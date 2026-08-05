@@ -7622,11 +7622,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get blueskyDisabledSubtitle => 'Videoların Bluesky\'a yayınlanmayacak';
 
   @override
-  String get blueskyBackfillDisclosureTitle => 'Your past videos will post too';
+  String get blueskyBackfillDisclosureTitle =>
+      'Geçmiş videoların da paylaşılacak';
 
   @override
   String get blueskyBackfillDisclosureSubtitle =>
-      'When you turn this on, Divine will start sending your older videos to Bluesky, oldest first, without rushing the daily limit.';
+      'Bunu açtığında Divine eski videolarını Bluesky’ye göndermeye başlar; en eskilerden başlar ve günlük sınırı aceleye getirmez.';
 
   @override
   String get blueskyHandle => 'Bluesky Kullanıcı Adı';

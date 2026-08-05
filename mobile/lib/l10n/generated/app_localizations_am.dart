@@ -7499,11 +7499,11 @@ class AppLocalizationsAm extends AppLocalizations {
   String get blueskyDisabledSubtitle => 'ቪዲዮዎችዎ ወደ Bluesky አይታተሙም';
 
   @override
-  String get blueskyBackfillDisclosureTitle => 'Your past videos will post too';
+  String get blueskyBackfillDisclosureTitle => 'ያለፉ ቪዲዮዎችህም ይለጠፋሉ';
 
   @override
   String get blueskyBackfillDisclosureSubtitle =>
-      'When you turn this on, Divine will start sending your older videos to Bluesky, oldest first, without rushing the daily limit.';
+      'ይህን ሲያበሩ፣ Divine የቆዩ ቪዲዮዎችህን ወደ Bluesky ከአሮጌዎቹ ጀምሮ፣ የቀን ገደቡን ሳይጣደፍ መላክ ይጀምራል።';
 
   @override
   String get blueskyHandle => 'የBluesky መያዣ';

@@ -20,8 +20,4 @@ enum AtprotoProvisioningState {
       _ => AtprotoProvisioningState.unknown,
     };
   }
-
-  bool get isTerminal =>
-      this != AtprotoProvisioningState.pending &&
-      this != AtprotoProvisioningState.unknown;
 }

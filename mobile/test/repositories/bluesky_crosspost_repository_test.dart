@@ -89,6 +89,51 @@ void main() {
         expect(status.provisioningState, AtprotoProvisioningState.failed);
         expect(status.provisioningError, 'PDS quota exhausted');
       });
+
+      test(
+        'preserves claim lookup details when keycast status fails',
+        () async {
+          when(() => apiClient.getStatus()).thenAnswer(
+            (_) async => throw const CrosspostApiException(
+              'unavailable',
+              statusCode: 503,
+              kind: CrosspostApiErrorKind.unavailable,
+            ),
+          );
+
+          Object? error;
+          try {
+            await repository.loadStatus(pubkey: pubkey);
+          } catch (caught) {
+            error = caught;
+          }
+
+          expect(error, isA<BlueskyCrosspostStatusException>());
+          final statusError = error! as BlueskyCrosspostStatusException;
+          expect(statusError.usernameClaimStatus, UsernameClaimStatus.claimed);
+          expect(statusError.username, 'testuser');
+          expect(statusError.handle, 'testuser.divine.video');
+          expect(statusError.cause, isA<CrosspostApiException>());
+        },
+      );
+
+      test('keycast-only status does not query name server', () async {
+        when(() => apiClient.getStatus()).thenAnswer(
+          (_) async => const CrosspostStatus(
+            crosspostEnabled: true,
+            provisioningState: AtprotoProvisioningState.pending,
+          ),
+        );
+
+        final status = await repository.loadKeycastStatus();
+
+        expect(status.crosspostEnabled, isTrue);
+        verifyNever(
+          () => profileRepository.lookupUsernameByPubkey(
+            pubkeyHex: any(named: 'pubkeyHex'),
+          ),
+        );
+      });
     });
 
     group('setCrosspost', () {

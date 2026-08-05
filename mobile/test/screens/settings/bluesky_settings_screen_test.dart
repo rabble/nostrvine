@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -519,6 +521,47 @@ void main() {
       verify(
         () => apiClient.setCrosspost(pubkey: 'pubkeyhex', enabled: true),
       ).called(1);
+    });
+
+    testWidgets('retry is disabled while provisioning retry is in flight', (
+      tester,
+    ) async {
+      final completer = Completer<CrosspostStatus>();
+      when(() => apiClient.getStatus()).thenAnswer(
+        (_) async => const CrosspostStatus(
+          crosspostEnabled: false,
+          username: 'testuser',
+          handle: 'testuser.divine.video',
+          provisioningState: AtprotoProvisioningState.failed,
+          provisioningError: 'PDS quota exhausted',
+        ),
+      );
+      when(
+        () => apiClient.setCrosspost(pubkey: 'pubkeyhex', enabled: true),
+      ).thenAnswer((_) => completer.future);
+
+      await tester.pumpWidget(buildApp());
+      await tester.pumpAndSettle();
+
+      final retry = find.widgetWithText(DivineButton, l10n.commonRetry);
+      await tester.tap(retry);
+      await tester.pump();
+      await tester.tap(retry);
+      await tester.pump();
+
+      verify(
+        () => apiClient.setCrosspost(pubkey: 'pubkeyhex', enabled: true),
+      ).called(1);
+
+      completer.complete(
+        const CrosspostStatus(
+          crosspostEnabled: true,
+          username: 'testuser',
+          handle: 'testuser.divine.video',
+          provisioningState: AtprotoProvisioningState.pending,
+        ),
+      );
+      await tester.pumpAndSettle();
     });
   });
 }

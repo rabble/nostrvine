@@ -59,6 +59,7 @@ class BlueskySettingsScreen extends ConsumerWidget {
     final repository = ref.watch(blueskyCrosspostRepositoryProvider);
 
     return BlocProvider(
+      key: ValueKey(repository),
       create: (_) => CrosspostSettingsCubit(
         repository: repository,
         pubkey: pubkey,
@@ -364,8 +365,11 @@ class _ProvisioningStatus extends StatelessWidget {
       trailing: state.provisioningState == AtprotoProvisioningState.failed
           ? DivineButton(
               label: context.l10n.commonRetry,
-              onPressed: () =>
-                  context.read<CrosspostSettingsCubit>().retryProvisioning(),
+              onPressed: state.status == CrosspostSettingsStatus.toggling
+                  ? null
+                  : () => context
+                        .read<CrosspostSettingsCubit>()
+                        .retryProvisioning(),
               type: DivineButtonType.link,
               size: DivineButtonSize.small,
             )

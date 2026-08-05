@@ -7753,11 +7753,12 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi ipa-publish ang mga video mo sa Bluesky';
 
   @override
-  String get blueskyBackfillDisclosureTitle => 'Your past videos will post too';
+  String get blueskyBackfillDisclosureTitle =>
+      'Mapo-post din ang mga dati mong video';
 
   @override
   String get blueskyBackfillDisclosureSubtitle =>
-      'When you turn this on, Divine will start sending your older videos to Bluesky, oldest first, without rushing the daily limit.';
+      'Kapag binuksan mo ito, sisimulan ng Divine na ipadala sa Bluesky ang mas luma mong mga video, pinakaluma muna, nang hindi minamadali ang daily limit.';
 
   @override
   String get blueskyHandle => 'Bluesky Handle';

@@ -33,34 +33,64 @@ class CrosspostSettingsCubit extends Cubit<CrosspostSettingsState> {
   final String _pubkey;
   final Duration _provisioningPollInterval;
   Timer? _provisioningPollTimer;
-  var _loadingStatus = false;
+  var _userLoadInFlight = false;
+  var _pollLoadInFlight = false;
+  var _operationGeneration = 0;
 
   /// Load the current crosspost status from keycast.
-  Future<void> loadStatus() => _loadStatus(showLoading: true);
+  Future<void> loadStatus() => _loadStatus(kind: _StatusLoadKind.user);
 
-  Future<void> _loadStatus({required bool showLoading}) async {
-    if (_loadingStatus) return;
-    _loadingStatus = true;
-    if (showLoading) {
-      emit(state.copyWith(status: CrosspostSettingsStatus.loading));
-    }
-    try {
-      final result = await _repository.loadStatus(pubkey: _pubkey);
-      if (isClosed) return;
-      _emitLoaded(result);
-    } catch (e, stackTrace) {
-      if (isClosed) return;
-      addError(e, stackTrace);
+  Future<void> _loadStatus({required _StatusLoadKind kind}) async {
+    if (isClosed) return;
+    final generation = switch (kind) {
+      _StatusLoadKind.user => _beginUserLoad(),
+      _StatusLoadKind.poll => _beginPollLoad(),
+    };
+    if (generation == null) return;
+    if (kind == _StatusLoadKind.user && !isClosed) {
       emit(
         state.copyWith(
-          status: CrosspostSettingsStatus.failure,
-          error: CrosspostSettingsError.generic,
-          attempt: state.attempt + 1,
+          status: CrosspostSettingsStatus.loading,
+          clearError: true,
         ),
       );
-    } finally {
-      _loadingStatus = false;
     }
+    try {
+      final result = switch (kind) {
+        _StatusLoadKind.user => await _repository.loadStatus(pubkey: _pubkey),
+        _StatusLoadKind.poll => _mergeKeycastStatus(
+          await _repository.loadKeycastStatus(),
+        ),
+      };
+      if (isClosed || generation != _operationGeneration) return;
+      _emitLoaded(result);
+    } catch (e, stackTrace) {
+      if (isClosed || generation != _operationGeneration) return;
+      if (kind == _StatusLoadKind.poll) {
+        return;
+      }
+      addError(e, stackTrace);
+      _emitLoadFailure(e);
+    } finally {
+      switch (kind) {
+        case _StatusLoadKind.user:
+          _userLoadInFlight = false;
+        case _StatusLoadKind.poll:
+          _pollLoadInFlight = false;
+      }
+    }
+  }
+
+  int? _beginUserLoad() {
+    if (_userLoadInFlight) return null;
+    _userLoadInFlight = true;
+    return ++_operationGeneration;
+  }
+
+  int? _beginPollLoad() {
+    if (_pollLoadInFlight || _userLoadInFlight) return null;
+    _pollLoadInFlight = true;
+    return _operationGeneration;
   }
 
   /// Toggle crossposting with optimistic update.
@@ -78,6 +108,8 @@ class CrosspostSettingsCubit extends Cubit<CrosspostSettingsState> {
   /// Otherwise emits the new value optimistically, calls the API, and reverts
   /// with a categorized [CrosspostSettingsError] on failure.
   Future<void> toggleCrosspost({required bool enabled}) async {
+    if (isClosed) return;
+    if (state.status == CrosspostSettingsStatus.toggling) return;
     if (enabled &&
         state.usernameClaimStatus == UsernameClaimStatus.notClaimed) {
       emit(
@@ -91,6 +123,7 @@ class CrosspostSettingsCubit extends Cubit<CrosspostSettingsState> {
     }
 
     final previousState = state;
+    final generation = ++_operationGeneration;
     emit(
       state.copyWith(
         status: CrosspostSettingsStatus.toggling,
@@ -104,8 +137,10 @@ class CrosspostSettingsCubit extends Cubit<CrosspostSettingsState> {
         pubkey: _pubkey,
         enabled: enabled,
       );
+      if (isClosed || generation != _operationGeneration) return;
       _emitLoaded(result);
     } catch (e, stackTrace) {
+      if (isClosed || generation != _operationGeneration) return;
       addError(e, stackTrace);
       // Revert to previous state on failure, tagging the reason.
       emit(
@@ -125,12 +160,35 @@ class CrosspostSettingsCubit extends Cubit<CrosspostSettingsState> {
   /// loaded state so the same error does not fire again.
   void acknowledgeError() {
     if (state.error == null) return;
+    if (isClosed) return;
     emit(
       state.copyWith(status: CrosspostSettingsStatus.loaded, clearError: true),
     );
   }
 
+  void _emitLoadFailure(Object error) {
+    final claimFailure = error is BlueskyCrosspostStatusException
+        ? error
+        : null;
+    emit(
+      CrosspostSettingsState(
+        status: CrosspostSettingsStatus.failure,
+        enabled: state.enabled,
+        username: claimFailure?.username ?? state.username,
+        handle: claimFailure?.handle ?? state.handle,
+        provisioningState: state.provisioningState,
+        did: state.did,
+        provisioningError: state.provisioningError,
+        usernameClaimStatus:
+            claimFailure?.usernameClaimStatus ?? state.usernameClaimStatus,
+        error: CrosspostSettingsError.generic,
+        attempt: state.attempt + 1,
+      ),
+    );
+  }
+
   void _emitLoaded(BlueskyCrosspostAccountStatus result) {
+    if (isClosed) return;
     emit(
       CrosspostSettingsState(
         status: CrosspostSettingsStatus.loaded,
@@ -151,11 +209,29 @@ class CrosspostSettingsCubit extends Cubit<CrosspostSettingsState> {
     if (provisioningState == AtprotoProvisioningState.pending) {
       _provisioningPollTimer ??= Timer.periodic(
         _provisioningPollInterval,
-        (_) => unawaited(_loadStatus(showLoading: false)),
+        (_) => unawaited(_loadStatus(kind: _StatusLoadKind.poll)),
       );
       return;
     }
     _stopProvisioningPoller();
+  }
+
+  BlueskyCrosspostAccountStatus _mergeKeycastStatus(CrosspostStatus status) {
+    final username = status.username ?? state.username;
+    return BlueskyCrosspostAccountStatus(
+      crosspostEnabled: status.crosspostEnabled,
+      provisioningState: status.provisioningState,
+      usernameClaimStatus: state.usernameClaimStatus,
+      username: username,
+      handle: status.handle ?? state.handle ?? _handleFor(username),
+      did: status.did,
+      provisioningError: status.provisioningError,
+    );
+  }
+
+  String? _handleFor(String? username) {
+    if (username == null || username.isEmpty) return null;
+    return '$username.divine.video';
   }
 
   void _stopProvisioningPoller() {
@@ -188,7 +264,10 @@ class CrosspostSettingsCubit extends Cubit<CrosspostSettingsState> {
 
   @override
   Future<void> close() {
+    _operationGeneration++;
     _stopProvisioningPoller();
     return super.close();
   }
 }
+
+enum _StatusLoadKind { user, poll }

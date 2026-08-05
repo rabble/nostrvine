@@ -7669,17 +7669,18 @@ class AppLocalizationsVi extends AppLocalizations {
       'Video của bạn sẽ không được đăng lên Bluesky';
 
   @override
-  String get blueskyBackfillDisclosureTitle => 'Your past videos will post too';
+  String get blueskyBackfillDisclosureTitle =>
+      'Video cũ của bạn cũng sẽ được đăng';
 
   @override
   String get blueskyBackfillDisclosureSubtitle =>
-      'When you turn this on, Divine will start sending your older videos to Bluesky, oldest first, without rushing the daily limit.';
+      'Khi bật tính năng này, Divine sẽ bắt đầu gửi các video cũ hơn của bạn lên Bluesky, từ cũ nhất trước, không vội chạm giới hạn hằng ngày.';
 
   @override
   String get blueskyHandle => 'Tên định danh Bluesky';
 
   @override
-  String get blueskyDid => 'Bluesky DID';
+  String get blueskyDid => 'DID Bluesky';
 
   @override
   String get blueskyStatus => 'Trạng thái';

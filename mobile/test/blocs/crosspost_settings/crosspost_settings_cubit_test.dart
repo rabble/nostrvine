@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/crosspost_settings/crosspost_settings_cubit.dart';
@@ -68,7 +71,10 @@ void main() {
 
       test('emits failure state when status fetch fails', () async {
         when(() => repository.loadStatus(pubkey: testPubkey)).thenAnswer(
-          (_) async => throw const CrosspostApiException('Network error'),
+          (_) async => throw const BlueskyCrosspostStatusException(
+            CrosspostApiException('Network error'),
+            usernameClaimStatus: UsernameClaimStatus.notClaimed,
+          ),
         );
 
         final cubit = buildCubit();
@@ -77,6 +83,7 @@ void main() {
         await Future<void>.delayed(Duration.zero);
 
         expect(cubit.state.status, CrosspostSettingsStatus.failure);
+        expect(cubit.state.usernameClaimStatus, UsernameClaimStatus.notClaimed);
       });
 
       test(
@@ -154,8 +161,16 @@ void main() {
           await Future<void>.delayed(Duration.zero);
           await cubit.toggleCrosspost(enabled: false);
         },
-        skip: 2,
+        skip: 1,
         expect: () => const [
+          CrosspostSettingsState(
+            status: CrosspostSettingsStatus.toggling,
+            username: 'testuser',
+            handle: 'testuser.divine.video',
+            provisioningState: AtprotoProvisioningState.ready,
+            did: 'did:plc:test123',
+            usernameClaimStatus: UsernameClaimStatus.claimed,
+          ),
           CrosspostSettingsState(
             status: CrosspostSettingsStatus.loaded,
             username: 'testuser',
@@ -184,8 +199,16 @@ void main() {
           await Future<void>.delayed(Duration.zero);
           await cubit.toggleCrosspost(enabled: false);
         },
-        skip: 2,
+        skip: 1,
         expect: () => const [
+          CrosspostSettingsState(
+            status: CrosspostSettingsStatus.toggling,
+            username: 'testuser',
+            handle: 'testuser.divine.video',
+            provisioningState: AtprotoProvisioningState.ready,
+            did: 'did:plc:test123',
+            usernameClaimStatus: UsernameClaimStatus.claimed,
+          ),
           CrosspostSettingsState(
             status: CrosspostSettingsStatus.failure,
             enabled: true,
@@ -237,6 +260,81 @@ void main() {
       );
 
       blocTest<CrosspostSettingsCubit, CrosspostSettingsState>(
+        'does not short-circuit enable when claim status is unknown',
+        setUp: () {
+          when(() => repository.loadStatus(pubkey: testPubkey)).thenAnswer(
+            (_) async => const BlueskyCrosspostAccountStatus(
+              crosspostEnabled: false,
+              provisioningState: AtprotoProvisioningState.notLinked,
+              usernameClaimStatus: UsernameClaimStatus.unknown,
+            ),
+          );
+          when(
+            () => repository.setCrosspost(pubkey: testPubkey, enabled: true),
+          ).thenAnswer(
+            (_) async => const BlueskyCrosspostAccountStatus(
+              crosspostEnabled: true,
+              provisioningState: AtprotoProvisioningState.pending,
+              usernameClaimStatus: UsernameClaimStatus.unknown,
+            ),
+          );
+        },
+        build: buildCubit,
+        act: (cubit) async {
+          await Future<void>.delayed(Duration.zero);
+          await cubit.toggleCrosspost(enabled: true);
+        },
+        skip: 2,
+        expect: () => const [
+          CrosspostSettingsState(
+            status: CrosspostSettingsStatus.loaded,
+            enabled: true,
+            provisioningState: AtprotoProvisioningState.pending,
+          ),
+        ],
+        verify: (_) {
+          verify(
+            () => repository.setCrosspost(pubkey: testPubkey, enabled: true),
+          ).called(1);
+        },
+      );
+
+      blocTest<CrosspostSettingsCubit, CrosspostSettingsState>(
+        'maps a username precondition failure to usernameNotSynced when claimed',
+        setUp: () {
+          when(
+            () => repository.setCrosspost(pubkey: testPubkey, enabled: true),
+          ).thenAnswer(
+            (_) async => throw const CrosspostApiException(
+              'not synced',
+              statusCode: 400,
+              kind: CrosspostApiErrorKind.usernameNotClaimed,
+            ),
+          );
+        },
+        build: buildCubit,
+        act: (cubit) async {
+          await Future<void>.delayed(Duration.zero);
+          await cubit.toggleCrosspost(enabled: true);
+        },
+        skip: 2,
+        expect: () => const [
+          CrosspostSettingsState(
+            status: CrosspostSettingsStatus.failure,
+            enabled: true,
+            username: 'testuser',
+            handle: 'testuser.divine.video',
+            provisioningState: AtprotoProvisioningState.ready,
+            did: 'did:plc:test123',
+            usernameClaimStatus: UsernameClaimStatus.claimed,
+            error: CrosspostSettingsError.usernameNotSynced,
+            attempt: 1,
+          ),
+        ],
+        errors: () => [isA<CrosspostApiException>()],
+      );
+
+      blocTest<CrosspostSettingsCubit, CrosspostSettingsState>(
         'maps 503 toggle failure to unavailable',
         setUp: () {
           when(
@@ -273,10 +371,65 @@ void main() {
         ],
         errors: () => [isA<CrosspostApiException>()],
       );
+
+      test('ignores toggle completion after close', () async {
+        final completer = Completer<BlueskyCrosspostAccountStatus>();
+        when(
+          () => repository.setCrosspost(pubkey: testPubkey, enabled: false),
+        ).thenAnswer((_) => completer.future);
+
+        final cubit = buildCubit();
+        await Future<void>.delayed(Duration.zero);
+
+        final errors = <Object>[];
+        final subscription = cubit.stream.listen(null, onError: errors.add);
+        unawaited(cubit.toggleCrosspost(enabled: false));
+        await Future<void>.delayed(Duration.zero);
+        await cubit.close();
+
+        completer.complete(
+          const BlueskyCrosspostAccountStatus(
+            crosspostEnabled: false,
+            provisioningState: AtprotoProvisioningState.disabled,
+            usernameClaimStatus: UsernameClaimStatus.claimed,
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(errors, isEmpty);
+        await subscription.cancel();
+      });
+
+      blocTest<CrosspostSettingsCubit, CrosspostSettingsState>(
+        'acknowledgeError clears the error and returns to loaded',
+        setUp: () {
+          when(() => repository.loadStatus(pubkey: testPubkey)).thenAnswer(
+            (_) async => const BlueskyCrosspostAccountStatus(
+              crosspostEnabled: false,
+              provisioningState: AtprotoProvisioningState.notLinked,
+              usernameClaimStatus: UsernameClaimStatus.notClaimed,
+            ),
+          );
+        },
+        build: buildCubit,
+        act: (cubit) async {
+          await Future<void>.delayed(Duration.zero);
+          await cubit.toggleCrosspost(enabled: true);
+          cubit.acknowledgeError();
+        },
+        skip: 2,
+        expect: () => const [
+          CrosspostSettingsState(
+            status: CrosspostSettingsStatus.loaded,
+            usernameClaimStatus: UsernameClaimStatus.notClaimed,
+            attempt: 1,
+          ),
+        ],
+      );
     });
 
     group('provisioning polling', () {
-      test('polls pending status until a terminal state is loaded', () async {
+      test('polls pending status until a terminal state is loaded', () {
         var loadCount = 0;
         when(() => repository.loadStatus(pubkey: testPubkey)).thenAnswer((
           _,
@@ -291,27 +444,46 @@ void main() {
               usernameClaimStatus: UsernameClaimStatus.claimed,
             );
           }
-          return loadedStatus;
+          return const BlueskyCrosspostAccountStatus(
+            crosspostEnabled: true,
+            username: 'testuser',
+            handle: 'testuser.divine.video',
+            provisioningState: AtprotoProvisioningState.pending,
+            usernameClaimStatus: UsernameClaimStatus.claimed,
+          );
+        });
+        when(() => repository.loadKeycastStatus()).thenAnswer((_) async {
+          loadCount += 1;
+          return const CrosspostStatus(
+            crosspostEnabled: true,
+            username: 'testuser',
+            provisioningState: AtprotoProvisioningState.ready,
+            did: 'did:plc:test123',
+          );
         });
 
-        final cubit = buildCubit(
-          pollInterval: const Duration(milliseconds: 1),
-        );
-        addTearDown(cubit.close);
+        fakeAsync((fake) {
+          final cubit = buildCubit(
+            pollInterval: const Duration(milliseconds: 1),
+          );
+          fake.flushMicrotasks();
+          fake.elapse(const Duration(milliseconds: 1));
+          fake.flushMicrotasks();
 
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-
-        expect(loadCount, greaterThanOrEqualTo(2));
-        expect(
-          cubit.state.provisioningState,
-          AtprotoProvisioningState.ready,
-        );
-        final settledCount = loadCount;
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-        expect(loadCount, settledCount);
+          expect(loadCount, 2);
+          expect(
+            cubit.state.provisioningState,
+            AtprotoProvisioningState.ready,
+          );
+          final settledCount = loadCount;
+          fake.elapse(const Duration(milliseconds: 10));
+          fake.flushMicrotasks();
+          expect(loadCount, settledCount);
+          cubit.close();
+        });
       });
 
-      test('stops polling when the cubit closes', () async {
+      test('stops polling when the cubit closes', () {
         var loadCount = 0;
         when(() => repository.loadStatus(pubkey: testPubkey)).thenAnswer((
           _,
@@ -325,16 +497,117 @@ void main() {
             usernameClaimStatus: UsernameClaimStatus.claimed,
           );
         });
+        when(() => repository.loadKeycastStatus()).thenAnswer((_) async {
+          loadCount += 1;
+          return const CrosspostStatus(
+            crosspostEnabled: true,
+            provisioningState: AtprotoProvisioningState.pending,
+          );
+        });
+
+        fakeAsync((fake) {
+          final cubit = buildCubit(
+            pollInterval: const Duration(milliseconds: 1),
+          );
+          fake.flushMicrotasks();
+          fake.elapse(const Duration(milliseconds: 5));
+          fake.flushMicrotasks();
+          cubit.close();
+
+          final countAfterClose = loadCount;
+          fake.elapse(const Duration(milliseconds: 5));
+          fake.flushMicrotasks();
+          expect(loadCount, countAfterClose);
+        });
+      });
+
+      test(
+        'poll failures keep the pending state without surfacing failure',
+        () {
+          when(() => repository.loadStatus(pubkey: testPubkey)).thenAnswer(
+            (_) async => const BlueskyCrosspostAccountStatus(
+              crosspostEnabled: true,
+              username: 'testuser',
+              handle: 'testuser.divine.video',
+              provisioningState: AtprotoProvisioningState.pending,
+              usernameClaimStatus: UsernameClaimStatus.claimed,
+            ),
+          );
+          when(() => repository.loadKeycastStatus()).thenAnswer(
+            (_) async => throw const CrosspostApiException(
+              'unavailable',
+              statusCode: 503,
+              kind: CrosspostApiErrorKind.unavailable,
+            ),
+          );
+
+          fakeAsync((fake) {
+            final cubit = buildCubit(
+              pollInterval: const Duration(milliseconds: 1),
+            );
+            fake.flushMicrotasks();
+            fake.elapse(const Duration(milliseconds: 3));
+            fake.flushMicrotasks();
+
+            expect(cubit.state.status, CrosspostSettingsStatus.loaded);
+            expect(
+              cubit.state.provisioningState,
+              AtprotoProvisioningState.pending,
+            );
+            expect(cubit.state.error, isNull);
+            expect(cubit.state.attempt, 0);
+            cubit.close();
+          });
+        },
+      );
+
+      test('stale poll result does not overwrite toggle result', () async {
+        final pollCompleter = Completer<CrosspostStatus>();
+        when(() => repository.loadStatus(pubkey: testPubkey)).thenAnswer(
+          (_) async => const BlueskyCrosspostAccountStatus(
+            crosspostEnabled: true,
+            username: 'testuser',
+            handle: 'testuser.divine.video',
+            provisioningState: AtprotoProvisioningState.pending,
+            usernameClaimStatus: UsernameClaimStatus.claimed,
+          ),
+        );
+        when(() => repository.loadKeycastStatus()).thenAnswer(
+          (_) => pollCompleter.future,
+        );
+        when(
+          () => repository.setCrosspost(pubkey: testPubkey, enabled: false),
+        ).thenAnswer(
+          (_) async => const BlueskyCrosspostAccountStatus(
+            crosspostEnabled: false,
+            username: 'testuser',
+            handle: 'testuser.divine.video',
+            provisioningState: AtprotoProvisioningState.disabled,
+            usernameClaimStatus: UsernameClaimStatus.claimed,
+          ),
+        );
 
         final cubit = buildCubit(
           pollInterval: const Duration(milliseconds: 1),
         );
-        await Future<void>.delayed(const Duration(milliseconds: 5));
-        await cubit.close();
+        addTearDown(cubit.close);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(const Duration(milliseconds: 1));
 
-        final countAfterClose = loadCount;
-        await Future<void>.delayed(const Duration(milliseconds: 5));
-        expect(loadCount, countAfterClose);
+        await cubit.toggleCrosspost(enabled: false);
+        pollCompleter.complete(
+          const CrosspostStatus(
+            crosspostEnabled: true,
+            provisioningState: AtprotoProvisioningState.pending,
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(cubit.state.enabled, isFalse);
+        expect(
+          cubit.state.provisioningState,
+          AtprotoProvisioningState.disabled,
+        );
       });
 
       test(

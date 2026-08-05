@@ -57,9 +57,21 @@ class BlueskyCrosspostRepository {
     required String pubkey,
   }) async {
     final claimLookup = await _lookupUsernameClaimStatus(pubkey);
-    final status = await _apiClient.getStatus();
-    return _mergeStatus(status, claimLookup);
+    try {
+      final status = await _apiClient.getStatus();
+      return _mergeStatus(status, claimLookup);
+    } catch (error) {
+      throw BlueskyCrosspostStatusException(
+        error,
+        usernameClaimStatus: claimLookup.status,
+        username: claimLookup.username,
+        handle: _handleFor(claimLookup.username),
+      );
+    }
   }
+
+  /// Poll keycast status without re-querying divine-name-server.
+  Future<CrosspostStatus> loadKeycastStatus() => _apiClient.getStatus();
 
   Future<BlueskyCrosspostAccountStatus> setCrosspost({
     required String pubkey,
@@ -114,4 +126,19 @@ class BlueskyCrosspostRepository {
     if (username == null || username.isEmpty) return null;
     return '$username.divine.video';
   }
+}
+
+/// Keycast status failed after divine-name-server claim lookup completed.
+class BlueskyCrosspostStatusException implements Exception {
+  const BlueskyCrosspostStatusException(
+    this.cause, {
+    required this.usernameClaimStatus,
+    this.username,
+    this.handle,
+  });
+
+  final Object cause;
+  final UsernameClaimStatus usernameClaimStatus;
+  final String? username;
+  final String? handle;
 }

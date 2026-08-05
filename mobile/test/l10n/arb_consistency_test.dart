@@ -286,6 +286,42 @@ void main() {
         }
       }
     });
+
+    test('Bluesky backfill disclosure is localized for every locale', () {
+      final l10nDir = Directory('lib/l10n');
+      final arbFiles =
+          l10nDir
+              .listSync()
+              .whereType<File>()
+              .where((file) => file.path.endsWith('.arb'))
+              .where((file) => !file.path.endsWith('app_en.arb'))
+              .toList()
+            ..sort((a, b) => a.path.compareTo(b.path));
+
+      final template = _readArb(File('lib/l10n/app_en.arb'));
+      const keys = [
+        'blueskyBackfillDisclosureTitle',
+        'blueskyBackfillDisclosureSubtitle',
+      ];
+
+      for (final file in arbFiles) {
+        final arb = _readArb(file);
+        for (final key in keys) {
+          expect(
+            arb[key],
+            isA<String>().having((s) => s.isNotEmpty, 'isNotEmpty', isTrue),
+            reason: '${file.path} must define a non-empty $key message',
+          );
+          expect(
+            arb[key],
+            isNot(template[key]),
+            reason:
+                '${file.path} must not fall back to English for the Bluesky '
+                'backfill disclosure',
+          );
+        }
+      }
+    });
   });
 }
 
