@@ -26,23 +26,31 @@ class ShareableUser {
 
   /// Builds a shareable user from a (possibly missing) [profile].
   ///
-  /// Uses `displayNip05` — the full `@username.divine.video` form the Figma
-  /// spec shows — rather than `UserProfile.handle`, which shortens divine
-  /// identifiers to `@username` and prefixes external ones into a doubled
-  /// `@alice@example.com`. Falls back to `@name`, then to `null` when the
-  /// profile carries neither, so the row can drop its handle line entirely.
+  /// Uses `displayNip05` — the full `@username.divine.video` form the
+  /// find-people design calls for (Figma node `13945:91140`) — rather than
+  /// `UserProfile.handle`, which shortens divine identifiers to `@username`
+  /// and prefixes external ones into a doubled `@alice@example.com`. Falls
+  /// back to the kind-0 `name`, then to `null` when the profile carries
+  /// neither, so the row can drop its handle line entirely.
   factory ShareableUser.fromProfile(String pubkey, UserProfile? profile) {
-    final name = profile?.name;
     return ShareableUser(
       pubkey: pubkey,
       displayName: profile?.bestDisplayName,
-      handle:
-          profile?.displayNip05 ??
-          (name == null || name.isEmpty
-              ? null
-              : '@${UserProfile.sanitizeDisplayName(name)}'),
+      handle: profile?.displayNip05 ?? _handleFromName(profile?.name),
       picture: profile?.picture,
     );
+  }
+
+  /// [name] as a handle: `@`-prefixed unless it already reads as one.
+  ///
+  /// A kind-0 `name` is free-form and often email-shaped
+  /// (`dana@nostrplebs.com`) or already prefixed (`@dana`). Prefixing those
+  /// would produce the doubled `@dana@nostrplebs.com` that this factory
+  /// avoids for external NIP-05.
+  static String? _handleFromName(String? name) {
+    if (name == null || name.isEmpty) return null;
+    final sanitized = UserProfile.sanitizeDisplayName(name);
+    return sanitized.contains('@') ? sanitized : '@$sanitized';
   }
 
   final String pubkey;

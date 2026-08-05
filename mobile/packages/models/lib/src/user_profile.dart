@@ -268,8 +268,9 @@ class UserProfile {
   /// `alice@example.com`) are returned unchanged.
   ///
   /// Use this when the domain is meaningful to the user — settings screens,
-  /// the share-video watermark, the NIP-05 editor — so people understand
-  /// what they own. For general UI rendering prefer [shortDisplayNip05].
+  /// the share-video watermark, the NIP-05 editor, the find-people sheet —
+  /// so people understand what they own. For general UI rendering prefer
+  /// [shortDisplayNip05].
   ///
   /// Sanitized: `nip05` is an unverified kind-0 field, and every consumer of
   /// this getter renders it. Verification compares by pubkey, not by this
