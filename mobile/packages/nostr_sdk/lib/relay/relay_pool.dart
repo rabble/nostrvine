@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:developer';
 
+import 'package:flutter/foundation.dart';
 import 'package:nostr_sdk/utils/relay_addr_util.dart';
 
 import '../count_response.dart';
@@ -198,7 +199,31 @@ class RelayPool {
     this.onNotice,
     this.signatureVerificationPolicy = SignatureVerificationPolicy.all,
     this.silentRepairCooldown = const Duration(seconds: 60),
+    this.tempRelayIdleTimeout = const Duration(seconds: 120),
+    this.tempRelaySweepInterval = const Duration(seconds: 60),
   });
+
+  /// How long a temp relay may sit with no inbound traffic before the sweep
+  /// closes it. Injectable so tests need no wall-clock wait.
+  ///
+  /// A temp relay is created per entry in a caller's `tempRelays` list, and
+  /// before #6585 nothing ever closed one: [_sendCollect] only tore a temp
+  /// relay down when the publish deadline had *already* expired, so any
+  /// address that answered in time kept its socket for the life of the
+  /// process. That matters most where the addresses are not ours to choose —
+  /// a NIP-17 gift wrap goes to the relays the *recipient* advertised, so an
+  /// unbounded, immortal set of connections was reachable from a counterparty
+  /// simply by listing hosts in their kind-10050.
+  ///
+  /// NIP-17's kind-10050 description says as much directly: "After sending,
+  /// disconnect from these relays unless further messages are expected."
+  final Duration tempRelayIdleTimeout;
+
+  /// How often the idle sweep runs while any temp relay exists.
+  final Duration tempRelaySweepInterval;
+
+  /// Periodic idle sweep over [_tempRelays]; null while none exist.
+  Timer? _tempRelaySweepTimer;
 
   /// Minimum gap between two silent-socket repairs of the *same* relay.
   ///
@@ -449,6 +474,11 @@ class RelayPool {
       _forgetRelayBookkeeping(url);
     }
     _relays.clear();
+    for (final url in _tempRelays.keys.toList(growable: false)) {
+      removeTempRelay(url);
+    }
+    _tempRelaySweepTimer?.cancel();
+    _tempRelaySweepTimer = null;
   }
 
   /// Drops the pool-side state keyed by [url] so a relay that comes back is
@@ -1780,6 +1810,12 @@ class RelayPool {
       return deadline != null && !DateTime.now().isBefore(deadline);
     }
 
+    // Only tears down a temp relay once the publish deadline has passed —
+    // before that the relay may still be carrying a concurrent publish or
+    // query, since temp relays are keyed by URL and therefore shared. The
+    // sockets this deliberately leaves behind are reclaimed by
+    // [sweepIdleTempRelays] once they go quiet, which is safe precisely
+    // because it judges idleness rather than guessing at ownership.
     void removeExpiredTempRelay(Relay relay) {
       if (!deadlineExpired()) return;
       unawaited(relay.disconnect());
@@ -2212,9 +2248,64 @@ class RelayPool {
       _observeRelayStatus(tempRelay);
       tempRelay.connect();
       _tempRelays[addr] = tempRelay;
+      _ensureTempRelaySweepScheduled();
     }
 
     return tempRelay;
+  }
+
+  void _ensureTempRelaySweepScheduled() {
+    if (_tempRelaySweepTimer != null) return;
+    _tempRelaySweepTimer = Timer.periodic(
+      tempRelaySweepInterval,
+      (_) => sweepIdleTempRelays(),
+    );
+  }
+
+  /// Closes temp relays that have gone quiet and are not serving anything.
+  ///
+  /// A temp relay exists to carry one publish or one targeted query. Once that
+  /// is done the socket is pure liability: it holds a connection open to an
+  /// address the caller may not control, and it keeps the pool paying for a
+  /// peer nothing is waiting on. This is the teardown NIP-17 asks for on the
+  /// DM path, applied uniformly so every `tempRelays` caller inherits it.
+  ///
+  /// A relay is closed only when it is **both** silent for
+  /// [tempRelayIdleTimeout] **and** holds no live subscription or unanswered
+  /// query. Temp relays are keyed by URL and therefore shared — a second
+  /// publish, or a query naming the same address, reuses the same entry — so
+  /// closing on "this publish finished" would cut a socket out from under a
+  /// concurrent caller. Idleness is the only condition that is safe to judge
+  /// without tracking ownership.
+  @visibleForTesting
+  void sweepIdleTempRelays() {
+    final idleSince = DateTime.now().subtract(tempRelayIdleTimeout);
+    for (final entry in _tempRelayEntriesSnapshot()) {
+      if (!_isTempRelayReapable(entry.value, idleSince)) continue;
+      log('Closing idle temp relay ${entry.key}');
+      removeTempRelay(entry.key);
+    }
+    if (_tempRelays.isEmpty) {
+      _tempRelaySweepTimer?.cancel();
+      _tempRelaySweepTimer = null;
+    }
+  }
+
+  bool _isTempRelayReapable(Relay relay, DateTime idleSince) {
+    // Still carrying work for somebody — never reap.
+    if (relay.hasSubscription() || relay.getQueries().isNotEmpty) return false;
+
+    // A relay that failed to connect, or has since dropped, is doing nothing
+    // for anyone. [RelayBase.isSilentSince] deliberately answers false for a
+    // socket that is not connected — it exists to spot *live* zombie sockets —
+    // so the disconnected case has to be caught separately or those entries
+    // would accumulate forever, which is the half of the leak that a failed
+    // send used to produce.
+    if (relay.relayStatus.connected == ClientConnected.disconnect) return true;
+
+    // Connected: reap only once genuinely quiet. The connection stamps its
+    // activity clock on connect, so a freshly opened socket is never silent.
+    return relay is RelayBase && relay.isSilentSince(idleSince);
   }
 
   bool _shouldReplaceTempRelay(Relay relay) {
@@ -2268,6 +2359,14 @@ class RelayPool {
   Relay? getTempRelay(String url) {
     return _tempRelays[url];
   }
+
+  /// Addresses currently holding a temp-relay connection.
+  ///
+  /// Keys are normalised by [RelayAddrUtil.handle], so tests assert on this
+  /// rather than on the raw URL they passed in — a raw-URL lookup misses and
+  /// would make an "it was cleaned up" assertion pass vacuously.
+  @visibleForTesting
+  List<String> get tempRelayUrls => _tempRelays.keys.toList(growable: false);
 
   bool readable() {
     for (final relay in _relaysSnapshot()) {
