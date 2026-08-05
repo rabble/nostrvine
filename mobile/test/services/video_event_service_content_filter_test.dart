@@ -46,6 +46,7 @@ VideoEvent _createVideo({
     timestamp: DateTime(2025),
     sha256: sha256,
     vineId: vineId,
+    addressableDTag: vineId,
     contentWarningLabels: contentWarningLabels,
   );
 }

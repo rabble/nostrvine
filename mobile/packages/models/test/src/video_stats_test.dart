@@ -1496,6 +1496,9 @@ void main() {
         expect(videoEvent.thumbnailUrl, isNull);
         // When dTag is empty, vineId falls back to the event id.
         expect(videoEvent.vineId, equals('test-id'));
+        expect(videoEvent.addressableDTag, isNull);
+        expect(videoEvent.hasAddressableDTag, isFalse);
+        expect(videoEvent.addressableId, isNull);
       });
 
       test('handles null description', () {
@@ -1517,6 +1520,30 @@ void main() {
         final videoEvent = stats.toVideoEvent();
 
         expect(videoEvent.content, equals(''));
+      });
+
+      test('preserves non-empty dTag as addressableDTag', () {
+        final stats = VideoStats(
+          id: 'test-id',
+          pubkey: 'test-pubkey',
+          createdAt: DateTime(2024),
+          kind: 34236,
+          dTag: 'test-dtag',
+          title: 'Test',
+          thumbnail: 'https://example.com/thumb.jpg',
+          videoUrl: 'https://example.com/video.mp4',
+          reactions: 0,
+          comments: 0,
+          reposts: 0,
+          engagementScore: 0,
+        );
+
+        final videoEvent = stats.toVideoEvent();
+
+        expect(videoEvent.vineId, equals('test-dtag'));
+        expect(videoEvent.addressableDTag, equals('test-dtag'));
+        expect(videoEvent.hasAddressableDTag, isTrue);
+        expect(videoEvent.addressableId, equals('34236:test-pubkey:test-dtag'));
       });
 
       test(

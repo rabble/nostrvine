@@ -145,6 +145,7 @@ void main() {
         videoUrl: 'https://example.com/$id.mp4',
         thumbnailUrl: 'https://example.com/$id.jpg',
         vineId: vineId,
+        addressableDTag: vineId,
       );
     }
 

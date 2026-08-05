@@ -573,6 +573,7 @@ class VideoStats {
       vineId: normalizedDTag.isNotEmpty ? normalizedDTag : null,
       publishedAt: publishedAt?.toString(),
       sha256: sha256,
+      addressableDTag: dTag.isNotEmpty ? dTag : null,
       authorName: authorName,
       authorAvatar: authorAvatar,
       blurhash: blurhash,

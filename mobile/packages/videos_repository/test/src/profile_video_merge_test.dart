@@ -13,6 +13,7 @@ VideoEvent _video({
   String? videoUrl,
   String? publishedAt,
   String? vineId,
+  String? addressableDTag,
   Map<String, String> rawTags = const {},
   List<String> hashtags = const [],
   List<String> collaboratorPubkeys = const [],
@@ -40,6 +41,7 @@ VideoEvent _video({
     videoUrl: videoUrl,
     publishedAt: publishedAt,
     vineId: vineId,
+    addressableDTag: addressableDTag,
     rawTags: rawTags,
     hashtags: hashtags,
     collaboratorPubkeys: collaboratorPubkeys,
@@ -140,6 +142,20 @@ void main() {
       );
 
       expect(merged.title, equals('new'));
+    });
+
+    test('fills addressable d tag from the secondary copy', () {
+      final merged = mergeProfileFeedVideos(
+        _video(id: 'rest', vineId: 'video-d-tag'),
+        _video(
+          id: 'nostr',
+          vineId: 'video-d-tag',
+          addressableDTag: 'video-d-tag',
+        ),
+      );
+
+      expect(merged.addressableDTag, equals('video-d-tag'));
+      expect(merged.addressableId, equals('34236:author:video-d-tag'));
     });
 
     test('fills plural text-track refs from the secondary copy', () {

@@ -542,19 +542,9 @@ class ContentDeletionService {
   }
 
   String? _addressableDeletionTarget(VideoEvent video) {
-    final dTag = video.rawTags['d'];
-    final stableDTag = dTag != null && dTag.isNotEmpty
-        ? dTag
-        : video.vineId != null &&
-              video.vineId!.isNotEmpty &&
-              video.vineId != video.id
-        ? video.vineId
-        : null;
-    if (stableDTag == null || stableDTag.isEmpty) {
-      return null;
-    }
-    return '${NIP71VideoKinds.getPreferredAddressableKind()}'
-        ':${video.pubkey}:$stableDTag';
+    // Do not emit an empty-d coordinate for d-less addressable videos; delete
+    // only the concrete event id when the event carried no real d tag.
+    return video.hasAddressableDTag ? video.addressableId : null;
   }
 
   /// Get delete reason text for common cases

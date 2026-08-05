@@ -186,6 +186,7 @@ void main() {
         timestamp: DateTime.now(),
         videoUrl: 'https://example.com/video.mp4',
         vineId: 'rest-vine-id',
+        addressableDTag: 'rest-vine-id',
       );
     }
 
@@ -201,6 +202,7 @@ void main() {
         timestamp: DateTime.now(),
         videoUrl: 'https://example.com/video.mp4',
         rawTags: {'d': dTag},
+        addressableDTag: dTag,
       );
     }
 
@@ -440,54 +442,49 @@ void main() {
         },
       );
 
-      test(
-        'saves locally and reports someRelays when one relay accepts and '
-        'another rejects',
-        () async {
-          final video = createTestVideoEvent(testPublicKey);
-          final deleteEvent = createTestEvent(
-            pubkey: testPublicKey,
-            kind: 5,
-            tags: [
-              ['e', video.id],
-              ['a', video.addressableId!],
-              ['k', '34236'],
-            ],
-            content: 'CONTENT DELETION',
-          );
+      test('saves locally and reports someRelays when one relay accepts and '
+          'another rejects', () async {
+        final video = createTestVideoEvent(testPublicKey);
+        final deleteEvent = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 5,
+          tags: [
+            ['e', video.id],
+            ['a', video.addressableId!],
+            ['k', '34236'],
+          ],
+          content: 'CONTENT DELETION',
+        );
 
-          when(
-            () => mockAuthService.createAndSignEvent(
-              kind: any(named: 'kind'),
-              content: any(named: 'content'),
-              tags: any(named: 'tags'),
-            ),
-          ).thenAnswer((_) async => deleteEvent);
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((_) async => deleteEvent);
 
-          when(
-            () => mockNostrService.publishEventAwaitOk(
-              any(),
-              timeout: any(named: 'timeout'),
-            ),
-          ).thenAnswer((_) async => partiallyAccepted(deleteEvent.id));
+        when(
+          () => mockNostrService.publishEventAwaitOk(
+            any(),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((_) async => partiallyAccepted(deleteEvent.id));
 
-          final result = await service.deleteContent(
-            video: video,
-            reason: 'Personal choice',
-          );
+        final result = await service.deleteContent(
+          video: video,
+          reason: 'Personal choice',
+        );
 
-          // The tombstone exists on a relay, so the video leaves this device's
-          // library. Retrying would only re-ask the relay that refused, which
-          // answers the same way.
-          expect(result.success, isTrue);
-          expect(result.acceptance, equals(DeleteAcceptance.someRelays));
-          expect(service.hasBeenDeleted(video.id), isTrue);
-          expect(service.deletionHistory, hasLength(1));
-          verify(
-            () => mockProfileStatsDao.deleteStats(testPublicKey),
-          ).called(1);
-        },
-      );
+        // The tombstone exists on a relay, so the video leaves this device's
+        // library. Retrying would only re-ask the relay that refused, which
+        // answers the same way.
+        expect(result.success, isTrue);
+        expect(result.acceptance, equals(DeleteAcceptance.someRelays));
+        expect(service.hasBeenDeleted(video.id), isTrue);
+        expect(service.deletionHistory, hasLength(1));
+        verify(() => mockProfileStatsDao.deleteStats(testPublicKey)).called(1);
+      });
 
       test(
         'saves locally and reports someRelays when a targeted relay was never '
@@ -630,6 +627,67 @@ void main() {
           ).captured;
 
           final tags = captured.first as List<List<String>>;
+          expect(tags, contains(equals(['e', video.id])));
+          expect(tags.any((tag) => tag.isNotEmpty && tag[0] == 'a'), isFalse);
+          expect(tags, contains(equals(['k', '34236'])));
+        },
+      );
+
+      test(
+        'does not include a tag when vine_id exists without a real d tag',
+        () async {
+          final event = Event(
+            testPublicKey,
+            34236,
+            [
+              ['title', 'Test Video'],
+              ['vine_id', 'legacy-vine-id'],
+              ['url', 'https://example.com/video.mp4'],
+            ],
+            'Test video content',
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          );
+          event.id = 'vine_id_only_event_id';
+          event.sig = 'test_signature';
+          final video = VideoEvent.fromNostrEvent(event);
+          final deleteEvent = createTestEvent(
+            pubkey: testPublicKey,
+            kind: 5,
+            tags: [
+              ['e', video.id],
+              ['k', '34236'],
+            ],
+            content: 'CONTENT DELETION',
+          );
+
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => deleteEvent);
+
+          when(
+            () => mockNostrService.publishEventAwaitOk(
+              any(),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => accepted(deleteEvent.id));
+
+          await service.deleteContent(video: video, reason: 'Personal choice');
+
+          final captured = verify(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: captureAny(named: 'tags'),
+            ),
+          ).captured;
+
+          final tags = captured.first as List<List<String>>;
+          expect(video.vineId, equals('legacy-vine-id'));
+          expect(video.addressableDTag, isNull);
           expect(tags, contains(equals(['e', video.id])));
           expect(tags.any((tag) => tag.isNotEmpty && tag[0] == 'a'), isFalse);
           expect(tags, contains(equals(['k', '34236'])));

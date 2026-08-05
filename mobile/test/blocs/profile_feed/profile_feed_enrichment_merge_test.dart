@@ -10,6 +10,7 @@ VideoEvent _video({
   required String id,
   String pubkey = 'pubkey',
   String? vineId,
+  String? addressableDTag,
   String? textTrackRef,
   List<String> textTrackRefs = const [],
   String? textTrackContent,
@@ -21,6 +22,7 @@ VideoEvent _video({
     content: '',
     timestamp: DateTime.fromMillisecondsSinceEpoch(1704067200 * 1000),
     vineId: vineId,
+    addressableDTag: addressableDTag,
     textTrackRef: textTrackRef,
     textTrackRefs: textTrackRefs,
     textTrackContent: textTrackContent,
@@ -29,6 +31,25 @@ VideoEvent _video({
 
 void main() {
   group('mergeProfileFeedEnrichment', () {
+    test('fills addressable d tag from enriched Nostr copy', () {
+      final current = _video(id: 'rest', vineId: 'video-d-tag');
+      final enriched = _video(
+        id: 'nostr',
+        vineId: 'video-d-tag',
+        addressableDTag: 'video-d-tag',
+      );
+
+      final merged = mergeProfileFeedEnrichment(
+        current: [current],
+        sourceKeys: {canonicalProfileFeedVideoKey(current)},
+        incoming: [enriched],
+        removeTombstones: (videos) => videos,
+      );
+
+      expect(merged.single.addressableDTag, equals('video-d-tag'));
+      expect(merged.single.addressableId, equals('34236:pubkey:video-d-tag'));
+    });
+
     test('fills plural text-track refs from enriched Nostr copy', () {
       final current = _video(id: 'rest', vineId: 'video-subtitles');
       final enriched = _video(

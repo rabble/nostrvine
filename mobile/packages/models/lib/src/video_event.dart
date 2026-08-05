@@ -168,6 +168,7 @@ class VideoEvent {
     this.publishedAt,
     this.rawTags = const {},
     this.vineId,
+    this.addressableDTag,
     this.group,
     this.altText,
     this.blurhash,
@@ -228,6 +229,13 @@ class VideoEvent {
     final timestamp = json['timestamp'];
     final textTrackRef = json['textTrackRef'] as String?;
     final textTrackRefs = stringList(json['textTrackRefs']);
+    final rawTags =
+        (json['rawTags'] as Map<String, dynamic>?)?.map(
+          (key, value) => MapEntry(key, value.toString()),
+        ) ??
+        const <String, String>{};
+    final persistedAddressableDTag = json['addressableDTag'] as String?;
+    final rawDTag = rawTags['d'];
     return VideoEvent(
       id: json['id'] as String? ?? '',
       pubkey: json['pubkey'] as String? ?? '',
@@ -248,12 +256,15 @@ class VideoEvent {
       categories: stringList(json['categories']),
       eventCreatedAt: optInt(json['eventCreatedAt']),
       publishedAt: json['publishedAt'] as String?,
-      rawTags:
-          (json['rawTags'] as Map<String, dynamic>?)?.map(
-            (key, value) => MapEntry(key, value.toString()),
-          ) ??
-          const {},
+      rawTags: rawTags,
       vineId: json['vineId'] as String?,
+      addressableDTag:
+          persistedAddressableDTag != null &&
+              persistedAddressableDTag.isNotEmpty
+          ? persistedAddressableDTag
+          : rawDTag != null && rawDTag.isNotEmpty
+          ? rawDTag
+          : null,
       group: json['group'] as String?,
       altText: json['altText'] as String?,
       blurhash: json['blurhash'] as String?,
@@ -345,6 +356,7 @@ class VideoEvent {
     String? audioEventId;
     String? audioEventRelay;
     String? sourceRelay;
+    String? addressableDTag;
     final collaboratorPubkeys = <String>[];
     InspiredByInfo? inspiredByVideo;
     final textTrackRefsLocal = <String>[];
@@ -472,6 +484,7 @@ class VideoEvent {
         case 'd':
           // Replaceable event ID - original vine ID
           vineId = tagValue as String?;
+          addressableDTag = tagValue as String?;
         case 'vine_id':
           // Some clients use 'vine_id' instead of 'd' for the original Vine ID
           vineId ??= tagValue as String?;
@@ -706,6 +719,9 @@ class VideoEvent {
       publishedAt: publishedAt,
       rawTags: rawTags,
       vineId: vineId,
+      addressableDTag: addressableDTag != null && addressableDTag.isNotEmpty
+          ? addressableDTag
+          : null,
       group: group,
       altText: altText,
       blurhash: blurhash,
@@ -764,6 +780,14 @@ class VideoEvent {
 
   // Vine-specific fields from NIP-71 spec
   final String? vineId; // 'd' tag - original vine ID for replaceable events
+
+  /// The real NIP-33 `d` tag value carried by this event.
+  ///
+  /// Null when the source event or REST row had no non-empty `d` tag. Unlike
+  /// [vineId], this is never filled from `vine_id` and never falls back to the
+  /// event id, so protocol coordinate builders can distinguish a missing `d`.
+  final String? addressableDTag;
+
   final String? group; // 'h' tag - group/community identification
   final String? altText; // 'alt' tag - accessibility text
   final String? blurhash; // 'blurhash' tag - for progressive image loading
@@ -1229,11 +1253,14 @@ class VideoEvent {
         proofSummary?.hasUsableC2paManifest == true;
   }
 
-  String? get addressableId => vineId != null
+  bool get hasAddressableDTag =>
+      addressableDTag != null && addressableDTag!.isNotEmpty;
+
+  String? get addressableId => hasAddressableDTag
       ? AId(
           kind: EventKind.videoVertical,
           pubkey: pubkey,
-          dTag: vineId!,
+          dTag: addressableDTag!,
         ).toAString()
       : null;
 
@@ -1593,6 +1620,8 @@ class VideoEvent {
     String? publishedAt,
     Map<String, String>? rawTags,
     String? vineId,
+    String? addressableDTag,
+    bool clearAddressableDTag = false,
     String? group,
     String? altText,
     String? blurhash,
@@ -1652,6 +1681,9 @@ class VideoEvent {
     publishedAt: publishedAt ?? this.publishedAt,
     rawTags: rawTags ?? this.rawTags,
     vineId: vineId ?? this.vineId,
+    addressableDTag: clearAddressableDTag
+        ? null
+        : (addressableDTag ?? this.addressableDTag),
     group: group ?? this.group,
     altText: altText ?? this.altText,
     blurhash: blurhash ?? this.blurhash,
@@ -1743,6 +1775,7 @@ class VideoEvent {
     'publishedAt': publishedAt,
     'rawTags': rawTags,
     'vineId': vineId,
+    'addressableDTag': addressableDTag,
     'group': group,
     'altText': altText,
     'blurhash': blurhash,

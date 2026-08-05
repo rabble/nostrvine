@@ -239,7 +239,7 @@ class AudioEvent {
       duration: video.duration?.toDouble(),
       title: creatorName == null ? null : 'Original sound - $creatorName',
       source: 'Original Sound',
-      sourceVideoReference: '34236:${video.pubkey}:${video.vineId ?? video.id}',
+      sourceVideoReference: video.addressableId,
       allowsReuse: video.allowAudioReuse,
     );
   }

@@ -56,6 +56,7 @@ VideoEvent _video({
   List<String> hashtags = const [],
   String? sha256,
   String? vineId,
+  String? addressableDTag,
 }) => VideoEvent(
   id: id,
   pubkey: pubkey,
@@ -65,6 +66,7 @@ VideoEvent _video({
   hashtags: hashtags,
   sha256: sha256,
   vineId: vineId,
+  addressableDTag: addressableDTag ?? vineId,
   contentWarningLabels: contentWarningLabels,
 );
 

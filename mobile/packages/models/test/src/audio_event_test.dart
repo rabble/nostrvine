@@ -429,6 +429,7 @@ void main() {
           videoUrl: 'https://example.com/video.mp4',
           duration: 6,
           vineId: 'vine-123',
+          addressableDTag: 'vine-123',
         );
 
         final audioEvent = AudioEvent.fromVideoOriginalSound(
@@ -454,6 +455,7 @@ void main() {
           videoUrl: 'https://example.com/video.mp4',
           duration: 6,
           vineId: 'vine-123',
+          addressableDTag: 'vine-123',
         );
 
         final audioEvent = AudioEvent.fromVideoOriginalSound(video);
@@ -461,6 +463,26 @@ void main() {
         expect(audioEvent.title, isNull);
         expect(audioEvent.pubkey, equals(testPubkey));
       });
+
+      test(
+        'omits sourceVideoReference when source video has no real d tag',
+        () {
+          final video = VideoEvent(
+            id: testHexId,
+            pubkey: testPubkey,
+            createdAt: 1700000000,
+            content: 'classic vine',
+            timestamp: DateTime(2026),
+            videoUrl: 'https://example.com/video.mp4',
+            duration: 6,
+            vineId: 'legacy-vine-id',
+          );
+
+          final audioEvent = AudioEvent.fromVideoOriginalSound(video);
+
+          expect(audioEvent.sourceVideoReference, isNull);
+        },
+      );
 
       test('carries allowsReuse from the source video', () {
         VideoEvent video({required bool allowReuse}) => VideoEvent(
@@ -472,6 +494,7 @@ void main() {
           videoUrl: 'https://example.com/video.mp4',
           duration: 6,
           vineId: 'vine-123',
+          addressableDTag: 'vine-123',
           rawTags: allowReuse ? const {'allow_audio_reuse': 'true'} : const {},
         );
 
