@@ -54,6 +54,40 @@ void main() {
     });
   });
 
+  group('isPrivateOrLinkLocalHost', () {
+    test('covers every loopback host the local stack uses', () {
+      for (final host in ['localhost', '127.0.0.1', '10.0.2.2', '::1']) {
+        expect(isPrivateOrLinkLocalHost(host), isTrue, reason: host);
+      }
+    });
+
+    test('treats an empty or unparseable host as private', () {
+      expect(isPrivateOrLinkLocalHost(''), isTrue);
+      expect(isPrivateOrLinkLocalHost('   '), isTrue);
+    });
+
+    test('strips brackets from an IPv6 literal read off a URI', () {
+      expect(isPrivateOrLinkLocalHost('[fe80::1]'), isTrue);
+      expect(isPrivateOrLinkLocalHost('[2606:4700::1111]'), isFalse);
+    });
+
+    test('is case-insensitive', () {
+      expect(isPrivateOrLinkLocalHost('LOCALHOST'), isTrue);
+      expect(isPrivateOrLinkLocalHost('Printer.LOCAL'), isTrue);
+    });
+
+    test('leaves ordinary public hosts alone', () {
+      for (final host in [
+        'relay.divine.video',
+        'inbox.nostr.wine',
+        '8.8.8.8',
+        '2606:4700:4700::1111',
+      ]) {
+        expect(isPrivateOrLinkLocalHost(host), isFalse, reason: host);
+      }
+    });
+  });
+
   group('allowsLocalBadCertificateHost', () {
     test('allows loopback hosts only in debug builds', () {
       expect(allowsLocalBadCertificateHost('localhost'), kDebugMode);

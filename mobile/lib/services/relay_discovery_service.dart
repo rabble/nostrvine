@@ -7,7 +7,6 @@ import 'dart:convert';
 
 import 'package:meta/meta.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/utils/relay_url_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
