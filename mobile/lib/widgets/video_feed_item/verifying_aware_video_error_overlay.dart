@@ -1,8 +1,6 @@
 // ABOUTME: Wraps PooledVideoErrorOverlay with the live "verifying age" flag
 // ABOUTME: from VideoPlaybackStatusCubit plus the Verify-age retry wiring.
 
-import 'dart:async';
-
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -47,7 +45,7 @@ class VerifyingAwareVideoErrorOverlay extends ConsumerWidget {
   final VoidCallback? onSkip;
 
   /// Reloads playback for the retried item with the signed viewer-auth headers.
-  final FutureOr<bool> Function(Map<String, String>) retryPlayback;
+  final PooledRetryPlayback retryPlayback;
 
   final VideoErrorType? errorType;
   final bool shouldPortraitExpand;

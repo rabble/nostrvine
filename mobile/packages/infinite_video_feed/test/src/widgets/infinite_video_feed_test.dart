@@ -4,6 +4,7 @@ import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:infinite_video_feed/src/models/video_error_type.dart';
 import 'package:infinite_video_feed/src/widgets/infinite_video_feed.dart';
 import 'package:infinite_video_feed/src/widgets/video_item.dart';
 import 'package:media_cache/media_cache.dart';
@@ -3329,6 +3330,59 @@ void main() {
 
           expect(harness.countCalls('setClips'), equals(setClipsAfterError));
           expect(find.text('VIDEO_ERROR'), findsOneWidget);
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await harness.dispose();
+        }
+      });
+    });
+
+    group('errorTypeAt', () {
+      testWidgets('is null before failure and reports the classified type '
+          'after', (tester) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        final harness = _NativePlayerHarness(tester);
+        await harness.install(playerIds: const <int>[0, 1, 2, 3]);
+        final key = GlobalKey<InfiniteVideoFeedState>();
+
+        try {
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: [_makeVideo('error_type_at')],
+                cache: cache,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+                autoRetryBaseDelay: const Duration(milliseconds: 200),
+                errorBuilder: (_, _, _, errorType) =>
+                    Text('VIDEO_ERROR:${errorType.name}'),
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          expect(key.currentState!.errorTypeAt(0), isNull);
+
+          await harness.sendEvent(0, const <Object?, Object?>{
+            'status': 'error',
+            'errorCode': 'network_error',
+            'errorMessage': 'HTTP 401 Unauthorized',
+          });
+          await tester.pump();
+          await tester.pump();
+
+          // Matches what errorBuilder was handed, so a caller awaiting
+          // retryAt can tell a repeated 401 from an unrelated failure.
+          expect(find.text('VIDEO_ERROR:ageRestricted'), findsOneWidget);
+          expect(
+            key.currentState!.errorTypeAt(0),
+            equals(VideoErrorType.ageRestricted),
+          );
+          // Out-of-range and healthy slots stay null.
+          expect(key.currentState!.errorTypeAt(1), isNull);
         } finally {
           await tester.pumpWidget(const SizedBox.shrink());
           await tester.pump();

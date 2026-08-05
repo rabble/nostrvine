@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:infinite_video_feed/infinite_video_feed.dart'
+    show VideoErrorType;
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
@@ -38,6 +40,21 @@ String get _failureText =>
 
 String get _unavailableText =>
     lookupAppLocalizations(const Locale('en')).videoErrorUnavailable;
+
+/// Retry recovered playback.
+const PooledRetryOutcome _retryRecovered = (succeeded: true, errorType: null);
+
+/// Retry ran with valid auth headers and the media server rejected it again.
+const PooledRetryOutcome _retryStillUnauthorized = (
+  succeeded: false,
+  errorType: VideoErrorType.ageRestricted,
+);
+
+/// Retry failed for a reason unrelated to the age gate (network, decode).
+const PooledRetryOutcome _retryFailedUnrelated = (
+  succeeded: false,
+  errorType: VideoErrorType.generic,
+);
 
 String get _signerUnreachableText => lookupAppLocalizations(
   const Locale('en'),
@@ -87,7 +104,7 @@ void main() {
           retryPlayback: (headers) {
             retryCount++;
             retryHeaders = headers;
-            return true;
+            return _retryRecovered;
           },
         ),
       );
@@ -132,7 +149,7 @@ void main() {
         _RetryHarness(
           mediaAuthInterceptor: mediaAuthInterceptor,
           playbackStatusCubit: playbackStatusCubit,
-          retryPlayback: (_) => true,
+          retryPlayback: (_) => _retryRecovered,
         ),
       );
 
@@ -178,7 +195,7 @@ void main() {
             playbackStatusCubit: playbackStatusCubit,
             retryPlayback: (_) {
               retryCount++;
-              return true;
+              return _retryRecovered;
             },
           ),
         );
@@ -237,7 +254,7 @@ void main() {
           ageVerificationService: _ageService(verified: false),
           retryPlayback: (_) {
             retryCount++;
-            return true;
+            return _retryRecovered;
           },
         ),
       );
@@ -285,7 +302,7 @@ void main() {
             ageVerificationService: _ageService(verified: true),
             retryPlayback: (_) {
               retryCount++;
-              return true;
+              return _retryRecovered;
             },
           ),
         );
@@ -332,7 +349,7 @@ void main() {
           playbackStatusCubit: playbackStatusCubit,
           retryPlayback: (_) {
             retryCount++;
-            return false;
+            return _retryStillUnauthorized;
           },
         ),
       );
@@ -351,6 +368,58 @@ void main() {
       expect(playbackStatusCubit.state.hasAuthRetryExhausted(_videoId), isTrue);
       expect(find.text(_unavailableText), findsOneWidget);
       expect(find.text(_failureText), findsNothing);
+    });
+
+    testWidgets('keeps the age-gated card when the retry fails for an '
+        'unrelated reason', (tester) async {
+      final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+      final playbackStatusCubit = VideoPlaybackStatusCubit();
+      var retryCount = 0;
+      addTearDown(playbackStatusCubit.close);
+
+      when(
+        () => mediaAuthInterceptor.handleUnauthorizedMedia(
+          context: any(named: 'context'),
+          sha256Hash: _sha256,
+          url: _videoUrl,
+          serverUrl: 'https://media.divine.video',
+          category: 'video',
+        ),
+      ).thenAnswer(
+        (_) async =>
+            const ViewerAuthAuthorized({'Authorization': 'Nostr token'}),
+      );
+
+      await tester.pumpWidget(
+        _RetryHarness(
+          mediaAuthInterceptor: mediaAuthInterceptor,
+          playbackStatusCubit: playbackStatusCubit,
+          retryPlayback: (_) {
+            retryCount++;
+            return _retryFailedUnrelated;
+          },
+        ),
+      );
+
+      playbackStatusCubit.report(_videoId, PlaybackStatus.ageRestricted);
+
+      await tester.tap(find.text('Verify'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(retryCount, 1);
+      // A network / decode failure is not evidence the age gate is
+      // unclearable, so the viewer keeps the retryable age-gated card.
+      expect(
+        playbackStatusCubit.state.statusFor(_videoId),
+        PlaybackStatus.ageRestricted,
+      );
+      expect(
+        playbackStatusCubit.state.hasAuthRetryExhausted(_videoId),
+        isFalse,
+      );
+      expect(find.text(_failureText), findsOneWidget);
+      expect(find.text(_unavailableText), findsNothing);
     });
 
     testWidgets(
@@ -381,7 +450,7 @@ void main() {
             ageVerificationService: _ageService(verified: true),
             retryPlayback: (_) {
               retryCount++;
-              return true;
+              return _retryRecovered;
             },
           ),
         );
@@ -429,7 +498,7 @@ void main() {
             playbackStatusCubit: playbackStatusCubit,
             retryPlayback: (_) {
               retryCount++;
-              return true;
+              return _retryRecovered;
             },
           ),
         );
@@ -479,7 +548,7 @@ void main() {
             video: video,
             retryPlayback: (_) {
               retryCount++;
-              return true;
+              return _retryRecovered;
             },
           ),
         );
@@ -537,7 +606,7 @@ void main() {
           playbackStatusCubit: playbackStatusCubit,
           retryPlayback: (_) {
             retryCount++;
-            return false;
+            return _retryStillUnauthorized;
           },
         ),
       );
@@ -557,6 +626,55 @@ void main() {
       expect(find.text(_unavailableText), findsNothing);
       expect(find.text(_failureText), findsNothing);
     });
+
+    testWidgets('leaves the age-gated status alone when the retry fails for '
+        'an unrelated reason', (tester) async {
+      final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+      final playbackStatusCubit = VideoPlaybackStatusCubit();
+      var retryCount = 0;
+      addTearDown(playbackStatusCubit.close);
+
+      when(
+        () => mediaAuthInterceptor.canAutoAuthorizeAdultMedia,
+      ).thenReturn(true);
+      when(
+        () => mediaAuthInterceptor.createAutoAuthHeadersForAdultMedia(
+          sha256Hash: _sha256,
+          url: _videoUrl,
+          serverUrl: 'https://media.divine.video',
+        ),
+      ).thenAnswer(
+        (_) async =>
+            const ViewerAuthAuthorized({'Authorization': 'Nostr token'}),
+      );
+
+      await tester.pumpWidget(
+        _AutoRetryHarness(
+          mediaAuthInterceptor: mediaAuthInterceptor,
+          playbackStatusCubit: playbackStatusCubit,
+          retryPlayback: (_) {
+            retryCount++;
+            return _retryFailedUnrelated;
+          },
+        ),
+      );
+
+      playbackStatusCubit.report(_videoId, PlaybackStatus.ageRestricted);
+
+      await tester.tap(find.text('Auto retry'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(retryCount, 1);
+      expect(
+        playbackStatusCubit.state.statusFor(_videoId),
+        PlaybackStatus.ageRestricted,
+      );
+      expect(
+        playbackStatusCubit.state.hasAuthRetryExhausted(_videoId),
+        isFalse,
+      );
+    });
   });
 }
 
@@ -571,7 +689,7 @@ class _RetryHarness extends StatelessWidget {
 
   final MediaAuthInterceptor mediaAuthInterceptor;
   final VideoPlaybackStatusCubit playbackStatusCubit;
-  final bool Function(Map<String, String>) retryPlayback;
+  final PooledRetryPlayback retryPlayback;
   final VideoEvent? video;
   final AgeVerificationService? ageVerificationService;
 
@@ -622,7 +740,7 @@ class _AutoRetryHarness extends StatelessWidget {
 
   final MediaAuthInterceptor mediaAuthInterceptor;
   final VideoPlaybackStatusCubit playbackStatusCubit;
-  final bool Function(Map<String, String>) retryPlayback;
+  final PooledRetryPlayback retryPlayback;
 
   @override
   Widget build(BuildContext context) {
