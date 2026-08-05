@@ -122,11 +122,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       final contacts = <ShareableUser>[
         ...recentUsers,
         for (final pubkey in remainingFollows)
-          ShareableUser(
-            pubkey: pubkey,
-            displayName: profiles[pubkey]?.bestDisplayName,
-            picture: profiles[pubkey]?.picture,
-          ),
+          ShareableUser.fromProfile(pubkey, profiles[pubkey]),
       ];
 
       emit(
