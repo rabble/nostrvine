@@ -526,10 +526,22 @@ class RelayDiscoveryService {
       }
 
       final relaysList = cacheData['relays'] as List<dynamic>;
-      return relaysList
+      final cached = relaysList
           .map((r) => DiscoveredRelay.fromJson(r as Map<String, dynamic>))
-          .where((r) => isRelayUrlAllowed(r.url))
           .toList();
+      // Re-admit on read, on the same remote-supplied terms as a fresh
+      // discovery. The cache holds a list that arrived over the network and
+      // survives for 24h, so filtering only on write would leave a day-long
+      // window in which an entry written by an older build — or by a build
+      // before this rule existed — is adopted unchecked (#6585).
+      final admitted = admitRemoteSuppliedRelays(
+        cached.map((r) => r.url),
+        cap: RelayListCaps.nip65,
+      );
+      return [
+        for (final relay in cached)
+          if (admitted.contains(relay.url)) relay,
+      ];
     } catch (e) {
       Log.warning(
         'Failed to read cached relays: $e',

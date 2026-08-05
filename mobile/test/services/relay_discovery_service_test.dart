@@ -245,6 +245,7 @@ void main() {
   });
 
   _authenticityTests();
+  _cacheAdmissionTests();
 
   group('parseRelayListFromJson (#3362 insecure URL filtering)', () {
     late RelayDiscoveryService service;
@@ -531,4 +532,51 @@ class _HostileIndexer {
   }
 
   Future<void> stop() => _server.close(force: true);
+}
+
+/// #6585 — the discovery cache holds a list that arrived over the network and
+/// survives for 24h, so it is re-admitted on read. Filtering only on write
+/// would leave a day-long window in which an entry persisted by an older
+/// build is adopted unchecked.
+void _cacheAdmissionTests() {
+  group('cached relay admission (#6585)', () {
+    const npub = 'npub1cachetest';
+
+    Future<List<DiscoveredRelay>> discoverFromCache(
+      List<String> cachedUrls,
+    ) async {
+      SharedPreferences.setMockInitialValues({
+        'relay_discovery_$npub': jsonEncode({
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+          'relays': [
+            for (final url in cachedUrls)
+              {'url': url, 'read': true, 'write': true},
+          ],
+        }),
+      });
+      final service = RelayDiscoveryService(indexerRelays: const ['wss://a']);
+      final result = await service.discoverRelays(npub);
+      return result.relays;
+    }
+
+    test(
+      'drops a cached private or loopback relay written by an old build',
+      () async {
+        final relays = await discoverFromCache([
+          'wss://good.example',
+          'wss://192.168.1.10',
+          'ws://localhost:47777',
+          'wss://169.254.169.254',
+        ]);
+        expect(relays.map((r) => r.url), ['wss://good.example']);
+      },
+    );
+
+    test('caps an oversized cached list', () async {
+      final relays = await discoverFromCache([
+        for (var i = 0; i < 100; i++) 'wss://cached-$i.example',
+      ]);
+      expect(relays, hasLength(RelayListCaps.nip65));
+    });
+  });
 }
