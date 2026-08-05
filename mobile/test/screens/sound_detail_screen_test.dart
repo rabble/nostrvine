@@ -573,6 +573,39 @@ void main() {
           findsOneWidget,
         );
       });
+
+      testWidgets('omits the source link when the source is not a URL', (
+        tester,
+      ) async {
+        // `fromVideoOriginalSound` puts the label "Original Sound" in `source`,
+        // which is not launchable — the credit must still render without a
+        // dead "View source" link next to it.
+        final video = createTestVideoEvent(id: 'video1');
+        final testSound = AudioEvent.fromVideoOriginalSound(video);
+
+        await tester.pumpWidget(
+          createTestWidget(
+            child: SoundDetailScreen(sound: testSound, sourceVideo: video),
+            overrides: [
+              soundUsageCountProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(0)),
+              videosUsingSoundProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(<String>[])),
+              audioPlaybackServiceProvider.overrideWithValue(mockAudioService),
+            ],
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('By ${UserProfile.defaultDisplayNameFor(video.pubkey)}'),
+          findsOneWidget,
+        );
+        expect(find.text('View source'), findsNothing);
+      });
     });
 
     group('Action Buttons', () {

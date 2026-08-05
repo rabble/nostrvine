@@ -449,11 +449,11 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
     final sound = widget.sound;
     _artistName = sound.creatorName;
     _license = sound.licenseName;
-    _sourceUrl = sound.source;
+    _sourceUrl = _launchableUrl(sound.source);
     if (sound.externalSource case final external?) {
       _artistName ??= external.creatorName;
       _license ??= external.license.name;
-      _sourceUrl ??= external.sourceUrl;
+      _sourceUrl ??= _launchableUrl(external.sourceUrl);
     }
     if (!sound.isBundled) return;
 
@@ -463,8 +463,18 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
     if (vineSound != null) {
       _artistName = vineSound.artist;
       _license = vineSound.license;
-      _sourceUrl = vineSound.sourceUrl;
+      _sourceUrl = _launchableUrl(vineSound.sourceUrl);
     }
+  }
+
+  /// [AudioEvent.source] carries free-text attribution ("Original Sound",
+  /// "Artist via Freesound") as often as a real URL, so only an absolute URL
+  /// becomes a tappable "View source" link — anything else would render a link
+  /// that `canLaunchUrl` rejects on tap.
+  static String? _launchableUrl(String? value) {
+    if (value == null) return null;
+    final uri = Uri.tryParse(value);
+    return uri != null && uri.hasScheme && uri.hasAuthority ? value : null;
   }
 
   String get _formattedDuration {
