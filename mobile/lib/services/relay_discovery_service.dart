@@ -268,7 +268,7 @@ class RelayDiscoveryService {
     final relayStatus = RelayStatus(indexerUrl);
     final relay = RelayBase(indexerUrl, relayStatus);
     final completer = Completer<List<DiscoveredRelay>>();
-    final events = <Map<String, dynamic>>[];
+    final events = <Event>[];
     final subscriptionId = 'rd_${DateTime.now().millisecondsSinceEpoch}';
 
     // Set up message handler before connecting
@@ -278,18 +278,20 @@ class RelayDiscoveryService {
       final messageType = json[0] as String;
 
       if (messageType == 'EVENT' && json.length >= 3) {
-        // Collect the raw event JSON
         final eventJson = json[2] as Map<String, dynamic>;
-        events.add(eventJson);
+        final event = _authenticRelayList(eventJson, indexerUrl, pubkeyHex);
+        if (event != null) events.add(event);
       } else if (messageType == 'EOSE') {
         // All stored events received - parse and complete
         if (!completer.isCompleted) {
           if (events.isEmpty) {
             completer.complete(<DiscoveredRelay>[]);
           } else {
-            // Parse the most recent event's relay list
-            final relays = _parseRelayListFromJson(events.first);
-            completer.complete(relays);
+            // Newest wins. Frames arrive in whatever order the indexer feels
+            // like sending them, so the first one through the socket is not
+            // the current relay list.
+            events.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+            completer.complete(_parseRelayListFromEvent(events.first));
           }
         }
       } else if (messageType == 'NOTICE') {
@@ -358,33 +360,110 @@ class RelayDiscoveryService {
     }
   }
 
+  /// Returns [eventJson] as an [Event] when it is genuinely [pubkeyHex]'s
+  /// kind-10002, and null otherwise.
+  ///
+  /// This query runs on a bare [RelayBase] with its own `onMessage`, so the
+  /// frame never passes through `RelayPool`, which is the only place inbound
+  /// events are checked. Nothing else stands between an indexer and the relay
+  /// pool: what comes back here is adopted via `NostrClient.addRelays` and
+  /// then used for every subsequent read and write. The indexers queried are
+  /// third-party public relays, so "it answered our REQ" is not evidence the
+  /// answer is the list we asked for — the id, the signature, the author and
+  /// the kind all have to be checked here (#6585).
+  ///
+  /// A frame that fails is logged and dropped, not reported: a broken or
+  /// hostile indexer is not something the user can act on, and routing it to
+  /// Crashlytics would bury real defects (see `error_handling.md`).
+  Event? _authenticRelayList(
+    Map<String, dynamic> eventJson,
+    String indexerUrl,
+    String pubkeyHex,
+  ) {
+    void reject(String reason) {
+      Log.warning(
+        '  Rejecting kind-10002 frame from $indexerUrl: $reason',
+        name: 'RelayDiscoveryService',
+        category: LogCategory.auth,
+      );
+    }
+
+    final Event event;
+    try {
+      event = Event.fromJson(eventJson);
+    } on Object catch (e) {
+      reject('unparseable ($e)');
+      return null;
+    }
+
+    if (event.kind != 10002) {
+      reject('kind ${event.kind}, expected 10002');
+      return null;
+    }
+    if (event.pubkey != pubkeyHex) {
+      reject('authored by ${event.pubkey}, asked for $pubkeyHex');
+      return null;
+    }
+    // `isValid` recomputes the id; `isSigned` verifies the Schnorr signature.
+    // Both are needed — the id check alone only proves internal consistency,
+    // which anyone can produce.
+    if (!event.isValid) {
+      reject('event id does not match its contents');
+      return null;
+    }
+    if (!event.isSigned) {
+      reject('missing or invalid signature');
+      return null;
+    }
+    return event;
+  }
+
   /// Parse relay list from kind 10002 event JSON.
   ///
   /// NIP-65 format:
   /// Tags: [["r", "<relay-url>"], ["r", "<relay-url>", "read"],
   ///        ["r", "<relay-url>", "write"]]
   @visibleForTesting
-  List<DiscoveredRelay> parseRelayListFromJson(Map<String, dynamic> json) =>
-      _parseRelayListFromJson(json);
+  List<DiscoveredRelay> parseRelayListFromJson(Map<String, dynamic> json) {
+    final tags = json['tags'] as List<dynamic>? ?? const [];
+    return _parseRelayListFromTags([
+      for (final tag in tags)
+        if (tag is List) [for (final value in tag) value.toString()],
+    ]);
+  }
 
-  List<DiscoveredRelay> _parseRelayListFromJson(Map<String, dynamic> json) {
+  List<DiscoveredRelay> _parseRelayListFromEvent(Event event) =>
+      _parseRelayListFromTags(event.tags);
+
+  List<DiscoveredRelay> _parseRelayListFromTags(List<List<String>> eventTags) {
     final relays = <DiscoveredRelay>[];
-    final tags = json['tags'] as List<dynamic>? ?? [];
 
-    for (final tag in tags) {
-      if (tag is! List || tag.isEmpty || tag[0] != 'r') continue;
+    for (final tag in eventTags) {
+      if (tag.isEmpty || tag[0] != 'r') continue;
       if (tag.length < 2) continue;
 
-      final url = tag[1] as String;
+      final url = tag[1];
 
-      // Accept wss:// for any host, ws:// only for loopback (#3362).
-      if (!isRelayUrlAllowed(url)) {
+      // The list belongs to the user but reaches us through a third-party
+      // indexer, so it is admitted on remote-supplied terms: `wss://` only,
+      // and never a private, loopback or link-local target (#3362, #6585).
+      if (!isRemoteSuppliedRelayUrlAllowed(url)) {
         Log.warning(
           '  Skipping disallowed relay URL: $url',
           name: 'RelayDiscoveryService',
           category: LogCategory.auth,
         );
         continue;
+      }
+
+      if (relays.length >= RelayListCaps.nip65) {
+        Log.warning(
+          '  kind-10002 lists more than ${RelayListCaps.nip65} relays; '
+          'ignoring the rest',
+          name: 'RelayDiscoveryService',
+          category: LogCategory.auth,
+        );
+        break;
       }
 
       final permission = tag.length > 2 ? tag[2] as String? : null;
