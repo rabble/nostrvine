@@ -87,7 +87,7 @@ void main() {
       ).called(1);
     });
 
-    test('does not forward non-Reportable errors to Crashlytics', () {
+    test('does not forward non-Reportable exceptions to Crashlytics', () {
       final cubit = _CountCubit();
       addTearDown(cubit.close);
 
@@ -101,6 +101,36 @@ void main() {
         ),
       );
     });
+
+    test(
+      'forwards bare invariant errors as Reportable errors to Crashlytics',
+      () async {
+        final cubit = _CountCubit();
+        addTearDown(cubit.close);
+
+        final invariantErrors = <Object>[
+          StateError('closed'),
+          TypeError(),
+          RangeError.index(2, const [1]),
+        ];
+
+        for (final error in invariantErrors) {
+          final stack = StackTrace.current;
+          observer.onError(cubit, error, stack);
+          await Future<void>.delayed(Duration.zero);
+
+          final captured = verify(
+            () => mockCrash.recordError(
+              captureAny<dynamic>(),
+              stack,
+              reason: 'Bloc.addError _CountCubit',
+            ),
+          ).captured;
+          expect(captured.single, isA<ReportableError>());
+          expect((captured.single as Reportable<Object>).unwrap(), same(error));
+        }
+      },
+    );
 
     test('includes the error string in the visible log message', () async {
       final cubit = _CountCubit();

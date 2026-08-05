@@ -77,6 +77,7 @@ Future<void> openVideoEditorFromRecorder(
   // the navigation can't start (or leave) a recording on the camera we are
   // about to release. The camera is still live here, so the lock can reset any
   // in-flight recording cleanly — without racing the deferred dispose below.
+  if (bloc.isClosed) return;
   bloc.add(const VideoRecorderRecordingLockedForNavigation());
 
   final navigation = recorderMode.hasVideoEditor
@@ -84,6 +85,7 @@ Future<void> openVideoEditorFromRecorder(
       : context.push(VideoMetadataScreen.path);
 
   await awaitPushTransition(context);
+  if (bloc.isClosed) return;
   await _pauseCameraForNavigation(bloc);
   if (recorderMode.hasVideoEditor) {
     await ref.read(audioSessionServiceProvider).configureForMixedPlayback();
@@ -92,7 +94,7 @@ Future<void> openVideoEditorFromRecorder(
   }
 
   await navigation;
-  if (!context.mounted) return;
+  if (!context.mounted || bloc.isClosed) return;
   bloc.add(const VideoRecorderInitializeRequested());
 }
 
@@ -115,6 +117,7 @@ Future<void> openRecorderLibrary(BuildContext context, WidgetRef ref) async {
   // the navigation can't start (or leave) a recording on the camera we are
   // about to release. The camera is still live here, so the lock can reset any
   // in-flight recording cleanly — without racing the deferred dispose below.
+  if (bloc.isClosed) return;
   bloc.add(const VideoRecorderRecordingLockedForNavigation());
 
   final navigation = context.pushNamed(
@@ -123,11 +126,12 @@ Future<void> openRecorderLibrary(BuildContext context, WidgetRef ref) async {
   );
 
   await awaitPushTransition(context);
+  if (bloc.isClosed) return;
   await _pauseCameraForNavigation(bloc);
   await ref.read(audioSessionServiceProvider).resetAudioSession();
 
   await navigation;
-  if (!context.mounted) return;
+  if (!context.mounted || bloc.isClosed) return;
   bloc.add(const VideoRecorderInitializeRequested());
 }
 

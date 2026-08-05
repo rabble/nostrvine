@@ -32,6 +32,7 @@ void main() {
 
     setUp(() {
       recorderBloc = _MockVideoRecorderBloc();
+      when(() => recorderBloc.isClosed).thenReturn(false);
     });
 
     Widget buildWidget({

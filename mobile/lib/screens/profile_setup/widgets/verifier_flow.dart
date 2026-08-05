@@ -51,8 +51,10 @@ Future<bool> launchVerifierFlow({
     );
   }
 
+  if (editorBloc.isClosed) return launched;
   editorBloc.add(const VerifierLaunchHandled());
   if (launched && isWeb) {
+    if (myProfileBloc.isClosed) return launched;
     myProfileBloc.add(const MyProfileFetchRequested());
   }
   return launched;

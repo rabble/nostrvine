@@ -401,6 +401,45 @@ void main() {
         },
       );
 
+      test(
+        'does not emit after close when a successful toggle completes',
+        () async {
+          final pubkey = validPubkey('user');
+          final toggleCompleter = Completer<void>();
+          when(
+            () => mockFollowRepository.toggleFollow(pubkey),
+          ).thenAnswer((_) => toggleCompleter.future);
+
+          final bloc = createBloc();
+          bloc.add(MyFollowingToggleRequested(pubkey));
+          await Future<void>.delayed(Duration.zero);
+
+          final closeFuture = bloc.close();
+          toggleCompleter.complete();
+
+          await expectLater(closeFuture, completes);
+          expect(bloc.state.hasLocalFollowEdit, isFalse);
+        },
+      );
+
+      test('does not emit after close when a toggle fails', () async {
+        final pubkey = validPubkey('user');
+        final toggleCompleter = Completer<void>();
+        when(
+          () => mockFollowRepository.toggleFollow(pubkey),
+        ).thenAnswer((_) => toggleCompleter.future);
+
+        final bloc = createBloc();
+        bloc.add(MyFollowingToggleRequested(pubkey));
+        await Future<void>.delayed(Duration.zero);
+
+        final closeFuture = bloc.close();
+        toggleCompleter.completeError(Exception('Network error'));
+
+        await expectLater(closeFuture, completes);
+        expect(bloc.state.status, MyFollowingStatus.initial);
+      });
+
       blocTest<MyFollowingBloc, MyFollowingState>(
         'uses droppable transformer — second rapid toggle is dropped',
         setUp: () {

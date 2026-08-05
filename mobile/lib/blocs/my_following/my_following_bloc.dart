@@ -147,6 +147,7 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
 
     try {
       await _followRepository.toggleFollow(event.pubkey);
+      if (isClosed || emit.isDone) return;
       if (!state.hasLocalFollowEdit) {
         emit(state.copyWith(hasLocalFollowEdit: true));
       }
@@ -156,6 +157,7 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
         name: 'MyFollowingBloc',
         category: LogCategory.system,
       );
+      if (isClosed || emit.isDone) return;
       emit(state.copyWith(status: MyFollowingStatus.toggleFailure));
     }
   }
