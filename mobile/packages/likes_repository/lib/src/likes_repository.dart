@@ -1133,7 +1133,14 @@ class LikesRepository {
   Future<void> removeDownvote(String eventId) async {
     await _ensureInitialized();
 
-    final record = _downvoteRecords[eventId];
+    // [_downvoteRecords] is in-memory only in v1, so a cold start leaves it
+    // empty while the kind-7 downvote is still live on relays. Falling back
+    // to the relay copy keeps the deletion honest: without it this throws
+    // [NotDownvotedException], the caller clears its UI, and the downvote
+    // survives untouched and reappears on the next fetch (#6124).
+    final record =
+        _downvoteRecords[eventId] ??
+        await _resolveRemoteDownvoteRecord(eventId);
     if (record == null) {
       throw NotDownvotedException(eventId);
     }
@@ -1854,5 +1861,57 @@ class LikesRepository {
       }
     }
     return null;
+  }
+
+  /// Resolves the current user's still-live downvote on [eventId] from relays.
+  ///
+  /// Returns the newest non-deleted kind-7 `-` reaction the user has published
+  /// against [eventId], or `null` when there is none. Used by
+  /// [removeDownvote] to recover from an empty in-memory cache after a cold
+  /// start, since downvotes are not persisted locally in v1.
+  Future<LikeRecord?> _resolveRemoteDownvoteRecord(String eventId) async {
+    final reactions = await _nostrClient.queryEvents([
+      Filter(
+        kinds: const [EventKind.reaction],
+        authors: [_nostrClient.publicKey],
+        e: [eventId],
+      ),
+    ]);
+
+    final candidates = reactions
+        .where((event) => event.content == _downvoteContent)
+        .where((event) => _extractTargetEventId(event) == eventId)
+        .toList();
+    if (candidates.isEmpty) return null;
+
+    final deletions = await _nostrClient.queryEvents([
+      Filter(
+        kinds: const [EventKind.eventDeletion],
+        authors: [_nostrClient.publicKey],
+        e: candidates.map((event) => event.id).toList(),
+      ),
+    ]);
+
+    final deletedIds = <String>{};
+    for (final deletion in deletions) {
+      for (final tag in deletion.tags) {
+        if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
+          deletedIds.add(tag[1]);
+        }
+      }
+    }
+
+    final live =
+        candidates.where((event) => !deletedIds.contains(event.id)).toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    if (live.isEmpty) return null;
+
+    final newest = live.first;
+    return LikeRecord(
+      targetEventId: eventId,
+      reactionEventId: newest.id,
+      createdAt: DateTime.fromMillisecondsSinceEpoch(newest.createdAt * 1000),
+      addressableId: _extractAddressableId(newest),
+    );
   }
 }

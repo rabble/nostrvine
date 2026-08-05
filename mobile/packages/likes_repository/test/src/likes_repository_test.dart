@@ -1134,14 +1134,73 @@ void main() {
         ).called(1);
       });
 
-      test('throws NotDownvotedException when not downvoted', () async {
-        repository = createRepository(withLocalStorage: false);
+      test(
+        'throws NotDownvotedException when neither cache nor relay has one',
+        () async {
+          repository = createRepository(withLocalStorage: false);
+          // Relay reports no reaction and no deletion.
+          mockQueryEventsSequence([<Event>[], <Event>[]]);
 
-        await expectLater(
-          repository.removeDownvote(testEventId),
-          throwsA(isA<NotDownvotedException>()),
-        );
-      });
+          await expectLater(
+            repository.removeDownvote(testEventId),
+            throwsA(isA<NotDownvotedException>()),
+          );
+        },
+      );
+
+      test(
+        'deletes the relay copy when the in-memory cache is cold (#6124)',
+        () async {
+          // Downvotes are never persisted, so a cold start leaves the cache
+          // empty while the kind-7 is still live. Without the relay fallback
+          // this threw and the deletion was never published.
+          repository = createRepository(withLocalStorage: false);
+          mockQueryEventsSequence([
+            [
+              createMockReaction(
+                id: testReactionEventId,
+                targetEventId: testEventId,
+                content: '-',
+              ),
+            ],
+            <Event>[],
+          ]);
+          when(
+            () => mockNostrClient.deleteEvent(any()),
+          ).thenAnswer((_) async => MockEvent());
+
+          await repository.removeDownvote(testEventId);
+
+          verify(
+            () => mockNostrClient.deleteEvent(testReactionEventId),
+          ).called(1);
+        },
+      );
+
+      test(
+        'does not delete a relay downvote that was already deleted (#6124)',
+        () async {
+          repository = createRepository(withLocalStorage: false);
+          mockQueryEventsSequence([
+            [
+              createMockReaction(
+                id: testReactionEventId,
+                targetEventId: testEventId,
+                content: '-',
+              ),
+            ],
+            [
+              createMockDeletion([testReactionEventId]),
+            ],
+          ]);
+
+          await expectLater(
+            repository.removeDownvote(testEventId),
+            throwsA(isA<NotDownvotedException>()),
+          );
+          verifyNever(() => mockNostrClient.deleteEvent(any()));
+        },
+      );
 
       test('rolls back record + stream when deletion returns null', () async {
         when(

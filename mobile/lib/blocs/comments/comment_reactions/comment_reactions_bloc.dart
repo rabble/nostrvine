@@ -245,10 +245,21 @@ class CommentReactionsBloc
       // upvotes in _likeRecords and downvotes in _downvoteRecords; pick the
       // right teardown call based on which side actually had it.
       if (hadSameVote || hadOppositeVote) {
-        if (wasUpvoted) {
-          await _likesRepository.unlikeEvent(commentId);
-        } else {
-          await _likesRepository.removeDownvote(commentId);
+        // A teardown miss must not abort the placement below. The repo's
+        // downvote cache is in-memory only, so after a cold start removing a
+        // pre-restart vote reports "not voted" even though the new vote still
+        // needs publishing — previously that threw past the placement and the
+        // UI showed a vote that was never sent (#6124).
+        try {
+          if (wasUpvoted) {
+            await _likesRepository.unlikeEvent(commentId);
+          } else {
+            await _likesRepository.removeDownvote(commentId);
+          }
+        } on NotLikedException {
+          // Nothing to remove; the optimistic update already reflects that.
+        } on NotDownvotedException {
+          // Nothing to remove; the optimistic update already reflects that.
         }
       }
 
@@ -279,14 +290,6 @@ class CommentReactionsBloc
             ..remove(commentId),
         ),
       );
-    } on NotLikedException {
-      // State-sync sentinel (silent): repo had no upvote to remove.
-      emit(
-        state.copyWith(
-          upvotedCommentIds: Set<String>.from(state.upvotedCommentIds)
-            ..remove(commentId),
-        ),
-      );
     } on AlreadyDownvotedException {
       // State-sync sentinel (silent): repo already had the downvote.
       emit(
@@ -294,14 +297,6 @@ class CommentReactionsBloc
           downvotedCommentIds: Set<String>.from(state.downvotedCommentIds)
             ..add(commentId),
           upvotedCommentIds: Set<String>.from(state.upvotedCommentIds)
-            ..remove(commentId),
-        ),
-      );
-    } on NotDownvotedException {
-      // State-sync sentinel (silent): repo had no downvote to remove.
-      emit(
-        state.copyWith(
-          downvotedCommentIds: Set<String>.from(state.downvotedCommentIds)
             ..remove(commentId),
         ),
       );

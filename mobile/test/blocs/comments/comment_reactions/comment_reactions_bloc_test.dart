@@ -321,6 +321,51 @@ void main() {
           ).called(1);
         },
       );
+
+      blocTest<CommentReactionsBloc, CommentReactionsState>(
+        'still publishes the upvote when the downvote teardown reports none '
+        '(#6124)',
+        setUp: () {
+          // Downvotes live only in memory, so after a cold start the teardown
+          // of a pre-restart downvote reports "not downvoted". That must not
+          // abort the upvote — previously it threw past the likeEvent call and
+          // the UI showed an upvote that was never published.
+          when(
+            () => mockLikesRepository.removeDownvote(any()),
+          ).thenThrow(NotDownvotedException(validId('c1')));
+          when(
+            () => mockLikesRepository.likeEvent(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenAnswer((_) async => 'like-event-id');
+        },
+        build: createBloc,
+        seed: () => CommentReactionsState(
+          downvotedCommentIds: {validId('c1')},
+          commentDownvoteCounts: {validId('c1'): 2},
+        ),
+        act: (b) => b.add(
+          CommentVoteToggled(
+            commentId: validId('c1'),
+            authorPubkey: validId('author1'),
+            vote: Vote.up,
+          ),
+        ),
+        verify: (b) {
+          verify(
+            () => mockLikesRepository.likeEvent(
+              eventId: validId('c1'),
+              authorPubkey: validId('author1'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).called(1);
+          expect(b.state.upvotedCommentIds.contains(validId('c1')), isTrue);
+          expect(b.state.downvotedCommentIds.contains(validId('c1')), isFalse);
+          expect(b.state.error, isNull);
+        },
+      );
     });
 
     group('CommentReportRequested', () {
