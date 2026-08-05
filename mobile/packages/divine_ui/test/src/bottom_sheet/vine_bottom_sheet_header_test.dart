@@ -165,7 +165,9 @@ void main() {
     testWidgets('keeps the title centered as the trailing width changes', (
       tester,
     ) async {
-      Future<double> pumpTrailingWidth(double width) async {
+      Future<(double title, double header)> pumpTrailingWidth(
+        double width,
+      ) async {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
@@ -176,13 +178,19 @@ void main() {
             ),
           ),
         );
-        return tester.getCenter(find.text('Test Title')).dx;
+        return (
+          tester.getCenter(find.text('Test Title')).dx,
+          tester.getCenter(find.byType(VineBottomSheetHeader)).dx,
+        );
       }
 
-      final narrow = await pumpTrailingWidth(60);
-      final wide = await pumpTrailingWidth(160);
+      final (narrow, narrowHeader) = await pumpTrailingWidth(60);
+      final (wide, wideHeader) = await pumpTrailingWidth(160);
 
       expect(narrow, moreOrLessEquals(wide));
+      // Not just stable across widths — centered at each of them.
+      expect(narrow, moreOrLessEquals(narrowHeader));
+      expect(wide, moreOrLessEquals(wideHeader));
     });
 
     testWidgets('reserved width does not react to taps', (tester) async {
