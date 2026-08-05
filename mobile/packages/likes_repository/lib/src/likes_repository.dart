@@ -1918,6 +1918,12 @@ class LikesRepository {
   ) async {
     late final Future<Map<String, List<String>>> revisionsFuture;
     try {
+      // The error handler has to be attached to the resolver's own future,
+      // not written as a catch around the await below: `Future.timeout`
+      // reports the source future's error as *unhandled* even when the
+      // awaiting frame catches it, and an unhandled async error fails
+      // whichever test provoked it. Only the synchronous-throw case — a
+      // resolver that never returns a future at all — needs the catch.
       revisionsFuture = resolver(chunk).then(
         (revisions) => revisions,
         onError: (Object error) => _emptyRevisionsAfterFailure(chunk, error),
@@ -1926,23 +1932,21 @@ class LikesRepository {
       return _emptyRevisionsAfterFailure(chunk, error);
     }
 
-    try {
-      return await revisionsFuture.timeout(
-        _revisionsResolverTimeout,
-        onTimeout: () {
-          Log.warning(
-            'Timed out resolving video revisions for ${chunk.length} event '
-            'id(s) after ${_revisionsResolverTimeout.inMilliseconds}ms; '
-            'continuing with current ids only.',
-            name: 'LikesRepository',
-            category: LogCategory.api,
-          );
-          return const <String, List<String>>{};
-        },
-      );
-    } on Object catch (error) {
-      return _emptyRevisionsAfterFailure(chunk, error);
-    }
+    // Both arms above resolve to a value, so this future cannot carry an
+    // error and needs no catch of its own.
+    return revisionsFuture.timeout(
+      _revisionsResolverTimeout,
+      onTimeout: () {
+        Log.warning(
+          'Timed out resolving video revisions for ${chunk.length} event '
+          'id(s) after ${_revisionsResolverTimeout.inMilliseconds}ms; '
+          'continuing with current ids only.',
+          name: 'LikesRepository',
+          category: LogCategory.api,
+        );
+        return const <String, List<String>>{};
+      },
+    );
   }
 
   Map<String, List<String>> _emptyRevisionsAfterFailure(
