@@ -10,7 +10,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
-import 'package:openvine/l10n/generated/app_localizations_en.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -133,91 +132,75 @@ void main() {
       expect(capturedName, equals('popular'));
     });
 
-    test(
-      'production shell.dart validates :name before threading it into '
-      'ExploreScreen.initialTabName',
-      () {
-        final source = File(
-          'lib/router/routes/shell.dart',
-        ).readAsStringSync();
+    test('production shell.dart validates :name before threading it into '
+        'ExploreScreen.initialTabName', () {
+      final source = File('lib/router/routes/shell.dart').readAsStringSync();
 
-        final tabRouteOffset = source.indexOf(
-          'path: ExploreScreen.pathTabSubpath',
-        );
-        expect(
-          tabRouteOffset,
-          isNonNegative,
-          reason:
-              'shell.dart must register a GoRoute at '
-              'ExploreScreen.pathTabSubpath so /explore/tab/<name> is '
-              'a valid URL.',
-        );
+      final tabRouteOffset = source.indexOf(
+        'path: ExploreScreen.pathTabSubpath',
+      );
+      expect(
+        tabRouteOffset,
+        isNonNegative,
+        reason:
+            'shell.dart must register a GoRoute at '
+            'ExploreScreen.pathTabSubpath so /explore/tab/<name> is '
+            'a valid URL.',
+      );
 
-        // The pageBuilder for this route must read and validate the :name
-        // path parameter before passing it to ExploreScreen. Invalid slugs
-        // should render RouteErrorScreen instead of silently coercing to some
-        // other tab.
-        final nextGoRouteAfter = source.indexOf('GoRoute(', tabRouteOffset + 1);
-        final region = source.substring(
-          tabRouteOffset,
-          nextGoRouteAfter == -1 ? source.length : nextGoRouteAfter,
-        );
-        expect(
-          region.contains("pathParameters['name']"),
-          isTrue,
-          reason:
-              'The /explore/tab/:name route must read '
-              "state.pathParameters['name'] in its pageBuilder.",
-        );
-        expect(
-          region.contains('tabNameFromPathParameter'),
-          isTrue,
-          reason:
-              'The /explore/tab/:name route must validate the slug with '
-              'ExploreScreen.tabNameFromPathParameter before rendering.',
-        );
-        expect(
-          region.contains('RouteErrorScreen'),
-          isTrue,
-          reason:
-              'The /explore/tab/:name route must render RouteErrorScreen '
-              'for an invalid tab slug.',
-        );
-        expect(
-          region.contains('routeUnknownPath'),
-          isTrue,
-          reason:
-              'The invalid-tab route error should use the shared localized '
-              'routeUnknownPath copy.',
-        );
-        expect(
-          region.contains('initialTabName:'),
-          isTrue,
-          reason:
-              'A valid /explore/tab/:name route must still thread the '
-              'validated name into ExploreScreen(initialTabName: …).',
-        );
-      },
-    );
+      // The pageBuilder for this route must read and validate the :name
+      // path parameter before passing it to ExploreScreen. Invalid or
+      // currently-unconfigured slugs pass null so Explore falls back to the
+      // default tab instead of erroring.
+      final nextGoRouteAfter = source.indexOf('GoRoute(', tabRouteOffset + 1);
+      final region = source.substring(
+        tabRouteOffset,
+        nextGoRouteAfter == -1 ? source.length : nextGoRouteAfter,
+      );
+      expect(
+        region.contains("pathParameters['name']"),
+        isTrue,
+        reason:
+            'The /explore/tab/:name route must read '
+            "state.pathParameters['name'] in its pageBuilder.",
+      );
+      expect(
+        region.contains('tabNameFromPathParameter'),
+        isTrue,
+        reason:
+            'The /explore/tab/:name route must validate the slug with '
+            'ExploreScreen.tabNameFromPathParameter before rendering.',
+      );
+      expect(
+        region.contains('RouteErrorScreen'),
+        isFalse,
+        reason:
+            'Unknown /explore/tab/:name slugs should fall back to the '
+            'default Explore tab, not render an error screen.',
+      );
+      expect(
+        region.contains('initialTabName:'),
+        isTrue,
+        reason:
+            'The /explore/tab/:name route must thread the validated name '
+            'or null into ExploreScreen(initialTabName: …).',
+      );
+    });
 
-    testWidgets('invalid tab slug renders RouteErrorScreen', (tester) async {
-      final strings = AppLocalizationsEn();
+    testWidgets('invalid tab slug falls back to the default tab', (
+      tester,
+    ) async {
       final router = GoRouter(
         initialLocation: '/',
         routes: [
           GoRoute(path: '/', builder: (_, _) => const SizedBox.shrink()),
           GoRoute(
             path: ExploreScreen.pathTabSubpath,
-            pageBuilder: (ctx, st) {
+            pageBuilder: (_, st) {
               final tabName = ExploreScreen.tabNameFromPathParameter(
                 st.pathParameters['name'],
               );
-              if (tabName == null) {
-                return NoTransitionPage(
-                  child: RouteErrorScreen(message: ctx.l10n.routeUnknownPath),
-                );
-              }
-              return NoTransitionPage(child: Text(tabName));
+              return NoTransitionPage(child: Text(tabName ?? 'default-tab'));
             },
           ),
         ],
@@ -234,7 +217,7 @@ void main() {
       router.go('/explore/tab/garbage');
       await tester.pumpAndSettle();
 
-      expect(find.text(strings.routeUnknownPath), findsOneWidget);
+      expect(find.text('default-tab'), findsOneWidget);
     });
   });
 
