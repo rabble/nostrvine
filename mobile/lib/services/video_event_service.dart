@@ -41,6 +41,7 @@ import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/effective_content_labels.dart';
 import 'package:openvine/services/event_router.dart';
+import 'package:openvine/services/feed_aspect_ratio_preference_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/repost_resolver.dart';
@@ -259,6 +260,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   ContentFilterService? _contentFilterService;
   ModerationLabelService? _moderationLabelService;
   DivineHostFilterService? _divineHostFilterService;
+  FeedAspectRatioPreferenceService? _feedAspectRatioPreferenceService;
   BrokenVideoTracker? _brokenVideoTracker;
   final SubscriptionManager _subscriptionManager;
 
@@ -486,6 +488,18 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     );
   }
 
+  /// Set the feed aspect-ratio preference service.
+  void setFeedAspectRatioPreferenceService(
+    FeedAspectRatioPreferenceService service,
+  ) {
+    _feedAspectRatioPreferenceService = service;
+    Log.debug(
+      'Feed aspect-ratio preference service attached to VideoEventService',
+      name: 'VideoEventService',
+      category: LogCategory.video,
+    );
+  }
+
   /// Set the broken-video tracker used to filter videos confirmed unavailable.
   /// Marked entries are persisted by the tracker, so this keeps unavailable
   /// videos out of every list surface (home, profile, hashtag, grids) across
@@ -505,7 +519,8 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   /// Returns true when this video should be hidden — either because its author
   /// is blocked/muted (the viewer blocked them, or they blocked the viewer via
   /// kind-30000 `d=block` / muted via kind-10000), or because the viewer's
-  /// Divine-hosted-only preference is on and the video is not Divine-hosted.
+  /// Divine-hosted-only preference is on and the video is not Divine-hosted, or
+  /// because the viewer's feed video-shape preference excludes this video.
   ///
   /// Detail/by-id surfaces (sound detail, video detail, curated lists,
   /// notifications) resolve videos directly and bypass the reception-time
@@ -515,7 +530,10 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     if (_blocklistRepository?.shouldFilterFromFeeds(video.pubkey) ?? false) {
       return true;
     }
-    return shouldFilterNonDivineVideos && !video.isFromDivineServer;
+    if (shouldFilterNonDivineVideos && !video.isFromDivineServer) {
+      return true;
+    }
+    return _feedAspectRatioPreferenceService?.shouldHideVideo(video) ?? false;
   }
 
   /// Returns true if adult content should be filtered from feeds

@@ -377,14 +377,14 @@ void main() {
         expect(stats.loops, equals(5000));
       });
 
-      test('extracts dimensions from size tag when dim tag is absent', () {
+      test('ignores size tag when dim tag is absent', () {
         final json = {
           'id': 'test-id',
           'pubkey': 'test-pubkey',
           'created_at': 1700000000,
           'kind': 34236,
           'tags': [
-            ['size', '480x480'],
+            ['size', '480000'],
           ],
           'thumbnail': 'https://example.com/thumb.jpg',
           'video_url': 'https://example.com/video.mp4',
@@ -396,7 +396,7 @@ void main() {
 
         final stats = VideoStats.fromJson(json);
 
-        expect(stats.dimensions, equals('480x480'));
+        expect(stats.dimensions, isNull);
       });
 
       test('parses dimensions from direct REST fields', () {
