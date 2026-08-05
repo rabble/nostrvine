@@ -45,8 +45,7 @@ void main() {
         ),
       );
 
-      // Real trailing widget + the hidden copy reserving the leading width.
-      expect(find.byKey(const Key('trailing')), findsNWidgets(2));
+      expect(find.byKey(const Key('trailing')), findsOneWidget);
     });
 
     testWidgets('renders with bottom input', (tester) async {
@@ -1145,8 +1144,7 @@ void main() {
           await tester.tap(find.text('Open'));
           await tester.pumpAndSettle();
 
-          // Real action + the hidden copy reserving the trailing width.
-          expect(find.byKey(const Key('leading')), findsNWidgets(2));
+          expect(find.byKey(const Key('leading')), findsOneWidget);
         },
       );
 
@@ -1180,8 +1178,7 @@ void main() {
           await tester.tap(find.text('Open'));
           await tester.pumpAndSettle();
 
-          // Real action + the hidden copy reserving the leading width.
-          expect(find.byKey(const Key('trailing')), findsNWidgets(2));
+          expect(find.byKey(const Key('trailing')), findsOneWidget);
         },
       );
 
@@ -1216,8 +1213,7 @@ void main() {
           await tester.tap(find.text('Open Fixed'));
           await tester.pumpAndSettle();
 
-          // Real action + the hidden copy reserving the trailing width.
-          expect(find.byKey(const Key('fixed_leading')), findsNWidgets(2));
+          expect(find.byKey(const Key('fixed_leading')), findsOneWidget);
         },
       );
 
