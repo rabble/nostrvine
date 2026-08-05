@@ -29,6 +29,7 @@ void main() {
     registerFallbackValue(
       Event('0' * 64, EventKind.relayListMetadata, const [], ''),
     );
+    registerFallbackValue(Duration.zero);
   });
 
   setUp(() async {
@@ -56,6 +57,7 @@ void main() {
       () => nostrClient.publishEventAwaitOk(
         any(),
         targetRelays: any(named: 'targetRelays'),
+        timeout: any(named: 'timeout'),
         diagnosticTag: any(named: 'diagnosticTag'),
       ),
     ).thenAnswer((invocation) async {
@@ -96,11 +98,14 @@ void main() {
         () => nostrClient.publishEventAwaitOk(
           captureAny(),
           targetRelays: captureAny(named: 'targetRelays'),
+          timeout: captureAny(named: 'timeout'),
           diagnosticTag: 'relay-list-kind-10002',
         ),
       ).captured;
+      // mocktail returns captures ordered by argument name, not call order.
       final event = captured[0] as Event;
-      final targetRelays = captured[1] as List<String>;
+      final timeout = captured[1] as Duration;
+      final targetRelays = captured[2] as List<String>;
 
       expect(event.kind, EventKind.relayListMetadata);
       expect(event.pubkey, pubkey);
@@ -112,6 +117,9 @@ void main() {
       ]);
       expect(targetRelays, contains('wss://relay.divine.video'));
       expect(targetRelays, contains('wss://purplepag.es'));
+      // Settings blocks on this publish, so it must not inherit the 15s
+      // default on top of the signer timeout.
+      expect(timeout, lessThan(const Duration(seconds: 15)));
       verify(
         () => relayDiscoveryService.clearCache(Nip19.encodePubKey(pubkey)),
       ).called(1);
@@ -130,6 +138,7 @@ void main() {
       () => nostrClient.publishEventAwaitOk(
         any(),
         targetRelays: any(named: 'targetRelays'),
+        timeout: any(named: 'timeout'),
         diagnosticTag: any(named: 'diagnosticTag'),
       ),
     );
@@ -146,6 +155,7 @@ void main() {
       () => nostrClient.publishEventAwaitOk(
         any(),
         targetRelays: any(named: 'targetRelays'),
+        timeout: any(named: 'timeout'),
         diagnosticTag: any(named: 'diagnosticTag'),
       ),
     );
@@ -159,6 +169,7 @@ void main() {
         () => nostrClient.publishEventAwaitOk(
           any(),
           targetRelays: any(named: 'targetRelays'),
+          timeout: any(named: 'timeout'),
           diagnosticTag: any(named: 'diagnosticTag'),
         ),
       ).thenAnswer((invocation) async {
@@ -199,6 +210,7 @@ void main() {
         () => nostrClient.publishEventAwaitOk(
           any(),
           targetRelays: any(named: 'targetRelays'),
+          timeout: any(named: 'timeout'),
           diagnosticTag: any(named: 'diagnosticTag'),
         ),
       );
@@ -211,6 +223,7 @@ void main() {
         () => nostrClient.publishEventAwaitOk(
           any(),
           targetRelays: any(named: 'targetRelays'),
+          timeout: any(named: 'timeout'),
           diagnosticTag: any(named: 'diagnosticTag'),
         ),
       ).called(1);

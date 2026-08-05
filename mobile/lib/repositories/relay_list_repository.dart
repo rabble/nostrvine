@@ -12,6 +12,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 const _relayListSignTimeout = Duration(seconds: 10);
+
+/// Settings add/remove/restore awaits this publish before it can show the
+/// user a result, so the OK wait is capped well below
+/// [NostrClient.publishEventAwaitOk]'s 15s default: stacked on the signer
+/// timeout that would leave the screen silent for 25s. A relay that has not
+/// answered by now is not about to, and the dirty flag retries next session.
+const _relayListPublishTimeout = Duration(seconds: 5);
+
 const _dirtyRelayListPublishPrefix = 'relay_list_publish_dirty_';
 
 enum RelayListPublishStatus {
@@ -167,6 +175,7 @@ class RelayListRepository {
     final outcome = await _nostrClient.publishEventAwaitOk(
       signed,
       targetRelays: targetRelays,
+      timeout: _relayListPublishTimeout,
       diagnosticTag: 'relay-list-kind-10002',
     );
     final acceptedByIndexer = outcome.acceptedBy.any(
