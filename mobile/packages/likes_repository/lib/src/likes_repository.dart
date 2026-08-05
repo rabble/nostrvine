@@ -1112,6 +1112,10 @@ class LikesRepository {
   /// when the network call hasn't been awaited yet (offline or pre-publish
   /// failure).
   ///
+  /// Pass [addressableId] (`kind:pubkey:d-tag`) when the target is
+  /// addressable, so the reaction carries NIP-25's `a` tag and survives an
+  /// edit of the target.
+  ///
   /// Throws [AlreadyDownvotedException] if the event is already downvoted.
   /// Throws [LikeFailedException] if the publish fails.
   Future<String> downvoteEvent({
@@ -1176,7 +1180,13 @@ class LikesRepository {
   /// BEFORE the kind-5 deletion publish. On failure restores the record and
   /// re-ticks the stream. Mirrors [unlikeEvent].
   ///
-  /// Throws [NotDownvotedException] if the event is not downvoted.
+  /// Pass [addressableId] when the target is addressable: an edit mints a new
+  /// event id under the same coordinate, so the coordinate is the only durable
+  /// way to find the reaction afterwards. When the in-memory cache holds
+  /// nothing, the relay copy is consulted before giving up.
+  ///
+  /// Throws [NotDownvotedException] when neither the cache nor the relay has a
+  /// live downvote for the target.
   /// Throws [UnlikeFailedException] if the deletion publish fails.
   Future<void> removeDownvote(String eventId, {String? addressableId}) async {
     await _ensureInitialized();

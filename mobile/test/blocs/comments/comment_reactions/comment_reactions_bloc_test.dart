@@ -323,6 +323,82 @@ void main() {
       );
 
       blocTest<CommentReactionsBloc, CommentReactionsState>(
+        'tags a video-reply vote with its OWN coordinate and real kind '
+        '(#6124)',
+        setUp: () {
+          when(
+            () => mockLikesRepository.downvoteEvent(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
+              targetKind: any(named: 'targetKind'),
+              addressableId: any(named: 'addressableId'),
+            ),
+          ).thenAnswer((_) async => 'downvote-event-id');
+        },
+        build: createBloc,
+        act: (b) => b.add(
+          CommentVoteToggled(
+            commentId: validId('c1'),
+            authorPubkey: validId('author1'),
+            vote: Vote.down,
+            addressableId: '34236:${validId('author1')}:reply-d',
+            targetKind: 34236,
+          ),
+        ),
+        verify: (_) {
+          // The parent video's coordinate must never be used here: funnelcake
+          // counts kind-7 by a-tag with no content filter, so it would inflate
+          // the parent's public reaction_count.
+          verify(
+            () => mockLikesRepository.downvoteEvent(
+              eventId: validId('c1'),
+              authorPubkey: validId('author1'),
+              targetKind: 34236,
+              addressableId: '34236:${validId('author1')}:reply-d',
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<CommentReactionsBloc, CommentReactionsState>(
+        'falls back to kind 1111 and no coordinate for a plain comment '
+        '(#6124)',
+        setUp: () {
+          when(
+            () => mockLikesRepository.likeEvent(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
+              targetKind: any(named: 'targetKind'),
+              addressableId: any(named: 'addressableId'),
+            ),
+          ).thenAnswer((_) async => 'like-event-id');
+        },
+        build: createBloc,
+        act: (b) => b.add(
+          CommentVoteToggled(
+            commentId: validId('c1'),
+            authorPubkey: validId('author1'),
+            vote: Vote.up,
+          ),
+        ),
+        verify: (_) {
+          // Captured rather than matched inline: passing `addressableId: null`
+          // to verify() reads as a redundant default, but the null IS the
+          // assertion — a Kind 1111 comment has no coordinate to send.
+          final captured = verify(
+            () => mockLikesRepository.likeEvent(
+              eventId: validId('c1'),
+              authorPubkey: validId('author1'),
+              targetKind: 1111,
+              addressableId: captureAny(named: 'addressableId'),
+            ),
+          ).captured;
+          expect(captured, hasLength(1));
+          expect(captured.single, isNull);
+        },
+      );
+
+      blocTest<CommentReactionsBloc, CommentReactionsState>(
         'still publishes the upvote when the downvote teardown reports none '
         '(#6124)',
         setUp: () {

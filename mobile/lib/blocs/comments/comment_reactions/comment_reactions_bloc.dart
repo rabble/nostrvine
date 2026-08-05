@@ -254,7 +254,10 @@ class CommentReactionsBloc
           if (wasUpvoted) {
             await _likesRepository.unlikeEvent(commentId);
           } else {
-            await _likesRepository.removeDownvote(commentId);
+            await _likesRepository.removeDownvote(
+              commentId,
+              addressableId: event.addressableId,
+            );
           }
         } on NotLikedException {
           // Nothing to remove; the optimistic update already reflects that.
@@ -265,17 +268,24 @@ class CommentReactionsBloc
 
       // Place the new vote (only when this tap isn't a same-side removal).
       if (!hadSameVote) {
+        // NIP-25: `a` and `k` describe the event being reacted to, so both
+        // come from the target itself. A Kind 34236 video reply is
+        // addressable and carries a coordinate; a Kind 1111 comment does not
+        // and passes null (#6124).
+        final targetKind = event.targetKind ?? EventKind.comment;
         if (isUpvote) {
           await _likesRepository.likeEvent(
             eventId: commentId,
             authorPubkey: event.authorPubkey,
-            targetKind: EventKind.comment,
+            targetKind: targetKind,
+            addressableId: event.addressableId,
           );
         } else {
           await _likesRepository.downvoteEvent(
             eventId: commentId,
             authorPubkey: event.authorPubkey,
-            targetKind: EventKind.comment,
+            targetKind: targetKind,
+            addressableId: event.addressableId,
           );
         }
       }

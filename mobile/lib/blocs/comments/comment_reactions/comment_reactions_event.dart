@@ -30,6 +30,8 @@ final class CommentVoteToggled extends CommentReactionsEvent {
     required this.commentId,
     required this.authorPubkey,
     required this.vote,
+    this.addressableId,
+    this.targetKind,
   });
 
   /// The ID of the comment being voted on.
@@ -40,6 +42,20 @@ final class CommentVoteToggled extends CommentReactionsEvent {
 
   /// Whether this is an upvote or a downvote tap.
   final Vote vote;
+
+  /// The target's **own** addressable coordinate, when it has one.
+  ///
+  /// A Kind 34236 video reply is addressable, and an edit re-publishes it
+  /// under the same coordinate with a new event id — so without this the
+  /// reaction strands on the superseded id (#6124). Null for Kind 1111
+  /// comments, which are regular events.
+  final String? addressableId;
+
+  /// The kind of the event being reacted to, for NIP-25's `k` tag.
+  ///
+  /// Null when the source did not report one, in which case the handler falls
+  /// back to [EventKind.comment].
+  final int? targetKind;
 }
 
 /// Request to batch-fetch vote counts for a set of comments.
