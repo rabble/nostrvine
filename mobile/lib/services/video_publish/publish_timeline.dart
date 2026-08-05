@@ -70,20 +70,29 @@ const Map<String, String> _metricByPhase = {
 /// Wall-clock metric for the whole publish.
 const String publishTotalMetric = 'total_ms';
 
-/// Uploaded video size, so throughput can be derived from [publishTraceName]
-/// rather than guessed from a nominal connection speed.
+/// Size of the uploaded video file, reported once.
 ///
-/// It is the size of the file, reported once, while `transfer_ms` sums every
-/// attempt — including one that timed out and one that resumed mid-file. Only
-/// divide the two on traces whose [publishTransferAttemptsMetric] is 1.
+/// Dividing it by `transfer_ms` gives the **effective** throughput of the
+/// publish — bytes delivered per unit of wall clock the user actually waited,
+/// retry overhead included. It is not the line rate, and no combination of
+/// these metrics recovers one: a single transfer leg can contain a whole-file
+/// OS attempt that failed, a chunked resumable fallback that re-sent the same
+/// bytes, iteration across servers, and per-chunk retries, none of which the
+/// publish layer can see. Measuring the line rate means instrumenting
+/// `blossom_upload_service` at the transport boundary.
 const String publishPayloadMetric = 'payload_bytes';
 
-/// How many times the transfer leg ran for this publish.
+/// How many times the transfer *leg* ran for this publish.
 ///
-/// `transfer_ms` is the sum across attempts, so without this a retried publish
-/// and a slow one look identical — and a publish whose first attempt hit the
-/// upload timeout carries minutes of dead time in the metric.
-const String publishTransferAttemptsMetric = 'transfer_attempts';
+/// `transfer_ms` sums the legs, so without this a publish that resumed after a
+/// failure and a genuinely slow one look identical — and a leg that hit the
+/// upload timeout carries minutes of dead time into the sum.
+///
+/// This counts the phase, not the transport: one leg is one
+/// [PublishPhases.uploadTransfer] line, however many attempts the upload
+/// service made inside it. `transfer_legs == 1` therefore means "the publish
+/// entered the transfer once", not "the file went up in one attempt".
+const String publishTransferLegsMetric = 'transfer_legs';
 
 /// Zone key the ambient [PublishTimeline] is stored under.
 const Object _timelineZoneKey = #publishTimeline;
@@ -99,6 +108,29 @@ typedef PublishPhase = ({String name, Duration elapsed});
 ///
 /// Pass [bytes] for a transferred payload; the size and rate are appended to
 /// the line and the size is carried into the publish's metrics.
+///
+/// The timeline is found through the zone, so the metric half of this call is
+/// invisible at the call site: a phase emitted off a call chain that did not
+/// start inside [PublishTimeline.run] still logs its line but reports no
+/// metric. The known emitters and where they sit:
+///
+/// - `UploadManager._performUploadInternal` (`upload.transfer`,
+///   `upload.thumbnail*`) — inside the zone when the publish started the
+///   upload, because `startUpload` awaits `_performUpload` on the publish's
+///   own chain. **Outside** it when the publish joins an upload another chain
+///   already had in flight — a session resumed at app start, or a retry the
+///   recovery sweep kicked off. Those legs belong to whichever chain started
+///   them, so attributing them to the publish that happened to wait would be
+///   the wrong answer, not a missing one.
+/// - `VideoEventPublisher` (`nostr.sign`, `nostr.publish`, `nostr.blurhash`) —
+///   always inside the zone; `publishVideoEvent` is awaited directly by
+///   `VideoPublishService`.
+///
+/// A `Timer`, an isolate hop, or a future scheduled outside `run` would drop
+/// the metric the same silent way. There is deliberately no assert for it:
+/// the joined-upload case above is legitimate and would trip on every resumed
+/// publish. `upload_ms` still covers the leg, so the console shows a duration
+/// with no breakdown rather than nothing at all.
 void logPublishPhase(
   String phase,
   Duration elapsed, {
@@ -171,7 +203,7 @@ class PublishTimeline {
   final Map<String, Duration> _elapsedByPhase = <String, Duration>{};
 
   int? _payloadBytes;
-  int _transferAttempts = 0;
+  int _transferLegs = 0;
 
   /// Null until the leg ran at all, so a publish that failed before it reports
   /// no attribute rather than claiming work it never did.
@@ -220,7 +252,7 @@ class PublishTimeline {
         (_elapsedByPhase[phase] ?? Duration.zero) + elapsed;
     switch (phase) {
       case PublishPhases.uploadTransfer:
-        _transferAttempts++;
+        _transferLegs++;
         if (bytes != null && bytes > 0) _payloadBytes = bytes;
       case PublishPhases.uploadThumbnail:
         _thumbnailReused = _reuseOf(_thumbnailReused, detail);
@@ -281,8 +313,8 @@ class PublishTimeline {
     if (payloadBytes != null) {
       _trace.setMetric(publishPayloadMetric, payloadBytes);
     }
-    if (_transferAttempts > 0) {
-      _trace.setMetric(publishTransferAttemptsMetric, _transferAttempts);
+    if (_transferLegs > 0) {
+      _trace.setMetric(publishTransferLegsMetric, _transferLegs);
     }
     _trace.putAttribute('outcome', outcome);
     _putReuseAttribute('thumbnail', _thumbnailReused, freshValue: 'generated');

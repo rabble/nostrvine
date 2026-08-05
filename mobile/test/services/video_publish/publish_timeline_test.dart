@@ -234,7 +234,7 @@ void main() {
         expect(monitor.trace.metrics['transfer_ms'], equals(1200));
       });
 
-      test('reports how many attempts the summed transfer covers', () async {
+      test('reports how many legs the summed transfer covers', () async {
         await traced.run(() async {
           logPublishPhase(
             PublishPhases.uploadTransfer,
@@ -250,12 +250,30 @@ void main() {
 
         traced.finish(outcome: 'success');
 
-        // Without this, payload_bytes / transfer_ms silently reads as half the
-        // real throughput on any publish that retried.
-        expect(
-          monitor.trace.metrics[publishTransferAttemptsMetric],
-          equals(2),
-        );
+        // Without this, a publish that resumed after a failure and a genuinely
+        // slow one are indistinguishable in the console.
+        expect(monitor.trace.metrics[publishTransferLegsMetric], equals(2));
+      });
+
+      test('counts one leg however many attempts it took inside', () async {
+        // The upload service can burn a whole-file OS attempt, fall back to
+        // chunked resumable, iterate servers and retry chunks — all inside the
+        // single uploadVideoWithResume call this one phase wraps. The publish
+        // layer sees none of that, so the metric must not be read as a count
+        // of transport attempts: transfer_legs == 1 means the publish entered
+        // the transfer once, not that the file went up in one attempt.
+        await traced.run(() async {
+          logPublishPhase(
+            PublishPhases.uploadTransfer,
+            const Duration(minutes: 4),
+            bytes: 16572,
+          );
+        });
+
+        traced.finish(outcome: 'success');
+
+        expect(monitor.trace.metrics[publishTransferLegsMetric], equals(1));
+        expect(monitor.trace.metrics['transfer_ms'], equals(240000));
       });
 
       test('omits a metric for a phase that never ran', () {
@@ -267,7 +285,7 @@ void main() {
           isFalse,
         );
         expect(
-          monitor.trace.metrics.containsKey(publishTransferAttemptsMetric),
+          monitor.trace.metrics.containsKey(publishTransferLegsMetric),
           isFalse,
         );
       });
