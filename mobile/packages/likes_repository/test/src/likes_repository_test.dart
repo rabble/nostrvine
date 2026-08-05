@@ -88,6 +88,7 @@ void main() {
       IsOnlineCallback? isOnline,
       QueueOfflineActionCallback? queueOfflineAction,
       BlockedLikerFilter? blockFilter,
+      VideoRevisionsResolver? revisionsResolver,
     }) {
       return LikesRepository(
         nostrClient: mockNostrClient,
@@ -95,6 +96,7 @@ void main() {
         isOnline: isOnline,
         queueOfflineAction: queueOfflineAction,
         blockFilter: blockFilter,
+        revisionsResolver: revisionsResolver,
       );
     }
 
@@ -2789,6 +2791,200 @@ void main() {
           await repository.fetchEventLikers(eventId: targetEventId),
           isEmpty,
         );
+      });
+
+      group('superseded revisions (#6021)', () {
+        const supersededEventId = 'superseded_event_0987654321fedcba';
+
+        /// Reaction stranded on a pre-edit revision: `e`-tags the superseded
+        /// id and carries no `a` tag. NIP-25 permits exactly this — the `e`
+        /// tag is a MUST, the `a` tag only a SHOULD.
+        MockEvent strandedReaction() => createReaction(
+          id: 'reaction_on_superseded_revision',
+          authorPubkey: likerC,
+          createdAt: 1699999000,
+          tags: [
+            ['e', supersededEventId],
+          ],
+        );
+
+        /// Reaction from a current client: `e`-tags the live id AND the
+        /// coordinate, so today's resolver already finds it.
+        MockEvent currentReaction() => createReaction(
+          id: 'reaction_on_current_revision',
+          authorPubkey: likerA,
+          tags: [
+            ['e', targetEventId],
+            ['a', addressableId],
+          ],
+        );
+
+        test(
+          'includes a liker stranded on a superseded revision',
+          () async {
+            // Both reactions come back from the widened e-tag query; the
+            // deletion probe returns nothing.
+            mockQueryEventsSequence([
+              [currentReaction(), strandedReaction()],
+              <Event>[],
+              <Event>[],
+            ]);
+
+            repository = createRepository(
+              revisionsResolver: (ids) async => {
+                targetEventId: [targetEventId, supersededEventId],
+              },
+            );
+
+            final likers = await repository.fetchEventLikers(
+              eventId: targetEventId,
+              addressableId: addressableId,
+            );
+
+            // likerC is only reachable via the superseded revision. Narrowing
+            // the resolver to [targetEventId] must drop them again.
+            expect(likers, containsAll(<String>[likerA, likerC]));
+          },
+        );
+
+        test('asks the resolver for the requested addressable id', () async {
+          mockQueryEventsSequence([
+            [currentReaction()],
+            <Event>[],
+            <Event>[],
+          ]);
+
+          var requested = <String>[];
+          repository = createRepository(
+            revisionsResolver: (ids) async {
+              requested = ids;
+              return {
+                targetEventId: [targetEventId, supersededEventId],
+              };
+            },
+          );
+
+          await repository.fetchEventLikers(
+            eventId: targetEventId,
+            addressableId: addressableId,
+          );
+
+          expect(requested, equals(<String>[targetEventId]));
+        });
+
+        test('skips the resolver when the target is not addressable', () async {
+          mockQueryEventsSequence([
+            [currentReaction()],
+            <Event>[],
+          ]);
+
+          var called = false;
+          repository = createRepository(
+            revisionsResolver: (ids) async {
+              called = true;
+              return const {};
+            },
+          );
+
+          await repository.fetchEventLikers(eventId: targetEventId);
+
+          expect(called, isFalse);
+        });
+
+        test('still returns likers when the resolver throws', () async {
+          mockQueryEventsSequence([
+            [currentReaction()],
+            <Event>[],
+            <Event>[],
+          ]);
+
+          repository = createRepository(
+            revisionsResolver: (ids) async => throw Exception('offline'),
+          );
+
+          expect(
+            await repository.fetchEventLikers(
+              eventId: targetEventId,
+              addressableId: addressableId,
+            ),
+            equals(<String>[likerA]),
+          );
+        });
+
+        test('counts a liker once when found via both revisions', () async {
+          // Same pubkey reacting on the old and new revision is one liker,
+          // not two — the per-pubkey dedupe must survive the widening.
+          final onOld = createReaction(
+            id: 'reaction_old_same_pubkey',
+            authorPubkey: likerB,
+            createdAt: 1699999000,
+            tags: [
+              ['e', supersededEventId],
+            ],
+          );
+          final onNew = createReaction(
+            id: 'reaction_new_same_pubkey',
+            authorPubkey: likerB,
+            createdAt: 1700000500,
+            tags: [
+              ['e', targetEventId],
+            ],
+          );
+
+          mockQueryEventsSequence([
+            [onOld, onNew],
+            <Event>[],
+            <Event>[],
+          ]);
+
+          repository = createRepository(
+            revisionsResolver: (ids) async => {
+              targetEventId: [targetEventId, supersededEventId],
+            },
+          );
+
+          expect(
+            await repository.fetchEventLikers(
+              eventId: targetEventId,
+              addressableId: addressableId,
+            ),
+            equals(<String>[likerB]),
+          );
+        });
+
+        test('excludes a downvote stranded on a superseded revision', () async {
+          // The existing NIP-25 filters must apply to reactions the widening
+          // newly reaches, not just to ones on the current id.
+          final strandedDownvote = createReaction(
+            id: 'downvote_on_superseded_revision',
+            authorPubkey: likerC,
+            content: '-',
+            createdAt: 1699999000,
+            tags: [
+              ['e', supersededEventId],
+            ],
+          );
+
+          mockQueryEventsSequence([
+            [currentReaction(), strandedDownvote],
+            <Event>[],
+            <Event>[],
+          ]);
+
+          repository = createRepository(
+            revisionsResolver: (ids) async => {
+              targetEventId: [targetEventId, supersededEventId],
+            },
+          );
+
+          expect(
+            await repository.fetchEventLikers(
+              eventId: targetEventId,
+              addressableId: addressableId,
+            ),
+            equals(<String>[likerA]),
+          );
+        });
       });
 
       test('returns liker pubkeys ordered by recency', () async {

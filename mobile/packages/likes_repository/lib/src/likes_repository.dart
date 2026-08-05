@@ -12,6 +12,7 @@ import 'package:likes_repository/src/exceptions.dart';
 import 'package:likes_repository/src/likes_local_storage.dart';
 import 'package:likes_repository/src/models/like_record.dart';
 import 'package:likes_repository/src/models/likes_sync_result.dart';
+import 'package:likes_repository/src/video_revisions_resolver.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:rxdart/rxdart.dart';
@@ -81,23 +82,30 @@ class LikesRepository {
   /// - [queueOfflineAction]: Optional callback to queue actions when offline
   /// - [blockFilter]: Optional callback to hide blocked/muted users from
   ///   engagement lists ([fetchEventLikers])
+  /// - [revisionsResolver]: Optional resolver for a video's superseded event
+  ///   ids, so reactions stranded on a pre-edit revision stay visible (#6021)
   LikesRepository({
     required NostrClient nostrClient,
     LikesLocalStorage? localStorage,
     IsOnlineCallback? isOnline,
     QueueOfflineActionCallback? queueOfflineAction,
     BlockedLikerFilter? blockFilter,
+    VideoRevisionsResolver? revisionsResolver,
   }) : _nostrClient = nostrClient,
        _localStorage = localStorage,
        _isOnline = isOnline,
        _queueOfflineAction = queueOfflineAction,
-       _blockFilter = blockFilter;
+       _blockFilter = blockFilter,
+       _revisionsResolver = revisionsResolver;
 
   final NostrClient _nostrClient;
   final LikesLocalStorage? _localStorage;
 
   /// Callback to hide blocked/muted users from engagement lists
   final BlockedLikerFilter? _blockFilter;
+
+  /// Resolves a video event id to its sibling NIP-33 revisions (#6021).
+  final VideoRevisionsResolver? _revisionsResolver;
 
   /// Callback to check if the device is online
   final IsOnlineCallback? _isOnline;
@@ -1687,14 +1695,13 @@ class LikesRepository {
   }) async {
     if (eventIds.isEmpty) return const {};
 
-    final eventIdSet = eventIds.toSet();
     final aTagToEventId = <String, String>{
       for (final entry in (addressableIds ?? const <String, String>{}).entries)
         if (entry.value.isNotEmpty) entry.value: entry.key,
     };
 
-    final filterByE = Filter(kinds: const [EventKind.reaction], e: eventIds);
-    final eEventsFuture = _nostrClient.queryEvents([filterByE]);
+    // The a-tag query needs nothing from the revision lookup, so start it
+    // first and let the two round-trips overlap.
     final aEventsFuture = aTagToEventId.isEmpty
         ? Future<List<Event>>.value(const <Event>[])
         : _nostrClient.queryEvents([
@@ -1703,7 +1710,27 @@ class LikesRepository {
               a: aTagToEventId.keys.toList(),
             ),
           ]);
-    final queryResults = await Future.wait([eEventsFuture, aEventsFuture]);
+
+    // A reaction on an addressable video may `e`-tag a revision the edit
+    // superseded, and NIP-25 lets it omit the `a` tag entirely — so querying
+    // only the current ids silently drops those likers (#6021). Resolve the
+    // sibling revisions and query them too, mapping each back to the id the
+    // caller asked about.
+    final revisionToEventId = await _resolveRevisionTargets(
+      eventIds,
+      addressableIds: addressableIds,
+    );
+    final queryIds = <String>{...eventIds, ...revisionToEventId.keys}.toList();
+
+    // Accept a reaction whose `e` tag names any revision, not just the ids the
+    // caller passed. Widening the filter without widening this set would
+    // fetch the reactions and then discard them.
+    final eventIdSet = queryIds.toSet();
+
+    final queryResults = await Future.wait([
+      _queryReactionsByEventIds(queryIds),
+      aEventsFuture,
+    ]);
 
     final reactionsByTarget = {
       for (final eventId in eventIds) eventId: <String, Event>{},
@@ -1715,6 +1742,7 @@ class LikesRepository {
         event,
         eventIdSet: eventIdSet,
         aTagToEventId: aTagToEventId,
+        revisionToEventId: revisionToEventId,
       );
       for (final targetId in targetIds) {
         reactionsByTarget[targetId]?[event.id] = event;
@@ -1788,6 +1816,7 @@ class LikesRepository {
     Event event, {
     required Set<String> eventIdSet,
     required Map<String, String> aTagToEventId,
+    Map<String, String> revisionToEventId = const {},
   }) {
     final targetIds = <String>{};
     for (final tag in event.tags) {
@@ -1795,13 +1824,82 @@ class LikesRepository {
       final marker = tag[0];
       final value = tag[1];
       if (marker == 'e' && eventIdSet.contains(value)) {
-        targetIds.add(value);
+        // A superseded revision resolves to the id the caller asked about, so
+        // the result stays keyed by that id rather than by the revision.
+        targetIds.add(revisionToEventId[value] ?? value);
       } else if (marker == 'a') {
         final eventId = aTagToEventId[value];
         if (eventId != null) targetIds.add(eventId);
       }
     }
     return targetIds;
+  }
+
+  /// Maps each superseded revision id to the requested event id it belongs to.
+  ///
+  /// Returns an empty map when no resolver is wired, when no requested id is
+  /// addressable, or when the resolver fails — the caller then queries the
+  /// current ids alone, exactly as before #6021.
+  Future<Map<String, String>> _resolveRevisionTargets(
+    List<String> eventIds, {
+    Map<String, String>? addressableIds,
+  }) async {
+    final resolver = _revisionsResolver;
+    if (resolver == null) return const {};
+
+    // Only addressable videos can have superseded revisions; asking about
+    // anything else is a wasted round-trip.
+    final addressableEventIds = [
+      for (final id in eventIds)
+        if (addressableIds?[id]?.isNotEmpty ?? false) id,
+    ];
+    if (addressableEventIds.isEmpty) return const {};
+
+    final Map<String, List<String>> revisionsByEventId;
+    try {
+      revisionsByEventId = await resolver(addressableEventIds);
+    } on Object catch (_) {
+      // Revision lookup is an enhancement, never a precondition — a failure
+      // must not take the "Liked by" list down with it.
+      return const {};
+    }
+
+    final requested = eventIds.toSet();
+    final revisionToEventId = <String, String>{};
+    for (final entry in revisionsByEventId.entries) {
+      if (!requested.contains(entry.key)) continue;
+      for (final revisionId in entry.value) {
+        // Never let a revision alias shadow an id the caller asked about.
+        if (revisionId.isEmpty || requested.contains(revisionId)) continue;
+        revisionToEventId[revisionId] = entry.key;
+      }
+    }
+    return revisionToEventId;
+  }
+
+  /// Queries kind 7 reactions by `e` tag, chunked so a coordinate with many
+  /// revisions cannot build a REQ frame over the relay's `max_message_length`
+  /// (same reason the deletion probe below chunks).
+  Future<List<Event>> _queryReactionsByEventIds(List<String> eventIds) async {
+    if (eventIds.length <= _deletionReqEidChunkSize) {
+      return _nostrClient.queryEvents([
+        Filter(kinds: const [EventKind.reaction], e: eventIds),
+      ]);
+    }
+
+    final chunks = await Future.wait([
+      for (var i = 0; i < eventIds.length; i += _deletionReqEidChunkSize)
+        _nostrClient.queryEvents([
+          Filter(
+            kinds: const [EventKind.reaction],
+            e: eventIds.sublist(
+              i,
+              min(i + _deletionReqEidChunkSize, eventIds.length),
+            ),
+          ),
+        ]),
+    ]);
+    return [for (final chunk in chunks) ...chunk];
   }
 
   List<String> _activeLikerPubkeys(

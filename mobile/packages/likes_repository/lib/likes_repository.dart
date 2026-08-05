@@ -14,3 +14,4 @@ export 'src/exceptions.dart';
 export 'src/likes_local_storage.dart';
 export 'src/likes_repository.dart';
 export 'src/models/models.dart';
+export 'src/video_revisions_resolver.dart';
