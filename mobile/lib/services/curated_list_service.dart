@@ -481,23 +481,25 @@ class CuratedListService extends ChangeNotifier {
         }
       }
 
-      // The public branch is already persisted: _publishListToNostr writes the
-      // updated list plus its accepted event ID back by ID and saves. The
-      // private branch still needs the visibility flip, and it must re-resolve
-      // the index — [listIndex] was captured before the publish awaits above.
+      // Only the public→private transition still needs a write. The public
+      // branch is already persisted by _publishListToNostr, and a list that
+      // was already private was fully written by the local-first save above —
+      // repeating it there costs a second notifyListeners and prefs write per
+      // edit for an identical value.
       //
       // A list that is no longer published must not keep the event ID of the
       // event we just asked relays to delete: [myLists] treats a non-null
       // nostrEventId as "published", so a stale one drops the list from My
       // Lists as soon as the owner signs out.
-      if (!updatedList.isPublic) {
+      //
+      // The index is re-resolved because [listIndex] was captured before the
+      // deletion publish awaited above.
+      if (becamePrivate) {
         final currentIndex = _lists.indexWhere((list) => list.id == listId);
         if (currentIndex == -1) {
           return false;
         }
-        _lists[currentIndex] = becamePrivate
-            ? updatedList.copyWith(clearNostrEventId: true)
-            : updatedList;
+        _lists[currentIndex] = updatedList.copyWith(clearNostrEventId: true);
         await _saveLists();
       }
 
