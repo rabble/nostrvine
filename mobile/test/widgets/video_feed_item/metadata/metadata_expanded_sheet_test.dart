@@ -474,9 +474,7 @@ void main() {
 
         await tester.pumpWidget(
           buildSubject(
-            child: MetadataStatsRow(
-              video: video.copyWith(originalReposts: 10),
-            ),
+            child: MetadataStatsRow(video: video.copyWith(originalReposts: 10)),
           ),
         );
 
@@ -498,9 +496,7 @@ void main() {
       'falls back to live nostr counts in the breakdown while loading',
       (tester) async {
         when(() => mockInteractionsBloc.state).thenReturn(
-          const VideoInteractionsState(
-            status: VideoInteractionsStatus.loading,
-          ),
+          const VideoInteractionsState(status: VideoInteractionsStatus.loading),
         );
 
         final video = _makeVideo(
@@ -1026,6 +1022,42 @@ void main() {
         expect(_dimmed(), findsNothing);
       },
     );
+
+    testWidgetsWithSurfaceSize(
+      'reveals fallback names after the profile grace window',
+      (tester) async {
+        final profile = Completer<UserProfile?>();
+
+        await tester.pumpWidget(
+          buildSubject(
+            providerOverrides: [
+              fetchUserProfileProvider(
+                _collaborator1,
+              ).overrideWith((ref) => profile.future),
+            ],
+            child: const MetadataCollaboratorsSectionBody(
+              visibility: CollaboratorVisibility.fallback(
+                taggedPubkeys: [_collaborator1],
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final l10n = _l10n(tester);
+        expect(find.text(l10n.metadataCollaboratorsLabel), findsNothing);
+
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.metadataCollaboratorsLabel), findsOneWidget);
+
+        profile.complete(_makeProfile(_collaborator1, 'Alice'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Alice'), findsOneWidget);
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------
@@ -1161,9 +1193,9 @@ void main() {
           12,
           (index) => (index + 1).toRadixString(16).padLeft(64, '0'),
         );
-        when(() => mockRepostersCubit.state).thenReturn(
-          VideoRepostersState(pubkeys: pubkeys, isLoading: false),
-        );
+        when(
+          () => mockRepostersCubit.state,
+        ).thenReturn(VideoRepostersState(pubkeys: pubkeys, isLoading: false));
 
         final container = ProviderContainer(
           overrides: [
@@ -1273,6 +1305,41 @@ void main() {
         // Showing the row first would swap every label a moment later and
         // reflow the rows around the new widths.
         expect(find.text('Reposted by'), findsNothing);
+
+        profile.complete(_makeProfile(_reposterPubkey, 'Improvising'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Improvising'), findsOneWidget);
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
+      'reveals fallback chips after the profile grace window',
+      (tester) async {
+        final profile = Completer<UserProfile?>();
+
+        await tester.pumpWidget(
+          buildSubject(
+            repostersState: const VideoRepostersState(
+              pubkeys: [_reposterPubkey],
+              isLoading: false,
+            ),
+            providerOverrides: [
+              fetchUserProfileProvider(
+                _reposterPubkey,
+              ).overrideWith((ref) => profile.future),
+            ],
+            child: MetadataRepostedBySection(video: _makeVideo()),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Reposted by'), findsNothing);
+
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Reposted by'), findsOneWidget);
 
         profile.complete(_makeProfile(_reposterPubkey, 'Improvising'));
         await tester.pumpAndSettle();
@@ -1405,6 +1472,7 @@ void main() {
         // while the four new profiles load — a bigger jump than the one the
         // gate prevents. The already-named chip keeps its place.
         expect(find.text('Improvising'), findsOneWidget);
+        expect(find.textContaining('more'), findsNothing);
         expect(tester.getSize(section).height, revealedHeight);
 
         for (final completer in relayProfiles.values) {
