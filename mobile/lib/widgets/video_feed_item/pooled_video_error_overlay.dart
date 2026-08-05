@@ -169,8 +169,11 @@ class _PooledVideoErrorOverlayState
         context.l10n.videoErrorContentRestricted,
       (VideoErrorType.forbidden, false, false, false) =>
         context.l10n.videoErrorPlayback,
+      // Unreachable: `isAgeRestricted` is true whenever the type is
+      // ageRestricted and the auth retry is not exhausted. Present only to
+      // keep the switch exhaustive.
       (VideoErrorType.ageRestricted, false, false, _) =>
-        context.l10n.videoErrorUnavailable,
+        context.l10n.videoErrorAgeRestricted,
       (VideoErrorType.generic, false, false, _) =>
         context.l10n.videoErrorPlayback,
     };
