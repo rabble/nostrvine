@@ -26,6 +26,8 @@ class CommentBuilder {
       'd4e5f6789012345678901234567890abcdef123456789012345678901234abc';
   String? _replyToEventId;
   String? _replyToAuthorPubkey;
+  int? _eventKind;
+  String? _addressableId;
 
   /// Set the comment ID.
   CommentBuilder withId(String id) {
@@ -97,6 +99,16 @@ class CommentBuilder {
     return this;
   }
 
+  /// Make this comment an addressable Kind 34236 video reply.
+  ///
+  /// [ownCoordinate] is the reply's **own** `kind:pubkey:d-tag`, not the
+  /// parent video's — that distinction is what #6124 turns on.
+  CommentBuilder asVideoReply({required String ownCoordinate}) {
+    _eventKind = 34236;
+    _addressableId = ownCoordinate;
+    return this;
+  }
+
   /// Build the Comment instance.
   Comment build() => Comment(
     id: _id,
@@ -107,6 +119,8 @@ class CommentBuilder {
     rootAuthorPubkey: _rootAuthorPubkey,
     replyToEventId: _replyToEventId,
     replyToAuthorPubkey: _replyToAuthorPubkey,
+    eventKind: _eventKind,
+    addressableId: _addressableId,
   );
 }
 

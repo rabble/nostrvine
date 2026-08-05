@@ -2,6 +2,7 @@
 // ABOUTME: CommentReactionsBloc provider tree.
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:comments_repository/comments_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -72,8 +73,9 @@ void main() {
     String content, {
     required _MockComposerBloc composerBloc,
     required _MockReactionsBloc reactionsBloc,
+    Comment? comment,
   }) {
-    final comment = CommentBuilder()
+    comment ??= CommentBuilder()
         .withAuthorPubkey(_testHexPubkey)
         .withRootEventId(_testRootEventId)
         .withRootAuthorPubkey(_testRootAuthorPubkey)
@@ -108,6 +110,46 @@ void main() {
       ),
     );
   }
+
+  testWidgets('votes a video reply with its own coordinate and kind, not the '
+      "parent video's (#6124)", (tester) async {
+    // The reply's own coordinate is deliberate: funnelcake's
+    // engagement_counts_by_coordinate_a_mv counts kind-7 `a` tags with no
+    // content filter, so sending the parent video's coordinate would make
+    // every comment vote inflate that video's public reaction_count.
+    const ownCoordinate = '34236:$_testHexPubkey:reply-d-tag';
+    final mocks = buildMocks();
+    final reply = CommentBuilder()
+        .withAuthorPubkey(_testHexPubkey)
+        .withRootEventId(_testRootEventId)
+        .withRootAuthorPubkey(_testRootAuthorPubkey)
+        .withContent('a video reply')
+        .asVideoReply(ownCoordinate: ownCoordinate)
+        .build();
+
+    await tester.pumpWidget(
+      buildTestWidget(
+        'a video reply',
+        composerBloc: mocks.composer,
+        reactionsBloc: mocks.reactions,
+        comment: reply,
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.bySemanticsIdentifier('upvote_button'));
+    await tester.pump();
+
+    final dispatched = verify(
+      () => mocks.reactions.add(captureAny()),
+    ).captured.whereType<CommentVoteToggled>().single;
+
+    expect(dispatched.addressableId, equals(ownCoordinate));
+    expect(dispatched.targetKind, equals(34236));
+    expect(dispatched.commentId, equals(reply.id));
+    // The root event is the parent video; its id must not leak into the vote.
+    expect(dispatched.addressableId, isNot(contains(_testRootEventId)));
+  });
 
   testWidgets('renders bare npub mentions as interactive profile links', (
     tester,
