@@ -27,17 +27,18 @@ const _likeContent = '+';
 /// NIP-25 reaction content for a downvote.
 const _downvoteContent = '-';
 
-/// Max number of reaction ids per Kind 5 deletion REQ.
+/// Max number of event ids per `#e` REQ — for the Kind 5 deletion probe and
+/// for the reaction query that a coordinate's revisions can widen.
 ///
-/// The resolver scopes the deletion query to the reaction ids it fetched,
-/// which can approach the relay's per-REQ cap (~5000) on a very
-/// high-engagement video. A single `#e` filter with that many 64-char ids
-/// (~67 bytes each in JSON) would build a REQ frame near/over the relay's
-/// `max_message_length` (512KB); an oversized frame errors the socket and
-/// `queryEvents` fails open, silently counting deleted likes. Chunking keeps
-/// every frame small (500 ids ~= 34KB, well under 512KB and the advertised
-/// `max_event_tags` of 2000). See #5751.
-const _deletionReqEidChunkSize = 500;
+/// The deletion probe scopes its query to the reaction ids it fetched, which
+/// can approach the relay's per-REQ cap (~5000) on a very high-engagement
+/// video. A single `#e` filter with that many 64-char ids (~67 bytes each in
+/// JSON) would build a REQ frame near/over the relay's `max_message_length`
+/// (512KB); an oversized frame errors the socket and `queryEvents` fails open,
+/// silently counting deleted likes. Chunking keeps every frame small (500 ids
+/// ~= 34KB, well under 512KB and the advertised `max_event_tags` of 2000).
+/// See #5751.
+const _reqEidChunkSize = 500;
 
 /// Max event IDs accepted by `/api/videos/revisions/bulk`.
 const _bulkVideoRevisionsBatchSize = 100;
@@ -1808,7 +1809,7 @@ class LikesRepository {
     final deletionEvents = await _queryEventsByEIds(
       reactionsById.keys.toList(),
       kind: EventKind.eventDeletion,
-      chunkSize: _deletionReqEidChunkSize,
+      chunkSize: _reqEidChunkSize,
     );
 
     final deleted = <String>{};
@@ -1948,7 +1949,7 @@ class LikesRepository {
     return _queryEventsByEIds(
       eventIds,
       kind: EventKind.reaction,
-      chunkSize: _deletionReqEidChunkSize,
+      chunkSize: _reqEidChunkSize,
     );
   }
 
