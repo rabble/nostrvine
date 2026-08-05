@@ -71,9 +71,9 @@ class Comment extends Equatable {
 
   /// The Nostr event kind this comment was parsed from.
   ///
-  /// `null` when the source did not report a kind (the funnelcake REST path,
-  /// which only ever returns Kind 1111). Reactions use this for NIP-25's `k`
-  /// tag, which must name the kind of the event being reacted to.
+  /// `null` when the source did not report a kind or reported the REST
+  /// omitted-kind sentinel. Reactions use this for NIP-25's `k` tag, which
+  /// must name the kind of the event being reacted to.
   final int? eventKind;
 
   /// If this is a reply, the ID of the parent comment.

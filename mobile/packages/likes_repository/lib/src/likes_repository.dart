@@ -213,7 +213,11 @@ class LikesRepository {
     final record = _likeRecords.remove(targetEventId);
     final addressableId = record?.addressableId;
     if (addressableId != null && addressableId.isNotEmpty) {
-      _likeRecordsByAddressableId.remove(addressableId);
+      final indexed = _likeRecordsByAddressableId[addressableId];
+      if (indexed?.reactionEventId == record?.reactionEventId &&
+          indexed?.targetEventId == record?.targetEventId) {
+        _likeRecordsByAddressableId.remove(addressableId);
+      }
     }
   }
 
@@ -232,7 +236,11 @@ class LikesRepository {
     final record = _downvoteRecords.remove(targetEventId);
     final addressableId = record?.addressableId;
     if (addressableId != null && addressableId.isNotEmpty) {
-      _downvoteRecordsByAddressableId.remove(addressableId);
+      final indexed = _downvoteRecordsByAddressableId[addressableId];
+      if (indexed?.reactionEventId == record?.reactionEventId &&
+          indexed?.targetEventId == record?.targetEventId) {
+        _downvoteRecordsByAddressableId.remove(addressableId);
+      }
     }
   }
 
@@ -1033,14 +1041,10 @@ class LikesRepository {
       addressableIds,
     );
 
-    final events = await _nostrClient.queryEvents([
-      Filter(kinds: const [EventKind.reaction], e: eventIds),
-      if (eventIdByCoordinate.isNotEmpty)
-        Filter(
-          kinds: const [EventKind.reaction],
-          a: eventIdByCoordinate.keys.toList(),
-        ),
-    ]);
+    final events = await _queryVoteTargetReactions(
+      eventIds: eventIds,
+      eventIdByCoordinate: eventIdByCoordinate,
+    );
 
     final upvotes = <String, int>{};
     final downvotes = <String, int>{};
@@ -1050,9 +1054,6 @@ class LikesRepository {
     }
 
     final knownEventIds = eventIds.toSet();
-    // A multi-filter REQ emits one frame per matching filter, so a reaction
-    // carrying both the `e` and the `a` tag arrives twice — count each
-    // reaction once.
     final counted = <String>{};
     for (final event in events) {
       if (!counted.add(event.id)) continue;
@@ -1095,19 +1096,11 @@ class LikesRepository {
       addressableIds,
     );
 
-    final events = await _nostrClient.queryEvents([
-      Filter(
-        kinds: const [EventKind.reaction],
-        authors: [_nostrClient.publicKey],
-        e: eventIds,
-      ),
-      if (eventIdByCoordinate.isNotEmpty)
-        Filter(
-          kinds: const [EventKind.reaction],
-          authors: [_nostrClient.publicKey],
-          a: eventIdByCoordinate.keys.toList(),
-        ),
-    ]);
+    final events = await _queryVoteTargetReactions(
+      eventIds: eventIds,
+      eventIdByCoordinate: eventIdByCoordinate,
+      authors: [_nostrClient.publicKey],
+    );
 
     // Also fetch deletions to exclude deleted votes
     final deletionFilter = Filter(
@@ -1147,6 +1140,32 @@ class LikesRepository {
     }
 
     return (upvotedIds: upvotedIds, downvotedIds: downvotedIds);
+  }
+
+  Future<List<Event>> _queryVoteTargetReactions({
+    required List<String> eventIds,
+    required Map<String, String> eventIdByCoordinate,
+    List<String>? authors,
+  }) async {
+    final eEventsFuture = _nostrClient.queryEvents([
+      Filter(kinds: const [EventKind.reaction], authors: authors, e: eventIds),
+    ]);
+    final aEventsFuture = eventIdByCoordinate.isEmpty
+        ? Future<List<Event>>.value(const <Event>[])
+        : _nostrClient.queryEvents([
+            Filter(
+              kinds: const [EventKind.reaction],
+              authors: authors,
+              a: eventIdByCoordinate.keys.toList(),
+            ),
+          ]);
+    final results = await Future.wait([eEventsFuture, aEventsFuture]);
+
+    final eventsById = <String, Event>{};
+    for (final event in [...results[0], ...results[1]]) {
+      eventsById[event.id] = event;
+    }
+    return eventsById.values.toList();
   }
 
   /// Inverts [addressableIds] into a coordinate → event-id lookup, limited to
@@ -1215,6 +1234,17 @@ class LikesRepository {
 
     if (_lookupDownvoteRecord(eventId, addressableId) != null) {
       throw AlreadyDownvotedException(eventId);
+    }
+    if (addressableId != null && addressableId.isNotEmpty) {
+      final remoteRecord = await _resolveRemoteDownvoteRecord(
+        eventId,
+        addressableId: addressableId,
+      );
+      if (remoteRecord != null) {
+        _indexDownvoteRecord(remoteRecord);
+        _emitDownvotedIds();
+        throw AlreadyDownvotedException(eventId);
+      }
     }
 
     // 1. Optimistic-first: write to memory + tick the stream BEFORE any
@@ -2032,24 +2062,14 @@ class LikesRepository {
     String? addressableId,
   }) async {
     final hasCoordinate = addressableId != null && addressableId.isNotEmpty;
-    final reactions = await _nostrClient.queryEvents([
-      Filter(
-        kinds: const [EventKind.reaction],
-        authors: [_nostrClient.publicKey],
-        e: [eventId],
-      ),
-      // An edited addressable target answers to a new event id, so the
-      // pre-edit reaction is only reachable by coordinate (#6124).
-      if (hasCoordinate)
-        Filter(
-          kinds: const [EventKind.reaction],
-          authors: [_nostrClient.publicKey],
-          a: [addressableId],
-        ),
-    ]);
+    final reactions = await _queryVoteTargetReactions(
+      eventIds: [eventId],
+      eventIdByCoordinate: hasCoordinate
+          ? {addressableId: eventId}
+          : const <String, String>{},
+      authors: [_nostrClient.publicKey],
+    );
 
-    // A multi-filter REQ emits one frame per matching filter, so a reaction
-    // carrying both the `e` and the `a` tag arrives twice — dedupe by id.
     final candidatesById = <String, Event>{};
     for (final event in reactions) {
       if (event.content != _downvoteContent) continue;
