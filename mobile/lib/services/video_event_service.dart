@@ -4953,7 +4953,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
     if (shouldHideVideo(videoEvent)) {
       Log.verbose(
-        'Filtering non-Divine-hosted video ${videoEvent.id} from $subscriptionType',
+        'Filtering hidden video ${videoEvent.id} from $subscriptionType',
         name: 'VideoEventService',
         category: LogCategory.video,
       );
