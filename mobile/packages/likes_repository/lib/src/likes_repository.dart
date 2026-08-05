@@ -39,6 +39,12 @@ const _downvoteContent = '-';
 /// `max_event_tags` of 2000). See #5751.
 const _deletionReqEidChunkSize = 500;
 
+/// Max event IDs accepted by `/api/videos/revisions/bulk`.
+const _bulkVideoRevisionsBatchSize = 100;
+
+/// Maximum time revision enrichment may add to a likers/count fetch.
+const _defaultVideoRevisionsResolverTimeout = Duration(milliseconds: 750);
+
 /// Callback to check if the device is currently online
 typedef IsOnlineCallback = bool Function();
 
@@ -84,6 +90,8 @@ class LikesRepository {
   ///   engagement lists ([fetchEventLikers])
   /// - [revisionsResolver]: Optional resolver for a video's superseded event
   ///   ids, so reactions stranded on a pre-edit revision stay visible (#6021)
+  /// - [revisionsResolverTimeout]: Latency budget for revision enrichment; if
+  ///   it is exceeded, the repository keeps the current-id result.
   LikesRepository({
     required NostrClient nostrClient,
     LikesLocalStorage? localStorage,
@@ -91,12 +99,14 @@ class LikesRepository {
     QueueOfflineActionCallback? queueOfflineAction,
     BlockedLikerFilter? blockFilter,
     VideoRevisionsResolver? revisionsResolver,
+    Duration revisionsResolverTimeout = _defaultVideoRevisionsResolverTimeout,
   }) : _nostrClient = nostrClient,
        _localStorage = localStorage,
        _isOnline = isOnline,
        _queueOfflineAction = queueOfflineAction,
        _blockFilter = blockFilter,
-       _revisionsResolver = revisionsResolver;
+       _revisionsResolver = revisionsResolver,
+       _revisionsResolverTimeout = revisionsResolverTimeout;
 
   final NostrClient _nostrClient;
   final LikesLocalStorage? _localStorage;
@@ -106,6 +116,8 @@ class LikesRepository {
 
   /// Resolves a video event id to its sibling NIP-33 revisions (#6021).
   final VideoRevisionsResolver? _revisionsResolver;
+
+  final Duration _revisionsResolverTimeout;
 
   /// Callback to check if the device is online
   final IsOnlineCallback? _isOnline;
@@ -1700,16 +1712,22 @@ class LikesRepository {
         if (entry.value.isNotEmpty) entry.value: entry.key,
     };
 
-    // The a-tag query needs nothing from the revision lookup, so start it
-    // first and let the two round-trips overlap.
-    final aEventsFuture = aTagToEventId.isEmpty
-        ? Future<List<Event>>.value(const <Event>[])
-        : _nostrClient.queryEvents([
-            Filter(
-              kinds: const [EventKind.reaction],
-              a: aTagToEventId.keys.toList(),
-            ),
-          ]);
+    // The original e-tag query and the a-tag query need nothing from the
+    // revision lookup, so start them immediately. Revision ids are fetched by a
+    // second additive e-tag query once the resolver returns.
+    final currentEEventsFuture = _awaitLater(
+      _queryReactionsByEventIds(eventIds),
+    );
+    final aEventsFuture = _awaitLater(
+      aTagToEventId.isEmpty
+          ? Future<List<Event>>.value(const <Event>[])
+          : _nostrClient.queryEvents([
+              Filter(
+                kinds: const [EventKind.reaction],
+                a: aTagToEventId.keys.toList(),
+              ),
+            ]),
+    );
 
     // A reaction on an addressable video may `e`-tag a revision the edit
     // superseded, and NIP-25 lets it omit the `a` tag entirely — so querying
@@ -1720,15 +1738,19 @@ class LikesRepository {
       eventIds,
       addressableIds: addressableIds,
     );
-    final queryIds = <String>{...eventIds, ...revisionToEventId.keys}.toList();
+    final revisionIds = revisionToEventId.keys.toList();
 
     // Accept a reaction whose `e` tag names any revision, not just the ids the
     // caller passed. Widening the filter without widening this set would
     // fetch the reactions and then discard them.
-    final eventIdSet = queryIds.toSet();
+    final eventIdSet = <String>{...eventIds, ...revisionIds};
+    final revisionEEventsFuture = revisionIds.isEmpty
+        ? Future<List<Event>>.value(const <Event>[])
+        : _queryReactionsByEventIds(revisionIds);
 
     final queryResults = await Future.wait([
-      _queryReactionsByEventIds(queryIds),
+      currentEEventsFuture,
+      revisionEEventsFuture,
       aEventsFuture,
     ]);
 
@@ -1736,7 +1758,11 @@ class LikesRepository {
       for (final eventId in eventIds) eventId: <String, Event>{},
     };
     final allReactionsById = <String, Event>{};
-    for (final event in [...queryResults[0], ...queryResults[1]]) {
+    for (final event in [
+      ...queryResults[0],
+      ...queryResults[1],
+      ...queryResults[2],
+    ]) {
       allReactionsById[event.id] = event;
       final targetIds = _reactionTargetEventIds(
         event,
@@ -1779,32 +1805,20 @@ class LikesRepository {
   Future<Set<String>> _deletedReactionIds(
     Map<String, Event> reactionsById,
   ) async {
-    final reactionIds = reactionsById.keys.toList();
-    if (reactionIds.isEmpty) return const {};
-
-    final chunkedDeletions = await Future.wait([
-      for (var i = 0; i < reactionIds.length; i += _deletionReqEidChunkSize)
-        _nostrClient.queryEvents([
-          Filter(
-            kinds: const [EventKind.eventDeletion],
-            e: reactionIds.sublist(
-              i,
-              min(i + _deletionReqEidChunkSize, reactionIds.length),
-            ),
-          ),
-        ]),
-    ]);
+    final deletionEvents = await _queryEventsByEIds(
+      reactionsById.keys.toList(),
+      kind: EventKind.eventDeletion,
+      chunkSize: _deletionReqEidChunkSize,
+    );
 
     final deleted = <String>{};
-    for (final chunk in chunkedDeletions) {
-      for (final deletion in chunk) {
-        for (final tag in deletion.tags) {
-          if (tag.length > 1 && tag[0] == 'e') {
-            final targetId = tag[1];
-            final target = reactionsById[targetId];
-            if (target != null && target.pubkey == deletion.pubkey) {
-              deleted.add(targetId);
-            }
+    for (final deletion in deletionEvents) {
+      for (final tag in deletion.tags) {
+        if (tag.length > 1 && tag[0] == 'e') {
+          final targetId = tag[1];
+          final target = reactionsById[targetId];
+          if (target != null && target.pubkey == deletion.pubkey) {
+            deleted.add(targetId);
           }
         }
       }
@@ -1855,14 +1869,16 @@ class LikesRepository {
     ];
     if (addressableEventIds.isEmpty) return const {};
 
-    final Map<String, List<String>> revisionsByEventId;
-    try {
-      revisionsByEventId = await resolver(addressableEventIds);
-    } on Object catch (_) {
-      // Revision lookup is an enhancement, never a precondition — a failure
-      // must not take the "Liked by" list down with it.
-      return const {};
-    }
+    final revisionMaps = await Future.wait([
+      for (final chunk in _chunkStrings(
+        addressableEventIds,
+        _bulkVideoRevisionsBatchSize,
+      ))
+        _resolveRevisionChunk(resolver, chunk),
+    ]);
+    final revisionsByEventId = {
+      for (final revisionMap in revisionMaps) ...revisionMap,
+    };
 
     final requested = eventIds.toSet();
     final revisionToEventId = <String, String>{};
@@ -1877,29 +1893,91 @@ class LikesRepository {
     return revisionToEventId;
   }
 
+  Future<Map<String, List<String>>> _resolveRevisionChunk(
+    VideoRevisionsResolver resolver,
+    List<String> chunk,
+  ) async {
+    late final Future<Map<String, List<String>>> revisionsFuture;
+    try {
+      revisionsFuture = resolver(chunk).then(
+        (revisions) => revisions,
+        onError: (Object error) => _emptyRevisionsAfterFailure(chunk, error),
+      );
+    } on Object catch (error) {
+      return _emptyRevisionsAfterFailure(chunk, error);
+    }
+
+    try {
+      return await revisionsFuture.timeout(
+        _revisionsResolverTimeout,
+        onTimeout: () {
+          Log.warning(
+            'Timed out resolving video revisions for ${chunk.length} event '
+            'id(s) after ${_revisionsResolverTimeout.inMilliseconds}ms; '
+            'continuing with current ids only.',
+            name: 'LikesRepository',
+            category: LogCategory.api,
+          );
+          return const <String, List<String>>{};
+        },
+      );
+    } on Object catch (error) {
+      return _emptyRevisionsAfterFailure(chunk, error);
+    }
+  }
+
+  Map<String, List<String>> _emptyRevisionsAfterFailure(
+    List<String> chunk,
+    Object error,
+  ) {
+    // Revision lookup is an enhancement, never a precondition — a failure
+    // must not take the "Liked by" list down with it.
+    Log.warning(
+      'Failed to resolve video revisions for ${chunk.length} event id(s); '
+      'continuing with current ids only: $error',
+      name: 'LikesRepository',
+      category: LogCategory.api,
+    );
+    return const {};
+  }
+
   /// Queries kind 7 reactions by `e` tag, chunked so a coordinate with many
   /// revisions cannot build a REQ frame over the relay's `max_message_length`
   /// (same reason the deletion probe below chunks).
   Future<List<Event>> _queryReactionsByEventIds(List<String> eventIds) async {
-    if (eventIds.length <= _deletionReqEidChunkSize) {
-      return _nostrClient.queryEvents([
-        Filter(kinds: const [EventKind.reaction], e: eventIds),
-      ]);
-    }
+    return _queryEventsByEIds(
+      eventIds,
+      kind: EventKind.reaction,
+      chunkSize: _deletionReqEidChunkSize,
+    );
+  }
+
+  Future<List<Event>> _queryEventsByEIds(
+    List<String> eventIds, {
+    required int kind,
+    required int chunkSize,
+  }) async {
+    if (eventIds.isEmpty) return const <Event>[];
 
     final chunks = await Future.wait([
-      for (var i = 0; i < eventIds.length; i += _deletionReqEidChunkSize)
+      for (final chunk in _chunkStrings(eventIds, chunkSize))
         _nostrClient.queryEvents([
-          Filter(
-            kinds: const [EventKind.reaction],
-            e: eventIds.sublist(
-              i,
-              min(i + _deletionReqEidChunkSize, eventIds.length),
-            ),
-          ),
+          Filter(kinds: [kind], e: chunk),
         ]),
     ]);
     return [for (final chunk in chunks) ...chunk];
+  }
+
+  List<List<String>> _chunkStrings(List<String> values, int chunkSize) {
+    return [
+      for (var i = 0; i < values.length; i += chunkSize)
+        values.sublist(i, min(i + chunkSize, values.length)),
+    ];
+  }
+
+  Future<List<Event>> _awaitLater(Future<List<Event>> future) {
+    future.ignore();
+    return future;
   }
 
   List<String> _activeLikerPubkeys(

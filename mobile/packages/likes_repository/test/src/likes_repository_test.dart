@@ -89,6 +89,7 @@ void main() {
       QueueOfflineActionCallback? queueOfflineAction,
       BlockedLikerFilter? blockFilter,
       VideoRevisionsResolver? revisionsResolver,
+      Duration revisionsResolverTimeout = const Duration(milliseconds: 750),
     }) {
       return LikesRepository(
         nostrClient: mockNostrClient,
@@ -97,6 +98,7 @@ void main() {
         queueOfflineAction: queueOfflineAction,
         blockFilter: blockFilter,
         revisionsResolver: revisionsResolver,
+        revisionsResolverTimeout: revisionsResolverTimeout,
       );
     }
 
@@ -2911,6 +2913,28 @@ void main() {
           );
         });
 
+        test('still returns likers when the resolver times out', () async {
+          mockQueryEventsSequence([
+            [currentReaction()],
+            <Event>[],
+            <Event>[],
+          ]);
+
+          repository = createRepository(
+            revisionsResolver: (ids) =>
+                Completer<Map<String, List<String>>>().future,
+            revisionsResolverTimeout: const Duration(milliseconds: 1),
+          );
+
+          expect(
+            await repository.fetchEventLikers(
+              eventId: targetEventId,
+              addressableId: addressableId,
+            ),
+            equals(<String>[likerA]),
+          );
+        });
+
         test('counts a liker once when found via both revisions', () async {
           // Same pubkey reacting on the old and new revision is one liker,
           // not two — the per-pubkey dedupe must survive the widening.
@@ -2984,6 +3008,41 @@ void main() {
             ),
             equals(<String>[likerA]),
           );
+        });
+
+        test('chunks revision resolver requests at the server limit', () async {
+          final eventIds = [
+            for (var i = 0; i < 105; i++) 'addressable_event_$i',
+          ];
+          final addressableIds = {
+            for (final id in eventIds) id: '34236:author:$id',
+          };
+          final resolverCalls = <List<String>>[];
+
+          mockQueryEventsSequence([
+            <Event>[],
+            <Event>[],
+          ]);
+
+          repository = createRepository(
+            revisionsResolver: (ids) async {
+              resolverCalls.add(List<String>.from(ids));
+              return {
+                for (final id in ids) id: [id],
+              };
+            },
+          );
+
+          final counts = await repository.getLikeCounts(
+            eventIds,
+            addressableIds: addressableIds,
+          );
+
+          expect(resolverCalls, hasLength(2));
+          expect(resolverCalls[0], hasLength(100));
+          expect(resolverCalls[1], hasLength(5));
+          expect(counts.keys, containsAll(eventIds));
+          expect(counts.values, everyElement(0));
         });
       });
 

@@ -5073,8 +5073,15 @@ void main() {
         // enhancement to engagement queries, so a 404 must degrade rather
         // than throw and take the caller's list down with it.
         stubPost('Not Found', 404);
+        final originalLogger = FunnelcakeApiClient.warningLogger;
+        addTearDown(() => FunnelcakeApiClient.warningLogger = originalLogger);
+        final warnings = <String>[];
+        FunnelcakeApiClient.warningLogger = warnings.add;
 
         expect(await client.getBulkVideoRevisions([currentId]), isEmpty);
+        expect(warnings, hasLength(1));
+        expect(warnings.single, contains('status=404'));
+        expect(warnings.single, contains('count=1'));
       });
 
       test('returns empty map when the request throws', () async {
@@ -5085,8 +5092,14 @@ void main() {
             body: any(named: 'body'),
           ),
         ).thenThrow(Exception('network down'));
+        final originalLogger = FunnelcakeApiClient.warningLogger;
+        addTearDown(() => FunnelcakeApiClient.warningLogger = originalLogger);
+        final warnings = <String>[];
+        FunnelcakeApiClient.warningLogger = warnings.add;
 
         expect(await client.getBulkVideoRevisions([currentId]), isEmpty);
+        expect(warnings, hasLength(1));
+        expect(warnings.single, contains('network down'));
       });
 
       test('drops entries whose revision list is unusable', () async {

@@ -2257,8 +2257,8 @@ class FunnelcakeApiClient {
   /// it was made against and is invisible to a query on the current ID alone
   /// (#6021). The returned lists include the requested ID itself.
   ///
-  /// [eventIds] is capped at 100 by the server; longer lists are truncated
-  /// there, so callers should chunk.
+  /// [eventIds] is capped at 100 by the server; longer lists are rejected with
+  /// 400, so callers should chunk.
   ///
   /// Returns an **empty map** rather than throwing when the API is
   /// unconfigured, the list is empty, the endpoint is missing (older
@@ -2274,11 +2274,23 @@ class FunnelcakeApiClient {
 
     try {
       final response = await _post(uri, body: {'event_ids': eventIds});
-      if (response.statusCode != 200) return const {};
+      if (response.statusCode != 200) {
+        warningLogger(
+          'Failed to fetch bulk video revisions; returning empty map. '
+          'status=${response.statusCode} url=$uri count=${eventIds.length}',
+        );
+        return const {};
+      }
 
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       final revisions = data['revisions'];
-      if (revisions is! Map) return const {};
+      if (revisions is! Map) {
+        warningLogger(
+          'Unrecognised bulk video revisions response shape; returning empty '
+          'map. shape=${_describeShape(data)}',
+        );
+        return const {};
+      }
 
       final result = <String, List<String>>{};
       for (final entry in revisions.entries) {
@@ -2293,7 +2305,11 @@ class FunnelcakeApiClient {
         }
       }
       return result;
-    } on Object catch (_) {
+    } on Object catch (error) {
+      warningLogger(
+        'Failed to parse or fetch bulk video revisions; returning empty map. '
+        'error=$error count=${eventIds.length}',
+      );
       return const {};
     }
   }

@@ -21,8 +21,10 @@
 /// `eventId -> revisionIds`, where the list includes the requested id itself.
 /// Ids that resolve to no addressable video may be omitted.
 ///
-/// Implementations must not throw: return an empty map when the source is
-/// unavailable, so callers degrade to querying the current id alone rather
-/// than failing the whole list.
+/// Implementations must not throw or hang: return an empty map when the source
+/// is unavailable, so callers degrade to querying the current id alone rather
+/// than failing the whole list. Repository callers also bound this resolver
+/// with a short timeout because revision data is additive, not a precondition
+/// for showing current-id likers.
 typedef VideoRevisionsResolver =
     Future<Map<String, List<String>>> Function(List<String> eventIds);
