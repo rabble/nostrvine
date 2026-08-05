@@ -101,16 +101,12 @@ void main() {
         'populates counts and statuses from likes repo',
         setUp: () {
           when(() => mockLikesRepository.getVoteCounts(any())).thenAnswer(
-            (_) async => (
-              upvotes: {validId('c1'): 5},
-              downvotes: {validId('c1'): 1},
-            ),
+            (_) async =>
+                (upvotes: {validId('c1'): 5}, downvotes: {validId('c1'): 1}),
           );
           when(() => mockLikesRepository.getUserVoteStatuses(any())).thenAnswer(
-            (_) async => (
-              upvotedIds: {validId('c1')},
-              downvotedIds: <String>{},
-            ),
+            (_) async =>
+                (upvotedIds: {validId('c1')}, downvotedIds: <String>{}),
           );
         },
         build: createBloc,
@@ -125,6 +121,56 @@ void main() {
                 true,
               ),
         ],
+      );
+
+      blocTest<CommentReactionsBloc, CommentReactionsState>(
+        'forwards the coordinates to both read paths (#6124)',
+        setUp: () {
+          when(
+            () => mockLikesRepository.getVoteCounts(
+              any(),
+              addressableIds: any(named: 'addressableIds'),
+            ),
+          ).thenAnswer(
+            (_) async => (upvotes: <String, int>{}, downvotes: <String, int>{}),
+          );
+          when(
+            () => mockLikesRepository.getUserVoteStatuses(
+              any(),
+              addressableIds: any(named: 'addressableIds'),
+            ),
+          ).thenAnswer(
+            (_) async => (upvotedIds: <String>{}, downvotedIds: <String>{}),
+          );
+        },
+        build: createBloc,
+        act: (b) => b.add(
+          CommentVoteCountsFetchRequested(
+            [validId('c1')],
+            addressableIdsByCommentId: {
+              validId('c1'): '34236:${validId('author1')}:reply-d',
+            },
+          ),
+        ),
+        verify: (_) {
+          // Both reads are e-only without this; a vote on an edited video
+          // reply then reads as zero for the counts and unvoted for the arrow.
+          final expected = {
+            validId('c1'): '34236:${validId('author1')}:reply-d',
+          };
+          verify(
+            () => mockLikesRepository.getVoteCounts(
+              [validId('c1')],
+              addressableIds: expected,
+            ),
+          ).called(1);
+          verify(
+            () => mockLikesRepository.getUserVoteStatuses(
+              [validId('c1')],
+              addressableIds: expected,
+            ),
+          ).called(1);
+        },
       );
 
       blocTest<CommentReactionsBloc, CommentReactionsState>(
@@ -184,9 +230,7 @@ void main() {
               authorPubkey: any(named: 'authorPubkey'),
               targetKind: any(named: 'targetKind'),
             ),
-          ).thenThrow(
-            const LikesRepositoryException('publish failed'),
-          );
+          ).thenThrow(const LikesRepositoryException('publish failed'));
         },
         build: createBloc,
         act: (b) => b.add(
@@ -319,6 +363,173 @@ void main() {
               targetKind: any(named: 'targetKind'),
             ),
           ).called(1);
+        },
+      );
+
+      blocTest<CommentReactionsBloc, CommentReactionsState>(
+        'tags a video-reply vote with its OWN coordinate and real kind '
+        '(#6124)',
+        setUp: () {
+          when(
+            () => mockLikesRepository.downvoteEvent(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
+              targetKind: any(named: 'targetKind'),
+              addressableId: any(named: 'addressableId'),
+            ),
+          ).thenAnswer((_) async => 'downvote-event-id');
+        },
+        build: createBloc,
+        act: (b) => b.add(
+          CommentVoteToggled(
+            commentId: validId('c1'),
+            authorPubkey: validId('author1'),
+            vote: Vote.down,
+            addressableId: '34236:${validId('author1')}:reply-d',
+            targetKind: 34236,
+          ),
+        ),
+        verify: (_) {
+          // The parent video's coordinate must never be used here: funnelcake
+          // counts kind-7 by a-tag with no content filter, so it would inflate
+          // the parent's public reaction_count.
+          verify(
+            () => mockLikesRepository.downvoteEvent(
+              eventId: validId('c1'),
+              authorPubkey: validId('author1'),
+              targetKind: 34236,
+              addressableId: '34236:${validId('author1')}:reply-d',
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<CommentReactionsBloc, CommentReactionsState>(
+        'tears down an upvote by coordinate when switching to a downvote '
+        '(#6124)',
+        setUp: () {
+          when(
+            () => mockLikesRepository.unlikeEvent(
+              any(),
+              addressableId: any(named: 'addressableId'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockLikesRepository.downvoteEvent(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
+              targetKind: any(named: 'targetKind'),
+              addressableId: any(named: 'addressableId'),
+            ),
+          ).thenAnswer((_) async => 'downvote-event-id');
+        },
+        build: createBloc,
+        seed: () => CommentReactionsState(
+          upvotedCommentIds: {validId('c1')},
+          commentUpvoteCounts: {validId('c1'): 3},
+        ),
+        act: (b) => b.add(
+          CommentVoteToggled(
+            commentId: validId('c1'),
+            authorPubkey: validId('author1'),
+            vote: Vote.down,
+            addressableId: '34236:${validId('author1')}:reply-d',
+            targetKind: 34236,
+          ),
+        ),
+        verify: (_) {
+          // Symmetric with removeDownvote: an edited target answers to a new
+          // event id, so an id-only teardown throws NotLikedException and
+          // strands the upvote reaction.
+          verify(
+            () => mockLikesRepository.unlikeEvent(
+              validId('c1'),
+              addressableId: '34236:${validId('author1')}:reply-d',
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<CommentReactionsBloc, CommentReactionsState>(
+        'falls back to kind 1111 and no coordinate for a plain comment '
+        '(#6124)',
+        setUp: () {
+          when(
+            () => mockLikesRepository.likeEvent(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
+              targetKind: any(named: 'targetKind'),
+              addressableId: any(named: 'addressableId'),
+            ),
+          ).thenAnswer((_) async => 'like-event-id');
+        },
+        build: createBloc,
+        act: (b) => b.add(
+          CommentVoteToggled(
+            commentId: validId('c1'),
+            authorPubkey: validId('author1'),
+            vote: Vote.up,
+          ),
+        ),
+        verify: (_) {
+          // Captured rather than matched inline: passing `addressableId: null`
+          // to verify() reads as a redundant default, but the null IS the
+          // assertion — a Kind 1111 comment has no coordinate to send.
+          final captured = verify(
+            () => mockLikesRepository.likeEvent(
+              eventId: validId('c1'),
+              authorPubkey: validId('author1'),
+              targetKind: 1111,
+              addressableId: captureAny(named: 'addressableId'),
+            ),
+          ).captured;
+          expect(captured, hasLength(1));
+          expect(captured.single, isNull);
+        },
+      );
+
+      blocTest<CommentReactionsBloc, CommentReactionsState>(
+        'still publishes the upvote when the downvote teardown reports none '
+        '(#6124)',
+        setUp: () {
+          // Downvotes live only in memory, so after a cold start the teardown
+          // of a pre-restart downvote reports "not downvoted". That must not
+          // abort the upvote — previously it threw past the likeEvent call and
+          // the UI showed an upvote that was never published.
+          when(
+            () => mockLikesRepository.removeDownvote(any()),
+          ).thenThrow(NotDownvotedException(validId('c1')));
+          when(
+            () => mockLikesRepository.likeEvent(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenAnswer((_) async => 'like-event-id');
+        },
+        build: createBloc,
+        seed: () => CommentReactionsState(
+          downvotedCommentIds: {validId('c1')},
+          commentDownvoteCounts: {validId('c1'): 2},
+        ),
+        act: (b) => b.add(
+          CommentVoteToggled(
+            commentId: validId('c1'),
+            authorPubkey: validId('author1'),
+            vote: Vote.up,
+          ),
+        ),
+        verify: (b) {
+          verify(
+            () => mockLikesRepository.likeEvent(
+              eventId: validId('c1'),
+              authorPubkey: validId('author1'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).called(1);
+          expect(b.state.upvotedCommentIds.contains(validId('c1')), isTrue);
+          expect(b.state.downvotedCommentIds.contains(validId('c1')), isFalse);
+          expect(b.state.error, isNull);
         },
       );
     });

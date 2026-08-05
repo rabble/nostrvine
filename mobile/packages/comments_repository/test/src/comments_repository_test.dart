@@ -313,6 +313,111 @@ void main() {
         verifyNever(() => mockNostrClient.queryEvents(any()));
       });
 
+      test(
+        'maps coordinate and kind from a REST video reply (#6124)',
+        () async {
+          // loadComments is REST-first, so this — not the relay mapper — is the
+          // path that serves the first page in production. Without it a vote on
+          // a REST-delivered video reply still carries k:1111 and no `a` tag.
+          when(() => mockFunnelcakeApiClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeApiClient.getVideoComments(
+              videoId: any(named: 'videoId'),
+              sort: any(named: 'sort'),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              cacheBustToken: any(named: 'cacheBustToken'),
+            ),
+          ).thenAnswer(
+            (_) async => const VideoCommentsResponse(
+              comments: [
+                VideoComment(
+                  id: 'rest_video_reply',
+                  pubkey: testUserPubkey,
+                  createdAt: 1000,
+                  kind: EventKind.videoVertical,
+                  content: 'REST video reply',
+                  sig: 'sig',
+                  tags: [
+                    ['E', testRootEventId],
+                    ['P', testRootAuthorPubkey],
+                    ['d', 'rest_reply_d'],
+                    ['imeta', 'url https://media.divine.video/reply/12345'],
+                  ],
+                ),
+              ],
+              total: 1,
+            ),
+          );
+
+          repository = CommentsRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeApiClient,
+          );
+
+          final result = await repository.loadComments(
+            rootEventId: testRootEventId,
+            rootEventKind: _testRootEventKind,
+            includeVideoReplies: true,
+          );
+
+          expect(result.comments, hasLength(1));
+          expect(result.comments.first.eventKind, EventKind.videoVertical);
+          expect(
+            result.comments.first.addressableId,
+            equals('${EventKind.videoVertical}:$testUserPubkey:rest_reply_d'),
+          );
+        },
+      );
+
+      test('leaves eventKind null when REST omits the kind (#6124)', () async {
+        // VideoComment.fromJson defaults an absent kind to 0. Forwarding that
+        // verbatim would put k:0 on the reaction; null keeps the handler's
+        // Kind 1111 fallback in charge.
+        when(() => mockFunnelcakeApiClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeApiClient.getVideoComments(
+            videoId: any(named: 'videoId'),
+            sort: any(named: 'sort'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            cacheBustToken: any(named: 'cacheBustToken'),
+          ),
+        ).thenAnswer(
+          (_) async => const VideoCommentsResponse(
+            comments: [
+              VideoComment(
+                id: 'rest_comment_no_kind',
+                pubkey: testUserPubkey,
+                createdAt: 1000,
+                kind: 0,
+                content: 'plain',
+                sig: 'sig',
+                tags: [
+                  ['E', testRootEventId],
+                  ['P', testRootAuthorPubkey],
+                ],
+              ),
+            ],
+            total: 1,
+          ),
+        );
+
+        repository = CommentsRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeApiClient,
+        );
+
+        final result = await repository.loadComments(
+          rootEventId: testRootEventId,
+          rootEventKind: _testRootEventKind,
+        );
+
+        expect(result.comments, hasLength(1));
+        expect(result.comments.first.eventKind, isNull);
+        expect(result.comments.first.addressableId, isNull);
+      });
+
       test('falls back to relay query when REST bootstrap throws', () async {
         when(() => mockFunnelcakeApiClient.isAvailable).thenReturn(true);
         when(
@@ -355,6 +460,62 @@ void main() {
         verify(() => mockNostrClient.queryEvents(any())).called(1);
       });
 
+      test(
+        'leaves addressableId null for a Kind 1111 comment (#6124)',
+        () async {
+          final plainComment = _createCommentEvent(
+            id: 'plain_comment',
+            content: 'no coordinate here',
+            pubkey: testUserPubkey,
+            rootEventId: testRootEventId,
+            rootAuthorPubkey: testRootAuthorPubkey,
+            rootEventKind: _testRootEventKind,
+          );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [plainComment]);
+
+          final result = await repository.loadComments(
+            rootEventId: testRootEventId,
+            rootEventKind: _testRootEventKind,
+          );
+
+          expect(result.comments, hasLength(1));
+          expect(result.comments.first.addressableId, isNull);
+          expect(result.comments.first.eventKind, _commentKind);
+        },
+      );
+
+      test('leaves addressableId null when an addressable event has no d tag '
+          '(#6124)', () async {
+        // Must NOT fall back to the event id the way VideoEvent does — that
+        // mints a well-formed coordinate that addresses nothing.
+        final noDTag = _createCommentEvent(
+          id: 'reply_without_d',
+          kind: EventKind.videoVertical,
+          content: 'Reply title',
+          pubkey: testUserPubkey,
+          rootEventId: testRootEventId,
+          rootAuthorPubkey: testRootAuthorPubkey,
+          rootEventKind: _testRootEventKind,
+          extraTags: const [
+            ['imeta', 'url https://media.divine.video/video.mp4'],
+          ],
+        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [noDTag]);
+
+        final result = await repository.loadComments(
+          rootEventId: testRootEventId,
+          rootEventKind: _testRootEventKind,
+          includeVideoReplies: true,
+        );
+
+        expect(result.comments, hasLength(1));
+        expect(result.comments.first.addressableId, isNull);
+      });
+
       test('loads NIP-71 video reply events in the comments thread', () async {
         const rootAddressableId = '34236:$testRootAuthorPubkey:video-dtag';
         final videoReplyEvent = _createCommentEvent(
@@ -368,6 +529,7 @@ void main() {
           extraTags: const [
             ['A', rootAddressableId, ''],
             ['a', rootAddressableId, ''],
+            ['d', 'video_reply_d'],
             ['imeta', 'url https://media.divine.video/video.mp4'],
             ['title', 'Reply title'],
             ['summary', 'Video reply summary'],
@@ -388,6 +550,17 @@ void main() {
         expect(result.comments.first.id, equals('video_reply'));
         expect(result.comments.first.rootAddressableId, rootAddressableId);
         expect(result.comments.first.hasVideo, isTrue);
+        // Its OWN coordinate and kind, not the parent video's — a reaction
+        // tagged with the parent's would credit the parent's counts (#6124).
+        expect(result.comments.first.eventKind, EventKind.videoVertical);
+        expect(
+          result.comments.first.addressableId,
+          equals('${EventKind.videoVertical}:$testUserPubkey:video_reply_d'),
+        );
+        expect(
+          result.comments.first.addressableId,
+          isNot(equals(rootAddressableId)),
+        );
         expect(
           result.comments.first.videoUrl,
           equals('https://media.divine.video/video.mp4'),

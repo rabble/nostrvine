@@ -199,6 +199,8 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                         _ActionsRow(
                           commentId: widget.comment.id,
                           authorPubkey: widget.comment.authorPubkey,
+                          addressableId: widget.comment.addressableId,
+                          targetKind: widget.comment.eventKind,
                         ),
                       ],
                     ),
@@ -453,13 +455,24 @@ class _CommentContent extends StatelessWidget {
 }
 
 class _ActionsRow extends StatelessWidget {
-  const _ActionsRow({required this.commentId, required this.authorPubkey});
+  const _ActionsRow({
+    required this.commentId,
+    required this.authorPubkey,
+    this.addressableId,
+    this.targetKind,
+  });
 
   /// ID of the comment (for reply targeting and vote toggling)
   final String commentId;
 
   /// Pubkey of the comment author (for vote toggling)
   final String authorPubkey;
+
+  /// The comment's own addressable coordinate, when it has one (#6124).
+  final String? addressableId;
+
+  /// The kind of the event being voted on, for NIP-25's `k` tag.
+  final int? targetKind;
 
   @override
   Widget build(BuildContext context) {
@@ -515,7 +528,12 @@ class _ActionsRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 20),
-        _CommentVoteButtons(commentId: commentId, authorPubkey: authorPubkey),
+        _CommentVoteButtons(
+          commentId: commentId,
+          authorPubkey: authorPubkey,
+          addressableId: addressableId,
+          targetKind: targetKind,
+        ),
       ],
     );
   }
@@ -529,10 +547,14 @@ class _CommentVoteButtons extends StatelessWidget {
   const _CommentVoteButtons({
     required this.commentId,
     required this.authorPubkey,
+    this.addressableId,
+    this.targetKind,
   });
 
   final String commentId;
   final String authorPubkey;
+  final String? addressableId;
+  final int? targetKind;
 
   @override
   Widget build(BuildContext context) {
@@ -566,6 +588,8 @@ class _CommentVoteButtons extends StatelessWidget {
                     CommentVoteToggled(
                       commentId: commentId,
                       authorPubkey: authorPubkey,
+                      addressableId: addressableId,
+                      targetKind: targetKind,
                       vote: Vote.up,
                     ),
                   );
@@ -613,6 +637,8 @@ class _CommentVoteButtons extends StatelessWidget {
                     CommentVoteToggled(
                       commentId: commentId,
                       authorPubkey: authorPubkey,
+                      addressableId: addressableId,
+                      targetKind: targetKind,
                       vote: Vote.down,
                     ),
                   );

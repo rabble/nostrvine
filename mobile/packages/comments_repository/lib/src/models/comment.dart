@@ -25,6 +25,8 @@ class Comment extends Equatable {
     required this.rootEventId,
     required this.rootAuthorPubkey,
     this.rootAddressableId,
+    this.addressableId,
+    this.eventKind,
     this.replyToEventId,
     this.replyToAuthorPubkey,
     this.videoUrl,
@@ -54,6 +56,25 @@ class Comment extends Equatable {
 
   /// Addressable identifier of the root event, when the root is parameterized.
   final String? rootAddressableId;
+
+  /// This comment's **own** addressable coordinate (`kind:pubkey:d-tag`).
+  ///
+  /// Non-null only when the comment wraps an addressable event that carries a
+  /// `d` tag — a Kind 34236 video reply, for example. Plain Kind 1111 comments
+  /// are regular events with no coordinate, and so are `null`.
+  ///
+  /// Distinct from [rootAddressableId], which addresses the *parent* video.
+  /// Reactions must be tagged with this one: NIP-25's `a` tag identifies the
+  /// event being reacted to, and using the parent's coordinate would credit
+  /// the parent video's engagement counts instead (#6124).
+  final String? addressableId;
+
+  /// The Nostr event kind this comment was parsed from.
+  ///
+  /// `null` when the source did not report a kind or reported the REST
+  /// omitted-kind sentinel. Reactions use this for NIP-25's `k` tag, which
+  /// must name the kind of the event being reacted to.
+  final int? eventKind;
 
   /// If this is a reply, the ID of the parent comment.
   ///
@@ -90,6 +111,8 @@ class Comment extends Equatable {
     String? rootEventId,
     String? rootAuthorPubkey,
     String? rootAddressableId,
+    String? addressableId,
+    int? eventKind,
     String? replyToEventId,
     String? replyToAuthorPubkey,
     String? videoUrl,
@@ -105,6 +128,8 @@ class Comment extends Equatable {
     rootEventId: rootEventId ?? this.rootEventId,
     rootAuthorPubkey: rootAuthorPubkey ?? this.rootAuthorPubkey,
     rootAddressableId: rootAddressableId ?? this.rootAddressableId,
+    addressableId: addressableId ?? this.addressableId,
+    eventKind: eventKind ?? this.eventKind,
     replyToEventId: replyToEventId ?? this.replyToEventId,
     replyToAuthorPubkey: replyToAuthorPubkey ?? this.replyToAuthorPubkey,
     videoUrl: videoUrl ?? this.videoUrl,
@@ -123,6 +148,8 @@ class Comment extends Equatable {
     rootEventId,
     rootAuthorPubkey,
     rootAddressableId,
+    addressableId,
+    eventKind,
     replyToEventId,
     replyToAuthorPubkey,
     videoUrl,

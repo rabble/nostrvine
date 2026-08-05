@@ -62,8 +62,12 @@ void main() {
     }
 
     // Helper to create a mock deletion event
-    MockEvent createMockDeletion(List<String> deletedEventIds) {
+    MockEvent createMockDeletion(
+      List<String> deletedEventIds, {
+      String authorPubkey = 'reaction_author_pubkey_1234567890abcdef',
+    }) {
       final event = MockEvent();
+      when(() => event.pubkey).thenReturn(authorPubkey);
       when(
         () => event.tags,
       ).thenReturn(deletedEventIds.map((id) => ['e', id]).toList());
@@ -1049,6 +1053,50 @@ void main() {
         );
       });
 
+      test('throws AlreadyDownvotedException when relay has coordinate '
+          'downvote after cold start (#6124)', () async {
+        const supersededId = 'superseded_reply_id_1234567890abcdef';
+        const editedId = 'edited_reply_id_1234567890abcdef';
+        const coordinate = '34236:$testAuthorPubkey:reply-d-tag';
+        mockQueryEventsSequence([
+          <Event>[],
+          [
+            createMockReaction(
+              id: testReactionEventId,
+              targetEventId: supersededId,
+              content: '-',
+              tags: [
+                ['e', supersededId],
+                ['a', coordinate],
+              ],
+            ),
+          ],
+          <Event>[],
+        ]);
+
+        repository = createRepository(withLocalStorage: false);
+
+        await expectLater(
+          repository.downvoteEvent(
+            eventId: editedId,
+            authorPubkey: testAuthorPubkey,
+            addressableId: coordinate,
+            targetKind: 34236,
+          ),
+          throwsA(isA<AlreadyDownvotedException>()),
+        );
+
+        verifyNever(
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        );
+      });
+
       test('rolls back record + stream when publish returns null', () async {
         when(
           () => mockNostrClient.sendLike(
@@ -1134,14 +1182,155 @@ void main() {
         ).called(1);
       });
 
-      test('throws NotDownvotedException when not downvoted', () async {
-        repository = createRepository(withLocalStorage: false);
+      test('resolves a downvote by coordinate after the target is edited '
+          '(#6124)', () async {
+        // An edit mints a new event id under the same coordinate. Without the
+        // coordinate companion index the pre-edit downvote is unreachable, so
+        // the deletion is never published and re-tapping mints a duplicate.
+        const coordinate = '34236:$testAuthorPubkey:reply-d-tag';
+        const supersededId = 'superseded_event_id_1234567890abcdef';
+        const editedId = 'edited_event_id_1234567890abcdef';
 
-        await expectLater(
-          repository.removeDownvote(testEventId),
-          throwsA(isA<NotDownvotedException>()),
+        repository = createRepository(withLocalStorage: false);
+        mockQueryEventsSequence([<Event>[], <Event>[], <Event>[]]);
+        when(
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenAnswer(
+          (_) async => createMockReaction(
+            id: testReactionEventId,
+            targetEventId: supersededId,
+            content: '-',
+          ),
         );
+        when(
+          () => mockNostrClient.deleteEvent(any()),
+        ).thenAnswer((_) async => MockEvent());
+
+        await repository.downvoteEvent(
+          eventId: supersededId,
+          authorPubkey: testAuthorPubkey,
+          addressableId: coordinate,
+        );
+
+        // The edited revision answers to a different id, same coordinate.
+        await repository.removeDownvote(editedId, addressableId: coordinate);
+
+        verify(
+          () => mockNostrClient.deleteEvent(testReactionEventId),
+        ).called(1);
       });
+
+      test('passes the coordinate through to sendLike (#6124)', () async {
+        const coordinate = '34236:$testAuthorPubkey:reply-d-tag';
+        repository = createRepository(withLocalStorage: false);
+        mockQueryEventsSequence([<Event>[], <Event>[], <Event>[]]);
+        when(
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenAnswer(
+          (_) async => createMockReaction(
+            id: testReactionEventId,
+            targetEventId: testEventId,
+            content: '-',
+          ),
+        );
+
+        await repository.downvoteEvent(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+          targetKind: 34236,
+          addressableId: coordinate,
+        );
+
+        verify(
+          () => mockNostrClient.sendLike(
+            testEventId,
+            content: '-',
+            addressableId: coordinate,
+            targetAuthorPubkey: testAuthorPubkey,
+            targetKind: 34236,
+          ),
+        ).called(1);
+      });
+
+      test(
+        'throws NotDownvotedException when neither cache nor relay has one',
+        () async {
+          repository = createRepository(withLocalStorage: false);
+          // Relay reports no reaction and no deletion.
+          mockQueryEventsSequence([<Event>[], <Event>[]]);
+
+          await expectLater(
+            repository.removeDownvote(testEventId),
+            throwsA(isA<NotDownvotedException>()),
+          );
+        },
+      );
+
+      test(
+        'deletes the relay copy when the in-memory cache is cold (#6124)',
+        () async {
+          // Downvotes are never persisted, so a cold start leaves the cache
+          // empty while the kind-7 is still live. Without the relay fallback
+          // this threw and the deletion was never published.
+          repository = createRepository(withLocalStorage: false);
+          mockQueryEventsSequence([
+            [
+              createMockReaction(
+                id: testReactionEventId,
+                targetEventId: testEventId,
+                content: '-',
+              ),
+            ],
+            <Event>[],
+          ]);
+          when(
+            () => mockNostrClient.deleteEvent(any()),
+          ).thenAnswer((_) async => MockEvent());
+
+          await repository.removeDownvote(testEventId);
+
+          verify(
+            () => mockNostrClient.deleteEvent(testReactionEventId),
+          ).called(1);
+        },
+      );
+
+      test(
+        'does not delete a relay downvote that was already deleted (#6124)',
+        () async {
+          repository = createRepository(withLocalStorage: false);
+          mockQueryEventsSequence([
+            [
+              createMockReaction(
+                id: testReactionEventId,
+                targetEventId: testEventId,
+                content: '-',
+              ),
+            ],
+            [
+              createMockDeletion([testReactionEventId]),
+            ],
+          ]);
+
+          await expectLater(
+            repository.removeDownvote(testEventId),
+            throwsA(isA<NotDownvotedException>()),
+          );
+          verifyNever(() => mockNostrClient.deleteEvent(any()));
+        },
+      );
 
       test('rolls back record + stream when deletion returns null', () async {
         when(
@@ -4120,6 +4309,335 @@ void main() {
           verify(() => mockNostrClient.queryEvents(any())).called(3);
         },
       );
+    });
+
+    group('coordinate-aware vote reads (#6124)', () {
+      const supersededId = 'superseded_reply_id_1234567890abcdef';
+      const editedId = 'edited_reply_id_1234567890abcdef';
+      const coordinate = '34236:$testAuthorPubkey:reply-d-tag';
+
+      test('getVoteCounts counts a vote cast before the target was edited', () {
+        // The reaction names the pre-edit id in its `e` tag, so an `e`-only
+        // query against the current id returns nothing and the score
+        // disappears for every viewer.
+        final reaction = createMockReaction(
+          id: 'voter_reaction',
+          targetEventId: supersededId,
+          authorPubkey: 'some_voter_pubkey_1234567890abcdef',
+          tags: [
+            ['e', supersededId],
+            ['a', coordinate],
+          ],
+        );
+        mockQueryEventsSequence([
+          <Event>[],
+          [reaction],
+        ]);
+
+        repository = createRepository(withLocalStorage: false);
+
+        return expectLater(
+          repository.getVoteCounts(
+            [editedId],
+            addressableIds: const {editedId: coordinate},
+          ),
+          completion(
+            isA<({Map<String, int> upvotes, Map<String, int> downvotes})>()
+                .having((r) => r.upvotes[editedId], 'upvotes', 1)
+                .having((r) => r.downvotes[editedId], 'downvotes', 0),
+          ),
+        );
+      });
+
+      test(
+        'getVoteCounts queries e and a separately so cache stays active',
+        () async {
+          final reaction = createMockReaction(
+            id: 'voter_reaction',
+            targetEventId: editedId,
+            authorPubkey: 'some_voter_pubkey_1234567890abcdef',
+            tags: [
+              ['e', editedId],
+              ['a', coordinate],
+            ],
+          );
+          mockQueryEventsSequence([
+            [reaction],
+            [reaction],
+            <Event>[], // no deletions
+          ]);
+
+          repository = createRepository(withLocalStorage: false);
+
+          final counts = await repository.getVoteCounts(
+            [editedId],
+            addressableIds: const {editedId: coordinate},
+          );
+
+          expect(counts.upvotes[editedId], equals(1));
+
+          // Three single-filter requests: by `e`, by `a`, then the Kind 5
+          // sweep over the reactions those returned. Every one has to stay
+          // single-filter — NostrClient skips the local event cache the
+          // moment a call carries more than one.
+          final captured = verify(
+            () => mockNostrClient.queryEvents(captureAny()),
+          ).captured.cast<List<Filter>>();
+          expect(captured, hasLength(3));
+          expect(captured.every((filters) => filters.length == 1), isTrue);
+          expect(captured[0].single.e, equals([editedId]));
+          expect(captured[1].single.a, equals([coordinate]));
+          expect(
+            captured[2].single.kinds,
+            equals([EventKind.eventDeletion]),
+          );
+        },
+      );
+
+      test('getUserVoteStatuses resolves the own vote by coordinate', () async {
+        mockQueryEventsSequence([
+          <Event>[],
+          [
+            createMockReaction(
+              id: 'own_downvote',
+              targetEventId: supersededId,
+              authorPubkey: testUserPubkey,
+              content: '-',
+              tags: [
+                ['e', supersededId],
+                ['a', coordinate],
+              ],
+            ),
+          ],
+          <Event>[], // no deletions
+        ]);
+
+        repository = createRepository(withLocalStorage: false);
+
+        final statuses = await repository.getUserVoteStatuses(
+          [editedId],
+          addressableIds: const {editedId: coordinate},
+        );
+
+        expect(statuses.downvotedIds, contains(editedId));
+        expect(statuses.upvotedIds, isEmpty);
+      });
+
+      test('getUserVoteStatuses still excludes a deleted coordinate '
+          'vote', () async {
+        mockQueryEventsSequence([
+          <Event>[],
+          [
+            createMockReaction(
+              id: 'own_downvote',
+              targetEventId: supersededId,
+              authorPubkey: testUserPubkey,
+              content: '-',
+              tags: [
+                ['e', supersededId],
+                ['a', coordinate],
+              ],
+            ),
+          ],
+          [
+            createMockDeletion(['own_downvote']),
+          ],
+        ]);
+
+        repository = createRepository(withLocalStorage: false);
+
+        final statuses = await repository.getUserVoteStatuses(
+          [editedId],
+          addressableIds: const {editedId: coordinate},
+        );
+
+        expect(statuses.downvotedIds, isEmpty);
+      });
+
+      test('getVoteCounts credits the last `e` tag when a reaction carries '
+          'several', () async {
+        // NIP-25: "the target event `id` should be last of the `e` tags".
+        // A client that copies the thread's ancestor tags would otherwise
+        // have its vote credited to the root comment instead of the reply.
+        const rootCommentId = 'root_comment_id_1234567890abcdef';
+        final reaction = createMockReaction(
+          id: 'ancestor_tagged_reaction',
+          targetEventId: editedId,
+          authorPubkey: 'some_voter_pubkey_1234567890abcdef',
+          tags: [
+            ['e', rootCommentId],
+            ['e', editedId],
+          ],
+        );
+        mockQueryEventsSequence([
+          [reaction],
+          <Event>[],
+          <Event>[],
+        ]);
+
+        repository = createRepository(withLocalStorage: false);
+
+        final counts = await repository.getVoteCounts([
+          rootCommentId,
+          editedId,
+        ]);
+
+        expect(counts.upvotes[editedId], equals(1));
+        expect(counts.upvotes[rootCommentId], equals(0));
+      });
+
+      test('getVoteCounts excludes a vote retracted on an earlier '
+          'revision', () async {
+        // Switching an upvote to a downvote on an edited reply publishes a
+        // Kind 5 for the pre-edit reaction and a new downvote on the current
+        // one. The coordinate leg reaches both, so counting the retracted
+        // upvote would leave netScore 0 — which comment_item renders by
+        // hiding the score entirely.
+        const voter = 'some_voter_pubkey_1234567890abcdef';
+        final retractedUpvote = createMockReaction(
+          id: 'retracted_upvote',
+          targetEventId: supersededId,
+          authorPubkey: voter,
+          tags: [
+            ['e', supersededId],
+            ['a', coordinate],
+          ],
+        );
+        final liveDownvote = createMockReaction(
+          id: 'live_downvote',
+          targetEventId: editedId,
+          authorPubkey: voter,
+          content: '-',
+          tags: [
+            ['e', editedId],
+            ['a', coordinate],
+          ],
+        );
+        mockQueryEventsSequence([
+          [liveDownvote],
+          [retractedUpvote, liveDownvote],
+          [
+            createMockDeletion(['retracted_upvote'], authorPubkey: voter),
+          ],
+        ]);
+
+        repository = createRepository(withLocalStorage: false);
+
+        final counts = await repository.getVoteCounts(
+          [editedId],
+          addressableIds: const {editedId: coordinate},
+        );
+
+        expect(counts.upvotes[editedId], equals(0));
+        expect(counts.downvotes[editedId], equals(1));
+      });
+
+      test('getVoteCounts ignores a deletion published by someone other than '
+          'the voter', () async {
+        // Otherwise anyone could suppress another user's vote by referencing
+        // its reaction id.
+        const voter = 'some_voter_pubkey_1234567890abcdef';
+        final upvote = createMockReaction(
+          id: 'honest_upvote',
+          targetEventId: editedId,
+          authorPubkey: voter,
+          tags: [
+            ['e', editedId],
+            ['a', coordinate],
+          ],
+        );
+        mockQueryEventsSequence([
+          [upvote],
+          [upvote],
+          [
+            createMockDeletion(
+              ['honest_upvote'],
+              authorPubkey: 'an_impostor_pubkey_1234567890abcdef',
+            ),
+          ],
+        ]);
+
+        repository = createRepository(withLocalStorage: false);
+
+        final counts = await repository.getVoteCounts(
+          [editedId],
+          addressableIds: const {editedId: coordinate},
+        );
+
+        expect(counts.upvotes[editedId], equals(1));
+      });
+
+      test('getVoteCounts ignores an unrelated coordinate', () async {
+        final reaction = createMockReaction(
+          id: 'other_reaction',
+          targetEventId: 'unrelated_event_id_1234567890abcdef',
+          authorPubkey: 'some_voter_pubkey_1234567890abcdef',
+          tags: [
+            ['a', '34236:$testAuthorPubkey:some-other-d-tag'],
+          ],
+        );
+        mockQueryEventsSequence([
+          <Event>[],
+          [reaction],
+        ]);
+
+        repository = createRepository(withLocalStorage: false);
+
+        final counts = await repository.getVoteCounts(
+          [editedId],
+          addressableIds: const {editedId: coordinate},
+        );
+
+        expect(counts.upvotes[editedId], equals(0));
+      });
+
+      test('deleting an older revision keeps the newer coordinate downvote '
+          'indexed (#6124)', () async {
+        const coordinate = '34236:$testAuthorPubkey:reply-d-tag';
+        const oldId = 'old_reply_id_1234567890abcdef';
+        const newId = 'new_reply_id_1234567890abcdef';
+        const oldReactionId = 'old_downvote_reaction_id_1234567890abcdef';
+        const newReactionId = 'new_downvote_reaction_id_1234567890abcdef';
+        final oldReaction = createMockReaction(
+          id: oldReactionId,
+          targetEventId: oldId,
+          content: '-',
+          tags: [
+            ['e', oldId],
+            ['a', coordinate],
+          ],
+        );
+        final newReaction = createMockReaction(
+          id: newReactionId,
+          targetEventId: newId,
+          content: '-',
+          createdAt: defaultTimestamp + 1,
+          tags: [
+            ['e', newId],
+            ['a', coordinate],
+          ],
+        );
+
+        mockQueryEventsSequence([
+          [oldReaction, newReaction],
+          <Event>[],
+          [oldReaction, newReaction],
+          [
+            createMockDeletion([oldReactionId]),
+          ],
+        ]);
+        when(
+          () => mockNostrClient.deleteEvent(any()),
+        ).thenAnswer((_) async => MockEvent());
+
+        repository = createRepository(withLocalStorage: false);
+
+        await repository.syncUserReactions();
+        await repository.syncUserReactions();
+        await repository.removeDownvote(newId, addressableId: coordinate);
+
+        verify(() => mockNostrClient.deleteEvent(newReactionId)).called(1);
+      });
     });
   });
 }

@@ -127,6 +127,17 @@ class LikesRepository {
   /// [syncUserReactions] / [getVoteCounts] on next fetch.
   final Map<String, LikeRecord> _downvoteRecords = {};
 
+  /// Companion index of [_downvoteRecords] keyed by addressable coordinate.
+  ///
+  /// Mirror of [_likeRecordsByAddressableId] for the downvote side. An edit of
+  /// an addressable target mints a new event id under the same coordinate, so
+  /// an id-only index loses the downvote the moment the target is edited
+  /// (#6124). Unlike the like side there is no persisted companion column:
+  /// `personal_reactions` has no reaction-content discriminator and is keyed
+  /// `{targetEventId, userPubkey}`, so it cannot represent a like and a
+  /// downvote on the same target. Downvotes stay in-memory only, as in v1.
+  final Map<String, LikeRecord> _downvoteRecordsByAddressableId = {};
+
   /// In-memory cache of global like counts keyed by event ID.
   ///
   /// Prevents redundant relay queries when the same video is scrolled
@@ -202,8 +213,47 @@ class LikesRepository {
     final record = _likeRecords.remove(targetEventId);
     final addressableId = record?.addressableId;
     if (addressableId != null && addressableId.isNotEmpty) {
-      _likeRecordsByAddressableId.remove(addressableId);
+      final indexed = _likeRecordsByAddressableId[addressableId];
+      if (indexed?.reactionEventId == record?.reactionEventId &&
+          indexed?.targetEventId == record?.targetEventId) {
+        _likeRecordsByAddressableId.remove(addressableId);
+      }
     }
+  }
+
+  /// Indexes [record] into [_downvoteRecords] and, when it carries a
+  /// coordinate, [_downvoteRecordsByAddressableId].
+  void _indexDownvoteRecord(LikeRecord record) {
+    _downvoteRecords[record.targetEventId] = record;
+    final addressableId = record.addressableId;
+    if (addressableId != null && addressableId.isNotEmpty) {
+      _downvoteRecordsByAddressableId[addressableId] = record;
+    }
+  }
+
+  /// Removes any downvote record for [targetEventId] from both indexes.
+  void _deindexDownvoteRecord(String targetEventId) {
+    final record = _downvoteRecords.remove(targetEventId);
+    final addressableId = record?.addressableId;
+    if (addressableId != null && addressableId.isNotEmpty) {
+      final indexed = _downvoteRecordsByAddressableId[addressableId];
+      if (indexed?.reactionEventId == record?.reactionEventId &&
+          indexed?.targetEventId == record?.targetEventId) {
+        _downvoteRecordsByAddressableId.remove(addressableId);
+      }
+    }
+  }
+
+  /// Resolves a downvote record by target event id, falling back to
+  /// [addressableId] when the id-keyed lookup misses.
+  ///
+  /// An addressable target that has been edited answers to a new event id but
+  /// the same coordinate, so the coordinate is the durable key (#6124).
+  LikeRecord? _lookupDownvoteRecord(String eventId, String? addressableId) {
+    final byId = _downvoteRecords[eventId];
+    if (byId != null) return byId;
+    if (addressableId == null || addressableId.isEmpty) return null;
+    return _downvoteRecordsByAddressableId[addressableId];
   }
 
   /// Emits the current liked event IDs ordered by recency (most recent
@@ -970,16 +1020,31 @@ class LikesRepository {
   /// Queries relays for Kind 7 reactions on each event, differentiating
   /// between `+` (upvote) and `-` (downvote) content.
   ///
+  /// Pass [addressableIds] — event id to `kind:pubkey:d-tag` coordinate — for
+  /// targets that are addressable. An edit republishes such a target under a
+  /// new event id, so every vote cast against the previous revision is only
+  /// reachable by coordinate; an `e`-only query reports zero and the score
+  /// vanishes for every viewer the moment the target is edited (#6124).
+  ///
   /// Returns a record of upvote and downvote count maps.
   Future<({Map<String, int> upvotes, Map<String, int> downvotes})>
-  getVoteCounts(List<String> eventIds) async {
+  getVoteCounts(
+    List<String> eventIds, {
+    Map<String, String> addressableIds = const {},
+  }) async {
     if (eventIds.isEmpty) {
       return (upvotes: <String, int>{}, downvotes: <String, int>{});
     }
 
-    final filter = Filter(kinds: const [EventKind.reaction], e: eventIds);
+    final eventIdByCoordinate = _voteTargetsByCoordinate(
+      eventIds,
+      addressableIds,
+    );
 
-    final events = await _nostrClient.queryEvents([filter]);
+    final events = await _queryVoteTargetReactions(
+      eventIds: eventIds,
+      eventIdByCoordinate: eventIdByCoordinate,
+    );
 
     final upvotes = <String, int>{};
     final downvotes = <String, int>{};
@@ -988,19 +1053,30 @@ class LikesRepository {
       downvotes[eventId] = 0;
     }
 
-    for (final event in events) {
-      for (final tag in event.tags) {
-        if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
-          final targetId = tag[1];
-          if (upvotes.containsKey(targetId)) {
-            if (event.content == _downvoteContent) {
-              downvotes[targetId] = downvotes[targetId]! + 1;
-            } else {
-              // '+' and any other content counts as upvote
-              upvotes[targetId] = upvotes[targetId]! + 1;
-            }
-          }
-        }
+    // Retracted votes have to be excluded here, not just in
+    // [getUserVoteStatuses]. The coordinate leg reaches reactions cast against
+    // every earlier revision of the target, including ones their author has
+    // since deleted — switching an upvote to a downvote on an edited reply
+    // publishes exactly that pair, and counting both leaves netScore 0, which
+    // `comment_item.dart` renders by hiding the score outright (#6124).
+    final reactionsById = {for (final event in events) event.id: event};
+    final deletedReactionIds = await _deletedReactionIds(reactionsById);
+
+    final knownEventIds = eventIds.toSet();
+    for (final event in reactionsById.values) {
+      if (deletedReactionIds.contains(event.id)) continue;
+      final targetId = _resolveVoteTarget(
+        event,
+        knownEventIds,
+        eventIdByCoordinate,
+      );
+      if (targetId == null) continue;
+
+      if (event.content == _downvoteContent) {
+        downvotes[targetId] = downvotes[targetId]! + 1;
+      } else {
+        // '+' and any other content counts as upvote
+        upvotes[targetId] = upvotes[targetId]! + 1;
       }
     }
 
@@ -1009,20 +1085,30 @@ class LikesRepository {
 
   /// Get the user's current vote status for multiple events.
   ///
+  /// Pass [addressableIds] for addressable targets, for the same reason
+  /// [getVoteCounts] needs it: without the coordinate the voter's own arrow
+  /// silently un-fills after the target is edited (#6124).
+  ///
   /// Returns maps of event IDs the user has upvoted or downvoted.
   Future<({Set<String> upvotedIds, Set<String> downvotedIds})>
-  getUserVoteStatuses(List<String> eventIds) async {
+  getUserVoteStatuses(
+    List<String> eventIds, {
+    Map<String, String> addressableIds = const {},
+  }) async {
     if (eventIds.isEmpty) {
       return (upvotedIds: <String>{}, downvotedIds: <String>{});
     }
 
-    final filter = Filter(
-      kinds: const [EventKind.reaction],
-      authors: [_nostrClient.publicKey],
-      e: eventIds,
+    final eventIdByCoordinate = _voteTargetsByCoordinate(
+      eventIds,
+      addressableIds,
     );
 
-    final events = await _nostrClient.queryEvents([filter]);
+    final events = await _queryVoteTargetReactions(
+      eventIds: eventIds,
+      eventIdByCoordinate: eventIdByCoordinate,
+      authors: [_nostrClient.publicKey],
+    );
 
     // Also fetch deletions to exclude deleted votes
     final deletionFilter = Filter(
@@ -1042,12 +1128,17 @@ class LikesRepository {
 
     final upvotedIds = <String>{};
     final downvotedIds = <String>{};
+    final knownEventIds = eventIds.toSet();
 
     for (final event in events) {
       if (deletedIds.contains(event.id)) continue;
 
-      final targetId = _extractTargetEventId(event);
-      if (targetId == null || !eventIds.contains(targetId)) continue;
+      final targetId = _resolveVoteTarget(
+        event,
+        knownEventIds,
+        eventIdByCoordinate,
+      );
+      if (targetId == null) continue;
 
       if (event.content == _downvoteContent) {
         downvotedIds.add(targetId);
@@ -1057,6 +1148,77 @@ class LikesRepository {
     }
 
     return (upvotedIds: upvotedIds, downvotedIds: downvotedIds);
+  }
+
+  Future<List<Event>> _queryVoteTargetReactions({
+    required List<String> eventIds,
+    required Map<String, String> eventIdByCoordinate,
+    List<String>? authors,
+  }) async {
+    final eEventsFuture = _nostrClient.queryEvents([
+      Filter(kinds: const [EventKind.reaction], authors: authors, e: eventIds),
+    ]);
+    final aEventsFuture = eventIdByCoordinate.isEmpty
+        ? Future<List<Event>>.value(const <Event>[])
+        : _nostrClient.queryEvents([
+            Filter(
+              kinds: const [EventKind.reaction],
+              authors: authors,
+              a: eventIdByCoordinate.keys.toList(),
+            ),
+          ]);
+    final results = await Future.wait([eEventsFuture, aEventsFuture]);
+
+    final eventsById = <String, Event>{};
+    for (final event in [...results[0], ...results[1]]) {
+      eventsById[event.id] = event;
+    }
+    return eventsById.values.toList();
+  }
+
+  /// Inverts [addressableIds] into a coordinate → event-id lookup, limited to
+  /// the ids actually being queried and skipping blank coordinates.
+  Map<String, String> _voteTargetsByCoordinate(
+    List<String> eventIds,
+    Map<String, String> addressableIds,
+  ) {
+    final byCoordinate = <String, String>{};
+    for (final eventId in eventIds) {
+      final coordinate = addressableIds[eventId];
+      if (coordinate != null && coordinate.isNotEmpty) {
+        byCoordinate[coordinate] = eventId;
+      }
+    }
+    return byCoordinate;
+  }
+
+  /// Resolves which queried target a reaction belongs to.
+  ///
+  /// Matches the `e` tag first, then falls back to the `a` tag so a reaction
+  /// cast against a superseded revision of an addressable target still lands
+  /// on the revision the caller is currently showing (#6124). Returns `null`
+  /// when the reaction targets nothing in the queried set.
+  ///
+  /// Scans the `e` tags last-first: NIP-25 says that when a reaction carries
+  /// more than one, "the target event `id` should be last of the `e` tags".
+  /// Reading forwards credits a copied ancestor tag instead of the real
+  /// target — Divine's own writer emits a single `e` tag, so this only
+  /// affects reactions from other clients.
+  String? _resolveVoteTarget(
+    Event event,
+    Set<String> knownEventIds,
+    Map<String, String> eventIdByCoordinate,
+  ) {
+    for (final tag in event.tags.reversed) {
+      if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
+        final targetId = tag[1];
+        if (knownEventIds.contains(targetId)) return targetId;
+      }
+    }
+    if (eventIdByCoordinate.isEmpty) return null;
+    final coordinate = _extractAddressableId(event);
+    if (coordinate == null) return null;
+    return eventIdByCoordinate[coordinate];
   }
 
   /// Publish a downvote (Kind 7 reaction with content '-').
@@ -1070,17 +1232,33 @@ class LikesRepository {
   /// when the network call hasn't been awaited yet (offline or pre-publish
   /// failure).
   ///
+  /// Pass [addressableId] (`kind:pubkey:d-tag`) when the target is
+  /// addressable, so the reaction carries NIP-25's `a` tag and survives an
+  /// edit of the target.
+  ///
   /// Throws [AlreadyDownvotedException] if the event is already downvoted.
   /// Throws [LikeFailedException] if the publish fails.
   Future<String> downvoteEvent({
     required String eventId,
     required String authorPubkey,
     int? targetKind,
+    String? addressableId,
   }) async {
     await _ensureInitialized();
 
-    if (_downvoteRecords.containsKey(eventId)) {
+    if (_lookupDownvoteRecord(eventId, addressableId) != null) {
       throw AlreadyDownvotedException(eventId);
+    }
+    if (addressableId != null && addressableId.isNotEmpty) {
+      final remoteRecord = await _resolveRemoteDownvoteRecord(
+        eventId,
+        addressableId: addressableId,
+      );
+      if (remoteRecord != null) {
+        _indexDownvoteRecord(remoteRecord);
+        _emitDownvotedIds();
+        throw AlreadyDownvotedException(eventId);
+      }
     }
 
     // 1. Optimistic-first: write to memory + tick the stream BEFORE any
@@ -1090,8 +1268,9 @@ class LikesRepository {
       targetEventId: eventId,
       reactionEventId: placeholderId,
       createdAt: DateTime.now(),
+      addressableId: addressableId,
     );
-    _downvoteRecords[eventId] = placeholder;
+    _indexDownvoteRecord(placeholder);
     _emitDownvotedIds();
 
     // 2. Online → publish kind 7 with '-'; on success swap the placeholder
@@ -1100,6 +1279,7 @@ class LikesRepository {
       final reactionEvent = await _nostrClient.sendLike(
         eventId,
         content: _downvoteContent,
+        addressableId: addressableId,
         targetAuthorPubkey: authorPubkey,
         targetKind: targetKind,
       );
@@ -1108,15 +1288,18 @@ class LikesRepository {
         throw const LikeFailedException('Failed to publish downvote reaction');
       }
 
-      _downvoteRecords[eventId] = LikeRecord(
-        targetEventId: eventId,
-        reactionEventId: reactionEvent.id,
-        createdAt: placeholder.createdAt,
+      _indexDownvoteRecord(
+        LikeRecord(
+          targetEventId: eventId,
+          reactionEventId: reactionEvent.id,
+          createdAt: placeholder.createdAt,
+          addressableId: addressableId,
+        ),
       );
 
       return reactionEvent.id;
     } catch (_) {
-      _downvoteRecords.remove(eventId);
+      _deindexDownvoteRecord(eventId);
       _emitDownvotedIds();
       rethrow;
     }
@@ -1128,20 +1311,38 @@ class LikesRepository {
   /// BEFORE the kind-5 deletion publish. On failure restores the record and
   /// re-ticks the stream. Mirrors [unlikeEvent].
   ///
-  /// Throws [NotDownvotedException] if the event is not downvoted.
+  /// Pass [addressableId] when the target is addressable: an edit mints a new
+  /// event id under the same coordinate, so the coordinate is the only durable
+  /// way to find the reaction afterwards. When the in-memory cache holds
+  /// nothing, the relay copy is consulted before giving up.
+  ///
+  /// Throws [NotDownvotedException] when neither the cache nor the relay has a
+  /// live downvote for the target.
   /// Throws [UnlikeFailedException] if the deletion publish fails.
-  Future<void> removeDownvote(String eventId) async {
+  Future<void> removeDownvote(String eventId, {String? addressableId}) async {
     await _ensureInitialized();
 
-    final record = _downvoteRecords[eventId];
+    // [_downvoteRecords] is in-memory only in v1, so a cold start leaves it
+    // empty while the kind-7 downvote is still live on relays. Falling back
+    // to the relay copy keeps the deletion honest: without it this throws
+    // [NotDownvotedException], the caller clears its UI, and the downvote
+    // survives untouched and reappears on the next fetch (#6124).
+    final record =
+        _lookupDownvoteRecord(eventId, addressableId) ??
+        await _resolveRemoteDownvoteRecord(
+          eventId,
+          addressableId: addressableId,
+        );
     if (record == null) {
       throw NotDownvotedException(eventId);
     }
 
     final snapshotRecord = record;
 
-    // 1. Optimistic-first: remove from memory and tick the stream.
-    _downvoteRecords.remove(eventId);
+    // 1. Optimistic-first: remove from memory and tick the stream. Deindex by
+    // the record's own target id: a coordinate hit can resolve to a record
+    // filed under a superseded event id.
+    _deindexDownvoteRecord(snapshotRecord.targetEventId);
     _emitDownvotedIds();
 
     // 2. Skip publishing deletion for placeholders that never reached the
@@ -1161,7 +1362,7 @@ class LikesRepository {
         );
       }
     } catch (_) {
-      _downvoteRecords[eventId] = snapshotRecord;
+      _indexDownvoteRecord(snapshotRecord);
       _emitDownvotedIds();
       rethrow;
     }
@@ -1176,11 +1377,12 @@ class LikesRepository {
     required String eventId,
     required String authorPubkey,
     int? targetKind,
+    String? addressableId,
   }) async {
     await _ensureInitialized();
 
-    if (_downvoteRecords.containsKey(eventId)) {
-      await removeDownvote(eventId);
+    if (_lookupDownvoteRecord(eventId, addressableId) != null) {
+      await removeDownvote(eventId, addressableId: addressableId);
       return false;
     }
 
@@ -1188,6 +1390,7 @@ class LikesRepository {
       eventId: eventId,
       authorPubkey: authorPubkey,
       targetKind: targetKind,
+      addressableId: addressableId,
     );
     return true;
   }
@@ -1322,14 +1525,16 @@ class LikesRepository {
             createdAt: DateTime.fromMillisecondsSinceEpoch(
               event.createdAt * 1000,
             ),
+            addressableId: _extractAddressableId(event),
           );
 
           // Mirror the upvote freshness check; downvotes aren't persisted
-          // in v1 so there's no batch save.
+          // in v1 so there's no batch save. The coordinate is indexed
+          // alongside the id so an edited target still resolves (#6124).
           final existing = _downvoteRecords[targetId];
           if (existing == null ||
               record.createdAt.isAfter(existing.createdAt)) {
-            _downvoteRecords[targetId] = record;
+            _indexDownvoteRecord(record);
             downvoteCacheChanged = true;
           }
         }
@@ -1343,7 +1548,7 @@ class LikesRepository {
 
       // Remove deleted downvotes from in-memory cache (no local storage in v1)
       for (final targetId in deletedDownvoteTargetIds) {
-        _downvoteRecords.remove(targetId);
+        _deindexDownvoteRecord(targetId);
         downvoteCacheChanged = true;
       }
 
@@ -1501,46 +1706,7 @@ class LikesRepository {
       return {for (final eventId in eventIds) eventId: <String>[]};
     }
 
-    // Scope the deletion query to the reaction ids we fetched. The consumer
-    // below only honors a Kind 5 whose `e` tag points at a fetched reaction
-    // AND whose author matches it, so `#e`-scoping is semantics-preserving and
-    // an `authors:` filter is redundant (dropped to halve the frame size).
-    // Chunk the `#e` list so a very high-engagement video can't build a single
-    // REQ frame over the relay's `max_message_length` — an oversized frame
-    // errors the socket and the query fails open, counting deletes (#5751).
-    final reactionIds = allReactionsById.keys.toList();
-    final deletionEvents = <Event>[];
-    if (reactionIds.isNotEmpty) {
-      final chunkedDeletions = await Future.wait([
-        for (var i = 0; i < reactionIds.length; i += _deletionReqEidChunkSize)
-          _nostrClient.queryEvents([
-            Filter(
-              kinds: const [EventKind.eventDeletion],
-              e: reactionIds.sublist(
-                i,
-                min(i + _deletionReqEidChunkSize, reactionIds.length),
-              ),
-            ),
-          ]),
-      ]);
-      chunkedDeletions.forEach(deletionEvents.addAll);
-    }
-
-    // Only honor a Kind 5 deletion when its author matches the reaction's
-    // author — otherwise anyone could suppress someone else's like by
-    // publishing a deletion that references the other user's reaction id.
-    final deletedReactionIds = <String>{};
-    for (final deletion in deletionEvents) {
-      for (final tag in deletion.tags) {
-        if (tag.length > 1 && tag[0] == 'e') {
-          final targetId = tag[1];
-          final target = allReactionsById[targetId];
-          if (target != null && target.pubkey == deletion.pubkey) {
-            deletedReactionIds.add(targetId);
-          }
-        }
-      }
-    }
+    final deletedReactionIds = await _deletedReactionIds(allReactionsById);
 
     return {
       for (final entry in reactionsByTarget.entries)
@@ -1549,6 +1715,54 @@ class LikesRepository {
           deletedReactionIds: deletedReactionIds,
         ),
     };
+  }
+
+  /// Resolves which of [reactionsById] their own author has since retracted.
+  ///
+  /// Scopes the deletion query to the reaction ids already fetched, so an
+  /// `authors:` filter would be redundant (dropped to halve the frame size).
+  /// Chunks the `#e` list so a very high-engagement target can't build a
+  /// single REQ frame over the relay's `max_message_length` — an oversized
+  /// frame errors the socket and the query fails open, counting deletes
+  /// (#5751).
+  ///
+  /// Only honors a Kind 5 whose author matches the reaction's author —
+  /// otherwise anyone could suppress someone else's vote by publishing a
+  /// deletion that references the other user's reaction id.
+  Future<Set<String>> _deletedReactionIds(
+    Map<String, Event> reactionsById,
+  ) async {
+    final reactionIds = reactionsById.keys.toList();
+    if (reactionIds.isEmpty) return const {};
+
+    final chunkedDeletions = await Future.wait([
+      for (var i = 0; i < reactionIds.length; i += _deletionReqEidChunkSize)
+        _nostrClient.queryEvents([
+          Filter(
+            kinds: const [EventKind.eventDeletion],
+            e: reactionIds.sublist(
+              i,
+              min(i + _deletionReqEidChunkSize, reactionIds.length),
+            ),
+          ),
+        ]),
+    ]);
+
+    final deleted = <String>{};
+    for (final chunk in chunkedDeletions) {
+      for (final deletion in chunk) {
+        for (final tag in deletion.tags) {
+          if (tag.length > 1 && tag[0] == 'e') {
+            final targetId = tag[1];
+            final target = reactionsById[targetId];
+            if (target != null && target.pubkey == deletion.pubkey) {
+              deleted.add(targetId);
+            }
+          }
+        }
+      }
+    }
+    return deleted;
   }
 
   Set<String> _reactionTargetEventIds(
@@ -1723,10 +1937,13 @@ class LikesRepository {
       final existing = _downvoteRecords[targetId];
       if (existing != null && !createdAt.isAfter(existing.createdAt)) return;
 
-      _downvoteRecords[targetId] = LikeRecord(
-        targetEventId: targetId,
-        reactionEventId: event.id,
-        createdAt: createdAt,
+      _indexDownvoteRecord(
+        LikeRecord(
+          targetEventId: targetId,
+          reactionEventId: event.id,
+          createdAt: createdAt,
+          addressableId: _extractAddressableId(event),
+        ),
       );
       _emitDownvotedIds();
     }
@@ -1791,6 +2008,7 @@ class LikesRepository {
     _likeRecords.clear();
     _likeRecordsByAddressableId.clear();
     _downvoteRecords.clear();
+    _downvoteRecordsByAddressableId.clear();
     _likeCountCache.clear();
     _likeCountCacheByAddressableId.clear();
     await _localStorage?.clearAll();
@@ -1854,5 +2072,66 @@ class LikesRepository {
       }
     }
     return null;
+  }
+
+  /// Resolves the current user's still-live downvote on [eventId] from relays.
+  ///
+  /// Returns the newest non-deleted kind-7 `-` reaction the user has published
+  /// against [eventId], or `null` when there is none. Used by
+  /// [removeDownvote] to recover from an empty in-memory cache after a cold
+  /// start, since downvotes are not persisted locally in v1.
+  Future<LikeRecord?> _resolveRemoteDownvoteRecord(
+    String eventId, {
+    String? addressableId,
+  }) async {
+    final hasCoordinate = addressableId != null && addressableId.isNotEmpty;
+    final reactions = await _queryVoteTargetReactions(
+      eventIds: [eventId],
+      eventIdByCoordinate: hasCoordinate
+          ? {addressableId: eventId}
+          : const <String, String>{},
+      authors: [_nostrClient.publicKey],
+    );
+
+    final candidatesById = <String, Event>{};
+    for (final event in reactions) {
+      if (event.content != _downvoteContent) continue;
+      final matches =
+          _extractTargetEventId(event) == eventId ||
+          (hasCoordinate && _extractAddressableId(event) == addressableId);
+      if (matches) candidatesById[event.id] = event;
+    }
+    final candidates = candidatesById.values.toList();
+    if (candidates.isEmpty) return null;
+
+    final deletions = await _nostrClient.queryEvents([
+      Filter(
+        kinds: const [EventKind.eventDeletion],
+        authors: [_nostrClient.publicKey],
+        e: candidates.map((event) => event.id).toList(),
+      ),
+    ]);
+
+    final deletedIds = <String>{};
+    for (final deletion in deletions) {
+      for (final tag in deletion.tags) {
+        if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
+          deletedIds.add(tag[1]);
+        }
+      }
+    }
+
+    final live =
+        candidates.where((event) => !deletedIds.contains(event.id)).toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    if (live.isEmpty) return null;
+
+    final newest = live.first;
+    return LikeRecord(
+      targetEventId: eventId,
+      reactionEventId: newest.id,
+      createdAt: DateTime.fromMillisecondsSinceEpoch(newest.createdAt * 1000),
+      addressableId: _extractAddressableId(newest),
+    );
   }
 }

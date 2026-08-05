@@ -953,6 +953,12 @@ class CommentsRepository {
         content: event.content,
         authorPubkey: event.pubkey,
         createdAt: event.createdAtDateTime,
+        eventKind: event.kind,
+        addressableId: _ownAddressableId(
+          kind: event.kind,
+          pubkey: event.pubkey,
+          tags: event.tags,
+        ),
         rootEventId: parsedRootEventId ?? rootEventId,
         // For top-level comments, replyToEventId should be null
         replyToEventId: isTopLevel ? null : replyToEventId,
@@ -968,6 +974,34 @@ class CommentsRepository {
     } on Exception {
       return null;
     }
+  }
+
+  /// Builds an event's **own** addressable coordinate, or `null` when it has
+  /// none.
+  ///
+  /// Only addressable kinds (30000-39999) have coordinates, and only when the
+  /// event actually carries a `d` tag. A missing `d` must yield `null` rather
+  /// than substituting the event id the way `VideoEvent` does — that would
+  /// mint a well-formed coordinate addressing nothing, and a reaction tagged
+  /// with it would be unresolvable (#6124).
+  ///
+  /// Takes raw tags rather than an [Event] so the funnelcake REST payload,
+  /// which carries the same tag list on a different type, resolves identically.
+  String? _ownAddressableId({
+    required int kind,
+    required String pubkey,
+    required List<dynamic> tags,
+  }) {
+    if (kind < 30000 || kind > 39999) return null;
+    for (final rawTag in tags) {
+      final tag = rawTag as List<dynamic>;
+      if (tag.length < 2 || tag[0] != 'd') continue;
+      final dTag = tag[1] as String;
+      return dTag.isEmpty
+          ? null
+          : AId(kind: kind, pubkey: pubkey, dTag: dTag).toAString();
+    }
+    return null;
   }
 
   /// Checks whether an event's uppercase `E` or `A` tag matches the queried
@@ -1095,6 +1129,17 @@ class CommentsRepository {
         authorPubkey: restComment.pubkey,
         createdAt: DateTime.fromMillisecondsSinceEpoch(
           restComment.createdAt * 1000,
+        ),
+        // The REST payload carries Kind 34236 video replies too, so the same
+        // coordinate/kind the relay path derives must be derived here — this
+        // path is REST-first and serves the first page in production (#6124).
+        // `kind` defaults to 0 when the payload omits it; map that back to
+        // null so the vote handler still falls back to Kind 1111.
+        eventKind: restComment.kind > 0 ? restComment.kind : null,
+        addressableId: _ownAddressableId(
+          kind: restComment.kind,
+          pubkey: restComment.pubkey,
+          tags: restComment.tags,
         ),
         rootEventId: parsedRootEventId ?? rootEventId,
         rootAuthorPubkey: rootAuthorPubkey ?? '',

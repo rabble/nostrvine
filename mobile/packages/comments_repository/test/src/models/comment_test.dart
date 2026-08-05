@@ -174,6 +174,8 @@ void main() {
           createdAt: DateTime(2024),
           rootEventId: 'root',
           rootAuthorPubkey: 'rootAuthor',
+          addressableId: '34236:author:d-tag',
+          eventKind: 34236,
           replyToEventId: 'replyTo',
           replyToAuthorPubkey: 'replyAuthor',
           videoUrl: 'https://example.com/video.mp4',
@@ -183,7 +185,7 @@ void main() {
           videoBlurhash: 'LEHV6nWB2y',
         );
 
-        expect(comment.props, hasLength(14));
+        expect(comment.props, hasLength(16));
         expect(
           comment.props,
           equals([
@@ -194,6 +196,8 @@ void main() {
             'root',
             'rootAuthor',
             null,
+            '34236:author:d-tag',
+            34236,
             'replyTo',
             'replyAuthor',
             'https://example.com/video.mp4',
