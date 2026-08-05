@@ -137,6 +137,8 @@ void main() {
     bool isReferencedVideo = true,
     String? referencedVideoTitle,
     String? referencedVideoThumbnail,
+    String? listTitle,
+    String? listCoordinate,
   }) {
     return RelayNotification(
       id: id,
@@ -158,6 +160,8 @@ void main() {
       isReferencedVideo: isReferencedVideo,
       referencedVideoTitle: referencedVideoTitle,
       referencedVideoThumbnail: referencedVideoThumbnail,
+      listTitle: listTitle,
+      listCoordinate: listCoordinate,
     );
   }
 
@@ -395,6 +399,27 @@ void main() {
 
         final signedUri = Uri.parse(signedUrl);
         expect(signedUri.queryParameters['types'], equals('reaction,zap'));
+      });
+
+      test('maps list-add filter to list_add server type', () async {
+        var signedUrl = '';
+        repository = NotificationRepository(
+          funnelcakeApiClient: funnelcakeApiClient,
+          profileRepository: profileRepository,
+          notificationsDao: notificationsDao,
+          userPubkey: userPubkey,
+          authHeadersProvider: (url, method, {body}) async {
+            signedUrl = url;
+            return {'Authorization': 'Nostr test-token'};
+          },
+        );
+        stubNotifications([]);
+        stubProfiles({});
+
+        await repository.getNotifications(filter: NotificationKind.listAdd);
+
+        final signedUri = Uri.parse(signedUrl);
+        expect(signedUri.queryParameters['types'], equals('list_add'));
       });
 
       test('comment feed keeps comment-target mentions', () async {
@@ -836,6 +861,42 @@ void main() {
           ),
         ).called(1);
       });
+
+      test(
+        'persists listAdd cache fields without degrading to system',
+        () async {
+          const listCoordinate = '30005:pubkey_alice:literature';
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+          });
+          stubNotifications([
+            makeNotification(
+              id: 'list_add_1',
+              sourceKind: 30005,
+              notificationType: 'list_add',
+              referencedEventId: 'video_1',
+              listTitle: 'Literature',
+              listCoordinate: listCoordinate,
+            ),
+          ]);
+
+          await repository.refresh();
+
+          final rows =
+              verify(
+                    () => notificationsDao.replaceAll(
+                      captureAny(),
+                      ownerPubkey: any(named: 'ownerPubkey'),
+                    ),
+                  ).captured.single
+                  as List<NotificationCacheRow>;
+          final row = rows.singleWhere((r) => r.type != 'seen_marker');
+          expect(row.type, equals('listAdd'));
+          expect(row.targetEventId, equals('video_1'));
+          expect(row.targetPubkey, equals(listCoordinate));
+          expect(row.content, equals('Literature'));
+        },
+      );
 
       test('passes cursor for pagination', () async {
         stubNotifications([], nextCursor: 'cursor_abc', hasMore: true);
@@ -1575,6 +1636,76 @@ void main() {
         final page = await repository.getNotifications();
         final item = page.items.single as VideoNotification;
         expect(item.type, equals(NotificationKind.like));
+      });
+
+      test(
+        'list_add maps to video-anchored listAdd with list context',
+        () async {
+          const listCoordinate = '30005:pubkey_alice:literature';
+          stubNotifications([
+            makeNotification(
+              id: 'list_add_1',
+              sourceKind: 30005,
+              notificationType: 'list_add',
+              referencedEventId: 'video_1',
+              referencedDTag: 'vine-1',
+              listTitle: 'Literature',
+              listCoordinate: listCoordinate,
+            ),
+          ]);
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+          });
+
+          final page = await repository.getNotifications();
+
+          final item = page.items.single as VideoNotification;
+          expect(item.type, equals(NotificationKind.listAdd));
+          expect(item.videoEventId, equals('video_1'));
+          expect(item.videoAddressableId, equals('34236:$userPubkey:vine-1'));
+          expect(item.listTitle, equals('Literature'));
+          expect(item.listCoordinate, equals(listCoordinate));
+          expect(item.actors.single.displayName, equals('Alice'));
+        },
+      );
+
+      test('list_add groups multiple videos by list coordinate', () async {
+        const listCoordinate = '30005:pubkey_alice:literature';
+        stubNotifications([
+          makeNotification(
+            id: 'list_add_1',
+            sourceEventId: 'list_evt_1',
+            sourceKind: 30005,
+            notificationType: 'list_add',
+            referencedEventId: 'video_1',
+            listTitle: 'Literature',
+            listCoordinate: listCoordinate,
+            createdAt: DateTime(2026, 1, 2),
+          ),
+          makeNotification(
+            id: 'list_add_2',
+            sourceEventId: 'list_evt_2',
+            sourceKind: 30005,
+            notificationType: 'list_add',
+            referencedEventId: 'video_2',
+            listTitle: 'Literature',
+            listCoordinate: listCoordinate,
+            createdAt: DateTime(2026, 1, 1, 1),
+          ),
+        ]);
+        stubProfiles({
+          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+        });
+
+        final page = await repository.getNotifications();
+
+        final item = page.items.single as VideoNotification;
+        expect(item.type, equals(NotificationKind.listAdd));
+        expect(item.totalCount, equals(2));
+        expect(item.actors, hasLength(1));
+        expect(item.videoEventId, equals('video_1'));
+        expect(item.sourceEventIds, equals(['list_evt_1', 'list_evt_2']));
+        expect(item.notificationIds, equals(['list_add_1', 'list_add_2']));
       });
 
       test('reaction with a target comment maps to likeComment even when '
@@ -2855,6 +2986,53 @@ void main() {
               (p) => p.items.length == 1 && p.items.first.id == 'cached_1',
               'snapshot contains the hydrated row',
             ),
+          ),
+        );
+      });
+
+      test('hydrates listAdd rows with list context from cache', () async {
+        const listCoordinate = '30005:cached_actor:literature';
+        when(
+          () => notificationsDao.getAllNotifications(
+            limit: any(named: 'limit'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            NotificationRow(
+              id: 'cached_list_add',
+              type: 'listAdd',
+              fromPubkey: 'cached_actor',
+              timestamp: 1700000000,
+              targetEventId: 'cached_video',
+              targetPubkey: listCoordinate,
+              content: 'Literature',
+              hasCommentTarget: false,
+              isRead: false,
+              cachedAt: DateTime(2026),
+            ),
+          ],
+        );
+
+        final hydrated = NotificationRepository(
+          funnelcakeApiClient: funnelcakeApiClient,
+          profileRepository: profileRepository,
+          notificationsDao: notificationsDao,
+          userPubkey: userPubkey,
+        );
+        addTearDown(hydrated.close);
+
+        await expectLater(
+          hydrated.watchSnapshot(),
+          emitsThrough(
+            predicate<NotificationPage>((p) {
+              if (p.items.singleOrNull case final VideoNotification item) {
+                return item.type == NotificationKind.listAdd &&
+                    item.listTitle == 'Literature' &&
+                    item.listCoordinate == listCoordinate;
+              }
+              return false;
+            }, 'snapshot contains hydrated listAdd row'),
           ),
         );
       });

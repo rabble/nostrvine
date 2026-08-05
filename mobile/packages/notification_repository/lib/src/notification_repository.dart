@@ -728,6 +728,10 @@ class NotificationRepository {
         timestamp: timestamp,
         isRead: row.isRead,
         commentText: videoKind == NotificationKind.comment ? row.content : null,
+        listTitle: videoKind == NotificationKind.listAdd ? row.content : null,
+        listCoordinate: videoKind == NotificationKind.listAdd
+            ? _nonEmpty(row.targetPubkey)
+            : null,
         notificationIds: row.id.isNotEmpty ? [row.id] : const [],
         // sourceEventIds intentionally empty — the cache stores only the
         // persisted row id and the videoEventId (`targetEventId`), not the
@@ -764,6 +768,7 @@ class NotificationRepository {
         'videoMention' => NotificationKind.mention,
         'repost' => NotificationKind.repost,
         'newPost' => NotificationKind.newPost,
+        'listAdd' => NotificationKind.listAdd,
         _ => null,
       };
 
@@ -812,6 +817,22 @@ class NotificationRepository {
       content,
       hasCommentTarget,
     ) = switch (item) {
+      VideoNotification(
+        type: NotificationKind.listAdd,
+        :final actors,
+        :final videoEventId,
+        :final videoAddressableId,
+        :final listTitle,
+        :final listCoordinate,
+      ) =>
+        (
+          actors.isNotEmpty ? actors.first.pubkey : '',
+          videoEventId,
+          videoAddressableId,
+          listCoordinate,
+          listTitle,
+          false,
+        ),
       VideoNotification(
         :final actors,
         :final videoEventId,
@@ -874,6 +895,7 @@ class NotificationRepository {
     NotificationKind.reply => 'reply',
     NotificationKind.system => 'system',
     NotificationKind.newPost => 'newPost',
+    NotificationKind.listAdd => 'listAdd',
   };
 
   static List<String>? _serverTypesForFilter(NotificationKind? filter) =>
@@ -886,8 +908,9 @@ class NotificationRepository {
         NotificationKind.mention => const ['mention'],
         NotificationKind.likeComment => const ['reaction', 'zap'],
         NotificationKind.reply => const ['reply'],
-        NotificationKind.system => const ['list_add'],
+        NotificationKind.system => const ['system'],
         NotificationKind.newPost => const ['newPost'],
+        NotificationKind.listAdd => const ['list_add'],
       };
 
   static final math.Random _jitter = math.Random();
@@ -1177,7 +1200,7 @@ class NotificationRepository {
     for (var i = 0; i < result.length; i++) {
       final item = result[i];
       if (item is VideoNotification) {
-        videoGroupIndex[(item.videoEventId, item.type)] = i;
+        videoGroupIndex[_snapshotVideoGroupKey(item)] = i;
       } else if (item is ActorNotification &&
           item.type == NotificationKind.follow) {
         followIndex[item.actor.pubkey] = i;
@@ -1188,7 +1211,7 @@ class NotificationRepository {
     // valid for the `result[idx] = …` merges below.
     for (final item in incoming) {
       if (item is VideoNotification) {
-        final idx = videoGroupIndex[(item.videoEventId, item.type)];
+        final idx = videoGroupIndex[_snapshotVideoGroupKey(item)];
         if (idx != null) {
           result[idx] = _mergeAppendedVideoGroup(
             result[idx] as VideoNotification,
@@ -1220,11 +1243,23 @@ class NotificationRepository {
       result.add(item);
       allSourceEventIds.addAll(item.sourceEventIds);
       allIds.add(item.id);
+      if (item is VideoNotification) {
+        videoGroupIndex[_snapshotVideoGroupKey(item)] = result.length - 1;
+      }
       if (item is ActorNotification && item.type == NotificationKind.follow) {
         followIndex[item.actor.pubkey] = result.length - 1;
       }
     }
     return result;
+  }
+
+  static (String, NotificationKind) _snapshotVideoGroupKey(
+    VideoNotification item,
+  ) {
+    final groupId = item.type == NotificationKind.listAdd
+        ? _nonEmpty(item.listCoordinate) ?? item.videoEventId
+        : item.videoEventId;
+    return (groupId, item.type);
   }
 
   static ActorNotification _mergeAppendedFollow(
@@ -1317,6 +1352,10 @@ class NotificationRepository {
       videoAddressableId:
           _nonEmpty(existing.videoAddressableId) ??
           _nonEmpty(incoming.videoAddressableId),
+      listTitle: _nonEmpty(existing.listTitle) ?? _nonEmpty(incoming.listTitle),
+      listCoordinate:
+          _nonEmpty(existing.listCoordinate) ??
+          _nonEmpty(incoming.listCoordinate),
       commentText: mergedCommentText,
     );
   }
@@ -1645,6 +1684,16 @@ class NotificationRepository {
           videoAddressableId: addressableId,
           videoThumbnailUrl: thumbnailUrl,
           videoTitle: videoTitle,
+          listTitle: entry.key.kind == NotificationKind.listAdd
+              ? group
+                    .map((n) => n.listTitle)
+                    .firstWhere((t) => t != null, orElse: () => null)
+              : null,
+          listCoordinate: entry.key.kind == NotificationKind.listAdd
+              ? group
+                    .map((n) => n.listCoordinate)
+                    .firstWhere((c) => c != null, orElse: () => null)
+              : null,
           actors: actors,
           totalCount: totalCount,
           timestamp: group.first.createdAt,
@@ -1668,7 +1717,8 @@ class NotificationRepository {
       kind == NotificationKind.like ||
       kind == NotificationKind.comment ||
       kind == NotificationKind.repost ||
-      kind == NotificationKind.newPost;
+      kind == NotificationKind.newPost ||
+      kind == NotificationKind.listAdd;
 
   static bool _isVideoAnchoredNotification(
     NotificationKind kind,
@@ -2195,6 +2245,7 @@ class NotificationRepository {
       'repost' => NotificationKind.repost,
       'mention' => NotificationKind.mention,
       'newPost' => NotificationKind.newPost,
+      'list_add' => NotificationKind.listAdd,
       'follow' || 'contact' => NotificationKind.follow,
       _ when n.sourceKind == 6 => NotificationKind.repost,
       _ when n.sourceKind == 16 => NotificationKind.repost,
@@ -2216,6 +2267,9 @@ class NotificationRepository {
   }) {
     if (kind == NotificationKind.mention && _isVideoSourcedMention(n)) {
       return _trustedSourceRootAddressableId(n, video: video) ?? eventId;
+    }
+    if (kind == NotificationKind.listAdd) {
+      return _nonEmpty(n.listCoordinate) ?? eventId;
     }
     return eventId;
   }
@@ -2269,6 +2323,9 @@ class NotificationRepository {
       if (n.rootEventId != null && n.rootEventId!.isNotEmpty) {
         return n.rootEventId;
       }
+    }
+    if (kind == NotificationKind.listAdd) {
+      return _nonEmpty(n.referencedEventId) ?? _nonEmpty(n.rootEventId);
     }
     return n.referencedEventId;
   }

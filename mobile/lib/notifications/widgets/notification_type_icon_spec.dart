@@ -64,6 +64,11 @@ NotificationTypeIconSpec notificationTypeIconSpec(
       background: VineTheme.accentBlueBackground,
       foreground: VineTheme.accentBlue,
     ),
+    NotificationKind.listAdd => const NotificationTypeIconSpec(
+      icon: DivineIconName.listPlus,
+      background: VineTheme.accentYellowBackground,
+      foreground: VineTheme.accentYellow,
+    ),
     NotificationKind.system => const NotificationTypeIconSpec(
       icon: DivineIconName.logo,
       background: VineTheme.onPrimaryButton,

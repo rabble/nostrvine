@@ -247,6 +247,7 @@ String _messageFor(
     NotificationKind.like ||
     NotificationKind.comment ||
     NotificationKind.repost ||
-    NotificationKind.newPost => '',
+    NotificationKind.newPost ||
+    NotificationKind.listAdd => '',
   };
 }

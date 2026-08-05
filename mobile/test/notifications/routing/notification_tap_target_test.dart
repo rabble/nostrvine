@@ -33,6 +33,7 @@ void main() {
       NotificationKind.repost,
       NotificationKind.follow,
       NotificationKind.system,
+      NotificationKind.listAdd,
     ]) {
       test('is false for $kind', () {
         expect(notificationKindOpensComments(kind), isFalse);
@@ -60,6 +61,13 @@ void main() {
       expect(notificationKindFromPushType('newPost'), NotificationKind.newPost);
     });
 
+    test('maps the inbox list_add type', () {
+      expect(
+        notificationKindFromPushType('list_add'),
+        NotificationKind.listAdd,
+      );
+    });
+
     test('routes a newPost tap to the video, not the profile', () {
       expect(
         resolveNotificationTapTarget(
@@ -80,6 +88,31 @@ void main() {
       expect(notificationKindFromPushType('zap'), isNull);
       expect(notificationKindFromPushType(null), isNull);
       expect(notificationKindFromPushType(''), isNull);
+    });
+  });
+
+  group('listTargetFromCoordinate', () {
+    test('parses kind 30005 list coordinates', () {
+      expect(
+        listTargetFromCoordinate('30005:pubkey_alice:literature'),
+        const OpenListTarget(pubkey: 'pubkey_alice', listId: 'literature'),
+      );
+    });
+
+    test('keeps colons in the list d-tag', () {
+      expect(
+        listTargetFromCoordinate('30005:pubkey_alice:lit:erature'),
+        const OpenListTarget(pubkey: 'pubkey_alice', listId: 'lit:erature'),
+      );
+    });
+
+    test('rejects malformed and non-list coordinates', () {
+      expect(listTargetFromCoordinate(null), isNull);
+      expect(listTargetFromCoordinate(''), isNull);
+      expect(listTargetFromCoordinate('34236:pubkey:dtag'), isNull);
+      expect(listTargetFromCoordinate('30005::dtag'), isNull);
+      expect(listTargetFromCoordinate('30005:pubkey:'), isNull);
+      expect(listTargetFromCoordinate('not-a-coordinate'), isNull);
     });
   });
 
@@ -117,6 +150,31 @@ void main() {
         const OpenInboxTarget(),
       );
     });
+
+    test('listAdd with a valid list coordinate opens the list', () {
+      expect(
+        resolveNotificationTapTarget(
+          kind: NotificationKind.listAdd,
+          hasVideoTarget: true,
+          listCoordinate: '30005:pubkey_alice:literature',
+        ),
+        const OpenListTarget(pubkey: 'pubkey_alice', listId: 'literature'),
+      );
+    });
+
+    test(
+      'listAdd without a valid list coordinate falls back to video target',
+      () {
+        expect(
+          resolveNotificationTapTarget(
+            kind: NotificationKind.listAdd,
+            hasVideoTarget: true,
+            listCoordinate: '34236:pubkey_alice:video',
+          ),
+          const OpenVideoTarget(autoOpenComments: false),
+        );
+      },
+    );
 
     test(
       'like / repost with a video target open the video without comments',

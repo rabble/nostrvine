@@ -32,15 +32,16 @@ void main() {
         await _pumpScenario(
           tester,
           textScaleFactor: 1,
-          surfaceSize: const Size(420, 560),
+          surfaceSize: const Size(420, 680),
         );
 
         expect(find.byType(ActorNotificationRow), findsOneWidget);
-        expect(find.byType(VideoNotificationRow), findsOneWidget);
+        expect(find.byType(VideoNotificationRow), findsNWidgets(2));
         expect(find.text(_l10n.notificationFollowBack), findsOneWidget);
+        expect(find.textContaining('Literature'), findsOneWidget);
         expect(
           find.byType(NotificationVideoThumbnail),
-          findsOneWidget,
+          findsNWidgets(2),
           reason: 'Default layout should keep the thumbnail inline.',
         );
         final actorAvatar = find.descendant(
@@ -56,13 +57,15 @@ void main() {
           reason: 'Default layout should keep Follow back inline with avatar.',
         );
         final message = tester.getTopLeft(
-          find.descendant(
-            of: find.byType(VideoNotificationRow),
-            matching: find.textContaining('Alice'),
-          ),
+          find
+              .descendant(
+                of: find.byType(VideoNotificationRow),
+                matching: find.textContaining('Alice'),
+              )
+              .first,
         );
         final thumbnail = tester.getTopLeft(
-          find.byType(NotificationVideoThumbnail),
+          find.byType(NotificationVideoThumbnail).first,
         );
         expect(
           thumbnail.dy,
@@ -78,15 +81,16 @@ void main() {
         await _pumpScenario(
           tester,
           textScaleFactor: 2,
-          surfaceSize: const Size(420, 1200),
+          surfaceSize: const Size(420, 1400),
         );
 
         expect(find.byType(ActorNotificationRow), findsOneWidget);
-        expect(find.byType(VideoNotificationRow), findsOneWidget);
+        expect(find.byType(VideoNotificationRow), findsNWidgets(2));
         expect(find.text(_l10n.notificationFollowBack), findsOneWidget);
+        expect(find.textContaining('Literature'), findsOneWidget);
         expect(
           find.byType(NotificationVideoThumbnail),
-          findsOneWidget,
+          findsNWidgets(2),
           reason: 'Large-text layout should still render the thumbnail.',
         );
         final actorAvatar = find.descendant(
@@ -101,13 +105,15 @@ void main() {
           reason: 'Large-text layout should stack Follow back below avatar.',
         );
         final message = tester.getTopLeft(
-          find.descendant(
-            of: find.byType(VideoNotificationRow),
-            matching: find.textContaining('Alice'),
-          ),
+          find
+              .descendant(
+                of: find.byType(VideoNotificationRow),
+                matching: find.textContaining('Alice'),
+              )
+              .first,
         );
         final thumbnail = tester.getTopLeft(
-          find.byType(NotificationVideoThumbnail),
+          find.byType(NotificationVideoThumbnail).first,
         );
         expect(
           thumbnail.dy,
@@ -139,6 +145,19 @@ Widget _scenarioColumn({required double textScaleFactor}) {
     commentText:
         'This is a longer preview comment that should still render cleanly.',
   );
+  final listAddNotification = VideoNotification(
+    id: 'list-add-1',
+    type: NotificationKind.listAdd,
+    videoEventId:
+        '2222222222222222222222222222222222222222222222222222222222222222',
+    actors: const [_alice],
+    totalCount: 1,
+    timestamp: _notificationTimestamp,
+    videoTitle: 'A vine that found a new shelf',
+    listTitle: 'Literature',
+    listCoordinate:
+        '30005:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:literature',
+  );
 
   return Column(
     mainAxisSize: MainAxisSize.min,
@@ -157,6 +176,16 @@ Widget _scenarioColumn({required double textScaleFactor}) {
         textScaleFactor: textScaleFactor,
         child: VideoNotificationRow(
           notification: videoNotification,
+          onTap: () {},
+          onProfileTap: () {},
+          onThumbnailTap: () {},
+        ),
+      ),
+      const SizedBox(height: 16),
+      _scenario(
+        textScaleFactor: textScaleFactor,
+        child: VideoNotificationRow(
+          notification: listAddNotification,
           onTap: () {},
           onProfileTap: () {},
           onThumbnailTap: () {},

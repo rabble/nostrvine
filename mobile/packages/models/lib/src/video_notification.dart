@@ -26,15 +26,18 @@ class VideoNotification extends NotificationItem {
     this.videoTitle,
     this.videoAddressableId,
     this.commentText,
+    this.listTitle,
+    this.listCoordinate,
   }) : assert(
          type == NotificationKind.like ||
              type == NotificationKind.likeComment ||
              type == NotificationKind.comment ||
              type == NotificationKind.mention ||
              type == NotificationKind.repost ||
-             type == NotificationKind.newPost,
+             type == NotificationKind.newPost ||
+             type == NotificationKind.listAdd,
          'VideoNotification only supports like, likeComment, comment, '
-         'mention, repost, newPost',
+         'mention, repost, newPost, listAdd',
        ),
        assert(actors.length > 0, 'must have at least one actor'),
        assert(
@@ -75,6 +78,12 @@ class VideoNotification extends NotificationItem {
   /// text.
   final String? commentText;
 
+  /// Title of the public curated list for [NotificationKind.listAdd].
+  final String? listTitle;
+
+  /// Full kind-30005 coordinate for the public curated list.
+  final String? listCoordinate;
+
   /// Returns a copy with the given fields replaced.
   VideoNotification copyWith({
     String? id,
@@ -88,6 +97,8 @@ class VideoNotification extends NotificationItem {
     DateTime? timestamp,
     bool? isRead,
     String? commentText,
+    String? listTitle,
+    String? listCoordinate,
     List<String>? sourceEventIds,
     List<String>? notificationIds,
   }) {
@@ -103,6 +114,8 @@ class VideoNotification extends NotificationItem {
       timestamp: timestamp ?? this.timestamp,
       isRead: isRead ?? this.isRead,
       commentText: commentText ?? this.commentText,
+      listTitle: listTitle ?? this.listTitle,
+      listCoordinate: listCoordinate ?? this.listCoordinate,
       sourceEventIds: sourceEventIds ?? this.sourceEventIds,
       notificationIds: notificationIds ?? this.notificationIds,
     );
@@ -121,6 +134,8 @@ class VideoNotification extends NotificationItem {
     timestamp,
     isRead,
     commentText,
+    listTitle,
+    listCoordinate,
     sourceEventIds,
     notificationIds,
   ];

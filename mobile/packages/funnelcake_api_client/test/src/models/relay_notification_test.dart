@@ -197,6 +197,57 @@ void main() {
         expect(notification.referencedDTag, isNull);
       });
 
+      test('parses list_add list context', () {
+        final json = {
+          'id': 'notif_123',
+          'source_pubkey': 'aabbccdd' * 8,
+          'source_event_id': '11223344' * 8,
+          'source_kind': 30005,
+          'referenced_event_id': '55667788' * 8,
+          'notification_type': 'list_add',
+          'created_at': 1712345678,
+          'read': false,
+          'list_title': 'Literature',
+          'list_coordinate': '30005:${'aabbccdd' * 8}:literature',
+        };
+
+        final notification = RelayNotification.fromJson(json);
+
+        expect(notification.listTitle, equals('Literature'));
+        expect(
+          notification.listCoordinate,
+          equals('30005:${'aabbccdd' * 8}:literature'),
+        );
+      });
+
+      test('treats absent and empty list_add context as null', () {
+        final absent = RelayNotification.fromJson({
+          'id': 'notif_123',
+          'source_pubkey': 'aabbccdd' * 8,
+          'source_event_id': '11223344' * 8,
+          'source_kind': 30005,
+          'notification_type': 'list_add',
+          'created_at': 1712345678,
+          'read': false,
+        });
+        final empty = RelayNotification.fromJson({
+          'id': 'notif_123',
+          'source_pubkey': 'aabbccdd' * 8,
+          'source_event_id': '11223344' * 8,
+          'source_kind': 30005,
+          'notification_type': 'list_add',
+          'created_at': 1712345678,
+          'read': false,
+          'list_title': '',
+          'list_coordinate': '',
+        });
+
+        expect(absent.listTitle, isNull);
+        expect(absent.listCoordinate, isNull);
+        expect(empty.listTitle, isNull);
+        expect(empty.listCoordinate, isNull);
+      });
+
       test('parses thumbnail from referenced_video.thumbnail', () {
         final json = {
           'id': 'notif_123',

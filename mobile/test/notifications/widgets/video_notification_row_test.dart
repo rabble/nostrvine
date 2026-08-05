@@ -39,6 +39,8 @@ VideoNotification _video({
   String? videoThumbnailUrl,
   String? videoTitle,
   String? commentText,
+  String? listTitle,
+  String? listCoordinate,
   bool isRead = false,
 }) {
   return VideoNotification(
@@ -52,6 +54,8 @@ VideoNotification _video({
     videoThumbnailUrl: videoThumbnailUrl,
     videoTitle: videoTitle,
     commentText: commentText,
+    listTitle: listTitle,
+    listCoordinate: listCoordinate,
     isRead: isRead,
   );
 }
@@ -170,6 +174,49 @@ void main() {
             '${_l10n.notificationOthersCount(49)} $verb',
           ),
           findsOneWidget,
+        );
+      });
+
+      testWidgets('listAdd message names the curated list', (tester) async {
+        await _pump(
+          tester,
+          notification: _video(
+            type: NotificationKind.listAdd,
+            listTitle: 'Literature',
+            listCoordinate: '30005:${_alice.pubkey}:literature',
+          ),
+        );
+
+        expect(
+          find.textContaining(
+            _l10n.notificationAddedYourVideoToList('Alice', 'Literature'),
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('grouped listAdd counts videos, not other actors', (
+        tester,
+      ) async {
+        await _pump(
+          tester,
+          notification: _video(
+            type: NotificationKind.listAdd,
+            totalCount: 3,
+            listTitle: 'Literature',
+            listCoordinate: '30005:${_alice.pubkey}:literature',
+          ),
+        );
+
+        expect(
+          find.textContaining(
+            _l10n.notificationAddedYourVideosToList('Alice', 3, 'Literature'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining(_l10n.notificationOthersCount(2)),
+          findsNothing,
         );
       });
 

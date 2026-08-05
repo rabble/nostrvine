@@ -36,6 +36,25 @@ void main() {
         );
       });
 
+      test('accepts listAdd with curated-list context', () {
+        final notification = VideoNotification(
+          id: 'n1',
+          type: NotificationKind.listAdd,
+          videoEventId: 'v1',
+          actors: [actorAlice],
+          totalCount: 1,
+          timestamp: timestamp,
+          listTitle: 'Literature',
+          listCoordinate: '30005:${actorAlice.pubkey}:literature',
+        );
+
+        expect(notification.listTitle, equals('Literature'));
+        expect(
+          notification.listCoordinate,
+          equals('30005:${actorAlice.pubkey}:literature'),
+        );
+      });
+
       test('exposes optional commentText for comment kind', () {
         // Comment notifications carry an excerpt of the most recent
         // comment so the row can quote it under the message text.
@@ -167,6 +186,27 @@ void main() {
         final updated = original.copyWith(isRead: true);
 
         expect(updated.commentText, equals('Original comment'));
+      });
+
+      test('preserves list context when not overridden', () {
+        final original = VideoNotification(
+          id: 'n1',
+          type: NotificationKind.listAdd,
+          videoEventId: 'v1',
+          actors: [actorAlice],
+          totalCount: 1,
+          timestamp: timestamp,
+          listTitle: 'Literature',
+          listCoordinate: '30005:${actorAlice.pubkey}:literature',
+        );
+
+        final updated = original.copyWith(isRead: true);
+
+        expect(updated.listTitle, equals('Literature'));
+        expect(
+          updated.listCoordinate,
+          equals('30005:${actorAlice.pubkey}:literature'),
+        );
       });
     });
 

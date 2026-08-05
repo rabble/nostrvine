@@ -196,6 +196,45 @@ class _MessageText extends StatelessWidget {
     final videoTitle = notification.videoTitle;
     final othersCount = notification.totalCount - 1;
 
+    if (type == NotificationKind.listAdd) {
+      final listName = notification.listTitle?.isNotEmpty == true
+          ? notification.listTitle!
+          : l10n.routeDefaultListName;
+      final fullText = notification.totalCount > 1
+          ? l10n.notificationAddedYourVideosToList(
+              actors.first.displayName,
+              notification.totalCount,
+              listName,
+            )
+          : l10n.notificationAddedYourVideoToList(
+              actors.first.displayName,
+              listName,
+            );
+      spans.addAll(
+        _localizedActorAndListSentenceSpans(
+          fullText: fullText,
+          actorName: actors.first.displayName,
+          listName: listName,
+          colors: context.vineColors,
+        ),
+      );
+      final ts = timestamp;
+      if (ts != null && ts.isNotEmpty) {
+        spans.add(
+          TextSpan(
+            text: ' $ts',
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.onSurfaceMuted,
+            ),
+          ),
+        );
+      }
+      return Text.rich(
+        TextSpan(children: spans),
+        textScaler: MediaQuery.textScalerOf(context),
+      );
+    }
+
     if (othersCount == 0) {
       spans.addAll(
         localizedActorSentenceSpans(
@@ -300,9 +339,11 @@ String _verbFor(AppLocalizations l10n, NotificationKind type) {
     NotificationKind.mention => l10n.notificationMentionedYou('').trimLeft(),
     NotificationKind.newPost => l10n.notificationPostedNewVine('').trimLeft(),
     // VideoNotification asserts type ∈ {like, likeComment, comment, mention,
-    // repost, newPost}; the remaining cases satisfy switch exhaustivity only.
+    // repost, newPost, listAdd}; the remaining cases satisfy switch
+    // exhaustivity only.
     NotificationKind.reply ||
     NotificationKind.follow ||
+    NotificationKind.listAdd ||
     NotificationKind.system => '',
   };
 }
@@ -325,6 +366,43 @@ String _messageFor(
     NotificationKind.newPost => l10n.notificationPostedNewVine(actorName),
     NotificationKind.reply ||
     NotificationKind.follow ||
+    NotificationKind.listAdd ||
     NotificationKind.system => '',
   };
+}
+
+List<InlineSpan> _localizedActorAndListSentenceSpans({
+  required String fullText,
+  required String actorName,
+  required String listName,
+  required VineThemeColors colors,
+}) {
+  final bodyStyle = VineTheme.bodyMediumFont(color: colors.primaryText);
+  final boldStyle = VineTheme.labelLargeFont(color: colors.primaryText);
+  final actorStart = fullText.indexOf(actorName);
+  if (actorName.isEmpty || actorStart < 0) {
+    return [TextSpan(text: fullText, style: bodyStyle)];
+  }
+
+  final actorEnd = actorStart + actorName.length;
+  final listStart = fullText.indexOf(listName, actorEnd);
+  if (listName.isEmpty || listStart < 0) {
+    return localizedActorSentenceSpans(
+      fullText: fullText,
+      actorName: actorName,
+      colors: colors,
+    );
+  }
+
+  final listEnd = listStart + listName.length;
+  return [
+    if (actorStart > 0)
+      TextSpan(text: fullText.substring(0, actorStart), style: bodyStyle),
+    TextSpan(text: actorName, style: boldStyle),
+    if (actorEnd < listStart)
+      TextSpan(text: fullText.substring(actorEnd, listStart), style: bodyStyle),
+    TextSpan(text: listName, style: boldStyle),
+    if (listEnd < fullText.length)
+      TextSpan(text: fullText.substring(listEnd), style: bodyStyle),
+  ];
 }

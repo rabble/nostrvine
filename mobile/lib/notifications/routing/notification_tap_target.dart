@@ -6,6 +6,8 @@ import 'package:models/models.dart' show NIP71VideoKinds, NotificationKind;
 import 'package:openvine/services/notification_helpers.dart'
     show parseAddressableId;
 
+const int _curatedListKind = 30005;
+
 /// Normalized destination for a notification tap.
 ///
 /// Built from either a `NotificationItem` (in-app row tap) or a push/local
@@ -53,6 +55,20 @@ class OpenProfileTarget extends NotificationTapTarget {
   List<Object?> get props => [actorPubkey];
 }
 
+/// Open a public curated list by its author and d-tag.
+class OpenListTarget extends NotificationTapTarget {
+  const OpenListTarget({required this.pubkey, required this.listId});
+
+  /// Hex pubkey of the list author.
+  final String pubkey;
+
+  /// The list's `d` tag.
+  final String listId;
+
+  @override
+  List<Object?> get props => [pubkey, listId];
+}
+
 /// Deterministic safe fallback: open the notifications inbox.
 ///
 /// Used when a tap carries no resolvable video target and no actor pubkey, so
@@ -84,9 +100,9 @@ bool notificationKindOpensComments(
 ///
 /// `divine-push-service` sends a lowercase vocabulary
 /// (`like`/`comment`/`follow`/`mention`/`repost`) plus the camelCase
-/// `newPost`, which matches that service's `NotificationType::display_name()`
-/// exactly — the string is a wire contract, not a display value. It never
-/// sends `reply`, `likeComment`, or `system`. Unknown / absent values return
+/// `newPost`; Funnelcake inbox rows also use `list_add`. The string is a wire
+/// contract, not a display value. It never sends `reply`, `likeComment`, or
+/// `system`. Unknown / absent values return
 /// `null`, which [resolveNotificationTapTarget] treats as a best-effort
 /// video/profile/inbox tap.
 NotificationKind? notificationKindFromPushType(String? type) {
@@ -103,11 +119,23 @@ NotificationKind? notificationKindFromPushType(String? type) {
       return NotificationKind.repost;
     case 'newPost':
       return NotificationKind.newPost;
+    case 'list_add':
+      return NotificationKind.listAdd;
     default:
       // Keep unknown values non-fatal: a mistyped or legacy-cased payload
       // should still fall back to the best available target.
       return null;
   }
+}
+
+/// Parses a public curated-list coordinate into an in-app route target.
+OpenListTarget? listTargetFromCoordinate(String? listCoordinate) {
+  if (listCoordinate == null || listCoordinate.isEmpty) return null;
+  final parsed = parseAddressableId(listCoordinate);
+  if (parsed == null) return null;
+  if (parsed.kind != _curatedListKind) return null;
+  if (parsed.pubkey.isEmpty || parsed.dTag.isEmpty) return null;
+  return OpenListTarget(pubkey: parsed.pubkey, listId: parsed.dTag);
 }
 
 /// Returns [referencedAddress] when it is a usable video coordinate, else null.
@@ -151,7 +179,12 @@ NotificationTapTarget resolveNotificationTapTarget({
   required bool hasVideoTarget,
   bool hasCommentTarget = false,
   String? actorPubkey,
+  String? listCoordinate,
 }) {
+  if (kind == NotificationKind.listAdd) {
+    final listTarget = listTargetFromCoordinate(listCoordinate);
+    if (listTarget != null) return listTarget;
+  }
   if (kind == NotificationKind.follow) {
     return _profileOrInbox(actorPubkey);
   }
