@@ -11,6 +11,8 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/relay_list_repository_provider.dart';
+import 'package:openvine/repositories/relay_list_repository.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
@@ -18,6 +20,22 @@ import 'package:openvine/services/video_event_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockNostrService extends Mock implements NostrClient {}
+
+/// The real provider reaches AuthService and SharedPreferences, which this
+/// layout-focused suite does not wire up. Publishing always succeeds here so
+/// the assertions stay about the screen.
+class _FakeRelayListRepository implements RelayListRepository {
+  @override
+  Future<RelayListPublishResult> publishConfiguredRelayList() async =>
+      const RelayListPublishResult.published();
+
+  @override
+  Future<RelayListPublishResult> retryDirtyPublish() async =>
+      const RelayListPublishResult.published();
+
+  @override
+  bool isDirty(String pubkey) => false;
+}
 
 class _MockRelayCapabilityService extends Mock
     implements RelayCapabilityService {}
@@ -70,6 +88,9 @@ void main() {
           relayStatisticsStreamProvider.overrideWith(
             (_) => Stream.value({'wss://relay.divine.video': stats}),
           ),
+          relayListRepositoryProvider.overrideWithValue(
+            _FakeRelayListRepository(),
+          ),
           videoEventServiceProvider.overrideWithValue(videoEventService),
         ],
       );
@@ -120,6 +141,9 @@ void main() {
         relayStatisticsServiceProvider.overrideWithValue(statsService),
         relayStatisticsStreamProvider.overrideWith(
           (_) => Stream.value({defaultRelay: stats}),
+        ),
+        relayListRepositoryProvider.overrideWithValue(
+          _FakeRelayListRepository(),
         ),
         videoEventServiceProvider.overrideWithValue(videoEventService),
       ],
@@ -187,6 +211,9 @@ void main() {
         relayStatisticsStreamProvider.overrideWith(
           (_) => Stream.value({customRelay: stats}),
         ),
+        relayListRepositoryProvider.overrideWithValue(
+          _FakeRelayListRepository(),
+        ),
         videoEventServiceProvider.overrideWithValue(videoEventService),
       ],
     );
@@ -245,6 +272,9 @@ void main() {
           relayStatisticsServiceProvider.overrideWithValue(statsService),
           relayStatisticsStreamProvider.overrideWith(
             (_) => const Stream<Map<String, RelayStatistics>>.empty(),
+          ),
+          relayListRepositoryProvider.overrideWithValue(
+            _FakeRelayListRepository(),
           ),
           videoEventServiceProvider.overrideWithValue(videoEventService),
         ],
