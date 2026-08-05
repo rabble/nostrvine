@@ -73,6 +73,41 @@ void main() {
       expect(IdentityClaimsRepository.parseClaims(_pubkey, tags), isEmpty);
     });
 
+    test('skips i tags whose claims fail the verifier contract', () {
+      final longIdentity = List.filled(
+        IdentityClaim.maxServerTextLength + 1,
+        'a',
+      ).join();
+      final tags = [
+        ['i', 'github:bad"identity', 'abc'],
+        ['i', 'github:bad<identity', 'abc'],
+        ['i', 'github:bad${String.fromCharCode(1)}identity', 'abc'],
+        ['i', 'github:$longIdentity', 'abc'],
+        ['i', 'github:octocat', 'bad>proof'],
+      ];
+      expect(IdentityClaimsRepository.parseClaims(_pubkey, tags), isEmpty);
+    });
+
+    test('skips unsupported verifier platforms', () {
+      final tags = [
+        ['i', 'reddit:octocat', 'abc'],
+        ['i', 'github:octocat', 'abc'],
+      ];
+      final claims = IdentityClaimsRepository.parseClaims(_pubkey, tags);
+      expect(claims, hasLength(1));
+      expect(claims.single.platform, equals('github'));
+    });
+
+    test('keeps bluesky claims with blank proof', () {
+      final tags = [
+        ['i', 'bluesky:octocat.bsky.social', ''],
+      ];
+      final claims = IdentityClaimsRepository.parseClaims(_pubkey, tags);
+      expect(claims, hasLength(1));
+      expect(claims.single.platform, equals('bluesky'));
+      expect(claims.single.proof, isEmpty);
+    });
+
     test('skips empty tag entries', () {
       final tags = [
         <String>[],
@@ -86,7 +121,7 @@ void main() {
 
     test('dedupes by case-insensitive platform:identity, keeping first', () {
       final tags = [
-        ['i', 'GitHub:Octocat', 'first'],
+        ['i', 'github:Octocat', 'first'],
         ['i', 'github:octocat', 'second'],
       ];
       final claims = IdentityClaimsRepository.parseClaims(_pubkey, tags);
@@ -101,6 +136,29 @@ void main() {
       );
       final claims = IdentityClaimsRepository.parseClaims(_pubkey, tags);
       expect(claims, hasLength(10));
+    });
+
+    test('caps at 10 valid claims after verifier-contract filtering', () {
+      final tags = [
+        ['i', 'github:bad"identity', 'bad>proof'],
+        ...List<List<String>>.generate(
+          10,
+          (i) => ['i', 'github:user$i', 'p$i'],
+        ),
+      ];
+      final claims = IdentityClaimsRepository.parseClaims(_pubkey, tags);
+      expect(claims, hasLength(10));
+      expect(claims.map((claim) => claim.identity), contains('user9'));
+    });
+
+    test('does not let an invalid duplicate block a valid claim', () {
+      final tags = [
+        ['i', 'github:octocat', 'bad>proof'],
+        ['i', 'github:octocat', 'abc'],
+      ];
+      final claims = IdentityClaimsRepository.parseClaims(_pubkey, tags);
+      expect(claims, hasLength(1));
+      expect(claims.single.proof, equals('abc'));
     });
 
     test('attaches the pubkey to each claim', () {
@@ -155,6 +213,40 @@ void main() {
       expect(result.single.platform, equals('github'));
     });
 
+    test('sends only verifier-valid claims to the verifier', () async {
+      when(() => client.verifyBatch(any())).thenAnswer(
+        (_) async => const [
+          VerificationResult(
+            platform: 'github',
+            identity: 'octocat',
+            verified: true,
+            checkedAt: 1,
+            cached: false,
+          ),
+        ],
+      );
+
+      final result = await repo.resolveClaims(
+        pubkey: _pubkey,
+        freshTags: const [
+          [
+            'i',
+            'bluesky:Verifying my account on nostr My Public Key: "npub1"',
+            '',
+          ],
+          ['i', 'github:octocat', 'abc'],
+        ],
+        cached: null,
+      );
+
+      expect(result, hasLength(1));
+      final sent = verify(() => client.verifyBatch(captureAny())).captured;
+      final claims = sent.single as List<IdentityClaim>;
+      expect(claims, hasLength(1));
+      expect(claims.single.platform, equals('github'));
+      expect(claims.single.identity, equals('octocat'));
+    });
+
     test(
       'returns empty and skips the verifier when there are no i tags',
       () async {
@@ -187,12 +279,12 @@ void main() {
       final result = await repo.resolveClaims(
         pubkey: _pubkey,
         freshTags: [
-          ['i', 'GitHub:Octocat', 'a'],
+          ['i', 'github:Octocat', 'a'],
         ],
         cached: null,
       );
       expect(result, hasLength(1));
-      expect(result.single.platform, equals('GitHub'));
+      expect(result.single.platform, equals('github'));
       expect(result.single.identity, equals('Octocat'));
     });
 
@@ -395,13 +487,13 @@ void main() {
         final cached = await repo.cachedVerifiedClaims(
           pubkey: _pubkey,
           tags: [
-            ['i', 'GitHub:Octocat', 'a'],
+            ['i', 'github:Octocat', 'a'],
             ['i', 'twitter:unverified', 'b'],
           ],
         );
         expect(cached, isNotNull);
         expect(cached!.claims, hasLength(1));
-        expect(cached.claims.single.platform, equals('GitHub'));
+        expect(cached.claims.single.platform, equals('github'));
         expect(cached.isFresh, isTrue);
       },
     );
@@ -876,7 +968,7 @@ void main() {
         final result = await repo.resolveClaims(
           pubkey: _pubkey,
           freshTags: [
-            ['i', 'GitHub:Octocat', 'new-proof'],
+            ['i', 'github:Octocat', 'new-proof'],
           ],
           cached: null,
           renderedClaims: const [renderedClaim],
