@@ -30,6 +30,7 @@ class BrokenVideoTracker {
 
   Future<void> initialize() async {
     _prefs = await SharedPreferences.getInstance();
+    await _dropLegacyUnscopedEntries();
     await _loadBrokenVideos();
     await _cleanupOldEntries();
 
@@ -38,6 +39,18 @@ class BrokenVideoTracker {
       name: 'BrokenVideoTracker',
       category: LogCategory.system,
     );
+  }
+
+  /// Pre-#6251 marks were stored under unscoped keys that no scope reads and
+  /// the 7-day sweep never visits, so they would sit in storage forever. Those
+  /// marks are already unreachable — dropping them reclaims the bytes without
+  /// changing what is filtered.
+  Future<void> _dropLegacyUnscopedEntries() async {
+    for (final key in const ['broken_video_urls', 'broken_video_timestamps']) {
+      if (_prefs.containsKey(key)) {
+        await _prefs.remove(key);
+      }
+    }
   }
 
   Future<void> _loadBrokenVideos() async {

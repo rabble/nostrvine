@@ -109,6 +109,26 @@ void main() {
       },
     );
 
+    // Scoping the keys orphaned the pre-#6251 unscoped pair: no scope reads
+    // them and `_cleanupOldEntries` only sweeps the loaded scope, so they
+    // would never expire. The containsKey assertions are the load-bearing
+    // ones — isVideoBroken already returns false without the cleanup.
+    test('drops the orphaned pre-#6251 unscoped entries', () async {
+      SharedPreferences.setMockInitialValues({
+        'broken_video_urls': '["legacy1"]',
+        'broken_video_timestamps':
+            '{"legacy1":${DateTime.now().millisecondsSinceEpoch}}',
+      });
+
+      final scopedTracker = BrokenVideoTracker();
+      await scopedTracker.initialize();
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.containsKey('broken_video_urls'), isFalse);
+      expect(prefs.containsKey('broken_video_timestamps'), isFalse);
+      expect(scopedTracker.isVideoBroken('legacy1'), isFalse);
+    });
+
     test(
       'tracker persistence is scoped between anonymous and signed-in users',
       () async {
