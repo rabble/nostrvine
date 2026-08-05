@@ -48,6 +48,7 @@ void main() {
           databaseProvider.overrideWithValue(db),
           sharedPreferencesProvider.overrideWithValue(prefs),
           dmRepositoryProvider.overrideWithValue(dmRepository),
+          openVineImageCacheClearProvider.overrideWithValue(() async {}),
           pendingUploadOwnerCleanupProvider.overrideWithValue((ownerPubkey) {
             purgedUploadOwners.add(ownerPubkey);
             return Future.value(1);

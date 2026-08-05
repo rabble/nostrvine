@@ -69,6 +69,12 @@ const _relayRepairTimeout = Duration(seconds: 15);
 
 typedef PendingUploadOwnerCleanup = Future<int> Function(String ownerPubkey);
 
+final openVineImageCacheClearProvider = Provider<Future<void> Function()>((
+  ref,
+) {
+  return clearOpenVineImageCache;
+});
+
 final pendingUploadOwnerCleanupProvider = Provider<PendingUploadOwnerCleanup>((
   ref,
 ) {
@@ -689,7 +695,7 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
           () => ref.read(dmRepositoryProvider).stopListening(),
         );
         try {
-          await clearOpenVineImageCache();
+          await ref.read(openVineImageCacheClearProvider)();
           ref
               .read(adultMediaAccessRevocationVersionProvider.notifier)
               .increment();
