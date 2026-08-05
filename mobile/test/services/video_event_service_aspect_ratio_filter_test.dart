@@ -66,37 +66,29 @@ void main() {
     );
 
     test(
-      'filterVideoList keeps square and portrait videos when preference is off',
-      () {
-        final filtered = service.filterVideoList([
+      'filterVideoList re-filters an already-loaded list when the '
+      'preference flips',
+      () async {
+        final videos = [
           _video(id: 'square', dimensions: '640x640'),
           _video(id: 'portrait', dimensions: '720x1280'),
-        ]);
+        ];
 
         expect(
-          filtered.map((video) => video.id),
+          service.filterVideoList(videos).map((video) => video.id),
           equals(['square', 'portrait']),
         );
-      },
-    );
 
-    test(
-      'filterVideoList keeps videos with unknown or malformed dimensions',
-      () async {
         await aspectRatioPreference.setPreference(
           FeedAspectRatioPreference.squareOnly,
         );
 
-        final filtered = service.filterVideoList([
-          _video(id: 'missing'),
-          _video(id: 'empty', dimensions: ''),
-          _video(id: 'malformed', dimensions: '480000'),
-          _video(id: 'partial', dimensions: '480x'),
-        ]);
-
         expect(
-          filtered.map((video) => video.id),
-          equals(['missing', 'empty', 'malformed', 'partial']),
+          service.filterVideoList(videos).map((video) => video.id),
+          equals(['square']),
+          reason:
+              'The reported bug (#6511) is a live toggle: the service must '
+              'read the preference at filter time, not snapshot it at attach.',
         );
       },
     );
