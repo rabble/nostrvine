@@ -75,9 +75,10 @@ class ShareActionButton extends StatelessWidget {
   /// same bottom-sheet wiring without duplicating setup logic.
   static void showShareSheet(BuildContext context, VideoEvent video) {
     // Read here so the sheet receives guaranteed non-null sharing dependencies.
-    // If Nostr client hasn't initialized yet, skip opening the sheet.
+    // Both are read-only handles, available once the identity is known — the
+    // sheet no longer waits for relays to connect (#6423).
     final container = ProviderScope.containerOf(context);
-    final profileRepository = container.read(profileRepositoryProvider);
+    final profileRepository = container.read(profileReadRepositoryProvider);
     final videoSharingService = container.read(videoSharingServiceProvider);
     if (profileRepository == null || videoSharingService == null) return;
 
@@ -126,7 +127,7 @@ class _UnifiedShareSheet extends ConsumerStatefulWidget {
   });
 
   final VideoEvent video;
-  final ProfileRepository profileRepository;
+  final ProfileReader profileRepository;
   final VideoSharingService videoSharingService;
 
   /// Context from the widget that opened the sheet (not the modal builder).
@@ -489,7 +490,7 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
   }
 
   Future<void> _handleSaveWithWatermark() async {
-    final profileRepo = ref.read(profileRepositoryProvider);
+    final profileRepo = ref.read(profileReadRepositoryProvider);
     final profile = await profileRepo?.getCachedProfile(
       pubkey: widget.video.pubkey,
     );

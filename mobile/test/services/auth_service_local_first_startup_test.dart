@@ -9,10 +9,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
-import 'package:nostr_sdk/nostr_sdk.dart' show generatePrivateKey;
+import 'package:nostr_sdk/nostr_sdk.dart' show NostrSigner, generatePrivateKey;
 import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/local_key_signer.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -22,6 +23,8 @@ class _MockUserDataCleanupService extends Mock
     implements UserDataCleanupService {}
 
 class _MockKeycastOAuth extends Mock implements KeycastOAuth {}
+
+class _MockNostrSigner extends Mock implements NostrSigner {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -105,9 +108,7 @@ void main() {
 
     /// Helper: stores a Keycast session and a valid local nsec that matches
     /// the session pubkey.
-    String arrangeSessionWithMatchingLocalKeys({
-      required DateTime expiresAt,
-    }) {
+    String arrangeSessionWithMatchingLocalKeys({required DateTime expiresAt}) {
       final privateKeyHex = generatePrivateKey();
       final container = SecureKeyContainer.fromPrivateKeyHex(privateKeyHex);
       final pubkey = container.publicKeyHex;
@@ -257,6 +258,35 @@ void main() {
     test('canPublishNostrWritesNow is false when not authenticated', () {
       final authService = createAuthService();
       expect(authService.canPublishNostrWritesNow, isFalse);
+    });
+
+    test('canPublishNostrWritesNow waits for RPC-backed Keycast readiness', () {
+      final authService = createAuthService();
+      const pubkey =
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
+      authService.debugSetIdentity(
+        KeycastNostrIdentity(pubkey: pubkey, rpcSigner: _MockNostrSigner()),
+      );
+
+      expect(authService.authRpcCapability, AuthRpcCapability.unavailable);
+      expect(authService.canPublishNostrWritesNow, isFalse);
+    });
+
+    test('canPublishNostrWritesNow allows Keycast with a local signer', () {
+      final authService = createAuthService();
+      final privateKeyHex = generatePrivateKey();
+      final container = SecureKeyContainer.fromPrivateKeyHex(privateKeyHex);
+
+      authService.debugSetIdentity(
+        KeycastNostrIdentity(
+          pubkey: container.publicKeyHex,
+          rpcSigner: _MockNostrSigner(),
+          localSigner: LocalKeySigner(container),
+        ),
+      );
+
+      expect(authService.canPublishNostrWritesNow, isTrue);
     });
 
     test('matching local key authenticates before refresh completes', () async {

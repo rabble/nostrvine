@@ -53,6 +53,7 @@ void main() {
             // lookup behind the confirmation gate both resolve to null
             // without touching the network.
             profileRepositoryProvider.overrideWithValue(null),
+            profileReadRepositoryProvider.overrideWithValue(null),
           ],
           child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,

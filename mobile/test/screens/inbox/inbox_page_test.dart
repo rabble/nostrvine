@@ -253,6 +253,10 @@ void main() {
               (ref) =>
                   ref.watch(_profileRepoSwap) == 0 ? null : readyProfileRepo,
             ),
+            profileReadRepositoryProvider.overrideWith(
+              (ref) =>
+                  ref.watch(_profileRepoSwap) == 0 ? null : readyProfileRepo,
+            ),
             goRouterProvider.overrideWithValue(mockGoRouter),
           ],
         );

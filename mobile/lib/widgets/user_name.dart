@@ -18,6 +18,7 @@ class UserName extends ConsumerWidget {
     this.overflow,
     this.selectable = false,
     this.anonymousName,
+    this.neverGenerateName = false,
   });
 
   /// Create a UserName widget from a pubkey.
@@ -26,6 +27,12 @@ class UserName extends ConsumerWidget {
   /// author_name), it will be used as a fallback when the profile isn't
   /// cached yet. This avoids unnecessary WebSocket profile fetches for
   /// videos that already have author data embedded.
+  ///
+  /// Set [neverGenerateName] on surfaces that show the signed-in user their
+  /// own identity. A generated "Adjective Animal NN" handle is a plausible
+  /// human name the user never chose, so showing it back to them reads as
+  /// their account having been reset (#6423). Those surfaces render blank —
+  /// normally under a `Skeletonizer` — until a real name resolves.
   factory UserName.fromPubKey(
     String pubkey, {
     String? embeddedName,
@@ -35,6 +42,7 @@ class UserName extends ConsumerWidget {
     bool? selectable,
     String? anonymousName,
     TextOverflow? overflow,
+    bool neverGenerateName = false,
   }) => UserName._(
     pubkey: pubkey,
     embeddedName: embeddedName,
@@ -44,6 +52,7 @@ class UserName extends ConsumerWidget {
     overflow: overflow,
     selectable: selectable,
     anonymousName: anonymousName,
+    neverGenerateName: neverGenerateName,
   );
 
   factory UserName.fromUserProfile(
@@ -54,6 +63,7 @@ class UserName extends ConsumerWidget {
     bool? selectable,
     String? anonymousName,
     TextOverflow? overflow,
+    bool neverGenerateName = false,
   }) => UserName._(
     userProfile: userProfile,
     key: key,
@@ -62,6 +72,7 @@ class UserName extends ConsumerWidget {
     overflow: overflow,
     selectable: selectable,
     anonymousName: anonymousName,
+    neverGenerateName: neverGenerateName,
   );
 
   final String? pubkey;
@@ -76,28 +87,47 @@ class UserName extends ConsumerWidget {
   final bool? selectable;
   final String? anonymousName;
 
+  /// Suppresses the generated "Adjective Animal NN" fallback entirely.
+  ///
+  /// See [UserName.fromPubKey]'s doc for why. Applies to a resolved profile
+  /// with an empty name as well as to the unresolved case.
+  final bool neverGenerateName;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     late String displayName;
     late String effectivePubkey;
     UserProfile? resolvedProfile;
+
+    // When [neverGenerateName] is set, an empty placeholder replaces the
+    // generated handle everywhere it would otherwise appear, so the caller
+    // renders blank (typically under a Skeletonizer) instead of a name the
+    // user never chose. It has to apply to a *resolved* profile too: a kind-0
+    // with empty name and display_name still falls through to the generated
+    // handle, and that is a state users reach — publishing from divine-web
+    // with an empty name strips both fields.
+    final placeholder = anonymousName ?? (neverGenerateName ? '' : null);
+
     if (userProfile case final userProfile?) {
       resolvedProfile = userProfile;
       effectivePubkey = userProfile.pubkey;
-      displayName = userProfile.betterDisplayName(anonymousName);
+      displayName = userProfile.betterDisplayName(placeholder);
     } else {
       final profileAsync = ref.watch(userProfileReactiveProvider(pubkey!));
       resolvedProfile = profileAsync.value;
       effectivePubkey = pubkey!;
 
-      // Use embedded name from REST API as fallback, then generated name.
+      // Precedence mirrors UserProfile.betterDisplayName: a real name embedded
+      // in a REST response beats a caller-supplied placeholder, which beats
+      // the generated handle. Honouring the placeholder here is what makes
+      // the header's displayNameHint reach the failure case at all (#6423).
       final fallbackName = embeddedName != null
           ? UserProfile.sanitizeDisplayName(embeddedName!)
-          : UserProfile.defaultDisplayNameFor(pubkey!);
+          : placeholder ?? UserProfile.defaultDisplayNameFor(pubkey!);
 
       displayName = switch (profileAsync) {
         AsyncData(:final value) when value != null => value.betterDisplayName(
-          anonymousName,
+          placeholder,
         ),
         AsyncLoading() || AsyncData() => fallbackName,
         AsyncError() => fallbackName,

@@ -502,7 +502,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     return switch (_currentIdentity) {
       null => false,
       LocalNostrIdentity() => true,
-      KeycastNostrIdentity() => true,
+      KeycastNostrIdentity(:final signsWithLocalKey) =>
+        signsWithLocalKey || _authRpcCapability == AuthRpcCapability.rpcReady,
       PubkeyOnlyNostrIdentity() => false,
       AmberNostrIdentity() => true,
       BunkerNostrIdentity() => true,

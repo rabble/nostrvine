@@ -17,6 +17,11 @@ part of 'user_profile_providers.dart';
 ///
 /// Consumers get `AsyncValue<UserProfile?>` — same API as the old
 /// FutureProvider, so widget code changes are minimal.
+///
+/// Reads through [profileReadRepositoryProvider], which is available at the
+/// identity-known phase. Waiting for the relay-connect settle here is what
+/// made the signed-in user's own header render a generated fallback name for
+/// the whole cold-start window (#6423); nothing on this path signs.
 
 @ProviderFor(userProfileReactive)
 final userProfileReactiveProvider = UserProfileReactiveFamily._();
@@ -30,6 +35,11 @@ final userProfileReactiveProvider = UserProfileReactiveFamily._();
 ///
 /// Consumers get `AsyncValue<UserProfile?>` — same API as the old
 /// FutureProvider, so widget code changes are minimal.
+///
+/// Reads through [profileReadRepositoryProvider], which is available at the
+/// identity-known phase. Waiting for the relay-connect settle here is what
+/// made the signed-in user's own header render a generated fallback name for
+/// the whole cold-start window (#6423); nothing on this path signs.
 
 final class UserProfileReactiveProvider
     extends
@@ -48,6 +58,11 @@ final class UserProfileReactiveProvider
   ///
   /// Consumers get `AsyncValue<UserProfile?>` — same API as the old
   /// FutureProvider, so widget code changes are minimal.
+  ///
+  /// Reads through [profileReadRepositoryProvider], which is available at the
+  /// identity-known phase. Waiting for the relay-connect settle here is what
+  /// made the signed-in user's own header render a generated fallback name for
+  /// the whole cold-start window (#6423); nothing on this path signs.
   UserProfileReactiveProvider._({
     required UserProfileReactiveFamily super.from,
     required String super.argument,
@@ -93,7 +108,7 @@ final class UserProfileReactiveProvider
 }
 
 String _$userProfileReactiveHash() =>
-    r'f0c15277edfd883bf7d28cb94b19822f01f94934';
+    r'a3c10ea57bfa00094e9bb26d62e8dcd93312435e';
 
 /// Reactive profile provider backed by Drift's watchProfile stream.
 ///
@@ -104,6 +119,11 @@ String _$userProfileReactiveHash() =>
 ///
 /// Consumers get `AsyncValue<UserProfile?>` — same API as the old
 /// FutureProvider, so widget code changes are minimal.
+///
+/// Reads through [profileReadRepositoryProvider], which is available at the
+/// identity-known phase. Waiting for the relay-connect settle here is what
+/// made the signed-in user's own header render a generated fallback name for
+/// the whole cold-start window (#6423); nothing on this path signs.
 
 final class UserProfileReactiveFamily extends $Family
     with $FunctionalFamilyOverride<Stream<UserProfile?>, String> {
@@ -125,6 +145,11 @@ final class UserProfileReactiveFamily extends $Family
   ///
   /// Consumers get `AsyncValue<UserProfile?>` — same API as the old
   /// FutureProvider, so widget code changes are minimal.
+  ///
+  /// Reads through [profileReadRepositoryProvider], which is available at the
+  /// identity-known phase. Waiting for the relay-connect settle here is what
+  /// made the signed-in user's own header render a generated fallback name for
+  /// the whole cold-start window (#6423); nothing on this path signs.
 
   UserProfileReactiveProvider call(String pubkey) =>
       UserProfileReactiveProvider._(argument: pubkey, from: this);
@@ -137,6 +162,8 @@ final class UserProfileReactiveFamily extends $Family
 ///
 /// Use this when you need a single read (e.g., building a share sheet)
 /// rather than a reactive stream.
+///
+/// Same read gate as [userProfileReactive] — both paths are signer-free.
 
 @ProviderFor(fetchUserProfile)
 final fetchUserProfileProvider = FetchUserProfileFamily._();
@@ -145,6 +172,8 @@ final fetchUserProfileProvider = FetchUserProfileFamily._();
 ///
 /// Use this when you need a single read (e.g., building a share sheet)
 /// rather than a reactive stream.
+///
+/// Same read gate as [userProfileReactive] — both paths are signer-free.
 
 final class FetchUserProfileProvider
     extends
@@ -158,6 +187,8 @@ final class FetchUserProfileProvider
   ///
   /// Use this when you need a single read (e.g., building a share sheet)
   /// rather than a reactive stream.
+  ///
+  /// Same read gate as [userProfileReactive] — both paths are signer-free.
   FetchUserProfileProvider._({
     required FetchUserProfileFamily super.from,
     required String super.argument,
@@ -202,12 +233,14 @@ final class FetchUserProfileProvider
   }
 }
 
-String _$fetchUserProfileHash() => r'6f16ff504ee65f0b1f8dbdf51674de0d4f375d94';
+String _$fetchUserProfileHash() => r'83353a4223c0c0ca7feee6e08c2f8116ca551c66';
 
 /// One-shot provider: returns cached profile or fetches fresh.
 ///
 /// Use this when you need a single read (e.g., building a share sheet)
 /// rather than a reactive stream.
+///
+/// Same read gate as [userProfileReactive] — both paths are signer-free.
 
 final class FetchUserProfileFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<UserProfile?>, String> {
@@ -224,6 +257,8 @@ final class FetchUserProfileFamily extends $Family
   ///
   /// Use this when you need a single read (e.g., building a share sheet)
   /// rather than a reactive stream.
+  ///
+  /// Same read gate as [userProfileReactive] — both paths are signer-free.
 
   FetchUserProfileProvider call(String pubkey) =>
       FetchUserProfileProvider._(argument: pubkey, from: this);

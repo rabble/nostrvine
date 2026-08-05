@@ -38,7 +38,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
     required VideoEvent video,
     required String relayUrl,
     required VideoSharingService videoSharingService,
-    required ProfileRepository profileRepository,
+    required ProfileReader profileRepository,
     required FollowRepository followRepository,
     Future<BookmarkService?>? bookmarkServiceFuture,
     BaseCacheManager? cacheManager,
@@ -69,7 +69,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
   final VideoEvent _video;
   final String _relayUrl;
   final VideoSharingService _videoSharingService;
-  final ProfileRepository _profileRepository;
+  final ProfileReader _profileRepository;
   final FollowRepository _followRepository;
   final Future<BookmarkService?>? _bookmarkServiceFuture;
   final BaseCacheManager? _cacheManager;

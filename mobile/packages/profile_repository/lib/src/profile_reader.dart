@@ -1,0 +1,80 @@
+// ABOUTME: Read-only view of [ProfileRepository] — the members that need
+// ABOUTME: neither a signer nor a relay-ready client.
+
+import 'package:models/models.dart';
+import 'package:profile_repository/profile_repository.dart';
+
+/// The subset of [ProfileRepository] that reads profile data without ever
+/// signing or publishing.
+///
+/// This exists to make a **security boundary compile-time enforceable**.
+/// `profileRepositoryProvider` withholds the repository until the
+/// signer-backed `NostrClient` has rebuilt for the active identity, which
+/// prevents a publish from being signed by the wrong key (#1048). But that
+/// same gate was also withholding purely local Drift reads, so the signed-in
+/// user's own name and avatar were replaced by a generated placeholder for
+/// the whole relay-connect window (#6423).
+///
+/// `profileReadRepositoryProvider` therefore hands over a [ProfileReader] as
+/// soon as the identity is known. Because the type cannot express
+/// `saveProfileEvent`, `claimUsername`, `releaseUsername` or
+/// `drivePendingSave`, a consumer of the loose provider cannot publish even
+/// by accident — the ungated phase carries a pubkey but no client, so signing
+/// there is unsafe while Drift reads are not.
+///
+/// Every member below is signer-free and relay-optional: each either reads
+/// Drift directly or falls back to a public, unauthenticated funnelcake REST
+/// call.
+///
+/// **Do not widen this interface without re-checking that invariant.** The
+/// write-intent members (`cacheProfile`, `deleteCachedProfile`,
+/// `enqueuePendingSave`, `clearPendingSave`, `resetInterruptedPendingSave`)
+/// are deliberately absent too — they do not sign, but a caller reaching for
+/// them through the read handle is a design smell worth catching in review.
+/// `mobile/scripts/check_profile_read_write_split.sh` guards the indirect
+/// route a type cannot see.
+abstract interface class ProfileReader {
+  /// Returns the cached profile from local storage (SQLite) only.
+  ///
+  /// Returns `null` if no cached profile exists for the given pubkey.
+  Future<UserProfile?> getCachedProfile({required String pubkey});
+
+  /// Watches the cached profile for [pubkey], emitting on every cache write.
+  Stream<UserProfile?> watchProfile({required String pubkey});
+
+  /// Watches the follower/following/video counts for [pubkey].
+  ///
+  /// Emits `null` if no stats exist, and an empty stream when no stats DAO
+  /// was injected.
+  Stream<ProfileStats?> watchProfileStats({required String pubkey});
+
+  /// Fetches the freshest profile for [pubkey] and caches it locally.
+  ///
+  /// Reads only — the relay query and the funnelcake REST fallback are both
+  /// unauthenticated. Returns `null` when no profile exists anywhere.
+  Future<UserProfile?> fetchFreshProfile({
+    required String pubkey,
+    bool requireRawKind0,
+    List<Duration> rawKind0RetryDelays,
+  });
+
+  /// Resolves many profiles at once, preferring the Drift cache.
+  ///
+  /// Partial results are returned rather than throwing.
+  Future<Map<String, UserProfile>> fetchBatchProfiles({
+    required List<String> pubkeys,
+  });
+
+  /// Returns the cached NIP-39 `i` tag list for [pubkey] from local storage.
+  ///
+  /// Does NOT hit the network. Returns `null` when nothing is cached.
+  Future<List<List<String>>?> cachedIdentityTags(String pubkey);
+
+  /// Fetches the freshest NIP-39 identity-claims source for [pubkey].
+  ///
+  /// Never throws — relay failures fall through the consult order.
+  Future<List<List<String>>> freshIdentityTags({
+    required String pubkey,
+    required List<List<String>> kind0Tags,
+  });
+}

@@ -355,7 +355,10 @@ SubscribedListVideoCache? subscribedListVideoCache(Ref ref) {
 VideoSharingService? videoSharingService(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
   final authService = ref.watch(authServiceProvider);
-  final profileRepository = ref.watch(profileRepositoryProvider);
+  // Read-only handle: the service only reads profiles, and gating it on the
+  // relay-ready client made Share a dead tap during cold start (#6423). The
+  // send path gates itself on `canPublishNostrWritesNow`.
+  final profileRepository = ref.watch(profileReadRepositoryProvider);
   final dmRepository = ref.watch(dmRepositoryProvider);
 
   if (profileRepository == null) {

@@ -390,6 +390,7 @@ void main() {
         ProviderScope(
           overrides: [
             profileRepositoryProvider.overrideWithValue(profileRepository),
+            profileReadRepositoryProvider.overrideWithValue(profileRepository),
           ],
           child: MaterialApp.router(
             localizationsDelegates: AppLocalizations.localizationsDelegates,

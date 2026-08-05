@@ -558,6 +558,9 @@ void main() {
       return [
         authServiceProvider.overrideWithValue(mockAuthService),
         profileRepositoryProvider.overrideWith((ref) => mockProfileRepository),
+        profileReadRepositoryProvider.overrideWith(
+          (ref) => mockProfileRepository,
+        ),
         fetchUserProfileProvider(
           testPubkeyHex,
         ).overrideWith((ref) async => null),
@@ -680,6 +683,9 @@ void main() {
             profileRepositoryProvider.overrideWith(
               (ref) => mockProfileRepository,
             ),
+            profileReadRepositoryProvider.overrideWith(
+              (ref) => mockProfileRepository,
+            ),
             fetchUserProfileProvider(
               testPubkeyHex,
             ).overrideWith((ref) async => null),
@@ -738,6 +744,9 @@ void main() {
           additionalOverrides: [
             authServiceProvider.overrideWithValue(mockAuthService),
             profileRepositoryProvider.overrideWith(
+              (ref) => mockProfileRepository,
+            ),
+            profileReadRepositoryProvider.overrideWith(
               (ref) => mockProfileRepository,
             ),
             fetchUserProfileProvider(
@@ -1292,6 +1301,9 @@ void main() {
               additionalOverrides: [
                 authServiceProvider.overrideWithValue(mockAuthService),
                 profileRepositoryProvider.overrideWith(
+                  (ref) => mockProfileRepository,
+                ),
+                profileReadRepositoryProvider.overrideWith(
                   (ref) => mockProfileRepository,
                 ),
                 fetchUserProfileProvider(

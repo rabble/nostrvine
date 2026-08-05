@@ -64,6 +64,7 @@ void main() {
     test('returns recently shared users after sharing', () async {
       // Arrange - set up successful share
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.canPublishNostrWritesNow).thenReturn(true);
       when(
         () => mockAuthService.createAndSignEvent(
           kind: any(named: 'kind'),
@@ -121,6 +122,7 @@ void main() {
     test('respects limit parameter', () async {
       // Arrange - share with multiple users
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.canPublishNostrWritesNow).thenReturn(true);
       when(
         () => mockAuthService.createAndSignEvent(
           kind: any(named: 'kind'),
@@ -258,8 +260,44 @@ void main() {
       expect(result.error, contains('not authenticated'));
     });
 
+    test('returns failure when the signer is not ready yet (#6423)', () async {
+      // The service used to inherit this check by accident: it was built from
+      // the relay-gated profile repository, so a not-yet-ready session made
+      // the whole service null and Share a silent dead tap. Now the sheet
+      // opens on the read-only handle and the send path owns the requirement.
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(
+        () => mockAuthService.canPublishNostrWritesNow,
+      ).thenReturn(false);
+
+      final now = DateTime.now();
+      final result = await service.shareVideoWithUser(
+        video: VideoEvent(
+          id: _testVideoId,
+          pubkey: _testPubkey,
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          timestamp: now,
+          content: 'Test',
+        ),
+        recipientPubkey: _recipientPubkey,
+      );
+
+      expect(result.success, isFalse);
+      expect(result.error, contains('Signing is not available'));
+      // Never reached the signer: the gate short-circuits before any event is
+      // created, rather than letting it fail 30s later on an RPC timeout.
+      verifyNever(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      );
+    });
+
     test('returns failure when event creation fails', () async {
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.canPublishNostrWritesNow).thenReturn(true);
       when(
         () => mockAuthService.createAndSignEvent(
           kind: any(named: 'kind'),
@@ -286,6 +324,7 @@ void main() {
 
     test('returns success on successful publish', () async {
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.canPublishNostrWritesNow).thenReturn(true);
       final signedEvent = Event(_testPubkey, 4, <List<String>>[], 'test');
       signedEvent.id = 'signed_event_id';
 
@@ -323,6 +362,7 @@ void main() {
 
     test('returns failure when publish fails', () async {
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.canPublishNostrWritesNow).thenReturn(true);
       when(
         () => mockAuthService.createAndSignEvent(
           kind: any(named: 'kind'),
@@ -371,6 +411,7 @@ void main() {
 
     test('uses NIP-17 when DmRepository is available', () async {
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.canPublishNostrWritesNow).thenReturn(true);
       when(
         () => mockDmRepository.sendSharedVideo(
           recipientPubkey: any(named: 'recipientPubkey'),
@@ -439,6 +480,7 @@ void main() {
       'rest, and each outcome is reported',
       () async {
         when(() => mockAuthService.isAuthenticated).thenReturn(true);
+        when(() => mockAuthService.canPublishNostrWritesNow).thenReturn(true);
         when(
           () => mockProfileRepository.fetchFreshProfile(
             pubkey: any(named: 'pubkey'),
@@ -507,6 +549,7 @@ void main() {
       'returns success without waiting on the recents profile fetch (#5391)',
       () async {
         when(() => mockAuthService.isAuthenticated).thenReturn(true);
+        when(() => mockAuthService.canPublishNostrWritesNow).thenReturn(true);
         when(
           () => mockDmRepository.sendSharedVideo(
             recipientPubkey: any(named: 'recipientPubkey'),
@@ -555,6 +598,7 @@ void main() {
 
     test('returns failure when NIP-17 send fails', () async {
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.canPublishNostrWritesNow).thenReturn(true);
       when(
         () => mockDmRepository.sendSharedVideo(
           recipientPubkey: any(named: 'recipientPubkey'),
@@ -588,6 +632,7 @@ void main() {
 
     test('includes personal message in content', () async {
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.canPublishNostrWritesNow).thenReturn(true);
       when(
         () => mockDmRepository.sendSharedVideo(
           recipientPubkey: any(named: 'recipientPubkey'),
@@ -643,6 +688,7 @@ void main() {
 
     test('share message contains quoted title and share URL', () async {
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.canPublishNostrWritesNow).thenReturn(true);
       when(
         () => mockDmRepository.sendSharedVideo(
           recipientPubkey: any(named: 'recipientPubkey'),
@@ -702,6 +748,7 @@ void main() {
 
     test('share message without title contains only share URL', () async {
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.canPublishNostrWritesNow).thenReturn(true);
       when(
         () => mockDmRepository.sendSharedVideo(
           recipientPubkey: any(named: 'recipientPubkey'),
@@ -760,6 +807,7 @@ void main() {
 
     test('computes correct conversationId', () async {
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.canPublishNostrWritesNow).thenReturn(true);
       when(
         () => mockDmRepository.sendSharedVideo(
           recipientPubkey: any(named: 'recipientPubkey'),
@@ -804,6 +852,7 @@ void main() {
 
     test('updates sharing history on NIP-17 success', () async {
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.canPublishNostrWritesNow).thenReturn(true);
       when(
         () => mockDmRepository.sendSharedVideo(
           recipientPubkey: any(named: 'recipientPubkey'),
@@ -889,6 +938,7 @@ void main() {
     test('hasSharedWithRecently returns true after sharing', () async {
       // Arrange
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.canPublishNostrWritesNow).thenReturn(true);
       when(
         () => mockAuthService.createAndSignEvent(
           kind: any(named: 'kind'),
@@ -927,6 +977,7 @@ void main() {
     test('clearSharingHistory removes all data', () async {
       // Arrange - populate some history
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.canPublishNostrWritesNow).thenReturn(true);
       when(
         () => mockAuthService.createAndSignEvent(
           kind: any(named: 'kind'),

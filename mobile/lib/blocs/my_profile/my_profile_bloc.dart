@@ -15,7 +15,7 @@ part 'my_profile_state.dart';
 /// BLoC for the current user's own profile.
 class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
   MyProfileBloc({
-    required ProfileRepository profileRepository,
+    required ProfileReader profileRepository,
     required this.pubkey,
     IdentityClaimsRepository? identityClaimsRepository,
   }) : _profileRepository = profileRepository,
@@ -37,7 +37,7 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
     );
   }
 
-  final ProfileRepository _profileRepository;
+  final ProfileReader _profileRepository;
   final IdentityClaimsRepository? _identityClaimsRepository;
 
   /// The pubkey of the current user.
