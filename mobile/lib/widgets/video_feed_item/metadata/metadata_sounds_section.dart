@@ -264,9 +264,10 @@ class _SoundListItem extends ConsumerWidget {
       final publisherProfile = ref
           .watch(userProfileReactiveProvider(audio.pubkey))
           .value;
-      publisherName =
-          publisherProfile?.bestDisplayName ??
-          UserProfile.defaultDisplayNameFor(audio.pubkey);
+      publisherName = AudioAttributionCredit.publisherNameFor(
+        audio: audio,
+        publisherProfile: publisherProfile,
+      );
     }
     final creatorName = audio.creatorName;
     final creditText = creatorName == null

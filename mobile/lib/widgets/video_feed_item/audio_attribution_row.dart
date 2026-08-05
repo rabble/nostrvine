@@ -90,9 +90,10 @@ class _AudioAttributionContent extends ConsumerWidget {
       final publisherProfile = ref
           .watch(userProfileReactiveProvider(audio.pubkey))
           .value;
-      publisherName =
-          publisherProfile?.bestDisplayName ??
-          UserProfile.defaultDisplayNameFor(audio.pubkey);
+      publisherName = AudioAttributionCredit.publisherNameFor(
+        audio: audio,
+        publisherProfile: publisherProfile,
+      );
     }
     final creditedCreator = audio.creatorName;
     final creditText = [
@@ -127,10 +128,7 @@ class _AudioAttributionContent extends ConsumerWidget {
 
     context.pushWithVideoPause(
       SoundDetailScreen.pathForId(audio.id),
-      extra: <String, dynamic>{
-        'sound': audio,
-        'sourceVideo': sourceVideo,
-      },
+      extra: <String, dynamic>{'sound': audio, 'sourceVideo': sourceVideo},
     );
   }
 }
@@ -215,10 +213,9 @@ class _AudioAttributionPill extends StatelessWidget {
           Flexible(
             child: Text(
               '$soundName · $creatorName',
-              style: VineTheme.labelMediumFont(color: VineTheme.whiteText)
-                  .copyWith(
-                    shadows: [const Shadow(blurRadius: 4)],
-                  ),
+              style: VineTheme.labelMediumFont(
+                color: VineTheme.whiteText,
+              ).copyWith(shadows: [const Shadow(blurRadius: 4)]),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

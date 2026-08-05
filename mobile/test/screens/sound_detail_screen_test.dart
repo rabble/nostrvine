@@ -7,6 +7,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -16,9 +17,12 @@ import 'package:openvine/blocs/saved_sounds/saved_sounds_scope.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
+import 'package:openvine/services/sound_library_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -132,10 +136,7 @@ Widget createTestWidget({
   final mockAuth = createMockAuthService();
   when(() => mockAuth.currentPublicKeyHex).thenReturn(viewerPubkey);
   return ProviderScope(
-    overrides: [
-      authServiceProvider.overrideWithValue(mockAuth),
-      ...?overrides,
-    ],
+    overrides: [authServiceProvider.overrideWithValue(mockAuth), ...?overrides],
     child: MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
@@ -456,6 +457,288 @@ void main() {
 
         expect(_divineIcon(DivineIconName.musicNote), findsOneWidget);
       });
+
+      testWidgets('keeps bundled sound artist and license attribution', (
+        tester,
+      ) async {
+        SharedPreferences.setMockInitialValues({});
+        final soundLibraryService = SoundLibraryService();
+        final vineSound = VineSound(
+          id: 'classic-loop',
+          title: 'Classic Loop',
+          assetPath: 'assets/sounds/classic-loop.mp3',
+          duration: const Duration(seconds: 6),
+          artist: 'Bundled Artist',
+          license: 'CC0',
+          sourceUrl: 'https://freesound.org/s/123',
+        );
+        await soundLibraryService.addCustomSound(vineSound);
+        final testSound = AudioEvent.fromBundledSound(vineSound);
+
+        await tester.pumpWidget(
+          createTestWidget(
+            child: SoundDetailScreen(sound: testSound),
+            overrides: [
+              soundLibraryServiceSyncProvider.overrideWithValue(
+                soundLibraryService,
+              ),
+              soundUsageCountProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(0)),
+              videosUsingSoundProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(<String>[])),
+              audioPlaybackServiceProvider.overrideWithValue(mockAudioService),
+            ],
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('By Bundled Artist'), findsOneWidget);
+        expect(find.textContaining('CC0'), findsOneWidget);
+        expect(find.text('View source'), findsOneWidget);
+      });
+
+      testWidgets('shows resolved community sound creator attribution', (
+        tester,
+      ) async {
+        const creatorPubkey =
+            '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+        final testSound = createTestAudioEvent(
+          id: 'sound1',
+          pubkey: creatorPubkey,
+        );
+
+        await tester.pumpWidget(
+          createTestWidget(
+            child: SoundDetailScreen(sound: testSound),
+            overrides: [
+              userProfileReactiveProvider(creatorPubkey).overrideWith((
+                ref,
+              ) async* {
+                yield UserProfile(
+                  pubkey: creatorPubkey,
+                  rawData: const {},
+                  createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+                  eventId: 'profile-event',
+                  displayName: 'Alice Beats',
+                );
+              }),
+              soundUsageCountProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(0)),
+              videosUsingSoundProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(<String>[])),
+              audioPlaybackServiceProvider.overrideWithValue(mockAudioService),
+            ],
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(find.text('By Alice Beats'), findsOneWidget);
+      });
+
+      testWidgets('falls back for community sound creator with no profile', (
+        tester,
+      ) async {
+        const creatorPubkey =
+            'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
+        final testSound = createTestAudioEvent(
+          id: 'sound1',
+          pubkey: creatorPubkey,
+        );
+
+        await tester.pumpWidget(
+          createTestWidget(
+            child: SoundDetailScreen(sound: testSound),
+            overrides: [
+              soundUsageCountProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(0)),
+              videosUsingSoundProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(<String>[])),
+              audioPlaybackServiceProvider.overrideWithValue(mockAudioService),
+            ],
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('By ${UserProfile.defaultDisplayNameFor(creatorPubkey)}'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('credits the publisher of an externally sourced sound', (
+        tester,
+      ) async {
+        // The external-provider publish path credits the provider's artist by
+        // name and never sets a creator pubkey, so the signer is a separate
+        // publisher — same credit the feed pill and metadata sheet show.
+        const publisherPubkey =
+            'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
+        final testSound = createTestAudioEvent(
+          id: 'sound1',
+          pubkey: publisherPubkey,
+        ).copyWith(creatorName: 'Freesound Artist', licenseName: 'CC0');
+
+        await tester.pumpWidget(
+          createTestWidget(
+            child: SoundDetailScreen(sound: testSound),
+            overrides: [
+              userProfileReactiveProvider(publisherPubkey).overrideWith((
+                ref,
+              ) async* {
+                yield UserProfile(
+                  pubkey: publisherPubkey,
+                  rawData: const {},
+                  createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+                  eventId: 'profile-event',
+                  displayName: 'Publisher Pat',
+                );
+              }),
+              soundUsageCountProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(0)),
+              videosUsingSoundProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(<String>[])),
+              audioPlaybackServiceProvider.overrideWithValue(mockAudioService),
+            ],
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('By Freesound Artist'), findsOneWidget);
+        expect(find.text('Shared by Publisher Pat'), findsOneWidget);
+      });
+
+      testWidgets('uses distinct semantics for creator and publisher credits', (
+        tester,
+      ) async {
+        const creatorPubkey =
+            '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+        const publisherPubkey =
+            'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
+        final testSound = createTestAudioEvent(
+          id: 'sound1',
+          pubkey: publisherPubkey,
+        ).copyWith(creatorName: 'Alice Beats', creatorPubkey: creatorPubkey);
+
+        await tester.pumpWidget(
+          createTestWidget(
+            child: SoundDetailScreen(sound: testSound),
+            overrides: [
+              userProfileReactiveProvider(publisherPubkey).overrideWith((
+                ref,
+              ) async* {
+                yield UserProfile(
+                  pubkey: publisherPubkey,
+                  rawData: const {},
+                  createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+                  eventId: 'publisher-profile-event',
+                  displayName: 'Publisher Pat',
+                );
+              }),
+              soundUsageCountProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(0)),
+              videosUsingSoundProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(<String>[])),
+              audioPlaybackServiceProvider.overrideWithValue(mockAudioService),
+            ],
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(find.text('By Alice Beats'), findsOneWidget);
+        expect(find.text('Shared by Publisher Pat'), findsOneWidget);
+        expect(
+          find.bySemanticsIdentifier('sound_detail_creator_attribution'),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsIdentifier('sound_detail_publisher_attribution'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('does not profile-link draft-local imported audio', (
+        tester,
+      ) async {
+        final testSound = AudioEvent.fromLocalImport(
+          id: '${AudioEvent.localImportMarker}_sound1',
+          filePath: '/tmp/sound.m4a',
+          createdAt: 1700000000,
+          title: 'Imported loop',
+          mimeType: 'audio/mp4',
+        );
+
+        await tester.pumpWidget(
+          createTestWidget(
+            child: SoundDetailScreen(sound: testSound),
+            overrides: [
+              soundUsageCountProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(0)),
+              videosUsingSoundProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(<String>[])),
+              audioPlaybackServiceProvider.overrideWithValue(mockAudioService),
+            ],
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(find.text('Imported loop'), findsOneWidget);
+        expect(find.textContaining('By '), findsNothing);
+        expect(
+          find.bySemanticsIdentifier('sound_detail_creator_attribution'),
+          findsNothing,
+        );
+      });
+
+      testWidgets('omits the source link when the source is not a URL', (
+        tester,
+      ) async {
+        // `fromVideoOriginalSound` puts the label "Original Sound" in `source`,
+        // which is not launchable — the credit must still render without a
+        // dead "View source" link next to it.
+        final video = createTestVideoEvent(id: 'video1');
+        final testSound = AudioEvent.fromVideoOriginalSound(video);
+
+        await tester.pumpWidget(
+          createTestWidget(
+            child: SoundDetailScreen(sound: testSound, sourceVideo: video),
+            overrides: [
+              soundUsageCountProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(0)),
+              videosUsingSoundProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(<String>[])),
+              audioPlaybackServiceProvider.overrideWithValue(mockAudioService),
+            ],
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('By ${UserProfile.defaultDisplayNameFor(video.pubkey)}'),
+          findsOneWidget,
+        );
+        expect(find.text('View source'), findsNothing);
+      });
     });
 
     group('Action Buttons', () {
@@ -518,7 +801,7 @@ void main() {
         await tester.pump();
 
         expect(find.text('Preview'), findsOneWidget);
-        expect(find.byIcon(Icons.play_arrow), findsWidgets);
+        expect(_divineIcon(DivineIconName.play), findsWidgets);
       });
 
       testWidgets('has Use Sound button', (tester) async {
@@ -727,7 +1010,7 @@ void main() {
 
         // Now shows Stop
         expect(find.text('Stop'), findsOneWidget);
-        expect(find.byIcon(Icons.stop), findsWidgets);
+        expect(_divineIcon(DivineIconName.squareFill), findsWidgets);
       });
 
       testWidgets('tapping Stop stops playback', (tester) async {
@@ -905,9 +1188,7 @@ void main() {
             SavedSoundsService(
               sharedPreferences,
             ).loadSavedSounds().map((sound) => sound.id),
-            [
-              testSound.id,
-            ],
+            [testSound.id],
           );
           expect(container.read(selectedSoundProvider), isNull);
         },
@@ -1275,6 +1556,65 @@ void main() {
           verify(() => mockGoRouter.pop<Object?>()).called(1);
         },
       );
+
+      testWidgets('creator attribution opens creator profile', (tester) async {
+        const creatorPubkey =
+            '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+        final testSound = createTestAudioEvent(
+          id: 'sound1',
+          pubkey: creatorPubkey,
+        );
+        final router = GoRouter(
+          routes: [
+            GoRoute(
+              path: '/',
+              builder: (context, state) => SoundDetailScreen(sound: testSound),
+            ),
+            GoRoute(
+              path: '/profile-view/:npub',
+              builder: (context, state) =>
+                  Text('profile ${state.pathParameters['npub']}'),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              userProfileReactiveProvider(creatorPubkey).overrideWith((
+                ref,
+              ) async* {
+                yield UserProfile(
+                  pubkey: creatorPubkey,
+                  rawData: const {},
+                  createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+                  eventId: 'profile-event',
+                  displayName: 'Alice Beats',
+                );
+              }),
+              soundUsageCountProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(0)),
+              videosUsingSoundProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(<String>[])),
+              audioPlaybackServiceProvider.overrideWithValue(mockAudioService),
+            ],
+            child: MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              theme: VineTheme.theme,
+              routerConfig: router,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('By Alice Beats'));
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('profile npub1'), findsOneWidget);
+      });
 
       testWidgets('use sound button shows existing saved feedback', (
         tester,
