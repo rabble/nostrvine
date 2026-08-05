@@ -5071,7 +5071,9 @@ void main() {
       test('returns empty map when the endpoint is missing', () async {
         // Older deployments have no such route. Revision data is an
         // enhancement to engagement queries, so a 404 must degrade rather
-        // than throw and take the caller's list down with it.
+        // than throw and take the caller's list down with it. It degrades to
+        // an empty map rather than null because the route stays absent until
+        // the deployment changes, so callers may cache it.
         stubPost('Not Found', 404);
         final originalLogger = FunnelcakeApiClient.warningLogger;
         addTearDown(() => FunnelcakeApiClient.warningLogger = originalLogger);
@@ -5084,7 +5086,10 @@ void main() {
         expect(warnings.single, contains('count=1'));
       });
 
-      test('returns empty map when the request throws', () async {
+      test('returns null when the request throws', () async {
+        // A failed request is not an answer: callers cache an empty map as
+        // "this video has no other revisions" for the session, and a network
+        // blip must not buy that.
         when(
           () => mockHttpClient.post(
             any(),
@@ -5097,9 +5102,26 @@ void main() {
         final warnings = <String>[];
         FunnelcakeApiClient.warningLogger = warnings.add;
 
-        expect(await client.getBulkVideoRevisions([currentId]), isEmpty);
+        expect(await client.getBulkVideoRevisions([currentId]), isNull);
         expect(warnings, hasLength(1));
         expect(warnings.single, contains('network down'));
+      });
+
+      test('returns null when the request fails', () async {
+        stubPost('Internal Server Error', 500);
+        final originalLogger = FunnelcakeApiClient.warningLogger;
+        addTearDown(() => FunnelcakeApiClient.warningLogger = originalLogger);
+        final warnings = <String>[];
+        FunnelcakeApiClient.warningLogger = warnings.add;
+
+        expect(await client.getBulkVideoRevisions([currentId]), isNull);
+        expect(warnings.single, contains('status=500'));
+      });
+
+      test('returns null for an unrecognised response shape', () async {
+        stubPost('{"revisions":"nope"}', 200);
+
+        expect(await client.getBulkVideoRevisions([currentId]), isNull);
       });
 
       test('drops entries whose revision list is unusable', () async {

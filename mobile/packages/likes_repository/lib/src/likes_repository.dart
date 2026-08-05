@@ -161,6 +161,12 @@ class LikesRepository {
   /// budget is not thrown away: it keeps running into this map, so the next
   /// fetch gets the revisions this one had to skip.
   ///
+  /// Only answers are kept. A lookup that could not answer — the resolver
+  /// failed, or funnelcake is unreachable — drops its entry again, so the next
+  /// fetch retries instead of serving "this video has no other revisions" for
+  /// the rest of the session. A 404 from a deployment without the endpoint is
+  /// an answer and is kept; see [VideoRevisionsResolver].
+  ///
   /// The stored futures never complete with an error; see
   /// [_resolveRevisionChunk].
   final Map<String, Future<List<String>>> _revisionIdsByEventId = {};
@@ -1999,6 +2005,11 @@ class LikesRepository {
   /// truncated server-side, which would be indistinguishable from "this video
   /// has no other revisions". Entries are registered synchronously, before any
   /// await, so two fetches racing on the same video share one lookup.
+  ///
+  /// A chunk whose lookup could not answer (`null`) takes its own entries back
+  /// out, leaving the next fetch to retry it. Without that, one funnelcake
+  /// blip would strand a video's likers for the whole session — #6021 again,
+  /// in a narrower window.
   void _startRevisionLookups(
     VideoRevisionsResolver resolver,
     List<String> eventIds,
@@ -2013,20 +2024,31 @@ class LikesRepository {
     )) {
       final chunkFuture = _resolveRevisionChunk(resolver, chunk);
       for (final id in chunk) {
-        _revisionIdsByEventId[id] = chunkFuture.then(
-          (revisions) => revisions[id] ?? const <String>[],
-        );
+        late final Future<List<String>> entry;
+        entry = chunkFuture.then((revisions) {
+          if (revisions != null) return revisions[id] ?? const <String>[];
+          // Only drop this lookup's own entry: `clearCache` may have run and
+          // a later fetch may have registered a fresh one under the same id.
+          // What `remove` hands back is this very future; `ignore` just says
+          // so, since the value is already on its way out of this callback.
+          if (identical(_revisionIdsByEventId[id], entry)) {
+            _revisionIdsByEventId.remove(id)?.ignore();
+          }
+          return const <String>[];
+        });
+        _revisionIdsByEventId[id] = entry;
       }
     }
   }
 
-  /// Runs one chunk of the revision lookup, mapping every failure to the
-  /// empty map so the returned future can never complete with an error.
+  /// Runs one chunk of the revision lookup, mapping every failure to `null` —
+  /// the resolver's own "could not answer" — so the returned future can never
+  /// complete with an error.
   ///
   /// Carries no timeout of its own — [_resolveRevisionTargets] applies the
   /// budget per read, so a lookup that overruns it still lands in
   /// [_revisionIdsByEventId] for the next fetch.
-  Future<Map<String, List<String>>> _resolveRevisionChunk(
+  Future<Map<String, List<String>>?> _resolveRevisionChunk(
     VideoRevisionsResolver resolver,
     List<String> chunk,
   ) {
@@ -2039,26 +2061,27 @@ class LikesRepository {
       // all — needs the catch.
       return resolver(chunk).then(
         (revisions) => revisions,
-        onError: (Object error) => _emptyRevisionsAfterFailure(chunk, error),
+        onError: (Object error) => _noRevisionsAfterFailure(chunk, error),
       );
     } on Object catch (error) {
-      return Future.value(_emptyRevisionsAfterFailure(chunk, error));
+      return Future.value(_noRevisionsAfterFailure(chunk, error));
     }
   }
 
-  Map<String, List<String>> _emptyRevisionsAfterFailure(
+  Map<String, List<String>>? _noRevisionsAfterFailure(
     List<String> chunk,
     Object error,
   ) {
     // Revision lookup is an enhancement, never a precondition — a failure
-    // must not take the "Liked by" list down with it.
+    // must not take the "Liked by" list down with it. It must not be
+    // remembered as an answer either, so this is `null` rather than `{}`.
     Log.warning(
       'Failed to resolve video revisions for ${chunk.length} event id(s); '
-      'continuing with current ids only: $error',
+      'continuing with current ids only, retrying on the next fetch: $error',
       name: 'LikesRepository',
       category: LogCategory.api,
     );
-    return const {};
+    return null;
   }
 
   /// Queries kind 7 reactions by `e` tag, chunked so a coordinate with many

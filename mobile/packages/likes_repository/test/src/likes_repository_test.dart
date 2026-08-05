@@ -3299,6 +3299,63 @@ void main() {
             // Sign-out clears it with every other per-user cache.
             expect(resolverCalls, equals(2));
           });
+
+          test('retries a lookup that could not answer', () async {
+            answerQueriesByFilter();
+
+            var resolverCalls = 0;
+            repository = createRepository(
+              revisionsResolver: (ids) async {
+                resolverCalls++;
+                // A funnelcake blip on the first fetch. Caching that as "no
+                // revisions" would strand this video's likers for the rest of
+                // the session — #6021 again, in a narrower window.
+                if (resolverCalls == 1) return null;
+                return {
+                  targetEventId: [targetEventId, supersededEventId],
+                };
+              },
+            );
+
+            final duringBlip = await repository.fetchEventLikers(
+              eventId: targetEventId,
+              addressableId: addressableId,
+            );
+            final afterBlip = await repository.fetchEventLikers(
+              eventId: targetEventId,
+              addressableId: addressableId,
+            );
+
+            expect(duringBlip, equals(<String>[likerA]));
+            expect(afterBlip, containsAll(<String>[likerA, likerC]));
+            expect(resolverCalls, equals(2));
+          });
+
+          test('keeps an answer of "no revisions"', () async {
+            answerQueriesByFilter();
+
+            var resolverCalls = 0;
+            repository = createRepository(
+              revisionsResolver: (ids) async {
+                resolverCalls++;
+                // What a deployment without the endpoint answers today. It
+                // stays absent, so re-asking every fetch would only cost a
+                // round-trip per fetch back.
+                return const <String, List<String>>{};
+              },
+            );
+
+            await repository.fetchEventLikers(
+              eventId: targetEventId,
+              addressableId: addressableId,
+            );
+            await repository.fetchEventLikers(
+              eventId: targetEventId,
+              addressableId: addressableId,
+            );
+
+            expect(resolverCalls, equals(1));
+          });
         });
       });
 

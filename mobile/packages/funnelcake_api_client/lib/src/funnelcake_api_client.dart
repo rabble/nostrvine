@@ -2260,36 +2260,52 @@ class FunnelcakeApiClient {
   /// [eventIds] is capped at 100 by the server; longer lists are rejected with
   /// 400, so callers should chunk.
   ///
-  /// Returns an **empty map** rather than throwing when the API is
-  /// unconfigured, the list is empty, the endpoint is missing (older
-  /// deployments), or the request fails. Revision data is an enhancement to
-  /// engagement queries, never a precondition for them, so a caller must be
-  /// able to carry on without it.
-  Future<Map<String, List<String>>> getBulkVideoRevisions(
+  /// Never throws: revision data is an enhancement to engagement queries,
+  /// never a precondition for them, so a caller must be able to carry on
+  /// without it. The two degraded shapes are distinct, and callers that cache
+  /// the result depend on the distinction:
+  ///
+  /// * An **empty map** is an answer — this deployment has no extra revisions
+  ///   to offer. The list was empty, or the endpoint is missing (a 404 on an
+  ///   older deployment, which stays a 404 until that deployment changes).
+  /// * **`null`** means no answer: unconfigured, a non-404 error status, an
+  ///   unrecognised body, or a failed request. The same call may well succeed
+  ///   later, so a caller must not remember `null` as "no revisions".
+  Future<Map<String, List<String>>?> getBulkVideoRevisions(
     List<String> eventIds,
   ) async {
-    if (!isAvailable || eventIds.isEmpty) return const {};
+    if (eventIds.isEmpty) return const {};
+    if (!isAvailable) return null;
 
     final uri = Uri.parse('$_baseUrl/api/videos/revisions/bulk');
 
     try {
       final response = await _post(uri, body: {'event_ids': eventIds});
-      if (response.statusCode != 200) {
+      if (response.statusCode == 404) {
+        // The route is absent from this deployment, which is an answer: it
+        // will keep being absent until the deployment changes.
         warningLogger(
-          'Failed to fetch bulk video revisions; returning empty map. '
-          'status=${response.statusCode} url=$uri count=${eventIds.length}',
+          'Bulk video revisions endpoint is missing; returning empty map. '
+          'status=404 url=$uri count=${eventIds.length}',
         );
         return const {};
+      }
+      if (response.statusCode != 200) {
+        warningLogger(
+          'Failed to fetch bulk video revisions; returning null. '
+          'status=${response.statusCode} url=$uri count=${eventIds.length}',
+        );
+        return null;
       }
 
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       final revisions = data['revisions'];
       if (revisions is! Map) {
         warningLogger(
-          'Unrecognised bulk video revisions response shape; returning empty '
-          'map. shape=${_describeShape(data)}',
+          'Unrecognised bulk video revisions response shape; returning null. '
+          'shape=${_describeShape(data)}',
         );
-        return const {};
+        return null;
       }
 
       final result = <String, List<String>>{};
@@ -2307,10 +2323,10 @@ class FunnelcakeApiClient {
       return result;
     } on Object catch (error) {
       warningLogger(
-        'Failed to parse or fetch bulk video revisions; returning empty map. '
+        'Failed to parse or fetch bulk video revisions; returning null. '
         'error=$error count=${eventIds.length}',
       );
-      return const {};
+      return null;
     }
   }
 
