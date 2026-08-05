@@ -270,6 +270,20 @@ class DeepLinkService {
         );
       }
 
+      // Handle /list/{listId} links to locally known lists.
+      if (pathSegments.length == 2 && pathSegments[0] == 'list') {
+        final listId = pathSegments[1];
+        if (listId.isEmpty) {
+          return const DeepLink(type: DeepLinkType.unknown);
+        }
+        Log.info(
+          '📱 Parsed list deep link id: $listId',
+          name: 'DeepLinkService',
+          category: LogCategory.ui,
+        );
+        return DeepLink(type: DeepLinkType.list, listId: listId);
+      }
+
       // Handle /list/{pubkey}/{listId} — NIP-51 kind 30005 curated video
       // lists, addressed by author + d-tag. The author segment accepts hex,
       // npub, or nprofile and is normalized to lowercase hex for relay

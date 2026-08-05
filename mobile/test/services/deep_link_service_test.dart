@@ -229,6 +229,26 @@ void main() {
       const authorPubkey =
           'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2';
 
+      test('parses /list/{listId}', () {
+        const url = 'https://divine.video/list/my-vines';
+
+        final result = DeepLinkService.parseDeepLink(url);
+
+        expect(result.type, equals(DeepLinkType.list));
+        expect(result.listPubkey, isNull);
+        expect(result.listId, equals('my-vines'));
+      });
+
+      test('parses /list/{listId} on www host', () {
+        const url = 'https://www.divine.video/list/my-vines';
+
+        final result = DeepLinkService.parseDeepLink(url);
+
+        expect(result.type, equals(DeepLinkType.list));
+        expect(result.listPubkey, isNull);
+        expect(result.listId, equals('my-vines'));
+      });
+
       test('parses /list/{pubkey}/{listId} with hex pubkey', () {
         const url = 'https://divine.video/list/$authorPubkey/my-vines';
 
@@ -288,13 +308,23 @@ void main() {
         expect(result.listId, equals('my favorite vines'));
       });
 
-      test('rejects list URL without a list id', () {
+      test('treats a two-segment list URL as a local list id', () {
         const url = 'https://divine.video/list/$authorPubkey';
 
         final result = DeepLinkService.parseDeepLink(url);
 
-        expect(result.type, equals(DeepLinkType.unknown));
+        expect(result.type, equals(DeepLinkType.list));
         expect(result.listPubkey, isNull);
+        expect(result.listId, equals(authorPubkey));
+      });
+
+      test('rejects a 2-segment list URL with an empty list id '
+          '(trailing slash)', () {
+        const url = 'https://divine.video/list/';
+
+        final result = DeepLinkService.parseDeepLink(url);
+
+        expect(result.type, equals(DeepLinkType.unknown));
         expect(result.listId, isNull);
       });
 

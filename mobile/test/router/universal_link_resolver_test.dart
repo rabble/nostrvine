@@ -40,7 +40,14 @@ void main() {
       );
     });
 
-    test('maps list links to the internal list route', () {
+    test('maps local list links to the internal list route', () {
+      expect(
+        divineUrlToPushRoute(Uri.parse('https://divine.video/list/my-vines')),
+        equals('/list/my-vines'),
+      );
+    });
+
+    test('maps authored list links to the internal list route', () {
       const authorPubkey =
           'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2';
       expect(
@@ -160,6 +167,24 @@ void main() {
       const authorPubkey =
           'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2';
 
+      test('maps /list/:listId to the internal list route', () {
+        expect(
+          universalLinkToRouterPath(
+            Uri.parse('https://divine.video/list/my-vines'),
+          ),
+          equals('/list/my-vines'),
+        );
+      });
+
+      test('maps /list/:listId on www host to the internal list route', () {
+        expect(
+          universalLinkToRouterPath(
+            Uri.parse('https://www.divine.video/list/my-vines'),
+          ),
+          equals('/list/my-vines'),
+        );
+      });
+
       test('maps /list/:pubkey/:listId to the internal list route', () {
         expect(
           universalLinkToRouterPath(
@@ -180,9 +205,7 @@ void main() {
 
       test('returns null for /list without a list id', () {
         expect(
-          universalLinkToRouterPath(
-            Uri.parse('https://divine.video/list/$authorPubkey'),
-          ),
+          universalLinkToRouterPath(Uri.parse('https://divine.video/list')),
           isNull,
         );
       });
