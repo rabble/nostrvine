@@ -139,8 +139,9 @@ class VineBottomSheetHeader extends StatelessWidget {
 /// when only one side is filled.
 ///
 /// A fixed-size box cannot do this: slot widgets size themselves, so a sort
-/// chip is as wide as its current label and a [DivineIconButton] is 48px, not
-/// the 40px a constant placeholder used to reserve. Mirroring the filled slot
+/// chip is as wide as its current label and a [DivineIconButton] lays out at
+/// 48-52px depending on its type, never the 40px a constant placeholder used
+/// to reserve. Mirroring the filled slot
 /// always reserves exactly the right width. The copy is laid out but never
 /// painted, focusable, tappable, or announced to screen readers.
 class _SlotMirror extends StatelessWidget {
