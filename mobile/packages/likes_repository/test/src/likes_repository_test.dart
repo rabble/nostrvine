@@ -89,8 +89,20 @@ void main() {
       QueueOfflineActionCallback? queueOfflineAction,
       BlockedLikerFilter? blockFilter,
       VideoRevisionsResolver? revisionsResolver,
-      Duration revisionsResolverTimeout = const Duration(milliseconds: 750),
+      // Null means "use the shipped default", so a test can exercise the real
+      // budget rather than a value mirrored here that would drift silently.
+      Duration? revisionsResolverTimeout,
     }) {
+      if (revisionsResolverTimeout == null) {
+        return LikesRepository(
+          nostrClient: mockNostrClient,
+          localStorage: withLocalStorage ? mockLocalStorage : null,
+          isOnline: isOnline,
+          queueOfflineAction: queueOfflineAction,
+          blockFilter: blockFilter,
+          revisionsResolver: revisionsResolver,
+        );
+      }
       return LikesRepository(
         nostrClient: mockNostrClient,
         localStorage: withLocalStorage ? mockLocalStorage : null,
@@ -2934,6 +2946,46 @@ void main() {
             equals(<String>[likerA]),
           );
         });
+
+        test(
+          'default timeout tolerates a real network round trip',
+          () async {
+            // The budget exists to bound a hung resolver, not to outrun a
+            // normal one. Measured against production, POST
+            // /api/videos/revisions/bulk answers in 0.4-0.7s while merely
+            // 404ing; once it does real work, and on cellular, it is slower.
+            // At the original 750ms this test fails and the stranded liker is
+            // silently dropped — which is #6021 all over again, invisibly.
+            //
+            // Deliberately built WITHOUT an explicit timeout so it exercises
+            // the shipped default rather than a value restated in the test.
+            mockQueryEventsSequence([
+              <Event>[],
+              <Event>[],
+              [strandedReaction()],
+              <Event>[],
+            ]);
+
+            repository = createRepository(
+              revisionsResolver: (ids) async {
+                await Future<void>.delayed(const Duration(seconds: 1));
+                return {
+                  targetEventId: [targetEventId, supersededEventId],
+                };
+              },
+            );
+
+            expect(
+              await repository.fetchEventLikers(
+                eventId: targetEventId,
+                addressableId: addressableId,
+              ),
+              contains(likerC),
+              reason:
+                  'a 1s resolver must still enrich under the default budget',
+            );
+          },
+        );
 
         test('counts a liker once when found via both revisions', () async {
           // Same pubkey reacting on the old and new revision is one liker,

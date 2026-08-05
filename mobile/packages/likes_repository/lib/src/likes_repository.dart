@@ -44,7 +44,22 @@ const _reqEidChunkSize = 500;
 const _bulkVideoRevisionsBatchSize = 100;
 
 /// Maximum time revision enrichment may add to a likers/count fetch.
-const _defaultVideoRevisionsResolverTimeout = Duration(milliseconds: 750);
+///
+/// Sized against measurement, not intuition. At 750ms, 4 of 17 lookups on an
+/// iOS simulator over wired networking timed out — against an endpoint that was
+/// returning 404 and doing no database work at all (`POST
+/// /api/videos/revisions/bulk` observed at 0.405–0.715s). Once
+/// divinevideo/divine-funnelcake#799 deploys, that call does a real ClickHouse
+/// query, and users are on cellular; the timeout would fire far more often
+/// still. Every expiry silently skips enrichment and reinstates #6021 for that
+/// fetch, so a budget that is too tight makes the fix look shipped while it is
+/// intermittently doing nothing.
+///
+/// 3s covers realistic cellular round-trips while staying well inside the
+/// client's own 15s request timeout. It only bounds the enrichment tail — the
+/// baseline current-id and `a`-tag relay queries start first and run
+/// concurrently, so the list is never held back by this.
+const _defaultVideoRevisionsResolverTimeout = Duration(seconds: 3);
 
 /// Callback to check if the device is currently online
 typedef IsOnlineCallback = bool Function();
