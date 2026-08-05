@@ -15,6 +15,16 @@ void main() {
         .setMockMethodCallHandler(channel, null);
   });
 
+  // The setUp above only protects this file. Under the merged VGV isolate the
+  // statics and the mock handler outlive it, so a later suite would see
+  // Zendesk as initialized and answering `createTicket` — which flips
+  // ContentReportingService's delivery from localOnly to reached.
+  tearDown(() {
+    ZendeskSupportService.resetForTesting();
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, null);
+  });
+
   group('ZendeskSupportService.initialize', () {
     test('returns false when credentials empty', () async {
       final result = await ZendeskSupportService.initialize(
