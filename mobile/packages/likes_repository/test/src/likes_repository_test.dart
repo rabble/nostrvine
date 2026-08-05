@@ -4260,5 +4260,150 @@ void main() {
         },
       );
     });
+
+    group('coordinate-aware vote reads (#6124)', () {
+      const supersededId = 'superseded_reply_id_1234567890abcdef';
+      const editedId = 'edited_reply_id_1234567890abcdef';
+      const coordinate = '34236:$testAuthorPubkey:reply-d-tag';
+
+      test('getVoteCounts counts a vote cast before the target was edited', () {
+        // The reaction names the pre-edit id in its `e` tag, so an `e`-only
+        // query against the current id returns nothing and the score
+        // disappears for every viewer.
+        final reaction = createMockReaction(
+          id: 'voter_reaction',
+          targetEventId: supersededId,
+          authorPubkey: 'some_voter_pubkey_1234567890abcdef',
+          tags: [
+            ['e', supersededId],
+            ['a', coordinate],
+          ],
+        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [reaction]);
+
+        repository = createRepository(withLocalStorage: false);
+
+        return expectLater(
+          repository.getVoteCounts(
+            [editedId],
+            addressableIds: const {editedId: coordinate},
+          ),
+          completion(
+            isA<({Map<String, int> upvotes, Map<String, int> downvotes})>()
+                .having((r) => r.upvotes[editedId], 'upvotes', 1)
+                .having((r) => r.downvotes[editedId], 'downvotes', 0),
+          ),
+        );
+      });
+
+      test('getVoteCounts counts a dual-tagged reaction only once', () async {
+        // A multi-filter REQ emits one frame per matching filter, so the same
+        // reaction arrives on both the e-filter and the a-filter.
+        final reaction = createMockReaction(
+          id: 'voter_reaction',
+          targetEventId: editedId,
+          authorPubkey: 'some_voter_pubkey_1234567890abcdef',
+          tags: [
+            ['e', editedId],
+            ['a', coordinate],
+          ],
+        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [reaction, reaction]);
+
+        repository = createRepository(withLocalStorage: false);
+
+        final counts = await repository.getVoteCounts(
+          [editedId],
+          addressableIds: const {editedId: coordinate},
+        );
+
+        expect(counts.upvotes[editedId], equals(1));
+      });
+
+      test('getUserVoteStatuses resolves the own vote by coordinate', () async {
+        mockQueryEventsSequence([
+          [
+            createMockReaction(
+              id: 'own_downvote',
+              targetEventId: supersededId,
+              authorPubkey: testUserPubkey,
+              content: '-',
+              tags: [
+                ['e', supersededId],
+                ['a', coordinate],
+              ],
+            ),
+          ],
+          <Event>[], // no deletions
+        ]);
+
+        repository = createRepository(withLocalStorage: false);
+
+        final statuses = await repository.getUserVoteStatuses(
+          [editedId],
+          addressableIds: const {editedId: coordinate},
+        );
+
+        expect(statuses.downvotedIds, contains(editedId));
+        expect(statuses.upvotedIds, isEmpty);
+      });
+
+      test('getUserVoteStatuses still excludes a deleted coordinate '
+          'vote', () async {
+        mockQueryEventsSequence([
+          [
+            createMockReaction(
+              id: 'own_downvote',
+              targetEventId: supersededId,
+              authorPubkey: testUserPubkey,
+              content: '-',
+              tags: [
+                ['e', supersededId],
+                ['a', coordinate],
+              ],
+            ),
+          ],
+          [
+            createMockDeletion(['own_downvote']),
+          ],
+        ]);
+
+        repository = createRepository(withLocalStorage: false);
+
+        final statuses = await repository.getUserVoteStatuses(
+          [editedId],
+          addressableIds: const {editedId: coordinate},
+        );
+
+        expect(statuses.downvotedIds, isEmpty);
+      });
+
+      test('getVoteCounts ignores an unrelated coordinate', () async {
+        final reaction = createMockReaction(
+          id: 'other_reaction',
+          targetEventId: 'unrelated_event_id_1234567890abcdef',
+          authorPubkey: 'some_voter_pubkey_1234567890abcdef',
+          tags: [
+            ['a', '34236:$testAuthorPubkey:some-other-d-tag'],
+          ],
+        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [reaction]);
+
+        repository = createRepository(withLocalStorage: false);
+
+        final counts = await repository.getVoteCounts(
+          [editedId],
+          addressableIds: const {editedId: coordinate},
+        );
+
+        expect(counts.upvotes[editedId], equals(0));
+      });
+    });
   });
 }

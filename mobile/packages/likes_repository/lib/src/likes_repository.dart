@@ -1012,16 +1012,35 @@ class LikesRepository {
   /// Queries relays for Kind 7 reactions on each event, differentiating
   /// between `+` (upvote) and `-` (downvote) content.
   ///
+  /// Pass [addressableIds] — event id to `kind:pubkey:d-tag` coordinate — for
+  /// targets that are addressable. An edit republishes such a target under a
+  /// new event id, so every vote cast against the previous revision is only
+  /// reachable by coordinate; an `e`-only query reports zero and the score
+  /// vanishes for every viewer the moment the target is edited (#6124).
+  ///
   /// Returns a record of upvote and downvote count maps.
   Future<({Map<String, int> upvotes, Map<String, int> downvotes})>
-  getVoteCounts(List<String> eventIds) async {
+  getVoteCounts(
+    List<String> eventIds, {
+    Map<String, String> addressableIds = const {},
+  }) async {
     if (eventIds.isEmpty) {
       return (upvotes: <String, int>{}, downvotes: <String, int>{});
     }
 
-    final filter = Filter(kinds: const [EventKind.reaction], e: eventIds);
+    final eventIdByCoordinate = _voteTargetsByCoordinate(
+      eventIds,
+      addressableIds,
+    );
 
-    final events = await _nostrClient.queryEvents([filter]);
+    final events = await _nostrClient.queryEvents([
+      Filter(kinds: const [EventKind.reaction], e: eventIds),
+      if (eventIdByCoordinate.isNotEmpty)
+        Filter(
+          kinds: const [EventKind.reaction],
+          a: eventIdByCoordinate.keys.toList(),
+        ),
+    ]);
 
     final upvotes = <String, int>{};
     final downvotes = <String, int>{};
@@ -1030,19 +1049,25 @@ class LikesRepository {
       downvotes[eventId] = 0;
     }
 
+    final knownEventIds = eventIds.toSet();
+    // A multi-filter REQ emits one frame per matching filter, so a reaction
+    // carrying both the `e` and the `a` tag arrives twice — count each
+    // reaction once.
+    final counted = <String>{};
     for (final event in events) {
-      for (final tag in event.tags) {
-        if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
-          final targetId = tag[1];
-          if (upvotes.containsKey(targetId)) {
-            if (event.content == _downvoteContent) {
-              downvotes[targetId] = downvotes[targetId]! + 1;
-            } else {
-              // '+' and any other content counts as upvote
-              upvotes[targetId] = upvotes[targetId]! + 1;
-            }
-          }
-        }
+      if (!counted.add(event.id)) continue;
+      final targetId = _resolveVoteTarget(
+        event,
+        knownEventIds,
+        eventIdByCoordinate,
+      );
+      if (targetId == null) continue;
+
+      if (event.content == _downvoteContent) {
+        downvotes[targetId] = downvotes[targetId]! + 1;
+      } else {
+        // '+' and any other content counts as upvote
+        upvotes[targetId] = upvotes[targetId]! + 1;
       }
     }
 
@@ -1051,20 +1076,38 @@ class LikesRepository {
 
   /// Get the user's current vote status for multiple events.
   ///
+  /// Pass [addressableIds] for addressable targets, for the same reason
+  /// [getVoteCounts] needs it: without the coordinate the voter's own arrow
+  /// silently un-fills after the target is edited (#6124).
+  ///
   /// Returns maps of event IDs the user has upvoted or downvoted.
   Future<({Set<String> upvotedIds, Set<String> downvotedIds})>
-  getUserVoteStatuses(List<String> eventIds) async {
+  getUserVoteStatuses(
+    List<String> eventIds, {
+    Map<String, String> addressableIds = const {},
+  }) async {
     if (eventIds.isEmpty) {
       return (upvotedIds: <String>{}, downvotedIds: <String>{});
     }
 
-    final filter = Filter(
-      kinds: const [EventKind.reaction],
-      authors: [_nostrClient.publicKey],
-      e: eventIds,
+    final eventIdByCoordinate = _voteTargetsByCoordinate(
+      eventIds,
+      addressableIds,
     );
 
-    final events = await _nostrClient.queryEvents([filter]);
+    final events = await _nostrClient.queryEvents([
+      Filter(
+        kinds: const [EventKind.reaction],
+        authors: [_nostrClient.publicKey],
+        e: eventIds,
+      ),
+      if (eventIdByCoordinate.isNotEmpty)
+        Filter(
+          kinds: const [EventKind.reaction],
+          authors: [_nostrClient.publicKey],
+          a: eventIdByCoordinate.keys.toList(),
+        ),
+    ]);
 
     // Also fetch deletions to exclude deleted votes
     final deletionFilter = Filter(
@@ -1084,12 +1127,17 @@ class LikesRepository {
 
     final upvotedIds = <String>{};
     final downvotedIds = <String>{};
+    final knownEventIds = eventIds.toSet();
 
     for (final event in events) {
       if (deletedIds.contains(event.id)) continue;
 
-      final targetId = _extractTargetEventId(event);
-      if (targetId == null || !eventIds.contains(targetId)) continue;
+      final targetId = _resolveVoteTarget(
+        event,
+        knownEventIds,
+        eventIdByCoordinate,
+      );
+      if (targetId == null) continue;
 
       if (event.content == _downvoteContent) {
         downvotedIds.add(targetId);
@@ -1099,6 +1147,45 @@ class LikesRepository {
     }
 
     return (upvotedIds: upvotedIds, downvotedIds: downvotedIds);
+  }
+
+  /// Inverts [addressableIds] into a coordinate → event-id lookup, limited to
+  /// the ids actually being queried and skipping blank coordinates.
+  Map<String, String> _voteTargetsByCoordinate(
+    List<String> eventIds,
+    Map<String, String> addressableIds,
+  ) {
+    final byCoordinate = <String, String>{};
+    for (final eventId in eventIds) {
+      final coordinate = addressableIds[eventId];
+      if (coordinate != null && coordinate.isNotEmpty) {
+        byCoordinate[coordinate] = eventId;
+      }
+    }
+    return byCoordinate;
+  }
+
+  /// Resolves which queried target a reaction belongs to.
+  ///
+  /// Matches the `e` tag first, then falls back to the `a` tag so a reaction
+  /// cast against a superseded revision of an addressable target still lands
+  /// on the revision the caller is currently showing (#6124). Returns `null`
+  /// when the reaction targets nothing in the queried set.
+  String? _resolveVoteTarget(
+    Event event,
+    Set<String> knownEventIds,
+    Map<String, String> eventIdByCoordinate,
+  ) {
+    for (final tag in event.tags) {
+      if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
+        final targetId = tag[1];
+        if (knownEventIds.contains(targetId)) return targetId;
+      }
+    }
+    if (eventIdByCoordinate.isEmpty) return null;
+    final coordinate = _extractAddressableId(event);
+    if (coordinate == null) return null;
+    return eventIdByCoordinate[coordinate];
   }
 
   /// Publish a downvote (Kind 7 reaction with content '-').

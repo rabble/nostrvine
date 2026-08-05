@@ -64,10 +64,22 @@ final class CommentVoteToggled extends CommentReactionsEvent {
 /// the loaded-comment set changes so the reactions cubit can populate counts
 /// for the visible list.
 final class CommentVoteCountsFetchRequested extends CommentReactionsEvent {
-  const CommentVoteCountsFetchRequested(this.commentIds);
+  const CommentVoteCountsFetchRequested(
+    this.commentIds, {
+    this.addressableIdsByCommentId = const {},
+  });
 
   /// The set of comment IDs to fetch vote counts for.
   final List<String> commentIds;
+
+  /// Own addressable coordinates for those of [commentIds] that have one,
+  /// keyed by comment id.
+  ///
+  /// Votes on an addressable target carry its coordinate, and an edit mints a
+  /// new event id — so without this the counts and the viewer's own arrow
+  /// read as zero/unvoted for every revision after the first (#6124). Empty
+  /// for threads of plain Kind 1111 comments.
+  final Map<String, String> addressableIdsByCommentId;
 }
 
 /// Report a comment (publishes Kind 1984 / NIP-56).

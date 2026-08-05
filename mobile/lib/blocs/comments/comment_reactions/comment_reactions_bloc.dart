@@ -141,8 +141,14 @@ class CommentReactionsBloc
 
     try {
       final results = await Future.wait([
-        _likesRepository.getVoteCounts(event.commentIds),
-        _likesRepository.getUserVoteStatuses(event.commentIds),
+        _likesRepository.getVoteCounts(
+          event.commentIds,
+          addressableIds: event.addressableIdsByCommentId,
+        ),
+        _likesRepository.getUserVoteStatuses(
+          event.commentIds,
+          addressableIds: event.addressableIdsByCommentId,
+        ),
       ]);
 
       final voteCounts =

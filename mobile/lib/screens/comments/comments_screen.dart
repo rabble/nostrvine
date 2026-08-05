@@ -396,8 +396,20 @@ class OutboxBridges extends StatelessWidget {
                 )
                 .toList();
             if (newIds.isEmpty) return;
+            // Video replies are addressable; their votes are only reachable by
+            // coordinate once the reply has been edited (#6124).
+            final addressableIds = <String, String>{};
+            for (final id in newIds) {
+              final coordinate = state.commentsById[id]?.addressableId;
+              if (coordinate != null && coordinate.isNotEmpty) {
+                addressableIds[id] = coordinate;
+              }
+            }
             ctx.read<CommentReactionsBloc>().add(
-              CommentVoteCountsFetchRequested(newIds),
+              CommentVoteCountsFetchRequested(
+                newIds,
+                addressableIdsByCommentId: addressableIds,
+              ),
             );
           },
         ),

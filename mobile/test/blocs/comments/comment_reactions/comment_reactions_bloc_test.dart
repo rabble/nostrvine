@@ -124,6 +124,56 @@ void main() {
       );
 
       blocTest<CommentReactionsBloc, CommentReactionsState>(
+        'forwards the coordinates to both read paths (#6124)',
+        setUp: () {
+          when(
+            () => mockLikesRepository.getVoteCounts(
+              any(),
+              addressableIds: any(named: 'addressableIds'),
+            ),
+          ).thenAnswer(
+            (_) async => (upvotes: <String, int>{}, downvotes: <String, int>{}),
+          );
+          when(
+            () => mockLikesRepository.getUserVoteStatuses(
+              any(),
+              addressableIds: any(named: 'addressableIds'),
+            ),
+          ).thenAnswer(
+            (_) async => (upvotedIds: <String>{}, downvotedIds: <String>{}),
+          );
+        },
+        build: createBloc,
+        act: (b) => b.add(
+          CommentVoteCountsFetchRequested(
+            [validId('c1')],
+            addressableIdsByCommentId: {
+              validId('c1'): '34236:${validId('author1')}:reply-d',
+            },
+          ),
+        ),
+        verify: (_) {
+          // Both reads are e-only without this; a vote on an edited video
+          // reply then reads as zero for the counts and unvoted for the arrow.
+          final expected = {
+            validId('c1'): '34236:${validId('author1')}:reply-d',
+          };
+          verify(
+            () => mockLikesRepository.getVoteCounts(
+              [validId('c1')],
+              addressableIds: expected,
+            ),
+          ).called(1);
+          verify(
+            () => mockLikesRepository.getUserVoteStatuses(
+              [validId('c1')],
+              addressableIds: expected,
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<CommentReactionsBloc, CommentReactionsState>(
         'no-ops when commentIds is empty',
         build: createBloc,
         act: (b) => b.add(const CommentVoteCountsFetchRequested([])),
