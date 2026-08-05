@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce/hive.dart';
+import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/cache_recovery_service.dart';
 import 'package:path/path.dart' as p;
 
@@ -17,6 +18,12 @@ void main() {
 
       setUpAll(() async {
         await initializeServiceTestEnvironment();
+        if (!Hive.isAdapterRegistered(1)) {
+          Hive.registerAdapter(UploadStatusAdapter());
+        }
+        if (!Hive.isAdapterRegistered(2)) {
+          Hive.registerAdapter(PendingUploadAdapter());
+        }
       });
 
       setUp(() async {
@@ -35,16 +42,27 @@ void main() {
       test(
         'preserves pending uploads while clearing disposable Hive caches',
         () async {
-          final pendingUploads = await Hive.openBox('pending_uploads');
-          final videoCache = await Hive.openBox('video_cache');
-          await pendingUploads.put('upload-id', 'durable upload');
+          final pendingUploads = Hive.isBoxOpen('pending_uploads')
+              ? Hive.box<PendingUpload>('pending_uploads')
+              : await Hive.openBox<PendingUpload>('pending_uploads');
+          final videoCache = Hive.isBoxOpen('video_cache')
+              ? Hive.box('video_cache')
+              : await Hive.openBox('video_cache');
+          final upload = PendingUpload.create(
+            localVideoPath: '/tmp/durable-upload.mp4',
+            nostrPubkey:
+                'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          );
+          await pendingUploads.put(upload.id, upload);
           await videoCache.put('cache-id', 'cached video');
 
           await CacheRecoveryService.clearHiveBoxesForTesting();
 
           expect(
-            Hive.box('pending_uploads').get('upload-id'),
-            'durable upload',
+            Hive.box<PendingUpload>(
+              'pending_uploads',
+            ).get(upload.id)?.localVideoPath,
+            upload.localVideoPath,
           );
           if (Hive.isBoxOpen('video_cache')) {
             expect(Hive.box('video_cache').get('cache-id'), isNull);
