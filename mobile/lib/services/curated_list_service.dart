@@ -1092,9 +1092,9 @@ class CuratedListService extends ChangeNotifier {
   ///
   /// [confirmed] picks the failure semantics. Set, the publish waits for relay
   /// `OK` frames and a `false` return means no relay took the event. Unset,
-  /// the SDK queues a failed send and replays it on reconnect
-  /// (`relay_pool.dart:1624` sends with `queueIfFailed: deadline == null`),
-  /// so `false` means "not yet" rather than "never".
+  /// the SDK queues a failed send and replays it on reconnect (`RelayPool`
+  /// sends with `queueIfFailed: deadline == null`), so `false` means "not
+  /// yet" rather than "never".
   ///
   /// A caller that rolls local state back on failure must pass `true`, or it
   /// undoes a list the relays still receive when the socket comes back. A
