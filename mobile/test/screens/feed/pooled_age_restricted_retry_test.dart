@@ -39,7 +39,7 @@ String get _failureText =>
     lookupAppLocalizations(const Locale('en')).videoErrorVerifyAgeFailed;
 
 String get _unavailableText =>
-    lookupAppLocalizations(const Locale('en')).videoErrorUnavailable;
+    lookupAppLocalizations(const Locale('en')).videoErrorUnavailableBody;
 
 /// Retry recovered playback.
 const PooledRetryOutcome _retryRecovered = (succeeded: true, errorType: null);

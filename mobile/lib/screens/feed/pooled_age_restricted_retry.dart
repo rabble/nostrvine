@@ -203,10 +203,13 @@ void _showVerifyAgeFailed(BuildContext context) {
 }
 
 /// Surfaces a neutral unavailable message after valid auth was rejected.
+///
+/// Uses the body copy rather than the title so the snackbar reads as a
+/// sentence instead of repeating the overlay heading verbatim.
 void _showVideoUnavailable(BuildContext context) {
   if (!context.mounted) return;
   ScaffoldMessenger.of(context).showSnackBar(
-    DivineSnackbarContainer.snackBar(context.l10n.videoErrorUnavailable),
+    DivineSnackbarContainer.snackBar(context.l10n.videoErrorUnavailableBody),
   );
 }
 
