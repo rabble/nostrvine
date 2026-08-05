@@ -56,9 +56,12 @@ const _bulkVideoRevisionsBatchSize = 100;
 /// intermittently doing nothing.
 ///
 /// 3s covers realistic cellular round-trips while staying well inside the
-/// client's own 15s request timeout. It only bounds the enrichment tail — the
-/// baseline current-id and `a`-tag relay queries start first and run
-/// concurrently, so the list is never held back by this.
+/// client's own 15s request timeout. It is a ceiling on the whole fetch, not
+/// on enrichment alone: the resolved-likers fetch awaits the resolver before
+/// returning, so a hung one delays the likers list and the like count by this
+/// budget even when the baseline relay queries already answered.
+/// Starting those queries first keeps them off the critical path; it does not
+/// release the result early.
 const _defaultVideoRevisionsResolverTimeout = Duration(seconds: 3);
 
 /// Callback to check if the device is currently online
