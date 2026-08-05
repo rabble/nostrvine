@@ -577,6 +577,8 @@
     "videoErrorUnsupportedFormat": "Videoformat stöds inte",
     "videoErrorPlayback": "Fel vid videouppspelning",
     "videoErrorAgeRestricted": "Åldersbegränsat innehåll",
+    "videoErrorUnavailable": "Videon är otillgänglig",
+    "videoErrorUnavailableBody": "Den här videon är inte tillgänglig just nu.",
     "videoErrorVerifyAge": "Verifiera ålder",
     "videoErrorRetry": "Försök igen",
     "videoErrorContentRestricted": "Innehåll begränsat",

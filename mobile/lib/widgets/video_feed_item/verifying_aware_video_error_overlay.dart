@@ -1,8 +1,6 @@
 // ABOUTME: Wraps PooledVideoErrorOverlay with the live "verifying age" flag
 // ABOUTME: from VideoPlaybackStatusCubit plus the Verify-age retry wiring.
 
-import 'dart:async';
-
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -47,7 +45,7 @@ class VerifyingAwareVideoErrorOverlay extends ConsumerWidget {
   final VoidCallback? onSkip;
 
   /// Reloads playback for the retried item with the signed viewer-auth headers.
-  final FutureOr<bool> Function(Map<String, String>) retryPlayback;
+  final PooledRetryPlayback retryPlayback;
 
   final VideoErrorType? errorType;
   final bool shouldPortraitExpand;
@@ -58,10 +56,13 @@ class VerifyingAwareVideoErrorOverlay extends ConsumerWidget {
     return BlocSelector<
       VideoPlaybackStatusCubit,
       VideoPlaybackStatusState,
-      bool
+      ({bool isAuthRetryExhausted, bool isVerifying})
     >(
-      selector: (state) => state.isVerifying(video.id),
-      builder: (context, isVerifying) => PooledVideoErrorOverlay(
+      selector: (state) => (
+        isAuthRetryExhausted: state.hasAuthRetryExhausted(video.id),
+        isVerifying: state.isVerifying(video.id),
+      ),
+      builder: (context, status) => PooledVideoErrorOverlay(
         video: video,
         onRetry: onRetry,
         onSkip: onSkip,
@@ -74,7 +75,8 @@ class VerifyingAwareVideoErrorOverlay extends ConsumerWidget {
           retryPlayback: retryPlayback,
         ),
         errorType: errorType,
-        isVerifying: isVerifying,
+        isVerifying: status.isVerifying,
+        isAuthRetryExhausted: status.isAuthRetryExhausted,
         shouldPortraitExpand: shouldPortraitExpand,
         isSquare: isSquare,
       ),

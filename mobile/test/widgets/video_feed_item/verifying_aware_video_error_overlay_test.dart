@@ -81,7 +81,7 @@ void main() {
                   index: 0,
                   resolveSha256: _resolveSha256,
                   onRetry: () {},
-                  retryPlayback: (_) => true,
+                  retryPlayback: (_) => (succeeded: true, errorType: null),
                   errorType: VideoErrorType.ageRestricted,
                   shouldPortraitExpand: true,
                   isSquare: false,

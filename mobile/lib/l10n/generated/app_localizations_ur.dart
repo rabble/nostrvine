@@ -1496,6 +1496,12 @@ class AppLocalizationsUr extends AppLocalizations {
   String get videoErrorAgeRestricted => 'عمر محدود مواد';
 
   @override
+  String get videoErrorUnavailable => 'ویڈیو دستیاب نہیں';
+
+  @override
+  String get videoErrorUnavailableBody => 'یہ ویڈیو اس وقت دستیاب نہیں ہے۔';
+
+  @override
   String get videoErrorVerifyAge => 'عمر کی تصدیق کریں';
 
   @override

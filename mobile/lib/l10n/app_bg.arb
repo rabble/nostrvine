@@ -608,6 +608,8 @@
     "videoErrorUnsupportedFormat": "Неподдържан видео формат",
     "videoErrorPlayback": "Грешка при възпроизвеждане",
     "videoErrorAgeRestricted": "Съдържание с възрастово ограничение",
+    "videoErrorUnavailable": "Видеото е недостъпно",
+    "videoErrorUnavailableBody": "Това видео не е налично в момента.",
     "videoErrorVerifyAge": "Потвърди възрастта",
     "videoErrorRetry": "Опитай пак",
     "videoErrorContentRestricted": "Ограничено съдържание",

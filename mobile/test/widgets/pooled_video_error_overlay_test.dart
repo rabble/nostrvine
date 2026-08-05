@@ -68,6 +68,7 @@ void main() {
       VoidCallback? onVerifyAge,
       VoidCallback? onSkip,
       bool isVerifying = false,
+      bool isAuthRetryExhausted = false,
       VideoPlaybackStatusCubit? playbackStatusCubit,
     }) {
       final overlay = PooledVideoErrorOverlay(
@@ -77,6 +78,7 @@ void main() {
         onVerifyAge: onVerifyAge,
         errorType: errorType,
         isVerifying: isVerifying,
+        isAuthRetryExhausted: isAuthRetryExhausted,
       );
       return ProviderScope(
         overrides: [
@@ -191,32 +193,31 @@ void main() {
         expect(find.text(l10n.videoErrorRetry), findsNothing);
       });
 
-      testWidgets(
-        'shows retryable playback error for third-party video URLs',
-        (tester) async {
-          await tester.pumpWidget(
-            buildWidget(
-              errorType: VideoErrorType.forbidden,
-              video: thirdPartyVideo,
-              onSkip: () => skipPressed = true,
-            ),
-          );
-          await tester.pumpAndSettle();
+      testWidgets('shows retryable playback error for third-party video URLs', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(
+            errorType: VideoErrorType.forbidden,
+            video: thirdPartyVideo,
+            onSkip: () => skipPressed = true,
+          ),
+        );
+        await tester.pumpAndSettle();
 
-          expect(_findDivineIcon(DivineIconName.warningCircle), findsOneWidget);
-          expect(find.text(l10n.videoErrorPlayback), findsOneWidget);
-          expect(find.text(l10n.videoErrorContentRestricted), findsNothing);
-          expect(find.text(l10n.videoErrorContentRestrictedBody), findsNothing);
-          expect(find.text(l10n.videoErrorSkip), findsNothing);
-          expect(find.text(l10n.videoErrorRetry), findsOneWidget);
+        expect(_findDivineIcon(DivineIconName.warningCircle), findsOneWidget);
+        expect(find.text(l10n.videoErrorPlayback), findsOneWidget);
+        expect(find.text(l10n.videoErrorContentRestricted), findsNothing);
+        expect(find.text(l10n.videoErrorContentRestrictedBody), findsNothing);
+        expect(find.text(l10n.videoErrorSkip), findsNothing);
+        expect(find.text(l10n.videoErrorRetry), findsOneWidget);
 
-          await tester.tap(find.text(l10n.videoErrorRetry));
-          await tester.pump();
+        await tester.tap(find.text(l10n.videoErrorRetry));
+        await tester.pump();
 
-          expect(retryPressed, isTrue);
-          expect(skipPressed, isFalse);
-        },
-      );
+        expect(retryPressed, isTrue);
+        expect(skipPressed, isFalse);
+      });
     });
 
     group('ageRestricted', () {
@@ -334,6 +335,40 @@ void main() {
 
         expect(verifyAgePressed, isFalse);
       });
+
+      testWidgets(
+        'shows unavailable copy after authenticated retry is exhausted',
+        (tester) async {
+          final playbackStatusCubit = VideoPlaybackStatusCubit();
+          addTearDown(playbackStatusCubit.close);
+          playbackStatusCubit.markAuthRetryExhausted(divineVideo.id);
+
+          await tester.pumpWidget(
+            buildWidget(
+              errorType: VideoErrorType.ageRestricted,
+              onVerifyAge: () => verifyAgePressed = true,
+              onSkip: () => skipPressed = true,
+              isAuthRetryExhausted: true,
+              playbackStatusCubit: playbackStatusCubit,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(_findDivineIcon(DivineIconName.warningCircle), findsOneWidget);
+          expect(find.text(l10n.videoErrorUnavailable), findsOneWidget);
+          expect(find.text(l10n.videoErrorUnavailableBody), findsOneWidget);
+          expect(find.text(l10n.videoErrorAgeRestricted), findsNothing);
+          expect(find.text(l10n.videoErrorVerifyAgeButton), findsNothing);
+          expect(find.text(l10n.videoErrorRetry), findsNothing);
+          expect(find.text(l10n.videoErrorSkip), findsOneWidget);
+
+          await tester.tap(find.text(l10n.videoErrorSkip));
+          await tester.pump();
+
+          expect(skipPressed, isTrue);
+          expect(verifyAgePressed, isFalse);
+        },
+      );
     });
 
     group('notFound', () {

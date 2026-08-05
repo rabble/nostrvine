@@ -1500,6 +1500,12 @@ class AppLocalizationsVi extends AppLocalizations {
   String get videoErrorAgeRestricted => 'Nội dung giới hạn độ tuổi';
 
   @override
+  String get videoErrorUnavailable => 'Video không khả dụng';
+
+  @override
+  String get videoErrorUnavailableBody => 'Video này hiện không khả dụng.';
+
+  @override
   String get videoErrorVerifyAge => 'Xác minh tuổi';
 
   @override

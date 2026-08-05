@@ -1283,6 +1283,20 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     }
   }
 
+  /// The error the player classified for [index], or `null` when that slot is
+  /// not currently in an error state.
+  ///
+  /// Mirrors the value handed to `errorBuilder`, so a caller that just awaited
+  /// [retryAt] can tell a repeated auth rejection apart from an unrelated
+  /// playback failure (network drop, decode error) that happened to land on
+  /// the same reload.
+  VideoErrorType? errorTypeAt(int index) {
+    if (!_errors.contains(index)) return null;
+    return _terminalErrorTypeAt(index) ??
+        _errorTypes[index] ??
+        VideoErrorType.generic;
+  }
+
   // coverage:ignore-start
   // Manual retry delegates back into native controller init, which is not
   // executable in package tests without platform players.

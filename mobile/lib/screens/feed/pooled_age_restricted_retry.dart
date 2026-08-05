@@ -4,6 +4,8 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:infinite_video_feed/infinite_video_feed.dart'
+    show VideoErrorType;
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
@@ -18,6 +20,18 @@ const _logName = 'PooledAgeRestrictedRetry';
 typedef PooledAgeRestrictedSha256Resolver =
     String? Function({String? explicitSha256, String? videoUrl});
 
+/// Outcome of a viewer-auth playback retry.
+///
+/// [errorType] carries the error the player classified for the retried item
+/// when [succeeded] is `false`. Only a repeated [VideoErrorType.ageRestricted]
+/// proves the age gate itself is unclearable; every other failure is an
+/// unrelated playback problem that must stay retryable. #6253
+typedef PooledRetryOutcome = ({bool succeeded, VideoErrorType? errorType});
+
+/// Reloads playback for the retried item with signed viewer-auth headers.
+typedef PooledRetryPlayback =
+    FutureOr<PooledRetryOutcome> Function(Map<String, String> httpHeaders);
+
 /// Verifies access to an age-restricted pooled video, then retries playback
 /// with viewer auth headers on the active pooled controller item.
 Future<void> retryAgeRestrictedPooledVideo({
@@ -26,7 +40,7 @@ Future<void> retryAgeRestrictedPooledVideo({
   required VideoEvent video,
   required int index,
   required PooledAgeRestrictedSha256Resolver resolveSha256,
-  required FutureOr<bool> Function(Map<String, String>) retryPlayback,
+  required PooledRetryPlayback retryPlayback,
 }) async {
   Log.info(
     '🔐 [AGE-GATE] Starting age-restricted pooled retry for video ${video.id}',
@@ -87,10 +101,16 @@ Future<void> retryAgeRestrictedPooledVideo({
         // The hash-bound token authorizes any variant of the blob, so the feed
         // applies these headers to every resolved playback source
         // (optimized/HLS/raw) for the retried item.
-        final playbackSucceeded = await retryPlayback(headers);
+        final outcome = await retryPlayback(headers);
         if (!context.mounted) return;
-        if (!playbackSucceeded) {
-          _showVerifyAgeFailed(context);
+        if (!outcome.succeeded) {
+          if (!_isAuthRejection(outcome)) {
+            _showVerifyAgeFailed(context);
+            return;
+          }
+          playbackStatusCubit.markAuthRetryExhausted(video.id);
+          playbackStatusCubit.report(video.id, PlaybackStatus.unavailable);
+          _showVideoUnavailable(context);
           return;
         }
         playbackStatusCubit.report(video.id, PlaybackStatus.ready);
@@ -129,7 +149,7 @@ Future<void> autoRetryAgeRestrictedPooledVideo({
   required VideoEvent video,
   required int index,
   required PooledAgeRestrictedSha256Resolver resolveSha256,
-  required FutureOr<bool> Function(Map<String, String>) retryPlayback,
+  required PooledRetryPlayback retryPlayback,
 }) async {
   final mediaAuthInterceptor = ref.read(mediaAuthInterceptorProvider);
   if (!mediaAuthInterceptor.canAutoAuthorizeAdultMedia) return;
@@ -152,8 +172,14 @@ Future<void> autoRetryAgeRestrictedPooledVideo({
 
     switch (authResult) {
       case ViewerAuthAuthorized(:final headers):
-        final playbackSucceeded = await retryPlayback(headers);
-        if (!context.mounted || !playbackSucceeded) return;
+        final outcome = await retryPlayback(headers);
+        if (!context.mounted) return;
+        if (!outcome.succeeded) {
+          if (!_isAuthRejection(outcome)) return;
+          playbackStatusCubit.markAuthRetryExhausted(video.id);
+          playbackStatusCubit.report(video.id, PlaybackStatus.unavailable);
+          return;
+        }
         playbackStatusCubit.report(video.id, PlaybackStatus.ready);
       case ViewerAuthSignerUnreachable():
       case ViewerAuthBlockedByPreference():
@@ -175,6 +201,26 @@ void _showVerifyAgeFailed(BuildContext context) {
     DivineSnackbarContainer.snackBar(context.l10n.videoErrorVerifyAgeFailed),
   );
 }
+
+/// Surfaces a neutral unavailable message after valid auth was rejected.
+///
+/// Uses the body copy rather than the title so the snackbar reads as a
+/// sentence instead of repeating the overlay heading verbatim.
+void _showVideoUnavailable(BuildContext context) {
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    DivineSnackbarContainer.snackBar(context.l10n.videoErrorUnavailableBody),
+  );
+}
+
+/// Whether a failed retry was the media server rejecting the signed request
+/// again, rather than an unrelated playback failure on the same reload.
+///
+/// A network drop, decode failure, or timeout also fails the retry, and
+/// treating those as an exhausted age gate would strand a recoverable video
+/// as permanently unavailable for the rest of the session.
+bool _isAuthRejection(PooledRetryOutcome outcome) =>
+    outcome.errorType == VideoErrorType.ageRestricted;
 
 /// Tells an age-verified viewer that adult content is switched off in their
 /// Content Filters, so they know where to opt in rather than re-verifying.

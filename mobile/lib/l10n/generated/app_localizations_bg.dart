@@ -1514,6 +1514,12 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoErrorAgeRestricted => 'Съдържание с възрастово ограничение';
 
   @override
+  String get videoErrorUnavailable => 'Видеото е недостъпно';
+
+  @override
+  String get videoErrorUnavailableBody => 'Това видео не е налично в момента.';
+
+  @override
   String get videoErrorVerifyAge => 'Потвърди възрастта';
 
   @override

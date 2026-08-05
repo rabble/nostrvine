@@ -2658,6 +2658,18 @@ abstract class AppLocalizations {
   /// **'Age-restricted content'**
   String get videoErrorAgeRestricted;
 
+  /// Title shown when authenticated retry still cannot play a video, so the app should not claim age restriction.
+  ///
+  /// In en, this message translates to:
+  /// **'Video unavailable'**
+  String get videoErrorUnavailable;
+
+  /// Body shown when authenticated retry still cannot play a video. The copy should be neutral and not blame age verification.
+  ///
+  /// In en, this message translates to:
+  /// **'This video isn\'t available right now.'**
+  String get videoErrorUnavailableBody;
+
   /// No description provided for @videoErrorVerifyAge.
   ///
   /// In en, this message translates to:

@@ -7,12 +7,10 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_state
 import 'package:openvine/l10n/l10n.dart';
 
 /// Displayed in place of the normal feed overlay when the active video's
-/// [PlaybackStatus] is [PlaybackStatus.forbidden] or
-/// [PlaybackStatus.ageRestricted].
+/// [PlaybackStatus] is [PlaybackStatus.forbidden],
+/// [PlaybackStatus.ageRestricted], or [PlaybackStatus.unavailable].
 ///
-/// This widget is only valid for [PlaybackStatus.forbidden] and
-/// [PlaybackStatus.ageRestricted]. Other values throw an assertion in debug
-/// builds.
+/// Other values throw an assertion in debug builds.
 ///
 /// When [status] is [PlaybackStatus.ageRestricted], [onVerifyAge] MUST be
 /// provided so the primary CTA can be wired to the caller's auth flow.
@@ -25,8 +23,10 @@ class ModeratedContentOverlay extends StatelessWidget {
     super.key,
   }) : assert(
          status == PlaybackStatus.forbidden ||
-             status == PlaybackStatus.ageRestricted,
-         'ModeratedContentOverlay only supports forbidden and ageRestricted',
+             status == PlaybackStatus.ageRestricted ||
+             status == PlaybackStatus.unavailable,
+         'ModeratedContentOverlay only supports forbidden, ageRestricted, '
+         'and unavailable',
        ),
        assert(
          status != PlaybackStatus.ageRestricted || onVerifyAge != null,
@@ -48,16 +48,23 @@ class ModeratedContentOverlay extends StatelessWidget {
   final bool isVerifying;
 
   bool get _isAgeRestricted => status == PlaybackStatus.ageRestricted;
+  bool get _isUnavailable => status == PlaybackStatus.unavailable;
 
   @override
   Widget build(BuildContext context) {
-    final icon = _isAgeRestricted
+    final icon = _isUnavailable
+        ? DivineIconName.warningCircle
+        : _isAgeRestricted
         ? DivineIconName.lockSimple
         : DivineIconName.shieldCheck;
-    final title = _isAgeRestricted
+    final title = _isUnavailable
+        ? context.l10n.videoErrorUnavailable
+        : _isAgeRestricted
         ? context.l10n.videoErrorAgeRestricted
         : context.l10n.videoErrorContentRestricted;
-    final body = _isAgeRestricted
+    final body = _isUnavailable
+        ? context.l10n.videoErrorUnavailableBody
+        : _isAgeRestricted
         ? context.l10n.videoErrorVerifyAgeBody
         : context.l10n.videoErrorContentRestrictedBody;
 

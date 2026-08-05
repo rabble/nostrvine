@@ -1408,6 +1408,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoErrorAgeRestricted => '年龄限制内容';
 
   @override
+  String get videoErrorUnavailable => '视频不可用';
+
+  @override
+  String get videoErrorUnavailableBody => '此视频目前不可用。';
+
+  @override
   String get videoErrorVerifyAge => '验证年龄';
 
   @override

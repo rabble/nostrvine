@@ -1399,6 +1399,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoErrorAgeRestricted => '연령 제한 콘텐츠';
 
   @override
+  String get videoErrorUnavailable => '영상을 사용할 수 없어요';
+
+  @override
+  String get videoErrorUnavailableBody => '이 영상은 지금 사용할 수 없어요.';
+
+  @override
   String get videoErrorVerifyAge => '나이 인증';
 
   @override

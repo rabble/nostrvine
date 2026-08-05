@@ -777,6 +777,14 @@
   "videoErrorUnsupportedFormat": "Unsupported video format",
   "videoErrorPlayback": "Video playback error",
   "videoErrorAgeRestricted": "Age-restricted content",
+  "videoErrorUnavailable": "Video unavailable",
+  "@videoErrorUnavailable": {
+    "description": "Title shown when authenticated retry still cannot play a video, so the app should not claim age restriction."
+  },
+  "videoErrorUnavailableBody": "This video isn't available right now.",
+  "@videoErrorUnavailableBody": {
+    "description": "Body shown when authenticated retry still cannot play a video. The copy should be neutral and not blame age verification."
+  },
   "videoErrorVerifyAge": "Verify Age",
   "videoErrorRetry": "Retry",
   "videoErrorContentRestricted": "Content restricted",

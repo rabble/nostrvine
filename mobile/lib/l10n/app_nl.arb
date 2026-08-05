@@ -577,6 +577,8 @@
     "videoErrorUnsupportedFormat": "Niet-ondersteund videoformaat",
     "videoErrorPlayback": "Fout bij afspelen video",
     "videoErrorAgeRestricted": "Leeftijdsbeperkte inhoud",
+    "videoErrorUnavailable": "Video niet beschikbaar",
+    "videoErrorUnavailableBody": "Deze video is nu niet beschikbaar.",
     "videoErrorVerifyAge": "Leeftijd verifiëren",
     "videoErrorRetry": "Opnieuw",
     "videoErrorContentRestricted": "Inhoud beperkt",

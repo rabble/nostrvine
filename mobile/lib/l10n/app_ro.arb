@@ -577,6 +577,8 @@
     "videoErrorUnsupportedFormat": "Format video nesuportat",
     "videoErrorPlayback": "Eroare de redare video",
     "videoErrorAgeRestricted": "Conținut cu restricție de vârstă",
+    "videoErrorUnavailable": "Videoclip indisponibil",
+    "videoErrorUnavailableBody": "Acest videoclip nu este disponibil acum.",
     "videoErrorVerifyAge": "Verifică vârsta",
     "videoErrorRetry": "Reîncearcă",
     "videoErrorContentRestricted": "Conținut restricționat",

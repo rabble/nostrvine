@@ -715,6 +715,8 @@
   "videoErrorUnsupportedFormat": "غیر تعاون یافتہ ویڈیو فارمیٹ",
   "videoErrorPlayback": "ویڈیو پلے بیک خرابی",
   "videoErrorAgeRestricted": "عمر محدود مواد",
+  "videoErrorUnavailable": "ویڈیو دستیاب نہیں",
+  "videoErrorUnavailableBody": "یہ ویڈیو اس وقت دستیاب نہیں ہے۔",
   "videoErrorVerifyAge": "عمر کی تصدیق کریں",
   "videoErrorRetry": "دوبارہ کوشش کریں",
   "videoErrorContentRestricted": "مواد محدود",

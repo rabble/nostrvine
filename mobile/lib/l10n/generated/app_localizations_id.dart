@@ -1458,6 +1458,12 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoErrorAgeRestricted => 'Konten dengan pembatasan usia';
 
   @override
+  String get videoErrorUnavailable => 'Video tidak tersedia';
+
+  @override
+  String get videoErrorUnavailableBody => 'Video ini belum tersedia saat ini.';
+
+  @override
   String get videoErrorVerifyAge => 'Verifikasi Usia';
 
   @override

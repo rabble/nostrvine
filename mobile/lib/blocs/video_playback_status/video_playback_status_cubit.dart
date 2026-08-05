@@ -59,6 +59,12 @@ class VideoPlaybackStatusCubit extends Cubit<VideoPlaybackStatusState> {
     return true;
   }
 
+  /// Marks that authenticated playback retry still failed for [eventId].
+  void markAuthRetryExhausted(String eventId) {
+    if (state.hasAuthRetryExhausted(eventId)) return;
+    emit(state.withAuthRetryExhausted(eventId));
+  }
+
   /// Consumes one automatic age-verification retry when the current playback
   /// state and viewer policy allow it.
   ///

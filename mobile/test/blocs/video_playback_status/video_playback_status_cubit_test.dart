@@ -261,6 +261,55 @@ void main() {
       });
     });
 
+    group('authenticated retry exhaustion', () {
+      test('markAuthRetryExhausted records the per-video marker', () {
+        final cubit = VideoPlaybackStatusCubit();
+
+        expect(cubit.state.hasAuthRetryExhausted(id1), isFalse);
+
+        cubit.markAuthRetryExhausted(id1);
+
+        expect(cubit.state.hasAuthRetryExhausted(id1), isTrue);
+        expect(cubit.state.hasAuthRetryExhausted(id2), isFalse);
+      });
+
+      blocTest<VideoPlaybackStatusCubit, VideoPlaybackStatusState>(
+        'markAuthRetryExhausted short-circuits when already marked',
+        build: VideoPlaybackStatusCubit.new,
+        act: (cubit) {
+          cubit.markAuthRetryExhausted(id1);
+          cubit.markAuthRetryExhausted(id1);
+        },
+        expect: () => hasLength(1),
+      );
+
+      test('reporting a status preserves the exhausted marker', () {
+        final cubit = VideoPlaybackStatusCubit();
+        cubit.markAuthRetryExhausted(id1);
+        cubit.report(id1, PlaybackStatus.unavailable);
+
+        expect(cubit.state.hasAuthRetryExhausted(id1), isTrue);
+        expect(cubit.state.statusFor(id1), PlaybackStatus.unavailable);
+      });
+
+      test('verifying changes preserve the exhausted marker', () {
+        final cubit = VideoPlaybackStatusCubit();
+        cubit.markAuthRetryExhausted(id1);
+        cubit.markVerifying(id1);
+        cubit.clearVerifying(id1);
+
+        expect(cubit.state.hasAuthRetryExhausted(id1), isTrue);
+      });
+
+      test('clear() drops exhausted markers', () {
+        final cubit = VideoPlaybackStatusCubit();
+        cubit.markAuthRetryExhausted(id1);
+        cubit.clear();
+
+        expect(cubit.state.hasAuthRetryExhausted(id1), isFalse);
+      });
+    });
+
     group('playbackStatusFromError', () {
       test('maps each VideoErrorType to the expected PlaybackStatus', () {
         expect(
