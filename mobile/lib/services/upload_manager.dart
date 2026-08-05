@@ -368,6 +368,10 @@ class UploadManager implements BackgroundAwareService {
   PendingUpload? getUploadByFilePath(String filePath) =>
       _store.getUploadByFilePath(filePath);
 
+  /// Delete all persisted uploads belonging to [ownerPubkey].
+  Future<int> deleteAllForOwner(String ownerPubkey) =>
+      _store.deleteAllForOwner(ownerPubkey);
+
   /// Finds a reusable upload for the given video file path.
   ///
   /// Returns the most recent upload matching [filePath] that is in a

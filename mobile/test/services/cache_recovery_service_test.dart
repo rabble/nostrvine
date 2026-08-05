@@ -4,11 +4,55 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hive_ce/hive.dart';
 import 'package:openvine/services/cache_recovery_service.dart';
 import 'package:path/path.dart' as p;
 
+import '../helpers/test_helpers.dart';
+
 void main() {
   group(CacheRecoveryService, () {
+    group('Hive box clearing', () {
+      late Directory tmp;
+
+      setUpAll(() async {
+        await initializeServiceTestEnvironment();
+      });
+
+      setUp(() async {
+        tmp = Directory.systemTemp.createTempSync('cache_recovery_hive_test');
+        Hive.init(tmp.path);
+        await TestHelpers.cleanupHiveBox('pending_uploads');
+        await TestHelpers.cleanupHiveBox('video_cache');
+      });
+
+      tearDown(() async {
+        await TestHelpers.cleanupHiveBox('pending_uploads');
+        await TestHelpers.cleanupHiveBox('video_cache');
+        if (tmp.existsSync()) tmp.deleteSync(recursive: true);
+      });
+
+      test(
+        'preserves pending uploads while clearing disposable Hive caches',
+        () async {
+          final pendingUploads = await Hive.openBox('pending_uploads');
+          final videoCache = await Hive.openBox('video_cache');
+          await pendingUploads.put('upload-id', 'durable upload');
+          await videoCache.put('cache-id', 'cached video');
+
+          await CacheRecoveryService.clearHiveBoxesForTesting();
+
+          expect(
+            Hive.box('pending_uploads').get('upload-id'),
+            'durable upload',
+          );
+          if (Hive.isBoxOpen('video_cache')) {
+            expect(Hive.box('video_cache').get('cache-id'), isNull);
+          }
+        },
+      );
+    });
+
     group('deleteDirectoryContentsExcept', () {
       late Directory tmp;
 

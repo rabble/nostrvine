@@ -187,6 +187,39 @@ class PendingUploadStore {
     await _box!.delete(id);
   }
 
+  /// Delete every upload persisted for [ownerPubkey].
+  ///
+  /// This is intentionally not owner-scoped to [currentNostrPubkey]: destructive
+  /// account cleanup passes the departing account explicitly, and must work even
+  /// after provider auth state has moved on.
+  Future<int> deleteAllForOwner(String ownerPubkey) async {
+    final queueIds = _pendingSaveQueue.entries
+        .where((entry) => entry.value.nostrPubkey == ownerPubkey)
+        .map((entry) => entry.key)
+        .toList();
+    for (final id in queueIds) {
+      _pendingSaveQueue.remove(id);
+    }
+    if (_pendingSaveQueue.isEmpty) {
+      _saveQueueTimer?.cancel();
+      _saveQueueTimer = null;
+    }
+
+    if (_box == null || !_box!.isOpen) {
+      await ensureOpen();
+    }
+    if (_box == null || !_box!.isOpen) return 0;
+
+    final uploadIds = _allUploads
+        .where((upload) => upload.nostrPubkey == ownerPubkey)
+        .map((upload) => upload.id)
+        .toList();
+    for (final id in uploadIds) {
+      await _box!.delete(id);
+    }
+    return uploadIds.length;
+  }
+
   // ---------------------------------------------------------------------------
   // Deferred-save queue
   // ---------------------------------------------------------------------------

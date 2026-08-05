@@ -618,6 +618,25 @@ void main() {
         final stats = store.uploadStats;
         expect(stats['total'], equals(1));
       });
+
+      test('deleteAllForOwner removes only the requested owner', () async {
+        final store = await _openStore(
+          scopeUploadsToCurrentUser: true,
+          currentNostrPubkey: _pubkeyA,
+        );
+        addTearDown(store.disposeStore);
+        await TestHelpers.ensureBoxEmpty<PendingUpload>('pending_uploads');
+        final uploads = await seedTwoAccounts(store);
+
+        final deleted = await store.deleteAllForOwner(_pubkeyA);
+
+        expect(deleted, equals(1));
+        expect(store.getUpload(uploads['a']!.id), isNull);
+
+        final box = Hive.box<PendingUpload>('pending_uploads');
+        expect(box.get(uploads['b']!.id), isNotNull);
+        expect(box.values.map((upload) => upload.nostrPubkey), [_pubkeyB]);
+      });
     });
 
     // -----------------------------------------------------------------------

@@ -67,7 +67,6 @@ class CacheRecoveryService {
         'personal_events',
         'personal_events_metadata',
         'bookmarks',
-        'pending_uploads',
         'video_cache',
         'secure_keys',
       ];
@@ -117,6 +116,9 @@ class CacheRecoveryService {
 
     return cleared;
   }
+
+  @visibleForTesting
+  static Future<int> clearHiveBoxesForTesting() => _clearHiveBoxes();
 
   /// Durable database directory under Application Support that must NEVER be
   /// deleted by cache clearing. It holds the live SQLite database
