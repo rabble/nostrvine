@@ -105,6 +105,7 @@ class _BookmarksEntry extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.vineColors;
     return Semantics(
       button: true,
       label: context.l10n.shareMenuBookmarks,
@@ -115,19 +116,17 @@ class _BookmarksEntry extends StatelessWidget {
           child: Row(
             spacing: 12,
             children: [
-              const DivineIcon(icon: .bookmarkSimple),
+              // Coloured for the same reason the label is: the asset is a
+              // hardcoded white fill, and DivineIcon applies no filter when
+              // color is null, so it disappears on the light palette.
+              DivineIcon(icon: .bookmarkSimple, color: colors.primaryText),
               Expanded(
                 child: Text(
                   context.l10n.shareMenuBookmarks,
-                  style: VineTheme.titleSmallFont(
-                    color: context.vineColors.primaryText,
-                  ),
+                  style: VineTheme.titleSmallFont(color: colors.primaryText),
                 ),
               ),
-              DivineIcon(
-                icon: .caretRight,
-                color: context.vineColors.secondaryText,
-              ),
+              DivineIcon(icon: .caretRight, color: colors.secondaryText),
             ],
           ),
         ),

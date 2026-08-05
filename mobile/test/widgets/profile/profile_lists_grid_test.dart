@@ -77,6 +77,20 @@ void main() {
       expect(find.text(l10n.shareMenuBookmarks), findsOneWidget);
     });
 
+    testWidgets('gives the bookmarks icon an explicit colour', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      // The asset is a hardcoded white fill and DivineIcon applies no filter
+      // when color is null, so an uncoloured icon vanishes on light.
+      final icon = tester.widget<DivineIcon>(
+        find.byWidgetPredicate(
+          (w) => w is DivineIcon && w.icon == DivineIconName.bookmarkSimple,
+        ),
+      );
+      expect(icon.color, isNotNull);
+    });
+
     testWidgets('opens the saved videos screen when bookmarks is tapped', (
       tester,
     ) async {
