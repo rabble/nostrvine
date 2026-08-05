@@ -293,10 +293,11 @@ class _VideoReplyButton extends StatelessWidget {
           child: Container(
             width: 40,
             height: 40,
-            margin: const EdgeInsets.only(bottom: 4),
+            margin: const .only(bottom: 4),
+            padding: const .all(7),
             decoration: BoxDecoration(
               color: context.vineColors.containerLow,
-              borderRadius: BorderRadius.circular(17),
+              borderRadius: BorderRadius.circular(20),
             ),
             child: IconButton(
               onPressed: onPressed,
