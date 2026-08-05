@@ -31,6 +31,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
@@ -2463,6 +2464,117 @@ void main() {
               'tappable during the loading window (#4183 review).',
         );
       });
+
+      testWidgets('avatar is swapped for a flat bone while the identity '
+          'skeleton is enabled', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            myProfileState: const MyProfileInitial(),
+          ),
+        );
+        await tester.pump();
+
+        expect(findIdentitySkeletonizer(tester).enabled, isTrue);
+        expect(
+          find.byType(UserAvatar),
+          findsNothing,
+          reason:
+              'Skeletonizer keeps the decoration of containers that have '
+              'children, so leaving the real UserAvatar in the tree shimmers '
+              'its generated placeholder art (gradient tile + person '
+              'silhouette) instead of a plain bone.',
+        );
+        expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
+      });
+
+      testWidgets(
+        'avatar comes back once the identity skeleton is disabled',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              myProfileState: MyProfileLoaded(
+                profile: createTestProfile(displayName: 'Loaded'),
+                isFresh: true,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(findIdentitySkeletonizer(tester).enabled, isFalse);
+          expect(find.byType(UserAvatar), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'never mounts two avatar Heroes while the skeleton cross-fades out',
+        (tester) async {
+          // The hint carries the avatar URL through the loading window (the
+          // feed → profile path), so the Hero is already mounted while the
+          // skeleton is on. Without it there is no Hero to double.
+          const avatarUrl = 'https://example.com/avatar.png';
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              avatarUrlHint: avatarUrl,
+              myProfileState: const MyProfileInitial(),
+            ),
+          );
+          await tester.pump();
+          expect(findIdentitySkeletonizer(tester).enabled, isTrue);
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              avatarUrlHint: avatarUrl,
+              myProfileState: MyProfileLoaded(
+                profile: createTestProfile(
+                  displayName: 'Loaded',
+                  picture: avatarUrl,
+                ),
+                isFresh: true,
+              ),
+            ),
+          );
+
+          // enableSwitchAnimation keeps both halves of the AnimatedSwitcher
+          // mounted for the length of the cross-fade. Selecting the bone off
+          // Skeletonizer's own scope (as Skeleton.replace does) rebuilds the
+          // outgoing half into the real avatar too, and two Heroes sharing a
+          // tag in one subtree trip Hero's duplicate-tag assert on the next
+          // route push.
+          final heroFinder = find.byWidgetPredicate(
+            (widget) =>
+                widget is Hero &&
+                widget.tag == 'profile_avatar_hero_$testUserHex',
+          );
+          for (final step in const [
+            Duration.zero,
+            Duration(milliseconds: 50),
+            Duration(milliseconds: 100),
+            Duration(milliseconds: 100),
+            Duration(milliseconds: 200),
+          ]) {
+            await tester.pump(step);
+            expect(
+              heroFinder.evaluate().length,
+              lessThanOrEqualTo(1),
+              reason:
+                  'Two avatar Heroes sharing '
+                  'profile_avatar_hero_$testUserHex were mounted at once '
+                  'during the skeleton cross-fade.',
+            );
+          }
+
+          expect(heroFinder, findsOneWidget);
+        },
+      );
     });
   });
 

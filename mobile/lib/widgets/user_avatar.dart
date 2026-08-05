@@ -64,6 +64,12 @@ class UserAvatar extends StatelessWidget {
   /// picture cannot be trusted to render.
   final Widget? contentOverride;
 
+  /// Corner radius of an avatar rendered at [size] without a [cornerRadius]
+  /// override. Exposed so skeleton stand-ins can match avatar geometry
+  /// without duplicating the ratio.
+  static double cornerRadiusForSize(double size) =>
+      size <= 24 ? size / 3 : math.min(size * 0.4, 56);
+
   @visibleForTesting
   static bool isSvgImageUrl(String? url) {
     if (url == null || url.isEmpty) return false;
@@ -111,8 +117,7 @@ class UserAvatar extends StatelessWidget {
     );
   }
 
-  double get _cornerRadius =>
-      cornerRadius ?? (size <= 24 ? size / 3 : math.min(size * 0.4, 56));
+  double get _cornerRadius => cornerRadius ?? cornerRadiusForSize(size);
 
   double get _borderWidth => size >= 120 ? 3 : 1;
 

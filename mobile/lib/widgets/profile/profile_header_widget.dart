@@ -35,6 +35,7 @@ import 'package:openvine/utils/deferred_login_options_navigator.dart';
 import 'package:openvine/utils/divine_login_banner_dismissal.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_actions_sheet/profile_actions_sheet.dart';
@@ -356,6 +357,7 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
           // during the loading window (#4183 review).
           Skeletonizer(
             enabled: showIdentitySkeleton,
+            enableSwitchAnimation: true,
             effect: vineSkeletonEffectOf(context),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -365,6 +367,7 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
                   child: _ProfileAvatarWithColor(
                     imageUrl: profilePictureUrl,
                     userIdHex: widget.userIdHex,
+                    showSkeleton: showIdentitySkeleton,
                     profileColor: profileColor,
                     pendingActions: pendingActions,
                     onActionTap: pendingActions.isNotEmpty
