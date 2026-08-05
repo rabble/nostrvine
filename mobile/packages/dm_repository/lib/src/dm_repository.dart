@@ -185,7 +185,7 @@ enum _OwnDmInboxState {
 ///
 /// The two are admitted on different terms. Our own list may name the local
 /// stack; a counterparty's may not name anything on this device's network.
-enum DmRelayListSource {
+enum _DmRelayListSource {
   /// The signed-in user's own kind-10050.
   selfAuthored,
 
@@ -875,7 +875,7 @@ class DmRepository {
     if (cached != null) return cached;
     final future = _queryOwnDmInbox(
       _userPubkey,
-      source: DmRelayListSource.selfAuthored,
+      source: _DmRelayListSource.selfAuthored,
     );
     _ownInboxFuture = future;
     unawaited(
@@ -2573,6 +2573,12 @@ class DmRepository {
   /// the default relay pool so reachability is preserved for recipients
   /// who have not advertised a DM inbox. Resolution failures degrade to
   /// `null` rather than throwing, so a relay hiccup never blocks a send.
+  ///
+  /// The list is admitted on remote-supplied terms and capped at
+  /// [RelayListCaps.dmInbox]: each entry becomes an outbound connection from
+  /// this device carrying the gift wrap, so a counterparty decides neither
+  /// how many hosts we dial nor whether any of them sit on the sender's own
+  /// network (#6585).
   Future<List<String>?> resolveDmInboxRelays(String pubkey) async {
     return (await _queryOwnDmInbox(pubkey)).relays;
   }
@@ -2581,7 +2587,7 @@ class DmRepository {
   ///
   /// A relay list is untrusted input and nothing in the protocol bounds its
   /// length, so the client bounds it. When [source] is
-  /// [DmRelayListSource.remote] the URLs came from the person being messaged,
+  /// [_DmRelayListSource.remote] the URLs came from the person being messaged,
   /// and each one becomes an outbound connection from this device carrying
   /// the gift wrap — so private, loopback and link-local targets are refused
   /// on top of the usual scheme rule. Our own list keeps the loopback
@@ -2593,9 +2599,9 @@ class DmRepository {
   List<String> _admitDmRelays(
     Iterable<String> urls,
     String pubkey,
-    DmRelayListSource source,
+    _DmRelayListSource source,
   ) {
-    if (source == DmRelayListSource.selfAuthored) {
+    if (source == _DmRelayListSource.selfAuthored) {
       final admitted = <String>{
         for (final url in urls)
           if (isRelayUrlAllowed(url)) url,
@@ -2635,7 +2641,7 @@ class DmRepository {
     // Defaults to the strict reading so a call site added later fails closed.
     // Every path here except the signed-in user's own inbox is resolving
     // somebody else's list.
-    DmRelayListSource source = DmRelayListSource.remote,
+    _DmRelayListSource source = _DmRelayListSource.remote,
   }) async {
     try {
       final events = await _nostrClient.queryEvents([
