@@ -252,7 +252,7 @@ class VideoStats {
               }
             }
           }
-          if ((tagName == 'dim' || tagName == 'size') && dimensions == null) {
+          if (tagName == 'dim' && dimensions == null) {
             dimensions = tagValue;
           }
           if (tagName == 'summary' && summaryFromTag == null) {
@@ -464,7 +464,7 @@ class VideoStats {
   /// Blurhash for placeholder thumbnail.
   final String? blurhash;
 
-  /// Video dimensions from REST or Nostr `dim`/`size` metadata.
+  /// Video dimensions from REST or Nostr `dim` metadata.
   final String? dimensions;
 
   /// Reaction/like count.

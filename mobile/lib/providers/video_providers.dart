@@ -149,6 +149,9 @@ VideoEventService videoEventService(Ref ref) {
   final likesRepository = ref.watch(likesRepositoryProvider);
   final moderationLabelService = ref.watch(moderationLabelServiceProvider);
   final divineHostFilterService = ref.read(divineHostFilterServiceProvider);
+  final feedAspectRatioPreference = ref.watch(
+    feedAspectRatioPreferenceServiceProvider,
+  );
   final prefs = ref.watch(sharedPreferencesProvider);
 
   final service = VideoEventService(
@@ -190,6 +193,7 @@ VideoEventService videoEventService(Ref ref) {
   service.setContentFilterService(ref.watch(contentFilterServiceProvider));
   service.setModerationLabelService(moderationLabelService);
   service.setDivineHostFilterService(divineHostFilterService);
+  service.setFeedAspectRatioPreferenceService(feedAspectRatioPreference);
 
   // Attach the scoped broken-video tracker so videos confirmed unavailable stay
   // filtered out of every list surface across restarts. `fireImmediately`

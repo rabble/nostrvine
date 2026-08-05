@@ -15,7 +15,7 @@ void main() {
       prefs = await SharedPreferences.getInstance();
     });
 
-    VideoEvent video({required String dimensions}) {
+    VideoEvent video({String? dimensions}) {
       return VideoEvent(
         id: 'event-id',
         pubkey: 'pubkey',
@@ -57,7 +57,19 @@ void main() {
       final service = FeedAspectRatioPreferenceService(prefs);
       await service.setPreference(FeedAspectRatioPreference.squareOnly);
 
+      expect(service.shouldHideVideo(video()), isFalse);
       expect(service.shouldHideVideo(video(dimensions: '')), isFalse);
+    });
+
+    test('square-only keeps videos with malformed dimensions', () async {
+      final service = FeedAspectRatioPreferenceService(prefs);
+      await service.setPreference(FeedAspectRatioPreference.squareOnly);
+
+      // A bare integer is what a NIP-94 `size` (bytes) tag looks like if it
+      // ever reaches `dimensions`; `480x` is a truncated `dim`. Neither
+      // yields a height, and the filter must fail open rather than hide.
+      expect(service.shouldHideVideo(video(dimensions: '480000')), isFalse);
+      expect(service.shouldHideVideo(video(dimensions: '480x')), isFalse);
     });
   });
 }

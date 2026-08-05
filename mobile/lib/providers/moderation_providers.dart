@@ -126,8 +126,8 @@ ContentFilterService contentFilterService(Ref ref) {
   return service;
 }
 
-/// Tracks content filter preference changes. Feed providers watch this
-/// to rebuild when the user changes a Show/Warn/Hide setting.
+/// Tracks feed-filter preference changes. Feed providers watch this to rebuild
+/// when the user changes a Show/Warn/Hide or video-shape setting.
 final contentFilterVersionProvider =
     NotifierProvider<ContentFilterVersion, int>(ContentFilterVersion.new);
 

@@ -41,6 +41,7 @@ import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/effective_content_labels.dart';
 import 'package:openvine/services/event_router.dart';
+import 'package:openvine/services/feed_aspect_ratio_preference_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/repost_resolver.dart';
@@ -259,6 +260,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   ContentFilterService? _contentFilterService;
   ModerationLabelService? _moderationLabelService;
   DivineHostFilterService? _divineHostFilterService;
+  FeedAspectRatioPreferenceService? _feedAspectRatioPreferenceService;
   BrokenVideoTracker? _brokenVideoTracker;
   final SubscriptionManager _subscriptionManager;
 
@@ -486,6 +488,18 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     );
   }
 
+  /// Set the feed aspect-ratio preference service.
+  void setFeedAspectRatioPreferenceService(
+    FeedAspectRatioPreferenceService service,
+  ) {
+    _feedAspectRatioPreferenceService = service;
+    Log.debug(
+      'Feed aspect-ratio preference service attached to VideoEventService',
+      name: 'VideoEventService',
+      category: LogCategory.video,
+    );
+  }
+
   /// Set the broken-video tracker used to filter videos confirmed unavailable.
   /// Marked entries are persisted by the tracker, so this keeps unavailable
   /// videos out of every list surface (home, profile, hashtag, grids) across
@@ -515,8 +529,14 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     if (_blocklistRepository?.shouldFilterFromFeeds(video.pubkey) ?? false) {
       return true;
     }
-    return shouldFilterNonDivineVideos && !video.isFromDivineServer;
+    if (shouldFilterNonDivineVideos && !video.isFromDivineServer) {
+      return true;
+    }
+    return false;
   }
+
+  bool _shouldHideForFeedShapePreference(VideoEvent video) =>
+      _feedAspectRatioPreferenceService?.shouldHideVideo(video) ?? false;
 
   /// Returns true if adult content should be filtered from feeds
   bool get shouldFilterAdultContent =>
@@ -652,6 +672,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         .where(
           (video) =>
               !shouldHideVideo(video) &&
+              !_shouldHideForFeedShapePreference(video) &&
               !(tracker?.isVideoBroken(video.id) ?? false),
         )
         .toList();
@@ -4935,7 +4956,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
     if (shouldHideVideo(videoEvent)) {
       Log.verbose(
-        'Filtering non-Divine-hosted video ${videoEvent.id} from $subscriptionType',
+        'Filtering hidden video ${videoEvent.id} from $subscriptionType',
         name: 'VideoEventService',
         category: LogCategory.video,
       );
