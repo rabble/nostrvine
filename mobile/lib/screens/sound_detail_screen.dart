@@ -508,9 +508,13 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
                 pubkey: profileCreditPubkey,
                 profile: profileCreditProfile,
               );
+    // Matches the feed pill and the metadata sheet: a credited creator who is
+    // not the signer means the signer only shared the sound. Bundled sounds
+    // carry a marker pubkey rather than a real signer, so they are excluded
+    // instead of being credited to a generated name.
     final showsSeparatePublisher =
         _artistName != null &&
-        sound.creatorPubkey != null &&
+        !sound.isBundled &&
         sound.creatorPubkey != sound.pubkey;
     final publisherProfile = showsSeparatePublisher
         ? ref.watch(userProfileReactiveProvider(sound.pubkey)).value

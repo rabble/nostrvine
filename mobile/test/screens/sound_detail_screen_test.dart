@@ -574,6 +574,51 @@ void main() {
         );
       });
 
+      testWidgets('credits the publisher of an externally sourced sound', (
+        tester,
+      ) async {
+        // The external-provider publish path credits the provider's artist by
+        // name and never sets a creator pubkey, so the signer is a separate
+        // publisher — same credit the feed pill and metadata sheet show.
+        const publisherPubkey =
+            'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
+        final testSound = createTestAudioEvent(
+          id: 'sound1',
+          pubkey: publisherPubkey,
+        ).copyWith(creatorName: 'Freesound Artist', licenseName: 'CC0');
+
+        await tester.pumpWidget(
+          createTestWidget(
+            child: SoundDetailScreen(sound: testSound),
+            overrides: [
+              userProfileReactiveProvider(publisherPubkey).overrideWith((
+                ref,
+              ) async* {
+                yield UserProfile(
+                  pubkey: publisherPubkey,
+                  rawData: const {},
+                  createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+                  eventId: 'profile-event',
+                  displayName: 'Publisher Pat',
+                );
+              }),
+              soundUsageCountProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(0)),
+              videosUsingSoundProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(<String>[])),
+              audioPlaybackServiceProvider.overrideWithValue(mockAudioService),
+            ],
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('By Freesound Artist'), findsOneWidget);
+        expect(find.text('Shared by Publisher Pat'), findsOneWidget);
+      });
+
       testWidgets('omits the source link when the source is not a URL', (
         tester,
       ) async {
