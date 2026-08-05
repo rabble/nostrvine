@@ -131,11 +131,10 @@ class RelaySettingsCubit extends Cubit<RelaySettingsState> {
         source: RelayRemoveSource.user,
       );
       refreshRelays();
-      if (!success) {
-        if (_hasRelayConfigured(relayUrl)) return RemoveRelayOutcome.failed;
-        return await _publishRelayListAfterLocalChange()
-            ? RemoveRelayOutcome.removed
-            : RemoveRelayOutcome.removedLocalOnly;
+      // A `false` return only means "nothing to remove"; the relay is gone
+      // either way unless it is still configured.
+      if (!success && _hasRelayConfigured(relayUrl)) {
+        return RemoveRelayOutcome.failed;
       }
       return await _publishRelayListAfterLocalChange()
           ? RemoveRelayOutcome.removed
