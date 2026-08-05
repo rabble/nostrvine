@@ -3017,18 +3017,36 @@ void main() {
           final addressableIds = {
             for (final id in eventIds) id: '34236:author:$id',
           };
+          // Falls in the second chunk, so its liker survives only if every
+          // chunk's result is merged — the endpoint rejects >100 with a 400,
+          // which is indistinguishable from "this video has no revisions".
+          const strandedInSecondChunk = 'addressable_event_104';
+          const supersededId = 'superseded_revision_of_event_104';
           final resolverCalls = <List<String>>[];
 
           mockQueryEventsSequence([
-            <Event>[],
-            <Event>[],
+            <Event>[], // current-id reaction query
+            <Event>[], // a-tag query
+            [
+              // Only reachable once the second chunk's revision id widens the
+              // query and the accepted-id set.
+              createReaction(
+                id: 'reaction_stranded_in_second_chunk',
+                authorPubkey: likerC,
+                tags: [
+                  ['e', supersededId],
+                ],
+              ),
+            ],
+            <Event>[], // deletion probe
           ]);
 
           repository = createRepository(
             revisionsResolver: (ids) async {
               resolverCalls.add(List<String>.from(ids));
               return {
-                for (final id in ids) id: [id],
+                for (final id in ids)
+                  id: [id, if (id == strandedInSecondChunk) supersededId],
               };
             },
           );
@@ -3042,7 +3060,9 @@ void main() {
           expect(resolverCalls[0], hasLength(100));
           expect(resolverCalls[1], hasLength(5));
           expect(counts.keys, containsAll(eventIds));
-          expect(counts.values, everyElement(0));
+          // Merging only the first chunk drops this liker back into #6021.
+          expect(counts[strandedInSecondChunk], equals(1));
+          expect(counts['addressable_event_0'], equals(0));
         });
       });
 
