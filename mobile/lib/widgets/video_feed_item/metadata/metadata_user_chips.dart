@@ -284,16 +284,6 @@ class MetadataRepostedBySection extends StatelessWidget {
   }
 }
 
-/// Reposter chips the feed payload already promises for [video].
-///
-/// The feed carries the video's Nostr repost count, so the row's size is
-/// known before the relay names anyone. Archival Vine reposts are left out —
-/// they carry no pubkey and never become a chip.
-int _promisedReposterCount(VideoEvent video) => math.max(
-  video.nostrRepostCount ?? 0,
-  video.reposterPubkeys?.length ?? 0,
-);
-
 /// Content widget for the Reposted-by section.
 ///
 /// Shows at most [_maxVisibleReposters] chips and hands the rest to the
@@ -395,15 +385,18 @@ class _RepostedByContentState extends ConsumerState<_RepostedByContent> {
 
   /// Placeholder chips to hold the row open with while nothing is revealed.
   ///
-  /// Once the relay has named someone, that count is exact — only the labels
-  /// are still resolving. Before then the feed's repost count stands in.
-  /// Drops to zero when the relay has answered with nobody, so a stale feed
-  /// count cannot leave a shimmer on screen forever.
+  /// Once the relay has named someone — including a reposter the feed
+  /// pre-populated — that count is exact and only the labels are still
+  /// resolving. Before then the feed's Nostr repost count stands in, since it
+  /// arrives with the video. Archival Vine reposts are left out: they carry
+  /// no pubkey and never become a chip. Drops to zero when the relay has
+  /// answered with nobody, so a stale feed count cannot leave a shimmer on
+  /// screen forever.
   int _placeholderChipCount(List<String> candidate) {
     if (candidate.isNotEmpty) return candidate.length;
     if (!widget.isLoading) return 0;
     return math.min(
-      _promisedReposterCount(widget.video),
+      widget.video.nostrRepostCount ?? 0,
       _RepostedByContent._maxVisibleReposters,
     );
   }
