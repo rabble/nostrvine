@@ -698,6 +698,7 @@ class NostrClient {
     Event event, {
     List<String>? targetRelays,
     Duration timeout = const Duration(seconds: 15),
+    String? diagnosticTag,
   }) async {
     final effectiveTargets = _allowedRelays(targetRelays);
     await _prepareEventForPublish(event);
