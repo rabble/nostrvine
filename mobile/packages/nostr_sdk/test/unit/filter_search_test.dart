@@ -6,22 +6,31 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 
 void main() {
   group('Filter event matching', () {
-    test('matches event id and author prefixes', () {
-      const pubkey =
-          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const pubkey =
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
+    test('matches an event by exact id and author', () {
       final event = Event(pubkey, 1, const [], 'hello', createdAt: 1);
 
-      final filter = Filter(
-        ids: [event.id.substring(0, 12)],
-        authors: [pubkey.substring(0, 12)],
-      );
+      final filter = Filter(ids: [event.id], authors: const [pubkey]);
 
       expect(filter.checkEvent(event), isTrue);
     });
 
-    test('rejects non-matching event id and author prefixes', () {
-      const pubkey =
-          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    test('a blank id or author entry matches nothing', () {
+      final event = Event(pubkey, 1, const [], 'hello', createdAt: 1);
+
+      // The discriminator against prefix matching. NIP-01 requires exact
+      // 64-character lowercase hex and dropped prefixes from the spec, and
+      // every string starts with '' — so under a prefix compare one blank
+      // entry silently turns the constraint, and the RelayPool and
+      // NostrClient gates built on checkEvent, into pass-throughs. Filter
+      // admits whatever it is handed, so this is where that is caught.
+      expect(Filter(ids: const ['']).checkEvent(event), isFalse);
+      expect(Filter(authors: const ['']).checkEvent(event), isFalse);
+    });
+
+    test('rejects a non-matching event id and author', () {
       final event = Event(pubkey, 1, const [], 'hello', createdAt: 1);
 
       final filter = Filter(ids: const ['bbbb'], authors: const ['cccc']);
