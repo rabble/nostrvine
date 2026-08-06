@@ -540,6 +540,7 @@ void main() {
           await tester.pump();
 
           expect(find.text(l10n.videoErrorNotFound), findsOneWidget);
+          expect(find.text(l10n.videoDetailNotFoundBody), findsOneWidget);
           // Prove the copy resolves through l10n rather than a hardcoded
           // English string (#5125).
           expect(
@@ -548,10 +549,7 @@ void main() {
             ),
             findsNothing,
           );
-          expect(
-            _divineSticker(DivineStickerName.alert),
-            findsOneWidget,
-          );
+          expect(_divineSticker(DivineStickerName.alert), findsOneWidget);
           expect(
             find.bySemanticsLabel(l10n.videoDetailCloseSemanticLabel),
             findsOneWidget,
@@ -580,10 +578,8 @@ void main() {
           await tester.pump();
 
           expect(find.text(l10n.videoErrorNotFound), findsOneWidget);
-          expect(
-            _divineSticker(DivineStickerName.alert),
-            findsOneWidget,
-          );
+          expect(find.text(l10n.videoDetailNotFoundBody), findsOneWidget);
+          expect(_divineSticker(DivineStickerName.alert), findsOneWidget);
           expect(
             find.bySemanticsLabel(l10n.videoDetailCloseSemanticLabel),
             findsOneWidget,
