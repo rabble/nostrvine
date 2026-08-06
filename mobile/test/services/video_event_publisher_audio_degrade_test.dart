@@ -139,6 +139,9 @@ void main() {
       return signed;
     }
 
+    /// [accepts] applies to the video event only; the Kind 1063 sound is
+    /// always accepted so a rejected video does not double as a failed audio
+    /// publish (which would degrade and mask what the test is pinning).
     void stubRelay({required bool accepts}) {
       when(
         () => mockNostrClient.publishEventAwaitOk(
@@ -147,10 +150,11 @@ void main() {
         ),
       ).thenAnswer((invocation) async {
         final event = invocation.positionalArguments.first as Event;
+        final accepted = accepts || event.kind != 34236;
         return PublishOutcome(
           eventId: event.id,
-          acceptedBy: accepts ? const ['wss://relay.divine.video'] : const [],
-          rejectedBy: accepts
+          acceptedBy: accepted ? const ['wss://relay.divine.video'] : const [],
+          rejectedBy: accepted
               ? const {}
               : const {'wss://relay.divine.video': 'rejected'},
           noResponseFrom: const [],
@@ -214,26 +218,71 @@ void main() {
       );
     });
 
-    test('a clean publish is still cached for retry', () async {
-      // Extraction succeeding is out of scope here; the point is that the
-      // guard keys off the degrade, not off allowAudioReuse being set.
-      final signed = stubSigning();
-      stubRelay(accepts: false);
+    test(
+      'a successful reusable-audio publish is still cached for retry',
+      () async {
+        // The guard must key off the degrade, not off allowAudioReuse being
+        // set: when extraction succeeds the event carries its audio markers,
+        // so caching it is correct and a retry should reuse it.
+        const audioPath = '/tmp/divine-audio.m4a';
+        when(
+          () => mockAudioExtractionService.extractAudio(
+            videoPath: any(named: 'videoPath'),
+          ),
+        ).thenAnswer(
+          (_) async => const AudioExtractionResult(
+            audioFilePath: audioPath,
+            duration: 6,
+            fileSize: 12345,
+            sha256Hash:
+                'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+            mimeType: 'audio/m4a',
+          ),
+        );
+        when(
+          () => mockAudioExtractionService.cleanupAudioFile(audioPath),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockBlossomUploadService.uploadAudio(
+            audioFile: any(named: 'audioFile'),
+            mimeType: 'audio/m4a',
+          ),
+        ).thenAnswer(
+          (_) async => const BlossomUploadResult(
+            success: true,
+            url: 'https://cdn.example.com/audio.m4a',
+            fallbackUrl: 'https://cdn.example.com/audio.m4a',
+            videoId:
+                'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          ),
+        );
 
-      var degraded = false;
-      await publisher.publishDirectUpload(
-        createUpload(),
-        onAudioReuseDegraded: () => degraded = true,
-      );
+        final signed = stubSigning();
+        stubRelay(accepts: false);
 
-      expect(degraded, isFalse);
-      verify(
-        () => mockUploadManager.updateUploadStatus(
-          any(),
-          any(),
-          nostrEventId: signed.single.id,
-        ),
-      ).called(1);
-    });
+        var degraded = false;
+        await publisher.publishDirectUpload(
+          createUpload(),
+          allowAudioReuse: true,
+          onAudioReuseDegraded: () => degraded = true,
+        );
+
+        expect(degraded, isFalse);
+
+        final videoEvent = signed.last;
+        expect(
+          videoEvent.tags.where((tag) => tag.first == 'allow_audio_reuse'),
+          isNotEmpty,
+          reason: 'the markers the retry would rebuild are already present',
+        );
+        verify(
+          () => mockUploadManager.updateUploadStatus(
+            any(),
+            any(),
+            nostrEventId: videoEvent.id,
+          ),
+        ).called(1);
+      },
+    );
   });
 }
