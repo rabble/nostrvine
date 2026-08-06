@@ -29,14 +29,16 @@ class FeedImmersiveState extends Equatable {
 class FeedImmersiveCubit extends Cubit<FeedImmersiveState> {
   FeedImmersiveCubit() : super(const FeedImmersiveState());
 
-  /// Hides the chrome. Idempotent, so the several exit paths that guard
-  /// against a stuck overlay can all call it unconditionally.
-  void enter() {
-    if (state.isImmersive) return;
-    emit(const FeedImmersiveState(isImmersive: true));
-  }
+  /// Hides the chrome. Idempotent — `emit` already drops a state equal to the
+  /// current one once anything has been emitted.
+  void enter() => emit(const FeedImmersiveState(isImmersive: true));
 
-  /// Restores the chrome. Idempotent — see [enter].
+  /// Restores the chrome. Idempotent, so the several exit paths that guard
+  /// against a stuck overlay can all call it unconditionally.
+  ///
+  /// The guard is load-bearing here in a way it is not in [enter]: `emit`
+  /// only suppresses an equal state after the first emission, so without it
+  /// an `exit()` on an untouched cubit would emit the initial state.
   void exit() {
     if (!state.isImmersive) return;
     emit(const FeedImmersiveState());
