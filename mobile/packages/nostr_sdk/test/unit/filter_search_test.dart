@@ -1,5 +1,6 @@
-// ABOUTME: Unit tests for NIP-50 search field in Filter class
-// ABOUTME: Tests serialization and deserialization of search parameter
+// ABOUTME: Unit tests for Filter's NIP-50 search field and for checkEvent,
+// ABOUTME: which backs the RelayPool and NostrClient inbound admission gates.
+// ABOUTME: Covers search serialization plus id/author/kind matching rules.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
