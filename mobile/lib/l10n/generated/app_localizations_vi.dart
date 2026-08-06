@@ -1837,7 +1837,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get metadataVerificationInfoDeviceAttestation =>
-      'Hệ điều hành của điện thoại đã bảo chứng cho ứng dụng đã quay video này. Chỉ bản quay thật trên thiết bị thật mới có được.';
+      'Hệ điều hành của điện thoại đã bảo chứng cho ứng dụng đã quay video này. Bằng chứng mạnh cho thấy nó đến từ camera, không phải tệp ai đó tải lên.';
 
   @override
   String get metadataVerificationInfoPgpSignature =>
@@ -1856,7 +1856,9 @@ class AppLocalizationsVi extends AppLocalizations {
       'Thiếu một kiểm tra không có nghĩa video là giả. Các clip cũ và video tải lên vốn chưa từng có — chỉ là chúng tôi không chứng minh được phần đó.';
 
   @override
-  String get metadataVerificationInfoLearnMoreAt => 'Tìm hiểu thêm tại ';
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'Tìm hiểu thêm tại $url';
+  }
 
   @override
   String get metadataCreatorLabel => 'Nhà sáng tạo';

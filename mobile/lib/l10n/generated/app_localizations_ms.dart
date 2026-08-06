@@ -1843,7 +1843,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get metadataVerificationInfoDeviceAttestation =>
-      'Sistem pengendalian telefon menjamin apl yang merakam ini. Hanya rakaman sebenar pada peranti sebenar mendapatnya.';
+      'Sistem pengendalian telefon menjamin apl yang merakam ini. Bukti kukuh bahawa ia datang daripada kamera, bukan fail yang dimuat naik seseorang.';
 
   @override
   String get metadataVerificationInfoPgpSignature =>
@@ -1862,7 +1862,9 @@ class AppLocalizationsMs extends AppLocalizations {
       'Pemeriksaan yang tiada tidak menjadikan video itu palsu. Klip lama dan muat naik memang tidak pernah ada — ia cuma bermakna kami tidak dapat membuktikan bahagian itu.';
 
   @override
-  String get metadataVerificationInfoLearnMoreAt => 'Ketahui lebih lanjut di ';
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'Ketahui lebih lanjut di $url';
+  }
 
   @override
   String get metadataCreatorLabel => 'Pencipta';

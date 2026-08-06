@@ -1828,7 +1828,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get metadataVerificationInfoDeviceAttestation =>
-      'The phone\'s operating system vouched for the app that recorded this. Only a real capture on a real device gets it.';
+      'The phone\'s operating system vouched for the app that recorded this. Strong evidence it came off a camera, not a file someone uploaded.';
 
   @override
   String get metadataVerificationInfoPgpSignature =>
@@ -1847,7 +1847,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'A missing check doesn\'t make a video fake. Older clips and uploads never got one — it only means we can\'t prove that part.';
 
   @override
-  String get metadataVerificationInfoLearnMoreAt => 'Learn more at ';
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'Learn more at $url';
+  }
 
   @override
   String get metadataCreatorLabel => 'Creator';

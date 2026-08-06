@@ -1856,7 +1856,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get metadataVerificationInfoDeviceAttestation =>
-      'Операционната система на телефона гарантира за приложението, което е записало това. Получава го само истинско заснемане на истинско устройство.';
+      'Операционната система на телефона гарантира за приложението, което е записало това. Силно доказателство, че идва от камера, а не от качен от някого файл.';
 
   @override
   String get metadataVerificationInfoPgpSignature =>
@@ -1875,7 +1875,9 @@ class AppLocalizationsBg extends AppLocalizations {
       'Липсваща проверка не прави видеото фалшиво. По-старите клипове и качванията никога не са имали такава — означава само, че не можем да докажем тази част.';
 
   @override
-  String get metadataVerificationInfoLearnMoreAt => 'Научете повече на ';
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'Научете повече на $url';
+  }
 
   @override
   String get metadataCreatorLabel => 'Създател';

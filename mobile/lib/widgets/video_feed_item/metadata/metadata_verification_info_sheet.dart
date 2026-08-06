@@ -8,6 +8,10 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/utils/external_link_launcher.dart';
 import 'package:openvine/widgets/video_recorder/modes/upload/upload_explainer_constants.dart';
 
+/// Vertical slack around the learn-more link so its tap target clears the
+/// 48 dp minimum. The link text is 20 dp tall, so 14 dp on each side.
+const _linkTapSlack = 14.0;
+
 /// Bottom sheet explaining the ProofMode / C2PA checks listed by
 /// [MetadataVerificationSection].
 ///
@@ -32,7 +36,6 @@ class MetadataVerificationInfoSheet extends StatelessWidget {
     return VineBottomSheet.show<void>(
       context: context,
       contentTitle: context.l10n.metadataVerificationInfoTitle,
-      expanded: false,
       scrollable: false,
       isScrollControlled: true,
       useRootNavigator: true,
@@ -47,7 +50,9 @@ class MetadataVerificationInfoSheet extends StatelessWidget {
     final l10n = context.l10n;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      // The learn-more link carries its own vertical padding to reach a 48 dp
+      // tap target, so the sheet gives that much back at the bottom.
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24 - _linkTapSlack),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -121,40 +126,31 @@ class _CheckExplanation extends StatelessWidget {
 }
 
 /// Outbound link to the public ProofMode page.
+///
+/// The URL sits in the sentence as a placeholder rather than after a fixed
+/// prefix, so languages that put it elsewhere — or that need punctuation
+/// instead of a trailing space — can move it.
 class _LearnMoreLink extends StatelessWidget {
   const _LearnMoreLink();
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
     // Shown without the scheme, so the label can never drift from the URL.
     final displayUrl = proofmodeLearnMoreUrl.replaceFirst('https://', '');
+    final sentence = context.l10n.metadataVerificationInfoLearnMore(displayUrl);
 
     return Semantics(
-      button: true,
       link: true,
-      label: '${l10n.metadataVerificationInfoLearnMoreAt}$displayUrl',
+      label: sentence,
       child: GestureDetector(
         onTap: () => openExternalLink(context, proofmodeLearnMoreUrl),
         behavior: HitTestBehavior.opaque,
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: _linkTapSlack),
           child: ExcludeSemantics(
             child: Text.rich(
               TextSpan(
-                children: [
-                  TextSpan(text: l10n.metadataVerificationInfoLearnMoreAt),
-                  TextSpan(
-                    text: displayUrl,
-                    style:
-                        VineTheme.bodyMediumFont(
-                          color: context.vineColors.primaryText,
-                        ).copyWith(
-                          decoration: TextDecoration.underline,
-                          decorationColor: context.vineColors.primaryText,
-                        ),
-                  ),
-                ],
+                children: _spans(context, sentence, displayUrl),
               ),
               style: VineTheme.bodyMediumFont(
                 color: context.vineColors.onSurfaceVariant,
@@ -164,5 +160,26 @@ class _LearnMoreLink extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Splits [sentence] around [url] so only the URL is underlined.
+  ///
+  /// A translation that dropped the placeholder yields a single span, which
+  /// still reads correctly — it just loses the underline.
+  List<TextSpan> _spans(BuildContext context, String sentence, String url) {
+    final linkStyle =
+        VineTheme.bodyMediumFont(
+          color: context.vineColors.primaryText,
+        ).copyWith(
+          decoration: TextDecoration.underline,
+          decorationColor: context.vineColors.primaryText,
+        );
+
+    return [
+      for (final (index, part) in sentence.split(url).indexed) ...[
+        if (index > 0) TextSpan(text: url, style: linkStyle),
+        TextSpan(text: part),
+      ],
+    ];
   }
 }

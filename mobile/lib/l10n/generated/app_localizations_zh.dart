@@ -1738,7 +1738,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get metadataVerificationInfoDeviceAttestation =>
-      '手机操作系统为录制这段视频的应用作了担保。只有在真实设备上的真实拍摄才能拿到。';
+      '手机操作系统为录制这段视频的应用作了担保。这有力地表明它来自摄像头，而不是别人上传的文件。';
 
   @override
   String get metadataVerificationInfoPgpSignature =>
@@ -1757,7 +1757,9 @@ class AppLocalizationsZh extends AppLocalizations {
       '缺少某项检查并不代表视频是假的。较早的片段和上传的视频本来就没有——这只说明我们无法证明那一部分。';
 
   @override
-  String get metadataVerificationInfoLearnMoreAt => '了解更多：';
+  String metadataVerificationInfoLearnMore(String url) {
+    return '了解更多：$url';
+  }
 
   @override
   String get metadataCreatorLabel => '创作者';

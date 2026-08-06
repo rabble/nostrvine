@@ -1828,7 +1828,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get metadataVerificationInfoDeviceAttestation =>
-      'Telefonens operativsystem gick i god för appen som spelade in. Bara en riktig inspelning på en riktig enhet får den.';
+      'Telefonens operativsystem gick i god för appen som spelade in. Starkt stöd för att det kommer från en kamera och inte från en uppladdad fil.';
 
   @override
   String get metadataVerificationInfoPgpSignature =>
@@ -1847,7 +1847,9 @@ class AppLocalizationsSv extends AppLocalizations {
       'En kontroll som saknas gör inte videon falsk. Äldre klipp och uppladdningar fick aldrig någon – det betyder bara att vi inte kan bevisa den delen.';
 
   @override
-  String get metadataVerificationInfoLearnMoreAt => 'Läs mer på ';
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'Läs mer på $url';
+  }
 
   @override
   String get metadataCreatorLabel => 'Kreatör';

@@ -1876,7 +1876,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get metadataVerificationInfoDeviceAttestation =>
-      'Sistemul de operare al telefonului a garantat pentru aplicația care a filmat. Îl primește doar o filmare reală pe un dispozitiv real.';
+      'Sistemul de operare al telefonului a garantat pentru aplicația care a filmat. Un indiciu puternic că vine de la o cameră, nu dintr-un fișier încărcat.';
 
   @override
   String get metadataVerificationInfoPgpSignature =>
@@ -1895,7 +1895,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'O verificare lipsă nu face videoclipul fals. Clipurile mai vechi și încărcările nu au avut niciodată una — înseamnă doar că nu putem dovedi acea parte.';
 
   @override
-  String get metadataVerificationInfoLearnMoreAt => 'Află mai multe pe ';
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'Află mai multe pe $url';
+  }
 
   @override
   String get metadataCreatorLabel => 'Creator';

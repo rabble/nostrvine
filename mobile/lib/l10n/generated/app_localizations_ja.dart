@@ -1719,7 +1719,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get metadataVerificationInfoDeviceAttestation =>
-      '端末のOSが、撮影したアプリを保証しました。実機での実際の撮影だけが得られるものです。';
+      '端末のOSが、撮影したアプリを保証しました。誰かがアップロードしたファイルではなく、カメラから来たことを強く裏づけます。';
 
   @override
   String get metadataVerificationInfoPgpSignature =>
@@ -1738,7 +1738,9 @@ class AppLocalizationsJa extends AppLocalizations {
       'チェックが欠けていても、その動画が偽物というわけではありません。古いクリップやアップロードには元々ありません。その部分を証明できない、というだけです。';
 
   @override
-  String get metadataVerificationInfoLearnMoreAt => '詳しくは ';
+  String metadataVerificationInfoLearnMore(String url) {
+    return '詳しくは $url をご覧ください';
+  }
 
   @override
   String get metadataCreatorLabel => 'クリエイター';

@@ -1831,7 +1831,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get metadataVerificationInfoDeviceAttestation =>
-      'فون کے آپریٹنگ سسٹم نے اُس ایپ کی ضمانت دی جس نے یہ ریکارڈ کیا۔ یہ صرف حقیقی ڈیوائس پر ہونے والی حقیقی ریکارڈنگ کو ملتا ہے۔';
+      'فون کے آپریٹنگ سسٹم نے اُس ایپ کی ضمانت دی جس نے یہ ریکارڈ کیا۔ یہ اس بات کا مضبوط ثبوت ہے کہ یہ کیمرے سے آیا، نہ کہ کسی کی اپ لوڈ کی ہوئی فائل سے۔';
 
   @override
   String get metadataVerificationInfoPgpSignature =>
@@ -1850,7 +1850,9 @@ class AppLocalizationsUr extends AppLocalizations {
       'کسی جانچ کا نہ ہونا ویڈیو کو جعلی نہیں بناتا۔ پرانی کلپس اور اپ لوڈز کے پاس یہ کبھی تھا ہی نہیں — اس کا مطلب صرف یہ ہے کہ ہم وہ حصہ ثابت نہیں کر سکتے۔';
 
   @override
-  String get metadataVerificationInfoLearnMoreAt => 'مزید جانیں ';
+  String metadataVerificationInfoLearnMore(String url) {
+    return '$url پر مزید جانیں';
+  }
 
   @override
   String get metadataCreatorLabel => 'کریئیٹر';

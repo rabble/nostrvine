@@ -1795,7 +1795,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get metadataVerificationInfoDeviceAttestation =>
-      'የስልኩ ኦፕሬቲንግ ሲስተም ይህን የቀረጸውን መተግበሪያ አረጋግጦለታል። ይህን የሚያገኘው በእውነተኛ መሣሪያ ላይ የተደረገ እውነተኛ ቀረጻ ብቻ ነው።';
+      'የስልኩ ኦፕሬቲንግ ሲስተም ይህን የቀረጸውን መተግበሪያ አረጋግጦለታል። ይህ ከካሜራ እንደመጣ እንጂ አንድ ሰው የጫነው ፋይል እንዳልሆነ ጠንካራ ማስረጃ ነው።';
 
   @override
   String get metadataVerificationInfoPgpSignature =>
@@ -1814,7 +1814,9 @@ class AppLocalizationsAm extends AppLocalizations {
       'አንድ ማረጋገጫ መጥፋቱ ቪዲዮውን ሐሰተኛ አያደርገውም። የቆዩ ክሊፖችና የተጫኑ ፋይሎች ከመጀመሪያውም አልነበራቸውም — ያንን ክፍል ማረጋገጥ አንችልም ማለት ብቻ ነው።';
 
   @override
-  String get metadataVerificationInfoLearnMoreAt => 'ተጨማሪ ይመልከቱ ';
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'ተጨማሪ በ$url ይመልከቱ';
+  }
 
   @override
   String get metadataCreatorLabel => 'ፈጣሪ';

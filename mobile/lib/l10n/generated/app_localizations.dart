@@ -3231,7 +3231,7 @@ abstract class AppLocalizations {
   /// Explanation of the 'Device attestation' check in the verification explainer sheet.
   ///
   /// In en, this message translates to:
-  /// **'The phone\'s operating system vouched for the app that recorded this. Only a real capture on a real device gets it.'**
+  /// **'The phone\'s operating system vouched for the app that recorded this. Strong evidence it came off a camera, not a file someone uploaded.'**
   String get metadataVerificationInfoDeviceAttestation;
 
   /// Explanation of the 'PGP signature' check in the verification explainer sheet.
@@ -3258,11 +3258,11 @@ abstract class AppLocalizations {
   /// **'A missing check doesn\'t make a video fake. Older clips and uploads never got one — it only means we can\'t prove that part.'**
   String get metadataVerificationInfoFootnote;
 
-  /// Prefix of the outbound 'Learn more at divine.video/proofmode' link at the bottom of the verification explainer sheet. The URL itself is not translated. Keep the trailing space.
+  /// Sentence linking out to the public ProofMode page at the bottom of the verification explainer sheet. {url} is the scheme-less URL and is not translated; it is rendered underlined, so keep it as one placeholder and place it wherever the sentence reads naturally.
   ///
   /// In en, this message translates to:
-  /// **'Learn more at '**
-  String get metadataVerificationInfoLearnMoreAt;
+  /// **'Learn more at {url}'**
+  String metadataVerificationInfoLearnMore(String url);
 
   /// No description provided for @metadataCreatorLabel.
   ///

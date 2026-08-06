@@ -26,6 +26,7 @@ import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_badges_row.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
+import 'package:openvine/widgets/video_feed_item/metadata/metadata_section.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_sounds_section.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_stats_row.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_tags_section.dart';
@@ -1620,6 +1621,26 @@ void main() {
           find.text(l10n.metadataVerificationInfoFootnote),
           findsOneWidget,
         );
+        // The URL is a placeholder inside the sentence, so a locale that
+        // moves it still renders one continuous line.
+        final learnMore = find.text(
+          l10n.metadataVerificationInfoLearnMore('divine.video/proofmode'),
+          findRichText: true,
+        );
+        expect(learnMore, findsOneWidget);
+        expect(
+          tester
+              .getSize(
+                find
+                    .ancestor(
+                      of: learnMore,
+                      matching: find.byType(GestureDetector),
+                    )
+                    .first,
+              )
+              .height,
+          greaterThanOrEqualTo(48),
+        );
       },
     );
 
@@ -1632,11 +1653,62 @@ void main() {
       );
 
       final l10n = _l10n(tester);
+      // The label names the section as well as the explainer: the visible
+      // "Verification" text is excluded from semantics, so dropping it here
+      // would leave the checklist with no announced section at all.
       final semantics = tester.getSemantics(
-        find.bySemanticsLabel(l10n.metadataVerificationInfoTooltip),
+        find.bySemanticsLabel(
+          '${l10n.metadataVerificationLabel}. '
+          '${l10n.metadataVerificationInfoTooltip}',
+        ),
       );
       expect(semantics.flagsCollection.isButton, isTrue);
+      // The tooltip carries the same string; announcing it again as a
+      // tooltip duplicates it on both platforms.
+      expect(semantics.tooltip, isEmpty);
     });
+
+    testWidgetsWithSurfaceSize(
+      'header tap target clears 48 dp without moving the label',
+      (tester) async {
+        final video = _makeVideo(rawTags: {'verification': 'verified_mobile'});
+        await tester.pumpWidget(
+          buildSubject(child: MetadataVerificationSection(video: video)),
+        );
+
+        final l10n = _l10n(tester);
+        final tapTarget = find
+            .ancestor(
+              of: find.text(l10n.metadataVerificationLabel),
+              matching: find.byType(GestureDetector),
+            )
+            .first;
+        expect(tester.getSize(tapTarget).height, greaterThanOrEqualTo(48));
+
+        // The extra height is slack around the row, not layout: the Figma
+        // spec's 16 px above the header and 16 px below it both survive.
+        final headerRow = find
+            .ancestor(
+              of: find.text(l10n.metadataVerificationLabel),
+              matching: find.byType(Row),
+            )
+            .first;
+        final firstCheckRow = find
+            .ancestor(
+              of: find.text(l10n.metadataDeviceAttestation),
+              matching: find.byType(Row),
+            )
+            .first;
+
+        final sectionTop = tester.getTopLeft(find.byType(MetadataSection)).dy;
+        expect(tester.getTopLeft(headerRow).dy - sectionTop, 16);
+        expect(
+          tester.getTopLeft(firstCheckRow).dy -
+              tester.getBottomLeft(headerRow).dy,
+          16,
+        );
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------

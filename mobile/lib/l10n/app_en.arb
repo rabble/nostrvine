@@ -1069,7 +1069,7 @@
   "@metadataVerificationInfoIntro": {
     "description": "Intro paragraph of the verification explainer sheet, framing the four checks as evidence about a video's origin."
   },
-  "metadataVerificationInfoDeviceAttestation": "The phone's operating system vouched for the app that recorded this. Only a real capture on a real device gets it.",
+  "metadataVerificationInfoDeviceAttestation": "The phone's operating system vouched for the app that recorded this. Strong evidence it came off a camera, not a file someone uploaded.",
   "@metadataVerificationInfoDeviceAttestation": {
     "description": "Explanation of the 'Device attestation' check in the verification explainer sheet."
   },
@@ -1089,9 +1089,14 @@
   "@metadataVerificationInfoFootnote": {
     "description": "Closing caveat of the verification explainer sheet. States the deliberate limit of the claim — a missing check is not evidence of forgery. Do not strengthen this into a guarantee."
   },
-  "metadataVerificationInfoLearnMoreAt": "Learn more at ",
-  "@metadataVerificationInfoLearnMoreAt": {
-    "description": "Prefix of the outbound 'Learn more at divine.video/proofmode' link at the bottom of the verification explainer sheet. The URL itself is not translated. Keep the trailing space."
+  "metadataVerificationInfoLearnMore": "Learn more at {url}",
+  "@metadataVerificationInfoLearnMore": {
+    "description": "Sentence linking out to the public ProofMode page at the bottom of the verification explainer sheet. {url} is the scheme-less URL and is not translated; it is rendered underlined, so keep it as one placeholder and place it wherever the sentence reads naturally.",
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
   },
   "metadataCreatorLabel": "Creator",
   "metadataCollaboratorsLabel": "Collaborators",

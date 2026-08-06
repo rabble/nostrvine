@@ -1840,7 +1840,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get metadataVerificationInfoDeviceAttestation =>
-      'Het besturingssysteem van de telefoon stond in voor de app die dit opnam. Alleen een echte opname op een echt toestel krijgt dit.';
+      'Het besturingssysteem van de telefoon stond in voor de app die dit opnam. Sterk bewijs dat het van een camera komt en niet van een geüpload bestand.';
 
   @override
   String get metadataVerificationInfoPgpSignature =>
@@ -1859,7 +1859,9 @@ class AppLocalizationsNl extends AppLocalizations {
       'Een ontbrekende controle maakt een video niet nep. Oudere clips en uploads kregen er nooit een — het betekent alleen dat we dat deel niet kunnen aantonen.';
 
   @override
-  String get metadataVerificationInfoLearnMoreAt => 'Meer weten op ';
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'Meer weten op $url';
+  }
 
   @override
   String get metadataCreatorLabel => 'Maker';

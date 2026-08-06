@@ -1863,7 +1863,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get metadataVerificationInfoDeviceAttestation =>
-      'Pinanindigan ng operating system ng telepono ang app na nag-record nito. Tanging tunay na pagkuha sa tunay na device ang nakakakuha nito.';
+      'Pinanindigan ng operating system ng telepono ang app na nag-record nito. Malakas na patunay na galing ito sa camera, hindi sa file na may nag-upload.';
 
   @override
   String get metadataVerificationInfoPgpSignature =>
@@ -1882,7 +1882,9 @@ class AppLocalizationsFil extends AppLocalizations {
       'Ang kulang na pagsusuri ay hindi nangangahulugang peke ang video. Ang mga lumang clip at upload ay wala talaga nito — ibig lang sabihin, hindi namin mapapatunayan ang bahaging iyon.';
 
   @override
-  String get metadataVerificationInfoLearnMoreAt => 'Matuto pa sa ';
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'Matuto pa sa $url';
+  }
 
   @override
   String get metadataCreatorLabel => 'Creator';

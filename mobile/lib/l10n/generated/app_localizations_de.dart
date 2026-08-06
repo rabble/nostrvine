@@ -1853,7 +1853,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get metadataVerificationInfoDeviceAttestation =>
-      'Das Betriebssystem des Handys hat für die App gebürgt, die hier aufgenommen hat. Das bekommt nur eine echte Aufnahme auf einem echten Gerät.';
+      'Das Betriebssystem des Handys hat für die App gebürgt, die hier aufgenommen hat. Ein starkes Indiz, dass es aus einer Kamera kommt und nicht aus einer hochgeladenen Datei.';
 
   @override
   String get metadataVerificationInfoPgpSignature =>
@@ -1872,7 +1872,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Eine fehlende Prüfung macht ein Video nicht zur Fälschung. Ältere Clips und Uploads hatten nie eine – es heißt nur, dass wir diesen Teil nicht belegen können.';
 
   @override
-  String get metadataVerificationInfoLearnMoreAt => 'Mehr erfahren auf ';
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'Mehr erfahren auf $url';
+  }
 
   @override
   String get metadataCreatorLabel => 'Creator';

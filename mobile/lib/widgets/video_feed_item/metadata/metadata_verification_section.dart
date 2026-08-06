@@ -27,8 +27,10 @@ class MetadataVerificationSection extends StatelessWidget {
       identifier: SemanticIds.verificationSection,
       child: MetadataSection(
         label: l10n.metadataVerificationLabel,
-        infoLabel: l10n.metadataVerificationInfoTooltip,
-        onInfoPressed: () => MetadataVerificationInfoSheet.show(context),
+        info: (
+          onPressed: () => MetadataVerificationInfoSheet.show(context),
+          label: l10n.metadataVerificationInfoTooltip,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           spacing: 4,

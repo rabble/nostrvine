@@ -1798,7 +1798,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get metadataVerificationInfoDeviceAttestation =>
-      'Telefonun işletim sistemi, bunu kaydeden uygulamaya kefil oldu. Bunu yalnızca gerçek bir cihazda yapılan gerçek bir çekim alır.';
+      'Telefonun işletim sistemi, bunu kaydeden uygulamaya kefil oldu. Bunun bir kameradan geldiğine, yüklenmiş bir dosya olmadığına dair güçlü bir kanıt.';
 
   @override
   String get metadataVerificationInfoPgpSignature =>
@@ -1817,7 +1817,9 @@ class AppLocalizationsTr extends AppLocalizations {
       'Eksik bir kontrol videoyu sahte yapmaz. Eski klipler ve yüklemeler hiç almadı — yalnızca o kısmı kanıtlayamadığımız anlamına gelir.';
 
   @override
-  String get metadataVerificationInfoLearnMoreAt => 'Daha fazla bilgi: ';
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'Daha fazla bilgi: $url';
+  }
 
   @override
   String get metadataCreatorLabel => 'İçerik üretici';

@@ -1729,7 +1729,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get metadataVerificationInfoDeviceAttestation =>
-      '휴대폰 운영체제가 이 영상을 녹화한 앱을 보증했습니다. 실제 기기에서의 실제 촬영만 받을 수 있습니다.';
+      '휴대폰 운영체제가 이 영상을 녹화한 앱을 보증했습니다. 누군가 올린 파일이 아니라 카메라에서 나왔다는 강력한 근거입니다.';
 
   @override
   String get metadataVerificationInfoPgpSignature =>
@@ -1748,7 +1748,9 @@ class AppLocalizationsKo extends AppLocalizations {
       '검사가 없다고 해서 영상이 가짜인 것은 아닙니다. 예전 클립과 업로드에는 애초에 없었습니다. 그 부분을 증명할 수 없다는 뜻일 뿐입니다.';
 
   @override
-  String get metadataVerificationInfoLearnMoreAt => '자세히 보기: ';
+  String metadataVerificationInfoLearnMore(String url) {
+    return '자세한 내용은 $url에서 확인하세요';
+  }
 
   @override
   String get metadataCreatorLabel => '크리에이터';
