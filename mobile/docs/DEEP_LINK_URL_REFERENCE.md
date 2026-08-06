@@ -10,8 +10,8 @@ https://divine.video/{type}/{identifier}[/{index}]
 ```
 
 Where:
-- `{type}` = video, profile, hashtag, search
-- `{identifier}` = ID, npub, tag, or search term
+- `{type}` = video, profile, hashtag, search, invite, or list
+- `{identifier}` = ID, npub, tag, search term, invite code, or list ID
 - `{index}` = Optional 0-based video index for feed view
 
 ## Supported URLs
@@ -223,6 +223,50 @@ https://divine.video/search/nostr/5     → Sixth result for "nostr"
 
 ---
 
+### 8. Invite Links
+
+Opens the invite gate with the supplied invite code.
+
+**Pattern**: `https://divine.video/invite/{code}`
+
+**Parameters**:
+- `code` (required): Invite code
+
+**Examples**:
+```
+https://divine.video/invite/ABCD-EFGH
+```
+
+**Mobile Behavior**:
+- Navigates to the invite gate
+- Preserves the invite code for redemption
+
+---
+
+### 9. List Links
+
+Opens a curated video list.
+
+**Patterns**:
+- `https://divine.video/list/{listId}`
+- `https://divine.video/list/{pubkey}/{listId}`
+
+**Parameters**:
+- `listId` (required): Curated list d-tag or local list ID
+- `pubkey` (optional): List author public key for authored web-canonical URLs
+
+**Examples**:
+```
+https://divine.video/list/my-vines
+https://divine.video/list/a1b2c3d4e5f6.../my-vines
+```
+
+**Mobile Behavior**:
+- Navigates to `/list/{listId}` for local list links
+- Navigates to `/list/{pubkey}/{listId}` for authored list links
+
+---
+
 ## URL Patterns Summary
 
 | URL Pattern | View | Mobile Route | Purpose |
@@ -234,6 +278,9 @@ https://divine.video/search/nostr/5     → Sixth result for "nostr"
 | `/hashtag/{tag}/{i}` | Feed | `/hashtag/{tag}/{i}` | Tagged videos (feed) |
 | `/search/{term}` | Grid | `/search/{term}` | Search results (grid) |
 | `/search/{term}/{i}` | Feed | `/search/{term}/{i}` | Search results (feed) |
+| `/invite/{code}` | Auth | `/welcome/invite?code={code}` | Redeem invite |
+| `/list/{listId}` | Grid | `/list/{listId}` | Curated video list |
+| `/list/{pubkey}/{listId}` | Grid | `/list/{pubkey}/{listId}` | Authored curated video list |
 
 ## Special Characters in URLs
 
@@ -304,6 +351,16 @@ https://divine.video/search/bitcoin
 https://divine.video/search/bitcoin/0
 ```
 
+**Invite**:
+```
+https://divine.video/invite/ABCD-EFGH
+```
+
+**List**:
+```
+https://divine.video/list/my-vines
+```
+
 ## Server Configuration Required
 
 For deep links to work, these files must be accessible:
@@ -311,7 +368,9 @@ For deep links to work, these files must be accessible:
 ### iOS Universal Links
 **File**: `/.well-known/apple-app-site-association`
 **Content-Type**: `application/json`
-**Paths**: All patterns listed above
+**Paths**: The apex/www AASA claim set is owned by `divine-web`; the
+`login.divine.video` AASA claim set is owned by `keycast`. Mobile mirrors both
+payloads in `test/fixtures/deep_links/` for offline routing coverage tests.
 
 ### Android App Links
 **File**: `/.well-known/assetlinks.json`
@@ -320,7 +379,7 @@ For deep links to work, these files must be accessible:
 
 ## Web App Implementation Checklist
 
-- [ ] Route handlers for all 7 URL patterns
+- [ ] Route handlers for all URL patterns claimed by the current AASA payload
 - [ ] Video player component
 - [ ] Grid view component
 - [ ] Feed view component with navigation

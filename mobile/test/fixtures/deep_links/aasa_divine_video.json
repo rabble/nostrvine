@@ -22,8 +22,12 @@
             "comment": "Search deep links"
           },
           {
+            "/": "/invite/*",
+            "comment": "Invite redemption deep links"
+          },
+          {
             "/": "/list/*",
-            "comment": "Curated list (playlist) deep links"
+            "comment": "Playlist (curated list) deep links"
           },
           {
             "/": "/app/callback",

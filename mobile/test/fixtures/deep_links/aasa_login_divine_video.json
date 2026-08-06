@@ -1,0 +1,59 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": [
+          "GZCZBKH7MY.co.openvine.keycastFlutterDemo"
+        ],
+        "components": [
+          {
+            "/": "/app/callback",
+            "comment": "OAuth callback for native apps"
+          },
+          {
+            "/": "/app/callback/*",
+            "comment": "OAuth callback with path params"
+          },
+          {
+            "/": "/verify-email",
+            "comment": "Email verification deep link"
+          },
+          {
+            "/": "/reset-password",
+            "comment": "Password reset deep link"
+          }
+        ]
+      },
+      {
+        "appIDs": [
+          "GZCZBKH7MY.co.openvine.app"
+        ],
+        "components": [
+          {
+            "/": "/app/callback",
+            "comment": "OAuth callback for Divine app"
+          },
+          {
+            "/": "/app/callback/*",
+            "comment": "OAuth callback with path params"
+          },
+          {
+            "/": "/verify-email",
+            "comment": "Email verification deep link"
+          },
+          {
+            "/": "/reset-password",
+            "comment": "Password reset deep link"
+          }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "GZCZBKH7MY.co.openvine.keycastFlutterDemo",
+      "GZCZBKH7MY.co.openvine.app"
+    ]
+  }
+}

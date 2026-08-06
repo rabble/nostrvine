@@ -2,20 +2,28 @@
 
 ## Files Ready to Deploy
 
-All verification files are ready in the `mobile/docs/` directory:
+The iOS Apple App Site Association payload for `divine.video` and
+`www.divine.video` is owned by `divine-web`:
+`public/.well-known/apple-app-site-association`. The login-domain payload is
+owned by `keycast` and served from its web build
+`.well-known/apple-app-site-association`. The mobile repo keeps offline test
+fixtures under `mobile/test/fixtures/deep_links/` to guard mobile routing
+coverage, but those fixtures are not deployment artifacts.
 
-### ✅ iOS Universal Links
-- **File**: `apple-app-site-association`
+Android verification files remain in the `mobile/docs/` directory:
+
+### iOS Universal Links
+- **Source repo**: `divine-web` for `divine.video` / `www.divine.video`; `keycast` for `login.divine.video`
+- **File**: `public/.well-known/apple-app-site-association` or the `keycast` web build `.well-known/apple-app-site-association`
 - **Team ID**: GZCZBKH7MY
 - **App ID**: co.openvine.app
-- **Paths**: /video/*, /profile/*
 
-### ✅ Android App Links (Debug)
+### Android App Links (Debug)
 - **File**: `assetlinks.json`
 - **Package**: co.openvine.app
 - **SHA-256 (Debug)**: 6F:36:C3:68:74:18:5E:03:B4:79:3D:82:EF:54:CE:34:26:ED:6E:C8:12:B7:CD:E2:F4:FA:9C:81:2F:C7:14:F4
 
-### ⚠️ Android App Links (Production)
+### Android App Links (Production)
 For production builds, you'll need to:
 1. Get your release keystore SHA-256:
    ```bash
@@ -33,13 +41,9 @@ mkdir -p /var/www/www.divine.video/.well-known
 mkdir -p /var/www/login.divine.video/.well-known
 ```
 
-### 2. Copy files to every claimed host
+### 2. Copy Android files to every claimed host
 
 ```bash
-# iOS file (no extension!)
-cp mobile/docs/apple-app-site-association /var/www/divine.video/.well-known/
-cp mobile/docs/apple-app-site-association /var/www/www.divine.video/.well-known/
-
 # Android file (for testing with debug builds)
 cp mobile/docs/assetlinks.json /var/www/divine.video/.well-known/
 cp mobile/docs/assetlinks.json /var/www/www.divine.video/.well-known/
@@ -52,9 +56,7 @@ cp mobile/docs/assetlinks.json /var/www/login.divine.video/.well-known/
 ### 3. Set correct permissions
 
 ```bash
-chmod 644 /var/www/divine.video/.well-known/apple-app-site-association
 chmod 644 /var/www/divine.video/.well-known/assetlinks.json
-chmod 644 /var/www/www.divine.video/.well-known/apple-app-site-association
 chmod 644 /var/www/www.divine.video/.well-known/assetlinks.json
 chmod 644 /var/www/login.divine.video/.well-known/assetlinks.json
 ```
@@ -127,6 +129,7 @@ hosts to verify together before the app becomes the default handler.
 ```bash
 curl -I https://divine.video/.well-known/apple-app-site-association
 curl -I https://www.divine.video/.well-known/apple-app-site-association
+curl -I https://login.divine.video/.well-known/apple-app-site-association
 ```
 
 Expected:
@@ -137,9 +140,12 @@ Verify content:
 ```bash
 curl https://divine.video/.well-known/apple-app-site-association
 curl https://www.divine.video/.well-known/apple-app-site-association
+curl https://login.divine.video/.well-known/apple-app-site-association
 ```
 
-Should return the JSON with your Team ID (GZCZBKH7MY).
+`divine.video` and `www.divine.video` should return the current path claims from
+`divine-web`. `login.divine.video` should return the current login-domain claims
+from `keycast`.
 
 ### Test Android file is accessible
 
