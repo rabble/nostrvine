@@ -372,7 +372,7 @@ class _RepostedByContentState extends ConsumerState<_RepostedByContent> {
       );
     } else {
       final placeholderCount = _placeholderChipCount(candidate);
-      content = placeholderCount == 0
+      content = placeholderCount <= 0
           ? null
           : _UserChipsSkeleton(
               label: context.l10n.metadataRepostedByLabel,
@@ -389,16 +389,24 @@ class _RepostedByContentState extends ConsumerState<_RepostedByContent> {
   /// pre-populated — that count is exact and only the labels are still
   /// resolving. Before then the feed's Nostr repost count stands in, since it
   /// arrives with the video. Archival Vine reposts are left out: they carry
-  /// no pubkey and never become a chip. Drops to zero when the relay has
-  /// answered with nobody, so a stale feed count cannot leave a shimmer on
-  /// screen forever.
+  /// no pubkey and never become a chip. When the eventual row includes the
+  /// "+N more" action, one extra placeholder reserves that chip too. Drops to
+  /// zero when the relay has answered with nobody, so a stale feed count cannot
+  /// leave a shimmer on screen forever.
   int _placeholderChipCount(List<String> candidate) {
-    if (candidate.isNotEmpty) return candidate.length;
+    if (candidate.isNotEmpty) {
+      return candidate.length +
+          (widget.pubkeys.length > candidate.length ? 1 : 0);
+    }
     if (!widget.isLoading) return 0;
-    return math.min(
-      widget.video.nostrRepostCount ?? 0,
+    final promisedCount = widget.video.nostrRepostCount ?? 0;
+    if (promisedCount <= 0) return 0;
+    final visibleCount = math.min(
+      promisedCount,
       _RepostedByContent._maxVisibleReposters,
     );
+    return visibleCount +
+        (promisedCount > _RepostedByContent._maxVisibleReposters ? 1 : 0);
   }
 
   void _syncGraceTimer(List<String> candidate, bool namesSettled) {

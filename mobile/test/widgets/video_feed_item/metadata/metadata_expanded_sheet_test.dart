@@ -1232,7 +1232,7 @@ void main() {
     );
 
     testWidgetsWithSurfaceSize(
-      'caps the placeholder chips at the visible chip limit',
+      'reserves the more button placeholder for popular videos',
       (tester) async {
         await tester.pumpWidget(
           buildSubject(
@@ -1244,7 +1244,38 @@ void main() {
         );
         await tester.pump();
 
-        expect(_skeletonChips(), findsNWidgets(5));
+        expect(_skeletonChips(), findsNWidgets(6));
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
+      'keeps the more button space while fetched reposter names resolve',
+      (tester) async {
+        final reposterPubkeys = List.generate(
+          7,
+          (index) => (index + 1).toRadixString(16).padLeft(64, '0'),
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            repostersState: VideoRepostersState(pubkeys: reposterPubkeys),
+            providerOverrides: [
+              for (final pubkey in reposterPubkeys.take(5))
+                fetchUserProfileProvider(
+                  pubkey,
+                ).overrideWith((ref) => Completer<UserProfile?>().future),
+            ],
+            child: MetadataRepostedBySection(video: _makeVideo()),
+          ),
+        );
+        await tester.pump();
+
+        expect(
+          find.text(_l10n(tester).metadataRepostedByLabel),
+          findsOneWidget,
+        );
+        expect(_skeletonChips(), findsNWidgets(6));
+        expect(find.byType(UserAvatar), findsNothing);
       },
     );
 
@@ -1255,6 +1286,24 @@ void main() {
           buildSubject(
             repostersState: const VideoRepostersState(),
             child: MetadataRepostedBySection(video: _makeVideo()),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(_l10n(tester).metadataRepostedByLabel), findsNothing);
+        expect(_skeletonChips(), findsNothing);
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
+      'stays hidden when the promised repost count is negative',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            repostersState: const VideoRepostersState(),
+            child: MetadataRepostedBySection(
+              video: _makeVideo(nostrRepostCount: -1),
+            ),
           ),
         );
         await tester.pump();
