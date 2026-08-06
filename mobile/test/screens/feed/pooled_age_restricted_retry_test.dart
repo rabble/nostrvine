@@ -73,6 +73,9 @@ String get _adultContentHiddenAction => lookupAppLocalizations(
   const Locale('en'),
 ).videoErrorAdultContentHiddenAction;
 
+String get _notNowText =>
+    lookupAppLocalizations(const Locale('en')).commonNotNow;
+
 AgeVerificationService _ageService({required bool verified}) {
   final service = _MockAgeVerificationService();
   when(() => service.isAdultContentVerified).thenReturn(verified);
@@ -520,6 +523,45 @@ void main() {
         // The sheet is a dead end without this jump — the remedy lives in the
         // Content Filters screen, not in re-verifying age.
         expect(find.text(_contentFiltersRouteMarker), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'dismisses the blocked-by-preference sheet without navigating on Not now',
+      (tester) async {
+        final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+        final playbackStatusCubit = VideoPlaybackStatusCubit();
+        addTearDown(playbackStatusCubit.close);
+
+        when(
+          () => mediaAuthInterceptor.handleUnauthorizedMedia(
+            context: any(named: 'context'),
+            sha256Hash: _sha256,
+            url: _videoUrl,
+            serverUrl: 'https://media.divine.video',
+            category: 'video',
+          ),
+        ).thenAnswer((_) async => const ViewerAuthBlockedByPreference());
+
+        await tester.pumpWidget(
+          _RetryHarness(
+            mediaAuthInterceptor: mediaAuthInterceptor,
+            playbackStatusCubit: playbackStatusCubit,
+            ageVerificationService: _ageService(verified: true),
+            retryPlayback: (_) => _retryRecovered,
+          ),
+        );
+
+        await tester.tap(find.text('Verify'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text(_notNowText));
+        await tester.pumpAndSettle();
+
+        // "Not now" closes the sheet and leaves the viewer on the feed — it
+        // must not fall through to the Content Filters push.
+        expect(find.text(_adultContentHiddenTitle), findsNothing);
+        expect(find.text(_contentFiltersRouteMarker), findsNothing);
       },
     );
 
