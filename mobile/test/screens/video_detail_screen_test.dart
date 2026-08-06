@@ -639,6 +639,67 @@ void main() {
         expect(find.byKey(const Key('video-feed-placeholder')), findsOneWidget);
         expect(attempts, equals(2));
       });
+
+      testWidgets('shows the loading state while the retry is in flight', (
+        tester,
+      ) async {
+        final refetch = Completer<VideoEvent?>();
+        var attempts = 0;
+        when(
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+        ).thenAnswer((_) {
+          attempts++;
+          return attempts == 1
+              ? Future<VideoEvent?>.error(Exception('Network error'))
+              : refetch.future;
+        });
+        addTearDown(() => refetch.complete(null));
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        expect(find.text(l10n.videoDetailLoadError), findsOneWidget);
+
+        await tester.tap(find.text(l10n.videoErrorRetry));
+        await tester.pump();
+
+        // The error takeover must give way to the spinner immediately, rather
+        // than sitting there unchanged for the length of the refetch.
+        expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
+        expect(find.text(l10n.videoDetailLoadError), findsNothing);
+      });
+
+      testWidgets(
+        'retry surfaces the error again when the relays are unreachable',
+        (tester) async {
+          // Regression: a retry that deferred to the relay-ready listener left
+          // the user on an unbounded spinner with no way back to Retry.
+          var attempts = 0;
+          when(
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+          ).thenAnswer((_) {
+            attempts++;
+            return Future<VideoEvent?>.error(Exception('Network error'));
+          });
+
+          await tester.pumpWidget(buildSubject());
+          await tester.pump();
+
+          expect(find.text(l10n.videoErrorRetry), findsOneWidget);
+
+          // The last relay drops while the user sits on the error screen.
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(0);
+
+          await tester.tap(find.text(l10n.videoErrorRetry));
+          await tester.pump();
+          await tester.pump();
+
+          expect(attempts, equals(2));
+          expect(find.byType(BrandedLoadingIndicator), findsNothing);
+          expect(find.text(l10n.videoDetailLoadError), findsOneWidget);
+          expect(find.text(l10n.videoErrorRetry), findsOneWidget);
+        },
+      );
     });
 
     group('explicit route block filtering', () {

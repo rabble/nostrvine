@@ -315,7 +315,11 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
       _isLoading = true;
       _error = null;
     });
-    unawaited(_loadVideo());
+    // A user-initiated retry must end in a definite state. Deferring to the
+    // relay-ready listener would swallow the failure and park the screen on an
+    // unbounded spinner with the Retry button gone; the user can always tap
+    // again once they are back online.
+    unawaited(_loadVideo(allowRelayReadyRetry: false));
   }
 
   void _handleExit(BuildContext context) {
