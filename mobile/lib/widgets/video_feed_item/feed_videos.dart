@@ -495,6 +495,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
               video: video,
               index: index,
               isActive: isActive,
+              isFeedActive: isFeedActive,
               contextTitle: widget.contextTitle,
               contentWarningRevealed: _revealedContentWarningVideoIds.contains(
                 video.id,
@@ -517,6 +518,7 @@ class _Overlay extends ConsumerStatefulWidget {
     required this.video,
     required this.index,
     required this.isActive,
+    required this.isFeedActive,
     required this.contentWarningRevealed,
     required this.onContentWarningRevealed,
     this.onToggleAutoAdvance,
@@ -527,7 +529,15 @@ class _Overlay extends ConsumerStatefulWidget {
   final DivineVideoPlayerController? controller;
   final VideoEvent video;
   final int index;
+
+  /// Whether this item is the current page of the feed.
   final bool isActive;
+
+  /// Whether the feed itself may play: the home tab is current, no route or
+  /// overlay covers it, and the app is foregrounded. A paused player while
+  /// this is `false` is a temporary pause that resumes on its own, so the
+  /// paused affordance stays hidden.
+  final bool isFeedActive;
 
   /// Whether the user already dismissed this video's content warning.
   /// Owned by [FeedVideosState] so the autoplay gate can read it too.
@@ -920,7 +930,12 @@ class __OverlayState extends ConsumerState<_Overlay> {
                         if (widget.controller != null)
                           PausedVideoOverlay(
                             controller: widget.controller!,
-                            isVisible: widget.isActive,
+                            // Only a pause the user can undo gets the
+                            // affordance. A comments/share sheet, a pushed
+                            // route or a backgrounded app pauses the player
+                            // too, but resumes it on its own — showing a play
+                            // button behind the sheet just reads as broken.
+                            isVisible: widget.isActive && widget.isFeedActive,
                           ),
                         _FeedItemActions(
                           video: video,

@@ -48,6 +48,7 @@ import 'package:openvine/widgets/video_feed_item/actions/help_classify_action_bu
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
+import 'package:openvine/widgets/video_feed_item/paused_video_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_loading_placeholder.dart';
 import 'package:reposts_repository/reposts_repository.dart';
@@ -1254,6 +1255,43 @@ void main() {
       await tester.pump();
       expect(tester.widget<InfiniteVideoFeed>(feedFinder).isActive, isTrue);
     });
+
+    testWidgets(
+      'hides the paused affordance while the feed itself is inactive',
+      (tester) async {
+        InfiniteVideoFeed.debugIsSupportedOverride = true;
+        final video = _makeVideo();
+
+        await _pumpFeedVideos(
+          tester,
+          videos: [video],
+          navigatorObservers: <NavigatorObserver>[routeObserver],
+        );
+        await tester.pump(const Duration(seconds: 4));
+
+        final overlayFinder = find.byType(PausedVideoOverlay);
+        expect(
+          tester.widget<PausedVideoOverlay>(overlayFinder).isVisible,
+          isTrue,
+        );
+
+        // A pushed route / opened sheet pauses the current player but resumes
+        // it on the way back, so the play affordance must stay hidden.
+        tester.state<FeedVideosState>(find.byType(FeedVideos)).didPushNext();
+        await tester.pump();
+        expect(
+          tester.widget<PausedVideoOverlay>(overlayFinder).isVisible,
+          isFalse,
+        );
+
+        tester.state<FeedVideosState>(find.byType(FeedVideos)).didPopNext();
+        await tester.pump();
+        expect(
+          tester.widget<PausedVideoOverlay>(overlayFinder).isVisible,
+          isTrue,
+        );
+      },
+    );
   });
 
   // -------------------------------------------------------------------------
