@@ -250,6 +250,7 @@ void main() {
       expect(_viewEndEvents(analyticsService), isEmpty);
       expect(seenVideosService.records, hasLength(1));
       expect(seenVideosService.records.single.videoId, equals('video_id'));
+      expect(seenVideosService.records.single.loopCount, equals(0));
       expect(
         seenVideosService.records.single.watchDuration,
         const Duration(milliseconds: 400),
