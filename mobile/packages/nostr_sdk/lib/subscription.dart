@@ -1,3 +1,5 @@
+import 'event.dart';
+import 'filter.dart';
 import 'utils/string_util.dart';
 
 /// Representation of a Nostr event subscription.
@@ -15,6 +17,14 @@ class Subscription {
 
   Subscription(this.filters, this.onEvent, {String? id, this.onEose})
     : _id = id ?? StringUtil.rndNameStr(16);
+
+  /// Whether [event] satisfies at least one filter in this subscription.
+  bool matchesEvent(Event event) {
+    for (final filterJson in filters) {
+      if (Filter.fromJson(filterJson).checkEvent(event)) return true;
+    }
+    return false;
+  }
 
   /// Returns the subscription as a Nostr subscription request in JSON format
   List<dynamic> toJson() {

@@ -2654,8 +2654,20 @@ class DmRepository {
       if (events.isEmpty) {
         return (state: _OwnDmInboxState.absent, relays: null);
       }
+      final matchingEvents = [
+        for (final event in events)
+          if (event.kind == EventKind.dmRelaysList && event.pubkey == pubkey)
+            event,
+      ];
+      if (matchingEvents.isEmpty) {
+        Log.warning(
+          'Ignoring off-filter DM inbox relay response for $pubkey',
+          category: LogCategory.system,
+        );
+        return (state: _OwnDmInboxState.absent, relays: null);
+      }
       // Newest wins for a replaceable event served from multiple relays.
-      events.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      matchingEvents.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       // Accept both `relay` (the kind-10050 spec tag) and `r` tags. The
       // whole point of #4974 is reading a 10050 a user advertised from
       // ANOTHER client, and some clients write `r` tags; within a
@@ -2664,7 +2676,7 @@ class DmRepository {
       // resolveDmInboxRelays, so it also widens recipient resolution there.
       final relays = _admitDmRelays(
         [
-          for (final tag in events.first.tags)
+          for (final tag in matchingEvents.first.tags)
             if (tag.length >= 2 &&
                 (tag[0] == 'relay' || tag[0] == 'r') &&
                 tag[1].isNotEmpty)

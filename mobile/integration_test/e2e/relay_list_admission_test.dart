@@ -4,7 +4,6 @@
 // ABOUTME: Requires: NO Docker stack — every dependency here is local.
 
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -19,83 +18,7 @@ import 'package:nostr_sdk/utils/relay_url_policy.dart';
 import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// A relay that answers every REQ with one chosen frame.
-///
-/// Stands in for an indexer. The point of #6585 is that an indexer is a
-/// third-party server, so what it returns is untrusted input no matter that
-/// we were the ones who asked.
-class _StubIndexer {
-  _StubIndexer(this._server, this._reply);
-
-  final HttpServer _server;
-  final Map<String, dynamic>? _reply;
-
-  String get url => 'ws://127.0.0.1:${_server.port}';
-
-  static Future<_StubIndexer> start(Map<String, dynamic>? reply) async {
-    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-    final indexer = _StubIndexer(server, reply);
-    server.listen((req) async {
-      // Anything that is not a WebSocket upgrade (a NIP-11 capability probe,
-      // a health check) must be answered rather than thrown out of the
-      // listener — an async throw here fails the surrounding test.
-      if (!WebSocketTransformer.isUpgradeRequest(req)) {
-        req.response.statusCode = HttpStatus.badRequest;
-        await req.response.close();
-        return;
-      }
-      final socket = await WebSocketTransformer.upgrade(req);
-      socket.listen((raw) {
-        final frame = jsonDecode(raw as String) as List<dynamic>;
-        if (frame.isEmpty || frame[0] != 'REQ') return;
-        final subId = frame[1] as String;
-        if (indexer._reply != null) {
-          socket.add(jsonEncode(<dynamic>['EVENT', subId, indexer._reply]));
-        }
-        socket.add(jsonEncode(<dynamic>['EOSE', subId]));
-      }, onError: (_) {});
-    });
-    return indexer;
-  }
-
-  Future<void> stop() => _server.close(force: true);
-}
-
-/// A relay that accepts the connection and then says nothing — the shape a
-/// listener takes when its only purpose is to be connected to.
-class _SilentRelay {
-  _SilentRelay(this._server);
-
-  final HttpServer _server;
-  final List<WebSocket> _sockets = [];
-
-  String get url => 'ws://127.0.0.1:${_server.port}';
-  int get openSockets =>
-      _sockets.where((s) => s.readyState == WebSocket.open).length;
-
-  static Future<_SilentRelay> start() async {
-    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-    final relay = _SilentRelay(server);
-    server.listen((req) async {
-      if (!WebSocketTransformer.isUpgradeRequest(req)) {
-        req.response.statusCode = HttpStatus.badRequest;
-        await req.response.close();
-        return;
-      }
-      final socket = await WebSocketTransformer.upgrade(req);
-      relay._sockets.add(socket);
-      socket.listen((_) {}, onError: (_) {});
-    });
-    return relay;
-  }
-
-  Future<void> stop() async {
-    for (final socket in _sockets) {
-      await socket.close().catchError((_) => null);
-    }
-    await _server.close(force: true);
-  }
-}
+import '../helpers/fake_relay.dart';
 
 Map<String, dynamic> _signedRelayList({
   required String privateKey,
@@ -114,6 +37,7 @@ Map<String, dynamic> _signedRelayList({
   return event.toJson();
 }
 
+@Tags(['service'])
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -123,8 +47,8 @@ void main() {
 
   group('#6585 relay-list admission', () {
     testWidgets('a correctly signed kind-10002 is admitted', (tester) async {
-      final indexer = await _StubIndexer.start(
-        _signedRelayList(privateKey: authorKey),
+      final indexer = await FakeRelay.start(
+        reply: _signedRelayList(privateKey: authorKey),
       );
       addTearDown(indexer.stop);
 
@@ -160,7 +84,7 @@ void main() {
       };
 
       for (final entry in cases.entries) {
-        final indexer = await _StubIndexer.start(entry.value);
+        final indexer = await FakeRelay.start(reply: entry.value);
         addTearDown(indexer.stop);
         final relays = await RelayDiscoveryService(
           indexerRelays: [indexer.url],
@@ -172,8 +96,8 @@ void main() {
     testWidgets("an admitted list cannot name this device's own network", (
       tester,
     ) async {
-      final indexer = await _StubIndexer.start(
-        _signedRelayList(
+      final indexer = await FakeRelay.start(
+        reply: _signedRelayList(
           privateKey: authorKey,
           tags: const [
             ['r', 'wss://public.example'],
@@ -200,8 +124,8 @@ void main() {
     testWidgets('one relay list cannot inject an unbounded set', (
       tester,
     ) async {
-      final indexer = await _StubIndexer.start(
-        _signedRelayList(
+      final indexer = await FakeRelay.start(
+        reply: _signedRelayList(
           privateKey: authorKey,
           tags: [
             for (var i = 0; i < 200; i++) ['r', 'wss://flood-$i.example'],
@@ -261,7 +185,7 @@ void main() {
     testWidgets('sockets opened for a publish are released once idle', (
       tester,
     ) async {
-      final targets = [for (var i = 0; i < 4; i++) await _SilentRelay.start()];
+      final targets = [for (var i = 0; i < 4; i++) await FakeRelay.start()];
       addTearDown(() async {
         for (final relay in targets) {
           await relay.stop();

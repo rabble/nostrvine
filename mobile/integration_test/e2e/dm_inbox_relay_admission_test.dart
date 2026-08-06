@@ -65,6 +65,7 @@ final List<String> _surplusTargets = [
   for (var i = 0; i < 10; i++) 'wss://surplus-$i.example',
 ];
 
+@Tags(['service'])
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 

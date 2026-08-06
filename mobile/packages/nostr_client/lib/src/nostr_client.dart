@@ -849,7 +849,10 @@ class NostrClient {
           ? await _queryPool.withResource(runWebSocketQuery)
           : await runWebSocketQuery();
     }
-    final websocketEvents = websocketResult.events;
+    final websocketEvents = _eventsMatchingAnyFilter(
+      websocketResult.events,
+      filters,
+    );
 
     // Cache websocket results (fire-and-forget)
     if (websocketEvents.isNotEmpty) {
@@ -1684,6 +1687,16 @@ class NostrClient {
     final bytes = utf8.encode(jsonString);
     final digest = sha256.convert(bytes);
     return digest.toString().substring(0, 16);
+  }
+
+  List<Event> _eventsMatchingAnyFilter(
+    List<Event> events,
+    List<Filter> filters,
+  ) {
+    return [
+      for (final event in events)
+        if (filters.any((filter) => filter.checkEvent(event))) event,
+    ];
   }
 
   /// Merges cached and network events, deduplicating by event ID.

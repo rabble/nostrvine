@@ -274,7 +274,9 @@ void main() {
         expect(pendingQueries, hasLength(2));
         expect(activeQueries, 2);
 
-        pendingQueries.removeFirst().complete([_createTestEvent(id: 'one')]);
+        pendingQueries.removeFirst().complete([
+          _createTestEvent(id: 'one', kind: 1059),
+        ]);
         await pumpEventQueue();
 
         expect(pendingQueries, hasLength(2));
@@ -286,8 +288,12 @@ void main() {
         expect(pendingQueries, hasLength(2));
         expect(activeQueries, 2);
 
-        pendingQueries.removeFirst().complete([_createTestEvent(id: 'three')]);
-        pendingQueries.removeFirst().complete([_createTestEvent(id: 'four')]);
+        pendingQueries.removeFirst().complete([
+          _createTestEvent(id: 'three', kind: 1059),
+        ]);
+        pendingQueries.removeFirst().complete([
+          _createTestEvent(id: 'four', kind: 1059),
+        ]);
 
         await expectLater(
           Future.wait(results),
@@ -1415,6 +1421,19 @@ void main() {
           // The simple form drops the timeout signal, but must not drop the
           // events that arrived before it.
           expect(await client.queryEvents([textNoteFilter()]), equals(events));
+        },
+      );
+
+      test(
+        'drops websocket events that do not match any requested filter',
+        () async {
+          final matching = _createTestEvent(kind: EventKind.textNote);
+          final offFilter = _createTestEvent(kind: EventKind.relayListMetadata);
+          stubWebSocketEvents([offFilter, matching]);
+
+          final result = await client.queryEventsDetailed([textNoteFilter()]);
+
+          expect(result.events, [matching]);
         },
       );
     });

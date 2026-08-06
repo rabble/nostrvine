@@ -5,7 +5,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:developer';
 
-import 'package:flutter/foundation.dart';
+import 'package:meta/meta.dart';
 import 'package:nostr_sdk/utils/relay_addr_util.dart';
 
 import '../count_response.dart';
@@ -1126,6 +1126,24 @@ class RelayPool {
           _verifiesSkippedByPolicy++;
         }
 
+        final poolSubscription = _subscriptions[subId];
+        final querySubscription = poolSubscription == null
+            ? relay.getRequestSubscription(subId)
+            : null;
+        final subscription = poolSubscription ?? querySubscription;
+
+        if (subscription == null) {
+          return;
+        }
+
+        if (!subscription.matchesEvent(event)) {
+          log(
+            'Dropping relay event that does not match subscription filter '
+            'from ${relay.url}: eventId=${event.id}, subId=$subId',
+          );
+          return;
+        }
+
         if ((relay.relayStatus.relayType != RelayType.cache)) {
           var event = Map<String, dynamic>.from(eventJson);
           var kind = event["kind"];
@@ -1158,20 +1176,13 @@ class RelayPool {
         } else {
           event.sources.add(relay.url);
         }
-        var subscription = _subscriptions[subId];
-
-        if (subscription != null) {
-          subscription.onEvent(event);
-        } else {
-          subscription = relay.getRequestSubscription(subId);
-          if (subscription != null) {
-            // The relay is mid-answer for this one-shot query, so it has not
-            // gone silent — restart the grace period rather than cut its
-            // result set off part-way through.
-            _restartQuerySettleWindow(subId);
-            subscription.onEvent(event);
-          }
+        if (querySubscription != null) {
+          // The relay is mid-answer for this one-shot query, so it has not
+          // gone silent. Restart the grace period rather than cutting its
+          // result set off part-way through.
+          _restartQuerySettleWindow(subId);
         }
+        subscription.onEvent(event);
       } catch (err) {
         log(err.toString());
       }
@@ -2352,6 +2363,7 @@ class RelayPool {
     var relay = _tempRelays.remove(addr);
     if (relay != null) {
       relay.disconnect();
+      relay.dispose();
     }
     _forgetRelayBookkeeping(addr);
   }

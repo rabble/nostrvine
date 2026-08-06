@@ -353,26 +353,23 @@ void main() {
       expect(relays.single.url, 'wss://good.example.com');
     });
 
-    test(
-      'drops mis-nested wss://http:// tags (#3362 review follow-up)',
-      () {
-        // `wss://http://attacker` parses with host=`http` and path=`//attacker…`.
-        // Without the `path.startsWith('//')` guard in `isRelayUrlAllowed`,
-        // the predicate would accept it (scheme=wss) and discovery would
-        // surface a relay pointing at host `http`. `normalizeRelayUrl`
-        // would also reject it downstream, but we don't want
-        // discovery's `hasRelays` to flip true on a malformed tag — that
-        // would suppress the safe-fallback bootstrap (#2931).
-        final relays = service.parseRelayListFromJson(
-          tagsJson([
-            ['r', 'wss://http://attacker.example.com'],
-            ['r', 'wss://https://attacker.example.com'],
-            ['r', 'wss://wss://relay.example.com'],
-          ]),
-        );
-        expect(relays, isEmpty);
-      },
-    );
+    test('drops mis-nested wss://http:// tags (#3362 review follow-up)', () {
+      // `wss://http://attacker` parses with host=`http` and path=`//attacker…`.
+      // Without the `path.startsWith('//')` guard in `isRelayUrlAllowed`,
+      // the predicate would accept it (scheme=wss) and discovery would
+      // surface a relay pointing at host `http`. `normalizeRelayUrl`
+      // would also reject it downstream, but we don't want
+      // discovery's `hasRelays` to flip true on a malformed tag — that
+      // would suppress the safe-fallback bootstrap (#2931).
+      final relays = service.parseRelayListFromJson(
+        tagsJson([
+          ['r', 'wss://http://attacker.example.com'],
+          ['r', 'wss://https://attacker.example.com'],
+          ['r', 'wss://wss://relay.example.com'],
+        ]),
+      );
+      expect(relays, isEmpty);
+    });
   });
 
   group(IndexerRelayConfig, () {
@@ -411,8 +408,9 @@ void main() {
 /// is not evidence the answer is the list we asked for.
 void _authenticityTests() {
   group('queryIndexerDirect authenticity (#6585)', () {
-    const victim =
-        '0000000000000000000000000000000000000000000000000000000000000abc';
+    const victimKey =
+        '1111111111111111111111111111111111111111111111111111111111111111';
+    final victimPubkey = getPublicKey(victimKey);
     late _HostileIndexer indexer;
     late RelayDiscoveryService service;
 
@@ -420,7 +418,7 @@ void _authenticityTests() {
       indexer = await _HostileIndexer.start(reply);
       addTearDown(indexer.stop);
       service = RelayDiscoveryService(indexerRelays: [indexer.url]);
-      return service.queryIndexerDirect(indexer.url, victim);
+      return service.queryIndexerDirect(indexer.url, victimPubkey);
     }
 
     /// A genuinely signed kind-10002 for [author].
@@ -442,10 +440,6 @@ void _authenticityTests() {
       return event.toJson();
     }
 
-    const victimKey =
-        '1111111111111111111111111111111111111111111111111111111111111111';
-    final victimPubkey = getPublicKey(victimKey);
-
     // Positive control. Without this, every rejection below could be passing
     // because the harness never delivers anything, not because the checks work.
     test(
@@ -466,10 +460,14 @@ void _authenticityTests() {
     );
 
     test('rejects a frame with no signature', () async {
-      final unsigned = signedRelayList(privateKey: victimKey)
-        ..['sig'] = ''
-        ..['pubkey'] = victim;
+      final unsigned = signedRelayList(privateKey: victimKey)..['sig'] = '';
       expect(await query(unsigned), isEmpty);
+    });
+
+    test('rejects a frame with an invalid signature', () async {
+      final badSignature = signedRelayList(privateKey: victimKey);
+      badSignature['sig'] = '00${(badSignature['sig'] as String).substring(2)}';
+      expect(await query(badSignature), isEmpty);
     });
 
     test('rejects a frame signed by somebody else', () async {
@@ -480,7 +478,6 @@ void _authenticityTests() {
 
     test('rejects a frame whose id does not match its contents', () async {
       final tampered = signedRelayList(privateKey: victimKey)
-        ..['pubkey'] = victim
         ..['tags'] = [
           ['r', 'wss://attacker-controlled.example'],
         ];

@@ -5,6 +5,31 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 
 void main() {
+  group('Filter event matching', () {
+    test('matches event id and author prefixes', () {
+      const pubkey =
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      final event = Event(pubkey, 1, const [], 'hello', createdAt: 1);
+
+      final filter = Filter(
+        ids: [event.id.substring(0, 12)],
+        authors: [pubkey.substring(0, 12)],
+      );
+
+      expect(filter.checkEvent(event), isTrue);
+    });
+
+    test('rejects non-matching event id and author prefixes', () {
+      const pubkey =
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      final event = Event(pubkey, 1, const [], 'hello', createdAt: 1);
+
+      final filter = Filter(ids: const ['bbbb'], authors: const ['cccc']);
+
+      expect(filter.checkEvent(event), isFalse);
+    });
+  });
+
   group('Filter Search Tests', () {
     test('Should serialize search field to JSON', () {
       final filter = Filter(kinds: [1], limit: 10, search: 'bitcoin');

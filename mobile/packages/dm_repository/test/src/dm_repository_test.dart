@@ -3800,10 +3800,15 @@ void main() {
     });
 
     group('resolveDmInboxRelays', () {
-      Event kind10050Event(List<String> relays, {int createdAt = 1700000000}) {
+      Event kind10050Event(
+        List<String> relays, {
+        int createdAt = 1700000000,
+        String pubkey = _validPubkeyB,
+        int kind = EventKind.dmRelaysList,
+      }) {
         return Event(
-          _validPubkeyB,
-          EventKind.dmRelaysList,
+          pubkey,
+          kind,
           [
             for (final r in relays) ['relay', r],
           ],
@@ -3844,6 +3849,25 @@ void main() {
         final repository = createRepository();
         expect(await repository.resolveDmInboxRelays(_validPubkeyB), isNull);
       });
+
+      test(
+        'ignores relay-returned events that do not match the requested '
+        'kind-10050 author',
+        () async {
+          stubQuery([
+            kind10050Event(
+              ['wss://attacker-selected.example'],
+              pubkey: _validPubkeyC,
+            ),
+            kind10050Event(
+              ['wss://wrong-kind.example'],
+              kind: EventKind.textNote,
+            ),
+          ]);
+          final repository = createRepository();
+          expect(await repository.resolveDmInboxRelays(_validPubkeyB), isNull);
+        },
+      );
 
       test('de-duplicates relay urls', () async {
         stubQuery([
@@ -15125,10 +15149,14 @@ void main() {
               subscriptionId: any(named: 'subscriptionId'),
               useCache: any(named: 'useCache'),
             ),
-          ).thenAnswer(
-            (_) async => [
+          ).thenAnswer((invocation) async {
+            final filters =
+                invocation.positionalArguments.first
+                    as List<nostr_filter.Filter>;
+            final recipient = filters.single.authors!.single;
+            return [
               Event(
-                _validPubkeyB,
+                recipient,
                 EventKind.dmRelaysList,
                 [
                   ['relay', 'wss://inbox.example'],
@@ -15136,8 +15164,8 @@ void main() {
                 '',
                 createdAt: 1700000000,
               ),
-            ],
-          );
+            ];
+          });
           stubSendRumor((_, recipient) async {
             return NIP17SendResult.success(
               rumorEventId: 'rumor-$recipient',

@@ -210,9 +210,9 @@ class RelayDiscoveryService {
   /// rather than waiting for all indexers to finish. If all indexers return
   /// empty or fail, returns null.
   ///
-  // TODO: cancel remaining WebSocket connections on first success. Currently
-  // losing queries complete naturally (EOSE or 10s timeout) which is harmless
-  // but wastes resources.
+  // Losing queries complete naturally (EOSE or 10s timeout). Each direct
+  // query owns and disposes its RelayBase, so no connection survives that
+  // bound.
   Future<(List<DiscoveredRelay>, String)?> _queryFirstSuccess(
     String pubkeyHex,
   ) async {
@@ -268,7 +268,7 @@ class RelayDiscoveryService {
     final relayStatus = RelayStatus(indexerUrl);
     final relay = RelayBase(indexerUrl, relayStatus);
     final completer = Completer<List<DiscoveredRelay>>();
-    final events = <Event>[];
+    Event? newestEvent;
     final subscriptionId = 'rd_${DateTime.now().millisecondsSinceEpoch}';
 
     // Set up message handler before connecting
@@ -280,18 +280,21 @@ class RelayDiscoveryService {
       if (messageType == 'EVENT' && json.length >= 3) {
         final eventJson = json[2] as Map<String, dynamic>;
         final event = _authenticRelayList(eventJson, indexerUrl, pubkeyHex);
-        if (event != null) events.add(event);
+        if (event != null &&
+            (newestEvent == null || event.createdAt > newestEvent!.createdAt)) {
+          newestEvent = event;
+        }
       } else if (messageType == 'EOSE') {
         // All stored events received - parse and complete
         if (!completer.isCompleted) {
-          if (events.isEmpty) {
+          final event = newestEvent;
+          if (event == null) {
             completer.complete(<DiscoveredRelay>[]);
           } else {
             // Newest wins. Frames arrive in whatever order the indexer feels
             // like sending them, so the first one through the socket is not
             // the current relay list.
-            events.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-            completer.complete(_parseRelayListFromEvent(events.first));
+            completer.complete(_parseRelayListFromEvent(event));
           }
         }
       } else if (messageType == 'NOTICE') {
@@ -356,6 +359,7 @@ class RelayDiscoveryService {
     } finally {
       try {
         await relay.disconnect();
+        relay.dispose();
       } catch (_) {}
     }
   }
@@ -364,9 +368,10 @@ class RelayDiscoveryService {
   /// kind-10002, and null otherwise.
   ///
   /// This query runs on a bare [RelayBase] with its own `onMessage`, so the
-  /// frame never passes through `RelayPool`, which is the only place inbound
-  /// events are checked. Nothing else stands between an indexer and the relay
-  /// pool: what comes back here is adopted via `NostrClient.addRelays` and
+  /// frame never passes through `RelayPool`, so it bypasses the normal
+  /// subscription filter and signature checks. Nothing else stands between an
+  /// indexer and the relay pool: what comes back here is adopted via
+  /// `NostrClient.addRelays` and
   /// then used for every subsequent read and write. The indexers queried are
   /// third-party public relays, so "it answered our REQ" is not evidence the
   /// answer is the list we asked for — the id, the signature, the author and
@@ -538,9 +543,12 @@ class RelayDiscoveryService {
         cached.map((r) => r.url),
         cap: RelayListCaps.nip65,
       );
+      final cachedByUrl = {
+        for (final relay in cached.reversed) relay.url: relay,
+      };
       return [
-        for (final relay in cached)
-          if (admitted.contains(relay.url)) relay,
+        for (final url in admitted)
+          if (cachedByUrl[url] != null) cachedByUrl[url]!,
       ];
     } catch (e) {
       Log.warning(

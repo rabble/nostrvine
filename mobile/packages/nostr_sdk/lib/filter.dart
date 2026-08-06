@@ -149,10 +149,10 @@ class Filter {
   }
 
   bool checkEvent(Event event) {
-    if (ids != null && (!ids!.contains(event.id))) {
+    if (ids != null && !_matchesAnyPrefix(ids!, event.id)) {
       return false;
     }
-    if (authors != null && (!authors!.contains(event.pubkey))) {
+    if (authors != null && !_matchesAnyPrefix(authors!, event.pubkey)) {
       return false;
     }
     if (kinds != null && (!kinds!.contains(event.kind))) {
@@ -265,5 +265,9 @@ class Filter {
     }
 
     return true;
+  }
+
+  bool _matchesAnyPrefix(List<String> prefixes, String value) {
+    return prefixes.any(value.startsWith);
   }
 }

@@ -8,6 +8,8 @@ import 'package:nostr_sdk/relay/client_connected.dart';
 class _MalformedFrameRelay extends Relay {
   _MalformedFrameRelay(String url) : super(url, RelayStatus(url));
 
+  String? capturedSubId;
+
   @override
   Future<bool> doConnect() async {
     relayStatus.connected = ClientConnected.connected;
@@ -27,6 +29,9 @@ class _MalformedFrameRelay extends Relay {
     bool skipReconnect = false,
     DateTime? deadline,
   }) async {
+    if (message.isNotEmpty && message[0] == 'REQ' && message.length > 1) {
+      capturedSubId = message[1] as String;
+    }
     return true;
   }
 
@@ -81,6 +86,46 @@ void main() {
           reason: 'malformed relay frame should be dropped: $frame',
         );
       }
+    });
+
+    test('drops signed events that do not match the query filter', () async {
+      const privateKey =
+          '5ee1c8000ab28edd64d74a7d951ac2dd559814887b1b9e1ac7c5f89e96125c12';
+      final signer = LocalNostrSigner(privateKey);
+      final nostr = Nostr(signer, [], dummyTempRelay);
+      final relay = _MalformedFrameRelay('wss://off-filter.example');
+
+      expect(await nostr.relayPool.add(relay), isTrue);
+
+      final pending = nostr.queryEventsDetailed([
+        {
+          'authors': [getPublicKey(privateKey)],
+          'kinds': [EventKind.relayListMetadata],
+        },
+      ], timeout: const Duration(seconds: 2));
+
+      for (var i = 0; i < 1000 && relay.capturedSubId == null; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+      final subId = relay.capturedSubId;
+      expect(subId, isNotNull);
+
+      final offFilterEvent = Event(
+        getPublicKey(privateKey),
+        EventKind.textNote,
+        [
+          ['r', 'wss://attacker-selected.example'],
+        ],
+        '',
+        createdAt: 1700000000,
+      )..sign(privateKey);
+
+      await relay.deliver(['EVENT', subId, offFilterEvent.toJson()]);
+      await relay.deliver(['EOSE', subId]);
+
+      final result = await pending;
+      expect(result.events, isEmpty);
+      expect(result.timedOut, isFalse);
     });
   });
 }

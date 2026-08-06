@@ -721,10 +721,10 @@ class NostrService extends _$NostrService {
       if (targetPubkey == null || pubkey != targetPubkey || relayUrls.isEmpty) {
         return;
       }
-      // Last gate before these become permanent pool members. Discovery
-      // already applies the same rule, but this is the boundary every path
-      // into the pool crosses, and the cost of getting it wrong here is a
-      // relay the user never chose serving all their reads and writes (#6585).
+      // Last gate before this callback's discovered relays become permanent
+      // pool members. Discovery already applies the same rule; keeping it
+      // here protects the late-add path if a future caller hands the callback
+      // a list that did not come straight from discovery (#6585).
       final admitted = admitRemoteSuppliedRelays(
         relayUrls,
         cap: RelayListCaps.nip65,
