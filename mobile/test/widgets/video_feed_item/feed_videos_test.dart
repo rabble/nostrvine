@@ -2,9 +2,13 @@
 // ABOUTME: overlay mode switching (forbidden/ageRestricted/contentWarning/interactive),
 // ABOUTME: effective isActive propagation, route-aware pausing, and pagination flush.
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:comments_repository/comments_repository.dart';
+import 'package:flutter/gestures.dart' show kLongPressTimeout;
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -34,6 +38,7 @@ import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/repositories/community_content_label_repository.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
+import 'package:openvine/screens/feed/feed_immersive_cubit.dart';
 import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/community_content_label_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
@@ -46,9 +51,12 @@ import 'package:openvine/services/view_event_publisher.dart'
 import 'package:openvine/widgets/divine_video_metrics_tracker.dart';
 import 'package:openvine/widgets/video_feed_item/actions/help_classify_action_button.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
+import 'package:openvine/widgets/video_feed_item/feed_immersive_chrome.dart';
 import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
+import 'package:openvine/widgets/video_feed_item/paused_video_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
+import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/video_feed_item/video_loading_placeholder.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -288,6 +296,7 @@ Future<void> _pumpFeedVideos(
   required List<VideoEvent> videos,
   _MockVideoPlaybackStatusCubit? videoPlaybackStatusCubit,
   _MockFeedAutoAdvanceCubit? feedAutoAdvanceCubit,
+  FeedImmersiveCubit? feedImmersiveCubit,
   _MockVideoVolumeCubit? videoVolumeCubit,
   VideoModerationStatusService? moderationService,
   MediaAuthInterceptor? mediaAuthInterceptor,
@@ -313,6 +322,10 @@ Future<void> _pumpFeedVideos(
       feedAutoAdvanceCubit ??
       (_MockFeedAutoAdvanceCubit()..stub(const FeedAutoAdvanceState()));
   final mockVolumeCubit = videoVolumeCubit ?? (_MockVideoVolumeCubit()..stub());
+  // Real cubit rather than a mock: it holds one bool and the hold-to-peek
+  // tests assert the chrome that reacts to it.
+  final immersiveCubit = feedImmersiveCubit ?? FeedImmersiveCubit();
+  addTearDown(immersiveCubit.close);
   final container = ProviderContainer(
     overrides: [
       ..._buildOverrides(
@@ -345,6 +358,7 @@ Future<void> _pumpFeedVideos(
               value: mockPlaybackCubit,
             ),
             BlocProvider<VideoVolumeCubit>.value(value: mockVolumeCubit),
+            BlocProvider<FeedImmersiveCubit>.value(value: immersiveCubit),
           ],
           child: Scaffold(
             body: FeedVideos(
@@ -1161,6 +1175,380 @@ void main() {
             ContentFilterPreference.hide,
           ),
         ).called(1);
+      },
+    );
+  });
+
+  // -------------------------------------------------------------------------
+  // Immersive (hold-to-peek) viewing — #6234
+  // -------------------------------------------------------------------------
+  group('hold to peek', () {
+    // Reads the fade the [FeedImmersiveChrome] around [of] applies. Anchored
+    // on the wrapped widget rather than on FeedImmersiveChrome itself: each
+    // chrome layer has its own wrapper, and the overlay actions carry an
+    // unrelated AnimatedOpacity of their own further down.
+    double chromeOpacity(WidgetTester tester, {required Type of}) => tester
+        .widget<AnimatedOpacity>(
+          find
+              .ancestor(
+                of: find.byType(of),
+                matching: find.byType(AnimatedOpacity),
+              )
+              .first,
+        )
+        .opacity;
+
+    // pumpAndSettle can't be used here: InfiniteVideoFeed keeps its own
+    // timers running, so settle never arrives. The fade is a fixed duration.
+    Future<void> pumpFade(WidgetTester tester) => tester.pump(
+      kFeedImmersiveFadeDuration + const Duration(milliseconds: 50),
+    );
+
+    testWidgets('hides the overlay chrome while held and restores on release', (
+      tester,
+    ) async {
+      final video = _makeVideo();
+      final immersiveCubit = FeedImmersiveCubit();
+
+      await _pumpFeedVideos(
+        tester,
+        videos: [video],
+        feedImmersiveCubit: immersiveCubit,
+      );
+      await tester.pump();
+
+      expect(chromeOpacity(tester, of: VideoOverlayActions), equals(1.0));
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(InfiniteVideoFeed)),
+      );
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      await pumpFade(tester);
+
+      expect(immersiveCubit.state.isImmersive, isTrue);
+      expect(chromeOpacity(tester, of: VideoOverlayActions), equals(0.0));
+
+      await gesture.up();
+      await pumpFade(tester);
+
+      expect(immersiveCubit.state.isImmersive, isFalse);
+      expect(chromeOpacity(tester, of: VideoOverlayActions), equals(1.0));
+    });
+
+    testWidgets('restores the chrome when the pointer is cancelled', (
+      tester,
+    ) async {
+      final video = _makeVideo();
+      final immersiveCubit = FeedImmersiveCubit();
+
+      await _pumpFeedVideos(
+        tester,
+        videos: [video],
+        feedImmersiveCubit: immersiveCubit,
+      );
+      await tester.pump();
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(InfiniteVideoFeed)),
+      );
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      expect(immersiveCubit.state.isImmersive, isTrue);
+
+      // LongPressGestureRecognizer reports neither onLongPressEnd nor
+      // onLongPressCancel for a pointer cancelled after acceptance, so
+      // without the raw Listener backstop the chrome would stay hidden.
+      await gesture.cancel();
+      await pumpFade(tester);
+
+      expect(immersiveCubit.state.isImmersive, isFalse);
+      expect(chromeOpacity(tester, of: VideoOverlayActions), equals(1.0));
+    });
+
+    testWidgets('a second finger lifting mid-hold does not end the peek', (
+      tester,
+    ) async {
+      final video = _makeVideo();
+      final immersiveCubit = FeedImmersiveCubit();
+
+      await _pumpFeedVideos(
+        tester,
+        videos: [video],
+        feedImmersiveCubit: immersiveCubit,
+      );
+      await tester.pump();
+
+      final center = tester.getCenter(find.byType(InfiniteVideoFeed));
+      final holdFinger = await tester.startGesture(center, pointer: 1);
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      await pumpFade(tester);
+
+      expect(immersiveCubit.state.isImmersive, isTrue);
+
+      // A second finger touches down and lifts while the first still holds.
+      final secondFinger = await tester.startGesture(
+        center + const Offset(24, 24),
+        pointer: 2,
+      );
+      await secondFinger.up();
+      await pumpFade(tester);
+
+      expect(
+        immersiveCubit.state.isImmersive,
+        isTrue,
+        reason: 'a second finger must not cut a hold the first finger keeps',
+      );
+      expect(chromeOpacity(tester, of: VideoOverlayActions), equals(0.0));
+
+      await holdFinger.up();
+      await pumpFade(tester);
+
+      expect(immersiveCubit.state.isImmersive, isFalse);
+      expect(chromeOpacity(tester, of: VideoOverlayActions), equals(1.0));
+    });
+
+    testWidgets('hides the paused play indicator too', (tester) async {
+      // The play indicator only mounts once a controller exists.
+      InfiniteVideoFeed.debugIsSupportedOverride = true;
+      final video = _makeVideo();
+      final immersiveCubit = FeedImmersiveCubit();
+
+      await _pumpFeedVideos(
+        tester,
+        videos: [video],
+        feedImmersiveCubit: immersiveCubit,
+      );
+      await tester.pump(const Duration(seconds: 4));
+
+      expect(find.byType(PausedVideoOverlay), findsOneWidget);
+      expect(chromeOpacity(tester, of: PausedVideoOverlay), equals(1.0));
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(InfiniteVideoFeed)),
+      );
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      await pumpFade(tester);
+
+      expect(
+        chromeOpacity(tester, of: PausedVideoOverlay),
+        equals(0.0),
+        reason: 'the play indicator covers the frame the peek reveals',
+      );
+
+      await gesture.up();
+      await pumpFade(tester);
+
+      expect(chromeOpacity(tester, of: PausedVideoOverlay), equals(1.0));
+    });
+
+    testWidgets('a short tap leaves the chrome alone', (tester) async {
+      final video = _makeVideo();
+      final immersiveCubit = FeedImmersiveCubit();
+
+      await _pumpFeedVideos(
+        tester,
+        videos: [video],
+        feedImmersiveCubit: immersiveCubit,
+      );
+      await tester.pump();
+
+      await tester.tap(find.byType(InfiniteVideoFeed));
+      await pumpFade(tester);
+
+      expect(immersiveCubit.state.isImmersive, isFalse);
+      expect(chromeOpacity(tester, of: VideoOverlayActions), equals(1.0));
+    });
+
+    testWidgets('lowers the flag when the feed is torn down mid-hold', (
+      tester,
+    ) async {
+      final video = _makeVideo();
+      final immersiveCubit = FeedImmersiveCubit();
+      addTearDown(immersiveCubit.close);
+
+      await _pumpFeedVideos(
+        tester,
+        videos: [video],
+        feedImmersiveCubit: immersiveCubit,
+      );
+      await tester.pump();
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(InfiniteVideoFeed)),
+      );
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      expect(immersiveCubit.state.isImmersive, isTrue);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(seconds: 4));
+
+      expect(
+        immersiveCubit.state.isImmersive,
+        isFalse,
+        reason: 'a cubit outliving the overlay must not stay immersive',
+      );
+
+      await gesture.cancel();
+    });
+
+    testWidgets(
+      'keeps the action rail out from under the peek gesture',
+      (tester) async {
+        // When the rail sat *inside* the long-press detector, any press held
+        // past kLongPressTimeout anywhere on Report/More/Share was claimed by
+        // the video's long-press: the button's tap recognizer only accepts on
+        // pointer-up, so it lost the arena, the tap was swallowed and the
+        // control faded out under the viewer's finger.
+        //
+        // Asserted structurally rather than by pressing a button: the action
+        // icons are SVG-backed and lay out at zero size under `flutter test`,
+        // so there is no button rect to press. Ancestry is the invariant that
+        // actually matters — a sibling rail cannot lose the arena.
+        final video = _makeVideo();
+
+        await _pumpFeedVideos(tester, videos: [video]);
+        await tester.pump();
+
+        final longPressAncestors = tester
+            .widgetList<GestureDetector>(
+              find.ancestor(
+                of: find.byType(VideoOverlayActions),
+                matching: find.byType(GestureDetector),
+              ),
+            )
+            .where((detector) => detector.onLongPressStart != null);
+
+        expect(
+          longPressAncestors,
+          isEmpty,
+          reason: 'the peek gesture must not sit above the action rail',
+        );
+      },
+    );
+
+    testWidgets('publishes no long-press semantics action', (tester) async {
+      // A semantics long-press delivers no pointer events, so the release
+      // path could never run and a screen-reader user would be stranded
+      // with every control hidden and pointer-blocked.
+      final handle = tester.ensureSemantics();
+      final video = _makeVideo();
+      final immersiveCubit = FeedImmersiveCubit();
+      addTearDown(immersiveCubit.close);
+
+      await _pumpFeedVideos(
+        tester,
+        videos: [video],
+        feedImmersiveCubit: immersiveCubit,
+      );
+      await tester.pump();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final node = tester.getSemantics(
+        find.bySemanticsLabel(l10n.videoPlayerPlayVideo).first,
+      );
+
+      expect(
+        node.getSemanticsData().hasAction(SemanticsAction.longPress),
+        isFalse,
+        reason: 'the peek must not be reachable from a screen reader',
+      );
+      handle.dispose();
+    });
+
+    testWidgets('cannot peek past a content warning gate', (tester) async {
+      // The gate modes are early returns in _resolveOverlayMode, so the
+      // gesture does not exist in that subtree. Nothing else enforces it —
+      // if the blur ever becomes a sibling in the interactive Stack, a hold
+      // would silently reveal warned content.
+      final video = _makeVideo(warnLabels: ['nudity']);
+      final immersiveCubit = FeedImmersiveCubit();
+      addTearDown(immersiveCubit.close);
+
+      await _pumpFeedVideos(
+        tester,
+        videos: [video],
+        feedImmersiveCubit: immersiveCubit,
+      );
+      await tester.pump();
+
+      expect(find.byType(ContentWarningBlurOverlay), findsOneWidget);
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(InfiniteVideoFeed)),
+      );
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      await pumpFade(tester);
+
+      expect(
+        immersiveCubit.state.isImmersive,
+        isFalse,
+        reason: 'a hold must never uncover gated content',
+      );
+      expect(find.byType(ContentWarningBlurOverlay), findsOneWidget);
+
+      await gesture.up();
+    });
+
+    testWidgets(
+      'restores the chrome when the overlay mode flips mid-hold',
+      (tester) async {
+        // The one release path `dispose()` cannot cover: a community label
+        // resolving mid-hold swaps the interactive subtree — and with it the
+        // Listener — for the blur overlay, while __OverlayState itself
+        // survives. The exit then depends on Flutter still delivering the
+        // terminal pointer event to the hit path captured at pointer-down.
+        final video = _makeVideo(); // no creator/trusted warn labels
+        final labels = Completer<Set<String>>();
+        final repository = _MockCommunityContentLabelRepository();
+        when(
+          () => repository.communityLabelsForVideo(video),
+        ).thenAnswer((_) => labels.future);
+        final filter = _MockContentFilterService();
+        when(
+          () => filter.getPreference(ContentLabel.gambling),
+        ).thenReturn(ContentFilterPreference.warn);
+        final service = CommunityContentLabelService(
+          repository: repository,
+          contentFilterService: filter,
+        );
+        final immersiveCubit = FeedImmersiveCubit();
+        addTearDown(immersiveCubit.close);
+
+        await _pumpFeedVideos(
+          tester,
+          videos: [video],
+          feedImmersiveCubit: immersiveCubit,
+          additionalOverrides: [
+            communityContentLabelServiceProvider.overrideWith((ref) => service),
+            featureFlagServiceProvider.overrideWithValue(_communityFlagsOn()),
+          ],
+        );
+        await tester.pump();
+
+        // Hold while the item is still interactive.
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.byType(InfiniteVideoFeed)),
+        );
+        await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+        expect(immersiveCubit.state.isImmersive, isTrue);
+
+        // The label lands mid-hold and unmounts the Listener.
+        labels.complete({'gambling'});
+        await tester.pump();
+        await tester.pump();
+        expect(
+          find.byType(ContentWarningBlurOverlay),
+          findsOneWidget,
+          reason: 'the flip must actually replace the interactive subtree',
+        );
+
+        await gesture.up();
+        await pumpFade(tester);
+
+        expect(
+          immersiveCubit.state.isImmersive,
+          isFalse,
+          reason: 'releasing after a mid-hold mode flip must restore chrome',
+        );
       },
     );
   });
