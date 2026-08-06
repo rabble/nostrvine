@@ -63,10 +63,7 @@ void main() {
         expect(cubit.state.status, CrosspostSettingsStatus.loaded);
         expect(cubit.state.enabled, isTrue);
         expect(cubit.state.handle, 'testuser.divine.video');
-        expect(
-          cubit.state.provisioningState,
-          AtprotoProvisioningState.ready,
-        );
+        expect(cubit.state.provisioningState, AtprotoProvisioningState.ready);
         expect(cubit.state.did, 'did:plc:test123');
         expect(cubit.state.usernameClaimStatus, UsernameClaimStatus.claimed);
       });
@@ -131,10 +128,7 @@ void main() {
         await Future<void>.delayed(Duration.zero);
 
         expect(cubit.state.status, CrosspostSettingsStatus.loaded);
-        expect(
-          cubit.state.usernameClaimStatus,
-          UsernameClaimStatus.notClaimed,
-        );
+        expect(cubit.state.usernameClaimStatus, UsernameClaimStatus.notClaimed);
         expect(cubit.state.username, isNull);
       });
     });
@@ -144,10 +138,7 @@ void main() {
         'emits loaded with enabled=false on successful toggle',
         setUp: () {
           when(
-            () => repository.setCrosspost(
-              pubkey: testPubkey,
-              enabled: false,
-            ),
+            () => repository.setCrosspost(pubkey: testPubkey, enabled: false),
           ).thenAnswer(
             (_) async => const BlueskyCrosspostAccountStatus(
               crosspostEnabled: false,
@@ -188,10 +179,7 @@ void main() {
         'reverts to previous enabled value on toggle failure',
         setUp: () {
           when(
-            () => repository.setCrosspost(
-              pubkey: testPubkey,
-              enabled: false,
-            ),
+            () => repository.setCrosspost(pubkey: testPubkey, enabled: false),
           ).thenAnswer(
             (_) async => throw const CrosspostApiException('Server error'),
           );
@@ -394,10 +382,7 @@ void main() {
         'maps 503 toggle failure to unavailable',
         setUp: () {
           when(
-            () => repository.setCrosspost(
-              pubkey: testPubkey,
-              enabled: true,
-            ),
+            () => repository.setCrosspost(pubkey: testPubkey, enabled: true),
           ).thenAnswer(
             (_) async => throw const CrosspostApiException(
               'unavailable',
@@ -502,6 +487,78 @@ void main() {
       });
     });
 
+    group('operationGeneration invariant', () {
+      test('documents operationGeneration exclusion from equality', () {
+        // This private async epoch is intentionally excluded from props; see
+        // CrosspostSettingsState.operationGeneration for the invariant that
+        // keeps emitted generation bumps visible.
+        expect(
+          const CrosspostSettingsState(),
+          const CrosspostSettingsState(operationGeneration: 1),
+        );
+      });
+
+      test(
+        'loadStatus generation bump emits with props-visible change',
+        () async {
+          final cubit = buildCubit();
+          addTearDown(cubit.close);
+          await Future<void>.delayed(Duration.zero);
+
+          final previousState = cubit.state;
+          final emittedStates = <CrosspostSettingsState>[];
+          final subscription = cubit.stream.listen(emittedStates.add);
+          addTearDown(subscription.cancel);
+
+          await cubit.loadStatus();
+
+          expect(emittedStates, isNotEmpty);
+          expect(emittedStates.first, isNot(equals(previousState)));
+          expect(
+            emittedStates.first.operationGeneration,
+            previousState.operationGeneration + 1,
+          );
+        },
+      );
+
+      test(
+        'toggleCrosspost generation bump emits with props-visible change',
+        () async {
+          final completer = Completer<BlueskyCrosspostAccountStatus>();
+          when(
+            () => repository.setCrosspost(pubkey: testPubkey, enabled: false),
+          ).thenAnswer((_) => completer.future);
+          final cubit = buildCubit();
+          addTearDown(cubit.close);
+          await Future<void>.delayed(Duration.zero);
+
+          final previousState = cubit.state;
+          final emittedStates = <CrosspostSettingsState>[];
+          final subscription = cubit.stream.listen(emittedStates.add);
+          addTearDown(subscription.cancel);
+
+          unawaited(cubit.toggleCrosspost(enabled: false));
+          await Future<void>.delayed(Duration.zero);
+
+          expect(emittedStates, isNotEmpty);
+          expect(emittedStates.first, isNot(equals(previousState)));
+          expect(
+            emittedStates.first.operationGeneration,
+            previousState.operationGeneration + 1,
+          );
+
+          completer.complete(
+            const BlueskyCrosspostAccountStatus(
+              crosspostEnabled: false,
+              provisioningState: AtprotoProvisioningState.disabled,
+              usernameClaimStatus: UsernameClaimStatus.claimed,
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+        },
+      );
+    });
+
     group('provisioning polling', () {
       test('polls pending status until a terminal state is loaded', () {
         var loadCount = 0;
@@ -545,10 +602,7 @@ void main() {
           fake.flushMicrotasks();
 
           expect(loadCount, 2);
-          expect(
-            cubit.state.provisioningState,
-            AtprotoProvisioningState.ready,
-          );
+          expect(cubit.state.provisioningState, AtprotoProvisioningState.ready);
           final settledCount = loadCount;
           fake.elapse(const Duration(milliseconds: 10));
           fake.flushMicrotasks();
@@ -646,9 +700,9 @@ void main() {
             usernameClaimStatus: UsernameClaimStatus.claimed,
           ),
         );
-        when(() => repository.loadKeycastStatus()).thenAnswer(
-          (_) => pollCompleter.future,
-        );
+        when(
+          () => repository.loadKeycastStatus(),
+        ).thenAnswer((_) => pollCompleter.future);
         when(
           () => repository.setCrosspost(pubkey: testPubkey, enabled: false),
         ).thenAnswer(
@@ -661,9 +715,7 @@ void main() {
           ),
         );
 
-        final cubit = buildCubit(
-          pollInterval: const Duration(milliseconds: 1),
-        );
+        final cubit = buildCubit(pollInterval: const Duration(milliseconds: 1));
         addTearDown(cubit.close);
         await Future<void>.delayed(Duration.zero);
         await Future<void>.delayed(const Duration(milliseconds: 1));
@@ -819,6 +871,46 @@ void main() {
           );
         },
       );
+
+      test('retryProvisioning ignores repeated taps while toggling', () async {
+        final completer = Completer<BlueskyCrosspostAccountStatus>();
+        when(() => repository.loadStatus(pubkey: testPubkey)).thenAnswer(
+          (_) async => const BlueskyCrosspostAccountStatus(
+            crosspostEnabled: false,
+            username: 'testuser',
+            handle: 'testuser.divine.video',
+            provisioningState: AtprotoProvisioningState.failed,
+            provisioningError: 'PDS quota exhausted',
+            usernameClaimStatus: UsernameClaimStatus.claimed,
+          ),
+        );
+        when(
+          () => repository.setCrosspost(pubkey: testPubkey, enabled: true),
+        ).thenAnswer((_) => completer.future);
+
+        final cubit = buildCubit();
+        addTearDown(cubit.close);
+        await Future<void>.delayed(Duration.zero);
+
+        unawaited(cubit.retryProvisioning());
+        unawaited(cubit.retryProvisioning());
+        await Future<void>.delayed(Duration.zero);
+
+        verify(
+          () => repository.setCrosspost(pubkey: testPubkey, enabled: true),
+        ).called(1);
+
+        completer.complete(
+          const BlueskyCrosspostAccountStatus(
+            crosspostEnabled: true,
+            username: 'testuser',
+            handle: 'testuser.divine.video',
+            provisioningState: AtprotoProvisioningState.pending,
+            usernameClaimStatus: UsernameClaimStatus.claimed,
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+      });
     });
   });
 }

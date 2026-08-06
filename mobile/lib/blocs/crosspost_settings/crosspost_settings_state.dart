@@ -65,6 +65,17 @@ class CrosspostSettingsState extends Equatable {
 
   final bool userLoadInFlight;
   final bool pollLoadInFlight;
+
+  /// Epoch used by async completion guards to discard stale loads and toggles
+  /// after a newer user operation has started.
+  ///
+  /// This is deliberately excluded from [props]. Every current bump also
+  /// changes a props-visible field: `_beginUserLoad` sets [userLoadInFlight],
+  /// and `toggleCrosspost` moves [status] to
+  /// [CrosspostSettingsStatus.toggling]. That invariant is important because a
+  /// bump-only emit would be swallowed by Equatable; the new operation would
+  /// then discard its own completion when its local generation no longer
+  /// matched the unchanged state.
   final int operationGeneration;
   final int provisioningPollAttempts;
   final bool provisioningPollingTimedOut;
@@ -128,6 +139,7 @@ class CrosspostSettingsState extends Equatable {
     attempt,
     userLoadInFlight,
     pollLoadInFlight,
+    // operationGeneration deliberately excluded; see the field doc.
     provisioningPollAttempts,
     provisioningPollingTimedOut,
   ];
