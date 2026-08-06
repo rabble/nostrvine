@@ -16,6 +16,7 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Screen for NIP-46 client-initiated connections via nostrconnect:// URL.
@@ -388,18 +389,33 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
       backgroundColor: context.vineColors.background,
       body: SafeArea(
         child: switch (_sessionState) {
-          NostrConnectState.idle || NostrConnectState.generating =>
-            _LoadingContent(message: context.l10n.authGeneratingConnection),
-          NostrConnectState.listening => _QrContent(
-            connectUrl: _connectUrl ?? '',
-            elapsedSeconds: _elapsedTimer.elapsed.inSeconds,
+          NostrConnectState.idle || NostrConnectState.generating => _QrContent(
+            connectUrl: '',
+            statusMessage: context.l10n.authGeneratingConnection,
+            isLoading: true,
             onBack: () => context.pop(),
             onCopyUrl: _copyUrl,
             onShareUrl: _shareUrl,
             onAddBunker: _showPasteBunkerDialog,
           ),
-          NostrConnectState.connected => _LoadingContent(
-            message: context.l10n.authConnectedAuthenticating,
+          NostrConnectState.listening => _QrContent(
+            connectUrl: _connectUrl ?? '',
+            statusMessage: context.l10n.authWaitingForConnection(
+              _elapsedTimer.elapsed.inSeconds,
+            ),
+            onBack: () => context.pop(),
+            onCopyUrl: _copyUrl,
+            onShareUrl: _shareUrl,
+            onAddBunker: _showPasteBunkerDialog,
+          ),
+          NostrConnectState.connected => _QrContent(
+            connectUrl: _connectUrl ?? '',
+            statusMessage: context.l10n.authConnectedAuthenticating,
+            isLoading: true,
+            onBack: () => context.pop(),
+            onCopyUrl: _copyUrl,
+            onShareUrl: _shareUrl,
+            onAddBunker: _showPasteBunkerDialog,
           ),
           NostrConnectState.timeout => _ErrorContent(
             title: context.l10n.authConnectionTimedOut,
@@ -452,59 +468,33 @@ String resolveNostrConnectFailureMessage(
   };
 }
 
-/// Loading state with spinner and message.
-class _LoadingContent extends StatelessWidget {
-  const _LoadingContent({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Space for close button overlay
-          const SizedBox(height: 72),
-          Text(
-            context.l10n.authScanSignerApp,
-            style: VineTheme.headlineLargeFont(
-              color: context.vineColors.primaryText,
-            ),
-          ),
-          const Spacer(),
-          const CircularProgressIndicator(color: VineTheme.vineGreen),
-          const SizedBox(height: 24),
-          Text(
-            message,
-            style: TextStyle(
-              color: context.vineColors.secondaryText,
-              fontSize: 16,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// Main QR code content with actions and compatibility table.
+///
+/// The same layout backs the generating and authenticating states: instead of
+/// a separate spinner screen, the payload-dependent parts (QR code and action
+/// bar) shimmer via [Skeletonizer] while [isLoading] is `true`, so the chrome
+/// never shifts between states.
 class _QrContent extends StatelessWidget {
   const _QrContent({
     required this.connectUrl,
-    required this.elapsedSeconds,
+    required this.statusMessage,
     required this.onBack,
     required this.onCopyUrl,
     required this.onShareUrl,
     required this.onAddBunker,
+    this.isLoading = false,
   });
 
   final String connectUrl;
-  final int elapsedSeconds;
+  final String statusMessage;
   final VoidCallback onBack;
   final VoidCallback onCopyUrl;
   final VoidCallback onShareUrl;
   final VoidCallback onAddBunker;
+
+  /// Whether the session payload is still pending. Skeletonizes — and, via
+  /// its default `ignorePointers`, disables — the QR code and action bar.
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -515,7 +505,8 @@ class _QrContent extends StatelessWidget {
         children: [
           const SizedBox(height: 8),
 
-          // Back button
+          // Back button — outside the skeleton so it stays tappable while
+          // the session is still generating.
           AuthBackButton(onPressed: onBack),
 
           const SizedBox(height: 32),
@@ -533,21 +524,32 @@ class _QrContent extends StatelessWidget {
 
           const SizedBox(height: 32),
 
-          // QR code card
-          _QrCodeCard(connectUrl: connectUrl),
+          Skeletonizer(
+            enabled: isLoading,
+            enableSwitchAnimation: true,
+            effect: vineSkeletonEffectOf(context),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // QR code card
+                _QrCodeCard(connectUrl: connectUrl, isLoading: isLoading),
 
-          const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-          // Waiting indicator
-          _WaitingIndicator(elapsedSeconds: elapsedSeconds),
+                // Status indicator — the message is real copy in every state,
+                // so it is kept rather than turned into a text bone.
+                Skeleton.keep(child: _StatusIndicator(message: statusMessage)),
 
-          const SizedBox(height: 32),
+                const SizedBox(height: 32),
 
-          // Action bar
-          _ActionBar(
-            onCopyUrl: onCopyUrl,
-            onShareUrl: onShareUrl,
-            onAddBunker: onAddBunker,
+                // Action bar
+                _ActionBar(
+                  onCopyUrl: onCopyUrl,
+                  onShareUrl: onShareUrl,
+                  onAddBunker: onAddBunker,
+                ),
+              ],
+            ),
           ),
 
           const SizedBox(height: 24),
@@ -564,9 +566,10 @@ class _QrContent extends StatelessWidget {
 
 /// QR code displayed in a rounded card.
 class _QrCodeCard extends StatelessWidget {
-  const _QrCodeCard({required this.connectUrl});
+  const _QrCodeCard({required this.connectUrl, required this.isLoading});
 
   final String connectUrl;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -588,11 +591,26 @@ class _QrCodeCard extends StatelessWidget {
             color: VineTheme.whiteText,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: QrImageView(
-            data: connectUrl,
-            size: 200,
-            backgroundColor: VineTheme.whiteText,
-            errorCorrectionLevel: QrErrorCorrectLevel.M,
+          // Replaced rather than skeletonized in place: the encoder would
+          // otherwise render a QR for a placeholder payload.
+          child: Skeleton.replace(
+            replace: isLoading,
+            width: 200,
+            height: 200,
+            replacement: Skeleton.leaf(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: context.vineColors.skeleton,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+            child: QrImageView(
+              data: connectUrl,
+              size: 200,
+              backgroundColor: VineTheme.whiteText,
+              errorCorrectionLevel: QrErrorCorrectLevel.M,
+            ),
           ),
         ),
       ),
@@ -600,11 +618,11 @@ class _QrCodeCard extends StatelessWidget {
   }
 }
 
-/// Waiting spinner with elapsed time.
-class _WaitingIndicator extends StatelessWidget {
-  const _WaitingIndicator({required this.elapsedSeconds});
+/// Spinner with the current session status message.
+class _StatusIndicator extends StatelessWidget {
+  const _StatusIndicator({required this.message});
 
-  final int elapsedSeconds;
+  final String message;
 
   @override
   Widget build(BuildContext context) {
@@ -621,7 +639,8 @@ class _WaitingIndicator extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            context.l10n.authWaitingForConnection(elapsedSeconds),
+            message,
+            textAlign: TextAlign.center,
             style: TextStyle(
               color: context.vineColors.secondaryText,
               fontSize: 14,
