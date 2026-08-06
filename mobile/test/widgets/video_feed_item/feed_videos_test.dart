@@ -1386,9 +1386,42 @@ void main() {
 
       await gesture.cancel();
     });
-  });
 
-  group('playback length cap', () {
+    testWidgets(
+      'keeps the action rail out from under the peek gesture',
+      (tester) async {
+        // When the rail sat *inside* the long-press detector, any press held
+        // past kLongPressTimeout anywhere on Report/More/Share was claimed by
+        // the video's long-press: the button's tap recognizer only accepts on
+        // pointer-up, so it lost the arena, the tap was swallowed and the
+        // control faded out under the viewer's finger.
+        //
+        // Asserted structurally rather than by pressing a button: the action
+        // icons are SVG-backed and lay out at zero size under `flutter test`,
+        // so there is no button rect to press. Ancestry is the invariant that
+        // actually matters — a sibling rail cannot lose the arena.
+        final video = _makeVideo();
+
+        await _pumpFeedVideos(tester, videos: [video]);
+        await tester.pump();
+
+        final longPressAncestors = tester
+            .widgetList<GestureDetector>(
+              find.ancestor(
+                of: find.byType(VideoOverlayActions),
+                matching: find.byType(GestureDetector),
+              ),
+            )
+            .where((detector) => detector.onLongPressStart != null);
+
+        expect(
+          longPressAncestors,
+          isEmpty,
+          reason: 'the peek gesture must not sit above the action rail',
+        );
+      },
+    );
+
     testWidgets('caps InfiniteVideoFeed playback at the feed cap', (
       tester,
     ) async {
