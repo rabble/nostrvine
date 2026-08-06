@@ -30,8 +30,11 @@
 /// * `null` means the source could not answer — it failed, or is not
 ///   configured — and the same call may succeed later.
 ///
-/// Repository callers also bound this resolver with a short timeout because
-/// revision data is additive, not a precondition for showing current-id
-/// likers.
+/// Revision data is additive, not a precondition for showing current-id
+/// likers, so no fetch waits for this: `LikesRepository` answers from the ids
+/// it already has and publishes the wider list on
+/// `watchRevisionEnrichedLikers` when this resolves. A slow implementation
+/// therefore costs nothing but its own enrichment, and only a hung one — one
+/// that never completes at all — is bounded away.
 typedef VideoRevisionsResolver =
     Future<Map<String, List<String>>?> Function(List<String> eventIds);

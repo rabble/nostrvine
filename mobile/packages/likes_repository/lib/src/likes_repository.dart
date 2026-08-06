@@ -12,6 +12,7 @@ import 'package:likes_repository/src/exceptions.dart';
 import 'package:likes_repository/src/likes_local_storage.dart';
 import 'package:likes_repository/src/models/like_record.dart';
 import 'package:likes_repository/src/models/likes_sync_result.dart';
+import 'package:likes_repository/src/models/revision_enriched_likers.dart';
 import 'package:likes_repository/src/video_revisions_resolver.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
@@ -43,36 +44,32 @@ const _reqEidChunkSize = 500;
 /// Max event IDs accepted by `/api/videos/revisions/bulk`.
 const _bulkVideoRevisionsBatchSize = 100;
 
-/// Maximum time revision enrichment may add to a likers/count fetch.
+/// How long the background revision lookup is waited on before its enrichment
+/// pass is abandoned.
 ///
-/// Sized against measurement, not intuition. At 750ms, 4 of 17 lookups on an
-/// iOS simulator over wired networking timed out — against an endpoint that was
-/// returning 404 and doing no database work at all (`POST
-/// /api/videos/revisions/bulk` observed at 0.405–0.715s). Once
-/// divinevideo/divine-funnelcake#799 deploys, that call does a real ClickHouse
-/// query, and users are on cellular; the timeout would fire far more often
-/// still. Every expiry silently skips enrichment and reinstates #6021 for that
-/// fetch, so a budget that is too tight makes the fix look shipped while it is
-/// intermittently doing nothing.
+/// This is not a latency budget. No fetch waits for the resolver: a likers or
+/// count fetch answers from the current ids as soon as the relays do, and the
+/// wider list is published on
+/// [LikesRepository.watchRevisionEnrichedLikers] if and when the lookup lands
+/// (#6021). So the only thing a shorter value buys is dropping enrichment
+/// sooner, and the only thing a longer one costs is a pending continuation.
 ///
-/// 3s covers realistic cellular round-trips while staying well inside the
-/// client's own 15s request timeout. It is a ceiling on the whole fetch, not
-/// on enrichment alone: the resolved-likers fetch awaits the resolver before
-/// returning, so a hung one delays the likers list and the like count by this
-/// budget even when the baseline relay queries already answered.
-/// Starting those queries first keeps them off the critical path; it does not
-/// release the result early.
+/// It exists solely so a resolver that never completes at all cannot leak one
+/// of those continuations for the process's lifetime. The shipped resolver
+/// bounds itself at 15s (`FunnelcakeApiClient`'s request timeout), so in
+/// practice the lookup resolves first and this never fires. Expiring is
+/// harmless either way: the lookup keeps running into
+/// [LikesRepository._revisionLookups], so the next fetch is enriched from the
+/// session cache with no round-trip at all.
 ///
-/// What keeps that ceiling affordable is that it is spent per *video*, not
-/// per fetch: results land in [LikesRepository._revisionIdsByEventId], and a
-/// lookup that overruns the budget keeps running into it instead of being
-/// discarded. Measured on this branch — a resolver answering in 700ms (the
-/// shape funnelcake has today, while still 404ing) costs 702ms on a video's
-/// first engagement fetch and 0ms on every one after; one that overruns and
-/// lands at 4s costs 3002ms then 0ms. A resolver that never answers is the
-/// exception: it is re-awaited until the client's own 15s request timeout
-/// resolves it, so the few fetches inside that window each pay the budget.
-const _defaultVideoRevisionsResolverTimeout = Duration(seconds: 3);
+/// The two earlier values here — 750ms, then 3s — were sized when the fetch
+/// awaited the resolver, which made this a ceiling on the whole fetch and made
+/// both directions wrong: too tight silently reinstated #6021 (4 of 17 lookups
+/// expired at 750ms against an endpoint that was merely 404ing in 0.4–0.7s),
+/// too wide stalled the likers list and the like count for the full budget.
+/// Publishing enrichment separately removes that trade rather than re-splitting
+/// it.
+const _defaultVideoRevisionsResolverTimeout = Duration(seconds: 15);
 
 /// Callback to check if the device is currently online
 typedef IsOnlineCallback = bool Function();
@@ -119,8 +116,9 @@ class LikesRepository {
   ///   engagement lists ([fetchEventLikers])
   /// - [revisionsResolver]: Optional resolver for a video's superseded event
   ///   ids, so reactions stranded on a pre-edit revision stay visible (#6021)
-  /// - [revisionsResolverTimeout]: Latency budget for revision enrichment; if
-  ///   it is exceeded, the repository keeps the current-id result.
+  /// - [revisionsResolverTimeout]: How long the background revision lookup is
+  ///   waited on before its enrichment pass is abandoned. Not on any fetch's
+  ///   critical path — see [watchRevisionEnrichedLikers].
   LikesRepository({
     required NostrClient nostrClient,
     LikesLocalStorage? localStorage,
@@ -151,15 +149,15 @@ class LikesRepository {
   /// Session cache of `video event id -> sibling NIP-33 revision ids`.
   ///
   /// A given event id's revision set cannot change: editing the video mints a
-  /// new id, which is a new key here. So this never goes stale, and the
-  /// [_revisionsResolverTimeout] budget is spent once per video per session
-  /// rather than once per engagement fetch.
+  /// new id, which is a new key here. So this never goes stale, and a video is
+  /// looked up once per session rather than once per engagement fetch.
   ///
-  /// Holds the lookup's own future rather than its result, which buys two
-  /// things. Concurrent fetches for the same video — the feed's count and the
-  /// "Liked by" sheet, say — share one request. And a lookup that overran the
-  /// budget is not thrown away: it keeps running into this map, so the next
-  /// fetch gets the revisions this one had to skip.
+  /// Each entry carries the lookup's future *and*, once it lands, its result.
+  /// The future lets concurrent fetches for the same video — the feed's count
+  /// and the "Liked by" sheet, say — share one request, and lets the
+  /// enrichment pass wait for a lookup that has not answered yet. The recorded
+  /// result is what a fetch reads, because it can be read without awaiting:
+  /// that is what keeps the resolver off the critical path entirely.
   ///
   /// Only answers are kept. A lookup that could not answer — the resolver
   /// failed, or funnelcake is unreachable — drops its entry again, so the next
@@ -169,7 +167,18 @@ class LikesRepository {
   ///
   /// The stored futures never complete with an error; see
   /// [_resolveRevisionChunk].
-  final Map<String, Future<List<String>>> _revisionIdsByEventId = {};
+  final Map<String, _RevisionLookup> _revisionLookups = {};
+
+  /// Event ids with a revision-enrichment pass already scheduled.
+  ///
+  /// Every fetch that finds a lookup still pending would otherwise schedule
+  /// its own pass, so a feed batch and the "Liked by" sheet opening on the
+  /// same video would re-resolve it twice over.
+  final Set<String> _revisionEnrichmentInFlight = {};
+
+  /// Emits wider liker lists resolved after the fetch that returned them.
+  final _revisionEnrichedLikersController =
+      StreamController<RevisionEnrichedLikers>.broadcast();
 
   /// Callback to check if the device is online
   final IsOnlineCallback? _isOnline;
@@ -957,7 +966,9 @@ class LikesRepository {
   /// but not cached: caching it would pin the un-enriched (lower) number for
   /// the rest of the session, when the lookup that would raise it is about to
   /// land in the session cache. The next fetch reads it from there and caches
-  /// the enriched count instead.
+  /// the enriched count instead. A caller that wants the raised count without
+  /// waiting for that next fetch can watch
+  /// [watchRevisionEnrichedLikers] — its `likerPubkeys.length` is this count.
   ///
   /// Note: This counts all likes, not just the current user's.
   Future<int> getLikeCount(String eventId, {String? addressableId}) async {
@@ -977,7 +988,7 @@ class LikesRepository {
         addressableIds: {eventId: addressableId},
       );
       count = resolved.likersByEvent[eventId]?.length ?? 0;
-      if (resolved.revisionsTimedOut) return count;
+      if (resolved.revisionsPending) return count;
     } else {
       // Query relays for the count of Kind 7 reactions on this event.
       final filterByE = Filter(kinds: const [EventKind.reaction], e: [eventId]);
@@ -1056,7 +1067,7 @@ class LikesRepository {
         counts[id] = count;
         // Same reason as [getLikeCount]: don't pin a count the still-running
         // revision lookup is about to raise.
-        if (resolved.revisionsTimedOut) continue;
+        if (resolved.revisionsPending) continue;
         _writeCachedLikeCount(
           id,
           count,
@@ -1744,6 +1755,12 @@ class LikesRepository {
   /// - [eventId]: Hex event ID of the target event (required).
   /// - [addressableId]: Optional `kind:pubkey:d-tag` for Kind 30000+ events.
   ///
+  /// For an addressable target this returns as soon as the relays answer, from
+  /// the ids known at that moment. A reaction stranded on a superseded
+  /// revision is only reachable once a backend lookup supplies that revision's
+  /// id, and the first fetch of a video does not wait for it — subscribe to
+  /// [watchRevisionEnrichedLikers] to receive the wider list when it lands.
+  ///
   /// Throws [FetchLikersFailedException] if relay queries fail.
   Future<List<String>> fetchEventLikers({
     required String eventId,
@@ -1764,21 +1781,47 @@ class LikesRepository {
     }
   }
 
+  /// Wider liker lists, published after the fetch that returned the narrower
+  /// one (#6021).
+  ///
+  /// An addressable video's superseded event ids come from a backend lookup,
+  /// so they are not known while the first fetch for that video is running.
+  /// Holding the fetch until they arrive would put funnelcake's round-trip in
+  /// front of every "Liked by" list and like count, so the fetch answers from
+  /// the current ids and the re-resolved list arrives here instead. Every
+  /// later fetch for the same video reads the lookup from the session cache
+  /// and is already wide, so nothing is emitted for it.
+  ///
+  /// Emits only when the re-resolved list actually differs from the one the
+  /// fetch returned — a video that was never edited emits nothing. Each event
+  /// carries the full list, which supersedes the returned one; it is not a
+  /// delta.
+  ///
+  /// Broadcast, so several consumers (a feed item's count and the open "Liked
+  /// by" sheet) can listen at once. Nothing is buffered: a subscriber that
+  /// attaches after the fetch it cares about may miss the update, so
+  /// subscribe before fetching.
+  Stream<RevisionEnrichedLikers> watchRevisionEnrichedLikers() =>
+      _revisionEnrichedLikersController.stream;
+
   /// Resolves active liker pubkeys per requested event id.
   ///
-  /// `revisionsTimedOut` reports that the revision lookup was still running
-  /// when its budget expired, so `likersByEvent` may be missing likers
-  /// stranded on a superseded revision. Callers that cache a derived value
-  /// must skip the write when it is set — see [getLikeCount].
-  Future<({Map<String, List<String>> likersByEvent, bool revisionsTimedOut})>
+  /// `revisionsPending` reports that at least one revision lookup had not
+  /// answered yet, so `likersByEvent` may be missing likers stranded on a
+  /// superseded revision. Callers that cache a derived value must skip the
+  /// write when it is set — see [getLikeCount]. The wider list is published on
+  /// [watchRevisionEnrichedLikers] when the lookup lands, unless [enrich] is
+  /// false.
+  Future<({Map<String, List<String>> likersByEvent, bool revisionsPending})>
   _fetchResolvedLikersByEvent(
     List<String> eventIds, {
     Map<String, String>? addressableIds,
+    bool enrich = true,
   }) async {
     if (eventIds.isEmpty) {
       return (
         likersByEvent: const <String, List<String>>{},
-        revisionsTimedOut: false,
+        revisionsPending: false,
       );
     }
 
@@ -1787,29 +1830,27 @@ class LikesRepository {
         if (entry.value.isNotEmpty) entry.value: entry.key,
     };
 
-    // The original e-tag query and the a-tag query need nothing from the
-    // revision lookup, so start them immediately. Revision ids are fetched by a
-    // second additive e-tag query once the resolver returns.
-    final currentEEventsFuture = _awaitLater(
-      _queryReactionsByEventIds(eventIds),
-    );
-    final aEventsFuture = _awaitLater(
-      aTagToEventId.isEmpty
-          ? Future<List<Event>>.value(const <Event>[])
-          : _nostrClient.queryEvents([
-              Filter(
-                kinds: const [EventKind.reaction],
-                a: aTagToEventId.keys.toList(),
-              ),
-            ]),
-    );
+    final currentEEventsFuture = _queryReactionsByEventIds(eventIds);
+    final aEventsFuture = aTagToEventId.isEmpty
+        ? Future<List<Event>>.value(const <Event>[])
+        : _nostrClient.queryEvents([
+            Filter(
+              kinds: const [EventKind.reaction],
+              a: aTagToEventId.keys.toList(),
+            ),
+          ]);
 
     // A reaction on an addressable video may `e`-tag a revision the edit
     // superseded, and NIP-25 lets it omit the `a` tag entirely — so querying
-    // only the current ids silently drops those likers (#6021). Resolve the
-    // sibling revisions and query them too, mapping each back to the id the
-    // caller asked about.
-    final revisions = await _resolveRevisionTargets(
+    // only the current ids silently drops those likers (#6021). Query the
+    // sibling revisions too, mapping each back to the id the caller asked
+    // about.
+    //
+    // Read, never await: the ids come from a backend lookup, and waiting for
+    // it would put funnelcake's round-trip in front of every likers list and
+    // like count. Revisions already resolved this session widen the query
+    // here; a lookup that has not landed yet enriches afterwards instead.
+    final revisions = _resolveRevisionTargets(
       eventIds,
       addressableIds: addressableIds,
     );
@@ -1851,24 +1892,29 @@ class LikesRepository {
       }
     }
 
-    if (allReactionsById.isEmpty) {
-      return (
-        likersByEvent: {for (final eventId in eventIds) eventId: <String>[]},
-        revisionsTimedOut: revisions.timedOut,
-      );
-    }
-
-    final deletedReactionIds = await _deletedReactionIds(allReactionsById);
-
-    return (
-      likersByEvent: {
+    var likersByEvent = {for (final eventId in eventIds) eventId: <String>[]};
+    if (allReactionsById.isNotEmpty) {
+      final deletedReactionIds = await _deletedReactionIds(allReactionsById);
+      likersByEvent = {
         for (final entry in reactionsByTarget.entries)
           entry.key: _activeLikerPubkeys(
             entry.value.values,
             deletedReactionIds: deletedReactionIds,
           ),
-      },
-      revisionsTimedOut: revisions.timedOut,
+      };
+    }
+
+    if (enrich && revisions.pendingEventIds.isNotEmpty) {
+      _scheduleRevisionEnrichment(
+        pendingEventIds: revisions.pendingEventIds,
+        addressableIds: addressableIds ?? const <String, String>{},
+        baselineLikers: likersByEvent,
+      );
+    }
+
+    return (
+      likersByEvent: likersByEvent,
+      revisionsPending: revisions.pendingEventIds.isNotEmpty,
     );
   }
 
@@ -1931,23 +1977,31 @@ class LikesRepository {
     return targetIds;
   }
 
-  /// Maps each superseded revision id to the requested event id it belongs to.
+  /// Maps each superseded revision id to the requested event id it belongs to,
+  /// from the lookups that have already answered this session.
+  ///
+  /// Synchronous by design: a fetch may start the lookup for an id it has not
+  /// seen before, but it must never wait for one. Waiting is what put
+  /// funnelcake's round-trip in front of the likers list and the like count.
   ///
   /// `byRevisionId` is empty when no resolver is wired, when no requested id
-  /// is addressable, or when the lookup failed — the caller then queries the
-  /// current ids alone, exactly as before #6021.
+  /// is addressable, or when nothing has been resolved yet — the caller then
+  /// queries the current ids alone, exactly as before #6021.
   ///
-  /// `timedOut` reports that at least one lookup was still running when
-  /// [_revisionsResolverTimeout] expired, so `byRevisionId` is incomplete
-  /// rather than merely empty. Callers that cache a result derived from it
-  /// must not, because the same lookup is still filling
-  /// [_revisionIdsByEventId] and the next fetch will do better.
-  Future<({Map<String, String> byRevisionId, bool timedOut})>
+  /// `pendingEventIds` lists the ids whose lookup is still running, so
+  /// `byRevisionId` is incomplete rather than merely empty. Callers must not
+  /// cache a result derived from it, and should let
+  /// [_scheduleRevisionEnrichment] publish the wider list once the lookup
+  /// lands.
+  ({Map<String, String> byRevisionId, List<String> pendingEventIds})
   _resolveRevisionTargets(
     List<String> eventIds, {
     Map<String, String>? addressableIds,
-  }) async {
-    const noRevisions = (byRevisionId: <String, String>{}, timedOut: false);
+  }) {
+    const noRevisions = (
+      byRevisionId: <String, String>{},
+      pendingEventIds: <String>[],
+    );
     final resolver = _revisionsResolver;
     if (resolver == null) return noRevisions;
 
@@ -1961,45 +2015,130 @@ class LikesRepository {
 
     _startRevisionLookups(resolver, addressableEventIds);
 
-    final timedOutIds = <String>[];
-    final revisionsByEventId = <String, List<String>>{};
-    await Future.wait([
-      for (final id in addressableEventIds)
-        _revisionIdsByEventId[id]!
-            .timeout(
-              _revisionsResolverTimeout,
-              onTimeout: () {
-                timedOutIds.add(id);
-                return const <String>[];
-              },
-            )
-            .then((revisionIds) => revisionsByEventId[id] = revisionIds),
-    ]);
+    final requested = eventIds.toSet();
+    final pendingEventIds = <String>[];
+    final revisionToEventId = <String, String>{};
+    for (final id in addressableEventIds) {
+      final resolved = _revisionLookups[id]?.revisionIds;
+      if (resolved == null) {
+        pendingEventIds.add(id);
+        continue;
+      }
+      for (final revisionId in resolved) {
+        // Never let a revision alias shadow an id the caller asked about.
+        if (revisionId.isEmpty || requested.contains(revisionId)) continue;
+        revisionToEventId[revisionId] = id;
+      }
+    }
+    return (byRevisionId: revisionToEventId, pendingEventIds: pendingEventIds);
+  }
 
-    if (timedOutIds.isNotEmpty) {
+  /// Re-resolves [pendingEventIds] once their revision lookups land, and
+  /// publishes any liker list that grew.
+  ///
+  /// This is the half of #6021 that cannot be answered synchronously. The
+  /// fetch that scheduled this has already returned its current-id result, so
+  /// nothing is waiting on the round-trip below.
+  void _scheduleRevisionEnrichment({
+    required List<String> pendingEventIds,
+    required Map<String, String> addressableIds,
+    required Map<String, List<String>> baselineLikers,
+  }) {
+    final scheduledIds = [
+      for (final id in pendingEventIds)
+        if (_revisionEnrichmentInFlight.add(id)) id,
+    ];
+    if (scheduledIds.isEmpty) return;
+
+    unawaited(
+      _enrichWhenRevisionsLand(
+        scheduledIds,
+        addressableIds: addressableIds,
+        baselineLikers: baselineLikers,
+      ).whenComplete(() => _revisionEnrichmentInFlight.removeAll(scheduledIds)),
+    );
+  }
+
+  Future<void> _enrichWhenRevisionsLand(
+    List<String> eventIds, {
+    required Map<String, String> addressableIds,
+    required Map<String, List<String>> baselineLikers,
+  }) async {
+    await Future.wait([
+      for (final id in eventIds)
+        _revisionLookups[id]?.future ?? Future<List<String>>.value(const []),
+    ]).timeout(
+      _revisionsResolverTimeout,
+      onTimeout: () {
+        Log.warning(
+          'Timed out resolving video revisions for ${eventIds.length} event '
+          'id(s) after ${_revisionsResolverTimeout.inMilliseconds}ms; the '
+          '"Liked by" list keeps its current-id result. The lookup keeps '
+          'running into the session cache, so the next fetch is enriched.',
+          name: 'LikesRepository',
+          category: LogCategory.api,
+        );
+        return const <List<String>>[];
+      },
+    );
+
+    // Only a video that was actually edited has anything to add. Skipping the
+    // rest is what keeps this from doubling relay traffic on every cold fetch:
+    // a resolver that answers "no other revisions" — including the 404 a
+    // deployment without the endpoint gives — costs nothing beyond its own
+    // lookup.
+    final enrichableIds = [
+      for (final id in eventIds)
+        if (_revisionLookups[id]?.revisionIds?.any((r) => r != id) ?? false) id,
+    ];
+    if (enrichableIds.isEmpty || _isDisposed) return;
+
+    final ({Map<String, List<String>> likersByEvent, bool revisionsPending})
+    resolved;
+    try {
+      resolved = await _fetchResolvedLikersByEvent(
+        enrichableIds,
+        addressableIds: {
+          for (final id in enrichableIds) id: addressableIds[id]!,
+        },
+        // The lookups these ids needed have landed, so this pass reads them
+        // straight from the session cache. Guarding against a second schedule
+        // regardless: an enrichment pass must not be able to schedule another.
+        enrich: false,
+      );
+    } on Object catch (error) {
+      // Nothing is awaiting this pass, so an escaping relay failure would
+      // surface as an unhandled async error for a list the caller already has.
+      // The revisions stay in the session cache, so the next fetch is wide.
       Log.warning(
-        'Timed out resolving video revisions for ${timedOutIds.length} event '
-        'id(s) after ${_revisionsResolverTimeout.inMilliseconds}ms; '
-        'continuing with current ids only. The lookup keeps running into the '
-        'session cache, so the next fetch for these ids is enriched.',
+        'Failed to re-resolve likers for ${enrichableIds.length} event id(s) '
+        'after their revisions landed; the next fetch reads them from the '
+        'session cache: $error',
         name: 'LikesRepository',
         category: LogCategory.api,
       );
+      return;
     }
 
-    final requested = eventIds.toSet();
-    final revisionToEventId = <String, String>{};
-    for (final entry in revisionsByEventId.entries) {
-      for (final revisionId in entry.value) {
-        // Never let a revision alias shadow an id the caller asked about.
-        if (revisionId.isEmpty || requested.contains(revisionId)) continue;
-        revisionToEventId[revisionId] = entry.key;
-      }
+    for (final id in enrichableIds) {
+      final likers = resolved.likersByEvent[id] ?? const <String>[];
+      if (_sameLikers(likers, baselineLikers[id] ?? const <String>[])) continue;
+      if (_isDisposed || _revisionEnrichedLikersController.isClosed) return;
+      _revisionEnrichedLikersController.add(
+        RevisionEnrichedLikers(eventId: id, likerPubkeys: likers),
+      );
     }
-    return (byRevisionId: revisionToEventId, timedOut: timedOutIds.isNotEmpty);
   }
 
-  /// Registers a [_revisionIdsByEventId] entry for every id that has none yet.
+  bool _sameLikers(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  /// Registers a [_revisionLookups] entry for every id that has none yet.
   ///
   /// Chunked at the endpoint's cap so a bulk caller cannot have its request
   /// truncated server-side, which would be indistinguishable from "this video
@@ -2016,7 +2155,7 @@ class LikesRepository {
   ) {
     final uncachedIds = [
       for (final id in eventIds)
-        if (!_revisionIdsByEventId.containsKey(id)) id,
+        if (!_revisionLookups.containsKey(id)) id,
     ];
     for (final chunk in _chunkStrings(
       uncachedIds,
@@ -2024,19 +2163,25 @@ class LikesRepository {
     )) {
       final chunkFuture = _resolveRevisionChunk(resolver, chunk);
       for (final id in chunk) {
-        late final Future<List<String>> entry;
-        entry = chunkFuture.then((revisions) {
-          if (revisions != null) return revisions[id] ?? const <String>[];
-          // Only drop this lookup's own entry: `clearCache` may have run and
-          // a later fetch may have registered a fresh one under the same id.
-          // What `remove` hands back is this very future; `ignore` just says
-          // so, since the value is already on its way out of this callback.
-          if (identical(_revisionIdsByEventId[id], entry)) {
-            _revisionIdsByEventId.remove(id)?.ignore();
-          }
-          return const <String>[];
-        });
-        _revisionIdsByEventId[id] = entry;
+        late final _RevisionLookup lookup;
+        lookup = _RevisionLookup(
+          chunkFuture.then((revisions) {
+            // Only touch this lookup's own entry: `clearCache` may have run
+            // and a later fetch may have registered a fresh one under the
+            // same id.
+            final isCurrent = identical(_revisionLookups[id], lookup);
+            if (revisions != null) {
+              final revisionIds = revisions[id] ?? const <String>[];
+              if (isCurrent) lookup.revisionIds = revisionIds;
+              return revisionIds;
+            }
+            // What `remove` hands back is this very future; `ignore` just
+            // says so, since the value is already on its way out of here.
+            if (isCurrent) _revisionLookups.remove(id)?.future.ignore();
+            return const <String>[];
+          }),
+        );
+        _revisionLookups[id] = lookup;
       }
     }
   }
@@ -2045,9 +2190,9 @@ class LikesRepository {
   /// the resolver's own "could not answer" — so the returned future can never
   /// complete with an error.
   ///
-  /// Carries no timeout of its own — [_resolveRevisionTargets] applies the
-  /// budget per read, so a lookup that overruns it still lands in
-  /// [_revisionIdsByEventId] for the next fetch.
+  /// Carries no timeout of its own — [_enrichWhenRevisionsLand] bounds how
+  /// long it waits, so a lookup that overruns still lands in
+  /// [_revisionLookups] for the next fetch.
   Future<Map<String, List<String>>?> _resolveRevisionChunk(
     VideoRevisionsResolver resolver,
     List<String> chunk,
@@ -2116,23 +2261,6 @@ class LikesRepository {
       for (var i = 0; i < values.length; i += chunkSize)
         values.sublist(i, min(i + chunkSize, values.length)),
     ];
-  }
-
-  /// Returns [future] marked as handled, for a query started before an
-  /// intervening `await`.
-  ///
-  /// The relay queries in [_fetchResolvedLikersByEvent] are started early so
-  /// they overlap the revision lookup, but nothing listens to them until the
-  /// later `Future.wait`. Without `Future.ignore` a query that fails inside
-  /// that window is reported as an unhandled async error — which fails the
-  /// test that provoked it and, in the app, reaches the zone error handler for
-  /// a failure the `Future.wait` is about to surface anyway. `ignore` only
-  /// suppresses the *unhandled* report; the error still arrives at the
-  /// `Future.wait`, so [fetchEventLikers] still turns it into a
-  /// [FetchLikersFailedException].
-  Future<List<Event>> _awaitLater(Future<List<Event>> future) {
-    future.ignore();
-    return future;
   }
 
   List<String> _activeLikerPubkeys(
@@ -2358,7 +2486,8 @@ class LikesRepository {
     _downvoteRecordsByAddressableId.clear();
     _likeCountCache.clear();
     _likeCountCacheByAddressableId.clear();
-    _revisionIdsByEventId.clear();
+    _revisionLookups.clear();
+    _revisionEnrichmentInFlight.clear();
     await _localStorage?.clearAll();
     _emitLikedIds();
     _emitDownvotedIds();
@@ -2379,6 +2508,7 @@ class LikesRepository {
     unawaited(_likedIdsController.close());
     unawaited(_likedAddressableIdsController.close());
     unawaited(_downvotedIdsController.close());
+    unawaited(_revisionEnrichedLikersController.close());
   }
 
   /// The signed-in user's pubkey, or `null` when the signer has no key.
@@ -2493,4 +2623,18 @@ class LikesRepository {
       addressableId: _extractAddressableId(newest),
     );
   }
+}
+
+/// One video's revision lookup: the request, and its answer once it lands.
+///
+/// [revisionIds] is what a fetch reads, because reading it costs nothing;
+/// [future] is what the enrichment pass waits on. Stays `null` while the
+/// lookup is in flight, and if the lookup could not answer the whole entry is
+/// dropped instead — see [LikesRepository._startRevisionLookups].
+class _RevisionLookup {
+  _RevisionLookup(this.future);
+
+  final Future<List<String>> future;
+
+  List<String>? revisionIds;
 }

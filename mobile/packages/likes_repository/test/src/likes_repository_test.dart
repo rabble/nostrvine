@@ -2833,33 +2833,113 @@ void main() {
           ],
         );
 
-        test(
-          'includes a liker stranded on a superseded revision',
-          () async {
-            // Both reactions come back from the widened e-tag query; the
-            // deletion probe returns nothing.
-            mockQueryEventsSequence([
-              [currentReaction(), strandedReaction()],
-              <Event>[],
-              <Event>[],
-            ]);
+        /// Answers each relay query from its filter rather than from call
+        /// order, so a test can run several fetches without having to predict
+        /// how many queries each one issues.
+        void answerQueriesByFilter() {
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer((
+            invocation,
+          ) async {
+            final filters =
+                invocation.positionalArguments.first as List<Filter>;
+            final filter = filters.first;
+            if (filter.kinds?.first == EventKind.eventDeletion) {
+              return <Event>[];
+            }
+            final taggedIds = filter.e ?? const <String>[];
+            if (taggedIds.contains(supersededEventId)) {
+              return [strandedReaction()];
+            }
+            if (taggedIds.contains(targetEventId)) {
+              return [currentReaction()];
+            }
+            return <Event>[];
+          });
+        }
 
-            repository = createRepository(
-              revisionsResolver: (ids) async => {
-                targetEventId: [targetEventId, supersededEventId],
-              },
-            );
-
-            final likers = await repository.fetchEventLikers(
-              eventId: targetEventId,
-              addressableId: addressableId,
-            );
-
-            // likerC is only reachable via the superseded revision. Narrowing
-            // the resolver to [targetEventId] must drop them again.
-            expect(likers, containsAll(<String>[likerA, likerC]));
-          },
+        Future<List<String>> fetchLikers() => repository.fetchEventLikers(
+          eventId: targetEventId,
+          addressableId: addressableId,
         );
+
+        /// Yields to the event loop so a resolver that has already answered
+        /// gets its result recorded in the session cache. Reading that cache
+        /// is what makes the *next* fetch wide without any waiting.
+        Future<void> letRevisionsLand() => Future<void>.delayed(Duration.zero);
+
+        /// Runs one fetch to land the video's revision lookup, then returns a
+        /// second one — the shape every fetch after a video's first has.
+        Future<List<String>> fetchWithRevisionsKnown() async {
+          await fetchLikers();
+          await letRevisionsLand();
+          return fetchLikers();
+        }
+
+        /// The wider list published once the revision lookup lands.
+        ///
+        /// Subscribes before [action] runs, because the stream buffers
+        /// nothing. Times out rather than hanging when nothing is published —
+        /// which is the failure this pins.
+        Future<List<String>> enrichedLikersDuring(
+          Future<void> Function() action,
+        ) async {
+          final published = repository.watchRevisionEnrichedLikers().firstWhere(
+            (update) => update.eventId == targetEventId,
+          );
+          await action();
+          final update = await published.timeout(const Duration(seconds: 5));
+          return update.likerPubkeys;
+        }
+
+        test('publishes a liker stranded on a superseded revision', () async {
+          answerQueriesByFilter();
+
+          repository = createRepository(
+            revisionsResolver: (ids) async => {
+              targetEventId: [targetEventId, supersededEventId],
+            },
+          );
+
+          var returnedByTheFetch = const <String>[];
+          final published = await enrichedLikersDuring(() async {
+            returnedByTheFetch = await fetchLikers();
+          });
+
+          // The revision ids are a backend round-trip away, so the fetch
+          // answers from the current id alone rather than waiting for them.
+          expect(returnedByTheFetch, equals(<String>[likerA]));
+          // likerC is only reachable via the superseded revision. Narrowing
+          // the resolver to [targetEventId] must stop this arriving.
+          expect(published, containsAll(<String>[likerA, likerC]));
+        });
+
+        test('returns without waiting for the revision lookup', () async {
+          // The point of the whole two-phase shape: a funnelcake that never
+          // answers must not delay the list by so much as one round-trip.
+          answerQueriesByFilter();
+
+          repository = createRepository(
+            revisionsResolver: (ids) =>
+                Completer<Map<String, List<String>>?>().future,
+            // Long enough that it cannot have expired at the checkpoint
+            // below, so a fetch that got there did not wait for the resolver;
+            // short enough not to leave a timer pending past the test.
+            revisionsResolverTimeout: const Duration(milliseconds: 500),
+          );
+
+          List<String>? likers;
+          unawaited(fetchLikers().then((result) => likers = result));
+          // One turn of the event loop. Every relay query is mocked with an
+          // async function, so the whole fetch resolves on microtasks and has
+          // finished by the time a zero-duration timer fires.
+          await letRevisionsLand();
+
+          expect(
+            likers,
+            equals(<String>[likerA]),
+            reason: 'the fetch must not be waiting on the revision lookup',
+          );
+        });
 
         test('asks the resolver for the requested addressable id', () async {
           mockQueryEventsSequence([
@@ -2878,10 +2958,7 @@ void main() {
             },
           );
 
-          await repository.fetchEventLikers(
-            eventId: targetEventId,
-            addressableId: addressableId,
-          );
+          await fetchLikers();
 
           expect(requested, equals(<String>[targetEventId]));
         });
@@ -2916,16 +2993,10 @@ void main() {
             revisionsResolver: (ids) async => throw Exception('offline'),
           );
 
-          expect(
-            await repository.fetchEventLikers(
-              eventId: targetEventId,
-              addressableId: addressableId,
-            ),
-            equals(<String>[likerA]),
-          );
+          expect(await fetchLikers(), equals(<String>[likerA]));
         });
 
-        test('still returns likers when the resolver times out', () async {
+        test('still returns likers when the resolver never answers', () async {
           mockQueryEventsSequence([
             [currentReaction()],
             <Event>[],
@@ -2938,54 +3009,8 @@ void main() {
             revisionsResolverTimeout: const Duration(milliseconds: 1),
           );
 
-          expect(
-            await repository.fetchEventLikers(
-              eventId: targetEventId,
-              addressableId: addressableId,
-            ),
-            equals(<String>[likerA]),
-          );
+          expect(await fetchLikers(), equals(<String>[likerA]));
         });
-
-        test(
-          'default timeout tolerates a real network round trip',
-          () async {
-            // The budget exists to bound a hung resolver, not to outrun a
-            // normal one. Measured against production, POST
-            // /api/videos/revisions/bulk answers in 0.4-0.7s while merely
-            // 404ing; once it does real work, and on cellular, it is slower.
-            // At the original 750ms this test fails and the stranded liker is
-            // silently dropped — which is #6021 all over again, invisibly.
-            //
-            // Deliberately built WITHOUT an explicit timeout so it exercises
-            // the shipped default rather than a value restated in the test.
-            mockQueryEventsSequence([
-              <Event>[],
-              <Event>[],
-              [strandedReaction()],
-              <Event>[],
-            ]);
-
-            repository = createRepository(
-              revisionsResolver: (ids) async {
-                await Future<void>.delayed(const Duration(seconds: 1));
-                return {
-                  targetEventId: [targetEventId, supersededEventId],
-                };
-              },
-            );
-
-            expect(
-              await repository.fetchEventLikers(
-                eventId: targetEventId,
-                addressableId: addressableId,
-              ),
-              contains(likerC),
-              reason:
-                  'a 1s resolver must still enrich under the default budget',
-            );
-          },
-        );
 
         test('counts a liker once when found via both revisions', () async {
           // Same pubkey reacting on the old and new revision is one liker,
@@ -3007,11 +3032,20 @@ void main() {
             ],
           );
 
-          mockQueryEventsSequence([
-            [onOld, onNew],
-            <Event>[],
-            <Event>[],
-          ]);
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer((
+            invocation,
+          ) async {
+            final filters =
+                invocation.positionalArguments.first as List<Filter>;
+            final filter = filters.first;
+            if (filter.kinds?.first == EventKind.eventDeletion) {
+              return <Event>[];
+            }
+            final taggedIds = filter.e ?? const <String>[];
+            if (taggedIds.contains(supersededEventId)) return [onOld];
+            if (taggedIds.contains(targetEventId)) return [onNew];
+            return <Event>[];
+          });
 
           repository = createRepository(
             revisionsResolver: (ids) async => {
@@ -3019,13 +3053,7 @@ void main() {
             },
           );
 
-          expect(
-            await repository.fetchEventLikers(
-              eventId: targetEventId,
-              addressableId: addressableId,
-            ),
-            equals(<String>[likerB]),
-          );
+          expect(await fetchWithRevisionsKnown(), equals(<String>[likerB]));
         });
 
         test('excludes a downvote stranded on a superseded revision', () async {
@@ -3041,11 +3069,22 @@ void main() {
             ],
           );
 
-          mockQueryEventsSequence([
-            [currentReaction(), strandedDownvote],
-            <Event>[],
-            <Event>[],
-          ]);
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer((
+            invocation,
+          ) async {
+            final filters =
+                invocation.positionalArguments.first as List<Filter>;
+            final filter = filters.first;
+            if (filter.kinds?.first == EventKind.eventDeletion) {
+              return <Event>[];
+            }
+            final taggedIds = filter.e ?? const <String>[];
+            if (taggedIds.contains(supersededEventId)) {
+              return [strandedDownvote];
+            }
+            if (taggedIds.contains(targetEventId)) return [currentReaction()];
+            return <Event>[];
+          });
 
           repository = createRepository(
             revisionsResolver: (ids) async => {
@@ -3053,13 +3092,7 @@ void main() {
             },
           );
 
-          expect(
-            await repository.fetchEventLikers(
-              eventId: targetEventId,
-              addressableId: addressableId,
-            ),
-            equals(<String>[likerA]),
-          );
+          expect(await fetchWithRevisionsKnown(), equals(<String>[likerA]));
         });
 
         test('chunks revision resolver requests at the server limit', () async {
@@ -3076,22 +3109,30 @@ void main() {
           const supersededId = 'superseded_revision_of_event_104';
           final resolverCalls = <List<String>>[];
 
-          mockQueryEventsSequence([
-            <Event>[], // current-id reaction query
-            <Event>[], // a-tag query
-            [
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer((
+            invocation,
+          ) async {
+            final filters =
+                invocation.positionalArguments.first as List<Filter>;
+            final filter = filters.first;
+            if (filter.kinds?.first == EventKind.eventDeletion) {
+              return <Event>[];
+            }
+            if (filter.e?.contains(supersededId) ?? false) {
               // Only reachable once the second chunk's revision id widens the
               // query and the accepted-id set.
-              createReaction(
-                id: 'reaction_stranded_in_second_chunk',
-                authorPubkey: likerC,
-                tags: [
-                  ['e', supersededId],
-                ],
-              ),
-            ],
-            <Event>[], // deletion probe
-          ]);
+              return [
+                createReaction(
+                  id: 'reaction_stranded_in_second_chunk',
+                  authorPubkey: likerC,
+                  tags: [
+                    ['e', supersededId],
+                  ],
+                ),
+              ];
+            }
+            return <Event>[];
+          });
 
           repository = createRepository(
             revisionsResolver: (ids) async {
@@ -3103,6 +3144,11 @@ void main() {
             },
           );
 
+          await repository.getLikeCounts(
+            eventIds,
+            addressableIds: addressableIds,
+          );
+          await letRevisionsLand();
           final counts = await repository.getLikeCounts(
             eventIds,
             addressableIds: addressableIds,
@@ -3117,11 +3163,39 @@ void main() {
           expect(counts['addressable_event_0'], equals(0));
         });
 
-        group('session revision cache', () {
-          /// Answers each relay query from its filter rather than from call
-          /// order, so a test can run several fetches without having to
-          /// predict how many queries each one issues.
-          void answerQueriesByFilter() {
+        group('publishing the wider list', () {
+          test('publishes nothing when the video was never edited', () async {
+            // The pass that re-resolves a video costs a second round of relay
+            // queries. Only a video that was actually edited may pay it —
+            // otherwise every cold fetch in the feed would double its traffic
+            // for nothing, which is what a deployment without the endpoint
+            // (answering "no revisions") would do to every video today.
+            var queries = 0;
+            when(() => mockNostrClient.queryEvents(any())).thenAnswer((
+              _,
+            ) async {
+              queries++;
+              return <Event>[];
+            });
+
+            repository = createRepository(
+              revisionsResolver: (ids) async => const <String, List<String>>{},
+            );
+
+            await fetchLikers();
+            final afterTheFetch = queries;
+            await letRevisionsLand();
+            await letRevisionsLand();
+
+            expect(queries, equals(afterTheFetch));
+          });
+
+          test('publishes nothing when the wider query finds no one '
+              'new', () async {
+            // An edited video whose superseded revision happens to carry no
+            // stranded reaction. The wider query has to run to find that out,
+            // but pushing an identical list back at the UI afterwards is
+            // churn, not news.
             when(() => mockNostrClient.queryEvents(any())).thenAnswer((
               invocation,
             ) async {
@@ -3131,17 +3205,94 @@ void main() {
               if (filter.kinds?.first == EventKind.eventDeletion) {
                 return <Event>[];
               }
-              final taggedIds = filter.e ?? const <String>[];
-              if (taggedIds.contains(supersededEventId)) {
-                return [strandedReaction()];
-              }
-              if (taggedIds.contains(targetEventId)) {
+              if (filter.e?.contains(targetEventId) ?? false) {
                 return [currentReaction()];
               }
               return <Event>[];
             });
-          }
 
+            repository = createRepository(
+              revisionsResolver: (ids) async => {
+                targetEventId: [targetEventId, supersededEventId],
+              },
+            );
+
+            final published = <RevisionEnrichedLikers>[];
+            final subscription = repository
+                .watchRevisionEnrichedLikers()
+                .listen(published.add);
+            addTearDown(subscription.cancel);
+
+            await fetchLikers();
+            await letRevisionsLand();
+            await letRevisionsLand();
+
+            expect(published, isEmpty);
+          });
+
+          test('survives a relay failure in the re-resolve', () async {
+            // Nothing awaits the pass, so a throw escaping it would be an
+            // unhandled async error — for a list the caller already has.
+            var queries = 0;
+            when(() => mockNostrClient.queryEvents(any())).thenAnswer((
+              _,
+            ) async {
+              queries++;
+              if (queries > 2) throw Exception('relay dropped');
+              return <Event>[];
+            });
+
+            repository = createRepository(
+              revisionsResolver: (ids) async => {
+                targetEventId: [targetEventId, supersededEventId],
+              },
+            );
+
+            expect(await fetchLikers(), isEmpty);
+            await letRevisionsLand();
+            await letRevisionsLand();
+          });
+
+          test('re-resolves a video once for concurrent fetches', () async {
+            answerQueriesByFilter();
+
+            final gate = Completer<void>();
+            repository = createRepository(
+              revisionsResolver: (ids) async {
+                await gate.future;
+                return {
+                  targetEventId: [targetEventId, supersededEventId],
+                };
+              },
+            );
+
+            final published = <RevisionEnrichedLikers>[];
+            final subscription = repository
+                .watchRevisionEnrichedLikers()
+                .listen(published.add);
+            addTearDown(subscription.cancel);
+
+            // The feed's count and the "Liked by" sheet, on the same video.
+            final both = Future.wait([
+              fetchLikers(),
+              repository.getLikeCount(
+                targetEventId,
+                addressableId: addressableId,
+              ),
+            ]);
+            gate.complete();
+            await both;
+            await letRevisionsLand();
+            await letRevisionsLand();
+
+            // Both fetches found the lookup pending; only one of them may
+            // schedule the pass that re-resolves it.
+            expect(published, hasLength(1));
+            expect(published.single.likerPubkeys, contains(likerC));
+          });
+        });
+
+        group('session revision cache', () {
           test("resolves a video's revisions once per session", () async {
             answerQueriesByFilter();
 
@@ -3155,19 +3306,15 @@ void main() {
               },
             );
 
-            final first = await repository.fetchEventLikers(
-              eventId: targetEventId,
-              addressableId: addressableId,
-            );
-            final second = await repository.fetchEventLikers(
-              eventId: targetEventId,
-              addressableId: addressableId,
-            );
+            final first = await fetchLikers();
+            await letRevisionsLand();
+            final second = await fetchLikers();
 
             expect(resolverCalls, equals(1));
             // The saving must not cost the enrichment: the second fetch is
-            // served from the cache and still finds the stranded liker.
-            expect(first, containsAll(<String>[likerA, likerC]));
+            // served from the cache and finds the stranded liker with no
+            // second lookup and nothing to wait for.
+            expect(first, equals(<String>[likerA]));
             expect(second, containsAll(<String>[likerA, likerC]));
           });
 
@@ -3187,10 +3334,7 @@ void main() {
             );
 
             final both = Future.wait([
-              repository.fetchEventLikers(
-                eventId: targetEventId,
-                addressableId: addressableId,
-              ),
+              fetchLikers(),
               repository.getLikeCount(
                 targetEventId,
                 addressableId: addressableId,
@@ -3204,7 +3348,7 @@ void main() {
             expect(resolverCalls, equals(1));
           });
 
-          test('enriches the next fetch after a lookup overruns the '
+          test('enriches the next fetch after a lookup overruns its '
               'budget', () async {
             answerQueriesByFilter();
 
@@ -3218,23 +3362,19 @@ void main() {
               revisionsResolverTimeout: const Duration(milliseconds: 1),
             );
 
-            final beforeLanding = await repository.fetchEventLikers(
-              eventId: targetEventId,
-              addressableId: addressableId,
-            );
+            final beforeLanding = await fetchLikers();
             expect(beforeLanding, equals(<String>[likerA]));
 
+            await Future<void>.delayed(const Duration(milliseconds: 5));
             landed.complete({
               targetEventId: [targetEventId, supersededEventId],
             });
+            await letRevisionsLand();
 
-            final afterLanding = await repository.fetchEventLikers(
-              eventId: targetEventId,
-              addressableId: addressableId,
-            );
+            final afterLanding = await fetchLikers();
 
-            // The overrun lookup was kept, not discarded: no second request,
-            // and the liker it was carrying now shows up.
+            // The lookup outlived the pass that gave up on it: no second
+            // request, and the liker it was carrying now shows up.
             expect(resolverCalls, equals(1));
             expect(afterLanding, containsAll(<String>[likerA, likerC]));
           });
@@ -3260,6 +3400,7 @@ void main() {
             landed.complete({
               targetEventId: [targetEventId, supersededEventId],
             });
+            await letRevisionsLand();
 
             // Caching the un-enriched 1 would pin it for the session; the
             // second read has to go back to the relays and find likerC.
@@ -3286,15 +3427,10 @@ void main() {
               },
             );
 
-            await repository.fetchEventLikers(
-              eventId: targetEventId,
-              addressableId: addressableId,
-            );
+            await fetchLikers();
+            await letRevisionsLand();
             await repository.clearCache();
-            await repository.fetchEventLikers(
-              eventId: targetEventId,
-              addressableId: addressableId,
-            );
+            await fetchLikers();
 
             // Sign-out clears it with every other per-user cache.
             expect(resolverCalls, equals(2));
@@ -3317,17 +3453,15 @@ void main() {
               },
             );
 
-            final duringBlip = await repository.fetchEventLikers(
-              eventId: targetEventId,
-              addressableId: addressableId,
-            );
-            final afterBlip = await repository.fetchEventLikers(
-              eventId: targetEventId,
-              addressableId: addressableId,
-            );
+            final duringBlip = await fetchLikers();
+            await letRevisionsLand();
+            final retrying = await fetchLikers();
+            await letRevisionsLand();
+            final afterRetry = await fetchLikers();
 
             expect(duringBlip, equals(<String>[likerA]));
-            expect(afterBlip, containsAll(<String>[likerA, likerC]));
+            expect(retrying, equals(<String>[likerA]));
+            expect(afterRetry, containsAll(<String>[likerA, likerC]));
             expect(resolverCalls, equals(2));
           });
 
@@ -3345,14 +3479,9 @@ void main() {
               },
             );
 
-            await repository.fetchEventLikers(
-              eventId: targetEventId,
-              addressableId: addressableId,
-            );
-            await repository.fetchEventLikers(
-              eventId: targetEventId,
-              addressableId: addressableId,
-            );
+            await fetchLikers();
+            await letRevisionsLand();
+            await fetchLikers();
 
             expect(resolverCalls, equals(1));
           });
