@@ -200,16 +200,11 @@ class _MessageText extends StatelessWidget {
       final listName = notification.listTitle?.isNotEmpty == true
           ? notification.listTitle!
           : l10n.routeDefaultListName;
-      final fullText = notification.totalCount > 1
-          ? l10n.notificationAddedYourVideosToList(
-              actors.first.displayName,
-              notification.totalCount,
-              listName,
-            )
-          : l10n.notificationAddedYourVideoToList(
-              actors.first.displayName,
-              listName,
-            );
+      final fullText = l10n.notificationAddedYourVideosToList(
+        actors.first.displayName,
+        notification.totalCount,
+        listName,
+      );
       spans.addAll(
         _localizedActorAndListSentenceSpans(
           fullText: fullText,

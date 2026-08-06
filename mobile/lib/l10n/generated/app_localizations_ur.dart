@@ -8091,17 +8091,18 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String notificationAddedYourVideoToList(String actorName, String listName) {
-    return '$actorName added your vine to $listName';
-  }
-
-  @override
   String notificationAddedYourVideosToList(
     String actorName,
     int count,
     String listName,
   ) {
-    return '$actorName added $count of your vines to $listName';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count of your vines',
+      one: 'your vine',
+    );
+    return '$actorName added $_temp0 to $listName';
   }
 
   @override
