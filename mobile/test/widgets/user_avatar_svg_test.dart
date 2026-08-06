@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -9,6 +8,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/repositories/avatar_svg_repository.dart';
 import 'package:openvine/widgets/avatar_failure_cache.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
@@ -86,25 +86,36 @@ final Uint8List _transparentImageBytes = Uint8List.fromList(<int>[
 ]);
 
 void main() {
-  Widget buildAvatar({String? imageUrl}) {
+  final validSvgBytes = Uint8List.fromList(
+    utf8.encode(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1" />',
+    ),
+  );
+
+  Widget buildAvatar({
+    String? imageUrl,
+    AvatarSvgRepository? avatarSvgRepository,
+  }) {
     return MaterialApp(
       home: Scaffold(
-        body: UserAvatar(imageUrl: imageUrl, name: 'Test User'),
+        body: UserAvatar(
+          imageUrl: imageUrl,
+          name: 'Test User',
+          avatarSvgRepository: avatarSvgRepository,
+        ),
       ),
     );
   }
 
-  Future<void> pumpAvatarWithValidSvgResponse(
-    WidgetTester tester,
-    String imageUrl,
-  ) {
-    return HttpOverrides.runZoned(
-      () async {
-        await tester.pumpWidget(buildAvatar(imageUrl: imageUrl));
-        await tester.pump();
-      },
-      createHttpClient: (_) => _ValidSvgHttpClient(),
+  Future<void> pumpAvatarWithSvgRepository(
+    WidgetTester tester, {
+    required String imageUrl,
+    required AvatarSvgRepository repository,
+  }) async {
+    await tester.pumpWidget(
+      buildAvatar(imageUrl: imageUrl, avatarSvgRepository: repository),
     );
+    await tester.pump();
   }
 
   Finder gradientPlaceholderFinder() => find.byWidgetPredicate((widget) {
@@ -225,10 +236,14 @@ void main() {
       expect(AvatarFailureCache.instance.isFailed(failedUrl), isTrue);
     });
 
-    testWidgets('SVG transient failures are cached briefly', (tester) async {
+    testWidgets('SVG render failures are cached briefly', (tester) async {
       const failedUrl = 'https://divine.video/divine-logo.svg';
 
-      await pumpAvatarWithValidSvgResponse(tester, failedUrl);
+      await pumpAvatarWithSvgRepository(
+        tester,
+        imageUrl: failedUrl,
+        repository: _FakeAvatarSvgRepository(validSvgBytes),
+      );
       final svg = tester.widget<SvgPicture>(find.byType(SvgPicture));
 
       svg.errorBuilder!(
@@ -263,7 +278,11 @@ void main() {
         AvatarFailureKind.deterministic,
       );
 
-      await pumpAvatarWithValidSvgResponse(tester, failedUrl);
+      await pumpAvatarWithSvgRepository(
+        tester,
+        imageUrl: failedUrl,
+        repository: _FakeAvatarSvgRepository(validSvgBytes),
+      );
       final svg = tester.widget<SvgPicture>(find.byType(SvgPicture));
       svg.errorBuilder!(
         tester.element(find.byType(SvgPicture)),
@@ -272,6 +291,46 @@ void main() {
       );
 
       expect(AvatarFailureCache.instance.isFailed(failedUrl), isTrue);
+    });
+
+    testWidgets('HTML returned for a .svg URL renders placeholder only', (
+      tester,
+    ) async {
+      const failedUrl = 'https://divine.video/html-error.svg';
+
+      await pumpAvatarWithSvgRepository(
+        tester,
+        imageUrl: failedUrl,
+        repository: const _FakeAvatarSvgRepository(null),
+      );
+
+      expect(find.byType(SvgPicture), findsNothing);
+      expect(find.byType(VineCachedImage), findsNothing);
+      expect(gradientPlaceholderFinder(), findsAtLeastNWidgets(1));
+    });
+
+    testWidgets('rejected .svg URL does not raise a zone error', (
+      tester,
+    ) async {
+      const failedUrl = 'https://divine.video/html-error.svg';
+      Object? zoneError;
+
+      await runZonedGuarded(
+        () async {
+          await pumpAvatarWithSvgRepository(
+            tester,
+            imageUrl: failedUrl,
+            repository: const _FakeAvatarSvgRepository(null),
+          );
+          await tester.pumpAndSettle();
+        },
+        (error, stackTrace) {
+          zoneError = error;
+        },
+      );
+
+      expect(zoneError, isNull);
+      expect(find.byType(SvgPicture), findsNothing);
     });
 
     testWidgets('raster completed download failures are cached', (
@@ -293,37 +352,34 @@ void main() {
       expect(AvatarFailureCache.instance.isFailed(failedUrl), isTrue);
     });
 
-    testWidgets(
-      'caches a broken raster URL through the real image provider',
-      (tester) async {
-        const brokenUrl = 'https://blotcdn.com/dead-avatar.png';
-        final cache = _MockMediaCacheManager();
-        when(
-          () => cache.getFileFromCache(any()),
-        ).thenAnswer((_) async => null);
-        when(
-          () => cache.cacheFileCancellable(
-            any(),
-            key: any(named: 'key'),
-            aliasKey: any(named: 'aliasKey'),
-            authHeaders: any(named: 'authHeaders'),
-          ),
-          // An empty stream resolves the download to a null file — exactly
-          // what a dead URL (non-2xx / DNS failure) produces in production.
-        ).thenReturn(
-          CancellableCacheOperation.fromStream(
-            const Stream<FileResponse>.empty(),
-          ),
-        );
-        debugImageCacheOverride = cache;
-        addTearDown(() => debugImageCacheOverride = null);
+    testWidgets('caches a broken raster URL through the real image provider', (
+      tester,
+    ) async {
+      const brokenUrl = 'https://blotcdn.com/dead-avatar.png';
+      final cache = _MockMediaCacheManager();
+      when(() => cache.getFileFromCache(any())).thenAnswer((_) async => null);
+      when(
+        () => cache.cacheFileCancellable(
+          any(),
+          key: any(named: 'key'),
+          aliasKey: any(named: 'aliasKey'),
+          authHeaders: any(named: 'authHeaders'),
+        ),
+        // An empty stream resolves the download to a null file — exactly
+        // what a dead URL (non-2xx / DNS failure) produces in production.
+      ).thenReturn(
+        CancellableCacheOperation.fromStream(
+          const Stream<FileResponse>.empty(),
+        ),
+      );
+      debugImageCacheOverride = cache;
+      addTearDown(() => debugImageCacheOverride = null);
 
-        await tester.pumpWidget(buildAvatar(imageUrl: brokenUrl));
-        await tester.pumpAndSettle();
+      await tester.pumpWidget(buildAvatar(imageUrl: brokenUrl));
+      await tester.pumpAndSettle();
 
-        expect(AvatarFailureCache.instance.isFailed(brokenUrl), isTrue);
-      },
-    );
+      expect(AvatarFailureCache.instance.isFailed(brokenUrl), isTrue);
+    });
 
     testWidgets('keeps raster avatar URLs on VineCachedImage', (tester) async {
       await tester.pumpWidget(
@@ -375,109 +431,11 @@ void main() {
   });
 }
 
-class _ValidSvgHttpClient implements HttpClient {
-  @override
-  Future<HttpClientRequest> openUrl(String method, Uri url) async =>
-      _ValidSvgRequest();
+class _FakeAvatarSvgRepository implements AvatarSvgRepository {
+  const _FakeAvatarSvgRepository(this.bytes);
 
   @override
-  Future<HttpClientRequest> getUrl(Uri url) async => _ValidSvgRequest();
+  Future<Uint8List?> load(String url) async => bytes;
 
-  @override
-  void close({bool force = false}) {}
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class _ValidSvgRequest implements HttpClientRequest {
-  final _headers = _EmptyHttpHeaders();
-
-  @override
-  bool followRedirects = true;
-
-  @override
-  int maxRedirects = 5;
-
-  @override
-  bool persistentConnection = false;
-
-  @override
-  int contentLength = 0;
-
-  @override
-  HttpHeaders get headers => _headers;
-
-  @override
-  Future<void> addStream(Stream<List<int>> stream) async {
-    await stream.drain<void>();
-  }
-
-  @override
-  Future<HttpClientResponse> close() async => _ValidSvgResponse();
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class _ValidSvgResponse extends Stream<List<int>>
-    implements HttpClientResponse {
-  _ValidSvgResponse()
-    : _body = utf8.encode(
-        '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1" />',
-      );
-
-  final List<int> _body;
-  final _headers = _EmptyHttpHeaders();
-
-  @override
-  int get statusCode => HttpStatus.ok;
-
-  @override
-  int get contentLength => _body.length;
-
-  @override
-  bool get persistentConnection => false;
-
-  @override
-  HttpHeaders get headers => _headers;
-
-  @override
-  bool get isRedirect => false;
-
-  @override
-  List<RedirectInfo> get redirects => const [];
-
-  @override
-  String get reasonPhrase => 'OK';
-
-  @override
-  HttpClientResponseCompressionState get compressionState =>
-      HttpClientResponseCompressionState.notCompressed;
-
-  @override
-  StreamSubscription<List<int>> listen(
-    void Function(List<int> event)? onData, {
-    Function? onError,
-    void Function()? onDone,
-    bool? cancelOnError,
-  }) {
-    return Stream<List<int>>.value(_body).listen(
-      onData,
-      onError: onError,
-      onDone: onDone,
-      cancelOnError: cancelOnError,
-    );
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class _EmptyHttpHeaders implements HttpHeaders {
-  @override
-  void forEach(void Function(String name, List<String> values) action) {}
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  final Uint8List? bytes;
 }
