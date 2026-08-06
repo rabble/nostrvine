@@ -3,6 +3,7 @@
 // ABOUTME: DmRepository + NostrClient over real sockets.
 // ABOUTME: Requires: NO Docker stack — every dependency here is local.
 
+@Tags(['service'])
 import 'package:db_client/db_client.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:drift/native.dart';
@@ -65,7 +66,6 @@ final List<String> _surplusTargets = [
   for (var i = 0; i < 10; i++) 'wss://surplus-$i.example',
 ];
 
-@Tags(['service'])
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 

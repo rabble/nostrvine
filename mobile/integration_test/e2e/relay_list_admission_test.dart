@@ -3,6 +3,7 @@
 // ABOUTME: released. Runs on-device against local WebSocket relays.
 // ABOUTME: Requires: NO Docker stack — every dependency here is local.
 
+@Tags(['service'])
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -37,7 +38,6 @@ Map<String, dynamic> _signedRelayList({
   return event.toJson();
 }
 
-@Tags(['service'])
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
