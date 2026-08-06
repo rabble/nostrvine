@@ -1312,6 +1312,18 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'Desactivar subtítulos';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'Avance automático activado';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'Avance automático desactivado';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Subtítulos activados';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Subtítulos desactivados';
+
+  @override
   String get contentWarningLabel => 'Advertencia de contenido';
 
   @override

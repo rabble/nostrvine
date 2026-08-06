@@ -1313,6 +1313,18 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'Desativar legendas';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'Avanço automático ativado';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'Avanço automático desativado';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Legendas ativadas';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Legendas desativadas';
+
+  @override
   String get contentWarningLabel => 'Aviso de conteúdo';
 
   @override

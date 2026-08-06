@@ -1323,6 +1323,18 @@ class AppLocalizationsFr extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'Désactiver les sous-titres';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'Passage automatique activé';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'Passage automatique désactivé';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Sous-titres activés';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Sous-titres désactivés';
+
+  @override
   String get contentWarningLabel => 'Avertissement de contenu';
 
   @override

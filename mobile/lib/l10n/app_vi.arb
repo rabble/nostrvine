@@ -642,6 +642,10 @@
     "description": "Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently off."
   },
   "videoSettingsCaptionsDisable": "Tắt phụ đề",
+  "videoSettingsAutoAdvanceOn": "Đã bật tự động chuyển video",
+  "videoSettingsAutoAdvanceOff": "Đã tắt tự động chuyển video",
+  "videoSettingsCaptionsOn": "Đã bật phụ đề",
+  "videoSettingsCaptionsOff": "Đã tắt phụ đề",
   "@videoSettingsCaptionsDisable": {
     "description": "Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently on."
   },

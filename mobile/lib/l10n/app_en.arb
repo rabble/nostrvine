@@ -707,6 +707,22 @@
   "@videoSettingsCaptionsDisable": {
     "description": "Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently on."
   },
+  "videoSettingsAutoAdvanceOn": "Auto advance on",
+  "@videoSettingsAutoAdvanceOn": {
+    "description": "Snackbar confirming that auto advance was just turned on from the playback-settings pill."
+  },
+  "videoSettingsAutoAdvanceOff": "Auto advance off",
+  "@videoSettingsAutoAdvanceOff": {
+    "description": "Snackbar confirming that auto advance was just turned off from the playback-settings pill."
+  },
+  "videoSettingsCaptionsOn": "Captions on",
+  "@videoSettingsCaptionsOn": {
+    "description": "Snackbar confirming that captions were just turned on from the playback-settings pill."
+  },
+  "videoSettingsCaptionsOff": "Captions off",
+  "@videoSettingsCaptionsOff": {
+    "description": "Snackbar confirming that captions were just turned off from the playback-settings pill."
+  },
   "contentWarningLabel": "Content Warning",
   "contentWarningNudity": "Nudity",
   "contentWarningSexualContent": "Sexual Content",

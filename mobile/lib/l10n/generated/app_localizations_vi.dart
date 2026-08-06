@@ -1303,6 +1303,18 @@ class AppLocalizationsVi extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'Tắt phụ đề';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'Đã bật tự động chuyển video';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'Đã tắt tự động chuyển video';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Đã bật phụ đề';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Đã tắt phụ đề';
+
+  @override
   String get contentWarningLabel => 'Cảnh báo nội dung';
 
   @override

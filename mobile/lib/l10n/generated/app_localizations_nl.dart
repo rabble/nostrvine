@@ -1304,6 +1304,18 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'Ondertiteling uitschakelen';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'Automatisch doorgaan aan';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'Automatisch doorgaan uit';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Ondertiteling aan';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Ondertiteling uit';
+
+  @override
   String get contentWarningLabel => 'Inhoudswaarschuwing';
 
   @override

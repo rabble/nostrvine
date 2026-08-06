@@ -1273,6 +1273,18 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'መግለጫ ጽሑፎችን አሰናክል';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'ራስ-ሰር ማስቀደም በርቷል';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'ራስ-ሰር ማስቀደም ጠፍቷል';
+
+  @override
+  String get videoSettingsCaptionsOn => 'መግለጫ ጽሑፎች በርተዋል';
+
+  @override
+  String get videoSettingsCaptionsOff => 'መግለጫ ጽሑፎች ጠፍተዋል';
+
+  @override
   String get contentWarningLabel => 'የይዘት ማስጠንቀቂያ';
 
   @override
