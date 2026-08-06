@@ -11,6 +11,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/screens/feed/feed_immersive_cubit.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
 import 'package:openvine/widgets/video_feed_item/feed_immersive_chrome.dart';
@@ -298,6 +299,41 @@ void main() {
         await tester.pumpAndSettle();
 
         verifyNever(() => mockBloc.add(any()));
+      });
+
+      testWidgets('pauses video playback while the mode sheet is open', (
+        tester,
+      ) async {
+        // Regression: the mode sheet used to bypass the overlay-visibility
+        // integration, so the video behind it kept playing.
+        when(() => mockBloc.state).thenReturn(
+          const VideoFeedBlocState(
+            status: VideoFeedStatus.success,
+            source: VideoFeedSource.forYou(),
+          ),
+        );
+        await tester.pumpWidget(createTestWidget());
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(FeedModeSwitch)),
+          listen: false,
+        );
+
+        await tester.tap(find.text(l10n.feedModeForYou));
+        await tester.pumpAndSettle();
+
+        expect(
+          container.read(overlayVisibilityProvider).isBottomSheetOpen,
+          isTrue,
+        );
+
+        await tester.tap(find.text(l10n.feedModeFollowing));
+        await tester.pumpAndSettle();
+
+        expect(
+          container.read(overlayVisibilityProvider).isBottomSheetOpen,
+          isFalse,
+        );
       });
     });
 
