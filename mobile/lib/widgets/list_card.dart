@@ -90,12 +90,20 @@ class CuratedListCard extends StatelessWidget {
     required this.curatedList,
     required this.onTap,
     this.showVisibility = false,
+    this.showAuthor = true,
     super.key,
   });
 
   final CuratedList curatedList;
   final VoidCallback onTap;
   final bool showVisibility;
+
+  /// Whether to credit the list's creator.
+  ///
+  /// Off for the viewer's own lists: every list they create is stamped with
+  /// their pubkey, so the row would credit them to themselves. The curated
+  /// list feed screen suppresses its own creator row for the same reason.
+  final bool showAuthor;
 
   @override
   Widget build(BuildContext context) {
@@ -187,7 +195,7 @@ class CuratedListCard extends StatelessWidget {
                   ],
                 ],
               ),
-              if (curatedList.pubkey != null) ...[
+              if (showAuthor && curatedList.pubkey != null) ...[
                 const SizedBox(height: 8),
                 _CuratedListAuthor(pubkey: curatedList.pubkey!),
               ],

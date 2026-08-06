@@ -29,6 +29,7 @@ class OwnedListCard extends StatelessWidget {
     return CuratedListCard(
       curatedList: curatedList,
       showVisibility: true,
+      showAuthor: false,
       onTap: () {
         onTap?.call();
         context.push(
