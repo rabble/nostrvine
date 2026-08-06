@@ -1465,13 +1465,9 @@ class VideosRepository {
         // Find videos matching our d-tags and convert to VideoEvent
         for (final videoStats in result.videos) {
           final video = videoStats.toVideoEvent();
-          if (video.vineId != null && dTags.contains(video.vineId)) {
-            final videoAddressableId = AId(
-              kind: EventKind.videoVertical,
-              pubkey: video.pubkey,
-              dTag: video.vineId!,
-            ).toAString();
-
+          final videoAddressableId = video.addressableId;
+          if (videoAddressableId != null &&
+              dTags.contains(video.addressableDTag)) {
             // Apply content filter if configured
             if (_blockFilter?.call(video.pubkey) ?? false) continue;
             if (!video.hasVideo) continue;

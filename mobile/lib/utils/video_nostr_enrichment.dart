@@ -209,6 +209,7 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
           hashtags: video.hashtags.isEmpty ? parsed.hashtags : video.hashtags,
           publishedAt: video.publishedAt ?? parsed.publishedAt,
           vineId: video.vineId ?? parsed.vineId,
+          addressableDTag: video.addressableDTag ?? parsed.addressableDTag,
           group: video.group ?? parsed.group,
           altText: video.altText ?? parsed.altText,
           blurhash: video.blurhash ?? parsed.blurhash,

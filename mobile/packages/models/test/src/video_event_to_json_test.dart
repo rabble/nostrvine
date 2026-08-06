@@ -41,8 +41,9 @@ VideoEvent _fullVideo() => VideoEvent(
   hashtags: const ['vine', 'test'],
   categories: const ['music'],
   publishedAt: '1704067200',
-  rawTags: const {'platform': 'vine', 'views': '42'},
+  rawTags: const {'d': 'abc123def', 'platform': 'vine', 'views': '42'},
   vineId: 'abc123def',
+  addressableDTag: 'abc123def',
   group: 'community',
   altText: 'A person waves at the camera',
   blurhash: 'LKO2?U%2Tw=w',
@@ -121,6 +122,7 @@ const _expectedKeys = <String>{
   'publishedAt',
   'rawTags',
   'vineId',
+  'addressableDTag',
   'group',
   'altText',
   'blurhash',
@@ -163,6 +165,7 @@ const _excludedDerivedGetters = <String>{
   'shareKind',
   'isAddressableShareKind',
   'stableId',
+  'hasAddressableDTag',
   'addressableId',
   'effectiveThumbnailUrl',
   'displayPubkey',
@@ -332,6 +335,7 @@ void main() {
       expect(restored.publishedAt, equals(original.publishedAt));
       expect(restored.rawTags, equals(original.rawTags));
       expect(restored.vineId, equals(original.vineId));
+      expect(restored.addressableDTag, equals(original.addressableDTag));
       expect(restored.group, equals(original.group));
       expect(restored.altText, equals(original.altText));
       expect(restored.blurhash, equals(original.blurhash));
@@ -370,6 +374,15 @@ void main() {
         equals(original.contentWarningLabels),
       );
       expect(restored.proofSummary, equals(original.proofSummary));
+    });
+
+    test('hydrates addressableDTag from rawTags for older cache entries', () {
+      final json = _fullVideo().toJson()..remove('addressableDTag');
+
+      final restored = VideoEvent.fromJson(json);
+
+      expect(restored.addressableDTag, equals('abc123def'));
+      expect(restored.addressableId, equals('34236:$_pubkey:abc123def'));
     });
 
     test('round-trips a minimal video with only required fields', () {

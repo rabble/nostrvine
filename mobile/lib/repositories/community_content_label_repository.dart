@@ -253,7 +253,7 @@ class CommunityContentLabelRepository {
   }
 
   String? _addressableTargetFor(VideoEvent video) {
-    final dTag = video.vineId;
+    final dTag = video.addressableDTag;
     if (!video.isAddressableShareKind || dTag == null || dTag.isEmpty) {
       return null;
     }

@@ -1,5 +1,5 @@
 // ABOUTME: Unit tests for ViewEventPublisher (Kind 22236 ephemeral view events)
-// ABOUTME: Tests self-view publishing, vineId fallback, auth checks, and tag
+// ABOUTME: Tests self-view publishing, addressable tags, auth checks, and tag
 // ABOUTME: construction
 
 import 'package:flutter_test/flutter_test.dart';
@@ -139,6 +139,29 @@ void main() {
         );
         expect(tags.firstWhere((t) => t[0] == 'viewed'), ['viewed', '0', '5']);
         expect(tags.firstWhere((t) => t[0] == 'source'), ['source', 'profile']);
+      });
+
+      test('returns false when video has no real d tag', () async {
+        final result = await publisher.publishViewEvent(
+          video: createTestVideoEvent(
+            id: 'event_id_without_d',
+            pubkey: creatorPubkey,
+            vineId: 'legacy_vine_id',
+            clearAddressableDTag: true,
+          ),
+          startSeconds: 0,
+          endSeconds: 5,
+        );
+
+        expect(result, isFalse);
+        verifyNever(
+          () => mockAuth.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        );
+        verifyNever(() => mockNostr.publishEvent(any()));
       });
 
       test('publishes event successfully', () async {
@@ -480,6 +503,28 @@ void main() {
         );
 
         expect(result, isFalse);
+        verifyNever(() => mockNostr.publishEvent(any()));
+      });
+
+      test('returns false for segments when video has no real d tag', () async {
+        final result = await publisher.publishViewEventWithSegments(
+          video: createTestVideoEvent(
+            id: 'event_id_without_d',
+            pubkey: creatorPubkey,
+            vineId: 'legacy_vine_id',
+            clearAddressableDTag: true,
+          ),
+          segments: [(0, 5), (10, 15)],
+        );
+
+        expect(result, isFalse);
+        verifyNever(
+          () => mockAuth.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        );
         verifyNever(() => mockNostr.publishEvent(any()));
       });
 

@@ -80,6 +80,8 @@ void main() {
 
         expect(enriched, hasLength(1));
         expect(enriched.single.rawTags['views'], equals('34'));
+        expect(enriched.single.addressableDTag, equals('video-1'));
+        expect(enriched.single.addressableId, equals('34236:$pubkey:video-1'));
         expect(enriched.single.totalLoops, equals(34));
         expect(enriched.single.hasLoopMetadata, isTrue);
       },

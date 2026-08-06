@@ -46,6 +46,7 @@ models.VideoEvent _video({
     dimensions: dimensions,
     rawTags: rawTags,
     vineId: vineId,
+    addressableDTag: vineId,
     textTrackContent: textTrackContent,
     sourceRelay: sourceRelay,
   );

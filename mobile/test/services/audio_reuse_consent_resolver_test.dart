@@ -46,6 +46,7 @@ VideoEvent _video({
       isUtc: true,
     ),
     vineId: vineId,
+    addressableDTag: vineId,
     rawTags: allowsReuse
         ? const {'allow_audio_reuse': 'true'}
         : const {'allow_audio_reuse': 'false'},

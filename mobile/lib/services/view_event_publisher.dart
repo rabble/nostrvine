@@ -137,12 +137,16 @@ class ViewEventPublisher {
     }
 
     try {
-      // Build the addressable coordinate (a tag)
-      // Format: "<kind>:author_pubkey:d_tag"
-      // Use event ID as fallback if vineId (d-tag) is null
-      final dTag = video.vineId ?? video.id;
-      final aTag =
-          '${NIP71VideoKinds.addressableShortVideo}:${video.pubkey}:$dTag';
+      // View events require an addressable video reference.
+      final aTag = video.addressableId;
+      if (aTag == null) {
+        Log.warning(
+          'Skipping view event: video has no addressable d tag',
+          name: 'ViewEventPublisher',
+          category: LogCategory.video,
+        );
+        return false;
+      }
 
       // Get relay hint
       String relayHint = _defaultRelayHint;
@@ -256,9 +260,15 @@ class ViewEventPublisher {
     }
 
     try {
-      final dTag = video.vineId ?? video.id;
-      final aTag =
-          '${NIP71VideoKinds.addressableShortVideo}:${video.pubkey}:$dTag';
+      final aTag = video.addressableId;
+      if (aTag == null) {
+        Log.warning(
+          'Skipping view event: video has no addressable d tag',
+          name: 'ViewEventPublisher',
+          category: LogCategory.video,
+        );
+        return false;
+      }
 
       String relayHint = _defaultRelayHint;
       if (_nostrService.connectedRelays.isNotEmpty) {

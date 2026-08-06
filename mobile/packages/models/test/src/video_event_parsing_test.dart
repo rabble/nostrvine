@@ -168,6 +168,14 @@ void main() {
 
       final videoEvent1 = VideoEvent.fromNostrEvent(eventWithDTag);
       expect(videoEvent1.vineId, equals('vine-id-from-d-tag'));
+      expect(videoEvent1.addressableDTag, equals('vine-id-from-d-tag'));
+      expect(videoEvent1.hasAddressableDTag, isTrue);
+      expect(
+        videoEvent1.addressableId,
+        equals(
+          '34236:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef:vine-id-from-d-tag',
+        ),
+      );
 
       // Test with 'vine_id' tag
       final eventWithVineIdTag = Event(
@@ -183,7 +191,32 @@ void main() {
 
       final videoEvent2 = VideoEvent.fromNostrEvent(eventWithVineIdTag);
       expect(videoEvent2.vineId, equals('vine-id-from-vine-id-tag'));
+      expect(videoEvent2.addressableDTag, isNull);
+      expect(videoEvent2.hasAddressableDTag, isFalse);
+      expect(videoEvent2.addressableId, isNull);
     });
+
+    test(
+      'preserves missing d tag state while keeping stable vineId fallback',
+      () {
+        final eventWithoutDTag = Event(
+          '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+          34236,
+          [
+            ['url', 'https://example.com/video.mp4'],
+          ],
+          'Test video',
+          createdAt: 1757385263,
+        );
+
+        final videoEvent = VideoEvent.fromNostrEvent(eventWithoutDTag);
+
+        expect(videoEvent.vineId, equals(eventWithoutDTag.id));
+        expect(videoEvent.addressableDTag, isNull);
+        expect(videoEvent.hasAddressableDTag, isFalse);
+        expect(videoEvent.addressableId, isNull);
+      },
+    );
 
     test(
       'should parse imeta tag with blurhash from divine.video events (OLD FORMAT - space-separated)',
@@ -747,25 +780,22 @@ void main() {
       },
     );
 
-    test(
-      'should not treat a single-newline-prefixed attribution as '
-      'inspiredByNpub',
-      () {
-        final nostrEvent = Event(
-          authorPubkey,
-          34236,
-          [
-            ['url', 'https://example.com/video.mp4'],
-          ],
-          'my caption\nInspired by nostr:npub1singlenewline',
-          createdAt: 1757385263,
-        );
+    test('should not treat a single-newline-prefixed attribution as '
+        'inspiredByNpub', () {
+      final nostrEvent = Event(
+        authorPubkey,
+        34236,
+        [
+          ['url', 'https://example.com/video.mp4'],
+        ],
+        'my caption\nInspired by nostr:npub1singlenewline',
+        createdAt: 1757385263,
+      );
 
-        final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+      final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
 
-        expect(videoEvent.inspiredByNpub, isNull);
-      },
-    );
+      expect(videoEvent.inspiredByNpub, isNull);
+    });
 
     test('should resolve the trailing attribution npub when an inline mention '
         'appears earlier in content', () {
@@ -782,10 +812,7 @@ void main() {
 
       final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
 
-      expect(
-        videoEvent.inspiredByNpub,
-        equals('npub1realattribution'),
-      );
+      expect(videoEvent.inspiredByNpub, equals('npub1realattribution'));
     });
 
     test(
@@ -805,10 +832,7 @@ void main() {
 
         final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
 
-        expect(
-          videoEvent.inspiredByNpub,
-          equals('npub1onlyattribution'),
-        );
+        expect(videoEvent.inspiredByNpub, equals('npub1onlyattribution'));
       },
     );
 

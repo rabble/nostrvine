@@ -64,6 +64,7 @@ VideoEvent _video(String id, {String? vineId}) => VideoEvent(
   ),
   videoUrl: 'https://cdn.divine.video/$id.mp4',
   vineId: vineId,
+  addressableDTag: vineId,
 );
 
 Future<void> _pump() => Future<void>.delayed(Duration.zero);

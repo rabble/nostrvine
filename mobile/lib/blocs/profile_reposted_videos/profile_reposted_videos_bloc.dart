@@ -11,8 +11,6 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' hide LogCategory;
-import 'package:nostr_sdk/aid.dart';
-import 'package:nostr_sdk/event_kind.dart';
 import 'package:openvine/blocs/profile_shared/profile_tab_page_size.dart';
 import 'package:openvine/blocs/profile_shared/profile_tab_sync_completion.dart';
 import 'package:openvine/blocs/profile_shared/profile_video_list_snapshot.dart';
@@ -586,13 +584,8 @@ class ProfileRepostedVideosBloc
   /// Compute the addressable ID for a video event.
   ///
   /// Format: `kind:pubkey:d-tag`
-  /// Returns null if the video doesn't have a d-tag (vineId).
+  /// Returns null if the video doesn't have a real d-tag.
   String? _computeAddressableId(VideoEvent video) {
-    if (video.vineId == null) return null;
-    return AId(
-      kind: EventKind.videoVertical,
-      pubkey: video.pubkey,
-      dTag: video.vineId!,
-    ).toAString();
+    return video.addressableId;
   }
 }

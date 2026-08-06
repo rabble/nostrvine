@@ -50,6 +50,7 @@ VideoEvent _createVideo({
     hashtags: hashtags,
     sha256: sha256,
     vineId: vineId,
+    addressableDTag: vineId,
   );
 }
 

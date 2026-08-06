@@ -73,6 +73,7 @@ void main() {
       when(() => video.pubkey).thenReturn(creatorPubkey);
       when(() => video.addressableId).thenReturn(addressableId);
       when(() => video.vineId).thenReturn('vine123');
+      when(() => video.addressableDTag).thenReturn('vine123');
       when(() => video.shareKind).thenReturn(34236);
       when(() => video.isAddressableShareKind).thenReturn(true);
       // Default: every author resolves to a Divine identity unless overridden.
@@ -470,6 +471,7 @@ void main() {
 
       test('does not publish an a tag for non-addressable videos', () async {
         when(() => video.vineId).thenReturn(videoId);
+        when(() => video.addressableDTag).thenReturn(null);
         when(() => video.shareKind).thenReturn(22);
         when(() => video.isAddressableShareKind).thenReturn(false);
         when(() => nostrClient.publicKey).thenReturn(authorA);

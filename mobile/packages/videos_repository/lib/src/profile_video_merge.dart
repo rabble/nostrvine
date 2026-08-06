@@ -69,6 +69,7 @@ VideoEvent mergeProfileFeedVideos(VideoEvent existing, VideoEvent incoming) {
         ? primary.hashtags
         : secondary.hashtags,
     vineId: primary.vineId ?? secondary.vineId,
+    addressableDTag: primary.addressableDTag ?? secondary.addressableDTag,
     group: primary.group ?? secondary.group,
     altText: primary.altText ?? secondary.altText,
     blurhash: primary.blurhash ?? secondary.blurhash,

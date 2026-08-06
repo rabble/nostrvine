@@ -304,6 +304,7 @@ void main() {
         ),
         videoUrl: 'https://example.com/$id.mp4',
         vineId: dTag,
+        addressableDTag: dTag,
       );
     }
 

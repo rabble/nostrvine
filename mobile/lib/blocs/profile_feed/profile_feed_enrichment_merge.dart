@@ -68,6 +68,7 @@ VideoEvent _mergeEnrichmentIntoCurrent(
         ? current.hashtags
         : enriched.hashtags,
     vineId: current.vineId ?? enriched.vineId,
+    addressableDTag: current.addressableDTag ?? enriched.addressableDTag,
     group: current.group ?? enriched.group,
     altText: current.altText ?? enriched.altText,
     blurhash: current.blurhash ?? enriched.blurhash,

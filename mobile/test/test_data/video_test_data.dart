@@ -18,6 +18,8 @@ VideoEvent createTestVideoEvent({
   String? publishedAt,
   Map<String, String> rawTags = const {},
   String? vineId,
+  String? addressableDTag,
+  bool clearAddressableDTag = false,
   String? group,
   String? altText,
   String? blurhash,
@@ -48,6 +50,9 @@ VideoEvent createTestVideoEvent({
     publishedAt: publishedAt,
     rawTags: rawTags,
     vineId: vineId ?? id,
+    addressableDTag: clearAddressableDTag
+        ? null
+        : (addressableDTag ?? vineId ?? id),
     group: group,
     altText: altText,
     blurhash: blurhash,
