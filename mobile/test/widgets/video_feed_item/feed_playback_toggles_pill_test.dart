@@ -181,7 +181,6 @@ void main() {
       expect(container.read(subtitleVisibilityProvider), isFalse);
 
       expect(find.text(l10n.videoSettingsCaptionsOff), findsOneWidget);
-      await tester.pumpAndSettle(const Duration(seconds: 3));
     });
 
     testWidgets(
@@ -212,7 +211,6 @@ void main() {
 
         expect(autoAdvanceCubit.state.enabled, isTrue);
         expect(find.text(l10n.videoSettingsAutoAdvanceOn), findsOneWidget);
-        await tester.pumpAndSettle(const Duration(seconds: 3));
       },
     );
 
@@ -240,7 +238,6 @@ void main() {
 
       expect(find.text(l10n.videoSettingsAutoAdvanceOn), findsNothing);
       expect(find.text(l10n.videoSettingsAutoAdvanceOff), findsOneWidget);
-      await tester.pumpAndSettle(const Duration(seconds: 3));
     });
 
     testWidgets('renders without the compilations toggle when '
