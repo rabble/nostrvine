@@ -1331,10 +1331,14 @@ void main() {
             return _accepted(invocation.positionalArguments[0] as Event);
           });
 
+          // Both deletes publish a NIP-09 request now that private lists live
+          // on relays too, so the second cannot be awaited before the gate
+          // opens — starting it here still lands it inside the first publish.
           final pendingDelete = service.deleteOwnedList(target!.id);
-          await service.deleteOwnedList(earlier!.id);
+          final pendingEarlierDelete = service.deleteOwnedList(earlier!.id);
           deletionGate.complete();
 
+          expect(await pendingEarlierDelete, isTrue);
           expect(await pendingDelete, isTrue);
           expect(service.getListById(target.id), isNull);
           expect(service.getListById(later!.id), isNotNull);
