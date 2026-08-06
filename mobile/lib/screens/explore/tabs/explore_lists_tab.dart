@@ -39,6 +39,9 @@ class ExploreListsTab extends ConsumerWidget {
       },
       child: ListView(
         key: const Key('lists-tab-content'),
+        // Explicit padding: without it Flutter inserts MediaQuery.padding,
+        // which adds a status-bar-sized gap above the first card.
+        padding: EdgeInsets.zero,
         children: [
           // Discover Lists button - ALWAYS VISIBLE
           Padding(

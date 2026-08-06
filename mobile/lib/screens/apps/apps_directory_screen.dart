@@ -86,6 +86,10 @@ class _AppsDirectoryContent extends StatelessWidget {
                   onRefresh: () =>
                       context.read<AppsDirectoryCubit>().refreshApps(),
                   child: ListView.builder(
+                    // Explicit padding: without it Flutter inserts
+                    // MediaQuery.padding, which adds a status-bar-sized gap
+                    // above the intro card when embedded in Explore.
+                    padding: EdgeInsets.zero,
                     itemCount: state.apps.length + 1,
                     itemBuilder: (context, index) {
                       if (index == 0) {
