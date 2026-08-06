@@ -668,12 +668,14 @@ class __OverlayState extends ConsumerState<_Overlay> {
   /// Drops a lifted/cancelled pointer and, once none remain, brings the chrome
   /// back.
   ///
-  /// Driven off the raw [Listener] rather than the gesture callbacks:
-  /// `LongPressGestureRecognizer` reports neither `onLongPressEnd` nor
-  /// `onLongPressCancel` for a pointer cancelled after the press was accepted,
-  /// which would otherwise strand the chrome hidden. Flutter still delivers the
-  /// terminal event to the down-time hit path even after the [Listener] has
-  /// unmounted (a mode flip mid-hold), so this stays the reliable exit.
+  /// Driven off the raw [Listener] rather than the gesture callbacks.
+  /// `LongPressGestureRecognizer` does not report `onLongPressEnd` for a
+  /// pointer cancelled after the press was accepted (`onLongPressCancel`
+  /// does fire), and neither callback can distinguish an incidental second
+  /// finger lifting from the hold finger lifting — only counting pointers
+  /// can. Flutter still delivers the terminal event to the down-time hit
+  /// path even after the [Listener] has unmounted (a mode flip mid-hold),
+  /// so this stays the reliable exit.
   void _handleImmersivePointerEnd(int pointer) {
     _immersivePointers.remove(pointer);
     if (_immersivePointers.isEmpty) _exitImmersive();
