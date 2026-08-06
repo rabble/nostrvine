@@ -98,6 +98,45 @@ void main() {
       expect(_ignoringPointer(tester), isFalse);
     });
 
+    testWidgets('keeps blocking taps until the chrome is visible again', (
+      tester,
+    ) async {
+      final cubit = FeedImmersiveCubit();
+      addTearDown(cubit.close);
+      var taps = 0;
+
+      await _pumpChrome(tester, cubit: cubit, onTap: () => taps++);
+      cubit.enter();
+      await tester.pumpAndSettle();
+
+      // Release the hold, then stop part-way through the fade back in.
+      cubit.exit();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 20));
+
+      expect(
+        _ignoringPointer(tester),
+        isTrue,
+        reason: 'chrome is still invisible here — it must not accept taps',
+      );
+
+      await tester.tap(find.text('chrome'), warnIfMissed: false);
+      await tester.pump();
+
+      expect(
+        taps,
+        isZero,
+        reason: 'a tap must never land on a control the viewer cannot see',
+      );
+
+      // Once the fade completes the chrome is tappable again.
+      await tester.pumpAndSettle();
+      expect(_ignoringPointer(tester), isFalse);
+      await tester.tap(find.text('chrome'));
+      await tester.pump();
+      expect(taps, equals(1));
+    });
+
     testWidgets('stays visible when no cubit is provided', (tester) async {
       await _pumpChrome(tester);
 
