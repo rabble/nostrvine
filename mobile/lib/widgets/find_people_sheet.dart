@@ -5,11 +5,11 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:models/models.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/video_sharing_service.dart';
-import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
 /// Full-screen bottom sheet for finding and selecting a user to share with.
@@ -20,6 +20,7 @@ import 'package:openvine/widgets/user_avatar.dart';
 class FindPeopleSheet extends ConsumerStatefulWidget {
   const FindPeopleSheet({
     required this.contacts,
+    this.scrollController,
     this.searchTimeout = const Duration(seconds: 20),
     super.key,
   });
@@ -27,8 +28,17 @@ class FindPeopleSheet extends ConsumerStatefulWidget {
   /// Pre-loaded contacts from the parent share sheet BLoC.
   final List<ShareableUser> contacts;
 
+  /// Scroll controller handed down by the enclosing [VineBottomSheet] so
+  /// flinging the result list drags the sheet itself.
+  final ScrollController? scrollController;
+
   /// Optional timeout forwarded to the internally created [UserSearchBloc].
   final Duration? searchTimeout;
+
+  /// Fraction of the viewport the sheet occupies, matching the Figma spec
+  /// (node 13945:91140) — tall enough for the list, short enough to leave
+  /// the scrim visible above it.
+  static const double _sheetHeightFraction = 0.92;
 
   @override
   ConsumerState<FindPeopleSheet> createState() => _FindPeopleSheetState();
@@ -41,12 +51,17 @@ class FindPeopleSheet extends ConsumerStatefulWidget {
     BuildContext context, {
     List<ShareableUser> contacts = const [],
   }) {
-    return showModalBottomSheet<ShareableUser>(
+    return VineBottomSheet.show<ShareableUser>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: VineTheme.transparent,
-      builder: (context) => FindPeopleSheet(contacts: contacts),
+      showHeader: false,
+      showHeaderDivider: false,
+      initialChildSize: _sheetHeightFraction,
+      maxChildSize: _sheetHeightFraction,
+      minChildSize: 0.5,
+      buildScrollBody: (scrollController) => FindPeopleSheet(
+        contacts: contacts,
+        scrollController: scrollController,
+      ),
     );
   }
 }
@@ -70,61 +85,60 @@ class _FindPeopleSheetState extends ConsumerState<FindPeopleSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.sizeOf(context).height;
-
-    return Material(
-      color: context.vineColors.surface,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      child: SizedBox(
-        height: screenHeight * 0.92,
-        child: Column(
-          children: [
-            const _DragIndicator(),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-              child: TextField(
-                controller: _searchController,
-                autofocus: true,
-                style: TextStyle(color: context.vineColors.primaryText),
-                decoration: InputDecoration(
-                  hintText: context.l10n.shareFindPeople,
-                  hintStyle: TextStyle(color: context.vineColors.secondaryText),
-                  prefixIconConstraints: const BoxConstraints(),
-                  prefixIcon: Padding(
-                    padding: const EdgeInsetsDirectional.only(
-                      start: 12,
-                      end: 8,
-                    ),
-                    child: DivineIcon(
-                      icon: DivineIconName.search,
-                      color: context.vineColors.secondaryText,
-                    ),
-                  ),
-                  filled: true,
-                  fillColor: context.vineColors.containerLow,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    vertical: 12,
-                    horizontal: 16,
-                  ),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: TextField(
+            controller: _searchController,
+            autofocus: true,
+            textInputAction: .search,
+            style: VineTheme.bodyLargeFont(
+              color: context.vineColors.primaryText,
+            ),
+            decoration: InputDecoration(
+              hintText: context.l10n.shareFindPeople,
+              hintStyle: VineTheme.bodyLargeFont(
+                color: context.vineColors.secondaryText,
+              ),
+              prefixIconConstraints: const BoxConstraints(),
+              prefixIcon: Padding(
+                padding: const EdgeInsetsDirectional.only(start: 12, end: 8),
+                child: DivineIcon(
+                  icon: DivineIconName.search,
+                  color: context.vineColors.secondaryText,
                 ),
-                onChanged: _onSearchChanged,
+              ),
+              filled: true,
+              fillColor: context.vineColors.containerLow,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: 12,
+                horizontal: 16,
               ),
             ),
-            Expanded(
-              child: _ResultsList(
-                searchQuery: _searchQuery,
-                searchBloc: _searchBloc,
-                contacts: widget.contacts,
-                onSelectUser: _selectUser,
-              ),
-            ),
-          ],
+            onChanged: _onSearchChanged,
+          ),
         ),
-      ),
+        Expanded(
+          // VineBottomSheet paints its surface with a ColoredBox, which would
+          // hide the tiles' ink splashes without an own Material in between.
+          child: Material(
+            type: MaterialType.transparency,
+            child: _ResultsList(
+              searchQuery: _searchQuery,
+              searchBloc: _searchBloc,
+              contacts: widget.contacts,
+              scrollController: widget.scrollController,
+              onSelectUser: _selectUser,
+            ),
+          ),
+        ),
+        SizedBox(height: MediaQuery.viewInsetsOf(context).bottom),
+      ],
     );
   }
 
@@ -150,36 +164,19 @@ class _FindPeopleSheetState extends ConsumerState<FindPeopleSheet> {
   }
 }
 
-class _DragIndicator extends StatelessWidget {
-  const _DragIndicator();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        margin: const EdgeInsets.only(top: 12, bottom: 4),
-        width: 40,
-        height: 4,
-        decoration: BoxDecoration(
-          color: context.vineColors.secondaryText,
-          borderRadius: BorderRadius.circular(2),
-        ),
-      ),
-    );
-  }
-}
-
 class _ResultsList extends StatelessWidget {
   const _ResultsList({
     required this.searchQuery,
     required this.searchBloc,
     required this.contacts,
+    required this.scrollController,
     required this.onSelectUser,
   });
 
   final String searchQuery;
   final UserSearchBloc? searchBloc;
   final List<ShareableUser> contacts;
+  final ScrollController? scrollController;
   final ValueChanged<ShareableUser> onSelectUser;
 
   @override
@@ -190,48 +187,28 @@ class _ResultsList extends StatelessWidget {
         builder: (context, state) {
           return switch (state.status) {
             UserSearchStatus.loading when state.results.isNotEmpty =>
-              ListView.builder(
-                itemCount: state.results.length,
-                itemBuilder: (context, index) {
-                  final profile = state.results[index];
-                  final user = ShareableUser(
-                    pubkey: profile.pubkey,
-                    displayName: profile.bestDisplayName,
-                    picture: profile.picture,
-                  );
-                  return _UserResultTile(
-                    user: user,
-                    nip05: profile.shortDisplayNip05,
-                    onTap: () => onSelectUser(user),
-                  );
-                },
+              _SearchResultsList(
+                results: state.results,
+                scrollController: scrollController,
+                onSelectUser: onSelectUser,
               ),
             UserSearchStatus.loading => const Center(
               child: CircularProgressIndicator(color: VineTheme.vineGreen),
             ),
             UserSearchStatus.success when state.results.isNotEmpty =>
-              ListView.builder(
-                itemCount: state.results.length,
-                itemBuilder: (context, index) {
-                  final profile = state.results[index];
-                  final user = ShareableUser(
-                    pubkey: profile.pubkey,
-                    displayName: profile.bestDisplayName,
-                    picture: profile.picture,
-                  );
-                  return _UserResultTile(
-                    user: user,
-                    nip05: profile.shortDisplayNip05,
-                    onTap: () => onSelectUser(user),
-                  );
-                },
+              _SearchResultsList(
+                results: state.results,
+                scrollController: scrollController,
+                onSelectUser: onSelectUser,
               ),
             UserSearchStatus.success => Center(
               child: Padding(
                 padding: const EdgeInsets.all(32),
                 child: Text(
                   context.l10n.userSearchNoResults,
-                  style: TextStyle(color: context.vineColors.secondaryText),
+                  style: VineTheme.bodyMediumFont(
+                    color: context.vineColors.secondaryText,
+                  ),
                 ),
               ),
             ),
@@ -240,12 +217,15 @@ class _ResultsList extends StatelessWidget {
                 padding: const EdgeInsets.all(32),
                 child: Text(
                   context.l10n.userPickerSearchFailedTryAgain,
-                  style: TextStyle(color: context.vineColors.secondaryText),
+                  style: VineTheme.bodyMediumFont(
+                    color: context.vineColors.secondaryText,
+                  ),
                 ),
               ),
             ),
             UserSearchStatus.initial => _ContactsList(
               contacts: contacts,
+              scrollController: scrollController,
               onSelectUser: onSelectUser,
             ),
           };
@@ -253,14 +233,53 @@ class _ResultsList extends StatelessWidget {
       );
     }
 
-    return _ContactsList(contacts: contacts, onSelectUser: onSelectUser);
+    return _ContactsList(
+      contacts: contacts,
+      scrollController: scrollController,
+      onSelectUser: onSelectUser,
+    );
+  }
+}
+
+/// The list of profiles matching the current search query.
+class _SearchResultsList extends StatelessWidget {
+  const _SearchResultsList({
+    required this.results,
+    required this.scrollController,
+    required this.onSelectUser,
+  });
+
+  final List<UserProfile> results;
+  final ScrollController? scrollController;
+  final ValueChanged<ShareableUser> onSelectUser;
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomSafeArea = MediaQuery.viewPaddingOf(context).bottom;
+    return ListView.builder(
+      controller: scrollController,
+      padding: EdgeInsets.only(bottom: 16 + bottomSafeArea),
+      itemCount: results.length,
+      itemBuilder: (context, index) {
+        final user = ShareableUser.fromProfile(
+          results[index].pubkey,
+          results[index],
+        );
+        return _UserResultTile(user: user, onTap: () => onSelectUser(user));
+      },
+    );
   }
 }
 
 class _ContactsList extends StatelessWidget {
-  const _ContactsList({required this.contacts, required this.onSelectUser});
+  const _ContactsList({
+    required this.contacts,
+    required this.scrollController,
+    required this.onSelectUser,
+  });
 
   final List<ShareableUser> contacts;
+  final ScrollController? scrollController;
   final ValueChanged<ShareableUser> onSelectUser;
 
   @override
@@ -271,14 +290,19 @@ class _ContactsList extends StatelessWidget {
           padding: const EdgeInsets.all(32),
           child: Text(
             context.l10n.findPeopleNoContacts,
-            style: TextStyle(color: context.vineColors.secondaryText),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.secondaryText,
+            ),
             textAlign: TextAlign.center,
           ),
         ),
       );
     }
 
+    final bottomSafeArea = MediaQuery.viewPaddingOf(context).bottom;
     return ListView.builder(
+      controller: scrollController,
+      padding: EdgeInsets.only(bottom: 16 + bottomSafeArea),
       itemCount: contacts.length,
       itemBuilder: (context, index) {
         final contact = contacts[index];
@@ -291,16 +315,15 @@ class _ContactsList extends StatelessWidget {
   }
 }
 
-class _UserResultTile extends ConsumerWidget {
-  const _UserResultTile({required this.user, required this.onTap, this.nip05});
+class _UserResultTile extends StatelessWidget {
+  const _UserResultTile({required this.user, required this.onTap});
 
   final ShareableUser user;
-  final String? nip05;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final displayId = nip05 ?? normalizeToNpub(user.pubkey) ?? user.pubkey;
+  Widget build(BuildContext context) {
+    final handle = user.handle;
 
     return ListTile(
       leading: UserAvatar(
@@ -310,16 +333,19 @@ class _UserResultTile extends ConsumerWidget {
       ),
       title: Text(
         user.displayName ?? context.l10n.findPeopleAnonymousUser,
-        style: TextStyle(
-          color: context.vineColors.primaryText,
-          fontWeight: FontWeight.w600,
-        ),
+        style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
       ),
-      subtitle: Text(
-        displayId.startsWith('npub') ? displayId : '@$displayId',
-        style: TextStyle(color: context.vineColors.secondaryText),
-        overflow: TextOverflow.ellipsis,
-      ),
+      // No npub fallback: a row without a nip05 or a name shows the name
+      // line only, matching the Figma spec and the new-message sheet.
+      subtitle: handle == null
+          ? null
+          : Text(
+              handle,
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.secondaryText,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
     );

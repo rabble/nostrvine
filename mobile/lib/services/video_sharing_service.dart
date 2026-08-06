@@ -6,7 +6,9 @@ import 'dart:async';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/services/auth_service.dart';
+// `auth_service` exports an unrelated `UserProfile`; hide it so the models
+// one (used by [ShareableUser.fromProfile]) resolves unambiguously.
+import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -16,19 +18,68 @@ class ShareableUser {
   const ShareableUser({
     required this.pubkey,
     this.displayName,
+    this.handle,
     this.picture,
-    this.isFollowing = false,
-    this.isFollower = false,
   });
+
+  /// Builds a shareable user from a (possibly missing) [profile].
+  ///
+  /// Uses `displayNip05` — the full `@username.divine.video` form the
+  /// find-people design calls for (Figma node `13945:91140`) — rather than
+  /// `UserProfile.handle`, which shortens divine identifiers to `@username`
+  /// and prefixes external ones into a doubled `@alice@example.com`. Falls
+  /// back to the kind-0 `name`, then to `null` when the profile carries
+  /// neither, so the row can drop its handle line entirely.
+  factory ShareableUser.fromProfile(String pubkey, UserProfile? profile) {
+    return ShareableUser(
+      pubkey: pubkey,
+      displayName: profile?.bestDisplayName,
+      handle:
+          _handleFromDisplayNip05(profile?.displayNip05) ??
+          _handleFromName(profile?.name),
+      picture: profile?.picture,
+    );
+  }
+
+  /// [displayNip05] as a handle when it is already handle-shaped.
+  static String? _handleFromDisplayNip05(String? displayNip05) {
+    final trimmed = displayNip05?.trim();
+    if (trimmed == null ||
+        trimmed.isEmpty ||
+        RegExp(r'\s').hasMatch(trimmed) ||
+        !trimmed.contains('@') ||
+        trimmed == '@') {
+      return null;
+    }
+    return trimmed;
+  }
+
+  /// [name] as a handle: `@`-prefixed unless it already reads as one.
+  ///
+  /// A kind-0 `name` is free-form and often email-shaped
+  /// (`dana@nostrplebs.com`) or already prefixed (`@dana`). Prefixing those
+  /// would produce the doubled `@dana@nostrplebs.com` that this factory
+  /// avoids for external NIP-05.
+  static String? _handleFromName(String? name) {
+    if (name == null || name.isEmpty) return null;
+    final sanitized = UserProfile.sanitizeDisplayName(name);
+    return sanitized.contains('@') ? sanitized : '@$sanitized';
+  }
+
   final String pubkey;
 
   /// Populate from `UserProfile.bestDisplayName`, never the raw kind-0
   /// fields: this renders directly in the share sheet and find-people list,
   /// where a lone UTF-16 surrogate crashes the paragraph builder.
   final String? displayName;
+
+  /// Handle for the user (e.g. `@alice.divine.video` or `alice@example.com`).
+  ///
+  /// Populate via [ShareableUser.fromProfile]. `null` means the profile has
+  /// no `nip05` and no `name`, and the find-people row then renders no
+  /// secondary line at all rather than falling back to an npub.
+  final String? handle;
   final String? picture;
-  final bool isFollowing;
-  final bool isFollower;
 }
 
 /// Structured share metadata for the platform share sheet.
@@ -275,69 +326,6 @@ class VideoSharingService {
     return results;
   }
 
-  /// Get shareable users (followers, following, recent contacts)
-  Future<List<ShareableUser>> getShareableUsers({int limit = 20}) async {
-    try {
-      final shareableUsers = <ShareableUser>[];
-
-      // Add recently shared with users first
-      shareableUsers.addAll(_recentlySharedWith.take(5));
-
-      // TODO: Add followers and following when social service integration is complete
-      // For now, return recent users
-
-      Log.info(
-        'Found ${shareableUsers.length} shareable users',
-        name: 'VideoSharingService',
-        category: LogCategory.video,
-      );
-      return shareableUsers.take(limit).toList();
-    } catch (e) {
-      Log.error(
-        'Error getting shareable users: $e',
-        name: 'VideoSharingService',
-        category: LogCategory.video,
-      );
-      return [];
-    }
-  }
-
-  /// Search for users to share with (by display name or pubkey)
-  Future<List<ShareableUser>> searchUsersToShareWith(String query) async {
-    try {
-      // TODO: Implement user search when user directory service is available
-      // For now, check if query looks like a pubkey and create a basic user
-
-      if (query.length == 64 && RegExp(r'^[0-9a-fA-F]+$').hasMatch(query)) {
-        // Looks like a hex pubkey
-        final profile = await _profileRepository.fetchFreshProfile(
-          pubkey: query,
-        );
-        return [
-          ShareableUser(
-            pubkey: query,
-            displayName: profile?.bestDisplayName,
-            picture: profile?.picture,
-          ),
-        ];
-      }
-
-      Log.debug(
-        'User search not yet implemented for: $query',
-        name: 'VideoSharingService',
-        category: LogCategory.video,
-      );
-      return [];
-    } catch (e) {
-      Log.error(
-        'Error searching users: $e',
-        name: 'VideoSharingService',
-        category: LogCategory.video,
-      );
-      return [];
-    }
-  }
-
   /// Generate external share URL for the video.
   ///
   /// Always emits an `https://divine.video/video/...` URL. The route accepts
@@ -425,14 +413,7 @@ class VideoSharingService {
       );
 
       // Add to front of list
-      _recentlySharedWith.insert(
-        0,
-        ShareableUser(
-          pubkey: pubkey,
-          displayName: profile?.bestDisplayName,
-          picture: profile?.picture,
-        ),
-      );
+      _recentlySharedWith.insert(0, ShareableUser.fromProfile(pubkey, profile));
 
       // Keep only recent 10 users
       if (_recentlySharedWith.length > 10) {
