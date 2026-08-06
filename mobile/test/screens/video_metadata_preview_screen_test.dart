@@ -14,6 +14,7 @@ import 'package:openvine/models/video_publish/video_publish_provider_state.dart'
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_preview_screen.dart';
+import 'package:openvine/widgets/video_feed_item/blurred_video_backdrop.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -27,14 +28,19 @@ class _MockVideoPublishNotifier extends VideoPublishNotifier {
   VideoPublishProviderState build() => _initialState;
 }
 
-DivineVideoClip _createTestClip({String id = 'test-clip'}) {
+DivineVideoClip _createTestClip({
+  String id = 'test-clip',
+  models.AspectRatio targetAspectRatio = models.AspectRatio.square,
+  String? thumbnailPath,
+}) {
   return DivineVideoClip(
     id: id,
     video: EditorVideo.file('test.mp4'),
     duration: const Duration(seconds: 10),
     recordedAt: DateTime.now(),
-    targetAspectRatio: models.AspectRatio.square,
+    targetAspectRatio: targetAspectRatio,
     originalAspectRatio: 9 / 16,
+    thumbnailPath: thumbnailPath,
   );
 }
 
@@ -171,6 +177,84 @@ void main() {
       expect(find.byType(DivineVideoPlayer), findsOneWidget);
     });
 
+    testWidgets('cover-fits a non-square clip like the feed does', (
+      tester,
+    ) async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            const MethodChannel('divine_video_player/player_0'),
+            (call) async => null,
+          );
+      addTearDown(() {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('divine_video_player/player_0'),
+              null,
+            );
+      });
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          clip: _createTestClip(
+            targetAspectRatio: models.AspectRatio.vertical,
+            thumbnailPath: '/tmp/poster.jpg',
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 400));
+
+      final fittedBox = tester.widget<FittedBox>(
+        find
+            .ancestor(
+              of: find.byType(DivineVideoPlayer),
+              matching: find.byType(FittedBox),
+            )
+            .first,
+      );
+      expect(fittedBox.fit, equals(BoxFit.cover));
+      // A cover-fit video occludes the backdrop, so the feed never mounts it.
+      expect(find.byType(BlurredVideoBackdrop), findsNothing);
+    });
+
+    testWidgets('letterboxes a square clip on the blurred poster backdrop', (
+      tester,
+    ) async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            const MethodChannel('divine_video_player/player_0'),
+            (call) async => null,
+          );
+      addTearDown(() {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('divine_video_player/player_0'),
+              null,
+            );
+      });
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          clip: _createTestClip(thumbnailPath: '/tmp/poster.jpg'),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 400));
+
+      final fittedBox = tester.widget<FittedBox>(
+        find
+            .ancestor(
+              of: find.byType(DivineVideoPlayer),
+              matching: find.byType(FittedBox),
+            )
+            .first,
+      );
+      expect(fittedBox.fit, equals(BoxFit.contain));
+      final backdrop = tester.widget<BlurredVideoBackdrop>(
+        find.byType(BlurredVideoBackdrop),
+      );
+      expect(backdrop.filePath, equals('/tmp/poster.jpg'));
+      expect(backdrop.videoAspectRatio, equals(1.0));
+    });
+
     testWidgets('renders close button', (tester) async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
@@ -189,6 +273,38 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.byType(DivineIconButton), findsOneWidget);
+    });
+
+    testWidgets('stays edge to edge in preview-only mode', (tester) async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            const MethodChannel('divine_video_player/player_0'),
+            (call) async => null,
+          );
+      addTearDown(() {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('divine_video_player/player_0'),
+              null,
+            );
+      });
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pump(const Duration(milliseconds: 400));
+
+      // The rounded bottom corners seam into the post bar; without a post
+      // bar there is nothing to seam into, so the preview fills the screen.
+      final rounded = tester.widgetList<ClipRRect>(find.byType(ClipRRect));
+      expect(
+        rounded.any(
+          (clip) =>
+              clip.borderRadius ==
+              const BorderRadius.vertical(
+                bottom: Radius.circular(VineTheme.shellCornerRadius),
+              ),
+        ),
+        isFalse,
+      );
     });
 
     testWidgets('hides bottom bar and overlay in preview-only mode', (

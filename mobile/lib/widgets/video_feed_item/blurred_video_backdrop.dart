@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/widgets.dart';
 import 'package:openvine/widgets/blurhash_display.dart';
+import 'package:openvine/widgets/video_clip/clip_thumbnail_image.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
 /// Diffused colour cloud derived from a video's own first frame,
@@ -29,17 +30,24 @@ class BlurredVideoBackdrop extends StatelessWidget {
   /// Creates a blurred backdrop for a video poster.
   ///
   /// [blurhash] is preferred when non-empty. [url] is the HTTPS poster
-  /// thumbnail used for the runtime-blur fallback; when neither is
-  /// available, or the image fails to load, the widget renders as empty
-  /// ([SizedBox.shrink]) and lets the parent background show through.
+  /// thumbnail used for the runtime-blur fallback, [filePath] the local
+  /// poster of a clip that has not been published yet (the pre-publish
+  /// preview). When none is available, or the image fails to load, the
+  /// widget renders as empty ([SizedBox.shrink]) and lets the parent
+  /// background show through.
   const BlurredVideoBackdrop({
     super.key,
     this.url,
+    this.filePath,
     this.blurhash,
     this.videoAspectRatio,
   });
 
   final String? url;
+
+  /// Absolute path of a local poster file, used when no [url] is available.
+  final String? filePath;
+
   final String? blurhash;
 
   /// Intrinsic aspect ratio (width / height) of the video sitting on this
@@ -51,7 +59,11 @@ class BlurredVideoBackdrop extends StatelessWidget {
   Widget build(BuildContext context) {
     final aspectRatio = videoAspectRatio;
     if (aspectRatio == null) {
-      return _BackdropContent(url: url, blurhash: blurhash);
+      return _BackdropContent(
+        url: url,
+        filePath: filePath,
+        blurhash: blurhash,
+      );
     }
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -71,7 +83,11 @@ class BlurredVideoBackdrop extends StatelessWidget {
                 // the video area, so there is no occluded fullscreen overdraw
                 // (PR #5957).
                 child: RepaintBoundary(
-                  child: _BackdropContent(url: url, blurhash: blurhash),
+                  child: _BackdropContent(
+                    url: url,
+                    filePath: filePath,
+                    blurhash: blurhash,
+                  ),
                 ),
               ),
           ],
@@ -84,9 +100,10 @@ class BlurredVideoBackdrop extends StatelessWidget {
 /// The blurred fill itself, without any letterbox clip. Prefers the cheap
 /// stretched-blurhash path and falls back to a runtime gaussian of the poster.
 class _BackdropContent extends StatelessWidget {
-  const _BackdropContent({this.url, this.blurhash});
+  const _BackdropContent({this.url, this.filePath, this.blurhash});
 
   final String? url;
+  final String? filePath;
   final String? blurhash;
 
   @override
@@ -97,7 +114,23 @@ class _BackdropContent extends StatelessWidget {
       return BlurhashDisplay(blurhash: hash, opacity: 0.5);
     }
     final posterUrl = url;
-    if (posterUrl == null || posterUrl.isEmpty) {
+    final posterPath = filePath;
+    final Widget poster;
+    if (posterUrl != null && posterUrl.isNotEmpty) {
+      poster = VineCachedImage(
+        imageUrl: posterUrl,
+        // Fall back to nothing on error — the parent
+        // [ColoredBox(VineTheme.surfaceContainerHigh)] shows through.
+        errorWidget: (_, _, _) => const SizedBox.shrink(),
+      );
+    } else if (posterPath != null && posterPath.isNotEmpty) {
+      poster = ClipThumbnailImage(
+        path: posterPath,
+        fit: BoxFit.cover,
+        excludeFromSemantics: true,
+        placeholder: const SizedBox.shrink(),
+      );
+    } else {
       return const SizedBox.shrink();
     }
     return ClipRect(
@@ -106,15 +139,7 @@ class _BackdropContent extends StatelessWidget {
       // outside the widget's box and over the surrounding chrome.
       child: ImageFiltered(
         imageFilter: ui.ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-        child: Opacity(
-          opacity: 0.5,
-          child: VineCachedImage(
-            imageUrl: posterUrl,
-            // Fall back to nothing on error — the parent
-            // [ColoredBox(VineTheme.surfaceContainerHigh)] shows through.
-            errorWidget: (_, _, _) => const SizedBox.shrink(),
-          ),
-        ),
+        child: Opacity(opacity: 0.5, child: poster),
       ),
     );
   }
