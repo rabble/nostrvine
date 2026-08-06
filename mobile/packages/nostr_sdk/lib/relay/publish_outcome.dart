@@ -62,9 +62,10 @@ class PublishOutcome {
   ///
   /// A relay that was already offline when the publish started is normally
   /// *not* listed here: it never counted as a target, so it cannot drag
-  /// [acceptedByAll] down. The one exception is a publish that reached nothing
-  /// at all, where every targeted relay is listed so the outcome can still say
-  /// how many there were.
+  /// [acceptedByAll] down. Two exceptions: a relay the caller named in
+  /// `targetRelays` or `tempRelays` is never narrowed away, and a publish
+  /// that reached nothing at all lists every targeted relay so the outcome
+  /// can still say how many there were.
   final List<String> unreachableTargets;
 
   /// Every relay this publish targeted.
@@ -389,11 +390,17 @@ class PublishTracker {
         .toList(growable: false);
     // A publish that reached nothing must still say how many relays it had.
     // `_countedTargets` excludes relays that were offline before the fan-out,
-    // so when *every* relay is offline it is empty and the outcome collapses
-    // to `targetCount: 0` / "no relay reached" — indistinguishable from having
-    // no relays configured at all. This floor only fires when nothing answered
-    // and nothing was counted, so it can never widen the denominator of a
-    // publish that partly succeeded.
+    // so when *every* relay drops it is empty and the outcome collapses to
+    // `targetCount: 0` / "no relay reached" — indistinguishable from having no
+    // relays configured at all. This floor only fires when nothing answered and
+    // nothing was counted, so it can never widen the denominator of a publish
+    // that partly succeeded.
+    //
+    // It applies to unfiltered publishes only. A caller-named publish puts
+    // every `targetRelays`/`tempRelays` entry into `_countedTargets`
+    // unconditionally, so `unreachable` is already non-empty and the floor is
+    // unreachable. In practice this fires when a connect momentarily succeeds
+    // and the socket drops before the live status is read.
     if (unreachable.isEmpty &&
         noResponse.isEmpty &&
         _accepted.isEmpty &&
