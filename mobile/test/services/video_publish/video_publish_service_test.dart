@@ -17,6 +17,7 @@ import 'package:openvine/models/video_editor/caption_track.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
+import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/mention_resolution_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/upload_manager.dart';
@@ -26,6 +27,7 @@ import 'package:openvine/services/video_publish/publish_timeline.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Mock classes
 class MockUploadManager extends Mock implements UploadManager {}
@@ -2120,6 +2122,116 @@ void main() {
           expect(error.rawFallback, message);
         },
       );
+    });
+
+    group('content language self-labelling', () {
+      VideoPublishService buildServiceWithLanguage(
+        LanguagePreferenceService languageService,
+      ) => VideoPublishService(
+        uploadManager: mockUploadManager,
+        authService: mockAuthService,
+        videoEventPublisher: mockVideoEventPublisher,
+        blossomService: mockBlossomService,
+        draftService: mockDraftService,
+        collaboratorInviteService: mockCollaboratorInviteService,
+        mentionResolutionService: mockMentionResolutionService,
+        performanceMonitor: fakePerformanceMonitor,
+        languagePreferenceService: languageService,
+        onProgressChanged:
+            ({required double progress, required String draftId}) {},
+      );
+
+      test(
+        'omits the language tag when the user never declared one',
+        () async {
+          _setupSuccessfulPublish(
+            mockAuthService: mockAuthService,
+            mockUploadManager: mockUploadManager,
+            mockDraftService: mockDraftService,
+            mockVideoEventPublisher: mockVideoEventPublisher,
+          );
+          SharedPreferences.setMockInitialValues(<String, Object>{});
+          final languageService = LanguagePreferenceService();
+          await languageService.initialize();
+
+          await buildServiceWithLanguage(
+            languageService,
+          ).publishVideo(draft: _createTestDraft());
+
+          final captured = verify(
+            () => mockVideoEventPublisher.publishVideoEvent(
+              upload: any(named: 'upload'),
+              title: any(named: 'title'),
+              description: any(named: 'description'),
+              hashtags: any(named: 'hashtags'),
+              expirationTimestamp: any(named: 'expirationTimestamp'),
+              allowAudioReuse: any(named: 'allowAudioReuse'),
+              collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
+              mentionedPubkeys: any(named: 'mentionedPubkeys'),
+              inspiredByAddressableId: any(named: 'inspiredByAddressableId'),
+              inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
+              inspiredByNpub: any(named: 'inspiredByNpub'),
+              selectedAudio: any(named: 'selectedAudio'),
+              selectedAudioEventId: any(named: 'selectedAudioEventId'),
+              selectedAudioRelay: any(named: 'selectedAudioRelay'),
+              language: captureAny(named: 'language'),
+              contentWarning: any(named: 'contentWarning'),
+              thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
+              replyContext: any(named: 'replyContext'),
+              addReplyToFeed: any(named: 'addReplyToFeed'),
+              textTrackRefs: any(named: 'textTrackRefs'),
+              textTrackLang: any(named: 'textTrackLang'),
+              onEventSigned: any(named: 'onEventSigned'),
+            ),
+          ).captured;
+          expect(captured.single, isNull);
+        },
+      );
+
+      test('sends the declared language when the user chose one', () async {
+        _setupSuccessfulPublish(
+          mockAuthService: mockAuthService,
+          mockUploadManager: mockUploadManager,
+          mockDraftService: mockDraftService,
+          mockVideoEventPublisher: mockVideoEventPublisher,
+        );
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final languageService = LanguagePreferenceService();
+        await languageService.initialize();
+        await languageService.setContentLanguage('pt');
+
+        await buildServiceWithLanguage(
+          languageService,
+        ).publishVideo(draft: _createTestDraft());
+
+        final captured = verify(
+          () => mockVideoEventPublisher.publishVideoEvent(
+            upload: any(named: 'upload'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            expirationTimestamp: any(named: 'expirationTimestamp'),
+            allowAudioReuse: any(named: 'allowAudioReuse'),
+            collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
+            mentionedPubkeys: any(named: 'mentionedPubkeys'),
+            inspiredByAddressableId: any(named: 'inspiredByAddressableId'),
+            inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
+            inspiredByNpub: any(named: 'inspiredByNpub'),
+            selectedAudio: any(named: 'selectedAudio'),
+            selectedAudioEventId: any(named: 'selectedAudioEventId'),
+            selectedAudioRelay: any(named: 'selectedAudioRelay'),
+            language: captureAny(named: 'language'),
+            contentWarning: any(named: 'contentWarning'),
+            thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
+            replyContext: any(named: 'replyContext'),
+            addReplyToFeed: any(named: 'addReplyToFeed'),
+            textTrackRefs: any(named: 'textTrackRefs'),
+            textTrackLang: any(named: 'textTrackLang'),
+            onEventSigned: any(named: 'onEventSigned'),
+          ),
+        ).captured;
+        expect(captured.single, equals('pt'));
+      });
     });
   });
 }
