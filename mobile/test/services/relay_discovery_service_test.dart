@@ -575,5 +575,32 @@ void _cacheAdmissionTests() {
       ]);
       expect(relays, hasLength(RelayListCaps.nip65));
     });
+
+    test('keeps both marker rows when one host is cached twice', () async {
+      // A kind-10002 may name the same host twice to carry a `read` and a
+      // `write` marker, and the fresh parse keeps both rows. Re-admission
+      // works on a deduplicated URL set, so rebuilding the result from that
+      // set instead of filtering the cached rows drops the second marker —
+      // the same event would then answer differently depending on whether
+      // discovery or the cache served it.
+      SharedPreferences.setMockInitialValues({
+        'relay_discovery_$npub': jsonEncode({
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+          'relays': [
+            {'url': 'wss://both.example', 'read': true, 'write': false},
+            {'url': 'wss://both.example', 'read': false, 'write': true},
+          ],
+        }),
+      });
+      final service = RelayDiscoveryService(indexerRelays: const ['wss://a']);
+
+      final result = await service.discoverRelays(npub);
+
+      expect(result.relays.map((r) => r.url), [
+        'wss://both.example',
+        'wss://both.example',
+      ]);
+      expect(result.relays.map((r) => r.write), [false, true]);
+    });
   });
 }

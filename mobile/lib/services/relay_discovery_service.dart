@@ -543,13 +543,15 @@ class RelayDiscoveryService {
         cached.map((r) => r.url),
         cap: RelayListCaps.nip65,
       );
-      final cachedByUrl = {
-        for (final relay in cached.reversed) relay.url: relay,
-      };
+      // Filter the cached entries rather than rebuilding one per admitted URL:
+      // a kind-10002 may list the same host twice to carry a `read` and a
+      // `write` marker, and the fresh parse keeps both. Keying by URL would
+      // drop the second, so the same event would answer differently depending
+      // on which path served it. The record cap matches the fresh parse.
       return [
-        for (final url in admitted)
-          if (cachedByUrl[url] != null) cachedByUrl[url]!,
-      ];
+        for (final relay in cached)
+          if (admitted.contains(relay.url)) relay,
+      ].take(RelayListCaps.nip65).toList();
     } catch (e) {
       Log.warning(
         'Failed to read cached relays: $e',
