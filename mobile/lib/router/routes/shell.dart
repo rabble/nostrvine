@@ -4,12 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/router/app_shell.dart';
 import 'package:openvine/router/navigator_keys.dart';
 import 'package:openvine/router/providers/page_context_provider.dart';
-import 'package:openvine/router/route_error_screen.dart';
 import 'package:openvine/router/routes/router_guards.dart';
 import 'package:openvine/screens/explore/explore_screen.dart';
 import 'package:openvine/screens/feed/home_feed_retap_cubit.dart';
@@ -88,20 +86,11 @@ List<RouteBase> shellRoutes() {
             ),
             GoRoute(
               path: ExploreScreen.pathTabSubpath,
-              pageBuilder: (ctx, st) {
+              pageBuilder: (_, st) {
                 final tabName = ExploreScreen.tabNameFromPathParameter(
                   st.pathParameters['name'],
                 );
-                if (tabName == null) {
-                  return _branchPage(
-                    st,
-                    RouteErrorScreen(message: ctx.l10n.routeUnknownPath),
-                  );
-                }
-                return _branchPage(
-                  st,
-                  ExploreScreen(initialTabName: tabName),
-                );
+                return _branchPage(st, ExploreScreen(initialTabName: tabName));
               },
             ),
             GoRoute(
