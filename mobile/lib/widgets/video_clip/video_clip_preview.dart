@@ -110,9 +110,7 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreview> {
       final gallerySaveService = ref.read(gallerySaveServiceProvider);
       // Stop-motion clips render their mp4 on demand; a normal clip passes
       // through unchanged.
-      materialized = await StopMotionRenderService.materialize(
-        widget.clip,
-      );
+      materialized = await StopMotionRenderService.materialize(widget.clip);
       if (!mounted) return;
       if (materialized == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -253,14 +251,28 @@ class _ClipHero extends StatelessWidget {
     final thumbnailPath = clip.thumbnailPath;
     if (thumbnailPath == null) return child;
 
+    final cacheHeight = _stillCacheHeight(context);
     return Hero(
       tag: 'Video-Clip-Preview-${clip.id}',
-      flightShuttleBuilder: (_, _, _, _, _) =>
-          ClipThumbnailImage(path: thumbnailPath, fit: BoxFit.cover),
+      flightShuttleBuilder: (_, _, _, _, _) => ClipThumbnailImage(
+        path: thumbnailPath,
+        fit: BoxFit.cover,
+        cacheHeight: cacheHeight,
+      ),
       child: child,
     );
   }
 }
+
+/// Decode bound (physical pixels) for every still the preview renders.
+///
+/// A stop-motion clip's thumbnail is a full-resolution camera frame; decoded
+/// unbounded it costs tens of MB and evicts the rest of the image cache. The
+/// shuttle, the video placeholder and [StopMotionPlayer] all share this bound
+/// so they resolve to one cache entry instead of three.
+int _stillCacheHeight(BuildContext context) =>
+    (MediaQuery.sizeOf(context).height * MediaQuery.devicePixelRatioOf(context))
+        .round();
 
 /// The clip itself: stop-motion stills, or the video surface with a thumbnail
 /// placeholder bridging the decode gap.
@@ -274,14 +286,9 @@ class _ClipMedia extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cacheHeight = _stillCacheHeight(context);
     if (clip.stopMotionFrames case final frames?) {
-      return StopMotionPlayer(
-        frames: frames,
-        cacheHeight:
-            (MediaQuery.sizeOf(context).height *
-                    MediaQuery.devicePixelRatioOf(context))
-                .round(),
-      );
+      return StopMotionPlayer(frames: frames, cacheHeight: cacheHeight);
     }
 
     final player = DivineVideoPlayer(
@@ -290,7 +297,11 @@ class _ClipMedia extends StatelessWidget {
         fit: .expand,
         children: [
           if (clip.thumbnailPath case final thumbnailPath?)
-            ClipThumbnailImage(path: thumbnailPath, fit: BoxFit.cover),
+            ClipThumbnailImage(
+              path: thumbnailPath,
+              fit: BoxFit.cover,
+              cacheHeight: cacheHeight,
+            ),
           const Center(
             child: CircularProgressIndicator(color: VineTheme.vineGreen),
           ),
