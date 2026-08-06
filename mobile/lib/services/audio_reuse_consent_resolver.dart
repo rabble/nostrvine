@@ -1,29 +1,15 @@
 // ABOUTME: Verifies reuse consent for legacy audio events without consent tags.
-// ABOUTME: Answers false unless one unambiguous source-video event grants reuse.
+// ABOUTME: Fails closed unless the sound's source video grants reuse.
 
 import 'package:models/models.dart';
-import 'package:sounds_repository/sounds_repository.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 class AudioReuseConsentResolver {
-  const AudioReuseConsentResolver({
-    required SoundsRepository soundsRepository,
-    required VideosRepository videosRepository,
-  }) : _soundsRepository = soundsRepository,
-       _videosRepository = videosRepository;
+  const AudioReuseConsentResolver({required VideosRepository videosRepository})
+    : _videosRepository = videosRepository;
 
-  final SoundsRepository _soundsRepository;
   final VideosRepository _videosRepository;
 
-  /// Whether [sound] may be reused, judged from its source video's current
-  /// `allow_audio_reuse` tag.
-  ///
-  /// Fails closed: `false` covers a confirmed revocation, missing or ambiguous
-  /// evidence, *and* a lookup that never completed. Those are not the same
-  /// fact, and this answer cannot tell them apart — an unreachable relay, a
-  /// source video outside the query window, and one the viewer's own filters
-  /// dropped all arrive as an empty list. Callers must therefore treat `false`
-  /// as "not verified", never as "the creator said no".
   Future<bool> verify(AudioEvent sound) async {
     if (sound.allowsReuse) return true;
     if (sound.hasExplicitReuseConsent) return false;
@@ -31,39 +17,27 @@ class AudioReuseConsentResolver {
     final sourceAddress = sound.sourceVideoReference;
     if (sourceAddress == null || sourceAddress.isEmpty) return false;
 
-    // Query the id reusing videos tag, not [AudioEvent.id]: an editor timeline
-    // track carries a `-<timestamp>` uniqueness suffix and an original sound a
-    // `video_` prefix, so the raw id matches no `["e", …, "audio"]` tag. Under
-    // that id every legacy sound failed closed the moment it reached the
-    // timeline — including ones the picker had already verified.
-    final audioEventId = sound.attributionEventId;
-    if (audioEventId == null) return false;
-
     try {
-      final ids = await _soundsRepository.fetchVideosUsingSound(audioEventId);
-      if (ids.isEmpty) return false;
-      final candidates = await _videosRepository.getVideosByIds(
-        ids,
-        hydrateBulkStats: false,
-      );
-      // `addressableId` is stable across edits, so several revisions of the
-      // same video can match. `allow_audio_reuse` is rebuilt on every edit —
-      // dropping the tag is how a creator revokes consent — so the newest
-      // revision is the current answer.
-      final matching =
-          candidates
-              .where((video) => video.addressableId == sourceAddress)
-              .where((video) => video.createdAt >= sound.createdAt)
-              .toList()
-            ..sort((left, right) => right.createdAt.compareTo(left.createdAt));
+      // Read the source video straight off the address the sound already
+      // carries. Resolving it the other way round — asking which videos
+      // reference this sound — only works once a video carries the
+      // `['e', <audioEventId>, <relay>, 'audio']` tag, which legacy videos
+      // predate. That is the same population this resolver exists to rescue,
+      // so the reverse lookup returned nothing for every one of them (#6769).
+      final candidates = await _videosRepository.getVideosByAddressableIds([
+        sourceAddress,
+      ]);
+      final matching = candidates
+          .where((video) => video.addressableId == sourceAddress)
+          .toList();
       if (matching.isEmpty) return false;
-      // Two revisions stamped the same second leave no way to tell which one
-      // is current, so fail closed rather than guess at the consent state.
-      if (matching.length > 1 &&
-          matching[0].createdAt == matching[1].createdAt) {
-        return false;
-      }
-      return matching.first.allowAudioReuse;
+      // `allow_audio_reuse` is rebuilt on every edit — dropping the tag is how
+      // a creator revokes consent — and an addressable read resolves to the
+      // current revision, so this is the live answer. A revision predating the
+      // sound cannot speak for it.
+      final source = matching.first;
+      if (source.createdAt < sound.createdAt) return false;
+      return source.allowAudioReuse;
     } catch (_) {
       return false;
     }

@@ -651,7 +651,7 @@ final class AudioReuseTermsProvider
   }
 }
 
-String _$audioReuseTermsHash() => r'f8dde7271c3f3bf5f45dba9a5decbafd5785a33d';
+String _$audioReuseTermsHash() => r'29a3be9aebb039c124e6afc99f33c2492a55bc6a';
 
 /// Viewer-independent reuse terms for explicit and legacy audio events.
 
@@ -741,7 +741,7 @@ final class AudioReuseConsentProvider
   }
 }
 
-String _$audioReuseConsentHash() => r'71e983b97064d07c92e7fd97de594d14f4a4fb9b';
+String _$audioReuseConsentHash() => r'd1e80a3056b98eaab653f8708aeac735cd21d4e8';
 
 /// Fail-closed reuse consent for explicit and legacy audio events.
 ///
