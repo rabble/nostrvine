@@ -32,6 +32,9 @@ enum C2paSigningFailureReason {
   outputMissing,
   tls,
   network,
+
+  /// This build opted out of C2PA signing; nothing was attempted.
+  disabled,
   other,
 }
 
@@ -123,6 +126,17 @@ class C2paSigningService {
     bool enableAdvancedCawgEmbedding = false,
   }) async {
     try {
+      // Opted-out builds must not reach the signer: the endpoint is a sentinel,
+      // not a URL, so attempting the call would fail with a confusing error.
+      if (!isSigningConfigured) {
+        return C2paSigningResult(
+          signedFilePath: videoPath,
+          success: false,
+          error: 'C2PA signing is disabled for this build',
+          failureReason: C2paSigningFailureReason.disabled,
+        );
+      }
+
       Log.info(
         'Starting C2PA signing for video: $videoPath',
         name: 'C2paSigningService',
