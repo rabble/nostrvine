@@ -1727,6 +1727,39 @@ class AppLocalizationsZh extends AppLocalizations {
   String get metadataProofManifest => '证明清单';
 
   @override
+  String get metadataVerificationInfoTooltip => '这些检查是什么意思？';
+
+  @override
+  String get metadataVerificationInfoTitle => '这些检查的含义';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      '这些信号来自摄像头和视频文件本身。一个视频带的信号越多，我们能证明的来源信息就越多。';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      '手机操作系统为录制这段视频的应用作了担保。只有在真实设备上的真实拍摄才能拿到。';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      '视频在拍摄的那一刻就完成了加密签名。之后哪怕只改动一帧，签名就会失效。';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      '随文件一同携带的行业标准来源记录——所以 Divine 之外的应用也能验证。';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      '完整的 ProofMode 记录：文件指纹、时间戳和拍摄环境信息，与视频打包在一起。';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      '缺少某项检查并不代表视频是假的。较早的片段和上传的视频本来就没有——这只说明我们无法证明那一部分。';
+
+  @override
+  String get metadataVerificationInfoLearnMoreAt => '了解更多：';
+
+  @override
   String get metadataCreatorLabel => '创作者';
 
   @override

@@ -1718,6 +1718,39 @@ class AppLocalizationsKo extends AppLocalizations {
   String get metadataProofManifest => '증명 매니페스트';
 
   @override
+  String get metadataVerificationInfoTooltip => '이 검사들은 무슨 뜻인가요?';
+
+  @override
+  String get metadataVerificationInfoTitle => '이 검사들의 의미';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      '이 신호들은 카메라와 영상 파일 자체에서 나옵니다. 영상이 담고 있는 신호가 많을수록 출처에 대해 더 많은 것을 증명할 수 있습니다.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      '휴대폰 운영체제가 이 영상을 녹화한 앱을 보증했습니다. 실제 기기에서의 실제 촬영만 받을 수 있습니다.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      '영상은 촬영되는 순간 암호학적으로 서명되었습니다. 이후 한 프레임만 바뀌어도 서명은 깨집니다.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      '파일 안에 함께 담겨 이동하는 업계 표준 출처 기록입니다. Divine이 아닌 앱에서도 확인할 수 있습니다.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      '전체 ProofMode 기록: 파일 지문, 타임스탬프, 촬영 정황이 영상과 함께 묶여 있습니다.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      '검사가 없다고 해서 영상이 가짜인 것은 아닙니다. 예전 클립과 업로드에는 애초에 없었습니다. 그 부분을 증명할 수 없다는 뜻일 뿐입니다.';
+
+  @override
+  String get metadataVerificationInfoLearnMoreAt => '자세히 보기: ';
+
+  @override
   String get metadataCreatorLabel => '크리에이터';
 
   @override

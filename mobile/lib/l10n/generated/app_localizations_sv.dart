@@ -1816,6 +1816,40 @@ class AppLocalizationsSv extends AppLocalizations {
   String get metadataProofManifest => 'Bevismanifest';
 
   @override
+  String get metadataVerificationInfoTooltip =>
+      'Vad betyder de här kontrollerna?';
+
+  @override
+  String get metadataVerificationInfoTitle => 'Vad kontrollerna betyder';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'Signalerna kommer från kameran och från själva videofilen. Ju fler en video bär med sig, desto mer kan vi bevisa om var den kommer ifrån.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'Telefonens operativsystem gick i god för appen som spelade in. Bara en riktig inspelning på en riktig enhet får den.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'Videon signerades kryptografiskt i samma stund den spelades in. Ändras en enda bildruta efteråt bryts signaturen.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'Ett ursprungsintyg enligt branschstandard som följer med i filen – så att även andra appar än Divine kan kontrollera det.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'Hela ProofMode-posten: filens fingeravtryck, tidsstämpel och inspelningskontext, tillsammans med videon.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'En kontroll som saknas gör inte videon falsk. Äldre klipp och uppladdningar fick aldrig någon – det betyder bara att vi inte kan bevisa den delen.';
+
+  @override
+  String get metadataVerificationInfoLearnMoreAt => 'Läs mer på ';
+
+  @override
   String get metadataCreatorLabel => 'Kreatör';
 
   @override

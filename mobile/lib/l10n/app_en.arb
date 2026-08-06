@@ -1057,6 +1057,42 @@
   "metadataPgpSignature": "PGP signature",
   "metadataC2paCredentials": "C2PA Content Credentials",
   "metadataProofManifest": "Proof manifest",
+  "metadataVerificationInfoTooltip": "What do these checks mean?",
+  "@metadataVerificationInfoTooltip": {
+    "description": "Accessibility label and tooltip for the info button next to the Verification section header in the video metadata sheet. Opens a sheet explaining the four verification checks."
+  },
+  "metadataVerificationInfoTitle": "What these checks mean",
+  "@metadataVerificationInfoTitle": {
+    "description": "Title of the bottom sheet explaining the four ProofMode/C2PA verification checks shown in the video metadata sheet."
+  },
+  "metadataVerificationInfoIntro": "These signals come from the camera and the video file itself. The more of them a video carries, the more we can prove about where it came from.",
+  "@metadataVerificationInfoIntro": {
+    "description": "Intro paragraph of the verification explainer sheet, framing the four checks as evidence about a video's origin."
+  },
+  "metadataVerificationInfoDeviceAttestation": "The phone's operating system vouched for the app that recorded this. Only a real capture on a real device gets it.",
+  "@metadataVerificationInfoDeviceAttestation": {
+    "description": "Explanation of the 'Device attestation' check in the verification explainer sheet."
+  },
+  "metadataVerificationInfoPgpSignature": "The video was cryptographically signed the moment it was captured. Change a single frame afterwards and the signature breaks.",
+  "@metadataVerificationInfoPgpSignature": {
+    "description": "Explanation of the 'PGP signature' check in the verification explainer sheet."
+  },
+  "metadataVerificationInfoC2paCredentials": "An industry-standard record of where the video came from, carried inside the file — so apps other than Divine can check it too.",
+  "@metadataVerificationInfoC2paCredentials": {
+    "description": "Explanation of the 'C2PA Content Credentials' check in the verification explainer sheet."
+  },
+  "metadataVerificationInfoProofManifest": "The full ProofMode record: file fingerprint, timestamp and capture context, bundled with the video.",
+  "@metadataVerificationInfoProofManifest": {
+    "description": "Explanation of the 'Proof manifest' check in the verification explainer sheet."
+  },
+  "metadataVerificationInfoFootnote": "A missing check doesn't make a video fake. Older clips and uploads never got one — it only means we can't prove that part.",
+  "@metadataVerificationInfoFootnote": {
+    "description": "Closing caveat of the verification explainer sheet. States the deliberate limit of the claim — a missing check is not evidence of forgery. Do not strengthen this into a guarantee."
+  },
+  "metadataVerificationInfoLearnMoreAt": "Learn more at ",
+  "@metadataVerificationInfoLearnMoreAt": {
+    "description": "Prefix of the outbound 'Learn more at divine.video/proofmode' link at the bottom of the verification explainer sheet. The URL itself is not translated. Keep the trailing space."
+  },
   "metadataCreatorLabel": "Creator",
   "metadataCollaboratorsLabel": "Collaborators",
   "metadataInspiredByLabel": "Inspired by",

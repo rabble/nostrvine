@@ -1781,6 +1781,39 @@ class AppLocalizationsId extends AppLocalizations {
   String get metadataProofManifest => 'Manifes bukti';
 
   @override
+  String get metadataVerificationInfoTooltip => 'Apa arti pemeriksaan ini?';
+
+  @override
+  String get metadataVerificationInfoTitle => 'Apa arti pemeriksaan ini';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'Sinyal ini berasal dari kamera dan dari berkas video itu sendiri. Makin banyak yang dibawa sebuah video, makin banyak yang bisa kami buktikan tentang asalnya.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'Sistem operasi ponsel menjamin aplikasi yang merekam ini. Hanya rekaman asli di perangkat asli yang mendapatkannya.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'Video ditandatangani secara kriptografis pada saat direkam. Ubah satu frame saja setelahnya, tanda tangannya rusak.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'Catatan asal-usul berstandar industri yang ikut di dalam berkas — sehingga aplikasi selain Divine juga bisa memeriksanya.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'Catatan ProofMode lengkap: sidik jari berkas, stempel waktu, dan konteks perekaman, menyatu dengan video.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'Pemeriksaan yang hilang tidak membuat video jadi palsu. Klip lama dan unggahan memang tidak pernah punya — itu hanya berarti bagian itu tidak bisa kami buktikan.';
+
+  @override
+  String get metadataVerificationInfoLearnMoreAt => 'Pelajari selengkapnya di ';
+
+  @override
   String get metadataCreatorLabel => 'Kreator';
 
   @override

@@ -1844,6 +1844,40 @@ class AppLocalizationsBg extends AppLocalizations {
   String get metadataProofManifest => 'Доказателствен манифест';
 
   @override
+  String get metadataVerificationInfoTooltip =>
+      'Какво означават тези проверки?';
+
+  @override
+  String get metadataVerificationInfoTitle => 'Какво означават тези проверки';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'Тези сигнали идват от камерата и от самия видеофайл. Колкото повече от тях носи едно видео, толкова повече можем да докажем за произхода му.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'Операционната система на телефона гарантира за приложението, което е записало това. Получава го само истинско заснемане на истинско устройство.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'Видеото е подписано криптографски в момента на заснемане. Ако после се промени дори един кадър, подписът се чупи.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'Запис за произход по индустриален стандарт, който пътува вътре във файла — така и приложения извън Divine могат да го проверят.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'Пълният запис на ProofMode: отпечатък на файла, времеви печат и контекст на заснемане, заедно с видеото.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'Липсваща проверка не прави видеото фалшиво. По-старите клипове и качванията никога не са имали такава — означава само, че не можем да докажем тази част.';
+
+  @override
+  String get metadataVerificationInfoLearnMoreAt => 'Научете повече на ';
+
+  @override
   String get metadataCreatorLabel => 'Създател';
 
   @override

@@ -1808,6 +1808,39 @@ class AppLocalizationsAr extends AppLocalizations {
   String get metadataProofManifest => 'بيان الإثبات';
 
   @override
+  String get metadataVerificationInfoTooltip => 'ماذا تعني هذه الفحوصات؟';
+
+  @override
+  String get metadataVerificationInfoTitle => 'ماذا تعني هذه الفحوصات';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'تأتي هذه الإشارات من الكاميرا ومن ملف الفيديو نفسه. كلما حمل الفيديو عددًا أكبر منها، زاد ما يمكننا إثباته عن مصدره.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'ضمِن نظام تشغيل الهاتف التطبيق الذي سجّل هذا المقطع. لا يحصل عليه إلا تصوير حقيقي على جهاز حقيقي.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'وُقّع الفيديو تشفيريًا لحظة تصويره. غيّر إطارًا واحدًا بعد ذلك ينكسر التوقيع.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'سجل مصدر وفق معيار الصناعة يُحمل داخل الملف، فتستطيع تطبيقات غير Divine التحقق منه أيضًا.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'سجل ProofMode الكامل: بصمة الملف والطابع الزمني وسياق التصوير، مرفقة مع الفيديو.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'غياب فحص لا يجعل الفيديو مزيفًا. المقاطع القديمة والملفات المرفوعة لم تحصل عليه أصلًا، وهذا يعني فقط أننا لا نستطيع إثبات ذلك الجزء.';
+
+  @override
+  String get metadataVerificationInfoLearnMoreAt => 'اعرف المزيد على ';
+
+  @override
   String get metadataCreatorLabel => 'الصانع';
 
   @override

@@ -3210,6 +3210,60 @@ abstract class AppLocalizations {
   /// **'Proof manifest'**
   String get metadataProofManifest;
 
+  /// Accessibility label and tooltip for the info button next to the Verification section header in the video metadata sheet. Opens a sheet explaining the four verification checks.
+  ///
+  /// In en, this message translates to:
+  /// **'What do these checks mean?'**
+  String get metadataVerificationInfoTooltip;
+
+  /// Title of the bottom sheet explaining the four ProofMode/C2PA verification checks shown in the video metadata sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'What these checks mean'**
+  String get metadataVerificationInfoTitle;
+
+  /// Intro paragraph of the verification explainer sheet, framing the four checks as evidence about a video's origin.
+  ///
+  /// In en, this message translates to:
+  /// **'These signals come from the camera and the video file itself. The more of them a video carries, the more we can prove about where it came from.'**
+  String get metadataVerificationInfoIntro;
+
+  /// Explanation of the 'Device attestation' check in the verification explainer sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'The phone\'s operating system vouched for the app that recorded this. Only a real capture on a real device gets it.'**
+  String get metadataVerificationInfoDeviceAttestation;
+
+  /// Explanation of the 'PGP signature' check in the verification explainer sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'The video was cryptographically signed the moment it was captured. Change a single frame afterwards and the signature breaks.'**
+  String get metadataVerificationInfoPgpSignature;
+
+  /// Explanation of the 'C2PA Content Credentials' check in the verification explainer sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'An industry-standard record of where the video came from, carried inside the file — so apps other than Divine can check it too.'**
+  String get metadataVerificationInfoC2paCredentials;
+
+  /// Explanation of the 'Proof manifest' check in the verification explainer sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'The full ProofMode record: file fingerprint, timestamp and capture context, bundled with the video.'**
+  String get metadataVerificationInfoProofManifest;
+
+  /// Closing caveat of the verification explainer sheet. States the deliberate limit of the claim — a missing check is not evidence of forgery. Do not strengthen this into a guarantee.
+  ///
+  /// In en, this message translates to:
+  /// **'A missing check doesn\'t make a video fake. Older clips and uploads never got one — it only means we can\'t prove that part.'**
+  String get metadataVerificationInfoFootnote;
+
+  /// Prefix of the outbound 'Learn more at divine.video/proofmode' link at the bottom of the verification explainer sheet. The URL itself is not translated. Keep the trailing space.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn more at '**
+  String get metadataVerificationInfoLearnMoreAt;
+
   /// No description provided for @metadataCreatorLabel.
   ///
   /// In en, this message translates to:

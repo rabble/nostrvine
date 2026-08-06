@@ -30,6 +30,7 @@ import 'package:openvine/widgets/video_feed_item/metadata/metadata_sounds_sectio
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_stats_row.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_tags_section.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_user_chips.dart';
+import 'package:openvine/widgets/video_feed_item/metadata/metadata_verification_info_sheet.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_verification_section.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/video_reposters_cubit.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -1579,6 +1580,62 @@ void main() {
 
       final l10n = _l10n(tester);
       expect(find.text(l10n.metadataVerificationLabel), findsNothing);
+    });
+
+    testWidgetsWithSurfaceSize(
+      'tapping the header explains every check and the missing-check caveat',
+      (tester) async {
+        final video = _makeVideo(
+          rawTags: {'verification': 'verified_mobile'},
+        );
+        await tester.pumpWidget(
+          buildSubject(child: MetadataVerificationSection(video: video)),
+        );
+
+        final l10n = _l10n(tester);
+        await tester.tap(find.text(l10n.metadataVerificationLabel));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(MetadataVerificationInfoSheet), findsOneWidget);
+        expect(find.text(l10n.metadataVerificationInfoTitle), findsOneWidget);
+        expect(
+          find.text(l10n.metadataVerificationInfoDeviceAttestation),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n.metadataVerificationInfoPgpSignature),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n.metadataVerificationInfoC2paCredentials),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n.metadataVerificationInfoProofManifest),
+          findsOneWidget,
+        );
+        // The caveat is the load-bearing half of the sheet: without it the
+        // four ticks over-claim, since a muted X only means "not proven".
+        expect(
+          find.text(l10n.metadataVerificationInfoFootnote),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgetsWithSurfaceSize('header info affordance is a labeled button', (
+      tester,
+    ) async {
+      final video = _makeVideo(rawTags: {'verification': 'verified_mobile'});
+      await tester.pumpWidget(
+        buildSubject(child: MetadataVerificationSection(video: video)),
+      );
+
+      final l10n = _l10n(tester);
+      final semantics = tester.getSemantics(
+        find.bySemanticsLabel(l10n.metadataVerificationInfoTooltip),
+      );
+      expect(semantics.flagsCollection.isButton, isTrue);
     });
   });
 

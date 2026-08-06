@@ -1820,6 +1820,39 @@ class AppLocalizationsUr extends AppLocalizations {
   String get metadataProofManifest => 'ثبوت مینی فیسٹ';
 
   @override
+  String get metadataVerificationInfoTooltip => 'ان جانچوں کا کیا مطلب ہے؟';
+
+  @override
+  String get metadataVerificationInfoTitle => 'ان جانچوں کا مطلب';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'یہ اشارے کیمرے اور خود ویڈیو فائل سے آتے ہیں۔ ویڈیو کے پاس جتنے زیادہ اشارے ہوں، ہم اس کے ماخذ کے بارے میں اتنا ہی زیادہ ثابت کر سکتے ہیں۔';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'فون کے آپریٹنگ سسٹم نے اُس ایپ کی ضمانت دی جس نے یہ ریکارڈ کیا۔ یہ صرف حقیقی ڈیوائس پر ہونے والی حقیقی ریکارڈنگ کو ملتا ہے۔';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'ویڈیو کو ریکارڈ ہوتے ہی خفیہ نگاری سے دستخط کیا گیا۔ بعد میں ایک فریم بھی بدلے تو دستخط ٹوٹ جاتا ہے۔';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'صنعتی معیار کا ماخذ ریکارڈ جو فائل کے اندر ساتھ سفر کرتا ہے — اس لیے Divine کے علاوہ ایپس بھی اسے جانچ سکتی ہیں۔';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'مکمل ProofMode ریکارڈ: فائل کا فنگر پرنٹ، وقت کی مہر اور ریکارڈنگ کا سیاق، ویڈیو کے ساتھ منسلک۔';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'کسی جانچ کا نہ ہونا ویڈیو کو جعلی نہیں بناتا۔ پرانی کلپس اور اپ لوڈز کے پاس یہ کبھی تھا ہی نہیں — اس کا مطلب صرف یہ ہے کہ ہم وہ حصہ ثابت نہیں کر سکتے۔';
+
+  @override
+  String get metadataVerificationInfoLearnMoreAt => 'مزید جانیں ';
+
+  @override
   String get metadataCreatorLabel => 'کریئیٹر';
 
   @override

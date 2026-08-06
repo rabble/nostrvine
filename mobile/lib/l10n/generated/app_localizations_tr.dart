@@ -1786,6 +1786,40 @@ class AppLocalizationsTr extends AppLocalizations {
   String get metadataProofManifest => 'Kanıt manifestosu';
 
   @override
+  String get metadataVerificationInfoTooltip =>
+      'Bu kontroller ne anlama geliyor?';
+
+  @override
+  String get metadataVerificationInfoTitle => 'Bu kontroller ne anlama geliyor';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'Bu sinyaller kameradan ve video dosyasının kendisinden gelir. Bir video ne kadar çok sinyal taşırsa, nereden geldiğine dair o kadar çok şey kanıtlayabiliriz.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'Telefonun işletim sistemi, bunu kaydeden uygulamaya kefil oldu. Bunu yalnızca gerçek bir cihazda yapılan gerçek bir çekim alır.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'Video, çekildiği anda kriptografik olarak imzalandı. Sonrasında tek bir kare değişse imza bozulur.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'Dosyanın içinde taşınan, sektör standardında bir köken kaydı — böylece Divine dışındaki uygulamalar da doğrulayabilir.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'Tam ProofMode kaydı: dosya parmak izi, zaman damgası ve çekim bağlamı, videoyla birlikte.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'Eksik bir kontrol videoyu sahte yapmaz. Eski klipler ve yüklemeler hiç almadı — yalnızca o kısmı kanıtlayamadığımız anlamına gelir.';
+
+  @override
+  String get metadataVerificationInfoLearnMoreAt => 'Daha fazla bilgi: ';
+
+  @override
   String get metadataCreatorLabel => 'İçerik üretici';
 
   @override

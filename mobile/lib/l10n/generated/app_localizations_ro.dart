@@ -1864,6 +1864,40 @@ class AppLocalizationsRo extends AppLocalizations {
   String get metadataProofManifest => 'Manifest de dovezi';
 
   @override
+  String get metadataVerificationInfoTooltip =>
+      'Ce înseamnă aceste verificări?';
+
+  @override
+  String get metadataVerificationInfoTitle => 'Ce înseamnă aceste verificări';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'Aceste semnale vin de la cameră și din fișierul video în sine. Cu cât un videoclip are mai multe, cu atât putem dovedi mai multe despre proveniența lui.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'Sistemul de operare al telefonului a garantat pentru aplicația care a filmat. Îl primește doar o filmare reală pe un dispozitiv real.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'Videoclipul a fost semnat criptografic chiar în momentul filmării. Dacă se schimbă ulterior un singur cadru, semnătura se rupe.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'O înregistrare a provenienței, conform standardului din industrie, care călătorește în interiorul fișierului — așa că o pot verifica și alte aplicații decât Divine.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'Înregistrarea ProofMode completă: amprenta fișierului, marcajul de timp și contextul filmării, împreună cu videoclipul.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'O verificare lipsă nu face videoclipul fals. Clipurile mai vechi și încărcările nu au avut niciodată una — înseamnă doar că nu putem dovedi acea parte.';
+
+  @override
+  String get metadataVerificationInfoLearnMoreAt => 'Află mai multe pe ';
+
+  @override
   String get metadataCreatorLabel => 'Creator';
 
   @override

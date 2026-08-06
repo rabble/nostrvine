@@ -1850,6 +1850,41 @@ class AppLocalizationsFr extends AppLocalizations {
   String get metadataProofManifest => 'Manifeste de preuve';
 
   @override
+  String get metadataVerificationInfoTooltip =>
+      'Que signifient ces vérifications ?';
+
+  @override
+  String get metadataVerificationInfoTitle =>
+      'Ce que signifient ces vérifications';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'Ces signaux proviennent de la caméra et du fichier vidéo lui-même. Plus une vidéo en réunit, plus nous pouvons prouver son origine.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'Le système d\'exploitation du téléphone s\'est porté garant de l\'app qui a filmé. Seule une vraie prise sur un vrai appareil l\'obtient.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'La vidéo a été signée cryptographiquement au moment de la prise. Changez une seule image ensuite et la signature se brise.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'Un certificat d\'origine aux normes du secteur, transporté dans le fichier — d\'autres apps que Divine peuvent donc le vérifier.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'L\'enregistrement ProofMode complet : empreinte du fichier, horodatage et contexte de prise de vue, joints à la vidéo.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'Une vérification manquante ne rend pas une vidéo fausse. Les clips anciens et les imports n\'en ont jamais eu — cela veut seulement dire que nous ne pouvons pas prouver cette partie.';
+
+  @override
+  String get metadataVerificationInfoLearnMoreAt => 'En savoir plus sur ';
+
+  @override
   String get metadataCreatorLabel => 'Créateur';
 
   @override

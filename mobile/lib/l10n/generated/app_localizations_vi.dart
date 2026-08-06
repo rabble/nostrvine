@@ -1825,6 +1825,40 @@ class AppLocalizationsVi extends AppLocalizations {
   String get metadataProofManifest => 'Tệp chứng minh';
 
   @override
+  String get metadataVerificationInfoTooltip =>
+      'Những kiểm tra này nghĩa là gì?';
+
+  @override
+  String get metadataVerificationInfoTitle => 'Ý nghĩa của những kiểm tra này';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'Các tín hiệu này đến từ máy ảnh và từ chính tệp video. Video mang càng nhiều tín hiệu, chúng tôi càng chứng minh được nhiều điều về nguồn gốc của nó.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'Hệ điều hành của điện thoại đã bảo chứng cho ứng dụng đã quay video này. Chỉ bản quay thật trên thiết bị thật mới có được.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'Video được ký bằng mật mã ngay khoảnh khắc quay. Sau đó chỉ cần đổi một khung hình là chữ ký hỏng.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'Bản ghi nguồn gốc theo chuẩn ngành, đi kèm bên trong tệp — nên các ứng dụng khác ngoài Divine cũng kiểm tra được.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'Bản ghi ProofMode đầy đủ: dấu vân tay tệp, dấu thời gian và bối cảnh quay, đi cùng video.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'Thiếu một kiểm tra không có nghĩa video là giả. Các clip cũ và video tải lên vốn chưa từng có — chỉ là chúng tôi không chứng minh được phần đó.';
+
+  @override
+  String get metadataVerificationInfoLearnMoreAt => 'Tìm hiểu thêm tại ';
+
+  @override
   String get metadataCreatorLabel => 'Nhà sáng tạo';
 
   @override

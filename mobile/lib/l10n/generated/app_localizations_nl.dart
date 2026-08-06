@@ -1829,6 +1829,39 @@ class AppLocalizationsNl extends AppLocalizations {
   String get metadataProofManifest => 'Proof-manifest';
 
   @override
+  String get metadataVerificationInfoTooltip => 'Wat betekenen deze controles?';
+
+  @override
+  String get metadataVerificationInfoTitle => 'Wat deze controles betekenen';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'Deze signalen komen van de camera en uit het videobestand zelf. Hoe meer een video er heeft, hoe meer we over de herkomst kunnen aantonen.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'Het besturingssysteem van de telefoon stond in voor de app die dit opnam. Alleen een echte opname op een echt toestel krijgt dit.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'De video is op het moment van opname cryptografisch ondertekend. Verandert daarna één beeldje, dan breekt de handtekening.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'Een herkomstbewijs volgens de industriestandaard dat in het bestand meereist — zo kunnen ook andere apps dan Divine het controleren.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'Het volledige ProofMode-record: bestandsvingerafdruk, tijdstempel en opnamecontext, samen met de video.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'Een ontbrekende controle maakt een video niet nep. Oudere clips en uploads kregen er nooit een — het betekent alleen dat we dat deel niet kunnen aantonen.';
+
+  @override
+  String get metadataVerificationInfoLearnMoreAt => 'Meer weten op ';
+
+  @override
   String get metadataCreatorLabel => 'Maker';
 
   @override

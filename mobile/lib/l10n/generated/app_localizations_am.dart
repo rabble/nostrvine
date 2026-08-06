@@ -1784,6 +1784,39 @@ class AppLocalizationsAm extends AppLocalizations {
   String get metadataProofManifest => 'ማረጋገጫ አንጸባራቂ';
 
   @override
+  String get metadataVerificationInfoTooltip => 'እነዚህ ማረጋገጫዎች ምን ማለት ናቸው?';
+
+  @override
+  String get metadataVerificationInfoTitle => 'እነዚህ ማረጋገጫዎች ምን ማለት እንደሆኑ';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'እነዚህ ምልክቶች ከካሜራውና ከቪዲዮ ፋይሉ ራሱ ይመጣሉ። አንድ ቪዲዮ ብዙ ምልክቶች ሲኖሩት፣ ስለ መነሻው ማረጋገጥ የምንችለው ነገር ይበዛል።';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'የስልኩ ኦፕሬቲንግ ሲስተም ይህን የቀረጸውን መተግበሪያ አረጋግጦለታል። ይህን የሚያገኘው በእውነተኛ መሣሪያ ላይ የተደረገ እውነተኛ ቀረጻ ብቻ ነው።';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'ቪዲዮው በተቀረጸበት ቅጽበት በምስጠራ ተፈርሟል። ከዚያ በኋላ አንድ ፍሬም እንኳ ከተቀየረ ፊርማው ይሰበራል።';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'በፋይሉ ውስጥ አብሮ የሚጓዝ የኢንዱስትሪ ደረጃ የመነሻ መዝገብ — ስለዚህ ከDivine ውጪ ያሉ መተግበሪያዎችም ሊያረጋግጡት ይችላሉ።';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'ሙሉው የProofMode መዝገብ፦ የፋይል አሻራ፣ የጊዜ ማህተም እና የቀረጻ አውድ ከቪዲዮው ጋር አብረው።';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'አንድ ማረጋገጫ መጥፋቱ ቪዲዮውን ሐሰተኛ አያደርገውም። የቆዩ ክሊፖችና የተጫኑ ፋይሎች ከመጀመሪያውም አልነበራቸውም — ያንን ክፍል ማረጋገጥ አንችልም ማለት ብቻ ነው።';
+
+  @override
+  String get metadataVerificationInfoLearnMoreAt => 'ተጨማሪ ይመልከቱ ';
+
+  @override
   String get metadataCreatorLabel => 'ፈጣሪ';
 
   @override

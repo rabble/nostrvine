@@ -1854,6 +1854,39 @@ class AppLocalizationsPl extends AppLocalizations {
   String get metadataProofManifest => 'Manifest dowodowy';
 
   @override
+  String get metadataVerificationInfoTooltip => 'Co oznaczają te sprawdzenia?';
+
+  @override
+  String get metadataVerificationInfoTitle => 'Co oznaczają te sprawdzenia';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'Te sygnały pochodzą z aparatu i z samego pliku wideo. Im więcej ich ma nagranie, tym więcej możemy udowodnić o jego pochodzeniu.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'System operacyjny telefonu poręczył za aplikację, która to nagrała. Dostaje to tylko prawdziwe nagranie na prawdziwym urządzeniu.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'Wideo zostało podpisane kryptograficznie w chwili nagrania. Jeśli później zmieni się choć jedna klatka, podpis przestaje się zgadzać.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'Zapis pochodzenia w standardzie branżowym, przenoszony wewnątrz pliku – dzięki temu sprawdzą go też aplikacje inne niż Divine.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'Pełny zapis ProofMode: odcisk pliku, znacznik czasu i kontekst nagrania, dołączone do wideo.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'Brak jednego sprawdzenia nie oznacza, że wideo jest fałszywe. Starsze klipy i przesłane pliki nigdy go nie miały — to znaczy tylko, że tej części nie możemy udowodnić.';
+
+  @override
+  String get metadataVerificationInfoLearnMoreAt => 'Więcej informacji na ';
+
+  @override
   String get metadataCreatorLabel => 'Twórca';
 
   @override

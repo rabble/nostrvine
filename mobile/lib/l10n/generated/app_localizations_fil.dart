@@ -1850,6 +1850,41 @@ class AppLocalizationsFil extends AppLocalizations {
   String get metadataProofManifest => 'Proof manifest';
 
   @override
+  String get metadataVerificationInfoTooltip =>
+      'Ano ang ibig sabihin ng mga pagsusuring ito?';
+
+  @override
+  String get metadataVerificationInfoTitle =>
+      'Ang ibig sabihin ng mga pagsusuring ito';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'Nanggagaling ang mga senyas na ito sa camera at sa mismong video file. Kapag mas marami nito ang dala ng isang video, mas marami kaming mapapatunayan tungkol sa pinanggalingan nito.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'Pinanindigan ng operating system ng telepono ang app na nag-record nito. Tanging tunay na pagkuha sa tunay na device ang nakakakuha nito.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'Cryptographic na nilagdaan ang video sa mismong sandali ng pagkuha. Baguhin ang kahit isang frame pagkatapos, masisira ang lagda.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'Isang industry-standard na tala ng pinagmulan na dala mismo ng file — kaya kayang suriin ito ng ibang app bukod sa Divine.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'Ang buong ProofMode record: fingerprint ng file, timestamp at konteksto ng pagkuha, kasama ng video.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'Ang kulang na pagsusuri ay hindi nangangahulugang peke ang video. Ang mga lumang clip at upload ay wala talaga nito — ibig lang sabihin, hindi namin mapapatunayan ang bahaging iyon.';
+
+  @override
+  String get metadataVerificationInfoLearnMoreAt => 'Matuto pa sa ';
+
+  @override
   String get metadataCreatorLabel => 'Creator';
 
   @override

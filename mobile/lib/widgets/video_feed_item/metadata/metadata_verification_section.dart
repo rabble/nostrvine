@@ -8,6 +8,7 @@ import 'package:models/models.dart';
 import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_section.dart';
+import 'package:openvine/widgets/video_feed_item/metadata/metadata_verification_info_sheet.dart';
 
 /// Verification section showing which ProofMode / C2PA signals are present.
 ///
@@ -26,6 +27,8 @@ class MetadataVerificationSection extends StatelessWidget {
       identifier: SemanticIds.verificationSection,
       child: MetadataSection(
         label: l10n.metadataVerificationLabel,
+        infoLabel: l10n.metadataVerificationInfoTooltip,
+        onInfoPressed: () => MetadataVerificationInfoSheet.show(context),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           spacing: 4,

@@ -1708,6 +1708,39 @@ class AppLocalizationsJa extends AppLocalizations {
   String get metadataProofManifest => '証明マニフェスト';
 
   @override
+  String get metadataVerificationInfoTooltip => 'これらのチェックの意味は？';
+
+  @override
+  String get metadataVerificationInfoTitle => 'これらのチェックの意味';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'これらのシグナルは、カメラと動画ファイル自体から得られます。動画が持つシグナルが多いほど、その出どころについて証明できることが増えます。';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      '端末のOSが、撮影したアプリを保証しました。実機での実際の撮影だけが得られるものです。';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      '動画は撮影されたその瞬間に暗号署名されました。あとから1フレームでも変えると署名は壊れます。';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      '業界標準の来歴記録がファイルの中に同梱されます。Divine以外のアプリでも確認できます。';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'ProofModeの完全な記録：ファイルのフィンガープリント、タイムスタンプ、撮影時の状況が動画と一緒に保存されます。';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'チェックが欠けていても、その動画が偽物というわけではありません。古いクリップやアップロードには元々ありません。その部分を証明できない、というだけです。';
+
+  @override
+  String get metadataVerificationInfoLearnMoreAt => '詳しくは ';
+
+  @override
   String get metadataCreatorLabel => 'クリエイター';
 
   @override
