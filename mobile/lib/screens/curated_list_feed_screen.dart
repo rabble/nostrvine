@@ -298,7 +298,9 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
     final videoCount =
         widget.videoIds?.length ?? localList?.videoEventIds.length ?? 0;
     final videoText = context.l10n.listVideoCount(videoCount);
-    final authorPubkey = widget.authorPubkey;
+    final authorPubkey = _isOwnedList()
+        ? null
+        : widget.authorPubkey ?? localList?.pubkey;
 
     if (authorPubkey != null) {
       return GestureDetector(
@@ -319,7 +321,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
             Flexible(
               flex: 0,
               child: UserName.fromPubKey(
-                widget.authorPubkey!,
+                authorPubkey,
                 style: TextStyle(
                   color: context.vineColors.primaryText,
                   fontSize: 12,
@@ -488,9 +490,9 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
         stackTrace: stackTrace,
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.listShareFailed)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.l10n.listShareFailed)));
       }
     }
   }

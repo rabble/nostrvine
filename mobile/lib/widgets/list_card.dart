@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
+import 'package:openvine/widgets/user_name.dart';
 
 /// Card for displaying a user list (kind 30000 - people list)
 class UserListCard extends StatelessWidget {
@@ -186,6 +187,10 @@ class CuratedListCard extends StatelessWidget {
                   ],
                 ],
               ),
+              if (curatedList.pubkey != null) ...[
+                const SizedBox(height: 8),
+                _CuratedListAuthor(pubkey: curatedList.pubkey!),
+              ],
               if (showVisibility) ...[
                 const SizedBox(height: 8),
                 _ListVisibilityBadge(isPublic: curatedList.isPublic),
@@ -194,6 +199,37 @@ class CuratedListCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _CuratedListAuthor extends StatelessWidget {
+  const _CuratedListAuthor({required this.pubkey});
+
+  final String pubkey;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          context.l10n.listByAuthorPrefix,
+          style: VineTheme.labelSmallFont(
+            color: context.vineColors.secondaryText,
+          ),
+        ),
+        Flexible(
+          child: UserName.fromPubKey(
+            pubkey,
+            style: VineTheme.labelSmallFont(
+              color: context.vineColors.primaryText,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 }
