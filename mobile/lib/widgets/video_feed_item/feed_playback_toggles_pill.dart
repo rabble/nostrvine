@@ -108,7 +108,8 @@ class _PlaybackModeToggle extends StatelessWidget {
               cubit.clearPendingPaginationAdvance();
             }
             // The snackbar is a live region, so it carries the screen-reader
-            // announcement `announceAutoAdvanceToggle` would otherwise make.
+            // announcement on its own — no separate `sendAnnouncement`, which
+            // would make a reader speak twice with two different strings.
             _showToggleFeedback(
               context,
               cubit.state.enabled

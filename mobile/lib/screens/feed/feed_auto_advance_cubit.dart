@@ -1,8 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:flutter/semantics.dart' show SemanticsService, TextDirection;
-import 'package:flutter/widgets.dart' show BuildContext, View;
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:openvine/l10n/l10n.dart';
 
 /// Feed-scoped runtime state for the Auto playback mode.
 ///
@@ -102,20 +99,4 @@ class FeedAutoAdvanceCubit extends Cubit<FeedAutoAdvanceState> {
     if (!state.pendingPaginationAdvance) return;
     emit(state.copyWith(pendingPaginationAdvance: false));
   }
-}
-
-/// Announce the new Auto playback toggle state to screen readers.
-///
-/// Called from the screen right after [FeedAutoAdvanceCubit.toggle] because
-/// the rail control is small and its visual state may be easy to miss.
-void announceAutoAdvanceToggle(BuildContext context, {required bool enabled}) {
-  final l10n = context.l10n;
-  final message = enabled
-      ? l10n.videoActionEnableAutoAdvance
-      : l10n.videoActionDisableAutoAdvance;
-  SemanticsService.sendAnnouncement(
-    View.of(context),
-    message,
-    TextDirection.ltr,
-  );
 }

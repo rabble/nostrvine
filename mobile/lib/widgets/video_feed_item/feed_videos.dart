@@ -257,23 +257,6 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
     setState(() => _routeAllowsPlayback = true);
   }
 
-  bool _isAutoAdvanceAvailable() {
-    if (!mounted) return false;
-    return !MediaQuery.disableAnimationsOf(context);
-  }
-
-  void _toggleAutoAdvance() {
-    if (!_isAutoAdvanceAvailable()) return;
-    _autoAdvanceCubit.toggle();
-    if (!_autoAdvanceCubit.state.isEffectivelyActive) {
-      _autoAdvanceCubit.clearPendingPaginationAdvance();
-    }
-    announceAutoAdvanceToggle(
-      context,
-      enabled: _autoAdvanceCubit.state.enabled,
-    );
-  }
-
   void _suppressAutoAdvance() => _autoAdvanceCubit.suppressForInteraction();
 
   void _resumeAutoAdvanceAfterSwipe() => _autoAdvanceCubit.resumeAfterSwipe();
@@ -504,7 +487,6 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
                 video.id,
               ),
               onContentWarningRevealed: () => _revealContentWarning(video.id),
-              onToggleAutoAdvance: _toggleAutoAdvance,
               onSuppressAutoAdvance: _suppressAutoAdvance,
             ),
           );
@@ -524,7 +506,6 @@ class _Overlay extends ConsumerStatefulWidget {
     required this.isFeedActive,
     required this.contentWarningRevealed,
     required this.onContentWarningRevealed,
-    this.onToggleAutoAdvance,
     this.onSuppressAutoAdvance,
   });
 
@@ -549,7 +530,6 @@ class _Overlay extends ConsumerStatefulWidget {
   /// Called when the user taps "View Anyway" on the content warning.
   final VoidCallback onContentWarningRevealed;
 
-  final VoidCallback? onToggleAutoAdvance;
   final VoidCallback? onSuppressAutoAdvance;
 
   @override
@@ -826,20 +806,16 @@ class __OverlayState extends ConsumerState<_Overlay> {
     final isOwnVideo =
         currentUserPubkey != null && currentUserPubkey == widget.video.pubkey;
 
-    // Subscribe only to the Auto flags this overlay renders — the rail being
-    // toggled (enabled) and suppressed/resumed (isEffectivelyActive) — so
-    // unrelated cubit changes (e.g. pendingPaginationAdvance) don't rebuild
-    // every visible feed item while scrolling.
-    final (autoEnabled, autoEffectivelyActive) = context.select(
-      (FeedAutoAdvanceCubit cubit) =>
-          (cubit.state.enabled, cubit.state.isEffectivelyActive),
+    // Subscribe only to `isEffectivelyActive` — the single Auto flag this
+    // overlay reads — so unrelated cubit changes don't rebuild every visible
+    // feed item while scrolling.
+    final autoEffectivelyActive = context.select(
+      (FeedAutoAdvanceCubit cubit) => cubit.state.isEffectivelyActive,
     );
 
-    // Gate the rail + runtime on both the feature flag and the
-    // user's reduced-motion preference. When Auto is unavailable,
-    // force it "off" at the view layer regardless of cubit state.
+    // Gate the runtime on the user's reduced-motion preference. When Auto is
+    // unavailable, force it "off" at the view layer regardless of cubit state.
     final autoAdvanceAvailable = !MediaQuery.disableAnimationsOf(context);
-    final effectiveAutoEnabled = autoAdvanceAvailable && autoEnabled;
 
     // Watch the kill-switch so the blur re-evaluates on a flip, and start
     // prefetching if it flips on for an already-mounted overlay (initState's
@@ -1075,9 +1051,6 @@ class __OverlayState extends ConsumerState<_Overlay> {
                           index: widget.index,
                           contextTitle: widget.contextTitle,
                           isOwnVideo: isOwnVideo,
-                          autoAdvanceAvailable: autoAdvanceAvailable,
-                          effectiveAutoEnabled: effectiveAutoEnabled,
-                          onToggleAutoAdvance: widget.onToggleAutoAdvance,
                           onSuppressAutoAdvance: widget.onSuppressAutoAdvance,
                           // Captions fade with the rest of the chrome, by
                           // design: the hold reveals the frame the UI covers,
@@ -1115,9 +1088,6 @@ class _FeedItemActions extends StatelessWidget {
     required this.index,
     required this.contextTitle,
     required this.isOwnVideo,
-    required this.autoAdvanceAvailable,
-    required this.effectiveAutoEnabled,
-    required this.onToggleAutoAdvance,
     required this.onSuppressAutoAdvance,
     this.subtitleLayer,
     this.pagePositionListenable,
@@ -1127,9 +1097,6 @@ class _FeedItemActions extends StatelessWidget {
   final int index;
   final String? contextTitle;
   final bool isOwnVideo;
-  final bool autoAdvanceAvailable;
-  final bool effectiveAutoEnabled;
-  final VoidCallback? onToggleAutoAdvance;
   final VoidCallback? onSuppressAutoAdvance;
   final Widget? subtitleLayer;
   final ValueListenable<double>? pagePositionListenable;
@@ -1142,9 +1109,6 @@ class _FeedItemActions extends StatelessWidget {
         video: video,
         contextTitle: contextTitle,
         isOwnVideo: isOwnVideo,
-        autoAdvanceAvailable: autoAdvanceAvailable,
-        effectiveAutoEnabled: effectiveAutoEnabled,
-        onToggleAutoAdvance: onToggleAutoAdvance,
         onSuppressAutoAdvance: onSuppressAutoAdvance,
         subtitleLayer: subtitleLayer,
       );
@@ -1163,9 +1127,6 @@ class _FeedItemActions extends StatelessWidget {
         video: video,
         contextTitle: contextTitle,
         isOwnVideo: isOwnVideo,
-        autoAdvanceAvailable: autoAdvanceAvailable,
-        effectiveAutoEnabled: effectiveAutoEnabled,
-        onToggleAutoAdvance: onToggleAutoAdvance,
         onSuppressAutoAdvance: onSuppressAutoAdvance,
         subtitleLayer: subtitleLayer,
       ),
@@ -1220,9 +1181,6 @@ class _FeedItemOverlayActions extends StatelessWidget {
     required this.video,
     required this.contextTitle,
     required this.isOwnVideo,
-    required this.autoAdvanceAvailable,
-    required this.effectiveAutoEnabled,
-    required this.onToggleAutoAdvance,
     required this.onSuppressAutoAdvance,
     this.subtitleLayer,
   });
@@ -1230,9 +1188,6 @@ class _FeedItemOverlayActions extends StatelessWidget {
   final VideoEvent video;
   final String? contextTitle;
   final bool isOwnVideo;
-  final bool autoAdvanceAvailable;
-  final bool effectiveAutoEnabled;
-  final VoidCallback? onToggleAutoAdvance;
   final VoidCallback? onSuppressAutoAdvance;
   final Widget? subtitleLayer;
 
@@ -1249,7 +1204,6 @@ class _FeedItemOverlayActions extends StatelessWidget {
       contextTitle: contextTitle,
       isFullscreen: true,
       topOffset: isOwnVideo ? 64 : 8,
-      showAutoButton: autoAdvanceAvailable,
       onInteracted: onSuppressAutoAdvance,
       subtitleLayer: subtitleLayer,
     );
