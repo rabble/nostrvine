@@ -36,6 +36,7 @@ import 'package:openvine/widgets/video_feed_item/metadata/metadata_verification_
 import 'package:openvine/widgets/video_feed_item/metadata/video_reposters_cubit.dart';
 import 'package:openvine/widgets/video_recorder/modes/upload/upload_explainer_constants.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -75,6 +76,10 @@ const _parentAddressableId =
 Finder _dimmed() =>
     find.byWidgetPredicate((widget) => widget is Opacity && widget.opacity < 1);
 
+/// Placeholder pills painted by `Skeletonizer` while chip names resolve.
+Finder _skeletonChips() =>
+    find.byWidgetPredicate((widget) => widget is Skeleton);
+
 AppLocalizations _l10n(WidgetTester tester) =>
     AppLocalizations.of(tester.element(find.byType(Scaffold).first));
 
@@ -95,6 +100,7 @@ VideoEvent _makeVideo({
   List<String> collaboratorPubkeys = const [],
   InspiredByInfo? inspiredByVideo,
   List<String>? reposterPubkeys,
+  int? nostrRepostCount,
   String? audioEventId,
   String? title,
   String content = '',
@@ -116,6 +122,7 @@ VideoEvent _makeVideo({
   collaboratorPubkeys: collaboratorPubkeys,
   inspiredByVideo: inspiredByVideo,
   reposterPubkeys: reposterPubkeys,
+  nostrRepostCount: nostrRepostCount,
   audioEventId: audioEventId,
   originalLoops: originalLoops,
   rawTags: rawTags,
@@ -1109,17 +1116,50 @@ void main() {
         await tester.pump();
 
         final l10n = _l10n(tester);
-        expect(find.text(l10n.metadataCollaboratorsLabel), findsNothing);
+        expect(_skeletonChips(), findsNWidgets(1));
+        expect(find.byType(UserAvatar), findsNothing);
 
         await tester.pump(const Duration(seconds: 1));
         await tester.pumpAndSettle();
 
         expect(find.text(l10n.metadataCollaboratorsLabel), findsOneWidget);
+        expect(_skeletonChips(), findsNothing);
 
         profile.complete(_makeProfile(_collaborator1, 'Alice'));
         await tester.pumpAndSettle();
 
         expect(find.text('Alice'), findsOneWidget);
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
+      'holds the row open with one placeholder per tagged collaborator',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            providerOverrides: [
+              for (final pubkey in [_collaborator1, _collaborator2])
+                fetchUserProfileProvider(
+                  pubkey,
+                ).overrideWith((ref) => Completer<UserProfile?>().future),
+            ],
+            child: const MetadataCollaboratorsSectionBody(
+              visibility: CollaboratorVisibility.fallback(
+                taggedPubkeys: [_collaborator1, _collaborator2],
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // The tagged list is known synchronously, so the row can take its
+        // final size while only the names are still in flight.
+        expect(
+          find.text(_l10n(tester).metadataCollaboratorsLabel),
+          findsOneWidget,
+        );
+        expect(_skeletonChips(), findsNWidgets(2));
+        expect(find.byType(UserAvatar), findsNothing);
       },
     );
   });
@@ -1169,6 +1209,76 @@ void main() {
   // Reposted By section
   // ---------------------------------------------------------------------------
   group(MetadataRepostedBySection, () {
+    testWidgetsWithSurfaceSize(
+      'holds the row open with one chip per known repost while loading',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            repostersState: const VideoRepostersState(),
+            child: MetadataRepostedBySection(
+              video: _makeVideo(nostrRepostCount: 3),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Reposted by'), findsOneWidget);
+        expect(_skeletonChips(), findsNWidgets(3));
+        expect(find.byType(UserAvatar), findsNothing);
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
+      'caps the placeholder chips at the visible chip limit',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            repostersState: const VideoRepostersState(),
+            child: MetadataRepostedBySection(
+              video: _makeVideo(nostrRepostCount: 4200),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(_skeletonChips(), findsNWidgets(5));
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
+      'stays hidden while loading when the feed knows of no reposts',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            repostersState: const VideoRepostersState(),
+            child: MetadataRepostedBySection(video: _makeVideo()),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Reposted by'), findsNothing);
+        expect(_skeletonChips(), findsNothing);
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
+      'drops the placeholders when the relay finds no reposters',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            repostersState: const VideoRepostersState(isLoading: false),
+            child: MetadataRepostedBySection(
+              video: _makeVideo(nostrRepostCount: 3),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Reposted by'), findsNothing);
+        expect(_skeletonChips(), findsNothing);
+      },
+    );
+
     testWidgetsWithSurfaceSize('renders reposters fetched from relay', (
       tester,
     ) async {
@@ -1345,7 +1455,7 @@ void main() {
     );
 
     testWidgetsWithSurfaceSize(
-      'waits for the chip names before revealing the section',
+      'waits for the chip names before swapping the placeholders out',
       (tester) async {
         final profile = Completer<UserProfile?>();
 
@@ -1366,14 +1476,18 @@ void main() {
         await tester.pump();
 
         // A chip falls back to a generated name while its profile loads.
-        // Showing the row first would swap every label a moment later and
-        // reflow the rows around the new widths.
-        expect(find.text('Reposted by'), findsNothing);
+        // Showing the real chips first would swap every label a moment later
+        // and reflow the rows around the new widths, so a placeholder of the
+        // known size stands in.
+        expect(find.text('Reposted by'), findsOneWidget);
+        expect(_skeletonChips(), findsNWidgets(1));
+        expect(find.byType(UserAvatar), findsNothing);
 
         profile.complete(_makeProfile(_reposterPubkey, 'Improvising'));
         await tester.pumpAndSettle();
 
         expect(find.text('Improvising'), findsOneWidget);
+        expect(_skeletonChips(), findsNothing);
       },
     );
 
@@ -1398,12 +1512,14 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.text('Reposted by'), findsNothing);
+        expect(_skeletonChips(), findsNWidgets(1));
 
         await tester.pump(const Duration(seconds: 1));
         await tester.pumpAndSettle();
 
         expect(find.text('Reposted by'), findsOneWidget);
+        expect(_skeletonChips(), findsNothing);
+        expect(find.byType(UserAvatar), findsOneWidget);
 
         profile.complete(_makeProfile(_reposterPubkey, 'Improvising'));
         await tester.pumpAndSettle();
