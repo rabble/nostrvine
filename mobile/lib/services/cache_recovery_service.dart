@@ -135,6 +135,11 @@ class CacheRecoveryService {
     'database',
   ];
 
+  static const List<List<String>> _durablePendingUploadsBoxSegments = [
+    ['openvine', 'pending_uploads.hive'],
+    ['openvine', 'pending_uploads.lock'],
+  ];
+
   /// Clear app support directory (NOT Documents - that's sandboxed on macOS),
   /// preserving the durable database directory (see [_durableDatabaseDirSegments]).
   static Future<int> _clearAppSupportDirectory() async {
@@ -145,9 +150,14 @@ class CacheRecoveryService {
         appSupportDir.path,
         ..._durableDatabaseDirSegments,
       ]);
+      final protectedPendingUploadsPaths = [
+        for (final segments in _durablePendingUploadsBoxSegments)
+          p.joinAll([appSupportDir.path, ...segments]),
+      ];
       return await deleteDirectoryContentsExcept(
         appSupportDir,
         protectedPath: protectedPath,
+        additionalProtectedPaths: protectedPendingUploadsPaths,
       );
     } catch (e) {
       Log.warning(
@@ -172,23 +182,31 @@ class CacheRecoveryService {
   static Future<int> deleteDirectoryContentsExcept(
     Directory dir, {
     required String protectedPath,
+    List<String> additionalProtectedPaths = const [],
   }) async {
-    // Only apply protection when the path actually exists; otherwise there is
-    // nothing to preserve and ancestors should be cleared like anything else.
-    final protect = Directory(protectedPath).existsSync();
-    if (protect && p.equals(dir.path, protectedPath)) {
+    final protectedPaths = [
+      protectedPath,
+      ...additionalProtectedPaths,
+    ].where(_pathExists).toList();
+    if (protectedPaths.any((path) => p.equals(dir.path, path))) {
       return 0;
     }
     var cleared = 0;
     for (final entity in dir.listSync()) {
       final path = entity.path;
-      if (protect && p.equals(path, protectedPath)) {
+      if (protectedPaths.any(
+        (protectedPath) => p.equals(path, protectedPath),
+      )) {
         continue;
       }
-      if (protect && entity is Directory && p.isWithin(path, protectedPath)) {
+      if (entity is Directory &&
+          protectedPaths.any(
+            (protectedPath) => p.isWithin(path, protectedPath),
+          )) {
         cleared += await deleteDirectoryContentsExcept(
           entity,
-          protectedPath: protectedPath,
+          protectedPath: protectedPaths.first,
+          additionalProtectedPaths: protectedPaths.skip(1).toList(),
         );
         continue;
       }
@@ -205,6 +223,9 @@ class CacheRecoveryService {
     }
     return cleared;
   }
+
+  static bool _pathExists(String path) =>
+      FileSystemEntity.typeSync(path) != FileSystemEntityType.notFound;
 
   /// Clear temporary files directory
   static Future<int> _clearTempDirectory() async {

@@ -637,6 +637,43 @@ void main() {
         expect(box.get(uploads['b']!.id), isNotNull);
         expect(box.values.map((upload) => upload.nostrPubkey), [_pubkeyB]);
       });
+
+      test(
+        'deleteAllForOwner purges queued saves for the requested owner',
+        () async {
+          final isolatedDir = await _forceStorageFailure();
+
+          final store = PendingUploadStore(
+            scopeUploadsToCurrentUser: false,
+            currentNostrPubkey: null,
+          );
+          addTearDown(store.disposeStore);
+
+          final uploadA = PendingUpload.create(
+            localVideoPath: '${isolatedDir.path}/a.mp4',
+            nostrPubkey: _pubkeyA,
+          );
+          final uploadB = PendingUpload.create(
+            localVideoPath: '${isolatedDir.path}/b.mp4',
+            nostrPubkey: _pubkeyB,
+          );
+
+          await expectLater(
+            () => store.save(uploadA),
+            throwsA(isA<Exception>()),
+          );
+          await expectLater(
+            () => store.save(uploadB),
+            throwsA(isA<Exception>()),
+          );
+          expect(store.queuedCount, equals(2));
+
+          final deleted = await store.deleteAllForOwner(_pubkeyA);
+
+          expect(deleted, equals(0));
+          expect(store.queuedCount, equals(1));
+        },
+      );
     });
 
     // -----------------------------------------------------------------------

@@ -20,6 +20,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/relay_providers.dart';
 import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/providers/upload_media_providers.dart';
 import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/services/analytics_ingest_client.dart';
 import 'package:openvine/services/analytics_service.dart';
@@ -38,7 +39,6 @@ import 'package:openvine/services/pending_action_service.dart';
 import 'package:openvine/services/product_event_queue.dart';
 import 'package:openvine/services/profile_save_retry_service.dart';
 import 'package:openvine/services/social_service.dart';
-import 'package:openvine/services/upload/pending_upload_store.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/services/view_event_retry_service.dart';
@@ -78,18 +78,8 @@ final openVineImageCacheClearProvider = Provider<Future<void> Function()>((
 final pendingUploadOwnerCleanupProvider = Provider<PendingUploadOwnerCleanup>((
   ref,
 ) {
-  return (ownerPubkey) async {
-    final store = PendingUploadStore(
-      scopeUploadsToCurrentUser: false,
-      currentNostrPubkey: null,
-    );
-    try {
-      await store.open();
-      return store.deleteAllForOwner(ownerPubkey);
-    } finally {
-      store.disposeStore();
-    }
-  };
+  return (ownerPubkey) =>
+      ref.read(uploadManagerProvider).deleteAllForOwner(ownerPubkey);
 });
 
 /// Connectivity trigger for the message retry sweep: fires on EVERY

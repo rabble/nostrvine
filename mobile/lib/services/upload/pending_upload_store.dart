@@ -206,7 +206,16 @@ class PendingUploadStore {
     }
 
     if (_box == null || !_box!.isOpen) {
-      await ensureOpen();
+      try {
+        await ensureOpen();
+      } catch (e) {
+        Log.warning(
+          'Unable to open pending uploads box for owner cleanup: $e',
+          name: 'UploadManager',
+          category: LogCategory.video,
+        );
+        return 0;
+      }
     }
     if (_box == null || !_box!.isOpen) return 0;
 
@@ -334,6 +343,13 @@ class PendingUploadStore {
     if (!scopeUploadsToCurrentUser) return uploads;
     return uploads.where(_isVisibleToCurrentOwner).toList();
   }
+
+  /// All uploads persisted for [ownerPubkey], ignoring current-user scoping.
+  ///
+  /// Destructive account cleanup passes the departing owner explicitly and can
+  /// run after auth state has already moved to another account.
+  List<PendingUpload> uploadsForOwner(String ownerPubkey) =>
+      _allUploads.where((upload) => upload.nostrPubkey == ownerPubkey).toList();
 
   bool _isVisibleToCurrentOwner(PendingUpload upload) {
     if (!scopeUploadsToCurrentUser) return true;

@@ -1,22 +1,33 @@
 // ABOUTME: Regression tests for account cleanup provider wiring.
 // ABOUTME: Ensures destructive cleanup reaches the live Hive upload store.
 
+import 'dart:io';
+
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:db_client/db_client.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' as model;
+import 'package:openvine/models/pending_upload.dart' as hive_model;
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
+import 'package:openvine/providers/upload_media_providers.dart';
+import 'package:openvine/services/upload_manager.dart';
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/test_helpers.dart';
+import '../mocks/mock_path_provider_platform.dart';
 
 class _MockDmRepository extends Mock implements DmRepository {}
+
+class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
 const _pubkeyA =
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -28,7 +39,10 @@ void main() {
     late AppDatabase db;
     late SharedPreferences prefs;
     late _MockDmRepository dmRepository;
-    late List<String> purgedUploadOwners;
+    late _MockBlossomUploadService blossomUploadService;
+    late UploadManager uploadManager;
+    late Directory tempDir;
+    late PathProviderPlatform originalPathProviderInstance;
     late ProviderContainer container;
 
     setUpAll(() async {
@@ -40,8 +54,32 @@ void main() {
       prefs = await SharedPreferences.getInstance();
       db = AppDatabase.test(NativeDatabase.memory());
       dmRepository = _MockDmRepository();
-      purgedUploadOwners = [];
+      blossomUploadService = _MockBlossomUploadService();
       when(() => dmRepository.stopListening()).thenAnswer((_) async {});
+      when(
+        () => blossomUploadService.isBlossomEnabled(),
+      ).thenAnswer((_) async => false);
+
+      tempDir = await Directory.systemTemp.createTemp(
+        'social_cleanup_uploads_',
+      );
+      originalPathProviderInstance = PathProviderPlatform.instance;
+      final mockPathProvider = MockPathProviderPlatform()
+        ..setTemporaryPath(tempDir.path)
+        ..setApplicationDocumentsPath('${tempDir.path}/documents')
+        ..setApplicationSupportPath('${tempDir.path}/support')
+        ..setApplicationCachePath('${tempDir.path}/cache');
+      PathProviderPlatform.instance = mockPathProvider;
+
+      uploadManager = UploadManager(
+        blossomService: blossomUploadService,
+        currentNostrPubkey: _pubkeyB,
+        scopeUploadsToCurrentUser: true,
+      );
+      await uploadManager.initialize();
+      await TestHelpers.ensureBoxEmpty<hive_model.PendingUpload>(
+        'pending_uploads',
+      );
 
       container = ProviderContainer(
         overrides: [
@@ -49,17 +87,20 @@ void main() {
           sharedPreferencesProvider.overrideWithValue(prefs),
           dmRepositoryProvider.overrideWithValue(dmRepository),
           openVineImageCacheClearProvider.overrideWithValue(() async {}),
-          pendingUploadOwnerCleanupProvider.overrideWithValue((ownerPubkey) {
-            purgedUploadOwners.add(ownerPubkey);
-            return Future.value(1);
-          }),
+          uploadManagerProvider.overrideWithValue(uploadManager),
         ],
       );
     });
 
     tearDown(() async {
       container.dispose();
+      uploadManager.dispose();
       await db.close();
+      await TestHelpers.cleanupHiveBox('pending_uploads');
+      PathProviderPlatform.instance = originalPathProviderInstance;
+      if (tempDir.existsSync()) {
+        await tempDir.delete(recursive: true);
+      }
     });
 
     test(
@@ -77,6 +118,22 @@ void main() {
             nostrPubkey: _pubkeyB,
           ),
         );
+        final box = Hive.box<hive_model.PendingUpload>('pending_uploads');
+        final a1 = hive_model.PendingUpload.create(
+          localVideoPath: '/tmp/a1.mp4',
+          nostrPubkey: _pubkeyA,
+        );
+        final a2 = hive_model.PendingUpload.create(
+          localVideoPath: '/tmp/a2.mp4',
+          nostrPubkey: _pubkeyA,
+        );
+        final b1 = hive_model.PendingUpload.create(
+          localVideoPath: '/tmp/b1.mp4',
+          nostrPubkey: _pubkeyB,
+        );
+        await box.put(a1.id, a1);
+        await box.put(a2.id, a2);
+        await box.put(b1.id, b1);
 
         final subscription = container.listen(
           userDataCleanupServiceProvider,
@@ -99,7 +156,9 @@ void main() {
           ownerPubkey: _pubkeyB,
         );
         expect(remainingDriftUploads, hasLength(1));
-        expect(purgedUploadOwners, [_pubkeyA]);
+        expect(box.get(a1.id), isNull);
+        expect(box.get(a2.id), isNull);
+        expect(box.get(b1.id), isNotNull);
       },
     );
 
@@ -116,7 +175,10 @@ void main() {
         userPubkey: _pubkeyA,
       );
 
-      expect(purgedUploadOwners, isEmpty);
+      expect(
+        Hive.box<hive_model.PendingUpload>('pending_uploads').values,
+        isEmpty,
+      );
     });
   });
 }

@@ -249,6 +249,11 @@ class UploadManager implements BackgroundAwareService {
   // upload pipelines for the same PendingUpload.
   final Map<String, Future<void>> _inFlightUploads = <String, Future<void>>{};
 
+  // Owners whose local pending-upload state was destructively purged during
+  // account cleanup. Late callbacks from already-started uploads must not
+  // recreate rows for accounts that have just been removed.
+  final Set<String> _purgedUploadOwners = <String>{};
+
   // Re-entrancy latch for [_recoverStuckUploads]; startup and app-resume
   // recovery can run close together while missing-file updates are awaiting.
   bool _isRecovering = false;
@@ -369,8 +374,37 @@ class UploadManager implements BackgroundAwareService {
       _store.getUploadByFilePath(filePath);
 
   /// Delete all persisted uploads belonging to [ownerPubkey].
-  Future<int> deleteAllForOwner(String ownerPubkey) =>
-      _store.deleteAllForOwner(ownerPubkey);
+  Future<int> deleteAllForOwner(String ownerPubkey) async {
+    _purgedUploadOwners.add(ownerPubkey);
+    final uploads = _store.uploadsForOwner(ownerPubkey);
+    final uploadIds = uploads.map((upload) => upload.id).toSet();
+
+    _retryPolicy.discardUploads(uploadIds);
+    for (final uploadId in uploadIds) {
+      _userStoppedUploadIds.add(uploadId);
+      _reporter.cancelAndRemoveSubscription(uploadId);
+      _processingPollTimers.remove(uploadId)?.cancel();
+    }
+
+    if (useBackgroundUpload) {
+      for (final uploadId in uploadIds) {
+        try {
+          await _blossomService.cancelBackgroundUpload(uploadId);
+        } catch (e) {
+          Log.warning(
+            'Failed to cancel upload $uploadId during owner cleanup: $e',
+            name: 'UploadManager',
+            category: LogCategory.video,
+          );
+        }
+      }
+    }
+
+    return _store.deleteAllForOwner(ownerPubkey);
+  }
+
+  bool _isPurgedOwnerUpload(PendingUpload upload) =>
+      _purgedUploadOwners.contains(upload.nostrPubkey);
 
   /// Finds a reusable upload for the given video file path.
   ///
@@ -775,6 +809,12 @@ class UploadManager implements BackgroundAwareService {
     try {
       await _performUpload(upload, onProgress: onProgress);
 
+      if (_isPurgedOwnerUpload(upload)) {
+        throw StateError(
+          'Upload was purged during account cleanup: ${upload.id}',
+        );
+      }
+
       // Fetch the updated upload with videoId and cdnUrl populated
       final completedUpload = getUpload(upload.id);
       if (completedUpload == null) {
@@ -807,6 +847,7 @@ class UploadManager implements BackgroundAwareService {
     PendingUpload upload, {
     ValueChanged<double>? onProgress,
   }) async {
+    if (_isPurgedOwnerUpload(upload)) return;
     final existing = _inFlightUploads[upload.id];
     if (existing != null) {
       Log.info(
@@ -947,7 +988,9 @@ class UploadManager implements BackgroundAwareService {
     ValueChanged<double>? onProgress,
   ) async {
     await _retryPolicy.performWithRetry(upload, () async {
+      if (_isPurgedOwnerUpload(upload)) return;
       final currentUpload = _store.getUpload(upload.id) ?? upload;
+      if (_isPurgedOwnerUpload(currentUpload)) return;
 
       // Validate file still exists
       if (!videoFile.existsSync()) {
@@ -1215,6 +1258,7 @@ class UploadManager implements BackgroundAwareService {
     final metrics = _reporter.metricsFor(upload.id);
 
     if (result.success == true) {
+      if (_isPurgedOwnerUpload(upload)) return;
       if (_userStoppedUploadIds.contains(upload.id)) {
         Log.info(
           'Upload ${upload.id} stopped by user; ignoring late success result',
@@ -1226,6 +1270,7 @@ class UploadManager implements BackgroundAwareService {
 
       // Get the LATEST upload record from Hive (may have been updated with thumbnail URL)
       final latestUpload = getUpload(upload.id) ?? upload;
+      if (_isPurgedOwnerUpload(latestUpload)) return;
 
       // Create updated upload with success metadata
       final updatedUpload = createSuccessfulUpload(latestUpload, result);
@@ -1266,6 +1311,7 @@ class UploadManager implements BackgroundAwareService {
     final endTime = DateTime.now();
     final metrics = _reporter.metricsFor(upload.id);
     final latestUpload = getUpload(upload.id) ?? upload;
+    if (_isPurgedOwnerUpload(latestUpload)) return;
 
     // Check network connectivity and categorize error
     final connectivity = await _reporter.checkNetworkConnectivity();
@@ -1535,6 +1581,7 @@ class UploadManager implements BackgroundAwareService {
         }
         // A user just paused/cancelled; leave the authoritative status alone.
         if (_userStoppedUploadIds.contains(upload.id)) continue;
+        if (_isPurgedOwnerUpload(upload)) continue;
 
         if (!File(upload.localVideoPath).existsSync()) {
           // The source file is gone (e.g. temp cleared by the OS), so resume
@@ -1931,6 +1978,7 @@ class UploadManager implements BackgroundAwareService {
       if (result.cdnUrl != null || result.blurhash != null) {
         try {
           final current = _store.getUpload(upload.id) ?? upload;
+          if (_isPurgedOwnerUpload(current)) return result;
           await _store.update(
             current.copyWith(
               thumbnailPath: result.cdnUrl ?? current.thumbnailPath,
