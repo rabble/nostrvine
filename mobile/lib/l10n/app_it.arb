@@ -2045,6 +2045,40 @@
     "listDescriptionLabel": "Descrizione (opzionale)",
     "listPublicList": "Lista pubblica",
     "listPublicListSubtitle": "Altri possono seguire e vedere questa lista",
+    "listPrivateListSubtitle": "Le liste private restano su questo dispositivo e non finiscono nel backup",
+    "listVisibilityPublic": "Pubblica",
+    "listVisibilityPrivateDevice": "Privata · Su questo dispositivo",
+    "profileListsEmpty": "Ancora nessuna lista. Creane una per i loop che vuoi tenere insieme.",
+    "listEditTitle": "Modifica lista",
+    "listEditAction": "Modifica lista",
+    "listShareAction": "Condividi lista",
+    "listShareFailed": "Impossibile condividere questa lista. Riprova.",
+    "listSave": "Salva",
+    "listContinue": "Continua",
+    "listUpdateFailed": "Impossibile aggiornare questa lista. Riprova.",
+    "listMakePrivateTitle": "Rendere privata questa lista?",
+    "listMakePrivateWarning": "Chiederemo ai relay di rimuovere la copia pubblica, ma le copie già condivise potrebbero restare online. Questa lista resterà solo su questo dispositivo e non finirà nel backup.",
+    "listMakePublicTitle": "Rendere pubblica questa lista?",
+    "listMakePublicWarning": "Chiunque abbia il link può vedere questa lista e i suoi video.",
+    "listShareText": "Guarda {name} su Divine: {url}",
+    "@listShareText": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            },
+            "url": {
+                "type": "String"
+            }
+        }
+    },
+    "listShareSubject": "{name} su Divine",
+    "@listShareSubject": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
     "listCancel": "Annulla",
     "listCreate": "Crea",
     "listCreateFailed": "Impossibile creare la lista",

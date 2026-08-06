@@ -5208,6 +5208,67 @@ class AppLocalizationsPl extends AppLocalizations {
       'Inni mogą obserwować i widzieć tę listę';
 
   @override
+  String get listPrivateListSubtitle =>
+      'Prywatne listy zostają na tym urządzeniu i nie mają kopii zapasowej';
+
+  @override
+  String get listVisibilityPublic => 'Publiczna';
+
+  @override
+  String get listVisibilityPrivateDevice => 'Prywatna · Na tym urządzeniu';
+
+  @override
+  String get profileListsEmpty =>
+      'Nie masz jeszcze list. Stwórz jedną dla pętli, które chcesz trzymać razem.';
+
+  @override
+  String get listEditTitle => 'Edytuj listę';
+
+  @override
+  String get listEditAction => 'Edytuj listę';
+
+  @override
+  String get listShareAction => 'Udostępnij listę';
+
+  @override
+  String get listShareFailed =>
+      'Nie udało się udostępnić tej listy. Spróbuj ponownie.';
+
+  @override
+  String get listSave => 'Zapisz';
+
+  @override
+  String get listContinue => 'Dalej';
+
+  @override
+  String get listUpdateFailed =>
+      'Nie udało się zaktualizować tej listy. Spróbuj ponownie.';
+
+  @override
+  String get listMakePrivateTitle => 'Ustawić tę listę jako prywatną?';
+
+  @override
+  String get listMakePrivateWarning =>
+      'Poprosimy przekaźniki o usunięcie publicznej kopii, ale już udostępnione kopie mogą pozostać w sieci. Ta lista będzie tylko na tym urządzeniu i nie powstanie jej kopia zapasowa.';
+
+  @override
+  String get listMakePublicTitle => 'Ustawić tę listę jako publiczną?';
+
+  @override
+  String get listMakePublicWarning =>
+      'Każdy, kto ma link, zobaczy tę listę i jej filmy.';
+
+  @override
+  String listShareText(String name, String url) {
+    return 'Zobacz $name na Divine: $url';
+  }
+
+  @override
+  String listShareSubject(String name) {
+    return '$name na Divine';
+  }
+
+  @override
   String get listCancel => 'Anuluj';
 
   @override

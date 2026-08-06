@@ -5047,6 +5047,65 @@ class AppLocalizationsTr extends AppLocalizations {
       'Diğerleri bu listeyi takip edebilir ve görebilir';
 
   @override
+  String get listPrivateListSubtitle =>
+      'Özel listeler bu cihazda kalır ve yedeklenmez';
+
+  @override
+  String get listVisibilityPublic => 'Herkese açık';
+
+  @override
+  String get listVisibilityPrivateDevice => 'Özel · Bu cihazda';
+
+  @override
+  String get profileListsEmpty =>
+      'Henüz liste yok. Bir arada tutmak istediğin döngüler için bir tane oluştur.';
+
+  @override
+  String get listEditTitle => 'Listeyi düzenle';
+
+  @override
+  String get listEditAction => 'Listeyi düzenle';
+
+  @override
+  String get listShareAction => 'Listeyi paylaş';
+
+  @override
+  String get listShareFailed => 'Bu liste paylaşılamadı. Tekrar dene.';
+
+  @override
+  String get listSave => 'Kaydet';
+
+  @override
+  String get listContinue => 'Devam';
+
+  @override
+  String get listUpdateFailed => 'Bu liste güncellenemedi. Tekrar dene.';
+
+  @override
+  String get listMakePrivateTitle => 'Bu liste özel yapılsın mı?';
+
+  @override
+  String get listMakePrivateWarning =>
+      'Herkese açık kopyanın kaldırılmasını relay\'lerden isteyeceğiz ama daha önce paylaşılan kopyalar çevrimiçi kalabilir. Bu liste yalnızca bu cihazda kalacak ve yedeklenmeyecek.';
+
+  @override
+  String get listMakePublicTitle => 'Bu liste herkese açık yapılsın mı?';
+
+  @override
+  String get listMakePublicWarning =>
+      'Bağlantıya sahip herkes bu listeyi ve videolarını görebilir.';
+
+  @override
+  String listShareText(String name, String url) {
+    return '$name listesine Divine\'da göz at: $url';
+  }
+
+  @override
+  String listShareSubject(String name) {
+    return 'Divine\'da $name';
+  }
+
+  @override
   String get listCancel => 'İptal';
 
   @override

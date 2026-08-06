@@ -15,7 +15,6 @@ import 'package:openvine/blocs/profile_comments/profile_comments_bloc.dart';
 import 'package:openvine/blocs/profile_feed/profile_feed_cubit.dart';
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
 import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
-import 'package:openvine/blocs/profile_saved_videos/profile_saved_videos_bloc.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -26,8 +25,8 @@ import 'package:openvine/widgets/profile/profile_collabs_grid.dart';
 import 'package:openvine/widgets/profile/profile_comments_grid.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/profile/profile_liked_grid.dart';
+import 'package:openvine/widgets/profile/profile_lists_grid.dart';
 import 'package:openvine/widgets/profile/profile_reposts_grid.dart';
-import 'package:openvine/widgets/profile/profile_saved_grid.dart';
 import 'package:openvine/widgets/profile/profile_tab_bar.dart';
 import 'package:openvine/widgets/profile/profile_tab_kind.dart';
 import 'package:openvine/widgets/profile/profile_videos_grid.dart';
@@ -129,7 +128,6 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   ProfileLikedVideosBloc? _likedVideosBloc;
   ProfileRepostedVideosBloc? _repostedVideosBloc;
   ProfileCollabVideosBloc? _collabVideosBloc;
-  ProfileSavedVideosBloc? _savedVideosBloc;
   ProfileCommentsBloc? _commentsBloc;
 
   /// Mirrors each cached tab's `isRefreshing` so the pinned tab bar can show a
@@ -139,8 +137,6 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   StreamSubscription<ProfileLikedVideosState>? _likedRefreshSub;
   bool _repostsRefreshing = false;
   StreamSubscription<ProfileRepostedVideosState>? _repostsRefreshSub;
-  bool _savedRefreshing = false;
-  StreamSubscription<ProfileSavedVideosState>? _savedRefreshSub;
   bool _collabsRefreshing = false;
   StreamSubscription<ProfileCollabVideosState>? _collabsRefreshSub;
 
@@ -157,7 +153,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
         ProfileTabKind.liked => _likedRefreshing,
         ProfileTabKind.reposts => _repostsRefreshing,
         ProfileTabKind.collabs => _collabsRefreshing,
-        ProfileTabKind.saved => _savedRefreshing,
+        ProfileTabKind.lists => false,
         ProfileTabKind.comments => false,
       };
 
@@ -189,7 +185,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   final Set<ProfileTabKind> _syncedKinds = <ProfileTabKind>{};
 
   /// Ordered tabs for the current profile. The own profile adds a Collabs
-  /// tab (between Videos and Liked) on top of its Saved tab (#5213); other
+  /// tab (between Videos and Liked) on top of its Lists tab (#5213); other
   /// profiles keep their existing order.
   List<ProfileTabKind> get _tabKinds =>
       profileTabKinds(isOwnProfile: widget.isOwnProfile);
@@ -277,10 +273,11 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
         final bloc = _repostedVideosBloc;
         if (bloc == null) return;
         bloc.add(const ProfileRepostedVideosSyncRequested());
-      case ProfileTabKind.saved:
-        final bloc = _savedVideosBloc;
-        if (bloc == null) return;
-        bloc.add(const ProfileSavedVideosSyncRequested());
+      case ProfileTabKind.lists:
+        // Lists render from [CuratedListService], which already synced during
+        // its own initialization. Nothing to dispatch on first view, but the
+        // tab still counts as synced so pull-to-refresh reaches it below.
+        break;
       case ProfileTabKind.comments:
         final bloc = _commentsBloc;
         if (bloc == null) return;
@@ -329,12 +326,13 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
           final completer = Completer<void>();
           bloc.add(ProfileRepostedVideosSyncRequested(completer: completer));
           refreshes.add(completer.future);
-        case ProfileTabKind.saved:
-          final bloc = _savedVideosBloc;
-          if (bloc == null) break;
-          final completer = Completer<void>();
-          bloc.add(ProfileSavedVideosSyncRequested(completer: completer));
-          refreshes.add(completer.future);
+        case ProfileTabKind.lists:
+          final service = ref.read(curatedListsStateProvider.notifier).service;
+          if (service == null) break;
+          // Forced: the service syncs once per session, so an unforced call
+          // returns without querying and a list made on another device would
+          // stay invisible until the next cold start.
+          refreshes.add(service.fetchUserListsFromRelays(force: true));
         case ProfileTabKind.comments:
           final bloc = _commentsBloc;
           if (bloc == null) break;
@@ -385,13 +383,11 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     _tabController.dispose();
     _likedRefreshSub?.cancel();
     _repostsRefreshSub?.cancel();
-    _savedRefreshSub?.cancel();
     _collabsRefreshSub?.cancel();
     // Close the BLoCs we created
     _likedVideosBloc?.close();
     _repostedVideosBloc?.close();
     _collabVideosBloc?.close();
-    _savedVideosBloc?.close();
     _commentsBloc?.close();
     super.dispose();
   }
@@ -420,8 +416,8 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
           isOwnProfile: widget.isOwnProfile,
           userIdHex: widget.userIdHex,
         );
-      case ProfileTabKind.saved:
-        return ProfileSavedGrid(userIdHex: widget.userIdHex);
+      case ProfileTabKind.lists:
+        return const ProfileListsGrid();
       case ProfileTabKind.comments:
         return ProfileCommentsGrid(isOwnProfile: widget.isOwnProfile);
     }
@@ -442,9 +438,9 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
         label: 'reposted_tab',
         icon: DivineIconName.repeat,
       ),
-      ProfileTabKind.saved => (
-        label: 'saved_tab',
-        icon: DivineIconName.bookmarkSimple,
+      ProfileTabKind.lists => (
+        label: 'lists_tab',
+        icon: DivineIconName.playlist,
       ),
       ProfileTabKind.comments => (
         label: 'comments_tab',
@@ -496,7 +492,6 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       _likedVideosBloc?.close();
       _repostedVideosBloc?.close();
       _collabVideosBloc?.close();
-      _savedVideosBloc?.close();
       _commentsBloc?.close();
 
       // Reset lazy load flags when switching profiles
@@ -539,8 +534,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
         }
       });
 
-      // Collabs render on every profile (#5213); Saved (bookmarks) is
-      // own-profile only.
+      // Collabs render on every profile (#5213); Lists is own-profile only.
       _collabVideosBloc = ProfileCollabVideosBloc(
         videosRepository: videosRepository,
         targetUserPubkey: widget.userIdHex,
@@ -553,25 +547,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
         }
       });
 
-      if (widget.isOwnProfile) {
-        _savedVideosBloc = ProfileSavedVideosBloc(
-          bookmarkService: ref.read(bookmarkServiceProvider.future),
-          videosRepository: videosRepository,
-          currentUserPubkey: currentUserPubkey,
-        );
-        _savedRefreshSub?.cancel();
-        _savedRefreshing = false;
-        _savedRefreshSub = _savedVideosBloc!.stream.listen((savedState) {
-          if (savedState.isRefreshing != _savedRefreshing && mounted) {
-            setState(() => _savedRefreshing = savedState.isRefreshing);
-          }
-        });
-      } else {
-        _savedVideosBloc = null;
-        _savedRefreshSub?.cancel();
-        _savedRefreshing = false;
-      }
-      // Sync deferred until the user views the Collabs / Saved tab
+      // Sync deferred until the user views the Collabs tab.
 
       _commentsBloc = ProfileCommentsBloc(
         commentsRepository: commentsRepository,
@@ -594,8 +570,8 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     }
 
     // Build the base widget with the tab BLoCs using .value() to provide
-    // our managed instances. Collabs is provided on every profile; Saved
-    // (bookmarks) only on the own profile. The tab order is resolved from
+    // our managed instances. Collabs is provided on every profile. The tab
+    // order is resolved from
     // [_tabKinds].
     final tabContent = MultiBlocProvider(
       providers: [
@@ -604,8 +580,6 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
           value: _repostedVideosBloc!,
         ),
         BlocProvider<ProfileCollabVideosBloc>.value(value: _collabVideosBloc!),
-        if (widget.isOwnProfile)
-          BlocProvider<ProfileSavedVideosBloc>.value(value: _savedVideosBloc!),
         BlocProvider<ProfileCommentsBloc>.value(value: _commentsBloc!),
       ],
       child: ColoredBox(

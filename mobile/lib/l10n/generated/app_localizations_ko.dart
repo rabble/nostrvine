@@ -4846,6 +4846,62 @@ class AppLocalizationsKo extends AppLocalizations {
   String get listPublicListSubtitle => '다른 사람들이 이 목록을 팔로우하고 볼 수 있어요';
 
   @override
+  String get listPrivateListSubtitle => '비공개 목록은 이 기기에만 남고 백업되지 않아요';
+
+  @override
+  String get listVisibilityPublic => '공개';
+
+  @override
+  String get listVisibilityPrivateDevice => '비공개 · 이 기기에만';
+
+  @override
+  String get profileListsEmpty => '아직 목록이 없어요. 함께 모아 두고 싶은 루프로 하나 만들어 보세요.';
+
+  @override
+  String get listEditTitle => '목록 편집';
+
+  @override
+  String get listEditAction => '목록 편집';
+
+  @override
+  String get listShareAction => '목록 공유';
+
+  @override
+  String get listShareFailed => '이 목록을 공유하지 못했어요. 다시 시도해 주세요.';
+
+  @override
+  String get listSave => '저장';
+
+  @override
+  String get listContinue => '계속';
+
+  @override
+  String get listUpdateFailed => '이 목록을 업데이트하지 못했어요. 다시 시도해 주세요.';
+
+  @override
+  String get listMakePrivateTitle => '이 목록을 비공개로 바꿀까요?';
+
+  @override
+  String get listMakePrivateWarning =>
+      '릴레이에 공개 사본 삭제를 요청하지만, 이미 공유된 사본은 남아 있을 수 있어요. 이 목록은 이 기기에만 남고 백업되지 않아요.';
+
+  @override
+  String get listMakePublicTitle => '이 목록을 공개로 바꿀까요?';
+
+  @override
+  String get listMakePublicWarning => '링크가 있는 사람은 누구나 이 목록과 동영상을 볼 수 있어요.';
+
+  @override
+  String listShareText(String name, String url) {
+    return 'Divine에서 $name 확인해 보세요: $url';
+  }
+
+  @override
+  String listShareSubject(String name) {
+    return 'Divine의 $name';
+  }
+
+  @override
   String get listCancel => '취소';
 
   @override

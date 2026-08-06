@@ -2045,6 +2045,40 @@
     "listDescriptionLabel": "Opis (opcjonalnie)",
     "listPublicList": "Publiczna lista",
     "listPublicListSubtitle": "Inni mogą obserwować i widzieć tę listę",
+    "listPrivateListSubtitle": "Prywatne listy zostają na tym urządzeniu i nie mają kopii zapasowej",
+    "listVisibilityPublic": "Publiczna",
+    "listVisibilityPrivateDevice": "Prywatna · Na tym urządzeniu",
+    "profileListsEmpty": "Nie masz jeszcze list. Stwórz jedną dla pętli, które chcesz trzymać razem.",
+    "listEditTitle": "Edytuj listę",
+    "listEditAction": "Edytuj listę",
+    "listShareAction": "Udostępnij listę",
+    "listShareFailed": "Nie udało się udostępnić tej listy. Spróbuj ponownie.",
+    "listSave": "Zapisz",
+    "listContinue": "Dalej",
+    "listUpdateFailed": "Nie udało się zaktualizować tej listy. Spróbuj ponownie.",
+    "listMakePrivateTitle": "Ustawić tę listę jako prywatną?",
+    "listMakePrivateWarning": "Poprosimy przekaźniki o usunięcie publicznej kopii, ale już udostępnione kopie mogą pozostać w sieci. Ta lista będzie tylko na tym urządzeniu i nie powstanie jej kopia zapasowa.",
+    "listMakePublicTitle": "Ustawić tę listę jako publiczną?",
+    "listMakePublicWarning": "Każdy, kto ma link, zobaczy tę listę i jej filmy.",
+    "listShareText": "Zobacz {name} na Divine: {url}",
+    "@listShareText": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            },
+            "url": {
+                "type": "String"
+            }
+        }
+    },
+    "listShareSubject": "{name} na Divine",
+    "@listShareSubject": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
     "listCancel": "Anuluj",
     "listCreate": "Utwórz",
     "listCreateFailed": "Nie udało się utworzyć listy",

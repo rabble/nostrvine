@@ -2045,6 +2045,40 @@
     "listDescriptionLabel": "Descriere (opțional)",
     "listPublicList": "Listă publică",
     "listPublicListSubtitle": "Alții pot urmări și vedea această listă",
+    "listPrivateListSubtitle": "Listele private rămân pe acest dispozitiv și nu au backup",
+    "listVisibilityPublic": "Publică",
+    "listVisibilityPrivateDevice": "Privată · Pe acest dispozitiv",
+    "profileListsEmpty": "Încă n-ai liste. Fă una pentru buclele pe care vrei să le ții împreună.",
+    "listEditTitle": "Editează lista",
+    "listEditAction": "Editează lista",
+    "listShareAction": "Distribuie lista",
+    "listShareFailed": "N-am putut distribui lista. Mai încearcă.",
+    "listSave": "Salvează",
+    "listContinue": "Continuă",
+    "listUpdateFailed": "N-am putut actualiza lista. Mai încearcă.",
+    "listMakePrivateTitle": "Faci lista privată?",
+    "listMakePrivateWarning": "Vom cere releelor să elimine copia publică, dar copiile deja distribuite pot rămâne online. Lista va rămâne doar pe acest dispozitiv și nu va avea backup.",
+    "listMakePublicTitle": "Faci lista publică?",
+    "listMakePublicWarning": "Oricine are linkul poate vedea lista și videoclipurile din ea.",
+    "listShareText": "Vezi {name} pe Divine: {url}",
+    "@listShareText": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            },
+            "url": {
+                "type": "String"
+            }
+        }
+    },
+    "listShareSubject": "{name} pe Divine",
+    "@listShareSubject": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
     "listCancel": "Anulează",
     "listCreate": "Creează",
     "listCreateFailed": "N-am putut crea lista",

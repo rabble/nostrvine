@@ -5219,6 +5219,65 @@ class AppLocalizationsRo extends AppLocalizations {
       'Alții pot urmări și vedea această listă';
 
   @override
+  String get listPrivateListSubtitle =>
+      'Listele private rămân pe acest dispozitiv și nu au backup';
+
+  @override
+  String get listVisibilityPublic => 'Publică';
+
+  @override
+  String get listVisibilityPrivateDevice => 'Privată · Pe acest dispozitiv';
+
+  @override
+  String get profileListsEmpty =>
+      'Încă n-ai liste. Fă una pentru buclele pe care vrei să le ții împreună.';
+
+  @override
+  String get listEditTitle => 'Editează lista';
+
+  @override
+  String get listEditAction => 'Editează lista';
+
+  @override
+  String get listShareAction => 'Distribuie lista';
+
+  @override
+  String get listShareFailed => 'N-am putut distribui lista. Mai încearcă.';
+
+  @override
+  String get listSave => 'Salvează';
+
+  @override
+  String get listContinue => 'Continuă';
+
+  @override
+  String get listUpdateFailed => 'N-am putut actualiza lista. Mai încearcă.';
+
+  @override
+  String get listMakePrivateTitle => 'Faci lista privată?';
+
+  @override
+  String get listMakePrivateWarning =>
+      'Vom cere releelor să elimine copia publică, dar copiile deja distribuite pot rămâne online. Lista va rămâne doar pe acest dispozitiv și nu va avea backup.';
+
+  @override
+  String get listMakePublicTitle => 'Faci lista publică?';
+
+  @override
+  String get listMakePublicWarning =>
+      'Oricine are linkul poate vedea lista și videoclipurile din ea.';
+
+  @override
+  String listShareText(String name, String url) {
+    return 'Vezi $name pe Divine: $url';
+  }
+
+  @override
+  String listShareSubject(String name) {
+    return '$name pe Divine';
+  }
+
+  @override
   String get listCancel => 'Anulează';
 
   @override

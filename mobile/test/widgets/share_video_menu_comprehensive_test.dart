@@ -440,28 +440,26 @@ void main() {
       expect(find.text('Public Lists'), findsNothing);
     });
 
-    testWidgets(
-      'hides Add to List when curatedLists feature flag is disabled',
-      (tester) async {
-        await tester.pumpWidget(buildSubject(curatedListsEnabled: false));
-        await tester.tap(find.byType(ShareActionButton));
-        await tester.pumpAndSettle();
+    // Video lists (kind 30005) ship unflagged: the profile Lists tab and its
+    // create button are ungated, so gating only the add action would leave
+    // the flag able to strand lists the user can still make but not fill.
+    // FeatureFlag.curatedLists now covers people lists (kind 30000) alone.
+    for (final flagEnabled in [true, false]) {
+      testWidgets(
+        'shows Add to List with the curatedLists flag ${flagEnabled ? 'on' : 'off'}',
+        (tester) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
 
-        expect(find.text('Share with'), findsOneWidget);
-        expect(find.text('Add to List'), findsNothing);
-        expect(find.text('Save'), findsOneWidget);
-      },
-    );
+          await tester.pumpWidget(
+            buildSubject(curatedListsEnabled: flagEnabled),
+          );
+          await tester.tap(find.byType(ShareActionButton));
+          await tester.pumpAndSettle();
 
-    testWidgets('shows Add to List when curatedLists feature flag is enabled', (
-      tester,
-    ) async {
-      await tester.pumpWidget(buildSubject());
-      await tester.tap(find.byType(ShareActionButton));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Add to List'), findsOneWidget);
-    });
+          expect(find.text(l10n.shareSheetAddToList), findsOneWidget);
+        },
+      );
+    }
 
     testWidgets(
       'shows Event JSON and Event ID when debugTools flag is enabled',

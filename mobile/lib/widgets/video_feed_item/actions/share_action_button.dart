@@ -33,7 +33,6 @@ import 'package:openvine/widgets/add_to_list_dialog.dart';
 import 'package:openvine/widgets/crosspost_sheet.dart';
 import 'package:openvine/widgets/find_people_sheet.dart';
 import 'package:openvine/widgets/owner_video_delete_confirmation_dialog.dart';
-import 'package:openvine/widgets/profile/profile_saved_videos_sync_scope.dart';
 import 'package:openvine/widgets/save_original_progress_sheet.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
@@ -82,14 +81,11 @@ class ShareActionButton extends StatelessWidget {
     final videoSharingService = container.read(videoSharingServiceProvider);
     if (profileRepository == null || videoSharingService == null) return;
 
-    final inheritedLookupContext = context;
-
     context.showVideoPausingVineBottomSheet<void>(
       builder: (sheetContext) => _UnifiedShareSheet(
         video: video,
         profileRepository: profileRepository,
         videoSharingService: videoSharingService,
-        inheritedLookupContext: inheritedLookupContext,
       ),
     );
   }
@@ -123,17 +119,11 @@ class _UnifiedShareSheet extends ConsumerStatefulWidget {
     required this.video,
     required this.profileRepository,
     required this.videoSharingService,
-    required this.inheritedLookupContext,
   });
 
   final VideoEvent video;
   final ProfileReader profileRepository;
   final VideoSharingService videoSharingService;
-
-  /// Context from the widget that opened the sheet (not the modal builder).
-  /// Used to reach [ProfileSavedVideosBloc] under the profile grid, which a
-  /// modal route context may not inherit.
-  final BuildContext inheritedLookupContext;
 
   @override
   ConsumerState<_UnifiedShareSheet> createState() => _UnifiedShareSheetState();
@@ -312,11 +302,6 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
         messenger.showSnackBar(
           DivineSnackbarContainer.snackBar(snackText, error: !succeeded),
         );
-        if (succeeded) {
-          requestProfileSavedVideosSyncIfAvailable(
-            widget.inheritedLookupContext,
-          );
-        }
       case ShareSheetVideoClipImportResult(
         :final succeeded,
         :final libraryTitle,

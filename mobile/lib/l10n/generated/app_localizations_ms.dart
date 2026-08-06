@@ -5116,6 +5116,66 @@ class AppLocalizationsMs extends AppLocalizations {
       'Orang lain boleh mengikuti dan melihat senarai ini';
 
   @override
+  String get listPrivateListSubtitle =>
+      'Senarai peribadi kekal pada peranti ini dan tidak disandarkan';
+
+  @override
+  String get listVisibilityPublic => 'Awam';
+
+  @override
+  String get listVisibilityPrivateDevice => 'Peribadi · Pada peranti ini';
+
+  @override
+  String get profileListsEmpty =>
+      'Belum ada senarai. Buat satu untuk loop yang anda mahu simpan bersama.';
+
+  @override
+  String get listEditTitle => 'Edit senarai';
+
+  @override
+  String get listEditAction => 'Edit senarai';
+
+  @override
+  String get listShareAction => 'Kongsi senarai';
+
+  @override
+  String get listShareFailed => 'Senarai ini tidak dapat dikongsi. Cuba lagi.';
+
+  @override
+  String get listSave => 'Simpan';
+
+  @override
+  String get listContinue => 'Teruskan';
+
+  @override
+  String get listUpdateFailed =>
+      'Senarai ini tidak dapat dikemas kini. Cuba lagi.';
+
+  @override
+  String get listMakePrivateTitle => 'Jadikan senarai ini peribadi?';
+
+  @override
+  String get listMakePrivateWarning =>
+      'Kami akan meminta relay membuang salinan awamnya, tetapi salinan yang sudah dikongsi mungkin masih kekal dalam talian. Senarai ini akan berada pada peranti ini sahaja dan tidak disandarkan.';
+
+  @override
+  String get listMakePublicTitle => 'Jadikan senarai ini awam?';
+
+  @override
+  String get listMakePublicWarning =>
+      'Sesiapa yang ada pautan boleh melihat senarai ini dan videonya.';
+
+  @override
+  String listShareText(String name, String url) {
+    return 'Tengok $name di Divine: $url';
+  }
+
+  @override
+  String listShareSubject(String name) {
+    return '$name di Divine';
+  }
+
+  @override
   String get listCancel => 'Batal';
 
   @override

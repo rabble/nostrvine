@@ -2247,6 +2247,40 @@
     "listDescriptionLabel": "Описание (по избор)",
     "listPublicList": "Публичен списък",
     "listPublicListSubtitle": "Други могат да следват и да видят този списък",
+    "listPrivateListSubtitle": "Частните списъци остават на това устройство и не се архивират",
+    "listVisibilityPublic": "Публичен",
+    "listVisibilityPrivateDevice": "Частен · На това устройство",
+    "profileListsEmpty": "Още няма списъци. Направи един за луповете, които искаш да държиш заедно.",
+    "listEditTitle": "Редактирай списъка",
+    "listEditAction": "Редактирай списъка",
+    "listShareAction": "Сподели списъка",
+    "listShareFailed": "Списъкът не можа да бъде споделен. Опитай пак.",
+    "listSave": "Запази",
+    "listContinue": "Продължи",
+    "listUpdateFailed": "Списъкът не можа да бъде обновен. Опитай пак.",
+    "listMakePrivateTitle": "Да направим ли този списък частен?",
+    "listMakePrivateWarning": "Ще помолим релетата да премахнат публичното копие, но вече споделени копия може да останат онлайн. Списъкът ще остане само на това устройство и няма да се архивира.",
+    "listMakePublicTitle": "Да направим ли този списък публичен?",
+    "listMakePublicWarning": "Всеки с линка може да види този списък и видеата в него.",
+    "listShareText": "Виж {name} в Divine: {url}",
+    "@listShareText": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            },
+            "url": {
+                "type": "String"
+            }
+        }
+    },
+    "listShareSubject": "{name} в Divine",
+    "@listShareSubject": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
     "listCancel": "Отказ",
     "listCreate": "Създай",
     "listCreateFailed": "Неуспешно създаване на списък",

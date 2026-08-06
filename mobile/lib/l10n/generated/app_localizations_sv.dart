@@ -5071,6 +5071,65 @@ class AppLocalizationsSv extends AppLocalizations {
   String get listPublicListSubtitle => 'Andra kan följa och se den här listan';
 
   @override
+  String get listPrivateListSubtitle =>
+      'Privata listor stannar på den här enheten och säkerhetskopieras inte';
+
+  @override
+  String get listVisibilityPublic => 'Offentlig';
+
+  @override
+  String get listVisibilityPrivateDevice => 'Privat · På den här enheten';
+
+  @override
+  String get profileListsEmpty =>
+      'Inga listor än. Skapa en för looparna du vill hålla ihop.';
+
+  @override
+  String get listEditTitle => 'Redigera lista';
+
+  @override
+  String get listEditAction => 'Redigera lista';
+
+  @override
+  String get listShareAction => 'Dela lista';
+
+  @override
+  String get listShareFailed => 'Kunde inte dela listan. Försök igen.';
+
+  @override
+  String get listSave => 'Spara';
+
+  @override
+  String get listContinue => 'Fortsätt';
+
+  @override
+  String get listUpdateFailed => 'Kunde inte uppdatera listan. Försök igen.';
+
+  @override
+  String get listMakePrivateTitle => 'Göra listan privat?';
+
+  @override
+  String get listMakePrivateWarning =>
+      'Vi ber reläerna att ta bort den publika kopian, men redan delade kopior kan finnas kvar online. Listan finns bara på den här enheten och säkerhetskopieras inte.';
+
+  @override
+  String get listMakePublicTitle => 'Göra listan offentlig?';
+
+  @override
+  String get listMakePublicWarning =>
+      'Alla med länken kan se listan och dess videor.';
+
+  @override
+  String listShareText(String name, String url) {
+    return 'Kolla in $name på Divine: $url';
+  }
+
+  @override
+  String listShareSubject(String name) {
+    return '$name på Divine';
+  }
+
+  @override
   String get listCancel => 'Avbryt';
 
   @override

@@ -14,6 +14,7 @@ class ProfileTabEmptyState extends StatelessWidget {
   const ProfileTabEmptyState({
     required this.title,
     required this.subtitle,
+    this.physics = const ClampingScrollPhysics(),
     super.key,
   });
 
@@ -23,9 +24,16 @@ class ProfileTabEmptyState extends StatelessWidget {
   /// Descriptive text shown below the title.
   final String subtitle;
 
+  /// Scroll physics for the wrapping viewport.
+  ///
+  /// Clamping suits a tab inside the profile's `NestedScrollView`. A host that
+  /// offers pull-to-refresh needs [AlwaysScrollableScrollPhysics] instead, so
+  /// an empty tab can still be overscrolled far enough to trigger it.
+  final ScrollPhysics physics;
+
   @override
   Widget build(BuildContext context) => CustomScrollView(
-    physics: const ClampingScrollPhysics(),
+    physics: physics,
     slivers: [
       SliverFillRemaining(
         hasScrollBody: false,

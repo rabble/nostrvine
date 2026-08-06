@@ -1,6 +1,7 @@
 // ABOUTME: Unit tests for CuratedListService CRUD operations (create, update, delete lists)
 // ABOUTME: Tests core list management functionality with mocked dependencies
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
@@ -12,6 +13,7 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -24,6 +26,24 @@ const _ownerPubkey =
     '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 const _otherPubkey =
     'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
+
+/// An outcome one relay accepted — what [PublishOutcome.acceptedByAny] gates on.
+PublishOutcome _accepted(Event event) => PublishOutcome(
+  eventId: event.id,
+  eventKind: event.kind,
+  acceptedBy: const ['wss://relay.test'],
+  rejectedBy: const {},
+  noResponseFrom: const [],
+);
+
+/// An outcome no relay accepted, so the caller may roll local state back.
+PublishOutcome _rejected(Event event) => PublishOutcome(
+  eventId: event.id,
+  eventKind: event.kind,
+  acceptedBy: const [],
+  rejectedBy: const {'wss://relay.test': 'blocked'},
+  noResponseFrom: const [],
+);
 
 void main() {
   group('CuratedListService - CRUD Operations', () {
@@ -54,10 +74,17 @@ void main() {
       when(() => mockAuth.isAuthenticated).thenReturn(true);
       when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownerPubkey);
 
-      // Mock successful event publishing
+      // Mock successful event publishing. Both paths are stubbed: the service
+      // confirms relay acceptance where a failure rolls local state back, and
+      // fires and forgets where it does not.
       when(() => mockNostr.publishEvent(any())).thenAnswer((invocation) {
         return Future<PublishResult>.value(
           PublishSuccess(event: invocation.positionalArguments[0] as Event),
+        );
+      });
+      when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer((invocation) {
+        return Future<PublishOutcome>.value(
+          _accepted(invocation.positionalArguments[0] as Event),
         );
       });
 
@@ -300,6 +327,22 @@ void main() {
         verify(() => mockNostr.subscribe(any())).called(1);
       });
 
+      test('re-queries relays only when the fetch is forced', () async {
+        when(
+          () => mockNostr.subscribe(any()),
+        ).thenAnswer((_) => const Stream.empty());
+        await service.fetchUserListsFromRelays();
+        clearInteractions(mockNostr);
+
+        // The session sync already ran, so an unforced call is a no-op and a
+        // list created on another device would stay invisible until restart.
+        await service.fetchUserListsFromRelays();
+        verifyNever(() => mockNostr.subscribe(any()));
+
+        await service.fetchUserListsFromRelays(force: true);
+        verify(() => mockNostr.subscribe(any())).called(1);
+      });
+
       test('relay-synced own lists stay in myLists', () async {
         when(() => mockNostr.subscribe(any())).thenAnswer(
           (_) => Stream.value(
@@ -405,7 +448,7 @@ void main() {
             tags: any(named: 'tags'),
           ),
         ).called(1);
-        verify(() => mockNostr.publishEvent(any())).called(1);
+        verify(() => mockNostr.publishEventAwaitOk(any())).called(1);
         expect(service.getListById(list!.id)!.nostrEventId, isNotNull);
       });
 
@@ -422,19 +465,20 @@ void main() {
         verify(() => mockNostr.publishEvent(any())).called(1);
       });
 
-      test('keeps list locally when publish fails', () async {
-        when(
-          () => mockNostr.publishEvent(any()),
-        ).thenAnswer((_) => Future<PublishResult>.value(const PublishFailed()));
+      test('does not claim a failed publication is a public list', () async {
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+          (invocation) => Future<PublishOutcome>.value(
+            _rejected(invocation.positionalArguments[0] as Event),
+          ),
+        );
 
         final list = await service.createList(name: 'Unlucky List');
 
-        expect(list, isNotNull);
-        expect(service.getListById(list!.id), isNotNull);
-        expect(service.getListById(list.id)!.nostrEventId, isNull);
+        expect(list, isNull);
+        expect(service.lists, isEmpty);
       });
 
-      test('keeps list locally when event signing fails', () async {
+      test('does not keep a public list when event signing fails', () async {
         when(
           () => mockAuth.createAndSignEvent(
             kind: any(named: 'kind'),
@@ -445,8 +489,8 @@ void main() {
 
         final list = await service.createList(name: 'Unsigned List');
 
-        expect(list, isNotNull);
-        expect(service.getListById(list!.id)!.nostrEventId, isNull);
+        expect(list, isNull);
+        expect(service.lists, isEmpty);
         verifyNever(() => mockNostr.publishEvent(any()));
       });
 
@@ -564,17 +608,15 @@ void main() {
         reset(mockNostr); // Clear previous invocations
 
         // Re-setup mocks after reset
-        when(() => mockNostr.publishEvent(any())).thenAnswer((
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer((
           invocation,
         ) async {
-          return PublishSuccess(
-            event: invocation.positionalArguments[0] as Event,
-          );
+          return _accepted(invocation.positionalArguments[0] as Event);
         });
 
         await service.updateList(listId: list.id, name: 'Updated Name');
 
-        verify(() => mockNostr.publishEvent(any())).called(1);
+        verify(() => mockNostr.publishEventAwaitOk(any())).called(1);
       });
 
       test('does not publish update for private list', () async {
@@ -621,6 +663,230 @@ void main() {
         final updatedList = service.getListById(list.id);
         expect(updatedList!.description, 'Original description');
         expect(updatedList.tags, ['original', 'tags']);
+      });
+
+      test('publishes deletion before making a public list private', () async {
+        final list = await service.createList(name: 'Public List');
+        reset(mockNostr);
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+          (invocation) async =>
+              _accepted(invocation.positionalArguments[0] as Event),
+        );
+
+        final result = await service.updateList(
+          listId: list!.id,
+          isPublic: false,
+        );
+
+        expect(result, isTrue);
+        expect(service.getListById(list.id)!.isPublic, isFalse);
+        final deletion =
+            verify(
+                  () => mockNostr.publishEventAwaitOk(captureAny()),
+                ).captured.single
+                as Event;
+        expect(deletion.kind, EventKind.eventDeletion);
+        expect(
+          deletion.tags,
+          contains(equals(['a', '30005:$_ownerPubkey:${list.id}'])),
+        );
+      });
+
+      test('unsets the description when the edit clears it', () async {
+        final list = await service.createList(
+          name: 'Described',
+          description: 'Original',
+          isPublic: false,
+        );
+
+        final result = await service.updateList(
+          listId: list!.id,
+          description: '',
+        );
+
+        expect(result, isTrue);
+        expect(service.getListById(list.id)!.description, isNull);
+      });
+
+      test('leaves the description alone when it is not passed', () async {
+        final list = await service.createList(
+          name: 'Described',
+          description: 'Original',
+          isPublic: false,
+        );
+
+        await service.updateList(listId: list!.id, name: 'Renamed');
+
+        expect(service.getListById(list.id)!.description, equals('Original'));
+      });
+
+      test('clears the Nostr event id when a list becomes private', () async {
+        final list = await service.createList(name: 'Public List');
+        expect(service.getListById(list!.id)!.nostrEventId, isNotNull);
+        reset(mockNostr);
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+          (invocation) async =>
+              _accepted(invocation.positionalArguments[0] as Event),
+        );
+
+        await service.updateList(listId: list.id, isPublic: false);
+
+        expect(service.getListById(list.id)!.nostrEventId, isNull);
+        expect(service.myLists.map((l) => l.id), contains(list.id));
+      });
+
+      test('keeps a list public when deletion publication fails', () async {
+        final list = await service.createList(name: 'Public List');
+        reset(mockNostr);
+        when(
+          () => mockNostr.publishEventAwaitOk(any()),
+        ).thenAnswer(
+          (invocation) async =>
+              _rejected(invocation.positionalArguments[0] as Event),
+        );
+
+        final result = await service.updateList(
+          listId: list!.id,
+          isPublic: false,
+        );
+
+        expect(result, isFalse);
+        expect(service.getListById(list.id)!.isPublic, isTrue);
+      });
+
+      test('publishes a private list before marking it public', () async {
+        final list = await service.createList(
+          name: 'Private List',
+          isPublic: false,
+        );
+
+        final result = await service.updateList(
+          listId: list!.id,
+          isPublic: true,
+        );
+
+        expect(result, isTrue);
+        expect(service.getListById(list.id)!.isPublic, isTrue);
+        final publication =
+            verify(
+                  () => mockNostr.publishEventAwaitOk(captureAny()),
+                ).captured.single
+                as Event;
+        expect(publication.kind, 30005);
+      });
+
+      test('keeps a list private when publication is rejected', () async {
+        final list = await service.createList(
+          name: 'Private List',
+          description: 'Original',
+          isPublic: false,
+        );
+        when(
+          () => mockNostr.publishEventAwaitOk(any()),
+        ).thenAnswer(
+          (invocation) async =>
+              _rejected(invocation.positionalArguments[0] as Event),
+        );
+
+        final result = await service.updateList(
+          listId: list!.id,
+          name: 'Renamed',
+          isPublic: true,
+        );
+
+        // The visibility change is the relay's to confirm, so it does not
+        // stick. The rename is this device's, so losing it to an unreachable
+        // relay would be data loss the user never asked for.
+        expect(result, isFalse);
+        final stored = service.getListById(list.id)!;
+        expect(stored.isPublic, isFalse);
+        expect(stored.name, equals('Renamed'));
+      });
+
+      test(
+        'keeps a rename when the relay rejects a public list update',
+        () async {
+          final list = await service.createList(name: 'Public List');
+          when(
+            () => mockNostr.publishEventAwaitOk(any()),
+          ).thenAnswer(
+            (invocation) async =>
+                _rejected(invocation.positionalArguments[0] as Event),
+          );
+
+          final result = await service.updateList(
+            listId: list!.id,
+            name: 'Renamed',
+            description: 'Written offline',
+          );
+
+          expect(result, isFalse);
+          final stored = service.getListById(list.id)!;
+          expect(stored.name, equals('Renamed'));
+          expect(stored.description, equals('Written offline'));
+          expect(stored.isPublic, isTrue);
+        },
+      );
+
+      test('confirms relay acceptance before rolling an update back', () async {
+        // publishEvent queues a failed send and replays it on reconnect, so a
+        // caller that rolls local state back on its result can undo an event
+        // the relays still receive. The confirmed path must be used instead.
+        final list = await service.createList(name: 'Public List');
+        reset(mockNostr);
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+          (invocation) async =>
+              _accepted(invocation.positionalArguments[0] as Event),
+        );
+
+        await service.updateList(listId: list!.id, name: 'Renamed');
+
+        verify(() => mockNostr.publishEventAwaitOk(any())).called(1);
+        verifyNever(() => mockNostr.publishEvent(any()));
+      });
+
+      test('keeps the published event id on a public update', () async {
+        final list = await service.createList(name: 'Public List');
+        final publishedId = service.getListById(list!.id)!.nostrEventId;
+        expect(publishedId, isNotNull);
+
+        await service.updateList(listId: list.id, name: 'Renamed');
+
+        final stored = service.getListById(list.id)!;
+        expect(stored.name, equals('Renamed'));
+        expect(stored.nostrEventId, isNotNull);
+      });
+
+      test('keeps a video added while the update was publishing', () async {
+        final list = await service.createList(name: 'Public List');
+        reset(mockNostr);
+
+        // Held open so the add lands inside the update's publish, which under
+        // publishEventAwaitOk runs to a 15s deadline rather than a socket
+        // write.
+        final publishGate = Completer<void>();
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer((
+          invocation,
+        ) async {
+          await publishGate.future;
+          return _accepted(invocation.positionalArguments[0] as Event);
+        });
+        when(() => mockNostr.publishEvent(any())).thenAnswer(
+          (invocation) async =>
+              PublishSuccess(event: invocation.positionalArguments[0] as Event),
+        );
+
+        final pendingUpdate = service.updateList(
+          listId: list!.id,
+          name: 'Renamed',
+        );
+        await service.addVideoToList(list.id, 'video_added_mid_publish');
+        publishGate.complete();
+
+        expect(await pendingUpdate, isTrue);
+        final stored = service.getListById(list.id)!;
+        expect(stored.name, equals('Renamed'));
+        expect(stored.videoEventIds, contains('video_added_mid_publish'));
       });
     });
 
@@ -693,9 +959,9 @@ void main() {
         // Creation publishes the kind 30005 event; reset so the capture
         // below only sees the deletion event.
         reset(mockNostr);
-        when(() => mockNostr.publishEvent(any())).thenAnswer(
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
           (invocation) async =>
-              PublishSuccess(event: invocation.positionalArguments[0] as Event),
+              _accepted(invocation.positionalArguments[0] as Event),
         );
 
         final result = await service.deleteOwnedList(list!.id);
@@ -704,7 +970,9 @@ void main() {
         expect(service.getListById(list.id), isNull);
 
         final published =
-            verify(() => mockNostr.publishEvent(captureAny())).captured.single
+            verify(
+                  () => mockNostr.publishEventAwaitOk(captureAny()),
+                ).captured.single
                 as Event;
         expect(published.kind, EventKind.eventDeletion);
         expect(published.content, 'Deleted curated list ${list.id}');
@@ -718,9 +986,11 @@ void main() {
       test('keeps local list when publish fails', () async {
         final list = await service.createList(name: 'Owned Public List');
         reset(mockNostr);
-        when(
-          () => mockNostr.publishEvent(any()),
-        ).thenAnswer((_) => Future<PublishResult>.value(const PublishFailed()));
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+          (invocation) => Future<PublishOutcome>.value(
+            _rejected(invocation.positionalArguments[0] as Event),
+          ),
+        );
 
         final result = await service.deleteOwnedList(list!.id);
 
@@ -741,6 +1011,40 @@ void main() {
           expect(result, isTrue);
           expect(service.getListById(list.id), isNull);
           verifyNever(() => mockNostr.publishEvent(any()));
+        },
+      );
+
+      test(
+        'deletes the requested list when an earlier one goes first',
+        () async {
+          final earlier = await service.createList(
+            name: 'Earlier',
+            isPublic: false,
+          );
+          final target = await service.createList(name: 'Target');
+          final later = await service.createList(
+            name: 'Later',
+            isPublic: false,
+          );
+          reset(mockNostr);
+
+          // Held open so the second delete lands inside the deletion publish,
+          // which under publishEventAwaitOk can run to a 15s deadline.
+          final deletionGate = Completer<void>();
+          when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer((
+            invocation,
+          ) async {
+            await deletionGate.future;
+            return _accepted(invocation.positionalArguments[0] as Event);
+          });
+
+          final pendingDelete = service.deleteOwnedList(target!.id);
+          await service.deleteOwnedList(earlier!.id);
+          deletionGate.complete();
+
+          expect(await pendingDelete, isTrue);
+          expect(service.getListById(target.id), isNull);
+          expect(service.getListById(later!.id), isNotNull);
         },
       );
 

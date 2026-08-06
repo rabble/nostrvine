@@ -5037,6 +5037,65 @@ class AppLocalizationsId extends AppLocalizations {
       'Orang lain bisa mengikuti dan melihat daftar ini';
 
   @override
+  String get listPrivateListSubtitle =>
+      'Daftar privat tetap di perangkat ini dan tidak dicadangkan';
+
+  @override
+  String get listVisibilityPublic => 'Publik';
+
+  @override
+  String get listVisibilityPrivateDevice => 'Privat · Di perangkat ini';
+
+  @override
+  String get profileListsEmpty =>
+      'Belum ada daftar. Bikin satu untuk loop yang mau kamu simpan bareng.';
+
+  @override
+  String get listEditTitle => 'Edit daftar';
+
+  @override
+  String get listEditAction => 'Edit daftar';
+
+  @override
+  String get listShareAction => 'Bagikan daftar';
+
+  @override
+  String get listShareFailed => 'Daftar ini gagal dibagikan. Coba lagi.';
+
+  @override
+  String get listSave => 'Simpan';
+
+  @override
+  String get listContinue => 'Lanjut';
+
+  @override
+  String get listUpdateFailed => 'Daftar ini gagal diperbarui. Coba lagi.';
+
+  @override
+  String get listMakePrivateTitle => 'Jadikan daftar ini privat?';
+
+  @override
+  String get listMakePrivateWarning =>
+      'Kami akan meminta relay menghapus salinan publiknya, tapi salinan yang sudah tersebar bisa tetap ada. Daftar ini cuma akan ada di perangkat ini dan tidak dicadangkan.';
+
+  @override
+  String get listMakePublicTitle => 'Jadikan daftar ini publik?';
+
+  @override
+  String get listMakePublicWarning =>
+      'Siapa pun yang punya tautannya bisa melihat daftar ini dan videonya.';
+
+  @override
+  String listShareText(String name, String url) {
+    return 'Lihat $name di Divine: $url';
+  }
+
+  @override
+  String listShareSubject(String name) {
+    return '$name di Divine';
+  }
+
+  @override
   String get listCancel => 'Batal';
 
   @override

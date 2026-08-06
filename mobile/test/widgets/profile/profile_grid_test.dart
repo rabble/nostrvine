@@ -19,7 +19,7 @@ import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/services/bookmark_service.dart';
+import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/widgets/profile/profile_grid.dart';
 import 'package:openvine/widgets/profile/profile_tab_kind.dart';
 import 'package:openvine/widgets/profile/profile_videos_grid_skeleton.dart';
@@ -38,8 +38,6 @@ class _MockCommentsRepository extends Mock implements CommentsRepository {}
 
 class _MockContentBlocklistRepository extends Mock
     implements ContentBlocklistRepository {}
-
-class _MockBookmarkService extends Mock implements BookmarkService {}
 
 /// In-memory [CacheDao] whose writes can be parked, so a test can hold a tab
 /// BLoC in the post-emit snapshot write the way a real disk write does.
@@ -82,6 +80,21 @@ class _MockProfileFeedCubit extends MockBloc<ProfileFeedEvent, ProfileFeedState>
 class _MockMyProfileBloc extends MockBloc<MyProfileEvent, MyProfileState>
     implements MyProfileBloc {}
 
+class _MockCuratedListService extends Mock implements CuratedListService {}
+
+/// Serves a mock service without running the real relay-backed build.
+class _FakeCuratedListsState extends CuratedListsState {
+  _FakeCuratedListsState(this._service);
+
+  final CuratedListService _service;
+
+  @override
+  CuratedListService? get service => _service;
+
+  @override
+  Future<List<CuratedList>> build() async => _service.lists;
+}
+
 void main() {
   const userIdHex =
       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -92,7 +105,6 @@ void main() {
     late _MockVideosRepository videosRepository;
     late _MockCommentsRepository commentsRepository;
     late _MockContentBlocklistRepository blocklistRepository;
-    late _MockBookmarkService bookmarkService;
     late _MockProfileFeedCubit profileFeedCubit;
     late _MockMyProfileBloc myProfileBloc;
     late MockNostrClient nostrClient;
@@ -111,7 +123,6 @@ void main() {
       videosRepository = _MockVideosRepository();
       commentsRepository = _MockCommentsRepository();
       blocklistRepository = _MockContentBlocklistRepository();
-      bookmarkService = _MockBookmarkService();
       profileFeedCubit = _MockProfileFeedCubit();
       myProfileBloc = _MockMyProfileBloc();
       nostrClient = createMockNostrService();
@@ -132,7 +143,6 @@ void main() {
       when(() => blocklistRepository.isBlocked(any())).thenReturn(false);
       when(() => blocklistRepository.hasMutedUs(any())).thenReturn(false);
       when(() => blocklistRepository.hasBlockedUs(any())).thenReturn(false);
-      when(() => bookmarkService.globalBookmarks).thenReturn(const []);
       whenListen(
         profileFeedCubit,
         const Stream<ProfileFeedState>.empty(),
@@ -175,6 +185,7 @@ void main() {
       required bool isOwnProfile,
       bool isLoadingVideos = false,
       MockAuthService? mockAuthService,
+      CuratedListService? curatedListService,
     }) {
       return testMaterialApp(
         theme: VineTheme.theme,
@@ -203,13 +214,16 @@ void main() {
           contentBlocklistRepositoryProvider.overrideWithValue(
             blocklistRepository,
           ),
-          bookmarkServiceProvider.overrideWith((_) => bookmarkService),
           isFeatureEnabledProvider(
             FeatureFlag.videoReplies,
           ).overrideWith((_) => false),
           isFeatureEnabledProvider(
             FeatureFlag.curatedLists,
           ).overrideWith((_) => false),
+          if (curatedListService != null)
+            curatedListsStateProvider.overrideWith(
+              () => _FakeCuratedListsState(curatedListService),
+            ),
         ],
       );
     }
@@ -247,7 +261,7 @@ void main() {
 
         expect(find.bySemanticsLabel('videos_tab'), findsOneWidget);
         expect(find.bySemanticsLabel('collabs_tab'), findsOneWidget);
-        expect(find.bySemanticsLabel('saved_tab'), findsNothing);
+        expect(find.bySemanticsLabel('lists_tab'), findsNothing);
         expect(find.bySemanticsLabel('comments_tab'), findsOneWidget);
 
         await tester.pumpWidget(buildSubject(isOwnProfile: true));
@@ -258,7 +272,7 @@ void main() {
         expect(find.bySemanticsLabel('collabs_tab'), findsOneWidget);
         expect(find.bySemanticsLabel('liked_tab'), findsOneWidget);
         expect(find.bySemanticsLabel('reposted_tab'), findsOneWidget);
-        expect(find.bySemanticsLabel('saved_tab'), findsOneWidget);
+        expect(find.bySemanticsLabel('lists_tab'), findsOneWidget);
         expect(find.bySemanticsLabel('comments_tab'), findsOneWidget);
       },
     );
@@ -293,7 +307,6 @@ void main() {
             contentBlocklistRepositoryProvider.overrideWithValue(
               blocklistRepository,
             ),
-            bookmarkServiceProvider.overrideWith((_) => bookmarkService),
             isFeatureEnabledProvider(
               FeatureFlag.videoReplies,
             ).overrideWith((_) => false),
@@ -340,14 +353,28 @@ void main() {
     testWidgets(
       'pull-to-refresh completes after a viewed tab settled empty',
       (tester) async {
-        await tester.pumpWidget(buildSubject(isOwnProfile: true));
+        final curatedListService = _MockCuratedListService();
+        when(() => curatedListService.lists).thenReturn(const []);
+        when(() => curatedListService.myLists).thenReturn(const []);
+        when(
+          () => curatedListService.fetchUserListsFromRelays(
+            force: any(named: 'force'),
+          ),
+        ).thenAnswer((_) async {});
+
+        await tester.pumpWidget(
+          buildSubject(
+            isOwnProfile: true,
+            curatedListService: curatedListService,
+          ),
+        );
         await tester.pump();
 
-        // View Saved so it joins the set of tabs a refresh re-syncs, and let
-        // it settle on the empty bookmark list.
+        // View Lists so it joins the set of tabs a refresh re-syncs, and let
+        // it settle on the empty list collection.
         final tabBar = tester.widget<TabBar>(find.byType(TabBar));
         tabBar.controller!.animateTo(
-          profileTabKinds(isOwnProfile: true).indexOf(ProfileTabKind.saved),
+          profileTabKinds(isOwnProfile: true).indexOf(ProfileTabKind.lists),
         );
         await tester.pumpAndSettle();
 
@@ -368,14 +395,21 @@ void main() {
       "pull-to-refresh completes when the next pull lands during a tab's "
       'snapshot write',
       (tester) async {
+        when(
+          likesRepository.getOrderedLikedEventIds,
+        ).thenAnswer((_) async => const <String>[]);
+        when(
+          likesRepository.syncUserReactions,
+        ).thenAnswer((_) async => const LikesSyncResult.empty());
+
         await tester.pumpWidget(buildSubject(isOwnProfile: true));
         await tester.pump();
 
-        // View Saved so it joins the set of tabs a refresh re-syncs, and let
-        // it settle on the empty bookmark list.
+        // View Liked so it joins the set of tabs a refresh re-syncs, and let
+        // it settle on the empty liked list.
         final tabBar = tester.widget<TabBar>(find.byType(TabBar));
         tabBar.controller!.animateTo(
-          profileTabKinds(isOwnProfile: true).indexOf(ProfileTabKind.saved),
+          profileTabKinds(isOwnProfile: true).indexOf(ProfileTabKind.liked),
         );
         await tester.pumpAndSettle();
 
@@ -426,6 +460,42 @@ void main() {
       ).called(1);
       verify(
         () => profileFeedCubit.add(const ProfileFeedRefreshRequested()),
+      ).called(1);
+    });
+
+    testWidgets('pull-to-refresh re-queries relays for the lists tab', (
+      tester,
+    ) async {
+      final curatedListService = _MockCuratedListService();
+      when(() => curatedListService.lists).thenReturn(const []);
+      when(() => curatedListService.myLists).thenReturn(const []);
+      when(
+        () => curatedListService.fetchUserListsFromRelays(
+          force: any(named: 'force'),
+        ),
+      ).thenAnswer((_) async {});
+
+      await tester.pumpWidget(
+        buildSubject(
+          isOwnProfile: true,
+          curatedListService: curatedListService,
+        ),
+      );
+      await tester.pump();
+
+      // The tab is lazy: it only participates in refresh once viewed.
+      await tester.tap(find.bySemanticsLabel('lists_tab'));
+      await tester.pumpAndSettle();
+
+      final refreshIndicator = tester.widget<RefreshIndicator>(
+        find.byType(RefreshIndicator),
+      );
+      await refreshIndicator.onRefresh();
+
+      // Forced, or the service returns without querying because it already
+      // synced once this session.
+      verify(
+        () => curatedListService.fetchUserListsFromRelays(force: true),
       ).called(1);
     });
 

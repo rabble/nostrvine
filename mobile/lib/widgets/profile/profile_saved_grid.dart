@@ -26,8 +26,9 @@ import 'package:unified_logger/unified_logger.dart';
 /// Grid widget displaying the current user's saved (bookmarked) videos.
 ///
 /// Requires [ProfileSavedVideosBloc] to be provided in the widget tree.
-/// Only used on the viewer's own profile — bookmarks are private, so there
-/// is no "other user's saved" variant.
+/// Only ever shows the viewer's own bookmarks — they are private, so there
+/// is no "other user's saved" variant. Hosted by `SavedVideosScreen`, which
+/// the profile's Lists tab links to.
 class ProfileSavedGrid extends StatefulWidget {
   const ProfileSavedGrid({required this.userIdHex, super.key});
 
@@ -40,7 +41,8 @@ class ProfileSavedGrid extends StatefulWidget {
 
 class _ProfileSavedGridState extends State<ProfileSavedGrid>
     with ScrollPaginationMixin {
-  /// Resolved from [PrimaryScrollController] provided by [NestedScrollView].
+  /// Resolved from the enclosing [PrimaryScrollController], which the host
+  /// screen supplies.
   ScrollController? _primaryScrollController;
 
   @override
@@ -86,9 +88,14 @@ class _ProfileSavedGridState extends State<ProfileSavedGrid>
           return const ProfileTabLoadingState();
         }
 
+        // The settled states opt into overscroll for the host's
+        // RefreshIndicator: with the tab's default clamping physics a pull
+        // would stop working exactly when it is most wanted — after
+        // unbookmarking the last video, or when a sync failed.
         if (state.status == ProfileSavedVideosStatus.failure) {
           return ProfileTabErrorState(
             message: context.l10n.profileErrorLoadingSaved,
+            physics: const AlwaysScrollableScrollPhysics(),
           );
         }
 
@@ -98,11 +105,12 @@ class _ProfileSavedGridState extends State<ProfileSavedGrid>
           return ProfileTabEmptyState(
             title: context.l10n.profileNoSavedVideosTitle,
             subtitle: context.l10n.profileSavedOwnEmpty,
+            physics: const AlwaysScrollableScrollPhysics(),
           );
         }
 
         return CustomScrollView(
-          physics: const ClampingScrollPhysics(),
+          physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             SliverGrid(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(

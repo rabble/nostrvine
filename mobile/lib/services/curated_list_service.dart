@@ -272,7 +272,11 @@ class CuratedListService extends ChangeNotifier {
 
       // Publish to Nostr if user is authenticated and list is public
       if (_authService.isAuthenticated && isPublic) {
-        await _publishListToNostr(newList);
+        if (!await _publishListToNostr(newList, confirmed: true)) {
+          _lists.removeWhere((list) => list.id == listId);
+          await _saveLists();
+          return null;
+        }
       }
 
       Log.info(
@@ -416,7 +420,12 @@ class CuratedListService extends ChangeNotifier {
     }
   }
 
-  /// Update list metadata with enhanced playlist features
+  /// Update list metadata with enhanced playlist features.
+  ///
+  /// A null field is left unchanged. Passing an empty [description] clears it
+  /// back to unset, which is how the edit dialog expresses "I emptied this
+  /// field": stored as `''` it would render an empty description block on the
+  /// list card and publish empty event content.
   Future<bool> updateList({
     required String listId,
     String? name,
@@ -439,6 +448,7 @@ class CuratedListService extends ChangeNotifier {
       final updatedList = list.copyWith(
         name: name ?? list.name,
         description: description ?? list.description,
+        clearDescription: description != null && description.isEmpty,
         imageUrl: imageUrl ?? list.imageUrl,
         isPublic: isPublic ?? list.isPublic,
         tags: tags ?? list.tags,
@@ -449,12 +459,48 @@ class CuratedListService extends ChangeNotifier {
         updatedAt: DateTime.now(),
       );
 
-      _lists[listIndex] = updatedList;
+      final becamePrivate = list.isPublic && !updatedList.isPublic;
+
+      // Name, description and the rest of the edit are local-first: they are
+      // stored on this device and the relay copy is a projection of them, so
+      // an unreachable relay must not cost the user a rename. Visibility is
+      // the exception — it is a statement about what the relays hold — so it
+      // alone stays at its old value until the relay confirms the change.
+      // Written before any publish await, so [listIndex] is still valid.
+      _lists[listIndex] = updatedList.copyWith(isPublic: list.isPublic);
       await _saveLists();
 
-      // Update on Nostr if public
-      if (updatedList.isPublic && _authService.isAuthenticated) {
-        await _publishListToNostr(updatedList);
+      if (becamePrivate && !await _publishListDeletion(updatedList.id)) {
+        return false;
+      }
+
+      if (updatedList.isPublic) {
+        if (!_authService.isAuthenticated ||
+            !await _publishListToNostr(updatedList, confirmed: true)) {
+          return false;
+        }
+      }
+
+      // Only the public→private transition still needs a write. The public
+      // branch is already persisted by _publishListToNostr, and a list that
+      // was already private was fully written by the local-first save above —
+      // repeating it there costs a second notifyListeners and prefs write per
+      // edit for an identical value.
+      //
+      // A list that is no longer published must not keep the event ID of the
+      // event we just asked relays to delete: [myLists] treats a non-null
+      // nostrEventId as "published", so a stale one drops the list from My
+      // Lists as soon as the owner signs out.
+      //
+      // The index is re-resolved because [listIndex] was captured before the
+      // deletion publish awaited above.
+      if (becamePrivate) {
+        final currentIndex = _lists.indexWhere((list) => list.id == listId);
+        if (currentIndex == -1) {
+          return false;
+        }
+        _lists[currentIndex] = updatedList.copyWith(clearNostrEventId: true);
+        await _saveLists();
       }
 
       Log.debug(
@@ -549,35 +595,12 @@ class CuratedListService extends ChangeNotifier {
       }
 
       if (list.isPublic) {
-        final currentPubkey = _currentAuthenticatedPubkey();
-        if (currentPubkey == null || currentPubkey.isEmpty) {
-          return false;
-        }
-
-        final event = await _authService.createAndSignEvent(
-          kind: EventKind.eventDeletion,
-          content: 'Deleted curated list $listId',
-          tags: [
-            ['a', '30005:$currentPubkey:$listId'],
-            ['k', '30005'],
-          ],
-        );
-        if (event == null) {
-          return false;
-        }
-
-        final publishResult = await _nostrService.publishEvent(event);
-        if (publishResult is! PublishSuccess) {
-          Log.warning(
-            'Failed to publish curated list deletion: ${publishResult.failureReason}',
-            name: 'CuratedListService',
-            category: LogCategory.system,
-          );
+        if (!await _publishListDeletion(listId)) {
           return false;
         }
       }
 
-      await _removeListAndSubscription(listId, listIndex);
+      await _removeListAndSubscription(listId);
 
       Log.info(
         'Deleted owned curated list: ${list.name} ($listId)',
@@ -598,8 +621,45 @@ class CuratedListService extends ChangeNotifier {
     }
   }
 
-  Future<void> _removeListAndSubscription(String listId, int listIndex) async {
-    _lists.removeAt(listIndex);
+  Future<bool> _publishListDeletion(String listId) async {
+    final currentPubkey = _currentAuthenticatedPubkey();
+    if (currentPubkey == null || currentPubkey.isEmpty) {
+      return false;
+    }
+
+    final event = await _authService.createAndSignEvent(
+      kind: EventKind.eventDeletion,
+      content: 'Deleted curated list $listId',
+      tags: [
+        ['a', '30005:$currentPubkey:$listId'],
+        ['k', '30005'],
+      ],
+    );
+    if (event == null) return false;
+
+    // Confirmed, for the same reason as the confirmed publish path: both
+    // callers drop or flip local state when this returns false, and a queued
+    // deletion that lands after the rollback would delete the list the user
+    // still has.
+    final outcome = await _nostrService.publishEventAwaitOk(event);
+    if (outcome.acceptedByAny) return true;
+
+    Log.warning(
+      'Failed to publish curated list deletion: ${outcome.summary}',
+      name: 'CuratedListService',
+      category: LogCategory.system,
+    );
+    return false;
+  }
+
+  /// Removes [listId] locally, re-resolving its position by ID.
+  ///
+  /// The caller captures its index before the deletion publish awaits, and
+  /// under `publishEventAwaitOk` that wait runs to a 15s deadline. Anything
+  /// removing an earlier list in the meantime shifts the index, so a
+  /// positional remove would drop the wrong one.
+  Future<void> _removeListAndSubscription(String listId) async {
+    _lists.removeWhere((list) => list.id == listId);
     _subscribedListIds.remove(listId);
     await _saveLists();
     await _saveSubscribedListIds();
@@ -1025,14 +1085,25 @@ class CuratedListService extends ChangeNotifier {
     );
   }
 
-  /// Publish list to Nostr as NIP-51 kind 30005 event.
+  /// Publishes [list] as a NIP-51 kind 30005 event.
   ///
   /// Empty lists are published too — a freshly created public list must
   /// reach the relay immediately or it exists only on this device.
   ///
-  /// Returns `true` when the relay accepted the event. Failures are logged
-  /// and leave the local list intact with a null [CuratedList.nostrEventId].
-  Future<bool> _publishListToNostr(CuratedList list) async {
+  /// [confirmed] picks the failure semantics. Set, the publish waits for relay
+  /// `OK` frames and a `false` return means no relay took the event. Unset,
+  /// the SDK queues a failed send and replays it on reconnect (`RelayPool`
+  /// sends with `queueIfFailed: deadline == null`), so `false` means "not
+  /// yet" rather than "never".
+  ///
+  /// A caller that rolls local state back on failure must pass `true`, or it
+  /// undoes a list the relays still receive when the socket comes back. A
+  /// caller that ignores the result should leave it unset: an add-to-list made
+  /// offline is meant to reach the relay eventually.
+  Future<bool> _publishListToNostr(
+    CuratedList list, {
+    bool confirmed = false,
+  }) async {
     try {
       if (!_authService.isAuthenticated) {
         Log.warning(
@@ -1061,22 +1132,48 @@ class CuratedListService extends ChangeNotifier {
         return false;
       }
 
-      final publishResult = await _nostrService.publishEvent(event);
-      final failureReason = publishResult.failureReason;
-      if (failureReason != null) {
-        Log.warning(
-          'Failed to publish curated list: ${list.name} (${list.id}): '
-          '$failureReason',
-          name: 'CuratedListService',
-          category: LogCategory.system,
-        );
-        return false;
+      if (confirmed) {
+        final outcome = await _nostrService.publishEventAwaitOk(event);
+        // One acceptance is the bar: the target set includes pool members the
+        // client never connected to, and nothing here republishes to the rest.
+        if (!outcome.acceptedByAny) {
+          Log.warning(
+            'Failed to publish curated list: ${list.name} (${list.id}): '
+            '${outcome.summary}',
+            name: 'CuratedListService',
+            category: LogCategory.system,
+          );
+          return false;
+        }
+      } else {
+        final publishResult = await _nostrService.publishEvent(event);
+        final failureReason = publishResult.failureReason;
+        if (failureReason != null) {
+          Log.warning(
+            'Failed to publish curated list: ${list.name} (${list.id}): '
+            '$failureReason',
+            name: 'CuratedListService',
+            category: LogCategory.system,
+          );
+          return false;
+        }
       }
 
-      // Update local list with Nostr event ID
+      // Record the event ID against the list's current entry, not the copy
+      // captured before the publish: under `confirmed` the await above runs to
+      // a 15s OK deadline, and a mutation landing inside that window would be
+      // discarded by writing the snapshot back.
+      //
+      // [isPublic] is the exception, carried from [list]. The rest of the list
+      // is local-first, but visibility is a statement about what the relays
+      // hold, so [updateList] leaves it at its old value and this write is
+      // what commits the change once a relay has accepted it.
       final listIndex = _lists.indexWhere((l) => l.id == list.id);
       if (listIndex != -1) {
-        _lists[listIndex] = list.copyWith(nostrEventId: event.id);
+        _lists[listIndex] = _lists[listIndex].copyWith(
+          nostrEventId: event.id,
+          isPublic: list.isPublic,
+        );
         await _saveLists();
       }
       Log.debug(
@@ -1183,8 +1280,12 @@ class CuratedListService extends ChangeNotifier {
     }
   }
 
-  /// Fetch user's curated lists from Nostr relays on app startup
-  Future<void> fetchUserListsFromRelays() async {
+  /// Fetch the user's curated lists from Nostr relays.
+  ///
+  /// Runs at most once per session unless [force] is set, which is what
+  /// pull-to-refresh passes: without it a list created on another device only
+  /// appears after the app restarts.
+  Future<void> fetchUserListsFromRelays({bool force = false}) async {
     if (!_authService.isAuthenticated) {
       Log.warning(
         'Cannot fetch lists from relays - user not authenticated',
@@ -1194,7 +1295,7 @@ class CuratedListService extends ChangeNotifier {
       return;
     }
 
-    if (_hasSyncedWithRelays) {
+    if (_hasSyncedWithRelays && !force) {
       Log.debug(
         'Already synced with relays this session',
         name: 'CuratedListService',

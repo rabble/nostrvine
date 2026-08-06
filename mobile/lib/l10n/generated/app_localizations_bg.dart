@@ -5124,6 +5124,67 @@ class AppLocalizationsBg extends AppLocalizations {
       'Други могат да следват и да видят този списък';
 
   @override
+  String get listPrivateListSubtitle =>
+      'Частните списъци остават на това устройство и не се архивират';
+
+  @override
+  String get listVisibilityPublic => 'Публичен';
+
+  @override
+  String get listVisibilityPrivateDevice => 'Частен · На това устройство';
+
+  @override
+  String get profileListsEmpty =>
+      'Още няма списъци. Направи един за луповете, които искаш да държиш заедно.';
+
+  @override
+  String get listEditTitle => 'Редактирай списъка';
+
+  @override
+  String get listEditAction => 'Редактирай списъка';
+
+  @override
+  String get listShareAction => 'Сподели списъка';
+
+  @override
+  String get listShareFailed =>
+      'Списъкът не можа да бъде споделен. Опитай пак.';
+
+  @override
+  String get listSave => 'Запази';
+
+  @override
+  String get listContinue => 'Продължи';
+
+  @override
+  String get listUpdateFailed =>
+      'Списъкът не можа да бъде обновен. Опитай пак.';
+
+  @override
+  String get listMakePrivateTitle => 'Да направим ли този списък частен?';
+
+  @override
+  String get listMakePrivateWarning =>
+      'Ще помолим релетата да премахнат публичното копие, но вече споделени копия може да останат онлайн. Списъкът ще остане само на това устройство и няма да се архивира.';
+
+  @override
+  String get listMakePublicTitle => 'Да направим ли този списък публичен?';
+
+  @override
+  String get listMakePublicWarning =>
+      'Всеки с линка може да види този списък и видеата в него.';
+
+  @override
+  String listShareText(String name, String url) {
+    return 'Виж $name в Divine: $url';
+  }
+
+  @override
+  String listShareSubject(String name) {
+    return '$name в Divine';
+  }
+
+  @override
   String get listCancel => 'Отказ';
 
   @override

@@ -2830,6 +2830,40 @@
   "listDescriptionLabel": "تفصیل (اختیاری)",
   "listPublicList": "عوامی فہرست",
   "listPublicListSubtitle": "دوسرے اس فہرست کو فالو اور دیکھ سکتے ہیں",
+  "listPrivateListSubtitle": "نجی فہرستیں اسی ڈیوائس پر رہتی ہیں اور ان کا بیک اپ نہیں بنتا",
+  "listVisibilityPublic": "عوامی",
+  "listVisibilityPrivateDevice": "نجی · اسی ڈیوائس پر",
+  "profileListsEmpty": "ابھی کوئی فہرست نہیں۔ جو لوپ ساتھ رکھنے ہیں، ان کے لیے ایک بنائیں۔",
+  "listEditTitle": "فہرست میں ترمیم کریں",
+  "listEditAction": "فہرست میں ترمیم کریں",
+  "listShareAction": "فہرست شیئر کریں",
+  "listShareFailed": "یہ فہرست شیئر نہیں ہو سکی۔ دوبارہ کوشش کریں۔",
+  "listSave": "محفوظ کریں",
+  "listContinue": "جاری رکھیں",
+  "listUpdateFailed": "یہ فہرست اپ ڈیٹ نہیں ہو سکی۔ دوبارہ کوشش کریں۔",
+  "listMakePrivateTitle": "اس فہرست کو نجی بنائیں؟",
+  "listMakePrivateWarning": "ہم ریلے سے عوامی کاپی ہٹانے کی درخواست کریں گے، لیکن پہلے سے شیئر کی گئی کاپیاں آن لائن باقی رہ سکتی ہیں۔ یہ فہرست صرف اسی ڈیوائس پر رہے گی اور اس کا بیک اپ نہیں بنے گا۔",
+  "listMakePublicTitle": "اس فہرست کو عوامی بنائیں؟",
+  "listMakePublicWarning": "جس کے پاس بھی لنک ہو، وہ یہ فہرست اور اس کی ویڈیوز دیکھ سکتا ہے۔",
+  "listShareText": "Divine پر {name} دیکھیں: {url}",
+  "@listShareText": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "listShareSubject": "Divine پر {name}",
+  "@listShareSubject": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "listCancel": "منسوخ کریں",
   "listCreate": "بنائیں",
   "listCreateFailed": "فہرست نہیں بن سکی",

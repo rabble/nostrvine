@@ -5080,6 +5080,67 @@ class AppLocalizationsVi extends AppLocalizations {
       'Người khác có thể theo dõi và xem danh sách này';
 
   @override
+  String get listPrivateListSubtitle =>
+      'Danh sách riêng tư chỉ nằm trên thiết bị này và không được sao lưu';
+
+  @override
+  String get listVisibilityPublic => 'Công khai';
+
+  @override
+  String get listVisibilityPrivateDevice => 'Riêng tư · Trên thiết bị này';
+
+  @override
+  String get profileListsEmpty =>
+      'Chưa có danh sách nào. Tạo một cái cho những loop bạn muốn để chung.';
+
+  @override
+  String get listEditTitle => 'Sửa danh sách';
+
+  @override
+  String get listEditAction => 'Sửa danh sách';
+
+  @override
+  String get listShareAction => 'Chia sẻ danh sách';
+
+  @override
+  String get listShareFailed =>
+      'Không chia sẻ được danh sách này. Thử lại nhé.';
+
+  @override
+  String get listSave => 'Lưu';
+
+  @override
+  String get listContinue => 'Tiếp tục';
+
+  @override
+  String get listUpdateFailed =>
+      'Không cập nhật được danh sách này. Thử lại nhé.';
+
+  @override
+  String get listMakePrivateTitle => 'Chuyển danh sách này thành riêng tư?';
+
+  @override
+  String get listMakePrivateWarning =>
+      'Chúng tôi sẽ yêu cầu các relay gỡ bản sao công khai, nhưng những bản đã chia sẻ vẫn có thể còn trên mạng. Danh sách này sẽ chỉ nằm trên thiết bị này và không được sao lưu.';
+
+  @override
+  String get listMakePublicTitle => 'Chuyển danh sách này thành công khai?';
+
+  @override
+  String get listMakePublicWarning =>
+      'Bất kỳ ai có liên kết đều xem được danh sách này và các video trong đó.';
+
+  @override
+  String listShareText(String name, String url) {
+    return 'Xem $name trên Divine: $url';
+  }
+
+  @override
+  String listShareSubject(String name) {
+    return '$name trên Divine';
+  }
+
+  @override
   String get listCancel => 'Hủy';
 
   @override

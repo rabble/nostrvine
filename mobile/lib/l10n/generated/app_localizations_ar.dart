@@ -5036,6 +5036,65 @@ class AppLocalizationsAr extends AppLocalizations {
       'يمكن للآخرين متابعة هذه القائمة ورؤيتها';
 
   @override
+  String get listPrivateListSubtitle =>
+      'القوائم الخاصة تبقى على هذا الجهاز ولا يتم نسخها احتياطيًا';
+
+  @override
+  String get listVisibilityPublic => 'عامة';
+
+  @override
+  String get listVisibilityPrivateDevice => 'خاصة · على هذا الجهاز';
+
+  @override
+  String get profileListsEmpty =>
+      'لا توجد قوائم بعد. أنشئ واحدة للمقاطع التي تريد جمعها معًا.';
+
+  @override
+  String get listEditTitle => 'تعديل القائمة';
+
+  @override
+  String get listEditAction => 'تعديل القائمة';
+
+  @override
+  String get listShareAction => 'مشاركة القائمة';
+
+  @override
+  String get listShareFailed => 'تعذّرت مشاركة هذه القائمة. حاول مرة أخرى.';
+
+  @override
+  String get listSave => 'حفظ';
+
+  @override
+  String get listContinue => 'متابعة';
+
+  @override
+  String get listUpdateFailed => 'تعذّر تحديث هذه القائمة. حاول مرة أخرى.';
+
+  @override
+  String get listMakePrivateTitle => 'هل تريد جعل هذه القائمة خاصة؟';
+
+  @override
+  String get listMakePrivateWarning =>
+      'سنطلب من المرحّلات إزالة النسخة العامة، لكن النسخ التي تمت مشاركتها قد تبقى متاحة على الإنترنت. ستبقى هذه القائمة على هذا الجهاز فقط ولن يتم نسخها احتياطيًا.';
+
+  @override
+  String get listMakePublicTitle => 'هل تريد جعل هذه القائمة عامة؟';
+
+  @override
+  String get listMakePublicWarning =>
+      'يمكن لأي شخص لديه الرابط رؤية هذه القائمة ومقاطعها.';
+
+  @override
+  String listShareText(String name, String url) {
+    return 'شاهد $name على Divine: $url';
+  }
+
+  @override
+  String listShareSubject(String name) {
+    return '$name على Divine';
+  }
+
+  @override
   String get listCancel => 'إلغاء';
 
   @override

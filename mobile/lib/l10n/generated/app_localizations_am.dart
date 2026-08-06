@@ -4966,6 +4966,65 @@ class AppLocalizationsAm extends AppLocalizations {
   String get listPublicListSubtitle => 'ሌሎች ሊከተሉት እና ይህንን ዝርዝር ማየት ይችላሉ።';
 
   @override
+  String get listPrivateListSubtitle =>
+      'የግል ዝርዝሮች በዚህ መሣሪያ ላይ ብቻ ይቆያሉ፤ ምትኬም አይያዝላቸውም';
+
+  @override
+  String get listVisibilityPublic => 'ይፋዊ';
+
+  @override
+  String get listVisibilityPrivateDevice => 'የግል · በዚህ መሣሪያ ላይ';
+
+  @override
+  String get profileListsEmpty =>
+      'እስካሁን ዝርዝር የለም። አብረው እንዲቆዩ የሚፈልጓቸውን ሉፖች የሚያሰባስብ ዝርዝር ይፍጠሩ።';
+
+  @override
+  String get listEditTitle => 'ዝርዝር አርትዕ';
+
+  @override
+  String get listEditAction => 'ዝርዝር አርትዕ';
+
+  @override
+  String get listShareAction => 'ዝርዝር አጋራ';
+
+  @override
+  String get listShareFailed => 'ይህን ዝርዝር ማጋራት አልተቻለም። እንደገና ይሞክሩ።';
+
+  @override
+  String get listSave => 'አስቀምጥ';
+
+  @override
+  String get listContinue => 'ቀጥል';
+
+  @override
+  String get listUpdateFailed => 'ይህን ዝርዝር ማዘመን አልተቻለም። እንደገና ይሞክሩ።';
+
+  @override
+  String get listMakePrivateTitle => 'ይህ ዝርዝር የግል ይሁን?';
+
+  @override
+  String get listMakePrivateWarning =>
+      'የይፋዊውን ቅጂ እንዲያስወግዱ ሪሌዎችን እንጠይቃለን፣ ነገር ግን አስቀድመው የተጋሩ ቅጂዎች በመስመር ላይ ሊቀሩ ይችላሉ። ይህ ዝርዝር በዚህ መሣሪያ ላይ ብቻ ይቆያል፤ ምትኬም አይያዝለትም።';
+
+  @override
+  String get listMakePublicTitle => 'ይህ ዝርዝር ይፋዊ ይሁን?';
+
+  @override
+  String get listMakePublicWarning =>
+      'አገናኙ ያለው ማንኛውም ሰው ይህን ዝርዝርና ቪዲዮዎቹን ማየት ይችላል።';
+
+  @override
+  String listShareText(String name, String url) {
+    return '$nameን በDivine ላይ ይመልከቱ፦ $url';
+  }
+
+  @override
+  String listShareSubject(String name) {
+    return '$name በDivine ላይ';
+  }
+
+  @override
   String get listCancel => 'ሰርዝ';
 
   @override

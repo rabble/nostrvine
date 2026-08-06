@@ -5080,6 +5080,66 @@ class AppLocalizationsUr extends AppLocalizations {
       'دوسرے اس فہرست کو فالو اور دیکھ سکتے ہیں';
 
   @override
+  String get listPrivateListSubtitle =>
+      'نجی فہرستیں اسی ڈیوائس پر رہتی ہیں اور ان کا بیک اپ نہیں بنتا';
+
+  @override
+  String get listVisibilityPublic => 'عوامی';
+
+  @override
+  String get listVisibilityPrivateDevice => 'نجی · اسی ڈیوائس پر';
+
+  @override
+  String get profileListsEmpty =>
+      'ابھی کوئی فہرست نہیں۔ جو لوپ ساتھ رکھنے ہیں، ان کے لیے ایک بنائیں۔';
+
+  @override
+  String get listEditTitle => 'فہرست میں ترمیم کریں';
+
+  @override
+  String get listEditAction => 'فہرست میں ترمیم کریں';
+
+  @override
+  String get listShareAction => 'فہرست شیئر کریں';
+
+  @override
+  String get listShareFailed => 'یہ فہرست شیئر نہیں ہو سکی۔ دوبارہ کوشش کریں۔';
+
+  @override
+  String get listSave => 'محفوظ کریں';
+
+  @override
+  String get listContinue => 'جاری رکھیں';
+
+  @override
+  String get listUpdateFailed =>
+      'یہ فہرست اپ ڈیٹ نہیں ہو سکی۔ دوبارہ کوشش کریں۔';
+
+  @override
+  String get listMakePrivateTitle => 'اس فہرست کو نجی بنائیں؟';
+
+  @override
+  String get listMakePrivateWarning =>
+      'ہم ریلے سے عوامی کاپی ہٹانے کی درخواست کریں گے، لیکن پہلے سے شیئر کی گئی کاپیاں آن لائن باقی رہ سکتی ہیں۔ یہ فہرست صرف اسی ڈیوائس پر رہے گی اور اس کا بیک اپ نہیں بنے گا۔';
+
+  @override
+  String get listMakePublicTitle => 'اس فہرست کو عوامی بنائیں؟';
+
+  @override
+  String get listMakePublicWarning =>
+      'جس کے پاس بھی لنک ہو، وہ یہ فہرست اور اس کی ویڈیوز دیکھ سکتا ہے۔';
+
+  @override
+  String listShareText(String name, String url) {
+    return 'Divine پر $name دیکھیں: $url';
+  }
+
+  @override
+  String listShareSubject(String name) {
+    return 'Divine پر $name';
+  }
+
+  @override
   String get listCancel => 'منسوخ کریں';
 
   @override

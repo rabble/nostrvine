@@ -88,11 +88,13 @@ class CuratedListCard extends StatelessWidget {
   const CuratedListCard({
     required this.curatedList,
     required this.onTap,
+    this.showVisibility = false,
     super.key,
   });
 
   final CuratedList curatedList;
   final VoidCallback onTap;
+  final bool showVisibility;
 
   @override
   Widget build(BuildContext context) {
@@ -184,10 +186,43 @@ class CuratedListCard extends StatelessWidget {
                   ],
                 ],
               ),
+              if (showVisibility) ...[
+                const SizedBox(height: 8),
+                _ListVisibilityBadge(isPublic: curatedList.isPublic),
+              ],
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ListVisibilityBadge extends StatelessWidget {
+  const _ListVisibilityBadge({required this.isPublic});
+
+  final bool isPublic;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      spacing: 6,
+      children: [
+        DivineIcon(
+          icon: isPublic ? DivineIconName.globe : DivineIconName.lockSimple,
+          size: 14,
+          color: context.vineColors.secondaryText,
+        ),
+        Text(
+          isPublic
+              ? context.l10n.listVisibilityPublic
+              : context.l10n.listVisibilityPrivateDevice,
+          style: VineTheme.labelSmallFont(
+            color: context.vineColors.secondaryText,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -2045,6 +2045,40 @@
     "listDescriptionLabel": "Beschrijving (optioneel)",
     "listPublicList": "Openbare lijst",
     "listPublicListSubtitle": "Anderen kunnen deze lijst volgen en zien",
+    "listPrivateListSubtitle": "Privélijsten blijven op dit apparaat en er wordt geen back-up van gemaakt",
+    "listVisibilityPublic": "Openbaar",
+    "listVisibilityPrivateDevice": "Privé · Op dit apparaat",
+    "profileListsEmpty": "Nog geen lijsten. Maak er een voor de loops die je bij elkaar wilt houden.",
+    "listEditTitle": "Lijst bewerken",
+    "listEditAction": "Lijst bewerken",
+    "listShareAction": "Lijst delen",
+    "listShareFailed": "Kon deze lijst niet delen. Probeer het opnieuw.",
+    "listSave": "Opslaan",
+    "listContinue": "Doorgaan",
+    "listUpdateFailed": "Kon deze lijst niet bijwerken. Probeer het opnieuw.",
+    "listMakePrivateTitle": "Deze lijst privé maken?",
+    "listMakePrivateWarning": "We vragen de relays om de openbare kopie te verwijderen, maar al gedeelde kopieën kunnen online blijven. Deze lijst staat alleen nog op dit apparaat en er wordt geen back-up van gemaakt.",
+    "listMakePublicTitle": "Deze lijst openbaar maken?",
+    "listMakePublicWarning": "Iedereen met de link kan deze lijst en de video's erin zien.",
+    "listShareText": "Check {name} op Divine: {url}",
+    "@listShareText": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            },
+            "url": {
+                "type": "String"
+            }
+        }
+    },
+    "listShareSubject": "{name} op Divine",
+    "@listShareSubject": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
     "listCancel": "Annuleren",
     "listCreate": "Maken",
     "listCreateFailed": "Lijst maken mislukt",

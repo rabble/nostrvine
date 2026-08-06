@@ -2045,6 +2045,40 @@
     "listDescriptionLabel": "Beskrivning (valfritt)",
     "listPublicList": "Publik lista",
     "listPublicListSubtitle": "Andra kan följa och se den här listan",
+    "listPrivateListSubtitle": "Privata listor stannar på den här enheten och säkerhetskopieras inte",
+    "listVisibilityPublic": "Offentlig",
+    "listVisibilityPrivateDevice": "Privat · På den här enheten",
+    "profileListsEmpty": "Inga listor än. Skapa en för looparna du vill hålla ihop.",
+    "listEditTitle": "Redigera lista",
+    "listEditAction": "Redigera lista",
+    "listShareAction": "Dela lista",
+    "listShareFailed": "Kunde inte dela listan. Försök igen.",
+    "listSave": "Spara",
+    "listContinue": "Fortsätt",
+    "listUpdateFailed": "Kunde inte uppdatera listan. Försök igen.",
+    "listMakePrivateTitle": "Göra listan privat?",
+    "listMakePrivateWarning": "Vi ber reläerna att ta bort den publika kopian, men redan delade kopior kan finnas kvar online. Listan finns bara på den här enheten och säkerhetskopieras inte.",
+    "listMakePublicTitle": "Göra listan offentlig?",
+    "listMakePublicWarning": "Alla med länken kan se listan och dess videor.",
+    "listShareText": "Kolla in {name} på Divine: {url}",
+    "@listShareText": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            },
+            "url": {
+                "type": "String"
+            }
+        }
+    },
+    "listShareSubject": "{name} på Divine",
+    "@listShareSubject": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
     "listCancel": "Avbryt",
     "listCreate": "Skapa",
     "listCreateFailed": "Kunde inte skapa listan",

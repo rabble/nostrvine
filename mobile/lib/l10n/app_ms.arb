@@ -2830,6 +2830,40 @@
   "listDescriptionLabel": "Keterangan (pilihan)",
   "listPublicList": "Senarai Awam",
   "listPublicListSubtitle": "Orang lain boleh mengikuti dan melihat senarai ini",
+  "listPrivateListSubtitle": "Senarai peribadi kekal pada peranti ini dan tidak disandarkan",
+  "listVisibilityPublic": "Awam",
+  "listVisibilityPrivateDevice": "Peribadi · Pada peranti ini",
+  "profileListsEmpty": "Belum ada senarai. Buat satu untuk loop yang anda mahu simpan bersama.",
+  "listEditTitle": "Edit senarai",
+  "listEditAction": "Edit senarai",
+  "listShareAction": "Kongsi senarai",
+  "listShareFailed": "Senarai ini tidak dapat dikongsi. Cuba lagi.",
+  "listSave": "Simpan",
+  "listContinue": "Teruskan",
+  "listUpdateFailed": "Senarai ini tidak dapat dikemas kini. Cuba lagi.",
+  "listMakePrivateTitle": "Jadikan senarai ini peribadi?",
+  "listMakePrivateWarning": "Kami akan meminta relay membuang salinan awamnya, tetapi salinan yang sudah dikongsi mungkin masih kekal dalam talian. Senarai ini akan berada pada peranti ini sahaja dan tidak disandarkan.",
+  "listMakePublicTitle": "Jadikan senarai ini awam?",
+  "listMakePublicWarning": "Sesiapa yang ada pautan boleh melihat senarai ini dan videonya.",
+  "listShareText": "Tengok {name} di Divine: {url}",
+  "@listShareText": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "listShareSubject": "{name} di Divine",
+  "@listShareSubject": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "listCancel": "Batal",
   "listCreate": "Cipta",
   "listCreateFailed": "Gagal mencipta senarai",

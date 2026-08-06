@@ -4826,6 +4826,62 @@ class AppLocalizationsJa extends AppLocalizations {
   String get listPublicListSubtitle => 'みんながフォロー・閲覧できるよ';
 
   @override
+  String get listPrivateListSubtitle => '非公開リストはこの端末にだけ残って、バックアップされないよ';
+
+  @override
+  String get listVisibilityPublic => '公開';
+
+  @override
+  String get listVisibilityPrivateDevice => '非公開 · この端末のみ';
+
+  @override
+  String get profileListsEmpty => 'まだリストがないよ。まとめておきたいループでひとつ作ってみて。';
+
+  @override
+  String get listEditTitle => 'リストを編集';
+
+  @override
+  String get listEditAction => 'リストを編集';
+
+  @override
+  String get listShareAction => 'リストを共有';
+
+  @override
+  String get listShareFailed => 'リストを共有できなかった。もう一度試してね。';
+
+  @override
+  String get listSave => '保存';
+
+  @override
+  String get listContinue => '続ける';
+
+  @override
+  String get listUpdateFailed => 'リストを更新できなかった。もう一度試してね。';
+
+  @override
+  String get listMakePrivateTitle => 'このリストを非公開にする？';
+
+  @override
+  String get listMakePrivateWarning =>
+      '公開コピーの削除をリレーにお願いするけど、すでに共有されたコピーは残ることがあるよ。このリストはこの端末にだけ残って、バックアップされないよ。';
+
+  @override
+  String get listMakePublicTitle => 'このリストを公開する？';
+
+  @override
+  String get listMakePublicWarning => 'リンクを知っている人なら誰でも、このリストと動画を見られるよ。';
+
+  @override
+  String listShareText(String name, String url) {
+    return 'Divineで$nameをチェックしてみて: $url';
+  }
+
+  @override
+  String listShareSubject(String name) {
+    return 'Divineの$name';
+  }
+
+  @override
   String get listCancel => 'キャンセル';
 
   @override

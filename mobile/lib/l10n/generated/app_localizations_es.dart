@@ -5120,6 +5120,67 @@ class AppLocalizationsEs extends AppLocalizations {
   String get listPublicListSubtitle => 'Otros pueden seguir y ver esta lista';
 
   @override
+  String get listPrivateListSubtitle =>
+      'Las listas privadas quedan en este dispositivo y no se respaldan';
+
+  @override
+  String get listVisibilityPublic => 'Pública';
+
+  @override
+  String get listVisibilityPrivateDevice => 'Privada · En este dispositivo';
+
+  @override
+  String get profileListsEmpty =>
+      'Todavía no tenés listas. Armá una con los loops que querés tener juntos.';
+
+  @override
+  String get listEditTitle => 'Editar lista';
+
+  @override
+  String get listEditAction => 'Editar lista';
+
+  @override
+  String get listShareAction => 'Compartir lista';
+
+  @override
+  String get listShareFailed =>
+      'No se pudo compartir esta lista. Probá de nuevo.';
+
+  @override
+  String get listSave => 'Guardar';
+
+  @override
+  String get listContinue => 'Continuar';
+
+  @override
+  String get listUpdateFailed =>
+      'No se pudo actualizar esta lista. Probá de nuevo.';
+
+  @override
+  String get listMakePrivateTitle => '¿Hacer privada esta lista?';
+
+  @override
+  String get listMakePrivateWarning =>
+      'Vamos a pedir a los relays que quiten la copia pública, pero las copias ya compartidas pueden seguir en línea. Esta lista va a quedar solo en este dispositivo y no se respalda.';
+
+  @override
+  String get listMakePublicTitle => '¿Hacer pública esta lista?';
+
+  @override
+  String get listMakePublicWarning =>
+      'Cualquiera con el enlace puede ver esta lista y sus videos.';
+
+  @override
+  String listShareText(String name, String url) {
+    return 'Mirá $name en Divine: $url';
+  }
+
+  @override
+  String listShareSubject(String name) {
+    return '$name en Divine';
+  }
+
+  @override
   String get listCancel => 'Cancelar';
 
   @override

@@ -5098,6 +5098,67 @@ class AppLocalizationsNl extends AppLocalizations {
       'Anderen kunnen deze lijst volgen en zien';
 
   @override
+  String get listPrivateListSubtitle =>
+      'Privélijsten blijven op dit apparaat en er wordt geen back-up van gemaakt';
+
+  @override
+  String get listVisibilityPublic => 'Openbaar';
+
+  @override
+  String get listVisibilityPrivateDevice => 'Privé · Op dit apparaat';
+
+  @override
+  String get profileListsEmpty =>
+      'Nog geen lijsten. Maak er een voor de loops die je bij elkaar wilt houden.';
+
+  @override
+  String get listEditTitle => 'Lijst bewerken';
+
+  @override
+  String get listEditAction => 'Lijst bewerken';
+
+  @override
+  String get listShareAction => 'Lijst delen';
+
+  @override
+  String get listShareFailed =>
+      'Kon deze lijst niet delen. Probeer het opnieuw.';
+
+  @override
+  String get listSave => 'Opslaan';
+
+  @override
+  String get listContinue => 'Doorgaan';
+
+  @override
+  String get listUpdateFailed =>
+      'Kon deze lijst niet bijwerken. Probeer het opnieuw.';
+
+  @override
+  String get listMakePrivateTitle => 'Deze lijst privé maken?';
+
+  @override
+  String get listMakePrivateWarning =>
+      'We vragen de relays om de openbare kopie te verwijderen, maar al gedeelde kopieën kunnen online blijven. Deze lijst staat alleen nog op dit apparaat en er wordt geen back-up van gemaakt.';
+
+  @override
+  String get listMakePublicTitle => 'Deze lijst openbaar maken?';
+
+  @override
+  String get listMakePublicWarning =>
+      'Iedereen met de link kan deze lijst en de video\'s erin zien.';
+
+  @override
+  String listShareText(String name, String url) {
+    return 'Check $name op Divine: $url';
+  }
+
+  @override
+  String listShareSubject(String name) {
+    return '$name op Divine';
+  }
+
+  @override
   String get listCancel => 'Annuleren';
 
   @override
