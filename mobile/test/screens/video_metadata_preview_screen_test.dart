@@ -10,14 +10,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as models;
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/models/video_publish/video_publish_provider_state.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_preview_screen.dart';
 import 'package:openvine/widgets/video_feed_item/blurred_video_backdrop.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../mocks/mock_nostr_service.dart';
 
 class _MockVideoPublishNotifier extends VideoPublishNotifier {
   _MockVideoPublishNotifier(this._initialState);
@@ -26,6 +31,22 @@ class _MockVideoPublishNotifier extends VideoPublishNotifier {
 
   @override
   VideoPublishProviderState build() => _initialState;
+}
+
+/// Returns a default editor state so the post-mode overlay can render without
+/// the real editor's dependency chain.
+class _MockVideoEditorNotifier extends VideoEditorNotifier {
+  @override
+  VideoEditorProviderState build() => VideoEditorProviderState();
+}
+
+/// Supplies a stable public key so the post-mode overlay can resolve the author
+/// pubkey without a real nostr session. [NostrClient.publicKey] is non-null, so
+/// the base mock's `noSuchMethod` (which returns null) is not enough here.
+class _FakeNostrClient extends MockNostrService {
+  @override
+  String get publicKey =>
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 }
 
 DivineVideoClip _createTestClip({
@@ -304,6 +325,56 @@ void main() {
               ),
         ),
         isFalse,
+      );
+    });
+
+    testWidgets('rounds the bottom corners in the post flow', (tester) async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            const MethodChannel('divine_video_player/player_0'),
+            (call) async => null,
+          );
+      addTearDown(() {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('divine_video_player/player_0'),
+              null,
+            );
+      });
+
+      // The post flow (previewOnly: false, the default) mounts the metadata
+      // overlay, so its editor/nostr dependencies are stubbed here. The stage
+      // seams into the post bar with rounded bottom corners.
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            videoPublishProvider.overrideWith(
+              () =>
+                  _MockVideoPublishNotifier(const VideoPublishProviderState()),
+            ),
+            videoEditorProvider.overrideWith(_MockVideoEditorNotifier.new),
+            nostrServiceProvider.overrideWithValue(_FakeNostrClient()),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: VideoMetadataPreviewScreen(clip: _createTestClip()),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 400));
+
+      final rounded = tester.widgetList<ClipRRect>(find.byType(ClipRRect));
+      expect(
+        rounded.any(
+          (clip) =>
+              clip.borderRadius ==
+              const BorderRadius.vertical(
+                bottom: Radius.circular(VineTheme.shellCornerRadius),
+              ),
+        ),
+        isTrue,
       );
     });
 

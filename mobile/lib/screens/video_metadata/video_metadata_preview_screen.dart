@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
@@ -187,12 +188,19 @@ class _PreviewStage extends StatelessWidget {
 
 /// Container widget that wraps the video player in a hero transition.
 ///
-/// Frames the clip exactly the way the feed will: non-square clips fill the
-/// preview edge to edge and crop like `VideoItemWidget`'s cover branch, square
-/// clips stay contain-fit on the blurred poster backdrop the feed paints in
-/// their letterbox bars. Without that mirroring the preview showed more of the
-/// frame than the feed does, so the metadata overlay sat over a different crop
-/// than the published post.
+/// Frames the clip to match the feed: non-square clips fill the preview edge to
+/// edge and crop like `VideoItemWidget`'s cover branch, square clips stay
+/// contain-fit on the blurred poster backdrop the feed paints in their
+/// letterbox bars. Without that mirroring the preview showed more of the frame
+/// than the feed does, so the metadata overlay sat over a different crop than
+/// the published post.
+///
+/// The video surface is sized from [DivineVideoClip.targetAspectRatio], not the
+/// live decoded ratio the feed uses. For a square target whose source is still
+/// uncropped (the crop is applied at publish) the video is fitted to the target
+/// box rather than center-cropped the way the feed shows the published file;
+/// matching that exactly would mean sizing from the decoded ratio like
+/// `video_metadata_cover_screen`.
 class _VideoPreviewContent extends StatelessWidget {
   /// Creates the video preview content wrapper.
   const _VideoPreviewContent({
@@ -230,13 +238,10 @@ class _VideoPreviewContent extends StatelessWidget {
               videoAspectRatio: aspectRatio,
             ),
           if (stopMotionFrames != null)
-            StopMotionPlayer(
+            _FittedStopMotion(
               frames: stopMotionFrames,
-              fit: fit,
-              cacheHeight:
-                  (MediaQuery.sizeOf(context).height *
-                          MediaQuery.devicePixelRatioOf(context))
-                      .round(),
+              aspectRatio: aspectRatio,
+              coversViewport: coversViewport,
             )
           else
             _FittedVideoSurface(
@@ -254,8 +259,10 @@ class _VideoPreviewContent extends StatelessWidget {
 /// Inscribes the player surface into the preview the way the feed does.
 ///
 /// The native surface has no intrinsic size and stretches to whatever box it
-/// gets, so the video is laid out at its own aspect ratio inside a
-/// [FittedBox] — the same construction `VideoItemWidget` uses in the feed.
+/// gets, so the video is laid out at [aspectRatio] inside a [FittedBox] — the
+/// same construction `VideoItemWidget` uses in the feed. Here [aspectRatio] is
+/// the clip's target ratio; see [_VideoPreviewContent] for the square-source
+/// caveat.
 class _FittedVideoSurface extends StatelessWidget {
   const _FittedVideoSurface({
     required this.clip,
@@ -283,6 +290,43 @@ class _FittedVideoSurface extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Frames a stop-motion clip the way the feed and the export do.
+///
+/// Export center-crops the raw stills to the target box (`StopMotionFit.cover`
+/// in `StopMotionRenderService`) and the feed then fits that already-cropped
+/// mp4 per cover/contain. Reproduce both from the stills: [StopMotionPlayer]
+/// cover-crops them, and for the letterboxed (square) case they are constrained
+/// to the target-ratio box so the blurred backdrop fills the bars — instead of
+/// contain-fitting the whole non-square still, which showed more frame than the
+/// published post.
+class _FittedStopMotion extends StatelessWidget {
+  const _FittedStopMotion({
+    required this.frames,
+    required this.aspectRatio,
+    required this.coversViewport,
+  });
+
+  final List<StopMotionClipFrame> frames;
+  final double aspectRatio;
+  final bool coversViewport;
+
+  @override
+  Widget build(BuildContext context) {
+    // Default fit is BoxFit.cover — the centered crop the export bakes in.
+    final player = StopMotionPlayer(
+      frames: frames,
+      cacheHeight:
+          (MediaQuery.sizeOf(context).height *
+                  MediaQuery.devicePixelRatioOf(context))
+              .round(),
+    );
+    if (coversViewport) return player;
+    return Center(
+      child: AspectRatio(aspectRatio: aspectRatio, child: player),
     );
   }
 }
