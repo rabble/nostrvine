@@ -9655,6 +9655,10 @@ class AppLocalizationsVi extends AppLocalizations {
       'Cho phép người khác lưu và dùng lại âm thanh của video này.';
 
   @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
+
+  @override
   String get videoMetadataCollaboratorsLabel => 'Thêm cộng tác viên';
 
   @override

@@ -9608,6 +9608,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Başkalarının bu videonun sesini kaydedip yeniden kullanmasına izin ver.';
 
   @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
+
+  @override
   String get videoMetadataCollaboratorsLabel => 'Ortak çalışanlar';
 
   @override

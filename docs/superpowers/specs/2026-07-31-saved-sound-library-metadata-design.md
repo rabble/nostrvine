@@ -367,8 +367,15 @@ others to remix this sound.”
   enables remixing.
 
 If a user explicitly requested a reusable sound and Kind 1063 publication
-fails, video publication stops in a retryable state. It must not silently post
-without the sharing choice the user reviewed. When the toggle is off,
+fails, the video publishes anyway and the creator is told the sound did not
+(#6659). Blocking was the original rule; it was reversed because the failure
+arrives *after* the video is already uploaded, so blocking discards a
+successful upload over a transient ffmpeg or Blossom glitch, and the sound is
+always reconstructible later by editing the video. What must not happen is a
+*silent* degrade: the publish result carries the loss and the UI surfaces it,
+and the degraded event is deliberately kept out of the retry cache so a retry
+rebuilds the audio tags instead of reusing a marker-less event. When the
+toggle is off,
 sound-sharing infrastructure cannot block original/private-import video
 publication. Provider-credit publication remains required; its failure blocks
 the video rather than publishing uncredited provider audio.
@@ -401,8 +408,9 @@ the video rather than publishing uncredited provider audio.
   missing creator/source field inline.
 - A license that forbids derivatives shows “Credit only” and disables further
   remix.
-- Failure to publish an explicitly requested reusable Kind 1063 keeps the
-  video retryable.
+- Failure to publish an explicitly requested reusable Kind 1063 still
+  publishes the video and reports the loss to the creator; it never posts
+  silently, and it never poisons the retry cache.
 - Publishing original/private-import audio with remix disabled never fails
   because sound sharing is unavailable.
 - Provider-credit event failure blocks publication instead of posting
@@ -461,9 +469,10 @@ Publishing / protocol:
   audio and matches its address, and fails closed when unavailable.
 - Private labels and personal hashtags never appear in publisher calls, signed
   tags/content, logs, analytics, or public widgets.
-- Reusable Kind 1063 failure blocks a publish that explicitly requested sound
-  sharing and remains retryable; a required provider credit-event failure also
-  blocks rather than publishing uncredited audio.
+- Reusable Kind 1063 failure degrades a publish that explicitly requested
+  sound sharing to video-only, surfaces a warning, and leaves the retry cache
+  untouched so the tags heal on a later attempt; a required provider
+  credit-event failure still blocks rather than publishing uncredited audio.
 
 Run the service, BLoC, widget, l10n, and golden checks first, then
 `flutter analyze` and the broader affected suite before publishing.

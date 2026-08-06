@@ -9261,6 +9261,10 @@ class AppLocalizationsKo extends AppLocalizations {
       '다른 사람들이 이 동영상의 오디오를 저장하고 재사용할 수 있도록 합니다.';
 
   @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
+
+  @override
   String get videoMetadataCollaboratorsLabel => '협업자';
 
   @override

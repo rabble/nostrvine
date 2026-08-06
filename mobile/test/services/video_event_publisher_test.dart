@@ -1008,8 +1008,12 @@ void main() {
         );
       });
 
+      // This group's publisher is built with no blossomUploadService and no
+      // audioExtractionService, so the audio step returns at its first guard —
+      // nothing is extracted or uploaded here. The real extraction-failure
+      // path is covered in video_event_publisher_audio_degrade_test.dart.
       test(
-        'a failed reusable original audio still publishes the video, without '
+        'an unavailable audio pipeline still publishes the video, without '
         'claiming reuse',
         () async {
           stubSignAndPublish();
@@ -1019,9 +1023,7 @@ void main() {
             allowAudioReuse: true,
           );
 
-          // Extracting the rendered audio is the last step and nothing
-          // downstream needs it, so a transient failure must not discard an
-          // already-uploaded video.
+          // A video-only publish beats discarding an already-uploaded video.
           expect(result, isTrue);
 
           final tags =

@@ -584,6 +584,9 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
           if (result.hasInviteWarnings) {
             _showCollaboratorInviteWarning(warnings: result.inviteWarnings);
           }
+          if (result.audioReuseDegraded) {
+            _showAudioReuseDegradedWarning();
+          }
 
         case PublishError(:final kind, :final serverName, :final rawFallback):
           final l10n = currentAppL10n(ref.read(sharedPreferencesProvider));
@@ -638,6 +641,25 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         content: Text(message),
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 6),
+      ),
+    );
+  }
+
+  /// The publish succeeded but the reusable sound the creator opted into did
+  /// not. Saying so beats a plain success snackbar that hides a dropped
+  /// sharing choice — the sound can still be attached by editing the video.
+  void _showAudioReuseDegradedWarning() {
+    final targetContext = NavigatorKeys.root.currentContext;
+    if (targetContext == null || !targetContext.mounted) return;
+
+    final messenger = ScaffoldMessenger.maybeOf(targetContext);
+    if (messenger == null) return;
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(targetContext.l10n.publishAudioReuseDegradedWarning),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 8),
       ),
     );
   }

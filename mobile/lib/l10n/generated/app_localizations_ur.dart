@@ -9654,6 +9654,10 @@ class AppLocalizationsUr extends AppLocalizations {
       'دوسروں کو اس ویڈیو کی آڈیو محفوظ اور دوبارہ استعمال کرنے دیں۔';
 
   @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
+
+  @override
   String get videoMetadataCollaboratorsLabel => 'شریک کار شامل کریں';
 
   @override

@@ -5825,6 +5825,10 @@
   "videoMetadataContentWarningDoneButton": "Done",
   "videoMetadataAudioReuseTitle": "Publish this sound",
   "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
+  "publishAudioReuseDegradedWarning": "Your video is up, but the sound didn't publish. Edit the video to share it.",
+  "@publishAudioReuseDegradedWarning": {
+    "description": "Snackbar shown after a successful publish when the creator opted into a reusable sound but extracting or publishing it failed, so the video posted without the sharing choice they made."
+  },
   "videoMetadataCollaboratorsLabel": "Add collaborators",
   "videoMetadataAddCollaboratorSemanticLabel": "Invite collaborator",
   "videoMetadataCollaboratorsHelpTooltip": "How collaborators work",

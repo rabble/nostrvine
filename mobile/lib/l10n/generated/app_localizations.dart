@@ -16618,6 +16618,12 @@ abstract class AppLocalizations {
   /// **'Let others save and reuse this video\'s audio.'**
   String get videoMetadataAudioReuseSubtitle;
 
+  /// Snackbar shown after a successful publish when the creator opted into a reusable sound but extracting or publishing it failed, so the video posted without the sharing choice they made.
+  ///
+  /// In en, this message translates to:
+  /// **'Your video is up, but the sound didn\'t publish. Edit the video to share it.'**
+  String get publishAudioReuseDegradedWarning;
+
   /// No description provided for @videoMetadataCollaboratorsLabel.
   ///
   /// In en, this message translates to:

@@ -40,14 +40,22 @@ sealed class PublishResult extends Equatable {
 }
 
 class PublishSuccess extends PublishResult {
-  const PublishSuccess({this.inviteWarnings = const []});
+  const PublishSuccess({
+    this.inviteWarnings = const [],
+    this.audioReuseDegraded = false,
+  });
 
   final List<CollaboratorInviteWarning> inviteWarnings;
+
+  /// The creator asked for a reusable sound and the video published without
+  /// one. The publish succeeded, so this is a warning rather than an error —
+  /// but silently dropping an explicit sharing choice is worse than saying so.
+  final bool audioReuseDegraded;
 
   bool get hasInviteWarnings => inviteWarnings.isNotEmpty;
 
   @override
-  List<Object?> get props => [inviteWarnings];
+  List<Object?> get props => [inviteWarnings, audioReuseDegraded];
 }
 
 /// A failed publish, classified by [kind] so the UI can localize it.
@@ -380,6 +388,7 @@ class VideoPublishService {
 
       onProgressChanged(draftId: draft.id, progress: _progressAfterMetadata);
 
+      var audioReuseDegraded = false;
       final published = await timeline.measure(
         PublishPhases.nostr,
         () => videoEventPublisher.publishVideoEvent(
@@ -414,6 +423,7 @@ class VideoPublishService {
             draftId: draft.id,
             progress: _progressAfterSigning,
           ),
+          onAudioReuseDegraded: () => audioReuseDegraded = true,
         ),
       );
 
@@ -440,7 +450,10 @@ class VideoPublishService {
       onProgressChanged(draftId: draft.id, progress: 1);
 
       Log.info('📝 Published successfully', category: .video);
-      return PublishSuccess(inviteWarnings: inviteWarnings);
+      return PublishSuccess(
+        inviteWarnings: inviteWarnings,
+        audioReuseDegraded: audioReuseDegraded,
+      );
     } catch (e, stackTrace) {
       return _handleUploadError(e, stackTrace, draft);
     }
