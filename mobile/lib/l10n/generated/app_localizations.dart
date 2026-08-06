@@ -2736,6 +2736,18 @@ abstract class AppLocalizations {
   /// **'Failed to load video'**
   String get videoDetailLoadError;
 
+  /// Supporting copy under the 'Failed to load video' title on the shared-link video screen, shown next to a Retry button. Deliberately vague about the cause because the failure can be network, relay, or parsing.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went sideways on the way here. Give it another try.'**
+  String get videoDetailLoadErrorBody;
+
+  /// Supporting copy under the 'Video not found' title on the shared-link video screen. Covers both a deleted video and one we simply cannot fetch from any connected relay, so it must not promise the video is gone for good.
+  ///
+  /// In en, this message translates to:
+  /// **'It was either deleted, or it\'s hiding somewhere we can\'t reach.'**
+  String get videoDetailNotFoundBody;
+
   /// Title of the full-screen takeover shown when the local database reports on-disk corruption at runtime. 'Scrambled' is deliberately non-technical: the user did nothing wrong and cannot act on the real cause.
   ///
   /// In en, this message translates to:

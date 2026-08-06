@@ -33,8 +33,8 @@ class _MockContentBlocklistRepository extends Mock
 
 class _MockVideosRepository extends Mock implements VideosRepository {}
 
-Finder _divineIcon(DivineIconName name) =>
-    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
+Finder _divineSticker(DivineStickerName name) =>
+    find.byWidgetPredicate((w) => w is DivineSticker && w.sticker == name);
 
 void main() {
   final l10n = lookupAppLocalizations(const Locale('en'));
@@ -400,7 +400,10 @@ void main() {
             ),
             findsNothing,
           );
-          expect(_divineIcon(DivineIconName.warningCircle), findsOneWidget);
+          expect(
+            _divineSticker(DivineStickerName.alert),
+            findsOneWidget,
+          );
           expect(
             find.bySemanticsLabel(l10n.videoDetailCloseSemanticLabel),
             findsOneWidget,
@@ -429,7 +432,10 @@ void main() {
           await tester.pump();
 
           expect(find.text(l10n.videoErrorNotFound), findsOneWidget);
-          expect(_divineIcon(DivineIconName.warningCircle), findsOneWidget);
+          expect(
+            _divineSticker(DivineStickerName.alert),
+            findsOneWidget,
+          );
           expect(
             find.bySemanticsLabel(l10n.videoDetailCloseSemanticLabel),
             findsOneWidget,
@@ -503,7 +509,8 @@ void main() {
           await tester.pump();
 
           expect(find.text(l10n.videoDetailLoadError), findsOneWidget);
-          expect(_divineIcon(DivineIconName.warningCircle), findsOneWidget);
+          expect(find.text(l10n.videoDetailLoadErrorBody), findsOneWidget);
+          expect(_divineSticker(DivineStickerName.alert), findsOneWidget);
           expect(
             find.bySemanticsLabel(l10n.videoDetailCloseSemanticLabel),
             findsOneWidget,
@@ -533,6 +540,35 @@ void main() {
         expect(find.text(l10n.videoDetailLoadError), findsOneWidget);
         expect(find.textContaining('SqliteException'), findsNothing);
         expect(find.textContaining('SELECT'), findsNothing);
+      });
+
+      testWidgets('refetches the video when retry is tapped', (tester) async {
+        final video = createTestVideoEvent(
+          id: 'test_video_id',
+          pubkey: 'test_pubkey',
+          title: 'Deep Link Video',
+        );
+        var attempts = 0;
+        when(
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+        ).thenAnswer((_) {
+          attempts++;
+          return attempts == 1
+              ? Future<VideoEvent?>.error(Exception('Network error'))
+              : Future<VideoEvent?>.value(video);
+        });
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        expect(find.text(l10n.videoDetailLoadError), findsOneWidget);
+
+        await tester.tap(find.text(l10n.videoErrorRetry));
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byKey(const Key('video-feed-placeholder')), findsOneWidget);
+        expect(attempts, equals(2));
       });
     });
 

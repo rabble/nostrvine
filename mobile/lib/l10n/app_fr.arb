@@ -4411,6 +4411,8 @@
     "videoErrorAdultContentHidden": "Le contenu pour adultes est désactivé. Tu peux l'activer dans Réglages → Filtres de contenu.",
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "Échec du chargement de la vidéo",
+    "videoDetailLoadErrorBody": "Quelque chose a déraillé en chemin. Réessaie.",
+    "videoDetailNotFoundBody": "Soit elle a été supprimée, soit elle se cache là où on ne peut pas aller.",
     "databaseCorruptionTitle": "Tes données locales sont abîmées",
     "databaseCorruptionBody": "Ferme Divine et rouvre-la : on répare ça automatiquement. On sauve ce qu'on peut de tes brouillons et clips, le reste se recharge.",
     "databaseCorruptionCloseButton": "Fermer Divine",

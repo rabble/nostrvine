@@ -1568,6 +1568,13 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoDetailLoadError => 'Hindi ma-load ang video';
 
   @override
+  String get videoDetailLoadErrorBody => 'May sumablay sa daan. Subukan ulit.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Baka nabura na, o nagtatago sa lugar na hindi namin maabot.';
+
+  @override
   String get databaseCorruptionTitle => 'Nasira ang local data mo';
 
   @override

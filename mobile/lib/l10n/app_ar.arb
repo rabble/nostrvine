@@ -4411,6 +4411,8 @@
     "videoErrorAdultContentHidden": "المحتوى للبالغين مُعطَّل. يمكنك تفعيله من الإعدادات ← مرشّحات المحتوى.",
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "فشل تحميل الفيديو",
+    "videoDetailLoadErrorBody": "حدث خطأ ما في الطريق. جرّب مرة أخرى.",
+    "videoDetailNotFoundBody": "إمّا أنه حُذف أو أنه مخبّأ في مكان لا نصل إليه.",
     "databaseCorruptionTitle": "بياناتك المحلية تعرضت للتلف",
     "databaseCorruptionBody": "أغلق Divine وافتحه من جديد — سنصلح ذلك تلقائيًا. سنحفظ ما نستطيع من مسوداتك ومقاطعك، وسيُعاد تحميل الباقي.",
     "databaseCorruptionCloseButton": "إغلاق Divine",

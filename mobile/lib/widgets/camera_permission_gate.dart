@@ -11,8 +11,8 @@ import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
+import 'package:openvine/widgets/tv_static_message_screen.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
-import 'package:tv_static_effect/tv_static_effect.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// A declarative gate widget that handles camera/microphone permissions.
@@ -274,75 +274,22 @@ class _PermissionScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: VideoEditorConstants.uiOverlayStyleFor(context.vineColors),
-      child: Scaffold(
-        backgroundColor: context.vineColors.background,
-        body: Stack(
-          fit: StackFit.expand,
-          children: [
-            const TvStaticNoise(),
-            Column(
-              children: [
-                Align(
-                  alignment: .centerLeft,
-                  child: SafeArea(
-                    bottom: false,
-                    child: Padding(
-                      padding: const .fromLTRB(16, 16, 0, 8),
-                      child: DivineIconButton(
-                        icon: .x,
-                        onPressed: onClose,
-                        size: .small,
-                        type: .ghost,
-                      ),
-                    ),
-                  ),
-                ),
-
-                Expanded(
-                  child: Center(
-                    child: SingleChildScrollView(
-                      padding: const .symmetric(horizontal: 48),
-                      child: Column(
-                        mainAxisAlignment: .center,
-                        children: [
-                          const DivineSticker(sticker: .alert, size: 154),
-                          const SizedBox(height: 19),
-                          Text(
-                            title,
-                            style: VineTheme.titleMediumFont(
-                              color: context.vineColors.onSurfaceMuted,
-                            ),
-                            textAlign: .center,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            description,
-                            style: VineTheme.bodyMediumFont(
-                              color: context.vineColors.onSurfaceMuted,
-                            ),
-                            textAlign: .center,
-                          ),
-                          const SizedBox(height: 32),
-                          DivineButton(label: buttonLabel, onPressed: onAction),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-                IgnorePointer(
-                  child: Container(
-                    padding: const .only(top: 8),
-                    color: context.vineColors.surfaceContainerHigh,
-                    child: const Opacity(
-                      opacity: 0.25,
-                      child: VideoRecorderBottomBar(),
-                    ),
-                  ),
-                ),
-              ],
+      child: TvStaticMessageScreen(
+        sticker: .alert,
+        title: title,
+        description: description,
+        actionLabel: buttonLabel,
+        onAction: onAction,
+        onClose: onClose,
+        footer: IgnorePointer(
+          child: Container(
+            padding: const .only(top: 8),
+            color: context.vineColors.surfaceContainerHigh,
+            child: const Opacity(
+              opacity: 0.25,
+              child: VideoRecorderBottomBar(),
             ),
-          ],
+          ),
         ),
       ),
     );

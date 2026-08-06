@@ -4411,6 +4411,8 @@
     "videoErrorAdultContentHidden": "Yetişkin içeriği kapalı. Ayarlar → İçerik Filtreleri'nden açabilirsin.",
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "Video yüklenemedi",
+    "videoDetailLoadErrorBody": "Yolda bir şeyler ters gitti. Bir daha dene.",
+    "videoDetailNotFoundBody": "Ya silinmiş ya da ulaşamadığımız bir yerde saklanıyor.",
     "databaseCorruptionTitle": "Yerel verilerin bozuldu",
     "databaseCorruptionBody": "Divine'ı kapatıp yeniden aç — bunu otomatik olarak onarıyoruz. Taslaklarından ve kliplerinden kurtarabildiğimizi saklıyoruz, gerisi yeniden yükleniyor.",
     "databaseCorruptionCloseButton": "Divine'ı kapat",

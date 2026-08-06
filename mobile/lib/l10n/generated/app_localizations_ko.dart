@@ -1441,6 +1441,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoDetailLoadError => '영상을 불러오지 못했어요';
 
   @override
+  String get videoDetailLoadErrorBody => '오는 길에 뭔가 어긋났어요. 다시 시도해 보세요.';
+
+  @override
+  String get videoDetailNotFoundBody => '삭제됐거나, 우리가 닿을 수 없는 곳에 숨어 있어요.';
+
+  @override
   String get databaseCorruptionTitle => '로컬 데이터가 손상됐어요';
 
   @override

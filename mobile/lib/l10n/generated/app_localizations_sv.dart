@@ -1534,6 +1534,14 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoDetailLoadError => 'Kunde inte läsa in videon';
 
   @override
+  String get videoDetailLoadErrorBody =>
+      'Något gick snett på vägen hit. Testa igen.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Antingen är den raderad, eller så gömmer den sig där vi inte når.';
+
+  @override
   String get databaseCorruptionTitle => 'Dina lokala data har skadats';
 
   @override

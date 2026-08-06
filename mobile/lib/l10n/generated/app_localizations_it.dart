@@ -1561,6 +1561,14 @@ class AppLocalizationsIt extends AppLocalizations {
   String get videoDetailLoadError => 'Impossibile caricare il video';
 
   @override
+  String get videoDetailLoadErrorBody =>
+      'Qualcosa è andato storto lungo la strada. Riprova.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'O è stato eliminato, o si nasconde dove non riusciamo ad arrivare.';
+
+  @override
   String get databaseCorruptionTitle => 'I tuoi dati locali si sono rovinati';
 
   @override

@@ -4411,6 +4411,8 @@
     "videoErrorAdultContentHidden": "Konten dewasa sedang dimatikan. Kamu bisa mengaktifkannya di Pengaturan → Filter Konten.",
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "Gagal memuat video",
+    "videoDetailLoadErrorBody": "Ada yang meleset di jalan. Coba lagi, ya.",
+    "videoDetailNotFoundBody": "Mungkin sudah dihapus, atau ngumpet di tempat yang nggak bisa kami jangkau.",
     "databaseCorruptionTitle": "Data lokalmu rusak",
     "databaseCorruptionBody": "Tutup Divine lalu buka lagi — kami perbaiki otomatis. Kami simpan draf dan klipmu semampu kami, sisanya dimuat ulang.",
     "databaseCorruptionCloseButton": "Tutup Divine",

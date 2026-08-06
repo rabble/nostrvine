@@ -1504,6 +1504,13 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoDetailLoadError => 'ቪዲዮ መጫን አልተሳካም';
 
   @override
+  String get videoDetailLoadErrorBody => 'እዚህ ሲደርስ የሆነ ችግር ተፈጥሯል። እንደገና ሞክር።';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'ወይ ተሰርዟል፣ ወይም ልንደርስበት በማንችልበት ቦታ ተደብቋል።';
+
+  @override
   String get databaseCorruptionTitle => 'የአካባቢዎ ውሂብ ተበላሽቷል';
 
   @override

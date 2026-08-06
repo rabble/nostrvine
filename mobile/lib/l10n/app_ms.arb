@@ -737,6 +737,8 @@
     "description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."
   },
   "videoDetailLoadError": "Gagal memuatkan video",
+  "videoDetailLoadErrorBody": "Ada yang tak kena dalam perjalanan. Cuba lagi.",
+  "videoDetailNotFoundBody": "Mungkin ia dipadam, atau tersembunyi di tempat yang kami tak dapat capai.",
   "databaseCorruptionTitle": "Data setempat anda bercelaru",
   "@databaseCorruptionTitle": {
     "description": "Title of the full-screen takeover shown when the local database reports on-disk corruption at runtime. 'Scrambled' is deliberately non-technical: the user did nothing wrong and cannot act on the real cause."

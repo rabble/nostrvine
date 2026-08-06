@@ -1549,6 +1549,14 @@ class AppLocalizationsMs extends AppLocalizations {
   String get videoDetailLoadError => 'Gagal memuatkan video';
 
   @override
+  String get videoDetailLoadErrorBody =>
+      'Ada yang tak kena dalam perjalanan. Cuba lagi.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Mungkin ia dipadam, atau tersembunyi di tempat yang kami tak dapat capai.';
+
+  @override
   String get databaseCorruptionTitle => 'Data setempat anda bercelaru';
 
   @override

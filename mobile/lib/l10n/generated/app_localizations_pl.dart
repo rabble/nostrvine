@@ -1564,6 +1564,14 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoDetailLoadError => 'Nie udało się wczytać filmu';
 
   @override
+  String get videoDetailLoadErrorBody =>
+      'Coś poszło nie tak po drodze. Spróbuj jeszcze raz.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Albo został usunięty, albo ukrywa się tam, gdzie nie sięgamy.';
+
+  @override
   String get databaseCorruptionTitle => 'Twoje lokalne dane się uszkodziły';
 
   @override

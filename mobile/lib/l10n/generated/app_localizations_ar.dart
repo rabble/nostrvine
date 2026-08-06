@@ -1521,6 +1521,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoDetailLoadError => 'فشل تحميل الفيديو';
 
   @override
+  String get videoDetailLoadErrorBody => 'حدث خطأ ما في الطريق. جرّب مرة أخرى.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'إمّا أنه حُذف أو أنه مخبّأ في مكان لا نصل إليه.';
+
+  @override
   String get databaseCorruptionTitle => 'بياناتك المحلية تعرضت للتلف';
 
   @override

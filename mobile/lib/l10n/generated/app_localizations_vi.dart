@@ -1544,6 +1544,14 @@ class AppLocalizationsVi extends AppLocalizations {
   String get videoDetailLoadError => 'Không thể tải video';
 
   @override
+  String get videoDetailLoadErrorBody =>
+      'Có gì đó trục trặc trên đường tới đây. Thử lại nhé.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Có thể nó đã bị xoá, hoặc đang trốn ở nơi chúng tôi không với tới.';
+
+  @override
   String get databaseCorruptionTitle => 'Dữ liệu cục bộ của bạn bị rối tung';
 
   @override
