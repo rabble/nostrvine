@@ -4412,7 +4412,7 @@
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "Falha ao carregar o vídeo",
     "videoDetailLoadErrorBody": "Alguma coisa deu errado no caminho. Tenta de novo.",
-    "videoDetailNotFoundBody": "Ou foi apagado, ou está escondido num lugar que não alcançamos.",
+    "videoDetailNotFoundBody": "Pode ter sido apagado, estar fora de alcance ou escondido pelas tuas definições.",
     "databaseCorruptionTitle": "Seus dados locais foram corrompidos",
     "databaseCorruptionBody": "Feche o Divine e abra de novo — a gente conserta automaticamente. A gente salva o que der dos seus rascunhos e clipes, o resto recarrega.",
     "databaseCorruptionCloseButton": "Fechar o Divine",

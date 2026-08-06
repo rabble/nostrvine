@@ -1572,7 +1572,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get videoDetailNotFoundBody =>
-      'Baka nabura na, o nagtatago sa lugar na hindi namin maabot.';
+      'Baka nabura na, wala sa abot, o nakatago dahil sa mga setting mo.';
 
   @override
   String get databaseCorruptionTitle => 'Nasira ang local data mo';

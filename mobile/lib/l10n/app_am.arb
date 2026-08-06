@@ -4537,7 +4537,7 @@
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "ቪዲዮ መጫን አልተሳካም",
     "videoDetailLoadErrorBody": "እዚህ ሲደርስ የሆነ ችግር ተፈጥሯል። እንደገና ሞክር።",
-    "videoDetailNotFoundBody": "ወይ ተሰርዟል፣ ወይም ልንደርስበት በማንችልበት ቦታ ተደብቋል።",
+    "videoDetailNotFoundBody": "ተሰርዞ ሊሆን ይችላል፣ ከአቅም ውጭ ሊሆን ይችላል፣ ወይም በቅንብሮችህ ተደብቆ ሊሆን ይችላል።",
     "databaseCorruptionTitle": "የአካባቢዎ ውሂብ ተበላሽቷል",
     "databaseCorruptionBody": "Divine ን ዘግተው እንደገና ይክፈቱት — በራስ-ሰር እናስተካክለዋለን። የቻልነውን ያህል ረቂቆችዎን እና ክሊፖችዎን እናስቀራለን፣ የቀረው እንደገና ይጫናል።",
     "databaseCorruptionCloseButton": "Divine ን ዝጋ",

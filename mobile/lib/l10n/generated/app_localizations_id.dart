@@ -1507,7 +1507,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get videoDetailNotFoundBody =>
-      'Mungkin sudah dihapus, atau ngumpet di tempat yang nggak bisa kami jangkau.';
+      'Mungkin sudah dihapus, di luar jangkauan, atau disembunyikan sama pengaturanmu.';
 
   @override
   String get databaseCorruptionTitle => 'Data lokalmu rusak';

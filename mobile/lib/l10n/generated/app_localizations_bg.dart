@@ -1562,7 +1562,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get videoDetailNotFoundBody =>
-      'Или е изтрито, или се крие някъде, докъдето не стигаме.';
+      'Може да е изтрито, да е извън обсега ни или да е скрито от твоите настройки.';
 
   @override
   String get databaseCorruptionTitle => 'Локалните ти данни се повредиха';

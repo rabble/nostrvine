@@ -1569,7 +1569,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get videoDetailNotFoundBody =>
-      'Albo został usunięty, albo ukrywa się tam, gdzie nie sięgamy.';
+      'Mógł zostać usunięty, być poza zasięgiem albo ukryty przez twoje ustawienia.';
 
   @override
   String get databaseCorruptionTitle => 'Twoje lokalne dane się uszkodziły';

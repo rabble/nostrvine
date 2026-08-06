@@ -809,7 +809,7 @@
   "@videoDetailLoadErrorBody": {
     "description": "Supporting copy under the 'Failed to load video' title on the shared-link video screen, shown next to a Retry button. Deliberately vague about the cause because the failure can be network, relay, or parsing."
   },
-  "videoDetailNotFoundBody": "It was either deleted, or it's hiding somewhere we can't reach.",
+  "videoDetailNotFoundBody": "It could be gone, out of reach, or hidden by your settings.",
   "@videoDetailNotFoundBody": {
     "description": "Supporting copy under the 'Video not found' title on the shared-link video screen. The screen shows this for three different causes it cannot tell apart: the video was deleted, it cannot be fetched from any connected relay, or it is hidden by a filter (a blocked or muted author, or the default-on Divine-hosted-only setting). It must not promise the video is gone for good, and it must not be read as covering only the first two."
   },

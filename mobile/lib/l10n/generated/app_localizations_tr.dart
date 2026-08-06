@@ -1510,7 +1510,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoDetailNotFoundBody =>
-      'Ya silinmiş ya da ulaşamadığımız bir yerde saklanıyor.';
+      'Silinmiş, ulaşılamıyor ya da ayarların yüzünden gizlenmiş olabilir.';
 
   @override
   String get databaseCorruptionTitle => 'Yerel verilerin bozuldu';

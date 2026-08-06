@@ -4543,7 +4543,7 @@
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "Неуспешно зареждане на видеото",
     "videoDetailLoadErrorBody": "Нещо се обърка по пътя. Опитай пак.",
-    "videoDetailNotFoundBody": "Или е изтрито, или се крие някъде, докъдето не стигаме.",
+    "videoDetailNotFoundBody": "Може да е изтрито, да е извън обсега ни или да е скрито от твоите настройки.",
     "databaseCorruptionTitle": "Локалните ти данни се повредиха",
     "databaseCorruptionBody": "Затвори Divine и го отвори пак — ще го поправим автоматично. Ще запазим каквото можем от черновите и клиповете ти, останалото се презарежда.",
     "databaseCorruptionCloseButton": "Затвори Divine",

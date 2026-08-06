@@ -738,7 +738,7 @@
   },
   "videoDetailLoadError": "Gagal memuatkan video",
   "videoDetailLoadErrorBody": "Ada yang tak kena dalam perjalanan. Cuba lagi.",
-  "videoDetailNotFoundBody": "Mungkin ia dipadam, atau tersembunyi di tempat yang kami tak dapat capai.",
+  "videoDetailNotFoundBody": "Mungkin ia dipadam, di luar capaian, atau disembunyikan oleh tetapan anda.",
   "databaseCorruptionTitle": "Data setempat anda bercelaru",
   "@databaseCorruptionTitle": {
     "description": "Title of the full-screen takeover shown when the local database reports on-disk corruption at runtime. 'Scrambled' is deliberately non-technical: the user did nothing wrong and cannot act on the real cause."

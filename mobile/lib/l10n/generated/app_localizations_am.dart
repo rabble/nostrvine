@@ -1508,7 +1508,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoDetailNotFoundBody =>
-      'ወይ ተሰርዟል፣ ወይም ልንደርስበት በማንችልበት ቦታ ተደብቋል።';
+      'ተሰርዞ ሊሆን ይችላል፣ ከአቅም ውጭ ሊሆን ይችላል፣ ወይም በቅንብሮችህ ተደብቆ ሊሆን ይችላል።';
 
   @override
   String get databaseCorruptionTitle => 'የአካባቢዎ ውሂብ ተበላሽቷል';

@@ -1554,7 +1554,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get videoDetailNotFoundBody =>
-      'Mungkin ia dipadam, atau tersembunyi di tempat yang kami tak dapat capai.';
+      'Mungkin ia dipadam, di luar capaian, atau disembunyikan oleh tetapan anda.';
 
   @override
   String get databaseCorruptionTitle => 'Data setempat anda bercelaru';

@@ -2998,7 +2998,7 @@
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "Hindi ma-load ang video",
     "videoDetailLoadErrorBody": "May sumablay sa daan. Subukan ulit.",
-    "videoDetailNotFoundBody": "Baka nabura na, o nagtatago sa lugar na hindi namin maabot.",
+    "videoDetailNotFoundBody": "Baka nabura na, wala sa abot, o nakatago dahil sa mga setting mo.",
     "databaseCorruptionTitle": "Nasira ang local data mo",
     "databaseCorruptionBody": "Isara ang Divine at buksan ulit — awtomatiko naming aayusin. Ise-save namin ang makakaya sa mga draft at clip mo, mag-reload na lang ang iba.",
     "databaseCorruptionCloseButton": "Isara ang Divine",

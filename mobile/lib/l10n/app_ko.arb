@@ -3743,7 +3743,7 @@
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "영상을 불러오지 못했어요",
     "videoDetailLoadErrorBody": "오는 길에 뭔가 어긋났어요. 다시 시도해 보세요.",
-    "videoDetailNotFoundBody": "삭제됐거나, 우리가 닿을 수 없는 곳에 숨어 있어요.",
+    "videoDetailNotFoundBody": "삭제됐거나, 닿을 수 없는 곳에 있거나, 설정 때문에 숨겨진 걸 수도 있어요.",
     "databaseCorruptionTitle": "로컬 데이터가 손상됐어요",
     "databaseCorruptionBody": "Divine을 껐다가 다시 열어주세요. 자동으로 고쳐드릴게요. 초안과 클립은 최대한 살려볼게요. 나머지는 다시 불러와요.",
     "databaseCorruptionCloseButton": "Divine 닫기",

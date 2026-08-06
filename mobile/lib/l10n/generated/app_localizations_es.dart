@@ -1563,7 +1563,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get videoDetailNotFoundBody =>
-      'O lo han borrado, o está escondido en algún sitio al que no llegamos.';
+      'Puede que se haya borrado, que esté fuera de nuestro alcance o que lo oculten tus ajustes.';
 
   @override
   String get databaseCorruptionTitle => 'Tus datos locales se estropearon';

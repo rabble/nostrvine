@@ -1434,7 +1434,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoDetailLoadErrorBody => '途中で何かがうまくいきませんでした。もう一度お試しください。';
 
   @override
-  String get videoDetailNotFoundBody => '削除されたか、こちらから届かない場所に隠れているみたいです。';
+  String get videoDetailNotFoundBody =>
+      '削除されたか、こちらから届かないか、設定で非表示になっているのかもしれません。';
 
   @override
   String get databaseCorruptionTitle => 'ローカルデータが壊れちゃった';

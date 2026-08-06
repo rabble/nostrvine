@@ -1549,7 +1549,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get videoDetailNotFoundBody =>
-      'Có thể nó đã bị xoá, hoặc đang trốn ở nơi chúng tôi không với tới.';
+      'Có thể nó đã bị xoá, ngoài tầm với, hoặc bị ẩn bởi cài đặt của bạn.';
 
   @override
   String get databaseCorruptionTitle => 'Dữ liệu cục bộ của bạn bị rối tung';

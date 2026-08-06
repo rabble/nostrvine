@@ -1551,7 +1551,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get videoDetailNotFoundBody =>
-      'Hij is verwijderd, of hij verstopt zich ergens waar we niet bij kunnen.';
+      'Misschien is hij verwijderd, buiten bereik, of verborgen door je instellingen.';
 
   @override
   String get databaseCorruptionTitle => 'Je lokale gegevens zijn beschadigd';

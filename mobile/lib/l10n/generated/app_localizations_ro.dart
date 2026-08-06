@@ -1584,7 +1584,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get videoDetailNotFoundBody =>
-      'Ori a fost șters, ori se ascunde undeva unde nu ajungem.';
+      'Poate a fost șters, e în afara razei noastre sau ascuns de setările tale.';
 
   @override
   String get databaseCorruptionTitle => 'Datele tale locale s-au deteriorat';

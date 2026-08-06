@@ -1444,7 +1444,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoDetailLoadErrorBody => '오는 길에 뭔가 어긋났어요. 다시 시도해 보세요.';
 
   @override
-  String get videoDetailNotFoundBody => '삭제됐거나, 우리가 닿을 수 없는 곳에 숨어 있어요.';
+  String get videoDetailNotFoundBody =>
+      '삭제됐거나, 닿을 수 없는 곳에 있거나, 설정 때문에 숨겨진 걸 수도 있어요.';
 
   @override
   String get databaseCorruptionTitle => '로컬 데이터가 손상됐어요';

@@ -1525,7 +1525,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get videoDetailNotFoundBody =>
-      'إمّا أنه حُذف أو أنه مخبّأ في مكان لا نصل إليه.';
+      'قد يكون محذوفًا، أو بعيدًا عن متناولنا، أو مخفيًا بواسطة إعداداتك.';
 
   @override
   String get databaseCorruptionTitle => 'بياناتك المحلية تعرضت للتلف';

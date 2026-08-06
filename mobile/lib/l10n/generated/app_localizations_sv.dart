@@ -1539,7 +1539,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoDetailNotFoundBody =>
-      'Antingen är den raderad, eller så gömmer den sig där vi inte når.';
+      'Den kan vara borttagen, utom räckhåll eller dold av dina inställningar.';
 
   @override
   String get databaseCorruptionTitle => 'Dina lokala data har skadats';

@@ -4412,7 +4412,7 @@
     "@videoErrorAdultContentHidden": {"description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."},
     "videoDetailLoadError": "動画の読み込みに失敗したよ",
     "videoDetailLoadErrorBody": "途中で何かがうまくいきませんでした。もう一度お試しください。",
-    "videoDetailNotFoundBody": "削除されたか、こちらから届かない場所に隠れているみたいです。",
+    "videoDetailNotFoundBody": "削除されたか、こちらから届かないか、設定で非表示になっているのかもしれません。",
     "databaseCorruptionTitle": "ローカルデータが壊れちゃった",
     "databaseCorruptionBody": "Divine を閉じてもう一度開いてね。自動で直すよ。下書きとクリップはできるだけ残すよ。ほかは読み込み直すよ。",
     "databaseCorruptionCloseButton": "Divine を閉じる",

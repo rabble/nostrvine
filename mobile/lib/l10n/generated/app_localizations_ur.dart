@@ -1545,7 +1545,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get videoDetailNotFoundBody =>
-      'یا تو یہ حذف ہو چکی ہے، یا کہیں ایسی جگہ چھپی ہے جہاں ہم نہیں پہنچ سکتے۔';
+      'ہو سکتا ہے یہ حذف ہو چکی ہو، ہماری پہنچ سے باہر ہو، یا آپ کی ترتیبات نے اسے چھپا دیا ہو۔';
 
   @override
   String get databaseCorruptionTitle => 'آپ کا مقامی ڈیٹا بگڑ گیا';

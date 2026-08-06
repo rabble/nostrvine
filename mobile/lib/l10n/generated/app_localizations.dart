@@ -2745,7 +2745,7 @@ abstract class AppLocalizations {
   /// Supporting copy under the 'Video not found' title on the shared-link video screen. The screen shows this for three different causes it cannot tell apart: the video was deleted, it cannot be fetched from any connected relay, or it is hidden by a filter (a blocked or muted author, or the default-on Divine-hosted-only setting). It must not promise the video is gone for good, and it must not be read as covering only the first two.
   ///
   /// In en, this message translates to:
-  /// **'It was either deleted, or it\'s hiding somewhere we can\'t reach.'**
+  /// **'It could be gone, out of reach, or hidden by your settings.'**
   String get videoDetailNotFoundBody;
 
   /// Title of the full-screen takeover shown when the local database reports on-disk corruption at runtime. 'Scrambled' is deliberately non-technical: the user did nothing wrong and cannot act on the real cause.
