@@ -19,12 +19,16 @@ class DuplicateSubscriptionException implements Exception {
   String toString() => 'DuplicateSubscriptionException: $message';
 }
 
-/// Exception thrown when a video's selected sound does not grant reuse consent.
+/// Exception thrown when a video's selected sound is not cleared for reuse.
 ///
 /// Thrown after the media has already uploaded, so it is not an upload or
 /// relay failure: only the Nostr event is withheld. It exists as a distinct
 /// type so the publish layer can classify it and tell the user the *sound* is
 /// the blocker instead of pointing them at their relay settings.
+///
+/// Raised only once the relays have answered. A consent check that could not
+/// run at all is a transport failure and must not surface as this type — the
+/// publisher reports that as `AudioReuseCheck.unverified` instead.
 class AudioReuseNotPermittedException implements Exception {
   AudioReuseNotPermittedException(this.audioEventId);
 

@@ -69,10 +69,11 @@ enum PublishErrorKind {
   /// Media uploaded but the Nostr event could not be published.
   nostrPublishFailed,
 
-  /// Media uploaded but the selected sound's creator does not allow reuse, so
-  /// the post was withheld. Distinct from [nostrPublishFailed]: nothing about
-  /// the relay or the network is wrong, and retrying changes nothing until the
-  /// user picks a different sound.
+  /// Media uploaded but the relays answered that the selected sound is not
+  /// cleared for reuse, so the post was withheld. Distinct from
+  /// [nostrPublishFailed]: the network did its job, and retrying returns the
+  /// same answer until the user picks a different sound. A consent check that
+  /// could not run at all stays [nostrPublishFailed] — that one is retryable.
   audioReuseNotPermitted,
 
   /// A previous upload was interrupted (surfaced on resume).
