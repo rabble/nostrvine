@@ -4818,21 +4818,9 @@
     }
   },
   "notificationPostedNewVine": "{actorName} menyiarkan vine baharu",
-  "notificationAddedYourVideoToList": "{actorName} added your vine to {listName}",
-  "@notificationAddedYourVideoToList": {
-    "description": "Shown when someone adds one of the user's videos to a public curated list.",
-    "placeholders": {
-      "actorName": {
-        "type": "String"
-      },
-      "listName": {
-        "type": "String"
-      }
-    }
-  },
-  "notificationAddedYourVideosToList": "{actorName} added {count} of your vines to {listName}",
+  "notificationAddedYourVideosToList": "{actorName} added {count, plural, =1{your vine} other{{count} of your vines}} to {listName}",
   "@notificationAddedYourVideosToList": {
-    "description": "Shown when someone adds multiple of the user's videos to the same public curated list.",
+    "description": "Shown when someone adds the user's videos to a public curated list. Uses an ICU plural so locales with more than two plural categories can inflect correctly.",
     "placeholders": {
       "actorName": {
         "type": "String"

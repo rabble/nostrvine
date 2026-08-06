@@ -189,10 +189,12 @@ void main() {
 
         expect(
           find.textContaining(
-            _l10n.notificationAddedYourVideoToList('Alice', 'Literature'),
+            _l10n.notificationAddedYourVideosToList('Alice', 1, 'Literature'),
           ),
           findsOneWidget,
         );
+        // The `=1` arm must not leak the count into the sentence.
+        expect(find.textContaining('1 of your vines'), findsNothing);
       });
 
       testWidgets('grouped listAdd counts videos, not other actors', (

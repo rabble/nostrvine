@@ -13970,16 +13970,10 @@ abstract class AppLocalizations {
   /// **'{actorName} posted a new vine'**
   String notificationPostedNewVine(String actorName);
 
-  /// Shown when someone adds one of the user's videos to a public curated list.
+  /// Shown when someone adds the user's videos to a public curated list. Uses an ICU plural so locales with more than two plural categories can inflect correctly.
   ///
   /// In en, this message translates to:
-  /// **'{actorName} added your vine to {listName}'**
-  String notificationAddedYourVideoToList(String actorName, String listName);
-
-  /// Shown when someone adds multiple of the user's videos to the same public curated list.
-  ///
-  /// In en, this message translates to:
-  /// **'{actorName} added {count} of your vines to {listName}'**
+  /// **'{actorName} added {count, plural, =1{your vine} other{{count} of your vines}} to {listName}'**
   String notificationAddedYourVideosToList(
     String actorName,
     int count,
