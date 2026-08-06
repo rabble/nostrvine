@@ -8,13 +8,11 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/router/routes/route_extras.dart';
-import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/saved_videos_screen.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/widgets/add_to_list_dialog.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
-import 'package:openvine/widgets/list_card.dart';
+import 'package:openvine/widgets/owned_list_card.dart';
 
 /// Owned video-list surface for the current user's profile.
 class ProfileListsGrid extends ConsumerWidget {
@@ -80,15 +78,7 @@ class _ProfileListsContent extends StatelessWidget {
             ),
           )
         else
-          for (final list in lists)
-            CuratedListCard(
-              curatedList: list,
-              showVisibility: true,
-              onTap: () => context.push(
-                CuratedListFeedScreen.pathForId(list.id),
-                extra: CuratedListRouteExtra(listName: list.name),
-              ),
-            ),
+          for (final list in lists) OwnedListCard(curatedList: list),
       ],
     );
   }

@@ -15,6 +15,7 @@ import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/widgets/add_to_list_dialog.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/list_card.dart';
+import 'package:openvine/widgets/owned_list_card.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// The Lists tab shown inside [ExploreScreen].
@@ -143,21 +144,12 @@ class ExploreListsTab extends ConsumerWidget {
                       ),
                     ),
                     ...myLists.map(
-                      (curatedList) => CuratedListCard(
+                      (curatedList) => OwnedListCard(
                         curatedList: curatedList,
-                        showVisibility: true,
-                        onTap: () {
-                          Log.info(
-                            'Tapped my curated list: ${curatedList.name}',
-                            category: LogCategory.ui,
-                          );
-                          context.push(
-                            CuratedListFeedScreen.pathForId(curatedList.id),
-                            extra: CuratedListRouteExtra(
-                              listName: curatedList.name,
-                            ),
-                          );
-                        },
+                        onTap: () => Log.info(
+                          'Tapped my curated list: ${curatedList.name}',
+                          category: LogCategory.ui,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
