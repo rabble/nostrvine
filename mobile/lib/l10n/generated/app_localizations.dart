@@ -2742,7 +2742,7 @@ abstract class AppLocalizations {
   /// **'Something went sideways on the way here. Give it another try.'**
   String get videoDetailLoadErrorBody;
 
-  /// Supporting copy under the 'Video not found' title on the shared-link video screen. Covers both a deleted video and one we simply cannot fetch from any connected relay, so it must not promise the video is gone for good.
+  /// Supporting copy under the 'Video not found' title on the shared-link video screen. The screen shows this for three different causes it cannot tell apart: the video was deleted, it cannot be fetched from any connected relay, or it is hidden by a filter (a blocked or muted author, or the default-on Divine-hosted-only setting). It must not promise the video is gone for good, and it must not be read as covering only the first two.
   ///
   /// In en, this message translates to:
   /// **'It was either deleted, or it\'s hiding somewhere we can\'t reach.'**
