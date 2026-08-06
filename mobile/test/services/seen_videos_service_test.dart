@@ -178,6 +178,12 @@ void main() {
     });
 
     test('coalesces rapid records while keeping memory current', () async {
+      await service.dispose();
+      service = SeenVideosService(
+        saveDebounceDuration: const Duration(days: 1),
+      );
+      await service.initialize();
+
       final firstSave = service.recordVideoView('video1');
       final secondSave = service.recordVideoView('video2');
 
@@ -190,6 +196,7 @@ void main() {
       expect(beforeFlush.hasSeenVideo('video2'), isFalse);
       await beforeFlush.dispose();
 
+      await service.dispose();
       await Future.wait([firstSave, secondSave]);
 
       final afterFlush = SeenVideosService();

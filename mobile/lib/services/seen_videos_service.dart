@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:meta/meta.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -70,13 +71,18 @@ class SeenVideoMetrics {
 /// Service for tracking seen videos with engagement metrics
 /// REFACTORED: Extended to store timestamps, loop counts, and watch duration
 class SeenVideosService {
+  SeenVideosService({
+    @visibleForTesting Duration? saveDebounceDuration,
+  }) : _saveDebounceDuration =
+           saveDebounceDuration ?? const Duration(milliseconds: 100);
+
   static const String _seenVideosKey = 'seen_video_ids'; // Legacy key
   static const String _seenVideosMetricsKey = 'seen_video_metrics'; // New key
   static const int _maxSeenVideos =
       1000; // Limit storage to prevent unbounded growth
-  static const Duration _saveDebounceDuration = Duration(milliseconds: 100);
 
   final Map<String, SeenVideoMetrics> _seenVideos = {};
+  final Duration _saveDebounceDuration;
   SharedPreferences? _prefs;
   bool _isInitialized = false;
   Future<void>? _initializeFuture;

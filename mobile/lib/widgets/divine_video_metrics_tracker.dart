@@ -43,7 +43,6 @@ class DivineVideoMetricsTracker extends ConsumerStatefulWidget {
 class _DivineVideoMetricsTrackerState
     extends ConsumerState<DivineVideoMetricsTracker> {
   static const _minimumViewEndWatchDuration = Duration(seconds: 1);
-  static const _minimumImpressionDuration = Duration(milliseconds: 500);
 
   DateTime? _viewStartTime;
   DateTime? _lastPlayStartTime;
@@ -231,8 +230,7 @@ class _DivineVideoMetricsTrackerState
       }
     }
 
-    if (!_hasRecordedImpression &&
-        activeDuration >= _minimumImpressionDuration) {
+    if (!_hasRecordedImpression && activeDuration > Duration.zero) {
       _hasRecordedImpression = true;
       unawaited(
         _seenVideosService.recordVideoView(

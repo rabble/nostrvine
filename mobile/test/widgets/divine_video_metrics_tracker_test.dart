@@ -226,7 +226,7 @@ void main() {
       await controller.close();
     });
 
-    testWidgets('fling-speed active session records nothing', (tester) async {
+    testWidgets('fling-speed active session records seen only', (tester) async {
       final isActive = ValueNotifier(true);
       final video = ValueNotifier(_video);
       final controller = _stubController(isPlaying: true);
@@ -248,7 +248,12 @@ void main() {
       await tester.pump();
 
       expect(_viewEndEvents(analyticsService), isEmpty);
-      expect(seenVideosService.records, isEmpty);
+      expect(seenVideosService.records, hasLength(1));
+      expect(seenVideosService.records.single.videoId, equals('video_id'));
+      expect(
+        seenVideosService.records.single.watchDuration,
+        const Duration(milliseconds: 400),
+      );
 
       isActive.dispose();
       video.dispose();
@@ -395,14 +400,18 @@ void main() {
         ),
       );
 
-      // Glance too short for either threshold, then the feed goes inactive
+      // Glance too short for view_end, then the feed goes inactive
       // (app backgrounded, route pushed, or swiped past within the pool).
       now = now.add(const Duration(milliseconds: 300));
       isActive.value = false;
       await tester.pump();
 
       expect(_viewEndEvents(analyticsService), isEmpty);
-      expect(seenVideosService.records, isEmpty);
+      expect(seenVideosService.records, hasLength(1));
+      expect(
+        seenVideosService.records.single.watchDuration,
+        const Duration(milliseconds: 300),
+      );
 
       // The same tracker becomes active again and is actually watched.
       isActive.value = true;
