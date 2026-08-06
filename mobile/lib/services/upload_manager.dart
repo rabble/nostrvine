@@ -1124,9 +1124,9 @@ class UploadManager implements BackgroundAwareService {
       } finally {
         transferWatch.stop();
         logPublishPhase(
-          'upload.transfer',
+          PublishPhases.uploadTransfer,
           transferWatch.elapsed,
-          detail: formatTransferDetail(videoBytes, transferWatch.elapsed),
+          bytes: videoBytes,
         );
       }
 
@@ -1907,7 +1907,11 @@ class UploadManager implements BackgroundAwareService {
       // content-addressed, so re-uploading would land on the same hash. The
       // zero-duration line keeps the PUBTIME timeline honest on retries —
       // without it an export reads as "the leg never ran".
-      logPublishPhase('upload.thumbnail', Duration.zero, detail: 'reused');
+      logPublishPhase(
+        PublishPhases.uploadThumbnail,
+        Duration.zero,
+        detail: PublishPhases.reusedDetail,
+      );
       return (cdnUrl: existing, blurhash: upload.blurhash);
     }
 
@@ -1950,7 +1954,7 @@ class UploadManager implements BackgroundAwareService {
       return result;
     } finally {
       watch.stop();
-      logPublishPhase('upload.thumbnail', watch.elapsed);
+      logPublishPhase(PublishPhases.uploadThumbnail, watch.elapsed);
     }
   }
 
@@ -1981,7 +1985,10 @@ class UploadManager implements BackgroundAwareService {
             VideoEditorConstants.defaultThumbnailExtractTime,
       );
       extractWatch.stop();
-      logPublishPhase('upload.thumbnail.extract', extractWatch.elapsed);
+      logPublishPhase(
+        PublishPhases.uploadThumbnailExtract,
+        extractWatch.elapsed,
+      );
 
       if (thumbnailExtraction == null) {
         Log.warning(
@@ -2015,7 +2022,10 @@ class UploadManager implements BackgroundAwareService {
         thumbnailFile.readAsBytesSync(),
       );
       blurhashWatch.stop();
-      logPublishPhase('upload.thumbnail.blurhash', blurhashWatch.elapsed);
+      logPublishPhase(
+        PublishPhases.uploadThumbnailBlurhash,
+        blurhashWatch.elapsed,
+      );
 
       // Upload thumbnail to Blossom server. Divine relay publishing requires
       // a CDN thumbnail, so keep the image upload's own retry enabled here.
@@ -2033,9 +2043,9 @@ class UploadManager implements BackgroundAwareService {
       );
       putWatch.stop();
       logPublishPhase(
-        'upload.thumbnail.put',
+        PublishPhases.uploadThumbnailPut,
         putWatch.elapsed,
-        detail: formatTransferDetail(thumbnailBytes, putWatch.elapsed),
+        bytes: thumbnailBytes,
       );
 
       // Clean up local thumbnail file

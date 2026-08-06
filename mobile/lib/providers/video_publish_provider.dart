@@ -27,6 +27,7 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/layer_rasterizer_provider.dart';
 import 'package:openvine/providers/preferences_providers.dart';
 import 'package:openvine/providers/repository_providers.dart';
+import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/upload_media_providers.dart';
@@ -164,6 +165,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         l10n: currentAppL10n(ref.read(sharedPreferencesProvider)),
       ),
       languagePreferenceService: ref.read(languagePreferenceServiceProvider),
+      performanceMonitor: ref.read(performanceMonitoringServiceProvider),
       onProgressChanged: ({required String draftId, required double progress}) {
         setUploadProgress(draftId: draftId, progress: progress);
         onProgressChanged(draftId: draftId, progress: progress);

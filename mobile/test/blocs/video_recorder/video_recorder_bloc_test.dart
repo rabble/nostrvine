@@ -38,11 +38,15 @@ class _MockCameraService extends Mock implements CameraService {}
 /// An operation-scoped trace handle that records its attributes and stop count.
 class _RecordingTrace implements PerformanceTrace {
   final Map<String, String> attributes = {};
+  final Map<String, int> metrics = {};
   int stopCount = 0;
 
   @override
   void putAttribute(String attribute, String value) =>
       attributes[attribute] = value;
+
+  @override
+  void setMetric(String metric, int value) => metrics[metric] = value;
 
   @override
   Future<void> stop() async => stopCount++;

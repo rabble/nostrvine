@@ -1325,7 +1325,7 @@ class VideoEventPublisher {
           // Continue publishing without blurhash - it's optional metadata
         } finally {
           blurhashWatch.stop();
-          logPublishPhase('nostr.blurhash', blurhashWatch.elapsed);
+          logPublishPhase(PublishPhases.nostrBlurhash, blurhashWatch.elapsed);
         }
       }
 
@@ -1773,9 +1773,11 @@ class VideoEventPublisher {
       }
       signWatch.stop();
       logPublishPhase(
-        'nostr.sign',
+        PublishPhases.nostrSign,
         signWatch.elapsed,
-        detail: reusedEvent != null ? 'reused' : 'signed',
+        detail: reusedEvent != null
+            ? PublishPhases.reusedDetail
+            : PublishPhases.signedDetail,
       );
 
       if (event == null) {
@@ -1816,7 +1818,7 @@ class VideoEventPublisher {
         isRetry: reusedEvent != null,
       );
       publishWatch.stop();
-      logPublishPhase('nostr.publish', publishWatch.elapsed);
+      logPublishPhase(PublishPhases.nostrPublish, publishWatch.elapsed);
 
       if (publishResult) {
         final shouldAddToDiscoveryCache =

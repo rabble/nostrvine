@@ -85,7 +85,9 @@ void main() {
 
         // Tagging and stopping the handle must be safe even when Firebase
         // isn't configured (the uninitialised path returns a no-op handle).
-        trace.putAttribute('outcome', 'success');
+        trace
+          ..putAttribute('outcome', 'success')
+          ..setMetric('phase_ms', 120);
         await expectLater(trace.stop(), completes);
       },
     );
@@ -96,7 +98,9 @@ void main() {
       const monitor = NoOpPerformanceTraceMonitor();
 
       final trace = monitor.startOperationTrace('test_operation');
-      trace.putAttribute('outcome', 'success');
+      trace
+        ..putAttribute('outcome', 'success')
+        ..setMetric('phase_ms', 120);
 
       await expectLater(trace.stop(), completes);
     });

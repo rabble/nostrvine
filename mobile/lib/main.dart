@@ -2607,6 +2607,7 @@ class _DivineAppState extends ConsumerState<DivineApp>
           dmRepository: ref.read(dmRepositoryProvider),
           l10n: currentAppL10n(ref.read(sharedPreferencesProvider)),
         ),
+        performanceMonitor: ref.read(performanceMonitoringServiceProvider),
         onProgressChanged:
             ({required String draftId, required double progress}) {
               onProgress(draftId: draftId, progress: progress);

@@ -20,6 +20,7 @@ import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/mention_resolution_service.dart';
+import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/subtitle_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
@@ -157,8 +158,11 @@ class VideoPublishService {
     this.collaboratorInviteService,
     this.languagePreferenceService,
     this.mentionResolutionService,
+    PerformanceTraceMonitor? performanceMonitor,
     Duration subtitlePublishTimeout = _defaultSubtitlePublishTimeout,
-  }) : _subtitlePublishTimeout = subtitlePublishTimeout;
+  }) : _performanceMonitor =
+           performanceMonitor ?? const NoOpPerformanceTraceMonitor(),
+       _subtitlePublishTimeout = subtitlePublishTimeout;
 
   /// Manages background video uploads.
   final UploadManager uploadManager;
@@ -186,6 +190,10 @@ class VideoPublishService {
 
   /// Resolves typed mentions before publishing Nostr video events.
   final MentionResolutionService? mentionResolutionService;
+
+  /// Reports the publish phase breakdown to Firebase Performance. Optional so
+  /// unit tests get the no-op monitor and never reach Firebase.
+  final PerformanceTraceMonitor _performanceMonitor;
 
   /// Deadline for each optional caption-asset network step. Captions are
   /// best-effort, so a stalled upload / relay publish must never hold up the
@@ -230,7 +238,8 @@ class VideoPublishService {
   /// Returns [PublishSuccess] on success, [PublishError] on failure.
   ///
   /// Wraps the publish in a [PublishTimeline] so every run emits per-phase
-  /// timing plus a summary line, whichever way it ends.
+  /// timing plus a summary line and a `video_publish` performance trace,
+  /// whichever way it ends.
   ///
   /// A successful publish does *not* delete the draft. Reclaiming the draft
   /// row and its unreferenced media is `BackgroundPublishBloc`'s job
@@ -239,13 +248,20 @@ class VideoPublishService {
   /// garbage collection only delays the UI (#6548). The bloc also deletes the
   /// source draft this publish copy came from, which this service never saw.
   Future<PublishResult> publishVideo({required DivineVideoDraft draft}) async {
-    final timeline = PublishTimeline(draft.id);
+    final timeline = PublishTimeline(
+      draft.id,
+      performanceMonitor: _performanceMonitor,
+    );
     PublishResult? result;
     try {
-      result = await _publishVideo(draft: draft, timeline: timeline);
+      // Inside `run` so the phases the upload and Nostr legs time for
+      // themselves are attributed to this publish's trace.
+      result = await timeline.run<PublishResult>(
+        () => _publishVideo(draft: draft, timeline: timeline),
+      );
       return result;
     } finally {
-      timeline.logSummary(
+      timeline.finish(
         outcome: switch (result) {
           PublishSuccess() => 'success',
           PublishError(:final kind) => 'error:${kind.name}',
@@ -305,7 +321,7 @@ class VideoPublishService {
 
       // Use existing upload if available, otherwise start new upload
       final pendingUpload = await timeline.measure(
-        'upload',
+        PublishPhases.upload,
         () => _getOrCreateUpload(pubkey, draft),
       );
       if (pendingUpload == null) {
@@ -349,14 +365,14 @@ class VideoPublishService {
       Log.info('📝 Publishing Nostr event...', category: .video);
 
       final mentionedPubkeys = await timeline.measure(
-        'mentions',
+        PublishPhases.mentions,
         () => _resolveMentionedPubkeys(draft, currentUserPubkey: pubkey),
       );
 
       final captionTrack = _captionTrackForPublish(draft);
       final textTrackRefs = captionTrack != null
           ? await timeline.measure(
-              'subtitles',
+              PublishPhases.subtitles,
               () => _publishSubtitleAssets(captionTrack, pendingUpload),
             )
           : const <String>[];
@@ -367,7 +383,7 @@ class VideoPublishService {
       );
 
       final published = await timeline.measure(
-        'nostr',
+        PublishPhases.nostr,
         () => videoEventPublisher.publishVideoEvent(
           upload: pendingUpload,
           title: draft.title,
@@ -415,7 +431,7 @@ class VideoPublishService {
       onProgressChanged(draftId: draft.id, progress: _progressAfterNostr);
 
       final inviteWarnings = await timeline.measure(
-        'invites',
+        PublishPhases.invites,
         () => _sendCollaboratorInvites(
           draft: draft,
           upload: pendingUpload,
