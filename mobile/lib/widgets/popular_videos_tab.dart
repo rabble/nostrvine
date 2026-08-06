@@ -30,6 +30,9 @@ import 'package:unified_logger/unified_logger.dart';
 /// including the native/classic variant switch.
 const _feedStateTransitionDuration = Duration(milliseconds: 250);
 
+/// Elapsed first-page load time past which the load is reported as slow.
+const _slowFeedLoadThresholdMs = 5000;
+
 /// Tab widget displaying popular videos by current watch volume.
 ///
 /// Handles its own:
@@ -121,6 +124,7 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
         child: const _PopularVideosErrorState(),
       );
     } else if (rendered != null) {
+      _trackSlowLoadIfNeeded();
       content = _PopularVideosTrendingContent(
         key: ValueKey(rendered.variant),
         videos: rendered.state.videos,
@@ -205,15 +209,24 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
       category: LogCategory.video,
     );
 
+    _trackSlowLoadIfNeeded();
+  }
+
+  /// Reports a slow first page regardless of what the tab is painting.
+  ///
+  /// A variant switch holds the previous page instead of the spinner, so
+  /// gating this on the spinner branch would drop the signal for exactly
+  /// the loads the user waits on.
+  void _trackSlowLoadIfNeeded() {
     if (_feedLoadStartTime != null) {
       final elapsed = DateTime.now()
           .difference(_feedLoadStartTime!)
           .inMilliseconds;
-      if (elapsed > 5000) {
+      if (elapsed > _slowFeedLoadThresholdMs) {
         _errorTracker.trackSlowOperation(
           operation: 'popular_feed_load',
           durationMs: elapsed,
-          thresholdMs: 5000,
+          thresholdMs: _slowFeedLoadThresholdMs,
           location: 'explore_popular',
         );
       }
