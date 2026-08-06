@@ -98,12 +98,13 @@ class C2paSigningService {
 
   /// Whether the remote signing pipeline is configured for this build.
   ///
-  /// Signing is a network call to [SIGNING_SERVER_ENDPOINT], which is injected
-  /// as a `--dart-define` only in builds that opt in (see `build_*.sh` /
-  /// `run_dev.sh`). CI and unconfigured builds leave it empty, so a missing
-  /// C2PA signature there is expected and must never be surfaced to the user —
+  /// Signing is a network call to [SIGNING_SERVER_ENDPOINT]. The endpoint always
+  /// resolves to a usable URL — an override that is absent falls back to
+  /// [defaultSigningServerEndpoint] — so signing is configured unless a build
+  /// explicitly disables it with `PROOFMODE_SIGNING_SERVER_ENDPOINT=disabled`.
+  /// Builds that disable it never surface a missing C2PA signature to the user;
   /// callers gate the "sign or skip" prompt on this (#6058).
-  static bool get isSigningConfigured => SIGNING_SERVER_ENDPOINT.isNotEmpty;
+  static bool get isSigningConfigured => !_signingDisabled;
 
   /// Signs a video file with C2PA content credentials.
   ///
@@ -490,10 +491,81 @@ class C2paSigningService {
     );
   }
 
+  /// Path every signing endpoint must end in.
+  ///
+  /// [_createSigner] appends `?platform=...` to the endpoint, so a value that
+  /// stops at the host collapses to the service root. The root serves an HTML
+  /// landing page with HTTP 200, and the signer then reports a bare
+  /// "Signature: internal error" that reads like a server outage.
+  static const String signingConfigurationPath = '/api/v1/c2pa/configuration';
+
+  /// Endpoint used when a build does not override it.
+  static const String defaultSigningServerEndpoint =
+      'https://proofsign.divine.video$signingConfigurationPath';
+
+  /// Sentinel that turns signing off entirely, for CI and unconfigured builds.
+  static const String signingDisabledSentinel = 'disabled';
+
   // add ?platform=android or ios
   static const String SIGNING_SERVER_ENDPOINT = String.fromEnvironment(
     'PROOFMODE_SIGNING_SERVER_ENDPOINT',
+    defaultValue: defaultSigningServerEndpoint,
   );
+
+  static bool get _signingDisabled =>
+      SIGNING_SERVER_ENDPOINT.trim().toLowerCase() == signingDisabledSentinel;
+
+  /// Validates [SIGNING_SERVER_ENDPOINT], returning null when it is usable and
+  /// a human-readable reason when it is not.
+  ///
+  /// Exposed separately from [assertSigningEndpointValid] so tests can check
+  /// arbitrary values without tearing down the app.
+  static String? describeSigningEndpointProblem(String endpoint) {
+    if (endpoint.trim().toLowerCase() == signingDisabledSentinel) return null;
+
+    if (endpoint.isEmpty) {
+      return 'PROOFMODE_SIGNING_SERVER_ENDPOINT is empty. Pass '
+          '--dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=<url> or leave it '
+          'unset to use $defaultSigningServerEndpoint.';
+    }
+
+    final uri = Uri.tryParse(endpoint);
+    if (uri == null || !uri.isAbsolute || uri.host.isEmpty) {
+      return 'PROOFMODE_SIGNING_SERVER_ENDPOINT ("$endpoint") is not an '
+          'absolute URL.';
+    }
+
+    if (uri.scheme != 'https') {
+      return 'PROOFMODE_SIGNING_SERVER_ENDPOINT ("$endpoint") must use https, '
+          'not "${uri.scheme}".';
+    }
+
+    if (uri.hasQuery) {
+      return 'PROOFMODE_SIGNING_SERVER_ENDPOINT ("$endpoint") must not carry a '
+          'query string; the platform parameter is appended at call time.';
+    }
+
+    if (uri.path != signingConfigurationPath) {
+      return 'PROOFMODE_SIGNING_SERVER_ENDPOINT ("$endpoint") must end in '
+          '$signingConfigurationPath. A bare host resolves to the service '
+          'root, which returns an HTML landing page instead of a signing '
+          'configuration.';
+    }
+
+    return null;
+  }
+
+  /// Fails the launch when the signing endpoint is malformed.
+  ///
+  /// A misconfigured endpoint does not fail loudly on its own: it surfaces much
+  /// later as an opaque signing error during capture, which reads as an outage
+  /// rather than a build problem. Called from app startup.
+  static void assertSigningEndpointValid() {
+    final problem = describeSigningEndpointProblem(SIGNING_SERVER_ENDPOINT);
+    if (problem != null) {
+      throw StateError('C2PA signing misconfigured: $problem');
+    }
+  }
 
   static const String SIGNING_SERVER_TOKEN = String.fromEnvironment(
     'PROOFMODE_SIGNING_SERVER_TOKEN',

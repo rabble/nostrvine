@@ -6380,6 +6380,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Удостоверенията за съдържание изискват интернет връзка.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Генерирай отново';
 
   @override

@@ -6406,6 +6406,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Les informations d’authenticité nécessitent une connexion internet.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Régénérer';
 
   @override

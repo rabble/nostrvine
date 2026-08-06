@@ -6020,6 +6020,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoMetadataC2paMissingNote => '添加内容凭证需要网络连接。';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => '重新生成';
 
   @override

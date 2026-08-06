@@ -6330,6 +6330,10 @@ class AppLocalizationsUr extends AppLocalizations {
       'مواد اسناد کے لیے انٹرنیٹ کنکشن درکار ہے۔';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'دوبارہ بنائیں';
 
   @override

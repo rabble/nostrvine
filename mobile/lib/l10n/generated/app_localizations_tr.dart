@@ -6291,6 +6291,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'İçerik kimlik bilgileri internet bağlantısı gerektirir.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Yeniden oluştur';
 
   @override
