@@ -4,7 +4,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:infinite_video_feed/infinite_video_feed.dart'
     show VideoErrorType;
 import 'package:models/models.dart';
@@ -15,6 +14,7 @@ import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/utils/blossom_blob_hash.dart';
+import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 const _logName = 'PooledAgeRestrictedRetry';
@@ -232,18 +232,23 @@ bool _isAuthRejection(PooledRetryOutcome outcome) =>
 /// and the message disappeared before the viewer could act on it.
 Future<void> _promptAdultContentHidden(BuildContext context) async {
   if (!context.mounted) return;
-  final openFilters = await VineBottomSheetPrompt.show<bool>(
-    context: context,
-    sticker: DivineStickerName.trafficCone,
-    title: context.l10n.videoErrorAdultContentHiddenTitle,
-    subtitle: context.l10n.videoErrorAdultContentHiddenBody,
-    primaryButtonText: context.l10n.videoErrorAdultContentHiddenAction,
-    onPrimaryPressed: () => Navigator.of(context).pop(true),
-    secondaryButtonText: context.l10n.commonNotNow,
-    onSecondaryPressed: () => Navigator.of(context).pop(false),
+  final openFilters = await context.showVideoPausingVineBottomSheet<bool>(
+    scrollable: false,
+    showHeaderDivider: false,
+    body: VineBottomSheetPrompt(
+      sticker: DivineStickerName.trafficCone,
+      title: context.l10n.videoErrorAdultContentHiddenTitle,
+      subtitle: context.l10n.videoErrorAdultContentHiddenBody,
+      primaryButtonText: context.l10n.videoErrorAdultContentHiddenAction,
+      onPrimaryPressed: () =>
+          Navigator.of(context, rootNavigator: true).pop(true),
+      secondaryButtonText: context.l10n.commonNotNow,
+      onSecondaryPressed: () =>
+          Navigator.of(context, rootNavigator: true).pop(false),
+    ),
   );
   if (openFilters != true || !context.mounted) return;
-  await context.push<void>(ContentFiltersScreen.path);
+  await context.pushWithVideoPause<void>(ContentFiltersScreen.path);
 }
 
 /// Surfaces the connectivity-specific message when a remote signer didn't
