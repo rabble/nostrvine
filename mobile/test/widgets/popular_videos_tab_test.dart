@@ -115,6 +115,22 @@ void main() {
         );
 
         classicCompleter.complete(_popularPage([_video('popular-classic')]));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(
+          find.byKey(const ValueKey(PopularVideosVariant.native)),
+          findsOneWidget,
+          reason:
+              'Both pages must be mounted part-way through the transition. '
+              'Without the AnimatedSwitcher the outgoing page is gone on the '
+              'frame the new one arrives, which is the jump this fixes.',
+        );
+        expect(
+          find.byKey(const ValueKey(PopularVideosVariant.classic)),
+          findsOneWidget,
+        );
+
         await tester.pumpAndSettle();
 
         expect(
