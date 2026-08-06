@@ -1637,7 +1637,11 @@ class RelayPool {
     String? id,
     Function? onComplete,
   }) {
-    if (filtersMap.isEmpty) {
+    if (filtersMap.isEmpty ||
+        filtersMap.values.any((filters) => filters.isEmpty)) {
+      // A per-relay entry with no filters would build a Subscription that
+      // matches nothing, so every event it received would be dropped by the
+      // admission gate. The sibling entry points reject this the same way.
       throw ArgumentError("No filters given", "filters");
     }
     id ??= StringUtil.rndNameStr(16);
