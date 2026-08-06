@@ -252,9 +252,15 @@ FeedAutoAdvanceCubit? _maybeReadFeedAutoAdvanceCubit(BuildContext context) =>
 /// names the state the tap just produced. Any banner still on screen is
 /// replaced rather than queued, so rapid toggling always shows the current
 /// state.
+///
+/// Uses `removeCurrentSnackBar` rather than `hideCurrentSnackBar`: hiding only
+/// *starts* the exit animation, and the entry leaves `ScaffoldMessenger`'s
+/// queue when that animation reports `dismissed`, so the banner shown next
+/// lands behind the departing one. Removing drops it in the same frame, which
+/// is what makes this a replace instead of a queue.
 void _showToggleFeedback(BuildContext context, String message) {
   ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
+    ..removeCurrentSnackBar()
     ..showSnackBar(
       DivineSnackbarContainer.snackBar(
         message,

@@ -225,6 +225,14 @@ void main() {
         find.bySemanticsLabel(l10n.videoActionEnableAutoAdvance),
       );
       await tester.pump();
+      // Let the first banner finish animating in before re-toggling. With no
+      // elapsed time its entrance controller sits at 0, so dismissing it
+      // collapses to a zero-duration reverse and the second banner takes over
+      // no matter how it was requested — which is exactly the distinction this
+      // test exists to pin.
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text(l10n.videoSettingsAutoAdvanceOn), findsOneWidget);
+
       await tester.tap(
         find.bySemanticsLabel(l10n.videoActionDisableAutoAdvance),
       );
