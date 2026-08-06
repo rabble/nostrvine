@@ -260,6 +260,34 @@ void main() {
       await controller.close();
     });
 
+    testWidgets('zero-duration active session records nothing', (tester) async {
+      final isActive = ValueNotifier(true);
+      final video = ValueNotifier(_video);
+      final controller = _stubController(isPlaying: true);
+
+      await tester.pumpWidget(
+        _buildTrackerHarness(
+          authService: authService,
+          analyticsService: analyticsService,
+          seenVideosService: seenVideosService,
+          controller: controller.controller,
+          video: video,
+          isActive: isActive,
+          clock: () => now,
+        ),
+      );
+
+      isActive.value = false;
+      await tester.pump();
+
+      expect(_viewEndEvents(analyticsService), isEmpty);
+      expect(seenVideosService.records, isEmpty);
+
+      isActive.dispose();
+      video.dispose();
+      await controller.close();
+    });
+
     testWidgets('dispose under one second records seen once', (tester) async {
       final controller = _stubController(isPlaying: true);
 
