@@ -2543,6 +2543,23 @@ void main() {
           .updateEditorEditingParameters(params);
     }
 
+    DivineVideoClip timelineClip({
+      String id = 'clip-1',
+      String? sourceAddressableId,
+      String? sourceRelayHint,
+    }) {
+      return DivineVideoClip(
+        id: id,
+        video: EditorVideo.file('/docs/$id.mp4'),
+        duration: const Duration(seconds: 2),
+        recordedAt: DateTime(2026),
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
+        sourceAddressableId: sourceAddressableId,
+        sourceRelayHint: sourceRelayHint,
+      );
+    }
+
     test('credits a reused editor timeline sound in the publish draft', () {
       seedEditorAudioTrack(reusedOriginalSound());
 
@@ -2576,6 +2593,88 @@ void main() {
           .getActiveDraft();
 
       expect(draft.selectedSound, isNull);
+    });
+
+    test('credits a single reused clip source in the publish draft', () {
+      container.read(clipManagerProvider.notifier).replaceClips([
+        timelineClip(
+          sourceAddressableId: '34236:$sourceCreator:clip-source',
+          sourceRelayHint: 'wss://source.relay',
+        ),
+      ], autosave: false);
+
+      final draft = container
+          .read(videoEditorProvider.notifier)
+          .getActiveDraft();
+
+      expect(
+        draft.inspiredByVideo?.addressableId,
+        equals('34236:$sourceCreator:clip-source'),
+      );
+      expect(draft.inspiredByVideo?.relayUrl, equals('wss://source.relay'));
+    });
+
+    test('keeps sound attribution ahead of reused clip attribution', () {
+      container.read(clipManagerProvider.notifier).replaceClips([
+        timelineClip(
+          sourceAddressableId: '34236:${'d' * 64}:clip-source',
+          sourceRelayHint: 'wss://clip.relay',
+        ),
+      ], autosave: false);
+      container
+          .read(videoEditorProvider.notifier)
+          .selectSound(reusedOriginalSound());
+
+      final draft = container
+          .read(videoEditorProvider.notifier)
+          .getActiveDraft();
+
+      expect(
+        draft.inspiredByVideo?.addressableId,
+        equals('34236:$sourceCreator:vine-xyz'),
+      );
+      expect(draft.inspiredByVideo?.relayUrl, isNull);
+    });
+
+    test('credits one reused clip source mixed with local clips', () {
+      container.read(clipManagerProvider.notifier).replaceClips([
+        timelineClip(id: 'local-clip'),
+        timelineClip(
+          id: 'reused-clip',
+          sourceAddressableId: '34236:$sourceCreator:clip-source',
+          sourceRelayHint: 'wss://source.relay',
+        ),
+      ], autosave: false);
+
+      final draft = container
+          .read(videoEditorProvider.notifier)
+          .getActiveDraft();
+
+      expect(
+        draft.inspiredByVideo?.addressableId,
+        equals('34236:$sourceCreator:clip-source'),
+      );
+    });
+
+    test('does not credit clips when reused sources disagree', () {
+      container.read(clipManagerProvider.notifier).replaceClips([
+        timelineClip(
+          id: 'source-a',
+          sourceAddressableId: '34236:${'d' * 64}:source-a',
+          sourceRelayHint: 'wss://source-a.relay',
+        ),
+        timelineClip(
+          id: 'source-b',
+          sourceAddressableId: '34236:${'e' * 64}:source-b',
+          sourceRelayHint: 'wss://source-b.relay',
+        ),
+      ], autosave: false);
+
+      final draft = container
+          .read(videoEditorProvider.notifier)
+          .getActiveDraft();
+
+      expect(draft.inspiredByVideo, isNull);
     });
   });
 

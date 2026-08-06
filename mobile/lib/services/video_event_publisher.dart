@@ -1389,8 +1389,22 @@ class VideoEventPublisher {
         ),
       );
 
+      final inspiredByCreatorPubkey = inspiredByAddressableId == null
+          ? null
+          : InspiredByInfo(
+              addressableId: inspiredByAddressableId,
+            ).creatorPubkey.trim().toLowerCase();
+      final selfPubkey = _authService?.currentPublicKeyHex
+          ?.trim()
+          .toLowerCase();
+      final shouldEmitInspiredByATag =
+          inspiredByAddressableId != null &&
+          (inspiredByCreatorPubkey == null ||
+              inspiredByCreatorPubkey.isEmpty ||
+              inspiredByCreatorPubkey != selfPubkey);
+
       // Add Inspired By a-tag (specific video reference)
-      if (inspiredByAddressableId != null) {
+      if (shouldEmitInspiredByATag) {
         tags.add([
           'a',
           inspiredByAddressableId,
