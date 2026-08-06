@@ -17,6 +17,7 @@ import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
 import 'package:openvine/widgets/stop_motion/stop_motion_player.dart';
 import 'package:openvine/widgets/video_clip/clip_thumbnail_image.dart';
+import 'package:openvine/widgets/video_clip/video_clip_hero.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 class VideoClipPreview extends ConsumerStatefulWidget {
@@ -253,11 +254,13 @@ class _ClipHero extends StatelessWidget {
 
     final cacheHeight = _stillCacheHeight(context);
     return Hero(
-      tag: 'Video-Clip-Preview-${clip.id}',
+      tag: videoClipPreviewHeroTag(clip.id),
       flightShuttleBuilder: (_, _, _, _, _) => ClipThumbnailImage(
         path: thumbnailPath,
         fit: BoxFit.cover,
         cacheHeight: cacheHeight,
+        excludeFromSemantics: true,
+        placeholder: const VideoClipThumbnailPlaceholder(),
       ),
       child: child,
     );
