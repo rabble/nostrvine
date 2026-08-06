@@ -126,6 +126,32 @@ void main() {
       expect(find.text('Primal'), findsOneWidget);
     });
 
+    testWidgets('embedded drops the status-bar inset above the first card', (
+      tester,
+    ) async {
+      // 120 physical px / 3.0 test devicePixelRatio = 40 logical px of status
+      // bar. Embedded in Explore nothing above this list consumes the top
+      // inset, so a null padding would push the intro card down by exactly
+      // that much — the gap reported in #6797.
+      tester.view.padding = const FakeViewPadding(top: 120);
+      addTearDown(tester.view.resetPadding);
+
+      when(
+        () => mockDirectoryService.fetchApprovedApps(),
+      ).thenAnswer((_) async => [_fixture()]);
+
+      await tester.pumpWidget(buildEmbeddedSubject());
+      await tester.pumpAndSettle();
+
+      // _AppsDirectoryIntro's own EdgeInsets.fromLTRB(16, 16, 16, 8) is the
+      // only offset that may sit between the viewport top and the card.
+      expect(
+        tester.getRect(find.byType(DivineInfoCard)).top -
+            tester.getRect(find.byType(ListView)).top,
+        moreOrLessEquals(16, epsilon: 0.5),
+      );
+    });
+
     testWidgets('standalone keeps the last card clear of the bottom inset', (
       tester,
     ) async {
