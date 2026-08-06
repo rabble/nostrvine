@@ -23,6 +23,7 @@ import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:nostr_sdk/relay/relay_pool.dart';
 import 'package:openvine/constants/nip71_migration.dart';
+import 'package:openvine/exceptions/video_exceptions.dart';
 import 'package:openvine/models/audio_share_attribution.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
@@ -722,13 +723,20 @@ void main() {
             hasExplicitReuseConsent: true,
           );
 
-          final result = await publisher.publishVideoEvent(
-            upload: createUpload(),
-            selectedAudio: forbiddenSound,
-            selectedAudioEventId: forbiddenSound.id,
+          await expectLater(
+            publisher.publishVideoEvent(
+              upload: createUpload(),
+              selectedAudio: forbiddenSound,
+              selectedAudioEventId: forbiddenSound.id,
+            ),
+            throwsA(
+              isA<AudioReuseNotPermittedException>().having(
+                (error) => error.audioEventId,
+                'audioEventId',
+                forbiddenSound.id,
+              ),
+            ),
           );
-
-          expect(result, isFalse);
           expect(
             _containsTag(capturedTags, [
               'e',

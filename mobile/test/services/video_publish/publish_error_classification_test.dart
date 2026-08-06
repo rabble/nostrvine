@@ -5,6 +5,7 @@ import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/exceptions/video_exceptions.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_publish/publish_error_kind.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
@@ -12,6 +13,41 @@ import 'package:openvine/services/video_publish/video_publish_service.dart';
 class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
 void main() {
+  group('classifyPublishErrorObject', () {
+    test('maps a withheld-sound refusal to its own kind', () {
+      expect(
+        VideoPublishService.classifyPublishErrorObject(
+          AudioReuseNotPermittedException('b' * 64),
+        ),
+        PublishErrorKind.audioReuseNotPermitted,
+      );
+    });
+
+    test('returns null for an untyped error', () {
+      expect(
+        VideoPublishService.classifyPublishErrorObject(
+          Exception('Failed to publish Nostr event'),
+        ),
+        isNull,
+      );
+    });
+
+    // Without the type branch running first, the substring matcher reads
+    // "publish" out of the refusal and tells the user to check their relay
+    // settings for a sound-permission problem.
+    test('takes precedence over the substring matcher', () {
+      final refusal = AudioReuseNotPermittedException('b' * 64);
+      expect(
+        VideoPublishService.classifyPublishErrorObject(refusal),
+        isNot(
+          VideoPublishService.classifyPublishErrorMessage(
+            refusal.toString(),
+          ),
+        ),
+      );
+    });
+  });
+
   group('classifyPublishErrorMessage', () {
     test('maps raw technical exceptions to their kind', () {
       const cases = <String, PublishErrorKind>{

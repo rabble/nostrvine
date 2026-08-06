@@ -7352,6 +7352,10 @@ class AppLocalizationsUr extends AppLocalizations {
       'ویڈیو اپلوڈ ہو گئی لیکن پوسٹ شائع نہیں ہو سکی۔ اپنی ریلے ترتیبات چیک کر کے دوبارہ کوشش کریں۔';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'ویڈیو اپلوڈ ہو گئی لیکن اس کی آڈیو دوبارہ استعمال کے لیے دستیاب نہیں۔ پوسٹ کرنے کے لیے کوئی دوسری آڈیو منتخب کریں۔';
+
+  @override
   String get publishErrorInterrupted =>
       'یہ اپلوڈ رک گیا۔ کیا آپ دوبارہ کوشش کرنا چاہیں گے؟';
 

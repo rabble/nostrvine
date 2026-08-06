@@ -19,6 +19,7 @@
     "publishErrorLowStorage": "Nu ai destul spațiu de stocare pe dispozitiv. Eliberează niște spațiu și încearcă din nou.",
     "publishErrorThumbnailFailed": "Videoclipul s-a încărcat, dar miniatura nu a putut fi pregătită. Încearcă din nou.",
     "publishErrorNostrPublishFailed": "Videoclipul s-a încărcat, dar postarea nu a putut fi publicată. Verifică-ți setările relay-urilor și încearcă din nou.",
+    "publishErrorAudioReuseNotPermitted": "Videoclipul s-a încărcat, dar sunetul lui nu este permis pentru reutilizare. Alege alt sunet ca să postezi.",
     "publishErrorInterrupted": "Această încărcare a fost întreruptă. Vrei să încerci din nou?",
     "publishErrorAccountChanged": "Acest videoclip aparține altui cont. Comută înapoi la acel cont ca să îl postezi.",
     "publishErrorGeneric": "Ceva nu a mers bine. Încearcă din nou.",

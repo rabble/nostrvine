@@ -20,6 +20,7 @@ import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:nostr_sdk/relay/relay_pool.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/exceptions/video_exceptions.dart';
 import 'package:openvine/models/audio_share_attribution.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/models/video_reply_context.dart';
@@ -860,6 +861,9 @@ class VideoEventPublisher {
   };
 
   /// Publish a video event with custom metadata
+  ///
+  /// Throws [AudioReuseNotPermittedException] when [selectedAudio]'s creator
+  /// does not grant reuse — see [publishDirectUpload].
   Future<bool> publishVideoEvent({
     required PendingUpload upload,
     String? title,
@@ -924,6 +928,14 @@ class VideoEventPublisher {
   /// a duplicate event with a fresh id (#6018). The audio-reuse step can
   /// keep a publish in flight for 20s+, which is the window where the
   /// duplicates were minted.
+  ///
+  /// Returns `false` when the event could not be signed or broadcast.
+  ///
+  /// Throws:
+  ///
+  /// * [AudioReuseNotPermittedException] if `selectedAudio` is set and its
+  ///   creator does not grant reuse. This is a refusal, not a transport
+  ///   failure, so it is raised instead of folded into `false`.
   Future<bool> publishDirectUpload(
     PendingUpload upload, {
     int? expirationTimestamp,
@@ -1442,7 +1454,9 @@ class VideoEventPublisher {
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
-        return false;
+        throw AudioReuseNotPermittedException(
+          selectedAudio.attributionEventId ?? selectedAudio.id,
+        );
       }
 
       if (selectedAudio?.isLocalImport == true) {
@@ -1899,6 +1913,12 @@ class VideoEventPublisher {
         );
         return false;
       }
+    } on AudioReuseNotPermittedException {
+      // Not a publish failure the user can retry their way out of: the sound's
+      // creator withheld reuse. Escape the generic catch below so the publish
+      // layer can classify it and name the sound as the blocker.
+      _totalEventsFailed++;
+      rethrow;
     } catch (e, stackTrace) {
       Log.error(
         'Error publishing direct upload: $e',

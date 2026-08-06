@@ -12767,6 +12767,12 @@ abstract class AppLocalizations {
   /// **'The video uploaded but the post could not be published. Check your relay settings and try again.'**
   String get publishErrorNostrPublishFailed;
 
+  /// No description provided for @publishErrorAudioReuseNotPermitted.
+  ///
+  /// In en, this message translates to:
+  /// **'The video uploaded, but its sound isn\'t cleared for reuse. Pick a different sound to post it.'**
+  String get publishErrorAudioReuseNotPermitted;
+
   /// No description provided for @publishErrorInterrupted.
   ///
   /// In en, this message translates to:

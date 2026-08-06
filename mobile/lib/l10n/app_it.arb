@@ -19,6 +19,7 @@
   "publishErrorLowStorage": "Spazio insufficiente sul dispositivo. Libera un po' di spazio e riprova.",
   "publishErrorThumbnailFailed": "Il video è stato caricato, ma non è stato possibile preparare la miniatura. Riprova.",
   "publishErrorNostrPublishFailed": "Il video è stato caricato, ma non è stato possibile pubblicare il post. Controlla le impostazioni dei relay e riprova.",
+  "publishErrorAudioReuseNotPermitted": "Il video è stato caricato, ma il suo audio non è autorizzato al riutilizzo. Scegli un altro audio per pubblicare.",
   "publishErrorInterrupted": "Questo caricamento è stato interrotto. Vuoi riprovare?",
   "publishErrorAccountChanged": "Questo video appartiene a un altro account. Torna su quell'account per pubblicarlo.",
   "publishErrorGeneric": "Qualcosa è andato storto. Riprova.",

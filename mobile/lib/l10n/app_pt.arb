@@ -19,6 +19,7 @@
     "publishErrorLowStorage": "Não há espaço suficiente no seu dispositivo. Libere espaço e tente novamente.",
     "publishErrorThumbnailFailed": "O vídeo foi enviado, mas não foi possível preparar a miniatura. Tente novamente.",
     "publishErrorNostrPublishFailed": "O vídeo foi enviado, mas não foi possível publicar o post. Verifique suas configurações de relay e tente novamente.",
+    "publishErrorAudioReuseNotPermitted": "O vídeo foi enviado, mas o áudio dele não está liberado para reutilização. Escolha outro áudio para publicar.",
     "publishErrorInterrupted": "Este envio foi interrompido. Quer tentar de novo?",
     "publishErrorAccountChanged": "Este vídeo é de outra conta. Volte para essa conta para publicá-lo.",
     "publishErrorGeneric": "Algo deu errado. Tente novamente.",

@@ -7439,6 +7439,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Das Video wurde hochgeladen, aber der Beitrag konnte nicht veröffentlicht werden. Prüfe deine Relay-Einstellungen und versuch es erneut.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Das Video wurde hochgeladen, aber der Sound ist nicht zur Wiederverwendung freigegeben. Wähl einen anderen Sound, um zu posten.';
+
+  @override
   String get publishErrorInterrupted =>
       'Dieser Upload wurde unterbrochen. Möchtest du es erneut versuchen?';
 

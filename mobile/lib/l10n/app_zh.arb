@@ -4273,6 +4273,7 @@
   "publishErrorLowStorage": "设备存储空间不足。清理一些空间后再试。",
   "publishErrorThumbnailFailed": "视频已上传，但缩略图没能准备好。请重试。",
   "publishErrorNostrPublishFailed": "视频已上传，但帖子没能发布。请检查你的中继设置后重试。",
+  "publishErrorAudioReuseNotPermitted": "视频已上传，但这段音频未开放二次使用。换一段音频再发布吧。",
   "publishErrorInterrupted": "上传被中断。要重试吗？",
   "publishErrorAccountChanged": "这个视频属于另一个账号。切回那个账号才能发布。",
   "publishErrorGeneric": "出了点问题，请重试。",

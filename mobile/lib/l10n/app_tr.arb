@@ -19,6 +19,7 @@
     "publishErrorLowStorage": "Cihazında yeterli depolama alanı yok. Biraz yer açıp tekrar dene.",
     "publishErrorThumbnailFailed": "Video yüklendi ama küçük resim hazırlanamadı. Lütfen tekrar dene.",
     "publishErrorNostrPublishFailed": "Video yüklendi ama gönderi yayınlanamadı. Röle ayarlarını kontrol edip tekrar dene.",
+    "publishErrorAudioReuseNotPermitted": "Video yüklendi ama bu ses yeniden kullanıma açık değil. Paylaşmak için başka bir ses seç.",
     "publishErrorInterrupted": "Bu yükleme yarıda kaldı. Tekrar denemek ister misin?",
     "publishErrorAccountChanged": "Bu video başka bir hesaba ait. Paylaşmak için o hesaba geri dön.",
     "publishErrorGeneric": "Bir şeyler ters gitti. Lütfen tekrar dene.",

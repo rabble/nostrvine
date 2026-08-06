@@ -7197,6 +7197,10 @@ class AppLocalizationsAm extends AppLocalizations {
       'ቪዲዮው ተሰቅሏል ነገር ግን ልጥፉ ሊታተም አልቻለም። የቅብብሎሽ ቅንብሮችዎን ይፈትሹ እና እንደገና ይሞክሩ።';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'ቪዲዮው ተሰቅሏል፣ ነገር ግን ድምፁ ለዳግም ጥቅም አልተፈቀደም። ለመለጠፍ ሌላ ድምፅ ይምረጡ።';
+
+  @override
   String get publishErrorInterrupted => 'ይህ ስቀላ ተቋርጧል። እንደገና መሞከር ይፈልጋሉ?';
 
   @override

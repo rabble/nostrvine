@@ -7420,6 +7420,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Видеото се качи, но публикацията не можа да се пусне. Провери настройките за релета и опитай пак.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Видеото се качи, но звукът не е разрешен за повторна употреба. Избери друг звук, за да публикуваш.';
+
+  @override
   String get publishErrorInterrupted =>
       'Качването беше прекъснато. Искаш ли да опиташ пак?';
 

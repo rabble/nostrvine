@@ -7309,6 +7309,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Video yüklendi ama gönderi yayınlanamadı. Röle ayarlarını kontrol edip tekrar dene.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Video yüklendi ama bu ses yeniden kullanıma açık değil. Paylaşmak için başka bir ses seç.';
+
+  @override
   String get publishErrorInterrupted =>
       'Bu yükleme yarıda kaldı. Tekrar denemek ister misin?';
 

@@ -19,6 +19,7 @@
     "publishErrorLowStorage": "Niet genoeg opslag op je apparaat. Maak wat ruimte vrij en probeer het opnieuw.",
     "publishErrorThumbnailFailed": "De video is geüpload, maar de thumbnail kon niet worden voorbereid. Probeer het opnieuw.",
     "publishErrorNostrPublishFailed": "De video is geüpload, maar de post kon niet worden gepubliceerd. Controleer je relay-instellingen en probeer het opnieuw.",
+    "publishErrorAudioReuseNotPermitted": "De video is geüpload, maar de sound mag niet hergebruikt worden. Kies een andere sound om te posten.",
     "publishErrorInterrupted": "Deze upload is onderbroken. Wil je het opnieuw proberen?",
     "publishErrorAccountChanged": "Deze video hoort bij een ander account. Ga terug naar dat account om hem te posten.",
     "publishErrorGeneric": "Er ging iets mis. Probeer het opnieuw.",

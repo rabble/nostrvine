@@ -7420,6 +7420,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Il video è stato caricato, ma non è stato possibile pubblicare il post. Controlla le impostazioni dei relay e riprova.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Il video è stato caricato, ma il suo audio non è autorizzato al riutilizzo. Scegli un altro audio per pubblicare.';
+
+  @override
   String get publishErrorInterrupted =>
       'Questo caricamento è stato interrotto. Vuoi riprovare?';
 

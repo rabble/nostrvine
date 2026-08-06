@@ -7381,6 +7381,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'De video is geüpload, maar de post kon niet worden gepubliceerd. Controleer je relay-instellingen en probeer het opnieuw.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'De video is geüpload, maar de sound mag niet hergebruikt worden. Kies een andere sound om te posten.';
+
+  @override
   String get publishErrorInterrupted =>
       'Deze upload is onderbroken. Wil je het opnieuw proberen?';
 

@@ -7518,6 +7518,10 @@ class AppLocalizationsPl extends AppLocalizations {
       'Film został przesłany, ale nie udało się opublikować posta. Sprawdź ustawienia przekaźników i spróbuj ponownie.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Film został przesłany, ale ten dźwięk nie jest dopuszczony do ponownego użycia. Wybierz inny dźwięk, żeby opublikować.';
+
+  @override
   String get publishErrorInterrupted =>
       'Przesyłanie zostało przerwane. Chcesz spróbować ponownie?';
 

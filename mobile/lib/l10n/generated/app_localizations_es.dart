@@ -7419,6 +7419,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'El vídeo se subió, pero no se pudo completar la publicación. Revisá tus ajustes de relays e intentá de nuevo.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'El vídeo se subió, pero su sonido no está habilitado para reutilizarse. Elegí otro sonido para publicarlo.';
+
+  @override
   String get publishErrorInterrupted =>
       'Esta subida se interrumpió. ¿Querés intentar de nuevo?';
 

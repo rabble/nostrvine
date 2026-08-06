@@ -19,6 +19,7 @@
     "publishErrorLowStorage": "Pas assez de stockage sur ton appareil. Libère de l'espace et réessaie.",
     "publishErrorThumbnailFailed": "La vidéo a été envoyée, mais la miniature n'a pas pu être préparée. Réessaie.",
     "publishErrorNostrPublishFailed": "La vidéo a été envoyée, mais la publication n'a pas pu être diffusée. Vérifie tes réglages de relais et réessaie.",
+    "publishErrorAudioReuseNotPermitted": "La vidéo a été envoyée, mais cet audio n'est pas autorisé à la réutilisation. Choisis un autre son pour publier.",
     "publishErrorInterrupted": "Cet envoi a été interrompu. Tu veux réessayer ?",
     "publishErrorAccountChanged": "Cette vidéo appartient à un autre compte. Reviens sur ce compte pour la publier.",
     "publishErrorGeneric": "Un problème est survenu. Réessaie.",

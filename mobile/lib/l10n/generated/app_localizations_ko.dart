@@ -7048,6 +7048,10 @@ class AppLocalizationsKo extends AppLocalizations {
       '영상은 업로드됐지만 게시물을 올리지 못했어요. 릴레이 설정을 확인하고 다시 시도해주세요.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      '영상은 업로드됐지만 이 사운드는 재사용이 허용되지 않았어요. 다른 사운드를 골라서 올려주세요.';
+
+  @override
   String get publishErrorInterrupted => '업로드가 중단됐어요. 다시 시도할까요?';
 
   @override

@@ -4273,6 +4273,7 @@
   "publishErrorLowStorage": "Thiết bị của bạn không đủ dung lượng. Giải phóng bớt chỗ rồi thử lại nhé.",
   "publishErrorThumbnailFailed": "Video đã tải lên nhưng không chuẩn bị được ảnh thu nhỏ. Vui lòng thử lại.",
   "publishErrorNostrPublishFailed": "Video đã tải lên nhưng không đăng được bài. Kiểm tra cài đặt relay rồi thử lại.",
+  "publishErrorAudioReuseNotPermitted": "Video đã tải lên nhưng âm thanh này không được phép dùng lại. Chọn âm thanh khác để đăng nhé.",
   "publishErrorInterrupted": "Lần tải lên này đã bị gián đoạn. Bạn có muốn thử lại không?",
   "publishErrorAccountChanged": "Video này thuộc về một tài khoản khác. Chuyển lại tài khoản đó để đăng nhé.",
   "publishErrorGeneric": "Có gì đó không ổn. Vui lòng thử lại.",

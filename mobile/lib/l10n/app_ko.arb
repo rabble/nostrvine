@@ -19,6 +19,7 @@
     "publishErrorLowStorage": "기기에 저장 공간이 부족해요. 공간을 좀 확보하고 다시 시도해주세요.",
     "publishErrorThumbnailFailed": "영상은 업로드됐지만 썸네일을 준비하지 못했어요. 다시 시도해주세요.",
     "publishErrorNostrPublishFailed": "영상은 업로드됐지만 게시물을 올리지 못했어요. 릴레이 설정을 확인하고 다시 시도해주세요.",
+    "publishErrorAudioReuseNotPermitted": "영상은 업로드됐지만 이 사운드는 재사용이 허용되지 않았어요. 다른 사운드를 골라서 올려주세요.",
     "publishErrorInterrupted": "업로드가 중단됐어요. 다시 시도할까요?",
     "publishErrorAccountChanged": "이 영상은 다른 계정 거예요. 올리려면 그 계정으로 다시 전환해 주세요.",
     "publishErrorGeneric": "문제가 생겼어요. 다시 시도해주세요.",

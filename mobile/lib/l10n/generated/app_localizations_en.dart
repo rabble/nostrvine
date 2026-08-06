@@ -7338,6 +7338,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'The video uploaded but the post could not be published. Check your relay settings and try again.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'The video uploaded, but its sound isn\'t cleared for reuse. Pick a different sound to post it.';
+
+  @override
   String get publishErrorInterrupted =>
       'This upload was interrupted. Would you like to try again?';
 
