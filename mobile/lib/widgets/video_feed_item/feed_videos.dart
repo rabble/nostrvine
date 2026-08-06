@@ -27,8 +27,10 @@ import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_coordinator.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_error_listener.dart';
+import 'package:openvine/screens/feed/feed_immersive_cubit.dart';
 import 'package:openvine/screens/feed/pooled_age_restricted_retry.dart';
 import 'package:openvine/services/community_content_label_service.dart';
+import 'package:openvine/services/haptic_service.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/services/view_event_publisher.dart'
@@ -39,6 +41,7 @@ import 'package:openvine/widgets/video_feed_item/blurred_video_backdrop.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_like_helpers.dart';
+import 'package:openvine/widgets/video_feed_item/feed_immersive_chrome.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/paused_video_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
@@ -593,6 +596,14 @@ class __OverlayState extends ConsumerState<_Overlay> {
   InfiniteVideoFeedState? _feedState;
   ValueListenable<double>? _pagePositionListenable;
 
+  /// Page-scoped immersive state, cached so [dispose] can lower the flag
+  /// without reaching through a deactivated [BuildContext].
+  FeedImmersiveCubit? _immersiveCubit;
+
+  /// Whether *this* item raised the immersive flag. Guards every exit path
+  /// so releasing an unrelated pointer can't clear a hold we never started.
+  bool _isHoldingForImmersive = false;
+
   @override
   void initState() {
     super.initState();
@@ -626,12 +637,41 @@ class __OverlayState extends ConsumerState<_Overlay> {
     super.didChangeDependencies();
     _feedState = context.findAncestorStateOfType<InfiniteVideoFeedState>();
     _pagePositionListenable = _feedState?.pagePositionListenable;
+    _immersiveCubit = context.read<FeedImmersiveCubit?>();
   }
 
   @override
   void dispose() {
+    // An item can be torn down mid-hold (feed rebuild, route replacement).
+    // The cubit outlives this overlay, so the flag has to come down here or
+    // the surface would be left with permanently hidden chrome.
+    _exitImmersive();
     _heartTrigger.dispose();
     super.dispose();
+  }
+
+  /// Hides the chrome for as long as the viewer keeps their finger down.
+  void _enterImmersive() {
+    final cubit = _immersiveCubit;
+    if (cubit == null || cubit.isClosed || _isHoldingForImmersive) return;
+    _isHoldingForImmersive = true;
+    // Confirms the hold registered — the gesture has no other affordance.
+    unawaited(HapticService.immersiveModeFeedback());
+    cubit.enter();
+  }
+
+  /// Brings the chrome back.
+  ///
+  /// Reached from three directions because `LongPressGestureRecognizer` only
+  /// reports `onLongPressEnd` for a clean lift: a `PointerCancelEvent` after
+  /// the press was accepted fires neither `onLongPressEnd` nor
+  /// `onLongPressCancel`, which would otherwise strand the chrome hidden.
+  void _exitImmersive() {
+    if (!_isHoldingForImmersive) return;
+    _isHoldingForImmersive = false;
+    final cubit = _immersiveCubit;
+    if (cubit == null || cubit.isClosed) return;
+    cubit.exit();
   }
 
   // Single definition of "what counts as warned" for this overlay: the
@@ -905,45 +945,77 @@ class __OverlayState extends ConsumerState<_Overlay> {
                   button: true,
                   label: context.l10n.videoPlayerPlayVideo,
                   hint: isOwnVideo ? null : context.l10n.videoPlayerTapHint,
-                  child: GestureDetector(
-                    behavior: .translucent,
-                    onTap: interactiveReady ? _handlePlayerTap : null,
-                    onDoubleTapDown: interactiveReady
-                        ? (details) => _handleDoubleTapLike(
-                            context,
-                            details,
-                            isOwnVideo: isOwnVideo,
-                          )
-                        : null,
-                    child: Stack(
-                      children: [
-                        if (widget.controller != null)
-                          PausedVideoOverlay(
-                            controller: widget.controller!,
-                            isVisible: widget.isActive,
+                  // The raw [Listener] is the backstop for immersive mode: a
+                  // cancelled pointer never reaches the long-press callbacks
+                  // below (see [_exitImmersive]), and a Listener sits outside
+                  // the gesture arena so it can't steal the press either.
+                  child: Listener(
+                    // Must match the translucent child below: with
+                    // `deferToChild` a press on empty video area never adds
+                    // this Listener to the hit-test path (the translucent
+                    // GestureDetector adds itself but still reports a miss),
+                    // so the cancel event would never arrive.
+                    behavior: HitTestBehavior.translucent,
+                    onPointerUp: (_) => _exitImmersive(),
+                    onPointerCancel: (_) => _exitImmersive(),
+                    child: GestureDetector(
+                      behavior: .translucent,
+                      onTap: interactiveReady ? _handlePlayerTap : null,
+                      onDoubleTapDown: interactiveReady
+                          ? (details) => _handleDoubleTapLike(
+                              context,
+                              details,
+                              isOwnVideo: isOwnVideo,
+                            )
+                          : null,
+                      // Press and hold to peek at the unobstructed frame.
+                      // Deliberately not gated on [interactiveReady] the way
+                      // tap and double-tap are: those mutate the player or
+                      // publish a like, while this only hides chrome, which
+                      // is just as valid over a still-loading frame.
+                      //
+                      // Only `onLongPressStart` / `onLongPressEnd` are wired
+                      // (never `onLongPress`), so no long-press semantics
+                      // action is published — the peek would be meaningless
+                      // to a screen reader, which needs the chrome it hides.
+                      onLongPressStart: (_) => _enterImmersive(),
+                      onLongPressEnd: (_) => _exitImmersive(),
+                      child: Stack(
+                        children: [
+                          if (widget.controller != null)
+                            PausedVideoOverlay(
+                              controller: widget.controller!,
+                              isVisible: widget.isActive,
+                            ),
+                          FeedImmersiveChrome(
+                            child: _FeedItemActions(
+                              video: video,
+                              index: widget.index,
+                              contextTitle: widget.contextTitle,
+                              isOwnVideo: isOwnVideo,
+                              autoAdvanceAvailable: autoAdvanceAvailable,
+                              effectiveAutoEnabled: effectiveAutoEnabled,
+                              onToggleAutoAdvance: widget.onToggleAutoAdvance,
+                              onSuppressAutoAdvance:
+                                  widget.onSuppressAutoAdvance,
+                              subtitleLayer:
+                                  video.hasSubtitles &&
+                                      widget.controller != null
+                                  ? _SubtitleLayer(
+                                      video: video,
+                                      controller: widget.controller!,
+                                    )
+                                  : null,
+                              pagePositionListenable: pagePositionListenable,
+                            ),
                           ),
-                        _FeedItemActions(
-                          video: video,
-                          index: widget.index,
-                          contextTitle: widget.contextTitle,
-                          isOwnVideo: isOwnVideo,
-                          autoAdvanceAvailable: autoAdvanceAvailable,
-                          effectiveAutoEnabled: effectiveAutoEnabled,
-                          onToggleAutoAdvance: widget.onToggleAutoAdvance,
-                          onSuppressAutoAdvance: widget.onSuppressAutoAdvance,
-                          subtitleLayer:
-                              video.hasSubtitles && widget.controller != null
-                              ? _SubtitleLayer(
-                                  video: video,
-                                  controller: widget.controller!,
-                                )
-                              : null,
-                          pagePositionListenable: pagePositionListenable,
-                        ),
-                        Positioned.fill(
-                          child: DoubleTapHeartOverlay(trigger: _heartTrigger),
-                        ),
-                      ],
+                          Positioned.fill(
+                            child: DoubleTapHeartOverlay(
+                              trigger: _heartTrigger,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );

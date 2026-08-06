@@ -22,6 +22,7 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/shell_obscured_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
+import 'package:openvine/screens/feed/feed_immersive_cubit.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
 import 'package:openvine/screens/feed/feed_tuning_snackbar.dart';
 import 'package:openvine/screens/feed/home_feed_retap_cubit.dart';
@@ -164,6 +165,11 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   /// can observe/read it.
   final FeedAutoAdvanceCubit _autoAdvanceCubit = FeedAutoAdvanceCubit();
 
+  /// Feed-scoped immersive (hold-to-peek) state. Owned here so it sits above
+  /// both [FeedVideos] — which raises it on a long press — and
+  /// [FeedModeSwitch], which fades out against it.
+  final FeedImmersiveCubit _immersiveCubit = FeedImmersiveCubit();
+
   @override
   void initState() {
     super.initState();
@@ -185,6 +191,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   void dispose() {
     _pagePosition.dispose();
     unawaited(_autoAdvanceCubit.close());
+    unawaited(_immersiveCubit.close());
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -331,8 +338,11 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
       // light in both appearance modes — the app-level style in main.dart
       // follows the palette and would turn them dark on a light theme.
       value: VineTheme.statusBarStyle,
-      child: BlocProvider.value(
-        value: _autoAdvanceCubit,
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: _autoAdvanceCubit),
+          BlocProvider.value(value: _immersiveCubit),
+        ],
         child: NavRoundedShell(
           innerColor: context.vineColors.background,
           child: MultiBlocListener(

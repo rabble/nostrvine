@@ -4,6 +4,7 @@
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:comments_repository/comments_repository.dart';
+import 'package:flutter/gestures.dart' show kLongPressTimeout;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,6 +35,7 @@ import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/repositories/community_content_label_repository.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
+import 'package:openvine/screens/feed/feed_immersive_cubit.dart';
 import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/community_content_label_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
@@ -46,6 +48,7 @@ import 'package:openvine/services/view_event_publisher.dart'
 import 'package:openvine/widgets/divine_video_metrics_tracker.dart';
 import 'package:openvine/widgets/video_feed_item/actions/help_classify_action_button.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
+import 'package:openvine/widgets/video_feed_item/feed_immersive_chrome.dart';
 import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
@@ -288,6 +291,7 @@ Future<void> _pumpFeedVideos(
   required List<VideoEvent> videos,
   _MockVideoPlaybackStatusCubit? videoPlaybackStatusCubit,
   _MockFeedAutoAdvanceCubit? feedAutoAdvanceCubit,
+  FeedImmersiveCubit? feedImmersiveCubit,
   _MockVideoVolumeCubit? videoVolumeCubit,
   VideoModerationStatusService? moderationService,
   MediaAuthInterceptor? mediaAuthInterceptor,
@@ -313,6 +317,10 @@ Future<void> _pumpFeedVideos(
       feedAutoAdvanceCubit ??
       (_MockFeedAutoAdvanceCubit()..stub(const FeedAutoAdvanceState()));
   final mockVolumeCubit = videoVolumeCubit ?? (_MockVideoVolumeCubit()..stub());
+  // Real cubit rather than a mock: it holds one bool and the hold-to-peek
+  // tests assert the chrome that reacts to it.
+  final immersiveCubit = feedImmersiveCubit ?? FeedImmersiveCubit();
+  addTearDown(immersiveCubit.close);
   final container = ProviderContainer(
     overrides: [
       ..._buildOverrides(
@@ -345,6 +353,7 @@ Future<void> _pumpFeedVideos(
               value: mockPlaybackCubit,
             ),
             BlocProvider<VideoVolumeCubit>.value(value: mockVolumeCubit),
+            BlocProvider<FeedImmersiveCubit>.value(value: immersiveCubit),
           ],
           child: Scaffold(
             body: FeedVideos(
@@ -1163,6 +1172,140 @@ void main() {
         ).called(1);
       },
     );
+  });
+
+  // -------------------------------------------------------------------------
+  // Immersive (hold-to-peek) viewing — #6234
+  // -------------------------------------------------------------------------
+  group('hold to peek', () {
+    // The overlay's author block has an AnimatedOpacity of its own, so take
+    // the outermost one — the wrapper's.
+    double chromeOpacity(WidgetTester tester) => tester
+        .widget<AnimatedOpacity>(
+          find
+              .descendant(
+                of: find.byType(FeedImmersiveChrome),
+                matching: find.byType(AnimatedOpacity),
+              )
+              .first,
+        )
+        .opacity;
+
+    // pumpAndSettle can't be used here: InfiniteVideoFeed keeps its own
+    // timers running, so settle never arrives. The fade is a fixed duration.
+    Future<void> pumpFade(WidgetTester tester) => tester.pump(
+      kFeedImmersiveFadeDuration + const Duration(milliseconds: 50),
+    );
+
+    testWidgets('hides the overlay chrome while held and restores on release', (
+      tester,
+    ) async {
+      final video = _makeVideo();
+      final immersiveCubit = FeedImmersiveCubit();
+
+      await _pumpFeedVideos(
+        tester,
+        videos: [video],
+        feedImmersiveCubit: immersiveCubit,
+      );
+      await tester.pump();
+
+      expect(chromeOpacity(tester), equals(1.0));
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(InfiniteVideoFeed)),
+      );
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      await pumpFade(tester);
+
+      expect(immersiveCubit.state.isImmersive, isTrue);
+      expect(chromeOpacity(tester), equals(0.0));
+
+      await gesture.up();
+      await pumpFade(tester);
+
+      expect(immersiveCubit.state.isImmersive, isFalse);
+      expect(chromeOpacity(tester), equals(1.0));
+    });
+
+    testWidgets('restores the chrome when the pointer is cancelled', (
+      tester,
+    ) async {
+      final video = _makeVideo();
+      final immersiveCubit = FeedImmersiveCubit();
+
+      await _pumpFeedVideos(
+        tester,
+        videos: [video],
+        feedImmersiveCubit: immersiveCubit,
+      );
+      await tester.pump();
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(InfiniteVideoFeed)),
+      );
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      expect(immersiveCubit.state.isImmersive, isTrue);
+
+      // LongPressGestureRecognizer reports neither onLongPressEnd nor
+      // onLongPressCancel for a pointer cancelled after acceptance, so
+      // without the raw Listener backstop the chrome would stay hidden.
+      await gesture.cancel();
+      await pumpFade(tester);
+
+      expect(immersiveCubit.state.isImmersive, isFalse);
+      expect(chromeOpacity(tester), equals(1.0));
+    });
+
+    testWidgets('a short tap leaves the chrome alone', (tester) async {
+      final video = _makeVideo();
+      final immersiveCubit = FeedImmersiveCubit();
+
+      await _pumpFeedVideos(
+        tester,
+        videos: [video],
+        feedImmersiveCubit: immersiveCubit,
+      );
+      await tester.pump();
+
+      await tester.tap(find.byType(InfiniteVideoFeed));
+      await pumpFade(tester);
+
+      expect(immersiveCubit.state.isImmersive, isFalse);
+      expect(chromeOpacity(tester), equals(1.0));
+    });
+
+    testWidgets('lowers the flag when the feed is torn down mid-hold', (
+      tester,
+    ) async {
+      final video = _makeVideo();
+      final immersiveCubit = FeedImmersiveCubit();
+      addTearDown(immersiveCubit.close);
+
+      await _pumpFeedVideos(
+        tester,
+        videos: [video],
+        feedImmersiveCubit: immersiveCubit,
+      );
+      await tester.pump();
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(InfiniteVideoFeed)),
+      );
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      expect(immersiveCubit.state.isImmersive, isTrue);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(seconds: 4));
+
+      expect(
+        immersiveCubit.state.isImmersive,
+        isFalse,
+        reason: 'a cubit outliving the overlay must not stay immersive',
+      );
+
+      await gesture.cancel();
+    });
   });
 
   group('playback length cap', () {

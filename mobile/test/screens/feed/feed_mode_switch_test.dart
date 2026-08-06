@@ -11,7 +11,9 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/screens/feed/feed_immersive_cubit.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
+import 'package:openvine/widgets/video_feed_item/feed_immersive_chrome.dart';
 
 class _MockVideoFeedBloc extends MockBloc<VideoFeedEvent, VideoFeedBlocState>
     implements VideoFeedBloc {}
@@ -372,6 +374,64 @@ void main() {
           expect(find.byType(VineBottomSheet), findsOneWidget);
         },
       );
+    });
+
+    group('Immersive mode', () {
+      testWidgets('fades the header out while the viewer holds the video', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          const VideoFeedBlocState(
+            status: VideoFeedStatus.success,
+            source: VideoFeedSource.forYou(),
+          ),
+        );
+        final immersiveCubit = FeedImmersiveCubit();
+        addTearDown(immersiveCubit.close);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: Stack(
+                  children: [
+                    MultiBlocProvider(
+                      providers: [
+                        BlocProvider<VideoFeedBloc>.value(value: mockBloc),
+                        BlocProvider<FeedImmersiveCubit>.value(
+                          value: immersiveCubit,
+                        ),
+                      ],
+                      child: const FeedModeSwitch(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        double headerOpacity() => tester
+            .widget<AnimatedOpacity>(
+              find
+                  .descendant(
+                    of: find.byType(FeedImmersiveChrome),
+                    matching: find.byType(AnimatedOpacity),
+                  )
+                  .first,
+            )
+            .opacity;
+
+        expect(headerOpacity(), equals(1.0));
+
+        immersiveCubit.enter();
+        await tester.pumpAndSettle();
+
+        expect(headerOpacity(), equals(0.0));
+      });
     });
 
     group('Accessibility', () {
