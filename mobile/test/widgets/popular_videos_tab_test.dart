@@ -104,6 +104,15 @@ void main() {
               'variant can cross-fade in.',
         );
         expect(find.byType(BrandedLoadingIndicator), findsNothing);
+        expect(
+          find.byKey(const ValueKey(PopularVideosVariant.classic)),
+          findsNothing,
+          reason:
+              'The held page keeps the variant it was loaded for, so the '
+              'arriving page gets a distinct key to cross-fade against. '
+              'Keying it by the selected variant instead would re-key the '
+              'still-native page on tap and skip the cross-fade entirely.',
+        );
 
         classicCompleter.complete(_popularPage([_video('popular-classic')]));
         await tester.pumpAndSettle();

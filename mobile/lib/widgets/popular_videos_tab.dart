@@ -97,7 +97,8 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
       _feedTracker.startFeedLoad('popular');
     }
 
-    // CRITICAL: Check hasValue FIRST before isLoading
+    // A held page outranks an in-flight load; a hard error only wins when
+    // nothing is held.
     final feedState = feedAsync.value;
     final showsSelectedVariant =
         feedState != null && loadedVariant == selectedVariant;
