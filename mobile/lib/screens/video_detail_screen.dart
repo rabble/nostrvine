@@ -20,6 +20,7 @@ import 'package:openvine/screens/feed/dm_reply_context.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/takeover_close_button.dart';
 import 'package:openvine/widgets/tv_static_message_screen.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -361,18 +362,9 @@ class _LoadingScreen extends StatelessWidget {
             ),
           ),
           SafeArea(
-            child: Align(
-              alignment: .topLeft,
-              child: Padding(
-                padding: const .fromLTRB(16, 16, 0, 8),
-                child: DivineIconButton(
-                  icon: .x,
-                  onPressed: onClose,
-                  size: .small,
-                  type: .ghost,
-                  semanticLabel: context.l10n.videoDetailCloseSemanticLabel,
-                ),
-              ),
+            child: TakeoverCloseButton(
+              onPressed: onClose,
+              semanticLabel: context.l10n.videoDetailCloseSemanticLabel,
             ),
           ),
         ],

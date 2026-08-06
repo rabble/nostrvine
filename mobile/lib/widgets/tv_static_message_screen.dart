@@ -3,6 +3,9 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/widgets/takeover_close_button.dart';
 import 'package:tv_static_effect/tv_static_effect.dart';
 
 /// Full-screen takeover that renders a message over animated TV static.
@@ -52,50 +55,46 @@ class TvStaticMessageScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.vineColors.background,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          const TvStaticNoise(),
-          SafeArea(
-            bottom: footer == null,
-            child: Column(
-              children: [
-                Align(
-                  alignment: .centerLeft,
-                  child: Padding(
-                    padding: const .fromLTRB(16, 16, 0, 8),
-                    child: DivineIconButton(
-                      icon: .x,
-                      onPressed: onClose,
-                      size: .small,
-                      type: .ghost,
-                      semanticLabel: closeSemanticLabel,
-                    ),
+    // The takeover replaces the whole screen, so it owns the status-bar tint
+    // rather than inheriting whatever route it covered.
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: VideoEditorConstants.uiOverlayStyleFor(context.vineColors),
+      child: Scaffold(
+        backgroundColor: context.vineColors.background,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            const TvStaticNoise(),
+            SafeArea(
+              bottom: footer == null,
+              child: Column(
+                children: [
+                  TakeoverCloseButton(
+                    onPressed: onClose,
+                    semanticLabel: closeSemanticLabel,
                   ),
-                ),
 
-                Expanded(
-                  child: Center(
-                    child: SingleChildScrollView(
-                      padding: const .symmetric(horizontal: 48),
-                      child: _TvStaticMessage(
-                        sticker: sticker,
-                        title: title,
-                        description: description,
-                        actionLabel: actionLabel,
-                        onAction: onAction,
+                  Expanded(
+                    child: Center(
+                      child: SingleChildScrollView(
+                        padding: const .symmetric(horizontal: 48),
+                        child: _TvStaticMessage(
+                          sticker: sticker,
+                          title: title,
+                          description: description,
+                          actionLabel: actionLabel,
+                          onAction: onAction,
+                        ),
                       ),
                     ),
                   ),
-                ),
 
-                ?footer,
-              ],
+                  ?footer,
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

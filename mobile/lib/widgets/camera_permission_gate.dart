@@ -4,13 +4,12 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
-import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
+import 'package:openvine/widgets/takeover_close_button.dart';
 import 'package:openvine/widgets/tv_static_message_screen.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -232,19 +231,11 @@ class _LoadingIndicator extends StatelessWidget {
             child: CircularProgressIndicator(color: VineTheme.vineGreen),
           ),
           if (onClose case final onClose?)
-            Align(
-              alignment: .topLeft,
-              child: SafeArea(
-                bottom: false,
-                child: Padding(
-                  padding: const .fromLTRB(16, 16, 0, 8),
-                  child: DivineIconButton(
-                    icon: .x,
-                    onPressed: onClose,
-                    size: .small,
-                    type: .ghost,
-                  ),
-                ),
+            SafeArea(
+              bottom: false,
+              child: TakeoverCloseButton(
+                onPressed: onClose,
+                semanticLabel: context.l10n.videoRecorderCloseLabel,
               ),
             ),
         ],
@@ -272,23 +263,21 @@ class _PermissionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: VideoEditorConstants.uiOverlayStyleFor(context.vineColors),
-      child: TvStaticMessageScreen(
-        sticker: .alert,
-        title: title,
-        description: description,
-        actionLabel: buttonLabel,
-        onAction: onAction,
-        onClose: onClose,
-        footer: IgnorePointer(
-          child: Container(
-            padding: const .only(top: 8),
-            color: context.vineColors.surfaceContainerHigh,
-            child: const Opacity(
-              opacity: 0.25,
-              child: VideoRecorderBottomBar(),
-            ),
+    return TvStaticMessageScreen(
+      sticker: .alert,
+      title: title,
+      description: description,
+      actionLabel: buttonLabel,
+      onAction: onAction,
+      onClose: onClose,
+      closeSemanticLabel: context.l10n.videoRecorderCloseLabel,
+      footer: IgnorePointer(
+        child: Container(
+          padding: const .only(top: 8),
+          color: context.vineColors.surfaceContainerHigh,
+          child: const Opacity(
+            opacity: 0.25,
+            child: VideoRecorderBottomBar(),
           ),
         ),
       ),
