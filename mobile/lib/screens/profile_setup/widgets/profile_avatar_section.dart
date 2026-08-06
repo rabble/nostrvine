@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -201,10 +199,9 @@ class _ProfileAvatarSectionState extends ConsumerState<ProfileAvatarSection> {
 
   /// Platform-aware image selection with an interactive crop step.
   ///
-  /// Native picks yield an [XFile] with a real filesystem path (wrapped in a
-  /// `dart:io File`); web picks yield blob bytes read eagerly before the URL
-  /// is revoked. Either way the image is handed to the Vine crop editor, and
-  /// the resulting cropped JPEG bytes are uploaded via
+  /// [resolveProfileImageSelection] validates the pick and resolves it to a
+  /// file (native) or bytes (web), so an empty pick never reaches the Vine
+  /// crop editor. The resulting cropped JPEG bytes are uploaded via
   /// `BlossomUploadService.uploadImageBytes`. The crop re-encode bounds the
   /// output dimensions and drops the original EXIF.
   Future<void> _pickImage(ImageSource source) async {
@@ -241,26 +238,22 @@ class _ProfileAvatarSectionState extends ConsumerState<ProfileAvatarSection> {
         return;
       }
 
-      final cropLauncher = ref.read(imageCropLauncherProvider);
-      Uint8List? cropped;
-      if (kIsWeb) {
-        // Resolve the blob synchronously here — once we navigate away from
-        // the picker the URL can be revoked.
-        final bytes = await picked.readAsBytes();
-        if (!mounted) return;
-        cropped = await cropLauncher(
-          context,
-          kind: ImageCropKind.avatar,
-          bytes: bytes,
-        );
-      } else {
-        if (!mounted) return;
-        cropped = await cropLauncher(
-          context,
-          kind: ImageCropKind.avatar,
-          file: File(picked.path),
-        );
+      // An empty pick would blow up inside the crop editor's image providers,
+      // so it is rejected here instead.
+      final selection = await resolveProfileImageSelection(picked);
+      if (!mounted) return;
+      if (selection == null) {
+        showProfileImageSelectionFailed(context);
+        return;
       }
+
+      final cropLauncher = ref.read(imageCropLauncherProvider);
+      final cropped = await cropLauncher(
+        context,
+        kind: ImageCropKind.avatar,
+        file: selection.file,
+        bytes: selection.bytes,
+      );
 
       if (cropped == null) {
         Log.info(
