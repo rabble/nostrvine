@@ -1,6 +1,8 @@
 // ABOUTME: Full-screen grid of the viewer's NIP-51 kind 10003 bookmarked videos
 // ABOUTME: Reached from the Bookmarks entry at the top of the profile Lists tab
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -51,22 +53,27 @@ class SavedVideosScreen extends ConsumerWidget {
           videosRepository: videosRepository,
           currentUserPubkey: currentUserPubkey,
         )..add(const ProfileSavedVideosSyncRequested()),
-        child: _SavedVideosBody(userIdHex: currentUserPubkey),
+        child: SavedVideosView(userIdHex: currentUserPubkey),
       ),
     );
   }
 }
 
-class _SavedVideosBody extends StatefulWidget {
-  const _SavedVideosBody({required this.userIdHex});
+/// Grid plus its pull-to-refresh, split out so it can be driven in tests
+/// against a mocked [ProfileSavedVideosBloc] rather than the screen's real
+/// bookmark and video dependencies.
+@visibleForTesting
+class SavedVideosView extends StatefulWidget {
+  @visibleForTesting
+  const SavedVideosView({required this.userIdHex, super.key});
 
   final String userIdHex;
 
   @override
-  State<_SavedVideosBody> createState() => _SavedVideosBodyState();
+  State<SavedVideosView> createState() => _SavedVideosViewState();
 }
 
-class _SavedVideosBodyState extends State<_SavedVideosBody> {
+class _SavedVideosViewState extends State<SavedVideosView> {
   /// Owned here because [ProfileSavedGrid] paginates off the primary
   /// controller. On the profile it came from the enclosing `NestedScrollView`;
   /// this screen has to supply one.
@@ -78,11 +85,24 @@ class _SavedVideosBodyState extends State<_SavedVideosBody> {
     super.dispose();
   }
 
+  Future<void> _onRefresh() {
+    final completer = Completer<void>();
+    context.read<ProfileSavedVideosBloc>().add(
+      ProfileSavedVideosSyncRequested(completer: completer),
+    );
+    return completer.future;
+  }
+
   @override
   Widget build(BuildContext context) {
     return PrimaryScrollController(
       controller: _scrollController,
-      child: ProfileSavedGrid(userIdHex: widget.userIdHex),
+      child: RefreshIndicator(
+        color: VineTheme.onPrimary,
+        backgroundColor: VineTheme.vineGreen,
+        onRefresh: _onRefresh,
+        child: ProfileSavedGrid(userIdHex: widget.userIdHex),
+      ),
     );
   }
 }

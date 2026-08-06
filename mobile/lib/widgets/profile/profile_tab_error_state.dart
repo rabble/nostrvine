@@ -11,14 +11,25 @@ import 'package:flutter/material.dart';
 /// Wraps content in a [CustomScrollView] with [SliverFillRemaining] so it
 /// participates correctly in the [NestedScrollView] scroll physics.
 class ProfileTabErrorState extends StatelessWidget {
-  const ProfileTabErrorState({required this.message, super.key});
+  const ProfileTabErrorState({
+    required this.message,
+    this.physics = const ClampingScrollPhysics(),
+    super.key,
+  });
 
   /// Error text shown to the user (e.g. "Error loading liked videos").
   final String message;
 
+  /// Scroll physics for the wrapping viewport.
+  ///
+  /// Clamping suits a tab inside the profile's `NestedScrollView`. A host that
+  /// offers pull-to-refresh needs [AlwaysScrollableScrollPhysics] instead, so
+  /// a failed tab can still be overscrolled far enough to retry.
+  final ScrollPhysics physics;
+
   @override
   Widget build(BuildContext context) => CustomScrollView(
-    physics: const ClampingScrollPhysics(),
+    physics: physics,
     slivers: [
       SliverFillRemaining(
         hasScrollBody: false,

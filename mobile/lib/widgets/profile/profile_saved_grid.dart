@@ -88,9 +88,14 @@ class _ProfileSavedGridState extends State<ProfileSavedGrid>
           return const ProfileTabLoadingState();
         }
 
+        // The settled states opt into overscroll for the host's
+        // RefreshIndicator: with the tab's default clamping physics a pull
+        // would stop working exactly when it is most wanted — after
+        // unbookmarking the last video, or when a sync failed.
         if (state.status == ProfileSavedVideosStatus.failure) {
           return ProfileTabErrorState(
             message: context.l10n.profileErrorLoadingSaved,
+            physics: const AlwaysScrollableScrollPhysics(),
           );
         }
 
@@ -100,11 +105,12 @@ class _ProfileSavedGridState extends State<ProfileSavedGrid>
           return ProfileTabEmptyState(
             title: context.l10n.profileNoSavedVideosTitle,
             subtitle: context.l10n.profileSavedOwnEmpty,
+            physics: const AlwaysScrollableScrollPhysics(),
           );
         }
 
         return CustomScrollView(
-          physics: const ClampingScrollPhysics(),
+          physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             SliverGrid(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
