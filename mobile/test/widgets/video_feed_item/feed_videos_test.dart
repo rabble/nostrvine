@@ -2,6 +2,8 @@
 // ABOUTME: overlay mode switching (forbidden/ageRestricted/contentWarning/interactive),
 // ABOUTME: effective isActive propagation, route-aware pausing, and pagination flush.
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:flutter/gestures.dart' show kLongPressTimeout;
@@ -1452,6 +1454,106 @@ void main() {
       handle.dispose();
     });
 
+    testWidgets('cannot peek past a content warning gate', (tester) async {
+      // The gate modes are early returns in _resolveOverlayMode, so the
+      // gesture does not exist in that subtree. Nothing else enforces it —
+      // if the blur ever becomes a sibling in the interactive Stack, a hold
+      // would silently reveal warned content.
+      final video = _makeVideo(warnLabels: ['nudity']);
+      final immersiveCubit = FeedImmersiveCubit();
+      addTearDown(immersiveCubit.close);
+
+      await _pumpFeedVideos(
+        tester,
+        videos: [video],
+        feedImmersiveCubit: immersiveCubit,
+      );
+      await tester.pump();
+
+      expect(find.byType(ContentWarningBlurOverlay), findsOneWidget);
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(InfiniteVideoFeed)),
+      );
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      await pumpFade(tester);
+
+      expect(
+        immersiveCubit.state.isImmersive,
+        isFalse,
+        reason: 'a hold must never uncover gated content',
+      );
+      expect(find.byType(ContentWarningBlurOverlay), findsOneWidget);
+
+      await gesture.up();
+    });
+
+    testWidgets(
+      'restores the chrome when the overlay mode flips mid-hold',
+      (tester) async {
+        // The one release path `dispose()` cannot cover: a community label
+        // resolving mid-hold swaps the interactive subtree — and with it the
+        // Listener — for the blur overlay, while __OverlayState itself
+        // survives. The exit then depends on Flutter still delivering the
+        // terminal pointer event to the hit path captured at pointer-down.
+        final video = _makeVideo(); // no creator/trusted warn labels
+        final labels = Completer<Set<String>>();
+        final repository = _MockCommunityContentLabelRepository();
+        when(
+          () => repository.communityLabelsForVideo(video),
+        ).thenAnswer((_) => labels.future);
+        final filter = _MockContentFilterService();
+        when(
+          () => filter.getPreference(ContentLabel.gambling),
+        ).thenReturn(ContentFilterPreference.warn);
+        final service = CommunityContentLabelService(
+          repository: repository,
+          contentFilterService: filter,
+        );
+        final immersiveCubit = FeedImmersiveCubit();
+        addTearDown(immersiveCubit.close);
+
+        await _pumpFeedVideos(
+          tester,
+          videos: [video],
+          feedImmersiveCubit: immersiveCubit,
+          additionalOverrides: [
+            communityContentLabelServiceProvider.overrideWith((ref) => service),
+            featureFlagServiceProvider.overrideWithValue(_communityFlagsOn()),
+          ],
+        );
+        await tester.pump();
+
+        // Hold while the item is still interactive.
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.byType(InfiniteVideoFeed)),
+        );
+        await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+        expect(immersiveCubit.state.isImmersive, isTrue);
+
+        // The label lands mid-hold and unmounts the Listener.
+        labels.complete({'gambling'});
+        await tester.pump();
+        await tester.pump();
+        expect(
+          find.byType(ContentWarningBlurOverlay),
+          findsOneWidget,
+          reason: 'the flip must actually replace the interactive subtree',
+        );
+
+        await gesture.up();
+        await pumpFade(tester);
+
+        expect(
+          immersiveCubit.state.isImmersive,
+          isFalse,
+          reason: 'releasing after a mid-hold mode flip must restore chrome',
+        );
+      },
+    );
+  });
+
+  group('playback length cap', () {
     testWidgets('caps InfiniteVideoFeed playback at the feed cap', (
       tester,
     ) async {
