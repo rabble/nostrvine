@@ -1064,6 +1064,12 @@ class __OverlayState extends ConsumerState<_Overlay> {
                           effectiveAutoEnabled: effectiveAutoEnabled,
                           onToggleAutoAdvance: widget.onToggleAutoAdvance,
                           onSuppressAutoAdvance: widget.onSuppressAutoAdvance,
+                          // Captions fade with the rest of the chrome, by
+                          // design: the hold reveals the frame the UI covers,
+                          // and the caption is an overlay over that same frame,
+                          // so keeping it up would re-cover exactly what the
+                          // peek exposes. It is gone only while the viewer
+                          // holds, and returns the instant they release.
                           subtitleLayer:
                               video.hasSubtitles && widget.controller != null
                               ? _SubtitleLayer(
