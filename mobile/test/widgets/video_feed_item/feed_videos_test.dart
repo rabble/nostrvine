@@ -1261,6 +1261,48 @@ void main() {
       expect(chromeOpacity(tester, of: VideoOverlayActions), equals(1.0));
     });
 
+    testWidgets('a second finger lifting mid-hold does not end the peek', (
+      tester,
+    ) async {
+      final video = _makeVideo();
+      final immersiveCubit = FeedImmersiveCubit();
+
+      await _pumpFeedVideos(
+        tester,
+        videos: [video],
+        feedImmersiveCubit: immersiveCubit,
+      );
+      await tester.pump();
+
+      final center = tester.getCenter(find.byType(InfiniteVideoFeed));
+      final holdFinger = await tester.startGesture(center, pointer: 1);
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      await pumpFade(tester);
+
+      expect(immersiveCubit.state.isImmersive, isTrue);
+
+      // A second finger touches down and lifts while the first still holds.
+      final secondFinger = await tester.startGesture(
+        center + const Offset(24, 24),
+        pointer: 2,
+      );
+      await secondFinger.up();
+      await pumpFade(tester);
+
+      expect(
+        immersiveCubit.state.isImmersive,
+        isTrue,
+        reason: 'a second finger must not cut a hold the first finger keeps',
+      );
+      expect(chromeOpacity(tester, of: VideoOverlayActions), equals(0.0));
+
+      await holdFinger.up();
+      await pumpFade(tester);
+
+      expect(immersiveCubit.state.isImmersive, isFalse);
+      expect(chromeOpacity(tester, of: VideoOverlayActions), equals(1.0));
+    });
+
     testWidgets('hides the paused play indicator too', (tester) async {
       // The play indicator only mounts once a controller exists.
       InfiniteVideoFeed.debugIsSupportedOverride = true;

@@ -600,9 +600,14 @@ class __OverlayState extends ConsumerState<_Overlay> {
   /// without reaching through a deactivated [BuildContext].
   FeedImmersiveCubit? _immersiveCubit;
 
-  /// Whether *this* item raised the immersive flag. Guards every exit path
-  /// so releasing an unrelated pointer can't clear a hold we never started.
+  /// Whether *this* item raised the immersive flag. Guards enter/exit so an
+  /// unrelated pointer can't clear a hold we never started.
   bool _isHoldingForImmersive = false;
+
+  /// Pointers currently down over this item. The peek ends only when the last
+  /// one lifts, so an incidental second finger (a resting thumb, a pinch
+  /// attempt) can't restore the chrome while the hold finger is still down.
+  final Set<int> _immersivePointers = <int>{};
 
   @override
   void initState() {
@@ -660,12 +665,22 @@ class __OverlayState extends ConsumerState<_Overlay> {
     cubit.enter();
   }
 
-  /// Brings the chrome back.
+  /// Drops a lifted/cancelled pointer and, once none remain, brings the chrome
+  /// back.
   ///
-  /// Reached from three directions because `LongPressGestureRecognizer` only
-  /// reports `onLongPressEnd` for a clean lift: a `PointerCancelEvent` after
-  /// the press was accepted fires neither `onLongPressEnd` nor
-  /// `onLongPressCancel`, which would otherwise strand the chrome hidden.
+  /// Driven off the raw [Listener] rather than the gesture callbacks:
+  /// `LongPressGestureRecognizer` reports neither `onLongPressEnd` nor
+  /// `onLongPressCancel` for a pointer cancelled after the press was accepted,
+  /// which would otherwise strand the chrome hidden. Flutter still delivers the
+  /// terminal event to the down-time hit path even after the [Listener] has
+  /// unmounted (a mode flip mid-hold), so this stays the reliable exit.
+  void _handleImmersivePointerEnd(int pointer) {
+    _immersivePointers.remove(pointer);
+    if (_immersivePointers.isEmpty) _exitImmersive();
+  }
+
+  /// Brings the chrome back. Idempotent — the no-op guard lets [dispose] and
+  /// the last-pointer-up path both call it unconditionally.
   void _exitImmersive() {
     if (!_isHoldingForImmersive) return;
     _isHoldingForImmersive = false;
@@ -945,19 +960,25 @@ class __OverlayState extends ConsumerState<_Overlay> {
                   button: true,
                   label: context.l10n.videoPlayerPlayVideo,
                   hint: isOwnVideo ? null : context.l10n.videoPlayerTapHint,
-                  // The raw [Listener] is the backstop for immersive mode: a
-                  // cancelled pointer never reaches the long-press callbacks
-                  // below (see [_exitImmersive]), and a Listener sits outside
+                  // The raw [Listener] owns immersive mode's release: it counts
+                  // the pointers over the item and exits once the last lifts,
+                  // because a pointer cancelled after the press was accepted
+                  // reaches neither long-press callback (see
+                  // [_handleImmersivePointerEnd]), and a Listener sits outside
                   // the gesture arena so it can't steal the press either.
                   child: Listener(
                     // Must match the translucent child below: with
                     // `deferToChild` a press on empty video area never adds
                     // this Listener to the hit-test path (the translucent
                     // GestureDetector adds itself but still reports a miss),
-                    // so the cancel event would never arrive.
+                    // so the pointer events would never arrive.
                     behavior: HitTestBehavior.translucent,
-                    onPointerUp: (_) => _exitImmersive(),
-                    onPointerCancel: (_) => _exitImmersive(),
+                    onPointerDown: (event) =>
+                        _immersivePointers.add(event.pointer),
+                    onPointerUp: (event) =>
+                        _handleImmersivePointerEnd(event.pointer),
+                    onPointerCancel: (event) =>
+                        _handleImmersivePointerEnd(event.pointer),
                     child: GestureDetector(
                       behavior: .translucent,
                       onTap: interactiveReady ? _handlePlayerTap : null,
@@ -974,12 +995,13 @@ class __OverlayState extends ConsumerState<_Overlay> {
                       // publish a like, while this only hides chrome, which
                       // is just as valid over a still-loading frame.
                       //
-                      // Only `onLongPressStart` / `onLongPressEnd` are wired
-                      // (never `onLongPress`), so no long-press semantics
-                      // action is published — the peek would be meaningless
-                      // to a screen reader, which needs the chrome it hides.
+                      // Only `onLongPressStart` is wired (never `onLongPress`),
+                      // so no long-press semantics action is published — the
+                      // peek would be meaningless to a screen reader, which
+                      // needs the chrome it hides. The release runs through the
+                      // [Listener] above, not `onLongPressEnd`, so an incidental
+                      // second finger can't cut the hold short.
                       onLongPressStart: (_) => _enterImmersive(),
-                      onLongPressEnd: (_) => _exitImmersive(),
                       child: Stack(
                         children: [
                           if (widget.controller != null)
