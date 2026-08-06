@@ -417,6 +417,12 @@ Future<void> _routeNotificationTap({
   );
 
   switch (target) {
+    case OpenListTarget(:final pubkey, :final listId):
+      container
+          .read(goRouterProvider)
+          .push(
+            CuratedListByAuthorScreen.pathFor(pubkey: pubkey, listId: listId),
+          );
     case OpenProfileTarget(:final actorPubkey):
       _navigateToNotificationProfile(container, actorPubkey);
     case OpenInboxTarget():

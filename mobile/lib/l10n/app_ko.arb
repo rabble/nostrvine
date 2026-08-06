@@ -2661,7 +2661,34 @@
         }
     },
     "notificationsViewProfilesSemanticLabel": "프로필 보기",
-    "notificationRepliedToYourComment": "{actorName}님이 회원님의 댓글에 답글을 남겼습니다",
+    "notificationAddedYourVideoToList": "{actorName} added your vine to {listName}",
+  "@notificationAddedYourVideoToList": {
+    "description": "Shown when someone adds one of the user's videos to a public curated list.",
+    "placeholders": {
+      "actorName": {
+        "type": "String"
+      },
+      "listName": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationAddedYourVideosToList": "{actorName} added {count} of your vines to {listName}",
+  "@notificationAddedYourVideosToList": {
+    "description": "Shown when someone adds multiple of the user's videos to the same public curated list.",
+    "placeholders": {
+      "actorName": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      },
+      "listName": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationRepliedToYourComment": "{actorName}님이 회원님의 댓글에 답글을 남겼습니다",
     "notificationAndConnector": "및",
     "notificationOthersCount": "{count, plural, other{외 {count}명}}",
     "@notificationOthersCount": {

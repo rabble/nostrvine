@@ -3330,7 +3330,34 @@
         }
     },
     "notificationsViewProfilesSemanticLabel": "Lihat profil",
-    "notificationRepliedToYourComment": "{actorName} membalas komentar Anda",
+    "notificationAddedYourVideoToList": "{actorName} added your vine to {listName}",
+  "@notificationAddedYourVideoToList": {
+    "description": "Shown when someone adds one of the user's videos to a public curated list.",
+    "placeholders": {
+      "actorName": {
+        "type": "String"
+      },
+      "listName": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationAddedYourVideosToList": "{actorName} added {count} of your vines to {listName}",
+  "@notificationAddedYourVideosToList": {
+    "description": "Shown when someone adds multiple of the user's videos to the same public curated list.",
+    "placeholders": {
+      "actorName": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      },
+      "listName": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationRepliedToYourComment": "{actorName} membalas komentar Anda",
     "notificationAndConnector": "dan",
     "notificationOthersCount": "{count, plural, other{{count} lainnya}}",
     "@notificationOthersCount": {

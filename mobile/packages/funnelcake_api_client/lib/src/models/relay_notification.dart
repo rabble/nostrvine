@@ -24,6 +24,8 @@ class RelayNotification {
     this.rootDTag,
     this.rootAddressableId,
     this.targetCommentId,
+    this.listTitle,
+    this.listCoordinate,
   });
 
   /// Parses a notification payload from the FunnelCake API.
@@ -79,6 +81,8 @@ class RelayNotification {
       rootDTag: _nonEmpty(json['root_d_tag'] as String?),
       rootAddressableId: _nonEmpty(json['root_addressable_id'] as String?),
       targetCommentId: _nonEmpty(json['target_comment_id'] as String?),
+      listTitle: _nonEmpty(json['list_title'] as String?),
+      listCoordinate: _nonEmpty(json['list_coordinate'] as String?),
     );
   }
 
@@ -171,6 +175,14 @@ class RelayNotification {
 
   /// Comment event ID included by Funnelcake for NIP-22 comment notifications.
   final String? targetCommentId;
+
+  /// Curated-list title for `notification_type: "list_add"`.
+  final String? listTitle;
+
+  /// Full kind-30005 coordinate for the curated list.
+  ///
+  /// Shape: `30005:<curator_pubkey>:<d-tag>`.
+  final String? listCoordinate;
 
   /// Stable dedup key -- falls back to sourceEventId if id is empty.
   String get dedupeKey => id.isNotEmpty ? id : sourceEventId;

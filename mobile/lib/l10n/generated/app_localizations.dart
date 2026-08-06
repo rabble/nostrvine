@@ -13970,6 +13970,22 @@ abstract class AppLocalizations {
   /// **'{actorName} posted a new vine'**
   String notificationPostedNewVine(String actorName);
 
+  /// Shown when someone adds one of the user's videos to a public curated list.
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} added your vine to {listName}'**
+  String notificationAddedYourVideoToList(String actorName, String listName);
+
+  /// Shown when someone adds multiple of the user's videos to the same public curated list.
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} added {count} of your vines to {listName}'**
+  String notificationAddedYourVideosToList(
+    String actorName,
+    int count,
+    String listName,
+  );
+
   /// Full sentence shown for a reply notification.
   ///
   /// In en, this message translates to:

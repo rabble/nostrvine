@@ -25,6 +25,9 @@ enum NotificationKind {
   /// user's own content — it comes from a subscription list the user
   /// publishes. See `Nip51PeopleListCodec.notifyDTag`.
   newPost,
+
+  /// Someone added one of the user's videos to a public curated list.
+  listAdd,
 }
 
 /// Base for all displayable notifications.

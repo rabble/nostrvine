@@ -3323,7 +3323,34 @@
         }
     },
     "notificationsViewProfilesSemanticLabel": "عرض الملفات الشخصية",
-    "notificationRepliedToYourComment": "{actorName} ردّ على تعليقك",
+    "notificationAddedYourVideoToList": "{actorName} added your vine to {listName}",
+  "@notificationAddedYourVideoToList": {
+    "description": "Shown when someone adds one of the user's videos to a public curated list.",
+    "placeholders": {
+      "actorName": {
+        "type": "String"
+      },
+      "listName": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationAddedYourVideosToList": "{actorName} added {count} of your vines to {listName}",
+  "@notificationAddedYourVideosToList": {
+    "description": "Shown when someone adds multiple of the user's videos to the same public curated list.",
+    "placeholders": {
+      "actorName": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      },
+      "listName": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationRepliedToYourComment": "{actorName} ردّ على تعليقك",
     "notificationAndConnector": "و",
     "notificationOthersCount": "{count, plural, =1{شخص آخر} other{{count} أشخاص آخرين}}",
     "@notificationOthersCount": {

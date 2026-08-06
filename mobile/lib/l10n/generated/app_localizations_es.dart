@@ -8164,6 +8164,20 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String notificationAddedYourVideoToList(String actorName, String listName) {
+    return '$actorName added your vine to $listName';
+  }
+
+  @override
+  String notificationAddedYourVideosToList(
+    String actorName,
+    int count,
+    String listName,
+  ) {
+    return '$actorName added $count of your vines to $listName';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return '$actorName respondió a tu comentario';
   }

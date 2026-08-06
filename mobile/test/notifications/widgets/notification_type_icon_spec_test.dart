@@ -74,6 +74,13 @@ void main() {
       expect(spec.foreground, equals(VineTheme.accentBlue));
     });
 
+    test('listAdd uses listPlus on accentYellow', () {
+      final spec = notificationTypeIconSpec(NotificationKind.listAdd);
+      expect(spec.icon, equals(DivineIconName.listPlus));
+      expect(spec.background, equals(VineTheme.accentYellowBackground));
+      expect(spec.foreground, equals(VineTheme.accentYellow));
+    });
+
     test('system uses logo on the primary accent', () {
       final spec = notificationTypeIconSpec(NotificationKind.system);
       expect(spec.icon, equals(DivineIconName.logo));

@@ -14,6 +14,7 @@ import 'package:openvine/notifications/routing/notification_tap_target.dart';
 import 'package:openvine/notifications/widgets/widgets.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/screens/curated_list_by_author_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/services/notification_target_resolver.dart';
@@ -190,12 +191,16 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
         :final videoEventId,
         :final videoAddressableId,
         :final type,
+        :final listCoordinate,
       ):
         final target = resolveNotificationTapTarget(
           kind: type,
           hasVideoTarget: true,
+          listCoordinate: listCoordinate,
         );
         switch (target) {
+          case OpenListTarget(:final pubkey, :final listId):
+            _navigateToList(context, pubkey: pubkey, listId: listId);
           case OpenVideoTarget():
             await _navigateToVideo(
               context,
@@ -228,6 +233,8 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
           actorPubkey: actor.pubkey,
         );
         switch (target) {
+          case OpenListTarget(:final pubkey, :final listId):
+            _navigateToList(context, pubkey: pubkey, listId: listId);
           case OpenVideoTarget():
             // targetEventId is the event the resolver walks to find the root
             // video. Any comment/reply/likeComment/mention whose root video
@@ -259,6 +266,16 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
             break;
         }
     }
+  }
+
+  void _navigateToList(
+    BuildContext context, {
+    required String pubkey,
+    required String listId,
+  }) {
+    context.push(
+      CuratedListByAuthorScreen.pathFor(pubkey: pubkey, listId: listId),
+    );
   }
 
   /// Resolves the video route and pushes [VideoDetailScreen].
