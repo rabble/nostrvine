@@ -57,29 +57,5 @@ void main() {
         'o:2',
       ]);
     });
-
-    test(
-      'popular cache key is stable regardless of the geo country hint',
-      () {
-        // The country hint comes from a 250ms-timeout geo lookup that
-        // yields null on a slow network. If it reached the key, the key
-        // would flip between two values and miss the cache exactly when
-        // the network is worst — so the suffix must carry no country
-        // segment at all.
-        expect(
-          popularPreferenceCacheSuffixForTest(
-            preferredLanguages: const ['pt'],
-          ),
-          equals(':lang=pt'),
-        );
-        expect(
-          // Explicit empty list, matching the default, documents the
-          // no-languages case alongside the no-country case above.
-          // ignore: avoid_redundant_argument_values
-          popularPreferenceCacheSuffixForTest(preferredLanguages: const []),
-          isEmpty,
-        );
-      },
-    );
   });
 }

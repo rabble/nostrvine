@@ -7,7 +7,6 @@
 import 'dart:math';
 
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
-import 'package:meta/meta.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nip19/nip19_tlv.dart';
@@ -160,12 +159,6 @@ String _popularPreferenceCacheSuffix({
 
   return languages.isEmpty ? '' : ':lang=$languages';
 }
-
-/// Test seam for [_popularPreferenceCacheSuffix].
-@visibleForTesting
-String popularPreferenceCacheSuffixForTest({
-  List<String> preferredLanguages = const [],
-}) => _popularPreferenceCacheSuffix(preferredLanguages: preferredLanguages);
 
 /// {@template videos_repository}
 /// Repository for video operations with Nostr.

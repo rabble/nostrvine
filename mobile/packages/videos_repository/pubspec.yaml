@@ -11,7 +11,6 @@ dependencies:
   db_client:
   equatable: ^2.0.8
   funnelcake_api_client:
-  meta: ^1.17.0
   models:
   nostr_client:
   nostr_sdk:
