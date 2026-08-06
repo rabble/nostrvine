@@ -30,12 +30,14 @@ void main() {
     const reposter1 = 'reposter-pubkey-1';
 
     late StreamController<RevisionEnrichedLikers> enrichedLikers;
+    late Completer<Map<String, UserProfile>> heldProfileFetch;
 
     setUp(() {
       likesRepository = _MockLikesRepository();
       repostsRepository = _MockRepostsRepository();
       profileRepository = _MockProfileRepository();
       enrichedLikers = StreamController<RevisionEnrichedLikers>.broadcast();
+      heldProfileFetch = Completer<Map<String, UserProfile>>();
       addTearDown(enrichedLikers.close);
 
       // Default stub — batch fetch returns empty map (cache miss is fine).
@@ -282,7 +284,7 @@ void main() {
         build: createBloc,
         act: (bloc) async {
           bloc.add(const VideoEngagementLoadRequested());
-          await Future<void>.delayed(Duration.zero);
+          await pumpEventQueue();
           enrichedLikers.add(
             const RevisionEnrichedLikers(
               eventId: testEventId,
@@ -323,7 +325,8 @@ void main() {
           // The profile pre-warm holds the load for up to 2s after the likers
           // come back, which is long enough for enrichment to land first.
           // Emitting the fetched list afterwards would put #6021 straight
-          // back for as long as the sheet stays open.
+          // back for as long as the sheet stays open. Gated on a completer
+          // rather than a wall-clock delay so the ordering is exact.
           when(
             () => likesRepository.fetchEventLikers(
               eventId: testEventId,
@@ -334,24 +337,22 @@ void main() {
             () => profileRepository.fetchBatchProfiles(
               pubkeys: const [liker1],
             ),
-          ).thenAnswer(
-            (_) => Future.delayed(
-              const Duration(milliseconds: 50),
-              () => <String, UserProfile>{},
-            ),
-          );
+          ).thenAnswer((_) => heldProfileFetch.future);
         },
         build: createBloc,
         act: (bloc) async {
           bloc.add(const VideoEngagementLoadRequested());
-          await Future<void>.delayed(Duration.zero);
+          await pumpEventQueue();
           enrichedLikers.add(
             const RevisionEnrichedLikers(
               eventId: testEventId,
               likerPubkeys: [liker1, liker2],
             ),
           );
-          await Future<void>.delayed(const Duration(milliseconds: 100));
+          await pumpEventQueue();
+          // The load resumes only now, with the wider list already emitted.
+          heldProfileFetch.complete(const {});
+          await pumpEventQueue();
         },
         expect: () => [
           const VideoEngagementState(
@@ -379,7 +380,7 @@ void main() {
         build: createBloc,
         act: (bloc) async {
           bloc.add(const VideoEngagementLoadRequested());
-          await Future<void>.delayed(Duration.zero);
+          await pumpEventQueue();
           enrichedLikers.add(
             const RevisionEnrichedLikers(
               eventId: 'some-other-event-id',
