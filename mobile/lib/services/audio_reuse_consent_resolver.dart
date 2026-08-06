@@ -22,8 +22,16 @@ class AudioReuseConsentResolver {
     final sourceAddress = sound.sourceVideoReference;
     if (sourceAddress == null || sourceAddress.isEmpty) return false;
 
+    // Query the id reusing videos tag, not [AudioEvent.id]: an editor timeline
+    // track carries a `-<timestamp>` uniqueness suffix and an original sound a
+    // `video_` prefix, so the raw id matches no `["e", …, "audio"]` tag. Under
+    // that id every legacy sound failed closed the moment it reached the
+    // timeline — including ones the picker had already verified.
+    final audioEventId = sound.attributionEventId;
+    if (audioEventId == null) return false;
+
     try {
-      final ids = await _soundsRepository.fetchVideosUsingSound(sound.id);
+      final ids = await _soundsRepository.fetchVideosUsingSound(audioEventId);
       if (ids.isEmpty) return false;
       final candidates = await _videosRepository.getVideosByIds(
         ids,

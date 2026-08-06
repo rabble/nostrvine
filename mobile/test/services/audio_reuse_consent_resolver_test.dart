@@ -15,13 +15,18 @@ class _MockVideosRepository extends Mock implements VideosRepository {}
 const _pubkey =
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
+/// A real Kind 1063 id: the lookup only matches a 32-byte-hex event id.
+const _audioEventId =
+    'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+
 AudioEvent _sound({
   bool allowsReuse = false,
   bool hasExplicitReuseConsent = false,
   String? sourceVideoReference = '34236:$_pubkey:source-video',
+  String id = _audioEventId,
 }) {
   return AudioEvent(
-    id: 'audio-event',
+    id: id,
     pubkey: _pubkey,
     createdAt: 100,
     sourceVideoReference: sourceVideoReference,
@@ -84,7 +89,7 @@ void main() {
 
   test('uses newest matching source video for a legacy event', () async {
     when(
-      () => soundsRepository.fetchVideosUsingSound('audio-event'),
+      () => soundsRepository.fetchVideosUsingSound(_audioEventId),
     ).thenAnswer((_) async => ['later', 'earliest', 'wrong']);
     when(
       () => videosRepository.getVideosByIds(
@@ -104,7 +109,7 @@ void main() {
 
   test('honours a revocation on the newest revision', () async {
     when(
-      () => soundsRepository.fetchVideosUsingSound('audio-event'),
+      () => soundsRepository.fetchVideosUsingSound(_audioEventId),
     ).thenAnswer((_) async => ['revoked', 'original']);
     when(
       () => videosRepository.getVideosByIds(
@@ -123,7 +128,7 @@ void main() {
 
   test('fails closed on ambiguous newest source events', () async {
     when(
-      () => soundsRepository.fetchVideosUsingSound('audio-event'),
+      () => soundsRepository.fetchVideosUsingSound(_audioEventId),
     ).thenAnswer((_) async => ['first', 'second']);
     when(
       () => videosRepository.getVideosByIds(
@@ -149,7 +154,7 @@ void main() {
       );
 
       when(
-        () => soundsRepository.fetchVideosUsingSound('audio-event'),
+        () => soundsRepository.fetchVideosUsingSound(_audioEventId),
       ).thenAnswer((_) async => ['candidate']);
       when(
         () => videosRepository.getVideosByIds(
@@ -162,9 +167,52 @@ void main() {
       expect(await resolver.verify(_sound()), isFalse);
 
       when(
-        () => soundsRepository.fetchVideosUsingSound('audio-event'),
+        () => soundsRepository.fetchVideosUsingSound(_audioEventId),
       ).thenThrow(StateError('relay unavailable'));
       expect(await resolver.verify(_sound()), isFalse);
     },
   );
+
+  // The editor stamps a `-<timestamp>` uniqueness suffix onto every timeline
+  // track, so the sound the publisher re-verifies is never the one the picker
+  // verified. Querying the raw id found no reusing videos and blocked a
+  // publish the creator had explicitly allowed.
+  test('looks past an editor timeline uniqueness suffix', () async {
+    when(
+      () => soundsRepository.fetchVideosUsingSound(_audioEventId),
+    ).thenAnswer((_) async => ['granting']);
+    when(
+      () => videosRepository.getVideosByIds(
+        ['granting'],
+        hydrateBulkStats: false,
+      ),
+    ).thenAnswer((_) async => [_video(id: 'granting', createdAt: 120)]);
+
+    expect(
+      await resolver.verify(_sound(id: '$_audioEventId-1786032375630')),
+      isTrue,
+    );
+    verify(
+      () => soundsRepository.fetchVideosUsingSound(_audioEventId),
+    ).called(1);
+  });
+
+  test('resolves an original sound through its source video id', () async {
+    when(
+      () => soundsRepository.fetchVideosUsingSound(_audioEventId),
+    ).thenAnswer((_) async => ['granting']);
+    when(
+      () => videosRepository.getVideosByIds(
+        ['granting'],
+        hydrateBulkStats: false,
+      ),
+    ).thenAnswer((_) async => [_video(id: 'granting', createdAt: 120)]);
+
+    expect(await resolver.verify(_sound(id: 'video_$_audioEventId')), isTrue);
+  });
+
+  test('fails closed when the sound has no referenceable event id', () async {
+    expect(await resolver.verify(_sound(id: 'not-a-nostr-event-id')), isFalse);
+    verifyNever(() => soundsRepository.fetchVideosUsingSound(any()));
+  });
 }
