@@ -126,6 +126,45 @@ void main() {
       expect(find.text('Primal'), findsOneWidget);
     });
 
+    testWidgets('standalone keeps the last card clear of the bottom inset', (
+      tester,
+    ) async {
+      // 102 physical px / 3.0 test devicePixelRatio = 34 logical px, i.e. a
+      // home indicator or gesture bar. The standalone route has no bottom
+      // nav, so Scaffold leaves this inset in the body's MediaQuery and the
+      // list has to reserve it itself.
+      tester.view.padding = const FakeViewPadding(bottom: 102);
+      addTearDown(tester.view.resetPadding);
+
+      when(
+        () => mockDirectoryService.fetchApprovedApps(),
+      ).thenAnswer((_) async => List.generate(12, _numberedFixture));
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      // A lazily-built list only reports its true extent once the last item
+      // has been laid out, so jump until the extent stops moving.
+      final position = tester
+          .state<ScrollableState>(find.byType(Scrollable))
+          .position;
+      double previousExtent;
+      do {
+        previousExtent = position.maxScrollExtent;
+        position.jumpTo(previousExtent);
+        await tester.pumpAndSettle();
+      } while (position.maxScrollExtent != previousExtent);
+
+      final lastCard = find.ancestor(
+        of: find.text('App 11'),
+        matching: find.byType(Ink),
+      );
+      expect(
+        tester.getRect(lastCard).bottom,
+        lessThanOrEqualTo(tester.getRect(find.byType(ListView)).bottom - 34),
+      );
+    });
+
     testWidgets('tapping an app opens its integration route', (tester) async {
       final mockGoRouter = MockGoRouter();
       when(
@@ -295,6 +334,26 @@ NostrAppDirectoryEntry _verifierFixtureWithUrl(String launchUrl) {
     promptRequiredFor: const [],
     status: 'approved',
     sortOrder: 16,
+    createdAt: null,
+    updatedAt: null,
+  );
+}
+
+NostrAppDirectoryEntry _numberedFixture(int index) {
+  return NostrAppDirectoryEntry(
+    id: 'app-$index',
+    slug: 'app-$index',
+    name: 'App $index',
+    tagline: 'Tagline $index',
+    description: 'Description $index',
+    iconUrl: '',
+    launchUrl: 'https://app$index.example',
+    allowedOrigins: ['https://app$index.example'],
+    allowedMethods: const ['getPublicKey'],
+    allowedSignEventKinds: const [1],
+    promptRequiredFor: const [],
+    status: 'approved',
+    sortOrder: index,
     createdAt: null,
     updatedAt: null,
   );
