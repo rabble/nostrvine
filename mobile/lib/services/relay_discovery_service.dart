@@ -339,8 +339,14 @@ class RelayDiscoveryService {
         },
       );
 
-      // Send CLOSE before disconnecting
-      await relay.send(<dynamic>['CLOSE', subscriptionId]);
+      // Send CLOSE before disconnecting. skipReconnect because the socket is
+      // about to be torn down either way: without it, a CLOSE sent after the
+      // indexer already dropped the connection walks the reconnect backoff,
+      // holding this method — and the relay it owns — open for minutes.
+      await relay.send(<dynamic>[
+        'CLOSE',
+        subscriptionId,
+      ], skipReconnect: true);
 
       Log.info(
         '  Got ${result.length} relays from $indexerUrl',
@@ -359,6 +365,10 @@ class RelayDiscoveryService {
     } finally {
       try {
         await relay.disconnect();
+      } catch (_) {}
+      // Its own guard: a throw from disconnect must not skip the dispose,
+      // which is what releases the socket's stream subscriptions.
+      try {
         relay.dispose();
       } catch (_) {}
     }
