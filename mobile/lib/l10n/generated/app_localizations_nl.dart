@@ -7772,7 +7772,18 @@ class AppLocalizationsNl extends AppLocalizations {
       'Je video\'s worden niet gepubliceerd naar Bluesky';
 
   @override
+  String get blueskyBackfillDisclosureTitle =>
+      'Je eerdere video’s worden ook geplaatst';
+
+  @override
+  String get blueskyBackfillDisclosureSubtitle =>
+      'Als je dit aanzet, stuurt Divine je oudere video’s naar Bluesky, de oudste eerst, zonder de daglimiet te forceren.';
+
+  @override
   String get blueskyHandle => 'Bluesky-handle';
+
+  @override
+  String get blueskyDid => 'Bluesky-DID';
 
   @override
   String get blueskyStatus => 'Status';

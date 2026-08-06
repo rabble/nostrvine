@@ -7731,7 +7731,18 @@ class AppLocalizationsSv extends AppLocalizations {
       'Dina videor publiceras inte till Bluesky';
 
   @override
+  String get blueskyBackfillDisclosureTitle =>
+      'Dina tidigare videor publiceras också';
+
+  @override
+  String get blueskyBackfillDisclosureSubtitle =>
+      'När du slår på detta börjar Divine skicka dina äldre videor till Bluesky, äldst först, utan att stressa dagsgränsen.';
+
+  @override
   String get blueskyHandle => 'Bluesky-handtag';
+
+  @override
+  String get blueskyDid => 'Bluesky-DID';
 
   @override
   String get blueskyStatus => 'Status';

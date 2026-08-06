@@ -13382,11 +13382,29 @@ abstract class AppLocalizations {
   /// **'Your videos will not be published to Bluesky'**
   String get blueskyDisabledSubtitle;
 
+  /// Title for the Bluesky publishing disclosure explaining historical videos are backfilled when crossposting is enabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Your past videos will post too'**
+  String get blueskyBackfillDisclosureTitle;
+
+  /// Body text for the Bluesky publishing disclosure explaining that enabling crossposting starts a historical video backfill.
+  ///
+  /// In en, this message translates to:
+  /// **'When you turn this on, Divine will start sending your older videos to Bluesky, oldest first, without rushing the daily limit.'**
+  String get blueskyBackfillDisclosureSubtitle;
+
   /// No description provided for @blueskyHandle.
   ///
   /// In en, this message translates to:
   /// **'Bluesky Handle'**
   String get blueskyHandle;
+
+  /// Label for the ATProto DID shown when a Bluesky account is provisioned.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluesky DID'**
+  String get blueskyDid;
 
   /// No description provided for @blueskyStatus.
   ///

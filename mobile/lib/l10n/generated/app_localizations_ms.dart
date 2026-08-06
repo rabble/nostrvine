@@ -7786,7 +7786,18 @@ class AppLocalizationsMs extends AppLocalizations {
       'Video anda tidak akan diterbitkan ke Bluesky';
 
   @override
+  String get blueskyBackfillDisclosureTitle =>
+      'Video lama anda juga akan disiarkan';
+
+  @override
+  String get blueskyBackfillDisclosureSubtitle =>
+      'Apabila anda menghidupkan ini, Divine akan mula menghantar video lama anda ke Bluesky, yang paling lama dahulu, tanpa tergesa-gesa mengejar had harian.';
+
+  @override
   String get blueskyHandle => 'Handle Bluesky';
+
+  @override
+  String get blueskyDid => 'DID Bluesky';
 
   @override
   String get blueskyStatus => 'Status';

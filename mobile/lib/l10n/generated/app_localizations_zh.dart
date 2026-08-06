@@ -7340,7 +7340,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get blueskyDisabledSubtitle => '你的视频不会发布到 Bluesky';
 
   @override
+  String get blueskyBackfillDisclosureTitle => '你以前的视频也会发布';
+
+  @override
+  String get blueskyBackfillDisclosureSubtitle =>
+      '开启后，Divine 会开始把你的旧视频发送到 Bluesky，从最早的视频开始，不会急着用完每日限额。';
+
+  @override
   String get blueskyHandle => 'Bluesky 用户名';
+
+  @override
+  String get blueskyDid => 'Bluesky DID';
 
   @override
   String get blueskyStatus => '状态';

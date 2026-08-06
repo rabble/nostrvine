@@ -7682,7 +7682,18 @@ class AppLocalizationsAr extends AppLocalizations {
   String get blueskyDisabledSubtitle => 'لن تُنشر فيديوهاتك على Bluesky';
 
   @override
+  String get blueskyBackfillDisclosureTitle =>
+      'سيتم نشر فيديوهاتك السابقة أيضًا';
+
+  @override
+  String get blueskyBackfillDisclosureSubtitle =>
+      'عند تفعيل هذا، سيبدأ Divine بإرسال فيديوهاتك الأقدم إلى Bluesky، من الأقدم أولًا، من دون استعجال حد اليوم.';
+
+  @override
   String get blueskyHandle => 'معرّف Bluesky';
+
+  @override
+  String get blueskyDid => 'معرّف Bluesky DID';
 
   @override
   String get blueskyStatus => 'الحالة';

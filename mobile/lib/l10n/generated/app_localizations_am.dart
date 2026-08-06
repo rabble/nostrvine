@@ -7573,7 +7573,17 @@ class AppLocalizationsAm extends AppLocalizations {
   String get blueskyDisabledSubtitle => 'ቪዲዮዎችዎ ወደ Bluesky አይታተሙም';
 
   @override
+  String get blueskyBackfillDisclosureTitle => 'ያለፉ ቪዲዮዎችህም ይለጠፋሉ';
+
+  @override
+  String get blueskyBackfillDisclosureSubtitle =>
+      'ይህን ሲያበሩ፣ Divine የቆዩ ቪዲዮዎችህን ወደ Bluesky ከአሮጌዎቹ ጀምሮ፣ የቀን ገደቡን ሳይጣደፍ መላክ ይጀምራል።';
+
+  @override
   String get blueskyHandle => 'የBluesky መያዣ';
+
+  @override
+  String get blueskyDid => 'Bluesky DID';
 
   @override
   String get blueskyStatus => 'ሁኔታ';

@@ -7740,7 +7740,18 @@ class AppLocalizationsUr extends AppLocalizations {
       'آپ کی ویڈیوز Bluesky پر شائع نہیں ہوں گی';
 
   @override
+  String get blueskyBackfillDisclosureTitle =>
+      'آپ کی پچھلی ویڈیوز بھی پوسٹ ہوں گی';
+
+  @override
+  String get blueskyBackfillDisclosureSubtitle =>
+      'جب آپ اسے آن کریں گے تو Divine آپ کی پرانی ویڈیوز Bluesky پر بھیجنا شروع کرے گا، سب سے پرانی پہلے، روزانہ حد میں جلدی کیے بغیر۔';
+
+  @override
   String get blueskyHandle => 'Bluesky ہینڈل';
+
+  @override
+  String get blueskyDid => 'Bluesky DID';
 
   @override
   String get blueskyStatus => 'اسٹیٹس';

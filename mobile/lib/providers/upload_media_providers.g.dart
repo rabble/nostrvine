@@ -315,6 +315,60 @@ final class CrosspostApiClientProvider
 String _$crosspostApiClientHash() =>
     r'b1bd6e7666b565c069cd7eaf6c24108366887124';
 
+/// Repository for Bluesky toggle settings
+
+@ProviderFor(blueskyCrosspostRepository)
+final blueskyCrosspostRepositoryProvider =
+    BlueskyCrosspostRepositoryProvider._();
+
+/// Repository for Bluesky toggle settings
+
+final class BlueskyCrosspostRepositoryProvider
+    extends
+        $FunctionalProvider<
+          BlueskyCrosspostRepository,
+          BlueskyCrosspostRepository,
+          BlueskyCrosspostRepository
+        >
+    with $Provider<BlueskyCrosspostRepository> {
+  /// Repository for Bluesky toggle settings
+  BlueskyCrosspostRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'blueskyCrosspostRepositoryProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$blueskyCrosspostRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<BlueskyCrosspostRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  BlueskyCrosspostRepository create(Ref ref) {
+    return blueskyCrosspostRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(BlueskyCrosspostRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<BlueskyCrosspostRepository>(value),
+    );
+  }
+}
+
+String _$blueskyCrosspostRepositoryHash() =>
+    r'b628946204b48356106b28c09485a54378b6aaea';
+
 /// Crossposter service client for manual per-video crossposting
 
 @ProviderFor(crossposterApiClient)

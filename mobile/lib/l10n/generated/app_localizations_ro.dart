@@ -7911,7 +7911,18 @@ class AppLocalizationsRo extends AppLocalizations {
       'Videoclipurile tale nu vor fi publicate pe Bluesky';
 
   @override
+  String get blueskyBackfillDisclosureTitle =>
+      'Și videoclipurile tale vechi vor fi postate';
+
+  @override
+  String get blueskyBackfillDisclosureSubtitle =>
+      'Când activezi asta, Divine va începe să trimită videoclipurile tale mai vechi pe Bluesky, începând cu cele mai vechi, fără să grăbească limita zilnică.';
+
+  @override
   String get blueskyHandle => 'Handle Bluesky';
+
+  @override
+  String get blueskyDid => 'DID Bluesky';
 
   @override
   String get blueskyStatus => 'Stare';

@@ -12,10 +12,12 @@ import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
+import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/shell_obscured_provider.dart';
+import 'package:openvine/repositories/bluesky_crosspost_repository.dart';
 import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/crosspost_api_client.dart';
@@ -316,6 +318,19 @@ CrosspostApiClient crosspostApiClient(Ref ref) {
   return CrosspostApiClient(
     oauthClient: oauthClient,
     serverUrl: config.serverUrl,
+  );
+}
+
+/// Repository for Bluesky toggle settings
+@riverpod
+BlueskyCrosspostRepository blueskyCrosspostRepository(Ref ref) {
+  final profileRepository = ref.watch(profileRepositoryProvider);
+  if (profileRepository == null) {
+    throw StateError('ProfileRepository is not ready');
+  }
+  return BlueskyCrosspostRepository(
+    apiClient: ref.watch(crosspostApiClientProvider),
+    profileRepository: profileRepository,
   );
 }
 

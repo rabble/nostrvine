@@ -7811,7 +7811,18 @@ class AppLocalizationsBg extends AppLocalizations {
       'Видеата ти няма да се публикуват в Bluesky';
 
   @override
+  String get blueskyBackfillDisclosureTitle =>
+      'И старите ти видеа ще се публикуват';
+
+  @override
+  String get blueskyBackfillDisclosureSubtitle =>
+      'Когато включиш това, Divine ще започне да изпраща по-старите ти видеа към Bluesky, първо най-старите, без да бърза с дневния лимит.';
+
+  @override
   String get blueskyHandle => 'Bluesky потребител';
+
+  @override
+  String get blueskyDid => 'Bluesky DID';
 
   @override
   String get blueskyStatus => 'Състояние';

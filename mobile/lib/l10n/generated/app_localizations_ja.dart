@@ -7390,7 +7390,17 @@ class AppLocalizationsJa extends AppLocalizations {
   String get blueskyDisabledSubtitle => '動画は Bluesky には公開されないよ';
 
   @override
+  String get blueskyBackfillDisclosureTitle => '過去の動画も投稿されます';
+
+  @override
+  String get blueskyBackfillDisclosureSubtitle =>
+      'これをオンにすると、Divine は古い動画から順に、1日の上限を急がず Bluesky へ送り始めます。';
+
+  @override
   String get blueskyHandle => 'Bluesky ハンドル';
+
+  @override
+  String get blueskyDid => 'Bluesky DID';
 
   @override
   String get blueskyStatus => 'ステータス';

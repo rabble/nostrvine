@@ -7414,7 +7414,17 @@ class AppLocalizationsKo extends AppLocalizations {
   String get blueskyDisabledSubtitle => '영상이 Bluesky에 게시되지 않아요';
 
   @override
+  String get blueskyBackfillDisclosureTitle => '이전 동영상도 게시됩니다';
+
+  @override
+  String get blueskyBackfillDisclosureSubtitle =>
+      '이 기능을 켜면 Divine이 오래된 동영상부터 Bluesky로 보내기 시작하며, 일일 한도를 무리하게 채우지 않습니다.';
+
+  @override
   String get blueskyHandle => 'Bluesky 핸들';
+
+  @override
+  String get blueskyDid => 'Bluesky DID';
 
   @override
   String get blueskyStatus => '상태';

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/models/atproto_provisioning_state.dart';
 import 'package:openvine/services/crosspost_api_client.dart';
 
 class _MockKeycastOAuth extends Mock implements KeycastOAuth {}
@@ -77,7 +78,7 @@ void main() {
         final status = await client.getStatus();
 
         expect(status.crosspostEnabled, isTrue);
-        expect(status.provisioningState, 'ready');
+        expect(status.provisioningState, AtprotoProvisioningState.ready);
         expect(status.did, 'did:plc:test123');
         expect(status.handle, 'testuser.divine.video');
       });
@@ -102,7 +103,10 @@ void main() {
           final status = await client.getStatus();
 
           expect(status.crosspostEnabled, isFalse);
-          expect(status.provisioningState, isNull);
+          expect(
+            status.provisioningState,
+            AtprotoProvisioningState.notLinked,
+          );
           expect(status.handle, isNull);
           expect(status.did, isNull);
         },
@@ -117,6 +121,7 @@ void main() {
               'enabled': false,
               'state': 'failed',
               'did': null,
+              'error': 'PDS quota exhausted',
               'username': 'testuser',
             }),
             200,
@@ -125,7 +130,8 @@ void main() {
 
         final status = await client.getStatus();
 
-        expect(status.provisioningState, 'failed');
+        expect(status.provisioningState, AtprotoProvisioningState.failed);
+        expect(status.provisioningError, 'PDS quota exhausted');
         expect(status.did, isNull);
       });
 
@@ -137,7 +143,7 @@ void main() {
         final status = await client.getStatus();
 
         expect(status.crosspostEnabled, isFalse);
-        expect(status.provisioningState, isNull);
+        expect(status.provisioningState, AtprotoProvisioningState.notLinked);
       });
 
       test('throws CrosspostApiException on non-200 (non-404)', () async {
@@ -219,7 +225,7 @@ void main() {
         );
 
         expect(status.crosspostEnabled, isFalse);
-        expect(status.provisioningState, 'disabled');
+        expect(status.provisioningState, AtprotoProvisioningState.disabled);
         expect(status.handle, 'testuser.divine.video');
       });
 

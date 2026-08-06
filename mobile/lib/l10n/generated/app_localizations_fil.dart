@@ -7829,7 +7829,18 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi ipa-publish ang mga video mo sa Bluesky';
 
   @override
+  String get blueskyBackfillDisclosureTitle =>
+      'Mapo-post din ang mga dati mong video';
+
+  @override
+  String get blueskyBackfillDisclosureSubtitle =>
+      'Kapag binuksan mo ito, sisimulan ng Divine na ipadala sa Bluesky ang mas luma mong mga video, pinakaluma muna, nang hindi minamadali ang daily limit.';
+
+  @override
   String get blueskyHandle => 'Bluesky Handle';
+
+  @override
+  String get blueskyDid => 'Bluesky DID';
 
   @override
   String get blueskyStatus => 'Status';
