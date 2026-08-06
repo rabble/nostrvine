@@ -1159,10 +1159,21 @@ class CuratedListService extends ChangeNotifier {
         }
       }
 
-      // Update local list with Nostr event ID
+      // Record the event ID against the list's current entry, not the copy
+      // captured before the publish: under `confirmed` the await above runs to
+      // a 15s OK deadline, and a mutation landing inside that window would be
+      // discarded by writing the snapshot back.
+      //
+      // [isPublic] is the exception, carried from [list]. The rest of the list
+      // is local-first, but visibility is a statement about what the relays
+      // hold, so [updateList] leaves it at its old value and this write is
+      // what commits the change once a relay has accepted it.
       final listIndex = _lists.indexWhere((l) => l.id == list.id);
       if (listIndex != -1) {
-        _lists[listIndex] = list.copyWith(nostrEventId: event.id);
+        _lists[listIndex] = _lists[listIndex].copyWith(
+          nostrEventId: event.id,
+          isPublic: list.isPublic,
+        );
         await _saveLists();
       }
       Log.debug(

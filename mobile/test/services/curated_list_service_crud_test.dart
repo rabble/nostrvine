@@ -856,6 +856,38 @@ void main() {
         expect(stored.name, equals('Renamed'));
         expect(stored.nostrEventId, isNotNull);
       });
+
+      test('keeps a video added while the update was publishing', () async {
+        final list = await service.createList(name: 'Public List');
+        reset(mockNostr);
+
+        // Held open so the add lands inside the update's publish, which under
+        // publishEventAwaitOk runs to a 15s deadline rather than a socket
+        // write.
+        final publishGate = Completer<void>();
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer((
+          invocation,
+        ) async {
+          await publishGate.future;
+          return _accepted(invocation.positionalArguments[0] as Event);
+        });
+        when(() => mockNostr.publishEvent(any())).thenAnswer(
+          (invocation) async =>
+              PublishSuccess(event: invocation.positionalArguments[0] as Event),
+        );
+
+        final pendingUpdate = service.updateList(
+          listId: list!.id,
+          name: 'Renamed',
+        );
+        await service.addVideoToList(list.id, 'video_added_mid_publish');
+        publishGate.complete();
+
+        expect(await pendingUpdate, isTrue);
+        final stored = service.getListById(list.id)!;
+        expect(stored.name, equals('Renamed'));
+        expect(stored.videoEventIds, contains('video_added_mid_publish'));
+      });
     });
 
     group('deleteList()', () {
