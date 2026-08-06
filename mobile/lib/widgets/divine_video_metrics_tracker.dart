@@ -51,7 +51,8 @@ class _DivineVideoMetricsTrackerState
   Duration? _lastPosition;
   int _loopCount = 0;
   bool _hasTrackedView = false;
-  bool _hasFinalizedView = false;
+  bool _hasSentEndEvent = false;
+  bool _hasRecordedImpression = false;
   bool _isPlaying = false;
   StreamSubscription<DivineVideoPlayerState>? _stateSubscription;
 
@@ -163,7 +164,8 @@ class _DivineVideoMetricsTrackerState
   void _trackViewStart() {
     _viewStartTime = widget._clock();
     _hasTrackedView = true;
-    _hasFinalizedView = false;
+    _hasSentEndEvent = false;
+    _hasRecordedImpression = false;
 
     _analyticsService.trackDetailedVideoViewWithUser(
       widget.video,
@@ -174,7 +176,8 @@ class _DivineVideoMetricsTrackerState
   }
 
   void _finalizeAndPublish({VideoEvent? finalizedVideo}) {
-    if (!_hasTrackedView || _hasFinalizedView) return;
+    if (!_hasTrackedView) return;
+    if (_hasSentEndEvent && _hasRecordedImpression) return;
     final viewStartTime = _viewStartTime;
     if (viewStartTime == null) return;
 
@@ -190,9 +193,6 @@ class _DivineVideoMetricsTrackerState
   }
 
   void _publishEvents(VideoEvent video, {required Duration activeDuration}) {
-    if (_hasFinalizedView) return;
-    _hasFinalizedView = true;
-
     Duration? totalDuration;
     try {
       totalDuration = widget.controller?.state.duration;
@@ -200,7 +200,8 @@ class _DivineVideoMetricsTrackerState
       totalDuration = null;
     }
 
-    if (_totalWatchDuration >= _minimumViewEndWatchDuration) {
+    if (!_hasSentEndEvent &&
+        _totalWatchDuration >= _minimumViewEndWatchDuration) {
       try {
         _analyticsService.trackDetailedVideoViewWithUser(
           video,
@@ -219,6 +220,8 @@ class _DivineVideoMetricsTrackerState
           trafficSource: widget.trafficSource,
           sourceDetail: widget.sourceDetail,
         );
+
+        _hasSentEndEvent = true;
       } catch (e) {
         Log.warning(
           'Failed to send video end event: $e',
@@ -228,7 +231,9 @@ class _DivineVideoMetricsTrackerState
       }
     }
 
-    if (activeDuration >= _minimumImpressionDuration) {
+    if (!_hasRecordedImpression &&
+        activeDuration >= _minimumImpressionDuration) {
+      _hasRecordedImpression = true;
       unawaited(
         _seenVideosService.recordVideoView(
           video.id,
@@ -246,7 +251,8 @@ class _DivineVideoMetricsTrackerState
     _lastPosition = null;
     _loopCount = 0;
     _hasTrackedView = false;
-    _hasFinalizedView = false;
+    _hasSentEndEvent = false;
+    _hasRecordedImpression = false;
     _isPlaying = false;
   }
 

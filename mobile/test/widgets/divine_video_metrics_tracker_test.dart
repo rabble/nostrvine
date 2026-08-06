@@ -376,6 +376,102 @@ void main() {
       await controller.close();
     });
 
+    testWidgets('reactivation after a skipped glance still finalizes', (
+      tester,
+    ) async {
+      final isActive = ValueNotifier(true);
+      final video = ValueNotifier(_video);
+      final controller = _stubController(isPlaying: true);
+
+      await tester.pumpWidget(
+        _buildTrackerHarness(
+          authService: authService,
+          analyticsService: analyticsService,
+          seenVideosService: seenVideosService,
+          controller: controller.controller,
+          video: video,
+          isActive: isActive,
+          clock: () => now,
+        ),
+      );
+
+      // Glance too short for either threshold, then the feed goes inactive
+      // (app backgrounded, route pushed, or swiped past within the pool).
+      now = now.add(const Duration(milliseconds: 300));
+      isActive.value = false;
+      await tester.pump();
+
+      expect(_viewEndEvents(analyticsService), isEmpty);
+      expect(seenVideosService.records, isEmpty);
+
+      // The same tracker becomes active again and is actually watched.
+      isActive.value = true;
+      await tester.pump();
+      now = now.add(const Duration(seconds: 5));
+      isActive.value = false;
+      await tester.pump();
+
+      final viewEndEvents = _viewEndEvents(analyticsService);
+      expect(viewEndEvents, hasLength(1));
+      expect(
+        viewEndEvents.single.watchDuration,
+        const Duration(milliseconds: 5300),
+      );
+      expect(seenVideosService.records, hasLength(1));
+      expect(seenVideosService.records.single.videoId, equals('video_id'));
+
+      isActive.dispose();
+      video.dispose();
+      await controller.close();
+    });
+
+    testWidgets('reactivation after a recorded impression sends view_end', (
+      tester,
+    ) async {
+      final isActive = ValueNotifier(true);
+      final video = ValueNotifier(_video);
+      final controller = _stubController(isPlaying: true);
+
+      await tester.pumpWidget(
+        _buildTrackerHarness(
+          authService: authService,
+          analyticsService: analyticsService,
+          seenVideosService: seenVideosService,
+          controller: controller.controller,
+          video: video,
+          isActive: isActive,
+          clock: () => now,
+        ),
+      );
+
+      // Long enough to record a seen impression, too short for view_end.
+      now = now.add(const Duration(milliseconds: 700));
+      isActive.value = false;
+      await tester.pump();
+
+      expect(_viewEndEvents(analyticsService), isEmpty);
+      expect(seenVideosService.records, hasLength(1));
+
+      isActive.value = true;
+      await tester.pump();
+      now = now.add(const Duration(seconds: 5));
+      isActive.value = false;
+      await tester.pump();
+
+      final viewEndEvents = _viewEndEvents(analyticsService);
+      expect(viewEndEvents, hasLength(1));
+      expect(
+        viewEndEvents.single.watchDuration,
+        const Duration(milliseconds: 5700),
+      );
+      // The impression is not recorded twice for one view session.
+      expect(seenVideosService.records, hasLength(1));
+
+      isActive.dispose();
+      video.dispose();
+      await controller.close();
+    });
+
     testWidgets('video id change finalizes old video and starts new one', (
       tester,
     ) async {
