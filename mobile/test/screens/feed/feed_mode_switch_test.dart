@@ -335,6 +335,45 @@ void main() {
           isFalse,
         );
       });
+
+      testWidgets(
+        'clears the pause flag when the mode sheet is dismissed without a '
+        'selection',
+        (tester) async {
+          // Regression guard: dismissing via the scrim (no option tapped)
+          // must still resume playback. The clear lives in the extension's
+          // whenComplete, so it fires on cancel too — this pins that path.
+          when(() => mockBloc.state).thenReturn(
+            const VideoFeedBlocState(
+              status: VideoFeedStatus.success,
+              source: VideoFeedSource.forYou(),
+            ),
+          );
+          await tester.pumpWidget(createTestWidget());
+
+          final container = ProviderScope.containerOf(
+            tester.element(find.byType(FeedModeSwitch)),
+            listen: false,
+          );
+
+          await tester.tap(find.text(l10n.feedModeForYou));
+          await tester.pumpAndSettle();
+
+          expect(
+            container.read(overlayVisibilityProvider).isBottomSheetOpen,
+            isTrue,
+          );
+
+          // Dismiss by tapping outside (on the barrier), no option selected.
+          await tester.tapAt(const Offset(10, 10));
+          await tester.pumpAndSettle();
+
+          expect(
+            container.read(overlayVisibilityProvider).isBottomSheetOpen,
+            isFalse,
+          );
+        },
+      );
     });
 
     group('Tap Area Coverage', () {
