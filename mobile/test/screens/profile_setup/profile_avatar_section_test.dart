@@ -8,7 +8,6 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -20,12 +19,8 @@ import 'package:openvine/screens/image_crop_editor/image_crop_editor.dart';
 import 'package:openvine/screens/profile_setup/widgets/profile_avatar_section.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
-import '../../helpers/shared_channel_override.dart';
+import '../../helpers/image_picker_stub.dart';
 import '../../helpers/test_provider_overrides.dart';
-
-const MethodChannel _imagePickerChannel = MethodChannel(
-  'plugins.flutter.io/image_picker',
-);
 
 class _MockProfileEditorBloc
     extends MockBloc<ProfileEditorEvent, ProfileEditorState>
@@ -223,19 +218,8 @@ void main() {
         if (tempDir.existsSync()) await tempDir.delete(recursive: true);
       });
 
-      /// Points the mocked picker at a file holding [bytes], and returns it.
-      ///
-      /// The canonical handler answers with a path that was never written, so
-      /// a test that needs a pick to survive validation has to write real
-      /// bytes for it.
-      File stubPickedFile(List<int> bytes) {
-        final file = File('${tempDir.path}/picked.jpg')
-          ..writeAsBytesSync(bytes);
-        overrideSharedChannel(_imagePickerChannel, (call) async {
-          return call.method == 'pickImage' ? file.path : null;
-        });
-        return file;
-      }
+      File stubPickedFile(List<int> bytes) =>
+          stubPickedImageFile(tempDir, bytes);
 
       // Gallery picks route through file_selector on desktop and image_picker
       // on mobile; force a mobile platform so the mocked image_picker channel

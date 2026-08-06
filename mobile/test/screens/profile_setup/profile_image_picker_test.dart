@@ -71,5 +71,19 @@ void main() {
 
       expect(selection, isNull);
     });
+
+    test('maps an I/O failure to null rather than throwing', () async {
+      // Traversing through a regular file fails with ENOTDIR on every POSIX
+      // platform — a FileSystemException that is *not* PathNotFoundException,
+      // so it exercises the catch-all rather than the missing-file branch.
+      final file = File('${tempDir.path}/not_a_dir.jpg')
+        ..writeAsBytesSync([1, 2, 3]);
+
+      final selection = await resolveProfileImageSelection(
+        XFile('${file.path}/picked.jpg'),
+      );
+
+      expect(selection, isNull);
+    });
   });
 }
