@@ -39,9 +39,6 @@ class _MoreActionsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final showCuratedLists = ref.watch(
-      isFeatureEnabledProvider(FeatureFlag.curatedLists),
-    );
     final showDebugTools = ref.watch(
       isFeatureEnabledProvider(FeatureFlag.debugTools),
     );
@@ -98,12 +95,11 @@ class _MoreActionsSection extends ConsumerWidget {
           label: context.l10n.shareSheetCrosspost,
           onTap: () => onCrosspost!.call(),
         ),
-      if (showCuratedLists)
-        _ActionData(
-          icon: DivineIconName.listPlus,
-          label: context.l10n.shareSheetAddToList,
-          onTap: onAddToList,
-        ),
+      _ActionData(
+        icon: DivineIconName.listPlus,
+        label: context.l10n.shareSheetAddToList,
+        onTap: onAddToList,
+      ),
       _ActionData(
         icon: DivineIconName.linkSimple,
         label: context.l10n.shareSheetCopy,
