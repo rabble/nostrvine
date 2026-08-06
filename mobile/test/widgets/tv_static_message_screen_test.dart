@@ -108,5 +108,70 @@ void main() {
 
       expect(find.byKey(const Key('footer')), findsOneWidget);
     });
+
+    testWidgets('lets the footer paint to the bottom screen edge', (
+      tester,
+    ) async {
+      // A footer carries its own SafeArea. If this screen also consumed the
+      // bottom inset, the footer's background would stop short of the edge
+      // and the animated static behind it would show through the gap.
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        const MediaQuery(
+          data: MediaQueryData(padding: EdgeInsets.only(bottom: 48)),
+          child: MaterialApp(
+            home: TvStaticMessageScreen(
+              sticker: DivineStickerName.alert,
+              title: 'Allow camera access',
+              onClose: _noop,
+              footer: SizedBox(key: Key('footer'), height: 60),
+            ),
+          ),
+        ),
+      );
+
+      final footer = tester.getRect(find.byKey(const Key('footer')));
+      final screen = tester.getRect(find.byType(Scaffold));
+
+      expect(footer.bottom, equals(screen.bottom));
+    });
+
+    testWidgets('keeps the bottom inset when there is no footer', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        const MediaQuery(
+          data: MediaQueryData(padding: EdgeInsets.only(bottom: 48)),
+          child: MaterialApp(
+            home: TvStaticMessageScreen(
+              sticker: DivineStickerName.alert,
+              title: 'Video not found',
+              onClose: _noop,
+            ),
+          ),
+        ),
+      );
+
+      final column = tester.getRect(
+        find
+            .descendant(
+              of: find.byType(SafeArea),
+              matching: find.byType(Column),
+            )
+            .first,
+      );
+      final screen = tester.getRect(find.byType(Scaffold));
+
+      expect(column.bottom, equals(screen.bottom - 48));
+    });
   });
 }
+
+void _noop() {}

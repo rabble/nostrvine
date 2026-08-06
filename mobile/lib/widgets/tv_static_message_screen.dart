@@ -45,6 +45,9 @@ class TvStaticMessageScreen extends StatelessWidget {
   final String? closeSemanticLabel;
 
   /// Optional chrome pinned to the bottom edge, below the message.
+  ///
+  /// A footer owns its own bottom inset — [SafeArea] here stops at the
+  /// message column so the footer can paint all the way to the screen edge.
   final Widget? footer;
 
   @override
@@ -56,6 +59,7 @@ class TvStaticMessageScreen extends StatelessWidget {
         children: [
           const TvStaticNoise(),
           SafeArea(
+            bottom: footer == null,
             child: Column(
               children: [
                 Align(
