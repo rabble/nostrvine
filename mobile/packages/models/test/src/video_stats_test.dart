@@ -123,6 +123,28 @@ void main() {
         expect(stats.trendingScore, equals(0.75));
       });
 
+      test('parses published_at from tags instead of REST fields', () {
+        final stats = VideoStats.fromJson(const {
+          'id': 'abc123',
+          'pubkey': 'pub456',
+          'created_at': 1777489813,
+          'published_at': 1777489813,
+          'kind': 34236,
+          'tags': [
+            ['d', 'video-1'],
+            ['published_at', '1473050841'],
+          ],
+          'thumbnail': 'https://example.com/thumb.jpg',
+          'video_url': 'https://example.com/video.mp4',
+          'reactions': 0,
+          'comments': 0,
+          'reposts': 0,
+          'engagement_score': 0,
+        });
+
+        expect(stats.publishedAt, equals(1473050841));
+      });
+
       test('normalizes invalid engagement counters to zero', () {
         final stats = VideoStats.fromJson(const {
           'id': 'test-id',

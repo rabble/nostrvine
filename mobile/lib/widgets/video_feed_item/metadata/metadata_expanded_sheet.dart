@@ -144,13 +144,15 @@ class _OverviewSection extends StatelessWidget {
     final title = video.displayTitle;
     final description = video.displayContent;
 
-    final publishedAtSeconds =
-        int.tryParse(video.publishedAt ?? '') ?? video.createdAt;
-    final formattedDate = TimeFormatter.formatLongDate(
-      publishedAtSeconds,
-      locale: Localizations.localeOf(context).toString(),
-    );
-    final semanticDate = l10n.metadataPostedDateSemantics(formattedDate);
+    final formattedDate = video.hasUnknownOriginalDate
+        ? null
+        : TimeFormatter.formatLongDate(
+            int.tryParse(video.publishedAt ?? '') ?? video.createdAt,
+            locale: Localizations.localeOf(context).toString(),
+          );
+    final semanticDate = formattedDate == null
+        ? null
+        : l10n.metadataPostedDateSemantics(formattedDate);
 
     final hasTitle = title != null && title.isNotEmpty;
     final hasDescription = description.isNotEmpty;
@@ -196,32 +198,34 @@ class _OverviewSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Semantics(
-            label: semanticDate,
-            child: ExcludeSemantics(
-              child: Text(
-                formattedDate,
-                style: VineTheme.labelSmallFont(
-                  color: context.vineColors.onSurfaceVariant,
+          if (formattedDate != null)
+            Semantics(
+              label: semanticDate,
+              child: ExcludeSemantics(
+                child: Text(
+                  formattedDate,
+                  style: VineTheme.labelSmallFont(
+                    color: context.vineColors.onSurfaceVariant,
+                  ),
                 ),
               ),
             ),
-          ),
-          if (titleCluster.isNotEmpty) ...[
+          if (formattedDate != null && titleCluster.isNotEmpty) ...[
             const SizedBox(height: 16),
+          ],
+          if (titleCluster.isNotEmpty)
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               spacing: 8,
               children: titleCluster,
             ),
-          ],
-          // ⚠ LOAD-BEARING 12 px (NOT 16). The first chip row's 4 px
-          // invisible top padding stacks on this to produce the visible
-          // 16 px gap matching the date → title-cluster gap. Sibling
-          // of the bottom-padding tweak above; see `MetadataTagsSection`
-          // for the full dependency map.
+          // ⚠ LOAD-BEARING 12 px (NOT 16). When content precedes the chip row,
+          // the first chip row's 4 px invisible top padding stacks on this to
+          // produce a visible 16 px gap. Sibling of the bottom-padding tweak
+          // above; see `MetadataTagsSection` for the full dependency map.
           if (hasTags) ...[
-            const SizedBox(height: 12),
+            if (formattedDate != null || titleCluster.isNotEmpty)
+              const SizedBox(height: 12),
             MetadataTagsSection(video: video),
           ],
         ],

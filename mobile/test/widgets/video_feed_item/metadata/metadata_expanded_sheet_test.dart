@@ -83,6 +83,8 @@ UserProfile _makeProfile(String pubkey, String name) => UserProfile(
 );
 
 VideoEvent _makeVideo({
+  String id =
+      'test_video_id_00000000000000000000000000000000000000000000000000',
   List<String> hashtags = const [],
   List<String> categories = const [],
   List<String> collaboratorPubkeys = const [],
@@ -97,7 +99,7 @@ VideoEvent _makeVideo({
   String? publishedAt,
   List<List<String>> nostrEventTags = const [],
 }) => VideoEvent(
-  id: 'test_video_id_00000000000000000000000000000000000000000000000000',
+  id: id,
   pubkey: _creatorPubkey,
   createdAt: createdAt,
   content: content,
@@ -331,6 +333,53 @@ void main() {
           title: 'Who knew?',
           content: 'A description',
           publishedAt: '$publishedAt',
+        );
+
+        await tester.pumpWidget(
+          buildSubject(child: MetadataExpandedSheet(video: video)),
+        );
+
+        final expectedDate = DateFormat.yMMMMd('en').format(
+          DateTime.fromMillisecondsSinceEpoch(publishedAt * 1000, isUtc: true),
+        );
+        expect(find.text(expectedDate), findsOneWidget);
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
+      'hides posted date when an original Vine has no original date',
+      (tester) async {
+        const importedAt = 1777489813;
+        final video = _makeVideo(
+          id: '0e5e24db5148c7eda48b874dd44d5365071020e131a4f399f3ea6c7b996d3196',
+          title: 'Classic vine',
+          content: 'From the archive',
+          createdAt: importedAt,
+          rawTags: {'platform': 'vine'},
+        );
+
+        await tester.pumpWidget(
+          buildSubject(child: MetadataExpandedSheet(video: video)),
+        );
+
+        final importedDate = DateFormat.yMMMMd('en').format(
+          DateTime.fromMillisecondsSinceEpoch(importedAt * 1000, isUtc: true),
+        );
+        expect(find.text(importedDate), findsNothing);
+        expect(find.text('Classic vine'), findsOneWidget);
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
+      'renders farewell-day date when original Vine has a published_at tag',
+      (tester) async {
+        const publishedAt = 1484627482;
+        final video = _makeVideo(
+          title: 'Final vine',
+          content: 'Thanks for everything',
+          createdAt: 1777489813,
+          publishedAt: '$publishedAt',
+          rawTags: const {'platform': 'vine', 'published_at': '1484627482'},
         );
 
         await tester.pumpWidget(

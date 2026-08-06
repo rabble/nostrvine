@@ -1295,17 +1295,15 @@ class VideoEvent {
   /// All hashtags including the synthetic "classic" tag for original Vines.
   List<String> get allHashtags => [if (isOriginalVine) 'classic', ...hashtags];
 
-  /// Vintage recovered Vine: original Vine metrics plus a pre-shutdown date.
-  ///
-  /// New Divine videos can also carry loop stats, so loop count alone is not
-  /// sufficient when the UI needs to know whether this is genuinely old archive
-  /// content.
-  bool get isVintageRecoveredVine {
+  /// True when this is a genuine Vine archive import without a usable original
+  /// publish date.
+  bool get hasUnknownOriginalDate {
     if (!isOriginalVine) return false;
 
-    final effectiveCreatedAt = int.tryParse(publishedAt ?? '') ?? createdAt;
-    return effectiveCreatedAt > 0 &&
-        effectiveCreatedAt < _vineShutdownAtUtcSeconds;
+    final taggedPublishedAt = int.tryParse(rawTags['published_at'] ?? '');
+    if (taggedPublishedAt != null && taggedPublishedAt > 0) return false;
+
+    return createdAt <= 0 || createdAt >= _vineShutdownAtUtcSeconds;
   }
 
   /// Check if this is original content (not a repost)

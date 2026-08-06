@@ -9,14 +9,22 @@ void main() {
     String? title,
     String content = '',
     String? authorName,
+    int createdAt = 1735689600,
+    String? publishedAt,
+    Map<String, String> rawTags = const {},
   }) => VideoEvent(
     id: 'a' * 64,
     pubkey: 'b' * 64,
-    createdAt: 1735689600,
+    createdAt: createdAt,
     content: content,
-    timestamp: DateTime.utc(2026),
+    timestamp: DateTime.fromMillisecondsSinceEpoch(
+      createdAt * 1000,
+      isUtc: true,
+    ),
     title: title,
     authorName: authorName,
+    publishedAt: publishedAt,
+    rawTags: rawTags,
   );
 
   group('VideoEvent.displayTitle', () {
@@ -96,6 +104,61 @@ void main() {
         build(authorName: malformed).displayAuthorName,
         equals('\uFFFDa\uFFFD'),
       );
+    });
+  });
+
+  group('VideoEvent.hasUnknownOriginalDate', () {
+    test('is true for original Vines without a tag after shutdown', () {
+      final video = build(
+        createdAt: 1777489813,
+        rawTags: const {'platform': 'vine'},
+      );
+
+      expect(video.hasUnknownOriginalDate, isTrue);
+    });
+
+    test('is false for original Vines with a Vine-era published_at tag', () {
+      final video = build(
+        createdAt: 1777489813,
+        publishedAt: '1473050841',
+        rawTags: const {'platform': 'vine', 'published_at': '1473050841'},
+      );
+
+      expect(video.hasUnknownOriginalDate, isFalse);
+    });
+
+    test(
+      'is false for original Vines with a farewell-day published_at tag',
+      () {
+        final video = build(
+          createdAt: 1777489813,
+          publishedAt: '1484627482',
+          rawTags: const {'platform': 'vine', 'published_at': '1484627482'},
+        );
+
+        expect(video.hasUnknownOriginalDate, isFalse);
+      },
+    );
+
+    test('is false for no-tag original Vines before shutdown', () {
+      final video = build(
+        createdAt: 1473050841,
+        rawTags: const {'platform': 'vine'},
+      );
+
+      expect(video.hasUnknownOriginalDate, isFalse);
+    });
+
+    test('is true for original Vines with a zero timestamp', () {
+      final video = build(createdAt: 0, rawTags: const {'platform': 'vine'});
+
+      expect(video.hasUnknownOriginalDate, isTrue);
+    });
+
+    test('is false for non-Vine videos with a post-shutdown date', () {
+      final video = build(createdAt: 1777489813);
+
+      expect(video.hasUnknownOriginalDate, isFalse);
     });
   });
 }
