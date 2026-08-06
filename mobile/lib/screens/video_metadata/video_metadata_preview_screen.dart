@@ -92,9 +92,7 @@ class _VideoMetadataPreviewScreenState
     _controller = DivineVideoPlayerController(useTexture: true);
     if (mounted) await _controller!.initialize();
     if (mounted) {
-      await _controller!.setSource(
-        VideoClip.file(await video.safeFilePath()),
-      );
+      await _controller!.setSource(VideoClip.file(await video.safeFilePath()));
     }
     if (mounted) await _controller!.setLooping(looping: true);
     if (mounted) await _controller!.play();
@@ -167,7 +165,7 @@ class _VideoMetadataPreviewScreenState
 /// behind them.
 ///
 /// The preview-only route has no bottom chrome to seam into and stays edge to
-/// edge — the same call the fullscreen feed makes in `_MaybeRoundFeedBottom`.
+/// edge — the same branch the fullscreen feed takes in `_MaybeRoundFeedBottom`.
 class _PreviewStage extends StatelessWidget {
   const _PreviewStage({required this.roundBottom, required this.child});
 
@@ -195,18 +193,14 @@ class _PreviewStage extends StatelessWidget {
 /// than the feed does, so the metadata overlay sat over a different crop than
 /// the published post.
 ///
-/// The video surface is sized from [DivineVideoClip.targetAspectRatio], not the
-/// live decoded ratio the feed uses. For a square target whose source is still
-/// uncropped (the crop is applied at publish) the video is fitted to the target
-/// box rather than center-cropped the way the feed shows the published file;
-/// matching that exactly would mean sizing from the decoded ratio like
-/// `video_metadata_cover_screen`.
+/// The video surface is sized from the live decoded ratio when the native
+/// player has reported dimensions, with [DivineVideoClip.targetAspectRatio] as
+/// the pre-decode fallback. That keeps raw draft previews from squeezing an
+/// uncropped source into the target-ratio box while still matching the rendered
+/// post path once the render has baked the target crop into the file.
 class _VideoPreviewContent extends StatelessWidget {
   /// Creates the video preview content wrapper.
-  const _VideoPreviewContent({
-    required this.clip,
-    required this.controller,
-  });
+  const _VideoPreviewContent({required this.clip, required this.controller});
 
   final DivineVideoClip clip;
   final DivineVideoPlayerController? controller;
@@ -259,11 +253,9 @@ class _VideoPreviewContent extends StatelessWidget {
 /// Inscribes the player surface into the preview the way the feed does.
 ///
 /// The native surface has no intrinsic size and stretches to whatever box it
-/// gets, so the video is laid out at [aspectRatio] inside a [FittedBox] — the
-/// same construction `VideoItemWidget` uses in the feed. Here [aspectRatio] is
-/// the clip's target ratio; see [_VideoPreviewContent] for the square-source
-/// caveat.
-class _FittedVideoSurface extends StatelessWidget {
+/// gets, so the video is laid out at the decoded video ratio inside a
+/// [FittedBox] — the same construction `VideoItemWidget` uses in the feed.
+class _FittedVideoSurface extends StatefulWidget {
   const _FittedVideoSurface({
     required this.clip,
     required this.controller,
@@ -277,16 +269,60 @@ class _FittedVideoSurface extends StatelessWidget {
   final BoxFit fit;
 
   @override
+  State<_FittedVideoSurface> createState() => _FittedVideoSurfaceState();
+}
+
+class _FittedVideoSurfaceState extends State<_FittedVideoSurface> {
+  StreamSubscription<DivineVideoPlayerState>? _sub;
+  double _videoAspectRatio = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _subscribeToController(widget.controller);
+  }
+
+  @override
+  void didUpdateWidget(_FittedVideoSurface oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      unawaited(_sub?.cancel());
+      _subscribeToController(widget.controller);
+    }
+  }
+
+  void _subscribeToController(DivineVideoPlayerController? controller) {
+    _videoAspectRatio = controller?.state.aspectRatio ?? 0;
+    _sub = controller?.stateStream.listen((state) {
+      final aspectRatio = state.aspectRatio;
+      if (aspectRatio > 0 && aspectRatio != _videoAspectRatio) {
+        setState(() => _videoAspectRatio = aspectRatio);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    unawaited(_sub?.cancel());
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final videoAspectRatio = _videoAspectRatio > 0
+        ? _videoAspectRatio
+        : widget.aspectRatio;
     return ClipRect(
       child: FittedBox(
-        fit: fit,
+        fit: widget.fit,
         child: SizedBox(
-          width: aspectRatio * 100,
+          width: videoAspectRatio * 100,
           height: 100,
           child: DivineVideoPlayer(
-            controller: controller,
-            placeholder: VideoMetadataCapturePreviewThumbnail(clip: clip),
+            controller: widget.controller,
+            placeholder: VideoMetadataCapturePreviewThumbnail(
+              clip: widget.clip,
+            ),
           ),
         ),
       ),
