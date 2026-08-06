@@ -492,8 +492,11 @@ class _QrContent extends StatelessWidget {
   final VoidCallback onShareUrl;
   final VoidCallback onAddBunker;
 
-  /// Whether the session payload is still pending. Skeletonizes — and, via
-  /// its default `ignorePointers`, disables — the QR code and action bar.
+  /// Whether the session payload is still pending. Skeletonizes the QR code
+  /// and action bar. [Skeletonizer]'s `ignorePointers` blocks touch but not
+  /// the semantics tree, so the action bar is also disabled for screen
+  /// readers by nulling its callbacks (see [_ActionBar.isLoading]) — otherwise
+  /// a double-tap could open the bunker sheet and drop the live session.
   final bool isLoading;
 
   @override
@@ -544,6 +547,7 @@ class _QrContent extends StatelessWidget {
 
                 // Action bar
                 _ActionBar(
+                  isLoading: isLoading,
                   onCopyUrl: onCopyUrl,
                   onShareUrl: onShareUrl,
                   onAddBunker: onAddBunker,
@@ -591,8 +595,10 @@ class _QrCodeCard extends StatelessWidget {
             color: VineTheme.whiteText,
             borderRadius: BorderRadius.circular(12),
           ),
-          // Replaced rather than skeletonized in place: the encoder would
-          // otherwise render a QR for a placeholder payload.
+          // Replaced rather than skeletonized in place: in the steady loading
+          // state the encoder never runs over the placeholder payload. (The
+          // switch animation still builds one throwaway `QrImageView('')`
+          // mid-transition; harmless — an empty payload encodes fine.)
           child: Skeleton.replace(
             replace: isLoading,
             width: 200,
@@ -658,11 +664,18 @@ class _ActionBar extends StatelessWidget {
     required this.onCopyUrl,
     required this.onShareUrl,
     required this.onAddBunker,
+    this.isLoading = false,
   });
 
   final VoidCallback onCopyUrl;
   final VoidCallback onShareUrl;
   final VoidCallback onAddBunker;
+
+  /// While loading, the buttons are handed `null` callbacks so they publish
+  /// no tap action — inert to both touch and screen readers. [Skeletonizer]'s
+  /// `ignorePointers` only blocks touch, so nulling here is what keeps a
+  /// double-tap from activating a bone.
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -689,7 +702,7 @@ class _ActionBar extends StatelessWidget {
                     size: MediaQuery.textScalerOf(context).scale(24),
                   ),
                   label: context.l10n.authCopyUrl,
-                  onTap: onCopyUrl,
+                  onTap: isLoading ? null : onCopyUrl,
                 ),
                 _ActionButton(
                   icon: DivineIcon(
@@ -698,7 +711,7 @@ class _ActionBar extends StatelessWidget {
                     size: MediaQuery.textScalerOf(context).scale(24),
                   ),
                   label: context.l10n.authShare,
-                  onTap: onShareUrl,
+                  onTap: isLoading ? null : onShareUrl,
                 ),
                 _ActionButton(
                   icon: DivineIcon(
@@ -707,7 +720,7 @@ class _ActionBar extends StatelessWidget {
                     size: MediaQuery.textScalerOf(context).scale(24),
                   ),
                   label: context.l10n.authAddBunker,
-                  onTap: onAddBunker,
+                  onTap: isLoading ? null : onAddBunker,
                 ),
               ],
             ),
@@ -728,7 +741,10 @@ class _ActionButton extends StatelessWidget {
 
   final Widget icon;
   final String label;
-  final VoidCallback onTap;
+
+  /// `null` while the session is loading, so the button is inert to both
+  /// touch and screen-reader activation.
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
