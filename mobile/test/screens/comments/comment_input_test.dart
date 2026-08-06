@@ -105,6 +105,43 @@ void main() {
       expect(tapped, isTrue);
     });
 
+    testWidgets('video reply glyph stays inset from its circle', (
+      tester,
+    ) async {
+      // The camera asset is 29x18, so BoxFit.contain sizes it off its height
+      // and it renders far wider than the requested 22. Unpadded it spans
+      // 35.4px inside the 40px circle, leaving 2.3px of clearance and reading
+      // as a ring drawn around the glyph.
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: CommentInput(
+              controller: controller,
+              onSubmit: () {},
+              onVideoReplyPressed: () {},
+            ),
+          ),
+        ),
+      );
+
+      final glyph = tester.getRect(_divineIcon(DivineIconName.videoCamera));
+      final circle = tester.getRect(
+        find
+            .ancestor(
+              of: _divineIcon(DivineIconName.videoCamera),
+              matching: find.byWidgetPredicate(
+                (widget) =>
+                    widget is Container && widget.constraints?.maxWidth == 40,
+              ),
+            )
+            .first,
+      );
+
+      expect((circle.width - glyph.width) / 2, greaterThanOrEqualTo(6));
+    });
+
     testWidgets(
       'never shows a CircularProgressIndicator on the send button',
       (tester) async {
