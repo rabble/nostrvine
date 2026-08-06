@@ -651,6 +651,9 @@ class __OverlayState extends ConsumerState<_Overlay> {
     // The cubit outlives this overlay, so the flag has to come down here or
     // the surface would be left with permanently hidden chrome.
     _exitImmersive();
+    // [didUpdateWidget] re-points this State at a different video, so the
+    // pointer set must not outlive the item that filled it.
+    _immersivePointers.clear();
     _heartTrigger.dispose();
     super.dispose();
   }
