@@ -1275,8 +1275,9 @@ void main() {
           isTrue,
         );
 
-        // A pushed route / opened sheet pauses the current player but resumes
-        // it on the way back, so the play affordance must stay hidden.
+        // Navigating away (a pushed route here; an opened comments/share
+        // sheet drives the same feed-inactive gate) pauses the player but
+        // resumes it on the way back, so the affordance must stay hidden.
         tester.state<FeedVideosState>(find.byType(FeedVideos)).didPushNext();
         await tester.pump();
         expect(
@@ -1285,6 +1286,45 @@ void main() {
         );
 
         tester.state<FeedVideosState>(find.byType(FeedVideos)).didPopNext();
+        await tester.pump();
+        expect(
+          tester.widget<PausedVideoOverlay>(overlayFinder).isVisible,
+          isTrue,
+        );
+      },
+    );
+
+    testWidgets(
+      'hides the paused affordance while the app is backgrounded',
+      (tester) async {
+        InfiniteVideoFeed.debugIsSupportedOverride = true;
+        final video = _makeVideo();
+
+        await _pumpFeedVideos(tester, videos: [video]);
+        await tester.pump(const Duration(seconds: 4));
+
+        final overlayFinder = find.byType(PausedVideoOverlay);
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(FeedVideos)),
+          listen: false,
+        );
+        expect(
+          tester.widget<PausedVideoOverlay>(overlayFinder).isVisible,
+          isTrue,
+        );
+
+        // Backgrounding pauses the player; foregrounding resumes it. The
+        // affordance must stay hidden while backgrounded. Guards the
+        // appForeground factor specifically: the route test above stays
+        // green if a refactor drops it, this one turns red.
+        container.read(appForegroundProvider.notifier).setForeground(false);
+        await tester.pump();
+        expect(
+          tester.widget<PausedVideoOverlay>(overlayFinder).isVisible,
+          isFalse,
+        );
+
+        container.read(appForegroundProvider.notifier).setForeground(true);
         await tester.pump();
         expect(
           tester.widget<PausedVideoOverlay>(overlayFinder).isVisible,
