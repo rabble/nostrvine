@@ -1222,7 +1222,10 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.text('Reposted by'), findsOneWidget);
+        expect(
+          find.text(_l10n(tester).metadataRepostedByLabel),
+          findsOneWidget,
+        );
         expect(_skeletonChips(), findsNWidgets(3));
         expect(find.byType(UserAvatar), findsNothing);
       },
@@ -1256,7 +1259,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.text('Reposted by'), findsNothing);
+        expect(find.text(_l10n(tester).metadataRepostedByLabel), findsNothing);
         expect(_skeletonChips(), findsNothing);
       },
     );
@@ -1274,7 +1277,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Reposted by'), findsNothing);
+        expect(find.text(_l10n(tester).metadataRepostedByLabel), findsNothing);
         expect(_skeletonChips(), findsNothing);
       },
     );
@@ -1300,7 +1303,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Reposted by'), findsOneWidget);
+      expect(find.text(_l10n(tester).metadataRepostedByLabel), findsOneWidget);
       expect(find.text('Improvising'), findsOneWidget);
     });
 
@@ -1321,7 +1324,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Reposted by'), findsOneWidget);
+      expect(find.text(_l10n(tester).metadataRepostedByLabel), findsOneWidget);
       expect(find.text('Improvising'), findsOneWidget);
     });
 
@@ -1435,7 +1438,10 @@ void main() {
         await tester.pumpAndSettle();
 
         final moreLabel = _l10n(tester).metadataMoreReposters(7);
-        expect(find.text('Reposted by'), findsOneWidget);
+        expect(
+          find.text(_l10n(tester).metadataRepostedByLabel),
+          findsOneWidget,
+        );
 
         await tester.tap(find.text(moreLabel));
         await tester.pumpAndSettle();
@@ -1450,7 +1456,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('open sheet'), findsOneWidget);
-        expect(find.text('Reposted by'), findsNothing);
+        expect(find.text(_l10n(tester).metadataRepostedByLabel), findsNothing);
       },
     );
 
@@ -1479,7 +1485,10 @@ void main() {
         // Showing the real chips first would swap every label a moment later
         // and reflow the rows around the new widths, so a placeholder of the
         // known size stands in.
-        expect(find.text('Reposted by'), findsOneWidget);
+        expect(
+          find.text(_l10n(tester).metadataRepostedByLabel),
+          findsOneWidget,
+        );
         expect(_skeletonChips(), findsNWidgets(1));
         expect(find.byType(UserAvatar), findsNothing);
 
@@ -1517,7 +1526,10 @@ void main() {
         await tester.pump(const Duration(seconds: 1));
         await tester.pumpAndSettle();
 
-        expect(find.text('Reposted by'), findsOneWidget);
+        expect(
+          find.text(_l10n(tester).metadataRepostedByLabel),
+          findsOneWidget,
+        );
         expect(_skeletonChips(), findsNothing);
         expect(find.byType(UserAvatar), findsOneWidget);
 
@@ -1562,7 +1574,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Reposted by'), findsNothing);
+        expect(find.text(_l10n(tester).metadataRepostedByLabel), findsNothing);
       },
     );
 
@@ -1597,7 +1609,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('Reposted by'), findsOneWidget);
+      expect(find.text(_l10n(tester).metadataRepostedByLabel), findsOneWidget);
       expect(revealingHeight, lessThan(tester.getSize(section).height));
     });
 
@@ -2047,9 +2059,12 @@ void main() {
         expect(find.text('hello'), findsOneWidget);
 
         // Absent
-        expect(find.text('Collaborators'), findsNothing);
+        expect(
+          find.text(_l10n(tester).metadataCollaboratorsLabel),
+          findsNothing,
+        );
         expect(find.text('Inspired by'), findsNothing);
-        expect(find.text('Reposted by'), findsNothing);
+        expect(find.text(_l10n(tester).metadataRepostedByLabel), findsNothing);
 
         // Sounds section is always present (shows "Original sound")
         // Scroll down to find it
