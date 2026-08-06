@@ -61,18 +61,15 @@ class FeedAutoAdvanceCubit extends Cubit<FeedAutoAdvanceState> {
     emit(state.copyWith(enabled: true, suppressed: false));
   }
 
-  /// Toggle behaviour for the rail control.
+  /// Flips the Auto toggle.
   ///
-  /// - If Auto is enabled and suppressed, tapping resumes (not disables).
-  /// - Otherwise, flips the enabled bit.
-  void toggle() {
-    if (state.enabled && state.suppressed) {
-      emit(state.copyWith(suppressed: false));
-      return;
-    }
-
-    setEnabled(enabled: !state.enabled);
-  }
+  /// Always moves `enabled`, including while Auto is suppressed. The pill is
+  /// the only caller, and on the paused-video overlay suppressed-and-enabled
+  /// is its normal state — the tap that reveals the overlay is the one that
+  /// suppresses. A resume-instead-of-disable branch there would leave the
+  /// control reporting "on" after a press on "Disable auto advance".
+  /// Suppression is lifted by a manual swipe ([resumeAfterSwipe]) instead.
+  void toggle() => setEnabled(enabled: !state.enabled);
 
   /// Temporarily suppress Auto for a non-swipe interaction.
   void suppressForInteraction() {

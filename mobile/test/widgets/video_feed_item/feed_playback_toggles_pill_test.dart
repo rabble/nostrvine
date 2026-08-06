@@ -214,6 +214,30 @@ void main() {
       },
     );
 
+    testWidgets('turns Auto off in one tap while it is suppressed', (
+      tester,
+    ) async {
+      // The paused-video overlay's own reveal tap suppresses Auto
+      // (`_handlePlayerTap` calls `onSuppressAutoAdvance` before pausing), so
+      // enabled-and-suppressed is the normal state of the pill on that
+      // surface — not an edge case.
+      autoAdvanceCubit
+        ..toggle()
+        ..suppressForInteraction();
+      expect(autoAdvanceCubit.state.enabled, isTrue);
+      expect(autoAdvanceCubit.state.suppressed, isTrue);
+
+      await tester.pumpWidget(buildSubject());
+
+      await tester.tap(
+        find.bySemanticsLabel(l10n.videoActionDisableAutoAdvance),
+      );
+      await tester.pump();
+
+      expect(autoAdvanceCubit.state.enabled, isFalse);
+      expect(find.text(l10n.videoSettingsAutoAdvanceOff), findsOneWidget);
+    });
+
     testWidgets('re-toggling replaces the banner instead of queueing it', (
       tester,
     ) async {
