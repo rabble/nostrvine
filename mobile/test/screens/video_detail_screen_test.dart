@@ -8,6 +8,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -134,6 +135,74 @@ void main() {
         expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
         expect(find.byType(CircularProgressIndicator), findsNothing);
       });
+
+      testWidgets(
+        'leaves the screen via the close button while still fetching',
+        (tester) async {
+          // A lookup that never resolves — cold start before the relays are
+          // queryable — used to strand the user on the spinner with no exit.
+          final completer = Completer<VideoEvent?>();
+          when(
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+          ).thenAnswer((_) => completer.future);
+          addTearDown(() => completer.complete(null));
+
+          final router = GoRouter(
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (_, _) => const Scaffold(body: Text('caller screen')),
+              ),
+              GoRoute(
+                path: VideoDetailScreen.path,
+                builder: (_, state) => VideoDetailScreen(
+                  videoId: state.pathParameters['id']!,
+                ),
+              ),
+            ],
+          );
+          addTearDown(router.dispose);
+
+          await tester.pumpWidget(
+            testProviderScope(
+              mockNostrService: mockNostrClient,
+              mockFollowRepository: mockFollowRepository,
+              additionalOverrides: [
+                videoEventServiceProvider.overrideWithValue(
+                  mockVideoEventService,
+                ),
+                contentBlocklistRepositoryProvider.overrideWithValue(
+                  mockBlocklistRepository,
+                ),
+                videosRepositoryProvider.overrideWithValue(
+                  mockVideosRepository,
+                ),
+              ],
+              child: MaterialApp.router(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                routerConfig: router,
+              ),
+            ),
+          );
+
+          unawaited(router.push(VideoDetailScreen.pathForId('test_video_id')));
+          // The branded indicator animates forever, so settle would time out.
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+
+          expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
+
+          await tester.tap(
+            find.bySemanticsLabel(l10n.videoDetailCloseSemanticLabel),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+
+          expect(find.byType(BrandedLoadingIndicator), findsNothing);
+          expect(find.text('caller screen'), findsOneWidget);
+        },
+      );
     });
 
     group('video found', () {

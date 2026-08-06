@@ -271,15 +271,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
     final videoEventService = ref.read(videoEventServiceProvider);
 
     if (_isLoading) {
-      return Scaffold(
-        backgroundColor: context.vineColors.background,
-        body: Center(
-          child: Semantics(
-            identifier: SemanticIds.videoDetailLoading,
-            child: const BrandedLoadingIndicator(),
-          ),
-        ),
-      );
+      return _LoadingScreen(onClose: () => _handleExit(context));
     }
 
     if (_error case final error?) {
@@ -332,6 +324,49 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
       return;
     }
     context.go('/');
+  }
+}
+
+/// Shown while the route's video is still being resolved.
+///
+/// Carries the same top-left close affordance as the dead-end states, so a slow
+/// or relay-stalled lookup never strands the user on a spinner with no way out.
+class _LoadingScreen extends StatelessWidget {
+  const _LoadingScreen({required this.onClose});
+
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: context.vineColors.background,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Center(
+            child: Semantics(
+              identifier: SemanticIds.videoDetailLoading,
+              child: const BrandedLoadingIndicator(),
+            ),
+          ),
+          SafeArea(
+            child: Align(
+              alignment: .topLeft,
+              child: Padding(
+                padding: const .fromLTRB(16, 16, 0, 8),
+                child: DivineIconButton(
+                  icon: .x,
+                  onPressed: onClose,
+                  size: .small,
+                  type: .ghost,
+                  semanticLabel: context.l10n.videoDetailCloseSemanticLabel,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
