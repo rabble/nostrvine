@@ -994,8 +994,15 @@ class __OverlayState extends ConsumerState<_Overlay> {
                           // reports a miss), so the pointer events would never
                           // arrive.
                           behavior: HitTestBehavior.translucent,
-                          onPointerDown: (event) =>
-                              _immersivePointers.add(event.pointer),
+                          onPointerDown: (event) {
+                            // An empty set means nothing is down, so any hold
+                            // this item still believes it owns is stale — its
+                            // terminal event was lost (a touch dropped on
+                            // backgrounding, a platform view taking over).
+                            // Without this the item could never peek again.
+                            if (_immersivePointers.isEmpty) _exitImmersive();
+                            _immersivePointers.add(event.pointer);
+                          },
                           onPointerUp: (event) =>
                               _handleImmersivePointerEnd(event.pointer),
                           onPointerCancel: (event) =>

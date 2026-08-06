@@ -201,6 +201,12 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.hidden) {
       _wasBackgrounded = true;
+      // A hold in progress ends here whether or not the platform delivers a
+      // pointer cancel. Without this, a touch lost to backgrounding leaves
+      // the item's pointer set non-empty, and that item can never lower the
+      // flag again — the header and app bar would stay hidden for the life
+      // of the page.
+      _immersiveCubit.exit();
       return;
     }
     // Only auto-refresh on a genuine background → foreground transition. The
