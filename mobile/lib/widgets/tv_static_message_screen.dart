@@ -60,17 +60,14 @@ class TvStaticMessageScreen extends StatelessWidget {
               children: [
                 Align(
                   alignment: .centerLeft,
-                  child: SafeArea(
-                    bottom: false,
-                    child: Padding(
-                      padding: const .fromLTRB(16, 16, 0, 8),
-                      child: DivineIconButton(
-                        icon: .x,
-                        onPressed: onClose,
-                        size: .small,
-                        type: .ghost,
-                        semanticLabel: closeSemanticLabel,
-                      ),
+                  child: Padding(
+                    padding: const .fromLTRB(16, 16, 0, 8),
+                    child: DivineIconButton(
+                      icon: .x,
+                      onPressed: onClose,
+                      size: .small,
+                      type: .ghost,
+                      semanticLabel: closeSemanticLabel,
                     ),
                   ),
                 ),
