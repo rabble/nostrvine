@@ -7,6 +7,7 @@
 import 'dart:math';
 
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
+import 'package:meta/meta.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nip19/nip19_tlv.dart';
@@ -143,22 +144,28 @@ int? _decodeClassicsOffsetCursor(String? cursor) {
   return int.tryParse(cursor.substring(_classicsOffsetCursorPrefix.length));
 }
 
+/// Cache-key suffix for the popular feed's viewer preferences.
+///
+/// Deliberately excludes the viewer country: it is resolved through a geo
+/// lookup with a short timeout that yields null when the network is slow, so
+/// including it made the key flip between two values and miss the cache
+/// exactly when the network was worst.
 String _popularPreferenceCacheSuffix({
   List<String> preferredLanguages = const [],
-  String? viewerCountry,
 }) {
   final languages = preferredLanguages
       .map((language) => language.trim())
       .where((language) => language.isNotEmpty)
       .join(',');
-  final country = viewerCountry?.trim() ?? '';
 
-  if (languages.isEmpty && country.isEmpty) {
-    return '';
-  }
-
-  return ':lang=$languages:country=$country';
+  return languages.isEmpty ? '' : ':lang=$languages';
 }
+
+/// Test seam for [_popularPreferenceCacheSuffix].
+@visibleForTesting
+String popularPreferenceCacheSuffixForTest({
+  List<String> preferredLanguages = const [],
+}) => _popularPreferenceCacheSuffix(preferredLanguages: preferredLanguages);
 
 /// {@template videos_repository}
 /// Repository for video operations with Nostr.
@@ -949,7 +956,6 @@ class VideosRepository {
   }) async {
     final preferenceCacheSuffix = _popularPreferenceCacheSuffix(
       preferredLanguages: preferredLanguages,
-      viewerCountry: viewerCountry,
     );
     final cacheKey = 'popular:v2:${variant.name}$preferenceCacheSuffix';
     if (!skipCache && until == null && cursor == null) {
@@ -1111,7 +1117,6 @@ class VideosRepository {
   }) async {
     final preferenceCacheSuffix = _popularPreferenceCacheSuffix(
       preferredLanguages: preferredLanguages,
-      viewerCountry: viewerCountry,
     );
     final cacheKey = variant != null
         ? 'popular:v2:${variant.name}$preferenceCacheSuffix'
@@ -2608,7 +2613,6 @@ class VideosRepository {
         (_nostrClient.publicKey.isNotEmpty ? _nostrClient.publicKey : null);
     final preferenceCacheSuffix = _popularPreferenceCacheSuffix(
       preferredLanguages: preferredLanguages,
-      viewerCountry: viewerCountry,
     );
     final cacheKey =
         'recommended:${effectiveUserPubkey ?? 'anonymous'}'
