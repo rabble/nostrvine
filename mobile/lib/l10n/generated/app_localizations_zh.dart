@@ -1441,7 +1441,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoErrorVerifyAgeSignerUnreachable => '验证超时。请检查网络连接，或稍后再试。';
 
   @override
-  String get videoErrorAdultContentHidden => '成人内容已关闭。你可以在“设置 → 内容过滤”中开启。';
+  String get videoErrorAdultContentHiddenTitle => '成人内容已关闭';
+
+  @override
+  String get videoErrorAdultContentHiddenBody => '在内容过滤中开启后就能看这个视频了。';
+
+  @override
+  String get videoErrorAdultContentHiddenAction => '打开内容过滤';
 
   @override
   String get videoDetailLoadError => '视频加载失败';
@@ -5929,6 +5935,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get commonClose => '关闭';
+
+  @override
+  String get commonNotNow => '暂不';
 
   @override
   String get commonLoading => '加载中';

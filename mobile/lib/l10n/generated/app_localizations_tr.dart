@@ -1498,8 +1498,14 @@ class AppLocalizationsTr extends AppLocalizations {
       'Doğrulama zaman aşımına uğradı. Bağlantını kontrol et ya da birazdan tekrar dene.';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      'Yetişkin içeriği kapalı. Ayarlar → İçerik Filtreleri\'nden açabilirsin.';
+  String get videoErrorAdultContentHiddenTitle => 'Yetişkin içeriği kapalı';
+
+  @override
+  String get videoErrorAdultContentHiddenBody =>
+      'Bu videoyu izlemek için İçerik Filtreleri\'nden aç.';
+
+  @override
+  String get videoErrorAdultContentHiddenAction => 'İçerik Filtreleri\'ni aç';
 
   @override
   String get videoDetailLoadError => 'Video yüklenemedi';
@@ -6194,6 +6200,9 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get commonClose => 'Kapat';
+
+  @override
+  String get commonNotNow => 'Şimdi Değil';
 
   @override
   String get commonLoading => 'Yükleniyor';

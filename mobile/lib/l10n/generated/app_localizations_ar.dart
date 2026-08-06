@@ -1514,8 +1514,14 @@ class AppLocalizationsAr extends AppLocalizations {
       'انتهت مهلة التحقق. تحقّق من اتصالك أو حاول مرّة أخرى بعد قليل.';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      'المحتوى للبالغين مُعطَّل. يمكنك تفعيله من الإعدادات ← مرشّحات المحتوى.';
+  String get videoErrorAdultContentHiddenTitle => 'المحتوى للبالغين مُعطَّل';
+
+  @override
+  String get videoErrorAdultContentHiddenBody =>
+      'فعّله من مرشّحات المحتوى لمشاهدة هذا الفيديو.';
+
+  @override
+  String get videoErrorAdultContentHiddenAction => 'فتح مرشّحات المحتوى';
 
   @override
   String get videoDetailLoadError => 'فشل تحميل الفيديو';
@@ -6183,6 +6189,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get commonClose => 'إغلاق';
+
+  @override
+  String get commonNotNow => 'ليس الآن';
 
   @override
   String get commonLoading => 'جارٍ التحميل';

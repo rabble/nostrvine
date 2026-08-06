@@ -732,10 +732,12 @@
   "@videoErrorVerifyAgeSignerUnreachable": {
     "description": "Snackbar shown when tapping Verify age on an age-restricted video and the remote signer didn't respond in time (timeout). Distinct from videoErrorVerifyAgeFailed because the remedy is checking connectivity, not re-verifying age."
   },
-  "videoErrorAdultContentHidden": "Nội dung người lớn đang tắt. Bạn có thể bật trong Cài đặt → Bộ lọc nội dung.",
-  "@videoErrorAdultContentHidden": {
-    "description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."
-  },
+  "videoErrorAdultContentHiddenTitle": "Nội dung người lớn đang tắt",
+  "@videoErrorAdultContentHiddenTitle": {"description": "Title of the bottom sheet shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden."},
+  "videoErrorAdultContentHiddenBody": "Bật trong bộ lọc nội dung để xem video này.",
+  "@videoErrorAdultContentHiddenBody": {"description": "Body of the adult-content-hidden sheet. The remedy is switching adult content on in Content Filters, not re-verifying age."},
+  "videoErrorAdultContentHiddenAction": "Mở bộ lọc nội dung",
+  "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
   "videoDetailLoadError": "Không thể tải video",
   "databaseCorruptionTitle": "Dữ liệu cục bộ của bạn bị rối tung",
   "@databaseCorruptionTitle": {
@@ -3651,6 +3653,7 @@
   "commonCancel": "Hủy",
   "commonBack": "Quay lại",
   "commonClose": "Đóng",
+  "commonNotNow": "Để sau",
   "commonLoading": "Đang tải",
   "@commonLoading": {
     "description": "Screen-reader label for a blocking progress spinner that covers the screen while an action is being prepared. Announced instead of the content behind it, which is not reachable while the spinner is up."

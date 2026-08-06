@@ -1542,8 +1542,14 @@ class AppLocalizationsMs extends AppLocalizations {
       'Pengesahan tamat masa. Semak sambungan anda atau cuba lagi sebentar nanti.';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      'Kandungan dewasa dimatikan. Anda boleh menghidupkannya dalam Tetapan → Penapis Kandungan.';
+  String get videoErrorAdultContentHiddenTitle => 'Kandungan dewasa dimatikan';
+
+  @override
+  String get videoErrorAdultContentHiddenBody =>
+      'Hidupkan dalam Penapis Kandungan anda untuk menonton video ini.';
+
+  @override
+  String get videoErrorAdultContentHiddenAction => 'Buka Penapis Kandungan';
 
   @override
   String get videoDetailLoadError => 'Gagal memuatkan video';
@@ -6274,6 +6280,9 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get commonClose => 'Tutup';
+
+  @override
+  String get commonNotNow => 'Bukan Sekarang';
 
   @override
   String get commonLoading => 'Memuatkan';

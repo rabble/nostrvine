@@ -1557,8 +1557,15 @@ class AppLocalizationsPl extends AppLocalizations {
       'Przekroczono czas weryfikacji. Sprawdź połączenie lub spróbuj ponownie za chwilę.';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      'Treści dla dorosłych są wyłączone. Możesz je włączyć w Ustawienia → Filtry treści.';
+  String get videoErrorAdultContentHiddenTitle =>
+      'Treści dla dorosłych są wyłączone';
+
+  @override
+  String get videoErrorAdultContentHiddenBody =>
+      'Włącz je w filtrach treści, żeby obejrzeć ten film.';
+
+  @override
+  String get videoErrorAdultContentHiddenAction => 'Otwórz filtry treści';
 
   @override
   String get videoDetailLoadError => 'Nie udało się wczytać filmu';
@@ -6376,6 +6383,9 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get commonClose => 'Zamknij';
+
+  @override
+  String get commonNotNow => 'Nie teraz';
 
   @override
   String get commonLoading => 'Ładowanie';

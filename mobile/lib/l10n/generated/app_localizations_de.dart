@@ -1549,8 +1549,15 @@ class AppLocalizationsDe extends AppLocalizations {
       'Zeitüberschreitung bei der Überprüfung. Prüf deine Verbindung oder versuch es gleich nochmal.';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      'Inhalte für Erwachsene sind ausgeschaltet. Du kannst sie unter Einstellungen → Inhaltsfilter aktivieren.';
+  String get videoErrorAdultContentHiddenTitle =>
+      'Inhalte für Erwachsene sind ausgeschaltet';
+
+  @override
+  String get videoErrorAdultContentHiddenBody =>
+      'Schalte sie in deinen Inhaltsfiltern ein, um dieses Video zu sehen.';
+
+  @override
+  String get videoErrorAdultContentHiddenAction => 'Inhaltsfilter öffnen';
 
   @override
   String get videoDetailLoadError => 'Video konnte nicht geladen werden';
@@ -6305,6 +6312,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get commonClose => 'Schließen';
+
+  @override
+  String get commonNotNow => 'Nicht jetzt';
 
   @override
   String get commonLoading => 'Wird geladen';

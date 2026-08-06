@@ -1527,8 +1527,15 @@ class AppLocalizationsSv extends AppLocalizations {
       'Timeout vid verifiering. Kontrollera din anslutning eller försök igen om en stund.';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      'Innehåll för vuxna är avstängt. Du kan slå på det i Inställningar → Innehållsfilter.';
+  String get videoErrorAdultContentHiddenTitle =>
+      'Innehåll för vuxna är avstängt';
+
+  @override
+  String get videoErrorAdultContentHiddenBody =>
+      'Slå på det i dina innehållsfilter för att se den här videon.';
+
+  @override
+  String get videoErrorAdultContentHiddenAction => 'Öppna innehållsfilter';
 
   @override
   String get videoDetailLoadError => 'Kunde inte läsa in videon';
@@ -6224,6 +6231,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get commonClose => 'Stäng';
+
+  @override
+  String get commonNotNow => 'Inte nu';
 
   @override
   String get commonLoading => 'Läser in';

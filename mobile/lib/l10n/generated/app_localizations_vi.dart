@@ -1537,8 +1537,14 @@ class AppLocalizationsVi extends AppLocalizations {
       'Xác minh đã hết thời gian chờ. Kiểm tra kết nối của bạn hoặc thử lại sau ít phút.';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      'Nội dung người lớn đang tắt. Bạn có thể bật trong Cài đặt → Bộ lọc nội dung.';
+  String get videoErrorAdultContentHiddenTitle => 'Nội dung người lớn đang tắt';
+
+  @override
+  String get videoErrorAdultContentHiddenBody =>
+      'Bật trong bộ lọc nội dung để xem video này.';
+
+  @override
+  String get videoErrorAdultContentHiddenAction => 'Mở bộ lọc nội dung';
 
   @override
   String get videoDetailLoadError => 'Không thể tải video';
@@ -6235,6 +6241,9 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get commonClose => 'Đóng';
+
+  @override
+  String get commonNotNow => 'Để sau';
 
   @override
   String get commonLoading => 'Đang tải';

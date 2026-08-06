@@ -1533,8 +1533,14 @@ class AppLocalizationsUr extends AppLocalizations {
       'تصدیق کا وقت ختم ہو گیا۔ اپنا کنکشن چیک کریں یا تھوڑی دیر بعد دوبارہ کوشش کریں۔';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      'بالغ مواد بند ہے۔ آپ اسے ترتیبات → مواد فلٹرز میں چالو کر سکتے ہیں۔';
+  String get videoErrorAdultContentHiddenTitle => 'بالغ مواد بند ہے';
+
+  @override
+  String get videoErrorAdultContentHiddenBody =>
+      'یہ ویڈیو دیکھنے کے لیے اسے مواد فلٹرز میں چالو کریں۔';
+
+  @override
+  String get videoErrorAdultContentHiddenAction => 'مواد فلٹرز کھولیں';
 
   @override
   String get videoDetailLoadError => 'ویڈیو لوڈ نہیں ہو سکی';
@@ -6234,6 +6240,9 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get commonClose => 'بند کریں';
+
+  @override
+  String get commonNotNow => 'ابھی نہیں';
 
   @override
   String get commonLoading => 'لوڈ ہو رہا ہے';

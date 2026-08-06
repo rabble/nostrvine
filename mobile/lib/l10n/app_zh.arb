@@ -732,10 +732,12 @@
   "@videoErrorVerifyAgeSignerUnreachable": {
     "description": "Snackbar shown when tapping Verify age on an age-restricted video and the remote signer didn't respond in time (timeout). Distinct from videoErrorVerifyAgeFailed because the remedy is checking connectivity, not re-verifying age."
   },
-  "videoErrorAdultContentHidden": "成人内容已关闭。你可以在“设置 → 内容过滤”中开启。",
-  "@videoErrorAdultContentHidden": {
-    "description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."
-  },
+  "videoErrorAdultContentHiddenTitle": "成人内容已关闭",
+  "@videoErrorAdultContentHiddenTitle": {"description": "Title of the bottom sheet shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden."},
+  "videoErrorAdultContentHiddenBody": "在内容过滤中开启后就能看这个视频了。",
+  "@videoErrorAdultContentHiddenBody": {"description": "Body of the adult-content-hidden sheet. The remedy is switching adult content on in Content Filters, not re-verifying age."},
+  "videoErrorAdultContentHiddenAction": "打开内容过滤",
+  "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
   "videoDetailLoadError": "视频加载失败",
   "databaseCorruptionTitle": "你的本地数据乱套了",
   "@databaseCorruptionTitle": {
@@ -3651,6 +3653,7 @@
   "commonCancel": "取消",
   "commonBack": "返回",
   "commonClose": "关闭",
+  "commonNotNow": "暂不",
   "commonLoading": "加载中",
   "@commonLoading": {
     "description": "Screen-reader label for a blocking progress spinner that covers the screen while an action is being prepared. Announced instead of the content behind it, which is not reachable while the spinner is up."

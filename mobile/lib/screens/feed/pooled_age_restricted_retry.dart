@@ -4,6 +4,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:infinite_video_feed/infinite_video_feed.dart'
     show VideoErrorType;
 import 'package:models/models.dart';
@@ -12,6 +13,7 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_state
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/utils/blossom_blob_hash.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -120,9 +122,10 @@ Future<void> retryAgeRestrictedPooledVideo({
         _showSignerUnreachable(context);
       case ViewerAuthBlockedByPreference():
         // The viewer is verified but adult content is switched off in their
-        // Content Filters (the default). Point them at the setting instead of
-        // implying verification failed.
-        _showAdultContentHidden(context);
+        // Content Filters (the default). Offer the jump to that screen instead
+        // of implying verification failed. Unawaited so the "Verify age"
+        // spinner clears as the sheet opens rather than when it closes.
+        unawaited(_promptAdultContentHidden(context));
       case ViewerAuthUnavailable():
         // Unavailable covers both a deliberate decline (stay silent) and an
         // accept-then-no-header case (surface feedback). Distinguish the two by
@@ -223,12 +226,24 @@ bool _isAuthRejection(PooledRetryOutcome outcome) =>
     outcome.errorType == VideoErrorType.ageRestricted;
 
 /// Tells an age-verified viewer that adult content is switched off in their
-/// Content Filters, so they know where to opt in rather than re-verifying.
-void _showAdultContentHidden(BuildContext context) {
+/// Content Filters and offers to open that screen.
+///
+/// A snackbar was a dead end here: the remedy lives two taps deep in settings,
+/// and the message disappeared before the viewer could act on it.
+Future<void> _promptAdultContentHidden(BuildContext context) async {
   if (!context.mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
-    DivineSnackbarContainer.snackBar(context.l10n.videoErrorAdultContentHidden),
+  final openFilters = await VineBottomSheetPrompt.show<bool>(
+    context: context,
+    sticker: DivineStickerName.trafficCone,
+    title: context.l10n.videoErrorAdultContentHiddenTitle,
+    subtitle: context.l10n.videoErrorAdultContentHiddenBody,
+    primaryButtonText: context.l10n.videoErrorAdultContentHiddenAction,
+    onPrimaryPressed: () => Navigator.of(context).pop(true),
+    secondaryButtonText: context.l10n.commonNotNow,
+    onSecondaryPressed: () => Navigator.of(context).pop(false),
   );
+  if (openFilters != true || !context.mounted) return;
+  await context.push<void>(ContentFiltersScreen.path);
 }
 
 /// Surfaces the connectivity-specific message when a remote signer didn't

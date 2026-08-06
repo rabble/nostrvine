@@ -1495,8 +1495,15 @@ class AppLocalizationsId extends AppLocalizations {
       'Waktu verifikasi habis. Periksa koneksi kamu atau coba lagi sebentar lagi.';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      'Konten dewasa sedang dimatikan. Kamu bisa mengaktifkannya di Pengaturan → Filter Konten.';
+  String get videoErrorAdultContentHiddenTitle =>
+      'Konten dewasa sedang dimatikan';
+
+  @override
+  String get videoErrorAdultContentHiddenBody =>
+      'Aktifkan di Filter Konten kamu untuk menonton video ini.';
+
+  @override
+  String get videoErrorAdultContentHiddenAction => 'Buka Filter Konten';
 
   @override
   String get videoDetailLoadError => 'Gagal memuat video';
@@ -6190,6 +6197,9 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get commonClose => 'Tutup';
+
+  @override
+  String get commonNotNow => 'Nanti Saja';
 
   @override
   String get commonLoading => 'Memuat';

@@ -2724,11 +2724,23 @@ abstract class AppLocalizations {
   /// **'Verification timed out. Check your connection or try again shortly.'**
   String get videoErrorVerifyAgeSignerUnreachable;
 
-  /// Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age.
+  /// Title of the bottom sheet shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden.
   ///
   /// In en, this message translates to:
-  /// **'Adult content is switched off. You can turn it on in Settings → Content Filters.'**
-  String get videoErrorAdultContentHidden;
+  /// **'Adult content is switched off'**
+  String get videoErrorAdultContentHiddenTitle;
+
+  /// Body of the adult-content-hidden sheet. The remedy is switching adult content on in Content Filters, not re-verifying age.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn it on in your content filters to watch this one.'**
+  String get videoErrorAdultContentHiddenBody;
+
+  /// Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Content Filters'**
+  String get videoErrorAdultContentHiddenAction;
 
   /// No description provided for @videoDetailLoadError.
   ///
@@ -10903,6 +10915,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close'**
   String get commonClose;
+
+  /// No description provided for @commonNotNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get commonNotNow;
 
   /// Screen-reader label for a blocking progress spinner that covers the screen while an action is being prepared. Announced instead of the content behind it, which is not reachable while the spinner is up.
   ///

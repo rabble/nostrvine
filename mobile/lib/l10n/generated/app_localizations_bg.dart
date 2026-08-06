@@ -1551,8 +1551,16 @@ class AppLocalizationsBg extends AppLocalizations {
       'Потвърждаването изтече. Провери връзката си или опитай пак след малко.';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      'Съдържанието за възрастни е изключено. Можеш да го включиш от Настройки → Филтри за съдържание.';
+  String get videoErrorAdultContentHiddenTitle =>
+      'Съдържанието за възрастни е изключено';
+
+  @override
+  String get videoErrorAdultContentHiddenBody =>
+      'Включи го от филтрите за съдържание, за да гледаш това видео.';
+
+  @override
+  String get videoErrorAdultContentHiddenAction =>
+      'Отвори филтрите за съдържание';
 
   @override
   String get videoDetailLoadError => 'Неуспешно зареждане на видеото';
@@ -6280,6 +6288,9 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get commonClose => 'Затвори';
+
+  @override
+  String get commonNotNow => 'Не сега';
 
   @override
   String get commonLoading => 'Зарежда се';

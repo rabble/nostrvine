@@ -1539,8 +1539,15 @@ class AppLocalizationsNl extends AppLocalizations {
       'Verificatie duurde te lang. Controleer je verbinding of probeer het straks opnieuw.';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      'Inhoud voor volwassenen staat uit. Je kunt dit aanzetten via Instellingen → Inhoudsfilters.';
+  String get videoErrorAdultContentHiddenTitle =>
+      'Inhoud voor volwassenen staat uit';
+
+  @override
+  String get videoErrorAdultContentHiddenBody =>
+      'Zet het aan in je inhoudsfilters om deze video te bekijken.';
+
+  @override
+  String get videoErrorAdultContentHiddenAction => 'Inhoudsfilters openen';
 
   @override
   String get videoDetailLoadError => 'Video laden mislukt';
@@ -6256,6 +6263,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get commonClose => 'Sluiten';
+
+  @override
+  String get commonNotNow => 'Niet nu';
 
   @override
   String get commonLoading => 'Laden';
