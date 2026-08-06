@@ -378,10 +378,7 @@ class VideoPublishService {
             )
           : const <String>[];
 
-      onProgressChanged(
-        draftId: draft.id,
-        progress: _progressAfterMetadata,
-      );
+      onProgressChanged(draftId: draft.id, progress: _progressAfterMetadata);
 
       final published = await timeline.measure(
         PublishPhases.nostr,
@@ -911,9 +908,8 @@ class VideoPublishService {
   /// don't recognize), which the UI renders verbatim.
   Future<({PublishErrorKind kind, String? serverName, String? rawFallback})>
   _classifyError(Object? e) async {
-    // Typed refusals are classified by type, before the substring matcher gets
-    // a chance to read "publish"/"relay" out of their message and mislabel a
-    // withheld post as a relay problem.
+    // Typed refusals are classified by type, before the substring matcher can
+    // read an HTTP status out of the Nostr id their message carries.
     final typed = classifyPublishErrorObject(e);
     if (typed != null) {
       return (kind: typed, serverName: null, rawFallback: null);
@@ -976,9 +972,16 @@ class VideoPublishService {
   /// is not one.
   ///
   /// These are deliberate refusals rather than transport failures, so they are
-  /// matched on type and take precedence over
-  /// [classifyPublishErrorMessage] — whose substrings would otherwise read
-  /// words like "publish" out of the message and blame the relay.
+  /// matched on type and must be consulted *before*
+  /// [classifyPublishErrorMessage].
+  ///
+  /// The precedence is load-bearing: a refusal's message interpolates a
+  /// 64-character hex Nostr id, and hex digits include every digit the
+  /// matcher reads as an HTTP status — an id containing `404`, `500`, `502`,
+  /// `503`, `401`, `403`, `413` or `429` classifies as `serverNotFound`,
+  /// `serverDown`, `notSignedIn`, `forbidden`, `fileTooLarge` or
+  /// `rateLimited`. Roughly one id in nine hits one of them, and
+  /// `serverNotFound` even names the Blossom host in the copy.
   @visibleForTesting
   static PublishErrorKind? classifyPublishErrorObject(Object? e) {
     if (e is AudioReuseNotPermittedException) {

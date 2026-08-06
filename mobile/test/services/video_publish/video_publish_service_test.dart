@@ -332,6 +332,11 @@ void main() {
       // The media is already uploaded when the sound's terms block the post, so
       // the user used to be told to check their relay settings for a problem no
       // relay setting can fix.
+      //
+      // The id is deliberately one that collides with the substring matcher
+      // (`404` is valid hex): classifying by message instead of by type would
+      // yield `serverNotFound`, so this also pins the type-first ordering in
+      // `_classifyError`.
       test('reports a withheld sound as its own kind, not a relay '
           'failure', () async {
         _setupSuccessfulPublish(
@@ -342,7 +347,7 @@ void main() {
         );
         _stubPublishVideoEventThrows(
           mockVideoEventPublisher,
-          AudioReuseNotPermittedException('b' * 64),
+          AudioReuseNotPermittedException('404${'b' * 61}'),
         );
 
         final result = await service.publishVideo(draft: _createTestDraft());
@@ -1516,10 +1521,7 @@ void main() {
         final result = await service.publishVideo(draft: draft);
 
         expect(result, isA<PublishError>());
-        expect(
-          (result as PublishError).kind,
-          PublishErrorKind.accountChanged,
-        );
+        expect((result as PublishError).kind, PublishErrorKind.accountChanged);
         verifyNever(() => mockDraftService.saveDraft(any()));
         verifyNever(
           () => mockUploadManager.startUploadFromDraft(
@@ -2053,32 +2055,29 @@ void main() {
         );
       });
 
-      test(
-        're-localizes an already-rendered upload-manager message instead of '
-        'passing it through as English rawFallback',
-        () async {
-          // The upload manager hands the publish service an already-rendered
-          // English sentence via PendingUpload.errorMessage. It must map to a
-          // kind (so it re-localizes on resume), not survive as rawFallback.
-          const message =
-              'No internet connection. Check your WiFi or cellular data '
-              'and try again.';
-          _stubFailedUpload(
-            mockAuthService: mockAuthService,
-            mockDraftService: mockDraftService,
-            mockUploadManager: mockUploadManager,
-            mockBlossomService: mockBlossomService,
-            errorMessage: message,
-          );
+      test('re-localizes an already-rendered upload-manager message instead of '
+          'passing it through as English rawFallback', () async {
+        // The upload manager hands the publish service an already-rendered
+        // English sentence via PendingUpload.errorMessage. It must map to a
+        // kind (so it re-localizes on resume), not survive as rawFallback.
+        const message =
+            'No internet connection. Check your WiFi or cellular data '
+            'and try again.';
+        _stubFailedUpload(
+          mockAuthService: mockAuthService,
+          mockDraftService: mockDraftService,
+          mockUploadManager: mockUploadManager,
+          mockBlossomService: mockBlossomService,
+          errorMessage: message,
+        );
 
-          final result = await service.publishVideo(draft: _createTestDraft());
+        final result = await service.publishVideo(draft: _createTestDraft());
 
-          expect(result, isA<PublishError>());
-          final error = result as PublishError;
-          expect(error.kind, PublishErrorKind.noInternet);
-          expect(error.rawFallback, isNull);
-        },
-      );
+        expect(result, isA<PublishError>());
+        final error = result as PublishError;
+        expect(error.kind, PublishErrorKind.noInternet);
+        expect(error.rawFallback, isNull);
+      });
 
       test('re-localizes an upload-manager file-too-large message', () async {
         const message =

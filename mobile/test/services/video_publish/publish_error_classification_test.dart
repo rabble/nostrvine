@@ -32,19 +32,35 @@ void main() {
       );
     });
 
-    // Without the type branch running first, the substring matcher reads
-    // "publish" out of the refusal and tells the user to check their relay
-    // settings for a sound-permission problem.
-    test('takes precedence over the substring matcher', () {
-      final refusal = AudioReuseNotPermittedException('b' * 64);
-      expect(
-        VideoPublishService.classifyPublishErrorObject(refusal),
-        isNot(
-          VideoPublishService.classifyPublishErrorMessage(
-            refusal.toString(),
-          ),
-        ),
-      );
+    // Why the type branch has to run first: the refusal's message carries a
+    // 64-hex Nostr id, and hex digits cover every HTTP status the substring
+    // matcher looks for. Roughly one id in nine contains one of them.
+    // `video_publish_service_test.dart` pins the resulting precedence through
+    // the full publish path.
+    test('substring matcher reads an HTTP status out of a hex audio id', () {
+      const collisions = <String, PublishErrorKind>{
+        '404': PublishErrorKind.serverNotFound,
+        '500': PublishErrorKind.serverInternalError,
+        '502': PublishErrorKind.serverDown,
+        '503': PublishErrorKind.serverDown,
+        '401': PublishErrorKind.notSignedIn,
+        '403': PublishErrorKind.forbidden,
+        '413': PublishErrorKind.fileTooLarge,
+        '429': PublishErrorKind.rateLimited,
+      };
+
+      for (final MapEntry(key: digits, value: kind) in collisions.entries) {
+        final refusal = AudioReuseNotPermittedException('$digits${'b' * 61}');
+        expect(
+          VideoPublishService.classifyPublishErrorMessage(refusal.toString()),
+          kind,
+          reason: 'an audio id containing $digits must be caught by type first',
+        );
+        expect(
+          VideoPublishService.classifyPublishErrorObject(refusal),
+          PublishErrorKind.audioReuseNotPermitted,
+        );
+      }
     });
   });
 
