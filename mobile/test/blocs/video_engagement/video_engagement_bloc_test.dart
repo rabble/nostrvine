@@ -6,6 +6,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:openvine/blocs/video_engagement/video_engagement_bloc.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:reposts_repository/reposts_repository.dart';
@@ -28,10 +29,14 @@ void main() {
     const liker2 = 'liker-pubkey-2';
     const reposter1 = 'reposter-pubkey-1';
 
+    late StreamController<RevisionEnrichedLikers> enrichedLikers;
+
     setUp(() {
       likesRepository = _MockLikesRepository();
       repostsRepository = _MockRepostsRepository();
       profileRepository = _MockProfileRepository();
+      enrichedLikers = StreamController<RevisionEnrichedLikers>.broadcast();
+      addTearDown(enrichedLikers.close);
 
       // Default stub — batch fetch returns empty map (cache miss is fine).
       when(
@@ -39,6 +44,9 @@ void main() {
           pubkeys: any(named: 'pubkeys'),
         ),
       ).thenAnswer((_) async => {});
+      when(
+        likesRepository.watchRevisionEnrichedLikers,
+      ).thenAnswer((_) => enrichedLikers.stream);
     });
 
     VideoEngagementBloc createBloc({
@@ -254,6 +262,159 @@ void main() {
             pubkeys: [liker1],
           ),
         ],
+      );
+    });
+
+    group('revision-enriched likers (#6021)', () {
+      // The repository answers the first fetch from the current event id and
+      // publishes the wider list when the backend revision lookup lands, so
+      // the sheet only ever shows the stranded liker if this bloc listens.
+      blocTest<VideoEngagementBloc, VideoEngagementState>(
+        'emits the wider list published after the fetch answered',
+        setUp: () {
+          when(
+            () => likesRepository.fetchEventLikers(
+              eventId: testEventId,
+              addressableId: testAddressableId,
+            ),
+          ).thenAnswer((_) async => const [liker1]);
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const VideoEngagementLoadRequested());
+          await Future<void>.delayed(Duration.zero);
+          enrichedLikers.add(
+            const RevisionEnrichedLikers(
+              eventId: testEventId,
+              likerPubkeys: [liker1, liker2],
+            ),
+          );
+        },
+        expect: () => [
+          const VideoEngagementState(
+            type: VideoEngagementType.likers,
+            status: VideoEngagementStatus.loading,
+          ),
+          const VideoEngagementState(
+            type: VideoEngagementType.likers,
+            status: VideoEngagementStatus.success,
+            pubkeys: [liker1],
+          ),
+          const VideoEngagementState(
+            type: VideoEngagementType.likers,
+            status: VideoEngagementStatus.success,
+            pubkeys: [liker1, liker2],
+          ),
+        ],
+        verify: (_) {
+          // Newly reachable likers need their profiles too, or their tiles
+          // render the generated fallback name.
+          verify(
+            () => profileRepository.fetchBatchProfiles(
+              pubkeys: const [liker1, liker2],
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<VideoEngagementBloc, VideoEngagementState>(
+        'keeps the wider list when it lands mid-fetch',
+        setUp: () {
+          // The profile pre-warm holds the load for up to 2s after the likers
+          // come back, which is long enough for enrichment to land first.
+          // Emitting the fetched list afterwards would put #6021 straight
+          // back for as long as the sheet stays open.
+          when(
+            () => likesRepository.fetchEventLikers(
+              eventId: testEventId,
+              addressableId: testAddressableId,
+            ),
+          ).thenAnswer((_) async => const [liker1]);
+          when(
+            () => profileRepository.fetchBatchProfiles(
+              pubkeys: const [liker1],
+            ),
+          ).thenAnswer(
+            (_) => Future.delayed(
+              const Duration(milliseconds: 50),
+              () => <String, UserProfile>{},
+            ),
+          );
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const VideoEngagementLoadRequested());
+          await Future<void>.delayed(Duration.zero);
+          enrichedLikers.add(
+            const RevisionEnrichedLikers(
+              eventId: testEventId,
+              likerPubkeys: [liker1, liker2],
+            ),
+          );
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        },
+        expect: () => [
+          const VideoEngagementState(
+            type: VideoEngagementType.likers,
+            status: VideoEngagementStatus.loading,
+          ),
+          const VideoEngagementState(
+            type: VideoEngagementType.likers,
+            status: VideoEngagementStatus.success,
+            pubkeys: [liker1, liker2],
+          ),
+        ],
+      );
+
+      blocTest<VideoEngagementBloc, VideoEngagementState>(
+        'ignores an update for a different video',
+        setUp: () {
+          when(
+            () => likesRepository.fetchEventLikers(
+              eventId: testEventId,
+              addressableId: testAddressableId,
+            ),
+          ).thenAnswer((_) async => const [liker1]);
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const VideoEngagementLoadRequested());
+          await Future<void>.delayed(Duration.zero);
+          enrichedLikers.add(
+            const RevisionEnrichedLikers(
+              eventId: 'some-other-event-id',
+              likerPubkeys: [liker1, liker2],
+            ),
+          );
+        },
+        expect: () => [
+          const VideoEngagementState(
+            type: VideoEngagementType.likers,
+            status: VideoEngagementStatus.loading,
+          ),
+          const VideoEngagementState(
+            type: VideoEngagementType.likers,
+            status: VideoEngagementStatus.success,
+            pubkeys: [liker1],
+          ),
+        ],
+      );
+
+      blocTest<VideoEngagementBloc, VideoEngagementState>(
+        'does not subscribe for the reposters list',
+        setUp: () {
+          when(
+            () => repostsRepository.fetchEventReposters(
+              eventId: testEventId,
+              addressableId: testAddressableId,
+            ),
+          ).thenAnswer((_) async => const [reposter1]);
+        },
+        build: () => createBloc(type: VideoEngagementType.reposters),
+        act: (bloc) => bloc.add(const VideoEngagementLoadRequested()),
+        verify: (_) {
+          verifyNever(likesRepository.watchRevisionEnrichedLikers);
+        },
       );
     });
 

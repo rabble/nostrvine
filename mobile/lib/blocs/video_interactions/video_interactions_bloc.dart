@@ -145,6 +145,25 @@ class VideoInteractionsBloc
           },
         ),
       if (_addressableId != null)
+        emit.forEach<RevisionEnrichedLikers>(
+          _likesRepository.watchRevisionEnrichedLikers().where(
+            (update) => update.eventId == _eventId,
+          ),
+          onData: (update) {
+            // The like count is resolved from the same distinct-liker set as
+            // the "Liked by" list, and for a video whose superseded revisions
+            // were not yet known that set arrives twice: getLikeCount never
+            // waits for the backend lookup that supplies them (#6021).
+            // Apply the same floor the fetch does (#6022) — enrichment only
+            // ever adds likers, so it may raise the count and never lower it,
+            // which also keeps it from wiping an optimistic +1.
+            final enriched =
+                (_archivedLikeCount ?? 0) + update.likerPubkeys.length;
+            if (enriched <= (state.likeCount ?? 0)) return state;
+            return state.copyWith(likeCount: enriched);
+          },
+        ),
+      if (_addressableId != null)
         emit.forEach<Set<String>>(
           _repostsRepository.watchRepostedAddressableIds(),
           onData: (repostedIds) {

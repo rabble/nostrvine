@@ -37,6 +37,7 @@ void main() {
     late StreamController<List<String>> likedIdsController;
     late StreamController<Set<String>> likedAddressableIdsController;
     late StreamController<Set<String>> repostedIdsController;
+    late StreamController<RevisionEnrichedLikers> enrichedLikersController;
 
     const testEventId = 'test-event-id';
     const testAuthorPubkey = 'test-author-pubkey';
@@ -49,6 +50,8 @@ void main() {
       likedIdsController = StreamController<List<String>>.broadcast();
       likedAddressableIdsController = StreamController<Set<String>>.broadcast();
       repostedIdsController = StreamController<Set<String>>.broadcast();
+      enrichedLikersController =
+          StreamController<RevisionEnrichedLikers>.broadcast();
 
       // Default stub for watchLikedEventIds
       when(
@@ -65,6 +68,11 @@ void main() {
         () => mockRepostsRepository.watchRepostedAddressableIds(),
       ).thenAnswer((_) => repostedIdsController.stream);
 
+      // Default stub for watchRevisionEnrichedLikers
+      when(
+        mockLikesRepository.watchRevisionEnrichedLikers,
+      ).thenAnswer((_) => enrichedLikersController.stream);
+
       // Default stub for isReposted (returns false by default)
       when(
         () => mockRepostsRepository.isReposted(any()),
@@ -75,6 +83,7 @@ void main() {
       likedIdsController.close();
       likedAddressableIdsController.close();
       repostedIdsController.close();
+      enrichedLikersController.close();
     });
 
     VideoInteractionsBloc createBloc({
@@ -1732,6 +1741,127 @@ void main() {
 
         expect(observer.errors, isEmpty);
       });
+    });
+
+    group('revision-enriched like count (#6021)', () {
+      // getLikeCount resolves the same distinct-liker set as the "Liked by"
+      // list, and never waits for the backend revision lookup — so for a
+      // video whose superseded revisions were not yet known, the raised count
+      // arrives on this stream instead. Without it the count would sit below
+      // the list the sheet shows.
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'raises the like count when a wider liker list is published',
+        build: () => createBloc(addressableId: testAddressableId),
+        seed: () => const VideoInteractionsState(
+          status: VideoInteractionsStatus.success,
+          likeCount: 1,
+        ),
+        act: (bloc) async {
+          bloc.add(const VideoInteractionsSubscriptionRequested());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          enrichedLikersController.add(
+            const RevisionEnrichedLikers(
+              eventId: testEventId,
+              likerPubkeys: ['liker-a', 'liker-b'],
+            ),
+          );
+        },
+        wait: const Duration(milliseconds: 100),
+        expect: () => [
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            likeCount: 2,
+          ),
+        ],
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'adds the archival baseline to the enriched count',
+        build: () => createBloc(
+          addressableId: testAddressableId,
+          archivedLikeCount: 100,
+        ),
+        seed: () => const VideoInteractionsState(
+          status: VideoInteractionsStatus.success,
+          likeCount: 100,
+        ),
+        act: (bloc) async {
+          bloc.add(const VideoInteractionsSubscriptionRequested());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          enrichedLikersController.add(
+            const RevisionEnrichedLikers(
+              eventId: testEventId,
+              likerPubkeys: ['liker-a', 'liker-b'],
+            ),
+          );
+        },
+        wait: const Duration(milliseconds: 100),
+        expect: () => [
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            likeCount: 102,
+          ),
+        ],
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'never lowers a higher count',
+        // Same floor the fetch applies (#6022): the relay-resolved set can be
+        // capped or lag the funnelcake seed, and a tap has already added its
+        // optimistic +1 that this must not wipe.
+        build: () => createBloc(addressableId: testAddressableId),
+        seed: () => const VideoInteractionsState(
+          status: VideoInteractionsStatus.success,
+          isLiked: true,
+          likeCount: 9,
+        ),
+        act: (bloc) async {
+          bloc.add(const VideoInteractionsSubscriptionRequested());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          enrichedLikersController.add(
+            const RevisionEnrichedLikers(
+              eventId: testEventId,
+              likerPubkeys: ['liker-a', 'liker-b'],
+            ),
+          );
+        },
+        wait: const Duration(milliseconds: 100),
+        expect: () => <VideoInteractionsState>[],
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'ignores an update for a different video',
+        build: () => createBloc(addressableId: testAddressableId),
+        seed: () => const VideoInteractionsState(
+          status: VideoInteractionsStatus.success,
+          likeCount: 1,
+        ),
+        act: (bloc) async {
+          bloc.add(const VideoInteractionsSubscriptionRequested());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          enrichedLikersController.add(
+            const RevisionEnrichedLikers(
+              eventId: 'some-other-event-id',
+              likerPubkeys: ['liker-a', 'liker-b', 'liker-c'],
+            ),
+          );
+        },
+        wait: const Duration(milliseconds: 100),
+        expect: () => <VideoInteractionsState>[],
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'does not subscribe for a non-addressable video',
+        // Only an addressable video can have superseded revisions.
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const VideoInteractionsSubscriptionRequested());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        },
+        verify: (_) {
+          verifyNever(mockLikesRepository.watchRevisionEnrichedLikers);
+        },
+      );
     });
 
     group('VideoInteractionsSubscriptionRequested', () {
