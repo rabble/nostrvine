@@ -323,6 +323,13 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
   }
 
   void _handleExit(BuildContext context) {
+    // The loading state can now be dismissed mid-fetch. Without this, a relay
+    // connecting during the pop transition would restart the lookup for a
+    // screen the user has already left.
+    _relayReadySubscription?.cancel();
+    _relayReadySubscription = null;
+    _retryScheduled = false;
+
     if (context.canPop()) {
       context.pop();
       return;

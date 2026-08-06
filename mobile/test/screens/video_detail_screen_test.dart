@@ -203,6 +203,85 @@ void main() {
           expect(find.text('caller screen'), findsOneWidget);
         },
       );
+
+      testWidgets(
+        'does not resume the lookup after leaving a deferred cold start',
+        (tester) async {
+          // Cold start: no relay is queryable yet, so the first lookup defers
+          // until one connects. The user leaves before that happens.
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(0);
+          var attempts = 0;
+          when(
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+          ).thenAnswer((_) async {
+            attempts++;
+            return null;
+          });
+
+          final router = GoRouter(
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (_, _) => const Scaffold(body: Text('caller screen')),
+              ),
+              GoRoute(
+                path: VideoDetailScreen.path,
+                builder: (_, state) => VideoDetailScreen(
+                  videoId: state.pathParameters['id']!,
+                ),
+              ),
+            ],
+          );
+          addTearDown(router.dispose);
+
+          await tester.pumpWidget(
+            testProviderScope(
+              mockNostrService: mockNostrClient,
+              mockFollowRepository: mockFollowRepository,
+              additionalOverrides: [
+                videoEventServiceProvider.overrideWithValue(
+                  mockVideoEventService,
+                ),
+                contentBlocklistRepositoryProvider.overrideWithValue(
+                  mockBlocklistRepository,
+                ),
+                videosRepositoryProvider.overrideWithValue(
+                  mockVideosRepository,
+                ),
+              ],
+              child: MaterialApp.router(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                routerConfig: router,
+              ),
+            ),
+          );
+
+          unawaited(router.push(VideoDetailScreen.pathForId('test_video_id')));
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+
+          expect(attempts, equals(1));
+
+          await tester.tap(
+            find.bySemanticsLabel(l10n.videoDetailCloseSemanticLabel),
+          );
+          // A relay comes up mid-transition, while the popped route's State is
+          // still alive and its listener has not yet been disposed.
+          await tester.pump();
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(1);
+          relayStatusController.add({
+            'wss://relay.divine.video': RelayConnectionStatus.connected(
+              'wss://relay.divine.video',
+            ),
+          });
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+
+          expect(attempts, equals(1));
+          expect(find.text('caller screen'), findsOneWidget);
+        },
+      );
     });
 
     group('video found', () {
