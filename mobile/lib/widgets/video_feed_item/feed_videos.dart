@@ -1019,6 +1019,17 @@ class __OverlayState extends ConsumerState<_Overlay> {
                               // like, while this only hides chrome, which is
                               // just as valid over a still-loading frame.
                               //
+                              // Excluded from semantics, and kept on its own
+                              // detector so the tap action above still is
+                              // published. A `GestureDetector` publishes
+                              // `SemanticsAction.longPress` for ANY long-press
+                              // callback, `onLongPressStart` included — and
+                              // firing that action delivers no pointer events,
+                              // so the release path below would never run and
+                              // a screen-reader user would be left with every
+                              // control hidden and pointer-blocked until the
+                              // item was disposed.
+                              excludeFromSemantics: true,
                               onLongPressStart: (_) => _enterImmersive(),
                               child: const SizedBox.expand(),
                             ),

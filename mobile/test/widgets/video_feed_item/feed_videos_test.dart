@@ -6,6 +6,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:flutter/gestures.dart' show kLongPressTimeout;
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -1421,6 +1422,35 @@ void main() {
         );
       },
     );
+
+    testWidgets('publishes no long-press semantics action', (tester) async {
+      // A semantics long-press delivers no pointer events, so the release
+      // path could never run and a screen-reader user would be stranded
+      // with every control hidden and pointer-blocked.
+      final handle = tester.ensureSemantics();
+      final video = _makeVideo();
+      final immersiveCubit = FeedImmersiveCubit();
+      addTearDown(immersiveCubit.close);
+
+      await _pumpFeedVideos(
+        tester,
+        videos: [video],
+        feedImmersiveCubit: immersiveCubit,
+      );
+      await tester.pump();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final node = tester.getSemantics(
+        find.bySemanticsLabel(l10n.videoPlayerPlayVideo).first,
+      );
+
+      expect(
+        node.getSemanticsData().hasAction(SemanticsAction.longPress),
+        isFalse,
+        reason: 'the peek must not be reachable from a screen reader',
+      );
+      handle.dispose();
+    });
 
     testWidgets('caps InfiniteVideoFeed playback at the feed cap', (
       tester,
