@@ -51,7 +51,9 @@ import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/feed_immersive_chrome.dart';
 import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
+import 'package:openvine/widgets/video_feed_item/paused_video_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
+import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/video_feed_item/video_loading_placeholder.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -1178,13 +1180,15 @@ void main() {
   // Immersive (hold-to-peek) viewing — #6234
   // -------------------------------------------------------------------------
   group('hold to peek', () {
-    // The overlay's author block has an AnimatedOpacity of its own, so take
-    // the outermost one — the wrapper's.
-    double chromeOpacity(WidgetTester tester) => tester
+    // Reads the fade the [FeedImmersiveChrome] around [of] applies. Anchored
+    // on the wrapped widget rather than on FeedImmersiveChrome itself: each
+    // chrome layer has its own wrapper, and the overlay actions carry an
+    // unrelated AnimatedOpacity of their own further down.
+    double chromeOpacity(WidgetTester tester, {required Type of}) => tester
         .widget<AnimatedOpacity>(
           find
-              .descendant(
-                of: find.byType(FeedImmersiveChrome),
+              .ancestor(
+                of: find.byType(of),
                 matching: find.byType(AnimatedOpacity),
               )
               .first,
@@ -1210,7 +1214,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(chromeOpacity(tester), equals(1.0));
+      expect(chromeOpacity(tester, of: VideoOverlayActions), equals(1.0));
 
       final gesture = await tester.startGesture(
         tester.getCenter(find.byType(InfiniteVideoFeed)),
@@ -1219,13 +1223,13 @@ void main() {
       await pumpFade(tester);
 
       expect(immersiveCubit.state.isImmersive, isTrue);
-      expect(chromeOpacity(tester), equals(0.0));
+      expect(chromeOpacity(tester, of: VideoOverlayActions), equals(0.0));
 
       await gesture.up();
       await pumpFade(tester);
 
       expect(immersiveCubit.state.isImmersive, isFalse);
-      expect(chromeOpacity(tester), equals(1.0));
+      expect(chromeOpacity(tester, of: VideoOverlayActions), equals(1.0));
     });
 
     testWidgets('restores the chrome when the pointer is cancelled', (
@@ -1254,7 +1258,41 @@ void main() {
       await pumpFade(tester);
 
       expect(immersiveCubit.state.isImmersive, isFalse);
-      expect(chromeOpacity(tester), equals(1.0));
+      expect(chromeOpacity(tester, of: VideoOverlayActions), equals(1.0));
+    });
+
+    testWidgets('hides the paused play indicator too', (tester) async {
+      // The play indicator only mounts once a controller exists.
+      InfiniteVideoFeed.debugIsSupportedOverride = true;
+      final video = _makeVideo();
+      final immersiveCubit = FeedImmersiveCubit();
+
+      await _pumpFeedVideos(
+        tester,
+        videos: [video],
+        feedImmersiveCubit: immersiveCubit,
+      );
+      await tester.pump(const Duration(seconds: 4));
+
+      expect(find.byType(PausedVideoOverlay), findsOneWidget);
+      expect(chromeOpacity(tester, of: PausedVideoOverlay), equals(1.0));
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(InfiniteVideoFeed)),
+      );
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      await pumpFade(tester);
+
+      expect(
+        chromeOpacity(tester, of: PausedVideoOverlay),
+        equals(0.0),
+        reason: 'the play indicator covers the frame the peek reveals',
+      );
+
+      await gesture.up();
+      await pumpFade(tester);
+
+      expect(chromeOpacity(tester, of: PausedVideoOverlay), equals(1.0));
     });
 
     testWidgets('a short tap leaves the chrome alone', (tester) async {
@@ -1272,7 +1310,7 @@ void main() {
       await pumpFade(tester);
 
       expect(immersiveCubit.state.isImmersive, isFalse);
-      expect(chromeOpacity(tester), equals(1.0));
+      expect(chromeOpacity(tester, of: VideoOverlayActions), equals(1.0));
     });
 
     testWidgets('lowers the flag when the feed is torn down mid-hold', (

@@ -983,9 +983,15 @@ class __OverlayState extends ConsumerState<_Overlay> {
                       child: Stack(
                         children: [
                           if (widget.controller != null)
-                            PausedVideoOverlay(
-                              controller: widget.controller!,
-                              isVisible: widget.isActive,
+                            // The paused play indicator is chrome too — it
+                            // covers the frame the peek is meant to reveal,
+                            // and holding never resumes playback, so leaving
+                            // it up would contradict the gesture.
+                            FeedImmersiveChrome(
+                              child: PausedVideoOverlay(
+                                controller: widget.controller!,
+                                isVisible: widget.isActive,
+                              ),
                             ),
                           FeedImmersiveChrome(
                             child: _FeedItemActions(
