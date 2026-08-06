@@ -15,8 +15,8 @@ void main() {
       await service.initialize();
     });
 
-    tearDown(() {
-      service.dispose();
+    tearDown(() async {
+      await service.dispose();
     });
 
     test('initializes with empty seen videos', () {
@@ -174,7 +174,43 @@ void main() {
       final metrics = newService.getVideoMetrics(videoId);
       expect(metrics?.loopCount, 2);
 
-      newService.dispose();
+      await newService.dispose();
+    });
+
+    test('coalesces rapid records while keeping memory current', () async {
+      final firstSave = service.recordVideoView('video1');
+      final secondSave = service.recordVideoView('video2');
+
+      expect(service.hasSeenVideo('video1'), isTrue);
+      expect(service.hasSeenVideo('video2'), isTrue);
+
+      final beforeFlush = SeenVideosService();
+      await beforeFlush.initialize();
+      expect(beforeFlush.hasSeenVideo('video1'), isFalse);
+      expect(beforeFlush.hasSeenVideo('video2'), isFalse);
+      await beforeFlush.dispose();
+
+      await Future.wait([firstSave, secondSave]);
+
+      final afterFlush = SeenVideosService();
+      await afterFlush.initialize();
+      expect(afterFlush.hasSeenVideo('video1'), isTrue);
+      expect(afterFlush.hasSeenVideo('video2'), isTrue);
+      await afterFlush.dispose();
+    });
+
+    test('dispose flushes pending seen video writes', () async {
+      final pendingSave = service.recordVideoView('dispose_video');
+
+      await service.dispose();
+      await pendingSave;
+
+      final newService = SeenVideosService();
+      await newService.initialize();
+
+      expect(newService.hasSeenVideo('dispose_video'), isTrue);
+
+      await newService.dispose();
     });
   });
 }

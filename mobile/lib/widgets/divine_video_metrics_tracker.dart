@@ -42,13 +42,16 @@ class DivineVideoMetricsTracker extends ConsumerStatefulWidget {
 
 class _DivineVideoMetricsTrackerState
     extends ConsumerState<DivineVideoMetricsTracker> {
+  static const _minimumViewEndWatchDuration = Duration(seconds: 1);
+  static const _minimumImpressionDuration = Duration(milliseconds: 500);
+
   DateTime? _viewStartTime;
   DateTime? _lastPlayStartTime;
   Duration _totalWatchDuration = Duration.zero;
   Duration? _lastPosition;
   int _loopCount = 0;
   bool _hasTrackedView = false;
-  bool _hasSentEndEvent = false;
+  bool _hasFinalizedView = false;
   bool _isPlaying = false;
   StreamSubscription<DivineVideoPlayerState>? _stateSubscription;
 
@@ -160,7 +163,7 @@ class _DivineVideoMetricsTrackerState
   void _trackViewStart() {
     _viewStartTime = widget._clock();
     _hasTrackedView = true;
-    _hasSentEndEvent = false;
+    _hasFinalizedView = false;
 
     _analyticsService.trackDetailedVideoViewWithUser(
       widget.video,
@@ -171,8 +174,9 @@ class _DivineVideoMetricsTrackerState
   }
 
   void _finalizeAndPublish({VideoEvent? finalizedVideo}) {
-    if (!_hasTrackedView || _hasSentEndEvent) return;
-    if (_viewStartTime == null) return;
+    if (!_hasTrackedView || _hasFinalizedView) return;
+    final viewStartTime = _viewStartTime;
+    if (viewStartTime == null) return;
 
     if (_isPlaying && _lastPlayStartTime != null) {
       _totalWatchDuration += widget._clock().difference(_lastPlayStartTime!);
@@ -181,12 +185,13 @@ class _DivineVideoMetricsTrackerState
     _isPlaying = false;
 
     final video = finalizedVideo ?? widget.video;
-    _publishEvents(video);
+    final activeDuration = widget._clock().difference(viewStartTime);
+    _publishEvents(video, activeDuration: activeDuration);
   }
 
-  void _publishEvents(VideoEvent video) {
-    if (_hasSentEndEvent) return;
-    if (_totalWatchDuration.inSeconds < 1) return;
+  void _publishEvents(VideoEvent video, {required Duration activeDuration}) {
+    if (_hasFinalizedView) return;
+    _hasFinalizedView = true;
 
     Duration? totalDuration;
     try {
@@ -195,37 +200,41 @@ class _DivineVideoMetricsTrackerState
       totalDuration = null;
     }
 
-    try {
-      _analyticsService.trackDetailedVideoViewWithUser(
-        video,
-        userId: _authService.currentPublicKeyHex,
-        source: 'mobile',
-        eventType: 'view_end',
-        watchDuration: _totalWatchDuration,
-        totalDuration: totalDuration,
-        loopCount: _loopCount,
-        completedVideo:
-            _loopCount > 0 ||
-            (totalDuration != null &&
-                totalDuration > Duration.zero &&
-                _totalWatchDuration.inMilliseconds >=
-                    totalDuration.inMilliseconds * 0.9),
-        trafficSource: widget.trafficSource,
-        sourceDetail: widget.sourceDetail,
-      );
+    if (_totalWatchDuration >= _minimumViewEndWatchDuration) {
+      try {
+        _analyticsService.trackDetailedVideoViewWithUser(
+          video,
+          userId: _authService.currentPublicKeyHex,
+          source: 'mobile',
+          eventType: 'view_end',
+          watchDuration: _totalWatchDuration,
+          totalDuration: totalDuration,
+          loopCount: _loopCount,
+          completedVideo:
+              _loopCount > 0 ||
+              (totalDuration != null &&
+                  totalDuration > Duration.zero &&
+                  _totalWatchDuration.inMilliseconds >=
+                      totalDuration.inMilliseconds * 0.9),
+          trafficSource: widget.trafficSource,
+          sourceDetail: widget.sourceDetail,
+        );
+      } catch (e) {
+        Log.warning(
+          'Failed to send video end event: $e',
+          name: 'DivineVideoMetricsTracker',
+          category: LogCategory.video,
+        );
+      }
+    }
 
-      _seenVideosService.recordVideoView(
-        video.id,
-        loopCount: _loopCount,
-        watchDuration: _totalWatchDuration,
-      );
-
-      _hasSentEndEvent = true;
-    } catch (e) {
-      Log.warning(
-        'Failed to send video end event: $e',
-        name: 'DivineVideoMetricsTracker',
-        category: LogCategory.video,
+    if (activeDuration >= _minimumImpressionDuration) {
+      unawaited(
+        _seenVideosService.recordVideoView(
+          video.id,
+          loopCount: _loopCount,
+          watchDuration: _totalWatchDuration,
+        ),
       );
     }
   }
@@ -237,7 +246,7 @@ class _DivineVideoMetricsTrackerState
     _lastPosition = null;
     _loopCount = 0;
     _hasTrackedView = false;
-    _hasSentEndEvent = false;
+    _hasFinalizedView = false;
     _isPlaying = false;
   }
 

@@ -190,7 +190,7 @@ void main() {
       await controller.close();
     });
 
-    testWidgets('active to inactive under one second omits view_end', (
+    testWidgets('active to inactive under one second records seen only', (
       tester,
     ) async {
       final isActive = ValueNotifier(true);
@@ -214,10 +214,72 @@ void main() {
       await tester.pump();
 
       expect(_viewEndEvents(analyticsService), isEmpty);
+      expect(seenVideosService.records, hasLength(1));
+      expect(seenVideosService.records.single.videoId, equals('video_id'));
+      expect(
+        seenVideosService.records.single.watchDuration,
+        const Duration(milliseconds: 900),
+      );
+
+      isActive.dispose();
+      video.dispose();
+      await controller.close();
+    });
+
+    testWidgets('fling-speed active session records nothing', (tester) async {
+      final isActive = ValueNotifier(true);
+      final video = ValueNotifier(_video);
+      final controller = _stubController(isPlaying: true);
+
+      await tester.pumpWidget(
+        _buildTrackerHarness(
+          authService: authService,
+          analyticsService: analyticsService,
+          seenVideosService: seenVideosService,
+          controller: controller.controller,
+          video: video,
+          isActive: isActive,
+          clock: () => now,
+        ),
+      );
+
+      now = now.add(const Duration(milliseconds: 400));
+      isActive.value = false;
+      await tester.pump();
+
+      expect(_viewEndEvents(analyticsService), isEmpty);
       expect(seenVideosService.records, isEmpty);
 
       isActive.dispose();
       video.dispose();
+      await controller.close();
+    });
+
+    testWidgets('dispose under one second records seen once', (tester) async {
+      final controller = _stubController(isPlaying: true);
+
+      await tester.pumpWidget(
+        _buildTracker(
+          authService: authService,
+          analyticsService: analyticsService,
+          seenVideosService: seenVideosService,
+          controller: controller.controller,
+          isActive: true,
+          clock: () => now,
+        ),
+      );
+
+      now = now.add(const Duration(milliseconds: 900));
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpWidget(const SizedBox.shrink());
+
+      expect(_viewEndEvents(analyticsService), isEmpty);
+      expect(seenVideosService.records, hasLength(1));
+      expect(
+        seenVideosService.records.single.watchDuration,
+        const Duration(milliseconds: 900),
+      );
+
       await controller.close();
     });
 
@@ -246,6 +308,39 @@ void main() {
       );
       expect(seenVideosService.records, hasLength(1));
 
+      await controller.close();
+    });
+
+    testWidgets('active video that never plays still records seen', (
+      tester,
+    ) async {
+      final isActive = ValueNotifier(true);
+      final video = ValueNotifier(_video);
+      final controller = _stubController(isPlaying: false);
+
+      await tester.pumpWidget(
+        _buildTrackerHarness(
+          authService: authService,
+          analyticsService: analyticsService,
+          seenVideosService: seenVideosService,
+          controller: controller.controller,
+          video: video,
+          isActive: isActive,
+          clock: () => now,
+        ),
+      );
+
+      now = now.add(const Duration(milliseconds: 900));
+      isActive.value = false;
+      await tester.pump();
+
+      expect(_viewEndEvents(analyticsService), isEmpty);
+      expect(seenVideosService.records, hasLength(1));
+      expect(seenVideosService.records.single.videoId, equals('video_id'));
+      expect(seenVideosService.records.single.watchDuration, Duration.zero);
+
+      isActive.dispose();
+      video.dispose();
       await controller.close();
     });
 
