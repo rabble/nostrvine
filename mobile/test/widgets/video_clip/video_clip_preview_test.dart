@@ -1,6 +1,8 @@
 // ABOUTME: Tests for VideoClipPreview widget
 // ABOUTME: Verifies rendering, DivineVideoPlayer integration, and button layout
 
+import 'dart:io';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +20,31 @@ import 'package:pro_video_editor/pro_video_editor.dart';
 import '../../helpers/go_router.dart';
 
 class _MockGallerySaveService extends Mock implements GallerySaveService {}
+
+/// Reports a decoded first frame as soon as the controller subscribes, which
+/// is what drops [DivineVideoPlayer]'s placeholder from the tree.
+class _FirstFrameStreamHandler extends MockStreamHandler {
+  @override
+  void onListen(Object? arguments, MockStreamHandlerEventSink events) {
+    events.success(<Object?, Object?>{
+      'status': 'playing',
+      'positionMs': 0,
+      'durationMs': 1000,
+      'bufferedPositionMs': 500,
+      'currentClipIndex': 0,
+      'clipCount': 1,
+      'isLooping': true,
+      'volume': 1.0,
+      'playbackSpeed': 1.0,
+      'isFirstFrameRendered': true,
+      'videoWidth': 1080,
+      'videoHeight': 1920,
+    });
+  }
+
+  @override
+  void onCancel(Object? arguments) {}
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -192,6 +219,75 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('keeps the hero mounted once the video replaces the '
+        'placeholder', (tester) async {
+      final tempDir = Directory.systemTemp.createTempSync('clip_preview_hero');
+      addTearDown(() => tempDir.deleteSync(recursive: true));
+      final videoFile = File('${tempDir.path}/video.mp4')
+        ..writeAsBytesSync(const [0]);
+      final thumbnailFile = File('${tempDir.path}/thumbnail.jpg')
+        ..writeAsBytesSync(const [0]);
+
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            ..setMockMethodCallHandler(
+              const MethodChannel('divine_video_player/player_0'),
+              (call) async => null,
+            )
+            ..setMockStreamHandler(
+              const EventChannel('divine_video_player/player_0/events'),
+              _FirstFrameStreamHandler(),
+            );
+      addTearDown(() {
+        messenger
+          ..setMockMethodCallHandler(
+            const MethodChannel('divine_video_player/player_0'),
+            null,
+          )
+          ..setMockStreamHandler(
+            const EventChannel('divine_video_player/player_0/events'),
+            null,
+          );
+      });
+
+      final clip = testClip.copyWith(
+        video: EditorVideo.file(videoFile.path),
+        thumbnailPath: thumbnailFile.path,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            gallerySaveServiceProvider.overrideWithValue(
+              mockGallerySaveService,
+            ),
+          ],
+          child: MockGoRouterProvider(
+            goRouter: mockGoRouter,
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(body: VideoClipPreview(clip: clip)),
+            ),
+          ),
+        ),
+      );
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      // The placeholder — which used to own the hero — is gone once the first
+      // frame is up, so a hero living inside it would be unmounted here and
+      // the dismiss animation would have nothing to fly back from.
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is Hero && w.tag == 'Video-Clip-Preview-${clip.id}',
+        ),
+        findsOneWidget,
+      );
     });
 
     group('save result snackbar', () {

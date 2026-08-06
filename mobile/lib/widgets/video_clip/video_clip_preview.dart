@@ -197,62 +197,12 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreview> {
                       aspectRatio: widget.clip.targetAspectRatio.value,
                       child: ClipRRect(
                         borderRadius: .circular(16),
-                        child: Builder(
-                          builder: (context) {
-                            if (widget.clip.stopMotionFrames
-                                case final frames?) {
-                              return StopMotionPlayer(
-                                frames: frames,
-                                cacheHeight:
-                                    (MediaQuery.sizeOf(context).height *
-                                            MediaQuery.devicePixelRatioOf(
-                                              context,
-                                            ))
-                                        .round(),
-                              );
-                            }
-
-                            final vw = _controller?.state.videoWidth ?? 0;
-                            final vh = _controller?.state.videoHeight ?? 0;
-
-                            final player = DivineVideoPlayer(
-                              controller: _controller,
-                              placeholder: Stack(
-                                fit: .expand,
-                                children: [
-                                  // Thumbnail
-                                  if (widget.clip.thumbnailPath != null)
-                                    Hero(
-                                      tag:
-                                          'Video-Clip-Preview-${widget.clip.id}',
-                                      child: ClipThumbnailImage(
-                                        path: widget.clip.thumbnailPath!,
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-
-                                  // Progress-indicator
-                                  const Center(
-                                    child: CircularProgressIndicator(
-                                      color: VineTheme.vineGreen,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-
-                            if (vw == 0 || vh == 0) return player;
-
-                            return FittedBox(
-                              fit: BoxFit.cover,
-                              clipBehavior: Clip.hardEdge,
-                              child: SizedBox(
-                                width: vw.toDouble(),
-                                height: vh.toDouble(),
-                                child: player,
-                              ),
-                            );
-                          },
+                        child: _ClipHero(
+                          clip: widget.clip,
+                          child: _ClipMedia(
+                            clip: widget.clip,
+                            controller: _controller,
+                          ),
                         ),
                       ),
                     ),
@@ -280,6 +230,85 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreview> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Keeps the grid → preview [Hero] mounted for the preview's whole lifetime.
+///
+/// The hero used to sit inside [DivineVideoPlayer]'s placeholder, which is
+/// dropped from the tree once the first video frame renders — so by the time
+/// the user closed the preview there was no hero left to fly back from. The
+/// shuttle renders the still thumbnail in both directions, which also keeps
+/// the native video surface out of the hero overlay.
+class _ClipHero extends StatelessWidget {
+  const _ClipHero({required this.clip, required this.child});
+
+  final DivineVideoClip clip;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final thumbnailPath = clip.thumbnailPath;
+    if (thumbnailPath == null) return child;
+
+    return Hero(
+      tag: 'Video-Clip-Preview-${clip.id}',
+      flightShuttleBuilder: (_, _, _, _, _) =>
+          ClipThumbnailImage(path: thumbnailPath, fit: BoxFit.cover),
+      child: child,
+    );
+  }
+}
+
+/// The clip itself: stop-motion stills, or the video surface with a thumbnail
+/// placeholder bridging the decode gap.
+class _ClipMedia extends StatelessWidget {
+  const _ClipMedia({required this.clip, required this.controller});
+
+  final DivineVideoClip clip;
+
+  /// `null` until the player has been created and initialized.
+  final DivineVideoPlayerController? controller;
+
+  @override
+  Widget build(BuildContext context) {
+    if (clip.stopMotionFrames case final frames?) {
+      return StopMotionPlayer(
+        frames: frames,
+        cacheHeight:
+            (MediaQuery.sizeOf(context).height *
+                    MediaQuery.devicePixelRatioOf(context))
+                .round(),
+      );
+    }
+
+    final player = DivineVideoPlayer(
+      controller: controller,
+      placeholder: Stack(
+        fit: .expand,
+        children: [
+          if (clip.thumbnailPath case final thumbnailPath?)
+            ClipThumbnailImage(path: thumbnailPath, fit: BoxFit.cover),
+          const Center(
+            child: CircularProgressIndicator(color: VineTheme.vineGreen),
+          ),
+        ],
+      ),
+    );
+
+    final vw = controller?.state.videoWidth ?? 0;
+    final vh = controller?.state.videoHeight ?? 0;
+    if (vw == 0 || vh == 0) return player;
+
+    return FittedBox(
+      fit: BoxFit.cover,
+      clipBehavior: Clip.hardEdge,
+      child: SizedBox(
+        width: vw.toDouble(),
+        height: vh.toDouble(),
+        child: player,
       ),
     );
   }
