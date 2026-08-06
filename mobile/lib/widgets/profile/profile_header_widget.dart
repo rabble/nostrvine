@@ -25,7 +25,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/router/widgets/followers_screen_router.dart';
 import 'package:openvine/router/widgets/following_screen_router.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
@@ -39,6 +38,7 @@ import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_actions_sheet/profile_actions_sheet.dart';
+import 'package:openvine/widgets/profile/profile_followers_stat.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 import 'package:openvine/widgets/profile/profile_support_sheet.dart';
 import 'package:openvine/widgets/profile/profile_website_row.dart';
@@ -409,6 +409,8 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: _ProfileStatsRow(
               userIdHex: widget.userIdHex,
+              displayName: widget.displayName,
+              isOwnProfile: widget.isOwnProfile,
               profileStats: widget.profileStats,
             ),
           ),

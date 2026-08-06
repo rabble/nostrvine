@@ -101,7 +101,7 @@ class _OthersFollowersView extends ConsumerWidget {
             FollowerCountTitle<OthersFollowersBloc, OthersFollowersState>(
               title: appBarTitle,
               selector: (state) => state.status == OthersFollowersStatus.success
-                  ? state.followerCount
+                  ? state.displayFollowerCount
                   : 0,
             ),
         showBackButton: true,

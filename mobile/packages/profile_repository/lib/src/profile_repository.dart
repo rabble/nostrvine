@@ -585,11 +585,10 @@ class ProfileRepository implements ProfileReader {
 
     // Both variants expose social/stats/engagement on the sealed base class,
     // so no switch is needed here.
-    final social = result.social;
     final stats = result.stats;
     final engagement = result.engagement;
 
-    if (social == null && stats == null && engagement == null) return;
+    if (stats == null && engagement == null) return;
 
     int? publicViewCount;
     if (engagement != null) {
@@ -600,8 +599,6 @@ class ProfileRepository implements ProfileReader {
 
     await dao.upsertStats(
       pubkey: pubkey,
-      followerCount: social?.followerCount,
-      followingCount: social?.followingCount,
       videoCount: stats?.videoCount,
       totalLikes: engagement?.totalReactions,
       totalViews: publicViewCount,

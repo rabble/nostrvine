@@ -550,5 +550,39 @@ void main() {
         false, // isFollowingTarget
       ]);
     });
+
+    test('displayFollowerCount matches complete rendered list', () {
+      const state = OthersFollowersState(
+        status: OthersFollowersStatus.success,
+        followersPubkeys: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
+        rawFollowersPubkeys: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
+        followerCount: 9,
+      );
+
+      expect(state.displayFollowerCount, 8);
+    });
+
+    test('displayFollowerCount subtracts filtered followers from count', () {
+      const state = OthersFollowersState(
+        status: OthersFollowersStatus.success,
+        followersPubkeys: ['visible'],
+        rawFollowersPubkeys: ['hidden', 'visible'],
+        followerCount: 2,
+      );
+
+      expect(state.displayFollowerCount, 1);
+    });
+
+    test('displayFollowerCount allows count above capped large list', () {
+      final pubkeys = List<String>.generate(5000, (index) => '$index');
+      final state = OthersFollowersState(
+        status: OthersFollowersStatus.success,
+        followersPubkeys: pubkeys,
+        rawFollowersPubkeys: pubkeys,
+        followerCount: 5200,
+      );
+
+      expect(state.displayFollowerCount, 5200);
+    });
   });
 }

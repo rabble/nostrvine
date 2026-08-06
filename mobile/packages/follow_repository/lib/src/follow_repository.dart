@@ -222,8 +222,11 @@ class FollowRepository {
   /// Get an accurate follower count for the current user.
   ///
   /// Uses multi-source fetching with hysteresis stabilization.
-  Future<int> getMyFollowerCount() async {
-    final count = await getFollowerCount(_nostrClient.publicKey);
+  Future<int> getMyFollowerCount({bool forceRefresh = false}) async {
+    final count = await getFollowerCount(
+      _nostrClient.publicKey,
+      forceRefresh: forceRefresh,
+    );
     _cachedMyFollowerCount = count;
     return count;
   }
@@ -355,13 +358,15 @@ class FollowRepository {
   /// snapshot that CacheSync incorrectly tagged as [CacheResult.live] before
   /// the real network fetch had completed, breaking [CacheResult.isLive]
   /// semantics.
-  Stream<CacheResult<FollowersSnapshot>> watchMyFollowersCached() {
+  Stream<CacheResult<FollowersSnapshot>> watchMyFollowersCached({
+    bool forceRefresh = false,
+  }) {
     return CacheSync.watchOne<FollowersSnapshot>(
       key: _myFollowersCacheKey(_nostrClient.publicKey),
       fetch: () async {
         final results = await Future.wait([
           getMyFollowers(),
-          getMyFollowerCount(),
+          getMyFollowerCount(forceRefresh: forceRefresh),
         ]);
         final pubkeys = results[0] as List<String>;
         final countFromService = results[1] as int;
@@ -371,6 +376,10 @@ class FollowRepository {
       },
       fromJson: FollowersSnapshot.fromJson,
       toJson: (s) => s.toJson(),
+      ttl: _profileListCacheTtl,
+      policy: forceRefresh
+          ? CacheFetchPolicy.networkOnly
+          : CacheFetchPolicy.cacheFirst,
     );
   }
 
@@ -415,7 +424,7 @@ class FollowRepository {
       fetch: () async {
         final results = await Future.wait([
           getFollowers(pubkey),
-          getFollowerCount(pubkey),
+          getFollowerCount(pubkey, forceRefresh: forceRefresh),
         ]);
         final followers = results[0] as List<String>;
         final countFromService = results[1] as int;
@@ -455,9 +464,12 @@ class FollowRepository {
   ///
   /// Fetches from multiple sources (REST + WebSocket + indexer relays),
   /// applies hysteresis stabilization, and persists via Drift.
-  Future<int> getFollowerCount(String pubkey) async {
+  Future<int> getFollowerCount(
+    String pubkey, {
+    bool forceRefresh = false,
+  }) async {
     try {
-      final stats = await getFollowerStats(pubkey);
+      final stats = await getFollowerStats(pubkey, forceRefresh: forceRefresh);
       return stats.followers;
     } catch (e) {
       Log.warning(
@@ -599,8 +611,9 @@ class FollowRepository {
   /// Drops within this threshold are assumed to be relay query variance.
   static const _hysteresisThreshold = 0.8;
 
-  /// In-memory cache for follower/following counts.
-  final Map<String, FollowerStats> _followerStatsCache = {};
+  /// Short-lived in-memory cache for follower/following counts.
+  final Map<String, ({FollowerStats stats, DateTime cachedAt})>
+  _followerStatsCache = {};
 
   /// Load persisted follower stats from the Drift database.
   ///
@@ -664,8 +677,9 @@ class FollowRepository {
     String pubkey,
     FollowerStats freshStats, {
     required ({int followers, int following, DateTime timestamp})? persisted,
+    bool applyHysteresis = true,
   }) {
-    if (persisted == null) return freshStats;
+    if (persisted == null || !applyHysteresis) return freshStats;
 
     final stableFollowers = _applyHysteresis(
       freshCount: freshStats.followers,
@@ -702,7 +716,10 @@ class FollowRepository {
   /// Returns in-memory cached data when available, otherwise fetches from
   /// the network and stabilizes the result against a persistent cache using
   /// hysteresis to avoid visible count fluctuations across app restarts.
-  Future<FollowerStats> getFollowerStats(String pubkey) async {
+  Future<FollowerStats> getFollowerStats(
+    String pubkey, {
+    bool forceRefresh = false,
+  }) async {
     Log.debug(
       'Fetching follower stats for: $pubkey',
       name: 'FollowRepository',
@@ -712,13 +729,16 @@ class FollowRepository {
     try {
       // Check in-memory cache first
       final cachedStats = _followerStatsCache[pubkey];
-      if (cachedStats != null) {
+      if (!forceRefresh &&
+          cachedStats != null &&
+          DateTime.now().difference(cachedStats.cachedAt) <=
+              _profileListCacheTtl) {
         Log.debug(
-          'Using cached follower stats: $cachedStats',
+          'Using cached follower stats: ${cachedStats.stats}',
           name: 'FollowRepository',
           category: LogCategory.system,
         );
-        return cachedStats;
+        return cachedStats.stats;
       }
 
       // Fetch from network
@@ -734,7 +754,10 @@ class FollowRepository {
             followers: persisted.followers,
             following: persisted.following,
           );
-          _followerStatsCache[pubkey] = fallback;
+          _followerStatsCache[pubkey] = (
+            stats: fallback,
+            cachedAt: DateTime.now(),
+          );
           return fallback;
         }
         return freshStats;
@@ -743,10 +766,15 @@ class FollowRepository {
       // Apply hysteresis against the persistent cache so counts don't
       // visibly fluctuate across app restarts due to relay variance.
       final persisted = await _loadPersistedStats(pubkey);
-      final stats = _stabilizeStats(pubkey, freshStats, persisted: persisted);
+      final stats = _stabilizeStats(
+        pubkey,
+        freshStats,
+        persisted: persisted,
+        applyHysteresis: !forceRefresh,
+      );
 
       // Cache in memory.
-      _followerStatsCache[pubkey] = stats;
+      _followerStatsCache[pubkey] = (stats: stats, cachedAt: DateTime.now());
 
       // Only re-persist when the value actually changed. When hysteresis
       // keeps the old persisted count, skipping the write preserves the
@@ -778,7 +806,10 @@ class FollowRepository {
           followers: persisted.followers,
           following: persisted.following,
         );
-        _followerStatsCache[pubkey] = fallback;
+        _followerStatsCache[pubkey] = (
+          stats: fallback,
+          cachedAt: DateTime.now(),
+        );
         return fallback;
       }
 

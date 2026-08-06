@@ -52,7 +52,11 @@ void main() {
       blocTest<MyFollowersBloc, MyFollowersState>(
         'emits [loading, success] when no cache exists',
         setUp: () {
-          when(() => mockFollowRepository.watchMyFollowersCached()).thenAnswer(
+          when(
+            () => mockFollowRepository.watchMyFollowersCached(
+              forceRefresh: any(named: 'forceRefresh'),
+            ),
+          ).thenAnswer(
             (_) => Stream.value(
               CacheResult.live(
                 FollowersSnapshot(
@@ -85,7 +89,11 @@ void main() {
       blocTest<MyFollowersBloc, MyFollowersState>(
         'emits [loading, cached, fresh] when cache yields then fresh data',
         setUp: () {
-          when(() => mockFollowRepository.watchMyFollowersCached()).thenAnswer(
+          when(
+            () => mockFollowRepository.watchMyFollowersCached(
+              forceRefresh: any(named: 'forceRefresh'),
+            ),
+          ).thenAnswer(
             (_) => Stream.fromIterable([
               CacheResult.live(
                 FollowersSnapshot(pubkeys: [validPubkey('old')], count: 1),
@@ -127,7 +135,11 @@ void main() {
       blocTest<MyFollowersBloc, MyFollowersState>(
         'uses higher count from service when list is incomplete',
         setUp: () {
-          when(() => mockFollowRepository.watchMyFollowersCached()).thenAnswer(
+          when(
+            () => mockFollowRepository.watchMyFollowersCached(
+              forceRefresh: any(named: 'forceRefresh'),
+            ),
+          ).thenAnswer(
             (_) => Stream.value(
               CacheResult.live(
                 FollowersSnapshot(
@@ -155,7 +167,9 @@ void main() {
         'emits [loading, success] with empty list when no followers',
         setUp: () {
           when(
-            () => mockFollowRepository.watchMyFollowersCached(),
+            () => mockFollowRepository.watchMyFollowersCached(
+              forceRefresh: any(named: 'forceRefresh'),
+            ),
           ).thenAnswer(
             (_) => Stream.value(
               const CacheResult.live(
@@ -176,7 +190,9 @@ void main() {
         'emits [loading, failure] when stream throws and no data',
         setUp: () {
           when(
-            () => mockFollowRepository.watchMyFollowersCached(),
+            () => mockFollowRepository.watchMyFollowersCached(
+              forceRefresh: any(named: 'forceRefresh'),
+            ),
           ).thenAnswer(
             (_) => Stream<CacheResult<FollowersSnapshot>>.error(
               Exception('Network error'),
@@ -194,9 +210,11 @@ void main() {
       blocTest<MyFollowersBloc, MyFollowersState>(
         'keeps cached data when stream errors after first yield',
         setUp: () {
-          when(() => mockFollowRepository.watchMyFollowersCached()).thenAnswer((
-            _,
-          ) async* {
+          when(
+            () => mockFollowRepository.watchMyFollowersCached(
+              forceRefresh: any(named: 'forceRefresh'),
+            ),
+          ).thenAnswer((_) async* {
             yield CacheResult.live(
               FollowersSnapshot(pubkeys: [validPubkey('cached')], count: 1),
             );
@@ -224,7 +242,11 @@ void main() {
             () => mockBlocklistRepository.isBlocked(blocked),
           ).thenReturn(true);
 
-          when(() => mockFollowRepository.watchMyFollowersCached()).thenAnswer(
+          when(
+            () => mockFollowRepository.watchMyFollowersCached(
+              forceRefresh: any(named: 'forceRefresh'),
+            ),
+          ).thenAnswer(
             (_) => Stream.value(
               CacheResult.live(
                 FollowersSnapshot(
@@ -247,13 +269,78 @@ void main() {
           ),
         ],
       );
+
+      blocTest<MyFollowersBloc, MyFollowersState>(
+        'passes forceRefresh through to repository',
+        setUp: () {
+          when(
+            () => mockFollowRepository.watchMyFollowersCached(
+              forceRefresh: any(named: 'forceRefresh'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.value(
+              const CacheResult.live(
+                FollowersSnapshot(pubkeys: <String>[], count: 0),
+              ),
+            ),
+          );
+        },
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(const MyFollowersListLoadRequested(forceRefresh: true)),
+        verify: (_) {
+          verify(
+            () =>
+                mockFollowRepository.watchMyFollowersCached(forceRefresh: true),
+          ).called(1);
+        },
+      );
+
+      blocTest<MyFollowersBloc, MyFollowersState>(
+        'clears isRefreshing when a cached-only stream closes',
+        setUp: () {
+          when(
+            () => mockFollowRepository.watchMyFollowersCached(
+              forceRefresh: any(named: 'forceRefresh'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.value(
+              CacheResult.cached(
+                FollowersSnapshot(pubkeys: [validPubkey('cached')], count: 1),
+              ),
+            ),
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const MyFollowersListLoadRequested()),
+        expect: () => [
+          const MyFollowersState(status: MyFollowersStatus.loading),
+          MyFollowersState(
+            status: MyFollowersStatus.success,
+            followersPubkeys: [validPubkey('cached')],
+            rawFollowersPubkeys: [validPubkey('cached')],
+            followerCount: 1,
+            isRefreshing: true,
+          ),
+          MyFollowersState(
+            status: MyFollowersStatus.success,
+            followersPubkeys: [validPubkey('cached')],
+            rawFollowersPubkeys: [validPubkey('cached')],
+            followerCount: 1,
+          ),
+        ],
+      );
     });
 
     group('MyFollowersBlocklistChanged', () {
       blocTest<MyFollowersBloc, MyFollowersState>(
         're-filters followers when blocklist changes',
         setUp: () {
-          when(() => mockFollowRepository.watchMyFollowersCached()).thenAnswer(
+          when(
+            () => mockFollowRepository.watchMyFollowersCached(
+              forceRefresh: any(named: 'forceRefresh'),
+            ),
+          ).thenAnswer(
             (_) => Stream.value(
               CacheResult.live(
                 FollowersSnapshot(
@@ -346,6 +433,40 @@ void main() {
         10,
         false, // isRefreshing
       ]);
+    });
+
+    test('displayFollowerCount matches complete rendered list', () {
+      const state = MyFollowersState(
+        status: MyFollowersStatus.success,
+        followersPubkeys: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
+        rawFollowersPubkeys: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
+        followerCount: 9,
+      );
+
+      expect(state.displayFollowerCount, 8);
+    });
+
+    test('displayFollowerCount subtracts filtered followers from count', () {
+      const state = MyFollowersState(
+        status: MyFollowersStatus.success,
+        followersPubkeys: ['visible'],
+        rawFollowersPubkeys: ['blocked', 'visible'],
+        followerCount: 2,
+      );
+
+      expect(state.displayFollowerCount, 1);
+    });
+
+    test('displayFollowerCount allows count above capped large list', () {
+      final pubkeys = List<String>.generate(5000, (index) => '$index');
+      final state = MyFollowersState(
+        status: MyFollowersStatus.success,
+        followersPubkeys: pubkeys,
+        rawFollowersPubkeys: pubkeys,
+        followerCount: 5200,
+      );
+
+      expect(state.displayFollowerCount, 5200);
     });
   });
 }

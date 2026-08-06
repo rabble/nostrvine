@@ -91,6 +91,15 @@ class MockFollowRepository extends Mock implements FollowRepository {
   }
 
   @override
+  Stream<CacheResult<FollowersSnapshot>> watchMyFollowersCached({
+    bool forceRefresh = false,
+  }) {
+    return Stream.value(
+      const CacheResult.live(FollowersSnapshot(pubkeys: <String>[], count: 0)),
+    );
+  }
+
+  @override
   Stream<CacheResult<FollowingSnapshot>> watchMyFollowingCached({
     bool forceRefresh = false,
   }) {
@@ -100,10 +109,13 @@ class MockFollowRepository extends Mock implements FollowRepository {
   }
 
   @override
-  Future<int> getMyFollowerCount() async => 0;
+  Future<int> getMyFollowerCount({bool forceRefresh = false}) async => 0;
 
   @override
-  Future<int> getFollowerCount(String pubkey) async => 0;
+  Future<int> getFollowerCount(
+    String pubkey, {
+    bool forceRefresh = false,
+  }) async => 0;
 }
 
 class MockNostrClient extends Mock implements NostrClient {
@@ -2489,25 +2501,24 @@ void main() {
         expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
       });
 
-      testWidgets(
-        'avatar comes back once the identity skeleton is disabled',
-        (tester) async {
-          await tester.pumpWidget(
-            buildTestWidget(
-              userIdHex: testUserHex,
-              isOwnProfile: true,
-              myProfileState: MyProfileLoaded(
-                profile: createTestProfile(displayName: 'Loaded'),
-                isFresh: true,
-              ),
+      testWidgets('avatar comes back once the identity skeleton is disabled', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            myProfileState: MyProfileLoaded(
+              profile: createTestProfile(displayName: 'Loaded'),
+              isFresh: true,
             ),
-          );
-          await tester.pump();
+          ),
+        );
+        await tester.pump();
 
-          expect(findIdentitySkeletonizer(tester).enabled, isFalse);
-          expect(find.byType(UserAvatar), findsOneWidget);
-        },
-      );
+        expect(findIdentitySkeletonizer(tester).enabled, isFalse);
+        expect(find.byType(UserAvatar), findsOneWidget);
+      });
 
       testWidgets(
         'never mounts two avatar Heroes while the skeleton cross-fades out',

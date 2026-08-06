@@ -117,6 +117,9 @@ class OthersFollowersBloc
           return state.copyWith(status: .failure, isRefreshing: false);
         },
       );
+      if (state.status == OthersFollowersStatus.success && state.isRefreshing) {
+        emit(state.copyWith(isRefreshing: false));
+      }
     } catch (e, stackTrace) {
       Log.error(
         'Unexpected error loading followers list for ${event.targetPubkey}: $e',

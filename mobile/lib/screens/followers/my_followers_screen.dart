@@ -100,7 +100,7 @@ class _MyFollowersView extends ConsumerWidget {
         titleWidget: FollowerCountTitle<MyFollowersBloc, MyFollowersState>(
           title: appBarTitle,
           selector: (state) => state.status == MyFollowersStatus.success
-              ? state.followerCount
+              ? state.displayFollowerCount
               : 0,
         ),
         showBackButton: true,
@@ -141,9 +141,7 @@ class _MyFollowersView extends ConsumerWidget {
                 const Center(child: BrandedLoadingIndicator()),
               MyFollowersStatus.success => LoadingOverlay(
                 isLoading: state.isRefreshing,
-                child: _FollowersListBody(
-                  followers: state.followersPubkeys,
-                ),
+                child: _FollowersListBody(followers: state.followersPubkeys),
               ),
               MyFollowersStatus.failure => _FollowersErrorBody(
                 onRetry: () {
@@ -175,7 +173,7 @@ class _FollowersListBody extends StatelessWidget {
       pubkeys: followers,
       onRefresh: () async {
         context.read<MyFollowersBloc>().add(
-          const MyFollowersListLoadRequested(),
+          const MyFollowersListLoadRequested(forceRefresh: true),
         );
       },
       itemBuilder: (context, userPubkey, index) {

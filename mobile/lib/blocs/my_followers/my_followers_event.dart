@@ -10,7 +10,9 @@ sealed class MyFollowersEvent {
 
 /// Request to load current user's followers list.
 final class MyFollowersListLoadRequested extends MyFollowersEvent {
-  const MyFollowersListLoadRequested();
+  const MyFollowersListLoadRequested({this.forceRefresh = false});
+
+  final bool forceRefresh;
 }
 
 /// Notification that the blocklist has changed, requiring re-filtering.

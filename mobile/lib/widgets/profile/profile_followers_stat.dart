@@ -19,6 +19,7 @@ class ProfileFollowersStat extends ConsumerWidget {
     required this.displayName,
     required this.isOwnProfile,
     this.initialCount,
+    this.isLoading = false,
     super.key,
   });
 
@@ -33,6 +34,9 @@ class ProfileFollowersStat extends ConsumerWidget {
 
   /// Initial count from profile data, shown while the BLoC loads.
   final int? initialCount;
+
+  /// Whether the parent stats row is still showing its skeleton placeholder.
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -49,6 +53,7 @@ class ProfileFollowersStat extends ConsumerWidget {
           pubkey: pubkey,
           displayName: displayName,
           initialCount: initialCount,
+          isLoading: isLoading,
         ),
       );
     } else {
@@ -59,6 +64,7 @@ class ProfileFollowersStat extends ConsumerWidget {
         pubkey: pubkey,
         displayName: displayName,
         initialCount: initialCount,
+        isLoading: isLoading,
       );
     }
   }
@@ -70,11 +76,13 @@ class _MyFollowersStatView extends ConsumerWidget {
     required this.pubkey,
     required this.displayName,
     this.initialCount,
+    this.isLoading = false,
   });
 
   final String pubkey;
   final String? displayName;
   final int? initialCount;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -84,14 +92,14 @@ class _MyFollowersStatView extends ConsumerWidget {
 
     return BlocBuilder<MyFollowersBloc, MyFollowersState>(
       builder: (context, state) {
-        final isLoading =
+        final isBlocLoading =
             state.status == MyFollowersStatus.initial ||
             state.status == MyFollowersStatus.loading;
 
         return ProfileStatColumn(
-          count: isLoading ? initialCount : state.followerCount,
+          count: isBlocLoading ? initialCount : state.displayFollowerCount,
           label: context.l10n.profileFollowersLabel,
-          isLoading: isLoading && initialCount == null,
+          isLoading: isLoading || (isBlocLoading && initialCount == null),
           onTap: () => context.push(
             FollowersScreenRouter.pathForPubkey(pubkey),
             extra: displayName,
@@ -108,11 +116,13 @@ class _OthersFollowersStatView extends ConsumerWidget {
     required this.pubkey,
     required this.displayName,
     this.initialCount,
+    this.isLoading = false,
   });
 
   final String pubkey;
   final String? displayName;
   final int? initialCount;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -124,14 +134,14 @@ class _OthersFollowersStatView extends ConsumerWidget {
 
     return BlocBuilder<OthersFollowersBloc, OthersFollowersState>(
       builder: (context, state) {
-        final isLoading =
+        final isBlocLoading =
             state.status == OthersFollowersStatus.initial ||
             state.status == OthersFollowersStatus.loading;
 
         return ProfileStatColumn(
-          count: isLoading ? initialCount : state.followerCount,
+          count: isBlocLoading ? initialCount : state.displayFollowerCount,
           label: context.l10n.profileFollowersLabel,
-          isLoading: isLoading && initialCount == null,
+          isLoading: isLoading || (isBlocLoading && initialCount == null),
           onTap: () => context.push(
             FollowersScreenRouter.pathForPubkey(pubkey),
             extra: displayName,

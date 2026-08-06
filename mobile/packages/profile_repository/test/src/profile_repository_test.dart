@@ -1224,14 +1224,47 @@ void main() {
           verify(
             () => mockProfileStatsDao.upsertStats(
               pubkey: testPubkey,
-              followerCount: 12,
-              followingCount: 7,
               videoCount: 3,
               totalLikes: 42,
               totalViews: 99,
             ),
           ).called(1);
         });
+
+        test(
+          'does not let Funnelcake social counts overwrite follower stats',
+          () async {
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getUserProfile(testPubkey),
+            ).thenAnswer(
+              (_) async => UserProfileNotPublished(
+                pubkey: testPubkey,
+                social: ProfileSocialData.fromJson(const {
+                  'follower_count': 12,
+                  'following_count': 7,
+                }),
+              ),
+            );
+
+            final result = await repoWithFunnelcake.fetchFreshProfile(
+              pubkey: testPubkey,
+            );
+
+            expect(result, isNull);
+            expect(repoWithFunnelcake.isConfirmedMissing(testPubkey), isTrue);
+            verifyNever(
+              () => mockProfileStatsDao.upsertStats(
+                pubkey: any(named: 'pubkey'),
+                followerCount: any(named: 'followerCount'),
+                followingCount: any(named: 'followingCount'),
+                videoCount: any(named: 'videoCount'),
+                totalLikes: any(named: 'totalLikes'),
+                totalViews: any(named: 'totalViews'),
+              ),
+            );
+          },
+        );
 
         test('uses rounded loops when unified views are unavailable', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);

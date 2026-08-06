@@ -260,6 +260,26 @@ void main() {
         expect(stats.following, equals(25));
       });
 
+      test('forceRefresh accepts lower count within threshold', () async {
+        final apiClient = _MockFunnelcakeApiClient();
+        final dao = _MockProfileStatsDao();
+        final repository = _createRepository(
+          apiClient: apiClient,
+          dao: dao,
+          restFollowers: 8,
+          restFollowing: 20,
+          persistedRow: _persistedRow(followers: 9, following: 20),
+        );
+
+        final stats = await repository.getFollowerStats(
+          _testPubkey,
+          forceRefresh: true,
+        );
+
+        expect(stats.followers, equals(8));
+        expect(stats.following, equals(20));
+      });
+
       test('boundary: fresh count one below threshold is accepted', () async {
         final apiClient = _MockFunnelcakeApiClient();
         final dao = _MockProfileStatsDao();
@@ -328,6 +348,37 @@ void main() {
           verifyNever(() => apiClient.getSocialCounts(_testPubkey));
         },
       );
+
+      test('forceRefresh bypasses in-memory cached data', () async {
+        final apiClient = _MockFunnelcakeApiClient();
+        final dao = _MockProfileStatsDao();
+        final repository = _createRepository(
+          apiClient: apiClient,
+          dao: dao,
+          restFollowers: 50,
+          restFollowing: 20,
+        );
+
+        await repository.getFollowerStats(_testPubkey);
+        verify(() => apiClient.getSocialCounts(_testPubkey)).called(1);
+
+        when(() => apiClient.getSocialCounts(_testPubkey)).thenAnswer(
+          (_) async => const SocialCounts(
+            pubkey: _testPubkey,
+            followerCount: 8,
+            followingCount: 4,
+          ),
+        );
+
+        final stats = await repository.getFollowerStats(
+          _testPubkey,
+          forceRefresh: true,
+        );
+
+        expect(stats.followers, equals(8));
+        expect(stats.following, equals(4));
+        verify(() => apiClient.getSocialCounts(_testPubkey)).called(1);
+      });
     });
   });
 }

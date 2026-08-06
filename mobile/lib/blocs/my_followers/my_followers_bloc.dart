@@ -59,7 +59,9 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
 
     try {
       await emit.forEach<CacheResult<FollowersSnapshot>>(
-        _followRepository.watchMyFollowersCached(),
+        _followRepository.watchMyFollowersCached(
+          forceRefresh: event.forceRefresh,
+        ),
         onData: (result) {
           return state.copyWith(
             status: MyFollowersStatus.success,
@@ -70,6 +72,9 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
           );
         },
       );
+      if (state.status == MyFollowersStatus.success && state.isRefreshing) {
+        emit(state.copyWith(isRefreshing: false));
+      }
     } catch (e) {
       Log.error(
         'Failed to load followers list: $e',
@@ -78,6 +83,8 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
       );
       if (state.status != MyFollowersStatus.success) {
         emit(state.copyWith(status: MyFollowersStatus.failure));
+      } else {
+        emit(state.copyWith(isRefreshing: false));
       }
     }
   }

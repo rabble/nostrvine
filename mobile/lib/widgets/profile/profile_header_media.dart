@@ -214,9 +214,16 @@ class _BannerImage extends StatelessWidget {
 /// shimmering indefinitely or collapsing the row (which would shift the
 /// surrounding profile layout).
 class _ProfileStatsRow extends StatefulWidget {
-  const _ProfileStatsRow({required this.userIdHex, this.profileStats});
+  const _ProfileStatsRow({
+    required this.userIdHex,
+    required this.isOwnProfile,
+    this.displayName,
+    this.profileStats,
+  });
 
   final String userIdHex;
+  final bool isOwnProfile;
+  final String? displayName;
   final ProfileStats? profileStats;
 
   @override
@@ -289,15 +296,14 @@ class _ProfileStatsRowState extends State<_ProfileStatsRow> {
           ),
         ),
       if (hasFollowers || isLoading)
-        ProfileStatColumn(
-          count: isLoading
+        ProfileFollowersStat(
+          pubkey: widget.userIdHex,
+          displayName: widget.displayName,
+          isOwnProfile: widget.isOwnProfile,
+          initialCount: isLoading
               ? _skeletonPlaceholderCount
               : widget.profileStats!.followers,
-          label: l10n.profileFollowersLabel,
           isLoading: isLoading && _timeoutExpired,
-          onTap: () => context.push(
-            FollowersScreenRouter.pathForPubkey(widget.userIdHex),
-          ),
         ),
     ];
 
