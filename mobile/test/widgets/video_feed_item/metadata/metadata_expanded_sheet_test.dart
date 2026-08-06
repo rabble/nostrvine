@@ -34,10 +34,13 @@ import 'package:openvine/widgets/video_feed_item/metadata/metadata_user_chips.da
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_verification_info_sheet.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_verification_section.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/video_reposters_cubit.dart';
+import 'package:openvine/widgets/video_recorder/modes/upload/upload_explainer_constants.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
+import '../../../helpers/url_launcher_test_double.dart';
 
 class _MockVideoInteractionsBloc extends Mock
     implements VideoInteractionsBloc {}
@@ -133,8 +136,14 @@ void main() {
   late _MockVideoInteractionsBloc mockInteractionsBloc;
   late _MockVideoRepostersCubit mockRepostersCubit;
   late _MockVideosRepository mockVideosRepository;
+  late UrlLauncherPlatform originalUrlLauncherPlatform;
+  late UrlLauncherTestDouble urlLauncher;
 
   setUp(() {
+    originalUrlLauncherPlatform = UrlLauncherPlatform.instance;
+    urlLauncher = UrlLauncherTestDouble();
+    UrlLauncherPlatform.instance = urlLauncher;
+
     mockVideosRepository = _MockVideosRepository();
     mockInteractionsBloc = _MockVideoInteractionsBloc();
     when(
@@ -160,6 +169,10 @@ void main() {
     when(
       () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
     ).thenAnswer((_) async => null);
+  });
+
+  tearDown(() {
+    UrlLauncherPlatform.instance = originalUrlLauncherPlatform;
   });
 
   /// Pumps a metadata widget inside the required provider tree.
@@ -1586,9 +1599,7 @@ void main() {
     testWidgetsWithSurfaceSize(
       'tapping the header explains every check and the missing-check caveat',
       (tester) async {
-        final video = _makeVideo(
-          rawTags: {'verification': 'verified_mobile'},
-        );
+        final video = _makeVideo(rawTags: {'verification': 'verified_mobile'});
         await tester.pumpWidget(
           buildSubject(child: MetadataVerificationSection(video: video)),
         );
@@ -1644,6 +1655,31 @@ void main() {
       },
     );
 
+    testWidgetsWithSurfaceSize(
+      'learn-more tap opens proofmode URL externally',
+      (tester) async {
+        final video = _makeVideo(rawTags: {'verification': 'verified_mobile'});
+        await tester.pumpWidget(
+          buildSubject(child: MetadataVerificationSection(video: video)),
+        );
+
+        final l10n = _l10n(tester);
+        await tester.tap(find.text(l10n.metadataVerificationLabel));
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.text(
+            l10n.metadataVerificationInfoLearnMore('divine.video/proofmode'),
+            findRichText: true,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(urlLauncher.launched, isNotEmpty);
+        expect(urlLauncher.launched.last.url, equals(proofmodeLearnMoreUrl));
+        expect(urlLauncher.launched.last.useExternalApplication, isTrue);
+      },
+    );
+
     testWidgetsWithSurfaceSize('header info affordance is a labeled button', (
       tester,
     ) async {
@@ -1658,8 +1694,10 @@ void main() {
       // would leave the checklist with no announced section at all.
       final semantics = tester.getSemantics(
         find.bySemanticsLabel(
-          '${l10n.metadataVerificationLabel}. '
-          '${l10n.metadataVerificationInfoTooltip}',
+          l10n.metadataSectionInfoSemanticsLabel(
+            l10n.metadataVerificationLabel,
+            l10n.metadataVerificationInfoTooltip,
+          ),
         ),
       );
       expect(semantics.flagsCollection.isButton, isTrue);

@@ -1823,6 +1823,11 @@ class AppLocalizationsUr extends AppLocalizations {
   String get metadataVerificationInfoTooltip => 'ان جانچوں کا کیا مطلب ہے؟';
 
   @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
   String get metadataVerificationInfoTitle => 'ان جانچوں کا مطلب';
 
   @override
@@ -7280,49 +7285,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
     return '$creatorName سے متاثر۔ ان کا پروفائل دیکھنے کے لیے ٹیپ کریں۔';
   }
-
-  @override
-  String get proofmodeBadgeAiScanPending => 'AI اسکین زیر التواء';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'انسان کی بنائی ہوئی';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Divine ہوسٹ شدہ نہیں';
-
-  @override
-  String get proofmodeBadgeOriginal => 'اصل';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'ممکنہ AI تیار کردہ';
-
-  @override
-  String get proofmodeBadgeUnverified => 'غیر تصدیق شدہ';
-
-  @override
-  String get proofmodeConfirmedByModerator => 'انسانی موڈریٹر نے تصدیق کی';
-
-  @override
-  String get proofmodeExternalContentTitle => 'بیرونی مواد';
-
-  @override
-  String get proofmodeHostedOnLabel => 'یہ ویڈیو ہوسٹ ہے:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'غالباً انسان کی تخلیق';
-
-  @override
-  String get proofmodeNoProofDataAttached => 'کوئی ProofMode ڈیٹا منسلک نہیں';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'یہ مواد Divine سرورز پر ہوسٹ نہیں ہے۔ ہم اس کی اصالت کی مکمل ضمانت نہیں دے سکتے۔';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'ممکنہ AI تیار کردہ';
-
-  @override
-  String get proofmodePublishedByLabel => 'شائع کنندہ:';
 
   @override
   String get publishErrorNotSignedIn =>

@@ -1848,6 +1848,11 @@ class AppLocalizationsBg extends AppLocalizations {
       'Какво означават тези проверки?';
 
   @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
   String get metadataVerificationInfoTitle => 'Какво означават тези проверки';
 
   @override
@@ -7349,50 +7354,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
     return 'Вдъхновено от $creatorName. Докосни, за да видиш профила им.';
   }
-
-  @override
-  String get proofmodeBadgeAiScanPending => 'AI сканиране в очакване';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'Създадено от човек';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Не се хоства от Divine';
-
-  @override
-  String get proofmodeBadgeOriginal => 'Оригинал';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated =>
-      'Възможно е да е генерирано от AI';
-
-  @override
-  String get proofmodeBadgeUnverified => 'Непроверено';
-
-  @override
-  String get proofmodeConfirmedByModerator => 'Потвърдено от човек модератор';
-
-  @override
-  String get proofmodeExternalContentTitle => 'Външно съдържание';
-
-  @override
-  String get proofmodeHostedOnLabel => 'Това видео се хоства на:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'Вероятно създадено от човек';
-
-  @override
-  String get proofmodeNoProofDataAttached => 'Няма прикачени ProofMode данни';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'Това съдържание не се хоства на сървъри на Divine. Не можем напълно да гарантираме автентичността му.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'Възможно е да е генерирано от AI';
-
-  @override
-  String get proofmodePublishedByLabel => 'Публикувано от:';
 
   @override
   String get publishErrorNotSignedIn => 'Влез, за да публикуваш видеа.';

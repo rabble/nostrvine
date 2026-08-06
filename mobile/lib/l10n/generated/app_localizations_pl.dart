@@ -1857,6 +1857,11 @@ class AppLocalizationsPl extends AppLocalizations {
   String get metadataVerificationInfoTooltip => 'Co oznaczają te sprawdzenia?';
 
   @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
   String get metadataVerificationInfoTitle => 'Co oznaczają te sprawdzenia';
 
   @override
@@ -7443,53 +7448,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
     return 'Zainspirowane przez $creatorName. Dotknij, aby zobaczyć jego profil.';
   }
-
-  @override
-  String get proofmodeBadgeAiScanPending => 'Skan AI w toku';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'Stworzone przez człowieka';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Nie hostowane przez Divine';
-
-  @override
-  String get proofmodeBadgeOriginal => 'Oryginał';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated =>
-      'Możliwe, że wygenerowane przez AI';
-
-  @override
-  String get proofmodeBadgeUnverified => 'Niezweryfikowane';
-
-  @override
-  String get proofmodeConfirmedByModerator =>
-      'Potwierdzone przez moderatora-człowieka';
-
-  @override
-  String get proofmodeExternalContentTitle => 'Treść zewnętrzna';
-
-  @override
-  String get proofmodeHostedOnLabel => 'Ten film jest hostowany na:';
-
-  @override
-  String get proofmodeLikelyHumanCreated =>
-      'Prawdopodobnie stworzone przez człowieka';
-
-  @override
-  String get proofmodeNoProofDataAttached => 'Nie dołączono danych ProofMode';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'Ta treść nie jest hostowana na serwerach Divine. Nie możemy w pełni zagwarantować jej autentyczności.';
-
-  @override
-  String get proofmodePossiblyAiGenerated =>
-      'Możliwe, że wygenerowane przez AI';
-
-  @override
-  String get proofmodePublishedByLabel => 'Opublikowane przez:';
 
   @override
   String get publishErrorNotSignedIn => 'Zaloguj się, aby publikować filmy.';

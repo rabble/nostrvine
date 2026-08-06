@@ -1854,6 +1854,11 @@ class AppLocalizationsFil extends AppLocalizations {
       'Ano ang ibig sabihin ng mga pagsusuring ito?';
 
   @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
   String get metadataVerificationInfoTitle =>
       'Ang ibig sabihin ng mga pagsusuring ito';
 
@@ -7364,50 +7369,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
     return 'Inspirado ni $creatorName. I-tap para tingnan ang kanilang profile.';
   }
-
-  @override
-  String get proofmodeBadgeAiScanPending => 'Nakabinbin ang AI scan';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'Gawa ng Tao';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Hindi Naka-host sa Divine';
-
-  @override
-  String get proofmodeBadgeOriginal => 'Original';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'Posibleng AI-Generated';
-
-  @override
-  String get proofmodeBadgeUnverified => 'Hindi Na-verify';
-
-  @override
-  String get proofmodeConfirmedByModerator => 'Kinumpirma ng human moderator';
-
-  @override
-  String get proofmodeExternalContentTitle => 'External na Content';
-
-  @override
-  String get proofmodeHostedOnLabel => 'Naka-host ang video na ito sa:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'Malamang na gawa ng tao';
-
-  @override
-  String get proofmodeNoProofDataAttached =>
-      'Walang naka-attach na ProofMode data';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'Hindi naka-host sa mga Divine server ang content na ito. Hindi namin lubusang magagarantiya ang pagiging tunay nito.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'Posibleng AI-generated';
-
-  @override
-  String get proofmodePublishedByLabel => 'Ni-publish ni:';
 
   @override
   String get publishErrorNotSignedIn =>

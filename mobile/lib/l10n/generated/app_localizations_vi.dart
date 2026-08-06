@@ -1829,6 +1829,11 @@ class AppLocalizationsVi extends AppLocalizations {
       'Những kiểm tra này nghĩa là gì?';
 
   @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
   String get metadataVerificationInfoTitle => 'Ý nghĩa của những kiểm tra này';
 
   @override
@@ -7288,50 +7293,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
     return 'Lấy cảm hứng từ $creatorName. Chạm để xem hồ sơ của họ.';
   }
-
-  @override
-  String get proofmodeBadgeAiScanPending => 'Đang chờ quét AI';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'Do người làm';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Không do Divine lưu trữ';
-
-  @override
-  String get proofmodeBadgeOriginal => 'Nguyên bản';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'Có thể do AI tạo ra';
-
-  @override
-  String get proofmodeBadgeUnverified => 'Chưa xác minh';
-
-  @override
-  String get proofmodeConfirmedByModerator => 'Được kiểm duyệt viên xác nhận';
-
-  @override
-  String get proofmodeExternalContentTitle => 'Nội dung bên ngoài';
-
-  @override
-  String get proofmodeHostedOnLabel => 'Video này được lưu trữ trên:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'Có vẻ do người tạo';
-
-  @override
-  String get proofmodeNoProofDataAttached =>
-      'Không có dữ liệu ProofMode đính kèm';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'Nội dung này không được lưu trữ trên máy chủ Divine. Bọn mình không thể đảm bảo hoàn toàn tính xác thực của nó.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'Có thể do AI tạo ra';
-
-  @override
-  String get proofmodePublishedByLabel => 'Đăng bởi:';
 
   @override
   String get publishErrorNotSignedIn => 'Vui lòng đăng nhập để đăng video.';

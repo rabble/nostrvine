@@ -1832,6 +1832,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get metadataVerificationInfoTooltip => 'Wat betekenen deze controles?';
 
   @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
   String get metadataVerificationInfoTitle => 'Wat deze controles betekenen';
 
   @override
@@ -7307,52 +7312,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
     return 'Geïnspireerd door $creatorName. Tik om hun profiel te bekijken.';
   }
-
-  @override
-  String get proofmodeBadgeAiScanPending => 'AI-scan in behandeling';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'Door mensen gemaakt';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Niet op Divine gehost';
-
-  @override
-  String get proofmodeBadgeOriginal => 'Origineel';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'Mogelijk AI-gegenereerd';
-
-  @override
-  String get proofmodeBadgeUnverified => 'Niet geverifieerd';
-
-  @override
-  String get proofmodeConfirmedByModerator =>
-      'Bevestigd door een menselijke moderator';
-
-  @override
-  String get proofmodeExternalContentTitle => 'Externe inhoud';
-
-  @override
-  String get proofmodeHostedOnLabel => 'Deze video wordt gehost op:';
-
-  @override
-  String get proofmodeLikelyHumanCreated =>
-      'Waarschijnlijk door een mens gemaakt';
-
-  @override
-  String get proofmodeNoProofDataAttached =>
-      'Geen ProofMode-gegevens bijgevoegd';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'Deze inhoud wordt niet op Divine-servers gehost. We kunnen de authenticiteit ervan niet volledig garanderen.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'Mogelijk AI-gegenereerd';
-
-  @override
-  String get proofmodePublishedByLabel => 'Gepubliceerd door:';
 
   @override
   String get publishErrorNotSignedIn => 'Log in om video\'s te publiceren.';

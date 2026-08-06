@@ -1787,6 +1787,11 @@ class AppLocalizationsAm extends AppLocalizations {
   String get metadataVerificationInfoTooltip => 'እነዚህ ማረጋገጫዎች ምን ማለት ናቸው?';
 
   @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
   String get metadataVerificationInfoTitle => 'እነዚህ ማረጋገጫዎች ምን ማለት እንደሆኑ';
 
   @override
@@ -7127,49 +7132,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
     return 'በ$creatorName የተነሳሳ። መገለጫቸውን ለማየት መታ ያድርጉ።';
   }
-
-  @override
-  String get proofmodeBadgeAiScanPending => 'የAI ቅኝት በመጠባበቅ ላይ';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'በሰው የተሰራ';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'በDivine ያልተስተናገደ';
-
-  @override
-  String get proofmodeBadgeOriginal => 'ኦሪጅናል';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'ምናልባት በAI የተፈጠረ';
-
-  @override
-  String get proofmodeBadgeUnverified => 'ያልተረጋገጠ';
-
-  @override
-  String get proofmodeConfirmedByModerator => 'በሰው አወያይ የተረጋገጠ';
-
-  @override
-  String get proofmodeExternalContentTitle => 'ውጫዊ ይዘት';
-
-  @override
-  String get proofmodeHostedOnLabel => 'ይህ ቪዲዮ የተስተናገደው በ፦';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'ምናልባት በሰው የተፈጠረ';
-
-  @override
-  String get proofmodeNoProofDataAttached => 'ምንም የProofMode ውሂብ አልተያያዘም';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'ይህ ይዘት በDivine አገልጋዮች ላይ አልተስተናገደም። ትክክለኛነቱን ሙሉ በሙሉ ማረጋገጥ አንችልም።';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'ምናልባት በAI የተፈጠረ';
-
-  @override
-  String get proofmodePublishedByLabel => 'የታተመው በ፦';
 
   @override
   String get publishErrorNotSignedIn => 'ቪዲዮዎችን ለማተም እባክዎ ይግቡ።';

@@ -1061,6 +1061,18 @@
   "@metadataVerificationInfoTooltip": {
     "description": "Accessibility label and tooltip for the info button next to the Verification section header in the video metadata sheet. Opens a sheet explaining the four verification checks."
   },
+  "metadataSectionInfoSemanticsLabel": "{section}. {question}",
+  "@metadataSectionInfoSemanticsLabel": {
+    "description": "Accessibility label for a metadata section header that also opens an info sheet. {section} is the visible section title, e.g. 'Verification'. {question} describes the info action, e.g. 'What do these checks mean?'.",
+    "placeholders": {
+      "section": {
+        "type": "String"
+      },
+      "question": {
+        "type": "String"
+      }
+    }
+  },
   "metadataVerificationInfoTitle": "What these checks mean",
   "@metadataVerificationInfoTitle": {
     "description": "Title of the bottom sheet explaining the four ProofMode/C2PA verification checks shown in the video metadata sheet."
@@ -4260,20 +4272,6 @@
   "videoIconPlaceholderLabel": "Video",
   "videoInspiredByAttributionSemanticLabel": "Inspired by {creatorName}. Tap to view their profile.",
   "@videoInspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
-  "proofmodeBadgeAiScanPending": "AI scan pending",
-  "proofmodeBadgeHumanMade": "Human Made",
-  "proofmodeBadgeNotDivineHosted": "Not Divine Hosted",
-  "proofmodeBadgeOriginal": "Original",
-  "proofmodeBadgePossiblyAiGenerated": "Possibly AI-Generated",
-  "proofmodeBadgeUnverified": "Unverified",
-  "proofmodeConfirmedByModerator": "Confirmed by human moderator",
-  "proofmodeExternalContentTitle": "External Content",
-  "proofmodeHostedOnLabel": "This video is hosted on:",
-  "proofmodeLikelyHumanCreated": "Likely human-created",
-  "proofmodeNoProofDataAttached": "No ProofMode data attached",
-  "proofmodeNotDivineHostedDisclaimer": "This content is not hosted on Divine servers. We cannot fully guarantee its authenticity.",
-  "proofmodePossiblyAiGenerated": "Possibly AI-generated",
-  "proofmodePublishedByLabel": "Published by:",
   "publishErrorNotSignedIn": "Please sign in to publish videos.",
   "publishErrorNoRetry": "No upload to retry.",
   "publishErrorNoInternet": "No internet connection. Check your Wi-Fi or mobile data and try again.",

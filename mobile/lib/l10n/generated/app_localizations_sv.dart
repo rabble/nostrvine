@@ -1820,6 +1820,11 @@ class AppLocalizationsSv extends AppLocalizations {
       'Vad betyder de här kontrollerna?';
 
   @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
   String get metadataVerificationInfoTitle => 'Vad kontrollerna betyder';
 
   @override
@@ -7272,49 +7277,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
     return 'Inspirerad av $creatorName. Tryck för att se deras profil.';
   }
-
-  @override
-  String get proofmodeBadgeAiScanPending => 'AI-skanning väntar';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'Gjord av människa';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Inte värd hos Divine';
-
-  @override
-  String get proofmodeBadgeOriginal => 'Original';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'Möjligen AI-genererad';
-
-  @override
-  String get proofmodeBadgeUnverified => 'Overifierad';
-
-  @override
-  String get proofmodeConfirmedByModerator => 'Bekräftad av mänsklig moderator';
-
-  @override
-  String get proofmodeExternalContentTitle => 'Externt innehåll';
-
-  @override
-  String get proofmodeHostedOnLabel => 'Den här videon är värd på:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'Troligen skapad av människa';
-
-  @override
-  String get proofmodeNoProofDataAttached => 'Ingen ProofMode-data bifogad';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'Det här innehållet är inte värd på Divines servrar. Vi kan inte helt garantera dess äkthet.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'Möjligen AI-genererad';
-
-  @override
-  String get proofmodePublishedByLabel => 'Publicerad av:';
 
   @override
   String get publishErrorNotSignedIn => 'Logga in för att publicera videor.';

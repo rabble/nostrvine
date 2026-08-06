@@ -1868,6 +1868,11 @@ class AppLocalizationsRo extends AppLocalizations {
       'Ce înseamnă aceste verificări?';
 
   @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
   String get metadataVerificationInfoTitle => 'Ce înseamnă aceste verificări';
 
   @override
@@ -7445,49 +7450,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
     return 'Inspirat de $creatorName. Atinge ca să-i vezi profilul.';
   }
-
-  @override
-  String get proofmodeBadgeAiScanPending => 'Scanare AI în așteptare';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'Făcut de om';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Negăzduit de Divine';
-
-  @override
-  String get proofmodeBadgeOriginal => 'Original';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'Posibil generat de AI';
-
-  @override
-  String get proofmodeBadgeUnverified => 'Neverificat';
-
-  @override
-  String get proofmodeConfirmedByModerator => 'Confirmat de un moderator uman';
-
-  @override
-  String get proofmodeExternalContentTitle => 'Conținut extern';
-
-  @override
-  String get proofmodeHostedOnLabel => 'Acest videoclip este găzduit pe:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'Probabil creat de om';
-
-  @override
-  String get proofmodeNoProofDataAttached => 'Niciun date ProofMode atașate';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'Acest conținut nu este găzduit pe serverele Divine. Nu îi putem garanta complet autenticitatea.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'Posibil generat de AI';
-
-  @override
-  String get proofmodePublishedByLabel => 'Publicat de:';
 
   @override
   String get publishErrorNotSignedIn =>

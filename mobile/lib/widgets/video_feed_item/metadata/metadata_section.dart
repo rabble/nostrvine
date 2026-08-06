@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Explainer affordance for a [MetadataSection] header.
 ///
@@ -120,7 +121,10 @@ class _SectionHeaderWithInfo extends StatelessWidget {
       button: true,
       // The visible section label is excluded below, so it is folded in here
       // — otherwise the section the checklist belongs to is never announced.
-      label: '$sectionLabel. $infoLabel',
+      label: context.l10n.metadataSectionInfoSemanticsLabel(
+        sectionLabel,
+        infoLabel,
+      ),
       child: GestureDetector(
         onTap: onPressed,
         behavior: HitTestBehavior.opaque,
@@ -131,9 +135,7 @@ class _SectionHeaderWithInfo extends StatelessWidget {
           // Android as tooltipText).
           excludeFromSemantics: true,
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-              vertical: _infoHeaderTapSlack,
-            ),
+            padding: const EdgeInsets.symmetric(vertical: _infoHeaderTapSlack),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [

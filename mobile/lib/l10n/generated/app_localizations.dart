@@ -3216,6 +3216,12 @@ abstract class AppLocalizations {
   /// **'What do these checks mean?'**
   String get metadataVerificationInfoTooltip;
 
+  /// Accessibility label for a metadata section header that also opens an info sheet. {section} is the visible section title, e.g. 'Verification'. {question} describes the info action, e.g. 'What do these checks mean?'.
+  ///
+  /// In en, this message translates to:
+  /// **'{section}. {question}'**
+  String metadataSectionInfoSemanticsLabel(String section, String question);
+
   /// Title of the bottom sheet explaining the four ProofMode/C2PA verification checks shown in the video metadata sheet.
   ///
   /// In en, this message translates to:
@@ -12646,90 +12652,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Inspired by {creatorName}. Tap to view their profile.'**
   String videoInspiredByAttributionSemanticLabel(String creatorName);
-
-  /// No description provided for @proofmodeBadgeAiScanPending.
-  ///
-  /// In en, this message translates to:
-  /// **'AI scan pending'**
-  String get proofmodeBadgeAiScanPending;
-
-  /// No description provided for @proofmodeBadgeHumanMade.
-  ///
-  /// In en, this message translates to:
-  /// **'Human Made'**
-  String get proofmodeBadgeHumanMade;
-
-  /// No description provided for @proofmodeBadgeNotDivineHosted.
-  ///
-  /// In en, this message translates to:
-  /// **'Not Divine Hosted'**
-  String get proofmodeBadgeNotDivineHosted;
-
-  /// No description provided for @proofmodeBadgeOriginal.
-  ///
-  /// In en, this message translates to:
-  /// **'Original'**
-  String get proofmodeBadgeOriginal;
-
-  /// No description provided for @proofmodeBadgePossiblyAiGenerated.
-  ///
-  /// In en, this message translates to:
-  /// **'Possibly AI-Generated'**
-  String get proofmodeBadgePossiblyAiGenerated;
-
-  /// No description provided for @proofmodeBadgeUnverified.
-  ///
-  /// In en, this message translates to:
-  /// **'Unverified'**
-  String get proofmodeBadgeUnverified;
-
-  /// No description provided for @proofmodeConfirmedByModerator.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirmed by human moderator'**
-  String get proofmodeConfirmedByModerator;
-
-  /// No description provided for @proofmodeExternalContentTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'External Content'**
-  String get proofmodeExternalContentTitle;
-
-  /// No description provided for @proofmodeHostedOnLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'This video is hosted on:'**
-  String get proofmodeHostedOnLabel;
-
-  /// No description provided for @proofmodeLikelyHumanCreated.
-  ///
-  /// In en, this message translates to:
-  /// **'Likely human-created'**
-  String get proofmodeLikelyHumanCreated;
-
-  /// No description provided for @proofmodeNoProofDataAttached.
-  ///
-  /// In en, this message translates to:
-  /// **'No ProofMode data attached'**
-  String get proofmodeNoProofDataAttached;
-
-  /// No description provided for @proofmodeNotDivineHostedDisclaimer.
-  ///
-  /// In en, this message translates to:
-  /// **'This content is not hosted on Divine servers. We cannot fully guarantee its authenticity.'**
-  String get proofmodeNotDivineHostedDisclaimer;
-
-  /// No description provided for @proofmodePossiblyAiGenerated.
-  ///
-  /// In en, this message translates to:
-  /// **'Possibly AI-generated'**
-  String get proofmodePossiblyAiGenerated;
-
-  /// No description provided for @proofmodePublishedByLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Published by:'**
-  String get proofmodePublishedByLabel;
 
   /// No description provided for @publishErrorNotSignedIn.
   ///

@@ -1790,6 +1790,11 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bu kontroller ne anlama geliyor?';
 
   @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
   String get metadataVerificationInfoTitle => 'Bu kontroller ne anlama geliyor';
 
   @override
@@ -7238,50 +7243,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
     return '$creatorName tarafından ilham alındı. Profilini görüntülemek için dokun.';
   }
-
-  @override
-  String get proofmodeBadgeAiScanPending => 'Yapay zekâ taraması bekleniyor';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'İnsan Yapımı';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Divine\'da Barındırılmıyor';
-
-  @override
-  String get proofmodeBadgeOriginal => 'Orijinal';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'Yapay Zekâ Üretimi Olabilir';
-
-  @override
-  String get proofmodeBadgeUnverified => 'Doğrulanmamış';
-
-  @override
-  String get proofmodeConfirmedByModerator =>
-      'İnsan moderatör tarafından onaylandı';
-
-  @override
-  String get proofmodeExternalContentTitle => 'Harici İçerik';
-
-  @override
-  String get proofmodeHostedOnLabel => 'Bu video şurada barındırılıyor:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'Muhtemelen insan yapımı';
-
-  @override
-  String get proofmodeNoProofDataAttached => 'ProofMode verisi eklenmemiş';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'Bu içerik Divine sunucularında barındırılmıyor. Gerçekliğini tam olarak garanti edemeyiz.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'Yapay zekâ üretimi olabilir';
-
-  @override
-  String get proofmodePublishedByLabel => 'Yayınlayan:';
 
   @override
   String get publishErrorNotSignedIn =>

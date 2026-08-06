@@ -1730,6 +1730,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get metadataVerificationInfoTooltip => '这些检查是什么意思？';
 
   @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section。$question';
+  }
+
+  @override
   String get metadataVerificationInfoTitle => '这些检查的含义';
 
   @override
@@ -6918,49 +6923,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
     return '灵感来自 $creatorName。点按查看 TA 的主页。';
   }
-
-  @override
-  String get proofmodeBadgeAiScanPending => 'AI 扫描中';
-
-  @override
-  String get proofmodeBadgeHumanMade => '人类创作';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => '非 Divine 托管';
-
-  @override
-  String get proofmodeBadgeOriginal => '原创';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => '疑似 AI 生成';
-
-  @override
-  String get proofmodeBadgeUnverified => '未验证';
-
-  @override
-  String get proofmodeConfirmedByModerator => '已由真人管理员确认';
-
-  @override
-  String get proofmodeExternalContentTitle => '外部内容';
-
-  @override
-  String get proofmodeHostedOnLabel => '该视频托管于：';
-
-  @override
-  String get proofmodeLikelyHumanCreated => '大概率为人类创作';
-
-  @override
-  String get proofmodeNoProofDataAttached => '未附带 ProofMode 数据';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      '该内容未托管在 Divine 服务器上，我们无法完全保证其真实性。';
-
-  @override
-  String get proofmodePossiblyAiGenerated => '疑似 AI 生成';
-
-  @override
-  String get proofmodePublishedByLabel => '发布者：';
 
   @override
   String get publishErrorNotSignedIn => '请登录后再发布视频。';

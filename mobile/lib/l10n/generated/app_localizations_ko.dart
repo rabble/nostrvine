@@ -1721,6 +1721,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get metadataVerificationInfoTooltip => '이 검사들은 무슨 뜻인가요?';
 
   @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
   String get metadataVerificationInfoTitle => '이 검사들의 의미';
 
   @override
@@ -6980,49 +6985,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
     return '$creatorName님에게서 영감을 받았어요. 탭하면 프로필을 볼 수 있어요.';
   }
-
-  @override
-  String get proofmodeBadgeAiScanPending => 'AI 검사 대기 중';
-
-  @override
-  String get proofmodeBadgeHumanMade => '사람이 제작';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Divine 호스팅 아님';
-
-  @override
-  String get proofmodeBadgeOriginal => '오리지널';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'AI 생성 가능성 있음';
-
-  @override
-  String get proofmodeBadgeUnverified => '미인증';
-
-  @override
-  String get proofmodeConfirmedByModerator => '사람 조절자가 확인함';
-
-  @override
-  String get proofmodeExternalContentTitle => '외부 콘텐츠';
-
-  @override
-  String get proofmodeHostedOnLabel => '이 영상은 여기에 호스팅돼 있어요:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => '사람이 만들었을 가능성 높음';
-
-  @override
-  String get proofmodeNoProofDataAttached => 'ProofMode 데이터가 첨부되지 않음';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      '이 콘텐츠는 Divine 서버에 호스팅돼 있지 않아요. 진위를 완전히 보장할 수는 없어요.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'AI 생성 가능성 있음';
-
-  @override
-  String get proofmodePublishedByLabel => '게시자:';
 
   @override
   String get publishErrorNotSignedIn => '영상을 게시하려면 로그인해주세요.';

@@ -1784,6 +1784,11 @@ class AppLocalizationsId extends AppLocalizations {
   String get metadataVerificationInfoTooltip => 'Apa arti pemeriksaan ini?';
 
   @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
   String get metadataVerificationInfoTitle => 'Apa arti pemeriksaan ini';
 
   @override
@@ -7235,51 +7240,6 @@ class AppLocalizationsId extends AppLocalizations {
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
     return 'Terinspirasi oleh $creatorName. Ketuk untuk melihat profil mereka.';
   }
-
-  @override
-  String get proofmodeBadgeAiScanPending => 'Pemindaian AI tertunda';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'Buatan Manusia';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Bukan Hosting Divine';
-
-  @override
-  String get proofmodeBadgeOriginal => 'Asli';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'Mungkin Dibuat AI';
-
-  @override
-  String get proofmodeBadgeUnverified => 'Belum Terverifikasi';
-
-  @override
-  String get proofmodeConfirmedByModerator =>
-      'Dikonfirmasi oleh moderator manusia';
-
-  @override
-  String get proofmodeExternalContentTitle => 'Konten Eksternal';
-
-  @override
-  String get proofmodeHostedOnLabel => 'Video ini di-hosting di:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'Kemungkinan dibuat manusia';
-
-  @override
-  String get proofmodeNoProofDataAttached =>
-      'Tidak ada data ProofMode yang dilampirkan';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'Konten ini tidak di-hosting di server Divine. Kami tidak bisa sepenuhnya menjamin keasliannya.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'Mungkin dibuat AI';
-
-  @override
-  String get proofmodePublishedByLabel => 'Dipublikasikan oleh:';
 
   @override
   String get publishErrorNotSignedIn =>

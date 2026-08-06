@@ -1811,6 +1811,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get metadataVerificationInfoTooltip => 'ماذا تعني هذه الفحوصات؟';
 
   @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
   String get metadataVerificationInfoTitle => 'ماذا تعني هذه الفحوصات';
 
   @override
@@ -7226,50 +7231,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
     return 'مستوحى من $creatorName. اضغط لعرض ملفه الشخصي.';
   }
-
-  @override
-  String get proofmodeBadgeAiScanPending => 'فحص الذكاء الاصطناعي قيد الانتظار';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'من صنع إنسان';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'ليس مستضافًا على Divine';
-
-  @override
-  String get proofmodeBadgeOriginal => 'أصلي';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated =>
-      'ربما مُولَّد بالذكاء الاصطناعي';
-
-  @override
-  String get proofmodeBadgeUnverified => 'غير مُوثَّق';
-
-  @override
-  String get proofmodeConfirmedByModerator => 'مؤكَّد من مُشرِف بشري';
-
-  @override
-  String get proofmodeExternalContentTitle => 'محتوى خارجي';
-
-  @override
-  String get proofmodeHostedOnLabel => 'هذا الفيديو مستضاف على:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'على الأرجح من صنع إنسان';
-
-  @override
-  String get proofmodeNoProofDataAttached => 'لا توجد بيانات ProofMode مرفقة';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'هذا المحتوى غير مستضاف على خوادم Divine. لا يمكننا ضمان أصالته بالكامل.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'ربما مُولَّد بالذكاء الاصطناعي';
-
-  @override
-  String get proofmodePublishedByLabel => 'نُشر بواسطة:';
 
   @override
   String get publishErrorNotSignedIn => 'يرجى تسجيل الدخول لنشر الفيديوهات.';
