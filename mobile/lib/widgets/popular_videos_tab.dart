@@ -18,12 +18,17 @@ import 'package:openvine/providers/popular_videos_feed_provider.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
+import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/feed_refresh_control.dart';
 import 'package:openvine/widgets/scroll_to_hide_mixin.dart';
 import 'package:openvine/widgets/trending_hashtags_section.dart';
 import 'package:unified_logger/unified_logger.dart';
+
+/// Cross-fade used when the feed swaps between loading, error and data —
+/// including the native/classic variant switch.
+const _feedStateTransitionDuration = Duration(milliseconds: 250);
 
 /// Tab widget displaying popular videos by current watch volume.
 ///
@@ -56,6 +61,12 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
   late final ErrorAnalyticsTracker _errorTracker;
   DateTime? _feedLoadStartTime;
 
+  /// Page currently painted, together with the variant it belongs to.
+  ///
+  /// Keeps the previous grid on screen while a variant switch loads, so the
+  /// toggle cross-fades between two feeds instead of dropping to a spinner.
+  ({PopularVideosVariant variant, VideoFeedState state})? _rendered;
+
   @override
   void initState() {
     super.initState();
@@ -87,30 +98,53 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
     }
 
     // CRITICAL: Check hasValue FIRST before isLoading
-    if (feedAsync.hasValue &&
-        feedAsync.value != null &&
-        loadedVariant == selectedVariant) {
-      return _buildDataState(feedAsync.value!.videos);
+    final feedState = feedAsync.value;
+    final showsSelectedVariant =
+        feedState != null && loadedVariant == selectedVariant;
+    if (showsSelectedVariant) {
+      _rendered = (variant: selectedVariant, state: feedState);
+      _trackDataState(feedState.videos);
     }
 
-    if (feedAsync.hasError) {
+    // While a variant switch loads, keep painting the page we last rendered,
+    // keyed by its own variant, so the newly selected variant cross-fades in
+    // instead of flashing a full-screen spinner.
+    final rendered = _rendered;
+
+    final Widget content;
+    if (feedAsync.hasError && !showsSelectedVariant) {
       _trackErrorState(feedAsync.error);
-      return RefreshableFeedStateView(
+      content = RefreshableFeedStateView(
+        key: const ValueKey('error'),
         onRefresh: _refreshPopularVideos,
         child: const _PopularVideosErrorState(),
       );
+    } else if (rendered != null) {
+      content = _PopularVideosTrendingContent(
+        key: ValueKey(rendered.variant),
+        videos: rendered.state.videos,
+        isLoadingMore: rendered.state.isLoadingMore,
+        hasMoreContent: rendered.state.hasMoreContent,
+      );
+    } else {
+      // Only show loading if we truly have no data yet
+      _trackLoadingState();
+      content = const _PopularVideosLoadingState(key: ValueKey('loading'));
     }
 
-    // Only show loading if we truly have no data yet
-    _trackLoadingState();
-    return const _PopularVideosLoadingState();
+    return AnimatedSwitcher(
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : _feedStateTransitionDuration,
+      child: content,
+    );
   }
 
   Future<void> _refreshPopularVideos() async {
     await ref.read(popularVideosFeedProvider.notifier).refresh();
   }
 
-  Widget _buildDataState(List<VideoEvent> videos) {
+  void _trackDataState(List<VideoEvent> videos) {
     // Videos are already sorted by current watch volume from the provider
     // (REST API sort=watching, or NIP-50 sort:hot fallback) and filtered for
     // platform compatibility
@@ -137,14 +171,6 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
     if (videos.isEmpty) {
       _feedTracker.trackEmptyFeed('popular');
     }
-
-    // Get the feed state for pagination info
-    final feedState = ref.watch(popularVideosFeedProvider).value;
-    return _PopularVideosTrendingContent(
-      videos: videos,
-      isLoadingMore: feedState?.isLoadingMore ?? false,
-      hasMoreContent: feedState?.hasMoreContent ?? false,
-    );
   }
 
   void _trackErrorState(Object? error) {
@@ -203,6 +229,7 @@ class _PopularVideosTrendingContent extends ConsumerStatefulWidget {
     required this.videos,
     required this.isLoadingMore,
     required this.hasMoreContent,
+    super.key,
   });
 
   final List<VideoEvent> videos;
@@ -456,7 +483,7 @@ class _PopularVideosErrorState extends StatelessWidget {
 
 /// Loading state widget for PopularVideosTab
 class _PopularVideosLoadingState extends StatelessWidget {
-  const _PopularVideosLoadingState();
+  const _PopularVideosLoadingState({super.key});
 
   @override
   Widget build(BuildContext context) {
