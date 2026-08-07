@@ -20,10 +20,16 @@ class PrefsSyncStateStore implements SyncStateStore {
   String _keyFor(SyncItemKind kind) => '${_keyPrefix}_${kind.name}_$_pubkeyHex';
 
   /// A malformed root (bad JSON, or JSON that isn't an object) discards the
-  /// whole cursor and returns an empty map: the next reconcile does a full
-  /// pass, which is recoverable. A malformed *entry* inside an otherwise
-  /// valid map is skipped individually so one corrupt dTag doesn't cost the
-  /// rest of the library its cursor — the same per-record recovery
+  /// whole cursor and returns an empty map. This is not benign: an empty
+  /// `applied` makes every remote record look unseen, so reconcile's
+  /// last-write-wins short-circuit never fires and the remote body wins
+  /// unconditionally — a local edit whose publish previously failed gets
+  /// overwritten, and a locally-deleted sound whose tombstone publish
+  /// failed gets resurrected. There is no better recovery available at
+  /// this layer once the cursor itself is corrupt, so this is the least-bad
+  /// option, not a safe one. A malformed *entry* inside an otherwise valid
+  /// map is skipped individually instead, so one corrupt dTag doesn't cost
+  /// the rest of the library its cursor — the same per-record recovery
   /// [SyncIndexClient.fetch] applies to undecryptable remote records.
   ///
   /// Every field is type-checked with `is` before being handed to

@@ -5,7 +5,7 @@ import 'dart:async';
 
 import 'package:creator_sync/creator_sync.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/saved_sounds_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -31,11 +31,22 @@ final soundSyncRepositoryProvider = FutureProvider<SoundSyncRepository?>((
 
   final client = readiness.client!;
   final pubkeyHex = readiness.pubkey!;
+  // Hoisted above the await below: every ref.watch must run before the
+  // first suspension point. obtain() is a relay round trip that can take
+  // seconds, and a sign-out/account-switch/session-re-advance in that
+  // window disposes this provider's element — a ref.watch reached after
+  // that throws UnmountedRefException. Reading these here also registers
+  // the dependency on the VaultKeyUnavailableException early-return path
+  // below, so this provider still rebuilds when they change even when it
+  // resolves to null.
+  final secureStorage = ref.watch(flutterSecureStorageProvider);
+  final sharedPreferences = ref.watch(sharedPreferencesProvider);
+  final savedSoundsService = ref.watch(savedSoundsServiceProvider);
 
   final vaultKeyService = VaultKeyService(
     signer: client.signer,
     client: client,
-    cache: SecureVaultKeyCache(const FlutterSecureStorage()),
+    cache: SecureVaultKeyCache(secureStorage),
   );
 
   final SyncCipher cipher;
@@ -53,11 +64,8 @@ final soundSyncRepositoryProvider = FutureProvider<SoundSyncRepository?>((
       signer: client.signer,
       cipher: cipher,
     ),
-    state: PrefsSyncStateStore(
-      ref.watch(sharedPreferencesProvider),
-      pubkeyHex: pubkeyHex,
-    ),
-    local: SavedSoundsLocalStore(ref.watch(savedSoundsServiceProvider)),
+    state: PrefsSyncStateStore(sharedPreferences, pubkeyHex: pubkeyHex),
+    local: SavedSoundsLocalStore(savedSoundsService),
     errorReporter: (error, stackTrace, {required site}) {
       unawaited(
         CrashReportingService.instance.recordError(

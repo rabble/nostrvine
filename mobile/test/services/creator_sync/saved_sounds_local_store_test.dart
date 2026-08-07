@@ -47,11 +47,24 @@ void main() {
 
       await store.upsert(sound.id, sound.toJson());
 
-      expect(
-        (await store.readAll())[sound.id]!['personalLabel'],
-        equals('intro'),
-      );
+      // Full-map equality, not just one field: the reconciler compares
+      // syncBodyHash(readAll()[id]) against the body it just wrote, so any
+      // field this adapter drops or alters would make every later pass
+      // see a spurious local edit and republish.
+      expect((await store.readAll())[sound.id], equals(sound.toJson()));
     });
+
+    test(
+      'upsert rejects a body whose own id disagrees with the id argument',
+      () async {
+        final sound = buildSavedSound(id: 'h' * 64);
+
+        expect(
+          () => store.upsert('i' * 64, sound.toJson()),
+          throwsA(isA<AssertionError>()),
+        );
+      },
+    );
 
     test('upsert replaces an existing sound', () async {
       final original = buildSavedSound(id: 'e' * 64, label: 'first');

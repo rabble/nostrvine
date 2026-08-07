@@ -7526,25 +7526,25 @@ abstract class AppLocalizations {
   /// **'Couldn\'t remove that sound. Try again.'**
   String get soundsRemoveFailed;
 
-  /// No description provided for @soundSyncStatusSyncing.
+  /// Shown while a saved-sound library sync pass with other devices is in progress.
   ///
   /// In en, this message translates to:
   /// **'Syncing your sounds…'**
   String get soundSyncStatusSyncing;
 
-  /// No description provided for @soundSyncStatusSynced.
+  /// Shown after a saved-sound library sync pass completes successfully; the local library matches other devices.
   ///
   /// In en, this message translates to:
   /// **'Sounds up to date'**
   String get soundSyncStatusSynced;
 
-  /// No description provided for @soundSyncStatusFailed.
+  /// Shown when a saved-sound library sync pass fails for a transient reason (e.g. the relay is unreachable). The app will retry automatically on the next trigger.
   ///
   /// In en, this message translates to:
   /// **'Couldn\'t sync your sounds. We\'ll try again.'**
   String get soundSyncStatusFailed;
 
-  /// No description provided for @soundSyncStatusLocked.
+  /// Shown when this device cannot obtain the encryption key that protects the synced sound library (e.g. the signer refused to decrypt it, or the account has no key yet). Sync stays disabled until this resolves; it is not a network error.
   ///
   /// In en, this message translates to:
   /// **'Can\'t unlock your synced library on this device.'**

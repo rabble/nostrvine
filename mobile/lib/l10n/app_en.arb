@@ -2540,9 +2540,21 @@
     "description": "Snackbar shown when removing a sound from the local library fails to persist."
   },
   "soundSyncStatusSyncing": "Syncing your sounds…",
+  "@soundSyncStatusSyncing": {
+    "description": "Shown while a saved-sound library sync pass with other devices is in progress."
+  },
   "soundSyncStatusSynced": "Sounds up to date",
+  "@soundSyncStatusSynced": {
+    "description": "Shown after a saved-sound library sync pass completes successfully; the local library matches other devices."
+  },
   "soundSyncStatusFailed": "Couldn't sync your sounds. We'll try again.",
+  "@soundSyncStatusFailed": {
+    "description": "Shown when a saved-sound library sync pass fails for a transient reason (e.g. the relay is unreachable). The app will retry automatically on the next trigger."
+  },
   "soundSyncStatusLocked": "Can't unlock your synced library on this device.",
+  "@soundSyncStatusLocked": {
+    "description": "Shown when this device cannot obtain the encryption key that protects the synced sound library (e.g. the signer refused to decrypt it, or the account has no key yet). Sync stays disabled until this resolves; it is not a network error."
+  },
   "soundsFailedToLoad": "Failed to load sounds",
   "soundsRetry": "Retry",
   "soundsScreenLabel": "Sounds screen",

@@ -20,8 +20,18 @@ class SavedSoundsLocalStore implements LocalSoundStore {
   }
 
   @override
-  Future<void> upsert(String id, Map<String, dynamic> body) =>
-      _service.replaceSavedSound(SavedSound.fromJson(body));
+  Future<void> upsert(String id, Map<String, dynamic> body) {
+    final sound = SavedSound.fromJson(body);
+    // replaceSavedSound keys off sound.id (== body's own "audio.id"), not
+    // [id]. The reconciler's applied-state cursor is keyed by [id], so a
+    // silent disagreement here would write the sound under one key while
+    // recording sync progress under another.
+    assert(
+      sound.id == id,
+      "upsert id ($id) does not match the body's own id (${sound.id})",
+    );
+    return _service.replaceSavedSound(sound);
+  }
 
   @override
   Future<void> remove(String id) => _service.removeSound(id);
