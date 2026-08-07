@@ -5,7 +5,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -26,6 +25,7 @@ class ClipsTab extends StatelessWidget {
     this.clips,
     this.targetAspectRatio,
     this.scrollController,
+    this.gridTopPadding = 0,
     super.key,
   });
 
@@ -43,6 +43,12 @@ class ClipsTab extends StatelessWidget {
 
   /// Optional scroll controller, e.g. from a parent bottom sheet.
   final ScrollController? scrollController;
+
+  /// Padding above the first grid row.
+  ///
+  /// The selection sheet sets this so the grid clears the sheet's drag
+  /// handle instead of butting straight up against it.
+  final double gridTopPadding;
 
   @override
   Widget build(BuildContext context) {
@@ -116,6 +122,7 @@ class ClipsTab extends StatelessWidget {
           selectedIsStopMotion: state.selectedIsStopMotion,
           scrollController: scrollController,
           targetAspectRatio: targetAspectRatio,
+          topPadding: gridTopPadding,
           onTapClip: (clip) {
             if (selectionEnabled) {
               context.read<ClipsLibraryBloc>().add(
@@ -179,60 +186,33 @@ class ClipsTab extends StatelessWidget {
   }
 }
 
-/// Header widget for clip selection mode.
-class ClipSelectionHeader extends StatelessWidget {
-  /// Creates a selection header.
-  const ClipSelectionHeader({required this.onCreate, super.key});
+/// Footer action bar for clip selection mode.
+///
+/// Sits below the clip grid and confirms the current selection. Renders no
+/// background of its own so the enclosing bottom sheet's surface shows
+/// through.
+class ClipSelectionFooter extends StatelessWidget {
+  /// Creates a selection footer.
+  const ClipSelectionFooter({required this.onCreate, super.key});
 
-  /// Callback when create button is tapped.
+  /// Callback when the select button is tapped.
   final VoidCallback onCreate;
 
   @override
   Widget build(BuildContext context) {
-    return BlocSelector<ClipsLibraryBloc, ClipsLibraryState, Set<String>>(
-      selector: (state) => state.selectedClipIds,
-      builder: (context, selectedClipIds) {
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 8, bottom: 16),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                spacing: 4,
-                children: [
-                  const Spacer(),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        context.l10n.libraryClipSelectionTitle,
-                        style: VineTheme.titleMediumFont(
-                          color: context.vineColors.onSurface,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Expanded(
-                    child: Align(
-                      alignment: AlignmentDirectional.centerEnd,
-                      child: _AddClipButton(
-                        onTap: selectedClipIds.isNotEmpty
-                            ? onCreate
-                            : context.pop,
-                        enable: selectedClipIds.isNotEmpty,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+    return BlocSelector<ClipsLibraryBloc, ClipsLibraryState, bool>(
+      selector: (state) => state.selectedClipIds.isNotEmpty,
+      builder: (context, hasSelection) {
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: DivineButton(
+              expanded: true,
+              label: context.l10n.librarySelect,
+              onPressed: hasSelection ? onCreate : null,
             ),
-            Divider(
-              height: 2,
-              thickness: 2,
-              color: context.vineColors.surfaceContainer,
-            ),
-          ],
+          ),
         );
       },
     );
@@ -250,6 +230,7 @@ class _MasonryLayout extends StatelessWidget {
     this.scrollController,
     this.targetAspectRatio,
     this.selectedIsStopMotion,
+    this.topPadding = 0,
   });
 
   final List<DivineVideoClip> clips;
@@ -260,6 +241,7 @@ class _MasonryLayout extends StatelessWidget {
   final ValueChanged<DivineVideoClip> onTapClip;
   final ValueChanged<DivineVideoClip> onLongPressClip;
   final double? targetAspectRatio;
+  final double topPadding;
 
   /// Type of the current selection (`true` = stop-motion). When set, clips of
   /// the other type are disabled so a selection can't mix stop-motion stills
@@ -276,7 +258,10 @@ class _MasonryLayout extends StatelessWidget {
     };
     return MasonryGridView.count(
       controller: scrollController,
-      padding: .only(bottom: MediaQuery.viewPaddingOf(context).bottom),
+      padding: .only(
+        top: topPadding,
+        bottom: MediaQuery.viewPaddingOf(context).bottom,
+      ),
       crossAxisCount: _columnCount,
       mainAxisSpacing: 4,
       crossAxisSpacing: 4,
@@ -300,42 +285,6 @@ class _MasonryLayout extends StatelessWidget {
           onLongPress: () => onLongPressClip(clip),
         );
       },
-    );
-  }
-}
-
-class _AddClipButton extends StatelessWidget {
-  const _AddClipButton({required this.onTap, this.enable = true});
-
-  final VoidCallback? onTap;
-  final bool enable;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: context.l10n.librarySelect,
-      child: GestureDetector(
-        onTap: enable ? onTap : null,
-        child: Opacity(
-          opacity: enable ? 1 : 0.32,
-          child: Container(
-            margin: const EdgeInsetsDirectional.only(end: 16),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: ShapeDecoration(
-              color: VineTheme.tabIndicatorGreen,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            child: Text(
-              context.l10n.librarySelect,
-              textAlign: .center,
-              style: VineTheme.titleMediumFont(color: VineTheme.onPrimary),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
