@@ -13,6 +13,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/user_picker_sheet.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:rxdart/rxdart.dart';
@@ -66,6 +67,12 @@ _MockProfileRepository _createMockProfileRepository({
     ),
   );
 
+  // Default for unknown pubkeys. Registered first so the per-profile stubs
+  // below win — mocktail resolves to the most recently registered match.
+  when(
+    () => mock.getCachedProfile(pubkey: any(named: 'pubkey')),
+  ).thenAnswer((_) async => null);
+
   // Mock getCachedProfile
   for (final profile in cachedProfiles) {
     when(
@@ -73,10 +80,17 @@ _MockProfileRepository _createMockProfileRepository({
     ).thenAnswer((_) async => profile);
   }
 
-  // Default for unknown pubkeys
+  // The batch lookup answers from the same per-pubkey stubs, so a test that
+  // stubs a single profile gets it back through either entry point.
   when(
-    () => mock.getCachedProfile(pubkey: any(named: 'pubkey')),
-  ).thenAnswer((_) async => null);
+    () => mock.getCachedProfiles(pubkeys: any(named: 'pubkeys')),
+  ).thenAnswer((invocation) async {
+    final pubkeys = invocation.namedArguments[#pubkeys] as List<String>;
+    final profiles = await Future.wait(
+      pubkeys.map((pubkey) => mock.getCachedProfile(pubkey: pubkey)),
+    );
+    return profiles.whereType<UserProfile>().toList();
+  });
 
   return mock;
 }
@@ -93,6 +107,9 @@ _MockFollowRepository _createMockFollowRepository({
   when(() => mock.isInitialized).thenReturn(true);
   when(() => mock.followingCount).thenReturn(followingPubkeys.length);
   when(mock.getMyFollowers).thenAnswer((_) async => followingPubkeys);
+  when(
+    mock.streamMyFollowers,
+  ).thenAnswer((_) => Stream.value(followingPubkeys));
   return mock;
 }
 
@@ -221,12 +238,31 @@ void main() {
     });
 
     group('mutualFollowsOnly mode', () {
-      testWidgets('shows loading indicator initially', (tester) async {
+      testWidgets('shows loading indicator until the first follower source '
+          'answers', (tester) async {
         final mockFollowRepo = _createMockFollowRepository(
           followingPubkeys: ['pubkey1'],
         );
+        // No source has answered yet.
+        final followers = StreamController<List<String>>();
+        // Not awaited: the widget is still listening at teardown, so the done
+        // event would never be delivered and the test would hang.
+        addTearDown(() => unawaited(followers.close()));
+        when(
+          mockFollowRepo.streamMyFollowers,
+        ).thenAnswer((_) => followers.stream);
 
-        final mockProfileRepo = _createMockProfileRepository();
+        final mockProfileRepo = _createMockProfileRepository(
+          cachedProfiles: [
+            UserProfile(
+              pubkey: 'pubkey1',
+              name: 'User One',
+              rawData: const {'name': 'User One'},
+              createdAt: DateTime.now(),
+              eventId: 'event1',
+            ),
+          ],
+        );
 
         await tester.pumpWidget(
           ProviderScope(
@@ -251,8 +287,12 @@ void main() {
           ),
         );
 
-        // Should show loading while follow profiles load
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        await tester.pump();
+
+        // Profiles are already resolved — the spinner is waiting on the
+        // mutual check, not on the profile lookup.
+        expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
+        expect(find.text('User One'), findsNothing);
       });
 
       testWidgets('shows empty state when no follows exist', (tester) async {
@@ -324,9 +364,8 @@ void main() {
         expect(find.text('Go back'), findsOneWidget);
       });
 
-      testWidgets('falls back to local follows when getMyFollowers fails', (
-        tester,
-      ) async {
+      testWidgets('falls back to local follows when every follower source '
+          'fails', (tester) async {
         final profile = UserProfile(
           pubkey: 'pubkey1',
           name: 'User One',
@@ -339,8 +378,10 @@ void main() {
           followingPubkeys: ['pubkey1'],
         );
         when(
-          mockFollowRepo.getMyFollowers,
-        ).thenAnswer((_) async => throw Exception('relay down'));
+          mockFollowRepo.streamMyFollowers,
+        ).thenAnswer(
+          (_) => Stream<List<String>>.error(Exception('relay down')),
+        );
 
         final mockProfileRepo = _createMockProfileRepository();
         when(
@@ -372,9 +413,146 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(find.byType(BrandedLoadingIndicator), findsNothing);
         expect(find.text('User One'), findsOneWidget);
         expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('renders mutuals from the first follower source and adds '
+          'later ones', (tester) async {
+        final profiles = [
+          UserProfile(
+            pubkey: 'pubkey1',
+            name: 'Fast User',
+            rawData: const {'name': 'Fast User'},
+            createdAt: DateTime.now(),
+            eventId: 'event1',
+          ),
+          UserProfile(
+            pubkey: 'pubkey2',
+            name: 'Slow User',
+            rawData: const {'name': 'Slow User'},
+            createdAt: DateTime.now(),
+            eventId: 'event2',
+          ),
+        ];
+
+        final followers = StreamController<List<String>>();
+        // Not awaited: the widget is still listening at teardown, so the done
+        // event would never be delivered and the test would hang.
+        addTearDown(() => unawaited(followers.close()));
+
+        final mockFollowRepo = _createMockFollowRepository(
+          followingPubkeys: ['pubkey1', 'pubkey2'],
+        );
+        when(
+          mockFollowRepo.streamMyFollowers,
+        ).thenAnswer((_) => followers.stream);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              profileRepositoryProvider.overrideWithValue(
+                _createMockProfileRepository(cachedProfiles: profiles),
+              ),
+              followRepositoryProvider.overrideWithValue(mockFollowRepo),
+              contentBlocklistRepositoryProvider.overrideWithValue(
+                _createMockContentBlocklistRepository(),
+              ),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: UserPickerSheet(
+                  title: 'Title',
+                  filterMode: UserPickerFilterMode.mutualFollowsOnly,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // The fast source alone is enough to leave the spinner. Two pumps:
+        // one to deliver the stream event, one to render the rebuild.
+        followers.add(['pubkey1']);
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byType(BrandedLoadingIndicator), findsNothing);
+        expect(find.text('Fast User'), findsOneWidget);
+        expect(find.text('Slow User'), findsNothing);
+
+        // A slower source only ever adds rows.
+        followers.add(['pubkey1', 'pubkey2']);
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('Fast User'), findsOneWidget);
+        expect(find.text('Slow User'), findsOneWidget);
+      });
+
+      testWidgets('keeps the spinner while an early source reports no '
+          'followers', (tester) async {
+        final profile = UserProfile(
+          pubkey: 'pubkey1',
+          name: 'Late Mutual',
+          rawData: const {'name': 'Late Mutual'},
+          createdAt: DateTime.now(),
+          eventId: 'event1',
+        );
+
+        final followers = StreamController<List<String>>();
+        // Not awaited: the widget is still listening at teardown, so the done
+        // event would never be delivered and the test would hang.
+        addTearDown(() => unawaited(followers.close()));
+
+        final mockFollowRepo = _createMockFollowRepository(
+          followingPubkeys: ['pubkey1'],
+        );
+        when(
+          mockFollowRepo.streamMyFollowers,
+        ).thenAnswer((_) => followers.stream);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              profileRepositoryProvider.overrideWithValue(
+                _createMockProfileRepository(cachedProfiles: [profile]),
+              ),
+              followRepositoryProvider.overrideWithValue(mockFollowRepo),
+              contentBlocklistRepositoryProvider.overrideWithValue(
+                _createMockContentBlocklistRepository(),
+              ),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: UserPickerSheet(
+                  title: 'Title',
+                  filterMode: UserPickerFilterMode.mutualFollowsOnly,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // An empty first emission must not flash the "no follows" state.
+        followers.add(const []);
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
+        expect(find.text('Your crew is out there'), findsNothing);
+
+        followers.add(['pubkey1']);
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('Late Mutual'), findsOneWidget);
       });
 
       testWidgets('displays follow list after loading', (tester) async {
