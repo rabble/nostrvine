@@ -140,6 +140,48 @@ class FeaturedTabConfig {
     return true;
   }
 
+  @override
+  bool operator ==(Object other) =>
+      other is FeaturedTabConfig &&
+      other.id == id &&
+      other.slug == slug &&
+      other.position == position &&
+      other.startsAt == startsAt &&
+      other.endsAt == endsAt &&
+      other.enabled == enabled &&
+      other.visibleToMinors == visibleToMinors &&
+      other.hasContent == hasContent &&
+      _mapEquals(other.label, label) &&
+      _mapEquals(other.disclosureLabel, disclosureLabel);
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    slug,
+    position,
+    startsAt,
+    endsAt,
+    enabled,
+    visibleToMinors,
+    hasContent,
+    _mapHash(label),
+    _mapHash(disclosureLabel),
+  );
+
+  static bool _mapEquals(Map<String, String> a, Map<String, String> b) {
+    if (a.length != b.length) return false;
+    for (final entry in a.entries) {
+      if (b[entry.key] != entry.value) return false;
+    }
+    return true;
+  }
+
+  static int _mapHash(Map<String, String> map) {
+    final entries = map.entries.map((e) => Object.hash(e.key, e.value)).toList()
+      ..sort();
+    return Object.hashAll(entries);
+  }
+
   static String _resolveLocale(Map<String, String> map, String? localeCode) {
     if (localeCode != null) {
       final exact = map[localeCode];
