@@ -13,6 +13,8 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 
+import '../helpers/test_helpers.dart';
+
 class _MockAuthService extends Mock implements AuthService {}
 
 const String _userPubkey =
@@ -130,32 +132,19 @@ void main() {
       authStateController.add(AuthState.checking);
     }
 
-    /// Pumps the event queue until [isSatisfied] holds, failing with
-    /// [description] once [_settleTimeout] elapses.
-    ///
-    /// The bound has to be wall-clock, not a fixed number of pumps: the work
-    /// being waited on completes on real Hive file I/O, while `pumpEventQueue`
-    /// only spins event-loop turns. A turn-bounded poll can burn its whole
-    /// budget in microseconds with the I/O still outstanding, which is how a
-    /// loaded CI isolate flaked this suite (run 31199721092, shard 3/4).
-    Future<void> waitFor(
+    /// Waits on wall-clock time rather than a fixed pump count because the
+    /// condition depends on real Hive file I/O.
+    Future<void> waitForPersonalCache(
       String description,
       bool Function() isSatisfied,
-    ) async {
-      final stopwatch = Stopwatch()..start();
-      while (!isSatisfied()) {
-        if (stopwatch.elapsed > _settleTimeout) {
-          fail(
-            'Timed out after ${_settleTimeout.inSeconds}s waiting for '
-            '$description.',
-          );
-        }
-        await pumpEventQueue();
-      }
-    }
+    ) => TestHelpers.waitForCondition(
+      isSatisfied,
+      timeout: _settleTimeout,
+      description: description,
+    );
 
     Future<void> waitForInitialized(PersonalEventCacheService service) =>
-        waitFor(
+        waitForPersonalCache(
           'PersonalEventCacheService to finish initializing',
           () => service.isInitialized,
         );
@@ -163,7 +152,7 @@ void main() {
     Future<void> waitForCachedEvent(
       PersonalEventCacheService service,
       Event event,
-    ) => waitFor(
+    ) => waitForPersonalCache(
       'event ${event.id} to be added to the kind ${event.kind} index',
       () => service
           .getEventsByKind(event.kind)
@@ -218,29 +207,26 @@ void main() {
       },
     );
 
-    test(
-      'keeps queued events through transient non-auth states',
-      () async {
-        final container = buildContainer();
-        final subscription = container.listen(
-          personalEventCacheServiceProvider,
-          (_, _) {},
-          fireImmediately: true,
-        );
-        addTearDown(subscription.close);
-        final ownEvent = _createEvent(pubkey: _userPubkey, id: _hexId(3));
+    test('keeps queued events through transient non-auth states', () async {
+      final container = buildContainer();
+      final subscription = container.listen(
+        personalEventCacheServiceProvider,
+        (_, _) {},
+        fireImmediately: true,
+      );
+      addTearDown(subscription.close);
+      final ownEvent = _createEvent(pubkey: _userPubkey, id: _hexId(3));
 
-        final service = subscription.read();
-        service.cacheUserEvent(ownEvent);
+      final service = subscription.read();
+      service.cacheUserEvent(ownEvent);
 
-        emitChecking();
-        await authenticate();
-        await waitForInitialized(service);
+      emitChecking();
+      await authenticate();
+      await waitForInitialized(service);
 
-        expect(service.hasEvent(ownEvent.id), isTrue);
-        expect(service.getEventById(ownEvent.id)?.id, ownEvent.id);
-      },
-    );
+      expect(service.hasEvent(ownEvent.id), isTrue);
+      expect(service.getEventById(ownEvent.id)?.id, ownEvent.id);
+    });
 
     test(
       'resets active cache session when auth becomes unauthenticated',

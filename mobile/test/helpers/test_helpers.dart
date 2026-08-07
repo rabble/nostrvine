@@ -257,6 +257,7 @@ class TestHelpers {
     bool Function() condition, {
     Duration timeout = const Duration(seconds: 5),
     Duration checkInterval = const Duration(milliseconds: 100),
+    String description = 'condition',
   }) async {
     final stopwatch = Stopwatch()..start();
 
@@ -266,7 +267,7 @@ class TestHelpers {
 
     if (!condition()) {
       throw TimeoutException(
-        'Condition not met within ${timeout.inSeconds} seconds',
+        'Timed out after ${timeout.inSeconds}s waiting for $description.',
         timeout,
       );
     }
