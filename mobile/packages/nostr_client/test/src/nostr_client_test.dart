@@ -1436,6 +1436,44 @@ void main() {
           expect(result.events, [matching]);
         },
       );
+
+      test(
+        'drops cached events that do not match the requested filter',
+        () async {
+          final mockDbClient = _MockAppDbClient();
+          final mockDatabase = _MockAppDatabase();
+          final dao = _MockNostrEventsDao();
+          when(() => mockDbClient.database).thenReturn(mockDatabase);
+          when(() => mockDatabase.nostrEventsDao).thenReturn(dao);
+
+          final matching = _createTestEvent(kind: EventKind.textNote);
+          final offFilter = _createTestEvent(kind: EventKind.relayListMetadata);
+          // A row the cache holds but this query did not ask for — what an
+          // older build persisted before the gate existed, or what one of the
+          // other writers into this table put there.
+          when(
+            () => dao.getEventsByFilter(any()),
+          ).thenAnswer((_) async => [offFilter, matching]);
+
+          final clientWithCache = NostrClient.forTesting(
+            nostr: mockNostr,
+            relayManager: mockRelayManager,
+            dbClient: mockDbClient,
+          );
+          stubWebSocketEvents([]);
+
+          final result = await clientWithCache.queryEventsDetailed([
+            textNoteFilter(),
+          ]);
+
+          expect(
+            result.events,
+            [matching],
+            reason:
+                'the cache leg is held to the same filter as the network leg',
+          );
+        },
+      );
     });
 
     group('fetchEventById', () {
