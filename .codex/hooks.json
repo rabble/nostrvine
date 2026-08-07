@@ -47,15 +47,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$(git rev-parse --show-toplevel)/.codex/hooks/post-edit-format.sh\"",
-            "timeout": 30,
-            "statusMessage": "Formatting code..."
-          },
-          {
-            "type": "command",
-            "command": "\"$(git rev-parse --show-toplevel)/.codex/hooks/post-edit-analyze.sh\"",
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/hooks/post-edit-dart.sh\"",
             "timeout": 60,
-            "statusMessage": "Analyzing code..."
+            "statusMessage": "Formatting and analyzing Dart code..."
           }
         ]
       }

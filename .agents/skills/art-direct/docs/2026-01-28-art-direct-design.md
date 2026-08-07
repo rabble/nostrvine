@@ -208,7 +208,7 @@ ai_prompt_suffixes:
 ```
 
 **Storage locations:**
-- `~/.claude/skills/art-direct/styles/` (user global)
+- `~/.agents/skills/art-direct/styles/` (user global)
 - `.art-direction/styles/` (project local)
 
 **Cross-skill template sourcing:**

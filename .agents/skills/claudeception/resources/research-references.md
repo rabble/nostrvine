@@ -6,8 +6,8 @@ This document compiles the academic research that informed the design of Claudec
 
 ### Voyager: An Open-Ended Embodied Agent with Large Language Models
 
-**Authors**: Wang, Xie, Jiang, Mandlekar, Xiao, Zhu, Fan, Anandkumar
-**Published**: May 2023
+**Authors**: Wang, Xie, Jiang, Mandlekar, Xiao, Zhu, Fan, Anandkumar<br>
+**Published**: May 2023<br>
 **URL**: https://arxiv.org/abs/2305.16291
 
 **Key Contribution**: First LLM-powered embodied lifelong learning agent with a skill library architecture.
@@ -26,8 +26,8 @@ This document compiles the academic research that informed the design of Claudec
 
 ### CASCADE: Cumulative Agentic Skill Creation through Autonomous Development and Evolution
 
-**Authors**: [Research Team]
-**Published**: December 2024
+**Authors**: [Research Team]<br>
+**Published**: December 2024<br>
 **URL**: https://arxiv.org/abs/2512.23880
 
 **Key Contribution**: Self-evolving agentic framework demonstrating the transition from "LLM + tool use" to "LLM + skill acquisition."
@@ -44,8 +44,8 @@ This document compiles the academic research that informed the design of Claudec
 
 ### SEAgent: Self-Evolving Computer Use Agent with Autonomous Learning from Experience
 
-**Authors**: Sun et al.
-**Published**: August 2025
+**Authors**: Sun et al.<br>
+**Published**: August 2025<br>
 **URL**: https://arxiv.org/abs/2508.04700
 
 **Key Contribution**: Framework enabling agents to autonomously evolve through interactions with unfamiliar software.
@@ -62,8 +62,8 @@ This document compiles the academic research that informed the design of Claudec
 
 ### Reflexion: Language Agents with Verbal Reinforcement Learning
 
-**Authors**: Shinn et al.
-**Published**: March 2023
+**Authors**: Shinn et al.<br>
+**Published**: March 2023<br>
 **URL**: https://arxiv.org/abs/2303.11366
 
 **Key Contribution**: Framework for verbal reinforcement through linguistic feedback and self-reflection.
@@ -80,7 +80,7 @@ This document compiles the academic research that informed the design of Claudec
 
 ### EvoFSM: Controllable Self-Evolution for Deep Research with Finite State Machines
 
-**Authors**: [Research Team]
+**Authors**: [Research Team]<br>
 **Published**: 2024
 
 **Key Contribution**: Self-evolving framework with experience pools for continuous learning.

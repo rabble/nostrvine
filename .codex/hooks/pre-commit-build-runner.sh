@@ -7,6 +7,21 @@
 
 set -e
 
+HOOK_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# shellcheck source=lib/dart-runner.sh
+source "$HOOK_DIR/lib/dart-runner.sh"
+
+emit_deny() {
+  jq -n --arg reason "$1" '{
+    hookSpecificOutput: {
+      hookEventName: "PreToolUse",
+      permissionDecision: "deny",
+      permissionDecisionReason: $reason
+    }
+  }'
+  exit 0
+}
+
 # Filter: only run on git commit commands
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
@@ -14,55 +29,75 @@ COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 FIRST_CMD=$(echo "$COMMAND" | head -1 | sed 's/[[:space:]]*&&.*//' | sed 's/[[:space:]]*|.*//' | sed 's/[[:space:]]*;.*//')
 echo "$FIRST_CMD" | grep -qE '^[[:space:]]*git[[:space:]]+commit([[:space:]]|$)' || exit 0
 
-# Get staged Dart files (excluding generated files)
-STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.dart$' | grep -v '\.g\.dart$' | grep -v '\.freezed\.dart$' || true)
+# Collect staged Dart inputs and their package roots without word-splitting paths.
+STAGED_FILES=()
+PACKAGE_ROOTS=()
 
-if [ -z "$STAGED_FILES" ]; then
-  exit 0
-fi
+while IFS= read -r -d '' FILE; do
+  case "$FILE" in
+    *.g.dart|*.freezed.dart|*.mocks.dart)
+      continue
+      ;;
+    *.dart)
+      ;;
+    *)
+      continue
+      ;;
+  esac
 
-# Collect package roots that need build_runner
-PACKAGE_ROOTS=""
-
-for FILE in $STAGED_FILES; do
-  # Skip if file doesn't exist
+  STAGED_FILES[${#STAGED_FILES[@]}]="$FILE"
   [ -f "$FILE" ] || continue
 
-  # Check if file contains code generation annotations
   if grep -qE '@(freezed|riverpod|Riverpod|JsonSerializable|GenerateMocks|HiveType|DriftDatabase|DriftAccessor)' "$FILE"; then
-    # Find the package root
-    PACKAGE_DIR="$FILE"
+    PACKAGE_DIR=$(dirname "$FILE")
     while [ "$PACKAGE_DIR" != "." ] && [ "$PACKAGE_DIR" != "/" ]; do
-      PACKAGE_DIR=$(dirname "$PACKAGE_DIR")
       if [ -f "$PACKAGE_DIR/pubspec.yaml" ]; then
-        # Add to set of package roots (dedup)
-        if ! echo "$PACKAGE_ROOTS" | grep -q "^${PACKAGE_DIR}$"; then
-          PACKAGE_ROOTS="${PACKAGE_ROOTS}${PACKAGE_DIR}
-"
+        ROOT_PRESENT=false
+        for ROOT in "${PACKAGE_ROOTS[@]}"; do
+          if [ "$ROOT" = "$PACKAGE_DIR" ]; then
+            ROOT_PRESENT=true
+            break
+          fi
+        done
+        if [ "$ROOT_PRESENT" = false ]; then
+          PACKAGE_ROOTS[${#PACKAGE_ROOTS[@]}]="$PACKAGE_DIR"
         fi
         break
       fi
+      PACKAGE_DIR=$(dirname "$PACKAGE_DIR")
     done
   fi
-done
+done < <(git diff --cached --name-only --diff-filter=ACM -z)
 
 # Run build_runner for each unique package root
-if [ -n "$PACKAGE_ROOTS" ]; then
-  echo "$PACKAGE_ROOTS" | while read -r ROOT; do
-    [ -z "$ROOT" ] && continue
-    echo "Running build_runner in $ROOT..."
-    (cd "$ROOT" && dart run build_runner build --delete-conflicting-outputs 2>&1) || {
-      echo "ERROR: build_runner failed in $ROOT"
-      exit 1
-    }
+if [ ${#PACKAGE_ROOTS[@]} -gt 0 ]; then
+  if ! resolve_dart_runner; then
+    emit_deny "Unable to run build_runner with the repository Dart SDK: $DART_RESOLUTION_REASON"
+  fi
+
+  for ROOT in "${PACKAGE_ROOTS[@]}"; do
+    echo "Running build_runner in $ROOT..." >&2
+    BUILD_OUTPUT=""
+    if ! BUILD_OUTPUT=$(run_repo_dart "$ROOT" run build_runner build --delete-conflicting-outputs 2>&1); then
+      BUILD_TAIL=$(printf '%s\n' "$BUILD_OUTPUT" | tail -20)
+      emit_deny "build_runner failed in $ROOT:\n$BUILD_TAIL"
+    fi
   done
 
   # Stage any regenerated files
-  for FILE in $STAGED_FILES; do
+  for FILE in "${STAGED_FILES[@]}"; do
     GENERATED="${FILE%.dart}.g.dart"
     FREEZED="${FILE%.dart}.freezed.dart"
-    [ -f "$GENERATED" ] && git add "$GENERATED"
-    [ -f "$FREEZED" ] && git add "$FREEZED"
+    MOCKS="${FILE%.dart}.mocks.dart"
+    if [ -f "$GENERATED" ]; then
+      git add "$GENERATED"
+    fi
+    if [ -f "$FREEZED" ]; then
+      git add "$FREEZED"
+    fi
+    if [ -f "$MOCKS" ]; then
+      git add "$MOCKS"
+    fi
   done
 fi
 

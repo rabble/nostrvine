@@ -4,16 +4,16 @@ description: |
   Review all uncommitted changes before pushing. Checks for dead code,
   stale comments, AGENTS.md rule violations, unused imports, and
   inconsistencies introduced during the current session.
-  Invoke with /review-before-commit.
+  Invoke with $review-before-commit.
 author: Claude Code
 version: 1.0.0
 date: 2026-02-10
 user_invocable: true
-invocation_hint: /review-before-commit
+invocation_hint: $review-before-commit
 arguments: |
   Optional: Scope the review to specific paths
-  Example: /review-before-commit
-  Example: /review-before-commit lib/blocs/hashtag_feed/
+  Example: $review-before-commit
+  Example: $review-before-commit lib/blocs/hashtag_feed/
 ---
 
 # Review Skill
