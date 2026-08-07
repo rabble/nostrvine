@@ -1,5 +1,5 @@
 // ABOUTME: Riverpod wiring for creator sync repositories.
-// ABOUTME: Returns null until the vault key resolves, gating the UI.
+// ABOUTME: Reports session-not-ready, vault-locked, and available distinctly.
 
 import 'dart:async';
 
