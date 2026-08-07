@@ -7520,7 +7520,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get supportPublicSubmissionMessage =>
-      'آپ یہاں جو کچھ بھی جمع کرائیں گے وہ ہمارے اوپن سورس GitHub ریپوزٹری میں پوسٹ کیا جائے گا تاکہ ڈویلپرز اس پر کام کر سکیں۔ یہ پوسٹ سب کو عوامی طور پر نظر آئے گی۔';
+      'آپ یہاں جو کچھ بھی جمع کرائیں گے وہ ہمارے اوپن سورس GitHub ریپوزٹری میں پوسٹ کیا جائے گا تاکہ ڈویلپرز اس پر کام کر سکیں۔ یہ پوسٹ اور وہ اکاؤنٹ جس سے آپ سائن اِن ہیں، سب کو عوامی طور پر نظر آئیں گے۔';
 
   @override
   String get supportRequiredHelper => 'درکار';

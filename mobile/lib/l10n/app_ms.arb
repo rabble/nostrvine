@@ -4407,7 +4407,7 @@
   "bugReportSendReport": "Hantar Laporan",
   "supportSubjectRequiredLabel": "Subjek *",
   "supportPublicSubmissionTitle": "Siaran GitHub awam",
-  "supportPublicSubmissionMessage": "Semua yang anda hantar di sini akan disiarkan dalam repositori sumber terbuka kami di GitHub supaya pembangun boleh mengendalikannya. Siaran ini boleh dilihat oleh semua orang.",
+  "supportPublicSubmissionMessage": "Semua yang anda hantar di sini akan disiarkan dalam repositori sumber terbuka kami di GitHub supaya pembangun boleh mengendalikannya. Siaran ini dan akaun yang anda log masuk boleh dilihat oleh semua orang.",
   "supportRequiredHelper": "Diperlukan",
   "bugReportSubjectHint": "Ringkasan ringkas isu itu",
   "bugReportDescriptionRequiredLabel": "Apa yang berlaku? *",

@@ -7511,7 +7511,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get supportPublicSubmissionMessage =>
-      'Allt du skickar in här publiceras i vårt öppna GitHub-arkiv så att utvecklare kan ta hand om det. Inlägget blir offentligt synligt för alla.';
+      'Allt du skickar in här publiceras i vårt öppna GitHub-arkiv så att utvecklare kan ta hand om det. Inlägget och kontot du är inloggad med blir offentligt synliga för alla.';
 
   @override
   String get supportRequiredHelper => 'Obligatoriskt';

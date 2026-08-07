@@ -7566,7 +7566,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get supportPublicSubmissionMessage =>
-      'Semua yang anda hantar di sini akan disiarkan dalam repositori sumber terbuka kami di GitHub supaya pembangun boleh mengendalikannya. Siaran ini boleh dilihat oleh semua orang.';
+      'Semua yang anda hantar di sini akan disiarkan dalam repositori sumber terbuka kami di GitHub supaya pembangun boleh mengendalikannya. Siaran ini dan akaun yang anda log masuk boleh dilihat oleh semua orang.';
 
   @override
   String get supportRequiredHelper => 'Diperlukan';

@@ -7614,7 +7614,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get supportPublicSubmissionMessage =>
-      'Tout ce que tu envoies ici sera publié dans notre dépôt open source sur GitHub afin que les développeurs puissent s\'en charger. La publication sera visible par tout le monde.';
+      'Tout ce que tu envoies ici sera publié dans notre dépôt open source sur GitHub afin que les développeurs puissent s\'en charger. La publication et le compte avec lequel tu es connecté seront visibles par tout le monde.';
 
   @override
   String get supportRequiredHelper => 'Requis';

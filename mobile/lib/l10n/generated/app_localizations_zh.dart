@@ -7139,7 +7139,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get supportPublicSubmissionMessage =>
-      '你在这里提交的所有内容都会发布到我们在 GitHub 上的开源仓库中，以便开发者处理。所有人都可以公开查看该帖子。';
+      '你在这里提交的所有内容都会发布到我们在 GitHub 上的开源仓库中，以便开发者处理。该帖子和你登录使用的账号都会被所有人公开查看。';
 
   @override
   String get supportRequiredHelper => '必填';

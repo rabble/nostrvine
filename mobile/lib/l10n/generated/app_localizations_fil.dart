@@ -7604,7 +7604,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get supportPublicSubmissionMessage =>
-      'Lahat ng isusumite mo rito ay ipo-post sa aming open-source repository sa GitHub para maasikaso ito ng mga developer. Makikita ng lahat ang post.';
+      'Lahat ng isusumite mo rito ay ipo-post sa aming open-source repository sa GitHub para maasikaso ito ng mga developer. Makikita ng lahat ang post at ang account na ginamit mong mag-sign in.';
 
   @override
   String get supportRequiredHelper => 'Kailangan';

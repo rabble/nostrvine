@@ -7570,7 +7570,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get supportPublicSubmissionMessage =>
-      'Tudo o que você enviar aqui será publicado no nosso repositório de código aberto no GitHub para que os desenvolvedores possam cuidar disso. A publicação ficará visível para todos.';
+      'Tudo o que você enviar aqui será publicado no nosso repositório de código aberto no GitHub para que os desenvolvedores possam cuidar disso. A publicação e a conta com que você entrou ficarão visíveis para todos.';
 
   @override
   String get supportRequiredHelper => 'Obrigatório';

@@ -4407,7 +4407,7 @@
   "bugReportSendReport": "发送报告",
   "supportSubjectRequiredLabel": "主题 *",
   "supportPublicSubmissionTitle": "公开的 GitHub 帖子",
-  "supportPublicSubmissionMessage": "你在这里提交的所有内容都会发布到我们在 GitHub 上的开源仓库中，以便开发者处理。所有人都可以公开查看该帖子。",
+  "supportPublicSubmissionMessage": "你在这里提交的所有内容都会发布到我们在 GitHub 上的开源仓库中，以便开发者处理。该帖子和你登录使用的账号都会被所有人公开查看。",
   "supportRequiredHelper": "必填",
   "bugReportSubjectHint": "简要概括问题",
   "bugReportDescriptionRequiredLabel": "发生了什么？*",

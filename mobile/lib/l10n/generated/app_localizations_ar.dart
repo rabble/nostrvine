@@ -7467,7 +7467,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get supportPublicSubmissionMessage =>
-      'سيُنشر كل ما ترسله هنا في مستودعنا مفتوح المصدر على GitHub ليتمكن المطورون من العمل عليه. سيكون المنشور متاحًا للجميع علنًا.';
+      'سيُنشر كل ما ترسله هنا في مستودعنا مفتوح المصدر على GitHub ليتمكن المطورون من العمل عليه. سيكون المنشور والحساب الذي سجّلت الدخول به متاحين للجميع علنًا.';
 
   @override
   String get supportRequiredHelper => 'مطلوب';

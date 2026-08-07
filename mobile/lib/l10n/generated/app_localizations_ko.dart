@@ -7209,7 +7209,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get supportPublicSubmissionMessage =>
-      '여기에 제출하는 모든 내용은 개발자가 작업을 맡을 수 있도록 GitHub의 오픈 소스 저장소에 게시됩니다. 게시물은 누구나 공개적으로 볼 수 있습니다.';
+      '여기에 제출하는 모든 내용은 개발자가 작업을 맡을 수 있도록 GitHub의 오픈 소스 저장소에 게시됩니다. 게시물과 로그인한 계정은 누구나 공개적으로 볼 수 있습니다.';
 
   @override
   String get supportRequiredHelper => '필수';

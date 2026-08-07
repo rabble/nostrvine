@@ -3751,7 +3751,7 @@
     "bugReportSendReport": "إرسال التقرير",
     "supportSubjectRequiredLabel": "الموضوع *",
     "supportPublicSubmissionTitle": "منشور عام على GitHub",
-    "supportPublicSubmissionMessage": "سيُنشر كل ما ترسله هنا في مستودعنا مفتوح المصدر على GitHub ليتمكن المطورون من العمل عليه. سيكون المنشور متاحًا للجميع علنًا.",
+    "supportPublicSubmissionMessage": "سيُنشر كل ما ترسله هنا في مستودعنا مفتوح المصدر على GitHub ليتمكن المطورون من العمل عليه. سيكون المنشور والحساب الذي سجّلت الدخول به متاحين للجميع علنًا.",
     "supportRequiredHelper": "مطلوب",
     "bugReportSubjectHint": "ملخّص قصير للمشكلة",
     "bugReportDescriptionRequiredLabel": "ماذا حدث؟ *",

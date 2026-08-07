@@ -3751,7 +3751,7 @@
     "bugReportSendReport": "Envoyer le rapport",
     "supportSubjectRequiredLabel": "Sujet *",
     "supportPublicSubmissionTitle": "Publication GitHub publique",
-    "supportPublicSubmissionMessage": "Tout ce que tu envoies ici sera publié dans notre dépôt open source sur GitHub afin que les développeurs puissent s'en charger. La publication sera visible par tout le monde.",
+    "supportPublicSubmissionMessage": "Tout ce que tu envoies ici sera publié dans notre dépôt open source sur GitHub afin que les développeurs puissent s'en charger. La publication et le compte avec lequel tu es connecté seront visibles par tout le monde.",
     "supportRequiredHelper": "Requis",
     "bugReportSubjectHint": "Bref résumé du problème",
     "bugReportDescriptionRequiredLabel": "Que s'est-il passé ? *",

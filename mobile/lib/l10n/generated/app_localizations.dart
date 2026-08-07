@@ -12995,7 +12995,7 @@ abstract class AppLocalizations {
   /// No description provided for @supportPublicSubmissionMessage.
   ///
   /// In en, this message translates to:
-  /// **'Everything you submit here will be posted to our open-source repository on GitHub so developers can pick it up. Your post will be publicly visible to everyone.'**
+  /// **'Everything you submit here will be posted to our open-source repository on GitHub so developers can pick it up. Your post and the account you\'re signed in with will be publicly visible to everyone.'**
   String get supportPublicSubmissionMessage;
 
   /// No description provided for @supportRequiredHelper.

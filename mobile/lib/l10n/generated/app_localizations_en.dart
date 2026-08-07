@@ -7506,7 +7506,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get supportPublicSubmissionMessage =>
-      'Everything you submit here will be posted to our open-source repository on GitHub so developers can pick it up. Your post will be publicly visible to everyone.';
+      'Everything you submit here will be posted to our open-source repository on GitHub so developers can pick it up. Your post and the account you\'re signed in with will be publicly visible to everyone.';
 
   @override
   String get supportRequiredHelper => 'Required';
