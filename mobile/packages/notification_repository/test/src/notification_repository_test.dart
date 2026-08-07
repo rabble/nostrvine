@@ -3030,6 +3030,82 @@ void main() {
         },
       );
 
+      test('leaves a hex run inside a URL to the plain cut', () async {
+        // The UI's URL alternative starts earlier than the hex one and wins,
+        // so https://host/<64-hex> is a single URL token and the hex inside
+        // it is never linked. Pulling the cut back to it would shorten the
+        // preview for a span the UI never resolves. Blossom and CDN media
+        // URLs are exactly this shape, so this is the common case, not an
+        // edge case.
+        const hex64 =
+            'a1b2c3d4e5f60718293a4b5c6d7e8f90'
+            'a1b2c3d4e5f60718293a4b5c6d7e8f90';
+        const content =
+            'Look at this https://blossom.divine.video/$hex64.mp4 great stuff';
+        stubNotifications([
+          makeNotification(
+            notificationType: 'comment',
+            sourceKind: 1,
+            content: content,
+          ),
+        ]);
+        stubProfiles({});
+
+        final page = await repository.getNotifications();
+        final item = page.items.single as VideoNotification;
+        expect(
+          item.commentText,
+          equals('Look at this https://blossom.divine.video/a1b2c3d4...'),
+        );
+      });
+
+      test('leaves a bech32 token inside a URL to the plain cut', () async {
+        // Same rule as the hex case: a share link is one URL token in the UI,
+        // so the npub in its path is not a reference either.
+        const npub =
+            'npub180cvv07tjdrrgpa9jzd0cdkej42kwsaxq9rz7gvdpjx6nz004f9uulstw6';
+        const content = 'Follow https://divine.video/$npub please';
+        stubNotifications([
+          makeNotification(
+            notificationType: 'comment',
+            sourceKind: 1,
+            content: content,
+          ),
+        ]);
+        stubProfiles({});
+
+        final page = await repository.getNotifications();
+        final item = page.items.single as VideoNotification;
+        expect(item.commentText, equals('${content.substring(0, 50)}...'));
+        expect(
+          item.commentText,
+          startsWith('Follow https://divine.video/npub1'),
+        );
+      });
+
+      test('leaves a hex run behind a hashtag to the plain cut', () async {
+        // The hashtag alternative also starts earlier and swallows the run.
+        const hex64 =
+            'a1b2c3d4e5f60718293a4b5c6d7e8f90'
+            'a1b2c3d4e5f60718293a4b5c6d7e8f90';
+        const content = 'nice one #$hex64 keep going with more words here';
+        stubNotifications([
+          makeNotification(
+            notificationType: 'comment',
+            sourceKind: 1,
+            content: content,
+          ),
+        ]);
+        stubProfiles({});
+
+        final page = await repository.getNotifications();
+        final item = page.items.single as VideoNotification;
+        expect(
+          item.commentText,
+          equals('nice one #a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4...'),
+        );
+      });
+
       test(
         'like / repost on video leaves commentText null (no body text)',
         () async {

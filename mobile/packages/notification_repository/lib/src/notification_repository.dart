@@ -46,21 +46,38 @@ final RegExp _npubIdentifierPattern = RegExp(
   caseSensitive: false,
 );
 
-/// A Nostr reference embedded in note content that the UI can decode: either
-/// bech32 (`npub1...`, `nostr:nprofile1...`) or a bare 64-char hex pubkey /
-/// event id.
+/// Mirror of `LinkifiedTextSpanBuilder._combinedRegex`
+/// (`mobile/lib/widgets/linkified_text/linkified_text_span_builder.dart`),
+/// alternative for alternative and in the same order.
 ///
-/// Keep both boundary rules aligned with
-/// `LinkifiedTextSpanBuilder._combinedRegex` so the repository protects
-/// exactly the token spans the UI can decode — no more, no less. A hex
-/// reference is 64 characters, so it always exceeds the preview cap; leaving
-/// it unprotected guaranteed a sliced fragment that the UI then rendered as
-/// raw hex, which is the same defect bech32 slicing caused.
-final RegExp _decodableReferencePattern = RegExp(
-  r'(?<![A-Za-z0-9])(?:nostr:)?(?:npub|nprofile|note|nevent|naddr)1[a-z0-9]+\b'
-  '|(?<![A-Fa-f0-9])[A-Fa-f0-9]{64}(?![A-Fa-f0-9])',
+/// The surrounding alternatives are mirrored too, not just the two reference
+/// ones, because alternation resolves per start position: a URL or hashtag
+/// that *contains* a bech32 or hex run starts earlier and wins there. In the
+/// UI `https://host/<64-hex>` is a single URL token and the hex inside it is
+/// never a reference. A pattern holding only the reference alternatives
+/// cannot see that and pulls the preview cut back for a span the UI never
+/// links — Blossom and CDN media URLs are exactly that shape.
+///
+/// Group 3 is a bech32 reference and group 4 a bare 64-char hex pubkey /
+/// event id; those are the spans [NotificationRepository._referenceAwareCut]
+/// protects. Groups 1 and 2 (URL/email, hashtag) are here only to consume
+/// their own text so a run buried inside them is not mistaken for one.
+///
+/// The UI's trailing `@([a-zA-Z][a-zA-Z0-9_]{0,30})` alternative is the one
+/// deliberate divergence. It wins over the bech32 alternative for `@npub1…`
+/// and truncates the token to 31 characters, so mirroring it would drop the
+/// protection #6346 added for that input. Whether the UI should tokenize
+/// `@npub1…` as a mention at all is a separate question from this cut.
+final RegExp _uiTokenPattern = RegExp(
+  r'((?:[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})|(?:https?:\/\/[^\s]+|www\.[^\s]+|(?<![@\w])(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s]*)?))|#(\w+)|(?<![A-Za-z0-9])(?:nostr:)?((?:npub|nprofile|note|nevent|naddr)1[a-z0-9]+)\b|(?<![A-Fa-f0-9])([A-Fa-f0-9]{64})(?![A-Fa-f0-9])',
   caseSensitive: false,
 );
+
+/// [_uiTokenPattern] group holding a bech32 Nostr reference.
+const _bech32ReferenceGroup = 3;
+
+/// [_uiTokenPattern] group holding a bare 64-char hex pubkey / event id.
+const _hexReferenceGroup = 4;
 
 /// Any letter or digit in any script.
 ///
@@ -2375,9 +2392,17 @@ class NotificationRepository {
   /// split. If the content before that token is only whitespace or
   /// punctuation, and keeping the full token stays within the preview bound,
   /// the token's end is returned so the UI can resolve it.
+  ///
+  /// A token the UI resolves as a URL or hashtag is skipped even when a
+  /// bech32 or hex run sits inside it — the UI does not link that run, so
+  /// pulling the cut back to it only shortens the preview.
   static int _referenceAwareCut(String content, int limit) {
     final maxReferencePreviewLength = limit * 4;
-    for (final match in _decodableReferencePattern.allMatches(content)) {
+    for (final match in _uiTokenPattern.allMatches(content)) {
+      final isReference =
+          match.group(_bech32ReferenceGroup) != null ||
+          match.group(_hexReferenceGroup) != null;
+      if (!isReference) continue;
       final startsBeforeOrAtLimit = match.start < limit;
       final endsAfterLimit = match.end > limit;
       if (!startsBeforeOrAtLimit || !endsAfterLimit) continue;
