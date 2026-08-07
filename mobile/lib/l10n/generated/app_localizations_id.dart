@@ -4295,6 +4295,20 @@ class AppLocalizationsId extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
+  String get soundSyncStatusSyncing => 'Syncing your sounds…';
+
+  @override
+  String get soundSyncStatusSynced => 'Sounds up to date';
+
+  @override
+  String get soundSyncStatusFailed =>
+      'Couldn\'t sync your sounds. We\'ll try again.';
+
+  @override
+  String get soundSyncStatusLocked =>
+      'Can\'t unlock your synced library on this device.';
+
+  @override
   String get soundsFailedToLoad => 'Gagal memuat suara';
 
   @override

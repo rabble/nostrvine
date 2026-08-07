@@ -432,6 +432,12 @@ const _knownUntranslatedDebt = <String>{
   'soundCreditPublicHashtagsLabel',
   'soundsSaveFailed',
   'soundsRemoveFailed',
+  // Cross-device sound library sync status copy; translation is deferred to
+  // the next sound-library localization pass.
+  'soundSyncStatusSyncing',
+  'soundSyncStatusSynced',
+  'soundSyncStatusFailed',
+  'soundSyncStatusLocked',
   // Distinguishes a signing-service failure from a genuinely offline device on
   // the missing-content-credential sheet. English-only until the next
   // localization pass; offline devices still get the fully translated

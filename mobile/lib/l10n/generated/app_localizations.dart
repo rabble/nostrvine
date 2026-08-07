@@ -7526,6 +7526,30 @@ abstract class AppLocalizations {
   /// **'Couldn\'t remove that sound. Try again.'**
   String get soundsRemoveFailed;
 
+  /// No description provided for @soundSyncStatusSyncing.
+  ///
+  /// In en, this message translates to:
+  /// **'Syncing your sounds…'**
+  String get soundSyncStatusSyncing;
+
+  /// No description provided for @soundSyncStatusSynced.
+  ///
+  /// In en, this message translates to:
+  /// **'Sounds up to date'**
+  String get soundSyncStatusSynced;
+
+  /// No description provided for @soundSyncStatusFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t sync your sounds. We\'ll try again.'**
+  String get soundSyncStatusFailed;
+
+  /// No description provided for @soundSyncStatusLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t unlock your synced library on this device.'**
+  String get soundSyncStatusLocked;
+
   /// No description provided for @soundsFailedToLoad.
   ///
   /// In en, this message translates to:

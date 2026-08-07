@@ -2539,6 +2539,10 @@
   "@soundsRemoveFailed": {
     "description": "Snackbar shown when removing a sound from the local library fails to persist."
   },
+  "soundSyncStatusSyncing": "Syncing your sounds…",
+  "soundSyncStatusSynced": "Sounds up to date",
+  "soundSyncStatusFailed": "Couldn't sync your sounds. We'll try again.",
+  "soundSyncStatusLocked": "Can't unlock your synced library on this device.",
   "soundsFailedToLoad": "Failed to load sounds",
   "soundsRetry": "Retry",
   "soundsScreenLabel": "Sounds screen",
