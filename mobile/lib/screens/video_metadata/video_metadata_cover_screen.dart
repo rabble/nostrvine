@@ -964,12 +964,25 @@ class _FadingSlotImageState extends State<_FadingSlotImage> {
   /// dipping back to the fallback while the new file decodes.
   bool _hasFrame = false;
 
+  /// Set once the frame is fully opaque, from where the layer underneath is
+  /// a second full-size image painted behind an opaque one — on every frame,
+  /// for every slot, for as long as the picker is open. The error path keeps
+  /// its own copy via [ClipThumbnailImage.placeholder], and a reassigned slot
+  /// holds its previous frame through `gaplessPlayback`, so nothing still
+  /// needs it.
+  bool _covered = false;
+
+  void _dropFallback() {
+    if (_covered || !_hasFrame || !mounted) return;
+    setState(() => _covered = true);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Stack(
       fit: .expand,
       children: [
-        widget.fallback,
+        if (_covered) const SizedBox.shrink() else widget.fallback,
         ClipThumbnailImage(
           path: widget.path,
           fit: .cover,
@@ -978,12 +991,20 @@ class _FadingSlotImageState extends State<_FadingSlotImage> {
           placeholder: widget.fallback,
           frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
             if (frame != null || wasSynchronouslyLoaded) _hasFrame = true;
+            if (wasSynchronouslyLoaded && !_covered) {
+              // Painted opaque on this very build, so there is no transition
+              // for `onEnd` to report — drop the layer on the next frame.
+              WidgetsBinding.instance.addPostFrameCallback(
+                (_) => _dropFallback(),
+              );
+            }
             return AnimatedOpacity(
               opacity: _hasFrame ? 1 : 0,
               // A cache hit paints on the first build; fading in from
               // nothing there would invent a transition nobody asked for.
               duration: wasSynchronouslyLoaded ? Duration.zero : _fadeDuration,
               curve: Curves.easeOut,
+              onEnd: _dropFallback,
               child: child,
             );
           },
