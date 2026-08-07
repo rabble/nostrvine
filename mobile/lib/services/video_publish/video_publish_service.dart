@@ -977,9 +977,9 @@ class VideoPublishService {
   ///
   /// The precedence is load-bearing: a refusal's message interpolates a
   /// 64-character hex Nostr id, and hex digits include every digit the
-  /// matcher reads as an HTTP status — an id containing `404`, `500`, `502`,
-  /// `503`, `401`, `403`, `413` or `429` classifies as `serverNotFound`,
-  /// `serverDown`, `notSignedIn`, `forbidden`, `fileTooLarge` or
+  /// matcher reads as an HTTP status — `404` becomes `serverNotFound`, `500`
+  /// `serverInternalError`, `502` and `503` `serverDown`, `401`
+  /// `notSignedIn`, `403` `forbidden`, `413` `fileTooLarge`, `429`
   /// `rateLimited`. Roughly one id in nine hits one of them, and
   /// `serverNotFound` even names the Blossom host in the copy.
   @visibleForTesting
