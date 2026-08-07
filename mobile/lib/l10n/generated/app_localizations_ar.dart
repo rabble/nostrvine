@@ -1814,6 +1814,46 @@ class AppLocalizationsAr extends AppLocalizations {
   String get metadataProofManifest => 'بيان الإثبات';
 
   @override
+  String get metadataVerificationInfoTooltip => 'ماذا تعني هذه الفحوصات؟';
+
+  @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
+  String get metadataVerificationInfoTitle => 'ماذا تعني هذه الفحوصات';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'تأتي هذه الإشارات من الكاميرا ومن ملف الفيديو نفسه. كلما حمل الفيديو عددًا أكبر منها، زاد ما يمكننا إثباته عن مصدره.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'ضمِن نظام تشغيل الهاتف التطبيق الذي سجّل هذا المقطع. دليل قوي على أنه جاء من كاميرا، لا من ملف رفعه أحدهم.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'وُقّع الفيديو تشفيريًا لحظة تصويره. غيّر إطارًا واحدًا بعد ذلك ينكسر التوقيع.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'سجل مصدر وفق معيار الصناعة يُحمل داخل الملف، فتستطيع تطبيقات غير Divine التحقق منه أيضًا.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'سجل ProofMode الكامل: بصمة الملف والطابع الزمني وسياق التصوير، مرفقة مع الفيديو.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'غياب فحص لا يجعل الفيديو مزيفًا. المقاطع القديمة والملفات المرفوعة لم تحصل عليه أصلًا، وهذا يعني فقط أننا لا نستطيع إثبات ذلك الجزء.';
+
+  @override
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'اعرف المزيد على $url';
+  }
+
+  @override
   String get metadataCreatorLabel => 'الصانع';
 
   @override
@@ -7200,50 +7240,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
     return 'مستوحى من $creatorName. اضغط لعرض ملفه الشخصي.';
   }
-
-  @override
-  String get proofmodeBadgeAiScanPending => 'فحص الذكاء الاصطناعي قيد الانتظار';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'من صنع إنسان';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'ليس مستضافًا على Divine';
-
-  @override
-  String get proofmodeBadgeOriginal => 'أصلي';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated =>
-      'ربما مُولَّد بالذكاء الاصطناعي';
-
-  @override
-  String get proofmodeBadgeUnverified => 'غير مُوثَّق';
-
-  @override
-  String get proofmodeConfirmedByModerator => 'مؤكَّد من مُشرِف بشري';
-
-  @override
-  String get proofmodeExternalContentTitle => 'محتوى خارجي';
-
-  @override
-  String get proofmodeHostedOnLabel => 'هذا الفيديو مستضاف على:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'على الأرجح من صنع إنسان';
-
-  @override
-  String get proofmodeNoProofDataAttached => 'لا توجد بيانات ProofMode مرفقة';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'هذا المحتوى غير مستضاف على خوادم Divine. لا يمكننا ضمان أصالته بالكامل.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'ربما مُولَّد بالذكاء الاصطناعي';
-
-  @override
-  String get proofmodePublishedByLabel => 'نُشر بواسطة:';
 
   @override
   String get publishErrorNotSignedIn => 'يرجى تسجيل الدخول لنشر الفيديوهات.';

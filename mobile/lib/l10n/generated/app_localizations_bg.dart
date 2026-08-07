@@ -1852,6 +1852,47 @@ class AppLocalizationsBg extends AppLocalizations {
   String get metadataProofManifest => 'Доказателствен манифест';
 
   @override
+  String get metadataVerificationInfoTooltip =>
+      'Какво означават тези проверки?';
+
+  @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
+  String get metadataVerificationInfoTitle => 'Какво означават тези проверки';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'Тези сигнали идват от камерата и от самия видеофайл. Колкото повече от тях носи едно видео, толкова повече можем да докажем за произхода му.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'Операционната система на телефона гарантира за приложението, което е записало това. Силно доказателство, че идва от камера, а не от качен от някого файл.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'Видеото е подписано криптографски в момента на заснемане. Ако после се промени дори един кадър, подписът се чупи.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'Запис за произход по индустриален стандарт, който пътува вътре във файла — така и приложения извън Divine могат да го проверят.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'Пълният запис на ProofMode: отпечатък на файла, времеви печат и контекст на заснемане, заедно с видеото.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'Липсваща проверка не прави видеото фалшиво. По-старите клипове и качванията никога не са имали такава — означава само, че не можем да докажем тази част.';
+
+  @override
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'Научете повече на $url';
+  }
+
+  @override
   String get metadataCreatorLabel => 'Създател';
 
   @override
@@ -7324,50 +7365,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
     return 'Вдъхновено от $creatorName. Докосни, за да видиш профила им.';
   }
-
-  @override
-  String get proofmodeBadgeAiScanPending => 'AI сканиране в очакване';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'Създадено от човек';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Не се хоства от Divine';
-
-  @override
-  String get proofmodeBadgeOriginal => 'Оригинал';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated =>
-      'Възможно е да е генерирано от AI';
-
-  @override
-  String get proofmodeBadgeUnverified => 'Непроверено';
-
-  @override
-  String get proofmodeConfirmedByModerator => 'Потвърдено от човек модератор';
-
-  @override
-  String get proofmodeExternalContentTitle => 'Външно съдържание';
-
-  @override
-  String get proofmodeHostedOnLabel => 'Това видео се хоства на:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'Вероятно създадено от човек';
-
-  @override
-  String get proofmodeNoProofDataAttached => 'Няма прикачени ProofMode данни';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'Това съдържание не се хоства на сървъри на Divine. Не можем напълно да гарантираме автентичността му.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'Възможно е да е генерирано от AI';
-
-  @override
-  String get proofmodePublishedByLabel => 'Публикувано от:';
 
   @override
   String get publishErrorNotSignedIn => 'Влез, за да публикуваш видеа.';

@@ -1856,6 +1856,48 @@ class AppLocalizationsFil extends AppLocalizations {
   String get metadataProofManifest => 'Proof manifest';
 
   @override
+  String get metadataVerificationInfoTooltip =>
+      'Ano ang ibig sabihin ng mga pagsusuring ito?';
+
+  @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
+  String get metadataVerificationInfoTitle =>
+      'Ang ibig sabihin ng mga pagsusuring ito';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'Nanggagaling ang mga senyas na ito sa camera at sa mismong video file. Kapag mas marami nito ang dala ng isang video, mas marami kaming mapapatunayan tungkol sa pinanggalingan nito.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'Pinanindigan ng operating system ng telepono ang app na nag-record nito. Malakas na patunay na galing ito sa camera, hindi sa file na may nag-upload.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'Cryptographic na nilagdaan ang video sa mismong sandali ng pagkuha. Baguhin ang kahit isang frame pagkatapos, masisira ang lagda.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'Isang industry-standard na tala ng pinagmulan na dala mismo ng file — kaya kayang suriin ito ng ibang app bukod sa Divine.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'Ang buong ProofMode record: fingerprint ng file, timestamp at konteksto ng pagkuha, kasama ng video.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'Ang kulang na pagsusuri ay hindi nangangahulugang peke ang video. Ang mga lumang clip at upload ay wala talaga nito — ibig lang sabihin, hindi namin mapapatunayan ang bahaging iyon.';
+
+  @override
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'Matuto pa sa $url';
+  }
+
+  @override
   String get metadataCreatorLabel => 'Creator';
 
   @override
@@ -7336,50 +7378,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
     return 'Inspirado ni $creatorName. I-tap para tingnan ang kanilang profile.';
   }
-
-  @override
-  String get proofmodeBadgeAiScanPending => 'Nakabinbin ang AI scan';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'Gawa ng Tao';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Hindi Naka-host sa Divine';
-
-  @override
-  String get proofmodeBadgeOriginal => 'Original';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'Posibleng AI-Generated';
-
-  @override
-  String get proofmodeBadgeUnverified => 'Hindi Na-verify';
-
-  @override
-  String get proofmodeConfirmedByModerator => 'Kinumpirma ng human moderator';
-
-  @override
-  String get proofmodeExternalContentTitle => 'External na Content';
-
-  @override
-  String get proofmodeHostedOnLabel => 'Naka-host ang video na ito sa:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'Malamang na gawa ng tao';
-
-  @override
-  String get proofmodeNoProofDataAttached =>
-      'Walang naka-attach na ProofMode data';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'Hindi naka-host sa mga Divine server ang content na ito. Hindi namin lubusang magagarantiya ang pagiging tunay nito.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'Posibleng AI-generated';
-
-  @override
-  String get proofmodePublishedByLabel => 'Ni-publish ni:';
 
   @override
   String get publishErrorNotSignedIn =>

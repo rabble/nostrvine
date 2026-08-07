@@ -1792,6 +1792,47 @@ class AppLocalizationsTr extends AppLocalizations {
   String get metadataProofManifest => 'Kanıt manifestosu';
 
   @override
+  String get metadataVerificationInfoTooltip =>
+      'Bu kontroller ne anlama geliyor?';
+
+  @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
+  String get metadataVerificationInfoTitle => 'Bu kontroller ne anlama geliyor';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'Bu sinyaller kameradan ve video dosyasının kendisinden gelir. Bir video ne kadar çok sinyal taşırsa, nereden geldiğine dair o kadar çok şey kanıtlayabiliriz.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'Telefonun işletim sistemi, bunu kaydeden uygulamaya kefil oldu. Bunun bir kameradan geldiğine, yüklenmiş bir dosya olmadığına dair güçlü bir kanıt.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'Video, çekildiği anda kriptografik olarak imzalandı. Sonrasında tek bir kare değişse imza bozulur.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'Dosyanın içinde taşınan, sektör standardında bir köken kaydı — böylece Divine dışındaki uygulamalar da doğrulayabilir.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'Tam ProofMode kaydı: dosya parmak izi, zaman damgası ve çekim bağlamı, videoyla birlikte.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'Eksik bir kontrol videoyu sahte yapmaz. Eski klipler ve yüklemeler hiç almadı — yalnızca o kısmı kanıtlayamadığımız anlamına gelir.';
+
+  @override
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'Daha fazla bilgi: $url';
+  }
+
+  @override
   String get metadataCreatorLabel => 'İçerik üretici';
 
   @override
@@ -7211,50 +7252,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
     return '$creatorName tarafından ilham alındı. Profilini görüntülemek için dokun.';
   }
-
-  @override
-  String get proofmodeBadgeAiScanPending => 'Yapay zekâ taraması bekleniyor';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'İnsan Yapımı';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Divine\'da Barındırılmıyor';
-
-  @override
-  String get proofmodeBadgeOriginal => 'Orijinal';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'Yapay Zekâ Üretimi Olabilir';
-
-  @override
-  String get proofmodeBadgeUnverified => 'Doğrulanmamış';
-
-  @override
-  String get proofmodeConfirmedByModerator =>
-      'İnsan moderatör tarafından onaylandı';
-
-  @override
-  String get proofmodeExternalContentTitle => 'Harici İçerik';
-
-  @override
-  String get proofmodeHostedOnLabel => 'Bu video şurada barındırılıyor:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'Muhtemelen insan yapımı';
-
-  @override
-  String get proofmodeNoProofDataAttached => 'ProofMode verisi eklenmemiş';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'Bu içerik Divine sunucularında barındırılmıyor. Gerçekliğini tam olarak garanti edemeyiz.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'Yapay zekâ üretimi olabilir';
-
-  @override
-  String get proofmodePublishedByLabel => 'Yayınlayan:';
 
   @override
   String get publishErrorNotSignedIn =>

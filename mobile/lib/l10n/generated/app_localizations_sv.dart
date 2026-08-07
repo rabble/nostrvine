@@ -1823,6 +1823,47 @@ class AppLocalizationsSv extends AppLocalizations {
   String get metadataProofManifest => 'Bevismanifest';
 
   @override
+  String get metadataVerificationInfoTooltip =>
+      'Vad betyder de här kontrollerna?';
+
+  @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
+  String get metadataVerificationInfoTitle => 'Vad kontrollerna betyder';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'Signalerna kommer från kameran och från själva videofilen. Ju fler en video bär med sig, desto mer kan vi bevisa om var den kommer ifrån.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'Telefonens operativsystem gick i god för appen som spelade in. Starkt stöd för att det kommer från en kamera och inte från en uppladdad fil.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'Videon signerades kryptografiskt i samma stund den spelades in. Ändras en enda bildruta efteråt bryts signaturen.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'Ett ursprungsintyg enligt branschstandard som följer med i filen – så att även andra appar än Divine kan kontrollera det.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'Hela ProofMode-posten: filens fingeravtryck, tidsstämpel och inspelningskontext, tillsammans med videon.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'En kontroll som saknas gör inte videon falsk. Äldre klipp och uppladdningar fick aldrig någon – det betyder bara att vi inte kan bevisa den delen.';
+
+  @override
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'Läs mer på $url';
+  }
+
+  @override
   String get metadataCreatorLabel => 'Kreatör';
 
   @override
@@ -7246,49 +7287,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
     return 'Inspirerad av $creatorName. Tryck för att se deras profil.';
   }
-
-  @override
-  String get proofmodeBadgeAiScanPending => 'AI-skanning väntar';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'Gjord av människa';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Inte värd hos Divine';
-
-  @override
-  String get proofmodeBadgeOriginal => 'Original';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'Möjligen AI-genererad';
-
-  @override
-  String get proofmodeBadgeUnverified => 'Overifierad';
-
-  @override
-  String get proofmodeConfirmedByModerator => 'Bekräftad av mänsklig moderator';
-
-  @override
-  String get proofmodeExternalContentTitle => 'Externt innehåll';
-
-  @override
-  String get proofmodeHostedOnLabel => 'Den här videon är värd på:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'Troligen skapad av människa';
-
-  @override
-  String get proofmodeNoProofDataAttached => 'Ingen ProofMode-data bifogad';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'Det här innehållet är inte värd på Divines servrar. Vi kan inte helt garantera dess äkthet.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'Möjligen AI-genererad';
-
-  @override
-  String get proofmodePublishedByLabel => 'Publicerad av:';
 
   @override
   String get publishErrorNotSignedIn => 'Logga in för att publicera videor.';

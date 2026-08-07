@@ -1851,6 +1851,48 @@ class AppLocalizationsIt extends AppLocalizations {
   String get metadataProofManifest => 'Manifesto di prova';
 
   @override
+  String get metadataVerificationInfoTooltip =>
+      'Cosa significano questi controlli?';
+
+  @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
+  String get metadataVerificationInfoTitle =>
+      'Cosa significano questi controlli';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'Questi segnali arrivano dalla fotocamera e dal file video stesso. Più ne ha un video, più possiamo dimostrare della sua origine.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'Il sistema operativo del telefono ha garantito per l\'app che ha registrato. Una prova solida che arriva da una fotocamera, non da un file caricato.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'Il video è stato firmato crittograficamente nel momento della ripresa. Se dopo cambia anche un solo fotogramma, la firma si rompe.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'Un certificato di provenienza secondo lo standard del settore, che viaggia dentro il file: così può verificarlo anche un\'app diversa da Divine.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'Il record ProofMode completo: impronta del file, marca temporale e contesto di ripresa, insieme al video.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'Un controllo mancante non rende falso un video. I clip più vecchi e i caricamenti non l\'hanno mai avuto: significa solo che non possiamo dimostrare quella parte.';
+
+  @override
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'Scopri di più su $url';
+  }
+
+  @override
   String get metadataCreatorLabel => 'Creator';
 
   @override
@@ -7323,50 +7365,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
     return 'Ispirato da $creatorName. Tocca per vedere il suo profilo.';
   }
-
-  @override
-  String get proofmodeBadgeAiScanPending => 'Scansione IA in sospeso';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'Fatto da un umano';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Non ospitato da Divine';
-
-  @override
-  String get proofmodeBadgeOriginal => 'Originale';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'Forse generato dall\'IA';
-
-  @override
-  String get proofmodeBadgeUnverified => 'Non verificato';
-
-  @override
-  String get proofmodeConfirmedByModerator =>
-      'Confermato da un moderatore umano';
-
-  @override
-  String get proofmodeExternalContentTitle => 'Contenuto esterno';
-
-  @override
-  String get proofmodeHostedOnLabel => 'Questo video è ospitato su:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'Probabilmente creato da un umano';
-
-  @override
-  String get proofmodeNoProofDataAttached => 'Nessun dato ProofMode allegato';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'Questo contenuto non è ospitato sui server di Divine. Non possiamo garantirne pienamente l\'autenticità.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'Forse generato dall\'IA';
-
-  @override
-  String get proofmodePublishedByLabel => 'Pubblicato da:';
 
   @override
   String get publishErrorNotSignedIn => 'Accedi per pubblicare i video.';

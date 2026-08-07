@@ -1824,6 +1824,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String get metadataProofManifest => 'Proof manifest';
 
   @override
+  String get metadataVerificationInfoTooltip => 'What do these checks mean?';
+
+  @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
+  String get metadataVerificationInfoTitle => 'What these checks mean';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'These signals come from the camera and the video file itself. The more of them a video carries, the more we can prove about where it came from.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'The phone\'s operating system vouched for the app that recorded this. Strong evidence it came off a camera, not a file someone uploaded.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'The video was cryptographically signed the moment it was captured. Change a single frame afterwards and the signature breaks.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'An industry-standard record of where the video came from, carried inside the file — so apps other than Divine can check it too.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'The full ProofMode record: file fingerprint, timestamp and capture context, bundled with the video.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'A missing check doesn\'t make a video fake. Older clips and uploads never got one — it only means we can\'t prove that part.';
+
+  @override
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'Learn more at $url';
+  }
+
+  @override
   String get metadataCreatorLabel => 'Creator';
 
   @override
@@ -7242,49 +7282,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
     return 'Inspired by $creatorName. Tap to view their profile.';
   }
-
-  @override
-  String get proofmodeBadgeAiScanPending => 'AI scan pending';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'Human Made';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Not Divine Hosted';
-
-  @override
-  String get proofmodeBadgeOriginal => 'Original';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'Possibly AI-Generated';
-
-  @override
-  String get proofmodeBadgeUnverified => 'Unverified';
-
-  @override
-  String get proofmodeConfirmedByModerator => 'Confirmed by human moderator';
-
-  @override
-  String get proofmodeExternalContentTitle => 'External Content';
-
-  @override
-  String get proofmodeHostedOnLabel => 'This video is hosted on:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'Likely human-created';
-
-  @override
-  String get proofmodeNoProofDataAttached => 'No ProofMode data attached';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'This content is not hosted on Divine servers. We cannot fully guarantee its authenticity.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'Possibly AI-generated';
-
-  @override
-  String get proofmodePublishedByLabel => 'Published by:';
 
   @override
   String get publishErrorNotSignedIn => 'Please sign in to publish videos.';

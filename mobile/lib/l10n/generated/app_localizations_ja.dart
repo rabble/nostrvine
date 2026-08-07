@@ -1713,6 +1713,46 @@ class AppLocalizationsJa extends AppLocalizations {
   String get metadataProofManifest => '証明マニフェスト';
 
   @override
+  String get metadataVerificationInfoTooltip => 'これらのチェックの意味は？';
+
+  @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section。$question';
+  }
+
+  @override
+  String get metadataVerificationInfoTitle => 'これらのチェックの意味';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'これらのシグナルは、カメラと動画ファイル自体から得られます。動画が持つシグナルが多いほど、その出どころについて証明できることが増えます。';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      '端末のOSが、撮影したアプリを保証しました。誰かがアップロードしたファイルではなく、カメラから来たことを強く裏づけます。';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      '動画は撮影されたその瞬間に暗号署名されました。あとから1フレームでも変えると署名は壊れます。';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      '業界標準の来歴記録がファイルの中に同梱されます。Divine以外のアプリでも確認できます。';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'ProofModeの完全な記録：ファイルのフィンガープリント、タイムスタンプ、撮影時の状況が動画と一緒に保存されます。';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'チェックが欠けていても、その動画が偽物というわけではありません。古いクリップやアップロードには元々ありません。その部分を証明できない、というだけです。';
+
+  @override
+  String metadataVerificationInfoLearnMore(String url) {
+    return '詳しくは $url をご覧ください';
+  }
+
+  @override
   String get metadataCreatorLabel => 'クリエイター';
 
   @override
@@ -6926,49 +6966,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
     return '$creatorNameにインスパイアされたよ。タップするとプロフィールを見れるよ。';
   }
-
-  @override
-  String get proofmodeBadgeAiScanPending => 'AI スキャン待ち';
-
-  @override
-  String get proofmodeBadgeHumanMade => '人間が作成';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Divine 非ホスト';
-
-  @override
-  String get proofmodeBadgeOriginal => 'オリジナル';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'AI 生成の可能性あり';
-
-  @override
-  String get proofmodeBadgeUnverified => '未検証';
-
-  @override
-  String get proofmodeConfirmedByModerator => '人間のモデレーターが確認済み';
-
-  @override
-  String get proofmodeExternalContentTitle => '外部コンテンツ';
-
-  @override
-  String get proofmodeHostedOnLabel => 'この動画のホスト先:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => '人間が作成した可能性が高い';
-
-  @override
-  String get proofmodeNoProofDataAttached => 'ProofMode データが添付されてないよ';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'このコンテンツは Divine のサーバーにはホストされてないよ。真正性を完全には保証できないよ。';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'AI 生成の可能性あり';
-
-  @override
-  String get proofmodePublishedByLabel => '投稿者:';
 
   @override
   String get publishErrorNotSignedIn => '動画を投稿するにはサインインしてね。';

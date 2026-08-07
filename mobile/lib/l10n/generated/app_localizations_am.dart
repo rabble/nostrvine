@@ -1790,6 +1790,46 @@ class AppLocalizationsAm extends AppLocalizations {
   String get metadataProofManifest => 'ማረጋገጫ አንጸባራቂ';
 
   @override
+  String get metadataVerificationInfoTooltip => 'እነዚህ ማረጋገጫዎች ምን ማለት ናቸው?';
+
+  @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
+  String get metadataVerificationInfoTitle => 'እነዚህ ማረጋገጫዎች ምን ማለት እንደሆኑ';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'እነዚህ ምልክቶች ከካሜራውና ከቪዲዮ ፋይሉ ራሱ ይመጣሉ። አንድ ቪዲዮ ብዙ ምልክቶች ሲኖሩት፣ ስለ መነሻው ማረጋገጥ የምንችለው ነገር ይበዛል።';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'የስልኩ ኦፕሬቲንግ ሲስተም ይህን የቀረጸውን መተግበሪያ አረጋግጦለታል። ይህ ከካሜራ እንደመጣ እንጂ አንድ ሰው የጫነው ፋይል እንዳልሆነ ጠንካራ ማስረጃ ነው።';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'ቪዲዮው በተቀረጸበት ቅጽበት በምስጠራ ተፈርሟል። ከዚያ በኋላ አንድ ፍሬም እንኳ ከተቀየረ ፊርማው ይሰበራል።';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'በፋይሉ ውስጥ አብሮ የሚጓዝ የኢንዱስትሪ ደረጃ የመነሻ መዝገብ — ስለዚህ ከDivine ውጪ ያሉ መተግበሪያዎችም ሊያረጋግጡት ይችላሉ።';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'ሙሉው የProofMode መዝገብ፦ የፋይል አሻራ፣ የጊዜ ማህተም እና የቀረጻ አውድ ከቪዲዮው ጋር አብረው።';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'አንድ ማረጋገጫ መጥፋቱ ቪዲዮውን ሐሰተኛ አያደርገውም። የቆዩ ክሊፖችና የተጫኑ ፋይሎች ከመጀመሪያውም አልነበራቸውም — ያንን ክፍል ማረጋገጥ አንችልም ማለት ብቻ ነው።';
+
+  @override
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'ተጨማሪ በ$url ይመልከቱ';
+  }
+
+  @override
   String get metadataCreatorLabel => 'ፈጣሪ';
 
   @override
@@ -7101,49 +7141,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
     return 'በ$creatorName የተነሳሳ። መገለጫቸውን ለማየት መታ ያድርጉ።';
   }
-
-  @override
-  String get proofmodeBadgeAiScanPending => 'የAI ቅኝት በመጠባበቅ ላይ';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'በሰው የተሰራ';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'በDivine ያልተስተናገደ';
-
-  @override
-  String get proofmodeBadgeOriginal => 'ኦሪጅናል';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'ምናልባት በAI የተፈጠረ';
-
-  @override
-  String get proofmodeBadgeUnverified => 'ያልተረጋገጠ';
-
-  @override
-  String get proofmodeConfirmedByModerator => 'በሰው አወያይ የተረጋገጠ';
-
-  @override
-  String get proofmodeExternalContentTitle => 'ውጫዊ ይዘት';
-
-  @override
-  String get proofmodeHostedOnLabel => 'ይህ ቪዲዮ የተስተናገደው በ፦';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'ምናልባት በሰው የተፈጠረ';
-
-  @override
-  String get proofmodeNoProofDataAttached => 'ምንም የProofMode ውሂብ አልተያያዘም';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'ይህ ይዘት በDivine አገልጋዮች ላይ አልተስተናገደም። ትክክለኛነቱን ሙሉ በሙሉ ማረጋገጥ አንችልም።';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'ምናልባት በAI የተፈጠረ';
-
-  @override
-  String get proofmodePublishedByLabel => 'የታተመው በ፦';
 
   @override
   String get publishErrorNotSignedIn => 'ቪዲዮዎችን ለማተም እባክዎ ይግቡ።';

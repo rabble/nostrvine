@@ -1788,6 +1788,46 @@ class AppLocalizationsId extends AppLocalizations {
   String get metadataProofManifest => 'Manifes bukti';
 
   @override
+  String get metadataVerificationInfoTooltip => 'Apa arti pemeriksaan ini?';
+
+  @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
+  String get metadataVerificationInfoTitle => 'Apa arti pemeriksaan ini';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'Sinyal ini berasal dari kamera dan dari berkas video itu sendiri. Makin banyak yang dibawa sebuah video, makin banyak yang bisa kami buktikan tentang asalnya.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'Sistem operasi ponsel menjamin aplikasi yang merekam ini. Bukti kuat bahwa ini berasal dari kamera, bukan file yang diunggah seseorang.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'Video ditandatangani secara kriptografis pada saat direkam. Ubah satu frame saja setelahnya, tanda tangannya rusak.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'Catatan asal-usul berstandar industri yang ikut di dalam berkas — sehingga aplikasi selain Divine juga bisa memeriksanya.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'Catatan ProofMode lengkap: sidik jari berkas, stempel waktu, dan konteks perekaman, menyatu dengan video.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'Pemeriksaan yang hilang tidak membuat video jadi palsu. Klip lama dan unggahan memang tidak pernah punya — itu hanya berarti bagian itu tidak bisa kami buktikan.';
+
+  @override
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'Pelajari selengkapnya di $url';
+  }
+
+  @override
   String get metadataCreatorLabel => 'Kreator';
 
   @override
@@ -7210,51 +7250,6 @@ class AppLocalizationsId extends AppLocalizations {
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
     return 'Terinspirasi oleh $creatorName. Ketuk untuk melihat profil mereka.';
   }
-
-  @override
-  String get proofmodeBadgeAiScanPending => 'Pemindaian AI tertunda';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'Buatan Manusia';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Bukan Hosting Divine';
-
-  @override
-  String get proofmodeBadgeOriginal => 'Asli';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'Mungkin Dibuat AI';
-
-  @override
-  String get proofmodeBadgeUnverified => 'Belum Terverifikasi';
-
-  @override
-  String get proofmodeConfirmedByModerator =>
-      'Dikonfirmasi oleh moderator manusia';
-
-  @override
-  String get proofmodeExternalContentTitle => 'Konten Eksternal';
-
-  @override
-  String get proofmodeHostedOnLabel => 'Video ini di-hosting di:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'Kemungkinan dibuat manusia';
-
-  @override
-  String get proofmodeNoProofDataAttached =>
-      'Tidak ada data ProofMode yang dilampirkan';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'Konten ini tidak di-hosting di server Divine. Kami tidak bisa sepenuhnya menjamin keasliannya.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'Mungkin dibuat AI';
-
-  @override
-  String get proofmodePublishedByLabel => 'Dipublikasikan oleh:';
 
   @override
   String get publishErrorNotSignedIn =>

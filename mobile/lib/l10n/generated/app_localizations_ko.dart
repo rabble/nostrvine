@@ -1723,6 +1723,46 @@ class AppLocalizationsKo extends AppLocalizations {
   String get metadataProofManifest => '증명 매니페스트';
 
   @override
+  String get metadataVerificationInfoTooltip => '이 검사들은 무슨 뜻인가요?';
+
+  @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
+  String get metadataVerificationInfoTitle => '이 검사들의 의미';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      '이 신호들은 카메라와 영상 파일 자체에서 나옵니다. 영상이 담고 있는 신호가 많을수록 출처에 대해 더 많은 것을 증명할 수 있습니다.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      '휴대폰 운영체제가 이 영상을 녹화한 앱을 보증했습니다. 누군가 올린 파일이 아니라 카메라에서 나왔다는 강력한 근거입니다.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      '영상은 촬영되는 순간 암호학적으로 서명되었습니다. 이후 한 프레임만 바뀌어도 서명은 깨집니다.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      '파일 안에 함께 담겨 이동하는 업계 표준 출처 기록입니다. Divine이 아닌 앱에서도 확인할 수 있습니다.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      '전체 ProofMode 기록: 파일 지문, 타임스탬프, 촬영 정황이 영상과 함께 묶여 있습니다.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      '검사가 없다고 해서 영상이 가짜인 것은 아닙니다. 예전 클립과 업로드에는 애초에 없었습니다. 그 부분을 증명할 수 없다는 뜻일 뿐입니다.';
+
+  @override
+  String metadataVerificationInfoLearnMore(String url) {
+    return '자세한 내용은 $url에서 확인하세요';
+  }
+
+  @override
   String get metadataCreatorLabel => '크리에이터';
 
   @override
@@ -6953,49 +6993,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
     return '$creatorName님에게서 영감을 받았어요. 탭하면 프로필을 볼 수 있어요.';
   }
-
-  @override
-  String get proofmodeBadgeAiScanPending => 'AI 검사 대기 중';
-
-  @override
-  String get proofmodeBadgeHumanMade => '사람이 제작';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Divine 호스팅 아님';
-
-  @override
-  String get proofmodeBadgeOriginal => '오리지널';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'AI 생성 가능성 있음';
-
-  @override
-  String get proofmodeBadgeUnverified => '미인증';
-
-  @override
-  String get proofmodeConfirmedByModerator => '사람 조절자가 확인함';
-
-  @override
-  String get proofmodeExternalContentTitle => '외부 콘텐츠';
-
-  @override
-  String get proofmodeHostedOnLabel => '이 영상은 여기에 호스팅돼 있어요:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => '사람이 만들었을 가능성 높음';
-
-  @override
-  String get proofmodeNoProofDataAttached => 'ProofMode 데이터가 첨부되지 않음';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      '이 콘텐츠는 Divine 서버에 호스팅돼 있지 않아요. 진위를 완전히 보장할 수는 없어요.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'AI 생성 가능성 있음';
-
-  @override
-  String get proofmodePublishedByLabel => '게시자:';
 
   @override
   String get publishErrorNotSignedIn => '영상을 게시하려면 로그인해주세요.';

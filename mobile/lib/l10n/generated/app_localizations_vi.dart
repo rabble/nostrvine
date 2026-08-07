@@ -1831,6 +1831,47 @@ class AppLocalizationsVi extends AppLocalizations {
   String get metadataProofManifest => 'Tệp chứng minh';
 
   @override
+  String get metadataVerificationInfoTooltip =>
+      'Những kiểm tra này nghĩa là gì?';
+
+  @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
+  String get metadataVerificationInfoTitle => 'Ý nghĩa của những kiểm tra này';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'Các tín hiệu này đến từ máy ảnh và từ chính tệp video. Video mang càng nhiều tín hiệu, chúng tôi càng chứng minh được nhiều điều về nguồn gốc của nó.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'Hệ điều hành của điện thoại đã bảo chứng cho ứng dụng đã quay video này. Bằng chứng mạnh cho thấy nó đến từ camera, không phải tệp ai đó tải lên.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'Video được ký bằng mật mã ngay khoảnh khắc quay. Sau đó chỉ cần đổi một khung hình là chữ ký hỏng.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'Bản ghi nguồn gốc theo chuẩn ngành, đi kèm bên trong tệp — nên các ứng dụng khác ngoài Divine cũng kiểm tra được.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'Bản ghi ProofMode đầy đủ: dấu vân tay tệp, dấu thời gian và bối cảnh quay, đi cùng video.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'Thiếu một kiểm tra không có nghĩa video là giả. Các clip cũ và video tải lên vốn chưa từng có — chỉ là chúng tôi không chứng minh được phần đó.';
+
+  @override
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'Tìm hiểu thêm tại $url';
+  }
+
+  @override
   String get metadataCreatorLabel => 'Nhà sáng tạo';
 
   @override
@@ -7261,50 +7302,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
     return 'Lấy cảm hứng từ $creatorName. Chạm để xem hồ sơ của họ.';
   }
-
-  @override
-  String get proofmodeBadgeAiScanPending => 'Đang chờ quét AI';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'Do người làm';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Không do Divine lưu trữ';
-
-  @override
-  String get proofmodeBadgeOriginal => 'Nguyên bản';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'Có thể do AI tạo ra';
-
-  @override
-  String get proofmodeBadgeUnverified => 'Chưa xác minh';
-
-  @override
-  String get proofmodeConfirmedByModerator => 'Được kiểm duyệt viên xác nhận';
-
-  @override
-  String get proofmodeExternalContentTitle => 'Nội dung bên ngoài';
-
-  @override
-  String get proofmodeHostedOnLabel => 'Video này được lưu trữ trên:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'Có vẻ do người tạo';
-
-  @override
-  String get proofmodeNoProofDataAttached =>
-      'Không có dữ liệu ProofMode đính kèm';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'Nội dung này không được lưu trữ trên máy chủ Divine. Bọn mình không thể đảm bảo hoàn toàn tính xác thực của nó.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'Có thể do AI tạo ra';
-
-  @override
-  String get proofmodePublishedByLabel => 'Đăng bởi:';
 
   @override
   String get publishErrorNotSignedIn => 'Vui lòng đăng nhập để đăng video.';

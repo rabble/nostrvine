@@ -1836,6 +1836,46 @@ class AppLocalizationsNl extends AppLocalizations {
   String get metadataProofManifest => 'Proof-manifest';
 
   @override
+  String get metadataVerificationInfoTooltip => 'Wat betekenen deze controles?';
+
+  @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
+  String get metadataVerificationInfoTitle => 'Wat deze controles betekenen';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'Deze signalen komen van de camera en uit het videobestand zelf. Hoe meer een video er heeft, hoe meer we over de herkomst kunnen aantonen.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'Het besturingssysteem van de telefoon stond in voor de app die dit opnam. Sterk bewijs dat het van een camera komt en niet van een geüpload bestand.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'De video is op het moment van opname cryptografisch ondertekend. Verandert daarna één beeldje, dan breekt de handtekening.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'Een herkomstbewijs volgens de industriestandaard dat in het bestand meereist — zo kunnen ook andere apps dan Divine het controleren.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'Het volledige ProofMode-record: bestandsvingerafdruk, tijdstempel en opnamecontext, samen met de video.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'Een ontbrekende controle maakt een video niet nep. Oudere clips en uploads kregen er nooit een — het betekent alleen dat we dat deel niet kunnen aantonen.';
+
+  @override
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'Meer weten op $url';
+  }
+
+  @override
   String get metadataCreatorLabel => 'Maker';
 
   @override
@@ -7282,52 +7322,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
     return 'Geïnspireerd door $creatorName. Tik om hun profiel te bekijken.';
   }
-
-  @override
-  String get proofmodeBadgeAiScanPending => 'AI-scan in behandeling';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'Door mensen gemaakt';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Niet op Divine gehost';
-
-  @override
-  String get proofmodeBadgeOriginal => 'Origineel';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'Mogelijk AI-gegenereerd';
-
-  @override
-  String get proofmodeBadgeUnverified => 'Niet geverifieerd';
-
-  @override
-  String get proofmodeConfirmedByModerator =>
-      'Bevestigd door een menselijke moderator';
-
-  @override
-  String get proofmodeExternalContentTitle => 'Externe inhoud';
-
-  @override
-  String get proofmodeHostedOnLabel => 'Deze video wordt gehost op:';
-
-  @override
-  String get proofmodeLikelyHumanCreated =>
-      'Waarschijnlijk door een mens gemaakt';
-
-  @override
-  String get proofmodeNoProofDataAttached =>
-      'Geen ProofMode-gegevens bijgevoegd';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'Deze inhoud wordt niet op Divine-servers gehost. We kunnen de authenticiteit ervan niet volledig garanderen.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'Mogelijk AI-gegenereerd';
-
-  @override
-  String get proofmodePublishedByLabel => 'Gepubliceerd door:';
 
   @override
   String get publishErrorNotSignedIn => 'Log in om video\'s te publiceren.';

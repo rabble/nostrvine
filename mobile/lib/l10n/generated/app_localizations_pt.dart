@@ -1844,6 +1844,48 @@ class AppLocalizationsPt extends AppLocalizations {
   String get metadataProofManifest => 'Manifesto de prova';
 
   @override
+  String get metadataVerificationInfoTooltip =>
+      'O que significam essas verificações?';
+
+  @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
+  String get metadataVerificationInfoTitle =>
+      'O que significam essas verificações';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'Esses sinais vêm da câmera e do próprio arquivo de vídeo. Quanto mais um vídeo carrega, mais conseguimos provar sobre a origem dele.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'O sistema operacional do celular garantiu o app que gravou isso. Forte indício de que veio de uma câmera, não de um arquivo que alguém enviou.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'O vídeo foi assinado criptograficamente no momento da captura. Se um único quadro mudar depois, a assinatura quebra.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'Um registro de origem no padrão do setor, que viaja dentro do arquivo — então apps além do Divine também conseguem verificar.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'O registro completo do ProofMode: impressão digital do arquivo, marca de tempo e contexto da captura, junto com o vídeo.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'Uma verificação ausente não torna o vídeo falso. Clipes antigos e uploads nunca tiveram uma — só significa que não podemos provar essa parte.';
+
+  @override
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'Saiba mais em $url';
+  }
+
+  @override
   String get metadataCreatorLabel => 'Criador';
 
   @override
@@ -7302,49 +7344,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
     return 'Inspirado por $creatorName. Toque para ver o perfil dele.';
   }
-
-  @override
-  String get proofmodeBadgeAiScanPending => 'Verificação de IA pendente';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'Feito por humano';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Não hospedado no Divine';
-
-  @override
-  String get proofmodeBadgeOriginal => 'Original';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'Possivelmente gerado por IA';
-
-  @override
-  String get proofmodeBadgeUnverified => 'Não verificado';
-
-  @override
-  String get proofmodeConfirmedByModerator => 'Confirmado por moderador humano';
-
-  @override
-  String get proofmodeExternalContentTitle => 'Conteúdo externo';
-
-  @override
-  String get proofmodeHostedOnLabel => 'Este vídeo está hospedado em:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'Provavelmente criado por humano';
-
-  @override
-  String get proofmodeNoProofDataAttached => 'Nenhum dado de ProofMode anexado';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'Este conteúdo não está hospedado nos servidores do Divine. Não podemos garantir totalmente sua autenticidade.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'Possivelmente gerado por IA';
-
-  @override
-  String get proofmodePublishedByLabel => 'Publicado por:';
 
   @override
   String get publishErrorNotSignedIn =>
