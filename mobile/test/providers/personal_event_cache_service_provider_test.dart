@@ -20,6 +20,12 @@ const String _userPubkey =
 const String _otherPubkey =
     'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 
+/// Wall-clock budget for the async-settling helpers in this suite.
+///
+/// Generous enough to absorb a loaded CI isolate, and well inside the 30s
+/// per-test default so an expiry reports itself instead of hanging the shard.
+const Duration _settleTimeout = Duration(seconds: 10);
+
 String _hexId(int index) => index.toRadixString(16).padLeft(64, '0');
 
 Event _createEvent({required String pubkey, required String id}) {
@@ -124,29 +130,45 @@ void main() {
       authStateController.add(AuthState.checking);
     }
 
-    Future<void> waitForInitialized(PersonalEventCacheService service) async {
-      for (var attempt = 0; attempt < 20; attempt++) {
-        await pumpEventQueue();
-        if (service.isInitialized) {
-          return;
+    /// Pumps the event queue until [isSatisfied] holds, failing with
+    /// [description] once [_settleTimeout] elapses.
+    ///
+    /// The bound has to be wall-clock, not a fixed number of pumps: the work
+    /// being waited on completes on real Hive file I/O, while `pumpEventQueue`
+    /// only spins event-loop turns. A turn-bounded poll can burn its whole
+    /// budget in microseconds with the I/O still outstanding, which is how a
+    /// loaded CI isolate flaked this suite (run 31199721092, shard 3/4).
+    Future<void> waitFor(
+      String description,
+      bool Function() isSatisfied,
+    ) async {
+      final stopwatch = Stopwatch()..start();
+      while (!isSatisfied()) {
+        if (stopwatch.elapsed > _settleTimeout) {
+          fail(
+            'Timed out after ${_settleTimeout.inSeconds}s waiting for '
+            '$description.',
+          );
         }
+        await pumpEventQueue();
       }
     }
+
+    Future<void> waitForInitialized(PersonalEventCacheService service) =>
+        waitFor(
+          'PersonalEventCacheService to finish initializing',
+          () => service.isInitialized,
+        );
 
     Future<void> waitForCachedEvent(
       PersonalEventCacheService service,
       Event event,
-    ) async {
-      for (var attempt = 0; attempt < 20; attempt++) {
-        await pumpEventQueue();
-        if (service
-            .getEventsByKind(event.kind)
-            .any((cachedEvent) => cachedEvent.id == event.id)) {
-          return;
-        }
-      }
-      fail('Event ${event.id} was not added to kind ${event.kind} index');
-    }
+    ) => waitFor(
+      'event ${event.id} to be added to the kind ${event.kind} index',
+      () => service
+          .getEventsByKind(event.kind)
+          .any((cachedEvent) => cachedEvent.id == event.id),
+    );
 
     test(
       'initializes when auth becomes ready after provider construction',
