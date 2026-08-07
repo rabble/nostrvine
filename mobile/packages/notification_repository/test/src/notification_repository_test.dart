@@ -2933,6 +2933,103 @@ void main() {
         },
       );
 
+      test('keeps a bounded leading 64-hex reference intact', () async {
+        // LinkifiedTextSpanBuilder decodes a bare 64-char hex pubkey / event
+        // id the same way it decodes bech32. A hex reference is always
+        // longer than the 50-char cap, so before it was protected the cut
+        // sliced it every time and the row rendered raw hex.
+        const hex64 =
+            'a1b2c3d4e5f60718293a4b5c6d7e8f90'
+            'a1b2c3d4e5f60718293a4b5c6d7e8f90';
+        const content = '$hex64 and some trailing words';
+        stubNotifications([
+          makeNotification(
+            notificationType: 'comment',
+            sourceKind: 1,
+            content: content,
+          ),
+        ]);
+        stubProfiles({});
+
+        final page = await repository.getNotifications();
+        final item = page.items.single as VideoNotification;
+        expect(item.commentText, equals('$hex64...'));
+      });
+
+      test(
+        'omits a 64-hex reference straddling the cut instead of splitting it',
+        () async {
+          const hex64 =
+              'a1b2c3d4e5f60718293a4b5c6d7e8f90'
+              'a1b2c3d4e5f60718293a4b5c6d7e8f90';
+          const content = 'Reply to $hex64 more';
+          stubNotifications([
+            makeNotification(
+              notificationType: 'comment',
+              sourceKind: 1,
+              content: content,
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as VideoNotification;
+          expect(item.commentText, equals('Reply to...'));
+          expect(item.commentText, isNot(contains(hex64.substring(0, 16))));
+        },
+      );
+
+      test('applies the preview cap to non-Latin lead-in text', () async {
+        // The leading-token allowance is bounded at four times the cap, and
+        // is only meant to fire when nothing but whitespace or punctuation
+        // precedes the token. Testing only ASCII letters classified every
+        // non-Latin script as punctuation, so Cyrillic / CJK / accented
+        // lead-ins silently got a 200-char preview of remote-controlled
+        // content while the Latin equivalent got 50.
+        const npub =
+            'npub180cvv07tjdrrgpa9jzd0cdkej42kwsaxq9rz7gvdpjx6nz004f9uulstw6';
+        const cyrillic = 'Привет всем друзьям сегодня';
+        const content = '$cyrillic nostr:$npub и ещё немного текста';
+        stubNotifications([
+          makeNotification(
+            notificationType: 'comment',
+            sourceKind: 1,
+            content: content,
+          ),
+        ]);
+        stubProfiles({});
+
+        final page = await repository.getNotifications();
+        final item = page.items.single as VideoNotification;
+        expect(item.commentText, equals('$cyrillic...'));
+        expect(item.commentText!.length, lessThanOrEqualTo(53));
+        expect(item.commentText, isNot(contains('npub1')));
+      });
+
+      test(
+        'still treats punctuation-only lead-in as leading for a bech32 token',
+        () async {
+          // Guards the other side of the non-Latin fix: real punctuation and
+          // whitespace must keep qualifying as "leading", including
+          // non-ASCII punctuation such as guillemets and an em dash.
+          const npub =
+              'npub180cvv07tjdrrgpa9jzd0cdkej42kwsaxq9rz7gvdpjx6nz004f9uulstw6';
+          const content = '«— » $npub';
+          stubNotifications([
+            makeNotification(
+              notificationType: 'comment',
+              sourceKind: 1,
+              content: content,
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as VideoNotification;
+          expect(item.commentText, equals(content));
+        },
+      );
+
       test(
         'like / repost on video leaves commentText null (no body text)',
         () async {

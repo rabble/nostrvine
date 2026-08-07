@@ -46,16 +46,30 @@ final RegExp _npubIdentifierPattern = RegExp(
   caseSensitive: false,
 );
 
-/// A bech32 Nostr reference embedded in note content, e.g. `npub1...` or
-/// `nostr:nprofile1...`.
+/// A Nostr reference embedded in note content that the UI can decode: either
+/// bech32 (`npub1...`, `nostr:nprofile1...`) or a bare 64-char hex pubkey /
+/// event id.
 ///
-/// Keep this boundary rule aligned with
-/// `LinkifiedTextSpanBuilder._combinedRegex` so the repository only protects
-/// token spans the UI can decode.
-final RegExp _bech32ReferencePattern = RegExp(
-  r'(?<![A-Za-z0-9])(?:nostr:)?(?:npub|nprofile|note|nevent|naddr)1[a-z0-9]+\b',
+/// Keep both boundary rules aligned with
+/// `LinkifiedTextSpanBuilder._combinedRegex` so the repository protects
+/// exactly the token spans the UI can decode — no more, no less. A hex
+/// reference is 64 characters, so it always exceeds the preview cap; leaving
+/// it unprotected guaranteed a sliced fragment that the UI then rendered as
+/// raw hex, which is the same defect bech32 slicing caused.
+final RegExp _decodableReferencePattern = RegExp(
+  r'(?<![A-Za-z0-9])(?:nostr:)?(?:npub|nprofile|note|nevent|naddr)1[a-z0-9]+\b'
+  '|(?<![A-Fa-f0-9])[A-Fa-f0-9]{64}(?![A-Fa-f0-9])',
   caseSensitive: false,
 );
+
+/// Any letter or digit in any script.
+///
+/// The preview's "is this token the leading content?" test must treat
+/// Cyrillic, CJK, and accented text as content. Testing only ASCII
+/// `[0-9A-Za-z]` classified every non-Latin script as punctuation, which let
+/// a straddling token qualify as leading and silently raised the preview cap
+/// from [_maxCommentLength] to four times that for most locales.
+final RegExp _letterOrDigitPattern = RegExp(r'[\p{L}\p{N}]', unicode: true);
 
 /// Retry policy for the first-page notifications fetch.
 ///
@@ -2335,12 +2349,12 @@ class NotificationRepository {
   ///
   /// Only applies to comment and reply notifications.
   ///
-  /// The cut avoids splitting a bech32 Nostr reference (`npub1...`,
-  /// `nprofile1...`, `note1...`, `nevent1...`, `naddr1...`) mid-token. A
-  /// sliced token can no longer be decoded, so the row widget falls back to
-  /// rendering the raw `npub1...` string verbatim instead of resolving it.
-  /// Keeping a bounded leading token intact lets the UI linkifier resolve it to
-  /// `@<name>`.
+  /// The cut avoids splitting a Nostr reference the UI can decode — bech32
+  /// (`npub1...`, `nprofile1...`, `note1...`, `nevent1...`, `naddr1...`) or a
+  /// bare 64-char hex pubkey / event id — mid-token. A sliced token can no
+  /// longer be decoded, so the row widget falls back to rendering the raw
+  /// string verbatim instead of resolving it. Keeping a bounded leading token
+  /// intact lets the UI linkifier resolve it to `@<name>`.
   static String? _truncateComment(String? content, NotificationKind kind) {
     if (content == null) return null;
     if (kind != NotificationKind.comment && kind != NotificationKind.reply) {
@@ -2348,26 +2362,27 @@ class NotificationRepository {
     }
     if (content.length <= _maxCommentLength) return content;
 
-    final cut = _bech32AwareCut(content, _maxCommentLength);
+    final cut = _referenceAwareCut(content, _maxCommentLength);
     if (cut >= content.length) return content;
     return '${content.substring(0, cut).trimRight()}...';
   }
 
-  /// Returns a bounded cut index that does not split a bech32 Nostr reference.
+  /// Returns a bounded cut index that does not split a decodable Nostr
+  /// reference — bech32 or bare 64-char hex.
   ///
   /// If a reference straddles [limit], the cut is pulled back to the
   /// reference's start so the token is omitted from the preview rather than
   /// split. If the content before that token is only whitespace or
   /// punctuation, and keeping the full token stays within the preview bound,
   /// the token's end is returned so the UI can resolve it.
-  static int _bech32AwareCut(String content, int limit) {
-    final maxBech32PreviewLength = limit * 4;
-    for (final match in _bech32ReferencePattern.allMatches(content)) {
+  static int _referenceAwareCut(String content, int limit) {
+    final maxReferencePreviewLength = limit * 4;
+    for (final match in _decodableReferencePattern.allMatches(content)) {
       final startsBeforeOrAtLimit = match.start < limit;
       final endsAfterLimit = match.end > limit;
       if (!startsBeforeOrAtLimit || !endsAfterLimit) continue;
       final canKeepLeadingToken =
-          match.end <= maxBech32PreviewLength &&
+          match.end <= maxReferencePreviewLength &&
           _hasOnlyWhitespaceOrPunctuationBefore(content, match.start);
       if (canKeepLeadingToken) return match.end;
       return match.start;
@@ -2375,16 +2390,8 @@ class NotificationRepository {
     return limit;
   }
 
-  static bool _hasOnlyWhitespaceOrPunctuationBefore(String content, int end) {
-    for (var index = 0; index < end; index += 1) {
-      final codeUnit = content.codeUnitAt(index);
-      final isAsciiDigit = codeUnit >= 0x30 && codeUnit <= 0x39;
-      final isAsciiUppercase = codeUnit >= 0x41 && codeUnit <= 0x5A;
-      final isAsciiLowercase = codeUnit >= 0x61 && codeUnit <= 0x7A;
-      if (isAsciiDigit || isAsciiUppercase || isAsciiLowercase) return false;
-    }
-    return true;
-  }
+  static bool _hasOnlyWhitespaceOrPunctuationBefore(String content, int end) =>
+      !_letterOrDigitPattern.hasMatch(content.substring(0, end));
 }
 
 @immutable
