@@ -250,6 +250,36 @@ void main() {
         expect(drafts.length, 2);
       });
 
+      test('keeps each draft own lastModified when reading the list', () async {
+        final savedAt = DateTime(2026, 5, 4, 3, 2, 1);
+        final draft = DivineVideoDraft(
+          id: 'draft_old',
+          clips: [
+            DivineVideoClip(
+              id: 'clip_old',
+              video: EditorVideo.file('/path/to/old_video.mp4'),
+              duration: const Duration(seconds: 6),
+              recordedAt: savedAt,
+              targetAspectRatio: AspectRatio.square,
+              originalAspectRatio: 9 / 16,
+            ),
+          ],
+          title: 'Old draft',
+          description: '',
+          hashtags: {},
+          selectedApproach: 'hybrid',
+          createdAt: savedAt,
+          lastModified: savedAt,
+          publishStatus: PublishStatus.draft,
+          publishAttempts: 0,
+        );
+
+        await service.saveDraft(draft);
+
+        final drafts = await service.getAllDrafts();
+        expect(drafts.single.lastModified, savedAt);
+      });
+
       test('should return empty when database is empty', () async {
         final drafts = await service.getAllDrafts();
         expect(drafts, isEmpty);
