@@ -127,6 +127,21 @@ services:
       CLICKHOUSE_URL: http://funnelcake-clickhouse:8123
       CLICKHOUSE_USER: default
       CLICKHOUSE_PASSWORD: clickhouse
+      # Disable the per-connection rate limiter for local runs.
+      #
+      # The relay defaults to a 10-event burst and 2 events/sec sustained per
+      # connection (funnelcake crates/relay/src/rate_limit.rs). `seed.py`
+      # publishes 100 events down a single WebSocket as fast as OK round-trips
+      # allow, so on a current relay build 90 of them come back
+      # "rate-limited: too many events, slow down", seed.py exits non-zero and
+      # `up.sh` fails. Measured against a relay built from funnelcake main:
+      # 100 events -> ok=10 rejected=90 without these, ok=100 rejected=0 with.
+      #
+      # Inert against the currently pinned 2026-02-24 image, which predates the
+      # rate limiter entirely.
+      MAX_EVENTS_PER_SECOND: "10000"
+      SUSTAINED_EVENTS_PER_SECOND: "10000"
+      MAX_EVENTS_PER_MINUTE_PER_PUBKEY: "0"
 
   funnelcake-api:
     image: ghcr.io/divinevideo/funnelcake-api:latest
