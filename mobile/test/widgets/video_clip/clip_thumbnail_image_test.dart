@@ -8,6 +8,16 @@ import 'package:openvine/widgets/video_clip/clip_thumbnail_image.dart';
 
 void main() {
   group(ClipThumbnailImage, () {
+    // Every test here resolves a deliberately missing file, and a failed
+    // resolution stays in the process-global cache. Under the merged-isolate
+    // test run that entry would outlive this file and deliver the error
+    // before the first build of any later test using the same path.
+    tearDown(() {
+      PaintingBinding.instance.imageCache
+        ..clear()
+        ..clearLiveImages();
+    });
+
     Future<void> pumpMissingThumbnail(
       WidgetTester tester, {
       Widget? placeholder,
@@ -70,9 +80,6 @@ void main() {
                 width: 120,
                 height: 120,
                 child: ClipThumbnailImage(
-                  // A path of its own: the sibling tests leave a failed
-                  // entry for theirs in the process-global image cache,
-                  // which would deliver the error before the first build.
                   path: '/nonexistent/container/frame_builder_probe.jpg',
                   placeholder: const SizedBox.shrink(),
                   frameBuilder: (context, child, frame, _) =>
