@@ -1530,8 +1530,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'Verification timed out. Check your connection or try again shortly.';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      'Adult content is switched off. You can turn it on in Settings → Content Filters.';
+  String get videoErrorAdultContentHiddenTitle =>
+      'Adult content is switched off';
+
+  @override
+  String get videoErrorAdultContentHiddenBody =>
+      'Turn it on in your content filters to watch this one.';
+
+  @override
+  String get videoErrorAdultContentHiddenAction => 'Open Content Filters';
 
   @override
   String get videoDetailLoadError => 'Failed to load video';
@@ -6224,6 +6231,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get commonClose => 'Close';
+
+  @override
+  String get commonNotNow => 'Not now';
 
   @override
   String get commonLoading => 'Loading';

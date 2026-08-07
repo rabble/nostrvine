@@ -1561,8 +1561,14 @@ class AppLocalizationsFil extends AppLocalizations {
       'Nag-timeout ang pag-verify. I-check ang koneksyon mo o subukan ulit mamaya.';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      'Naka-off ang adult content. Puwede mong i-on sa Settings → Content Filters.';
+  String get videoErrorAdultContentHiddenTitle => 'Naka-off ang adult content';
+
+  @override
+  String get videoErrorAdultContentHiddenBody =>
+      'I-on mo ito sa Content Filters mo para mapanood ang video na ito.';
+
+  @override
+  String get videoErrorAdultContentHiddenAction => 'Buksan ang Content Filters';
 
   @override
   String get videoDetailLoadError => 'Hindi ma-load ang video';
@@ -6304,6 +6310,9 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get commonClose => 'Isara';
+
+  @override
+  String get commonNotNow => 'Hindi muna';
 
   @override
   String get commonLoading => 'Naglo-load';

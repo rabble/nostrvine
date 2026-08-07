@@ -1572,8 +1572,16 @@ class AppLocalizationsRo extends AppLocalizations {
       'Timpul de verificare a expirat. Verifică-ți conexiunea sau încearcă din nou în scurt timp.';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      'Conținutul pentru adulți este dezactivat. Îl poți activa în Setări → Filtre de conținut.';
+  String get videoErrorAdultContentHiddenTitle =>
+      'Conținutul pentru adulți este dezactivat';
+
+  @override
+  String get videoErrorAdultContentHiddenBody =>
+      'Activează-l în filtrele de conținut ca să vezi acest videoclip.';
+
+  @override
+  String get videoErrorAdultContentHiddenAction =>
+      'Deschide filtrele de conținut';
 
   @override
   String get videoDetailLoadError => 'N-am putut încărca videoclipul';
@@ -6383,6 +6391,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get commonClose => 'Închide';
+
+  @override
+  String get commonNotNow => 'Nu acum';
 
   @override
   String get commonLoading => 'Se încarcă';

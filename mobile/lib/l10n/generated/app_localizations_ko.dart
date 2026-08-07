@@ -1434,8 +1434,13 @@ class AppLocalizationsKo extends AppLocalizations {
       '확인 시간이 초과되었습니다. 연결을 확인하거나 잠시 후 다시 시도해보세요';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      '성인 콘텐츠가 꺼져 있어요. 설정 → 콘텐츠 필터에서 켤 수 있어요.';
+  String get videoErrorAdultContentHiddenTitle => '성인 콘텐츠가 꺼져 있어요';
+
+  @override
+  String get videoErrorAdultContentHiddenBody => '이 영상을 보려면 콘텐츠 필터에서 켜 주세요.';
+
+  @override
+  String get videoErrorAdultContentHiddenAction => '콘텐츠 필터 열기';
 
   @override
   String get videoDetailLoadError => '영상을 불러오지 못했어요';
@@ -5978,6 +5983,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get commonClose => '닫기';
+
+  @override
+  String get commonNotNow => '나중에';
 
   @override
   String get commonLoading => '불러오는 중';

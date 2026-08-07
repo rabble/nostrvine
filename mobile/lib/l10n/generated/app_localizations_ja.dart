@@ -1424,8 +1424,13 @@ class AppLocalizationsJa extends AppLocalizations {
       '確認がタイムアウトしました。接続を確認するか、少し時間をおいてもう一回試してみて';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      'アダルトコンテンツはオフになってるよ。[設定]→[コンテンツフィルター]でオンにできるよ。';
+  String get videoErrorAdultContentHiddenTitle => 'アダルトコンテンツはオフになってるよ';
+
+  @override
+  String get videoErrorAdultContentHiddenBody => 'この動画を見るには、コンテンツフィルターでオンにしてね。';
+
+  @override
+  String get videoErrorAdultContentHiddenAction => 'コンテンツフィルターを開く';
 
   @override
   String get videoDetailLoadError => '動画の読み込みに失敗したよ';
@@ -5956,6 +5961,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get commonClose => '閉じる';
+
+  @override
+  String get commonNotNow => '今はいい';
 
   @override
   String get commonLoading => '読み込み中';

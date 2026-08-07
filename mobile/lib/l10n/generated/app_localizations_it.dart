@@ -1554,8 +1554,15 @@ class AppLocalizationsIt extends AppLocalizations {
       'Verifica scaduta. Controlla la connessione o riprova tra poco.';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      'I contenuti per adulti sono disattivati. Puoi attivarli in Impostazioni → Filtri contenuti.';
+  String get videoErrorAdultContentHiddenTitle =>
+      'I contenuti per adulti sono disattivati';
+
+  @override
+  String get videoErrorAdultContentHiddenBody =>
+      'Attivali nei tuoi filtri contenuti per guardare questo video.';
+
+  @override
+  String get videoErrorAdultContentHiddenAction => 'Apri filtri contenuti';
 
   @override
   String get videoDetailLoadError => 'Impossibile caricare il video';
@@ -6286,6 +6293,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get commonClose => 'Chiudi';
+
+  @override
+  String get commonNotNow => 'Non ora';
 
   @override
   String get commonLoading => 'Caricamento';

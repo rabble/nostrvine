@@ -1497,8 +1497,14 @@ class AppLocalizationsAm extends AppLocalizations {
       'ማረጋገጡ ጊዜው አልፎበታል። ግንኙነትህን አረጋግጥ ወይም ትንሽ ቆይተህ እንደገና ሞክር።';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      'የአዋቂዎች ይዘት ጠፍቷል። በቅንብሮች → የይዘት ማጣሪያዎች ውስጥ ማብራት ይችላሉ።';
+  String get videoErrorAdultContentHiddenTitle => 'የአዋቂዎች ይዘት ጠፍቷል';
+
+  @override
+  String get videoErrorAdultContentHiddenBody =>
+      'ይህን ቪዲዮ ለማየት በይዘት ማጣሪያዎችዎ ውስጥ ያብሩት።';
+
+  @override
+  String get videoErrorAdultContentHiddenAction => 'የይዘት ማጣሪያዎችን ክፈት';
 
   @override
   String get videoDetailLoadError => 'ቪዲዮ መጫን አልተሳካም';
@@ -6103,6 +6109,9 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get commonClose => 'ዝጋ';
+
+  @override
+  String get commonNotNow => 'አሁን አይደለም';
 
   @override
   String get commonLoading => 'በመጫን ላይ';
