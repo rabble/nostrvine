@@ -5120,16 +5120,16 @@
     "description": "Snackbar shown when the user taps the record button in lip-sync mode without first selecting a sound."
   },
   "videoRecorderStopMotionAssembleFailed": "Không tạo được video. Thử lại nhé.",
-    "videoRecorderStopMotionShotsLeft": "{count, plural, =0{Hết lượt chụp} other{Còn {count} lượt chụp}}",
-    "@videoRecorderStopMotionShotsLeft": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
   "@videoRecorderStopMotionAssembleFailed": {
     "description": "Snackbar shown when assembling captured stop-motion frames into a video failed."
+  },
+  "videoRecorderStopMotionShotsLeft": "{count, plural, =0{Hết lượt chụp} other{Còn {count} lượt chụp}}",
+  "@videoRecorderStopMotionShotsLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "videoRecorderToggleFlashLabel": "Bật/tắt đèn flash",
   "videoRecorderCycleTimerLabel": "Chuyển hẹn giờ",
