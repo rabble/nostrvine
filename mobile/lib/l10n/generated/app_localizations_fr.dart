@@ -7476,6 +7476,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'La vidéo a été envoyée, mais la publication n\'a pas pu être diffusée. Vérifie tes réglages de relais et réessaie.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'La vidéo a été envoyée, mais cet audio n\'est pas autorisé à la réutilisation. Choisis un autre son pour publier.';
+
+  @override
   String get publishErrorInterrupted =>
       'Cet envoi a été interrompu. Tu veux réessayer ?';
 

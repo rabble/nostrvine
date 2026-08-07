@@ -7548,6 +7548,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Videoclipul s-a încărcat, dar postarea nu a putut fi publicată. Verifică-ți setările relay-urilor și încearcă din nou.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Videoclipul s-a încărcat, dar sunetul lui nu este permis pentru reutilizare. Alege alt sunet ca să postezi.';
+
+  @override
   String get publishErrorInterrupted =>
       'Această încărcare a fost întreruptă. Vrei să încerci din nou?';
 

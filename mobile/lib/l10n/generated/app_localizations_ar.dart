@@ -7324,6 +7324,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'تم رفع الفيديو لكن تعذّر نشر المنشور. تحقّق من إعدادات المحوّلات وحاول مرّة أخرى.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'تم رفع الفيديو، لكن الصوت غير مسموح بإعادة استخدامه. اختر صوتًا آخر لنشره.';
+
+  @override
   String get publishErrorInterrupted =>
       'تم قطع هذا الرفع. هل ترغب في المحاولة مرّة أخرى؟';
 

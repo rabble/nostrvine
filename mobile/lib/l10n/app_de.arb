@@ -19,6 +19,7 @@
     "publishErrorLowStorage": "Nicht genug Speicher auf deinem Gerät. Schaffe etwas Platz und versuch es erneut.",
     "publishErrorThumbnailFailed": "Das Video wurde hochgeladen, aber das Vorschaubild konnte nicht erstellt werden. Bitte versuch es erneut.",
     "publishErrorNostrPublishFailed": "Das Video wurde hochgeladen, aber der Beitrag konnte nicht veröffentlicht werden. Prüfe deine Relay-Einstellungen und versuch es erneut.",
+    "publishErrorAudioReuseNotPermitted": "Das Video wurde hochgeladen, aber der Sound ist nicht zur Wiederverwendung freigegeben. Wähl einen anderen Sound, um zu posten.",
     "publishErrorInterrupted": "Dieser Upload wurde unterbrochen. Möchtest du es erneut versuchen?",
     "publishErrorAccountChanged": "Dieses Video gehört zu einem anderen Konto. Wechsle zurück zu diesem Konto, um es zu posten.",
     "publishErrorGeneric": "Etwas ist schiefgelaufen. Bitte versuch es erneut.",

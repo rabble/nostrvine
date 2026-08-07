@@ -52,6 +52,8 @@ extension PublishErrorKindL10n on AppLocalizations {
         return publishErrorThumbnailFailed;
       case PublishErrorKind.nostrPublishFailed:
         return publishErrorNostrPublishFailed;
+      case PublishErrorKind.audioReuseNotPermitted:
+        return publishErrorAudioReuseNotPermitted;
       case PublishErrorKind.interrupted:
         return publishErrorInterrupted;
       case PublishErrorKind.accountChanged:

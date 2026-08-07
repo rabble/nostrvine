@@ -19,6 +19,7 @@
     "publishErrorLowStorage": "Za mało miejsca w pamięci urządzenia. Zwolnij trochę miejsca i spróbuj ponownie.",
     "publishErrorThumbnailFailed": "Film został przesłany, ale nie udało się przygotować miniatury. Spróbuj ponownie.",
     "publishErrorNostrPublishFailed": "Film został przesłany, ale nie udało się opublikować posta. Sprawdź ustawienia przekaźników i spróbuj ponownie.",
+    "publishErrorAudioReuseNotPermitted": "Film został przesłany, ale ten dźwięk nie jest dopuszczony do ponownego użycia. Wybierz inny dźwięk, żeby opublikować.",
     "publishErrorInterrupted": "Przesyłanie zostało przerwane. Chcesz spróbować ponownie?",
     "publishErrorAccountChanged": "Ten film należy do innego konta. Wróć na tamto konto, żeby go opublikować.",
     "publishErrorGeneric": "Coś poszło nie tak. Spróbuj ponownie.",

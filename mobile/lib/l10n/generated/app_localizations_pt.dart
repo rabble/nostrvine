@@ -7431,6 +7431,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'O vídeo foi enviado, mas não foi possível publicar o post. Verifique suas configurações de relay e tente novamente.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'O vídeo foi enviado, mas o áudio dele não está liberado para reutilização. Escolha outro áudio para publicar.';
+
+  @override
   String get publishErrorInterrupted =>
       'Este envio foi interrompido. Quer tentar de novo?';
 

@@ -7428,6 +7428,10 @@ class AppLocalizationsMs extends AppLocalizations {
       'Video dimuat naik tetapi siaran tidak dapat diterbitkan. Semak tetapan relay anda dan cuba lagi.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Video dimuat naik tetapi bunyinya tidak dibenarkan untuk digunakan semula. Pilih bunyi lain untuk menyiarkannya.';
+
+  @override
   String get publishErrorInterrupted =>
       'Muat naik ini terganggu. Adakah anda mahu cuba lagi?';
 

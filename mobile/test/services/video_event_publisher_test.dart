@@ -23,6 +23,7 @@ import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:nostr_sdk/relay/relay_pool.dart';
 import 'package:openvine/constants/nip71_migration.dart';
+import 'package:openvine/exceptions/video_exceptions.dart';
 import 'package:openvine/models/audio_share_attribution.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
@@ -518,11 +519,7 @@ void main() {
       registerFallbackValue(UploadStatus.pending);
       registerFallbackValue(File('fallback.mp3'));
       registerFallbackValue(
-        const AudioEvent(
-          id: 'fallback',
-          pubkey: 'fallback',
-          createdAt: 0,
-        ),
+        const AudioEvent(id: 'fallback', pubkey: 'fallback', createdAt: 0),
       );
       registerFallbackValue(Duration.zero);
     });
@@ -709,30 +706,55 @@ void main() {
         },
       );
 
+      /// A publisher whose consent checker answers with [consent], or throws
+      /// [failure] when the check itself cannot be carried out.
+      VideoEventPublisher publisherWithConsent({
+        bool consent = false,
+        Object? failure,
+      }) {
+        return VideoEventPublisher(
+          uploadManager: uploadManager,
+          nostrService: nostrClient,
+          authService: authService,
+          videoEventService: videoEventService,
+          audioReuseConsentChecker: (_) async {
+            if (failure != null) throw failure;
+            return consent;
+          },
+        );
+      }
+
+      final withheldSound = AudioEvent(
+        id: 'd' * 64,
+        pubkey: sourceCreator,
+        createdAt: 1700000000,
+        allowsReuse: false,
+        hasExplicitReuseConsent: true,
+      );
+
       test(
         'blocks selected audio when the source explicitly forbids reuse',
         () async {
           stubSignAndPublish();
 
-          final forbiddenSound = AudioEvent(
-            id: 'd' * 64,
-            pubkey: sourceCreator,
-            createdAt: 1700000000,
-            allowsReuse: false,
-            hasExplicitReuseConsent: true,
+          await expectLater(
+            publisherWithConsent().publishVideoEvent(
+              upload: createUpload(),
+              selectedAudio: withheldSound,
+              selectedAudioEventId: withheldSound.id,
+            ),
+            throwsA(
+              isA<AudioReuseNotPermittedException>().having(
+                (error) => error.audioEventId,
+                'audioEventId',
+                withheldSound.id,
+              ),
+            ),
           );
-
-          final result = await publisher.publishVideoEvent(
-            upload: createUpload(),
-            selectedAudio: forbiddenSound,
-            selectedAudioEventId: forbiddenSound.id,
-          );
-
-          expect(result, isFalse);
           expect(
             _containsTag(capturedTags, [
               'e',
-              forbiddenSound.id,
+              withheldSound.id,
               'wss://relay.divine.video',
               'audio',
             ]),
@@ -741,38 +763,85 @@ void main() {
         },
       );
 
-      test(
-        'recovers the reference from an editor timeline track id',
-        () async {
-          stubSignAndPublish();
+      // The legacy resolver's `false` cannot tell a refusal from an
+      // unreachable relay, a source video outside the query window, or one the
+      // viewer's own filters dropped. Raising the refusal on it would tell
+      // those users to swap a sound that may well be cleared, and to stop
+      // retrying the one thing that would have worked.
+      test('reports an unverified legacy sound as a plain failure', () async {
+        stubSignAndPublish();
 
-          // The editor appends a `-<timestamp>` uniqueness suffix to timeline
-          // track ids; the reference must still resolve to the source video.
-          final reusedTrack = AudioEvent(
-            id: 'video_$sourceVideoId-1700000000000',
-            pubkey: sourceCreator,
-            createdAt: 1700000000,
-            sourceVideoReference: '34236:$sourceCreator:vine-xyz',
-          );
+        final legacySound = AudioEvent(
+          id: 'e' * 64,
+          pubkey: sourceCreator,
+          createdAt: 1700000000,
+          allowsReuse: false,
+          sourceVideoReference: '34236:$sourceCreator:vine-xyz',
+        );
 
-          final result = await publisher.publishVideoEvent(
-            upload: createUpload(),
-            selectedAudio: reusedTrack,
-            selectedAudioEventId: reusedTrack.id,
-          );
+        final result = await publisherWithConsent().publishVideoEvent(
+          upload: createUpload(),
+          selectedAudio: legacySound,
+          selectedAudioEventId: legacySound.id,
+        );
 
-          expect(result, isTrue);
-          expect(
-            _containsTag(capturedTags, [
-              'e',
-              sourceVideoId,
-              'wss://relay.divine.video',
-              'audio',
-            ]),
-            isTrue,
-          );
-        },
-      );
+        expect(result, isFalse);
+        expect(capturedTags, isEmpty);
+      });
+
+      // With no resolver wired there is nothing to ask, so a legacy sound
+      // belonging to someone else must not be remixed on the strength of a
+      // missing check. `publisher` here is the bare one from setUp.
+      test('blocks reuse when no consent checker is wired', () async {
+        stubSignAndPublish();
+
+        final legacySound = AudioEvent(
+          id: 'f' * 64,
+          pubkey: sourceCreator,
+          createdAt: 1700000000,
+          allowsReuse: false,
+          sourceVideoReference: '34236:$sourceCreator:vine-xyz',
+        );
+
+        final result = await publisher.publishVideoEvent(
+          upload: createUpload(),
+          selectedAudio: legacySound,
+          selectedAudioEventId: legacySound.id,
+        );
+
+        expect(result, isFalse);
+        expect(capturedTags, isEmpty);
+      });
+
+      test('recovers the reference from an editor timeline track id', () async {
+        stubSignAndPublish();
+
+        // The editor appends a `-<timestamp>` uniqueness suffix to timeline
+        // track ids; the reference must still resolve to the source video.
+        final reusedTrack = AudioEvent(
+          id: 'video_$sourceVideoId-1700000000000',
+          pubkey: sourceCreator,
+          createdAt: 1700000000,
+          sourceVideoReference: '34236:$sourceCreator:vine-xyz',
+        );
+
+        final result = await publisher.publishVideoEvent(
+          upload: createUpload(),
+          selectedAudio: reusedTrack,
+          selectedAudioEventId: reusedTrack.id,
+        );
+
+        expect(result, isTrue);
+        expect(
+          _containsTag(capturedTags, [
+            'e',
+            sourceVideoId,
+            'wss://relay.divine.video',
+            'audio',
+          ]),
+          isTrue,
+        );
+      });
 
       test(
         'does not re-publish the video audio when a source is referenced',
@@ -800,147 +869,144 @@ void main() {
         },
       );
 
-      test(
-        'honors audio reuse for bundled sounds',
-        () async {
-          final blossomUploadService = _MockBlossomUploadService();
-          final audioExtractionService = _MockAudioExtractionService();
-          final signedEvents = <Event>[];
-          publisher = VideoEventPublisher(
-            uploadManager: uploadManager,
-            nostrService: nostrClient,
-            authService: authService,
-            videoEventService: videoEventService,
-            blossomUploadService: blossomUploadService,
-            audioExtractionService: audioExtractionService,
-          );
+      test('honors audio reuse for bundled sounds', () async {
+        final blossomUploadService = _MockBlossomUploadService();
+        final audioExtractionService = _MockAudioExtractionService();
+        final signedEvents = <Event>[];
+        publisher = VideoEventPublisher(
+          uploadManager: uploadManager,
+          nostrService: nostrClient,
+          authService: authService,
+          videoEventService: videoEventService,
+          blossomUploadService: blossomUploadService,
+          audioExtractionService: audioExtractionService,
+        );
 
-          // A bundled sound has no Nostr event to reference, so the video's own
-          // audio is the user's to offer and "Publish this sound" must still
-          // take effect instead of being silently dropped (#6185).
-          const bundledSound = AudioEvent(
-            id: '${AudioEvent.bundledMarker}_oh_no_no_no_crowd',
-            pubkey: AudioEvent.bundledMarker,
-            createdAt: 0,
-            url: 'asset://assets/sounds/oh-no-no-no-crowd.mp3',
-          );
+        // A bundled sound has no Nostr event to reference, so the video's own
+        // audio is the user's to offer and "Publish this sound" must still
+        // take effect instead of being silently dropped (#6185).
+        const bundledSound = AudioEvent(
+          id: '${AudioEvent.bundledMarker}_oh_no_no_no_crowd',
+          pubkey: AudioEvent.bundledMarker,
+          createdAt: 0,
+          url: 'asset://assets/sounds/oh-no-no-no-crowd.mp3',
+        );
 
-          const audioPath = '/tmp/divine-video-6185.m4a';
-          when(
-            () => audioExtractionService.extractAudio(
-              videoPath: '/tmp/divine-video-6185.mp4',
-            ),
-          ).thenAnswer(
-            (_) async => const AudioExtractionResult(
-              audioFilePath: audioPath,
-              duration: 6,
-              fileSize: 12345,
-              sha256Hash:
-                  'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-              mimeType: 'audio/m4a',
-            ),
-          );
-          when(
-            () => audioExtractionService.cleanupAudioFile(audioPath),
-          ).thenAnswer((_) async {});
-          when(
-            () => blossomUploadService.uploadAudio(
-              audioFile: any(named: 'audioFile'),
-              mimeType: 'audio/m4a',
-            ),
-          ).thenAnswer(
-            (_) async => const BlossomUploadResult(
-              success: true,
-              url: 'https://cdn.example.com/audio.m4a',
-              fallbackUrl: 'https://cdn.example.com/audio.m4a',
-              videoId:
-                  'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-            ),
-          );
-          when(
-            () => authService.createAndSignEvent(
-              kind: any(named: 'kind'),
-              content: any(named: 'content'),
-              tags: any(named: 'tags'),
-            ),
-          ).thenAnswer((invocation) async {
-            final kind = invocation.namedArguments[#kind] as int;
-            final content = invocation.namedArguments[#content] as String;
-            final tags = invocation.namedArguments[#tags] as List<List<String>>;
-            final event = Event(testPubkey, kind, tags, content);
-            signedEvents.add(event);
-            capturedTags = tags;
-            return event;
-          });
-          when(
-            () => nostrClient.publishEventAwaitOk(
-              any(),
-              timeout: any(named: 'timeout'),
-            ),
-          ).thenAnswer(
-            (invocation) async => PublishOutcome(
-              eventId: (invocation.positionalArguments.first as Event).id,
-              acceptedBy: const ['wss://relay.divine.video'],
-              rejectedBy: const {},
-              noResponseFrom: const [],
-            ),
-          );
+        const audioPath = '/tmp/divine-video-6185.m4a';
+        when(
+          () => audioExtractionService.extractAudio(
+            videoPath: '/tmp/divine-video-6185.mp4',
+          ),
+        ).thenAnswer(
+          (_) async => const AudioExtractionResult(
+            audioFilePath: audioPath,
+            duration: 6,
+            fileSize: 12345,
+            sha256Hash:
+                'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+            mimeType: 'audio/m4a',
+          ),
+        );
+        when(
+          () => audioExtractionService.cleanupAudioFile(audioPath),
+        ).thenAnswer((_) async {});
+        when(
+          () => blossomUploadService.uploadAudio(
+            audioFile: any(named: 'audioFile'),
+            mimeType: 'audio/m4a',
+          ),
+        ).thenAnswer(
+          (_) async => const BlossomUploadResult(
+            success: true,
+            url: 'https://cdn.example.com/audio.m4a',
+            fallbackUrl: 'https://cdn.example.com/audio.m4a',
+            videoId:
+                'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          ),
+        );
+        when(
+          () => authService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((invocation) async {
+          final kind = invocation.namedArguments[#kind] as int;
+          final content = invocation.namedArguments[#content] as String;
+          final tags = invocation.namedArguments[#tags] as List<List<String>>;
+          final event = Event(testPubkey, kind, tags, content);
+          signedEvents.add(event);
+          capturedTags = tags;
+          return event;
+        });
+        when(
+          () => nostrClient.publishEventAwaitOk(
+            any(),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer(
+          (invocation) async => PublishOutcome(
+            eventId: (invocation.positionalArguments.first as Event).id,
+            acceptedBy: const ['wss://relay.divine.video'],
+            rejectedBy: const {},
+            noResponseFrom: const [],
+          ),
+        );
 
-          final result = await publisher.publishVideoEvent(
-            upload: createUpload(localVideoPath: '/tmp/divine-video-6185.mp4'),
-            allowAudioReuse: true,
-            selectedAudio: bundledSound,
-            selectedAudioEventId: bundledSound.id,
-          );
+        final result = await publisher.publishVideoEvent(
+          upload: createUpload(localVideoPath: '/tmp/divine-video-6185.mp4'),
+          allowAudioReuse: true,
+          selectedAudio: bundledSound,
+          selectedAudioEventId: bundledSound.id,
+        );
 
-          expect(result, isTrue);
-          expect(
-            _containsTag(capturedTags, const ['allow_audio_reuse', 'true']),
-            isTrue,
-          );
-          final audioEvent = signedEvents.singleWhere(
-            (event) => event.kind == audioEventKind,
-          );
-          final fallbackName = UserProfile.defaultDisplayNameFor(testPubkey);
-          expect(
-            _containsTag(audioEvent.tags, [
-              'title',
-              'Original sound - @$fallbackName',
-            ]),
-            isTrue,
-          );
-          expect(
-            _containsTag(audioEvent.tags, ['creator', fallbackName]),
-            isTrue,
-          );
-          final publicCreditTags = audioEvent.tags
-              .where(
-                (tag) =>
-                    tag.firstOrNull == 'title' || tag.firstOrNull == 'creator',
-              )
-              .expand((tag) => tag);
-          expect(publicCreditTags.join(' '), isNot(contains(testPubkey)));
-          final videoEvent = signedEvents.singleWhere(
-            (event) => event.kind != audioEventKind,
-          );
-          expect(
-            _containsTag(audioEvent.tags, const [
-              'url',
-              'https://cdn.example.com/audio.m4a',
-            ]),
-            isTrue,
-          );
-          expect(
-            _containsTag(videoEvent.tags, [
-              'e',
-              audioEvent.id,
-              'wss://relay.divine.video',
-              'audio',
-            ]),
-            isTrue,
-          );
-        },
-      );
+        expect(result, isTrue);
+        expect(
+          _containsTag(capturedTags, const ['allow_audio_reuse', 'true']),
+          isTrue,
+        );
+        final audioEvent = signedEvents.singleWhere(
+          (event) => event.kind == audioEventKind,
+        );
+        final fallbackName = UserProfile.defaultDisplayNameFor(testPubkey);
+        expect(
+          _containsTag(audioEvent.tags, [
+            'title',
+            'Original sound - @$fallbackName',
+          ]),
+          isTrue,
+        );
+        expect(
+          _containsTag(audioEvent.tags, ['creator', fallbackName]),
+          isTrue,
+        );
+        final publicCreditTags = audioEvent.tags
+            .where(
+              (tag) =>
+                  tag.firstOrNull == 'title' || tag.firstOrNull == 'creator',
+            )
+            .expand((tag) => tag);
+        expect(publicCreditTags.join(' '), isNot(contains(testPubkey)));
+        final videoEvent = signedEvents.singleWhere(
+          (event) => event.kind != audioEventKind,
+        );
+        expect(
+          _containsTag(audioEvent.tags, const [
+            'url',
+            'https://cdn.example.com/audio.m4a',
+          ]),
+          isTrue,
+        );
+        expect(
+          _containsTag(videoEvent.tags, [
+            'e',
+            audioEvent.id,
+            'wss://relay.divine.video',
+            'audio',
+          ]),
+          isTrue,
+        );
+      });
 
       test(
         'requested reusable original audio blocks on publish failure',
@@ -1013,11 +1079,7 @@ void main() {
           final audioTags = captured[1] as List<List<String>>;
           expect(audioContent, contains('Catalog Artist'));
           expect(
-            _containsTag(audioTags, const [
-              'proxy',
-              '12345',
-              'freesound',
-            ]),
+            _containsTag(audioTags, const ['proxy', '12345', 'freesound']),
             isTrue,
           );
           expect(
@@ -1028,10 +1090,7 @@ void main() {
             isTrue,
           );
           expect(
-            _containsTag(audioTags, const [
-              'creator',
-              'Catalog Artist',
-            ]),
+            _containsTag(audioTags, const ['creator', 'Catalog Artist']),
             isTrue,
           );
           expect(
@@ -1150,10 +1209,7 @@ void main() {
                 ),
               ).captured.single
               as List<List<String>>;
-      expect(
-        _containsTag(tags, const ['allow_audio_reuse', 'false']),
-        isTrue,
-      );
+      expect(_containsTag(tags, const ['allow_audio_reuse', 'false']), isTrue);
     });
 
     test(
@@ -1383,10 +1439,7 @@ void main() {
             isTrue,
           );
           expect(
-            _containsTag(audioEvent.tags, const [
-              'creator',
-              'Field Recordist',
-            ]),
+            _containsTag(audioEvent.tags, const ['creator', 'Field Recordist']),
             isTrue,
           );
           expect(
@@ -1525,66 +1578,60 @@ void main() {
     // by the dedicated group below.
     const patternTimeout = Duration(seconds: 30);
 
-    test(
-      'a never-completing publishEvent future surfaces TimeoutException '
-      'and is mapped to null',
-      () {
-        fakeAsync((async) {
-          final never = Completer<String?>();
-          var completed = false;
-          String? result;
+    test('a never-completing publishEvent future surfaces TimeoutException '
+        'and is mapped to null', () {
+      fakeAsync((async) {
+        final never = Completer<String?>();
+        var completed = false;
+        String? result;
 
-          // Mirrors the exact wrapping inside _publishEventToNostr.
-          Future<void> wrapped() async {
-            try {
-              result = await never.future.timeout(patternTimeout);
-            } on TimeoutException {
-              result = null;
-            }
-            completed = true;
+        // Mirrors the exact wrapping inside _publishEventToNostr.
+        Future<void> wrapped() async {
+          try {
+            result = await never.future.timeout(patternTimeout);
+          } on TimeoutException {
+            result = null;
           }
+          completed = true;
+        }
 
-          unawaited(wrapped());
+        unawaited(wrapped());
 
-          // Just before the timeout — must still be pending.
-          async.elapse(const Duration(seconds: 29));
-          expect(completed, isFalse);
+        // Just before the timeout — must still be pending.
+        async.elapse(const Duration(seconds: 29));
+        expect(completed, isFalse);
 
-          // Cross the timeout boundary.
-          async.elapse(const Duration(seconds: 2));
-          expect(completed, isTrue);
-          expect(result, isNull);
-        });
-      },
-    );
+        // Cross the timeout boundary.
+        async.elapse(const Duration(seconds: 2));
+        expect(completed, isTrue);
+        expect(result, isNull);
+      });
+    });
 
-    test(
-      'a publishEvent future that completes before the timeout returns its '
-      'value',
-      () {
-        fakeAsync((async) {
-          final completer = Completer<String?>();
-          var resolvedValue = 'unset';
+    test('a publishEvent future that completes before the timeout returns its '
+        'value', () {
+      fakeAsync((async) {
+        final completer = Completer<String?>();
+        var resolvedValue = 'unset';
 
-          Future<void> wrapped() async {
-            try {
-              final value = await completer.future.timeout(patternTimeout);
-              resolvedValue = value ?? 'null';
-            } on TimeoutException {
-              resolvedValue = 'timeout';
-            }
+        Future<void> wrapped() async {
+          try {
+            final value = await completer.future.timeout(patternTimeout);
+            resolvedValue = value ?? 'null';
+          } on TimeoutException {
+            resolvedValue = 'timeout';
           }
+        }
 
-          unawaited(wrapped());
+        unawaited(wrapped());
 
-          async.elapse(const Duration(seconds: 5));
-          completer.complete('signed_event_id');
-          async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 5));
+        completer.complete('signed_event_id');
+        async.flushMicrotasks();
 
-          expect(resolvedValue, equals('signed_event_id'));
-        });
-      },
-    );
+        expect(resolvedValue, equals('signed_event_id'));
+      });
+    });
   });
 
   group('outerPublishTimeoutFor', () {
@@ -1597,115 +1644,88 @@ void main() {
 
     test('clamps to the floor when the relay count is zero', () {
       // 0 * 5s + 5s = 5s, which is below the 10s floor.
-      expect(
-        outerPublishTimeoutFor(0),
-        equals(const Duration(seconds: 10)),
-      );
+      expect(outerPublishTimeoutFor(0), equals(const Duration(seconds: 10)));
     });
 
     test('still clamps to the floor for a single relay', () {
       // 1 * 5s + 5s = 10s, exactly at the floor — never below it.
-      expect(
-        outerPublishTimeoutFor(1),
-        equals(const Duration(seconds: 10)),
-      );
+      expect(outerPublishTimeoutFor(1), equals(const Duration(seconds: 10)));
     });
 
     test('scales linearly between the floor and ceiling', () {
       // 2 * 5s + 5s = 15s
-      expect(
-        outerPublishTimeoutFor(2),
-        equals(const Duration(seconds: 15)),
-      );
+      expect(outerPublishTimeoutFor(2), equals(const Duration(seconds: 15)));
       // 6 * 5s + 5s = 35s — the current default-config worst case.
-      expect(
-        outerPublishTimeoutFor(6),
-        equals(const Duration(seconds: 35)),
-      );
+      expect(outerPublishTimeoutFor(6), equals(const Duration(seconds: 35)));
       // 11 * 5s + 5s = 60s, exactly at the ceiling.
-      expect(
-        outerPublishTimeoutFor(11),
-        equals(const Duration(seconds: 60)),
-      );
+      expect(outerPublishTimeoutFor(11), equals(const Duration(seconds: 60)));
     });
 
     test('clamps to the ceiling for misconfigured huge relay lists', () {
       // 12 * 5s + 5s = 65s → clamped to 60s ceiling. Bounds worst-case
       // publish latency so the user never stares at a spinner for
       // several minutes.
-      expect(
-        outerPublishTimeoutFor(12),
-        equals(const Duration(seconds: 60)),
-      );
-      expect(
-        outerPublishTimeoutFor(50),
-        equals(const Duration(seconds: 60)),
-      );
+      expect(outerPublishTimeoutFor(12), equals(const Duration(seconds: 60)));
+      expect(outerPublishTimeoutFor(50), equals(const Duration(seconds: 60)));
     });
 
-    test(
-      'strictly exceeds the inner worst-case fan-out up to the ceiling '
-      'boundary',
-      () {
-        // The whole point of the derivation: the outer guard must never
-        // fire before the inner sequential fan-out inside
-        // `RelayPool._sendCollect` can complete. Asserts the invariant
-        // strictly (with the buffer present) for the full range up to
-        // the ceiling boundary.
-        for (final relayCount in [0, 1, 2, 6, 7, 11]) {
-          final innerWorstCase = RelayPool.perRelaySendTimeout * relayCount;
-          final outer = outerPublishTimeoutFor(relayCount);
-          expect(
-            outer > innerWorstCase,
-            isTrue,
-            reason:
-                'outer ($outer) must strictly exceed inner worst case '
-                '($innerWorstCase) for relayCount=$relayCount '
-                '(buffer must be present)',
-          );
-        }
-      },
-    );
-
-    test(
-      'invariant degrades at the ceiling boundary (relayCount >= 12)',
-      () {
-        // Pinned trade-off: clamping to the 60s ceiling means the
-        // strict `outer > inner_worst_case` invariant evaporates at the
-        // boundary and inverts beyond it. This test locks the documented
-        // edge so any change to the ceiling, the per-relay timeout, or
-        // the buffer surfaces here loudly. See the
-        // `_outerPublishTimeoutCeiling` doc comment for the rationale.
-
-        // At relayCount == 12: derived = 12 * 5s + 5s = 65s, clamped to
-        // 60s. Inner worst case = 12 * 5s = 60s. Outer == inner; buffer
-        // is gone but the invariant is not yet violated.
-        final innerAt12 = RelayPool.perRelaySendTimeout * 12;
-        final outerAt12 = outerPublishTimeoutFor(12);
-        expect(outerAt12, equals(const Duration(seconds: 60)));
-        expect(outerAt12, equals(innerAt12));
+    test('strictly exceeds the inner worst-case fan-out up to the ceiling '
+        'boundary', () {
+      // The whole point of the derivation: the outer guard must never
+      // fire before the inner sequential fan-out inside
+      // `RelayPool._sendCollect` can complete. Asserts the invariant
+      // strictly (with the buffer present) for the full range up to
+      // the ceiling boundary.
+      for (final relayCount in [0, 1, 2, 6, 7, 11]) {
+        final innerWorstCase = RelayPool.perRelaySendTimeout * relayCount;
+        final outer = outerPublishTimeoutFor(relayCount);
         expect(
-          outerAt12 > innerAt12,
-          isFalse,
-          reason: 'buffer is exhausted at relayCount == 12',
-        );
-
-        // At relayCount == 13: derived = 70s, clamped to 60s. Inner
-        // worst case = 65s. Outer < inner — the original false-negative
-        // failure mode is back for this edge. The retry loop in
-        // VideoEventPublisher.publishDirectUpload absorbs it.
-        final innerAt13 = RelayPool.perRelaySendTimeout * 13;
-        final outerAt13 = outerPublishTimeoutFor(13);
-        expect(outerAt13, equals(const Duration(seconds: 60)));
-        expect(
-          outerAt13 < innerAt13,
+          outer > innerWorstCase,
           isTrue,
           reason:
-              'invariant breaks at relayCount == 13: '
-              'outer ($outerAt13) < inner ($innerAt13)',
+              'outer ($outer) must strictly exceed inner worst case '
+              '($innerWorstCase) for relayCount=$relayCount '
+              '(buffer must be present)',
         );
-      },
-    );
+      }
+    });
+
+    test('invariant degrades at the ceiling boundary (relayCount >= 12)', () {
+      // Pinned trade-off: clamping to the 60s ceiling means the
+      // strict `outer > inner_worst_case` invariant evaporates at the
+      // boundary and inverts beyond it. This test locks the documented
+      // edge so any change to the ceiling, the per-relay timeout, or
+      // the buffer surfaces here loudly. See the
+      // `_outerPublishTimeoutCeiling` doc comment for the rationale.
+
+      // At relayCount == 12: derived = 12 * 5s + 5s = 65s, clamped to
+      // 60s. Inner worst case = 12 * 5s = 60s. Outer == inner; buffer
+      // is gone but the invariant is not yet violated.
+      final innerAt12 = RelayPool.perRelaySendTimeout * 12;
+      final outerAt12 = outerPublishTimeoutFor(12);
+      expect(outerAt12, equals(const Duration(seconds: 60)));
+      expect(outerAt12, equals(innerAt12));
+      expect(
+        outerAt12 > innerAt12,
+        isFalse,
+        reason: 'buffer is exhausted at relayCount == 12',
+      );
+
+      // At relayCount == 13: derived = 70s, clamped to 60s. Inner
+      // worst case = 65s. Outer < inner — the original false-negative
+      // failure mode is back for this edge. The retry loop in
+      // VideoEventPublisher.publishDirectUpload absorbs it.
+      final innerAt13 = RelayPool.perRelaySendTimeout * 13;
+      final outerAt13 = outerPublishTimeoutFor(13);
+      expect(outerAt13, equals(const Duration(seconds: 60)));
+      expect(
+        outerAt13 < innerAt13,
+        isTrue,
+        reason:
+            'invariant breaks at relayCount == 13: '
+            'outer ($outerAt13) < inner ($innerAt13)',
+      );
+    });
   });
 }
 

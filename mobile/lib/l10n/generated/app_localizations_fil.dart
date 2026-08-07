@@ -7464,6 +7464,10 @@ class AppLocalizationsFil extends AppLocalizations {
       'Na-upload ang video pero hindi na-publish ang post. Tingnan ang iyong relay settings at subukan ulit.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Na-upload ang video pero hindi pinapayagang gamitin ulit ang sound nito. Pumili ng ibang sound para makapag-post.';
+
+  @override
   String get publishErrorInterrupted =>
       'Naputol ang upload na ito. Gusto mo bang subukan ulit?';
 

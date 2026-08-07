@@ -7049,6 +7049,10 @@ class AppLocalizationsJa extends AppLocalizations {
       '動画はアップロードできたけど、投稿を公開できなかったよ。リレー設定を確認して、もう一回試してみて。';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      '動画はアップロードできたけど、この音源は再利用が許可されてないよ。別の音源を選んで投稿してね。';
+
+  @override
   String get publishErrorInterrupted => 'アップロードが中断されたよ。もう一回試す？';
 
   @override

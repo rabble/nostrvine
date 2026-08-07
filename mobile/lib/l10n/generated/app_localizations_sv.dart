@@ -7373,6 +7373,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Videon laddades upp men inlägget kunde inte publiceras. Kontrollera dina relinställningar och försök igen.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Videon laddades upp men ljudet får inte återanvändas. Välj ett annat ljud för att posta.';
+
+  @override
   String get publishErrorInterrupted =>
       'Uppladdningen avbröts. Vill du försöka igen?';
 

@@ -7387,6 +7387,10 @@ class AppLocalizationsVi extends AppLocalizations {
       'Video đã tải lên nhưng không đăng được bài. Kiểm tra cài đặt relay rồi thử lại.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Video đã tải lên nhưng âm thanh này không được phép dùng lại. Chọn âm thanh khác để đăng nhé.';
+
+  @override
   String get publishErrorInterrupted =>
       'Lần tải lên này đã bị gián đoạn. Bạn có muốn thử lại không?';
 

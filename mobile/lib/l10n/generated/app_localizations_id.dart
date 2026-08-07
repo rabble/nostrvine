@@ -7337,6 +7337,10 @@ class AppLocalizationsId extends AppLocalizations {
       'Video berhasil diunggah, tapi posting tidak bisa dipublikasikan. Periksa pengaturan relay-mu dan coba lagi.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Video berhasil diunggah, tapi suaranya tidak diizinkan untuk dipakai ulang. Pilih suara lain untuk memposting.';
+
+  @override
   String get publishErrorInterrupted =>
       'Unggahan ini terganggu. Mau coba lagi?';
 
