@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/constants/text_scale_limits.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
@@ -27,7 +28,7 @@ class ProfileStatColumn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final column = MediaQuery.withClampedTextScaling(
-      maxScaleFactor: 1.5,
+      maxScaleFactor: statColumnTextScaleLimit,
       child: Padding(
         padding: const .symmetric(horizontal: 4),
         child: Column(

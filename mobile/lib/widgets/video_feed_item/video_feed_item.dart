@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
 import 'package:openvine/constants/semantic_ids.dart';
+import 'package:openvine/constants/text_scale_limits.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -675,7 +676,7 @@ class VideoOverlayActionColumn extends ConsumerWidget {
     final showEditButton = !isPreviewMode && isOwnVideo;
 
     return MediaQuery.withClampedTextScaling(
-      maxScaleFactor: 1.3,
+      maxScaleFactor: overlayActionColumnTextScaleLimit,
       child: Column(
         spacing: 20,
         children: [

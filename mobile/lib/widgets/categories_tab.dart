@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show VideoCategory;
 import 'package:openvine/blocs/categories/categories_bloc.dart';
 import 'package:openvine/constants/semantic_ids.dart';
+import 'package:openvine/constants/text_scale_limits.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_category_name.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -179,7 +180,7 @@ class _CategoryTile extends StatelessWidget {
                     vertical: 16,
                   ),
                   child: MediaQuery.withClampedTextScaling(
-                    maxScaleFactor: 1.25,
+                    maxScaleFactor: fixedRowTextScaleLimit,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.center,

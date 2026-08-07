@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/content_filters/content_filters_cubit.dart';
 import 'package:openvine/blocs/content_filters/content_filters_state.dart';
+import 'package:openvine/constants/text_scale_limits.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_content_label_name.dart';
 import 'package:openvine/models/content_label.dart';
@@ -169,7 +170,7 @@ class _CategoryGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MediaQuery.withClampedTextScaling(
-      maxScaleFactor: 1.25,
+      maxScaleFactor: fixedRowTextScaleLimit,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/blocs/notifications/badge/notification_badge_cubit.dart';
 import 'package:openvine/constants/semantic_ids.dart';
+import 'package:openvine/constants/text_scale_limits.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -142,7 +143,7 @@ class VineBottomNav extends ConsumerWidget {
                     .clamp(0.0, double.infinity);
 
             return MediaQuery.withClampedTextScaling(
-              maxScaleFactor: 1.25,
+              maxScaleFactor: fixedRowTextScaleLimit,
               child: Row(
                 children: [
                   _HomeTabButton(

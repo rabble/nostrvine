@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/constants/text_scale_limits.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 
@@ -40,7 +41,7 @@ class TrendingHashtagsSection extends StatelessWidget {
       child: SizedBox(
         height: 52,
         child: MediaQuery.withClampedTextScaling(
-          maxScaleFactor: 1.25,
+          maxScaleFactor: fixedRowTextScaleLimit,
           child: Row(
             children: [
               if (leading != null)

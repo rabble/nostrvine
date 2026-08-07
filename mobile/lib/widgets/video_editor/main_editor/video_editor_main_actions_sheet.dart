@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/tune_editor/video_editor_tune_bloc.dart';
+import 'package:openvine/constants/text_scale_limits.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
@@ -251,7 +252,7 @@ class _ItemButton extends StatelessWidget {
         Semantics(
           excludeSemantics: true,
           child: MediaQuery.withClampedTextScaling(
-            maxScaleFactor: 1.4,
+            maxScaleFactor: chipLabelTextScaleLimit,
             child: Text(
               label,
               maxLines: 1,
