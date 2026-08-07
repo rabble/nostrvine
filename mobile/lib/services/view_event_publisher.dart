@@ -3,84 +3,17 @@
 
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
+import 'package:openvine/models/view_traffic_source.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+/// Re-exported so existing callers keep importing the source enum from here.
+/// Presentation code should import `openvine/models/view_traffic_source.dart`
+/// directly rather than reaching into the service layer.
+export 'package:openvine/models/view_traffic_source.dart';
+
 /// Kind 22236 - Ephemeral video view event (NIP-71 extension)
 const int viewEventKind = 22236;
-
-/// Traffic source for video views
-enum ViewTrafficSource {
-  /// Video viewed from home/following feed
-  home,
-
-  /// Video viewed from explore/discovery — new videos tab
-  discoveryNew,
-
-  /// Video viewed from explore/discovery — classic vines tab
-  discoveryClassic,
-
-  /// Video viewed from explore/discovery — for you (personalized) tab
-  discoveryForYou,
-
-  /// Video viewed from explore/discovery — popular videos tab
-  discoveryPopular,
-
-  /// Video viewed from a user's profile page
-  profile,
-
-  /// Video viewed via shared link
-  share,
-
-  /// Video viewed from search results or hashtag feed
-  search,
-
-  /// Video viewed from explore/discovery — a server-configured featured tab.
-  ///
-  /// Deliberately generic: the tag never names the editorial theme, so
-  /// dashboards do not inherit a schema per campaign. The configuration id
-  /// travels separately as the source detail.
-  discoveryFeatured,
-
-  /// Unknown/unspecified source
-  unknown,
-}
-
-extension ViewTrafficSourceTags on ViewTrafficSource {
-  String get tagValue {
-    return switch (this) {
-      ViewTrafficSource.home => 'home',
-      ViewTrafficSource.discoveryNew => 'discovery:new',
-      ViewTrafficSource.discoveryClassic => 'discovery:classic',
-      ViewTrafficSource.discoveryForYou => 'discovery:foryou',
-      ViewTrafficSource.discoveryPopular => 'discovery:popular',
-      ViewTrafficSource.discoveryFeatured => 'discovery:featured',
-      ViewTrafficSource.profile => 'profile',
-      ViewTrafficSource.share => 'share',
-      ViewTrafficSource.search => 'search',
-      ViewTrafficSource.unknown => 'unknown',
-    };
-  }
-}
-
-ViewTrafficSource viewTrafficSourceFromTag(String raw) {
-  return switch (raw) {
-    'home' => ViewTrafficSource.home,
-    'profile' => ViewTrafficSource.profile,
-    'search' => ViewTrafficSource.search,
-    'share' => ViewTrafficSource.share,
-    'discovery:new' || 'discovery_new' => ViewTrafficSource.discoveryNew,
-    'discovery:popular' ||
-    'discovery_popular' => ViewTrafficSource.discoveryPopular,
-    'discovery:classic' ||
-    'discovery_classic' => ViewTrafficSource.discoveryClassic,
-    'discovery:foryou' ||
-    'discovery_for_you' => ViewTrafficSource.discoveryForYou,
-    'discovery:featured' ||
-    'discovery_featured' => ViewTrafficSource.discoveryFeatured,
-    _ => ViewTrafficSource.unknown,
-  };
-}
 
 /// Service for publishing video view events to Nostr relays.
 ///
