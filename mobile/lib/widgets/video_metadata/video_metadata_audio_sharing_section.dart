@@ -357,6 +357,7 @@ class _PublicAudioCreditEditorState
             ),
           ),
           child: ListTile(
+            contentPadding: const .symmetric(horizontal: 16),
             title: Text(
               context.l10n.soundSharedAs,
               style: VineTheme.labelMediumFont(
