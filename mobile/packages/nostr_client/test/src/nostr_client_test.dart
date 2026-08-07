@@ -161,6 +161,69 @@ void main() {
         );
         expect(clientWithoutDb.publicKey, equals(testPublicKey));
       });
+
+      group('resolvePublicKey (#6813)', () {
+        test('returns the cached key without asking the signer', () async {
+          expect(await client.resolvePublicKey(), equals(testPublicKey));
+          verifyNever(() => mockNostr.refreshPublicKey());
+        });
+
+        test('refreshes from the signer when the cache is empty', () async {
+          // The signer acquired its key after the client initialized, so the
+          // cache is stale — the refresh is what makes it visible.
+          var cached = '';
+          when(() => mockNostr.publicKey).thenAnswer((_) => cached);
+          when(() => mockNostr.refreshPublicKey()).thenAnswer((_) async {
+            cached = testPublicKey;
+          });
+
+          expect(await client.resolvePublicKey(), equals(testPublicKey));
+          verify(() => mockNostr.refreshPublicKey()).called(1);
+        });
+
+        test('returns null when the signer still has no key', () async {
+          when(() => mockNostr.publicKey).thenReturn('');
+          when(() => mockNostr.refreshPublicKey()).thenAnswer((_) async {});
+
+          expect(await client.resolvePublicKey(), isNull);
+        });
+
+        test('concurrent callers share a single signer refresh', () async {
+          // A cache miss reaches the signer, and under NIP-55 that is a
+          // user-visible Amber prompt — three repositories resolving the key
+          // at startup must not raise three of them.
+          var cached = '';
+          final gate = Completer<void>();
+          when(() => mockNostr.publicKey).thenAnswer((_) => cached);
+          when(() => mockNostr.refreshPublicKey()).thenAnswer((_) async {
+            await gate.future;
+            cached = testPublicKey;
+          });
+
+          final calls = Future.wait([
+            client.resolvePublicKey(),
+            client.resolvePublicKey(),
+            client.resolvePublicKey(),
+          ]);
+          gate.complete();
+
+          expect(await calls, everyElement(equals(testPublicKey)));
+          verify(() => mockNostr.refreshPublicKey()).called(1);
+        });
+
+        test(
+          'a later miss refreshes again once the first has settled',
+          () async {
+            when(() => mockNostr.publicKey).thenReturn('');
+            when(() => mockNostr.refreshPublicKey()).thenAnswer((_) async {});
+
+            expect(await client.resolvePublicKey(), isNull);
+            expect(await client.resolvePublicKey(), isNull);
+
+            verify(() => mockNostr.refreshPublicKey()).called(2);
+          },
+        );
+      });
     });
 
     group('initialize seeds known-verified event ids', () {
