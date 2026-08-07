@@ -32,14 +32,26 @@ CODE_SIGNING_ALLOWED = YES
 ```
 
 The Runner target's Debug build config also sets
-`CODE_SIGN_STYLE = Manual`, `CODE_SIGN_IDENTITY = -`, and
-`OTHER_CODE_SIGN_FLAGS = --options=runtime` at target precedence. That
-keeps the Debug app ad-hoc signed with Hardened Runtime while still
-applying `Runner/DebugProfile.entitlements`. Debug entitlements
-intentionally omit provisioning-backed capabilities such as associated
-domains and explicit keychain access groups; those require a team profile
-and remain in the team-signed configurations. Profile and Release remain
-team-signed with `DEVELOPMENT_TEAM = GZCZBKH7MY`.
+`OTHER_CODE_SIGN_FLAGS = --options=runtime` and resolves its signing
+identity, style, and team from `DIVINE_DEBUG_*` variables defined in
+`Runner/Configs/Debug.xcconfig`:
+
+```
+DIVINE_DEBUG_CODE_SIGN_IDENTITY = -
+DIVINE_DEBUG_CODE_SIGN_STYLE = Manual
+DIVINE_DEBUG_DEVELOPMENT_TEAM =
+```
+
+Those defaults keep the Debug app ad-hoc signed with Hardened Runtime
+while still applying `Runner/DebugProfile.entitlements`. The indirection
+exists so a developer who *is* on the team can opt into a stable
+signature locally without changing tracked files — see
+[Keychain password prompts on every rebuild](#keychain-password-prompts-on-every-rebuild).
+Debug entitlements intentionally omit provisioning-backed capabilities
+such as associated domains and explicit keychain access groups; those
+require a team profile and remain in the team-signed configurations.
+Profile and Release remain team-signed with
+`DEVELOPMENT_TEAM = GZCZBKH7MY`.
 
 Two related changes make that signed debug build run:
 
@@ -80,12 +92,55 @@ flutter build macos --debug
 ```
 
 If a fresh checkout fails a debug build with a provisioning or team
-error, first verify the Runner target's Debug configuration still uses
-manual ad-hoc signing (`CODE_SIGN_STYLE = Manual` and
-`CODE_SIGN_IDENTITY = -`) and that `Runner/DebugProfile.entitlements`
-does not include provisioning-backed capabilities. Do not commit a Debug
-`DEVELOPMENT_TEAM` override; team signing is only expected for Profile
-and Release.
+error, first verify `Runner/Configs/Debug.xcconfig` still carries the
+ad-hoc `DIVINE_DEBUG_*` defaults above and that
+`Runner/DebugProfile.entitlements` does not include provisioning-backed
+capabilities. Do not commit a Debug `DEVELOPMENT_TEAM` override; team
+signing stays opt-in through the git-ignored `LocalDebug.xcconfig`
+described below, and is only the committed default for Profile and
+Release.
+
+## Keychain password prompts on every rebuild
+
+An ad-hoc signature carries no designated requirement and a fresh
+CDHash on every build (`codesign -dvvv` reports `Signature=adhoc`,
+`TeamIdentifier=not set`, `Internal requirements count=0`). Two things
+follow from that, and together they make macOS ask for the login
+keychain password several times per debug launch:
+
+1. The data-protection keychain rejects ad-hoc binaries with OSStatus
+   `-34018`, so `appMacOsSecureStorageOptions()` in
+   `lib/services/secure_storage_options.dart` falls back to the
+   file-based login keychain for macOS debug builds (#5563).
+2. The login keychain guards each item with an ACL bound to the calling
+   app's code signature. With no stable requirement to record, "Always
+   Allow" only holds until the next build, and every secret read at
+   startup (database cipher key, Keycast session, saved identity)
+   prompts again.
+
+Team members can opt into a stable signature by creating
+`Runner/Configs/LocalDebug.xcconfig` (git-ignored, included at the end
+of `Debug.xcconfig`):
+
+```
+DIVINE_DEBUG_CODE_SIGN_IDENTITY = Apple Development
+DIVINE_DEBUG_CODE_SIGN_STYLE = Manual
+DIVINE_DEBUG_DEVELOPMENT_TEAM = GZCZBKH7MY
+```
+
+Manual style is deliberate: `DebugProfile.entitlements` contains no
+provisioning-backed capabilities, so the build needs a development
+certificate but no provisioning profile. If more than one installed
+certificate matches, pin the exact one by SHA-1 instead
+(`security find-identity -v -p codesigning`).
+
+After the first team-signed build, answer each keychain prompt with
+**Always Allow** once. The ACL then records a designated requirement
+that survives rebuilds, and the prompts stop.
+
+This is per-machine setup, not a repo default: leaving the tracked
+defaults ad-hoc keeps debug builds working for contributors without
+Apple Developer team membership.
 
 ## If a stale Swift Package Manager cache blocks the build
 
