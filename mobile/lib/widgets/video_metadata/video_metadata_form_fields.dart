@@ -220,7 +220,6 @@ class _InputWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      clipBehavior: .hardEdge,
       borderRadius: .circular(_borderRadius),
       child: DecoratedBox(
         decoration: BoxDecoration(

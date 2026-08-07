@@ -79,7 +79,6 @@ class VideoMetadataAudioSharingSection extends ConsumerWidget {
                 )
               : const SizedBox.shrink(),
         ),
-
         _ExpandSwitcher(
           child:
               editorState.requiresPublicAudioAttribution &&
@@ -304,31 +303,38 @@ class _PublicAudioCreditEditorState
             onChanged: (value) => _update(creatorName: value),
           ),
         ),
-        Material(
-          type: MaterialType.transparency,
-          child: DivineCheckboxTile(
-            value: ownWork,
-            title: context.l10n.soundOwnWork,
-            onChanged: (value) => _update(confirmedOwnWork: value),
-          ),
-        ),
-
-        _ExpandSwitcher(
-          child: ownWork
-              ? const SizedBox.shrink()
-              : Padding(
-                  padding: const .symmetric(horizontal: 16),
-                  child: DivineTextField(
-                    key: const Key('audio_credit_source'),
-                    controller: _sourceController,
-                    labelText: context.l10n.soundCreditSourceUrlLabel,
-                    keyboardType: TextInputType.url,
-                    filled: true,
-                    autocorrect: false,
-                    textInputAction: .next,
-                    onChanged: (value) => _update(sourceUrl: value),
-                  ),
-                ),
+        // The source field carries its own top gap so that collapsing it
+        // leaves the checkbox row a single [Column.spacing] away from the
+        // hashtags field, not two.
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Material(
+              type: MaterialType.transparency,
+              child: DivineCheckboxTile(
+                value: ownWork,
+                title: context.l10n.soundOwnWork,
+                onChanged: (value) => _update(confirmedOwnWork: value),
+              ),
+            ),
+            _ExpandSwitcher(
+              child: ownWork
+                  ? const SizedBox.shrink()
+                  : Padding(
+                      padding: const .fromLTRB(16, 8, 16, 0),
+                      child: DivineTextField(
+                        key: const Key('audio_credit_source'),
+                        controller: _sourceController,
+                        labelText: context.l10n.soundCreditSourceUrlLabel,
+                        keyboardType: TextInputType.url,
+                        filled: true,
+                        autocorrect: false,
+                        textInputAction: .next,
+                        onChanged: (value) => _update(sourceUrl: value),
+                      ),
+                    ),
+            ),
+          ],
         ),
         Padding(
           padding: const .symmetric(horizontal: 16),
@@ -343,7 +349,6 @@ class _PublicAudioCreditEditorState
                 _update(publicTags: value.split(RegExp(r'[,\s]+'))),
           ),
         ),
-
         Container(
           margin: const .symmetric(vertical: 8),
           decoration: BoxDecoration(
