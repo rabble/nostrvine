@@ -1,0 +1,64 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/hooks/pre-edit-nostr-id-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking for Nostr ID truncation..."
+          },
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/hooks/pre-edit-vinetheme-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking VineTheme compliance..."
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/hooks/check-git-hooks.sh\"",
+            "timeout": 3,
+            "statusMessage": "Checking git hooks..."
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/hooks/pre-commit-build-runner.sh\"",
+            "timeout": 120,
+            "statusMessage": "Running build_runner for staged files..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/hooks/post-edit-format.sh\"",
+            "timeout": 30,
+            "statusMessage": "Formatting code..."
+          },
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/hooks/post-edit-analyze.sh\"",
+            "timeout": 60,
+            "statusMessage": "Analyzing code..."
+          }
+        ]
+      }
+    ]
+  }
+}
