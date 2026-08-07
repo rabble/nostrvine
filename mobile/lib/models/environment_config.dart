@@ -40,6 +40,9 @@ const localRelayPort = 47777;
 const int localApiPort = localRelayPort;
 const localBlossomPort = 43003;
 const localInvitePort = 43004;
+
+/// Not in local_stack: wrangler dev default for divine-relay-manager,
+/// which is run separately.
 const localRelayManagerPort = 8787;
 const productionApiBaseUrl = 'https://api.divine.video';
 
