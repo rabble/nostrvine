@@ -20,8 +20,6 @@ enum OthersFollowersStatus {
 
 /// State class for OthersFollowersBloc
 final class OthersFollowersState extends Equatable {
-  static const _maxCompleteFollowerListSize = 5000;
-
   const OthersFollowersState({
     this.status = OthersFollowersStatus.initial,
     this.followersPubkeys = const [],
@@ -68,21 +66,14 @@ final class OthersFollowersState extends Equatable {
 
   /// Count to show beside the rendered follower list.
   ///
-  /// [followerCount] may legitimately exceed the loaded list for very large
-  /// accounts where source APIs cap follower pubkey results. For smaller lists,
-  /// the loaded pubkeys are expected to be complete, so the display count stays
-  /// tied to the visible rows after blocklist/current-user filtering.
-  int get displayFollowerCount {
-    final removedByFiltering =
-        rawFollowersPubkeys.length - followersPubkeys.length;
-    final adjustedCount = followerCount - removedByFiltering;
-    if (rawFollowersPubkeys.length >= _maxCompleteFollowerListSize) {
-      return adjustedCount > followersPubkeys.length
-          ? adjustedCount
-          : followersPubkeys.length;
-    }
-    return followersPubkeys.length;
-  }
+  /// [followerCount] is the source of truth because follower pubkey fetches can
+  /// be partial at any size. The loaded list only tells us how many followers
+  /// were definitely hidden by blocklist/current-user filtering.
+  int get displayFollowerCount => displayFilteredFollowerCount(
+    authoritativeCount: followerCount,
+    rawLoadedCount: rawFollowersPubkeys.length,
+    visibleLoadedCount: followersPubkeys.length,
+  );
 
   /// Create a copy with updated values
   OthersFollowersState copyWith({

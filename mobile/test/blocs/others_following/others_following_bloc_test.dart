@@ -81,6 +81,7 @@ void main() {
             validPubkey('following1'),
             validPubkey('following2'),
           ]);
+          expect(bloc.state.followingCount, 2);
           expect(bloc.state.targetPubkey, validPubkey('target'));
         },
       );
@@ -425,6 +426,35 @@ void main() {
         const state2 = OthersFollowingState();
 
         expect(state1, isNot(equals(state2)));
+      });
+
+      test('followingCount included in props', () {
+        const state1 = OthersFollowingState(followingCount: 1);
+        const state2 = OthersFollowingState();
+
+        expect(state1, isNot(equals(state2)));
+      });
+
+      test('displayFollowingCount preserves authoritative count', () {
+        const state = OthersFollowingState(
+          status: OthersFollowingStatus.success,
+          followingPubkeys: ['a'],
+          rawFollowingPubkeys: ['a'],
+          followingCount: 8,
+        );
+
+        expect(state.displayFollowingCount, 8);
+      });
+
+      test('displayFollowingCount subtracts filtered follows from count', () {
+        const state = OthersFollowingState(
+          status: OthersFollowingStatus.success,
+          followingPubkeys: ['visible'],
+          rawFollowingPubkeys: ['hidden', 'visible'],
+          followingCount: 8,
+        );
+
+        expect(state.displayFollowingCount, 7);
       });
     });
   });

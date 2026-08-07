@@ -5,6 +5,7 @@ import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
+import 'package:openvine/blocs/followers/display_follower_count.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part 'my_followers_event.dart';

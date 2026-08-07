@@ -8,6 +8,7 @@ import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
+import 'package:openvine/blocs/following/display_following_count.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part 'my_following_event.dart';
@@ -35,6 +36,7 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
            followingPubkeys: followRepository.followingPubkeys
                .where((pk) => !contentBlocklistRepository.isBlocked(pk))
                .toList(),
+           followingCount: followRepository.followingCount,
          ),
        ) {
     on<MyFollowingListLoadRequested>(
@@ -80,6 +82,9 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
             status: MyFollowingStatus.success,
             rawFollowingPubkeys: pubkeys,
             followingPubkeys: _filterPubkeys(pubkeys),
+            followingCount: state.hasLocalFollowEdit
+                ? pubkeys.length
+                : result.data.count,
             isRefreshing: result.isStale,
           );
         },
@@ -180,6 +185,7 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
         status: MyFollowingStatus.success,
         rawFollowingPubkeys: event.pubkeys,
         followingPubkeys: _filterPubkeys(event.pubkeys),
+        followingCount: event.pubkeys.length,
         isRefreshing: false,
       ),
     );

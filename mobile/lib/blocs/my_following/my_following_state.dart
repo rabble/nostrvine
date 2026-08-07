@@ -24,6 +24,7 @@ final class MyFollowingState extends Equatable {
     this.status = MyFollowingStatus.initial,
     this.followingPubkeys = const [],
     this.rawFollowingPubkeys = const [],
+    this.followingCount = 0,
     this.isRefreshing = false,
     this.hasLocalFollowEdit = false,
   });
@@ -40,6 +41,12 @@ final class MyFollowingState extends Equatable {
   /// without waiting for a new network event.
   final List<String> rawFollowingPubkeys;
 
+  /// Authoritative following count.
+  ///
+  /// Following pubkey fetches may undercount when source APIs or relays return
+  /// partial results. The loaded list only proves which rows were filtered.
+  final int followingCount;
+
   /// True while stale cache data is shown and a fresh fetch is in progress.
   final bool isRefreshing;
 
@@ -55,11 +62,19 @@ final class MyFollowingState extends Equatable {
   /// Check if the current user is following a specific pubkey.
   bool isFollowing(String pubkey) => followingPubkeys.contains(pubkey);
 
+  /// Count to show beside the rendered following list.
+  int get displayFollowingCount => displayFilteredFollowingCount(
+    authoritativeCount: followingCount,
+    rawLoadedCount: rawFollowingPubkeys.length,
+    visibleLoadedCount: followingPubkeys.length,
+  );
+
   /// Create a copy with updated values.
   MyFollowingState copyWith({
     MyFollowingStatus? status,
     List<String>? followingPubkeys,
     List<String>? rawFollowingPubkeys,
+    int? followingCount,
     bool? isRefreshing,
     bool? hasLocalFollowEdit,
   }) {
@@ -67,6 +82,7 @@ final class MyFollowingState extends Equatable {
       status: status ?? this.status,
       followingPubkeys: followingPubkeys ?? this.followingPubkeys,
       rawFollowingPubkeys: rawFollowingPubkeys ?? this.rawFollowingPubkeys,
+      followingCount: followingCount ?? this.followingCount,
       isRefreshing: isRefreshing ?? this.isRefreshing,
       hasLocalFollowEdit: hasLocalFollowEdit ?? this.hasLocalFollowEdit,
     );
@@ -77,6 +93,7 @@ final class MyFollowingState extends Equatable {
     status,
     followingPubkeys,
     rawFollowingPubkeys,
+    followingCount,
     isRefreshing,
     hasLocalFollowEdit,
   ];

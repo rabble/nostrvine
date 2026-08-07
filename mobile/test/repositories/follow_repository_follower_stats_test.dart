@@ -386,6 +386,49 @@ void main() {
         expect(stats.following, equals(4));
         verify(() => apiClient.getSocialCounts(_testPubkey)).called(1);
       });
+
+      test('evicts oldest follower stats cache entry when bounded', () async {
+        final apiClient = _MockFunnelcakeApiClient();
+        final dao = _MockProfileStatsDao();
+        final nostrClient = _MockNostrClient();
+
+        when(
+          () => nostrClient.subscribe(any()),
+        ).thenAnswer((_) => const Stream<Event>.empty());
+        when(() => apiClient.isAvailable).thenReturn(true);
+        when(() => apiClient.getSocialCounts(any())).thenAnswer((invocation) {
+          final pubkey = invocation.positionalArguments.single as String;
+          return Future.value(
+            SocialCounts(
+              pubkey: pubkey,
+              followerCount: 1,
+              followingCount: 1,
+            ),
+          );
+        });
+        when(() => dao.getStatsRaw(any())).thenAnswer((_) async => null);
+        when(
+          () => dao.upsertStats(
+            pubkey: any(named: 'pubkey'),
+            followerCount: any(named: 'followerCount'),
+            followingCount: any(named: 'followingCount'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final repository = FollowRepository(
+          nostrClient: nostrClient,
+          funnelcakeApiClient: apiClient,
+          profileStatsDao: dao,
+          indexerRelayUrls: const [],
+        );
+
+        for (var i = 0; i < 257; i++) {
+          await repository.getFollowerStats('pubkey-$i');
+        }
+        await repository.getFollowerStats('pubkey-0');
+
+        verify(() => apiClient.getSocialCounts('pubkey-0')).called(2);
+      });
     });
   });
 }

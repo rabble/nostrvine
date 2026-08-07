@@ -6,6 +6,7 @@ import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
+import 'package:openvine/blocs/following/display_following_count.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part 'others_following_event.dart';
@@ -92,6 +93,7 @@ class OthersFollowingBloc
             status: OthersFollowingStatus.success,
             rawFollowingPubkeys: result.data.pubkeys,
             followingPubkeys: _filterPubkeys(result.data.pubkeys),
+            followingCount: result.data.count,
             isRefreshing: result.isStale,
           );
         },

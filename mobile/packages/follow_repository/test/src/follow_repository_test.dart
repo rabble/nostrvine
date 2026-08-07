@@ -3561,6 +3561,47 @@ void main() {
       );
 
       test(
+        'evicts oldest cached follower stats when cache reaches max entries',
+        () async {
+          final mockFunnelcakeClient = _MockFunnelcakeApiClient();
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(() => mockFunnelcakeClient.getSocialCounts(any())).thenAnswer(
+            (invocation) async {
+              final pubkey = invocation.positionalArguments.single as String;
+              return SocialCounts(
+                pubkey: pubkey,
+                followerCount: 1,
+                followingCount: 2,
+              );
+            },
+          );
+
+          repository = FollowRepository(
+            nostrClient: mockNostrClient,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            indexerRelayUrls: const [],
+          );
+
+          final pubkeys = List.generate(
+            257,
+            (index) => index.toRadixString(16).padLeft(64, '0'),
+          );
+
+          for (final pubkey in pubkeys) {
+            await repository.getFollowerStats(pubkey);
+          }
+          await repository.getFollowerStats(pubkeys.first);
+
+          verify(
+            () => mockFunnelcakeClient.getSocialCounts(pubkeys.first),
+          ).called(2);
+        },
+      );
+
+      test(
         'falls back to WebSocket when REST API is unavailable',
         () async {
           // No funnelcake client, use nostr client subscribe for

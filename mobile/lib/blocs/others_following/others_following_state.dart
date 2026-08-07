@@ -21,6 +21,7 @@ final class OthersFollowingState extends Equatable {
     this.status = OthersFollowingStatus.initial,
     this.followingPubkeys = const [],
     this.rawFollowingPubkeys = const [],
+    this.followingCount = 0,
     this.targetPubkey,
     this.isRefreshing = false,
   });
@@ -37,17 +38,31 @@ final class OthersFollowingState extends Equatable {
   /// without waiting for a new network event.
   final List<String> rawFollowingPubkeys;
 
+  /// Authoritative following count.
+  ///
+  /// Following pubkey fetches may undercount when source APIs or relays return
+  /// partial results. The loaded list only proves which rows were filtered.
+  final int followingCount;
+
   /// The pubkey whose following list is being viewed (for retry).
   final String? targetPubkey;
 
   /// True while stale cache data is shown and a fresh fetch is in progress.
   final bool isRefreshing;
 
+  /// Count to show beside the rendered following list.
+  int get displayFollowingCount => displayFilteredFollowingCount(
+    authoritativeCount: followingCount,
+    rawLoadedCount: rawFollowingPubkeys.length,
+    visibleLoadedCount: followingPubkeys.length,
+  );
+
   /// Create a copy with updated values.
   OthersFollowingState copyWith({
     OthersFollowingStatus? status,
     List<String>? followingPubkeys,
     List<String>? rawFollowingPubkeys,
+    int? followingCount,
     String? targetPubkey,
     bool? isRefreshing,
   }) {
@@ -55,6 +70,7 @@ final class OthersFollowingState extends Equatable {
       status: status ?? this.status,
       followingPubkeys: followingPubkeys ?? this.followingPubkeys,
       rawFollowingPubkeys: rawFollowingPubkeys ?? this.rawFollowingPubkeys,
+      followingCount: followingCount ?? this.followingCount,
       targetPubkey: targetPubkey ?? this.targetPubkey,
       isRefreshing: isRefreshing ?? this.isRefreshing,
     );
@@ -65,6 +81,7 @@ final class OthersFollowingState extends Equatable {
     status,
     followingPubkeys,
     rawFollowingPubkeys,
+    followingCount,
     targetPubkey,
     isRefreshing,
   ];

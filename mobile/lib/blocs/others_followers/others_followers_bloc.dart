@@ -8,6 +8,7 @@ import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
+import 'package:openvine/blocs/followers/display_follower_count.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part 'others_followers_event.dart';
@@ -99,7 +100,7 @@ class OthersFollowersBloc
               result.data.pubkeys,
               isFollowingTarget: isFollowingTarget,
             ),
-            followerCount: max(result.data.pubkeys.length, result.data.count),
+            followerCount: result.data.count,
             isRefreshing: result.isStale,
             isFollowingTarget: isFollowingTarget,
           );

@@ -45,6 +45,7 @@ class ProfileFollowersStat extends ConsumerWidget {
 
     if (isOwnProfile) {
       return BlocProvider(
+        key: ValueKey((followRepository, blocklistRepository)),
         create: (_) => MyFollowersBloc(
           followRepository: followRepository,
           contentBlocklistRepository: blocklistRepository,
@@ -99,7 +100,7 @@ class _MyFollowersStatView extends ConsumerWidget {
         return ProfileStatColumn(
           count: isBlocLoading ? initialCount : state.displayFollowerCount,
           label: context.l10n.profileFollowersLabel,
-          isLoading: isLoading || (isBlocLoading && initialCount == null),
+          isLoading: isBlocLoading && (isLoading || initialCount == null),
           onTap: () => context.push(
             FollowersScreenRouter.pathForPubkey(pubkey),
             extra: displayName,
@@ -141,7 +142,7 @@ class _OthersFollowersStatView extends ConsumerWidget {
         return ProfileStatColumn(
           count: isBlocLoading ? initialCount : state.displayFollowerCount,
           label: context.l10n.profileFollowersLabel,
-          isLoading: isLoading || (isBlocLoading && initialCount == null),
+          isLoading: isBlocLoading && (isLoading || initialCount == null),
           onTap: () => context.push(
             FollowersScreenRouter.pathForPubkey(pubkey),
             extra: displayName,

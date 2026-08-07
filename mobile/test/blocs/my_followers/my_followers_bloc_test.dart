@@ -435,7 +435,7 @@ void main() {
       ]);
     });
 
-    test('displayFollowerCount matches complete rendered list', () {
+    test('displayFollowerCount preserves authoritative count', () {
       const state = MyFollowersState(
         status: MyFollowersStatus.success,
         followersPubkeys: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
@@ -443,7 +443,16 @@ void main() {
         followerCount: 9,
       );
 
-      expect(state.displayFollowerCount, 8);
+      expect(state.displayFollowerCount, 9);
+    });
+
+    test('displayFollowerCount preserves count for empty partial list', () {
+      const state = MyFollowersState(
+        status: MyFollowersStatus.success,
+        followerCount: 1200,
+      );
+
+      expect(state.displayFollowerCount, 1200);
     });
 
     test('displayFollowerCount subtracts filtered followers from count', () {

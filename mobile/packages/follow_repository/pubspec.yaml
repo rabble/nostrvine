@@ -10,6 +10,7 @@ environment:
 dependencies:
   cache_sync:
     path: ../cache_sync
+  clock: ^1.1.2
   db_client:
     path: ../db_client
   funnelcake_api_client:

@@ -285,15 +285,13 @@ class _ProfileStatsRowState extends State<_ProfileStatsRow> {
           isLoading: isLoading && _timeoutExpired,
         ),
       if (hasFollowing || isLoading)
-        ProfileStatColumn(
-          count: isLoading
+        ProfileFollowingStat(
+          pubkey: widget.userIdHex,
+          displayName: widget.displayName,
+          initialCount: isLoading
               ? _skeletonPlaceholderCount
               : widget.profileStats!.following,
-          label: l10n.profileFollowingLabel,
           isLoading: isLoading && _timeoutExpired,
-          onTap: () => context.push(
-            FollowingScreenRouter.pathForPubkey(widget.userIdHex),
-          ),
         ),
       if (hasFollowers || isLoading)
         ProfileFollowersStat(

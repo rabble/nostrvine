@@ -35,6 +35,7 @@ void main() {
       // Default: nothing is blocked
       when(() => mockBlocklistRepository.isBlocked(any())).thenReturn(false);
       when(() => mockFollowRepository.followingPubkeys).thenReturn(const []);
+      when(() => mockFollowRepository.followingCount).thenReturn(0);
       when(
         () => mockFollowRepository.followingStream,
       ).thenAnswer((_) => const Stream<List<String>>.empty());
@@ -55,6 +56,7 @@ void main() {
       when(
         () => mockFollowRepository.followingPubkeys,
       ).thenReturn([validPubkey('cached')]);
+      when(() => mockFollowRepository.followingCount).thenReturn(1);
 
       final bloc = createBloc();
       expect(
@@ -63,6 +65,7 @@ void main() {
           status: MyFollowingStatus.success,
           rawFollowingPubkeys: [validPubkey('cached')],
           followingPubkeys: [validPubkey('cached')],
+          followingCount: 1,
         ),
       );
       bloc.close();
@@ -94,6 +97,7 @@ void main() {
             validPubkey('following1'),
             validPubkey('following2'),
           ]);
+          expect(bloc.state.followingCount, 2);
         },
       );
 
@@ -601,10 +605,40 @@ void main() {
         expect(state1, isNot(equals(state2)));
       });
 
+      test('followingCount included in equality check', () {
+        const state1 = MyFollowingState(followingCount: 1);
+        const state2 = MyFollowingState();
+
+        expect(state1, isNot(equals(state2)));
+      });
+
+      test('displayFollowingCount preserves authoritative count', () {
+        const state = MyFollowingState(
+          status: MyFollowingStatus.success,
+          followingPubkeys: ['a'],
+          rawFollowingPubkeys: ['a'],
+          followingCount: 8,
+        );
+
+        expect(state.displayFollowingCount, 8);
+      });
+
+      test('displayFollowingCount subtracts filtered follows from count', () {
+        const state = MyFollowingState(
+          status: MyFollowingStatus.success,
+          followingPubkeys: ['visible'],
+          rawFollowingPubkeys: ['blocked', 'visible'],
+          followingCount: 8,
+        );
+
+        expect(state.displayFollowingCount, 7);
+      });
+
       test('copyWith preserves values when not specified', () {
         const state = MyFollowingState(
           status: MyFollowingStatus.success,
           followingPubkeys: ['pubkey1'],
+          followingCount: 4,
           isRefreshing: true,
         );
 
@@ -612,6 +646,7 @@ void main() {
 
         expect(updated.status, MyFollowingStatus.success);
         expect(updated.followingPubkeys, ['pubkey1']);
+        expect(updated.followingCount, 4);
         expect(updated.isRefreshing, isTrue);
       });
     });

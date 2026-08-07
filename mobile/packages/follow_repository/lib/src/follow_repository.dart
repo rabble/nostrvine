@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:cache_sync/cache_sync.dart';
+import 'package:clock/clock.dart';
 import 'package:db_client/db_client.dart' hide Filter;
 import 'package:follow_repository/src/follow_list_kind.dart';
 import 'package:follow_repository/src/follower_stats.dart';
@@ -613,8 +614,30 @@ class FollowRepository {
   static const _hysteresisThreshold = 0.8;
 
   /// Short-lived in-memory cache for follower/following counts.
+  static const _followerStatsCacheMaxEntries = 256;
+
   final Map<String, ({FollowerStats stats, DateTime cachedAt})>
   _followerStatsCache = {};
+
+  void _cacheFollowerStats(String pubkey, FollowerStats stats) {
+    if (!_followerStatsCache.containsKey(pubkey) &&
+        _followerStatsCache.length >= _followerStatsCacheMaxEntries) {
+      String? oldestPubkey;
+      DateTime? oldestCachedAt;
+      for (final entry in _followerStatsCache.entries) {
+        if (oldestCachedAt == null ||
+            entry.value.cachedAt.isBefore(oldestCachedAt)) {
+          oldestPubkey = entry.key;
+          oldestCachedAt = entry.value.cachedAt;
+        }
+      }
+      if (oldestPubkey != null) {
+        _followerStatsCache.remove(oldestPubkey);
+      }
+    }
+
+    _followerStatsCache[pubkey] = (stats: stats, cachedAt: clock.now());
+  }
 
   /// Load persisted follower stats from the Drift database.
   ///
@@ -657,7 +680,7 @@ class FollowRepository {
     if (freshCount >= persistedCount) return freshCount;
 
     // Persisted count is stale → accept the fresh count
-    if (DateTime.now().difference(persistedTimestamp) > _staleDuration) {
+    if (clock.now().difference(persistedTimestamp) > _staleDuration) {
       return freshCount;
     }
 
@@ -678,9 +701,8 @@ class FollowRepository {
     String pubkey,
     FollowerStats freshStats, {
     required ({int followers, int following, DateTime timestamp})? persisted,
-    bool applyHysteresis = true,
   }) {
-    if (persisted == null || !applyHysteresis) return freshStats;
+    if (persisted == null) return freshStats;
 
     final stableFollowers = _applyHysteresis(
       freshCount: freshStats.followers,
@@ -732,7 +754,7 @@ class FollowRepository {
       final cachedStats = _followerStatsCache[pubkey];
       if (!forceRefresh &&
           cachedStats != null &&
-          DateTime.now().difference(cachedStats.cachedAt) <=
+          clock.now().difference(cachedStats.cachedAt) <=
               _profileListCacheTtl) {
         Log.debug(
           'Using cached follower stats: ${cachedStats.stats}',
@@ -755,10 +777,7 @@ class FollowRepository {
             followers: persisted.followers,
             following: persisted.following,
           );
-          _followerStatsCache[pubkey] = (
-            stats: fallback,
-            cachedAt: DateTime.now(),
-          );
+          _cacheFollowerStats(pubkey, fallback);
           return fallback;
         }
         return freshStats;
@@ -775,7 +794,7 @@ class FollowRepository {
       final stats = forceRefresh ? freshStats : stabilizedStats;
 
       // Cache in memory.
-      _followerStatsCache[pubkey] = (stats: stats, cachedAt: DateTime.now());
+      _cacheFollowerStats(pubkey, stats);
 
       // Only re-persist when the value actually changed. When hysteresis
       // keeps the old persisted count, skipping the write preserves the
@@ -807,10 +826,7 @@ class FollowRepository {
           followers: persisted.followers,
           following: persisted.following,
         );
-        _followerStatsCache[pubkey] = (
-          stats: fallback,
-          cachedAt: DateTime.now(),
-        );
+        _cacheFollowerStats(pubkey, fallback);
         return fallback;
       }
 

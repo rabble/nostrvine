@@ -64,17 +64,36 @@ class _MockBadgeRepository extends Mock implements BadgeRepository {}
 
 // Mock classes
 class MockFollowRepository extends Mock implements FollowRepository {
-  @override
-  List<String> get followingPubkeys => [];
+  MockFollowRepository({
+    this.myFollowersSnapshot = const FollowersSnapshot(
+      pubkeys: <String>[],
+      count: 0,
+    ),
+    this.myFollowingSnapshot = const FollowingSnapshot(
+      pubkeys: <String>[],
+      count: 0,
+    ),
+    this.othersFollowingSnapshot = const FollowingSnapshot(
+      pubkeys: <String>[],
+      count: 0,
+    ),
+  });
+
+  FollowersSnapshot myFollowersSnapshot;
+  FollowingSnapshot myFollowingSnapshot;
+  FollowingSnapshot othersFollowingSnapshot;
 
   @override
-  Stream<List<String>> get followingStream => Stream.value([]);
+  List<String> get followingPubkeys => myFollowingSnapshot.pubkeys;
+
+  @override
+  Stream<List<String>> get followingStream => Stream.value(followingPubkeys);
 
   @override
   bool get isInitialized => true;
 
   @override
-  int get followingCount => 0;
+  int get followingCount => myFollowingSnapshot.count;
 
   @override
   Future<List<String>> getMyFollowers() async => [];
@@ -87,7 +106,7 @@ class MockFollowRepository extends Mock implements FollowRepository {
 
   @override
   Stream<FollowersSnapshot> watchMyFollowers() {
-    return Stream.value(const FollowersSnapshot(pubkeys: <String>[], count: 0));
+    return Stream.value(myFollowersSnapshot);
   }
 
   @override
@@ -95,7 +114,7 @@ class MockFollowRepository extends Mock implements FollowRepository {
     bool forceRefresh = false,
   }) {
     return Stream.value(
-      const CacheResult.live(FollowersSnapshot(pubkeys: <String>[], count: 0)),
+      CacheResult.live(myFollowersSnapshot),
     );
   }
 
@@ -104,12 +123,21 @@ class MockFollowRepository extends Mock implements FollowRepository {
     bool forceRefresh = false,
   }) {
     return Stream.value(
-      const CacheResult.live(FollowingSnapshot(pubkeys: <String>[], count: 0)),
+      CacheResult.live(myFollowingSnapshot),
     );
   }
 
   @override
-  Future<int> getMyFollowerCount({bool forceRefresh = false}) async => 0;
+  Stream<CacheResult<FollowingSnapshot>> watchOthersFollowingCached(
+    String pubkey, {
+    bool forceRefresh = false,
+  }) {
+    return Stream.value(CacheResult.live(othersFollowingSnapshot));
+  }
+
+  @override
+  Future<int> getMyFollowerCount({bool forceRefresh = false}) async =>
+      myFollowersSnapshot.count;
 
   @override
   Future<int> getFollowerCount(
@@ -1222,8 +1250,8 @@ void main() {
     });
 
     testWidgets(
-      'keeps all stat columns visible with em-dash placeholders once the '
-      'skeleton timeout expires and profileStats is still null',
+      'keeps all stat columns visible after the skeleton timeout when '
+      'profileStats is still null',
       (tester) async {
         final testProfile = createTestProfile(displayName: 'Test User');
 
@@ -1239,12 +1267,14 @@ void main() {
         await tester.pump(const Duration(seconds: 8));
         await tester.pumpAndSettle();
 
-        // All four labels stay in the tree; counts fall back to '—'.
+        // All four labels stay in the tree. Followers/following come from
+        // their BLoCs; likes/loops still fall back to '—'.
         expect(find.text('Followers'), findsOneWidget);
         expect(find.text('Following'), findsOneWidget);
         expect(find.text('Likes'), findsOneWidget);
         expect(find.text('Loops'), findsOneWidget);
-        expect(find.text('—'), findsNWidgets(4));
+        expect(find.text('0'), findsNWidgets(2));
+        expect(find.text('—'), findsNWidgets(2));
 
         // Stats Skeletonizer (the closest one above a stat label) must
         // be disabled after timeout — data is shown as-is.
@@ -2476,6 +2506,36 @@ void main() {
               'tappable during the loading window (#4183 review).',
         );
       });
+
+      testWidgets(
+        'stats row shows follower and following bloc counts when profile '
+        'stats are absent',
+        (tester) async {
+          mockFollowRepository.myFollowersSnapshot = const FollowersSnapshot(
+            pubkeys: <String>[],
+            count: 42,
+          );
+          mockFollowRepository.myFollowingSnapshot = const FollowingSnapshot(
+            pubkeys: <String>[],
+            count: 37,
+          );
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              myProfileState: MyProfileLoaded(
+                profile: createTestProfile(displayName: 'Loaded'),
+                isFresh: true,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(find.text('42'), findsOneWidget);
+          expect(find.text('37'), findsOneWidget);
+        },
+      );
 
       testWidgets('avatar is swapped for a flat bone while the identity '
           'skeleton is enabled', (tester) async {
