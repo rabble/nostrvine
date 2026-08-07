@@ -61,6 +61,26 @@ class _SilentRelay {
   }
 }
 
+/// Polls [condition] until it holds, failing after [timeout].
+///
+/// Loopback sockets close in a couple of milliseconds, but a fixed sleep has
+/// to pick a side of that: too short flakes under CI load, too long taxes
+/// every green run. Mirrors `_waitUntil` in
+/// `test/unit/nostr_connect_session_test.dart`.
+Future<void> _waitUntil(
+  bool Function() condition, {
+  required String Function() describe,
+  Duration timeout = const Duration(seconds: 5),
+}) async {
+  final deadline = DateTime.now().add(timeout);
+  while (!condition()) {
+    if (DateTime.now().isAfter(deadline)) {
+      fail('${describe()} (waited $timeout)');
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+  }
+}
+
 void main() {
   late List<_SilentRelay> relays;
 
@@ -85,13 +105,18 @@ void main() {
       '0000000000000000000000000000000000000000000000000000000000000001',
     );
     final nostr = Nostr(signer, [], (url) => RelayBase(url, RelayStatus(url)));
-    return RelayPool(
+    final pool = RelayPool(
       nostr,
       [],
       (url) => RelayBase(url, RelayStatus(url)),
       tempRelayIdleTimeout: Duration.zero,
       tempRelaySweepInterval: const Duration(hours: 1),
     );
+    // A test that leaves temp relays behind also leaves the sweep timer
+    // armed, and these files share one isolate under `very_good test
+    // --optimization` — so the pool must not outlive the test that built it.
+    addTearDown(pool.removeAll);
+    return pool;
   }
 
   Future<Event> signedGiftWrap(RelayPool pool) async {
@@ -129,8 +154,12 @@ void main() {
       expect(pool.tempRelayUrls, hasLength(5));
 
       pool.sweepIdleTempRelays();
-      // Let the close frames land on the listeners.
-      await Future<void>.delayed(const Duration(milliseconds: 300));
+      await _waitUntil(
+        () => targets.every((relay) => relay.openSockets == 0),
+        describe: () =>
+            'idle temp relays still open: '
+            '${targets.where((r) => r.openSockets > 0).map((r) => r.url)}',
+      );
 
       for (final relay in targets) {
         expect(
@@ -158,10 +187,15 @@ void main() {
         tempRelays: [target.url],
         id: 'sub-under-sweep',
       );
-      await Future<void>.delayed(const Duration(milliseconds: 300));
+      await _waitUntil(
+        () => target.openSockets > 0,
+        describe: () => 'subscribe never opened a socket on ${target.url}',
+      );
 
+      // No settling wait afterwards: `removeTempRelay` drops the map key
+      // before it disconnects, so a wrongly swept relay is already missing
+      // from `tempRelayUrls` by the time the sweep returns.
       pool.sweepIdleTempRelays();
-      await Future<void>.delayed(const Duration(milliseconds: 200));
 
       expect(
         pool.tempRelayUrls,
@@ -191,7 +225,10 @@ void main() {
       expect(pool.tempRelayUrls, hasLength(1));
 
       pool.removeAll();
-      await Future<void>.delayed(const Duration(milliseconds: 300));
+      await _waitUntil(
+        () => target.openSockets == 0,
+        describe: () => 'removeAll left ${target.url} open',
+      );
 
       expect(pool.tempRelayUrls, isEmpty);
       expect(target.openSockets, isZero);
