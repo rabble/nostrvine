@@ -3,6 +3,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:openvine/blocs/explore_tabs/explore_tabs_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/explore/explore_tab_labels.dart';
@@ -61,7 +62,12 @@ class ExploreTabBar extends StatelessWidget {
               onTap: onTap,
               tabs: [
                 for (final name in tabsState.tabNames)
-                  Tab(text: labelForExploreTabName(context.l10n, name)),
+                  Tab(
+                    child: _ExploreTabLabel(
+                      name: name,
+                      featuredTab: tabsState.featuredTab,
+                    ),
+                  ),
               ],
             ),
             // Right-edge fade gradient shim
@@ -93,6 +99,42 @@ class ExploreTabBar extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// One tab's label, with the featured tab's optional disclosure marker.
+///
+/// The marker exists so a labeling requirement discovered mid-campaign can be
+/// met by configuration rather than an app store review cycle. It renders
+/// only when the server supplies one.
+class _ExploreTabLabel extends StatelessWidget {
+  const _ExploreTabLabel({required this.name, this.featuredTab});
+
+  final String name;
+  final FeaturedTabConfig? featuredTab;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colors = context.vineColors;
+    final label = labelForExploreTabName(l10n, name, featuredTab: featuredTab);
+    final disclosure = name == exploreFeaturedTabName
+        ? featuredTab?.disclosureLabelFor(l10n.localeName)
+        : null;
+
+    if (disclosure == null) return Text(label);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      spacing: 4,
+      children: [
+        Text(label),
+        Text(
+          disclosure,
+          style: VineTheme.labelSmallFont(color: colors.onSurfaceMuted),
+        ),
+      ],
     );
   }
 }

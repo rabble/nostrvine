@@ -2,6 +2,7 @@
 // ABOUTME: Owns TTL/staleness policy so the BLoC consumes a resolved answer.
 
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
+import 'package:models/models.dart';
 
 /// Resolved featured-tab answer for one refresh.
 class FeaturedTabsSnapshot {
@@ -19,6 +20,25 @@ class FeaturedTabsSnapshot {
 
   /// Whether a tab should render.
   bool get hasTab => tab != null;
+}
+
+/// One page of featured tab videos, in server order.
+class FeaturedTabVideosPage {
+  /// Creates a page of featured tab videos.
+  const FeaturedTabVideosPage({
+    required this.videos,
+    this.nextCursor,
+    this.hasMore = false,
+  });
+
+  /// Videos for this page, in the order the server returned them.
+  final List<VideoEvent> videos;
+
+  /// Opaque cursor for the following page.
+  final String? nextCursor;
+
+  /// Whether another page exists.
+  final bool hasMore;
 }
 
 /// Composes the featured-tab config source with cache and eligibility rules.
@@ -74,6 +94,31 @@ class FeaturedTabsRepository {
     } on FunnelcakeException {
       return _fromCache(viewerIsMinor: viewerIsMinor);
     }
+  }
+
+  /// Loads one page of videos for the featured tab identified by [tabId].
+  ///
+  /// The returned order is the server's and is preserved exactly: curated
+  /// entries first, then approved newest-first. Callers must not re-sort or
+  /// re-filter — the server has already applied audience and moderation
+  /// gating. Expired NIP-40 events are the one exception, dropped here at the
+  /// REST ingress boundary like every other feed.
+  ///
+  /// Throws [FunnelcakeException] subclasses on failure; unlike [refresh],
+  /// paging errors are surfaced so the tab can show a retry affordance.
+  Future<FeaturedTabVideosPage> loadVideos({
+    required String tabId,
+    String? cursor,
+  }) async {
+    final response = await _apiClient.getFeaturedTabVideos(
+      id: tabId,
+      cursor: cursor,
+    );
+    return FeaturedTabVideosPage(
+      videos: response.videos.toVideoEvents(),
+      nextCursor: response.nextCursor,
+      hasMore: response.hasMore ?? response.nextCursor != null,
+    );
   }
 
   /// Drops any cached config, so the next [refresh] must reach the network.

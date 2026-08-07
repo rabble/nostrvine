@@ -35,6 +35,13 @@ enum ViewTrafficSource {
   /// Video viewed from search results or hashtag feed
   search,
 
+  /// Video viewed from explore/discovery — a server-configured featured tab.
+  ///
+  /// Deliberately generic: the tag never names the editorial theme, so
+  /// dashboards do not inherit a schema per campaign. The configuration id
+  /// travels separately as the source detail.
+  discoveryFeatured,
+
   /// Unknown/unspecified source
   unknown,
 }
@@ -47,6 +54,7 @@ extension ViewTrafficSourceTags on ViewTrafficSource {
       ViewTrafficSource.discoveryClassic => 'discovery:classic',
       ViewTrafficSource.discoveryForYou => 'discovery:foryou',
       ViewTrafficSource.discoveryPopular => 'discovery:popular',
+      ViewTrafficSource.discoveryFeatured => 'discovery:featured',
       ViewTrafficSource.profile => 'profile',
       ViewTrafficSource.share => 'share',
       ViewTrafficSource.search => 'search',
@@ -68,6 +76,8 @@ ViewTrafficSource viewTrafficSourceFromTag(String raw) {
     'discovery_classic' => ViewTrafficSource.discoveryClassic,
     'discovery:foryou' ||
     'discovery_for_you' => ViewTrafficSource.discoveryForYou,
+    'discovery:featured' ||
+    'discovery_featured' => ViewTrafficSource.discoveryFeatured,
     _ => ViewTrafficSource.unknown,
   };
 }

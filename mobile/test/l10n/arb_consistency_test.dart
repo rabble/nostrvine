@@ -413,6 +413,12 @@ const _knownUntranslatedDebt = <String>{
   // Warning shown when a requested reusable sound fails to publish; translation
   // is deferred to the next sound-library localization pass.
   'publishAudioReuseDegradedWarning',
+  // Featured Explore tab empty/failure copy; translation is deferred to the
+  // next localization pass. The tab's own label is server-supplied via a
+  // locale map and never routes through these ARB files.
+  'featuredTabEmpty',
+  'featuredTabLoadFailed',
+  'featuredTabRetry',
   // Saved-sound organization and public-credit copy; translation is deferred
   // to the next sound-library localization pass.
   'savedSoundYourLabel',

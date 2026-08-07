@@ -1208,6 +1208,15 @@ class AppLocalizationsBg extends AppLocalizations {
   String get exploreTabIntegratedApps => 'Интегрирани приложения';
 
   @override
+  String get featuredTabEmpty => 'Nothing here yet. Check back soon.';
+
+  @override
+  String get featuredTabLoadFailed => 'Couldn\'t load this collection.';
+
+  @override
+  String get featuredTabRetry => 'Try again';
+
+  @override
   String get exploreNoVideosAvailable => 'Няма налични видеа';
 
   @override

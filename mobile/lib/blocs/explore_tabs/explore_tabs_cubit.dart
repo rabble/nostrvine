@@ -4,6 +4,7 @@
 import 'package:analytics/analytics.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:openvine/services/top_hashtags_service.dart';
 
 part 'explore_tabs_state.dart';
@@ -44,10 +45,12 @@ class ExploreTabsCubit extends Cubit<ExploreTabsState> {
     required bool classicsAvailable,
     required bool forYouAvailable,
     required bool appsAvailable,
+    FeaturedTabConfig? featuredTab,
   }) {
     if (classicsAvailable == state.classicsAvailable &&
         forYouAvailable == state.forYouAvailable &&
-        appsAvailable == state.appsAvailable) {
+        appsAvailable == state.appsAvailable &&
+        featuredTab == state.featuredTab) {
       return;
     }
     emit(
@@ -55,6 +58,7 @@ class ExploreTabsCubit extends Cubit<ExploreTabsState> {
         classicsAvailable: classicsAvailable,
         forYouAvailable: forYouAvailable,
         appsAvailable: appsAvailable,
+        featuredTab: featuredTab,
       ),
     );
   }

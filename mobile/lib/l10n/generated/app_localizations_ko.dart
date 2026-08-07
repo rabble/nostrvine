@@ -1116,6 +1116,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get exploreTabIntegratedApps => '연동된 앱';
 
   @override
+  String get featuredTabEmpty => 'Nothing here yet. Check back soon.';
+
+  @override
+  String get featuredTabLoadFailed => 'Couldn\'t load this collection.';
+
+  @override
+  String get featuredTabRetry => 'Try again';
+
+  @override
   String get exploreNoVideosAvailable => '이용 가능한 영상이 없어요';
 
   @override

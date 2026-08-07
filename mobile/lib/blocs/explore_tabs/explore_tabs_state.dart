@@ -27,6 +27,12 @@ const exploreListsTabName = 'lists';
 /// Internal tab name for the integrated Apps tab.
 const exploreAppsTabName = 'apps';
 
+/// Internal tab name for the server-configured featured tab.
+///
+/// Deliberately generic: no editorial name is compiled into the app, and
+/// analytics keys off the configuration id rather than this constant.
+const exploreFeaturedTabName = 'featured';
+
 /// Immutable explore tab configuration derived from feature availability.
 class ExploreTabsState extends Equatable {
   /// Creates a tab state with the given optional-tab availability.
@@ -34,6 +40,7 @@ class ExploreTabsState extends Equatable {
     this.classicsAvailable = false,
     this.forYouAvailable = false,
     this.appsAvailable = false,
+    this.featuredTab,
   });
 
   /// Whether the Classics tab is shown.
@@ -45,28 +52,60 @@ class ExploreTabsState extends Equatable {
   /// Whether the integrated Apps tab is shown.
   final bool appsAvailable;
 
+  /// Server-configured featured tab, or `null` when none should render.
+  final FeaturedTabConfig? featuredTab;
+
   /// Ordered tab names based on current availability.
   ///
   /// Canonical order: `classics?`, `new`, `popular`, `categories`,
-  /// `for_you?`, `lists`, `apps?`.
-  List<String> get tabNames => [
-    if (classicsAvailable) exploreClassicsTabName,
-    exploreDefaultTabName,
-    explorePopularTabName,
-    exploreCategoriesTabName,
-    if (forYouAvailable) exploreForYouTabName,
-    exploreListsTabName,
-    if (appsAvailable) exploreAppsTabName,
-  ];
+  /// `for_you?`, `lists`, `apps?`, with the configured `featured?` tab
+  /// spliced in at its named anchor.
+  List<String> get tabNames {
+    final names = [
+      if (classicsAvailable) exploreClassicsTabName,
+      exploreDefaultTabName,
+      explorePopularTabName,
+      exploreCategoriesTabName,
+      if (forYouAvailable) exploreForYouTabName,
+      exploreListsTabName,
+      if (appsAvailable) exploreAppsTabName,
+    ];
+    final featured = featuredTab;
+    if (featured == null) return names;
+    return names
+      ..insert(_featuredInsertIndex(names, featured), exploreFeaturedTabName);
+  }
+
+  /// Resolves the featured tab's slot from its named anchor.
+  ///
+  /// Anchors are names, never indices, because the optional tabs above shift
+  /// indices at runtime. An anchor naming an absent tab falls through to the
+  /// end of the list rather than displacing an unrelated tab.
+  static int _featuredInsertIndex(
+    List<String> names,
+    FeaturedTabConfig featured,
+  ) {
+    final after = featured.position.after;
+    if (after != null) {
+      final index = names.indexOf(after);
+      if (index >= 0) return index + 1;
+    }
+    final before = featured.position.before;
+    if (before != null) {
+      final index = names.indexOf(before);
+      if (index >= 0) return index;
+    }
+    return names.length;
+  }
 
   /// Number of visible tabs.
   int get tabCount => tabNames.length;
 
   /// Index of the New Videos tab.
-  int get newVideosIndex => classicsAvailable ? 1 : 0;
+  int get newVideosIndex => indexForName(exploreDefaultTabName);
 
   /// Index of the Trending (popular) tab.
-  int get trendingIndex => classicsAvailable ? 2 : 1;
+  int get trendingIndex => indexForName(explorePopularTabName);
 
   /// Resolves a tab [name] to its index, falling back to the default tab.
   int indexForName(String name) {
@@ -84,15 +123,20 @@ class ExploreTabsState extends Equatable {
   }
 
   /// Returns a copy with the given availability overrides.
+  ///
+  /// [featuredTab] is passed through as-is, so a `null` clears the tab —
+  /// that is how a server kill switch removes it.
   ExploreTabsState copyWith({
     bool? classicsAvailable,
     bool? forYouAvailable,
     bool? appsAvailable,
+    FeaturedTabConfig? featuredTab,
   }) {
     return ExploreTabsState(
       classicsAvailable: classicsAvailable ?? this.classicsAvailable,
       forYouAvailable: forYouAvailable ?? this.forYouAvailable,
       appsAvailable: appsAvailable ?? this.appsAvailable,
+      featuredTab: featuredTab,
     );
   }
 
@@ -101,5 +145,6 @@ class ExploreTabsState extends Equatable {
     classicsAvailable,
     forYouAvailable,
     appsAvailable,
+    featuredTab,
   ];
 }

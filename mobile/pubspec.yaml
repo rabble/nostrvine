@@ -350,6 +350,7 @@ dependencies:
   volume_controller: ^3.4.4
   meta: ^1.18.0
 
+  funnelcake_api_client: any
 dependency_overrides:
   # TODO(#3638): Keep device_info_plus on 10.x until the app is ready for the
   # transitive 11.x platform interface changes.

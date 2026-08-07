@@ -1166,6 +1166,15 @@ class AppLocalizationsId extends AppLocalizations {
   String get exploreTabIntegratedApps => 'Aplikasi Terintegrasi';
 
   @override
+  String get featuredTabEmpty => 'Nothing here yet. Check back soon.';
+
+  @override
+  String get featuredTabLoadFailed => 'Couldn\'t load this collection.';
+
+  @override
+  String get featuredTabRetry => 'Try again';
+
+  @override
   String get exploreNoVideosAvailable => 'Tidak ada video tersedia';
 
   @override

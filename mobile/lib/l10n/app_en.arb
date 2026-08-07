@@ -656,6 +656,18 @@
   "exploreTabForYou": "For You",
   "exploreTabLists": "Lists",
   "exploreTabIntegratedApps": "Integrated Apps",
+  "featuredTabEmpty": "Nothing here yet. Check back soon.",
+  "@featuredTabEmpty": {
+    "description": "Empty state for a server-configured featured Explore tab whose content snapshot has not caught up yet."
+  },
+  "featuredTabLoadFailed": "Couldn't load this collection.",
+  "@featuredTabLoadFailed": {
+    "description": "Shown when the featured Explore tab's video request fails."
+  },
+  "featuredTabRetry": "Try again",
+  "@featuredTabRetry": {
+    "description": "Retry button on the featured Explore tab's failure state."
+  },
   "exploreNoVideosAvailable": "No videos available",
   "exploreErrorPrefix": "Error: {error}",
   "@exploreErrorPrefix": {

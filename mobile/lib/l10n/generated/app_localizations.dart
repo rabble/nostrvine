@@ -2136,6 +2136,24 @@ abstract class AppLocalizations {
   /// **'Integrated Apps'**
   String get exploreTabIntegratedApps;
 
+  /// Empty state for a server-configured featured Explore tab whose content snapshot has not caught up yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing here yet. Check back soon.'**
+  String get featuredTabEmpty;
+
+  /// Shown when the featured Explore tab's video request fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this collection.'**
+  String get featuredTabLoadFailed;
+
+  /// Retry button on the featured Explore tab's failure state.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get featuredTabRetry;
+
   /// No description provided for @exploreNoVideosAvailable.
   ///
   /// In en, this message translates to:

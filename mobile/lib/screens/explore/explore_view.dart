@@ -5,8 +5,10 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/explore_tabs/explore_tabs_cubit.dart';
+import 'package:openvine/blocs/featured_tabs/featured_tabs_cubit.dart';
 import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -30,10 +32,14 @@ import 'package:unified_logger/unified_logger.dart';
 /// The explore screen body. Provided an [ExploreTabsCubit] by [ExploreScreen].
 class ExploreView extends ConsumerStatefulWidget {
   /// Creates the explore view, optionally selecting [initialTabName].
-  const ExploreView({this.initialTabName, super.key});
+  const ExploreView({this.initialTabName, this.initialTabSlug, super.key});
 
   /// Optional tab name to select on first build.
   final String? initialTabName;
+
+  /// Raw URL slug, resolved against the featured tab once its configuration
+  /// arrives. Unmatched slugs leave the default tab selected.
+  final String? initialTabSlug;
 
   @override
   ConsumerState<ExploreView> createState() => _ExploreViewState();
@@ -42,6 +48,10 @@ class ExploreView extends ConsumerStatefulWidget {
 class _ExploreViewState extends ConsumerState<ExploreView>
     with TickerProviderStateMixin, ReducedMotionTabControllerMixin {
   // Feed mode and videos are derived from URL + providers - no internal state.
+
+  /// Launch slug that matched no compiled tab name; kept until the featured
+  /// configuration arrives so a deep link can still land on it.
+  String? _pendingFeaturedSlug;
 
   ExploreTabsCubit get _tabs => context.read<ExploreTabsCubit>();
   ExploreTabsState get _tabsState => _tabs.state;
@@ -63,8 +73,7 @@ class _ExploreViewState extends ConsumerState<ExploreView>
     final targetTabName =
         widget.initialTabName ??
         previousTabName ??
-        ref.read(exploreTabNameProvider) ??
-        exploreDefaultTabName;
+        ref.read(exploreTabNameProvider);
     final index = _tabsState.indexForName(targetTabName);
 
     Log.info(
@@ -85,6 +94,12 @@ class _ExploreViewState extends ConsumerState<ExploreView>
   @override
   void initState() {
     super.initState();
+
+    // Only a slug the compiled tab names did not claim can be the featured
+    // one; anything else was already resolved into initialTabName.
+    if (widget.initialTabName == null) {
+      _pendingFeaturedSlug = widget.initialTabSlug;
+    }
 
     // Track Explore-specific data load completion from child tabs.
     _tabs.trackScreenLoad();
@@ -107,6 +122,18 @@ class _ExploreViewState extends ConsumerState<ExploreView>
         }
       });
     });
+  }
+
+  /// Returns the featured tab name when the launch URL named its configured
+  /// slug.
+  String? _resolvePendingFeaturedSlug(FeaturedTabConfig? featuredTab) {
+    final slug = _pendingFeaturedSlug;
+    if (slug == null || featuredTab == null) return null;
+    return slug == featuredTab.slug ? exploreFeaturedTabName : null;
+  }
+
+  void _consumePendingFeaturedSlug() {
+    _pendingFeaturedSlug = null;
   }
 
   Future<void> _loadHashtags() async {
@@ -167,20 +194,38 @@ class _ExploreViewState extends ConsumerState<ExploreView>
         nostrAppsSandboxSupported &&
         ref.watch(isFeatureEnabledProvider(FeatureFlag.integratedApps));
 
+    final featuredTab = context.select(
+      (FeaturedTabsCubit cubit) => cubit.state.tab,
+    );
+
     final previousState = _tabsState;
     _tabs.updateAvailability(
       classicsAvailable: classicsAvailable,
       forYouAvailable: forYouAvailable,
       appsAvailable: appsAvailable,
+      featuredTab: featuredTab,
     );
 
     if (_tabsState != previousState) {
       // Resolve the current tab name using the PREVIOUS state, because indices
       // are about to shift.
       final previousTabName = previousState.nameForIndex(tabController.index);
+      // A deep link to the configured featured slug can only resolve once the
+      // configuration has arrived, so honour it on the rebuild that adds the
+      // tab rather than on first build.
+      final shouldConsumePendingFeaturedSlug =
+          _pendingFeaturedSlug != null && featuredTab != null;
+      final resolvedFeaturedSlug = _resolvePendingFeaturedSlug(featuredTab);
       syncTabController(
-        index: _indexForTabName(previousTabName: previousTabName),
+        index: _indexForTabName(
+          previousTabName: resolvedFeaturedSlug ?? previousTabName,
+        ),
       );
+      if (shouldConsumePendingFeaturedSlug) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _consumePendingFeaturedSlug();
+        });
+      }
     }
 
     // Derive feed mode from URL
