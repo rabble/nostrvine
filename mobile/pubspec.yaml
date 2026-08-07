@@ -38,6 +38,7 @@ workspace:
   - packages/content_blocklist_repository
   - packages/content_policy
   - packages/count_formatter
+  - packages/creator_sync
   - packages/curated_list_repository
   - packages/curation_repository
   - packages/divine_blurhash
