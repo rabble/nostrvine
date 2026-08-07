@@ -7610,6 +7610,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get supportSubjectRequiredLabel => 'Sujet *';
 
   @override
+  String get supportPublicSubmissionTitle => 'Publication GitHub publique';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Tout ce que tu envoies ici sera publié dans notre dépôt open source sur GitHub afin que les développeurs puissent s\'en charger. La publication sera visible par tout le monde.';
+
+  @override
   String get supportRequiredHelper => 'Requis';
 
   @override

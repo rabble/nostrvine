@@ -3750,6 +3750,8 @@
     "nostrAppPermissionAllow": "Toestaan",
     "bugReportSendReport": "Rapport verzenden",
     "supportSubjectRequiredLabel": "Onderwerp *",
+    "supportPublicSubmissionTitle": "Openbaar GitHub-bericht",
+    "supportPublicSubmissionMessage": "Alles wat je hier indient, wordt in onze opensource-repository op GitHub geplaatst, zodat ontwikkelaars ermee aan de slag kunnen. Het bericht is voor iedereen openbaar zichtbaar.",
     "supportRequiredHelper": "Verplicht",
     "bugReportSubjectHint": "Korte samenvatting van het probleem",
     "bugReportDescriptionRequiredLabel": "Wat is er gebeurd? *",

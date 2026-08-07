@@ -7600,6 +7600,13 @@ class AppLocalizationsFil extends AppLocalizations {
   String get supportSubjectRequiredLabel => 'Subject *';
 
   @override
+  String get supportPublicSubmissionTitle => 'Pampublikong GitHub post';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Lahat ng isusumite mo rito ay ipo-post sa aming open-source repository sa GitHub para maasikaso ito ng mga developer. Makikita ng lahat ang post.';
+
+  @override
   String get supportRequiredHelper => 'Kailangan';
 
   @override

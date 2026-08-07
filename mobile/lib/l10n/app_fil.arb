@@ -2350,6 +2350,8 @@
     "reportMessageWhyReporting": "Bakit mo nire-report ang message na ito?",
     "supportRequiredHelper": "Kailangan",
     "supportSubjectRequiredLabel": "Subject *",
+    "supportPublicSubmissionTitle": "Pampublikong GitHub post",
+    "supportPublicSubmissionMessage": "Lahat ng isusumite mo rito ay ipo-post sa aming open-source repository sa GitHub para maasikaso ito ng mga developer. Makikita ng lahat ang post.",
     "userNotAvailableBody": "Hindi available ang account na ito ngayon.",
     "userNotAvailableTitle": "Hindi available ang account",
     "videoOverlayOpenMetadataFromDescription": "Buksan ang video details",

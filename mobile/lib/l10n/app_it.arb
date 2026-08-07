@@ -3750,6 +3750,8 @@
     "nostrAppPermissionAllow": "Consenti",
     "bugReportSendReport": "Invia segnalazione",
     "supportSubjectRequiredLabel": "Oggetto *",
+    "supportPublicSubmissionTitle": "Post pubblico su GitHub",
+    "supportPublicSubmissionMessage": "Tutto ciò che invii qui verrà pubblicato nel nostro repository open source su GitHub, così gli sviluppatori potranno occuparsene. Il post sarà visibile pubblicamente a tutti.",
     "supportRequiredHelper": "Obbligatorio",
     "bugReportSubjectHint": "Breve riassunto del problema",
     "bugReportDescriptionRequiredLabel": "Cos'è successo? *",

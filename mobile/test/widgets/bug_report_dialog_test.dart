@@ -148,10 +148,14 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets('displays title and form fields', (tester) async {
+    testWidgets('displays public submission warning and form fields', (
+      tester,
+    ) async {
       await openFlow(tester);
 
       expect(find.text(l10n.supportReportBug), findsOneWidget);
+      expect(find.text(l10n.supportPublicSubmissionTitle), findsOneWidget);
+      expect(find.text(l10n.supportPublicSubmissionMessage), findsOneWidget);
       expect(find.byType(TextField), findsNWidgets(4));
       expect(find.text(l10n.supportSubjectRequiredLabel), findsOneWidget);
       expect(find.text(l10n.bugReportDescriptionRequiredLabel), findsOneWidget);

@@ -7516,6 +7516,13 @@ class AppLocalizationsUr extends AppLocalizations {
   String get supportSubjectRequiredLabel => 'موضوع *';
 
   @override
+  String get supportPublicSubmissionTitle => 'عوامی GitHub پوسٹ';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'آپ یہاں جو کچھ بھی جمع کرائیں گے وہ ہمارے اوپن سورس GitHub ریپوزٹری میں پوسٹ کیا جائے گا تاکہ ڈویلپرز اس پر کام کر سکیں۔ یہ پوسٹ سب کو عوامی طور پر نظر آئے گی۔';
+
+  @override
   String get supportRequiredHelper => 'درکار';
 
   @override

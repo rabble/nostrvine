@@ -7586,6 +7586,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get supportSubjectRequiredLabel => 'Oggetto *';
 
   @override
+  String get supportPublicSubmissionTitle => 'Post pubblico su GitHub';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Tutto ciò che invii qui verrà pubblicato nel nostro repository open source su GitHub, così gli sviluppatori potranno occuparsene. Il post sarà visibile pubblicamente a tutti.';
+
+  @override
   String get supportRequiredHelper => 'Obbligatorio';
 
   @override

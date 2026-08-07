@@ -7180,6 +7180,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get supportSubjectRequiredLabel => '件名 *';
 
   @override
+  String get supportPublicSubmissionTitle => '公開GitHub投稿';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'ここで送信した内容はすべて、開発者が対応できるようGitHub上のオープンソースリポジトリに投稿されます。投稿は誰でも閲覧できます。';
+
+  @override
   String get supportRequiredHelper => '必須';
 
   @override

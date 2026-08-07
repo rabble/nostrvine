@@ -7562,6 +7562,13 @@ class AppLocalizationsMs extends AppLocalizations {
   String get supportSubjectRequiredLabel => 'Subjek *';
 
   @override
+  String get supportPublicSubmissionTitle => 'Siaran GitHub awam';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Semua yang anda hantar di sini akan disiarkan dalam repositori sumber terbuka kami di GitHub supaya pembangun boleh mengendalikannya. Siaran ini boleh dilihat oleh semua orang.';
+
+  @override
   String get supportRequiredHelper => 'Diperlukan';
 
   @override

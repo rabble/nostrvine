@@ -7358,6 +7358,13 @@ class AppLocalizationsAm extends AppLocalizations {
   String get supportSubjectRequiredLabel => 'ርዕስ *';
 
   @override
+  String get supportPublicSubmissionTitle => 'ይፋዊ የGitHub ልጥፍ';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'እዚህ የምታስገባው ሁሉ ገንቢዎች እንዲሰሩበት በGitHub ላይ ባለው ክፍት ምንጭ ማከማቻችን ውስጥ ይለጠፋል። ልጥፉን ማንኛውም ሰው በይፋ ማየት ይችላል።';
+
+  @override
   String get supportRequiredHelper => 'ያስፈልጋል';
 
   @override

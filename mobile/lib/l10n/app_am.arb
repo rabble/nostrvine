@@ -3083,6 +3083,8 @@
     "nostrAppPermissionAllow": "ፍቀድ",
     "bugReportSendReport": "ሪፖርት ላክ",
     "supportSubjectRequiredLabel": "ርዕስ *",
+    "supportPublicSubmissionTitle": "ይፋዊ የGitHub ልጥፍ",
+    "supportPublicSubmissionMessage": "እዚህ የምታስገባው ሁሉ ገንቢዎች እንዲሰሩበት በGitHub ላይ ባለው ክፍት ምንጭ ማከማቻችን ውስጥ ይለጠፋል። ልጥፉን ማንኛውም ሰው በይፋ ማየት ይችላል።",
     "supportRequiredHelper": "ያስፈልጋል",
     "bugReportSubjectHint": "የችግሩ አጭር ማጠቃለያ",
     "bugReportDescriptionRequiredLabel": "ምን ተከሰተ? *",

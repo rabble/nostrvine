@@ -103,6 +103,12 @@ class _FeatureRequestView extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     spacing: 16,
                     children: [
+                      DivineInfoCard(
+                        title: l10n.supportPublicSubmissionTitle,
+                        message: l10n.supportPublicSubmissionMessage,
+                        tone: DivineInfoCardTone.warning,
+                        compact: true,
+                      ),
                       DivineTextField(
                         controller: fields.subject,
                         labelText: l10n.supportSubjectRequiredLabel,

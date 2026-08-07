@@ -3750,6 +3750,8 @@
     "nostrAppPermissionAllow": "Permitir",
     "bugReportSendReport": "Enviar relatório",
     "supportSubjectRequiredLabel": "Assunto *",
+    "supportPublicSubmissionTitle": "Publicação pública no GitHub",
+    "supportPublicSubmissionMessage": "Tudo o que você enviar aqui será publicado no nosso repositório de código aberto no GitHub para que os desenvolvedores possam cuidar disso. A publicação ficará visível para todos.",
     "supportRequiredHelper": "Obrigatório",
     "bugReportSubjectHint": "Resumo curto do problema",
     "bugReportDescriptionRequiredLabel": "O que aconteceu? *",

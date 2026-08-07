@@ -4361,6 +4361,8 @@
   "@inspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
   "bugReportSendReport": "Send Report",
   "supportSubjectRequiredLabel": "Subject *",
+  "supportPublicSubmissionTitle": "Public GitHub post",
+  "supportPublicSubmissionMessage": "Everything you submit here will be posted to our open-source repository on GitHub so developers can pick it up. Your post will be publicly visible to everyone.",
   "supportRequiredHelper": "Required",
   "bugReportSubjectHint": "Brief summary of the issue",
   "bugReportDescriptionRequiredLabel": "What happened? *",
