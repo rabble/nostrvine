@@ -371,7 +371,7 @@ void main() {
       );
     });
 
-    testWidgets('rounds the bottom corners during the hero flight', (
+    testWidgets('morphs the hero flight corners in both directions', (
       tester,
     ) async {
       // The flying hero is lifted into the navigator overlay, above the stage's
@@ -425,29 +425,67 @@ void main() {
         ),
       );
 
+      // The shuttle is the only clip caught mid-lerp: strictly inside both
+      // endpoints on both corners. The stage's own clip sits exactly on them.
+      final shuttleClip = find.byWidgetPredicate((widget) {
+        if (widget is! ClipRRect) return false;
+        final radius = widget.borderRadius;
+        return radius is BorderRadius &&
+            radius.topLeft.x > 0 &&
+            radius.topLeft.x < VideoEditorConstants.clipPreviewCornerRadius &&
+            radius.bottomLeft.x >
+                VideoEditorConstants.clipPreviewCornerRadius &&
+            radius.bottomLeft.x < VineTheme.shellCornerRadius;
+      });
+      BorderRadius shuttleRadius() =>
+          tester.widget<ClipRRect>(shuttleClip).borderRadius as BorderRadius;
+
       await tester.tap(find.text('open'));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 150));
+      await tester.pump(const Duration(milliseconds: 20));
 
       // Mid-flight the shuttle sits between the thumbnail's all-round corners
       // and the stage's bottom-only rounding.
-      final radii = tester
-          .widgetList<ClipRRect>(find.byType(ClipRRect))
-          .map((clip) => clip.borderRadius)
-          .whereType<BorderRadius>();
+      expect(shuttleClip, findsOneWidget);
+      final early = shuttleRadius();
+
+      await tester.pump(const Duration(milliseconds: 130));
+      final mid = shuttleRadius();
+
+      // It morphs from the thumbnail's shape towards the stage's, so the top
+      // opens out as the bottom tightens. A single sample cannot tell that
+      // from a lerp running backwards, or from one pinned to a constant --
+      // both leave the preview in the wrong shape, which is the bug here.
+      expect(mid.topLeft.x, lessThan(early.topLeft.x));
+      expect(mid.bottomLeft.x, greaterThan(early.bottomLeft.x));
+
+      await tester.pumpAndSettle();
+
+      // Coming back, the shuttle carries the destination thumbnail -- so a
+      // rounding that lives inside that Hero rides along and pins the top
+      // corners at 16 for the whole flight, whatever the lerp is doing.
+      tester.state<NavigatorState>(find.byType(Navigator)).pop();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(shuttleClip, findsOneWidget);
       expect(
-        radii.any(
-          (radius) =>
-              radius.bottomLeft.x >
-                  VideoEditorConstants.clipPreviewCornerRadius &&
-              radius.bottomLeft.x < VineTheme.shellCornerRadius &&
-              radius.topLeft.x < VideoEditorConstants.clipPreviewCornerRadius,
+        find.descendant(
+          of: shuttleClip,
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is ClipRRect &&
+                widget.borderRadius ==
+                    BorderRadius.circular(
+                      VideoEditorConstants.clipPreviewCornerRadius,
+                    ),
+          ),
         ),
-        isTrue,
+        findsNothing,
       );
 
       // Settle the flight and the overlay timer the screen starts on mount.
-      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
     });
 
     testWidgets('constrains square stop-motion clips to the target box', (
