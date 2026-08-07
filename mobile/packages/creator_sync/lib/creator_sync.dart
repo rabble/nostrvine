@@ -1,7 +1,9 @@
 // ABOUTME: Public API for the creator_sync package.
 // ABOUTME: Exports the sync clock, cipher, index client, and repository.
 
+export 'src/creator_sync_reportable_sites.dart';
 export 'src/exceptions.dart';
+export 'src/sound_sync_repository.dart';
 export 'src/sync_cipher.dart';
 export 'src/sync_clock.dart';
 export 'src/sync_index_client.dart';

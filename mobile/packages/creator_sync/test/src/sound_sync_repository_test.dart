@@ -1,0 +1,365 @@
+// ABOUTME: Tests for sound library reconciliation across devices.
+// ABOUTME: Pins LWW, tombstone handling, and the resurrection guard.
+
+import 'package:creator_sync/creator_sync.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:test/test.dart';
+
+class _MockIndexClient extends Mock implements SyncIndexClient {}
+
+class _FakeLocalSoundStore implements LocalSoundStore {
+  final Map<String, Map<String, dynamic>> sounds = {};
+
+  @override
+  Future<Map<String, Map<String, dynamic>>> readAll() async =>
+      Map<String, Map<String, dynamic>>.from(sounds);
+
+  @override
+  Future<void> upsert(String id, Map<String, dynamic> body) async {
+    sounds[id] = body;
+  }
+
+  @override
+  Future<void> remove(String id) async => sounds.remove(id);
+}
+
+void main() {
+  group(SoundSyncRepository, () {
+    const idA =
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const idB =
+        'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+
+    late _MockIndexClient index;
+    late InMemorySyncStateStore state;
+    late _FakeLocalSoundStore local;
+    late SoundSyncRepository repository;
+
+    setUpAll(() {
+      registerFallbackValue(const SyncItemRef(SyncItemKind.sound, 'x'));
+      registerFallbackValue(SyncIndexEntry.tombstone());
+    });
+
+    setUp(() {
+      index = _MockIndexClient();
+      state = InMemorySyncStateStore();
+      local = _FakeLocalSoundStore();
+      repository = SoundSyncRepository(
+        index: index,
+        state: state,
+        local: local,
+      );
+      when(
+        () => index.fetch(SyncItemKind.sound, since: any(named: 'since')),
+      ).thenAnswer((_) async => []);
+      when(
+        () => index.publish(
+          any(),
+          any(),
+          latestKnownRemote: any(named: 'latestKnownRemote'),
+        ),
+      ).thenAnswer((_) async => 9999);
+    });
+
+    RemoteSyncRecord record(
+      String id,
+      int createdAt, {
+      Map<String, dynamic>? body,
+    }) => RemoteSyncRecord(
+      ref: SyncItemRef(SyncItemKind.sound, id),
+      entry: body == null
+          ? SyncIndexEntry.tombstone()
+          : SyncIndexEntry.item(body: body),
+      createdAt: createdAt,
+    );
+
+    test('pulls a remote sound absent locally', () async {
+      when(
+        () => index.fetch(SyncItemKind.sound, since: any(named: 'since')),
+      ).thenAnswer(
+        (_) async => [
+          record(idA, 1000, body: {'label': 'intro'}),
+        ],
+      );
+
+      final outcome = await repository.reconcile();
+
+      expect(local.sounds[idA], equals({'label': 'intro'}));
+      expect(outcome.pulled, equals(1));
+    });
+
+    test('pushes a local sound never published', () async {
+      local.sounds[idB] = {'label': 'outro'};
+
+      final outcome = await repository.reconcile();
+
+      final captured = verify(
+        () => index.publish(
+          captureAny(),
+          captureAny(),
+          latestKnownRemote: any(named: 'latestKnownRemote'),
+        ),
+      ).captured;
+      expect((captured[0] as SyncItemRef).id, equals(idB));
+      expect((captured[1] as SyncIndexEntry).body, equals({'label': 'outro'}));
+      expect(outcome.pushed, equals(1));
+    });
+
+    test('applies a newer remote edit over the local copy', () async {
+      local.sounds[idA] = {'label': 'old'};
+      await state.writeApplied(SyncItemKind.sound, {
+        'divine:sync:sound:$idA': SyncItemState(
+          createdAt: 1000,
+          bodyHash: syncBodyHash(const {'label': 'old'}),
+        ),
+      });
+      when(
+        () => index.fetch(SyncItemKind.sound, since: any(named: 'since')),
+      ).thenAnswer(
+        (_) async => [
+          record(idA, 2000, body: {'label': 'new'}),
+        ],
+      );
+
+      await repository.reconcile();
+
+      expect(local.sounds[idA], equals({'label': 'new'}));
+    });
+
+    test('ignores a remote record it has already applied', () async {
+      local.sounds[idA] = {'label': 'current'};
+      await state.writeApplied(SyncItemKind.sound, {
+        'divine:sync:sound:$idA': SyncItemState(
+          createdAt: 2000,
+          bodyHash: syncBodyHash(const {'label': 'current'}),
+        ),
+      });
+      when(
+        () => index.fetch(SyncItemKind.sound, since: any(named: 'since')),
+      ).thenAnswer(
+        (_) async => [
+          record(idA, 2000, body: {'label': 'echo'}),
+        ],
+      );
+
+      await repository.reconcile();
+
+      expect(local.sounds[idA], equals({'label': 'current'}));
+      verifyNever(
+        () => index.publish(
+          any(),
+          any(),
+          latestKnownRemote: any(named: 'latestKnownRemote'),
+        ),
+      );
+    });
+
+    test('records the created_at the publish actually stamped', () async {
+      local.sounds[idB] = {'label': 'outro'};
+      when(
+        () => index.publish(
+          any(),
+          any(),
+          latestKnownRemote: any(named: 'latestKnownRemote'),
+        ),
+      ).thenAnswer((_) async => 4_242_424_242);
+
+      await repository.reconcile();
+
+      expect(
+        (await state.readApplied(
+          SyncItemKind.sound,
+        ))['divine:sync:sound:$idB']!.createdAt,
+        equals(4_242_424_242),
+      );
+    });
+
+    test('republishes a local edit whose earlier publish failed', () async {
+      // Body drifted from what was last published: the edit never landed.
+      local.sounds[idA] = {'label': 'edited offline'};
+      await state.writeApplied(SyncItemKind.sound, {
+        'divine:sync:sound:$idA': SyncItemState(
+          createdAt: 1000,
+          bodyHash: syncBodyHash(const {'label': 'stale published body'}),
+        ),
+      });
+
+      final outcome = await repository.reconcile();
+
+      final captured = verify(
+        () => index.publish(
+          any(),
+          captureAny(),
+          latestKnownRemote: any(named: 'latestKnownRemote'),
+        ),
+      ).captured;
+      expect(
+        (captured.single as SyncIndexEntry).body,
+        equals({'label': 'edited offline'}),
+      );
+      expect(outcome.pushed, equals(1));
+    });
+
+    test('does not republish when the local body already matches', () async {
+      local.sounds[idA] = {'label': 'in sync'};
+      await state.writeApplied(SyncItemKind.sound, {
+        'divine:sync:sound:$idA': SyncItemState(
+          createdAt: 1000,
+          bodyHash: syncBodyHash(const {'label': 'in sync'}),
+        ),
+      });
+
+      final outcome = await repository.reconcile();
+
+      verifyNever(
+        () => index.publish(
+          any(),
+          any(),
+          latestKnownRemote: any(named: 'latestKnownRemote'),
+        ),
+      );
+      expect(outcome.pushed, equals(0));
+    });
+
+    test('removes a locally-present sound on a remote tombstone', () async {
+      local.sounds[idA] = {'label': 'doomed'};
+      when(
+        () => index.fetch(SyncItemKind.sound, since: any(named: 'since')),
+      ).thenAnswer((_) async => [record(idA, 3000)]);
+
+      final outcome = await repository.reconcile();
+
+      expect(local.sounds.containsKey(idA), isFalse);
+      expect(outcome.deleted, equals(1));
+    });
+
+    test('does not resurrect a sound deleted on another device', () async {
+      local.sounds[idA] = {'label': 'doomed'};
+      when(
+        () => index.fetch(SyncItemKind.sound, since: any(named: 'since')),
+      ).thenAnswer((_) async => [record(idA, 3000)]);
+
+      await repository.reconcile();
+      // Second pass: the tombstone is already applied and the local copy
+      // is gone, so nothing should be republished.
+      when(
+        () => index.fetch(SyncItemKind.sound, since: any(named: 'since')),
+      ).thenAnswer((_) async => []);
+      await repository.reconcile();
+
+      verifyNever(
+        () => index.publish(
+          any(),
+          any(),
+          latestKnownRemote: any(named: 'latestKnownRemote'),
+        ),
+      );
+    });
+
+    test('publishLocalChange publishes an item entry', () async {
+      local.sounds[idA] = {'label': 'fresh'};
+
+      await repository.publishLocalChange(idA);
+
+      final captured = verify(
+        () => index.publish(
+          captureAny(),
+          captureAny(),
+          latestKnownRemote: any(named: 'latestKnownRemote'),
+        ),
+      ).captured;
+      expect((captured[1] as SyncIndexEntry).deleted, isFalse);
+    });
+
+    test('publishLocalDeletion publishes a tombstone', () async {
+      await repository.publishLocalDeletion(idA);
+
+      final captured = verify(
+        () => index.publish(
+          captureAny(),
+          captureAny(),
+          latestKnownRemote: any(named: 'latestKnownRemote'),
+        ),
+      ).captured;
+      expect((captured[1] as SyncIndexEntry).deleted, isTrue);
+    });
+
+    test('reports index failures through the reporter port', () async {
+      final sites = <String>[];
+      repository = SoundSyncRepository(
+        index: index,
+        state: state,
+        local: local,
+        errorReporter: (_, _, {required site}) => sites.add(site),
+      );
+      when(
+        () => index.fetch(SyncItemKind.sound, since: any(named: 'since')),
+      ).thenThrow(SyncIndexException('relay down'));
+
+      await expectLater(
+        repository.reconcile(),
+        throwsA(isA<SyncIndexException>()),
+      );
+      expect(sites, equals([CreatorSyncReportableSites.reconcileSounds]));
+    });
+
+    test(
+      'reports publishLocalChange failures through the reporter port',
+      () async {
+        final sites = <String>[];
+        local.sounds[idA] = {'label': 'fresh'};
+        repository = SoundSyncRepository(
+          index: index,
+          state: state,
+          local: local,
+          errorReporter: (_, _, {required site}) => sites.add(site),
+        );
+        when(
+          () => index.publish(
+            any(),
+            any(),
+            latestKnownRemote: any(named: 'latestKnownRemote'),
+          ),
+        ).thenThrow(SyncIndexException('relay down'));
+
+        await expectLater(
+          repository.publishLocalChange(idA),
+          throwsA(isA<SyncIndexException>()),
+        );
+        expect(
+          sites,
+          equals([CreatorSyncReportableSites.publishSoundChange]),
+        );
+      },
+    );
+
+    test(
+      'reports publishLocalDeletion failures through the reporter port',
+      () async {
+        final sites = <String>[];
+        repository = SoundSyncRepository(
+          index: index,
+          state: state,
+          local: local,
+          errorReporter: (_, _, {required site}) => sites.add(site),
+        );
+        when(
+          () => index.publish(
+            any(),
+            any(),
+            latestKnownRemote: any(named: 'latestKnownRemote'),
+          ),
+        ).thenThrow(SyncIndexException('relay down'));
+
+        await expectLater(
+          repository.publishLocalDeletion(idA),
+          throwsA(isA<SyncIndexException>()),
+        );
+        expect(
+          sites,
+          equals([CreatorSyncReportableSites.publishSoundDeletion]),
+        );
+      },
+    );
+  });
+}
