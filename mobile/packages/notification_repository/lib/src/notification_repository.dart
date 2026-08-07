@@ -65,9 +65,10 @@ final RegExp _npubIdentifierPattern = RegExp(
 ///
 /// The UI's trailing `@([a-zA-Z][a-zA-Z0-9_]{0,30})` alternative is the one
 /// deliberate divergence. It wins over the bech32 alternative for `@npub1…`
-/// and truncates the token to 31 characters, so mirroring it would drop the
-/// protection #6346 added for that input. Whether the UI should tokenize
-/// `@npub1…` as a mention at all is a separate question from this cut.
+/// and over hex for `@<64-hex>`, so mirroring it would drop the protection
+/// #6346 added for `@npub1…` and keep `@<64-hex>` capped at the mention
+/// length. Whether the UI should tokenize those as mentions at all is a
+/// separate question from this cut.
 final RegExp _uiTokenPattern = RegExp(
   r'((?:[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})|(?:https?:\/\/[^\s]+|www\.[^\s]+|(?<![@\w])(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s]*)?))|#(\w+)|(?<![A-Za-z0-9])(?:nostr:)?((?:npub|nprofile|note|nevent|naddr)1[a-z0-9]+)\b|(?<![A-Fa-f0-9])([A-Fa-f0-9]{64})(?![A-Fa-f0-9])',
   caseSensitive: false,
@@ -2399,6 +2400,7 @@ class NotificationRepository {
   static int _referenceAwareCut(String content, int limit) {
     final maxReferencePreviewLength = limit * 4;
     for (final match in _uiTokenPattern.allMatches(content)) {
+      if (match.start >= limit) break;
       final isReference =
           match.group(_bech32ReferenceGroup) != null ||
           match.group(_hexReferenceGroup) != null;
