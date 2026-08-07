@@ -277,6 +277,59 @@ void main() {
       expect(spans.single.recognizer, isNull);
     });
 
+    // `@<64-hex>` resolves on the first character after the `@`. The trailing
+    // mention alternative opens with `[a-zA-Z]`, so a letter-initial hex is
+    // taken as a 31-character mention while a digit-initial one has no letter
+    // to consume and falls through to the hex reference alternative.
+    // `notification_repository` mirrors this tokenizer without the mention
+    // alternative and documents that divergence, so it is pinned here.
+    group('@-prefixed 64-hex references', () {
+      const letterInitialHex =
+          'a1b2c3d4e5f60718293a4b5c6d7e8f90'
+          'a1b2c3d4e5f60718293a4b5c6d7e8f90';
+      const digitInitialHex =
+          '01b2c3d4e5f60718293a4b5c6d7e8f90'
+          'a1b2c3d4e5f60718293a4b5c6d7e8f90';
+
+      test('truncates a letter-initial hex to a plain mention', () {
+        String? tappedMention;
+
+        final spans = LinkifiedTextSpanBuilder(
+          text: '@$letterInitialHex',
+          defaultStyle: defaultStyle,
+          linkStyle: linkStyle,
+          mentionStyle: mentionStyle,
+          onMentionTap: (username) => tappedMention = username,
+        ).build();
+
+        final mentionSpan = spans.tappableSpans.single;
+        expect(
+          mentionSpan.text,
+          equals('@${letterInitialHex.substring(0, 31)}'),
+        );
+        mentionSpan.tap();
+        expect(tappedMention, equals(letterInitialHex.substring(0, 31)));
+      });
+
+      test('keeps a digit-initial hex whole as a video reference', () {
+        String? tappedVideo;
+
+        final spans = LinkifiedTextSpanBuilder(
+          text: '@$digitInitialHex',
+          defaultStyle: defaultStyle,
+          linkStyle: linkStyle,
+          mentionStyle: mentionStyle,
+          videoLabel: 'View video',
+          onVideoTap: (routeReference) => tappedVideo = routeReference,
+        ).build();
+
+        final videoSpan = spans.tappableSpans.single;
+        expect(videoSpan.text, equals('View video'));
+        videoSpan.tap();
+        expect(tappedVideo, equals(digitInitialHex));
+      });
+    });
+
     // Unpaired UTF-16 surrogates make Flutter's paragraph builder throw
     // "string is not well-formed UTF-16" during layout, which is a crash
     // rather than a rendering glitch. They reach spans from two independent

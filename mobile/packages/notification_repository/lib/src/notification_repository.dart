@@ -64,10 +64,14 @@ final RegExp _npubIdentifierPattern = RegExp(
 /// their own text so a run buried inside them is not mistaken for one.
 ///
 /// The UI's trailing `@([a-zA-Z][a-zA-Z0-9_]{0,30})` alternative is the one
-/// deliberate divergence. It wins over the bech32 alternative for `@npub1…`
-/// and truncates the token to 31 characters, so mirroring it would drop the
-/// protection #6346 added for that input. Whether the UI should tokenize
-/// `@npub1…` as a mention at all is a separate question from this cut.
+/// deliberate divergence, and it only fires when a letter follows the `@`.
+/// It therefore always wins for `@npub1…` — every bech32 prefix starts with
+/// `n` — and wins over hex only for a letter-initial `@<64-hex>`, capping
+/// either at 31 characters. A digit-initial `@<64-hex>` starts with no
+/// letter to consume, so it falls through to the hex alternative in both
+/// patterns and does not diverge at all. Mirroring the alternative would
+/// drop the protection #6346 added for `@npub1…`. Whether the UI should
+/// tokenize these as mentions at all is a separate question from this cut.
 final RegExp _uiTokenPattern = RegExp(
   r'((?:[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})|(?:https?:\/\/[^\s]+|www\.[^\s]+|(?<![@\w])(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s]*)?))|#(\w+)|(?<![A-Za-z0-9])(?:nostr:)?((?:npub|nprofile|note|nevent|naddr)1[a-z0-9]+)\b|(?<![A-Fa-f0-9])([A-Fa-f0-9]{64})(?![A-Fa-f0-9])',
   caseSensitive: false,
@@ -2399,13 +2403,15 @@ class NotificationRepository {
   static int _referenceAwareCut(String content, int limit) {
     final maxReferencePreviewLength = limit * 4;
     for (final match in _uiTokenPattern.allMatches(content)) {
+      if (match.start >= limit) break;
       final isReference =
           match.group(_bech32ReferenceGroup) != null ||
           match.group(_hexReferenceGroup) != null;
       if (!isReference) continue;
-      final startsBeforeOrAtLimit = match.start < limit;
-      final endsAfterLimit = match.end > limit;
-      if (!startsBeforeOrAtLimit || !endsAfterLimit) continue;
+      // The `break` above already guarantees `match.start < limit`, so
+      // ending after it is exactly the straddling case.
+      final straddlesLimit = match.end > limit;
+      if (!straddlesLimit) continue;
       final canKeepLeadingToken =
           match.end <= maxReferencePreviewLength &&
           _hasOnlyWhitespaceOrPunctuationBefore(content, match.start);
