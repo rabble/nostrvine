@@ -874,10 +874,7 @@ class _ThumbnailStripState extends State<_ThumbnailStrip> {
                   Positioned(
                     top: 0,
                     bottom: 0,
-                    left: (cursorDx - _cursorWidth / 2).clamp(
-                      0,
-                      stripWidth - _cursorWidth,
-                    ),
+                    left: cursorLeft,
                     child: IgnorePointer(
                       child: Container(
                         width: _cursorWidth,
