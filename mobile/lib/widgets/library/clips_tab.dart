@@ -46,8 +46,8 @@ class ClipsTab extends StatelessWidget {
 
   /// Padding above the first grid row.
   ///
-  /// The selection sheet sets this so the grid clears the sheet's drag
-  /// handle instead of butting straight up against it.
+  /// The selection sheet sets this so the first row clears the bottom
+  /// sheet header's divider instead of butting straight up against it.
   final double gridTopPadding;
 
   @override
