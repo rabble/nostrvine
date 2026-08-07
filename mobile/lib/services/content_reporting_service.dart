@@ -122,9 +122,6 @@ class ContentReport {
 /// Service for reporting inappropriate content
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class ContentReportingService {
-  static const String _reportLabelNamespace = 'social.nos.ontology';
-  static const String _reportLabelPrefix = 'NS-';
-
   ContentReportingService({
     required NostrClient nostrService,
     required AuthService authService,
@@ -454,7 +451,7 @@ class ContentReportingService {
       }
 
       // NIP-56 requires the report type as the 3rd element of the e/p tags.
-      final nip56Type = _toNip56ReportType(reason);
+      final nip56Type = contentFilterReasonToNip56Type(reason);
       // Filter at the construction boundary so every report path avoids
       // emitting synthetic or malformed e tags, not just reportUser().
       final eventTagIds = (nip56EventIds ?? [eventId])
@@ -463,10 +460,10 @@ class ContentReportingService {
       final tags = <List<String>>[
         for (final nip56EventId in eventTagIds) ['e', nip56EventId, nip56Type],
         ['p', authorPubkey, nip56Type],
-        ['L', _reportLabelNamespace],
+        ['L', kReportLabelNamespace],
         // These label values are a cross-repo wire contract consumed by
         // divine-web and divine-relay-manager.
-        ['l', _toNip32ReportLabel(reason), _reportLabelNamespace],
+        ['l', contentFilterReasonToNip32Label(reason), kReportLabelNamespace],
       ];
 
       // Add hashtags as 't' tags
@@ -529,46 +526,8 @@ class ContentReportingService {
     }
   }
 
-  /// Maps app-level [ContentFilterReason] to one of the NIP-56 standard
-  /// report type strings: nudity, malware, profanity, illegal, spam,
-  /// impersonation, other.
-  String _toNip56ReportType(ContentFilterReason reason) {
-    return switch (reason) {
-      ContentFilterReason.spam => 'spam',
-      ContentFilterReason.harassment => 'profanity',
-      ContentFilterReason.violence => 'illegal',
-      ContentFilterReason.sexualContent => 'nudity',
-      ContentFilterReason.copyright => 'illegal',
-      ContentFilterReason.falseInformation => 'other',
-      ContentFilterReason.childSafety => 'other',
-      ContentFilterReason.csam => 'illegal',
-      ContentFilterReason.underageUser => 'other',
-      ContentFilterReason.aiGenerated => 'other',
-      ContentFilterReason.other => 'other',
-    };
-  }
-
   static bool _isValidEventId(String eventId) =>
       NostrHexUtils.isValidEventId(eventId);
-
-  /// Maps app-level [ContentFilterReason] to the NIP-32 label value used by
-  /// downstream moderation UIs.
-  String _toNip32ReportLabel(ContentFilterReason reason) {
-    return switch (reason) {
-      ContentFilterReason.spam => '${_reportLabelPrefix}spam',
-      ContentFilterReason.harassment => '${_reportLabelPrefix}harassment',
-      ContentFilterReason.violence => '${_reportLabelPrefix}violence',
-      ContentFilterReason.sexualContent => '${_reportLabelPrefix}sexualContent',
-      ContentFilterReason.copyright => '${_reportLabelPrefix}copyright',
-      ContentFilterReason.falseInformation =>
-        '${_reportLabelPrefix}falseInformation',
-      ContentFilterReason.childSafety => '${_reportLabelPrefix}childSafety',
-      ContentFilterReason.csam => '${_reportLabelPrefix}csam',
-      ContentFilterReason.underageUser => '${_reportLabelPrefix}underageUser',
-      ContentFilterReason.aiGenerated => '${_reportLabelPrefix}aiGenerated',
-      ContentFilterReason.other => '${_reportLabelPrefix}other',
-    };
-  }
 
   /// Format report content for NIP-56 compliance (kind 1984)
   String _formatNip56ReportContent(

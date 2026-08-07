@@ -18,6 +18,63 @@ enum ContentFilterReason {
   other,
 }
 
+/// NIP-32 namespace for Divine's report labels, used as the `L` tag and as
+/// each `l` tag's third element.
+const String kReportLabelNamespace = 'social.nos.ontology';
+
+const String _reportLabelPrefix = 'NS-';
+
+/// Maps a [ContentFilterReason] to the canonical NIP-56 (kind 1984) report
+/// type strings: nudity, malware, profanity, illegal, spam, impersonation,
+/// other.
+///
+/// NIP-56's vocabulary is coarser than Divine's, so this collapses several
+/// reasons (`aiGenerated`/`childSafety`/`underageUser`/`falseInformation` ->
+/// `other`; `csam`/`copyright`/`violence` -> `illegal`). Prefer
+/// [contentFilterReasonToNip32Label] wherever the granular reason matters —
+/// this exists to satisfy the protocol's fixed marker vocabulary.
+String contentFilterReasonToNip56Type(ContentFilterReason reason) {
+  return switch (reason) {
+    ContentFilterReason.spam => 'spam',
+    ContentFilterReason.harassment => 'profanity',
+    ContentFilterReason.violence => 'illegal',
+    ContentFilterReason.sexualContent => 'nudity',
+    ContentFilterReason.copyright => 'illegal',
+    ContentFilterReason.falseInformation => 'other',
+    ContentFilterReason.childSafety => 'other',
+    ContentFilterReason.csam => 'illegal',
+    ContentFilterReason.underageUser => 'other',
+    ContentFilterReason.aiGenerated => 'other',
+    ContentFilterReason.other => 'other',
+  };
+}
+
+/// Maps a [ContentFilterReason] to its NIP-32 label value, the lossless
+/// wire form of the reason.
+///
+/// These values are a cross-repo wire contract: divine-web and
+/// divine-relay-manager key display and escalation policy off them (see
+/// divine-relay-manager's `CATEGORY_LABELS`, `HIGH_PRIORITY_CATEGORIES`,
+/// and `UNDERAGE_REPORT_CATEGORY`), and divine-moderation-service resolves
+/// them to `user_reports.report_type`. Renaming one silently reclassifies
+/// reports in three services — change it there first.
+String contentFilterReasonToNip32Label(ContentFilterReason reason) {
+  return switch (reason) {
+    ContentFilterReason.spam => '${_reportLabelPrefix}spam',
+    ContentFilterReason.harassment => '${_reportLabelPrefix}harassment',
+    ContentFilterReason.violence => '${_reportLabelPrefix}violence',
+    ContentFilterReason.sexualContent => '${_reportLabelPrefix}sexualContent',
+    ContentFilterReason.copyright => '${_reportLabelPrefix}copyright',
+    ContentFilterReason.falseInformation =>
+      '${_reportLabelPrefix}falseInformation',
+    ContentFilterReason.childSafety => '${_reportLabelPrefix}childSafety',
+    ContentFilterReason.csam => '${_reportLabelPrefix}csam',
+    ContentFilterReason.underageUser => '${_reportLabelPrefix}underageUser',
+    ContentFilterReason.aiGenerated => '${_reportLabelPrefix}aiGenerated',
+    ContentFilterReason.other => '${_reportLabelPrefix}other',
+  };
+}
+
 /// Content severity levels for filtering
 enum ContentSeverity {
   info, // Informational only

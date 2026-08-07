@@ -72,4 +72,90 @@ void main() {
       expect(ModerationResult.clean.warningMessage, isNull);
     });
   });
+
+  group(contentFilterReasonToNip56Type, () {
+    test('maps every reason to a canonical NIP-56 report type string', () {
+      const expected = {
+        ContentFilterReason.spam: 'spam',
+        ContentFilterReason.harassment: 'profanity',
+        ContentFilterReason.violence: 'illegal',
+        ContentFilterReason.sexualContent: 'nudity',
+        ContentFilterReason.copyright: 'illegal',
+        ContentFilterReason.falseInformation: 'other',
+        ContentFilterReason.childSafety: 'other',
+        ContentFilterReason.csam: 'illegal',
+        ContentFilterReason.underageUser: 'other',
+        ContentFilterReason.aiGenerated: 'other',
+        ContentFilterReason.other: 'other',
+      };
+
+      // Pin the table to the enum first: without this a newly added reason
+      // with a wrong mapping arm would pass, since the loop below only
+      // visits the keys the table already names.
+      expect(expected.keys.toSet(), ContentFilterReason.values.toSet());
+
+      for (final entry in expected.entries) {
+        expect(
+          contentFilterReasonToNip56Type(entry.key),
+          entry.value,
+          reason: '${entry.key} should map to NIP-56 type "${entry.value}"',
+        );
+      }
+    });
+  });
+
+  group(contentFilterReasonToNip32Label, () {
+    test('maps every reason to a distinct NS- label', () {
+      const expected = {
+        ContentFilterReason.spam: 'NS-spam',
+        ContentFilterReason.harassment: 'NS-harassment',
+        ContentFilterReason.violence: 'NS-violence',
+        ContentFilterReason.sexualContent: 'NS-sexualContent',
+        ContentFilterReason.copyright: 'NS-copyright',
+        ContentFilterReason.falseInformation: 'NS-falseInformation',
+        ContentFilterReason.childSafety: 'NS-childSafety',
+        ContentFilterReason.csam: 'NS-csam',
+        ContentFilterReason.underageUser: 'NS-underageUser',
+        ContentFilterReason.aiGenerated: 'NS-aiGenerated',
+        ContentFilterReason.other: 'NS-other',
+      };
+
+      expect(expected.keys.toSet(), ContentFilterReason.values.toSet());
+
+      for (final entry in expected.entries) {
+        expect(
+          contentFilterReasonToNip32Label(entry.key),
+          entry.value,
+          reason:
+              '${entry.key} is a cross-repo wire value consumed by '
+              'divine-web, divine-relay-manager, and '
+              'divine-moderation-service -- renaming it reclassifies '
+              'reports in three services',
+        );
+      }
+    });
+
+    test('is lossless where the NIP-56 mapping collapses reasons', () {
+      // The whole reason the DM carries this label as well as the NIP-56
+      // type: these five reasons are indistinguishable after the NIP-56
+      // collapse, and divine-moderation-service pins report_type on
+      // whichever ingestion path writes first.
+      const collapsed = [
+        ContentFilterReason.aiGenerated,
+        ContentFilterReason.childSafety,
+        ContentFilterReason.underageUser,
+        ContentFilterReason.csam,
+        ContentFilterReason.copyright,
+      ];
+
+      expect(
+        collapsed.map(contentFilterReasonToNip56Type).toSet(),
+        hasLength(2),
+      );
+      expect(
+        collapsed.map(contentFilterReasonToNip32Label).toSet(),
+        hasLength(collapsed.length),
+      );
+    });
+  });
 }
