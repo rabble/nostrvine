@@ -112,9 +112,8 @@ class _VineBottomSheetListTile extends StatelessWidget {
       child: ListTile(
         enabled: isEnabled,
         minTileHeight: 56,
-        leading: SizedBox(
-          height: 24,
-          width: 24,
+        leading: SizedBox.square(
+          dimension: DivineIcon.scaleSize(context, 24),
           child: SvgPicture.asset(
             data.iconPath,
             colorFilter: .mode(color, .srcIn),

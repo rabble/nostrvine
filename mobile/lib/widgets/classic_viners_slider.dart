@@ -41,7 +41,7 @@ class ClassicVinersSlider extends ConsumerWidget {
                 Icon(
                   Icons.star,
                   color: VineTheme.vineGreen,
-                  size: MediaQuery.textScalerOf(context).scale(20),
+                  size: DivineIcon.scaleSize(context, 20),
                 ),
                 Text(
                   context.l10n.classicVinersTitle,

@@ -312,8 +312,9 @@ class _DivineIconButtonContent extends StatelessWidget {
   Widget _iconWidget(BuildContext context, Color iconColor) {
     final source = iconSource;
     // Raw SvgPicture / Icon need the scaler applied here; the DivineIcon
-    // fallback below applies it itself, so it stays on its 24px default.
-    final size = MediaQuery.textScalerOf(context).scale(24);
+    // fallback below applies the same one itself, so it stays on its 24px
+    // default. Both branches must land on the same rendered size.
+    final size = DivineIcon.scaleSize(context, 24);
 
     if (source != null) {
       return switch (source) {
@@ -370,7 +371,7 @@ class _DivineIconButtonContent extends StatelessWidget {
     // doesn't capture taps.
     final tapTarget = size == DivineIconButtonSize.small
         ? SizedBox.square(
-            dimension: MediaQuery.textScalerOf(context).scale(48),
+            dimension: DivineIcon.scaleSize(context, 48),
             child: Center(child: inkBox),
           )
         : inkBox;

@@ -433,7 +433,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   DivineListTile(
                     leading: Icon(
                       Icons.apps,
-                      size: MediaQuery.textScalerOf(context).scale(24),
+                      size: DivineIcon.scaleSize(context, 24),
                     ),
                     title: context.l10n.settingsIntegratedApps,
                     subtitle: context.l10n.settingsIntegratedAppsSubtitle,
@@ -443,14 +443,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   title: context.l10n.settingsLegal,
                   leading: Icon(
                     Icons.gavel,
-                    size: MediaQuery.textScalerOf(context).scale(24),
+                    size: DivineIcon.scaleSize(context, 24),
                   ),
                   onTap: () => context.push(LegalScreen.path),
                 ),
                 DivineListTile(
                   leading: Icon(
                     Icons.lock_open,
-                    size: MediaQuery.textScalerOf(context).scale(24),
+                    size: DivineIcon.scaleSize(context, 24),
                   ),
                   title: context.l10n.settingsIntegrationPermissions,
                   subtitle: context.l10n.settingsIntegrationPermissionsSubtitle,
@@ -459,7 +459,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 DivineListTile(
                   leading: Icon(
                     Icons.science,
-                    size: MediaQuery.textScalerOf(context).scale(24),
+                    size: DivineIcon.scaleSize(context, 24),
                   ),
                   title: context.l10n.settingsExperimentalFeatures,
                   subtitle: context.l10n.settingsExperimentalFeaturesSubtitle,

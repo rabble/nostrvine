@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/blocs/comments/comment_composer/comment_composer_bloc.dart';
+import 'package:openvine/constants/text_scale_limits.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/comments/widgets/mention_overlay.dart';
 
@@ -223,7 +224,7 @@ class _CommentInputState extends State<CommentInput> {
                 children: [
                   Expanded(
                     child: MediaQuery.withClampedTextScaling(
-                      maxScaleFactor: 1.25,
+                      maxScaleFactor: fixedRowTextScaleLimit,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -294,8 +295,8 @@ class _VideoReplyButton extends StatelessWidget {
         constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
         child: Center(
           child: Container(
-            width: MediaQuery.textScalerOf(context).scale(40),
-            height: MediaQuery.textScalerOf(context).scale(40),
+            width: DivineIcon.scaleSize(context, 40),
+            height: DivineIcon.scaleSize(context, 40),
             margin: const EdgeInsets.only(bottom: 4),
             // The camera asset is 29x18, so `contain` sizes it off its height
             // and it renders 35px wide inside the 40px circle. The padding

@@ -206,7 +206,10 @@ class _DivineButtonContent extends StatelessWidget {
   /// inside the 32px visible chip, small/base use 24px.
   ///
   /// Unscaled — [DivineIcon] applies the text scaler itself. The loading
-  /// spinner is not a [DivineIcon], so it scales this explicitly.
+  /// spinner is not a [DivineIcon], so it scales this through
+  /// [DivineIcon.scaleSize] to land on the same size as the icon it
+  /// replaces; otherwise the button resizes when it enters the loading
+  /// state.
   double get _iconSize => switch (size) {
     DivineButtonSize.tiny => 20,
     DivineButtonSize.small => 24,
@@ -345,7 +348,7 @@ class _DivineButtonContent extends StatelessWidget {
       children: [
         if (isLoading)
           SizedBox.square(
-            dimension: MediaQuery.textScalerOf(context).scale(_iconSize),
+            dimension: DivineIcon.scaleSize(context, _iconSize),
             child: CircularProgressIndicator(
               strokeWidth: 2,
               valueColor: AlwaysStoppedAnimation<Color>(foregroundColor),

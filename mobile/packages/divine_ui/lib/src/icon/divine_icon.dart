@@ -275,13 +275,25 @@ class DivineIcon extends StatelessWidget {
   /// they sit next to, but unbounded growth breaks tight layouts — at the
   /// 2.0x platform maximum a 24px icon would render at 48px and overflow
   /// narrow rows. Callers must not pre-scale [size]; this widget owns it.
-  static const _kMaxIconScaleFactor = 1.3;
+  static const maxScaleFactor = 1.3;
+
+  /// Applies the system text scale to [size], capped at [maxScaleFactor].
+  ///
+  /// Use this for icon-sized chrome that [DivineIcon] does not render
+  /// itself — a raw [Icon] or `SvgPicture`, a spinner standing in for an
+  /// icon, or a tap target sized off one — so it grows on the same curve
+  /// and stops at the same bound as the icons beside it.
+  ///
+  /// Do **not** use it on a [size] passed to [DivineIcon]: that scales the
+  /// value twice, squaring the factor.
+  static double scaleSize(BuildContext context, double size) =>
+      MediaQuery.textScalerOf(
+        context,
+      ).clamp(maxScaleFactor: maxScaleFactor).scale(size);
 
   @override
   Widget build(BuildContext context) {
-    final dimension = MediaQuery.textScalerOf(
-      context,
-    ).clamp(maxScaleFactor: _kMaxIconScaleFactor).scale(size);
+    final dimension = scaleSize(context, size);
 
     return SvgPicture.asset(
       icon.assetPath,

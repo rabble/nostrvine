@@ -142,7 +142,7 @@ class _ColorSwatchButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dimension = MediaQuery.textScalerOf(context).scale(20);
+    final dimension = DivineIcon.scaleSize(context, 20);
     return Semantics(
       label: semanticsLabel,
       button: true,

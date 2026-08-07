@@ -31,7 +31,7 @@ class LegalScreen extends StatelessWidget {
               DivineListTile(
                 leading: Icon(
                   Icons.description,
-                  size: MediaQuery.textScalerOf(context).scale(24),
+                  size: DivineIcon.scaleSize(context, 24),
                   color: VineTheme.vineGreen,
                 ),
                 title: l10n.legalTermsOfService,
@@ -47,7 +47,7 @@ class LegalScreen extends StatelessWidget {
               DivineListTile(
                 leading: Icon(
                   Icons.privacy_tip,
-                  size: MediaQuery.textScalerOf(context).scale(24),
+                  size: DivineIcon.scaleSize(context, 24),
                   color: VineTheme.vineGreen,
                 ),
                 title: l10n.legalPrivacyPolicy,
@@ -76,7 +76,7 @@ class LegalScreen extends StatelessWidget {
               DivineListTile(
                 leading: Icon(
                   Icons.copyright,
-                  size: MediaQuery.textScalerOf(context).scale(24),
+                  size: DivineIcon.scaleSize(context, 24),
                   color: VineTheme.vineGreen,
                 ),
                 title: l10n.legalDmca,
@@ -92,7 +92,7 @@ class LegalScreen extends StatelessWidget {
               DivineListTile(
                 leading: Icon(
                   Icons.source,
-                  size: MediaQuery.textScalerOf(context).scale(24),
+                  size: DivineIcon.scaleSize(context, 24),
                   color: VineTheme.vineGreen,
                 ),
                 title: l10n.legalOpenSourceLicenses,

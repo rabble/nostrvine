@@ -70,7 +70,7 @@ class NostrSettingsScreen extends ConsumerWidget {
                 DivineListTile(
                   leading: Icon(
                     Icons.hub,
-                    size: MediaQuery.textScalerOf(context).scale(24),
+                    size: DivineIcon.scaleSize(context, 24),
                     color: VineTheme.vineGreen,
                   ),
                   title: context.l10n.nostrSettingsRelays,
@@ -80,7 +80,7 @@ class NostrSettingsScreen extends ConsumerWidget {
                 DivineListTile(
                   leading: Icon(
                     Icons.troubleshoot,
-                    size: MediaQuery.textScalerOf(context).scale(24),
+                    size: DivineIcon.scaleSize(context, 24),
                     color: VineTheme.vineGreen,
                   ),
                   title: context.l10n.nostrSettingsRelayDiagnostics,
@@ -91,7 +91,7 @@ class NostrSettingsScreen extends ConsumerWidget {
               DivineListTile(
                 leading: Icon(
                   Icons.cloud_upload,
-                  size: MediaQuery.textScalerOf(context).scale(24),
+                  size: DivineIcon.scaleSize(context, 24),
                   color: VineTheme.vineGreen,
                 ),
                 title: context.l10n.nostrSettingsMediaServers,
@@ -114,7 +114,7 @@ class NostrSettingsScreen extends ConsumerWidget {
                 DivineListTile(
                   leading: Icon(
                     Icons.alternate_email,
-                    size: MediaQuery.textScalerOf(context).scale(24),
+                    size: DivineIcon.scaleSize(context, 24),
                     color: VineTheme.vineGreen,
                   ),
                   title: context.l10n.nostrSettingsNip05Address,
@@ -157,7 +157,7 @@ class _RemoveKeysTile extends StatelessWidget {
     return DivineListTile(
       leading: Icon(
         Icons.key_off,
-        size: MediaQuery.textScalerOf(context).scale(24),
+        size: DivineIcon.scaleSize(context, 24),
         color: VineTheme.warning,
       ),
       title: context.l10n.nostrSettingsRemoveKeys,
