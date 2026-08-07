@@ -298,7 +298,7 @@ class _PreviewFlightCorners extends StatelessWidget {
         borderRadius: BorderRadius.lerp(
           BorderRadius.circular(VideoEditorConstants.clipPreviewCornerRadius),
           stageBorderRadius,
-          animation.value.clamp(0.0, 1.0),
+          animation.value,
         )!,
         child: child,
       ),
