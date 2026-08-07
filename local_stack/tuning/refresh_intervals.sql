@@ -12,8 +12,9 @@
 -- Measured on a stack built from funnelcake main (2026-08-07): 110 kind-34236
 -- events sat in `nostr.events_local` while `SELECT count() FROM nostr.video_stats`
 -- returned 0, with `next_refresh_time` 4.5 minutes out. `video_stats` stopped
--- being a live view at migration 000160 and its MV settled at
--- `REFRESH EVERY 15 MINUTE OFFSET 3 MINUTE` (000182, then 000184).
+-- being a live view at migration 000143 (`DROP VIEW nostr.video_stats` ->
+-- `CREATE VIEW ... FROM nostr.video_stats_snapshot`, initially 60s) and its MV
+-- was widened to `REFRESH EVERY 15 MINUTE OFFSET 3 MINUTE` by 000182/000184.
 --
 -- integration_test/helpers/http_helpers.dart polls that endpoint with
 -- `maxSeconds = 30`, so deleted_video_visible_to_other_users_test.dart fails at
@@ -37,6 +38,27 @@ ALTER TABLE nostr.video_stats_snapshot_refresh_mv MODIFY REFRESH EVERY 10 SECOND
 ALTER TABLE nostr.recent_videos_snapshot_refresh_mv MODIFY REFRESH EVERY 10 SECOND;
 ALTER TABLE nostr.popular_videos_snapshot_refresh_mv MODIFY REFRESH EVERY 30 SECOND;
 ALTER TABLE nostr.trending_videos_snapshot_refresh_mv MODIFY REFRESH EVERY 30 SECOND;
-ALTER TABLE nostr.video_event_card_snapshot_refresh_mv MODIFY REFRESH EVERY 10 SECOND;
 ALTER TABLE nostr.relay_feed_cache_refresh_mv MODIFY REFRESH EVERY 10 SECOND;
 ALTER TABLE nostr.user_feed_video_candidates_refresh_mv MODIFY REFRESH EVERY 30 SECOND;
+
+-- DELIBERATELY NOT SHORTENED: video_event_card_snapshot_refresh_mv.
+--
+-- Shortening it buys nothing. It reads `nostr.classic_videos_snapshot`
+-- (000170:642), whose only writer is classic_videos_snapshot_refresh_mv at
+-- 10 minutes (000182:47), which is not in the list above. Setting the card MV
+-- to 10s would just make it free-run against a source that still rebuilds
+-- every 10 minutes. Nothing in local dev reads it either — the e2e polls
+-- `/api/users/{pubkey}/videos`, which is the video_stats path.
+--
+-- It is also the one MV that was given an ordering guarantee:
+-- `DEPENDS ON nostr.classic_videos_snapshot_refresh_mv` (000170:620), the only
+-- DEPENDS ON in the schema. 000184 warns that "MODIFY REFRESH replaces ALL
+-- refresh parameters, so touching it would silently drop that dependency."
+-- Worth knowing that upstream already tripped this: 000182:50 ran exactly that
+-- ALTER, so the clause is gone by schema 210 — `SELECT create_table_query`
+-- shows `REFRESH EVERY 10 MINUTE TO ...` with no DEPENDS ON, and nothing after
+-- 000182 restores it. Re-altering it here would not restore it either, and
+-- would only add churn, so leave it alone.
+--
+-- 000184:80 confirms none of the six MVs above declare RANDOMIZE, OFFSET,
+-- DEPENDS ON or refresh SETTINGS, so `MODIFY REFRESH` is lossless for them.
