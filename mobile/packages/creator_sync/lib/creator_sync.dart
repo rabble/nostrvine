@@ -7,4 +7,5 @@ export 'src/sync_clock.dart';
 export 'src/sync_index_client.dart';
 export 'src/sync_index_entry.dart';
 export 'src/sync_item_ref.dart';
+export 'src/sync_state_store.dart';
 export 'src/vault_key_service.dart';
