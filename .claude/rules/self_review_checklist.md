@@ -10,6 +10,28 @@ before continuing.
 
 ---
 
+## Before touching an existing PR
+
+Do this **first** — before reading the diff, running tests, or planning
+a fix. See [`pr_takeover.md`](pr_takeover.md).
+
+- [ ] **Whose PR is this?** `gh pr view <n> --json author,isCrossRepository,isDraft,maintainerCanModify`
+  vs `gh api user --jq .login`. Your own PR, a same-repo takeover, and
+  a fork PR each carry different gates. Treat `maintainerCanModify` as
+  fork-only; same-repo PRs can report `false` even when mutable.
+  Learning the answer from a GitHub API rejection means you skipped this
+  and re-triage is required.
+- [ ] If it's **your own** PR: you cannot review or approve it, and no
+  reviewer is downstream to catch a red build. Blockers go in a regular
+  issue comment, clearly labelled.
+- [ ] If it's **someone else's**: every gate in `PR_REVIEW.md` clears
+  before you push. Draft or feedback-only ⇒ read-only.
+- [ ] Every review item sorted into fixed / escalated / declined —
+  including inline threads fetched via GraphQL, and outdated ones.
+- [ ] Unrequested changes called out separately from review fixes.
+
+---
+
 ## Before starting any task
 
 Branch hygiene (see [`agent_workflow.md`](agent_workflow.md)):
@@ -149,9 +171,11 @@ Then:
 - [ ] No unused imports, unused locals, dead code from a removed
   approach.
 - [ ] Format, analyze, and scoped tests all pass locally. **Never push
-  red** — `origin/main` always passes, so any failing test on your
-  branch is caused by your diff. See
-  [`agent_workflow.md`](agent_workflow.md#5-failing-tests-are-never-acceptable-and-always-your-fault).
+  red** — assume any failing test on your branch is caused by your diff.
+  In the rare case it genuinely isn't, prove it both ways and report
+  rather than patch. See
+  [`agent_workflow.md`](agent_workflow.md#5-failing-tests-are-never-acceptable-and-always-your-fault)
+  and [when the failure is not yours](agent_workflow.md#when-the-failure-is-not-yours).
 - [ ] Generated files (Riverpod, Freezed, JSON, Mockito, Drift) are
   regenerated and staged if you touched inputs.
 - [ ] `pubspec.lock` churn from a different SDK/pub-resolver run is
@@ -186,6 +210,12 @@ Then:
 - [ ] CI: `build / build` (divine_ui coverage), `Analyze`,
   `Tests (shard N/total)` for every shard, aggregate `Mobile CI`,
   `Format`, `Generated Files` all green before requesting review.
+- [ ] **Checks watched to completion after the push**
+  (`gh pr checks <n> --watch`), not merely launched. The handback
+  comment is written *after* reading the result — never alongside the
+  push. Red ⇒ fix and push again until green. The only acceptable red
+  handback names the breaking commit and the PR that unblocks it; see
+  [`agent_workflow.md`](agent_workflow.md#when-the-failure-is-not-yours).
 
 ## Responding to review
 
