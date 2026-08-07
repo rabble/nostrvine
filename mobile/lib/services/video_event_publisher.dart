@@ -178,7 +178,7 @@ class VideoEventPublisher {
     AudioExtractionService? audioExtractionService,
     ProfileStatsDao? profileStatsDao,
     SavedSoundsService? savedSoundsService,
-    SoundSyncRepository? soundSyncRepository,
+    SoundSyncRepository? Function()? soundSyncRepositoryGetter,
     EventApiClient? eventApiClient,
     AudioReuseConsentChecker? audioReuseConsentChecker,
     IosDeviceAttestationService? iosDeviceAttestationService,
@@ -194,7 +194,7 @@ class VideoEventPublisher {
        _audioExtractionService = audioExtractionService,
        _profileStatsDao = profileStatsDao,
        _savedSoundsService = savedSoundsService,
-       _soundSyncRepository = soundSyncRepository,
+       _soundSyncRepositoryGetter = soundSyncRepositoryGetter,
        _eventApiClient = eventApiClient,
        _audioReuseConsentChecker = audioReuseConsentChecker;
   final UploadManager _uploadManager;
@@ -208,11 +208,17 @@ class VideoEventPublisher {
   final ProfileStatsDao? _profileStatsDao;
   final SavedSoundsService? _savedSoundsService;
 
-  /// Cross-device sync for sounds saved to "My Sounds" from this publish
-  /// flow, or null until the vault key resolves. Best-effort: a failure
-  /// here never affects video publishing, and the next Sounds-tab reconcile
-  /// pass on this device picks up anything that did not mirror.
-  final SoundSyncRepository? _soundSyncRepository;
+  /// Reads the current cross-device sync repository at call time, or null
+  /// until the vault key resolves. A getter rather than a captured value:
+  /// this publisher lives behind a `keepAlive` Riverpod provider, and
+  /// watching `soundSyncRepositoryProvider` there would rebuild the
+  /// provider — discarding `_inFlightDirectPublishes` (the #6018
+  /// duplicate-publish coalescer) — every time the vault key resolves,
+  /// which lands strictly later than the auth transitions this provider
+  /// already rebuilds on. Best-effort: a mirror failure never affects
+  /// video publishing, and the next Sounds-tab reconcile pass on this
+  /// device picks up anything that did not mirror.
+  final SoundSyncRepository? Function()? _soundSyncRepositoryGetter;
   final IosDeviceAttestationService _iosDeviceAttestation;
 
   /// REST-first publish client. When non-null, video events are published

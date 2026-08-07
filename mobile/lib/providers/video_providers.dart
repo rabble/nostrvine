@@ -240,7 +240,6 @@ VideoEventPublisher videoEventPublisher(Ref ref) {
   final profileRepository = ref.watch(profileRepositoryProvider);
   final profileStatsDao = ref.watch(databaseProvider).profileStatsDao;
   final savedSoundsService = ref.watch(savedSoundsServiceProvider);
-  final soundSyncRepository = ref.watch(soundSyncRepositoryValueProvider);
   final consentResolver = AudioReuseConsentResolver(
     videosRepository: ref.watch(videosRepositoryProvider),
   );
@@ -269,7 +268,12 @@ VideoEventPublisher videoEventPublisher(Ref ref) {
     profileRepository: profileRepository,
     profileStatsDao: profileStatsDao,
     savedSoundsService: savedSoundsService,
-    soundSyncRepository: soundSyncRepository,
+    // ref.read, not watch: watching soundSyncRepositoryValueProvider here
+    // would rebuild this keepAlive provider (and discard its in-flight
+    // publish coalescer) every time the vault key resolves. Reading inside
+    // the getter instead makes the publisher check the current value at
+    // call time without subscribing to it.
+    soundSyncRepositoryGetter: () => ref.read(soundSyncRepositoryValueProvider),
     eventApiClient: eventApiClient,
     audioReuseConsentChecker: consentResolver.verify,
   );

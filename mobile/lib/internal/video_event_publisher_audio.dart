@@ -8,7 +8,7 @@ extension _VideoEventPublisherAudio on VideoEventPublisher {
   /// failure — expected (relay down, vault key unavailable) or not — is
   /// logged and swallowed, same as this file's other "My Sounds" errors.
   Future<void> _mirrorSavedSound(AudioEvent audio) async {
-    final repository = _soundSyncRepository;
+    final repository = _soundSyncRepositoryGetter?.call();
     if (repository == null) return;
     try {
       await repository.publishLocalChange(audio.id);

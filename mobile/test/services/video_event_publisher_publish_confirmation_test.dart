@@ -404,7 +404,7 @@ void main() {
         blossomUploadService: blossomUploadService,
         audioExtractionService: audioExtractionService,
         savedSoundsService: savedSoundsService,
-        soundSyncRepository: syncRepository,
+        soundSyncRepositoryGetter: () => syncRepository,
       );
 
       const audioPath = '/tmp/openvine_test_audio.m4a';
