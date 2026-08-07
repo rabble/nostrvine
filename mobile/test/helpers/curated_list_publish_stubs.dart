@@ -37,7 +37,6 @@ String? unsealForTest(String ciphertext) =>
 /// An outcome one relay accepted — what [PublishOutcome.acceptedByAny] gates on.
 PublishOutcome acceptedOutcome(Event event) => PublishOutcome(
   eventId: event.id,
-  eventKind: event.kind,
   acceptedBy: const ['wss://relay.test'],
   rejectedBy: const {},
   noResponseFrom: const [],
@@ -46,7 +45,6 @@ PublishOutcome acceptedOutcome(Event event) => PublishOutcome(
 /// An outcome no relay accepted, so the caller may roll local state back.
 PublishOutcome rejectedOutcome(Event event) => PublishOutcome(
   eventId: event.id,
-  eventKind: event.kind,
   acceptedBy: const [],
   rejectedBy: const {'wss://relay.test': 'blocked'},
   noResponseFrom: const [],
