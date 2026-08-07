@@ -3882,6 +3882,8 @@
     "nostrAppPermissionAllow": "Позволи",
     "bugReportSendReport": "Изпрати доклад",
     "supportSubjectRequiredLabel": "Тема *",
+    "supportPublicSubmissionTitle": "Публична публикация в GitHub",
+    "supportPublicSubmissionMessage": "Всичко, което изпратиш тук, ще бъде публикувано в нашето хранилище с отворен код в GitHub, за да могат разработчиците да го поемат. Публикацията и профилът, с който си влязъл, ще бъдат видими за всички.",
     "supportRequiredHelper": "Задължително",
     "bugReportSubjectHint": "Кратко резюме на проблема",
     "bugReportDescriptionRequiredLabel": "Какво се случи? *",

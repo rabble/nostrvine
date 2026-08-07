@@ -7144,6 +7144,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get supportSubjectRequiredLabel => '主题 *';
 
   @override
+  String get supportPublicSubmissionTitle => '公开的 GitHub 帖子';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      '你在这里提交的所有内容都会发布到我们在 GitHub 上的开源仓库中，以便开发者处理。该帖子和你登录使用的账号都会被所有人公开查看。';
+
+  @override
   String get supportRequiredHelper => '必填';
 
   @override

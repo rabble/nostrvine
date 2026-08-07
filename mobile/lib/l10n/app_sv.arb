@@ -3751,6 +3751,8 @@
     "nostrAppPermissionAllow": "Tillåt",
     "bugReportSendReport": "Skicka rapport",
     "supportSubjectRequiredLabel": "Ämne *",
+    "supportPublicSubmissionTitle": "Offentligt GitHub-inlägg",
+    "supportPublicSubmissionMessage": "Allt du skickar in här publiceras i vårt öppna GitHub-arkiv så att utvecklare kan ta hand om det. Inlägget och kontot du är inloggad med blir offentligt synliga för alla.",
     "supportRequiredHelper": "Obligatoriskt",
     "bugReportSubjectHint": "Kort sammanfattning av problemet",
     "bugReportDescriptionRequiredLabel": "Vad hände? *",

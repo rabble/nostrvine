@@ -7473,6 +7473,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get supportSubjectRequiredLabel => 'الموضوع *';
 
   @override
+  String get supportPublicSubmissionTitle => 'منشور عام على GitHub';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'سيُنشر كل ما ترسله هنا في مستودعنا مفتوح المصدر على GitHub ليتمكن المطورون من العمل عليه. سيكون المنشور والحساب الذي سجّلت الدخول به متاحين للجميع علنًا.';
+
+  @override
   String get supportRequiredHelper => 'مطلوب';
 
   @override

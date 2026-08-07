@@ -3751,6 +3751,8 @@
     "nostrAppPermissionAllow": "Permite",
     "bugReportSendReport": "Trimite raportul",
     "supportSubjectRequiredLabel": "Subiect *",
+    "supportPublicSubmissionTitle": "Postare publică pe GitHub",
+    "supportPublicSubmissionMessage": "Tot ce trimiți aici va fi publicat în depozitul nostru open-source de pe GitHub, pentru ca dezvoltatorii să se poată ocupa. Postarea și contul cu care ești conectat vor fi vizibile public pentru toată lumea.",
     "supportRequiredHelper": "Obligatoriu",
     "bugReportSubjectHint": "Scurt rezumat al problemei",
     "bugReportDescriptionRequiredLabel": "Ce s-a întâmplat? *",

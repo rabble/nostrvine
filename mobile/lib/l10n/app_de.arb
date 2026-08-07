@@ -3751,6 +3751,8 @@
     "nostrAppPermissionAllow": "Erlauben",
     "bugReportSendReport": "Bericht senden",
     "supportSubjectRequiredLabel": "Betreff *",
+    "supportPublicSubmissionTitle": "Öffentlicher GitHub-Beitrag",
+    "supportPublicSubmissionMessage": "Alles, was du hier sendest, wird in unserem Open-Source-Repository auf GitHub veröffentlicht, damit Entwickler den Task aufnehmen können. Der Beitrag und das Konto, mit dem du angemeldet bist, sind für alle öffentlich einsehbar.",
     "supportRequiredHelper": "Pflichtfeld",
     "bugReportSubjectHint": "Kurze Zusammenfassung des Problems",
     "bugReportDescriptionRequiredLabel": "Was ist passiert? *",

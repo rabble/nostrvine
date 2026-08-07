@@ -7484,6 +7484,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get supportSubjectRequiredLabel => 'Konu *';
 
   @override
+  String get supportPublicSubmissionTitle => 'Herkese açık GitHub gönderisi';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Buraya gönderdiğin her şey, geliştiricilerin ilgilenebilmesi için GitHub\'daki açık kaynak depomuzda yayınlanacak. Gönderi ve giriş yaptığın hesap herkes tarafından görülebilecek.';
+
+  @override
   String get supportRequiredHelper => 'Zorunlu';
 
   @override

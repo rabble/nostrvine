@@ -3751,6 +3751,8 @@
     "nostrAppPermissionAllow": "Zezwól",
     "bugReportSendReport": "Wyślij zgłoszenie",
     "supportSubjectRequiredLabel": "Temat *",
+    "supportPublicSubmissionTitle": "Publiczny wpis na GitHubie",
+    "supportPublicSubmissionMessage": "Wszystko, co tu prześlesz, zostanie opublikowane w naszym repozytorium open source na GitHubie, aby deweloperzy mogli się tym zająć. Wpis oraz konto, na które jesteś zalogowany, będą publicznie widoczne dla wszystkich.",
     "supportRequiredHelper": "Wymagane",
     "bugReportSubjectHint": "Krótkie podsumowanie problemu",
     "bugReportDescriptionRequiredLabel": "Co się stało? *",

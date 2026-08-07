@@ -7532,6 +7532,13 @@ class AppLocalizationsVi extends AppLocalizations {
   String get supportSubjectRequiredLabel => 'Chủ đề *';
 
   @override
+  String get supportPublicSubmissionTitle => 'Bài đăng GitHub công khai';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Mọi nội dung bạn gửi tại đây sẽ được đăng lên kho mã nguồn mở của chúng tôi trên GitHub để các nhà phát triển có thể xử lý. Bài đăng và tài khoản bạn đang đăng nhập sẽ hiển thị công khai với tất cả mọi người.';
+
+  @override
   String get supportRequiredHelper => 'Bắt buộc';
 
   @override

@@ -7695,6 +7695,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get supportSubjectRequiredLabel => 'Subiect *';
 
   @override
+  String get supportPublicSubmissionTitle => 'Postare publică pe GitHub';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Tot ce trimiți aici va fi publicat în depozitul nostru open-source de pe GitHub, pentru ca dezvoltatorii să se poată ocupa. Postarea și contul cu care ești conectat vor fi vizibile public pentru toată lumea.';
+
+  @override
   String get supportRequiredHelper => 'Obligatoriu';
 
   @override

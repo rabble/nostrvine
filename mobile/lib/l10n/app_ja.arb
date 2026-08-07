@@ -3751,6 +3751,8 @@
     "nostrAppPermissionAllow": "許可",
     "bugReportSendReport": "レポートを送信",
     "supportSubjectRequiredLabel": "件名 *",
+    "supportPublicSubmissionTitle": "公開 GitHub 投稿",
+    "supportPublicSubmissionMessage": "ここで送信した内容はすべて、開発者が対応できるよう GitHub 上のオープンソースリポジトリに投稿されます。投稿とログイン中のアカウントは誰でも閲覧できます。",
     "supportRequiredHelper": "必須",
     "bugReportSubjectHint": "問題の概要",
     "bugReportDescriptionRequiredLabel": "何が起きた? *",

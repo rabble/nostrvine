@@ -7518,6 +7518,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get supportSubjectRequiredLabel => 'Ämne *';
 
   @override
+  String get supportPublicSubmissionTitle => 'Offentligt GitHub-inlägg';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Allt du skickar in här publiceras i vårt öppna GitHub-arkiv så att utvecklare kan ta hand om det. Inlägget och kontot du är inloggad med blir offentligt synliga för alla.';
+
+  @override
   String get supportRequiredHelper => 'Obligatoriskt';
 
   @override
