@@ -29,8 +29,9 @@ class LegalScreen extends StatelessWidget {
           child: ListView(
             children: [
               DivineListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.description,
+                  size: MediaQuery.textScalerOf(context).scale(24),
                   color: VineTheme.vineGreen,
                 ),
                 title: l10n.legalTermsOfService,
@@ -44,8 +45,9 @@ class LegalScreen extends StatelessWidget {
                 ),
               ),
               DivineListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.privacy_tip,
+                  size: MediaQuery.textScalerOf(context).scale(24),
                   color: VineTheme.vineGreen,
                 ),
                 title: l10n.legalPrivacyPolicy,
@@ -72,8 +74,9 @@ class LegalScreen extends StatelessWidget {
                 ),
               ),
               DivineListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.copyright,
+                  size: MediaQuery.textScalerOf(context).scale(24),
                   color: VineTheme.vineGreen,
                 ),
                 title: l10n.legalDmca,
@@ -87,7 +90,11 @@ class LegalScreen extends StatelessWidget {
                 ),
               ),
               DivineListTile(
-                leading: const Icon(Icons.source, color: VineTheme.vineGreen),
+                leading: Icon(
+                  Icons.source,
+                  size: MediaQuery.textScalerOf(context).scale(24),
+                  color: VineTheme.vineGreen,
+                ),
                 title: l10n.legalOpenSourceLicenses,
                 subtitle: l10n.legalOpenSourceLicensesSubtitle,
                 onTap: () => showLicensePage(

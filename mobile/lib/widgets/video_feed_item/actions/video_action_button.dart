@@ -187,8 +187,9 @@ class _VideoActionCaption extends StatelessWidget {
           shadows: VineTheme.buttonShadows,
         ),
         textAlign: TextAlign.center,
+        softWrap: false,
         maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+        overflow: TextOverflow.fade,
       ),
     );
   }

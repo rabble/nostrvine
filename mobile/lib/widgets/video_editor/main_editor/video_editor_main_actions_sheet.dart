@@ -250,12 +250,15 @@ class _ItemButton extends StatelessWidget {
         ),
         Semantics(
           excludeSemantics: true,
-          child: Text(
-            label,
-            maxLines: 1,
-            textAlign: .center,
-            style: VineTheme.bodySmallFont(
-              color: context.vineColors.primaryText,
+          child: MediaQuery.withClampedTextScaling(
+            maxScaleFactor: 1.4,
+            child: Text(
+              label,
+              maxLines: 1,
+              textAlign: .center,
+              style: VineTheme.bodySmallFont(
+                color: context.vineColors.primaryText,
+              ),
             ),
           ),
         ),

@@ -26,32 +26,41 @@ class ProfileStatColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final column = Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          child: Text(
-            isLoading || count == null
-                ? '—'
-                : StringUtils.formatCompactNumber(count!),
-            key: ValueKey(isLoading ? 'loading' : count),
-            style: VineTheme.statNumberFont(
-              color: isLoading || count == null
-                  ? context.vineColors.onSurfaceMuted
-                  : context.vineColors.primaryText,
+    final column = MediaQuery.withClampedTextScaling(
+      maxScaleFactor: 1.5,
+      child: Padding(
+        padding: const .symmetric(horizontal: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: Text(
+                isLoading || count == null
+                    ? '—'
+                    : StringUtils.formatCompactNumber(count!),
+                key: ValueKey(isLoading ? 'loading' : count),
+                style: VineTheme.statNumberFont(
+                  color: isLoading || count == null
+                      ? context.vineColors.onSurfaceMuted
+                      : context.vineColors.primaryText,
+                ),
+              ),
             ),
-          ),
-        ),
-        Skeleton.keep(
-          child: Text(
-            label,
-            style: VineTheme.bodySmallFont(
-              color: context.vineColors.onSurfaceVariant,
+            Skeleton.keep(
+              child: Text(
+                label,
+                style: VineTheme.bodySmallFont(
+                  color: context.vineColors.onSurfaceVariant,
+                ),
+                softWrap: false,
+                maxLines: 1,
+                overflow: .fade,
+              ),
             ),
-          ),
+          ],
         ),
-      ],
+      ),
     );
 
     if (onTap != null) {

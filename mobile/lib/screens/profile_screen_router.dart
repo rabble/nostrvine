@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
@@ -223,67 +222,21 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
   }
 
   Future<void> _more(String userIdHex) async {
-    final result = await VineBottomSheet.show<String>(
+    await VineBottomSheetActionMenu.show(
       context: context,
-      scrollable: false,
-      children: [
-        InkWell(
-          onTap: () => Navigator.of(context).pop('copy_npub'),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-            child: Row(
-              children: [
-                SvgPicture.asset(
-                  DivineIconName.copy.assetPath,
-                  width: 24,
-                  height: 24,
-                  colorFilter: ColorFilter.mode(
-                    context.vineColors.primaryText,
-                    BlendMode.srcIn,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Text(
-                  context.l10n.profileCopyPublicKey,
-                  style: VineTheme.titleMediumFont(
-                    color: context.vineColors.primaryText,
-                  ),
-                ),
-              ],
-            ),
-          ),
+      options: [
+        VineBottomSheetActionData(
+          iconPath: DivineIconName.copy.assetPath,
+          label: context.l10n.profileCopyPublicKey,
+          onTap: () => _copyNpub(userIdHex),
         ),
-        InkWell(
-          onTap: () => Navigator.of(context).pop('embed_code'),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-            child: Row(
-              children: [
-                DivineIcon(
-                  icon: DivineIconName.bracketsAngle,
-                  color: context.vineColors.primaryText,
-                ),
-                const SizedBox(width: 16),
-                Text(
-                  context.l10n.profileGetEmbedCode,
-                  style: VineTheme.titleMediumFont(
-                    color: context.vineColors.primaryText,
-                  ),
-                ),
-              ],
-            ),
-          ),
+        VineBottomSheetActionData(
+          iconPath: DivineIconName.bracketsAngle.assetPath,
+          label: context.l10n.profileGetEmbedCode,
+          onTap: () => _copyEmbedCode(userIdHex),
         ),
       ],
     );
-
-    if (!mounted) return;
-
-    if (result == 'copy_npub') {
-      await _copyNpub(userIdHex);
-    } else if (result == 'embed_code') {
-      await _copyEmbedCode(userIdHex);
-    }
   }
 
   Future<void> _copyNpub(String userIdHex) async {

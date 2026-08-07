@@ -168,21 +168,24 @@ class _CategoryGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        DivineSectionHeader(title),
-        ...labels.map(
-          (label) => _ContentFilterRow(
-            label: label,
-            preference: state.preferenceFor(label),
-            locked: state.isLabelLocked(label),
-            onChanged: (preference) {
-              onChanged(label, preference);
-            },
+    return MediaQuery.withClampedTextScaling(
+      maxScaleFactor: 1.25,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          DivineSectionHeader(title),
+          ...labels.map(
+            (label) => _ContentFilterRow(
+              label: label,
+              preference: state.preferenceFor(label),
+              locked: state.isLabelLocked(label),
+              onChanged: (preference) {
+                onChanged(label, preference);
+              },
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

@@ -269,12 +269,24 @@ class DivineIcon extends StatelessWidget {
   /// avatar.
   final BoxFit fit;
 
+  /// Upper bound on how far [size] grows with the system text scale.
+  ///
+  /// Icons track the text scale so they stay proportional to the labels
+  /// they sit next to, but unbounded growth breaks tight layouts — at the
+  /// 2.0x platform maximum a 24px icon would render at 48px and overflow
+  /// narrow rows. Callers must not pre-scale [size]; this widget owns it.
+  static const _kMaxIconScaleFactor = 1.3;
+
   @override
   Widget build(BuildContext context) {
+    final dimension = MediaQuery.textScalerOf(
+      context,
+    ).clamp(maxScaleFactor: _kMaxIconScaleFactor).scale(size);
+
     return SvgPicture.asset(
       icon.assetPath,
-      width: size,
-      height: size,
+      width: dimension,
+      height: dimension,
       fit: fit,
       colorFilter: color != null
           ? ColorFilter.mode(color!, BlendMode.srcIn)

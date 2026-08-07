@@ -178,33 +178,31 @@ class _CategoryTile extends StatelessWidget {
                     horizontal: 24,
                     vertical: 16,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        localizedName,
-                        style: TextStyle(
-                          color: visuals.foregroundColor,
-                          fontSize: 24,
-                          height: 32 / 24,
-                          fontWeight: FontWeight.w700,
+                  child: MediaQuery.withClampedTextScaling(
+                    maxScaleFactor: 1.25,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      spacing: 4,
+                      children: [
+                        Text(
+                          localizedName,
+                          style: VineTheme.headlineSmallFont(
+                            color: visuals.foregroundColor,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        context.l10n.categoryVideoCount(
-                          _formatCount(category.videoCount),
+                        Text(
+                          context.l10n.categoryVideoCount(
+                            _formatCount(category.videoCount),
+                          ),
+                          style: VineTheme.labelMediumFont(
+                            color: visuals.foregroundColor.withValues(
+                              alpha: 0.9,
+                            ),
+                          ),
                         ),
-                        style: TextStyle(
-                          color: visuals.foregroundColor.withValues(alpha: 0.9),
-                          fontSize: 12,
-                          height: 16 / 12,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
                 PositionedDirectional(

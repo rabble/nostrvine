@@ -116,15 +116,20 @@ class _CommentsTitle extends StatelessWidget {
 
         return Row(
           mainAxisSize: MainAxisSize.min,
+          spacing: 8,
           children: [
-            Text(
-              context.l10n.commentsHeaderCount(count),
-              style: VineTheme.titleMediumFont(
-                color: context.vineColors.onSurface,
+            Flexible(
+              child: Text(
+                context.l10n.commentsHeaderCount(count),
+                style: VineTheme.titleMediumFont(
+                  color: context.vineColors.onSurface,
+                ),
+                maxLines: 1,
+                softWrap: false,
+                overflow: .fade,
               ),
             ),
-            if (state.newCommentCount > 0) ...[
-              const SizedBox(width: 8),
+            if (state.newCommentCount > 0)
               NewCommentsPill(
                 count: state.newCommentCount,
                 onTap: () {
@@ -134,7 +139,6 @@ class _CommentsTitle extends StatelessWidget {
                   );
                 },
               ),
-            ],
           ],
         );
       },

@@ -309,14 +309,18 @@ class _DivineIconButtonContent extends StatelessWidget {
     return VineTheme.buttonBoxShadowsFor(colors);
   }
 
-  Widget _iconWidget(Color iconColor) {
+  Widget _iconWidget(BuildContext context, Color iconColor) {
     final source = iconSource;
+    // Raw SvgPicture / Icon need the scaler applied here; the DivineIcon
+    // fallback below applies it itself, so it stays on its 24px default.
+    final size = MediaQuery.textScalerOf(context).scale(24);
+
     if (source != null) {
       return switch (source) {
         SvgIconSource(:final assetPath) => SvgPicture.asset(
           assetPath,
-          width: 24,
-          height: 24,
+          width: size,
+          height: size,
           colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
         ),
         // Still rendered for existing deprecated MaterialIconSource call
@@ -326,7 +330,7 @@ class _DivineIconButtonContent extends StatelessWidget {
         MaterialIconSource(:final iconData) => Icon(
           iconData,
           color: iconColor,
-          size: 24,
+          size: size,
         ),
       };
     }
@@ -338,7 +342,7 @@ class _DivineIconButtonContent extends StatelessWidget {
     final colors = context.vineColors;
     final iconColor = _resolveIconColor(colors);
     final borderColor = _borderColor(colors);
-    var iconWidget = _iconWidget(iconColor);
+    var iconWidget = _iconWidget(context, iconColor);
     if (tooltip != null) {
       iconWidget = Tooltip(message: tooltip, child: iconWidget);
     }
@@ -365,7 +369,10 @@ class _DivineIconButtonContent extends StatelessWidget {
     // space — a `Padding` outside the InkWell only reserves space, it
     // doesn't capture taps.
     final tapTarget = size == DivineIconButtonSize.small
-        ? SizedBox(width: 48, height: 48, child: Center(child: inkBox))
+        ? SizedBox.square(
+            dimension: MediaQuery.textScalerOf(context).scale(48),
+            child: Center(child: inkBox),
+          )
         : inkBox;
 
     return Semantics(

@@ -512,7 +512,7 @@ class _ActionsRow extends StatelessWidget {
                 children: [
                   DivineIcon(
                     icon: DivineIconName.arrowBendDownRight,
-                    size: MediaQuery.textScalerOf(context).scale(11),
+                    size: 11,
                     color: context.vineColors.onSurface,
                   ),
                   const SizedBox(width: 8),
@@ -601,7 +601,7 @@ class _CommentVoteButtons extends StatelessWidget {
                   ),
                   child: DivineIcon(
                     icon: DivineIconName.arrowFatUp,
-                    size: MediaQuery.textScalerOf(context).scale(16),
+                    size: 16,
                     color: voteState.isUpvoted
                         ? VineTheme.vineGreen
                         : context.vineColors.onSurfaceMuted,
@@ -650,7 +650,7 @@ class _CommentVoteButtons extends StatelessWidget {
                   ),
                   child: DivineIcon(
                     icon: DivineIconName.arrowFatDown,
-                    size: MediaQuery.textScalerOf(context).scale(16),
+                    size: 16,
                     color: voteState.isDownvoted
                         ? VineTheme.likeRed
                         : context.vineColors.onSurfaceMuted,

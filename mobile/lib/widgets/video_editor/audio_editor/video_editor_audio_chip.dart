@@ -92,72 +92,83 @@ class VideoEditorAudioChip extends StatelessWidget {
       tag: VideoEditorConstants.heroAudioChipId,
       child: Material(
         type: .transparency,
-        child: InkWell(
-          onTap: () => _selectAudio(context),
-          borderRadius: .circular(16),
-          child: Container(
-            constraints: const BoxConstraints(minHeight: 40),
-            padding: const .fromLTRB(16, 8, 8, 8),
-            decoration: ShapeDecoration(
-              color: VineTheme.scrim15,
-              shape: RoundedRectangleBorder(borderRadius: .circular(16)),
-            ),
-            child: Row(
-              mainAxisSize: .min,
-              mainAxisAlignment: .center,
-              children: [
-                const Row(
-                  spacing: 1.5,
-                  children: [
-                    _AudioBar(height: 7),
-                    _AudioBar(height: 16),
-                    _AudioBar(height: 13),
-                    _AudioBar(height: 7),
-                    _AudioBar(height: 10),
-                  ],
-                ),
-                Flexible(
-                  child: Padding(
-                    padding: const .symmetric(horizontal: 8),
-                    child: hasSelectedSound
-                        ? Text.rich(
-                            textScaler: TextScaler.noScaling,
-                            TextSpan(
-                              style: VineTheme.labelLargeFont(
+        child: MediaQuery.withClampedTextScaling(
+          maxScaleFactor: 1.4,
+          child: InkWell(
+            onTap: () => _selectAudio(context),
+            borderRadius: .circular(16),
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 40),
+              padding: const .fromLTRB(16, 8, 8, 8),
+              decoration: ShapeDecoration(
+                color: VineTheme.scrim15,
+                shape: RoundedRectangleBorder(borderRadius: .circular(16)),
+              ),
+              child: Row(
+                mainAxisSize: .min,
+                mainAxisAlignment: .center,
+                children: [
+                  Row(
+                    spacing: MediaQuery.textScalerOf(context).scale(1.5),
+                    children: [
+                      _AudioBar(
+                        height: MediaQuery.textScalerOf(context).scale(7),
+                      ),
+                      _AudioBar(
+                        height: MediaQuery.textScalerOf(context).scale(16),
+                      ),
+                      _AudioBar(
+                        height: MediaQuery.textScalerOf(context).scale(13),
+                      ),
+                      _AudioBar(
+                        height: MediaQuery.textScalerOf(context).scale(7),
+                      ),
+                      _AudioBar(
+                        height: MediaQuery.textScalerOf(context).scale(10),
+                      ),
+                    ],
+                  ),
+                  Flexible(
+                    child: Padding(
+                      padding: const .symmetric(horizontal: 8),
+                      child: hasSelectedSound
+                          ? Text.rich(
+                              TextSpan(
+                                style: VineTheme.labelLargeFont(
+                                  color: VineTheme.whiteText,
+                                ),
+                                children: [
+                                  TextSpan(
+                                    text:
+                                        selectedSound?.title ??
+                                        context.l10n.videoEditorAudioUntitled,
+                                  ),
+                                  if (selectedSound?.source != null) ...[
+                                    const TextSpan(text: ' ∙ '),
+                                    TextSpan(
+                                      text: selectedSound!.source,
+                                      style: VineTheme.bodyMediumFont(
+                                        color: VineTheme.whiteText,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              textAlign: .center,
+                              maxLines: 1,
+                              overflow: .ellipsis,
+                            )
+                          : Text(
+                              context.l10n.videoEditorAudioAddAudio,
+                              textAlign: .center,
+                              style: VineTheme.titleMediumFont(
                                 color: VineTheme.whiteText,
                               ),
-                              children: [
-                                TextSpan(
-                                  text:
-                                      selectedSound?.title ??
-                                      context.l10n.videoEditorAudioUntitled,
-                                ),
-                                if (selectedSound?.source != null) ...[
-                                  const TextSpan(text: ' ∙ '),
-                                  TextSpan(
-                                    text: selectedSound!.source,
-                                    style: VineTheme.bodyMediumFont(
-                                      color: VineTheme.whiteText,
-                                    ),
-                                  ),
-                                ],
-                              ],
                             ),
-                            textAlign: .center,
-                            maxLines: 1,
-                            overflow: .ellipsis,
-                          )
-                        : Text(
-                            context.l10n.videoEditorAudioAddAudio,
-                            textAlign: .center,
-                            textScaler: TextScaler.noScaling,
-                            style: VineTheme.titleMediumFont(
-                              color: VineTheme.whiteText,
-                            ),
-                          ),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

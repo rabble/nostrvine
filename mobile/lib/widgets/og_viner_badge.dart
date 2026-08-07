@@ -12,26 +12,27 @@ class OgVinerBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dimension = MediaQuery.textScalerOf(context).scale(size);
     return Semantics(
       label: context.l10n.ogVinerBadgeLabel,
       container: true,
-      child: Padding(
-        padding: const EdgeInsetsDirectional.only(start: 4),
-        child: Container(
-          width: size,
-          height: size,
-          alignment: Alignment.center,
-          decoration: const BoxDecoration(
-            color: VineTheme.primary,
-            shape: BoxShape.circle,
-          ),
+      child: Container(
+        margin: const EdgeInsetsDirectional.only(start: 4),
+        width: dimension,
+        height: dimension,
+        alignment: Alignment.center,
+        decoration: const BoxDecoration(
+          color: VineTheme.primary,
+          shape: BoxShape.circle,
+        ),
+        child: FittedBox(
           child: Text(
             'V',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: VineTheme.onPrimary,
               fontFamily: 'Pacifico',
-              fontSize: size * 0.85,
+              fontSize: dimension * 0.85,
               height: 1,
             ),
           ),

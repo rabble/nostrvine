@@ -39,23 +39,26 @@ class TrendingHashtagsSection extends StatelessWidget {
       color: context.vineColors.background,
       child: SizedBox(
         height: 52,
-        child: Row(
-          children: [
-            if (leading != null)
-              Padding(
-                padding: const EdgeInsetsDirectional.only(start: 12, end: 6),
-                child: Center(child: leading),
+        child: MediaQuery.withClampedTextScaling(
+          maxScaleFactor: 1.25,
+          child: Row(
+            children: [
+              if (leading != null)
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(start: 12, end: 6),
+                  child: Center(child: leading),
+                ),
+              Expanded(
+                child: hashtags.isEmpty
+                    ? const _HashtagLoadingPlaceholder()
+                    : _HashtagChipList(
+                        hashtags: hashtags,
+                        leadingInset: leading == null ? 16 : 0,
+                        onHashtagTap: onHashtagTap,
+                      ),
               ),
-            Expanded(
-              child: hashtags.isEmpty
-                  ? const _HashtagLoadingPlaceholder()
-                  : _HashtagChipList(
-                      hashtags: hashtags,
-                      leadingInset: leading == null ? 16 : 0,
-                      onHashtagTap: onHashtagTap,
-                    ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

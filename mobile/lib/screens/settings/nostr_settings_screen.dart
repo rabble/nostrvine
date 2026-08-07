@@ -68,14 +68,19 @@ class NostrSettingsScreen extends ConsumerWidget {
               DivineSectionHeader(context.l10n.nostrSettingsSectionNetwork),
               if (showAdvancedRelaySettings) ...[
                 DivineListTile(
-                  leading: const Icon(Icons.hub, color: VineTheme.vineGreen),
+                  leading: Icon(
+                    Icons.hub,
+                    size: MediaQuery.textScalerOf(context).scale(24),
+                    color: VineTheme.vineGreen,
+                  ),
                   title: context.l10n.nostrSettingsRelays,
                   subtitle: context.l10n.nostrSettingsRelaysSubtitle,
                   onTap: () => context.push(RelaySettingsScreen.path),
                 ),
                 DivineListTile(
-                  leading: const Icon(
+                  leading: Icon(
                     Icons.troubleshoot,
+                    size: MediaQuery.textScalerOf(context).scale(24),
                     color: VineTheme.vineGreen,
                   ),
                   title: context.l10n.nostrSettingsRelayDiagnostics,
@@ -84,8 +89,9 @@ class NostrSettingsScreen extends ConsumerWidget {
                 ),
               ],
               DivineListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.cloud_upload,
+                  size: MediaQuery.textScalerOf(context).scale(24),
                   color: VineTheme.vineGreen,
                 ),
                 title: context.l10n.nostrSettingsMediaServers,
@@ -106,8 +112,9 @@ class NostrSettingsScreen extends ConsumerWidget {
                 ),
                 const _ClientAttributionToggle(),
                 DivineListTile(
-                  leading: const Icon(
+                  leading: Icon(
                     Icons.alternate_email,
+                    size: MediaQuery.textScalerOf(context).scale(24),
                     color: VineTheme.vineGreen,
                   ),
                   title: context.l10n.nostrSettingsNip05Address,
@@ -148,7 +155,11 @@ class _RemoveKeysTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DivineListTile(
-      leading: const Icon(Icons.key_off, color: VineTheme.warning),
+      leading: Icon(
+        Icons.key_off,
+        size: MediaQuery.textScalerOf(context).scale(24),
+        color: VineTheme.warning,
+      ),
       title: context.l10n.nostrSettingsRemoveKeys,
       subtitle: context.l10n.nostrSettingsRemoveKeysSubtitle,
       onTap: () => _handleRemoveLocalAccount(context, ref),
