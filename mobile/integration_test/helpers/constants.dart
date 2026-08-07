@@ -3,13 +3,11 @@
 
 export 'package:openvine/models/environment_config.dart'
     show
-        androidEmulatorHost,
         localApiPort,
         localBlossomPort,
         localHost,
         localInvitePort,
         localKeycastPort,
-        localRelayManagerPort,
         localRelayPort,
         loopbackHost;
 
