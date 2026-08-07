@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' as models;
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
@@ -127,6 +128,51 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: VideoMetadataCoverScreen(clip: clip ?? _createTestClip()),
+          ),
+        ),
+      );
+    }
+
+    /// Wraps the screen behind a push so the route transition — and with it
+    /// the hero flight — actually runs. Pumped directly as `home:` the route
+    /// animation is already completed and never animates.
+    Widget buildPushableApp(DivineVideoClip clip) {
+      return ProviderScope(
+        overrides: [
+          videoEditorProvider.overrideWith(
+            () => _MockVideoEditorNotifier(VideoEditorProviderState()),
+          ),
+        ],
+        child: MockGoRouterProvider(
+          goRouter: mockGoRouter,
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Builder(
+              builder: (context) => Center(
+                // A matching hero on the source side, so the push runs a real
+                // flight through the navigator overlay rather than a bare
+                // route transition.
+                child: Hero(
+                  tag: VideoEditorConstants.heroMetaPreviewId,
+                  child: SizedBox(
+                    width: 200,
+                    height: 200,
+                    child: TextButton(
+                      // Mirrors the production push in
+                      // video_metadata_capture_clip_preview.dart.
+                      onPressed: () => Navigator.of(context).push(
+                        PageRouteBuilder<void>(
+                          pageBuilder: (_, _, _) =>
+                              VideoMetadataCoverScreen(clip: clip),
+                        ),
+                      ),
+                      child: const Text('open'),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       );
@@ -330,6 +376,68 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets('keeps the top bar hidden until the route transition lands', (
+      tester,
+    ) async {
+      setUpPlayerChannel();
+      addTearDown(tearDownPlayerChannel);
+
+      await tester.pumpWidget(buildPushableApp(_createTestClip()));
+      await tester.tap(find.text('open'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final topBar = find.ancestor(
+        of: find.text(l10n.videoMetadataEditCoverTitle),
+        matching: find.byType(AnimatedOpacity),
+      );
+
+      // Mid-flight the hero is painted by the navigator overlay, on top of
+      // anything the route draws — the bar must stay out of the way.
+      expect(tester.widget<AnimatedOpacity>(topBar).opacity, equals(0.0));
+
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(tester.widget<AnimatedOpacity>(topBar).opacity, equals(1.0));
+    });
+
+    testWidgets(
+      'loads the preview at the cover position instead of seeking after '
+      'load',
+      (tester) async {
+        addTearDown(tearDownPlayerChannel);
+        final calls = <MethodCall>[];
+        _setHandler(const MethodChannel('divine_video_player/player_0'), (
+          call,
+        ) async {
+          calls.add(call);
+          return null;
+        });
+        _setHandler(
+          const MethodChannel('divine_video_player/player_0/events'),
+          (call) async => null,
+        );
+
+        await tester.pumpWidget(
+          buildWidget(
+            clip: _createTestClip().copyWith(
+              thumbnailTimestamp: const Duration(milliseconds: 1500),
+            ),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 400));
+
+        final setClips = calls.singleWhere((c) => c.method == 'setClips');
+        expect(
+          (setClips.arguments as Map)['startPositionMs'],
+          equals(1500),
+          reason: 'the first decoded frame must already be the cover frame',
+        );
+        expect(calls.where((c) => c.method == 'seekTo'), isEmpty);
+      },
+    );
 
     testWidgets(
       'a permanently failed preview still generates the cover strip, hides '

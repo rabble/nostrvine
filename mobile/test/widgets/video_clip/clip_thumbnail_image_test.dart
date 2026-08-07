@@ -56,5 +56,43 @@ void main() {
       expect(find.byKey(marker), findsOneWidget);
       expect(find.byType(DivineIcon), findsNothing);
     });
+
+    testWidgets(
+      'wraps the image with frameBuilder while decoding, and drops it for '
+      'the placeholder once decoding fails',
+      (tester) async {
+        const marker = Key('frame-builder');
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 120,
+                height: 120,
+                child: ClipThumbnailImage(
+                  // A path of its own: the sibling tests leave a failed
+                  // entry for theirs in the process-global image cache,
+                  // which would deliver the error before the first build.
+                  path: '/nonexistent/container/frame_builder_probe.jpg',
+                  placeholder: const SizedBox.shrink(),
+                  frameBuilder: (context, child, frame, _) =>
+                      SizedBox(key: marker, child: child),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(find.byKey(marker), findsOneWidget);
+
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 100)),
+        );
+        await tester.pump();
+
+        expect(tester.takeException(), isNull);
+        expect(find.byKey(marker), findsNothing);
+      },
+    );
   });
 }

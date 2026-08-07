@@ -108,8 +108,15 @@ class _VideoMetadataCoverScreenState
         await controller.dispose();
         return;
       }
-      await controller.setSource(VideoClip.file(localPath));
-      if (mounted) await controller.seekTo(_selectedPosition);
+      // Prepare directly at the cover position instead of loading at 0 and
+      // seeking afterwards: the decoder's very first frame is then already
+      // the selected one. Loading-then-seeking renders frame 0 first, which
+      // flashed the wrong frame for the length of the seek right after the
+      // hero landed.
+      await controller.setClips(
+        [VideoClip.file(localPath)],
+        startPosition: _selectedPosition,
+      );
       if (mounted) {
         setState(() {
           _controller = controller;
@@ -472,6 +479,11 @@ class _VideoAreaState extends State<_VideoArea> {
           child: DivineVideoPlayer(
             controller: widget.controller,
             placeholder: _buildPlaceholder(),
+            // The thumbnail is already on screen (it is what the hero flew
+            // in) and the player is swapped in only once its first frame is
+            // decoded. Without this the widget hard-cuts thumbnail→texture,
+            // which reads as a flicker; cross-fade instead.
+            crossFadePlaceholder: true,
           ),
         ),
       ),
@@ -487,8 +499,109 @@ class _VideoAreaState extends State<_VideoArea> {
   }
 }
 
-class _TopBar extends StatelessWidget {
+/// Controls overlaying the preview, held back until the route transition has
+/// settled.
+///
+/// The hero flies in the navigator's overlay, which sits above everything the
+/// route itself paints. A bar rendered from the first frame is therefore
+/// covered by the flying video for the length of the flight and only pops in
+/// front once the hero lands — so it fades in on arrival instead.
+class _TopBar extends StatefulWidget {
   const _TopBar({
+    required this.isConfirming,
+    required this.onClose,
+    required this.onConfirm,
+  });
+
+  static const _fadeDuration = Duration(milliseconds: 180);
+
+  final bool isConfirming;
+  final VoidCallback onClose;
+  final VoidCallback onConfirm;
+
+  @override
+  State<_TopBar> createState() => _TopBarState();
+}
+
+class _TopBarState extends State<_TopBar> {
+  Animation<double>? _entranceAnimation;
+  bool _entered = false;
+
+  /// Only a bar that actually waited for a flight has something to fade in
+  /// from. Shown without a transition it just belongs on screen.
+  bool _fadeIn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Armed from a post-frame callback, the same shape
+    // [CodecHeavySurfaceGuard] uses. Reading the route during the first build
+    // is unreliable — it still resolves to the route being pushed *from*,
+    // whose transition has long completed, so the bar would decide it had
+    // nothing to wait for.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _armAfterEntrance();
+    });
+  }
+
+  void _armAfterEntrance() {
+    final animation = ModalRoute.of(context)?.animation;
+    if (animation == null || animation.isCompleted) {
+      _reveal(fadeIn: false);
+      return;
+    }
+    _entranceAnimation = animation..addStatusListener(_onEntranceStatus);
+  }
+
+  void _onEntranceStatus(AnimationStatus status) {
+    if (status != AnimationStatus.completed) return;
+    _detachEntranceListener();
+    if (mounted) _reveal(fadeIn: true);
+  }
+
+  void _reveal({required bool fadeIn}) {
+    if (_entered) return;
+    setState(() {
+      _entered = true;
+      _fadeIn = fadeIn;
+    });
+  }
+
+  void _detachEntranceListener() {
+    _entranceAnimation?.removeStatusListener(_onEntranceStatus);
+    _entranceAnimation = null;
+  }
+
+  @override
+  void dispose() {
+    _detachEntranceListener();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      // Opacity 0 drops the buttons from the semantics tree but still hit
+      // tests, so taps have to be blocked separately.
+      ignoring: !_entered,
+      child: AnimatedOpacity(
+        opacity: _entered ? 1 : 0,
+        duration: _fadeIn && !MediaQuery.disableAnimationsOf(context)
+            ? _TopBar._fadeDuration
+            : Duration.zero,
+        curve: Curves.easeOut,
+        child: _TopBarContent(
+          isConfirming: widget.isConfirming,
+          onClose: widget.onClose,
+          onConfirm: widget.onConfirm,
+        ),
+      ),
+    );
+  }
+}
+
+class _TopBarContent extends StatelessWidget {
+  const _TopBarContent({
     required this.isConfirming,
     required this.onClose,
     required this.onConfirm,
@@ -532,20 +645,7 @@ class _TopBar extends StatelessWidget {
                 label: context.l10n.videoMetadataEditCoverConfirmSemanticLabel,
                 button: true,
                 child: isConfirming
-                    ? const SizedBox(
-                        width: 40,
-                        height: 40,
-                        child: Center(
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: VineTheme.primary,
-                            ),
-                          ),
-                        ),
-                      )
+                    ? const BrandedLoadingIndicator(size: 44)
                     : DivineIconButton(
                         icon: .check,
                         size: .small,
@@ -720,6 +820,10 @@ class _ThumbnailStripState extends State<_ThumbnailStrip> {
           _updateSlotCache(count);
           final slotWidth = stripWidth / count;
           final cursorDx = _dxFromPosition(widget.selectedPosition, stripWidth);
+          final cursorLeft = (cursorDx - _cursorWidth / 2).clamp(
+            0.0,
+            stripWidth - _cursorWidth,
+          );
 
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
@@ -747,6 +851,24 @@ class _ThumbnailStripState extends State<_ThumbnailStrip> {
                             ),
                           ),
                       ],
+                    ),
+                  ),
+                  Positioned(
+                    top: 0,
+                    bottom: 0,
+                    left: 0,
+                    width: cursorLeft,
+                    child: const IgnorePointer(
+                      child: ColoredBox(color: VineTheme.scrim35),
+                    ),
+                  ),
+                  Positioned(
+                    top: 0,
+                    bottom: 0,
+                    left: cursorLeft + _cursorWidth,
+                    right: 0,
+                    child: const IgnorePointer(
+                      child: ColoredBox(color: VineTheme.scrim35),
                     ),
                   ),
                   Positioned(
@@ -810,14 +932,66 @@ class _SlotImage extends StatelessWidget {
           )
         : ColoredBox(color: context.vineColors.surfaceContainerHigh);
 
-    if (stripThumbnailPath == null) return fallback;
+    final path = stripThumbnailPath;
+    if (path == null) return fallback;
 
-    return ClipThumbnailImage(
-      path: stripThumbnailPath!,
-      fit: BoxFit.cover,
-      gaplessPlayback: true,
-      excludeFromSemantics: true,
-      placeholder: fallback,
+    return _FadingSlotImage(path: path, fallback: fallback);
+  }
+}
+
+/// Fades an extracted strip frame in over [fallback] instead of swapping it
+/// in the moment it decodes.
+///
+/// The priority timestamps cover every slot, so the first batch fills the
+/// whole strip at once — a hard swap flips all tiles from the stretched
+/// cover thumbnail to their real frames on a single frame boundary, which
+/// reads as a jolt.
+class _FadingSlotImage extends StatefulWidget {
+  const _FadingSlotImage({required this.path, required this.fallback});
+
+  /// Absolute path of the extracted strip frame.
+  final String path;
+
+  /// Painted underneath until the frame has faded in, and on the error path.
+  final Widget fallback;
+
+  @override
+  State<_FadingSlotImage> createState() => _FadingSlotImageState();
+}
+
+class _FadingSlotImageState extends State<_FadingSlotImage> {
+  static const _fadeDuration = Duration(milliseconds: 220);
+
+  /// Sticky once a frame has been painted: a later batch reassigning this
+  /// slot keeps the previous frame up (via `gaplessPlayback`) rather than
+  /// dipping back to the fallback while the new file decodes.
+  bool _hasFrame = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: .expand,
+      children: [
+        widget.fallback,
+        ClipThumbnailImage(
+          path: widget.path,
+          fit: .cover,
+          gaplessPlayback: true,
+          excludeFromSemantics: true,
+          placeholder: widget.fallback,
+          frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+            if (frame != null || wasSynchronouslyLoaded) _hasFrame = true;
+            return AnimatedOpacity(
+              opacity: _hasFrame ? 1 : 0,
+              // A cache hit paints on the first build; fading in from
+              // nothing there would invent a transition nobody asked for.
+              duration: wasSynchronouslyLoaded ? Duration.zero : _fadeDuration,
+              curve: Curves.easeOut,
+              child: child,
+            );
+          },
+        ),
+      ],
     );
   }
 }

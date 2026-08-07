@@ -27,6 +27,7 @@ class ClipThumbnailImage extends StatelessWidget {
     this.gaplessPlayback = false,
     this.excludeFromSemantics = false,
     this.placeholder,
+    this.frameBuilder,
   });
 
   /// Absolute path of the thumbnail/ghost file.
@@ -44,6 +45,11 @@ class ClipThumbnailImage extends StatelessWidget {
   /// the drafts list uses for a clip with no thumbnail).
   final Widget? placeholder;
 
+  /// Wraps the decoded image, e.g. to fade it in once the first frame
+  /// lands. Forwarded verbatim to [Image.file]; not called on the error
+  /// path, where [placeholder] replaces the image outright.
+  final ImageFrameBuilder? frameBuilder;
+
   @override
   Widget build(BuildContext context) {
     return Image.file(
@@ -54,6 +60,7 @@ class ClipThumbnailImage extends StatelessWidget {
       cacheHeight: cacheHeight,
       gaplessPlayback: gaplessPlayback,
       excludeFromSemantics: excludeFromSemantics,
+      frameBuilder: frameBuilder,
       errorBuilder: (context, error, stackTrace) =>
           placeholder ?? const _MissingThumbnailPlaceholder(),
     );
