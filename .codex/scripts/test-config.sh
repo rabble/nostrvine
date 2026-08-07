@@ -47,6 +47,13 @@ cat > "$TEST_REPO/mobile/lib/warning file.dart" <<'EOF'
 // ANALYZER_WARNING
 void main() {}
 EOF
+cat > "$TEST_REPO/mobile/lib/clean.dart" <<'EOF'
+void main() {}
+EOF
+cat > "$TEST_REPO/mobile/lib/info only.dart" <<'EOF'
+// ANALYZER_INFO
+void main() {}
+EOF
 cat > "$TEST_REPO/mobile/lib/with space.dart" <<'EOF'
 @freezed
 class GeneratedInput {}
@@ -72,8 +79,24 @@ case "$1" in
     ;;
   analyze)
     if grep -q 'ANALYZER_WARNING' "$2"; then
+      # Mirror real `dart analyze`: a header and footer around the diagnostic,
+      # severity right-padded to 7 characters so `warning` sits at column 1.
+      echo "Analyzing $2..."
+      echo
       echo "warning - $2:1:1 - Test warning. - test_warning"
+      echo
+      echo "1 issue found."
       exit 2
+    fi
+    # Info-level diagnostics are reported with exit 0, so the severity match is
+    # the only thing that can surface them.
+    if grep -q 'ANALYZER_INFO' "$2"; then
+      echo "Analyzing $2..."
+      echo
+      echo "   info - $2:1:1 - Test info. - test_info"
+      echo
+      echo "1 issue found."
+      exit 0
     fi
     echo "No issues found!"
     exit 0
@@ -100,12 +123,48 @@ POST_OUTPUT=$(cd "$TEST_REPO" && \
     DART_CALL_LOG="$CALL_LOG" \
     "$POST_EDIT_HOOK" <<< "$POST_PAYLOAD")
 
-printf '%s\n' "$POST_OUTPUT" | jq -e \
-  '.decision == "block" and (.reason | contains("Test warning"))' >/dev/null
+if ! printf '%s\n' "$POST_OUTPUT" | jq -e \
+  '.decision == "block"
+   and (.reason | startswith("Analyzer diagnostics in"))
+   and (.reason | contains("Test warning"))' >/dev/null; then
+  echo "Post-edit hook did not surface a column-1 warning via the severity match." >&2
+  echo "It fell back to the analyzer exit code, whose message also contains the" >&2
+  echo "diagnostic text, so this assertion pins the severity-match path." >&2
+  echo "Reason was: $(printf '%s' "$POST_OUTPUT" | jq -r '.reason // "<none>"')" >&2
+  exit 1
+fi
 FORMAT_LINE=$(grep -n '^format ' "$CALL_LOG" | cut -d: -f1)
 ANALYZE_LINE=$(grep -n '^analyze ' "$CALL_LOG" | cut -d: -f1)
 if [ -z "$FORMAT_LINE" ] || [ -z "$ANALYZE_LINE" ] || [ "$FORMAT_LINE" -ge "$ANALYZE_LINE" ]; then
   echo "Post-edit hook did not format before analyzing." >&2
+  exit 1
+fi
+
+INFO_PAYLOAD=$(jq -n --arg command $'*** Begin Patch\n*** Update File: mobile/lib/info only.dart\n*** End Patch' \
+  '{tool_input: {command: $command}}')
+INFO_OUTPUT=$(cd "$TEST_REPO" && \
+  env PATH="$BIN_DIR:/usr/bin:/bin" \
+    TEST_DART="$BIN_DIR/test-dart" \
+    DART_CALL_LOG="$CALL_LOG" \
+    "$POST_EDIT_HOOK" <<< "$INFO_PAYLOAD")
+
+if ! printf '%s\n' "$INFO_OUTPUT" | jq -e \
+  '.decision == "block" and (.reason | contains("info -"))' >/dev/null; then
+  echo "Post-edit hook did not block info-level diagnostics reported with exit 0." >&2
+  exit 1
+fi
+
+# A file with no diagnostics must not block, or every edit stalls.
+CLEAN_PAYLOAD=$(jq -n --arg command $'*** Begin Patch\n*** Update File: mobile/lib/clean.dart\n*** End Patch' \
+  '{tool_input: {command: $command}}')
+CLEAN_OUTPUT=$(cd "$TEST_REPO" && \
+  env PATH="$BIN_DIR:/usr/bin:/bin" \
+    TEST_DART="$BIN_DIR/test-dart" \
+    DART_CALL_LOG="$CALL_LOG" \
+    "$POST_EDIT_HOOK" <<< "$CLEAN_PAYLOAD")
+
+if [ -n "$CLEAN_OUTPUT" ]; then
+  echo "Post-edit hook blocked a file with no diagnostics: $CLEAN_OUTPUT" >&2
   exit 1
 fi
 
