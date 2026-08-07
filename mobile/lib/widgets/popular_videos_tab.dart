@@ -47,12 +47,20 @@ class PopularVideosTab extends ConsumerStatefulWidget {
     this.screenAnalytics,
     this.feedTracker,
     this.errorTracker,
+    this.slowLoadThresholdMs = _slowFeedLoadThresholdMs,
   });
 
   /// Optional analytics services (for testing, defaults to singletons)
   final ScreenAnalyticsService? screenAnalytics;
   final FeedPerformanceTracker? feedTracker;
   final ErrorAnalyticsTracker? errorTracker;
+
+  /// Elapsed load time past which the load is reported as slow.
+  ///
+  /// Overridable because the elapsed time comes from the wall clock, which
+  /// `fakeAsync` cannot advance — a test would otherwise have to sleep for
+  /// [_slowFeedLoadThresholdMs] to reach the branch.
+  final int slowLoadThresholdMs;
 
   @override
   ConsumerState<PopularVideosTab> createState() => _PopularVideosTabState();
@@ -63,11 +71,14 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
   late final FeedPerformanceTracker _feedTracker;
   late final ErrorAnalyticsTracker _errorTracker;
   DateTime? _feedLoadStartTime;
+  bool _slowFeedLoadReported = false;
 
   /// Page currently painted, together with the variant it belongs to.
   ///
   /// Keeps the previous grid on screen while a variant switch loads, so the
   /// toggle cross-fades between two feeds instead of dropping to a spinner.
+  /// It also survives an error that arrives after a successful load, so a
+  /// failed refresh leaves the working grid up instead of blanking it.
   ({PopularVideosVariant variant, VideoFeedState state})? _rendered;
 
   @override
@@ -97,15 +108,21 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
     // Track feed loading start
     if (feedAsync.isLoading && _feedLoadStartTime == null) {
       _feedLoadStartTime = DateTime.now();
+      _slowFeedLoadReported = false;
       _feedTracker.startFeedLoad('popular');
     }
 
-    // A held page outranks an in-flight load; a hard error only wins when
-    // nothing is held.
+    // A held page outranks an in-flight load. A hard error outranks both.
     final feedState = feedAsync.value;
     final showsSelectedVariant =
         feedState != null && loadedVariant == selectedVariant;
     if (showsSelectedVariant) {
+      // Captured here rather than from a listener because the very first
+      // frame that carries the new variant must already paint it: a
+      // `ref.listen` callback runs after this build, so the tab would paint
+      // the outgoing page for one extra frame and the cross-fade would start
+      // late. Assigning from build is safe because the value is derived
+      // entirely from providers this build already read.
       _rendered = (variant: selectedVariant, state: feedState);
       _trackDataState(feedState.videos);
     }
@@ -217,20 +234,25 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
   /// A variant switch holds the previous page instead of the spinner, so
   /// gating this on the spinner branch would drop the signal for exactly
   /// the loads the user waits on.
+  ///
+  /// Reports at most once per load. The held-page branch runs on every
+  /// rebuild while the switch is in flight and never clears
+  /// [_feedLoadStartTime] the way [_trackDataState] does, so an unguarded
+  /// report would emit one event per rebuild for a single slow load.
   void _trackSlowLoadIfNeeded() {
-    if (_feedLoadStartTime != null) {
-      final elapsed = DateTime.now()
-          .difference(_feedLoadStartTime!)
-          .inMilliseconds;
-      if (elapsed > _slowFeedLoadThresholdMs) {
-        _errorTracker.trackSlowOperation(
-          operation: 'popular_feed_load',
-          durationMs: elapsed,
-          thresholdMs: _slowFeedLoadThresholdMs,
-          location: 'explore_popular',
-        );
-      }
-    }
+    final startedAt = _feedLoadStartTime;
+    if (startedAt == null || _slowFeedLoadReported) return;
+
+    final elapsed = DateTime.now().difference(startedAt).inMilliseconds;
+    if (elapsed <= widget.slowLoadThresholdMs) return;
+
+    _slowFeedLoadReported = true;
+    _errorTracker.trackSlowOperation(
+      operation: 'popular_feed_load',
+      durationMs: elapsed,
+      thresholdMs: widget.slowLoadThresholdMs,
+      location: 'explore_popular',
+    );
   }
 }
 

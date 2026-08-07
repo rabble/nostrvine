@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:analytics/analytics.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -22,6 +23,9 @@ class _MockVideoEventService extends Mock implements VideoEventService {}
 
 class _MockContentBlocklistRepository extends Mock
     implements ContentBlocklistRepository {}
+
+class _MockErrorAnalyticsTracker extends Mock
+    implements ErrorAnalyticsTracker {}
 
 void main() {
   group(PopularVideosTab, () {
@@ -143,6 +147,87 @@ void main() {
         );
       },
     );
+
+    testWidgets('reports a slow variant switch once, not once per rebuild', (
+      tester,
+    ) async {
+      final errorTracker = _MockErrorAnalyticsTracker();
+      when(
+        () => errorTracker.trackSlowOperation(
+          operation: any(named: 'operation'),
+          durationMs: any(named: 'durationMs'),
+          thresholdMs: any(named: 'thresholdMs'),
+          location: any(named: 'location'),
+        ),
+      ).thenReturn(null);
+
+      when(
+        () => videosRepository.getPopularVideosPage(
+          limit: any(named: 'limit'),
+          until: any(named: 'until'),
+          cursor: any(named: 'cursor'),
+          variant: any(named: 'variant'),
+          skipCache: any(named: 'skipCache'),
+          preferredLanguages: any(named: 'preferredLanguages'),
+          viewerCountry: any(named: 'viewerCountry'),
+        ),
+      ).thenAnswer((invocation) {
+        final variant =
+            invocation.namedArguments[#variant] as PopularVideosVariant;
+        if (variant == PopularVideosVariant.native) {
+          return Future.value(_popularPage([_video('popular-native')]));
+        }
+        // Never completes: the switch stays in flight for the whole test.
+        return Completer<PopularVideosPage>().future;
+      });
+
+      await tester.pumpWidget(
+        testMaterialApp(
+          additionalOverrides: [
+            appReadyProvider.overrideWithValue(true),
+            videosRepositoryProvider.overrideWithValue(videosRepository),
+            videoEventServiceProvider.overrideWithValue(videoEventService),
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              blocklistRepository,
+            ),
+          ],
+          home: Scaffold(
+            body: PopularVideosTab(
+              errorTracker: errorTracker,
+              slowLoadThresholdMs: 0,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await tester.tap(find.text(l10n.categoryGallerySortClassic));
+      await tester.pump();
+
+      // Wall-clock time, because the threshold is measured with DateTime.now()
+      // and fakeAsync cannot advance it.
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 20)),
+      );
+
+      // Stands in for any rebuild while the page is held — a provider tick,
+      // a MediaQuery aspect change, a parent rebuild. The held-page branch
+      // never clears _feedLoadStartTime, so each one reaches the report.
+      for (var i = 0; i < 3; i++) {
+        tester.element(find.byType(PopularVideosTab)).markNeedsBuild();
+        await tester.pump();
+      }
+
+      verify(
+        () => errorTracker.trackSlowOperation(
+          operation: 'popular_feed_load',
+          durationMs: any(named: 'durationMs'),
+          thresholdMs: 0,
+          location: 'explore_popular',
+        ),
+      ).called(1);
+    });
   });
 }
 
