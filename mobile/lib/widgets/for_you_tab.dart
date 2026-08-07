@@ -155,6 +155,11 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
   void _showAlgorithmExplainer(BuildContext context) {
     VineBottomSheet.show(
       context: context,
+      // Long-form content: keep the pre-design-system sizing so the explainer
+      // still opens nearly full-height instead of the 0.6 default.
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
       buildScrollBody: (scrollController) => _AlgorithmExplainerSheet(
         scrollController: scrollController,
       ),
@@ -246,7 +251,6 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
                     const DivineIcon(
                       icon: DivineIconName.sparkle,
                       color: VineTheme.vineGreen,
-                      size: 20,
                     ),
                     const SizedBox(width: 8),
                     Text(
