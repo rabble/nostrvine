@@ -49,6 +49,7 @@ class DivineCheckboxTile extends StatelessWidget {
           enabled: isEnabled,
           checked: value,
           child: ListTile(
+            contentPadding: const .symmetric(horizontal: 16),
             enabled: isEnabled,
             leading: DivineSpriteCheckbox(
               state: value
