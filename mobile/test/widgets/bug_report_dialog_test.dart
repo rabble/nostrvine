@@ -13,6 +13,7 @@ import 'package:openvine/blocs/bug_report/bug_report_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';
+import 'package:openvine/widgets/support_public_submission_notice.dart';
 
 class _MockBugReportService extends Mock implements BugReportService {}
 
@@ -161,6 +162,22 @@ void main() {
       expect(find.text(l10n.bugReportDescriptionRequiredLabel), findsOneWidget);
       expect(find.text(l10n.bugReportStepsLabel), findsOneWidget);
       expect(find.text(l10n.bugReportExpectedBehaviorLabel), findsOneWidget);
+    });
+
+    testWidgets('renders the public submission warning above the form', (
+      tester,
+    ) async {
+      await openFlow(tester);
+
+      // The warning only works if it is read before anything is typed, so
+      // pin it above the first field rather than merely present.
+      final warning = tester.getTopLeft(
+        find.byType(SupportPublicSubmissionNotice),
+      );
+      final subject = tester.getTopLeft(
+        find.text(l10n.supportSubjectRequiredLabel),
+      );
+      expect(warning.dy, lessThan(subject.dy));
     });
 
     testWidgets('keeps actions out of the scrollable form', (tester) async {
