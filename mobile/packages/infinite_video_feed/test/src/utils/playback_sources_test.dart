@@ -211,6 +211,17 @@ void main() {
       );
     });
 
+    test('does not let a hash-like 422 mask explicit HTTP 404', () {
+      expect(
+        classifyVideoError(
+          errorMessage:
+              'HTTP 404 Not Found: https://media.divine.video/a422b/video.mp4',
+          source: 'https://media.divine.video/$_hash/720p.mp4',
+        ),
+        equals(VideoErrorType.notFound),
+      );
+    });
+
     test('returns generic for Android response-code 202 messages', () {
       expect(
         classifyVideoError(
@@ -284,6 +295,15 @@ void main() {
     test('does not match unrelated 202 numbers', () {
       expect(
         isMediaProcessingError(Exception('Response completed in 2025 ms')),
+        isFalse,
+      );
+    });
+
+    test('does not match status-like numbers inside hex hashes', () {
+      expect(
+        isMediaProcessingError(
+          Exception('HTTP load failed for https://media.divine.video/a422b'),
+        ),
         isFalse,
       );
     });

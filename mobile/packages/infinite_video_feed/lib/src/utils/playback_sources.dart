@@ -81,12 +81,6 @@ VideoErrorType classifyVideoError({
   if (typedErrorType != null) return typedErrorType;
 
   final lower = (errorMessage ?? '').toLowerCase();
-  // Divine derivative URLs can legitimately return HTTP 202 while MP4/HLS
-  // processing catches up after upload. Treat that as transient playback
-  // failure, not as proof that the blob is missing.
-  if (_mentionsHttpStatus(lower, 202) || _mentionsHttpStatus(lower, 422)) {
-    return VideoErrorType.generic;
-  }
   if (lower.contains('401') || lower.contains('unauthorized')) {
     return VideoErrorType.ageRestricted;
   }
@@ -95,6 +89,12 @@ VideoErrorType classifyVideoError({
   }
   if (lower.contains('404') || lower.contains('not found')) {
     return VideoErrorType.notFound;
+  }
+  // Divine derivative URLs can legitimately return HTTP 202/422 while MP4/HLS
+  // processing catches up after upload. Treat those as transient playback
+  // failures, not as proof that the blob is missing.
+  if (_mentionsHttpStatus(lower, 202) || _mentionsHttpStatus(lower, 422)) {
+    return VideoErrorType.generic;
   }
 
   // Only use the Divine blob heuristic when a concrete source was provided
@@ -141,5 +141,5 @@ bool _mentionsHttpStatus(String lower, int status) {
       !lower.contains('response code')) {
     return false;
   }
-  return RegExp('(^|[^0-9])$status([^0-9]|\$)').hasMatch(lower);
+  return RegExp('(^|[^0-9a-f])$status([^0-9a-f]|\$)').hasMatch(lower);
 }

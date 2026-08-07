@@ -237,9 +237,6 @@ class VideoStats {
           }
           if (tagName == 'url' && videoUrl.isEmpty) videoUrl = tagValue;
           if (tagName == 'd' && dTag.isEmpty) dTag = tagValue;
-          if ((tagName == 'a' || tagName == 'A') && dTag.isEmpty) {
-            dTag = _dTagFromAddressableId(tagValue) ?? '';
-          }
           if (tagName == 'x' && (sha256 == null || sha256.isEmpty)) {
             sha256 = tagValue; // x tag often contains sha256 hash
           }

@@ -80,7 +80,9 @@ class _RecordingFactory {
       pubkey,
     );
     when(() => client.hasKeys).thenReturn(hasKeys);
-    when(() => client.publicKey).thenReturn(pubkey ?? '');
+    when(
+      () => client.publicKey,
+    ).thenReturn(pubkey ?? '');
     when(client.initialize).thenAnswer((_) {
       initializePubkeys.add(pubkey);
       return initializeCompleter?.future ?? Future<void>.value();
@@ -778,82 +780,85 @@ void main() {
       );
     });
 
-    test('same-pubkey RPC-upgrade nudge after a successful restore is deduped '
-        '(no spurious NostrClient rebuild) — #5909', () async {
-      // Reproduces the production Divine-OAuth cold-start sequence that
-      // issue #5909 flags. On every production launch NostrService.build()
-      // runs BEFORE AuthService restores the identity (Case B: the
-      // corrupted-video-repair microtask forces the provider ahead of the
-      // MethodChannel-gated key-storage restore), so build() sees a null
-      // identity and creates a placeholder client. The `authenticated`
-      // restore then recreates the client once (placeholder -> real) and,
-      // on success, records _lastPubkey. The RPC-upgrade path later re-emits
-      // the SAME auth state unconditionally (auth_service.dart:733) once the
-      // background Keycast refresh resolves; because it is serialized behind
-      // the restore on _authStateChangeQueue and carries the same pubkey, it
-      // must be deduped — NOT trigger a second full client rebuild.
-      //
-      // Guards the WAI conclusion of #5909: if the queue serialization or
-      // the `newPubkey != _lastPubkey` dedup ever regressed, this nudge
-      // would rebuild the whole client mid-startup and this test would fail
-      // (callCount 3 instead of 2).
+    test(
+      'same-pubkey RPC-upgrade nudge after a successful restore is deduped '
+      '(no spurious NostrClient rebuild) — #5909',
+      () async {
+        // Reproduces the production Divine-OAuth cold-start sequence that
+        // issue #5909 flags. On every production launch NostrService.build()
+        // runs BEFORE AuthService restores the identity (Case B: the
+        // corrupted-video-repair microtask forces the provider ahead of the
+        // MethodChannel-gated key-storage restore), so build() sees a null
+        // identity and creates a placeholder client. The `authenticated`
+        // restore then recreates the client once (placeholder -> real) and,
+        // on success, records _lastPubkey. The RPC-upgrade path later re-emits
+        // the SAME auth state unconditionally (auth_service.dart:733) once the
+        // background Keycast refresh resolves; because it is serialized behind
+        // the restore on _authStateChangeQueue and carries the same pubkey, it
+        // must be deduped — NOT trigger a second full client rebuild.
+        //
+        // Guards the WAI conclusion of #5909: if the queue serialization or
+        // the `newPubkey != _lastPubkey` dedup ever regressed, this nudge
+        // would rebuild the whole client mid-startup and this test would fail
+        // (callCount 3 instead of 2).
 
-      // Case B: currentIdentity is null at build() (baseline from setUp).
-      final container = createContainer();
-      addTearDown(container.dispose);
+        // Case B: currentIdentity is null at build() (baseline from setUp).
+        final container = createContainer();
+        addTearDown(container.dispose);
 
-      container.read(nostrServiceProvider);
-      await Future<void>.delayed(Duration.zero);
-      expect(
-        factory.callCount,
-        equals(1),
-        reason:
-            'build() creates the placeholder client before restore (Case B).',
-      );
-      expect(factory.signers.single, isNull);
+        container.read(nostrServiceProvider);
+        await Future<void>.delayed(Duration.zero);
+        expect(
+          factory.callCount,
+          equals(1),
+          reason:
+              'build() creates the placeholder client before restore (Case B).',
+        );
+        expect(factory.signers.single, isNull);
 
-      // Identity restore: the authenticated emission carries the real
-      // identity, recreating the placeholder into a real client exactly once.
-      when(() => mockAuth.currentIdentity).thenReturn(identityA);
-      when(() => mockAuth.currentPublicKeyHex).thenReturn(pubkeyA);
-      authStream.add(AuthState.authenticated);
-      await Future<void>.delayed(Duration.zero);
-      await Future<void>.delayed(Duration.zero);
+        // Identity restore: the authenticated emission carries the real
+        // identity, recreating the placeholder into a real client exactly once.
+        when(() => mockAuth.currentIdentity).thenReturn(identityA);
+        when(() => mockAuth.currentPublicKeyHex).thenReturn(pubkeyA);
+        authStream.add(AuthState.authenticated);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
 
-      expect(
-        factory.callCount,
-        equals(2),
-        reason:
-            'the authenticated restore recreates once (placeholder -> real).',
-      );
-      expect(factory.signers.last, same(identityA));
-      expect(
-        container.read(nostrSessionProvider).phase,
-        equals(NostrSessionPhase.nostrReady),
-        reason:
-            'the successful restore init records _lastPubkey and marks ready.',
-      );
+        expect(
+          factory.callCount,
+          equals(2),
+          reason:
+              'the authenticated restore recreates once (placeholder -> real).',
+        );
+        expect(factory.signers.last, same(identityA));
+        expect(
+          container.read(nostrSessionProvider).phase,
+          equals(NostrSessionPhase.nostrReady),
+          reason:
+              'the successful restore init records _lastPubkey and marks ready.',
+        );
 
-      // RPC-upgrade nudge: same pubkey re-emitted after the background
-      // Keycast upgrade resolves (auth_service.dart:733, unconditional add).
-      authStream.add(AuthState.authenticated);
-      await Future<void>.delayed(Duration.zero);
-      await Future<void>.delayed(Duration.zero);
+        // RPC-upgrade nudge: same pubkey re-emitted after the background
+        // Keycast upgrade resolves (auth_service.dart:733, unconditional add).
+        authStream.add(AuthState.authenticated);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
 
-      expect(
-        factory.callCount,
-        equals(2),
-        reason:
-            'a same-pubkey RPC-upgrade nudge must be deduped '
-            '(newPubkey == _lastPubkey) — no spurious NostrClient rebuild '
-            'during startup (#5909).',
-      );
-      expect(
-        container.read(nostrServiceProvider),
-        same(factory.clients.last),
-        reason: 'the client identity is unchanged by the deduped nudge.',
-      );
-    });
+        expect(
+          factory.callCount,
+          equals(2),
+          reason:
+              'a same-pubkey RPC-upgrade nudge must be deduped '
+              '(newPubkey == _lastPubkey) — no spurious NostrClient rebuild '
+              'during startup (#5909).',
+        );
+        expect(
+          container.read(nostrServiceProvider),
+          same(factory.clients.last),
+          reason: 'the client identity is unchanged by the deduped nudge.',
+        );
+      },
+    );
 
     test(
       'does not rebuild the connecting client when a same-pubkey nudge '
@@ -1159,7 +1164,10 @@ void main() {
       expect(factory.callCount, equals(2));
       expect(factory.signers.last, same(identityB));
       expect(container.read(nostrServiceProvider), same(factory.clients.last));
-      expect(container.read(nostrSessionProvider).pubkey, equals(pubkeyB));
+      expect(
+        container.read(nostrSessionProvider).pubkey,
+        equals(pubkeyB),
+      );
       expect(
         container.read(nostrSessionProvider).phase,
         equals(NostrSessionPhase.nostrReady),
@@ -1408,14 +1416,17 @@ void main() {
         when(() => mockAuth.currentIdentity).thenReturn(identityA);
 
         final errors = <Object>[];
-        await runZonedGuarded(() async {
-          final container = createContainer();
-          container.read(nostrServiceProvider);
-          container.dispose();
+        await runZonedGuarded(
+          () async {
+            final container = createContainer();
+            container.read(nostrServiceProvider);
+            container.dispose();
 
-          await Future<void>.delayed(Duration.zero);
-          await Future<void>.delayed(Duration.zero);
-        }, (error, _) => errors.add(error));
+            await Future<void>.delayed(Duration.zero);
+            await Future<void>.delayed(Duration.zero);
+          },
+          (error, _) => errors.add(error),
+        );
 
         expect(
           errors,
@@ -1438,27 +1449,31 @@ void main() {
       // guard, the resumed _isCurrentClientForPubkey reads a disposed ref and
       // throws ("Cannot use the Ref ... after it has been disposed").
       final errors = <Object>[];
-      await runZonedGuarded(() async {
-        // Gate initialize() so _initializeClient parks on the await.
-        factory.initializeCompleters[pubkeyA] = Completer<void>();
+      await runZonedGuarded(
+        () async {
+          // Gate initialize() so _initializeClient parks on the await.
+          factory.initializeCompleters[pubkeyA] = Completer<void>();
 
-        final container = createContainer();
-        container.read(nostrServiceProvider); // schedules _initializeClient
+          final container = createContainer();
+          container.read(nostrServiceProvider); // schedules _initializeClient
 
-        // Let the scheduled microtask reach `await client.initialize()`.
-        await Future<void>.delayed(Duration.zero);
-        expect(
-          factory.initializePubkeys,
-          contains(pubkeyA),
-          reason: '_initializeClient must be parked on the gated initialize()',
-        );
+          // Let the scheduled microtask reach `await client.initialize()`.
+          await Future<void>.delayed(Duration.zero);
+          expect(
+            factory.initializePubkeys,
+            contains(pubkeyA),
+            reason:
+                '_initializeClient must be parked on the gated initialize()',
+          );
 
-        // Dispose mid-init, then let init resume past the await.
-        container.dispose();
-        factory.initializeCompleters[pubkeyA]!.complete();
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
-      }, (error, _) => errors.add(error));
+          // Dispose mid-init, then let init resume past the await.
+          container.dispose();
+          factory.initializeCompleters[pubkeyA]!.complete();
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+        },
+        (error, _) => errors.add(error),
+      );
 
       expect(
         errors,
@@ -1479,22 +1494,25 @@ void main() {
       // _initializeClient into its catch block; without the guard the catch
       // path's ref reads throw on the disposed provider.
       final errors = <Object>[];
-      await runZonedGuarded(() async {
-        factory.initializeCompleters[pubkeyA] = Completer<void>();
+      await runZonedGuarded(
+        () async {
+          factory.initializeCompleters[pubkeyA] = Completer<void>();
 
-        final container = createContainer();
-        container.read(nostrServiceProvider);
+          final container = createContainer();
+          container.read(nostrServiceProvider);
 
-        await Future<void>.delayed(Duration.zero);
-        expect(factory.initializePubkeys, contains(pubkeyA));
+          await Future<void>.delayed(Duration.zero);
+          expect(factory.initializePubkeys, contains(pubkeyA));
 
-        container.dispose();
-        factory.initializeCompleters[pubkeyA]!.completeError(
-          StateError('init failed'),
-        );
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
-      }, (error, _) => errors.add(error));
+          container.dispose();
+          factory.initializeCompleters[pubkeyA]!.completeError(
+            StateError('init failed'),
+          );
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+        },
+        (error, _) => errors.add(error),
+      );
 
       expect(
         errors,

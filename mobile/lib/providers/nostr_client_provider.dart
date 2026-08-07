@@ -627,14 +627,6 @@ class NostrService extends _$NostrService {
       final clientGeneration = _nextClientGeneration();
       _pendingPubkey = newPubkey;
 
-      // NIP-65 discovered-relays callback — see _userRelaysDiscoveredCallbackFor.
-      _registerClientCallbacks(
-        authService: authService,
-        client: newClient,
-        pubkey: newPubkey,
-        clientGeneration: clientGeneration,
-      );
-
       state = newClient;
       _setSessionIdentityState(newPubkey);
 
@@ -643,6 +635,14 @@ class NostrService extends _$NostrService {
         _pendingPubkey = null;
         return;
       }
+
+      // NIP-65 discovered-relays callback — see _userRelaysDiscoveredCallbackFor.
+      _registerClientCallbacks(
+        authService: authService,
+        client: newClient,
+        pubkey: newPubkey,
+        clientGeneration: clientGeneration,
+      );
 
       await _initializeClient(
         client: newClient,
