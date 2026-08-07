@@ -162,7 +162,12 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
 
   @override
   Widget build(BuildContext context) {
-    final syncRepository = ref.watch(soundSyncRepositoryProvider).value;
+    final availability = ref.watch(soundSyncAvailabilityProvider).value;
+    final syncRepository = switch (availability) {
+      SoundSyncAvailable(:final repository) => repository,
+      _ => null,
+    };
+    final locked = availability is SoundSyncVaultLocked;
     final column = Column(
       children: [
         _SearchInput(
@@ -171,7 +176,10 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
         ),
         if (kDebugMode && !kIsWeb)
           _DebugAudioPickerLauncher(onTap: _onAddAudioTap),
-        if (syncRepository != null) const _SyncStatusBanner(),
+        if (locked)
+          const _SyncLockedBanner()
+        else if (syncRepository != null)
+          const _SyncStatusBanner(),
         Expanded(child: _buildContent()),
       ],
     );
@@ -288,6 +296,27 @@ class _SyncStatusBanner extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// Shown instead of [_SyncStatusBanner] when the vault key could not be
+/// unlocked. No [SoundSyncCubit] exists in this case — see
+/// [_SoundsTabState.build] — so this renders the locked copy directly
+/// rather than selecting cubit state.
+class _SyncLockedBanner extends StatelessWidget {
+  const _SyncLockedBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Text(
+        context.l10n.soundSyncStatusLocked,
+        style: VineTheme.labelSmallFont(
+          color: context.vineColors.onSurfaceMuted,
+        ),
+      ),
     );
   }
 }

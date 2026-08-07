@@ -377,7 +377,7 @@ void main() {
       'starts unsynced then picks up sync once the repository resolves '
       '(cold start)',
       () async {
-        // Pins the #6480 re-pointing mechanism: soundSyncRepositoryProvider
+        // Pins the #6480 re-pointing mechanism: soundSyncAvailabilityProvider
         // resolves asynchronously, well after this bloc is constructed at
         // app-shell scope, so a save issued before it resolves must not
         // publish, and a later save must — without recreating the bloc.

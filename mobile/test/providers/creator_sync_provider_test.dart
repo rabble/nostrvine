@@ -1,5 +1,5 @@
-// ABOUTME: Tests the soundSyncRepositoryProvider nullable-gate branches.
-// ABOUTME: Covers signed-out, not-ready, vault-key-unavailable, and ready.
+// ABOUTME: Tests the soundSyncAvailabilityProvider outcome branches.
+// ABOUTME: Covers signed-out, not-ready, vault-key-locked, and ready.
 
 import 'dart:convert';
 import 'dart:typed_data';
@@ -39,7 +39,7 @@ void main() {
   const testPubkey =
       'a1b2c3d4e5f6789012345678901234567890abcdef1234567890123456789012';
 
-  group('soundSyncRepositoryProvider', () {
+  group('soundSyncAvailabilityProvider', () {
     late SharedPreferences prefs;
     late SavedSoundsService savedSoundsService;
 
@@ -68,21 +68,23 @@ void main() {
       );
     }
 
-    test('resolves to null when signed out', () async {
+    test('resolves to session-not-ready when signed out', () async {
       final container = createContainer(
         readiness: const NostrSessionReadiness.signedOut(),
       );
       addTearDown(container.dispose);
 
-      final repository = await container.read(
-        soundSyncRepositoryProvider.future,
+      final availability = await container.read(
+        soundSyncAvailabilityProvider.future,
       );
 
-      expect(repository, isNull);
+      expect(availability, isA<SoundSyncSessionNotReady>());
+      expect(container.read(soundSyncRepositoryValueProvider), isNull);
     });
 
     test(
-      'resolves to null when identity is known but the client is not ready',
+      'resolves to session-not-ready when identity is known but the '
+      'client is not ready',
       () async {
         final container = createContainer(
           readiness: const NostrSessionReadiness.identityKnown(
@@ -91,38 +93,44 @@ void main() {
         );
         addTearDown(container.dispose);
 
-        final repository = await container.read(
-          soundSyncRepositoryProvider.future,
+        final availability = await container.read(
+          soundSyncAvailabilityProvider.future,
         );
 
-        expect(repository, isNull);
+        expect(availability, isA<SoundSyncSessionNotReady>());
+        expect(container.read(soundSyncRepositoryValueProvider), isNull);
       },
     );
 
-    test('resolves to null when the vault key cannot be obtained', () async {
-      final mockClient = _MockNostrClient();
-      final mockSigner = _MockNostrSigner();
-      when(() => mockClient.signer).thenReturn(mockSigner);
-      when(() => mockClient.hasKeys).thenReturn(true);
-      when(() => mockClient.publicKey).thenReturn(testPubkey);
-      // No signed-in account from the signer's perspective — VaultKeyService
-      // throws VaultKeyUnavailableException before ever touching the client.
-      when(mockSigner.getPublicKey).thenAnswer((_) async => null);
+    test(
+      'resolves to vault-locked when the vault key cannot be obtained',
+      () async {
+        final mockClient = _MockNostrClient();
+        final mockSigner = _MockNostrSigner();
+        when(() => mockClient.signer).thenReturn(mockSigner);
+        when(() => mockClient.hasKeys).thenReturn(true);
+        when(() => mockClient.publicKey).thenReturn(testPubkey);
+        // No signed-in account from the signer's perspective —
+        // VaultKeyService throws VaultKeyUnavailableException before ever
+        // touching the client.
+        when(mockSigner.getPublicKey).thenAnswer((_) async => null);
 
-      final container = createContainer(
-        readiness: NostrSessionReadiness.nostrReady(
-          pubkey: testPubkey,
-          client: mockClient,
-        ),
-      );
-      addTearDown(container.dispose);
+        final container = createContainer(
+          readiness: NostrSessionReadiness.nostrReady(
+            pubkey: testPubkey,
+            client: mockClient,
+          ),
+        );
+        addTearDown(container.dispose);
 
-      final repository = await container.read(
-        soundSyncRepositoryProvider.future,
-      );
+        final availability = await container.read(
+          soundSyncAvailabilityProvider.future,
+        );
 
-      expect(repository, isNull);
-    });
+        expect(availability, isA<SoundSyncVaultLocked>());
+        expect(container.read(soundSyncRepositoryValueProvider), isNull);
+      },
+    );
 
     test(
       'returns a repository once the client is ready and the vault key '
@@ -154,11 +162,15 @@ void main() {
         );
         addTearDown(container.dispose);
 
-        final repository = await container.read(
-          soundSyncRepositoryProvider.future,
+        final availability = await container.read(
+          soundSyncAvailabilityProvider.future,
         );
 
-        expect(repository, isA<SoundSyncRepository>());
+        expect(availability, isA<SoundSyncAvailable>());
+        expect(
+          container.read(soundSyncRepositoryValueProvider),
+          isA<SoundSyncRepository>(),
+        );
       },
     );
   });

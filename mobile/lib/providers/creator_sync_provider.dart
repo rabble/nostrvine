@@ -15,25 +15,56 @@ import 'package:openvine/services/creator_sync/prefs_sync_state_store.dart';
 import 'package:openvine/services/creator_sync/saved_sounds_local_store.dart';
 import 'package:openvine/services/creator_sync/secure_vault_key_cache.dart';
 
-/// The sound sync repository, or null until the vault key is available.
+/// Outcome of resolving the sound sync repository for the active session.
+///
+/// Distinguishes "not ready yet" (signed out, or the signer-backed client
+/// has not finished advancing to `NostrSessionPhase.nostrReady`) from
+/// "couldn't unlock" (`VaultKeyUnavailableException` — a NIP-46 bunker
+/// refusal, a relay outage at key-fetch time, a malformed remote key
+/// event). The first case means sync is simply off; the second is the
+/// spec-mandated locked state, and `SoundsTab` renders a banner for it.
+sealed class SoundSyncAvailability {
+  const SoundSyncAvailability();
+}
+
+/// The session is not ready to sync yet. Sync stays off; nothing to show.
+class SoundSyncSessionNotReady extends SoundSyncAvailability {
+  const SoundSyncSessionNotReady();
+}
+
+/// The session is ready, but the vault key could not be unlocked.
+class SoundSyncVaultLocked extends SoundSyncAvailability {
+  const SoundSyncVaultLocked();
+}
+
+/// The repository is ready to sync.
+class SoundSyncAvailable extends SoundSyncAvailability {
+  const SoundSyncAvailable(this.repository);
+
+  final SoundSyncRepository repository;
+}
+
+/// Resolves [SoundSyncAvailability] for the active session.
 ///
 /// Follows the nullable-gate pattern already used by
 /// `profileRepository` (`repository_providers.dart`): the repository only
 /// exists once [nostrSessionProvider] reports a signer-backed client ready
-/// for the active identity and the vault key resolves. The nullable gate
-/// alone does not make this identity-stable, though — consumers still need
-/// to react to it flipping from null to non-null, or to a different
-/// instance on an auth change. A leaf-scoped consumer keys a `BlocProvider`
-/// on the resolved value (`SoundsTab`, matching `NotificationsPage`'s
-/// pattern). `SavedSoundsScope` sits above `MaterialApp.router`, where
-/// re-keying re-inflates the whole app shell (#6477/#6480), so it
-/// subscribes to [soundSyncRepositoryStreamProvider] instead and re-points
-/// the dependency in place.
-final soundSyncRepositoryProvider = FutureProvider<SoundSyncRepository?>((
+/// for the active identity and the vault key resolves. The gate alone does
+/// not make this identity-stable, though — consumers still need to react
+/// to it changing, or to a different instance on an auth change. A
+/// leaf-scoped consumer keys a `BlocProvider` on the resolved repository
+/// (`SoundsTab`, matching `NotificationsPage`'s pattern). `SavedSoundsScope`
+/// sits above `MaterialApp.router`, where re-keying re-inflates the whole
+/// app shell (#6477/#6480), so it subscribes to
+/// [soundSyncRepositoryStreamProvider] instead and re-points the dependency
+/// in place.
+final soundSyncAvailabilityProvider = FutureProvider<SoundSyncAvailability>((
   ref,
 ) async {
   final readiness = ref.watch(nostrSessionProvider);
-  if (!readiness.isReadyForActiveClient) return null;
+  if (!readiness.isReadyForActiveClient) {
+    return const SoundSyncSessionNotReady();
+  }
 
   final client = readiness.client!;
   final pubkeyHex = readiness.pubkey!;
@@ -44,7 +75,7 @@ final soundSyncRepositoryProvider = FutureProvider<SoundSyncRepository?>((
   // that throws UnmountedRefException. Reading these here also registers
   // the dependency on the VaultKeyUnavailableException early-return path
   // below, so this provider still rebuilds when they change even when it
-  // resolves to null.
+  // resolves to locked.
   final secureStorage = ref.watch(flutterSecureStorageProvider);
   final sharedPreferences = ref.watch(sharedPreferencesProvider);
   final savedSoundsService = ref.watch(savedSoundsServiceProvider);
@@ -59,47 +90,55 @@ final soundSyncRepositoryProvider = FutureProvider<SoundSyncRepository?>((
   try {
     cipher = SyncCipher(await vaultKeyService.obtain());
   } on VaultKeyUnavailableException {
-    // Expected offline and during cold start. Null keeps the UI disabled
-    // rather than surfacing a spurious failure.
-    return null;
+    // Expected offline and during cold start. Surfaced as the locked
+    // state rather than a spurious failure.
+    return const SoundSyncVaultLocked();
   }
 
-  return SoundSyncRepository(
-    index: SyncIndexClient(
-      client: client,
-      signer: client.signer,
-      cipher: cipher,
+  return SoundSyncAvailable(
+    SoundSyncRepository(
+      index: SyncIndexClient(
+        client: client,
+        signer: client.signer,
+        cipher: cipher,
+      ),
+      state: PrefsSyncStateStore(sharedPreferences, pubkeyHex: pubkeyHex),
+      local: SavedSoundsLocalStore(savedSoundsService),
+      errorReporter: (error, stackTrace, {required site}) {
+        unawaited(
+          CrashReportingService.instance.recordError(
+            error,
+            stackTrace,
+            reason: 'SoundSyncRepository.$site',
+          ),
+        );
+      },
     ),
-    state: PrefsSyncStateStore(sharedPreferences, pubkeyHex: pubkeyHex),
-    local: SavedSoundsLocalStore(savedSoundsService),
-    errorReporter: (error, stackTrace, {required site}) {
-      unawaited(
-        CrashReportingService.instance.recordError(
-          error,
-          stackTrace,
-          reason: 'SoundSyncRepository.$site',
-        ),
-      );
-    },
   );
 });
 
-/// [soundSyncRepositoryProvider] flattened to its resolved value, or null
-/// while loading, on error, or while genuinely unavailable.
+/// [soundSyncAvailabilityProvider] flattened to the repository, or null
+/// while loading, on error, not-ready, or locked.
 ///
 /// Exists so [soundSyncRepositoryStreamProvider] can wrap a plain
 /// `ProviderListenable`, which `identityStreamOf` requires, rather than a
-/// `FutureProvider`'s `AsyncValue`.
+/// `FutureProvider`'s `AsyncValue`. Consumers that only need the repository
+/// itself — not the not-ready/locked distinction — use this or the stream
+/// below rather than [soundSyncAvailabilityProvider] directly.
 final soundSyncRepositoryValueProvider = Provider<SoundSyncRepository?>((
   ref,
 ) {
-  return ref.watch(soundSyncRepositoryProvider).value;
+  final availability = ref.watch(soundSyncAvailabilityProvider).value;
+  return switch (availability) {
+    SoundSyncAvailable(:final repository) => repository,
+    _ => null,
+  };
 });
 
 /// Successive [SoundSyncRepository] instances (including null while
 /// unavailable), for the app-shell `SavedSoundsBloc` that is constructed
 /// once in `SavedSoundsScope` and can never re-read
-/// [soundSyncRepositoryProvider] itself without re-inflating everything
+/// [soundSyncAvailabilityProvider] itself without re-inflating everything
 /// below it. See `identityStreamOf`'s doc comment for the #6480 pattern
 /// this follows.
 final Provider<Stream<SoundSyncRepository?>> soundSyncRepositoryStreamProvider =

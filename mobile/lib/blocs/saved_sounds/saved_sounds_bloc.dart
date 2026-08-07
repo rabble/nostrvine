@@ -24,7 +24,7 @@ class SavedSoundsBloc extends Bloc<SavedSoundsEvent, SavedSoundsState> {
   /// optional: this bloc is built once per account in the app-shell
   /// `SavedSoundsScope` — which sits above `MaterialApp.router`, where
   /// re-keying on the repository re-inflates the whole app shell
-  /// (#6477/#6480) — while `soundSyncRepositoryProvider` resolves
+  /// (#6477/#6480) — while `soundSyncAvailabilityProvider` resolves
   /// asynchronously and can change identity later. A caller that omits the
   /// stream leaves sync permanently off for the bloc's lifetime. Pass
   /// `const Stream.empty()` in tests that don't exercise sync.
@@ -54,7 +54,7 @@ class SavedSoundsBloc extends Bloc<SavedSoundsEvent, SavedSoundsState> {
   /// Mutable by design. `state_management.md` bans mutable bloc fields for
   /// *state*, but an injected dependency is configuration, and this one has
   /// to be swappable in place: the bloc is constructed once while
-  /// `soundSyncRepositoryProvider` resolves asynchronously and can later
+  /// `soundSyncAvailabilityProvider` resolves asynchronously and can later
   /// change identity on auth transitions. `PeopleListsBloc._repository`
   /// carries the same mutable-dependency shape for the same reason.
   SoundSyncRepository? _syncRepository;

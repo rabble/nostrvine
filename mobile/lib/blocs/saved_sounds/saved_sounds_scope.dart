@@ -26,7 +26,7 @@ class SavedSoundsScope extends StatelessWidget {
   /// This scope sits above `MaterialApp.router`, so its `BlocProvider` is
   /// keyed only on the account's storage key — re-keying on the repository
   /// too would re-inflate the whole app shell every time
-  /// `soundSyncRepositoryProvider` resolves (#6477/#6480). The bloc instead
+  /// `soundSyncAvailabilityProvider` resolves (#6477/#6480). The bloc instead
   /// subscribes to this stream and re-points its dependency in place.
   /// Defaults to an empty stream for callers that don't exercise sync.
   final Stream<SoundSyncRepository?> syncRepositoryStream;

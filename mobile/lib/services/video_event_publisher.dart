@@ -211,7 +211,7 @@ class VideoEventPublisher {
   /// Reads the current cross-device sync repository at call time, or null
   /// until the vault key resolves. A getter rather than a captured value:
   /// this publisher lives behind a `keepAlive` Riverpod provider, and
-  /// watching `soundSyncRepositoryProvider` there would rebuild the
+  /// watching `soundSyncAvailabilityProvider` there would rebuild the
   /// provider — discarding `_inFlightDirectPublishes` (the #6018
   /// duplicate-publish coalescer) — every time the vault key resolves,
   /// which lands strictly later than the auth transitions this provider

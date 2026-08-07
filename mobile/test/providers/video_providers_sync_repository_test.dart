@@ -105,7 +105,7 @@ void main() {
 
         final before = container.read(videoEventPublisherProvider);
 
-        // The transition this pins: soundSyncRepositoryProvider resolving
+        // The transition this pins: soundSyncAvailabilityProvider resolving
         // well after videoEventPublisherProvider was first read.
         container.read(_syncRepositorySelector.notifier).state =
             _MockSoundSyncRepository();
