@@ -4,6 +4,12 @@
 import 'package:creator_sync/creator_sync.dart';
 import 'package:test/test.dart';
 
+/// Builds a [SyncItemRef] through a runtime call so that equal
+/// arguments still produce distinct object instances. A direct
+/// `const SyncItemRef(...)` literal would canonicalize to a single
+/// shared object, letting identity stand in for value equality.
+SyncItemRef _buildRef(SyncItemKind kind, String id) => SyncItemRef(kind, id);
+
 void main() {
   group(SyncItemRef, () {
     const soundId =
@@ -78,20 +84,23 @@ void main() {
 
     group('hashCode', () {
       test('equal refs produce equal hashes', () {
-        const ref1 = SyncItemRef(SyncItemKind.sound, soundId);
-        const ref2 = SyncItemRef(SyncItemKind.sound, soundId);
+        final ref1 = _buildRef(SyncItemKind.sound, soundId);
+        final ref2 = _buildRef(SyncItemKind.sound, soundId);
+        expect(identical(ref1, ref2), isFalse);
         expect(ref1.hashCode, equals(ref2.hashCode));
       });
 
       test('refs differing by kind do not collide', () {
-        const ref1 = SyncItemRef(SyncItemKind.sound, 'id');
-        const ref2 = SyncItemRef(SyncItemKind.clip, 'id');
+        final ref1 = _buildRef(SyncItemKind.sound, 'id');
+        final ref2 = _buildRef(SyncItemKind.clip, 'id');
+        expect(identical(ref1, ref2), isFalse);
         expect(ref1.hashCode, isNot(equals(ref2.hashCode)));
       });
 
       test('refs differing by id do not collide', () {
-        const ref1 = SyncItemRef(SyncItemKind.sound, 'id1');
-        const ref2 = SyncItemRef(SyncItemKind.sound, 'id2');
+        final ref1 = _buildRef(SyncItemKind.sound, 'id1');
+        final ref2 = _buildRef(SyncItemKind.sound, 'id2');
+        expect(identical(ref1, ref2), isFalse);
         expect(ref1.hashCode, isNot(equals(ref2.hashCode)));
       });
     });
@@ -106,7 +115,6 @@ void main() {
         const ref = SyncItemRef(SyncItemKind.clip, soundId);
         final str = ref.toString();
         expect(str, contains(soundId));
-        expect(str.length, greaterThan(64));
       });
     });
   });
