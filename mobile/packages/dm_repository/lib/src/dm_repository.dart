@@ -2602,10 +2602,19 @@ class DmRepository {
     _DmRelayListSource source,
   ) {
     if (source == _DmRelayListSource.selfAuthored) {
-      final admitted = <String>{
-        for (final url in urls)
-          if (isRelayUrlAllowed(url)) url,
-      };
+      final admitted = <String>{};
+      for (final url in urls) {
+        if (isRelayUrlAllowed(url)) {
+          admitted.add(url);
+          continue;
+        }
+        // Their own list, so a rejection is a typo they can fix — say so
+        // rather than dropping the entry the way the remote branch does.
+        Log.warning(
+          'Ignoring unusable relay in own kind-10050: $url',
+          category: LogCategory.system,
+        );
+      }
       if (admitted.length <= RelayListCaps.dmInbox) return admitted.toList();
       Log.warning(
         'Own kind-10050 lists ${admitted.length} relays; using the first '
