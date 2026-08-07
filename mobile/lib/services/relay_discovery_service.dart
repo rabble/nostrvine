@@ -469,6 +469,7 @@ class RelayDiscoveryService {
   /// event cannot answer differently depending on which one served it.
   List<DiscoveredRelay> _admitRelayList(Iterable<DiscoveredRelay> candidates) {
     final byHost = <String, DiscoveredRelay>{};
+    var loggedCap = false;
 
     for (final candidate in candidates) {
       final url = candidate.url;
@@ -495,13 +496,16 @@ class RelayDiscoveryService {
       }
 
       if (byHost.length >= RelayListCaps.nip65) {
-        Log.warning(
-          '  kind-10002 lists more than ${RelayListCaps.nip65} relays; '
-          'ignoring the rest',
-          name: 'RelayDiscoveryService',
-          category: LogCategory.auth,
-        );
-        break;
+        if (!loggedCap) {
+          Log.warning(
+            '  kind-10002 lists more than ${RelayListCaps.nip65} relays; '
+            'ignoring additional hosts',
+            name: 'RelayDiscoveryService',
+            category: LogCategory.auth,
+          );
+          loggedCap = true;
+        }
+        continue;
       }
 
       byHost[key] = candidate;

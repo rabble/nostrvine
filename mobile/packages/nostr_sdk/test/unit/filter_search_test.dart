@@ -38,6 +38,32 @@ void main() {
 
       expect(filter.checkEvent(event), isFalse);
     });
+
+    test('matches #t tags exactly and case-sensitively', () {
+      final lowercaseEvent = Event(
+        pubkey,
+        1,
+        const [
+          ['t', 'skateboarding'],
+        ],
+        'hello',
+        createdAt: 1,
+      );
+      final mixedCaseEvent = Event(
+        pubkey,
+        1,
+        const [
+          ['t', 'Skateboarding'],
+        ],
+        'hello',
+        createdAt: 1,
+      );
+
+      final filter = Filter(t: const ['skateboarding']);
+
+      expect(filter.checkEvent(lowercaseEvent), isTrue);
+      expect(filter.checkEvent(mixedCaseEvent), isFalse);
+    });
   });
 
   group('Filter Search Tests', () {

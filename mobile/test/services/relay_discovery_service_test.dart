@@ -304,6 +304,27 @@ void main() {
       expect(relays.first.url, 'wss://flood-0.example');
     });
 
+    test('keeps merging markers for admitted relays after the cap', () {
+      final relays = service.parseRelayListFromJson(
+        tagsJson([
+          ['r', 'wss://relay-0.example', 'read'],
+          for (var i = 1; i < RelayListCaps.nip65; i++)
+            ['r', 'wss://relay-$i.example'],
+          ['r', 'wss://overflow.example'],
+          ['r', 'wss://relay-0.example', 'write'],
+        ]),
+      );
+
+      expect(relays, hasLength(RelayListCaps.nip65));
+      expect(
+        relays.map((relay) => relay.url),
+        isNot(contains('wss://overflow.example')),
+      );
+      expect(relays.first.url, 'wss://relay-0.example');
+      expect(relays.first.read, isTrue);
+      expect(relays.first.write, isTrue);
+    });
+
     test('drops ws:// non-loopback relays', () {
       final relays = service.parseRelayListFromJson(
         tagsJson([
