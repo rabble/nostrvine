@@ -17,6 +17,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/models/video_publish/video_publish_provider_state.dart';
+import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -25,6 +26,7 @@ import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/widgets/video_recorder/modes/capture/video_recorder_capture_stack.dart';
+import 'package:openvine/widgets/video_recorder/modes/capture/video_recorder_stop_motion_budget.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -206,6 +208,33 @@ void main() {
         await tester.pump();
 
         expect(find.byType(VideoRecorderCaptureStack), findsOneWidget);
+      });
+
+      testWidgets('leaves the top bar center slot empty in capture mode', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildTestWidget());
+
+        await tester.pump();
+
+        expect(find.byType(VideoRecorderStopMotionBudget), findsNothing);
+      });
+
+      testWidgets('fills the top bar center slot with the shot budget in '
+          'stop-motion', (tester) async {
+        when(() => recorderBloc.state).thenReturn(
+          const VideoRecorderBlocState(
+            isCameraInitialized: true,
+            canRecord: true,
+            recorderMode: VideoRecorderMode.stopMotion,
+          ),
+        );
+
+        await tester.pumpWidget(buildTestWidget());
+
+        await tester.pump();
+
+        expect(find.byType(VideoRecorderStopMotionBudget), findsOneWidget);
       });
 
       testWidgets('renders bottom bar widget', (tester) async {

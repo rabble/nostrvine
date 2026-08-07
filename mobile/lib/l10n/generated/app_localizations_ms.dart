@@ -8526,6 +8526,17 @@ class AppLocalizationsMs extends AppLocalizations {
       'Tidak dapat mencipta video. Cuba lagi.';
 
   @override
+  String videoRecorderStopMotionShotsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Tinggal $count syot',
+      zero: 'Tiada syot tinggal',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get videoRecorderToggleFlashLabel => 'Togol denyar';
 
   @override

@@ -8557,6 +8557,18 @@ class AppLocalizationsIt extends AppLocalizations {
       'Impossibile creare il video. Riprova.';
 
   @override
+  String videoRecorderStopMotionShotsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count scatti rimasti',
+      one: '1 scatto rimasto',
+      zero: 'Nessuno scatto rimasto',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get videoRecorderToggleFlashLabel => 'Attiva/disattiva flash';
 
   @override

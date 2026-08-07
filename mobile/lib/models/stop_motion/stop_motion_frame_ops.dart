@@ -24,7 +24,7 @@ abstract class StopMotionFrameOps {
   /// Highest number of output frames a still may be held for.
   static const int maxFramesPerImage = 300;
 
-  /// Fallback hold of 1 output frame at 24fps: the floor
+  /// Fallback hold of 1 output frame at 30fps: the floor
   /// [initialFramesPerImage] clamps to, and what
   /// [globalDefaultFramesPerImage] falls back to for an empty frame list.
   ///
@@ -33,6 +33,26 @@ abstract class StopMotionFrameOps {
   /// [minimumInitialDuration]. Nothing outside this file uses this constant;
   /// a new capture path wanting a starting hold wants [initialHold].
   static const int defaultFramesPerImage = 1;
+
+  /// Most stills one capture session fits before the assembled clip would run
+  /// past [VideoEditorConstants.maxDuration].
+  ///
+  /// A session long enough to clear [minimumInitialDuration] on its own holds
+  /// every still for [defaultFramesPerImage] output frame, so the ceiling is
+  /// however many output frames fit in the maximum clip length. Shorter
+  /// sessions are stretched ([initialFramesPerImage]) but stay far below it.
+  static final int maxCaptureFrames =
+      VideoEditorConstants.maxDuration.inMicroseconds *
+      StopMotionRenderService.defaultFrameRate ~/
+      (Duration.microsecondsPerSecond * defaultFramesPerImage);
+
+  /// Stills still available after [captured] shots, floored at zero.
+  ///
+  /// Shooting past [maxCaptureFrames] is not blocked — the recorder keeps
+  /// capturing and the overflow is trimmed in the editor, matching how
+  /// capture mode lets a recording run past the maximum duration.
+  static int remainingCaptureFrames(int captured) =>
+      (maxCaptureFrames - captured).clamp(0, maxCaptureFrames);
 
   /// Shortest a freshly captured session plays for.
   ///

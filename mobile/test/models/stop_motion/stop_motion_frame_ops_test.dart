@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as model show AspectRatio;
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
@@ -9,7 +10,7 @@ import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart' show EditorVideo;
 
 void main() {
-  // At the default 24fps base, one output frame is 1/24s.
+  // One output frame at the render frame rate.
   Duration hold(int framesPerImage) => Duration(
     microseconds:
         (framesPerImage *
@@ -51,6 +52,44 @@ void main() {
     });
   });
 
+  group('maxCaptureFrames / remainingCaptureFrames', () {
+    test('fits exactly the maximum clip length at one frame per still', () {
+      final max = StopMotionFrameOps.maxCaptureFrames;
+
+      expect(
+        StopMotionFrameOps.framesPerImageToDuration(
+              StopMotionFrameOps.defaultFramesPerImage,
+            ) *
+            max,
+        lessThanOrEqualTo(VideoEditorConstants.maxDuration),
+      );
+      expect(
+        StopMotionFrameOps.framesPerImageToDuration(
+              StopMotionFrameOps.defaultFramesPerImage,
+            ) *
+            (max + 1),
+        greaterThan(VideoEditorConstants.maxDuration),
+      );
+    });
+
+    test('counts down as stills are captured', () {
+      final max = StopMotionFrameOps.maxCaptureFrames;
+
+      expect(StopMotionFrameOps.remainingCaptureFrames(0), max);
+      expect(StopMotionFrameOps.remainingCaptureFrames(1), max - 1);
+      expect(StopMotionFrameOps.remainingCaptureFrames(max), 0);
+    });
+
+    test('floors at zero once the budget is blown', () {
+      expect(
+        StopMotionFrameOps.remainingCaptureFrames(
+          StopMotionFrameOps.maxCaptureFrames + 10,
+        ),
+        0,
+      );
+    });
+  });
+
   group('initialFramesPerImage / initialHold', () {
     test('holds a lone still for the whole minimum duration', () {
       expect(
@@ -73,12 +112,22 @@ void main() {
     });
 
     test('keeps the default hold once the stills fill it on their own', () {
+      // Fewest stills that reach the minimum at one output frame each.
+      // Derived rather than hardcoded so a frame-rate change moves the
+      // boundary with it instead of silently invalidating the assertion.
+      final fillingCount =
+          (StopMotionFrameOps.minimumInitialDuration.inMicroseconds /
+                  StopMotionFrameOps.framesPerImageToDuration(
+                    StopMotionFrameOps.defaultFramesPerImage,
+                  ).inMicroseconds)
+              .ceil();
+
       expect(
-        StopMotionFrameOps.initialFramesPerImage(24),
+        StopMotionFrameOps.initialFramesPerImage(fillingCount),
         StopMotionFrameOps.defaultFramesPerImage,
       );
       expect(
-        StopMotionFrameOps.initialFramesPerImage(100),
+        StopMotionFrameOps.initialFramesPerImage(fillingCount * 4),
         StopMotionFrameOps.defaultFramesPerImage,
       );
     });
@@ -267,9 +316,9 @@ void main() {
 
     test('returns the source list when no selected hold actually changes', () {
       final frames = [
-        const StopMotionClipFrame(
+        StopMotionClipFrame(
           path: 'f0.jpg',
-          duration: Duration(microseconds: 166667), // 4 frames @ 24fps
+          duration: hold(4),
           holdOverridden: true,
         ),
         StopMotionClipFrame(path: 'f1.jpg', duration: hold(1)),
@@ -282,7 +331,7 @@ void main() {
   });
 
   group('insertIndexAtPosition', () {
-    final frames = framesOf([1, 1, 1]); // three 1/24s stills
+    final frames = framesOf([1, 1, 1]); // three one-frame stills
 
     test('prepends at (or before) the start', () {
       expect(

@@ -8430,6 +8430,17 @@ class AppLocalizationsTr extends AppLocalizations {
       'Video oluşturulamadı. Tekrar deneyin.';
 
   @override
+  String videoRecorderStopMotionShotsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count çekim kaldı',
+      zero: 'Kalan çekim yok',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get videoRecorderToggleFlashLabel => 'Flaşı değiştir';
 
   @override

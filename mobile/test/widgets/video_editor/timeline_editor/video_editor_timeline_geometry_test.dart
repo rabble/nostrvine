@@ -1237,7 +1237,7 @@ void main() {
   });
 
   group(growAudioToCompositionEnd, () {
-    // The #6401 shape: nine stills at the default 1/24s hold (375ms) with a
+    // The #6401 shape: nine stills at a one-frame hold (375ms) with a
     // sound clamped to that end, then a hold change stretching them to 6.375s.
     const shortComposition = Duration(milliseconds: 375);
     const longComposition = Duration(milliseconds: 6375);
@@ -1266,7 +1266,7 @@ void main() {
     });
 
     test('follows the end across the millisecond the window persists at', () {
-      // Nine 1/24s holds are 375003µs, but the window round-trips through
+      // Nine such holds are 375003µs, but the window round-trips through
       // editor history as whole milliseconds. Comparing it against the exact
       // composition end would read the truncation as a deliberate trim.
       final track = _audio(

@@ -14598,6 +14598,12 @@ abstract class AppLocalizations {
   /// **'Couldn\'t create the video. Try again.'**
   String get videoRecorderStopMotionAssembleFailed;
 
+  /// Label above the stop-motion budget bar in the recorder top bar, counting how many more stills fit in the maximum clip length.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No shots left} =1{1 shot left} other{{count} shots left}}'**
+  String videoRecorderStopMotionShotsLeft(int count);
+
   /// No description provided for @videoRecorderToggleFlashLabel.
   ///
   /// In en, this message translates to:

@@ -8654,6 +8654,19 @@ class AppLocalizationsRo extends AppLocalizations {
       'Videoclipul nu a putut fi creat. Încearcă din nou.';
 
   @override
+  String videoRecorderStopMotionShotsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Au mai rămas $count de cadre',
+      few: 'Au mai rămas $count cadre',
+      one: 'A mai rămas 1 cadru',
+      zero: 'Nu mai sunt cadre',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get videoRecorderToggleFlashLabel => 'Activează/dezactivează blițul';
 
   @override

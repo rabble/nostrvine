@@ -8570,6 +8570,18 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi magawa ang video. Subukan ulit.';
 
   @override
+  String videoRecorderStopMotionShotsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count shot na lang',
+      one: '1 shot na lang',
+      zero: 'Wala nang natitirang shot',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get videoRecorderToggleFlashLabel => 'I-toggle ang flash';
 
   @override

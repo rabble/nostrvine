@@ -1856,6 +1856,14 @@
     "videoRecorderCaptureNextLabel": "Susunod",
     "videoRecorderLipSyncAddAudioFirst": "Magdagdag ng audio bago mag-record",
     "videoRecorderStopMotionAssembleFailed": "Hindi magawa ang video. Subukan ulit.",
+    "videoRecorderStopMotionShotsLeft": "{count, plural, =0{Wala nang natitirang shot} =1{1 shot na lang} other{{count} shot na lang}}",
+    "@videoRecorderStopMotionShotsLeft": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "videoRecorderToggleFlashLabel": "I-toggle ang flash",
     "videoRecorderCycleTimerLabel": "I-cycle ang timer",
     "videoRecorderToggleAspectRatioLabel": "I-toggle ang aspect ratio",

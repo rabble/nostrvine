@@ -232,7 +232,7 @@ List<AudioEvent> rebaseAnchoredAudioForClipState(
 /// Granularity an audio window survives a history/draft round-trip at.
 ///
 /// [AudioEvent] serializes its window in whole milliseconds while a stop-motion
-/// composition is microsecond-accurate (a 1/24s hold is 41667µs), so a window
+/// composition is microsecond-accurate (a 1/30s hold is 33333µs), so a window
 /// restored from history sits up to a millisecond short of the composition end
 /// it was clamped to. Comparisons against the composition end carry that slack.
 const _audioWindowResolution = Duration(milliseconds: 1);

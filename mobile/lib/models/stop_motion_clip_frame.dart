@@ -44,7 +44,7 @@ class StopMotionClipFrame {
   /// (mirrors [DivineVideoClip.toJson]).
   ///
   /// The hold is stored in microseconds: frame holds are fractions of the
-  /// output frame grid (2 frames @ 24fps = 83333µs) and a millisecond
+  /// output frame grid (2 frames @ 30fps = 66667µs) and a millisecond
   /// round-trip would silently shift them off the grid — and make history
   /// snapshots compare unequal to the live clip state on every sync.
   Map<String, dynamic> toJson() => {
