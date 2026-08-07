@@ -540,10 +540,13 @@ class _TopBarState extends State<_TopBar> {
   void initState() {
     super.initState();
     // Armed from a post-frame callback, the same shape
-    // [CodecHeavySurfaceGuard] uses. Reading the route during the first build
-    // is unreliable — it still resolves to the route being pushed *from*,
-    // whose transition has long completed, so the bar would decide it had
-    // nothing to wait for.
+    // [CodecHeavySurfaceGuard] uses, for two independent reasons. Reading the
+    // route in initState throws outright, and reading it during the first
+    // build resolves the right route but the wrong animation: Navigator
+    // renders a newly pushed route offstage on its first frame so heroes can
+    // be measured, and ModalRoute swaps in kAlwaysCompleteAnimation while
+    // offstage. The bar would see `completed` and decide it had nothing to
+    // wait for.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _armAfterEntrance();
     });
@@ -1013,7 +1016,11 @@ class _FadingSlotImageState extends State<_FadingSlotImage> {
               opacity: _hasFrame ? 1 : 0,
               // A cache hit paints on the first build; fading in from
               // nothing there would invent a transition nobody asked for.
-              duration: wasSynchronouslyLoaded ? Duration.zero : _fadeDuration,
+              duration:
+                  wasSynchronouslyLoaded ||
+                      MediaQuery.disableAnimationsOf(context)
+                  ? Duration.zero
+                  : _fadeDuration,
               curve: Curves.easeOut,
               onEnd: _dropFallback,
               child: child,
