@@ -50,8 +50,8 @@ signature locally without changing tracked files — see
 Debug entitlements intentionally omit provisioning-backed capabilities
 such as associated domains and explicit keychain access groups; those
 require a team profile and remain in the team-signed configurations.
-Profile and Release remain team-signed with
-`DEVELOPMENT_TEAM = GZCZBKH7MY`.
+Profile and Release remain team-signed by default through
+`DIVINE_RELEASE_*` variables in `Runner/Configs/Release.xcconfig`.
 
 Two related changes make that signed debug build run:
 
@@ -141,6 +141,12 @@ that survives rebuilds, and the prompts stop.
 This is per-machine setup, not a repo default: leaving the tracked
 defaults ad-hoc keeps debug builds working for contributors without
 Apple Developer team membership.
+
+`Runner/Configs/LocalRelease.xcconfig` works the same way for local
+Release and Profile signing overrides. The tracked `DIVINE_RELEASE_*`
+defaults resolve to `Apple Development`, `Automatic`, and
+`GZCZBKH7MY`; local overrides can replace those values without editing
+the Xcode project.
 
 ## If a stale Swift Package Manager cache blocks the build
 

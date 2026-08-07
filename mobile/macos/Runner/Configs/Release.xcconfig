@@ -1,10 +1,11 @@
 #include "../../Flutter/Flutter-Release.xcconfig"
 #include "Warnings.xcconfig"
 
-// Code signing configuration for distribution
-CODE_SIGN_STYLE = Manual
-CODE_SIGN_IDENTITY = Developer ID Application: Verse Communications, Inc. (GZCZBKH7MY)
-DEVELOPMENT_TEAM = GZCZBKH7MY
+// Release/Profile signing defaults, indirected through variables so the Runner
+// target can be overridden locally without touching tracked files.
+DIVINE_RELEASE_CODE_SIGN_IDENTITY = Apple Development
+DIVINE_RELEASE_CODE_SIGN_STYLE = Automatic
+DIVINE_RELEASE_DEVELOPMENT_TEAM = GZCZBKH7MY
 PROVISIONING_PROFILE_SPECIFIER = 
 
 // Enable hardened runtime for notarization
