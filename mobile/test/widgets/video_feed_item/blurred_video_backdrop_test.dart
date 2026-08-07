@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/widgets/blurhash_display.dart';
+import 'package:openvine/widgets/video_clip/clip_thumbnail_image.dart';
 import 'package:openvine/widgets/video_feed_item/blurred_video_backdrop.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
@@ -98,6 +99,31 @@ void main() {
 
         expect(find.byType(BlurhashDisplay), findsNothing);
         expect(find.byType(ImageFiltered), findsNothing);
+        expect(find.byType(VineCachedImage), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'blurs the local poster file when no url is available',
+      (tester) async {
+        // The pre-publish preview has a local thumbnail, never a poster URL.
+        await tester.pumpWidget(
+          WidgetsApp(
+            color: const Color(0xFF000000),
+            builder: (_, _) => const SizedBox(
+              width: 400,
+              height: 800,
+              child: BlurredVideoBackdrop(filePath: '/tmp/poster.jpg'),
+            ),
+          ),
+        );
+
+        final image = tester.widget<ClipThumbnailImage>(
+          find.byType(ClipThumbnailImage),
+        );
+        expect(image.path, equals('/tmp/poster.jpg'));
+        expect(image.fit, equals(BoxFit.cover));
+        expect(find.byType(ImageFiltered), findsOneWidget);
         expect(find.byType(VineCachedImage), findsNothing);
       },
     );
