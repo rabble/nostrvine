@@ -193,6 +193,52 @@ exit 0
 STUB
 chmod +x "${BIN}/sleep"
 
+# Serves canned GHCR responses off the requested URL. `rc_curl` makes every
+# request fail, which is how the offline / rate-limited / GHCR-outage paths are
+# exercised.
+cat >"${BIN}/curl" <<'STUB'
+#!/usr/bin/env bash
+set -u
+
+if [[ -f "${STUB_FIXTURES}/rc_curl" ]]; then
+    exit "$(cat "${STUB_FIXTURES}/rc_curl")"
+fi
+
+url=""
+for arg in "$@"; do
+    case "$arg" in https://*) url="$arg" ;; esac
+done
+
+case "$url" in
+  *"/token?scope"*)  cat "${STUB_FIXTURES}/ghcr_token.json" ;;
+  *"/manifests/"*)   cat "${STUB_FIXTURES}/ghcr_manifest.json" ;;
+  *"/blobs/"*)       cat "${STUB_FIXTURES}/ghcr_config.json" ;;
+  *"/tags/list"*)    cat "${STUB_FIXTURES}/ghcr_tags.json" ;;
+  *) exit 1 ;;
+esac
+STUB
+chmod +x "${BIN}/curl"
+
+# ghcr_fixtures <created_iso8601> <tag_count>
+ghcr_fixtures() {
+    local created="$1" tag_count="$2" tags i
+    echo '{"token":"stub-token"}' >"${FIXTURES}/ghcr_token.json"
+    echo '{"config":{"digest":"sha256:deadbeef"}}' >"${FIXTURES}/ghcr_manifest.json"
+    printf '{"created":"%s"}\n' "$created" >"${FIXTURES}/ghcr_config.json"
+    tags=""
+    for ((i = 0; i < tag_count; i++)); do
+        tags="${tags}\"t${i}\","
+    done
+    printf '{"tags":[%s]}\n' "${tags%,}" >"${FIXTURES}/ghcr_tags.json"
+}
+
+run_staleness() {
+    set +e
+    run_in_sandbox 'preflight_image_staleness "$(dirname "$1")"'
+    last_status=$?
+    set -e
+}
+
 # with_tools <tool>... — exactly these of ss/lsof exist for the next run.
 with_tools() {
     rm -f "${BIN}/ss" "${BIN}/lsof"
@@ -483,6 +529,53 @@ assert_stderr_contains 'blossom upload failed: connection refused' "the seed's o
 assert_stderr_lacks '=== Local stack failed to come up ===' "the stack came up, so it should not claim otherwise"
 assert_stderr_contains 'Service status:' "the service table still helps explain a seed failure"
 assert_stderr_contains 'profile.sh' "the bypass command should still be offered"
+
+# --- A frozen image warns, and names the escape hatch ------------------------
+
+reset_fixtures
+with_tools lsof
+ghcr_fixtures "$(python3 -c 'import datetime;print((datetime.datetime.now(datetime.timezone.utc)-datetime.timedelta(days=163)).isoformat())')" 2
+run_staleness
+
+assert_status 0 "$last_status" "a stale image must never block the stack"
+assert_stderr_contains 'the pinned funnelcake images are stale' "the warning should fire"
+assert_stderr_contains '163 days ago' "the warning should say how stale"
+assert_stderr_contains 'build_funnelcake.sh' "the warning should name the escape hatch"
+assert_stderr_contains '6594' "the warning should cite the tracking issue"
+
+# --- A freshly published image says nothing ---------------------------------
+
+reset_fixtures
+with_tools lsof
+ghcr_fixtures "$(python3 -c 'import datetime;print((datetime.datetime.now(datetime.timezone.utc)-datetime.timedelta(days=1)).isoformat())')" 107
+run_staleness
+
+assert_status 0 "$last_status" "a fresh image is not an error"
+assert_stderr_lacks 'stale' "a fresh image must not warn"
+
+# --- Nanosecond precision and a numeric offset still parse -------------------
+# GHCR stamps e.g. 2026-02-24T12:31:46.817075705-03:00; fromisoformat rejects a
+# 9-digit fraction, so the parser has to drop it.
+
+reset_fixtures
+with_tools lsof
+ghcr_fixtures "2026-02-24T12:31:46.817075705-03:00" 2
+run_staleness
+
+assert_status 0 "$last_status" "an odd timestamp must not break the check"
+assert_stderr_contains 'the pinned funnelcake images are stale' "a 2026-02-24 build is stale and must warn"
+
+# --- An unreachable registry fails open -------------------------------------
+# Offline, rate-limited, or GHCR down: warn about nothing, never block.
+
+reset_fixtures
+with_tools lsof
+ghcr_fixtures "2026-02-24T12:31:46Z" 2
+echo 6 >"${FIXTURES}/rc_curl"
+run_staleness
+
+assert_status 0 "$last_status" "an unreachable registry must not block the stack"
+assert_stderr_lacks 'stale' "nothing is known, so nothing should be claimed"
 
 # ----------------------------------------------------------------------------
 
