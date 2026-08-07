@@ -626,7 +626,7 @@ class _TopBarContent extends StatelessWidget {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const .all(16),
+          padding: const .symmetric(horizontal: 16),
           child: Row(
             spacing: 16,
             children: [

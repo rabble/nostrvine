@@ -253,7 +253,9 @@ void main() {
           find.byKey(const Key('audio_credit_source')),
           'https://example.com/source',
         );
-        await tester.pump();
+        // Settle: the validation line fades out over the section's switcher
+        // rather than disappearing on the next frame.
+        await tester.pumpAndSettle();
 
         final credit = container
             .read(videoEditorProvider)

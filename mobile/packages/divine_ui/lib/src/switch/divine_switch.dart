@@ -115,6 +115,7 @@ class DivineSwitchTile extends StatelessWidget {
       opacity: isEnabled ? 1.0 : disabledOpacity,
       child: MergeSemantics(
         child: ListTile(
+          contentPadding: const .symmetric(horizontal: 16),
           enabled: isEnabled,
           leading:
               leading ??
