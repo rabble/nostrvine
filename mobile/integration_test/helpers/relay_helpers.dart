@@ -38,7 +38,7 @@ Future<PublishedVideo> publishTestVideoEvent({
   final dTag = 'e2e-${DateTime.now().millisecondsSinceEpoch}';
 
   // Upload real blobs to blossom so the app can fetch valid URLs
-  const blossomBase = 'http://$localHost:$localBlossomPort';
+  final blossomBase = 'http://$localHost:$localBlossomPort';
   final blobs = await _ensureTestBlobs();
 
   final event = Event(

@@ -1,15 +1,34 @@
 // ABOUTME: Environment configuration model for poc/staging/test/production/local
 // ABOUTME: Each environment maps to exactly one relay URL and API base URL
 
+import 'package:flutter/foundation.dart';
+
 /// Host address from Android emulator to reach the host machine's localhost.
+///
+/// Only the Android emulator maps this alias to the host. Everywhere else it
+/// is an ordinary routable LAN address that is not the host machine.
+const androidEmulatorHost = '10.0.2.2';
+
+/// Host address every other target uses to reach the host machine.
+const loopbackHost = 'localhost';
+
+/// Host that reaches the local Docker stack from the current platform.
+///
+/// The Android emulator reaches the host through [androidEmulatorHost];
+/// `localhost` there resolves to the emulator itself. Every other target —
+/// iOS Simulator, macOS, web — shares the host's network stack, where
+/// [androidEmulatorHost] routes out to the LAN and times out.
 ///
 /// Mirrored in the native transport-security configs that allow cleartext
 /// to loopback hosts:
 ///   - mobile/android/app/src/main/res/xml/network_security_config.xml
 ///   - mobile/ios/Runner/Info.plist (NSAllowsLocalNetworking)
 ///   - mobile/macos/Runner/Info.plist (NSAllowsLocalNetworking)
-/// Keep this constant in sync with the Android <domain-config> list.
-const localHost = '10.0.2.2';
+/// Keep both constants in sync with the Android <domain-config> list.
+String get localHost =>
+    !kIsWeb && defaultTargetPlatform == TargetPlatform.android
+    ? androidEmulatorHost
+    : loopbackHost;
 
 /// Local Docker stack port mappings.
 const localKeycastPort = 43000;

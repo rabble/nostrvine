@@ -1,10 +1,43 @@
 // ABOUTME: Tests for environment configuration model
 // ABOUTME: Verifies relay URL and API URL generation for each environment
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/environment_config.dart';
 
 void main() {
+  group('localHost', () {
+    tearDown(() => debugDefaultTargetPlatformOverride = null);
+
+    test('is the emulator alias on Android', () {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      expect(localHost, androidEmulatorHost);
+    });
+
+    test('is loopback on iOS', () {
+      // 10.0.2.2 is an Android-emulator-only alias. The iOS Simulator shares
+      // the host's network stack, where it routes out to the LAN instead.
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      expect(localHost, loopbackHost);
+    });
+
+    test('is loopback on macOS', () {
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+      expect(localHost, loopbackHost);
+    });
+
+    test('drives every local endpoint off the resolved host', () {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      const config = EnvironmentConfig(environment: AppEnvironment.local);
+      expect(config.relayUrl, 'ws://$loopbackHost:$localRelayPort');
+      expect(config.apiBaseUrl, 'http://$loopbackHost:$localApiPort');
+      expect(config.blossomUrl, 'http://$loopbackHost:$localBlossomPort');
+      expect(config.indexerRelays, [
+        'ws://$loopbackHost:$localRelayPort',
+      ]);
+    });
+  });
+
   group('AppEnvironment', () {
     test('has five values', () {
       expect(AppEnvironment.values.length, 5);
