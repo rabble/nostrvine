@@ -95,9 +95,24 @@ set -e
 # Report the applied schema version. The pre-flight check can only say the image
 # is old; this names the actual gap, and it is the first thing to look at when a
 # relay behaviour does not match production.
-SCHEMA_VERSION="$(docker compose -f "$COMPOSE_FILE" exec -T funnelcake-clickhouse \
-  clickhouse-client --password clickhouse --query \
-  "SELECT max(version) FROM nostr.schema_migrations" 2>/dev/null | tr -d '[:space:]')"
+#
+# Two bookkeeping tables, because funnelcake replaced golang-migrate with a
+# first-party Rust migrator in 2026-05. The pinned 2026-02-24 image is still
+# golang-migrate and writes `schema_migrations`; anything built from current
+# main writes `funnelcake_schema_migrations`. Ask for the new one first — on an
+# upgraded volume both exist and only the new one keeps advancing.
+_stack_schema_version() {
+  local table
+  for table in funnelcake_schema_migrations schema_migrations; do
+    docker compose -f "$COMPOSE_FILE" exec -T funnelcake-clickhouse \
+      clickhouse-client --password clickhouse \
+      --query "SELECT max(version) FROM nostr.${table}" 2>/dev/null |
+      tr -d '[:space:]' | grep -E '^[0-9]+$' && return 0
+  done
+  return 1
+}
+
+SCHEMA_VERSION="$(_stack_schema_version || true)"
 if [[ -n "$SCHEMA_VERSION" ]]; then
   echo "funnelcake schema version: ${SCHEMA_VERSION}"
 fi
