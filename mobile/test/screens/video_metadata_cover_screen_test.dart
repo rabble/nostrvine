@@ -429,7 +429,9 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 400));
 
-        final setClips = calls.singleWhere((c) => c.method == 'setClips');
+        final setClipsCalls = calls.where((c) => c.method == 'setClips');
+        expect(setClipsCalls, hasLength(1));
+        final setClips = setClipsCalls.first;
         expect(
           (setClips.arguments as Map)['startPositionMs'],
           equals(1500),
