@@ -370,3 +370,109 @@ stack_failure_report() {
     stack_bypass_hint "$script_dir" \
         "A service being down does NOT block tests that never call it."
 }
+
+# --- Image staleness ---------------------------------------------------------
+#
+# `pull_policy: always` re-checks the registry every run, but when the remote
+# digest has not moved that is a no-op: `docker compose pull` prints "Pulled"
+# and nothing changes. The funnelcake images have been frozen at 2026-02-24
+# since before they were ever published by CI (divine-mobile#6594), so the stack
+# looks fresh while running a schema ~130 migrations behind.
+#
+# This warns; it never blocks. GHCR is queried anonymously (no credentials of
+# any kind), and every failure path returns 0 so a rate limit, an offline
+# laptop, or a GHCR outage cannot stop `up.sh`.
+
+_STACK_STALE_AFTER_DAYS="${STACK_STALE_AFTER_DAYS:-45}"
+
+# _stack_ghcr_image_age <package>
+# stdout: "<age_in_days> <tag_count>". Returns 1 if it could not be determined.
+_stack_ghcr_image_age() {
+    local package="$1" token manifest digest created tags
+
+    token="$(curl -fsS --max-time 10 \
+        "https://ghcr.io/token?scope=repository:divinevideo/${package}:pull&service=ghcr.io" \
+        2>/dev/null | python3 -c 'import sys,json; print(json.load(sys.stdin).get("token",""))' 2>/dev/null)" || return 1
+    [[ -n "$token" ]] || return 1
+
+    manifest="$(curl -fsS --max-time 10 -H "Authorization: Bearer ${token}" \
+        -H "Accept: application/vnd.docker.distribution.manifest.v2+json" \
+        "https://ghcr.io/v2/divinevideo/${package}/manifests/latest" 2>/dev/null)" || return 1
+    digest="$(python3 -c 'import sys,json; print((json.load(sys.stdin).get("config") or {}).get("digest",""))' <<<"$manifest" 2>/dev/null)" || return 1
+    [[ -n "$digest" ]] || return 1
+
+    created="$(curl -fsSL --max-time 10 -H "Authorization: Bearer ${token}" \
+        "https://ghcr.io/v2/divinevideo/${package}/blobs/${digest}" 2>/dev/null |
+        python3 -c 'import sys,json; print(json.load(sys.stdin).get("created",""))' 2>/dev/null)" || return 1
+    [[ -n "$created" ]] || return 1
+
+    tags="$(curl -fsS --max-time 10 -H "Authorization: Bearer ${token}" \
+        "https://ghcr.io/v2/divinevideo/${package}/tags/list?n=1000" 2>/dev/null |
+        python3 -c 'import sys,json; print(len(json.load(sys.stdin).get("tags") or []))' 2>/dev/null)" || tags=0
+
+    # Registry timestamps carry up to nanosecond precision and either "Z" or a
+    # numeric offset, e.g. "2026-02-24T12:31:46.817075705-03:00".
+    # datetime.fromisoformat rejects a 9-digit fraction, so drop it entirely —
+    # sub-second precision is irrelevant to an age measured in days.
+    python3 -c '
+import datetime, re, sys
+m = re.match(
+    r"^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.\d+)?(Z|[+-]\d{2}:?\d{2})?$",
+    sys.argv[1].strip(),
+)
+if not m:
+    sys.exit(1)
+base, offset = m.group(1), m.group(2) or "Z"
+if offset == "Z":
+    offset = "+00:00"
+elif ":" not in offset:
+    offset = offset[:3] + ":" + offset[3:]
+created = datetime.datetime.fromisoformat(base + offset)
+now = datetime.datetime.now(datetime.timezone.utc)
+print(int((now - created).total_seconds() // 86400), sys.argv[2])
+' "$created" "$tags" 2>/dev/null || return 1
+}
+
+# preflight_image_staleness <script_dir>
+# Warns when the pinned funnelcake images are stale. Always returns 0.
+preflight_image_staleness() {
+    local script_dir="$1"
+    local package age_and_tags age tags stale=""
+
+    # An explicit image override means the developer already knows.
+    if [[ -n "${FUNNELCAKE_RELAY_IMAGE:-}${FUNNELCAKE_API_IMAGE:-}${FUNNELCAKE_MIGRATE_IMAGE:-}" ]]; then
+        return 0
+    fi
+
+    for package in funnelcake-migrate funnelcake-relay funnelcake-api; do
+        age_and_tags="$(_stack_ghcr_image_age "$package")" || continue
+        age="${age_and_tags% *}"
+        tags="${age_and_tags#* }"
+        if [[ "$age" -ge "$_STACK_STALE_AFTER_DAYS" ]]; then
+            stale="${stale}  ${package}: built ${age} days ago (${tags} tag(s) published)
+"
+        fi
+    done
+
+    [[ -n "$stale" ]] || return 0
+
+    {
+        echo ""
+        echo "WARNING: the pinned funnelcake images are stale."
+        echo ""
+        printf '%s' "$stale"
+        echo ""
+        echo "\`docker compose pull\` reports success because the remote digest has not"
+        echo "moved — there is nothing newer to pull. The relay's kind allowlist is"
+        echo "therefore frozen too, so NIP-17 DMs (kinds 1059 and 10050) are rejected."
+        echo "Tracking: divine-mobile#6594."
+        echo ""
+        echo "To run against current funnelcake instead:"
+        echo ""
+        echo "    bash ${script_dir}/build_funnelcake.sh"
+        echo "    eval \"\$(bash ${script_dir}/build_funnelcake.sh --export-only)\""
+        echo "    mise run local_reset"
+        echo ""
+    } >&2
+    return 0
+}

@@ -40,6 +40,9 @@ if ! preflight_ports "$COMPOSE_FILE"; then
   exit 1
 fi
 
+# Advisory only — a stale mirror still starts, it just cannot serve NIP-17.
+preflight_image_staleness "$SCRIPT_DIR"
+
 UP_CMD=(docker compose -f "$COMPOSE_FILE" up -d --wait)
 if ((${#PULL_ARGS[@]} > 0)); then
   UP_CMD+=("${PULL_ARGS[@]}")
@@ -88,6 +91,16 @@ done
 set +e
 docker compose -f "$COMPOSE_FILE" run --rm funnelcake-local-tuning
 set -e
+
+# Report the applied schema version. The pre-flight check can only say the image
+# is old; this names the actual gap, and it is the first thing to look at when a
+# relay behaviour does not match production.
+SCHEMA_VERSION="$(docker compose -f "$COMPOSE_FILE" exec -T funnelcake-clickhouse \
+  clickhouse-client --password clickhouse --query \
+  "SELECT max(version) FROM nostr.schema_migrations" 2>/dev/null | tr -d '[:space:]')"
+if [[ -n "$SCHEMA_VERSION" ]]; then
+  echo "funnelcake schema version: ${SCHEMA_VERSION}"
+fi
 
 # `--rm` takes the seed container away with it, so its logs are gone by the
 # time a post-mortem could ask for them. Keep a copy.
