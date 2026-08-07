@@ -576,13 +576,11 @@ void _cacheAdmissionTests() {
       expect(relays, hasLength(RelayListCaps.nip65));
     });
 
-    test('keeps both marker rows when one host is cached twice', () async {
-      // A kind-10002 may name the same host twice to carry a `read` and a
-      // `write` marker, and the fresh parse keeps both rows. Re-admission
-      // works on a deduplicated URL set, so rebuilding the result from that
-      // set instead of filtering the cached rows drops the second marker —
-      // the same event would then answer differently depending on whether
-      // discovery or the cache served it.
+    test('merges a host cached twice into one read-and-write relay', () async {
+      // NIP-65 marks a relay per `r` tag, so a host carrying a `read` row and
+      // a `write` row is both. Keeping the pair is lossy downstream anyway:
+      // `RelayListRepository._markerFor` takes the first match and would
+      // republish this host as `read`-only.
       SharedPreferences.setMockInitialValues({
         'relay_discovery_$npub': jsonEncode({
           'timestamp': DateTime.now().millisecondsSinceEpoch,
@@ -596,11 +594,53 @@ void _cacheAdmissionTests() {
 
       final result = await service.discoverRelays(npub);
 
+      expect(result.relays.map((r) => r.url), ['wss://both.example']);
+      expect(result.relays.single.read, isTrue);
+      expect(result.relays.single.write, isTrue);
+    });
+
+    test('a repeated host does not spend the whole cap', () async {
+      // Duplicates used to be counted against the cap, so a list naming one
+      // host RelayListCaps.nip65 times dropped every genuine relay after it.
+      SharedPreferences.setMockInitialValues({
+        'relay_discovery_$npub': jsonEncode({
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+          'relays': [
+            for (var i = 0; i < RelayListCaps.nip65; i++)
+              {'url': 'wss://loud.example', 'read': true, 'write': true},
+            {'url': 'wss://genuine-one.example', 'read': true, 'write': true},
+            {'url': 'wss://genuine-two.example', 'read': true, 'write': true},
+          ],
+        }),
+      });
+      final service = RelayDiscoveryService(indexerRelays: const ['wss://a']);
+
+      final result = await service.discoverRelays(npub);
+
       expect(result.relays.map((r) => r.url), [
-        'wss://both.example',
-        'wss://both.example',
+        'wss://loud.example',
+        'wss://genuine-one.example',
+        'wss://genuine-two.example',
       ]);
-      expect(result.relays.map((r) => r.write), [false, true]);
+    });
+
+    test('collapses hosts that differ only by trailing slash', () async {
+      SharedPreferences.setMockInitialValues({
+        'relay_discovery_$npub': jsonEncode({
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+          'relays': [
+            {'url': 'wss://same.example', 'read': true, 'write': false},
+            {'url': 'wss://same.example/', 'read': false, 'write': true},
+          ],
+        }),
+      });
+      final service = RelayDiscoveryService(indexerRelays: const ['wss://a']);
+
+      final result = await service.discoverRelays(npub);
+
+      expect(result.relays, hasLength(1));
+      expect(result.relays.single.read, isTrue);
+      expect(result.relays.single.write, isTrue);
     });
   });
 }

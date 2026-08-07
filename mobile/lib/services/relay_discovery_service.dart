@@ -7,6 +7,7 @@ import 'dart:convert';
 
 import 'package:meta/meta.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:openvine/utils/relay_url_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -450,18 +451,27 @@ class RelayDiscoveryService {
   List<DiscoveredRelay> _parseRelayListFromEvent(Event event) =>
       _parseRelayListFromTags(event.tags);
 
-  List<DiscoveredRelay> _parseRelayListFromTags(List<List<String>> eventTags) {
-    final relays = <DiscoveredRelay>[];
+  /// Admits a kind-10002's relays: host policy, duplicate collapse, then cap.
+  ///
+  /// The list belongs to the user but reaches us through a third-party
+  /// indexer, so it is admitted on remote-supplied terms: `wss://` only, and
+  /// never a private, loopback or link-local target (#3362, #6585).
+  ///
+  /// Duplicates collapse before the cap is counted, or a host named
+  /// [RelayListCaps.nip65] times would spend the whole budget and drop every
+  /// genuine relay after it. Markers are OR-ed rather than first-wins: NIP-65
+  /// marks a relay per `r` tag, so a host carrying a `read` row and a `write`
+  /// row is read *and* write. Keeping the pair instead would be lossy anyway —
+  /// `RelayListRepository._markerFor` takes the first match and republishes
+  /// the host as `read`-only, and the app bridge takes the last.
+  ///
+  /// Both the fresh parse and the cached read go through here, so the same
+  /// event cannot answer differently depending on which one served it.
+  List<DiscoveredRelay> _admitRelayList(Iterable<DiscoveredRelay> candidates) {
+    final byHost = <String, DiscoveredRelay>{};
 
-    for (final tag in eventTags) {
-      if (tag.isEmpty || tag[0] != 'r') continue;
-      if (tag.length < 2) continue;
-
-      final url = tag[1];
-
-      // The list belongs to the user but reaches us through a third-party
-      // indexer, so it is admitted on remote-supplied terms: `wss://` only,
-      // and never a private, loopback or link-local target (#3362, #6585).
+    for (final candidate in candidates) {
+      final url = candidate.url;
       if (!isRemoteSuppliedRelayUrlAllowed(url)) {
         Log.warning(
           '  Skipping disallowed relay URL: $url',
@@ -471,7 +481,20 @@ class RelayDiscoveryService {
         continue;
       }
 
-      if (relays.length >= RelayListCaps.nip65) {
+      // Compare hosts the way the rest of the app does, so `wss://a.example`
+      // and `wss://a.example/` are one relay rather than two cap slots.
+      final key = normalizeRelayUrlForComparison(url) ?? url;
+      final existing = byHost[key];
+      if (existing != null) {
+        byHost[key] = DiscoveredRelay(
+          url: existing.url,
+          read: existing.read || candidate.read,
+          write: existing.write || candidate.write,
+        );
+        continue;
+      }
+
+      if (byHost.length >= RelayListCaps.nip65) {
         Log.warning(
           '  kind-10002 lists more than ${RelayListCaps.nip65} relays; '
           'ignoring the rest',
@@ -481,16 +504,22 @@ class RelayDiscoveryService {
         break;
       }
 
-      final permission = tag.length > 2 ? tag[2] as String? : null;
-
-      final relay = DiscoveredRelay(
-        url: url,
-        read: permission == null || permission == 'read',
-        write: permission == null || permission == 'write',
-      );
-
-      relays.add(relay);
+      byHost[key] = candidate;
     }
+
+    return byHost.values.toList();
+  }
+
+  List<DiscoveredRelay> _parseRelayListFromTags(List<List<String>> eventTags) {
+    final relays = _admitRelayList([
+      for (final tag in eventTags)
+        if (tag.length >= 2 && tag[0] == 'r')
+          DiscoveredRelay(
+            url: tag[1],
+            read: tag.length <= 2 || tag[2] == 'read',
+            write: tag.length <= 2 || tag[2] == 'write',
+          ),
+    ]);
 
     Log.info(
       '  Parsed ${relays.length} relays from kind 10002 event',
@@ -548,20 +577,10 @@ class RelayDiscoveryService {
       // discovery. The cache holds a list that arrived over the network and
       // survives for 24h, so filtering only on write would leave a day-long
       // window in which an entry written by an older build — or by a build
-      // before this rule existed — is adopted unchecked (#6585).
-      final admitted = admitRemoteSuppliedRelays(
-        cached.map((r) => r.url),
-        cap: RelayListCaps.nip65,
-      );
-      // Filter the cached entries rather than rebuilding one per admitted URL:
-      // a kind-10002 may list the same host twice to carry a `read` and a
-      // `write` marker, and the fresh parse keeps both. Keying by URL would
-      // drop the second, so the same event would answer differently depending
-      // on which path served it. The record cap matches the fresh parse.
-      return [
-        for (final relay in cached)
-          if (admitted.contains(relay.url)) relay,
-      ].take(RelayListCaps.nip65).toList();
+      // before this rule existed — is adopted unchecked (#6585). A pre-#6585
+      // build wrote under this same key with no author check and no cap, so
+      // these rows can still be an unauthenticated indexer's.
+      return _admitRelayList(cached);
     } catch (e) {
       Log.warning(
         'Failed to read cached relays: $e',
