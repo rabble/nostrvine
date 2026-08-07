@@ -152,6 +152,56 @@ void main() {
       },
     );
 
+    test(
+      'keeps the genuine key when a wrong-author decoy shares its d tag '
+      'with a newer created_at',
+      () async {
+        const foreignPubkey =
+            'b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90a1';
+        final key = await AesGcm.with256bits().newSecretKey();
+        final raw = base64Encode(await key.extractBytes());
+        when(
+          () => client.queryEventsDetailed(
+            any(),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer(
+          (_) async => _confirmed([
+            Event(
+              pubkey,
+              30078,
+              const [
+                ['d', vaultKeyDTag],
+              ],
+              'wrapped-ciphertext',
+              createdAt: 1000,
+            ),
+            // Different author, same d tag, newer created_at. A relay
+            // answering a broad kind+author filter can hand this back;
+            // without a pubkey check it would win the dedup by created_at
+            // and shadow the genuine vault-key event.
+            Event(
+              foreignPubkey,
+              30078,
+              const [
+                ['d', vaultKeyDTag],
+              ],
+              'someone-elses-wrapped-ciphertext',
+              createdAt: 2000,
+            ),
+          ]),
+        );
+        when(
+          () => signer.nip44Decrypt(pubkey, 'wrapped-ciphertext'),
+        ).thenAnswer((_) async => raw);
+
+        final obtained = await service.obtain();
+
+        expect(base64Encode(await obtained.extractBytes()), equals(raw));
+        verifyNever(() => signer.nip44Decrypt(foreignPubkey, any()));
+      },
+    );
+
     test('generates and publishes a key when none exists remotely', () async {
       when(
         () => client.queryEventsDetailed(

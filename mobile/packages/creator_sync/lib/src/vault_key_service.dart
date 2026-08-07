@@ -183,12 +183,15 @@ class VaultKeyService {
 
     // Relays are untrusted and can return anything for a broad kind+author
     // filter; only trust events that actually carry this event's own
-    // kind and d tag before treating one as the vault key.
+    // kind, this account's pubkey, and this event's d tag before treating
+    // one as the vault key — otherwise a newer foreign-author decoy
+    // sharing the d tag would shadow the genuine key in the sort below.
     final matches =
         result.events
             .where(
               (event) =>
                   event.kind == EventKind.appSpecificData &&
+                  event.pubkey == pubkey &&
                   event.dTagValue == vaultKeyDTag,
             )
             .toList()
