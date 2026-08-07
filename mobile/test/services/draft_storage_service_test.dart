@@ -429,7 +429,9 @@ void main() {
       });
 
       test('clears missing final rendered clip references', () async {
-        final draft = DivineVideoDraft.create(
+        final savedAt = DateTime(2026, 5, 4, 3, 2, 1);
+        final draft = DivineVideoDraft(
+          id: 'draft_rendered',
           clips: [
             DivineVideoClip(
               id: 'clip_1',
@@ -444,6 +446,10 @@ void main() {
           description: '',
           hashtags: {},
           selectedApproach: 'video',
+          createdAt: savedAt,
+          lastModified: savedAt,
+          publishStatus: PublishStatus.draft,
+          publishAttempts: 0,
           finalRenderedClip: DivineVideoClip(
             id: 'rendered_clip',
             video: EditorVideo.file('/path/to/missing-render.mp4'),
@@ -462,6 +468,8 @@ void main() {
         // Dropping the dangling render does not take the draft out of play:
         // publish re-renders it from its clips and editor state.
         expect(drafts.single.canPost, isTrue);
+        // ...and it is not an edit either, so the timestamp stays put.
+        expect(drafts.single.lastModified, savedAt);
       });
     });
 
@@ -507,6 +515,38 @@ void main() {
         );
 
         expect(await service.getDraftById('draft_corrupt'), isNull);
+      });
+    });
+
+    group('getValidatedDraftById', () {
+      test('keeps the stored lastModified', () async {
+        final savedAt = DateTime(2026, 5, 4, 3, 2, 1);
+        final draft = DivineVideoDraft(
+          id: 'draft_validated',
+          clips: [
+            DivineVideoClip(
+              id: 'clip_validated',
+              video: EditorVideo.file('/path/to/old_video.mp4'),
+              duration: const Duration(seconds: 6),
+              recordedAt: savedAt,
+              targetAspectRatio: AspectRatio.square,
+              originalAspectRatio: 9 / 16,
+            ),
+          ],
+          title: 'Validated draft',
+          description: '',
+          hashtags: {},
+          selectedApproach: 'hybrid',
+          createdAt: savedAt,
+          lastModified: savedAt,
+          publishStatus: PublishStatus.draft,
+          publishAttempts: 0,
+        );
+
+        await service.saveDraft(draft);
+
+        final loaded = await service.getValidatedDraftById('draft_validated');
+        expect(loaded?.lastModified, savedAt);
       });
     });
 
