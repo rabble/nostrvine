@@ -969,17 +969,25 @@ class _FadingSlotImageState extends State<_FadingSlotImage> {
   /// dipping back to the fallback while the new file decodes.
   bool _hasFrame = false;
 
-  /// Set once the frame is fully opaque, from where the layer underneath is
-  /// a second full-size image painted behind an opaque one — on every frame,
-  /// for every slot, for as long as the picker is open. The error path keeps
-  /// its own copy via [ClipThumbnailImage.placeholder], and a reassigned slot
-  /// holds its previous frame through `gaplessPlayback`, so nothing still
-  /// needs it.
+  /// Set once the frame is fully opaque, at which point the fallback beneath
+  /// it is nothing but a second full-size image painted behind an opaque one
+  /// — on every frame, for every slot, for as long as the picker is open.
+  /// Dropping it is safe because both paths that could still want it are
+  /// covered: the error path keeps its own copy via
+  /// [ClipThumbnailImage.placeholder], and a reassigned slot holds its
+  /// previous frame through `gaplessPlayback`.
   bool _covered = false;
 
+  /// Always deferred to the next frame: [AnimatedOpacity] fires `onEnd`
+  /// synchronously when its duration is zero and the target changed, which
+  /// lands mid-build and would mark this ancestor dirty while the [Image]
+  /// below is still building.
   void _dropFallback() {
     if (_covered || !_hasFrame || !mounted) return;
-    setState(() => _covered = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _covered || !_hasFrame) return;
+      setState(() => _covered = true);
+    });
   }
 
   @override
@@ -996,12 +1004,10 @@ class _FadingSlotImageState extends State<_FadingSlotImage> {
           placeholder: widget.fallback,
           frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
             if (frame != null || wasSynchronouslyLoaded) _hasFrame = true;
-            if (wasSynchronouslyLoaded && !_covered) {
+            if (wasSynchronouslyLoaded) {
               // Painted opaque on this very build, so there is no transition
               // for `onEnd` to report — drop the layer on the next frame.
-              WidgetsBinding.instance.addPostFrameCallback(
-                (_) => _dropFallback(),
-              );
+              _dropFallback();
             }
             return AnimatedOpacity(
               opacity: _hasFrame ? 1 : 0,
