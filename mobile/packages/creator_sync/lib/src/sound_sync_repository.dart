@@ -94,6 +94,10 @@ class SoundSyncRepository {
         if (record.entry.deleted) {
           if (localSounds.containsKey(record.ref.id)) {
             await _local.remove(record.ref.id);
+            // Keeps the snapshot the push loop below iterates in sync
+            // with what was just removed — this is the resurrection
+            // guard: without it the push loop would see this id as a
+            // local item with no matching applied hash and republish it.
             localSounds.remove(record.ref.id);
             deleted++;
           }
@@ -112,6 +116,14 @@ class SoundSyncRepository {
         }
       }
 
+      // Commits pull progress before the push phase runs. `_local.upsert`
+      // and `_local.remove` above already persisted to disk, so if a
+      // publish below throws, the in-memory `applied` map must not be
+      // discarded — otherwise the next reconcile would see these items as
+      // unseen and re-apply the (now stale) remote body over whatever the
+      // user edited locally in between.
+      await _state.writeApplied(SyncItemKind.sound, applied);
+
       var pushed = 0;
       for (final entry in localSounds.entries) {
         final ref = SyncItemRef(SyncItemKind.sound, entry.key);
@@ -128,7 +140,7 @@ class SoundSyncRepository {
         final stamped = await _index.publish(
           ref,
           SyncIndexEntry.item(body: entry.value),
-          latestKnownRemote: _latestOf(applied),
+          latestKnownRemote: seen?.createdAt,
         );
         applied[ref.dTag] = SyncItemState(
           createdAt: stamped,
@@ -143,6 +155,10 @@ class SoundSyncRepository {
         pushed: pushed,
         deleted: deleted,
       );
+    } on SyncIndexException {
+      // Relay failures are expected on flaky networks; the UI surfaces
+      // them via a status enum, not Crashlytics. See error_handling.md.
+      rethrow;
     } catch (e, stackTrace) {
       _report?.call(
         e,
@@ -163,6 +179,9 @@ class SoundSyncRepository {
     try {
       final sounds = await _local.readAll();
       final body = sounds[soundId];
+      // Intentional no-op: the sound was removed locally (or the id was
+      // never valid) between the caller's own change and this publish
+      // call, so there is nothing left to publish.
       if (body == null) return;
 
       final applied = await _state.readApplied(SyncItemKind.sound);
@@ -170,13 +189,15 @@ class SoundSyncRepository {
       final stamped = await _index.publish(
         ref,
         SyncIndexEntry.item(body: body),
-        latestKnownRemote: _latestOf(applied),
+        latestKnownRemote: applied[ref.dTag]?.createdAt,
       );
       applied[ref.dTag] = SyncItemState(
         createdAt: stamped,
         bodyHash: syncBodyHash(body),
       );
       await _state.writeApplied(SyncItemKind.sound, applied);
+    } on SyncIndexException {
+      rethrow;
     } catch (e, stackTrace) {
       _report?.call(
         e,
@@ -195,13 +216,15 @@ class SoundSyncRepository {
       final stamped = await _index.publish(
         ref,
         SyncIndexEntry.tombstone(),
-        latestKnownRemote: _latestOf(applied),
+        latestKnownRemote: applied[ref.dTag]?.createdAt,
       );
       applied[ref.dTag] = SyncItemState(
         createdAt: stamped,
         bodyHash: SyncItemState.tombstoneHash,
       );
       await _state.writeApplied(SyncItemKind.sound, applied);
+    } on SyncIndexException {
+      rethrow;
     } catch (e, stackTrace) {
       _report?.call(
         e,
@@ -210,12 +233,5 @@ class SoundSyncRepository {
       );
       rethrow;
     }
-  }
-
-  int? _latestOf(Map<String, SyncItemState> applied) {
-    if (applied.isEmpty) return null;
-    return applied.values
-        .map((state) => state.createdAt)
-        .reduce((a, b) => a > b ? a : b);
   }
 }
