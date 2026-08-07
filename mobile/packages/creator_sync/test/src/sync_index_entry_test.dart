@@ -50,6 +50,20 @@ void main() {
       );
     });
 
+    test('throws on a JSON payload that is not an object', () {
+      expect(
+        () => SyncIndexEntry.fromPayloadJson('[1,2,3]'),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('throws on a JSON payload that is a bare scalar', () {
+      expect(
+        () => SyncIndexEntry.fromPayloadJson('42'),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
     test('throws when an item payload has no body', () {
       expect(
         () => SyncIndexEntry.fromPayloadJson('{"v":1,"deleted":false}'),
