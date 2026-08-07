@@ -247,9 +247,11 @@ class VideoEditorConstants {
   /// Hero animation tag for the final clip-preview in the video editor.
   static const heroMetaPreviewId = 'Video-metadata-clip-preview-video';
 
-  /// Corner radius of the clip-preview thumbnail the [heroMetaPreviewId] hero
-  /// flies from. The preview screen morphs its flight out of this shape into
-  /// the stage's rounded bottom, so both sides read the same value.
+  /// Corner radius of the clip-preview thumbnails that carry
+  /// [heroMetaPreviewId]. The preview screen morphs its flight out of this
+  /// shape into the stage's rounded bottom, so the thumbnails and the flight
+  /// cannot drift apart. The cover screen is the other destination on that
+  /// tag and keeps its own rounding.
   static const clipPreviewCornerRadius = 16.0;
 
   /// Hero animation tag for the audio-chip in the video editor.
