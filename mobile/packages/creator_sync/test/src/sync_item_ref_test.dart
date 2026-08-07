@@ -75,5 +75,39 @@ void main() {
         expect(parsed!.id, equals('a:b'));
       });
     });
+
+    group('hashCode', () {
+      test('equal refs produce equal hashes', () {
+        const ref1 = SyncItemRef(SyncItemKind.sound, soundId);
+        const ref2 = SyncItemRef(SyncItemKind.sound, soundId);
+        expect(ref1.hashCode, equals(ref2.hashCode));
+      });
+
+      test('refs differing by kind do not collide', () {
+        const ref1 = SyncItemRef(SyncItemKind.sound, 'id');
+        const ref2 = SyncItemRef(SyncItemKind.clip, 'id');
+        expect(ref1.hashCode, isNot(equals(ref2.hashCode)));
+      });
+
+      test('refs differing by id do not collide', () {
+        const ref1 = SyncItemRef(SyncItemKind.sound, 'id1');
+        const ref2 = SyncItemRef(SyncItemKind.sound, 'id2');
+        expect(ref1.hashCode, isNot(equals(ref2.hashCode)));
+      });
+    });
+
+    group('toString', () {
+      test('contains the full untruncated dTag', () {
+        const ref = SyncItemRef(SyncItemKind.sound, soundId);
+        expect(ref.toString(), contains('divine:sync:sound:$soundId'));
+      });
+
+      test('never truncates nostr ids in output', () {
+        const ref = SyncItemRef(SyncItemKind.clip, soundId);
+        final str = ref.toString();
+        expect(str, contains(soundId));
+        expect(str.length, greaterThan(64));
+      });
+    });
   });
 }
