@@ -169,9 +169,11 @@ Then:
 - [ ] No unused imports, unused locals, dead code from a removed
   approach.
 - [ ] Format, analyze, and scoped tests all pass locally. **Never push
-  red** — `origin/main` always passes, so any failing test on your
-  branch is caused by your diff. See
-  [`agent_workflow.md`](agent_workflow.md#5-failing-tests-are-never-acceptable-and-always-your-fault).
+  red** — assume any failing test on your branch is caused by your diff.
+  In the rare case it genuinely isn't, prove it both ways and report
+  rather than patch. See
+  [`agent_workflow.md`](agent_workflow.md#5-failing-tests-are-never-acceptable-and-always-your-fault)
+  and [when the failure is not yours](agent_workflow.md#when-the-failure-is-not-yours).
 - [ ] Generated files (Riverpod, Freezed, JSON, Mockito, Drift) are
   regenerated and staged if you touched inputs.
 - [ ] `pubspec.lock` churn from a different SDK/pub-resolver run is
