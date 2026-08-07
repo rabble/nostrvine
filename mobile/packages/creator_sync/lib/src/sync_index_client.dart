@@ -103,7 +103,14 @@ class SyncIndexClient {
   ///
   /// Pass [since] to fetch incrementally. Records that fail to decrypt or
   /// parse are skipped rather than aborting the whole reconcile — one bad
-  /// event must not strand the rest of the library.
+  /// event must not strand the rest of the library. This applies per item:
+  /// if the *newest* event for a given item fails to decrypt or parse,
+  /// that item is dropped from the result entirely for this fetch, even
+  /// if an older, readable event for the same item also came back. This
+  /// is a deliberate last-write-wins choice — falling back to an older
+  /// record could resurrect an item the newest event tombstoned — but it
+  /// means the caller cannot distinguish "no record" from "newest record
+  /// unreadable".
   ///
   /// Throws [SyncIndexException] when signed out or the query fails.
   Future<List<RemoteSyncRecord>> fetch(SyncItemKind kind, {int? since}) async {
@@ -138,25 +145,32 @@ class SyncIndexClient {
       throw SyncIndexException('sync index query failed: ${e.runtimeType}');
     }
 
-    // Relay filters cannot prefix-match d tags, so this result also holds
-    // foreign app-data events (DM read cursors, the vault key). Keep only
-    // the newest event per recognised item d tag.
-    final newest = <String, Event>{};
+    // Relay filters cannot prefix-match d tags, and relays are untrusted:
+    // a broad kind+author query can come back with events of the wrong
+    // kind, a different author, or a d tag outside the creator-sync
+    // allowlist (DM read cursors, this package's own vault-key event).
+    // Trust only events that actually carry this event's own kind, this
+    // account's pubkey, and an allowlisted d tag for [kind] before
+    // treating one as a candidate; keep only the newest candidate per
+    // item so an untrustworthy or stale decoy can never shadow the
+    // genuine record.
+    final newest = <SyncItemRef, Event>{};
     for (final event in events) {
-      final dTag = event.dTagValue;
-      if (dTag.isEmpty) continue;
-      final ref = SyncItemRef.tryParse(dTag);
+      if (event.kind != EventKind.appSpecificData || event.pubkey != pubkey) {
+        continue;
+      }
+      final ref = SyncItemRef.tryParse(event.dTagValue);
       if (ref == null || ref.kind != kind) continue;
 
-      final existing = newest[dTag];
+      final existing = newest[ref];
       if (existing == null || event.createdAt > existing.createdAt) {
-        newest[dTag] = event;
+        newest[ref] = event;
       }
     }
 
     final records = <RemoteSyncRecord>[];
     for (final entry in newest.entries) {
-      final ref = SyncItemRef.tryParse(entry.key)!;
+      final ref = entry.key;
       try {
         records.add(
           RemoteSyncRecord(
@@ -169,13 +183,13 @@ class SyncIndexClient {
         );
       } on SyncDecryptException catch (e) {
         Log.warning(
-          'skipping undecryptable sync record ${entry.key}: ${e.message}',
+          'skipping undecryptable sync record ${ref.dTag}: ${e.message}',
           name: _logName,
           category: LogCategory.relay,
         );
       } on FormatException catch (e) {
         Log.warning(
-          'skipping malformed sync record ${entry.key}: ${e.message}',
+          'skipping malformed sync record ${ref.dTag}: ${e.message}',
           name: _logName,
           category: LogCategory.relay,
         );

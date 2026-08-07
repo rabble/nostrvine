@@ -24,6 +24,8 @@ void main() {
   group(SyncIndexClient, () {
     const pubkey =
         'a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90';
+    const foreignPubkey =
+        'b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90a1';
     const soundId =
         'f1e2d3c4b5a6978869504132231405f6e7d8c9baab9c8d7e6f50413223140506';
     const ref = SyncItemRef(SyncItemKind.sound, soundId);
@@ -283,6 +285,121 @@ void main() {
 
         expect(records, hasLength(1));
         expect(records.single.entry.body, equals({'gen': 'new'}));
+      });
+
+      test(
+        'keeps the genuine record when a wrong-kind decoy shares its d '
+        'tag with a newer created_at',
+        () async {
+          final sealed = await cipher.seal(
+            SyncIndexEntry.item(body: const {'id': 'genuine'}).toPayloadJson(),
+          );
+          when(() => client.queryEventsDetailed(any())).thenAnswer(
+            (_) async => _confirmed([
+              Event(
+                pubkey,
+                30078,
+                [
+                  ['d', ref.dTag],
+                ],
+                sealed,
+                createdAt: 1000,
+              ),
+              // Wrong kind, same d tag, newer created_at. Without a kind
+              // check this decoy would win the dedup by created_at, fail
+              // to decrypt as an unrelated text note, and silently drop
+              // the genuine record instead of surfacing it.
+              Event(
+                pubkey,
+                1,
+                [
+                  ['d', ref.dTag],
+                ],
+                'unrelated note',
+                createdAt: 2000,
+              ),
+            ]),
+          );
+
+          final records = await indexClient.fetch(SyncItemKind.sound);
+
+          expect(records, hasLength(1));
+          expect(records.single.entry.body, equals({'id': 'genuine'}));
+        },
+      );
+
+      test(
+        'keeps the genuine record when a wrong-author decoy shares its '
+        'd tag with a newer created_at',
+        () async {
+          final sealed = await cipher.seal(
+            SyncIndexEntry.item(body: const {'id': 'genuine'}).toPayloadJson(),
+          );
+          when(() => client.queryEventsDetailed(any())).thenAnswer(
+            (_) async => _confirmed([
+              Event(
+                pubkey,
+                30078,
+                [
+                  ['d', ref.dTag],
+                ],
+                sealed,
+                createdAt: 1000,
+              ),
+              // Different author, same d tag, newer created_at. A relay
+              // answering a broad kind+author filter can hand this back;
+              // without a pubkey check it would win the dedup and shadow
+              // the genuine record from this account.
+              Event(
+                foreignPubkey,
+                30078,
+                [
+                  ['d', ref.dTag],
+                ],
+                'someone-elses-payload',
+                createdAt: 2000,
+              ),
+            ]),
+          );
+
+          final records = await indexClient.fetch(SyncItemKind.sound);
+
+          expect(records, hasLength(1));
+          expect(records.single.entry.body, equals({'id': 'genuine'}));
+        },
+      );
+
+      test('sends kinds, authors, and since in the query filter', () async {
+        when(
+          () => client.queryEventsDetailed(any()),
+        ).thenAnswer((_) async => _confirmed(const []));
+
+        await indexClient.fetch(SyncItemKind.sound, since: 1_234_567);
+
+        final filters =
+            verify(
+                  () => client.queryEventsDetailed(captureAny()),
+                ).captured.single
+                as List<Filter>;
+        expect(filters, hasLength(1));
+        expect(filters.single.kinds, equals([30078]));
+        expect(filters.single.authors, equals([pubkey]));
+        expect(filters.single.since, equals(1_234_567));
+      });
+
+      test('omits since from the filter when not passed', () async {
+        when(
+          () => client.queryEventsDetailed(any()),
+        ).thenAnswer((_) async => _confirmed(const []));
+
+        await indexClient.fetch(SyncItemKind.sound);
+
+        final filters =
+            verify(
+                  () => client.queryEventsDetailed(captureAny()),
+                ).captured.single
+                as List<Filter>;
+        expect(filters.single.since, isNull);
       });
 
       test('throws $SyncIndexException when the query fails', () async {
