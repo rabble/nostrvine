@@ -596,26 +596,26 @@ class RepostsRepository {
       _emitRepostedIds();
     }
 
-    // Signed out: keep whatever local storage gave us rather than throwing —
-    // there is nothing to reconcile against, which is not a sync failure.
-    final pubkey = await _currentUserPubkey();
-    if (pubkey == null) {
-      Log.warning(
-        'Skipping repost sync: signer has no public key',
-        name: 'RepostsRepository',
-      );
-      _isInitialized = true;
-      return _buildSyncResult();
-    }
-
-    // Then, fetch from relays (authoritative)
-    final filter = Filter(
-      kinds: const [EventKind.genericRepost],
-      authors: [pubkey],
-      limit: _defaultRepostFetchLimit,
-    );
-
     try {
+      // Signed out: keep whatever local storage gave us rather than throwing —
+      // there is nothing to reconcile against, which is not a sync failure.
+      final pubkey = await _currentUserPubkey();
+      if (pubkey == null) {
+        Log.warning(
+          'Skipping repost sync: signer has no public key',
+          name: 'RepostsRepository',
+        );
+        _isInitialized = true;
+        return _buildSyncResult();
+      }
+
+      // Then, fetch from relays (authoritative)
+      final filter = Filter(
+        kinds: const [EventKind.genericRepost],
+        authors: [pubkey],
+        limit: _defaultRepostFetchLimit,
+      );
+
       final events = await _nostrClient.queryEvents([filter]);
       final newRecords = <RepostRecord>[];
 
@@ -899,9 +899,9 @@ class RepostsRepository {
       _emitRepostedIds();
     }
 
-    // Subscribe to reposts for real-time sync and cross-device updates
-    if (_nostrClient.hasKeys) {
-      _subscribeToReposts();
+    final pubkey = await _currentUserPubkey();
+    if (pubkey != null) {
+      _subscribeToReposts(pubkey);
     }
 
     _isInitialized = true;
@@ -912,10 +912,7 @@ class RepostsRepository {
   /// Creates a long-running subscription to the current user's Kind 16 events.
   /// When a newer repost arrives (from another device or this one),
   /// updates the local cache.
-  void _subscribeToReposts() {
-    final currentUserPubkey = _nostrClient.publicKey;
-    if (currentUserPubkey.isEmpty) return;
-
+  void _subscribeToReposts(String currentUserPubkey) {
     // Use a deterministic subscription ID so we can unsubscribe later
     _repostSubscriptionId = 'reposts_repo_reposts_$currentUserPubkey';
 

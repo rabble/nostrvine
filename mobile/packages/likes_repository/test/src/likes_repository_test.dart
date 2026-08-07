@@ -117,6 +117,12 @@ void main() {
       when(() => mockNostrClient.hasKeys).thenReturn(false);
       when(() => mockNostrClient.unsubscribe(any())).thenAnswer((_) async {});
       when(
+        () => mockNostrClient.subscribe(
+          any(),
+          subscriptionId: any(named: 'subscriptionId'),
+        ),
+      ).thenAnswer((_) => const Stream.empty());
+      when(
         () => mockLocalStorage.getAllLikeRecords(),
       ).thenAnswer((_) async => []);
       when(
@@ -2230,6 +2236,24 @@ void main() {
       );
 
       test(
+        'syncUserReactions keeps local data when key resolution throws',
+        () async {
+          when(
+            () => mockNostrClient.resolvePublicKey(),
+          ).thenThrow(StateError('signer unavailable'));
+          when(() => mockLocalStorage.getAllLikeRecords()).thenAnswer(
+            (_) async => [createLikeRecord()],
+          );
+
+          repository = createRepository();
+          final result = await repository.syncUserReactions();
+
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+          expect(result.orderedEventIds, contains(testEventId));
+        },
+      );
+
+      test(
         'getUserVoteStatuses returns empty without querying with no key',
         () async {
           when(
@@ -3158,7 +3182,9 @@ void main() {
 
     group('initialize', () {
       test('loads records from local storage', () async {
-        when(() => mockNostrClient.hasKeys).thenReturn(false);
+        when(
+          () => mockNostrClient.resolvePublicKey(),
+        ).thenAnswer((_) async => null);
         when(() => mockLocalStorage.getAllLikeRecords()).thenAnswer(
           (_) async => [
             createLikeRecord(
@@ -3174,8 +3200,7 @@ void main() {
         expect(await repository.isLiked('event_a_1234567890abcdef'), isTrue);
       });
 
-      test('sets up subscription when client has keys', () async {
-        when(() => mockNostrClient.hasKeys).thenReturn(true);
+      test('sets up subscription when the client resolves a key', () async {
         when(
           () => mockNostrClient.subscribe(
             any(),
@@ -3195,7 +3220,9 @@ void main() {
       });
 
       test('skips subscription when client has no keys', () async {
-        when(() => mockNostrClient.hasKeys).thenReturn(false);
+        when(
+          () => mockNostrClient.resolvePublicKey(),
+        ).thenAnswer((_) async => null);
 
         repository = createRepository();
         await repository.initialize();
@@ -3208,8 +3235,39 @@ void main() {
         );
       });
 
+      test(
+        'subscribes with the resolved key when the publicKey cache is stale',
+        () async {
+          when(() => mockNostrClient.publicKey).thenReturn('');
+          when(
+            () => mockNostrClient.resolvePublicKey(),
+          ).thenAnswer((_) async => testUserPubkey);
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => const Stream.empty());
+
+          repository = createRepository();
+          await repository.initialize();
+
+          final captured =
+              verify(
+                    () => mockNostrClient.subscribe(
+                      captureAny(),
+                      subscriptionId: any(named: 'subscriptionId'),
+                    ),
+                  ).captured.single
+                  as List<Filter>;
+          expect(captured.single.authors, equals([testUserPubkey]));
+        },
+      );
+
       test('is idempotent', () async {
-        when(() => mockNostrClient.hasKeys).thenReturn(false);
+        when(
+          () => mockNostrClient.resolvePublicKey(),
+        ).thenAnswer((_) async => null);
 
         repository = createRepository();
         await repository.initialize();

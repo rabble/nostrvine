@@ -549,8 +549,8 @@ VideosRepository videosRepository(Ref ref) {
 
 /// Provider for LikesRepository instance
 ///
-/// Creates a LikesRepository when the user is authenticated.
-/// Returns null when user is not authenticated.
+/// Creates a LikesRepository. Local storage is attached when the user is
+/// authenticated; signed-out relay queries are guarded by the repository.
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)

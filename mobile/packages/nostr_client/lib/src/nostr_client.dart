@@ -507,17 +507,24 @@ class NostrClient {
     final cached = _nostr.publicKey;
     if (cached.isNotEmpty) return cached;
 
-    final refresh = _pendingPublicKeyRefresh ??= _nostr
-        .refreshPublicKey()
-        .whenComplete(() => _pendingPublicKeyRefresh = null);
-    await refresh;
+    try {
+      await _refreshPublicKeyFromSigner();
+    } on Object {
+      return null;
+    }
 
     final key = _nostr.publicKey;
     return key.isEmpty ? null : key;
   }
 
-  /// In-flight [resolvePublicKey] signer refresh, shared by concurrent callers.
+  /// In-flight signer refresh, shared by initialize and resolving callers.
   Future<void>? _pendingPublicKeyRefresh;
+
+  Future<void> _refreshPublicKeyFromSigner() {
+    return _pendingPublicKeyRefresh ??= _nostr.refreshPublicKey().whenComplete(
+      () => _pendingPublicKeyRefresh = null,
+    );
+  }
 
   /// Whether the client has been initialized
   ///
@@ -548,7 +555,7 @@ class NostrClient {
       _reportInitializationStage(
         NostrClientInitializationStage.refreshingPublicKey,
       );
-      await _nostr.refreshPublicKey();
+      await _refreshPublicKeyFromSigner();
       // Seed the already-verified set before relays connect, so re-sent
       // events skip re-verification during the cold-start flood.
       _reportInitializationStage(

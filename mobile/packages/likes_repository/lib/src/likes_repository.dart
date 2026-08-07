@@ -1439,32 +1439,32 @@ class LikesRepository {
       _emitLikedIds();
     }
 
-    // Signed out: keep whatever local storage gave us rather than throwing —
-    // there is nothing to reconcile against, which is not a sync failure.
-    final pubkey = await _currentUserPubkey();
-    if (pubkey == null) {
-      Log.warning(
-        'Skipping reaction sync: signer has no public key',
-        name: 'LikesRepository',
-      );
-      _isInitialized = true;
-      return _buildSyncResult();
-    }
-
-    // Fetch both reactions and deletions from relays (authoritative)
-    final reactionsFilter = Filter(
-      kinds: const [EventKind.reaction],
-      authors: [pubkey],
-      limit: _defaultReactionFetchLimit,
-    );
-
-    final deletionsFilter = Filter(
-      kinds: const [EventKind.eventDeletion],
-      authors: [pubkey],
-      limit: _defaultReactionFetchLimit,
-    );
-
     try {
+      // Signed out: keep whatever local storage gave us rather than throwing —
+      // there is nothing to reconcile against, which is not a sync failure.
+      final pubkey = await _currentUserPubkey();
+      if (pubkey == null) {
+        Log.warning(
+          'Skipping reaction sync: signer has no public key',
+          name: 'LikesRepository',
+        );
+        _isInitialized = true;
+        return _buildSyncResult();
+      }
+
+      // Fetch both reactions and deletions from relays (authoritative)
+      final reactionsFilter = Filter(
+        kinds: const [EventKind.reaction],
+        authors: [pubkey],
+        limit: _defaultReactionFetchLimit,
+      );
+
+      final deletionsFilter = Filter(
+        kinds: const [EventKind.eventDeletion],
+        authors: [pubkey],
+        limit: _defaultReactionFetchLimit,
+      );
+
       // Fetch reactions and deletions in parallel
       final results = await Future.wait([
         _nostrClient.queryEvents([reactionsFilter]),
@@ -1870,16 +1870,16 @@ class LikesRepository {
       _emitLikedIds();
     }
 
-    // Subscribe to reactions for real-time sync and cross-device updates
-    if (_nostrClient.hasKeys) {
-      _subscribeToReactions();
+    final pubkey = await _currentUserPubkey();
+    if (pubkey != null) {
+      _subscribeToReactions(pubkey);
     }
 
     // Flip the flag before the backfill sync so _ensureInitialized callers
     // aren't blocked on a relay round-trip.
     _isInitialized = true;
 
-    if (hasCoordinatelessRecords && _nostrClient.hasKeys) {
+    if (hasCoordinatelessRecords && pubkey != null) {
       try {
         await syncUserReactions();
       } on Exception catch (_) {
@@ -1895,10 +1895,7 @@ class LikesRepository {
   /// Creates a long-running subscription to the current user's Kind 7 events.
   /// When a newer reaction arrives (from another device or this one),
   /// updates the local cache.
-  void _subscribeToReactions() {
-    final currentUserPubkey = _nostrClient.publicKey;
-    if (currentUserPubkey.isEmpty) return;
-
+  void _subscribeToReactions(String currentUserPubkey) {
     // Use a deterministic subscription ID so we can unsubscribe later
     _reactionSubscriptionId = 'likes_repo_reactions_$currentUserPubkey';
 

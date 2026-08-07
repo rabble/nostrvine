@@ -188,6 +188,15 @@ void main() {
           expect(await client.resolvePublicKey(), isNull);
         });
 
+        test('returns null when the signer refresh throws', () async {
+          when(() => mockNostr.publicKey).thenReturn('');
+          when(
+            () => mockNostr.refreshPublicKey(),
+          ).thenThrow(StateError('refresh failed'));
+
+          expect(await client.resolvePublicKey(), isNull);
+        });
+
         test('concurrent callers share a single signer refresh', () async {
           // A cache miss reaches the signer, and under NIP-55 that is a
           // user-visible Amber prompt — three repositories resolving the key
@@ -221,6 +230,28 @@ void main() {
             expect(await client.resolvePublicKey(), isNull);
 
             verify(() => mockNostr.refreshPublicKey()).called(2);
+          },
+        );
+
+        test(
+          'shares an initialize refresh with concurrent resolvers',
+          () async {
+            var cached = '';
+            final gate = Completer<void>();
+            when(() => mockNostr.publicKey).thenAnswer((_) => cached);
+            when(() => mockNostr.refreshPublicKey()).thenAnswer((_) async {
+              await gate.future;
+              cached = testPublicKey;
+            });
+            when(() => mockRelayManager.initialize()).thenAnswer((_) async {});
+
+            final initialization = client.initialize();
+            final resolved = client.resolvePublicKey();
+            gate.complete();
+
+            await initialization;
+            expect(await resolved, equals(testPublicKey));
+            verify(() => mockNostr.refreshPublicKey()).called(1);
           },
         );
       });
