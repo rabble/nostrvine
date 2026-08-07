@@ -383,7 +383,7 @@ class SoundsRepository {
   /// `TimeoutException` into an empty box — so without this flag silence is
   /// indistinguishable from evidence that nothing references the sound.
   ///
-  /// A cached hit can still fill [ids] while `answered` is false; that is real
+  /// A cached hit can still fill `ids` while `answered` is false; that is real
   /// evidence and callers should use it.
   Future<({List<String> ids, bool answered})> fetchVideosUsingSoundDetailed(
     String audioEventId, {
