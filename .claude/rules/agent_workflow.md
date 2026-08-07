@@ -158,9 +158,11 @@ inherit cold.
 assumption is that any failing test on a feature branch is caused by
 something in that branch's diff — start there every time.
 
-That default is a starting point, not an axiom. `main` is not
-protected by required status checks, so a red commit *can* land on it,
-and when one does, every open PR inherits the failure. Assume the
+That default is a starting point, not an axiom. Required checks can
+pass and still be **stale**: a PR tested days ago can merge into a
+`main` that has since gained a semantically conflicting change — no
+textual conflict, no re-run, green badge, broken `main`. When that
+happens every open PR behind it inherits the failure. Assume the
 failure is yours until you have positively proven otherwise, and prove
 it the specific way described in "When the failure is not yours"
 below. Never assert it from vibes.
@@ -200,9 +202,18 @@ the local environment differs from CI. Investigate the difference.
 
 ### When the failure is not yours
 
-Rare, but real — `main` has no required status checks, so a red commit
-can land and break every open PR behind it. Before you may say this,
-prove it. Two checks, both required:
+Rare, but real. The usual cause is a **stale-check merge**: PR A
+removes an API, PR B adds a caller, both go green independently, and
+whichever merges second lands without re-running against the other.
+Nothing conflicts textually, so `main` breaks and every open PR behind
+it inherits the failure.
+
+`origin/main` broke exactly this way on 2026-08-07: #6731 removed
+`diagnosticTag` / `eventKind` from `nostr_sdk` and merged with checks
+that had last run 46 hours earlier, by which point #6721 and #6617 had
+added callers.
+
+Before you may claim this, prove it. Two checks, both required:
 
 1. **The failing symbol is outside your diff.** Confirm the files and
    identifiers in the failure do not appear in

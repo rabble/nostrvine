@@ -81,7 +81,7 @@ If a Divine Brain search or ask tool is available, you may use it for company me
 
 - Do not accumulate technical debt. Fix issues in the PR that touches them; do not defer with TODOs, follow-up issues, skipped tests, or commented-out code. The only acceptable TODO is a transitional-code TODO with a tracking-issue link (see `.claude/rules/code_style.md`).
 - **Assume any failing test on a feature branch is caused by that branch's diff.** Never claim flakiness, never `@Skip` to silence a failure, never push red "to see what CI says." Run affected tests + `flutter analyze` before every push. See `.claude/rules/agent_workflow.md` for the diagnostic recipe when a test fails.
-- `main` has no required status checks, so a red commit can occasionally land there and break every open PR behind it. That is rare and never your first hypothesis. Before claiming it, prove it: the failing symbol is outside your diff **and** `main`'s own latest run failed with the same errors (`gh run list --branch main --workflow "Mobile CI"`). Then report the breaking commit and the PR that unblocks it — do not patch someone else's fix into your PR.
+- A red commit can occasionally land on `main` anyway — required checks pass but go **stale**, so PR A removing an API and PR B adding a caller can both be green and still break `main` when the second merges without re-running. Every open PR behind it then inherits the failure. That is rare and never your first hypothesis. Before claiming it, prove it: the failing symbol is outside your diff **and** `main`'s own latest run failed with the same errors (`gh run list --branch main --workflow "Mobile CI"`). Then report the breaking commit and the PR that unblocks it — do not patch someone else's fix into your PR.
 
 ## Bug-Fix Workflow
 
