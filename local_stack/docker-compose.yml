@@ -115,6 +115,35 @@ services:
       CLICKHOUSE_USER: default
       CLICKHOUSE_PASSWORD: clickhouse
 
+  # Shortens the refreshable-MV intervals that local dev and the e2e read, so a
+  # freshly published video is visible in seconds instead of up to 15 minutes.
+  # No-op against the pinned 2026-02-24 schema, which has none of these MVs.
+  # See tuning/refresh_intervals.sql for the measurements.
+  funnelcake-local-tuning:
+    image: clickhouse/clickhouse-server:25.8
+    pull_policy: always
+    depends_on:
+      funnelcake-migrate:
+        condition: service_completed_successfully
+    volumes:
+      - ./tuning:/tuning:ro
+    entrypoint: ["/bin/bash", "-c"]
+    # Applied one statement at a time: on the pinned schema every ALTER fails
+    # because the MV does not exist, and that must not fail the stack.
+    command:
+      - |
+        applied=0; skipped=0
+        while IFS= read -r stmt; do
+          [ -z "$$stmt" ] && continue
+          if clickhouse-client --host funnelcake-clickhouse --password clickhouse \
+               --query "$$stmt" >/dev/null 2>&1; then
+            applied=$$((applied + 1))
+          else
+            skipped=$$((skipped + 1))
+          fi
+        done < <(grep -v '^--' /tuning/refresh_intervals.sql | tr '\n' ' ' | tr ';' '\n' | sed 's/^ *//')
+        echo "refresh-interval tuning: applied=$$applied skipped=$$skipped"
+
   funnelcake-relay:
     image: ${FUNNELCAKE_RELAY_IMAGE:-ghcr.io/divinevideo/funnelcake-relay:latest}
     pull_policy: ${FUNNELCAKE_PULL_POLICY:-always}

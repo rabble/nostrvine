@@ -29,7 +29,10 @@ SERVICES=(
 
 # SERVICES plus the one-shot jobs compose pulls in as dependencies. Failures
 # often land in those, so the post-mortem has to be able to see them.
-REPORT_SERVICES=("${SERVICES[@]}" keycast-migrate funnelcake-migrate minio-init)
+REPORT_SERVICES=(
+  "${SERVICES[@]}"
+  keycast-migrate funnelcake-migrate funnelcake-local-tuning minio-init
+)
 
 # Fail early and by name on port clashes, instead of letting the daemon report
 # an anonymous "port is already allocated" partway through startup.
@@ -77,6 +80,14 @@ while true; do
   stack_failure_report "$COMPOSE_FILE" "$SCRIPT_DIR" "${REPORT_SERVICES[@]}"
   exit "$UP_RC"
 done
+
+# Snapshot read models rebuild on production cadences (5-30 minutes), which
+# makes a freshly published video invisible to the REST API for far longer than
+# any test waits. Shorten the intervals the app and the e2e actually read.
+# Every statement is optional — none of these views exist on the pinned schema.
+set +e
+docker compose -f "$COMPOSE_FILE" run --rm funnelcake-local-tuning
+set -e
 
 # `--rm` takes the seed container away with it, so its logs are gone by the
 # time a post-mortem could ask for them. Keep a copy.
