@@ -52,6 +52,12 @@ void main() {
   });
 
   group('EnvironmentConfig', () {
+    // The LOCAL assertions below spell out 10.0.2.2. Without an explicit
+    // override they would inherit TargetPlatform.android from the test
+    // harness — flutter_test forces it inside an assert block whenever
+    // FLUTTER_TEST is set — rather than stating the platform they mean.
+    tearDown(() => debugDefaultTargetPlatformOverride = null);
+
     group('relayUrl', () {
       test('poc returns poc relay', () {
         const config = EnvironmentConfig(environment: AppEnvironment.poc);
@@ -69,6 +75,7 @@ void main() {
       });
 
       test('local returns emulator relay', () {
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
         const config = EnvironmentConfig(environment: AppEnvironment.local);
         expect(config.relayUrl, 'ws://10.0.2.2:47777');
       });
@@ -98,6 +105,7 @@ void main() {
       });
 
       test('local returns local API URL (unified funnelcake-proxy port)', () {
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
         const config = EnvironmentConfig(environment: AppEnvironment.local);
         expect(config.apiBaseUrl, 'http://10.0.2.2:47777');
       });
@@ -274,8 +282,6 @@ void main() {
       // These exercise the no-define path. The
       // `bool.hasEnvironment('INVITE_SERVER_URL')` override branch cannot be
       // reached without a --dart-define on the test run itself.
-      tearDown(() => debugDefaultTargetPlatformOverride = null);
-
       test('local tracks the resolved host on Android', () {
         debugDefaultTargetPlatformOverride = TargetPlatform.android;
         const config = EnvironmentConfig(environment: AppEnvironment.local);
