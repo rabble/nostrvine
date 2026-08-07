@@ -39,18 +39,17 @@ abstract class StopMotionFrameOps {
   ///
   /// A session long enough to clear [minimumInitialDuration] on its own holds
   /// every still for [defaultFramesPerImage] output frame, so the ceiling is
-  /// however many output frames fit in the maximum clip length. Shorter
-  /// sessions are stretched ([initialFramesPerImage]) but stay far below it.
+  /// however many such holds fit in the maximum clip length. Shorter sessions
+  /// are stretched ([initialFramesPerImage]) but stay far below it.
   static final int maxCaptureFrames =
-      VideoEditorConstants.maxDuration.inMicroseconds *
-      StopMotionRenderService.defaultFrameRate ~/
-      (Duration.microsecondsPerSecond * defaultFramesPerImage);
+      VideoEditorConstants.maxDuration.inMicroseconds ~/
+      framesPerImageToDuration(defaultFramesPerImage).inMicroseconds;
 
   /// Stills still available after [captured] shots, floored at zero.
   ///
   /// Shooting past [maxCaptureFrames] is not blocked — the recorder keeps
-  /// capturing and the overflow is trimmed in the editor, matching how
-  /// capture mode lets a recording run past the maximum duration.
+  /// capturing and the overflow is trimmed in the editor, matching how capture
+  /// mode lets a recording run past the maximum duration.
   static int remainingCaptureFrames(int captured) =>
       (maxCaptureFrames - captured).clamp(0, maxCaptureFrames);
 
@@ -72,24 +71,17 @@ abstract class StopMotionFrameOps {
   /// [defaultFramesPerImage] once there are enough stills to fill
   /// [minimumInitialDuration] on their own, and an evenly shared longer hold
   /// below that — a lone still is held for the full second.
+  ///
+  /// The hold rounds up ([framesPerImageToDuration]), so the stills always sum
+  /// to at least the minimum and never need a correcting extra frame — which
+  /// on a one-frame hold would double the session.
   static int initialFramesPerImage(int frameCount) {
     if (frameCount <= 0) return defaultFramesPerImage;
     final outputFrames = durationToFramesPerImage(minimumInitialDuration);
-    final framesPerImage = (outputFrames / frameCount).ceil().clamp(
+    return (outputFrames / frameCount).ceil().clamp(
       defaultFramesPerImage,
       maxFramesPerImage,
     );
-    // Output frames divide the minimum evenly; whole microseconds don't, and
-    // [framesPerImageToDuration] rounds. 3 stills (8 frames each) sum to
-    // 999,999µs and 12 stills (2 each) to 999,996µs — just under the gate,
-    // which compares summed durations, not frame counts. One extra frame is
-    // always enough to cover it: a frame is ~41ms against a ≤4µs shortfall.
-    if (framesPerImage < maxFramesPerImage &&
-        framesPerImageToDuration(framesPerImage) * frameCount <
-            minimumInitialDuration) {
-      return framesPerImage + 1;
-    }
-    return framesPerImage;
   }
 
   /// Hold for one still in a freshly captured session of [frameCount] stills
@@ -100,6 +92,12 @@ abstract class StopMotionFrameOps {
   /// Hold duration for a still shown for [framesPerImage] output frames at the
   /// default frame rate. [framesPerImage] is clamped to
   /// [minFramesPerImage]..[maxFramesPerImage].
+  ///
+  /// Rounded *up*: a frame is not a whole number of microseconds (1/30s is
+  /// 33333.3µs) while the gates around a composition — the editor's Done
+  /// check, the renderer's loop-to-length minimum — compare summed holds in
+  /// microseconds. Rounding down would leave 30 one-frame stills at 999,990µs:
+  /// exactly one second of output, read as a hair too short.
   static Duration framesPerImageToDuration(int framesPerImage) {
     final clamped = framesPerImage.clamp(minFramesPerImage, maxFramesPerImage);
     return Duration(
@@ -107,7 +105,7 @@ abstract class StopMotionFrameOps {
           (clamped *
                   Duration.microsecondsPerSecond /
                   StopMotionRenderService.defaultFrameRate)
-              .round(),
+              .ceil(),
     );
   }
 

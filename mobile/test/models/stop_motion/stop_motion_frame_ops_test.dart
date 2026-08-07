@@ -10,13 +10,14 @@ import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart' show EditorVideo;
 
 void main() {
-  // One output frame at the render frame rate.
+  // One output frame at the render frame rate, rounded up like the production
+  // helper so a hold always covers the frames it stands for.
   Duration hold(int framesPerImage) => Duration(
     microseconds:
         (framesPerImage *
                 Duration.microsecondsPerSecond /
                 StopMotionRenderService.defaultFrameRate)
-            .round(),
+            .ceil(),
   );
 
   List<StopMotionClipFrame> framesOf(List<int> holds) => [
@@ -100,8 +101,8 @@ void main() {
 
     test('a session of any size fills at least the minimum duration', () {
       // Asserted on summed *duration*, which is what the editor's Done gate
-      // compares — counting output frames instead hides the rounding in
-      // framesPerImageToDuration (3 and 12 stills land 1µs and 4µs short).
+      // compares — counting output frames instead would hide any rounding in
+      // framesPerImageToDuration.
       for (var frameCount = 1; frameCount <= 40; frameCount++) {
         expect(
           StopMotionFrameOps.initialHold(frameCount) * frameCount,
@@ -112,15 +113,16 @@ void main() {
     });
 
     test('keeps the default hold once the stills fill it on their own', () {
-      // Fewest stills that reach the minimum at one output frame each.
-      // Derived rather than hardcoded so a frame-rate change moves the
-      // boundary with it instead of silently invalidating the assertion.
-      final fillingCount =
-          (StopMotionFrameOps.minimumInitialDuration.inMicroseconds /
-                  StopMotionFrameOps.framesPerImageToDuration(
-                    StopMotionFrameOps.defaultFramesPerImage,
-                  ).inMicroseconds)
-              .ceil();
+      // Fewest stills that reach the minimum at one output frame each — the
+      // minimum expressed in output frames. Derived rather than hardcoded so a
+      // frame-rate change moves the boundary with it, and read off the frame
+      // grid rather than by dividing microseconds so the boundary count itself
+      // is asserted: covering the microseconds a hold rounds off by adding a
+      // frame to *every* still would play these exact stills for twice the
+      // minimum.
+      final fillingCount = StopMotionFrameOps.durationToFramesPerImage(
+        StopMotionFrameOps.minimumInitialDuration,
+      );
 
       expect(
         StopMotionFrameOps.initialFramesPerImage(fillingCount),

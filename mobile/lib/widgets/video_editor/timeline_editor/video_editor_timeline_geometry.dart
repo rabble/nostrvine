@@ -232,7 +232,7 @@ List<AudioEvent> rebaseAnchoredAudioForClipState(
 /// Granularity an audio window survives a history/draft round-trip at.
 ///
 /// [AudioEvent] serializes its window in whole milliseconds while a stop-motion
-/// composition is microsecond-accurate (a 1/30s hold is 33333µs), so a window
+/// composition is microsecond-accurate (a 1/30s hold is 33334µs), so a window
 /// restored from history sits up to a millisecond short of the composition end
 /// it was clamped to. Comparisons against the composition end carry that slack.
 const _audioWindowResolution = Duration(milliseconds: 1);
@@ -243,8 +243,8 @@ const _audioWindowResolution = Duration(milliseconds: 1);
 /// A sound is added with its window clamped to the composition end (see
 /// `_openMusicLibrary`). Growing the composition afterwards used to leave that
 /// window frozen at the old, shorter end — a stop-motion hold change that
-/// stretches nine stills from 0.375s to 6.375s published a 6.375s video muxed
-/// with a 0.375s audio track (#6401).
+/// stretches nine stills from 0.3s to 6.6s published a 6.6s video muxed with a
+/// 0.3s audio track (#6401).
 ///
 /// Only tracks whose window *ended at* [previousDuration] follow the new end.
 /// A window the user deliberately trimmed shorter keeps its length, and so does

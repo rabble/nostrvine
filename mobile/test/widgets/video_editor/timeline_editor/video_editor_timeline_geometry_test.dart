@@ -1237,10 +1237,10 @@ void main() {
   });
 
   group(growAudioToCompositionEnd, () {
-    // The #6401 shape: nine stills at a one-frame hold (375ms) with a
-    // sound clamped to that end, then a hold change stretching them to 6.375s.
-    const shortComposition = Duration(milliseconds: 375);
-    const longComposition = Duration(milliseconds: 6375);
+    // The #6401 shape: nine stills at a one-frame hold (300ms) with a
+    // sound clamped to that end, then a hold change stretching them to 6.6s.
+    const shortComposition = Duration(milliseconds: 300);
+    const longComposition = Duration(milliseconds: 6600);
     const maxDuration = Duration(seconds: 6, milliseconds: 300);
 
     List<AudioEvent> grow(
@@ -1266,20 +1266,20 @@ void main() {
     });
 
     test('follows the end across the millisecond the window persists at', () {
-      // Nine such holds are 375003µs, but the window round-trips through
+      // Nine such holds are 300006µs, but the window round-trips through
       // editor history as whole milliseconds. Comparing it against the exact
       // composition end would read the truncation as a deliberate trim.
       final track = _audio(
         id: 'sound',
         startTime: Duration.zero,
-        endTime: const Duration(milliseconds: 375),
+        endTime: const Duration(milliseconds: 300),
         duration: 30,
       );
 
       expect(
         grow(
           [track],
-          previousDuration: const Duration(microseconds: 375003),
+          previousDuration: const Duration(microseconds: 300006),
         ).single.endTime,
         maxDuration,
       );

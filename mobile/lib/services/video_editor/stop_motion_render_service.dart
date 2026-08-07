@@ -213,7 +213,7 @@ class StopMotionRenderService {
   /// duration (each frame held for its own hold time) reaches
   /// [VideoEditorConstants.stopMotionMinOutputDuration].
   ///
-  /// Ultra-short clips (a single still ≈ 83ms) make looping players
+  /// Ultra-short clips (a single still ≈ 33ms) make looping players
   /// stutter/oscillate; repeating preserves the per-frame timing and keeps the
   /// loop seam clean (last frame → first frame). A sequence already at or above
   /// the minimum is returned unchanged.
