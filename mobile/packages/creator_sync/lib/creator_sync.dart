@@ -4,5 +4,6 @@
 export 'src/exceptions.dart';
 export 'src/sync_cipher.dart';
 export 'src/sync_clock.dart';
+export 'src/sync_index_entry.dart';
 export 'src/sync_item_ref.dart';
 export 'src/vault_key_service.dart';
