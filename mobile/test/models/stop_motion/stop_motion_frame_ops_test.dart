@@ -89,6 +89,80 @@ void main() {
         0,
       );
     });
+
+    test('leaves room only for what the committed composition has left', () {
+      // The recorder reopened from the editor shoots into a composition that
+      // already owns part of the maximum length.
+      final half = VideoEditorConstants.maxDuration ~/ 2;
+
+      expect(
+        StopMotionFrameOps.maxCaptureFramesAfter(half),
+        StopMotionFrameOps.maxCaptureFrames ~/ 2,
+      );
+      expect(
+        StopMotionFrameOps.remainingCaptureFrames(1, committed: half),
+        StopMotionFrameOps.maxCaptureFrames ~/ 2 - 1,
+      );
+    });
+
+    test('divides the room left by the hold the new stills inherit', () {
+      // Stills spliced into a clip on threes are re-held at three output
+      // frames each, so roughly a third as many fit as into an empty session.
+      final onThrees = StopMotionFrameOps.maxCaptureFramesAfter(
+        Duration.zero,
+        framesPerImage: 3,
+      );
+      final threeFrameHold = StopMotionFrameOps.framesPerImageToDuration(3);
+
+      expect(
+        threeFrameHold * onThrees,
+        lessThanOrEqualTo(VideoEditorConstants.maxDuration),
+      );
+      expect(
+        threeFrameHold * (onThrees + 1),
+        greaterThan(VideoEditorConstants.maxDuration),
+      );
+      expect(onThrees, lessThan(StopMotionFrameOps.maxCaptureFrames));
+      expect(
+        StopMotionFrameOps.remainingCaptureFrames(1, framesPerImage: 3),
+        onThrees - 1,
+      );
+    });
+
+    test('reads the inherited hold off the composition being edited', () {
+      final onThrees = DivineVideoClip(
+        id: 'on-threes',
+        stopMotionFrames: framesOf([3, 3, 3]),
+        duration: hold(3) * 3,
+        recordedAt: DateTime(2024),
+        targetAspectRatio: model.AspectRatio.vertical,
+        originalAspectRatio: 1,
+      );
+
+      expect(StopMotionFrameOps.captureFramesPerImageFor([onThrees]), 3);
+      // No composition open (fresh session) or a normal video clip: a capture
+      // starts its own set, so it keeps the default hold.
+      expect(
+        StopMotionFrameOps.captureFramesPerImageFor(const []),
+        StopMotionFrameOps.defaultFramesPerImage,
+      );
+    });
+
+    test('leaves no room once the composition fills the maximum', () {
+      expect(
+        StopMotionFrameOps.maxCaptureFramesAfter(
+          VideoEditorConstants.maxDuration,
+        ),
+        0,
+      );
+      expect(
+        StopMotionFrameOps.remainingCaptureFrames(
+          0,
+          committed: VideoEditorConstants.maxDuration * 2,
+        ),
+        0,
+      );
+    });
   });
 
   group('initialFramesPerImage / initialHold', () {

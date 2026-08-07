@@ -3,9 +3,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
+import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_progress_bar.dart';
 
 /// How many more stills fit in the running stop-motion session.
@@ -16,10 +18,15 @@ import 'package:openvine/widgets/video_recorder/video_recorder_progress_bar.dart
 /// frame budget instead: each still is held for one output frame, so the
 /// ceiling is however many frames fit in the maximum clip length.
 ///
+/// Measured against the same clip-manager total capture mode's bar counts, and
+/// at the hold the new stills will actually inherit, so a recorder opened from
+/// the editor to top up a clip starts from what that composition has left
+/// rather than from a full budget.
+///
 /// Returns a [Flexible], so it belongs in the top bar's center slot between
 /// the close and next buttons — the same slot (and the same shape) lip-sync's
 /// audio chip uses.
-class VideoRecorderStopMotionBudget extends StatelessWidget {
+class VideoRecorderStopMotionBudget extends ConsumerWidget {
   const VideoRecorderStopMotionBudget({super.key});
 
   /// Gap between the count and the bar. Tighter than the recording bar's,
@@ -29,12 +36,27 @@ class VideoRecorderStopMotionBudget extends StatelessWidget {
   static const double _labelSpacing = 2;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final captured = context.select(
       (VideoRecorderBloc b) => b.state.stopMotionFrameCount,
     );
-    final budget = StopMotionFrameOps.maxCaptureFrames;
-    final remaining = StopMotionFrameOps.remainingCaptureFrames(captured);
+    final (committed, framesPerImage) = ref.watch(
+      clipManagerProvider.select(
+        (s) => (
+          s.totalDuration,
+          StopMotionFrameOps.captureFramesPerImageFor(s.clips),
+        ),
+      ),
+    );
+    final budget = StopMotionFrameOps.maxCaptureFramesAfter(
+      committed,
+      framesPerImage: framesPerImage,
+    );
+    final remaining = StopMotionFrameOps.remainingCaptureFrames(
+      captured,
+      committed: committed,
+      framesPerImage: framesPerImage,
+    );
     final label = context.l10n.videoRecorderStopMotionShotsLeft(remaining);
 
     return Flexible(

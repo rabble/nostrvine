@@ -34,24 +34,61 @@ abstract class StopMotionFrameOps {
   /// a new capture path wanting a starting hold wants [initialHold].
   static const int defaultFramesPerImage = 1;
 
-  /// Most stills one capture session fits before the assembled clip would run
-  /// past [VideoEditorConstants.maxDuration].
+  /// Output frames a newly captured still ends up held for once it lands in
+  /// [clips].
+  ///
+  /// A session shooting into an existing stop-motion composition inherits that
+  /// composition's global hold — the editor re-applies it on splice, both to
+  /// undo the fresh capture's stretch and to keep the new stills in step with
+  /// the old ones — so a clip on threes fits a third as many more stills as an
+  /// empty session does.
+  static int captureFramesPerImageFor(List<DivineVideoClip> clips) {
+    if (!isStopMotionComposition(clips)) return defaultFramesPerImage;
+    return globalDefaultFramesPerImage(
+      clips.first.stopMotionFrames ?? const [],
+    );
+  }
+
+  /// Most stills a capture session fits alongside [committed] — composition
+  /// already in the clip manager, which is what the recorder opens over when
+  /// the editor sends the user back to add more stills — holding each new
+  /// still for [framesPerImage] output frames (see [captureFramesPerImageFor]).
   ///
   /// A session long enough to clear [minimumInitialDuration] on its own holds
   /// every still for [defaultFramesPerImage] output frame, so the ceiling is
-  /// however many such holds fit in the maximum clip length. Shorter sessions
-  /// are stretched ([initialFramesPerImage]) but stay far below it.
-  static final int maxCaptureFrames =
-      VideoEditorConstants.maxDuration.inMicroseconds ~/
-      framesPerImageToDuration(defaultFramesPerImage).inMicroseconds;
+  /// however many such holds fit in what is left of
+  /// [VideoEditorConstants.maxDuration]. Shorter sessions are stretched
+  /// ([initialFramesPerImage]) but stay far below it.
+  static int maxCaptureFramesAfter(
+    Duration committed, {
+    int framesPerImage = defaultFramesPerImage,
+  }) {
+    final left = VideoEditorConstants.maxDuration - committed;
+    if (left <= Duration.zero) return 0;
+    return left.inMicroseconds ~/
+        framesPerImageToDuration(framesPerImage).inMicroseconds;
+  }
+
+  /// [maxCaptureFramesAfter] with nothing committed: the ceiling a recorder
+  /// session opened on an empty composition starts from.
+  static final int maxCaptureFrames = maxCaptureFramesAfter(Duration.zero);
 
   /// Stills still available after [captured] shots, floored at zero.
   ///
-  /// Shooting past [maxCaptureFrames] is not blocked — the recorder keeps
-  /// capturing and the overflow is trimmed in the editor, matching how capture
-  /// mode lets a recording run past the maximum duration.
-  static int remainingCaptureFrames(int captured) =>
-      (maxCaptureFrames - captured).clamp(0, maxCaptureFrames);
+  /// Shooting past the ceiling is not blocked — the recorder keeps capturing
+  /// and the overflow is trimmed in the editor, matching how capture mode lets
+  /// a recording run past the maximum duration.
+  static int remainingCaptureFrames(
+    int captured, {
+    Duration committed = Duration.zero,
+    int framesPerImage = defaultFramesPerImage,
+  }) {
+    final budget = maxCaptureFramesAfter(
+      committed,
+      framesPerImage: framesPerImage,
+    );
+    return (budget - captured).clamp(0, budget);
+  }
 
   /// Shortest a freshly captured session plays for.
   ///
