@@ -317,6 +317,7 @@ void main() {
           ViewTrafficSource.discoveryClassic: 'discovery:classic',
           ViewTrafficSource.discoveryForYou: 'discovery:foryou',
           ViewTrafficSource.discoveryPopular: 'discovery:popular',
+          ViewTrafficSource.discoveryFeatured: 'discovery:featured',
           ViewTrafficSource.profile: 'profile',
           ViewTrafficSource.share: 'share',
           ViewTrafficSource.search: 'search',
