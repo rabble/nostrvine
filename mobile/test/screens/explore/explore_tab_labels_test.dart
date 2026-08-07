@@ -1,11 +1,12 @@
-// ABOUTME: Tests for featured tab label resolution and defensive clamping.
-// ABOUTME: The label is server-supplied, so it is treated as untrusted.
+// ABOUTME: Regression tests for shared Explore tab label resolution.
+// ABOUTME: Covers shell titles plus the server-supplied featured tab label.
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:openvine/blocs/explore_tabs/explore_tabs_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/l10n/generated/app_localizations_en.dart';
 import 'package:openvine/screens/explore/explore_tab_labels.dart';
 
 FeaturedTabConfig _featured(Map<String, String> label) {
@@ -21,6 +22,54 @@ FeaturedTabConfig _featured(Map<String, String> label) {
 }
 
 void main() {
+  group('labelForExploreTabName', () {
+    final l10n = AppLocalizationsEn();
+
+    test('returns tab-bar labels for every canonical tab name', () {
+      const state = ExploreTabsState(
+        classicsAvailable: true,
+        forYouAvailable: true,
+        appsAvailable: true,
+      );
+
+      expect(
+        state.tabNames.map((name) => labelForExploreTabName(l10n, name)),
+        const [
+          'Classics',
+          'New',
+          'Popular',
+          'Categories',
+          'For You',
+          'Lists',
+          'Integrated Apps',
+        ],
+      );
+    });
+
+    test('returns feed-mode shell titles for every canonical tab name', () {
+      const state = ExploreTabsState(
+        classicsAvailable: true,
+        forYouAvailable: true,
+        appsAvailable: true,
+      );
+
+      expect(
+        state.tabNames.map(
+          (name) => labelForExploreTabName(l10n, name, shellTitle: true),
+        ),
+        const [
+          'Classics',
+          'New Videos',
+          'Trending',
+          'Categories',
+          'For You',
+          'Lists',
+          'Integrated Apps',
+        ],
+      );
+    });
+  });
+
   group('labelForExploreTabName featured tab', () {
     late AppLocalizations en;
 
