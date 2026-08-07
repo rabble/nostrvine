@@ -115,6 +115,9 @@ class DivineSwitchTile extends StatelessWidget {
       opacity: isEnabled ? 1.0 : disabledOpacity,
       child: MergeSemantics(
         child: ListTile(
+          // Symmetric 16 rather than Material 3's start 16 / end 24. Rows that
+          // carry a control sit at 16 on both edges; navigation rows keep the
+          // Material default, so the caret has room to breathe.
           contentPadding: const .symmetric(horizontal: 16),
           enabled: isEnabled,
           leading:

@@ -114,6 +114,10 @@ class VideoMetadataAudioSharingSection extends ConsumerWidget {
         confirmedOwnWork: false,
       );
     }
+    // Deliberately not localized: this title is published into the audio
+    // event, so translating it would make event data depend on the poster's
+    // locale — a German poster's sound would read "Originalton" to every
+    // viewer, whatever their own locale.
     return AudioShareAttribution.forOwnedSound(
       title: title?.isNotEmpty == true ? title! : 'Original sound',
       publisherName: publisherName,

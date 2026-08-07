@@ -49,6 +49,8 @@ class DivineCheckboxTile extends StatelessWidget {
           enabled: isEnabled,
           checked: value,
           child: ListTile(
+            // Symmetric 16, matching `DivineSwitchTile` — see the note there
+            // on why control rows and navigation rows differ.
             contentPadding: const .symmetric(horizontal: 16),
             enabled: isEnabled,
             leading: DivineSpriteCheckbox(
