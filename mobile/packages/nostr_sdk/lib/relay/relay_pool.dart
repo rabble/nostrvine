@@ -2302,10 +2302,6 @@ class RelayPool {
       log('Closing idle temp relay ${entry.key}');
       removeTempRelay(entry.key);
     }
-    if (_tempRelays.isEmpty) {
-      _tempRelaySweepTimer?.cancel();
-      _tempRelaySweepTimer = null;
-    }
   }
 
   bool _isTempRelayReapable(Relay relay, DateTime idleSince) {
@@ -2393,6 +2389,13 @@ class RelayPool {
       relay.dispose();
     }
     _forgetRelayBookkeeping(addr);
+    // Pairs with the arm in [checkAndGenTempRelay]: the sweep exists only to
+    // serve entries in [_tempRelays], so it stops with the last one rather
+    // than waiting for a tick to notice the map is empty.
+    if (_tempRelays.isEmpty) {
+      _tempRelaySweepTimer?.cancel();
+      _tempRelaySweepTimer = null;
+    }
   }
 
   Relay? getTempRelay(String url) {
