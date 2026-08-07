@@ -258,9 +258,13 @@ void main() {
         tester,
       ) async {
         final soundsRepository = _MockSoundsRepository();
+        // An unreachable relay arrives as an unanswered empty result, and that
+        // is what makes the resolver throw. Stubbing `fetchVideosUsingSound`
+        // leaves the method the resolver calls unstubbed, so the test passes on
+        // a missing-stub error instead of this scenario.
         when(
-          () => soundsRepository.fetchVideosUsingSound(any()),
-        ).thenThrow(StateError('relay unavailable'));
+          () => soundsRepository.fetchVideosUsingSoundDetailed(any()),
+        ).thenAnswer((_) async => (ids: <String>[], answered: false));
 
         final legacySound =
             _createTestAudioEvent(
