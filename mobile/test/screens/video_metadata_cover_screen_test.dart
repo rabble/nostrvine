@@ -355,7 +355,7 @@ void main() {
           find.text(l10n.videoMetadataEditCoverFailedSnackbar),
           findsOneWidget,
         );
-        expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(find.byType(BrandedLoadingIndicator), findsNothing);
       },
     );
 
@@ -368,7 +368,7 @@ void main() {
       await tester.pumpWidget(buildWidget());
       await tester.pump(const Duration(milliseconds: 400));
 
-      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byType(BrandedLoadingIndicator), findsNothing);
       expect(
         find.byWidgetPredicate(
           (w) => w is DivineIconButton && w.icon == DivineIconName.check,
