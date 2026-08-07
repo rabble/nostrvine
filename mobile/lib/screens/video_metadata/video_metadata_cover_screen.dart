@@ -625,7 +625,8 @@ class _TopBarContent extends StatelessWidget {
       alignment: .topCenter,
       child: SafeArea(
         bottom: false,
-        child: Padding(
+        child: Container(
+          height: kToolbarHeight,
           padding: const .symmetric(horizontal: 16),
           child: Row(
             spacing: 16,
