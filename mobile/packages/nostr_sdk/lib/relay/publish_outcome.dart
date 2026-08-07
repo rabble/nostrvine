@@ -30,7 +30,6 @@ import 'dart:async';
 class PublishOutcome {
   const PublishOutcome({
     required this.eventId,
-    this.eventKind,
     required this.acceptedBy,
     required this.rejectedBy,
     required this.noResponseFrom,
@@ -39,13 +38,6 @@ class PublishOutcome {
 
   /// The id of the event that was published.
   final String eventId;
-
-  /// The event kind that was published, when known.
-  ///
-  /// Set by `RelayPool.sendEventAwaitOk` callers or inferred from the `EVENT`
-  /// message envelope. Null when callers do not provide a kind and it cannot be
-  /// inferred from the message.
-  final int? eventKind;
 
   /// Relay URLs that returned `OK true`.
   final List<String> acceptedBy;
@@ -147,8 +139,6 @@ class PublishOutcome {
 class PublishTracker {
   PublishTracker({
     required this.eventId,
-    this.eventKind,
-    this.diagnosticTag,
     this.message,
     this.deadline,
     required this.expectedRelays,
@@ -177,12 +167,6 @@ class PublishTracker {
 
   /// The event id we are waiting on.
   final String eventId;
-
-  /// The event kind we are waiting on, when known.
-  final int? eventKind;
-
-  /// Caller-supplied tag for temporary publish diagnostics, when enabled.
-  final String? diagnosticTag;
 
   /// Original EVENT frame for SDK-internal retry paths.
   final List<dynamic>? message;
@@ -393,7 +377,6 @@ class PublishTracker {
     _completer.complete(
       PublishOutcome(
         eventId: eventId,
-        eventKind: eventKind,
         acceptedBy: _accepted.toList(growable: false),
         rejectedBy: Map<String, String>.unmodifiable(effectiveRejected),
         noResponseFrom: noResponse,

@@ -39,7 +39,6 @@ void main() {
           {'id': 'zombie-event-id', 'kind': 14},
         ],
         eventId: 'zombie-event-id',
-        eventKind: 14,
         targetRelays: [relayUrl],
         timeout: const Duration(milliseconds: 100),
       );
@@ -150,7 +149,6 @@ void main() {
           {'id': 'zombie-event-id', 'kind': 14},
         ],
         eventId: 'zombie-event-id',
-        eventKind: 14,
         targetRelays: [relayUrl, siblingUrl],
         timeout: const Duration(milliseconds: 100),
       );
@@ -197,7 +195,6 @@ void main() {
           {'id': 'busy-event-id', 'kind': 14},
         ],
         eventId: 'busy-event-id',
-        eventKind: 14,
         targetRelays: [relayUrl, siblingUrl],
         timeout: const Duration(milliseconds: 100),
       );
@@ -226,7 +223,6 @@ void main() {
           {'id': id, 'kind': 14},
         ],
         eventId: id,
-        eventKind: 14,
         targetRelays: [relayUrl],
         timeout: const Duration(milliseconds: 100),
       );

@@ -229,7 +229,6 @@ class Nostr {
     List<String>? tempRelays,
     List<String>? targetRelays,
     Duration timeout = const Duration(seconds: 15),
-    String? diagnosticTag,
   }) async {
     if (StringUtil.isBlank(event.sig)) {
       await signEvent(event);
@@ -241,11 +240,9 @@ class Nostr {
     return _pool.sendEventAwaitOk(
       ["EVENT", event.toJson()],
       eventId: event.id,
-      eventKind: event.kind,
       tempRelays: tempRelays,
       targetRelays: targetRelays,
       timeout: timeout,
-      diagnosticTag: diagnosticTag,
     );
   }
 
