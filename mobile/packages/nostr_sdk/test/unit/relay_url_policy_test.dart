@@ -119,6 +119,20 @@ void main() {
       );
     });
 
+    test('refuses the remaining non-globally-routable ranges', () {
+      for (final url in [
+        'wss://192.0.0.1', // 192.0.0.0/24 IETF protocol assignments
+        'wss://198.18.0.1', // 198.18.0.0/15 benchmarking
+        'wss://198.19.255.254', // top of the benchmarking block
+        'wss://192.0.2.1', // TEST-NET-1
+        'wss://198.51.100.1', // TEST-NET-2
+        'wss://203.0.113.1', // TEST-NET-3
+        'wss://[2001:db8::1]', // RFC 3849 documentation prefix
+      ]) {
+        expect(isRemoteSuppliedRelayUrlAllowed(url), isFalse, reason: url);
+      }
+    });
+
     test(
       'does not refuse ordinary public addresses that merely look close',
       () {
@@ -129,6 +143,13 @@ void main() {
           'wss://192.169.0.1', // adjacent to 192.168/16
           'wss://100.63.0.1', // just below CGNAT
           'wss://8.8.8.8',
+          'wss://192.0.1.1', // just above 192.0.0.0/24
+          'wss://192.0.3.1', // just above TEST-NET-1
+          'wss://198.17.255.254', // just below the benchmarking block
+          'wss://198.20.0.1', // just above the benchmarking block
+          'wss://198.51.99.1', // just below TEST-NET-2
+          'wss://203.0.114.1', // just above TEST-NET-3
+          'wss://[2001:db9::1]', // adjacent to the documentation prefix
         ]) {
           expect(isRemoteSuppliedRelayUrlAllowed(url), isTrue, reason: url);
         }

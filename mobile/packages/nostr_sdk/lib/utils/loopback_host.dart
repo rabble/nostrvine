@@ -131,6 +131,12 @@ List<int>? _tryParseIPv6(String host) {
   }
 }
 
+/// Whether [b] is outside the globally routable unicast space.
+///
+/// Tracks the IANA IPv4 Special-Purpose Address Registry rather than only the
+/// reachable-LAN set: a relay list a stranger wrote has no business naming any
+/// of these, and "not globally routable" is a rule that can be checked against
+/// a published registry instead of re-argued per range.
 bool _isPrivateIPv4(List<int> b) {
   if (b[0] == 10) return true; // 10.0.0.0/8 private
   if (b[0] == 127) return true; // 127.0.0.0/8 loopback
@@ -140,6 +146,14 @@ bool _isPrivateIPv4(List<int> b) {
   if (b[0] == 192 && b[1] == 168) return true; // 192.168.0.0/16
   if (b[0] == 100 && b[1] >= 64 && b[1] <= 127) return true; // 100.64/10 CGNAT
   if (b[0] >= 224) return true; // 224.0.0.0/4 multicast + 240/4 reserved
+  // 192.0.0.0/24 IETF protocol assignments.
+  if (b[0] == 192 && b[1] == 0 && b[2] == 0) return true;
+  // 198.18.0.0/15 benchmarking (RFC 2544).
+  if (b[0] == 198 && (b[1] == 18 || b[1] == 19)) return true;
+  // RFC 5737 documentation ranges: TEST-NET-1/2/3.
+  if (b[0] == 192 && b[1] == 0 && b[2] == 2) return true;
+  if (b[0] == 198 && b[1] == 51 && b[2] == 100) return true;
+  if (b[0] == 203 && b[1] == 0 && b[2] == 113) return true;
   return false;
 }
 
@@ -158,5 +172,7 @@ bool _isPrivateIPv6(List<int> b) {
   // fe80::/10 link-local.
   if (b[0] == 0xfe && (b[1] & 0xc0) == 0x80) return true;
   if (b[0] == 0xff) return true; // ff00::/8 multicast
+  // 2001:db8::/32 documentation (RFC 3849) — the v6 twin of TEST-NET.
+  if (b[0] == 0x20 && b[1] == 0x01 && b[2] == 0x0d && b[3] == 0xb8) return true;
   return false;
 }
