@@ -103,8 +103,8 @@ services:
       retries: 10
 
   funnelcake-migrate:
-    image: ghcr.io/divinevideo/funnelcake-migrate:latest
-    pull_policy: always
+    image: ${FUNNELCAKE_MIGRATE_IMAGE:-ghcr.io/divinevideo/funnelcake-migrate:latest}
+    pull_policy: ${FUNNELCAKE_PULL_POLICY:-always}
     restart: on-failure:3
     depends_on:
       funnelcake-clickhouse:
@@ -116,8 +116,8 @@ services:
       CLICKHOUSE_PASSWORD: clickhouse
 
   funnelcake-relay:
-    image: ghcr.io/divinevideo/funnelcake-relay:latest
-    pull_policy: always
+    image: ${FUNNELCAKE_RELAY_IMAGE:-ghcr.io/divinevideo/funnelcake-relay:latest}
+    pull_policy: ${FUNNELCAKE_PULL_POLICY:-always}
     depends_on:
       funnelcake-migrate:
         condition: service_completed_successfully
@@ -144,8 +144,8 @@ services:
       MAX_EVENTS_PER_MINUTE_PER_PUBKEY: "0"
 
   funnelcake-api:
-    image: ghcr.io/divinevideo/funnelcake-api:latest
-    pull_policy: always
+    image: ${FUNNELCAKE_API_IMAGE:-ghcr.io/divinevideo/funnelcake-api:latest}
+    pull_policy: ${FUNNELCAKE_PULL_POLICY:-always}
     depends_on:
       funnelcake-migrate:
         condition: service_completed_successfully
