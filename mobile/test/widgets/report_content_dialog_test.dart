@@ -13,6 +13,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/event.dart' as nostr;
+import 'package:openvine/l10n/content_filter_reason_localizations.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/content_moderation_types.dart';
@@ -725,6 +726,7 @@ void main() {
           content: any(named: 'content'),
           replyToId: any(named: 'replyToId'),
           skipNip04Fallback: any(named: 'skipNip04Fallback'),
+          additionalTags: any(named: 'additionalTags'),
         ),
       ).thenAnswer(
         (_) async => NIP17SendResult.success(
@@ -776,17 +778,41 @@ void main() {
       );
     }
 
-    Future<void> openAndSubmitReport(WidgetTester tester) async {
+    Future<void> openAndSubmitReport(
+      WidgetTester tester, {
+      String? reasonLabel,
+    }) async {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
       await tester.tap(find.text('Open Report'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text(l10n.reportReasonSpam));
+      final reason = reasonLabel ?? l10n.reportReasonSpam;
+      await tester.scrollUntilVisible(
+        find.text(reason),
+        100,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.tap(find.text(reason));
       await tester.pumpAndSettle();
 
       await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
       await tester.pumpAndSettle();
+    }
+
+    /// The `additionalTags` the dialog attached to the single moderation DM.
+    Future<List<List<String>>> captureDmTags(WidgetTester tester) async {
+      final captured = verify(
+        () => mockDmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
+          additionalTags: captureAny(named: 'additionalTags'),
+        ),
+      ).captured;
+
+      return captured.single as List<List<String>>;
     }
 
     testWidgets('sends DM to moderation team after successful report', (
@@ -801,6 +827,7 @@ void main() {
           content: any(named: 'content'),
           replyToId: any(named: 'replyToId'),
           skipNip04Fallback: any(named: 'skipNip04Fallback'),
+          additionalTags: any(named: 'additionalTags'),
         ),
       ).called(1);
     });
@@ -817,6 +844,7 @@ void main() {
           content: captureAny(named: 'content'),
           replyToId: any(named: 'replyToId'),
           skipNip04Fallback: any(named: 'skipNip04Fallback'),
+          additionalTags: any(named: 'additionalTags'),
         ),
       ).captured;
 
@@ -838,6 +866,100 @@ void main() {
       );
     });
 
+    testWidgets('DM carries the granular NIP-32 label for the reason', (
+      tester,
+    ) async {
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+
+      final tags = await captureDmTags(tester);
+
+      expect(
+        tags,
+        contains(equals(['L', kReportLabelNamespace])),
+        reason: 'NIP-32 requires the namespace to be declared with L',
+      );
+      expect(
+        tags,
+        contains(equals(['l', 'NS-spam', kReportLabelNamespace])),
+        reason:
+            'divine-moderation-service resolves report_type from this label '
+            'first, so it must carry the uncollapsed reason (#6593)',
+      );
+    });
+
+    testWidgets('DM carries the NIP-56 type as a coarse fallback', (
+      tester,
+    ) async {
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+
+      expect(
+        await captureDmTags(tester),
+        contains(equals(['report_type', 'spam'])),
+        reason:
+            'the backend falls back to this when the NIP-32 label is absent',
+      );
+    });
+
+    testWidgets(
+      'DM label survives a reason the NIP-56 mapping collapses to "other"',
+      (tester) async {
+        await setLargeSurface(tester);
+        await openAndSubmitReport(
+          tester,
+          reasonLabel: l10n.reportReasonTitle(ContentFilterReason.aiGenerated),
+        );
+
+        final tags = await captureDmTags(tester);
+
+        // The regression this whole change exists to prevent: report_type
+        // alone would pin user_reports.report_type to 'other' for an AI
+        // report, permanently, via INSERT OR IGNORE.
+        expect(tags, contains(equals(['report_type', 'other'])));
+        expect(
+          tags,
+          contains(equals(['l', 'NS-aiGenerated', kReportLabelNamespace])),
+        );
+      },
+    );
+
+    testWidgets(
+      'DM carries sha256 when the reported video resolves a blob hash',
+      (tester) async {
+        testVideo = testVideo.copyWith(sha256: 'a' * 64);
+
+        await setLargeSurface(tester);
+        await openAndSubmitReport(tester);
+
+        expect(
+          await captureDmTags(tester),
+          contains(equals(['sha256', 'a' * 64])),
+        );
+      },
+    );
+
+    testWidgets('DM omits sha256 when the video has no blob hash', (
+      tester,
+    ) async {
+      // The default fixture's imeta tag has no x sub-value, matching a
+      // video published without one.
+      expect(testVideo.sha256, isNull);
+
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+
+      final tags = await captureDmTags(tester);
+      expect(
+        tags.where((t) => t.first == 'sha256'),
+        isEmpty,
+        reason:
+            'user_reports.sha256 is NOT NULL server-side; a blank tag would '
+            'let a malformed report through instead of degrading cleanly to '
+            'no report row',
+      );
+    });
+
     testWidgets('report succeeds even if moderation DM fails', (tester) async {
       when(
         () => mockDmRepository.sendMessage(
@@ -845,6 +967,7 @@ void main() {
           content: any(named: 'content'),
           replyToId: any(named: 'replyToId'),
           skipNip04Fallback: any(named: 'skipNip04Fallback'),
+          additionalTags: any(named: 'additionalTags'),
         ),
       ).thenThrow(Exception('DM relay unreachable'));
 
@@ -875,6 +998,7 @@ void main() {
           content: any(named: 'content'),
           replyToId: any(named: 'replyToId'),
           skipNip04Fallback: true,
+          additionalTags: any(named: 'additionalTags'),
         ),
       ).called(1);
     });
@@ -899,6 +1023,7 @@ void main() {
           content: any(named: 'content'),
           replyToId: any(named: 'replyToId'),
           skipNip04Fallback: any(named: 'skipNip04Fallback'),
+          additionalTags: any(named: 'additionalTags'),
         ),
       ).thenAnswer((_) async => result);
     }
@@ -1009,6 +1134,7 @@ void main() {
           content: any(named: 'content'),
           replyToId: any(named: 'replyToId'),
           skipNip04Fallback: any(named: 'skipNip04Fallback'),
+          additionalTags: any(named: 'additionalTags'),
         ),
       ).called(1);
     });
@@ -1050,6 +1176,7 @@ void main() {
           content: any(named: 'content'),
           replyToId: any(named: 'replyToId'),
           skipNip04Fallback: any(named: 'skipNip04Fallback'),
+          additionalTags: any(named: 'additionalTags'),
         ),
       );
     });
@@ -1098,6 +1225,7 @@ void main() {
           content: any(named: 'content'),
           replyToId: any(named: 'replyToId'),
           skipNip04Fallback: any(named: 'skipNip04Fallback'),
+          additionalTags: any(named: 'additionalTags'),
         ),
       ).called(1);
     });
@@ -1165,6 +1293,7 @@ void main() {
           content: any(named: 'content'),
           replyToId: any(named: 'replyToId'),
           skipNip04Fallback: any(named: 'skipNip04Fallback'),
+          additionalTags: any(named: 'additionalTags'),
         ),
       ).called(1);
       verify(
@@ -1223,6 +1352,7 @@ void main() {
             content: any(named: 'content'),
             replyToId: any(named: 'replyToId'),
             skipNip04Fallback: any(named: 'skipNip04Fallback'),
+            additionalTags: any(named: 'additionalTags'),
           ),
         ).called(1);
         expect(find.text(l10n.reportReceivedTitle), findsOneWidget);
@@ -1273,6 +1403,7 @@ void main() {
           content: any(named: 'content'),
           replyToId: any(named: 'replyToId'),
           skipNip04Fallback: any(named: 'skipNip04Fallback'),
+          additionalTags: any(named: 'additionalTags'),
         ),
       ).called(1);
       // Coalescing spent the row, so the re-drive is not retried either.
@@ -1318,6 +1449,7 @@ void main() {
           content: any(named: 'content'),
           replyToId: any(named: 'replyToId'),
           skipNip04Fallback: any(named: 'skipNip04Fallback'),
+          additionalTags: any(named: 'additionalTags'),
         ),
       ).called(1);
     });
@@ -1478,6 +1610,7 @@ void main() {
             content: any(named: 'content'),
             replyToId: any(named: 'replyToId'),
             skipNip04Fallback: any(named: 'skipNip04Fallback'),
+            additionalTags: any(named: 'additionalTags'),
           ),
         ).thenThrow(Exception('No keys available'));
 
@@ -1536,6 +1669,7 @@ void main() {
             content: any(named: 'content'),
             replyToId: any(named: 'replyToId'),
             skipNip04Fallback: any(named: 'skipNip04Fallback'),
+            additionalTags: any(named: 'additionalTags'),
           ),
         );
       },
@@ -1566,6 +1700,7 @@ void main() {
           content: any(named: 'content'),
           replyToId: any(named: 'replyToId'),
           skipNip04Fallback: any(named: 'skipNip04Fallback'),
+          additionalTags: any(named: 'additionalTags'),
         ),
       ).thenAnswer(
         (_) async => NIP17SendResult.success(
@@ -1648,6 +1783,7 @@ void main() {
             content: captureAny(named: 'content'),
             replyToId: any(named: 'replyToId'),
             skipNip04Fallback: any(named: 'skipNip04Fallback'),
+            additionalTags: any(named: 'additionalTags'),
           ),
         ).captured;
 
@@ -1699,6 +1835,7 @@ void main() {
           content: any(named: 'content'),
           replyToId: any(named: 'replyToId'),
           skipNip04Fallback: any(named: 'skipNip04Fallback'),
+          additionalTags: any(named: 'additionalTags'),
         ),
       ).thenAnswer(
         (_) async => NIP17SendResult.success(
@@ -1809,6 +1946,7 @@ void main() {
             content: captureAny(named: 'content'),
             replyToId: any(named: 'replyToId'),
             skipNip04Fallback: any(named: 'skipNip04Fallback'),
+            additionalTags: any(named: 'additionalTags'),
           ),
         ).captured;
 

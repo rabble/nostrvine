@@ -524,6 +524,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
           // never let them degrade to a metadata-leaking NIP-04
           // plaintext duplicate. NIP-17 gift wrap only.
           skipNip04Fallback: true,
+          additionalTags: _reportDmTags(),
         );
       } else {
         try {
@@ -617,6 +618,34 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
       buffer.writeln('Details: $details');
     }
     return buffer.toString().trimRight();
+  }
+
+  /// Machine-readable report data for divine-moderation-service's dm-reader,
+  /// carried as NIP-17 tags on the rumor rather than folded into
+  /// [_formatReportDm] — the DM's content stays plain human-readable prose,
+  /// which NIP-17 mandates and the admin Messages UI renders as-is (#6593).
+  ///
+  /// The `L`/`l` pair is the same NIP-32 label the kind-1984 report already
+  /// carries, so both channels resolve to one report type; the backend
+  /// prefers it over `report_type`. Sending only the NIP-56 value would let
+  /// whichever channel ingested first pin a collapsed type — `other` for an
+  /// `aiGenerated` report — permanently, because `user_reports` is written
+  /// with `INSERT OR IGNORE` on `(sha256, reporter_pubkey)`.
+  ///
+  /// `sha256` is present only for content reports whose video resolves a
+  /// Blossom blob hash: [VideoEvent.sha256] is nullable, and user reports
+  /// and DM-message reports never have one. `user_reports.sha256` is
+  /// `NOT NULL`, so omitting it degrades to no report row rather than a
+  /// malformed one.
+  List<List<String>> _reportDmTags() {
+    final reason = _selectedReason!;
+    final sha256 = widget.video?.sha256;
+    return [
+      ['L', kReportLabelNamespace],
+      ['l', contentFilterReasonToNip32Label(reason), kReportLabelNamespace],
+      ['report_type', contentFilterReasonToNip56Type(reason)],
+      if (sha256 != null && sha256.isNotEmpty) ['sha256', sha256],
+    ];
   }
 
   @override
