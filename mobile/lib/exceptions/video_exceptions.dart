@@ -19,6 +19,23 @@ class DuplicateSubscriptionException implements Exception {
   String toString() => 'DuplicateSubscriptionException: $message';
 }
 
+/// Exception thrown when a sound's reuse consent could not be determined.
+///
+/// Distinct from [AudioReuseNotPermittedException]: the relays never answered,
+/// so nothing is known about the creator's terms. Callers fail closed on it,
+/// but must not report it as a refusal — a retry can clear it.
+class AudioReuseConsentUnavailableException implements Exception {
+  AudioReuseConsentUnavailableException(this.audioEventId);
+
+  /// The sound's Nostr event id.
+  final String audioEventId;
+
+  @override
+  String toString() =>
+      'AudioReuseConsentUnavailableException: the relays did not answer the '
+      'reuse-consent lookup (audio: $audioEventId)';
+}
+
 /// Exception thrown when a video's selected sound is not cleared for reuse.
 ///
 /// Thrown after the media has already uploaded, so it is not an upload or

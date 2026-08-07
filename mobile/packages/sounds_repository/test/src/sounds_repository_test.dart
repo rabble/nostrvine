@@ -465,7 +465,7 @@ void main() {
         final videos = await repository.fetchVideosUsingSound('');
 
         expect(videos, isEmpty);
-        verifyNever(() => mockNostrClient.queryEvents(any()));
+        verifyNever(() => mockNostrClient.queryEventsDetailed(any()));
       });
 
       test('returns list of video event IDs', () async {
@@ -481,15 +481,74 @@ void main() {
           'sig': '',
         });
 
-        when(
-          () => mockNostrClient.queryEvents(any()),
-        ).thenAnswer((_) async => [videoEvent]);
+        when(() => mockNostrClient.queryEventsDetailed(any())).thenAnswer(
+          (_) async => (
+            events: [videoEvent],
+            timedOut: false,
+            noRelays: false,
+          ),
+        );
 
         final videos = await repository.fetchVideosUsingSound(testEventId1);
 
         expect(videos, hasLength(1));
         expect(videos.first, testVideoEventId);
       });
+    });
+
+    group('fetchVideosUsingSoundDetailed', () {
+      // The transport folds "no relay answered" into an empty list —
+      // `queryEvents` drops `timedOut`/`noRelays` and the SDK swallows the
+      // TimeoutException — so callers that must not read silence as evidence
+      // need the flag.
+      test('reports that the relays did not answer', () async {
+        when(() => mockNostrClient.queryEventsDetailed(any())).thenAnswer(
+          (_) async => (events: <Event>[], timedOut: true, noRelays: false),
+        );
+
+        final result = await repository.fetchVideosUsingSoundDetailed(
+          testEventId1,
+        );
+
+        expect(result.ids, isEmpty);
+        expect(result.answered, isFalse);
+      });
+
+      test('reports that no relay was connected', () async {
+        when(() => mockNostrClient.queryEventsDetailed(any())).thenAnswer(
+          (_) async => (events: <Event>[], timedOut: false, noRelays: true),
+        );
+
+        final result = await repository.fetchVideosUsingSoundDetailed(
+          testEventId1,
+        );
+
+        expect(result.answered, isFalse);
+      });
+
+      test('reports an answered empty result', () async {
+        when(() => mockNostrClient.queryEventsDetailed(any())).thenAnswer(
+          (_) async => (events: <Event>[], timedOut: false, noRelays: false),
+        );
+
+        final result = await repository.fetchVideosUsingSoundDetailed(
+          testEventId1,
+        );
+
+        expect(result.ids, isEmpty);
+        expect(result.answered, isTrue);
+      });
+
+      test(
+        'treats an empty audioEventId as answered without querying',
+        () async {
+          final result = await repository.fetchVideosUsingSoundDetailed('');
+
+          expect(result.ids, isEmpty);
+          expect(result.answered, isTrue);
+          verifyNever(() => mockNostrClient.queryEventsDetailed(any()));
+        },
+      );
     });
 
     group('soundsStream', () {
@@ -723,7 +782,7 @@ void main() {
 
       test('fetchVideosUsingSound rethrows on error', () async {
         when(
-          () => mockNostrClient.queryEvents(
+          () => mockNostrClient.queryEventsDetailed(
             any(),
             subscriptionId: any(named: 'subscriptionId'),
             tempRelays: any(named: 'tempRelays'),

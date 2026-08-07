@@ -2,6 +2,7 @@
 // ABOUTME: Answers false unless one unambiguous source-video event grants reuse.
 
 import 'package:models/models.dart';
+import 'package:openvine/exceptions/video_exceptions.dart';
 import 'package:sounds_repository/sounds_repository.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -23,11 +24,12 @@ class AudioReuseConsentResolver {
   /// treat both as "not cleared for reuse", because no later attempt changes
   /// the answer.
   ///
-  /// Throws whatever the repositories throw when the lookup itself fails
-  /// (relay unreachable, timeout). That is *not* an answer about consent, and
-  /// swallowing it as `false` would tell a user their sound was withheld when
-  /// the network was the only problem. Callers that cannot act on the
-  /// difference should catch and fail closed.
+  /// Throws [AudioReuseConsentUnavailableException] when the relays never
+  /// answered, and whatever the repositories throw when a lookup fails
+  /// outright. Neither is an answer about consent, and swallowing them as
+  /// `false` would tell a user their sound was withheld when the network was
+  /// the only problem. Callers that cannot act on the difference should catch
+  /// and fail closed.
   Future<bool> verify(AudioEvent sound) async {
     if (sound.allowsReuse) return true;
     if (sound.hasExplicitReuseConsent) return false;
@@ -43,12 +45,26 @@ class AudioReuseConsentResolver {
     final audioEventId = sound.attributionEventId;
     if (audioEventId == null) return false;
 
-    final ids = await _soundsRepository.fetchVideosUsingSound(audioEventId);
-    if (ids.isEmpty) return false;
+    // The transport reports an unreachable relay as an empty result, not an
+    // error, so an empty list is only evidence when the relays answered.
+    final lookup = await _soundsRepository.fetchVideosUsingSoundDetailed(
+      audioEventId,
+    );
+    if (lookup.ids.isEmpty) {
+      if (!lookup.answered) {
+        throw AudioReuseConsentUnavailableException(audioEventId);
+      }
+      return false;
+    }
     final candidates = await _videosRepository.getVideosByIds(
-      ids,
+      lookup.ids,
       hydrateBulkStats: false,
     );
+    // The relays just named these videos, so failing to fetch a single one is
+    // the same silence one layer down — not a revocation.
+    if (candidates.isEmpty) {
+      throw AudioReuseConsentUnavailableException(audioEventId);
+    }
     // `addressableId` is stable across edits, so several revisions of the
     // same video can match. `allow_audio_reuse` is rebuilt on every edit —
     // dropping the tag is how a creator revokes consent — so the newest
