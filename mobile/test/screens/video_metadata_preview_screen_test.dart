@@ -396,12 +396,14 @@ void main() {
                 body: Center(
                   child: SizedBox.square(
                     dimension: 200,
-                    child: Hero(
-                      tag: VideoEditorConstants.heroMetaPreviewId,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(
-                          VideoEditorConstants.clipPreviewCornerRadius,
-                        ),
+                    // Clip outside the Hero, the way both real thumbnails do:
+                    // inside, it rides into the shuttle and pins the corners.
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(
+                        VideoEditorConstants.clipPreviewCornerRadius,
+                      ),
+                      child: Hero(
+                        tag: VideoEditorConstants.heroMetaPreviewId,
                         child: GestureDetector(
                           onTap: () => Navigator.of(context).push(
                             PageRouteBuilder<void>(

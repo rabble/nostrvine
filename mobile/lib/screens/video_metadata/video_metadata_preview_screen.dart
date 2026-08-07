@@ -269,10 +269,15 @@ class _VideoPreviewContent extends StatelessWidget {
 /// The flying widget is lifted into the navigator overlay, above the
 /// [_PreviewStage] clip, so the stage's rounding cannot reach it — the corners
 /// only appeared once the flight landed. Clip the shuttle here instead, morphing
-/// out of the clip thumbnail's all-round corners into the stage's shape.
+/// out of the clip thumbnail's all-round corners into the stage's shape. The
+/// thumbnails round themselves from outside their Hero so this is the only clip
+/// on the shuttle; one inside the Hero child would ride along and pin the
+/// corners it is meant to be animating.
 ///
-/// The flight animation runs 0 (metadata screen) to 1 (preview screen) in both
-/// directions, because a pop drives it from the popped route's animation.
+/// The animation's endpoints mean the same thing in both directions — 0 is the
+/// metadata screen, 1 is the preview — because a push drives it from the pushed
+/// route's animation and a pop from the popped one. A pop runs 1 to 0, so a
+/// single lerp covers the way back.
 class _PreviewFlightCorners extends StatelessWidget {
   const _PreviewFlightCorners({
     required this.animation,

@@ -213,15 +213,18 @@ class _EditClipPreview extends StatelessWidget {
     final thumbnailUrl = video.thumbnailUrl;
     final ratio = _aspectRatio();
     return Center(
-      child: Hero(
-        tag: VideoEditorConstants.heroMetaPreviewId,
-        child: SizedBox(
-          height: 200,
-          width: 200 * ratio,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(
-              VideoEditorConstants.clipPreviewCornerRadius,
-            ),
+      // Rounds the thumbnail from outside the Hero: a clip inside the Hero
+      // child rides into the flight shuttle and fights the shape the
+      // preview's flightShuttleBuilder is morphing towards.
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(
+          VideoEditorConstants.clipPreviewCornerRadius,
+        ),
+        child: Hero(
+          tag: VideoEditorConstants.heroMetaPreviewId,
+          child: SizedBox(
+            height: 200,
+            width: 200 * ratio,
             child: Stack(
               fit: StackFit.expand,
               children: [
