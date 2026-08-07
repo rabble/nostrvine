@@ -156,8 +156,9 @@ class SoundSyncRepository {
         deleted: deleted,
       );
     } on SyncIndexException {
-      // Relay failures are expected on flaky networks; the UI surfaces
-      // them via a status enum, not Crashlytics. See error_handling.md.
+      // Expected relay/network failures and expected auth/signer failures
+      // (e.g. signed out, signer refused to sign) are both surfaced via a
+      // status enum in the UI, not Crashlytics. See error_handling.md.
       rethrow;
     } catch (e, stackTrace) {
       _report?.call(

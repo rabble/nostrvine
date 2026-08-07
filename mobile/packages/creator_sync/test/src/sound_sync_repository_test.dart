@@ -436,6 +436,50 @@ void main() {
     });
 
     test(
+      'publishLocalChange passes null latestKnownRemote for a sound with '
+      'no prior applied entry',
+      () async {
+        local.sounds[idA] = {'label': 'fresh'};
+
+        await repository.publishLocalChange(idA);
+
+        final captured = verify(
+          () => index.publish(
+            any(),
+            any(),
+            latestKnownRemote: captureAny(named: 'latestKnownRemote'),
+          ),
+        ).captured;
+        expect(captured.single, isNull);
+      },
+    );
+
+    test(
+      'publishLocalChange passes the prior per-item created_at as '
+      'latestKnownRemote when republishing an edit',
+      () async {
+        local.sounds[idA] = {'label': 'edited offline'};
+        await state.writeApplied(SyncItemKind.sound, {
+          'divine:sync:sound:$idA': SyncItemState(
+            createdAt: 1500,
+            bodyHash: syncBodyHash(const {'label': 'stale published body'}),
+          ),
+        });
+
+        await repository.publishLocalChange(idA);
+
+        final captured = verify(
+          () => index.publish(
+            any(),
+            any(),
+            latestKnownRemote: captureAny(named: 'latestKnownRemote'),
+          ),
+        ).captured;
+        expect(captured.single, equals(1500));
+      },
+    );
+
+    test(
       'publishLocalChange is a no-op when the sound is not stored locally',
       () async {
         await repository.publishLocalChange(idA);
@@ -462,6 +506,47 @@ void main() {
       ).captured;
       expect((captured[1] as SyncIndexEntry).deleted, isTrue);
     });
+
+    test(
+      'publishLocalDeletion passes null latestKnownRemote for a sound '
+      'with no prior applied entry',
+      () async {
+        await repository.publishLocalDeletion(idA);
+
+        final captured = verify(
+          () => index.publish(
+            any(),
+            any(),
+            latestKnownRemote: captureAny(named: 'latestKnownRemote'),
+          ),
+        ).captured;
+        expect(captured.single, isNull);
+      },
+    );
+
+    test(
+      'publishLocalDeletion passes the prior per-item created_at as '
+      'latestKnownRemote when the item was previously applied',
+      () async {
+        await state.writeApplied(SyncItemKind.sound, {
+          'divine:sync:sound:$idA': SyncItemState(
+            createdAt: 2500,
+            bodyHash: syncBodyHash(const {'label': 'old'}),
+          ),
+        });
+
+        await repository.publishLocalDeletion(idA);
+
+        final captured = verify(
+          () => index.publish(
+            any(),
+            any(),
+            latestKnownRemote: captureAny(named: 'latestKnownRemote'),
+          ),
+        ).captured;
+        expect(captured.single, equals(2500));
+      },
+    );
 
     test(
       'does not report a relay failure to the crash reporter (reconcile)',
