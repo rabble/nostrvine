@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/feed/feed_settings_menu.dart';
+import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/widgets/video_feed_item/feed_immersive_chrome.dart';
 
 /// Feed mode picker overlay that displays the current feed mode
@@ -80,8 +81,7 @@ class FeedModeSwitch extends StatelessWidget {
     VideoFeedBlocState state,
   ) async {
     final l10n = context.l10n;
-    final selected = await VineBottomSheetSelectionMenu.show(
-      context: context,
+    final selected = await context.showVideoPausingSelectionMenu(
       selectedValue: state.source.persistenceValue,
       options: [
         VineBottomSheetSelectionOptionData(
