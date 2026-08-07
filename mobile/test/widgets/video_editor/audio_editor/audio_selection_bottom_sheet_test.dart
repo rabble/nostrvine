@@ -25,11 +25,7 @@ import 'package:openvine/widgets/video_editor/audio_editor/audio_category_bar.da
 import 'package:openvine/widgets/video_editor/audio_editor/audio_editor_selection_overlay.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_list_tile.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_selection_bottom_sheet.dart';
-// Override lives in riverpod's misc barrel; flutter_riverpod does not
-// re-export the type name even though it accepts List<Override>.
-import 'package:riverpod/misc.dart' show Override;
 import 'package:sound_service/sound_service.dart';
-import 'package:sounds_repository/sounds_repository.dart';
 
 AudioEvent _createTestAudioEvent({
   String id = 'test-sound-id',
@@ -56,8 +52,6 @@ Finder _divineIcon(DivineIconName name) =>
 
 class _MockAudioPlaybackService extends Mock implements AudioPlaybackService {}
 
-class _MockSoundsRepository extends Mock implements SoundsRepository {}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -78,7 +72,6 @@ void main() {
       List<VineSound> bundledSounds = const [],
       AudioPlaybackService? audioService,
       String? viewerPubkey,
-      List<Override> extraOverrides = const [],
     }) {
       final savedSoundsBloc = _MockSavedSoundsBloc();
       when(() => savedSoundsBloc.state).thenReturn(
@@ -112,7 +105,6 @@ void main() {
               trendingSoundsProvider.overrideWith(
                 () => _FakeTrendingSounds(trendingSoundsAsync),
               ),
-            ...extraOverrides,
           ],
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -249,52 +241,6 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(AudioEditorSelectionOverlay), findsNothing);
-      });
-
-      // The resolver reports an unreachable relay by throwing rather than
-      // answering "not permitted", so the picker has to fail closed itself —
-      // otherwise the tap ends in an unhandled exception and no feedback.
-      testWidgets('does not select a sound whose consent lookup fails', (
-        tester,
-      ) async {
-        final soundsRepository = _MockSoundsRepository();
-        // An unreachable relay arrives as an unanswered empty result, and that
-        // is what makes the resolver throw. Stubbing `fetchVideosUsingSound`
-        // leaves the method the resolver calls unstubbed, so the test passes on
-        // a missing-stub error instead of this scenario.
-        when(
-          () => soundsRepository.fetchVideosUsingSoundDetailed(any()),
-        ).thenAnswer((_) async => (ids: <String>[], answered: false));
-
-        final legacySound =
-            _createTestAudioEvent(
-              id: 'c' * 64,
-              title: 'Unverifiable',
-            ).copyWith(
-              allowsReuse: false,
-              hasExplicitReuseConsent: false,
-              sourceVideoReference: '34236:source-pubkey:source-video',
-            );
-
-        await tester.pumpWidget(
-          buildWidget(
-            trendingSoundsAsync: AsyncValue.data([legacySound]),
-            extraOverrides: [
-              soundsRepositoryProvider.overrideWithValue(soundsRepository),
-            ],
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        final l10n = lookupAppLocalizations(const Locale('en'));
-        await tester.tap(find.text(l10n.videoEditorAudioCategoryCommunity));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Unverifiable'));
-        await tester.pumpAndSettle();
-
-        expect(find.byType(AudioEditorSelectionOverlay), findsNothing);
-        expect(find.text(l10n.soundReuseUnavailable), findsOneWidget);
-        expect(tester.takeException(), isNull);
       });
 
       testWidgets("selects the creator's own legacy sound", (tester) async {

@@ -359,38 +359,13 @@ class SoundsRepository {
 
   /// Fetch videos that use a specific sound.
   ///
-  /// Returns a list of video event IDs that reference the audio event. An
-  /// empty list conflates "no video uses this sound" with "the relays never
-  /// answered" — callers that must tell those apart want
-  /// [fetchVideosUsingSoundDetailed].
+  /// Returns a list of video event IDs that reference the audio event.
   Future<List<String>> fetchVideosUsingSound(
     String audioEventId, {
     int limit = 50,
   }) async {
-    final result = await fetchVideosUsingSoundDetailed(
-      audioEventId,
-      limit: limit,
-    );
-    return result.ids;
-  }
-
-  /// Fetch videos that use a specific sound, reporting whether the relays
-  /// actually answered.
-  ///
-  /// `answered` is false when no relay was connected or the query timed out.
-  /// The transport folds both into an empty result — `NostrClient.queryEvents`
-  /// drops the `timedOut` / `noRelays` flags, and the SDK below it catches the
-  /// `TimeoutException` into an empty box — so without this flag silence is
-  /// indistinguishable from evidence that nothing references the sound.
-  ///
-  /// A cached hit can still fill `ids` while `answered` is false; that is real
-  /// evidence and callers should use it.
-  Future<({List<String> ids, bool answered})> fetchVideosUsingSoundDetailed(
-    String audioEventId, {
-    int limit = 50,
-  }) async {
     if (audioEventId.isEmpty) {
-      return (ids: <String>[], answered: true);
+      return [];
     }
 
     Log.debug(
@@ -400,7 +375,7 @@ class SoundsRepository {
     );
 
     try {
-      final result = await _nostrClient.queryEventsDetailed([
+      final events = await _nostrClient.queryEvents([
         Filter(
           kinds: const [NIP71VideoKinds.addressableShortVideo],
           e: [audioEventId],
@@ -408,16 +383,15 @@ class SoundsRepository {
         ),
       ]);
 
-      final videoIds = result.events.map((e) => e.id).toList();
-      final answered = !result.timedOut && !result.noRelays;
+      final videoIds = events.map((e) => e.id).toList();
 
       Log.debug(
-        'Found ${videoIds.length} videos using audio (answered: $answered)',
+        'Found ${videoIds.length} videos using audio',
         name: 'SoundsRepository',
         category: LogCategory.api,
       );
 
-      return (ids: videoIds, answered: answered);
+      return videoIds;
     } catch (e) {
       Log.error(
         'Error fetching videos using audio: $e',

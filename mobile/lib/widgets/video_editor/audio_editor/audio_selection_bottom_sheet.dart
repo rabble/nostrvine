@@ -236,25 +236,6 @@ class _AudioSelectionBottomSheetState
     }
   }
 
-  /// Whether [sound] may be reused, answering `false` when the lookup itself
-  /// fails.
-  ///
-  /// The picker has no retry affordance, so an unreachable relay and a real
-  /// refusal both have to end as "not available here". The publisher makes the
-  /// distinction instead, because there a retry is one tap away.
-  Future<bool> _hasReuseConsent(AudioEvent sound) async {
-    try {
-      return await ref.read(audioReuseConsentProvider(sound).future);
-    } catch (error) {
-      Log.warning(
-        'Reuse consent lookup failed for ${sound.id}: $error',
-        name: 'AudioSelectionBottomSheet',
-        category: LogCategory.ui,
-      );
-      return false;
-    }
-  }
-
   Future<void> _selectSound(AudioEvent sound) async {
     if (_selectedItem?.id == sound.id) return;
 
@@ -266,7 +247,7 @@ class _AudioSelectionBottomSheetState
         sound.isBundled ||
         sound.isLocalImport ||
         sound.isExternalProviderSound ||
-        await _hasReuseConsent(sound);
+        await ref.read(audioReuseConsentProvider(sound).future);
     if (!mounted) return;
     if (!canReuse) {
       Log.info(

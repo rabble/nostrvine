@@ -2,7 +2,6 @@
 // ABOUTME: Answers false unless one unambiguous source-video event grants reuse.
 
 import 'package:models/models.dart';
-import 'package:openvine/exceptions/video_exceptions.dart';
 import 'package:sounds_repository/sounds_repository.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -19,17 +18,12 @@ class AudioReuseConsentResolver {
   /// Whether [sound] may be reused, judged from its source video's current
   /// `allow_audio_reuse` tag.
   ///
-  /// Returns `false` for a confirmed revocation *and* for every case where the
-  /// relays answer but the evidence is missing or ambiguous — the caller may
-  /// treat both as "not cleared for reuse", because no later attempt changes
-  /// the answer.
-  ///
-  /// Throws [AudioReuseConsentUnavailableException] when the relays never
-  /// answered, and whatever the repositories throw when a lookup fails
-  /// outright. Neither is an answer about consent, and swallowing them as
-  /// `false` would tell a user their sound was withheld when the network was
-  /// the only problem. Callers that cannot act on the difference should catch
-  /// and fail closed.
+  /// Fails closed: `false` covers a confirmed revocation, missing or ambiguous
+  /// evidence, *and* a lookup that never completed. Those are not the same
+  /// fact, and this answer cannot tell them apart — an unreachable relay, a
+  /// source video outside the query window, and one the viewer's own filters
+  /// dropped all arrive as an empty list. Callers must therefore treat `false`
+  /// as "not verified", never as "the creator said no".
   Future<bool> verify(AudioEvent sound) async {
     if (sound.allowsReuse) return true;
     if (sound.hasExplicitReuseConsent) return false;
@@ -45,42 +39,33 @@ class AudioReuseConsentResolver {
     final audioEventId = sound.attributionEventId;
     if (audioEventId == null) return false;
 
-    // The transport reports an unreachable relay as an empty result, not an
-    // error, so an empty list is only evidence when the relays answered.
-    final lookup = await _soundsRepository.fetchVideosUsingSoundDetailed(
-      audioEventId,
-    );
-    if (lookup.ids.isEmpty) {
-      if (!lookup.answered) {
-        throw AudioReuseConsentUnavailableException(audioEventId);
+    try {
+      final ids = await _soundsRepository.fetchVideosUsingSound(audioEventId);
+      if (ids.isEmpty) return false;
+      final candidates = await _videosRepository.getVideosByIds(
+        ids,
+        hydrateBulkStats: false,
+      );
+      // `addressableId` is stable across edits, so several revisions of the
+      // same video can match. `allow_audio_reuse` is rebuilt on every edit —
+      // dropping the tag is how a creator revokes consent — so the newest
+      // revision is the current answer.
+      final matching =
+          candidates
+              .where((video) => video.addressableId == sourceAddress)
+              .where((video) => video.createdAt >= sound.createdAt)
+              .toList()
+            ..sort((left, right) => right.createdAt.compareTo(left.createdAt));
+      if (matching.isEmpty) return false;
+      // Two revisions stamped the same second leave no way to tell which one
+      // is current, so fail closed rather than guess at the consent state.
+      if (matching.length > 1 &&
+          matching[0].createdAt == matching[1].createdAt) {
+        return false;
       }
+      return matching.first.allowAudioReuse;
+    } catch (_) {
       return false;
     }
-    final candidates = await _videosRepository.getVideosByIds(
-      lookup.ids,
-      hydrateBulkStats: false,
-    );
-    // The relays just named these videos, so failing to fetch a single one is
-    // the same silence one layer down — not a revocation.
-    if (candidates.isEmpty) {
-      throw AudioReuseConsentUnavailableException(audioEventId);
-    }
-    // `addressableId` is stable across edits, so several revisions of the
-    // same video can match. `allow_audio_reuse` is rebuilt on every edit —
-    // dropping the tag is how a creator revokes consent — so the newest
-    // revision is the current answer.
-    final matching =
-        candidates
-            .where((video) => video.addressableId == sourceAddress)
-            .where((video) => video.createdAt >= sound.createdAt)
-            .toList()
-          ..sort((left, right) => right.createdAt.compareTo(left.createdAt));
-    if (matching.isEmpty) return false;
-    // Two revisions stamped the same second leave no way to tell which one
-    // is current, so fail closed rather than guess at the consent state.
-    if (matching.length > 1 && matching[0].createdAt == matching[1].createdAt) {
-      return false;
-    }
-    return matching.first.allowAudioReuse;
   }
 }

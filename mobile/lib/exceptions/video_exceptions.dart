@@ -19,23 +19,6 @@ class DuplicateSubscriptionException implements Exception {
   String toString() => 'DuplicateSubscriptionException: $message';
 }
 
-/// Exception thrown when a sound's reuse consent could not be determined.
-///
-/// Distinct from [AudioReuseNotPermittedException]: the relays never answered,
-/// so nothing is known about the creator's terms. Callers fail closed on it,
-/// but must not report it as a refusal — a retry can clear it.
-class AudioReuseConsentUnavailableException implements Exception {
-  AudioReuseConsentUnavailableException(this.audioEventId);
-
-  /// The sound's Nostr event id.
-  final String audioEventId;
-
-  @override
-  String toString() =>
-      'AudioReuseConsentUnavailableException: the relays did not answer the '
-      'reuse-consent lookup (audio: $audioEventId)';
-}
-
 /// Exception thrown when a video's selected sound is not cleared for reuse.
 ///
 /// Thrown after the media has already uploaded, so it is not an upload or
@@ -43,9 +26,11 @@ class AudioReuseConsentUnavailableException implements Exception {
 /// type so the publish layer can classify it and tell the user the *sound* is
 /// the blocker instead of pointing them at their relay settings.
 ///
-/// Raised only once the relays have answered. A consent check that could not
-/// run at all is a transport failure and must not surface as this type — the
-/// publisher reports that as `AudioReuseCheck.unverified` instead.
+/// Raised only for a refusal carried on the sound's own event, where no relay
+/// lookup is involved. The legacy source-video resolver cannot produce
+/// evidence this strong — its `false` also covers an unreachable relay, a
+/// source video outside the query window, and one the viewer's filters
+/// dropped — so that path stays an ordinary publish failure.
 class AudioReuseNotPermittedException implements Exception {
   AudioReuseNotPermittedException(this.audioEventId);
 

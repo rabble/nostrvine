@@ -763,38 +763,50 @@ void main() {
         },
       );
 
-      // An unreachable relay is not a creator saying no. Raising the refusal
-      // here would tell the user to swap a sound that may well be cleared,
-      // and to stop retrying the one thing that would have worked.
-      test(
-        'reports an unverifiable check as a plain failure, not a refusal',
-        () async {
-          stubSignAndPublish();
+      // The legacy resolver's `false` cannot tell a refusal from an
+      // unreachable relay, a source video outside the query window, or one the
+      // viewer's own filters dropped. Raising the refusal on it would tell
+      // those users to swap a sound that may well be cleared, and to stop
+      // retrying the one thing that would have worked.
+      test('reports an unverified legacy sound as a plain failure', () async {
+        stubSignAndPublish();
 
-          final result =
-              await publisherWithConsent(
-                failure: StateError('relay unavailable'),
-              ).publishVideoEvent(
-                upload: createUpload(),
-                selectedAudio: withheldSound,
-                selectedAudioEventId: withheldSound.id,
-              );
+        final legacySound = AudioEvent(
+          id: 'e' * 64,
+          pubkey: sourceCreator,
+          createdAt: 1700000000,
+          allowsReuse: false,
+          sourceVideoReference: '34236:$sourceCreator:vine-xyz',
+        );
 
-          expect(result, isFalse);
-          expect(capturedTags, isEmpty);
-        },
-      );
+        final result = await publisherWithConsent().publishVideoEvent(
+          upload: createUpload(),
+          selectedAudio: legacySound,
+          selectedAudioEventId: legacySound.id,
+        );
 
-      // With no resolver wired there is nothing to ask, so a sound belonging
-      // to someone else must not be remixed on the strength of a missing
-      // check. `publisher` here is the bare one from setUp.
+        expect(result, isFalse);
+        expect(capturedTags, isEmpty);
+      });
+
+      // With no resolver wired there is nothing to ask, so a legacy sound
+      // belonging to someone else must not be remixed on the strength of a
+      // missing check. `publisher` here is the bare one from setUp.
       test('blocks reuse when no consent checker is wired', () async {
         stubSignAndPublish();
 
+        final legacySound = AudioEvent(
+          id: 'f' * 64,
+          pubkey: sourceCreator,
+          createdAt: 1700000000,
+          allowsReuse: false,
+          sourceVideoReference: '34236:$sourceCreator:vine-xyz',
+        );
+
         final result = await publisher.publishVideoEvent(
           upload: createUpload(),
-          selectedAudio: withheldSound,
-          selectedAudioEventId: withheldSound.id,
+          selectedAudio: legacySound,
+          selectedAudioEventId: legacySound.id,
         );
 
         expect(result, isFalse);

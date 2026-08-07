@@ -161,30 +161,7 @@ enum _RelayPresence { found, notFound, unknown }
 ///
 /// The callback is injected by the app provider so this service remains
 /// independent of Riverpod and can fail closed in tests and other wiring.
-///
-/// Throwing means the check could not be carried out; it must not be used to
-/// signal a refusal (see [AudioReuseCheck]).
 typedef AudioReuseConsentChecker = Future<bool> Function(AudioEvent sound);
-
-/// Outcome of the reuse check for a selected sound.
-///
-/// [refused] and [unverified] both block the publish, but they are different
-/// answers to the user: a refusal is final and needs a different sound, while
-/// an unverified check is a transport problem a retry can clear.
-enum AudioReuseCheck {
-  /// The sound may be reused.
-  permitted,
-
-  /// The relays answered and the sound is not cleared for reuse — a
-  /// revocation, or evidence too incomplete or ambiguous to grant. Retrying
-  /// returns the same answer.
-  refused,
-
-  /// The check could not be carried out (relay unreachable, timeout, or no
-  /// resolver wired). Says nothing about consent, so it must not be reported
-  /// as a refusal.
-  unverified,
-}
 
 /// Service for publishing processed videos to Nostr relays
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
@@ -244,29 +221,28 @@ class VideoEventPublisher {
   /// short of a granted answer blocks the publish so a private sound cannot be
   /// remixed by accident.
   ///
-  /// A failed check reports [AudioReuseCheck.unverified] rather than
-  /// [AudioReuseCheck.refused]: both block, but only a refusal is worth
-  /// telling the user to pick a different sound over.
-  Future<AudioReuseCheck> _canReuseSelectedAudio(AudioEvent sound) async {
+  /// This answer is fail-closed, not a verdict: it is `false` for a refusal,
+  /// for missing evidence, and for a lookup that never completed. Only
+  /// [AudioEvent.hasExplicitReuseConsent] separates a real refusal out, and
+  /// the publish path handles that case before reaching here.
+  Future<bool> _canReuseSelectedAudio(AudioEvent sound) async {
     if (sound.isBundled ||
         sound.isLocalImport ||
         sound.isExternalProviderSound ||
         sound.allowsReuse) {
-      return AudioReuseCheck.permitted;
+      return true;
     }
 
     final currentPubkey = _authService?.currentPublicKeyHex;
     if (currentPubkey != null && currentPubkey == sound.pubkey) {
-      return AudioReuseCheck.permitted;
+      return true;
     }
 
     final checker = _audioReuseConsentChecker;
-    if (checker == null) return AudioReuseCheck.unverified;
+    if (checker == null) return false;
 
     try {
-      return await checker(sound)
-          ? AudioReuseCheck.permitted
-          : AudioReuseCheck.refused;
+      return await checker(sound);
     } catch (error, _) {
       Log.warning(
         'Unable to verify selected audio reuse consent; blocking reuse: '
@@ -274,7 +250,7 @@ class VideoEventPublisher {
         name: 'VideoEventPublisher',
         category: LogCategory.video,
       );
-      return AudioReuseCheck.unverified;
+      return false;
     }
   }
 
@@ -1480,31 +1456,34 @@ class VideoEventPublisher {
       var selectedAudioReferenceId = selectedAudioEventId;
       var selectedAudioReferenceRelay = selectedAudioRelay;
 
-      if (selectedAudio != null) {
-        switch (await _canReuseSelectedAudio(selectedAudio)) {
-          case AudioReuseCheck.permitted:
-            break;
-          case AudioReuseCheck.refused:
-            Log.warning(
-              'Selected audio does not permit reuse; blocking video publish',
-              name: 'VideoEventPublisher',
-              category: LogCategory.video,
-            );
-            throw AudioReuseNotPermittedException(
-              selectedAudio.attributionEventId ?? selectedAudio.id,
-            );
-          case AudioReuseCheck.unverified:
-            // Consent is unknown, not withheld. Fall out as a plain publish
-            // failure so the user is told to try again instead of being sent
-            // back to swap a sound that may well be fine.
-            Log.warning(
-              'Could not verify selected audio reuse consent; blocking video '
-              'publish',
-              name: 'VideoEventPublisher',
-              category: LogCategory.video,
-            );
-            return false;
+      if (selectedAudio != null &&
+          !await _canReuseSelectedAudio(selectedAudio)) {
+        // Only the sound's own event carries evidence strong enough to tell
+        // the user the sound is the blocker: `hasExplicitReuseConsent` is read
+        // off the event already in hand, with no relay in the way. The legacy
+        // resolver's `false` is fail-closed rather than a verdict — it also
+        // covers an unreachable relay, a source video outside the 50-event
+        // query window, and one the viewer's own block/content filters
+        // dropped — so it stays an ordinary publish failure the user can
+        // retry.
+        if (selectedAudio.hasExplicitReuseConsent &&
+            !selectedAudio.allowsReuse) {
+          Log.warning(
+            'Selected audio explicitly forbids reuse; blocking video publish',
+            name: 'VideoEventPublisher',
+            category: LogCategory.video,
+          );
+          throw AudioReuseNotPermittedException(
+            selectedAudio.attributionEventId ?? selectedAudio.id,
+          );
         }
+        Log.warning(
+          'Could not verify selected audio reuse consent; blocking video '
+          'publish',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+        return false;
       }
 
       if (selectedAudio?.isLocalImport == true) {
