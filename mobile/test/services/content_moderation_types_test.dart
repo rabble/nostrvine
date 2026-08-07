@@ -72,4 +72,41 @@ void main() {
       expect(ModerationResult.clean.warningMessage, isNull);
     });
   });
+
+  group(contentFilterReasonToNip56Type, () {
+    test('maps every reason to a canonical NIP-56 report type string', () {
+      const expected = {
+        ContentFilterReason.spam: 'spam',
+        ContentFilterReason.harassment: 'profanity',
+        ContentFilterReason.violence: 'illegal',
+        ContentFilterReason.sexualContent: 'nudity',
+        ContentFilterReason.copyright: 'illegal',
+        ContentFilterReason.falseInformation: 'other',
+        ContentFilterReason.childSafety: 'other',
+        ContentFilterReason.csam: 'illegal',
+        ContentFilterReason.underageUser: 'other',
+        ContentFilterReason.aiGenerated: 'other',
+        ContentFilterReason.other: 'other',
+      };
+
+      for (final entry in expected.entries) {
+        expect(
+          contentFilterReasonToNip56Type(entry.key),
+          entry.value,
+          reason: '${entry.key} should map to NIP-56 type "${entry.value}"',
+        );
+      }
+    });
+
+    test('covers every ContentFilterReason value', () {
+      // Guards against a new enum case silently falling through to a
+      // default -- the switch in contentFilterReasonToNip56Type is
+      // exhaustive (no default case), so this would be a compile error
+      // before it could ever be a runtime gap, but pinning the full
+      // enum set here keeps that guarantee visible in the test itself.
+      for (final reason in ContentFilterReason.values) {
+        expect(contentFilterReasonToNip56Type(reason), isNotEmpty);
+      }
+    });
+  });
 }

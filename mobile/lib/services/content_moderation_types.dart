@@ -18,6 +18,30 @@ enum ContentFilterReason {
   other,
 }
 
+/// Maps a [ContentFilterReason] to the canonical NIP-56 (kind 1984)
+/// report type strings: nudity, malware, profanity, illegal, spam,
+/// impersonation, other.
+///
+/// Shared by [ContentFilterReason]'s two report channels so they stay in
+/// sync: the kind-1984 `e`/`p` tag's 3rd element (NIP-56), and the
+/// moderation-DM's `report_type` tag (a divine-moderation-service-specific
+/// convention — see `divine-mobile#6593`).
+String contentFilterReasonToNip56Type(ContentFilterReason reason) {
+  return switch (reason) {
+    ContentFilterReason.spam => 'spam',
+    ContentFilterReason.harassment => 'profanity',
+    ContentFilterReason.violence => 'illegal',
+    ContentFilterReason.sexualContent => 'nudity',
+    ContentFilterReason.copyright => 'illegal',
+    ContentFilterReason.falseInformation => 'other',
+    ContentFilterReason.childSafety => 'other',
+    ContentFilterReason.csam => 'illegal',
+    ContentFilterReason.underageUser => 'other',
+    ContentFilterReason.aiGenerated => 'other',
+    ContentFilterReason.other => 'other',
+  };
+}
+
 /// Content severity levels for filtering
 enum ContentSeverity {
   info, // Informational only

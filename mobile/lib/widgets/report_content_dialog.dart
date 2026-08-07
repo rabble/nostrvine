@@ -524,6 +524,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
           // never let them degrade to a metadata-leaking NIP-04
           // plaintext duplicate. NIP-17 gift wrap only.
           skipNip04Fallback: true,
+          additionalTags: _reportDmTags(),
         );
       } else {
         try {
@@ -617,6 +618,26 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
       buffer.writeln('Details: $details');
     }
     return buffer.toString().trimRight();
+  }
+
+  /// Machine-readable data for divine-moderation-service's dm-reader to
+  /// classify this report, attached as NIP-17 tags on the rumor rather
+  /// than folded into [_formatReportDm]'s content — the DM stays plain,
+  /// human-readable prose (see divine-mobile#6593).
+  ///
+  /// `sha256` is only present for content reports where the reported
+  /// video has a resolvable Blossom blob hash — [VideoEvent.sha256] is
+  /// nullable (a video published without an `imeta` `x` value has none),
+  /// and user reports / DM-message reports never have one at all. The
+  /// backend's `user_reports` table is `sha256 NOT NULL`, so it can only
+  /// ever record content reports; this tag intentionally never covers the
+  /// other two report variants.
+  List<List<String>> _reportDmTags() {
+    final sha256 = widget.video?.sha256;
+    return [
+      ['report_type', contentFilterReasonToNip56Type(_selectedReason!)],
+      if (sha256 != null && sha256.isNotEmpty) ['sha256', sha256],
+    ];
   }
 
   @override

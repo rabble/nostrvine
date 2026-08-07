@@ -454,7 +454,7 @@ class ContentReportingService {
       }
 
       // NIP-56 requires the report type as the 3rd element of the e/p tags.
-      final nip56Type = _toNip56ReportType(reason);
+      final nip56Type = contentFilterReasonToNip56Type(reason);
       // Filter at the construction boundary so every report path avoids
       // emitting synthetic or malformed e tags, not just reportUser().
       final eventTagIds = (nip56EventIds ?? [eventId])
@@ -527,25 +527,6 @@ class ContentReportingService {
       );
       return null;
     }
-  }
-
-  /// Maps app-level [ContentFilterReason] to one of the NIP-56 standard
-  /// report type strings: nudity, malware, profanity, illegal, spam,
-  /// impersonation, other.
-  String _toNip56ReportType(ContentFilterReason reason) {
-    return switch (reason) {
-      ContentFilterReason.spam => 'spam',
-      ContentFilterReason.harassment => 'profanity',
-      ContentFilterReason.violence => 'illegal',
-      ContentFilterReason.sexualContent => 'nudity',
-      ContentFilterReason.copyright => 'illegal',
-      ContentFilterReason.falseInformation => 'other',
-      ContentFilterReason.childSafety => 'other',
-      ContentFilterReason.csam => 'illegal',
-      ContentFilterReason.underageUser => 'other',
-      ContentFilterReason.aiGenerated => 'other',
-      ContentFilterReason.other => 'other',
-    };
   }
 
   static bool _isValidEventId(String eventId) =>
