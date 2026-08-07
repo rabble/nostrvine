@@ -2847,7 +2847,7 @@
   "listDescriptionLabel": "Keterangan (pilihan)",
   "listPublicList": "Senarai Awam",
   "listPublicListSubtitle": "Orang lain boleh mengikuti dan melihat senarai ini",
-  "listPrivateListSubtitle": "Senarai peribadi kekal pada peranti ini dan tidak disandarkan",
+  "listPrivateListSubtitle": "Hanya anda boleh melihat kandungan senarai ini",
   "listVisibilityPublic": "Awam",
   "listVisibilityPrivate": "Peribadi",
   "profileListsEmpty": "Belum ada senarai. Buat satu untuk loop yang anda mahu simpan bersama.",

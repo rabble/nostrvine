@@ -4897,7 +4897,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get listPublicListSubtitle => '其他人可以关注并查看此列表';
 
   @override
-  String get listPrivateListSubtitle => '私密列表只保存在本设备，不会备份';
+  String get listPrivateListSubtitle => '只有你能看到这个列表里的内容';
 
   @override
   String get listVisibilityPublic => '公开';

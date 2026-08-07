@@ -5202,7 +5202,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Senarai peribadi kekal pada peranti ini dan tidak disandarkan';
+      'Hanya anda boleh melihat kandungan senarai ini';
 
   @override
   String get listVisibilityPublic => 'Awam';

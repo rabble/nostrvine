@@ -24,13 +24,15 @@ abstract final class CuratedListConverter {
   /// Returns `null` if the event cannot be parsed (e.g. missing d-tag).
   ///
   /// [privateTags] carries the item tags a caller decrypted out of
-  /// [Event.content] for a NIP-51 private list. Passing them marks the result
-  /// private and appends their references to [CuratedList.videoEventIds];
-  /// their presence also means [Event.content] is ciphertext, so it is not
-  /// read as a description or borrowed as a name.
+  /// [Event.content] for a NIP-51 private list. Passing them appends their
+  /// references to [CuratedList.videoEventIds]. When [isPrivateEvent] is not
+  /// supplied, a list is treated as private whenever it either has decrypted
+  /// private tags or has the NIP-51 sealed-item shape: item tags omitted from
+  /// public tags and non-empty content.
   static CuratedList? fromEvent(
     Event event, {
     List<List<String>>? privateTags,
+    bool? isPrivateEvent,
   }) {
     try {
       final dTag = extractDTag(event);
@@ -46,13 +48,14 @@ abstract final class CuratedListConverter {
       var isCollaborative = false;
       final allowedCollaborators = <String>[];
 
-      final isPrivate = privateTags != null;
-      final rawTags = [
-        ...event.tags.map(
-          (dynamic tag) => (tag as List<dynamic>).cast<String>(),
-        ),
-        if (privateTags != null) ...privateTags,
-      ];
+      final eventTags = event.tags
+          .map((dynamic tag) => (tag as List<dynamic>).cast<String>())
+          .toList(growable: false);
+      final isPrivate =
+          isPrivateEvent ??
+          (privateTags != null ||
+              _hasSealedItemShape(eventTags, event.content));
+      final rawTags = [...eventTags, ...?privateTags];
 
       for (final tag in rawTags) {
         if (tag.isEmpty) continue;
@@ -119,6 +122,18 @@ abstract final class CuratedListConverter {
     } on Object catch (_) {
       return null;
     }
+  }
+
+  static bool _hasSealedItemShape(List<List<String>> tags, String content) {
+    if (!_looksLikeSealedItemContent(content)) return false;
+    return !tags.any(
+      (tag) => tag.isNotEmpty && (tag.first == 'e' || tag.first == 'a'),
+    );
+  }
+
+  static bool _looksLikeSealedItemContent(String content) {
+    if (content.length < 100) return false;
+    return RegExp(r'^[A-Za-z0-9+/]+={0,2}$').hasMatch(content);
   }
 
   /// Converts a [CuratedList] to Nostr event tags for publishing.

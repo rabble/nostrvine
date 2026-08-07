@@ -2847,7 +2847,7 @@
   "listDescriptionLabel": "Mô tả (không bắt buộc)",
   "listPublicList": "Danh sách công khai",
   "listPublicListSubtitle": "Người khác có thể theo dõi và xem danh sách này",
-  "listPrivateListSubtitle": "Danh sách riêng tư chỉ nằm trên thiết bị này và không được sao lưu",
+  "listPrivateListSubtitle": "Chỉ bạn mới xem được nội dung trong danh sách này",
   "listVisibilityPublic": "Công khai",
   "listVisibilityPrivate": "Riêng tư",
   "profileListsEmpty": "Chưa có danh sách nào. Tạo một cái cho những loop bạn muốn để chung.",

@@ -2042,7 +2042,7 @@
     "listDescriptionLabel": "説明 (任意)",
     "listPublicList": "公開リスト",
     "listPublicListSubtitle": "みんながフォロー・閲覧できるよ",
-    "listPrivateListSubtitle": "非公開リストはこの端末にだけ残って、バックアップされないよ",
+    "listPrivateListSubtitle": "このリストの中身を見られるのはあなただけ",
     "listVisibilityPublic": "公開",
     "listVisibilityPrivate": "非公開",
     "profileListsEmpty": "まだリストがないよ。まとめておきたいループでひとつ作ってみて。",

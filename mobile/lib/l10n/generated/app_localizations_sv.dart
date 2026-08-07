@@ -5158,7 +5158,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Privata listor stannar på den här enheten och säkerhetskopieras inte';
+      'Bara du kan se vad som finns i den här listan';
 
   @override
   String get listVisibilityPublic => 'Offentlig';

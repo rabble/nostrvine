@@ -370,10 +370,7 @@ void main() {
 
       expect(find.text('Edit list'), findsOneWidget);
       expect(find.text('Puppets'), findsOneWidget);
-      expect(
-        find.text("Private lists stay on this device and aren't backed up"),
-        findsOneWidget,
-      );
+      expect(find.text("Only you can see what's in this list"), findsOneWidget);
       expect(
         tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
         isFalse,

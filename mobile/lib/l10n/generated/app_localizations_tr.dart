@@ -5133,7 +5133,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Özel listeler bu cihazda kalır ve yedeklenmez';
+      'Bu listede ne olduğunu yalnızca sen görebilirsin';
 
   @override
   String get listVisibilityPublic => 'Herkese açık';

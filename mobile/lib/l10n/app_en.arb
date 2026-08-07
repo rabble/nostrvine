@@ -3085,7 +3085,7 @@
   "listDescriptionLabel": "Description (optional)",
   "listPublicList": "Public List",
   "listPublicListSubtitle": "Others can follow and see this list",
-  "listPrivateListSubtitle": "Private lists stay on this device and aren't backed up",
+  "listPrivateListSubtitle": "Only you can see what's in this list",
   "listVisibilityPublic": "Public",
   "listVisibilityPrivate": "Private",
   "profileListsEmpty": "No lists yet. Make one for the loops you want to keep together.",

@@ -5213,7 +5213,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Частните списъци остават на това устройство и не се архивират';
+      'Само ти можеш да виждаш какво има в този списък';
 
   @override
   String get listVisibilityPublic => 'Публичен';

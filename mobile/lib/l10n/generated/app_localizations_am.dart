@@ -5051,7 +5051,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'የግል ዝርዝሮች በዚህ መሣሪያ ላይ ብቻ ይቆያሉ፤ ምትኬም አይያዝላቸውም';
+      'በዚህ ዝርዝር ውስጥ ያለውን ማየት የምትችለው አንተ ብቻ ነህ';
 
   @override
   String get listVisibilityPublic => 'ይፋዊ';

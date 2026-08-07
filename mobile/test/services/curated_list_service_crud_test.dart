@@ -425,6 +425,37 @@ void main() {
         );
       });
 
+      test(
+        'does not backfill a subscribed list owned by someone else',
+        () async {
+          SharedPreferences.setMockInitialValues({
+            CuratedListService.listsStorageKey: jsonEncode([
+              CuratedList(
+                id: 'foreign-stranded',
+                name: 'Foreign Stranded',
+                videoEventIds: const ['foreign_video'],
+                createdAt: DateTime(2026),
+                updatedAt: DateTime(2026),
+                pubkey: _otherPubkey,
+              ).toJson(),
+            ]),
+          });
+          final upgraded = CuratedListService(
+            nostrService: mockNostr,
+            authService: mockAuth,
+            prefs: await SharedPreferences.getInstance(),
+          );
+
+          await upgraded.fetchUserListsFromRelays();
+
+          verifyNever(() => mockNostr.publishEventAwaitOk(any()));
+          expect(
+            upgraded.getListById('foreign-stranded')!.nostrEventId,
+            isNull,
+          );
+        },
+      );
+
       test('does not republish a list the relay already has', () async {
         final list = await service.createList(name: 'Already Published');
         expect(service.getListById(list!.id)!.nostrEventId, isNotNull);
@@ -529,6 +560,48 @@ void main() {
         expect(list!.isPublic, isTrue);
         expect(list.videoEventIds, ['legacy_video_id']);
       });
+
+      test(
+        'keeps local private list when sealed relay copy will not unseal',
+        () async {
+          final list = await service.createList(
+            name: 'Local Private',
+            isPublic: false,
+          );
+          await service.addVideoToList(list!.id, 'local_private_video_id');
+          final localUpdatedAt = service.getListById(list.id)!.updatedAt;
+          when(
+            () => mockSigner.nip44Decrypt(any(), any()),
+          ).thenAnswer((_) async => null);
+          when(() => mockNostr.subscribe(any())).thenAnswer(
+            (_) => Stream.value(
+              Event.fromJson({
+                'id': 'relay_private_unreadable_event',
+                'pubkey': _ownerPubkey,
+                'created_at':
+                    localUpdatedAt
+                        .add(const Duration(seconds: 10))
+                        .millisecondsSinceEpoch ~/
+                    1000,
+                'kind': 30005,
+                'tags': [
+                  ['d', list.id],
+                  ['title', 'Local Private'],
+                ],
+                'content': 'sealed:but_signer_not_ready',
+                'sig': 'test_signature',
+              }),
+            ),
+          );
+
+          await service.fetchUserListsFromRelays(force: true);
+
+          final retained = service.getListById(list.id);
+          expect(retained, isNotNull);
+          expect(retained!.isPublic, isFalse);
+          expect(retained.videoEventIds, ['local_private_video_id']);
+        },
+      );
     });
 
     group('createList()', () {
@@ -696,12 +769,9 @@ void main() {
         final published =
             verify(() => mockNostr.publishEvent(captureAny())).captured.last
                 as Event;
-        expect(
-          jsonDecode(_unseal(published.content)!),
-          [
-            ['e', 'video_event_id'],
-          ],
-        );
+        expect(jsonDecode(_unseal(published.content)!), [
+          ['e', 'video_event_id'],
+        ]);
       });
 
       test('encrypts to the list owner, not to a third party', () async {
@@ -716,9 +786,9 @@ void main() {
       });
 
       test('does not keep a private list it could not encrypt', () async {
-        when(() => mockSigner.nip44Encrypt(any(), any())).thenAnswer(
-          (_) async => null,
-        );
+        when(
+          () => mockSigner.nip44Encrypt(any(), any()),
+        ).thenAnswer((_) async => null);
 
         final list = await service.createList(
           name: 'Private List',
@@ -1010,9 +1080,7 @@ void main() {
           final list = await service.createList(name: 'Public List');
           reset(mockNostr);
           when(() => mockNostr.signer).thenReturn(mockSigner);
-          when(
-            () => mockNostr.publishEventAwaitOk(any()),
-          ).thenAnswer(
+          when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
             (invocation) async =>
                 _rejected(invocation.positionalArguments[0] as Event),
           );
@@ -1059,9 +1127,7 @@ void main() {
           description: 'Original',
           isPublic: false,
         );
-        when(
-          () => mockNostr.publishEventAwaitOk(any()),
-        ).thenAnswer(
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
           (invocation) async =>
               _rejected(invocation.positionalArguments[0] as Event),
         );
@@ -1085,9 +1151,7 @@ void main() {
         'keeps a rename when the relay rejects a public list update',
         () async {
           final list = await service.createList(name: 'Public List');
-          when(
-            () => mockNostr.publishEventAwaitOk(any()),
-          ).thenAnswer(
+          when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
             (invocation) async =>
                 _rejected(invocation.positionalArguments[0] as Event),
           );

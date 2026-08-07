@@ -30,6 +30,22 @@ typedef OnListSubscribedCallback =
 /// Called with listId when a list is unsubscribed
 typedef OnListUnsubscribedCallback = void Function(String listId);
 
+enum _UnsealItemTagsStatus { notSealed, unsealed, failed }
+
+final class _UnsealedItemTags {
+  const _UnsealedItemTags._(this.status, [this.tags]);
+
+  const _UnsealedItemTags.notSealed() : this._(_UnsealItemTagsStatus.notSealed);
+
+  const _UnsealedItemTags.unsealed(List<List<String>> tags)
+    : this._(_UnsealItemTagsStatus.unsealed, tags);
+
+  const _UnsealedItemTags.failed() : this._(_UnsealItemTagsStatus.failed);
+
+  final _UnsealItemTagsStatus status;
+  final List<List<String>>? tags;
+}
+
 /// Service for managing NIP-51 curated lists.
 ///
 /// Sanctioned ChangeNotifier per the "Sanctioned Riverpod (STAYS)" list in
@@ -1845,8 +1861,11 @@ class CuratedListService extends ChangeNotifier {
   Future<void> _backfillUnpublishedLists() async {
     if (!_authService.isAuthenticated) return;
 
+    final owner = _currentAuthenticatedPubkey();
+    if (owner == null) return;
+
     final stranded = _lists
-        .where((list) => list.nostrEventId == null)
+        .where((list) => list.nostrEventId == null && list.pubkey == owner)
         .toList(growable: false);
     if (stranded.isEmpty) return;
 
@@ -1863,47 +1882,78 @@ class CuratedListService extends ChangeNotifier {
 
   /// Recovers the item tags a private list sealed into [event]'s content.
   ///
-  /// Returns `null` whenever the event is not one of ours to unseal — a
-  /// public list, someone else's list, or a list published before items
-  /// moved into the content, whose content is a plain description. All three
-  /// are ordinary, so none of them is an error.
-  Future<List<List<String>>?> _unsealItemTags(Event event) async {
-    if (event.content.isEmpty) return null;
+  /// A failed unseal is distinct from a public list: merging a sealed event as
+  /// public would drop the private items locally and publish them in plain tags
+  /// on the next edit.
+  Future<_UnsealedItemTags> _unsealItemTags(Event event) async {
+    if (event.content.isEmpty || _hasPublicItemTags(event.tags)) {
+      return const _UnsealedItemTags.notSealed();
+    }
+    if (!_looksLikeSealedItemContent(event.content)) {
+      return const _UnsealedItemTags.notSealed();
+    }
 
     final ownerPubkey = _currentAuthenticatedPubkey();
     // Only our own lists are encrypted to us. Asking the signer about
     // everyone else's costs a round trip per list to be told no.
-    if (ownerPubkey == null || event.pubkey != ownerPubkey) return null;
+    if (ownerPubkey == null || event.pubkey != ownerPubkey) {
+      return const _UnsealedItemTags.notSealed();
+    }
 
     try {
       final plaintext = await _nostrService.signer.nip44Decrypt(
         ownerPubkey,
         event.content,
       );
-      if (plaintext == null) return null;
+      if (plaintext == null) return const _UnsealedItemTags.failed();
 
       final decoded = jsonDecode(plaintext);
-      if (decoded is! List) return null;
-      return [
+      if (decoded is! List) return const _UnsealedItemTags.failed();
+      return _UnsealedItemTags.unsealed([
         for (final dynamic tag in decoded)
           if (tag is List) tag.map((dynamic value) => '$value').toList(),
-      ];
+      ]);
     } on Object catch (e) {
       Log.debug(
         'Content of list event ${event.id} is not sealed item tags: $e',
         name: 'CuratedListService',
         category: LogCategory.system,
       );
-      return null;
+      return const _UnsealedItemTags.failed();
     }
+  }
+
+  bool _hasPublicItemTags(List<List<String>> tags) {
+    return tags.any(
+      (tag) => tag.isNotEmpty && (tag.first == 'e' || tag.first == 'a'),
+    );
+  }
+
+  bool _looksLikeSealedItemContent(String content) {
+    if (content.startsWith('sealed:')) return true; // Test cipher stand-in.
+    if (content.length < 100) return false;
+    return RegExp(r'^[A-Za-z0-9+/]+={0,2}$').hasMatch(content);
   }
 
   /// Process a single list event from Nostr
   Future<void> _processListEvent(Event event) async {
     try {
+      final unsealedItemTags = await _unsealItemTags(event);
+      if (unsealedItemTags.status == _UnsealItemTagsStatus.failed) {
+        Log.warning(
+          'Skipping list event ${event.id} because its private items '
+          'could not be unsealed',
+          name: 'CuratedListService',
+          category: LogCategory.system,
+        );
+        return;
+      }
+
       final curatedList = CuratedListConverter.fromEvent(
         event,
-        privateTags: await _unsealItemTags(event),
+        privateTags: unsealedItemTags.tags,
+        isPrivateEvent:
+            unsealedItemTags.status == _UnsealItemTagsStatus.unsealed,
       );
       if (curatedList == null) {
         Log.warning(

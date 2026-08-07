@@ -4912,7 +4912,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get listPublicListSubtitle => 'みんながフォロー・閲覧できるよ';
 
   @override
-  String get listPrivateListSubtitle => '非公開リストはこの端末にだけ残って、バックアップされないよ';
+  String get listPrivateListSubtitle => 'このリストの中身を見られるのはあなただけ';
 
   @override
   String get listVisibilityPublic => '公開';

@@ -5121,8 +5121,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'يمكن للآخرين متابعة هذه القائمة ورؤيتها';
 
   @override
-  String get listPrivateListSubtitle =>
-      'القوائم الخاصة تبقى على هذا الجهاز ولا يتم نسخها احتياطيًا';
+  String get listPrivateListSubtitle => 'أنت فقط تستطيع رؤية ما في هذه القائمة';
 
   @override
   String get listVisibilityPublic => 'عامة';

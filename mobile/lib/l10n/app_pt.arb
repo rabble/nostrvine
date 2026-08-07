@@ -2050,7 +2050,7 @@
     "listDescriptionLabel": "Descrição (opcional)",
     "listPublicList": "Lista pública",
     "listPublicListSubtitle": "Outras pessoas podem seguir e ver esta lista",
-    "listPrivateListSubtitle": "Listas privadas ficam neste dispositivo e não têm backup",
+    "listPrivateListSubtitle": "Só você pode ver o que está nesta lista",
     "listVisibilityPublic": "Pública",
     "listVisibilityPrivate": "Privada",
     "profileListsEmpty": "Nenhuma lista ainda. Crie uma para os loops que você quer manter juntos.",

@@ -2050,7 +2050,7 @@
     "listDescriptionLabel": "Opis (opcjonalnie)",
     "listPublicList": "Publiczna lista",
     "listPublicListSubtitle": "Inni mogą obserwować i widzieć tę listę",
-    "listPrivateListSubtitle": "Prywatne listy zostają na tym urządzeniu i nie mają kopii zapasowej",
+    "listPrivateListSubtitle": "Tylko ty możesz zobaczyć, co jest na tej liście",
     "listVisibilityPublic": "Publiczna",
     "listVisibilityPrivate": "Prywatna",
     "profileListsEmpty": "Nie masz jeszcze list. Stwórz jedną dla pętli, które chcesz trzymać razem.",

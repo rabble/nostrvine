@@ -5229,7 +5229,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Nananatili sa device na ito ang mga private list at hindi naba-back up';
+      'Ikaw lang ang makakakita ng laman ng listahang ito';
 
   @override
   String get listVisibilityPublic => 'Public';

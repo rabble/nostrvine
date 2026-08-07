@@ -5159,8 +5159,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get listPublicListSubtitle => 'Others can follow and see this list';
 
   @override
-  String get listPrivateListSubtitle =>
-      'Private lists stay on this device and aren\'t backed up';
+  String get listPrivateListSubtitle => 'Only you can see what\'s in this list';
 
   @override
   String get listVisibilityPublic => 'Public';

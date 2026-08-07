@@ -8981,7 +8981,7 @@ abstract class AppLocalizations {
   /// No description provided for @listPrivateListSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Private lists stay on this device and aren\'t backed up'**
+  /// **'Only you can see what\'s in this list'**
   String get listPrivateListSubtitle;
 
   /// No description provided for @listVisibilityPublic.

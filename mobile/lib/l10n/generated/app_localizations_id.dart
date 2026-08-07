@@ -5126,7 +5126,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Daftar privat tetap di perangkat ini dan tidak dicadangkan';
+      'Hanya kamu yang bisa melihat isi daftar ini';
 
   @override
   String get listVisibilityPublic => 'Publik';

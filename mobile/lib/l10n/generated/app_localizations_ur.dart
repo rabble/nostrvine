@@ -5165,7 +5165,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'نجی فہرستیں اسی ڈیوائس پر رہتی ہیں اور ان کا بیک اپ نہیں بنتا';
+      'اس فہرست میں کیا ہے یہ صرف آپ دیکھ سکتے ہیں';
 
   @override
   String get listVisibilityPublic => 'عوامی';

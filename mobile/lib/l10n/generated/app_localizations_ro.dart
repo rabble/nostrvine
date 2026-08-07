@@ -5304,7 +5304,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Listele private rămân pe acest dispozitiv și nu au backup';
+      'Doar tu poți vedea ce este în această listă';
 
   @override
   String get listVisibilityPublic => 'Publică';

@@ -7,6 +7,11 @@ import 'package:test/test.dart';
 const _testPubkey =
     'aabbccddaabbccddaabbccddaabbccdd'
     'aabbccddaabbccddaabbccddaabbccdd';
+const _sealedPayload =
+    'Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
 /// Creates a kind 30005 Nostr event with the given [tags] and [content].
 Event _makeEvent({
@@ -122,6 +127,38 @@ void main() {
         final list = CuratedListConverter.fromEvent(event)!;
 
         expect(list.description, equals('Fallback description'));
+      });
+
+      test('does not expose sealed content as name or description', () {
+        final event = _makeEvent(
+          tags: [
+            ['d', 'private-list'],
+          ],
+          content: _sealedPayload,
+        );
+
+        final list = CuratedListConverter.fromEvent(event)!;
+
+        expect(list.name, equals('Untitled List'));
+        expect(list.description, isNull);
+        expect(list.isPublic, isFalse);
+      });
+
+      test('uses public metadata when sealed content is unreadable', () {
+        final event = _makeEvent(
+          tags: [
+            ['d', 'private-list'],
+            ['title', 'Private List'],
+            ['description', 'Private description'],
+          ],
+          content: _sealedPayload,
+        );
+
+        final list = CuratedListConverter.fromEvent(event)!;
+
+        expect(list.name, equals('Private List'));
+        expect(list.description, equals('Private description'));
+        expect(list.isPublic, isFalse);
       });
 
       test('parses e-tags as video event IDs', () {

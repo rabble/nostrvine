@@ -2847,7 +2847,7 @@
   "listDescriptionLabel": "تفصیل (اختیاری)",
   "listPublicList": "عوامی فہرست",
   "listPublicListSubtitle": "دوسرے اس فہرست کو فالو اور دیکھ سکتے ہیں",
-  "listPrivateListSubtitle": "نجی فہرستیں اسی ڈیوائس پر رہتی ہیں اور ان کا بیک اپ نہیں بنتا",
+  "listPrivateListSubtitle": "اس فہرست میں کیا ہے یہ صرف آپ دیکھ سکتے ہیں",
   "listVisibilityPublic": "عوامی",
   "listVisibilityPrivate": "نجی",
   "profileListsEmpty": "ابھی کوئی فہرست نہیں۔ جو لوپ ساتھ رکھنے ہیں، ان کے لیے ایک بنائیں۔",

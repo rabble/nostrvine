@@ -2252,7 +2252,7 @@
     "listDescriptionLabel": "Описание (по избор)",
     "listPublicList": "Публичен списък",
     "listPublicListSubtitle": "Други могат да следват и да видят този списък",
-    "listPrivateListSubtitle": "Частните списъци остават на това устройство и не се архивират",
+    "listPrivateListSubtitle": "Само ти можеш да виждаш какво има в този списък",
     "listVisibilityPublic": "Публичен",
     "listVisibilityPrivate": "Частен",
     "profileListsEmpty": "Още няма списъци. Направи един за луповете, които искаш да държиш заедно.",

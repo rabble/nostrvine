@@ -5167,7 +5167,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Danh sách riêng tư chỉ nằm trên thiết bị này và không được sao lưu';
+      'Chỉ bạn mới xem được nội dung trong danh sách này';
 
   @override
   String get listVisibilityPublic => 'Công khai';

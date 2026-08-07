@@ -5182,7 +5182,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Privélijsten blijven op dit apparaat en er wordt geen back-up van gemaakt';
+      'Alleen jij kunt zien wat er in deze lijst staat';
 
   @override
   String get listVisibilityPublic => 'Openbaar';

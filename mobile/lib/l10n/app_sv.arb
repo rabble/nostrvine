@@ -2050,7 +2050,7 @@
     "listDescriptionLabel": "Beskrivning (valfritt)",
     "listPublicList": "Publik lista",
     "listPublicListSubtitle": "Andra kan följa och se den här listan",
-    "listPrivateListSubtitle": "Privata listor stannar på den här enheten och säkerhetskopieras inte",
+    "listPrivateListSubtitle": "Bara du kan se vad som finns i den här listan",
     "listVisibilityPublic": "Offentlig",
     "listVisibilityPrivate": "Privat",
     "profileListsEmpty": "Inga listor än. Skapa en för looparna du vill hålla ihop.",

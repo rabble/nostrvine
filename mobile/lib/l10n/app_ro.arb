@@ -2050,7 +2050,7 @@
     "listDescriptionLabel": "Descriere (opțional)",
     "listPublicList": "Listă publică",
     "listPublicListSubtitle": "Alții pot urmări și vedea această listă",
-    "listPrivateListSubtitle": "Listele private rămân pe acest dispozitiv și nu au backup",
+    "listPrivateListSubtitle": "Doar tu poți vedea ce este în această listă",
     "listVisibilityPublic": "Publică",
     "listVisibilityPrivate": "Privată",
     "profileListsEmpty": "Încă n-ai liste. Fă una pentru buclele pe care vrei să le ții împreună.",
