@@ -84,7 +84,7 @@ class VideoMetadataAudioSharingSection extends ConsumerWidget {
               editorState.requiresPublicAudioAttribution &&
                   !editorState.hasValidPublicAudioAttribution
               ? Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   child: Text(
                     context.l10n.soundCreditRequired,
                     key: const Key('audio_credit_validation'),
