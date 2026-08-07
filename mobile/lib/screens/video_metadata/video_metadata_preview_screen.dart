@@ -17,6 +17,7 @@ import 'package:openvine/screens/feed/feed_mode_switch.dart';
 import 'package:openvine/widgets/stop_motion/stop_motion_player.dart';
 import 'package:openvine/widgets/video_feed_item/blurred_video_backdrop.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
+import 'package:openvine/widgets/video_metadata/metadata_hero_corners.dart';
 import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_bottom_bar.dart';
 import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_preview_thumbnail.dart';
 
@@ -232,9 +233,9 @@ class _VideoPreviewContent extends StatelessWidget {
       // Use linear flight path instead of curved arc
       createRectTween: (begin, end) => RectTween(begin: begin, end: end),
       flightShuttleBuilder: (_, animation, _, _, toHeroContext) =>
-          _PreviewFlightCorners(
+          MetadataHeroCorners(
             animation: animation,
-            stageBorderRadius: stageBorderRadius,
+            destinationBorderRadius: stageBorderRadius,
             child: (toHeroContext.widget as Hero).child,
           ),
       child: Stack(
@@ -259,48 +260,6 @@ class _VideoPreviewContent extends StatelessWidget {
               fit: fit,
             ),
         ],
-      ),
-    );
-  }
-}
-
-/// Carries the stage's rounded bottom through the hero flight.
-///
-/// The flying widget is lifted into the navigator overlay, above the
-/// [_PreviewStage] clip, so the stage's rounding cannot reach it — the corners
-/// only appeared once the flight landed. Clip the shuttle here instead, morphing
-/// out of the clip thumbnail's all-round corners into the stage's shape. The
-/// thumbnails round themselves from outside their Hero so this is the only clip
-/// on the shuttle; one inside the Hero child would ride along and pin the
-/// corners it is meant to be animating.
-///
-/// The animation's endpoints mean the same thing in both directions — 0 is the
-/// metadata screen, 1 is the preview — because a push drives it from the pushed
-/// route's animation and a pop from the popped one. A pop runs 1 to 0, so a
-/// single lerp covers the way back.
-class _PreviewFlightCorners extends StatelessWidget {
-  const _PreviewFlightCorners({
-    required this.animation,
-    required this.stageBorderRadius,
-    required this.child,
-  });
-
-  final Animation<double> animation;
-  final BorderRadius stageBorderRadius;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: animation,
-      child: child,
-      builder: (context, child) => ClipRRect(
-        borderRadius: BorderRadius.lerp(
-          BorderRadius.circular(VideoEditorConstants.clipPreviewCornerRadius),
-          stageBorderRadius,
-          animation.value,
-        )!,
-        child: child,
       ),
     );
   }
