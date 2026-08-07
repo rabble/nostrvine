@@ -1136,6 +1136,17 @@ class RelayPool {
           return;
         }
 
+        // Liveness before admission: a frame arriving is progress whether or
+        // not we wanted its contents. Both of these say "this relay is still
+        // working", which is a property of the socket, not of the payload.
+        relay.relayStatus.noteReceive();
+        if (querySubscription != null) {
+          // The relay is mid-answer for this one-shot query, so it has not
+          // gone silent. Restart the grace period rather than cutting its
+          // result set off part-way through.
+          _restartQuerySettleWindow(subId);
+        }
+
         if (!subscription.matchesEvent(event)) {
           log(
             'Dropping relay event that does not match subscription filter '
@@ -1152,9 +1163,6 @@ class RelayPool {
             _broadcaseToCache(event);
           }
         }
-
-        // add some statistics
-        relay.relayStatus.noteReceive();
 
         // check block pubkey
         for (var eventFilter in eventFilters) {
@@ -1175,12 +1183,6 @@ class RelayPool {
           event.cacheEvent = true;
         } else {
           event.sources.add(relay.url);
-        }
-        if (querySubscription != null) {
-          // The relay is mid-answer for this one-shot query, so it has not
-          // gone silent. Restart the grace period rather than cutting its
-          // result set off part-way through.
-          _restartQuerySettleWindow(subId);
         }
         subscription.onEvent(event);
       } catch (err) {
