@@ -67,6 +67,9 @@ void main() {
       mockLocalStorage = MockRepostsLocalStorage();
 
       when(() => mockNostrClient.publicKey).thenReturn(testPubkey);
+      when(
+        () => mockNostrClient.resolvePublicKey(),
+      ).thenAnswer((_) async => testPubkey);
 
       // Default sendGenericRepost mock - returns a valid event
       when(
@@ -1124,6 +1127,65 @@ void main() {
         expect(record.repostEventId, equals(testRepostEventId));
         expect(record.originalAuthorPubkey, equals(testAuthorPubkey));
       });
+    });
+
+    group('signer readiness (#6813)', () {
+      test(
+        'syncUserReposts filters on the resolved key, not the stale cache',
+        () async {
+          // The cache stays empty when the signer acquired its key after the
+          // client initialized. Reading it directly would query
+          // authors: [''], which matches no event.
+          when(() => mockNostrClient.publicKey).thenReturn('');
+          when(
+            () => mockNostrClient.resolvePublicKey(),
+          ).thenAnswer((_) async => testPubkey);
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => []);
+
+          final repository = RepostsRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+          );
+          await repository.syncUserReposts();
+
+          final captured = verify(
+            () => mockNostrClient.queryEvents(captureAny()),
+          ).captured.cast<List<Filter>>();
+          expect(captured, isNotEmpty);
+          for (final filters in captured) {
+            expect(filters.single.authors, equals([testPubkey]));
+          }
+        },
+      );
+
+      test(
+        'syncUserReposts keeps local data and skips relays with no key',
+        () async {
+          final record = RepostRecord(
+            addressableId: testAddressableId,
+            repostEventId: testRepostEventId,
+            originalAuthorPubkey: testAuthorPubkey,
+            createdAt: DateTime.now(),
+          );
+          when(
+            () => mockNostrClient.resolvePublicKey(),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockLocalStorage.getAllRepostRecords(),
+          ).thenAnswer((_) async => [record]);
+
+          final repository = RepostsRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+          );
+          final result = await repository.syncUserReposts();
+
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+          expect(result.orderedAddressableIds, contains(testAddressableId));
+        },
+      );
     });
 
     group('syncUserReposts', () {

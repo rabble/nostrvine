@@ -111,6 +111,9 @@ void main() {
 
       // Default mock behaviors
       when(() => mockNostrClient.publicKey).thenReturn(testUserPubkey);
+      when(
+        () => mockNostrClient.resolvePublicKey(),
+      ).thenAnswer((_) async => testUserPubkey);
       when(() => mockNostrClient.hasKeys).thenReturn(false);
       when(() => mockNostrClient.unsubscribe(any())).thenAnswer((_) async {});
       when(
@@ -2177,6 +2180,70 @@ void main() {
         verify(() => mockNostrClient.countEvents(any())).called(1);
         verify(() => mockNostrClient.queryEvents(any())).called(1);
       });
+    });
+
+    group('signer readiness (#6813)', () {
+      test(
+        'syncUserReactions filters on the resolved key, not the stale cache',
+        () async {
+          // The cache stays empty when the signer acquired its key after the
+          // client initialized. Reading it directly would query
+          // authors: [''], which matches no event.
+          when(() => mockNostrClient.publicKey).thenReturn('');
+          when(
+            () => mockNostrClient.resolvePublicKey(),
+          ).thenAnswer((_) async => testUserPubkey);
+          mockQueryEventsSequence([
+            [],
+            [],
+          ]);
+
+          repository = createRepository();
+          await repository.syncUserReactions();
+
+          final captured = verify(
+            () => mockNostrClient.queryEvents(captureAny()),
+          ).captured.cast<List<Filter>>();
+          expect(captured, isNotEmpty);
+          for (final filters in captured) {
+            expect(filters.single.authors, equals([testUserPubkey]));
+          }
+        },
+      );
+
+      test(
+        'syncUserReactions keeps local data and skips relays with no key',
+        () async {
+          when(
+            () => mockNostrClient.resolvePublicKey(),
+          ).thenAnswer((_) async => null);
+          when(() => mockLocalStorage.getAllLikeRecords()).thenAnswer(
+            (_) async => [createLikeRecord()],
+          );
+
+          repository = createRepository();
+          final result = await repository.syncUserReactions();
+
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+          expect(result.orderedEventIds, contains(testEventId));
+        },
+      );
+
+      test(
+        'getUserVoteStatuses returns empty without querying with no key',
+        () async {
+          when(
+            () => mockNostrClient.resolvePublicKey(),
+          ).thenAnswer((_) async => null);
+
+          repository = createRepository();
+          final statuses = await repository.getUserVoteStatuses([testEventId]);
+
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+          expect(statuses.upvotedIds, isEmpty);
+          expect(statuses.downvotedIds, isEmpty);
+        },
+      );
     });
 
     group('syncUserReactions', () {

@@ -596,10 +596,22 @@ class RepostsRepository {
       _emitRepostedIds();
     }
 
+    // Signed out: keep whatever local storage gave us rather than throwing —
+    // there is nothing to reconcile against, which is not a sync failure.
+    final pubkey = await _currentUserPubkey();
+    if (pubkey == null) {
+      Log.warning(
+        'Skipping repost sync: signer has no public key',
+        name: 'RepostsRepository',
+      );
+      _isInitialized = true;
+      return _buildSyncResult();
+    }
+
     // Then, fetch from relays (authoritative)
     final filter = Filter(
       kinds: const [EventKind.genericRepost],
-      authors: [_nostrClient.publicKey],
+      authors: [pubkey],
       limit: _defaultRepostFetchLimit,
     );
 
@@ -988,6 +1000,14 @@ class RepostsRepository {
     }
     unawaited(_repostedIdsController.close());
   }
+
+  /// The signed-in user's pubkey, or `null` when the signer has no key.
+  ///
+  /// Resolves through [NostrClient.resolvePublicKey] rather than reading
+  /// `publicKey` directly, so a signer that acquired its key after the client
+  /// initialized is picked up here instead of leaving the author-scoped sync
+  /// query filtering on an empty author (#6813).
+  Future<String?> _currentUserPubkey() => _nostrClient.resolvePublicKey();
 
   /// Ensures the repository is initialized with data from storage.
   Future<void> _ensureInitialized() async {

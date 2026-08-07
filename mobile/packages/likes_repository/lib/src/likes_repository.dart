@@ -1099,6 +1099,13 @@ class LikesRepository {
       return (upvotedIds: <String>{}, downvotedIds: <String>{});
     }
 
+    // Signed out: both queries below are author-scoped, and a null author
+    // would widen them to every user's votes rather than narrowing to none.
+    final pubkey = await _currentUserPubkey();
+    if (pubkey == null) {
+      return (upvotedIds: <String>{}, downvotedIds: <String>{});
+    }
+
     final eventIdByCoordinate = _voteTargetsByCoordinate(
       eventIds,
       addressableIds,
@@ -1107,13 +1114,13 @@ class LikesRepository {
     final events = await _queryVoteTargetReactions(
       eventIds: eventIds,
       eventIdByCoordinate: eventIdByCoordinate,
-      authors: [_nostrClient.publicKey],
+      authors: [pubkey],
     );
 
     // Also fetch deletions to exclude deleted votes
     final deletionFilter = Filter(
       kinds: const [EventKind.eventDeletion],
-      authors: [_nostrClient.publicKey],
+      authors: [pubkey],
     );
     final deletions = await _nostrClient.queryEvents([deletionFilter]);
 
@@ -1432,16 +1439,28 @@ class LikesRepository {
       _emitLikedIds();
     }
 
+    // Signed out: keep whatever local storage gave us rather than throwing —
+    // there is nothing to reconcile against, which is not a sync failure.
+    final pubkey = await _currentUserPubkey();
+    if (pubkey == null) {
+      Log.warning(
+        'Skipping reaction sync: signer has no public key',
+        name: 'LikesRepository',
+      );
+      _isInitialized = true;
+      return _buildSyncResult();
+    }
+
     // Fetch both reactions and deletions from relays (authoritative)
     final reactionsFilter = Filter(
       kinds: const [EventKind.reaction],
-      authors: [_nostrClient.publicKey],
+      authors: [pubkey],
       limit: _defaultReactionFetchLimit,
     );
 
     final deletionsFilter = Filter(
       kinds: const [EventKind.eventDeletion],
-      authors: [_nostrClient.publicKey],
+      authors: [pubkey],
       limit: _defaultReactionFetchLimit,
     );
 
@@ -2033,6 +2052,14 @@ class LikesRepository {
     unawaited(_downvotedIdsController.close());
   }
 
+  /// The signed-in user's pubkey, or `null` when the signer has no key.
+  ///
+  /// Resolves through [NostrClient.resolvePublicKey] rather than reading
+  /// `publicKey` directly, so a signer that acquired its key after the client
+  /// initialized is picked up here instead of leaving every author-scoped
+  /// query below filtering on an empty author (#6813).
+  Future<String?> _currentUserPubkey() => _nostrClient.resolvePublicKey();
+
   /// Ensures the repository is initialized with data from storage.
   Future<void> _ensureInitialized() async {
     if (_isInitialized) return;
@@ -2084,13 +2111,16 @@ class LikesRepository {
     String eventId, {
     String? addressableId,
   }) async {
+    final pubkey = await _currentUserPubkey();
+    if (pubkey == null) return null;
+
     final hasCoordinate = addressableId != null && addressableId.isNotEmpty;
     final reactions = await _queryVoteTargetReactions(
       eventIds: [eventId],
       eventIdByCoordinate: hasCoordinate
           ? {addressableId: eventId}
           : const <String, String>{},
-      authors: [_nostrClient.publicKey],
+      authors: [pubkey],
     );
 
     final candidatesById = <String, Event>{};
@@ -2107,7 +2137,7 @@ class LikesRepository {
     final deletions = await _nostrClient.queryEvents([
       Filter(
         kinds: const [EventKind.eventDeletion],
-        authors: [_nostrClient.publicKey],
+        authors: [pubkey],
         e: candidates.map((event) => event.id).toList(),
       ),
     ]);
