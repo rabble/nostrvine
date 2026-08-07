@@ -138,7 +138,6 @@ void main() {
       await pool.sendEventAwaitOk(
         ['EVENT', event.toJson()],
         eventId: event.id,
-        eventKind: event.kind,
         tempRelays: urls,
         targetRelays: urls,
         timeout: const Duration(seconds: 2),
@@ -217,7 +216,6 @@ void main() {
       await pool.sendEventAwaitOk(
         ['EVENT', event.toJson()],
         eventId: event.id,
-        eventKind: event.kind,
         tempRelays: [target.url],
         targetRelays: [target.url],
         timeout: const Duration(seconds: 2),

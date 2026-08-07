@@ -207,7 +207,6 @@ void main() {
       await pool.sendEventAwaitOk(
         ['EVENT', wrap.toJson()],
         eventId: wrap.id,
-        eventKind: wrap.kind,
         tempRelays: urls,
         targetRelays: urls,
         timeout: const Duration(seconds: 2),

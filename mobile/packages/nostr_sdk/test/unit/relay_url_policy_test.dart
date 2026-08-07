@@ -218,6 +218,17 @@ void main() {
 
       expect(admitted, equals(['wss://same.example']));
     });
+
+    test('collapses equivalent relay URLs before applying the cap', () {
+      final admitted = admitRemoteSuppliedRelays([
+        'wss://same.example',
+        'WSS://same.example/',
+        'wss://same.example/',
+        'wss://other.example',
+      ], cap: RelayListCaps.dmInbox);
+
+      expect(admitted, equals(['wss://same.example', 'wss://other.example']));
+    });
   });
 
   group('RelayListCaps', () {

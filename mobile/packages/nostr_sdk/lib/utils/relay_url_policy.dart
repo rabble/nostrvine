@@ -75,6 +75,18 @@ Uri? _tryParseRelayUri(String url) {
   return uri;
 }
 
+String? _remoteRelayIdentityKey(String url) {
+  final uri = _tryParseRelayUri(url);
+  if (uri == null) return null;
+  return uri
+      .replace(
+        scheme: uri.scheme.toLowerCase(),
+        host: uri.host.toLowerCase(),
+        path: uri.path == '/' ? '' : uri.path,
+      )
+      .toString();
+}
+
 /// Filters [urls] to those a remote party may legitimately point us at, and
 /// truncates the result to [cap], preserving order.
 ///
@@ -86,15 +98,16 @@ List<String> admitRemoteSuppliedRelays(
   void Function(String url)? onRejected,
   void Function(int kept, int total)? onTruncated,
 }) {
-  final admitted = <String>{};
+  final admittedByKey = <String, String>{};
   for (final url in urls) {
     if (isRemoteSuppliedRelayUrlAllowed(url)) {
-      admitted.add(url);
+      final key = _remoteRelayIdentityKey(url) ?? url;
+      admittedByKey.putIfAbsent(key, () => url);
     } else {
       onRejected?.call(url);
     }
   }
-  if (admitted.length <= cap) return admitted.toList();
-  onTruncated?.call(cap, admitted.length);
-  return admitted.take(cap).toList();
+  if (admittedByKey.length <= cap) return admittedByKey.values.toList();
+  onTruncated?.call(cap, admittedByKey.length);
+  return admittedByKey.values.take(cap).toList();
 }
