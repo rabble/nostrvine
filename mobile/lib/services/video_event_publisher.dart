@@ -935,16 +935,17 @@ class VideoEventPublisher {
   /// duplicates were minted.
   ///
   /// Returns `false` when the event could not be signed or broadcast, and
-  /// when `selectedAudio`'s reuse consent could not be checked at all
-  /// ([AudioReuseCheck.unverified]) — that is a transport failure like any
-  /// other, and a retry can clear it.
+  /// when `selectedAudio`'s reuse consent could not be verified — the legacy
+  /// source-video lookup cannot tell a refusal from an unreachable relay, so
+  /// it is treated as a transport failure a retry can clear.
   ///
   /// Throws:
   ///
-  /// * [AudioReuseNotPermittedException] if `selectedAudio` is set and the
-  ///   relays answered that it is not cleared for reuse. This is a refusal,
-  ///   not a transport failure, so it is raised instead of folded into
-  ///   `false`.
+  /// * [AudioReuseNotPermittedException] if `selectedAudio`'s own event
+  ///   forbids reuse ([AudioEvent.hasExplicitReuseConsent] without
+  ///   [AudioEvent.allowsReuse]). That evidence needs no relay, so it is a
+  ///   refusal rather than a transport failure and is raised instead of
+  ///   folded into `false`.
   Future<bool> publishDirectUpload(
     PendingUpload upload, {
     int? expirationTimestamp,
