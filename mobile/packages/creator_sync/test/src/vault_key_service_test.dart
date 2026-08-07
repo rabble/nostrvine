@@ -213,6 +213,53 @@ void main() {
     );
 
     test(
+      'clears the in-flight future on failure so a later call re-queries '
+      'and can succeed',
+      () async {
+        var queryCount = 0;
+        when(
+          () => client.queryEventsDetailed(
+            any(),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer((_) async {
+          queryCount++;
+          if (queryCount == 1) {
+            return (events: <Event>[], timedOut: true, noRelays: false);
+          }
+          return _confirmed(const []);
+        });
+        when(
+          () => signer.nip44Encrypt(pubkey, any()),
+        ).thenAnswer((_) async => 'freshly-wrapped');
+        when(() => signer.signEvent(any())).thenAnswer(
+          (invocation) async => invocation.positionalArguments.first as Event,
+        );
+        when(() => client.publishEvent(any())).thenAnswer(
+          (invocation) async => PublishSuccess(
+            event: invocation.positionalArguments.first as Event,
+          ),
+        );
+
+        await expectLater(
+          service.obtain(),
+          throwsA(isA<VaultKeyUnavailableException>()),
+        );
+
+        // If the failed future's in-flight entry were never cleared, this
+        // second call would return the same already-rejected future
+        // instead of re-querying — asserted below via queryCount rather
+        // than just "does this resolve", since a stuck future would also
+        // (wrongly) throw here, which could be mistaken for "still
+        // guarding against forking" instead of "broken re-query".
+        final obtained = await service.obtain();
+
+        expect((await obtained.extractBytes()).length, equals(32));
+        expect(queryCount, equals(2));
+      },
+    );
+
+    test(
       'throws rather than forking when the relay lookup throws',
       () async {
         when(
@@ -247,6 +294,15 @@ void main() {
           throwsA(isA<VaultKeyUnavailableException>()),
         );
         verifyNever(() => client.publishEvent(any()));
+        // The dangerous failure mode is not "did it publish" but "did it
+        // ever decide to generate a key at all" — deleting the noRelays
+        // guard makes execution fall through to _generateAndPublish,
+        // which calls nip44Encrypt before signEvent/publishEvent. Without
+        // this assertion the earlier two still pass (mocktail's
+        // MissingStubError on the unstubbed nip44Encrypt gets caught by
+        // the generic catch and rethrown as VaultKeyUnavailableException),
+        // so this is the one assertion that actually pins the invariant.
+        verifyNever(() => signer.nip44Encrypt(any(), any()));
         expect(await cache.read(pubkey), isNull);
       },
     );
@@ -268,6 +324,10 @@ void main() {
           throwsA(isA<VaultKeyUnavailableException>()),
         );
         verifyNever(() => client.publishEvent(any()));
+        // See the noRelays test above: this is the assertion that
+        // actually proves generation was never reached, not just that
+        // publish wasn't reached.
+        verifyNever(() => signer.nip44Encrypt(any(), any()));
         expect(await cache.read(pubkey), isNull);
       },
     );
@@ -315,6 +375,26 @@ void main() {
         ),
       );
     });
+
+    test(
+      'does not leak the key material when the cached value fails to '
+      'decode',
+      () async {
+        const badKey = '@@@@this-looks-like-a-leaked-vault-key@@@@';
+        await cache.write(pubkey, badKey);
+
+        await expectLater(
+          service.obtain(),
+          throwsA(
+            isA<VaultKeyUnavailableException>().having(
+              (e) => e.message,
+              'message',
+              isNot(contains(badKey)),
+            ),
+          ),
+        );
+      },
+    );
 
     test(
       'throws rather than forking when the cached key is not valid base64',
