@@ -60,10 +60,11 @@ bool isRelayUrlAllowed(String url) {
 /// has no legitimate reason to ask for cleartext.
 bool isRemoteSuppliedRelayUrlAllowed(String url) {
   final uri = _tryParseRelayUri(url);
-  if (uri == null) return false;
-  if (uri.scheme.toLowerCase() != 'wss') return false;
-  return !isPrivateOrLinkLocalHost(uri.host);
+  return uri != null && _isRemoteSuppliedUriAllowed(uri);
 }
+
+bool _isRemoteSuppliedUriAllowed(Uri uri) =>
+    uri.scheme.toLowerCase() == 'wss' && !isPrivateOrLinkLocalHost(uri.host);
 
 Uri? _tryParseRelayUri(String url) {
   final uri = Uri.tryParse(url.trim());
@@ -75,16 +76,23 @@ Uri? _tryParseRelayUri(String url) {
   return uri;
 }
 
-String? _remoteRelayIdentityKey(String url) {
+/// The identity [urls] entries are deduplicated under, or null when a remote
+/// party may not name this one at all.
+///
+/// Admitting and keying share a single parse: deciding twice would double the
+/// work done per entry on input that is untrusted and, before the cap applies,
+/// unbounded — and would let the two answers drift apart.
+///
+/// Only a bare root path is collapsed, so `wss://h.example` and
+/// `wss://h.example/` are one relay while `wss://h.example/a` and
+/// `wss://h.example/a/` stay two. That is the equivalence
+/// `RelayAddrUtil.handle` already applies to every address this package dials;
+/// a wider rule here would disagree with the pool it feeds. Scheme and host
+/// need no case folding — `Uri` canonicalizes both at parse.
+String? _admittedRemoteRelayKey(String url) {
   final uri = _tryParseRelayUri(url);
-  if (uri == null) return null;
-  return uri
-      .replace(
-        scheme: uri.scheme.toLowerCase(),
-        host: uri.host.toLowerCase(),
-        path: uri.path == '/' ? '' : uri.path,
-      )
-      .toString();
+  if (uri == null || !_isRemoteSuppliedUriAllowed(uri)) return null;
+  return uri.replace(path: uri.path == '/' ? '' : uri.path).toString();
 }
 
 /// Filters [urls] to those a remote party may legitimately point us at, and
@@ -100,12 +108,12 @@ List<String> admitRemoteSuppliedRelays(
 }) {
   final admittedByKey = <String, String>{};
   for (final url in urls) {
-    if (isRemoteSuppliedRelayUrlAllowed(url)) {
-      final key = _remoteRelayIdentityKey(url) ?? url;
-      admittedByKey.putIfAbsent(key, () => url);
-    } else {
+    final key = _admittedRemoteRelayKey(url);
+    if (key == null) {
       onRejected?.call(url);
+      continue;
     }
+    admittedByKey.putIfAbsent(key, () => url);
   }
   if (admittedByKey.length <= cap) return admittedByKey.values.toList();
   onTruncated?.call(cap, admittedByKey.length);
