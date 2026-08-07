@@ -1340,6 +1340,113 @@ void main() {
       });
     });
 
+    group('streamMyFollowers', () {
+      const follower1 =
+          'e5f6789012345678901234567890abcdef1234567890123456789012abcd1234';
+      const follower2 =
+          'f6789012345678901234567890abcdef1234567890123456789012abcde12345';
+
+      /// Builds a repository whose REST source answers immediately while the
+      /// connected-relay source stays pending until [relayResult] completes.
+      FollowRepository buildRepository({
+        required Future<List<Event>> Function() relayResult,
+        List<String> apiFollowers = const [],
+        bool apiAvailable = true,
+      }) {
+        final mockFunnelcakeClient = _MockFunnelcakeApiClient();
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(apiAvailable);
+        when(
+          () => mockFunnelcakeClient.getFollowers(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => PaginatedPubkeys(pubkeys: apiFollowers));
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) => relayResult());
+
+        return FollowRepository(
+          nostrClient: mockNostrClient,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
+          funnelcakeApiClient: mockFunnelcakeClient,
+          indexerRelayUrls: const [],
+        );
+      }
+
+      Event contactListOf(String author) => Event(
+        author,
+        3,
+        [
+          ['p', testCurrentUserPubkey],
+        ],
+        '',
+        createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      );
+
+      test('emits a growing union as each source answers', () async {
+        final slowRelay = Completer<List<Event>>();
+        repository = buildRepository(
+          relayResult: () => slowRelay.future,
+          apiFollowers: const [follower1],
+        );
+
+        final emissions = <List<String>>[];
+        final done = repository.streamMyFollowers().forEach(emissions.add);
+
+        // The fast REST source lands first, on its own.
+        await pumpEventQueue();
+        expect(emissions, [
+          [follower1],
+        ]);
+
+        slowRelay.complete([contactListOf(follower2)]);
+        await done;
+
+        // Later sources only add — the first emission stays a prefix.
+        expect(emissions.last, containsAll([follower1, follower2]));
+        expect(emissions.first, equals([follower1]));
+      });
+
+      test('keeps emitting when a single source fails', () async {
+        repository = buildRepository(
+          relayResult: () => Future<List<Event>>.error(Exception('relay down')),
+          apiFollowers: const [follower1],
+        );
+
+        final followers = await repository.streamMyFollowers().last;
+
+        expect(followers, equals([follower1]));
+      });
+
+      test(
+        'emits an error when a source fails and nothing was found',
+        () async {
+          repository = buildRepository(
+            relayResult: () => Future<List<Event>>.error(
+              Exception('relay down'),
+            ),
+            apiAvailable: false,
+          );
+
+          await expectLater(
+            repository.streamMyFollowers(),
+            emitsThrough(emitsError(isA<Exception>())),
+          );
+        },
+      );
+
+      test('emits an empty list when not authenticated', () async {
+        when(() => mockNostrClient.publicKey).thenReturn('');
+
+        final emissions = await repository.streamMyFollowers().toList();
+
+        expect(emissions, [<String>[]]);
+        verifyNever(() => mockNostrClient.queryEvents(any()));
+      });
+    });
+
     group('watchMyFollowers', () {
       const follower1 =
           'e5f6789012345678901234567890abcdef1234567890123456789012abcd1234';

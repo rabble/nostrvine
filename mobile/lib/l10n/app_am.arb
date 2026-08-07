@@ -2262,6 +2262,7 @@
     "userPickerSearchByName": "በስም ፈልግ",
     "userPickerFilterByNameHint": "በስም አጣራ...",
     "userPickerSearchByNameHint": "በስም ፈልግ...",
+    "userPickerClearSearchSemantics": "ፍለጋን አጽዳ",
     "userPickerAlreadyAddedSemantics": "{name} አስቀድሞ ታክሏል።",
     "@userPickerAlreadyAddedSemantics": {
         "placeholders": {

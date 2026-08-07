@@ -2606,6 +2606,7 @@
   "userPickerSearchByName": "نام سے تلاش کریں",
   "userPickerFilterByNameHint": "نام سے فلٹر کریں...",
   "userPickerSearchByNameHint": "نام سے تلاش کریں...",
+  "userPickerClearSearchSemantics": "تلاش صاف کریں",
   "userPickerAlreadyAddedSemantics": "{name} پہلے سے شامل ہے",
   "@userPickerAlreadyAddedSemantics": {
     "placeholders": {

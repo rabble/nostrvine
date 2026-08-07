@@ -2075,6 +2075,7 @@
     "userPickerSearchByName": "Търсене по име",
     "userPickerFilterByNameHint": "Филтриране по име...",
     "userPickerSearchByNameHint": "Търсене по име...",
+    "userPickerClearSearchSemantics": "Изчистване на търсенето",
     "userPickerAlreadyAddedSemantics": "{name} вече е добавен",
     "@userPickerAlreadyAddedSemantics": {
         "placeholders": {

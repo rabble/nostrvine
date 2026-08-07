@@ -4786,6 +4786,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Caută după nume...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Șterge căutarea';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name este deja adăugat';
   }

@@ -1865,6 +1865,7 @@
     "userPickerSearchByName": "İsme göre ara",
     "userPickerFilterByNameHint": "İsme göre filtrele...",
     "userPickerSearchByNameHint": "İsme göre ara...",
+    "userPickerClearSearchSemantics": "مسح البحث",
     "userPickerAlreadyAddedSemantics": "{name} zaten eklendi",
     "@userPickerAlreadyAddedSemantics": {
         "placeholders": {

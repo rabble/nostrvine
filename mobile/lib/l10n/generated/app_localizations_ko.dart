@@ -4440,6 +4440,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get userPickerSearchByNameHint => '이름으로 검색...';
 
   @override
+  String get userPickerClearSearchSemantics => '검색 지우기';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name 이미 추가됨';
   }

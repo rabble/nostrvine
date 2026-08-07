@@ -4705,6 +4705,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Cerca per nome...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Cancella ricerca';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name già aggiunto';
   }

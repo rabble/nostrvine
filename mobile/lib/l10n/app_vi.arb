@@ -2606,6 +2606,7 @@
   "userPickerSearchByName": "Tìm theo tên",
   "userPickerFilterByNameHint": "Lọc theo tên...",
   "userPickerSearchByNameHint": "Tìm theo tên...",
+  "userPickerClearSearchSemantics": "Xóa tìm kiếm",
   "userPickerAlreadyAddedSemantics": "{name} đã được thêm",
   "@userPickerAlreadyAddedSemantics": {
     "placeholders": {

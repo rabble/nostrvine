@@ -4420,6 +4420,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get userPickerSearchByNameHint => '名前で検索...';
 
   @override
+  String get userPickerClearSearchSemantics => '検索をクリア';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name はすでに追加済みです';
   }

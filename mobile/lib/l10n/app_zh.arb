@@ -2606,6 +2606,7 @@
   "userPickerSearchByName": "按名字搜索",
   "userPickerFilterByNameHint": "按名字筛选...",
   "userPickerSearchByNameHint": "按名字搜索...",
+  "userPickerClearSearchSemantics": "清除搜索",
   "userPickerAlreadyAddedSemantics": "{name} 已添加",
   "@userPickerAlreadyAddedSemantics": {
     "placeholders": {

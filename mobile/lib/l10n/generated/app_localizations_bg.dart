@@ -4700,6 +4700,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Търсене по име...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Изчистване на търсенето';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name вече е добавен';
   }

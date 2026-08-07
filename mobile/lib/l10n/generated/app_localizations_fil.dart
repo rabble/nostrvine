@@ -4716,6 +4716,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Hanapin ayon sa pangalan...';
 
   @override
+  String get userPickerClearSearchSemantics => 'I-clear ang paghahanap';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return 'Naidagdag na si $name';
   }

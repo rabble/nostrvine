@@ -1217,6 +1217,7 @@
     "userPickerSearchByName": "Hanapin ayon sa pangalan",
     "userPickerFilterByNameHint": "I-filter ayon sa pangalan...",
     "userPickerSearchByNameHint": "Hanapin ayon sa pangalan...",
+    "userPickerClearSearchSemantics": "I-clear ang paghahanap",
     "userPickerAlreadyAddedSemantics": "Naidagdag na si {name}",
     "userPickerSelectSemantics": "Piliin si {name}",
     "userPickerEmptyFollowListTitle": "Naghihintay sa iyo ang crew mo",

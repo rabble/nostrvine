@@ -1872,6 +1872,7 @@
     "userPickerSearchByName": "Ada göre ara",
     "userPickerFilterByNameHint": "Ada göre filtrele...",
     "userPickerSearchByNameHint": "Ada göre ara...",
+    "userPickerClearSearchSemantics": "Aramayı temizle",
     "userPickerAlreadyAddedSemantics": "{name} zaten eklendi",
     "@userPickerAlreadyAddedSemantics": {
         "placeholders": {
