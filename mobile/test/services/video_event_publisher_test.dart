@@ -785,6 +785,22 @@ void main() {
         },
       );
 
+      // With no resolver wired there is nothing to ask, so a sound belonging
+      // to someone else must not be remixed on the strength of a missing
+      // check. `publisher` here is the bare one from setUp.
+      test('blocks reuse when no consent checker is wired', () async {
+        stubSignAndPublish();
+
+        final result = await publisher.publishVideoEvent(
+          upload: createUpload(),
+          selectedAudio: withheldSound,
+          selectedAudioEventId: withheldSound.id,
+        );
+
+        expect(result, isFalse);
+        expect(capturedTags, isEmpty);
+      });
+
       test('recovers the reference from an editor timeline track id', () async {
         stubSignAndPublish();
 
