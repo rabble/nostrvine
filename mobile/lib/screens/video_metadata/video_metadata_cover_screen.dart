@@ -117,15 +117,20 @@ class _VideoMetadataCoverScreenState
         [VideoClip.file(localPath)],
         startPosition: _selectedPosition,
       );
-      if (mounted) {
-        setState(() {
-          _controller = controller;
-          _playerReady = true;
-          _seekEpoch++;
-          _isSeeking = false;
-          _pendingSeekPosition = null;
-        });
+      // Unmounting during the await leaves the controller unreachable but
+      // still registered, so dispose() has already run against a null
+      // _controller and nothing else will release the decoder.
+      if (!mounted) {
+        await controller.dispose();
+        return;
       }
+      setState(() {
+        _controller = controller;
+        _playerReady = true;
+        _seekEpoch++;
+        _isSeeking = false;
+        _pendingSeekPosition = null;
+      });
     } catch (e, stackTrace) {
       // A dead preview must not take the cover picker down with it — the
       // strip below still lets the user scrub and confirm a frame.
