@@ -1215,6 +1215,18 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoSettingsCaptionsDisable => '자막 사용 안 함';
 
   @override
+  String get videoSettingsAutoAdvanceOn => '자동 넘기기 켜짐';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => '자동 넘기기 꺼짐';
+
+  @override
+  String get videoSettingsCaptionsOn => '자막 켜짐';
+
+  @override
+  String get videoSettingsCaptionsOff => '자막 꺼짐';
+
+  @override
   String get contentWarningLabel => '콘텐츠 경고';
 
   @override

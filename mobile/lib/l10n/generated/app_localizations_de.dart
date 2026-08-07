@@ -1311,6 +1311,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'Untertitel deaktivieren';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'Automatisches Weiterblättern an';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'Automatisches Weiterblättern aus';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Untertitel an';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Untertitel aus';
+
+  @override
   String get contentWarningLabel => 'Inhaltswarnung';
 
   @override

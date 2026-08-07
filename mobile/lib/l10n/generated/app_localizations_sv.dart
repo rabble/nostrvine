@@ -1289,6 +1289,18 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'Avaktivera textning';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'Automatisk fortsättning på';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'Automatisk fortsättning av';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Textning på';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Textning av';
+
+  @override
   String get contentWarningLabel => 'Innehållsvarning';
 
   @override

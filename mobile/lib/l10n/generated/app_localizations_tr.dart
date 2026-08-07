@@ -1263,6 +1263,18 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'Altyazıyı devre dışı bırak';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'Otomatik ilerleme açık';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'Otomatik ilerleme kapalı';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Altyazı açık';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Altyazı kapalı';
+
+  @override
   String get contentWarningLabel => 'İçerik Uyarısı';
 
   @override

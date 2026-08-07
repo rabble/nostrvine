@@ -2292,6 +2292,30 @@ abstract class AppLocalizations {
   /// **'Disable captions'**
   String get videoSettingsCaptionsDisable;
 
+  /// Snackbar confirming that auto advance was just turned on from the playback-settings pill.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto advance on'**
+  String get videoSettingsAutoAdvanceOn;
+
+  /// Snackbar confirming that auto advance was just turned off from the playback-settings pill.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto advance off'**
+  String get videoSettingsAutoAdvanceOff;
+
+  /// Snackbar confirming that captions were just turned on from the playback-settings pill.
+  ///
+  /// In en, this message translates to:
+  /// **'Captions on'**
+  String get videoSettingsCaptionsOn;
+
+  /// Snackbar confirming that captions were just turned off from the playback-settings pill.
+  ///
+  /// In en, this message translates to:
+  /// **'Captions off'**
+  String get videoSettingsCaptionsOff;
+
   /// No description provided for @contentWarningLabel.
   ///
   /// In en, this message translates to:

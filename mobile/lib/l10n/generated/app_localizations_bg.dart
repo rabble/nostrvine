@@ -1312,6 +1312,20 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'Изключи субтитрите';
 
   @override
+  String get videoSettingsAutoAdvanceOn =>
+      'Автоматичното продължаване е включено';
+
+  @override
+  String get videoSettingsAutoAdvanceOff =>
+      'Автоматичното продължаване е изключено';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Субтитрите са включени';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Субтитрите са изключени';
+
+  @override
   String get contentWarningLabel => 'Предупреждение за съдържание';
 
   @override

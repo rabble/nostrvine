@@ -1336,6 +1336,18 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'Dezactivează subtitrările';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'Avansare automată activată';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'Avansare automată dezactivată';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Subtitrări activate';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Subtitrări dezactivate';
+
+  @override
   String get contentWarningLabel => 'Atenționare de conținut';
 
   @override

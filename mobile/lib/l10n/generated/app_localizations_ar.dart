@@ -1287,6 +1287,18 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'إيقاف الترجمة';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'التشغيل التلقائي مفعّل';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'التشغيل التلقائي متوقف';
+
+  @override
+  String get videoSettingsCaptionsOn => 'الترجمة مفعّلة';
+
+  @override
+  String get videoSettingsCaptionsOff => 'الترجمة متوقفة';
+
+  @override
   String get contentWarningLabel => 'تحذير محتوى';
 
   @override

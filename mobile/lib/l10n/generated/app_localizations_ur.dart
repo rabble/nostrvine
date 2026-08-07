@@ -1302,6 +1302,18 @@ class AppLocalizationsUr extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'کیپشن غیر فعال کریں';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'خودکار آگے بڑھنا آن';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'خودکار آگے بڑھنا آف';
+
+  @override
+  String get videoSettingsCaptionsOn => 'کیپشن آن';
+
+  @override
+  String get videoSettingsCaptionsOff => 'کیپشن آف';
+
+  @override
   String get contentWarningLabel => 'مواد انتباہ';
 
   @override

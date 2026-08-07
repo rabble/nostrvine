@@ -1317,6 +1317,18 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'I-disable ang captions';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'Naka-on ang auto advance';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'Naka-off ang auto advance';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Naka-on ang captions';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Naka-off ang captions';
+
+  @override
   String get contentWarningLabel => 'Content Warning';
 
   @override

@@ -1324,6 +1324,20 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'Wyłącz napisy';
 
   @override
+  String get videoSettingsAutoAdvanceOn =>
+      'Automatyczne przechodzenie włączone';
+
+  @override
+  String get videoSettingsAutoAdvanceOff =>
+      'Automatyczne przechodzenie wyłączone';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Napisy włączone';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Napisy wyłączone';
+
+  @override
   String get contentWarningLabel => 'Ostrzeżenie o treści';
 
   @override

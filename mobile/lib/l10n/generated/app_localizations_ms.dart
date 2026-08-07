@@ -1303,6 +1303,18 @@ class AppLocalizationsMs extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'Lumpuhkan sarikata';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'Maju automatik dihidupkan';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'Maju automatik dimatikan';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Sarikata dihidupkan';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Sarikata dimatikan';
+
+  @override
   String get contentWarningLabel => 'Amaran Kandungan';
 
   @override
