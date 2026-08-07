@@ -69,7 +69,7 @@ class VideoMetadataAudioSharingSection extends ConsumerWidget {
             onChanged: derivativesAllowed ? updateReuse : null,
           ),
         ),
-        _ExpandSwitcher(
+        AnimatedReveal(
           child: external != null
               ? _ProviderAudioCredit(sound: sound!)
               : allowAudioReuse
@@ -77,9 +77,9 @@ class VideoMetadataAudioSharingSection extends ConsumerWidget {
                   key: ValueKey(sound?.id ?? 'original-audio'),
                   sound: sound,
                 )
-              : const SizedBox.shrink(),
+              : null,
         ),
-        _ExpandSwitcher(
+        AnimatedReveal(
           child:
               editorState.requiresPublicAudioAttribution &&
                   !editorState.hasValidPublicAudioAttribution
@@ -91,7 +91,7 @@ class VideoMetadataAudioSharingSection extends ConsumerWidget {
                     style: VineTheme.bodySmallFont(color: VineTheme.error),
                   ),
                 )
-              : const SizedBox.shrink(),
+              : null,
         ),
       ],
     );
@@ -118,29 +118,6 @@ class VideoMetadataAudioSharingSection extends ConsumerWidget {
       title: title?.isNotEmpty == true ? title! : 'Original sound',
       publisherName: publisherName,
       publisherPubkey: pubkey,
-    );
-  }
-}
-
-/// Cross-fades between the section's optional rows, growing the incoming one
-/// out of the top edge so the card's height never jumps.
-class _ExpandSwitcher extends StatelessWidget {
-  const _ExpandSwitcher({required this.child});
-
-  final Widget child;
-
-  static const _duration = Duration(milliseconds: 180);
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedSwitcher(
-      duration: _duration,
-      transitionBuilder: (child, animation) => SizeTransition(
-        sizeFactor: animation,
-        alignment: Alignment.topCenter,
-        child: FadeTransition(opacity: animation, child: child),
-      ),
-      child: child,
     );
   }
 }
@@ -317,9 +294,9 @@ class _PublicAudioCreditEditorState
                 onChanged: (value) => _update(confirmedOwnWork: value),
               ),
             ),
-            _ExpandSwitcher(
+            AnimatedReveal(
               child: ownWork
-                  ? const SizedBox.shrink()
+                  ? null
                   : Padding(
                       padding: const .fromLTRB(16, 8, 16, 0),
                       child: DivineTextField(
