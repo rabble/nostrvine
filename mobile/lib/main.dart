@@ -2713,7 +2713,11 @@ class _DivineAppState extends ConsumerState<DivineApp>
       // eager (`lazy: false`) wiring that stops the #6115 re-entrant create.
       child: SavedSoundsScope(
         service: ref.watch(savedSoundsServiceProvider),
-        syncRepository: ref.watch(soundSyncRepositoryProvider).value,
+        // A stream, not a watched value: SavedSoundsScope sits above
+        // MaterialApp.router, so keying its BlocProvider on the resolved
+        // repository would re-inflate the whole app shell every time it
+        // resolves (#6477/#6480). The bloc subscribes and re-points itself.
+        syncRepositoryStream: ref.read(soundSyncRepositoryStreamProvider),
         child: AppShellBadgeScope(
           child: MultiBlocProvider(
             providers: [

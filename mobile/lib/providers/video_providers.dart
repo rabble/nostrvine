@@ -9,6 +9,7 @@ import 'package:likes_repository/likes_repository.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/l10n/current_app_l10n.dart';
 import 'package:openvine/providers/auth_providers.dart';
+import 'package:openvine/providers/creator_sync_provider.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -239,6 +240,7 @@ VideoEventPublisher videoEventPublisher(Ref ref) {
   final profileRepository = ref.watch(profileRepositoryProvider);
   final profileStatsDao = ref.watch(databaseProvider).profileStatsDao;
   final savedSoundsService = ref.watch(savedSoundsServiceProvider);
+  final soundSyncRepository = ref.watch(soundSyncRepositoryValueProvider);
   final consentResolver = AudioReuseConsentResolver(
     videosRepository: ref.watch(videosRepositoryProvider),
   );
@@ -267,6 +269,7 @@ VideoEventPublisher videoEventPublisher(Ref ref) {
     profileRepository: profileRepository,
     profileStatsDao: profileStatsDao,
     savedSoundsService: savedSoundsService,
+    soundSyncRepository: soundSyncRepository,
     eventApiClient: eventApiClient,
     audioReuseConsentChecker: consentResolver.verify,
   );

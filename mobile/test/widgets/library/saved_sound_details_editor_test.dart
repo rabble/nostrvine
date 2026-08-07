@@ -57,8 +57,11 @@ Future<(SavedSoundsBloc, SavedSoundsService)> _bloc({
       ? _FailingService(preferences)
       : SavedSoundsService(preferences);
   await service.saveSavedSound(_record());
-  final bloc = SavedSoundsBloc(service: service, mediaProbe: _NoProbe())
-    ..add(const SavedSoundsLoadRequested());
+  final bloc = SavedSoundsBloc(
+    service: service,
+    mediaProbe: _NoProbe(),
+    syncRepositoryStream: const Stream.empty(),
+  )..add(const SavedSoundsLoadRequested());
   return (bloc, service);
 }
 

@@ -7,6 +7,7 @@ import 'package:creator_sync/creator_sync.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/provider_identity_stream.dart';
 import 'package:openvine/providers/saved_sounds_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
@@ -19,10 +20,15 @@ import 'package:openvine/services/creator_sync/secure_vault_key_cache.dart';
 /// Follows the nullable-gate pattern already used by
 /// `profileRepository` (`repository_providers.dart`): the repository only
 /// exists once [nostrSessionProvider] reports a signer-backed client ready
-/// for the active identity and the vault key resolves, so no consumer can
-/// ever capture a half-initialised dependency and no `ValueKey` guard is
-/// needed at the call site. The UI renders a disabled sync affordance while
-/// this stays null.
+/// for the active identity and the vault key resolves. The nullable gate
+/// alone does not make this identity-stable, though — consumers still need
+/// to react to it flipping from null to non-null, or to a different
+/// instance on an auth change. A leaf-scoped consumer keys a `BlocProvider`
+/// on the resolved value (`SoundsTab`, matching `NotificationsPage`'s
+/// pattern). `SavedSoundsScope` sits above `MaterialApp.router`, where
+/// re-keying re-inflates the whole app shell (#6477/#6480), so it
+/// subscribes to [soundSyncRepositoryStreamProvider] instead and re-points
+/// the dependency in place.
 final soundSyncRepositoryProvider = FutureProvider<SoundSyncRepository?>((
   ref,
 ) async {
@@ -77,3 +83,24 @@ final soundSyncRepositoryProvider = FutureProvider<SoundSyncRepository?>((
     },
   );
 });
+
+/// [soundSyncRepositoryProvider] flattened to its resolved value, or null
+/// while loading, on error, or while genuinely unavailable.
+///
+/// Exists so [soundSyncRepositoryStreamProvider] can wrap a plain
+/// `ProviderListenable`, which `identityStreamOf` requires, rather than a
+/// `FutureProvider`'s `AsyncValue`.
+final soundSyncRepositoryValueProvider = Provider<SoundSyncRepository?>((
+  ref,
+) {
+  return ref.watch(soundSyncRepositoryProvider).value;
+});
+
+/// Successive [SoundSyncRepository] instances (including null while
+/// unavailable), for the app-shell `SavedSoundsBloc` that is constructed
+/// once in `SavedSoundsScope` and can never re-read
+/// [soundSyncRepositoryProvider] itself without re-inflating everything
+/// below it. See `identityStreamOf`'s doc comment for the #6480 pattern
+/// this follows.
+final Provider<Stream<SoundSyncRepository?>> soundSyncRepositoryStreamProvider =
+    identityStreamOf<SoundSyncRepository?>(soundSyncRepositoryValueProvider);

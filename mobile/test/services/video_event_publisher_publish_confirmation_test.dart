@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
+import 'package:creator_sync/creator_sync.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show AudioEvent, VideoEvent, audioEventKind;
@@ -33,6 +34,8 @@ class _MockPersonalEventCacheService extends Mock
     implements PersonalEventCacheService {}
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
+
+class _MockSoundSyncRepository extends Mock implements SoundSyncRepository {}
 
 class _FakeEvent extends Fake implements Event {}
 
@@ -390,6 +393,10 @@ void main() {
       final savedSoundsService = SavedSoundsService(prefs);
       final blossomUploadService = _MockBlossomUploadService();
       final audioExtractionService = _MockAudioExtractionService();
+      final syncRepository = _MockSoundSyncRepository();
+      when(
+        () => syncRepository.publishLocalChange(any()),
+      ).thenAnswer((_) async {});
       final audioPublisher = VideoEventPublisher(
         uploadManager: mockUploadManager,
         nostrService: mockNostrClient,
@@ -397,6 +404,7 @@ void main() {
         blossomUploadService: blossomUploadService,
         audioExtractionService: audioExtractionService,
         savedSoundsService: savedSoundsService,
+        soundSyncRepository: syncRepository,
       );
 
       const audioPath = '/tmp/openvine_test_audio.m4a';
@@ -503,6 +511,9 @@ void main() {
         savedSound.sourceVideoReference,
         '34236:$testPubkey:test-video-id',
       );
+      verify(
+        () => syncRepository.publishLocalChange(signedAudioEvent.id),
+      ).called(1);
     });
   });
 

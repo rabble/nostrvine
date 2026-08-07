@@ -282,9 +282,8 @@ class _SyncStatusBanner extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Text(
             message,
-            style: TextStyle(
+            style: VineTheme.labelSmallFont(
               color: context.vineColors.onSurfaceMuted,
-              fontSize: 12,
             ),
           ),
         );

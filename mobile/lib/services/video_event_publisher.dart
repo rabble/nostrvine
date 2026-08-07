@@ -8,6 +8,7 @@ import 'dart:io';
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:blurhash_service/blurhash_service.dart';
 //adding c2pa support for publishing c2pa manifest data into nostr
+import 'package:creator_sync/creator_sync.dart';
 import 'package:db_client/db_client.dart' hide Filter;
 import 'package:meta/meta.dart';
 import 'package:models/models.dart'
@@ -177,6 +178,7 @@ class VideoEventPublisher {
     AudioExtractionService? audioExtractionService,
     ProfileStatsDao? profileStatsDao,
     SavedSoundsService? savedSoundsService,
+    SoundSyncRepository? soundSyncRepository,
     EventApiClient? eventApiClient,
     AudioReuseConsentChecker? audioReuseConsentChecker,
     IosDeviceAttestationService? iosDeviceAttestationService,
@@ -192,6 +194,7 @@ class VideoEventPublisher {
        _audioExtractionService = audioExtractionService,
        _profileStatsDao = profileStatsDao,
        _savedSoundsService = savedSoundsService,
+       _soundSyncRepository = soundSyncRepository,
        _eventApiClient = eventApiClient,
        _audioReuseConsentChecker = audioReuseConsentChecker;
   final UploadManager _uploadManager;
@@ -204,6 +207,12 @@ class VideoEventPublisher {
   final AudioExtractionService? _audioExtractionService;
   final ProfileStatsDao? _profileStatsDao;
   final SavedSoundsService? _savedSoundsService;
+
+  /// Cross-device sync for sounds saved to "My Sounds" from this publish
+  /// flow, or null until the vault key resolves. Best-effort: a failure
+  /// here never affects video publishing, and the next Sounds-tab reconcile
+  /// pass on this device picks up anything that did not mirror.
+  final SoundSyncRepository? _soundSyncRepository;
   final IosDeviceAttestationService _iosDeviceAttestation;
 
   /// REST-first publish client. When non-null, video events are published

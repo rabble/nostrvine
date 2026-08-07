@@ -9,41 +9,82 @@ import 'package:creator_sync/creator_sync.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/saved_sounds/saved_sound_media_probe.dart';
 import 'package:openvine/blocs/saved_sounds/saved_sounds_event.dart';
+import 'package:openvine/blocs/saved_sounds/saved_sounds_reportable_sites.dart';
 import 'package:openvine/blocs/saved_sounds/saved_sounds_state.dart';
 import 'package:openvine/models/saved_sound.dart';
+import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 
 export 'saved_sounds_event.dart';
 export 'saved_sounds_state.dart';
 
 class SavedSoundsBloc extends Bloc<SavedSoundsEvent, SavedSoundsState> {
+  /// [syncRepositoryStream] must emit each successive [SoundSyncRepository]
+  /// instance, including null while unavailable. Required rather than
+  /// optional: this bloc is built once per account in the app-shell
+  /// `SavedSoundsScope` — which sits above `MaterialApp.router`, where
+  /// re-keying on the repository re-inflates the whole app shell
+  /// (#6477/#6480) — while `soundSyncRepositoryProvider` resolves
+  /// asynchronously and can change identity later. A caller that omits the
+  /// stream leaves sync permanently off for the bloc's lifetime. Pass
+  /// `const Stream.empty()` in tests that don't exercise sync.
   SavedSoundsBloc({
     required SavedSoundsService service,
     required SavedSoundMediaProbe mediaProbe,
-    SoundSyncRepository? syncRepository,
+    required Stream<SoundSyncRepository?> syncRepositoryStream,
     DateTime Function()? now,
   }) : _service = service,
        _mediaProbe = mediaProbe,
-       _syncRepository = syncRepository,
        _now = now ?? DateTime.now,
        super(const SavedSoundsState()) {
     on<SavedSoundsEvent>(_onEvent, transformer: sequential());
+    _syncRepositorySubscription = syncRepositoryStream.listen(
+      (repository) => add(SavedSoundSyncRepositoryChanged(repository)),
+      onError: (Object error, StackTrace stackTrace) {
+        addError(error, stackTrace);
+      },
+    );
   }
 
   final SavedSoundsService _service;
   final SavedSoundMediaProbe _mediaProbe;
 
   /// Cross-device sync, or null until the vault key resolves.
-  final SoundSyncRepository? _syncRepository;
+  ///
+  /// Mutable by design. `state_management.md` bans mutable bloc fields for
+  /// *state*, but an injected dependency is configuration, and this one has
+  /// to be swappable in place: the bloc is constructed once while
+  /// `soundSyncRepositoryProvider` resolves asynchronously and can later
+  /// change identity on auth transitions. `PeopleListsBloc._repository`
+  /// carries the same mutable-dependency shape for the same reason.
+  SoundSyncRepository? _syncRepository;
+  StreamSubscription<SoundSyncRepository?>? _syncRepositorySubscription;
 
   final DateTime Function() _now;
 
+  @override
+  Future<void> close() async {
+    // super.close() first, unawaited: it synchronously flips isClosed the
+    // moment this method is invoked, matching the pre-sync-wiring
+    // behavior BlocProvider's element disposal relies on. Awaiting the
+    // subscription cancel before it would push that flip a microtask
+    // later, unlike the same-shape PeopleListsBloc.close() where nothing
+    // depends on isClosed flipping within the same tick.
+    final closing = super.close();
+    await _syncRepositorySubscription?.cancel();
+    await closing;
+  }
+
   /// Mirrors a local mutation to the user's other devices.
   ///
-  /// Sync is best-effort: the local write has already succeeded, and a
-  /// relay outage must never surface as a failed save. The next reconcile
-  /// pass picks up anything that did not publish.
-  Future<void> _mirror(Future<void> Function() publish) async {
+  /// Sync is best-effort: the local write has already succeeded, and any
+  /// failure here — expected (relay down, vault key unavailable) or not —
+  /// must never surface as a failed save. The next reconcile pass picks up
+  /// anything that did not publish.
+  Future<void> _mirror(
+    Future<void> Function() publish, {
+    required String context,
+  }) async {
     if (_syncRepository == null) return;
     try {
       await publish();
@@ -51,6 +92,8 @@ class SavedSoundsBloc extends Bloc<SavedSoundsEvent, SavedSoundsState> {
       addError(e, stackTrace);
     } on VaultKeyUnavailableException catch (e, stackTrace) {
       addError(e, stackTrace);
+    } catch (e, stackTrace) {
+      addError(Reportable(e, context: context), stackTrace);
     }
   }
 
@@ -101,6 +144,8 @@ class SavedSoundsBloc extends Bloc<SavedSoundsEvent, SavedSoundsState> {
         emit(state.copyWith(selectedHashtag: event.hashtag));
       case SavedSoundProbeCompleted():
         await _applyProbe(event, emit);
+      case SavedSoundSyncRepositoryChanged():
+        _syncRepository = event.repository;
     }
   }
 
@@ -118,7 +163,10 @@ class SavedSoundsBloc extends Bloc<SavedSoundsEvent, SavedSoundsState> {
     );
     try {
       final result = await _service.saveSavedSound(record);
-      await _mirror(() => _syncRepository!.publishLocalChange(record.id));
+      await _mirror(
+        () => _syncRepository!.publishLocalChange(record.id),
+        context: SavedSoundsReportableSites.mirrorSave,
+      );
       if (!event.completer.isCompleted) event.completer.complete(result);
       if (emit.isDone) return;
       emit(
@@ -163,7 +211,10 @@ class SavedSoundsBloc extends Bloc<SavedSoundsEvent, SavedSoundsState> {
     );
     try {
       await _service.replaceSavedSound(updated);
-      await _mirror(() => _syncRepository!.publishLocalChange(updated.id));
+      await _mirror(
+        () => _syncRepository!.publishLocalChange(updated.id),
+        context: SavedSoundsReportableSites.mirrorEdit,
+      );
     } catch (_) {
       if (!emit.isDone) {
         emit(
@@ -193,7 +244,10 @@ class SavedSoundsBloc extends Bloc<SavedSoundsEvent, SavedSoundsState> {
       return;
     }
 
-    await _mirror(() => _syncRepository!.publishLocalDeletion(event.soundId));
+    await _mirror(
+      () => _syncRepository!.publishLocalDeletion(event.soundId),
+      context: SavedSoundsReportableSites.mirrorRemove,
+    );
 
     if (completer != null && !completer.isCompleted) completer.complete();
     if (emit.isDone) return;
@@ -225,7 +279,10 @@ class SavedSoundsBloc extends Bloc<SavedSoundsEvent, SavedSoundsState> {
     );
     try {
       await _service.replaceSavedSound(updated);
-      await _mirror(() => _syncRepository!.publishLocalChange(updated.id));
+      await _mirror(
+        () => _syncRepository!.publishLocalChange(updated.id),
+        context: SavedSoundsReportableSites.mirrorProbe,
+      );
       if (emit.isDone) return;
       emit(state.copyWith(sounds: [...state.sounds]..[index] = updated));
     } catch (_) {

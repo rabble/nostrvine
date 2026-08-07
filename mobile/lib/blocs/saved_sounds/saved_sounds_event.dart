@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:creator_sync/creator_sync.dart';
 import 'package:equatable/equatable.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/saved_sounds/saved_sound_media_probe.dart';
@@ -92,4 +93,18 @@ final class SavedSoundProbeCompleted extends SavedSoundsEvent {
 
   @override
   List<Object?> get props => [soundId, result];
+}
+
+/// The cross-device sync repository re-pointed to a new instance, or to
+/// null while unavailable.
+///
+/// Fired from the bloc's own `syncRepositoryStream` subscription — never
+/// added externally.
+final class SavedSoundSyncRepositoryChanged extends SavedSoundsEvent {
+  const SavedSoundSyncRepositoryChanged(this.repository);
+
+  final SoundSyncRepository? repository;
+
+  @override
+  List<Object?> get props => [repository];
 }

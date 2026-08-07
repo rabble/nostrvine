@@ -13,30 +13,35 @@ class SavedSoundsScope extends StatelessWidget {
     required this.service,
     required this.child,
     this.mediaProbe,
-    this.syncRepository,
+    this.syncRepositoryStream = const Stream.empty(),
     super.key,
   });
 
   final SavedSoundsService service;
   final SavedSoundMediaProbe? mediaProbe;
 
-  /// Cross-device sync, or null until the vault key resolves.
-  final SoundSyncRepository? syncRepository;
+  /// Successive sync repository instances, including null while
+  /// unavailable.
+  ///
+  /// This scope sits above `MaterialApp.router`, so its `BlocProvider` is
+  /// keyed only on the account's storage key — re-keying on the repository
+  /// too would re-inflate the whole app shell every time
+  /// `soundSyncRepositoryProvider` resolves (#6477/#6480). The bloc instead
+  /// subscribes to this stream and re-points its dependency in place.
+  /// Defaults to an empty stream for callers that don't exercise sync.
+  final Stream<SoundSyncRepository?> syncRepositoryStream;
 
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider<SavedSoundsBloc>(
-      // Also keyed on syncRepository: it resolves asynchronously after the
-      // account storage key is already known, so without this the bloc
-      // would be created before sync is available and never pick it up.
-      key: ValueKey((service.storageKey, syncRepository)),
+      key: ValueKey(service.storageKey),
       lazy: false,
       create: (_) => SavedSoundsBloc(
         service: service,
         mediaProbe: mediaProbe ?? ProVideoEditorSavedSoundMediaProbe(),
-        syncRepository: syncRepository,
+        syncRepositoryStream: syncRepositoryStream,
       )..add(const SavedSoundsLoadRequested()),
       child: child,
     );
