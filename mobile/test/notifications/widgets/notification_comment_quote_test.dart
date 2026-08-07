@@ -7,9 +7,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/widgets/notification_comment_quote.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+
+final AppLocalizations _l10n = lookupAppLocalizations(const Locale('en'));
 
 Future<void> _pump(
   WidgetTester tester, {
@@ -27,6 +30,11 @@ Future<void> _pump(
           ).overrideWith((ref) => Stream.value(profile)),
       ],
       child: MaterialApp(
+        // The widget reads AppLocalizations for the video-reference label;
+        // without the delegates it silently falls back to rendering the raw
+        // reference, which masks link regressions.
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: NotificationCommentQuote(text: text, timestamp: timestamp),
         ),
@@ -138,6 +146,66 @@ void main() {
       );
       expect(profileSpan, isNotNull);
       expect(profileSpan!.recognizer, isA<TapGestureRecognizer>());
+    });
+
+    testWidgets('renders an undecodable npub as raw text (#6346 mode)', (
+      tester,
+    ) async {
+      // The symptom users reported: a bech32 token whose checksum does not
+      // verify — which is what slicing one produces — cannot be decoded, so
+      // the linkifier leaves it as literal text. This pins *why*
+      // NotificationRepository must never split a reference; without it,
+      // nothing at this layer fails when truncation regresses.
+      final malformed = 'npub1${'q' * 40}';
+
+      await _pump(tester, text: 'hey nostr:$malformed');
+
+      final richText = tester.widget<RichText>(find.byType(RichText));
+      final rootSpan = richText.text as TextSpan;
+      expect(rootSpan.toPlainText(), contains(malformed));
+      expect(rootSpan.toPlainText(), isNot(contains('@')));
+    });
+
+    testWidgets('renders an intact 64-hex reference as a tappable link', (
+      tester,
+    ) async {
+      // The linkifier decodes a bare 64-char hex reference as well as bech32,
+      // resolving it to a labelled video link. This is why
+      // NotificationRepository must protect hex from the preview cut: a hex
+      // reference is 64 chars, so an unprotected one was always sliced.
+      await _pump(tester, text: 'hey $profileHex thanks');
+
+      final richText = tester.widget<RichText>(find.byType(RichText));
+      final rootSpan = richText.text as TextSpan;
+      expect(
+        rootSpan.toPlainText(),
+        equals('“hey ${_l10n.clickableTextViewVideoLink} thanks”'),
+      );
+      expect(rootSpan.toPlainText(), isNot(contains(profileHex)));
+
+      final linkSpan = _findSpan(
+        rootSpan,
+        matching: (span) => span.text == _l10n.clickableTextViewVideoLink,
+      );
+      expect(linkSpan, isNotNull);
+      expect(linkSpan!.recognizer, isA<TapGestureRecognizer>());
+    });
+
+    testWidgets('renders a partial hex reference as raw text', (tester) async {
+      // The other half of the pair above: anything short of 64 hex chars is
+      // not a reference, so a sliced one is dumped verbatim into the row.
+      // That is the user-visible damage the repository cut used to cause.
+      final partialHex = 'a1b2c3d4e5' * 5; // 50 chars — below the 64 needed
+
+      await _pump(tester, text: 'hey $partialHex thanks');
+
+      final richText = tester.widget<RichText>(find.byType(RichText));
+      final rootSpan = richText.text as TextSpan;
+      expect(rootSpan.toPlainText(), contains(partialHex));
+      expect(
+        rootSpan.toPlainText(),
+        isNot(contains(_l10n.clickableTextViewVideoLink)),
+      );
     });
 
     testWidgets('uses cached profile names for nostr profile references', (
