@@ -72,7 +72,9 @@ class VideoMetadataCaptureClipPreview extends ConsumerWidget {
           child: AspectRatio(
             aspectRatio: clip.targetAspectRatio.value,
             child: ClipRRect(
-              borderRadius: .circular(16),
+              borderRadius: .circular(
+                VideoEditorConstants.clipPreviewCornerRadius,
+              ),
               child: Semantics(
                 button: true,
                 enabled: isReady,

@@ -109,6 +109,11 @@ class _VideoMetadataPreviewScreenState
 
   @override
   Widget build(BuildContext context) {
+    final stageBorderRadius = widget.previewOnly
+        ? BorderRadius.zero
+        : const BorderRadius.vertical(
+            bottom: Radius.circular(VineTheme.shellCornerRadius),
+          );
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: VideoEditorConstants.uiOverlayStyleFor(context.vineColors),
       child: Scaffold(
@@ -119,13 +124,14 @@ class _VideoMetadataPreviewScreenState
             // Video preview area with close button
             Expanded(
               child: _PreviewStage(
-                roundBottom: !widget.previewOnly,
+                borderRadius: stageBorderRadius,
                 child: Stack(
                   fit: .expand,
                   children: [
                     _VideoPreviewContent(
                       clip: widget.clip,
                       controller: _controller,
+                      stageBorderRadius: stageBorderRadius,
                     ),
                     if (!widget.previewOnly)
                       // The overlay offsets its caption and action column
@@ -167,20 +173,15 @@ class _VideoMetadataPreviewScreenState
 /// The preview-only route has no bottom chrome to seam into and stays edge to
 /// edge — the same branch the fullscreen feed takes in `_MaybeRoundFeedBottom`.
 class _PreviewStage extends StatelessWidget {
-  const _PreviewStage({required this.roundBottom, required this.child});
+  const _PreviewStage({required this.borderRadius, required this.child});
 
-  final bool roundBottom;
+  final BorderRadius borderRadius;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    if (!roundBottom) return child;
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(
-        bottom: Radius.circular(VineTheme.shellCornerRadius),
-      ),
-      child: child,
-    );
+    if (borderRadius == BorderRadius.zero) return child;
+    return ClipRRect(borderRadius: borderRadius, child: child);
   }
 }
 
@@ -200,10 +201,17 @@ class _PreviewStage extends StatelessWidget {
 /// post path once the render has baked the target crop into the file.
 class _VideoPreviewContent extends StatelessWidget {
   /// Creates the video preview content wrapper.
-  const _VideoPreviewContent({required this.clip, required this.controller});
+  const _VideoPreviewContent({
+    required this.clip,
+    required this.controller,
+    required this.stageBorderRadius,
+  });
 
   final DivineVideoClip clip;
   final DivineVideoPlayerController? controller;
+
+  /// Shape the stage rests at, which the hero flight morphs into.
+  final BorderRadius stageBorderRadius;
 
   @override
   Widget build(BuildContext context) {
@@ -223,6 +231,12 @@ class _VideoPreviewContent extends StatelessWidget {
       tag: VideoEditorConstants.heroMetaPreviewId,
       // Use linear flight path instead of curved arc
       createRectTween: (begin, end) => RectTween(begin: begin, end: end),
+      flightShuttleBuilder: (_, animation, _, _, toHeroContext) =>
+          _PreviewFlightCorners(
+            animation: animation,
+            stageBorderRadius: stageBorderRadius,
+            child: (toHeroContext.widget as Hero).child,
+          ),
       child: Stack(
         fit: .expand,
         children: [
@@ -245,6 +259,43 @@ class _VideoPreviewContent extends StatelessWidget {
               fit: fit,
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// Carries the stage's rounded bottom through the hero flight.
+///
+/// The flying widget is lifted into the navigator overlay, above the
+/// [_PreviewStage] clip, so the stage's rounding cannot reach it — the corners
+/// only appeared once the flight landed. Clip the shuttle here instead, morphing
+/// out of the clip thumbnail's all-round corners into the stage's shape.
+///
+/// The flight animation runs 0 (metadata screen) to 1 (preview screen) in both
+/// directions, because a pop drives it from the popped route's animation.
+class _PreviewFlightCorners extends StatelessWidget {
+  const _PreviewFlightCorners({
+    required this.animation,
+    required this.stageBorderRadius,
+    required this.child,
+  });
+
+  final Animation<double> animation;
+  final BorderRadius stageBorderRadius;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: animation,
+      child: child,
+      builder: (context, child) => ClipRRect(
+        borderRadius: BorderRadius.lerp(
+          BorderRadius.circular(VideoEditorConstants.clipPreviewCornerRadius),
+          stageBorderRadius,
+          animation.value.clamp(0.0, 1.0),
+        )!,
+        child: child,
       ),
     );
   }

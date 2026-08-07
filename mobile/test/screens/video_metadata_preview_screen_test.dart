@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as models;
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
@@ -368,6 +369,83 @@ void main() {
         ),
         isTrue,
       );
+    });
+
+    testWidgets('rounds the bottom corners during the hero flight', (
+      tester,
+    ) async {
+      // The flying hero is lifted into the navigator overlay, above the stage's
+      // clip, so without its own rounding the preview arrived square-bottomed
+      // and only snapped into shape once the flight landed.
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            videoPublishProvider.overrideWith(
+              () =>
+                  _MockVideoPublishNotifier(const VideoPublishProviderState()),
+            ),
+            videoEditorProvider.overrideWith(_MockVideoEditorNotifier.new),
+            nostrServiceProvider.overrideWithValue(_FakeNostrClient()),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: Center(
+                  child: SizedBox.square(
+                    dimension: 200,
+                    child: Hero(
+                      tag: VideoEditorConstants.heroMetaPreviewId,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(
+                          VideoEditorConstants.clipPreviewCornerRadius,
+                        ),
+                        child: GestureDetector(
+                          onTap: () => Navigator.of(context).push(
+                            PageRouteBuilder<void>(
+                              pageBuilder: (_, _, _) =>
+                                  VideoMetadataPreviewScreen(
+                                    clip: _createTestClip(),
+                                  ),
+                            ),
+                          ),
+                          child: const Text('open'),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('open'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 150));
+
+      // Mid-flight the shuttle sits between the thumbnail's all-round corners
+      // and the stage's bottom-only rounding.
+      final radii = tester
+          .widgetList<ClipRRect>(find.byType(ClipRRect))
+          .map((clip) => clip.borderRadius)
+          .whereType<BorderRadius>();
+      expect(
+        radii.any(
+          (radius) =>
+              radius.bottomLeft.x >
+                  VideoEditorConstants.clipPreviewCornerRadius &&
+              radius.bottomLeft.x < VineTheme.shellCornerRadius &&
+              radius.topLeft.x < VideoEditorConstants.clipPreviewCornerRadius,
+        ),
+        isTrue,
+      );
+
+      // Settle the flight and the overlay timer the screen starts on mount.
+      await tester.pump(const Duration(milliseconds: 400));
     });
 
     testWidgets('constrains square stop-motion clips to the target box', (
