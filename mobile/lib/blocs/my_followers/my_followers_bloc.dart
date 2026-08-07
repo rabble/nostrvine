@@ -43,10 +43,9 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
 
   /// Handle request to load current user's followers list.
   ///
-  /// Delegates to [FollowRepository.watchMyFollowersCached] for
-  /// stale-while-revalidate: cached data is emitted first (if present and
-  /// not expired), then the relay stream updates the list and refreshes the
-  /// cache.
+  /// Delegates to [FollowRepository.watchMyFollowersCached]. Fresh cached data
+  /// is emitted without a network fetch; otherwise the repository fetches live
+  /// data and refreshes the cache.
   Future<void> _onLoadRequested(
     MyFollowersListLoadRequested event,
     Emitter<MyFollowersState> emit,

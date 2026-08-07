@@ -305,19 +305,19 @@ class FollowRepository {
     return FollowingSnapshot(pubkeys: sanitized, count: sanitized.length);
   }
 
-  // ---- CacheSync-backed stale-while-revalidate watchers --------------------
+  // ---- CacheSync-backed profile-list watchers -----------------------------
   //
   // These wrap [watchMyFollowers], [watchMyFollowing], [getFollowers], and
-  // [getOthersFollowing] with [CacheSync] so consumers (BLoCs) get
-  // cache-first emissions followed by live data without knowing about
-  // [CacheSync] or cache-key conventions. Cache keys are private to this
-  // repository — changing them invalidates every cached entry on every user's
-  // device.
+  // [getOthersFollowing] with [CacheSync] so consumers (BLoCs) do not need to
+  // know about [CacheSync] or cache-key conventions. Cache keys are private to
+  // this repository — changing them invalidates every cached entry on every
+  // user's device.
 
   // Cache keys follow the `${pubkey}:${operation}` convention (RFC #4244) so
   // `CacheSync.invalidatePrefix(pubkey)` at sign-out clears every entry for
   // that account without touching other accounts on the same device.
-  static String _myFollowersCacheKey(String pubkey) => '$pubkey:my_followers';
+  static String _myFollowersCacheKey(String pubkey) =>
+      '$pubkey:my_followers_v2';
   static String _myFollowingCacheKey(String pubkey) => '$pubkey:my_following';
   static String _othersFollowersCacheKey(String pubkey) =>
       '$pubkey:others_followers';
@@ -347,8 +347,9 @@ class FollowRepository {
 
   /// Cache-backed stream of the current user's followers.
   ///
-  /// Emits a [CacheResult.cached] if disk-cached data exists, then a single
-  /// [CacheResult.live] once the network fetch resolves.
+  /// Emits a [CacheResult.cached] and completes when fresh disk-cached data
+  /// exists. Otherwise emits a single [CacheResult.live] once the network fetch
+  /// resolves. Pass [forceRefresh] to bypass the cache and fetch live.
   ///
   /// Uses [CacheSync.watchOne] rather than [CacheSync.watchStream] so that
   /// [CacheSync] is the single owner of the stale/live boundary. Wrapping
@@ -766,12 +767,12 @@ class FollowRepository {
       // Apply hysteresis against the persistent cache so counts don't
       // visibly fluctuate across app restarts due to relay variance.
       final persisted = await _loadPersistedStats(pubkey);
-      final stats = _stabilizeStats(
+      final stabilizedStats = _stabilizeStats(
         pubkey,
         freshStats,
         persisted: persisted,
-        applyHysteresis: !forceRefresh,
       );
+      final stats = forceRefresh ? freshStats : stabilizedStats;
 
       // Cache in memory.
       _followerStatsCache[pubkey] = (stats: stats, cachedAt: DateTime.now());
@@ -780,9 +781,9 @@ class FollowRepository {
       // keeps the old persisted count, skipping the write preserves the
       // original timestamp so the stale check can eventually trigger.
       if (persisted == null ||
-          stats.followers != persisted.followers ||
-          stats.following != persisted.following) {
-        await _persistFollowerStats(pubkey, stats);
+          stabilizedStats.followers != persisted.followers ||
+          stabilizedStats.following != persisted.following) {
+        await _persistFollowerStats(pubkey, stabilizedStats);
       }
 
       Log.debug(

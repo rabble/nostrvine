@@ -278,6 +278,13 @@ void main() {
 
         expect(stats.followers, equals(8));
         expect(stats.following, equals(20));
+        verifyNever(
+          () => dao.upsertStats(
+            pubkey: _testPubkey,
+            followerCount: any(named: 'followerCount'),
+            followingCount: any(named: 'followingCount'),
+          ),
+        );
       });
 
       test('boundary: fresh count one below threshold is accepted', () async {

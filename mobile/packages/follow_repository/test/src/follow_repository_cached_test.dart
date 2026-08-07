@@ -120,7 +120,7 @@ void main() {
 
     test('uses cacheFirst policy for fresh cached profile lists', () async {
       await dao.write(
-        key: 'current-user:my_followers',
+        key: 'current-user:my_followers_v2',
         payload: const FollowersSnapshot(
           pubkeys: ['cached'],
           count: 1,
@@ -145,9 +145,35 @@ void main() {
       expect(repo.getMyFollowersCallCount, 0);
     });
 
-    test('expired cached entry refetches live data', () async {
+    test('ignores legacy never-expiring my_followers cache entry', () async {
       await dao.write(
         key: 'current-user:my_followers',
+        payload: const FollowersSnapshot(
+          pubkeys: ['legacy'],
+          count: 1,
+        ).toJson(),
+      );
+
+      final repo = _TestableFollowRepository(
+        nostrClient: mockNostrClient,
+        myFollowersResult: const ['live'],
+        myFollowerCountResult: 1,
+        myFollowingStream: const Stream.empty(),
+        othersFollowersResult: const [],
+        othersFollowingResult: const FollowingSnapshot(pubkeys: [], count: 0),
+      );
+
+      final events = await repo.watchMyFollowersCached().take(1).toList();
+
+      expect(events, hasLength(1));
+      expect(events[0].isLive, isTrue);
+      expect(events[0].data.pubkeys, ['live']);
+      expect(repo.getMyFollowersCallCount, 1);
+    });
+
+    test('expired cached entry refetches live data', () async {
+      await dao.write(
+        key: 'current-user:my_followers_v2',
         payload: const FollowersSnapshot(pubkeys: ['stale'], count: 1).toJson(),
         ttl: const Duration(microseconds: 1),
       );
@@ -172,7 +198,7 @@ void main() {
 
     test('forceRefresh skips cached emission', () async {
       await dao.write(
-        key: 'current-user:my_followers',
+        key: 'current-user:my_followers_v2',
         payload: const FollowersSnapshot(
           pubkeys: ['cached'],
           count: 1,
@@ -202,7 +228,7 @@ void main() {
 
     test('uses current-user scoped cache key', () async {
       await dao.write(
-        key: 'alice:my_followers',
+        key: 'alice:my_followers_v2',
         payload: const FollowersSnapshot(
           pubkeys: ['alice_cached'],
           count: 1,
@@ -232,7 +258,7 @@ void main() {
       'snapshot',
       () async {
         await dao.write(
-          key: 'current-user:my_followers',
+          key: 'current-user:my_followers_v2',
           payload: const FollowersSnapshot(
             pubkeys: ['disk'],
             count: 1,
@@ -617,7 +643,7 @@ void main() {
 
         await repo.watchMyFollowersCached().take(1).toList();
 
-        expect(dao.rawRead('current-user:my_followers'), isNotNull);
+        expect(dao.rawRead('current-user:my_followers_v2'), isNotNull);
         expect(dao.keys, isNotEmpty);
         expectNoLegacyPrefixedKey();
       },
