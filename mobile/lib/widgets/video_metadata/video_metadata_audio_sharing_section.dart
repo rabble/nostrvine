@@ -244,9 +244,8 @@ class _PublicAudioCreditEditorState
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 8,
       children: [
-        const SizedBox(height: 8),
         Padding(
-          padding: const .symmetric(horizontal: 16),
+          padding: const .fromLTRB(16, 16, 16, 0),
           child: Text(
             context.l10n.soundPublicCredit,
             style: VineTheme.titleSmallFont(
