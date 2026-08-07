@@ -2408,9 +2408,10 @@ class NotificationRepository {
           match.group(_bech32ReferenceGroup) != null ||
           match.group(_hexReferenceGroup) != null;
       if (!isReference) continue;
-      final startsBeforeOrAtLimit = match.start < limit;
-      final endsAfterLimit = match.end > limit;
-      if (!startsBeforeOrAtLimit || !endsAfterLimit) continue;
+      // The `break` above already guarantees `match.start < limit`, so
+      // ending after it is exactly the straddling case.
+      final straddlesLimit = match.end > limit;
+      if (!straddlesLimit) continue;
       final canKeepLeadingToken =
           match.end <= maxReferencePreviewLength &&
           _hasOnlyWhitespaceOrPunctuationBefore(content, match.start);
