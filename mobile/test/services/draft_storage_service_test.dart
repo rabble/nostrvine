@@ -1093,6 +1093,44 @@ void main() {
         expect(updated, isFalse);
       });
 
+      test('surfaces the new status to readers of the draft', () async {
+        final draft = DivineVideoDraft.create(
+          clips: [
+            DivineVideoClip(
+              id: 'test_clip',
+              video: EditorVideo.file('/path/to/video.mp4'),
+              duration: const Duration(seconds: 6),
+              recordedAt: DateTime.now(),
+              targetAspectRatio: AspectRatio.square,
+              originalAspectRatio: 9 / 16,
+            ),
+          ],
+          title: 'Test Vine',
+          description: '',
+          hashtags: {},
+          selectedApproach: 'hybrid',
+        );
+
+        // The publish flow writes `publishing` through a full save, then only
+        // ever touches the row columns.
+        await service.saveDraft(
+          draft.copyWith(publishStatus: PublishStatus.publishing),
+        );
+        await service.updatePublishStatus(
+          draftId: draft.id,
+          status: PublishStatus.failed,
+          publishError: 'Network error',
+          publishAttempts: 2,
+        );
+
+        // A `publishing` draft is filtered out of the library, so reading the
+        // stale blob strands the video: the user never sees it again.
+        final loaded = await service.getAllDrafts();
+        expect(loaded.single.publishStatus, PublishStatus.failed);
+        expect(loaded.single.publishError, 'Network error');
+        expect(loaded.single.publishAttempts, 2);
+      });
+
       test('should update publish status with error message', () async {
         final draft = DivineVideoDraft.create(
           clips: [
