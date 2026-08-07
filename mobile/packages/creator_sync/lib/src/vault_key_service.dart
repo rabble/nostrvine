@@ -1,6 +1,7 @@
 // ABOUTME: Owns the per-account sync vault key lifecycle.
 // ABOUTME: Wraps with NIP-44 to self; never forks when the relay is down.
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
@@ -54,17 +55,52 @@ class VaultKeyService {
 
   static const int _keyLengthBytes = 32;
 
+  Future<SecretKey>? _inFlight;
+
   /// Returns the vault key for the signed-in account.
   ///
   /// Resolution order: device cache, then the remote wrapped-key event,
   /// then generate-and-publish.
   ///
   /// Throws [VaultKeyUnavailableException] when signed out, when the
-  /// remote lookup fails, or when the signer cannot unwrap an existing
-  /// key. It deliberately does NOT generate a replacement in those cases:
+  /// remote lookup fails or cannot be confirmed empty, when the signer
+  /// cannot unwrap an existing key, or when a decoded key is malformed.
+  /// It deliberately does NOT generate a replacement in those cases:
   /// publishing a second vault key would replace the first and render
   /// every previously synced item permanently unreadable.
-  Future<SecretKey> obtain() async {
+  ///
+  /// Concurrent calls share one in-flight resolution, so two callers
+  /// racing on a cold cache can't both observe "no remote key" and each
+  /// generate and publish a distinct replacement.
+  Future<SecretKey> obtain() {
+    final inFlight = _inFlight;
+    if (inFlight != null) return inFlight;
+
+    final future = _obtain();
+    _inFlight = future;
+    // `future.whenComplete(...)` would return a *new* future that
+    // re-propagates any error, and unawaited-discarding that new future
+    // would leave it with no error listener at all — reported as an
+    // unhandled async error. `then(onError:)` instead swallows the error
+    // into a future that only ever completes successfully, so it's safe
+    // to discard without ever surfacing an unhandled-error report. The
+    // original [future] still carries its own result/error to the caller.
+    unawaited(
+      future.then(
+        (_) => _forgetInFlight(future),
+        onError: (_) => _forgetInFlight(future),
+      ),
+    );
+    return future;
+  }
+
+  void _forgetInFlight(Future<SecretKey> future) {
+    if (identical(_inFlight, future)) {
+      _inFlight = null;
+    }
+  }
+
+  Future<SecretKey> _obtain() async {
     final pubkey = await _signer.getPublicKey();
     if (pubkey == null || pubkey.isEmpty) {
       throw VaultKeyUnavailableException('no signed-in account');
@@ -72,37 +108,93 @@ class VaultKeyService {
 
     final cached = await _cache.read(pubkey);
     if (cached != null) {
-      return SecretKey(base64Decode(cached));
+      return _decodeKey(cached);
     }
 
     final remote = await _fetchRemote(pubkey);
     if (remote != null) {
       final raw = await _unwrap(pubkey, remote);
+      // Decode and validate before touching the cache: a write here that
+      // turned out to be garbage would poison the cache permanently, since
+      // every later obtain() would then short-circuit on it.
+      final key = _decodeKey(raw);
       await _cache.write(pubkey, raw);
-      return SecretKey(base64Decode(raw));
+      return key;
     }
 
     return _generateAndPublish(pubkey);
   }
 
-  Future<Event?> _fetchRemote(String pubkey) async {
+  SecretKey _decodeKey(String base64Key) {
+    final Uint8List bytes;
     try {
-      final events = await _client.queryEvents([
-        Filter(
-          kinds: [EventKind.appSpecificData],
-          authors: [pubkey],
-          d: [vaultKeyDTag],
-          limit: 1,
-        ),
-      ]);
-      if (events.isEmpty) return null;
-      events.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      return events.first;
-    } catch (e) {
+      bytes = base64Decode(base64Key);
+    } on FormatException catch (e) {
       throw VaultKeyUnavailableException(
-        'could not determine whether a vault key exists: $e',
+        'vault key is not valid base64: ${e.message}',
       );
     }
+    if (bytes.length != _keyLengthBytes) {
+      throw VaultKeyUnavailableException(
+        'vault key is ${bytes.length} bytes, expected $_keyLengthBytes',
+      );
+    }
+    return SecretKey(bytes);
+  }
+
+  /// Returns the newest genuine vault key event for [pubkey], or `null`
+  /// only when the relay pool was reachable and confirmed there is none.
+  ///
+  /// A query that never reached a relay or timed out cannot distinguish
+  /// "no vault key exists" from "we could not ask" — treating the former
+  /// as the answer would let [obtain] generate a second key over a first
+  /// one it never actually saw. [NostrClient.queryEvents] discards that
+  /// distinction (it collapses a failed lookup to an empty list), so this
+  /// uses [NostrClient.queryEventsDetailed] and fails closed on
+  /// `noRelays`/`timedOut` instead.
+  Future<Event?> _fetchRemote(String pubkey) async {
+    final ({List<Event> events, bool timedOut, bool noRelays}) result;
+    try {
+      result = await _client.queryEventsDetailed(
+        [
+          Filter(
+            kinds: [EventKind.appSpecificData],
+            authors: [pubkey],
+            d: [vaultKeyDTag],
+          ),
+        ],
+        // A local cache hit answers "did we see one before", not "does one
+        // exist on the relay right now" — only a live relay answer counts
+        // as confirmation the vault key is absent.
+        useCache: false,
+      );
+    } catch (e) {
+      throw VaultKeyUnavailableException(
+        'could not determine whether a vault key exists: ${e.runtimeType}',
+      );
+    }
+
+    if (result.noRelays || result.timedOut) {
+      throw VaultKeyUnavailableException(
+        'could not determine whether a vault key exists '
+        '(noRelays: ${result.noRelays}, timedOut: ${result.timedOut})',
+      );
+    }
+
+    // Relays are untrusted and can return anything for a broad kind+author
+    // filter; only trust events that actually carry this event's own
+    // kind and d tag before treating one as the vault key.
+    final matches =
+        result.events
+            .where(
+              (event) =>
+                  event.kind == EventKind.appSpecificData &&
+                  event.dTagValue == vaultKeyDTag,
+            )
+            .toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    return matches.isEmpty ? null : matches.first;
   }
 
   Future<String> _unwrap(String pubkey, Event event) async {
@@ -110,7 +202,9 @@ class VaultKeyService {
     try {
       raw = await _signer.nip44Decrypt(pubkey, event.content);
     } catch (e) {
-      throw VaultKeyUnavailableException('signer refused to unwrap: $e');
+      throw VaultKeyUnavailableException(
+        'signer refused to unwrap: ${e.runtimeType}',
+      );
     }
     if (raw == null || raw.isEmpty) {
       throw VaultKeyUnavailableException('signer returned an empty key');
@@ -128,7 +222,9 @@ class VaultKeyService {
     try {
       wrapped = await _signer.nip44Encrypt(pubkey, raw);
     } catch (e) {
-      throw VaultKeyUnavailableException('signer refused to wrap: $e');
+      throw VaultKeyUnavailableException(
+        'signer refused to wrap: ${e.runtimeType}',
+      );
     }
     if (wrapped == null || wrapped.isEmpty) {
       throw VaultKeyUnavailableException('signer returned an empty wrap');
