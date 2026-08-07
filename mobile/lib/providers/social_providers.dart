@@ -20,6 +20,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/relay_providers.dart';
 import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/providers/upload_media_providers.dart';
 import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/services/analytics_ingest_client.dart';
 import 'package:openvine/services/analytics_service.dart';
@@ -65,6 +66,21 @@ Stream<void> _dmRetryConnectivityTriggerStream() => Connectivity()
 /// must not starve the retry sweep indefinitely — on timeout the sweep runs
 /// and the SDK's own OK-timeout remediation backstops any still-stale socket.
 const _relayRepairTimeout = Duration(seconds: 15);
+
+typedef PendingUploadOwnerCleanup = Future<int> Function(String ownerPubkey);
+
+final openVineImageCacheClearProvider = Provider<Future<void> Function()>((
+  ref,
+) {
+  return clearOpenVineImageCache;
+});
+
+final pendingUploadOwnerCleanupProvider = Provider<PendingUploadOwnerCleanup>((
+  ref,
+) {
+  return (ownerPubkey) =>
+      ref.read(uploadManagerProvider).deleteAllForOwner(ownerPubkey);
+});
 
 /// Connectivity trigger for the message retry sweep: fires on EVERY
 /// connectivity transition, including `→ none`. [OutgoingDmRetryService] runs
@@ -649,13 +665,27 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
   // those rows are already scoped by ownerPubkey.
   service.onDatabaseCleanup =
       ({String? userPubkey, bool deleteUserData = false}) async {
-        try {
-          await ref.read(dmRepositoryProvider).stopListening();
-        } catch (_) {
-          // DmRepository may not exist yet (e.g., first launch).
+        Future<void> safeCleanup(
+          String name,
+          Future<void> Function() fn,
+        ) async {
+          try {
+            await fn();
+          } catch (e) {
+            Log.warning(
+              'Failed to clean $name for ${userPubkey ?? "unknown user"}: $e',
+              name: 'UserDataCleanup',
+              category: LogCategory.auth,
+            );
+          }
         }
+
+        await safeCleanup(
+          'dmRepository',
+          () => ref.read(dmRepositoryProvider).stopListening(),
+        );
         try {
-          await clearOpenVineImageCache();
+          await ref.read(openVineImageCacheClearProvider)();
           ref
               .read(adultMediaAccessRevocationVersionProvider.notifier)
               .increment();
@@ -666,26 +696,35 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
             category: LogCategory.auth,
           );
         }
-        await db.directMessagesDao.clearAll();
-        await db.conversationsDao.clearAll();
+        await safeCleanup('directMessages', db.directMessagesDao.clearAll);
+        await safeCleanup('conversations', db.conversationsDao.clearAll);
         // Raw failed-decrypt gift wraps are encrypted DM data of the same
         // class as direct_messages — wipe them on the same path so they never
         // outlive the account's decrypted DMs. See #5202.
-        await db.pendingGiftWrapsDao.clearAll();
+        await safeCleanup('pendingGiftWraps', db.pendingGiftWrapsDao.clearAll);
         // Wipe the processed-wrap dedup ledger on the same path: a stale ledger
         // must never suppress re-population of an account's reactions/deletions
         // after its DM data is cleared. See #5452.
-        await db.processedGiftWrapsDao.clearAll();
+        await safeCleanup(
+          'processedGiftWraps',
+          db.processedGiftWrapsDao.clearAll,
+        );
         // Scoped to the leaving account so a switch does not wipe the other
         // account's cached inbox along with this one's.
-        await db.notificationsDao.clearAll(ownerPubkey: userPubkey);
+        await safeCleanup(
+          'notifications',
+          () => db.notificationsDao.clearAll(ownerPubkey: userPubkey),
+        );
         // Issue #3936 requires the NIP-39 identity caches to clear on logout
         // and account switches rather than persisting across identities.
-        await db.identityEventsDao.clearAll();
-        await db.identityVerificationsDao.clearAll();
+        await safeCleanup('identityEvents', db.identityEventsDao.clearAll);
+        await safeCleanup(
+          'identityVerifications',
+          db.identityVerificationsDao.clearAll,
+        );
         // Clear DM sync cursors so the next login triggers a full re-fetch
         // from relays instead of using stale `since:` boundaries.
-        await DmSyncState(prefs).clearAll();
+        await safeCleanup('dmSyncState', () => DmSyncState(prefs).clearAll());
 
         // Per-user data cleanup (#2999): only on destructive paths
         if (deleteUserData && userPubkey != null) {
@@ -715,6 +754,10 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
           await safeDelete(
             'pendingUploads',
             () => db.pendingUploadsDao.deleteAllForUser(userPubkey),
+          );
+          await safeDelete(
+            'pendingUploadsHive',
+            () => ref.read(pendingUploadOwnerCleanupProvider)(userPubkey),
           );
           await safeDelete(
             'personalReactions',

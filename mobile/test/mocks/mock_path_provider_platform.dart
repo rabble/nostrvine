@@ -10,6 +10,7 @@ class MockPathProviderPlatform
   String? _temporaryPath;
   String? _applicationDocumentsPath;
   String? _applicationSupportPath;
+  String? _applicationCachePath;
 
   void setTemporaryPath(String path) {
     _temporaryPath = path;
@@ -21,6 +22,10 @@ class MockPathProviderPlatform
 
   void setApplicationSupportPath(String path) {
     _applicationSupportPath = path;
+  }
+
+  void setApplicationCachePath(String path) {
+    _applicationCachePath = path;
   }
 
   @override
@@ -40,7 +45,7 @@ class MockPathProviderPlatform
 
   @override
   Future<String?> getApplicationCachePath() async {
-    return null;
+    return _applicationCachePath;
   }
 
   @override
