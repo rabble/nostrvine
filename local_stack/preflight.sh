@@ -470,7 +470,7 @@ preflight_image_staleness() {
         echo "To run against current funnelcake instead:"
         echo ""
         echo "    bash ${script_dir}/build_funnelcake.sh"
-        echo "    eval \"\$(bash ${script_dir}/build_funnelcake.sh --export-only)\""
+        echo "    # Add the printed override lines to ${script_dir}/.env."
         echo "    mise run local_reset"
         echo ""
     } >&2

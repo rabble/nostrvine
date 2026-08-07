@@ -140,6 +140,7 @@ services:
   funnelcake-local-tuning:
     image: clickhouse/clickhouse-server:25.8
     pull_policy: always
+    profiles: ["tools"]
     depends_on:
       funnelcake-migrate:
         condition: service_completed_successfully

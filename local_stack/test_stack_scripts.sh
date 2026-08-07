@@ -17,7 +17,22 @@ COMPOSE_FILE="${SCRIPT_DIR}/docker-compose.yml"
 BASH_BIN="$(command -v bash)"
 
 tmp_dir="$(mktemp -d)"
-trap 'rm -rf "$tmp_dir"' EXIT
+ENV_FILE="${SCRIPT_DIR}/.env"
+ENV_BACKUP="${tmp_dir}/env.backup"
+ENV_HAD_FILE=0
+if [[ -f "$ENV_FILE" ]]; then
+    cp "$ENV_FILE" "$ENV_BACKUP"
+    ENV_HAD_FILE=1
+fi
+cleanup() {
+    if [[ "$ENV_HAD_FILE" -eq 1 ]]; then
+        cp "$ENV_BACKUP" "$ENV_FILE"
+    else
+        rm -f "$ENV_FILE"
+    fi
+    rm -rf "$tmp_dir"
+}
+trap cleanup EXIT
 
 BIN="${tmp_dir}/bin"
 FIXTURES="${tmp_dir}/fixtures"
@@ -134,8 +149,19 @@ case "${1:-}" in
           exit "$up_rc"
           ;;
         run)
+          if printf '%s\n' "$@" | grep -q 'funnelcake-local-tuning'; then
+            emit "${STUB_FIXTURES}/tuning_output.txt"
+            exit "$(stub_rc tuning)"
+          fi
           emit "${STUB_FIXTURES}/seed_output.txt"
           exit "$(stub_rc run)"
+          ;;
+        exec)
+          if printf '%s\n' "$@" | grep -q 'funnelcake-clickhouse'; then
+            emit "${STUB_FIXTURES}/schema_version.txt"
+            exit "$(stub_rc exec)"
+          fi
+          exit 0
           ;;
         ps)
           # Two different --format strings; ExitCode marks the pipe-delimited one.
@@ -503,6 +529,57 @@ if [[ "$(cat "${FIXTURES}/up_count")" != "2" ]]; then
         "up attempts: $(cat "${FIXTURES}/up_count")"
 fi
 assert_stderr_contains 'Retrying in 5s (attempt 2 of 3).' "the retry should be announced"
+
+# --- Current schema with partial tuning warns --------------------------------
+
+reset_fixtures
+with_tools lsof
+: >"${FIXTURES}/docker_ps.txt"
+: >"${FIXTURES}/lsof.txt"
+echo 'refresh-interval tuning: applied=4 skipped=1' >"${FIXTURES}/tuning_output.txt"
+echo 210 >"${FIXTURES}/schema_version.txt"
+echo 'seed ok' >"${FIXTURES}/seed_output.txt"
+run_up_sh
+
+assert_status 0 "$last_status" "partial tuning should not block local_up"
+assert_stderr_contains 'refresh-interval tuning applied 4/5 expected statements on schema 210' "current-schema tuning drift should be visible"
+
+# --- Pinned schema with skipped tuning stays quiet ---------------------------
+
+reset_fixtures
+with_tools lsof
+: >"${FIXTURES}/docker_ps.txt"
+: >"${FIXTURES}/lsof.txt"
+echo 'refresh-interval tuning: applied=0 skipped=5' >"${FIXTURES}/tuning_output.txt"
+echo 70 >"${FIXTURES}/schema_version.txt"
+echo 'seed ok' >"${FIXTURES}/seed_output.txt"
+run_up_sh
+
+assert_status 0 "$last_status" "skipped tuning should not block the pinned schema"
+assert_stderr_lacks 'refresh-interval tuning applied' "the pinned schema should not warn about missing current MVs"
+
+# --- .env overrides suppress the stale-image warning through up.sh -----------
+
+reset_fixtures
+with_tools lsof
+: >"${FIXTURES}/docker_ps.txt"
+: >"${FIXTURES}/lsof.txt"
+ghcr_fixtures "$(python3 -c 'import datetime;print((datetime.datetime.now(datetime.timezone.utc)-datetime.timedelta(days=163)).isoformat())')" 2
+echo 'refresh-interval tuning: applied=0 skipped=5' >"${FIXTURES}/tuning_output.txt"
+echo 70 >"${FIXTURES}/schema_version.txt"
+echo 'seed ok' >"${FIXTURES}/seed_output.txt"
+cat >"$ENV_FILE" <<'ENV'
+FUNNELCAKE_RELAY_IMAGE=funnelcake-relay:local
+FUNNELCAKE_API_IMAGE=funnelcake-api:local
+FUNNELCAKE_MIGRATE_IMAGE=funnelcake-migrate:local
+FUNNELCAKE_PULL_POLICY=never
+STACK_STALE_AFTER_DAYS=9999
+ENV
+run_up_sh
+rm -f "$ENV_FILE"
+
+assert_status 0 "$last_status" "up.sh should load .env overrides"
+assert_stderr_lacks 'the pinned funnelcake images are stale' ".env image overrides should suppress the stale-image warning"
 
 # --- A failed seed reports the seed, not the healthy services ---------------
 # The services came up; saying "Local stack failed to come up" over a list of

@@ -36,15 +36,23 @@
 #
 # USAGE
 #
-#   bash local_stack/build_funnelcake.sh        # build, then print the exports
-#   eval "$(bash local_stack/build_funnelcake.sh --export-only)"
-#   mise run local_up
+#   bash local_stack/build_funnelcake.sh
+#   # add the printed override lines to local_stack/.env
+#   mise run local_reset
 #
-# Point at a checkout elsewhere with DIVINE_FUNNELCAKE_ROOT.
+# Point at a checkout elsewhere by setting DIVINE_FUNNELCAKE_ROOT in
+# local_stack/.env or in the shell before invoking this script.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="${SCRIPT_DIR}/.env"
+
+if [[ -f "$ENV_FILE" ]]; then
+  # shellcheck source=/dev/null
+  source "$ENV_FILE"
+fi
+
 FUNNELCAKE_ROOT="${DIVINE_FUNNELCAKE_ROOT:-${SCRIPT_DIR}/../../divine-funnelcake}"
 TAG="${FUNNELCAKE_LOCAL_TAG:-local}"
 
@@ -86,6 +94,8 @@ if [[ ! -d "$FUNNELCAKE_ROOT/.git" ]]; then
     echo "Or point at an existing checkout:"
     echo ""
     echo "    DIVINE_FUNNELCAKE_ROOT=/path/to/divine-funnelcake $0"
+    echo ""
+    echo "Or set DIVINE_FUNNELCAKE_ROOT in ${ENV_FILE}."
   } >&2
   exit 1
 fi
