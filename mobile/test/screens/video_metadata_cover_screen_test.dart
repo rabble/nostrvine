@@ -377,6 +377,59 @@ void main() {
       );
     });
 
+    testWidgets('dims the strip either side of the selection cursor', (
+      tester,
+    ) async {
+      setUpPlayerChannel();
+      addTearDown(tearDownPlayerChannel);
+
+      await tester.pumpWidget(buildWidget());
+      await tester.pump(const Duration(milliseconds: 400));
+
+      final dimFinder = find.byWidgetPredicate(
+        (w) => w is ColoredBox && w.color == VineTheme.scrim35,
+      );
+      expect(dimFinder, findsNWidgets(2));
+
+      Rect leftDim() => tester.getRect(dimFinder.first);
+      Rect rightDim() => tester.getRect(dimFinder.last);
+
+      // The dims span the strip between them, flanking the cursor.
+      final stripLeft = leftDim().left;
+      final stripRight = rightDim().right;
+      expect(rightDim().left - leftDim().right, equals(36.0));
+
+      // The default cover sits inside the cursor's own width, so the clamp
+      // collapses the leading dim rather than giving it a negative width.
+      expect(leftDim().width, equals(0.0));
+
+      final midY = leftDim().center.dy;
+      await tester.tapAt(
+        Offset(stripLeft + (stripRight - stripLeft) * 0.6, midY),
+      );
+      await tester.pump();
+
+      // Moving the selection later widens the dim behind it. The strip's own
+      // bounds do not move, and the cursor-sized gap is preserved.
+      expect(leftDim().width, greaterThan(0));
+      expect(leftDim().left, equals(stripLeft));
+      expect(rightDim().right, equals(stripRight));
+      expect(rightDim().left - leftDim().right, equals(36.0));
+
+      // Clamped at the far end too: the trailing dim collapses rather than
+      // running past the strip.
+      await tester.tapAt(Offset(stripRight - 1, midY));
+      await tester.pump();
+      expect(rightDim().width, equals(0.0));
+      expect(stripRight - leftDim().right, equals(36.0));
+
+      // And back to the start.
+      await tester.tapAt(Offset(stripLeft + 1, midY));
+      await tester.pump();
+      expect(leftDim().width, equals(0.0));
+      expect(rightDim().left - stripLeft, equals(36.0));
+    });
+
     testWidgets('keeps the top bar hidden until the route transition lands', (
       tester,
     ) async {
