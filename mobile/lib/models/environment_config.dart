@@ -39,6 +39,7 @@ const localRelayPort = 47777;
 const int localApiPort = localRelayPort;
 const localBlossomPort = 43003;
 const localInvitePort = 43004;
+const localRelayManagerPort = 8787;
 const productionApiBaseUrl = 'https://api.divine.video';
 
 /// Build-time default environment
@@ -162,7 +163,7 @@ class EnvironmentConfig {
   String get relayManagerApiUrl {
     switch (environment) {
       case AppEnvironment.local:
-        return 'http://$localHost:8787';
+        return 'http://$localHost:$localRelayManagerPort';
       case AppEnvironment.poc:
       case AppEnvironment.test:
       case AppEnvironment.staging:

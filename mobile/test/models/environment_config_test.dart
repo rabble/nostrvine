@@ -32,9 +32,11 @@ void main() {
       expect(config.relayUrl, 'ws://$loopbackHost:$localRelayPort');
       expect(config.apiBaseUrl, 'http://$loopbackHost:$localApiPort');
       expect(config.blossomUrl, 'http://$loopbackHost:$localBlossomPort');
-      expect(config.indexerRelays, [
-        'ws://$loopbackHost:$localRelayPort',
-      ]);
+      expect(
+        config.relayManagerApiUrl,
+        'http://$loopbackHost:$localRelayManagerPort',
+      );
+      expect(config.indexerRelays, ['ws://$loopbackHost:$localRelayPort']);
     });
   });
 

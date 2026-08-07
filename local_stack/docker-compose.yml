@@ -326,7 +326,7 @@ services:
       # Baked into the media URLs the seeder mints, so it cannot be resolved
       # per client. Defaults to the Android emulator host alias; export
       # BLOSSOM_PUBLIC_URL=http://localhost:43003 before `up.sh` when running
-      # against the iOS Simulator, macOS, or web.
+      # against the iOS Simulator or macOS.
       BLOSSOM_PUBLIC_URL: ${BLOSSOM_PUBLIC_URL:-http://10.0.2.2:43003}
       MINIO_ENDPOINT: http://minio:9000
       MINIO_BUCKET: divine-blossom-local
