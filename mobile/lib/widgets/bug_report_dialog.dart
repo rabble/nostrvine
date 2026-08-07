@@ -16,6 +16,7 @@ import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/widgets/image_attachment_picker.dart';
 import 'package:openvine/widgets/support_form_actions.dart';
 import 'package:openvine/widgets/support_form_fields.dart';
+import 'package:openvine/widgets/support_public_submission_notice.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Build a log summary prioritizing errors/warnings with recent context.
@@ -172,12 +173,7 @@ class _BugReportView extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     spacing: 16,
                     children: [
-                      DivineInfoCard(
-                        title: l10n.supportPublicSubmissionTitle,
-                        message: l10n.supportPublicSubmissionMessage,
-                        tone: DivineInfoCardTone.warning,
-                        compact: true,
-                      ),
+                      const SupportPublicSubmissionNotice(),
                       DivineTextField(
                         controller: fields.subject,
                         labelText: l10n.supportSubjectRequiredLabel,

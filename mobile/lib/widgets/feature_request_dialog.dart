@@ -11,6 +11,7 @@ import 'package:openvine/blocs/feature_request/feature_request_state.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/support_form_actions.dart';
 import 'package:openvine/widgets/support_form_fields.dart';
+import 'package:openvine/widgets/support_public_submission_notice.dart';
 
 /// Route for collecting and submitting feature requests.
 class FeatureRequestScreen extends StatefulWidget {
@@ -103,12 +104,7 @@ class _FeatureRequestView extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     spacing: 16,
                     children: [
-                      DivineInfoCard(
-                        title: l10n.supportPublicSubmissionTitle,
-                        message: l10n.supportPublicSubmissionMessage,
-                        tone: DivineInfoCardTone.warning,
-                        compact: true,
-                      ),
+                      const SupportPublicSubmissionNotice(),
                       DivineTextField(
                         controller: fields.subject,
                         labelText: l10n.supportSubjectRequiredLabel,
