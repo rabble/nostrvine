@@ -223,6 +223,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
 
     _followersSubscription = followRepo.streamMyFollowers().listen(
       (followers) {
+        if (!mounted) return;
         final followerSet = followers.toSet();
         final mutuals = candidates
             .where((profile) => followerSet.contains(profile.pubkey))
@@ -876,9 +877,7 @@ class _LocalResults extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!followListLoaded) {
-      return const Center(
-        child: BrandedLoadingIndicator(),
-      );
+      return const Center(child: BrandedLoadingIndicator());
     }
 
     if (followProfiles.isEmpty) {

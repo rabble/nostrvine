@@ -31,9 +31,7 @@ _MockContentBlocklistRepository _createMockContentBlocklistRepository({
   Set<String> blockedPubkeys = const {},
 }) {
   final mock = _MockContentBlocklistRepository();
-  when(
-    () => mock.shouldFilterFromFeeds(any()),
-  ).thenReturn(false);
+  when(() => mock.shouldFilterFromFeeds(any())).thenReturn(false);
   for (final pubkey in blockedPubkeys) {
     when(() => mock.shouldFilterFromFeeds(pubkey)).thenReturn(true);
   }
@@ -82,15 +80,15 @@ _MockProfileRepository _createMockProfileRepository({
 
   // The batch lookup answers from the same per-pubkey stubs, so a test that
   // stubs a single profile gets it back through either entry point.
-  when(
-    () => mock.getCachedProfiles(pubkeys: any(named: 'pubkeys')),
-  ).thenAnswer((invocation) async {
-    final pubkeys = invocation.namedArguments[#pubkeys] as List<String>;
-    final profiles = await Future.wait(
-      pubkeys.map((pubkey) => mock.getCachedProfile(pubkey: pubkey)),
-    );
-    return profiles.whereType<UserProfile>().toList();
-  });
+  when(() => mock.getCachedProfiles(pubkeys: any(named: 'pubkeys'))).thenAnswer(
+    (invocation) async {
+      final pubkeys = invocation.namedArguments[#pubkeys] as List<String>;
+      final profiles = await Future.wait(
+        pubkeys.map((pubkey) => mock.getCachedProfile(pubkey: pubkey)),
+      );
+      return profiles.whereType<UserProfile>().toList();
+    },
+  );
 
   return mock;
 }
@@ -377,9 +375,7 @@ void main() {
         final mockFollowRepo = _createMockFollowRepository(
           followingPubkeys: ['pubkey1'],
         );
-        when(
-          mockFollowRepo.streamMyFollowers,
-        ).thenAnswer(
+        when(mockFollowRepo.streamMyFollowers).thenAnswer(
           (_) => Stream<List<String>>.error(Exception('relay down')),
         );
 
@@ -493,6 +489,83 @@ void main() {
         expect(find.text('Slow User'), findsOneWidget);
       });
 
+      testWidgets(
+        'keeps the active filter when later follower sources add rows',
+        (tester) async {
+          final profiles = [
+            UserProfile(
+              pubkey: 'pubkey1',
+              name: 'Fast User',
+              rawData: const {'name': 'Fast User'},
+              createdAt: DateTime.now(),
+              eventId: 'event1',
+            ),
+            UserProfile(
+              pubkey: 'pubkey2',
+              name: 'Slow Match',
+              rawData: const {'name': 'Slow Match'},
+              createdAt: DateTime.now(),
+              eventId: 'event2',
+            ),
+          ];
+
+          final followers = StreamController<List<String>>();
+          addTearDown(() => unawaited(followers.close()));
+
+          final mockFollowRepo = _createMockFollowRepository(
+            followingPubkeys: ['pubkey1', 'pubkey2'],
+          );
+          when(
+            mockFollowRepo.streamMyFollowers,
+          ).thenAnswer((_) => followers.stream);
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                profileRepositoryProvider.overrideWithValue(
+                  _createMockProfileRepository(cachedProfiles: profiles),
+                ),
+                followRepositoryProvider.overrideWithValue(mockFollowRepo),
+                contentBlocklistRepositoryProvider.overrideWithValue(
+                  _createMockContentBlocklistRepository(),
+                ),
+              ],
+              child: const MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: Scaffold(
+                  body: UserPickerSheet(
+                    title: 'Title',
+                    filterMode: UserPickerFilterMode.mutualFollowsOnly,
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+
+          followers.add(['pubkey1']);
+          await tester.pump();
+          await tester.pump();
+
+          expect(find.text('Fast User'), findsOneWidget);
+          expect(find.text('Slow Match'), findsNothing);
+
+          await tester.enterText(find.byType(TextField), 'slow');
+          await tester.pumpAndSettle();
+
+          expect(find.text('Fast User'), findsNothing);
+          expect(find.text('Slow Match'), findsNothing);
+
+          followers.add(['pubkey1', 'pubkey2']);
+          await tester.pump();
+          await tester.pump();
+
+          expect(find.text('Fast User'), findsNothing);
+          expect(find.text('Slow Match'), findsOneWidget);
+        },
+      );
+
       testWidgets('keeps the spinner while an early source reports no '
           'followers', (tester) async {
         final profile = UserProfile(
@@ -581,13 +654,6 @@ void main() {
         final mockProfileRepo = _createMockProfileRepository(
           cachedProfiles: profiles,
         );
-
-        // Explicitly stub each pubkey
-        for (final profile in profiles) {
-          when(
-            () => mockProfileRepo.getCachedProfile(pubkey: profile.pubkey),
-          ).thenAnswer((_) async => profile);
-        }
 
         await tester.pumpWidget(
           ProviderScope(
@@ -753,16 +819,6 @@ void main() {
         final mockProfileRepo = _createMockProfileRepository(
           cachedProfiles: [allowedProfile, blockedProfile],
         );
-        when(
-          () => mockProfileRepo.getCachedProfile(
-            pubkey: allowedProfile.pubkey,
-          ),
-        ).thenAnswer((_) async => allowedProfile);
-        when(
-          () => mockProfileRepo.getCachedProfile(
-            pubkey: blockedProfile.pubkey,
-          ),
-        ).thenAnswer((_) async => blockedProfile);
         final mockBlocklistRepo = _createMockContentBlocklistRepository(
           blockedPubkeys: {blockedProfile.pubkey},
         );
