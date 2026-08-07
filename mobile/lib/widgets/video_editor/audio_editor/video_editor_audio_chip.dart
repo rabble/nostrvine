@@ -1,6 +1,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart' show AudioEvent;
+import 'package:openvine/constants/text_scale_limits.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/video_editor/video_audio_editor_timing_screen.dart';
@@ -93,7 +94,7 @@ class VideoEditorAudioChip extends StatelessWidget {
       child: Material(
         type: .transparency,
         child: MediaQuery.withClampedTextScaling(
-          maxScaleFactor: 1.4,
+          maxScaleFactor: chipLabelTextScaleLimit,
           child: InkWell(
             onTap: () => _selectAudio(context),
             borderRadius: .circular(16),
@@ -108,26 +109,7 @@ class VideoEditorAudioChip extends StatelessWidget {
                 mainAxisSize: .min,
                 mainAxisAlignment: .center,
                 children: [
-                  Row(
-                    spacing: MediaQuery.textScalerOf(context).scale(1.5),
-                    children: [
-                      _AudioBar(
-                        height: MediaQuery.textScalerOf(context).scale(7),
-                      ),
-                      _AudioBar(
-                        height: MediaQuery.textScalerOf(context).scale(16),
-                      ),
-                      _AudioBar(
-                        height: MediaQuery.textScalerOf(context).scale(13),
-                      ),
-                      _AudioBar(
-                        height: MediaQuery.textScalerOf(context).scale(7),
-                      ),
-                      _AudioBar(
-                        height: MediaQuery.textScalerOf(context).scale(10),
-                      ),
-                    ],
-                  ),
+                  const _AudioBars(),
                   Flexible(
                     child: Padding(
                       padding: const .symmetric(horizontal: 8),
@@ -177,17 +159,43 @@ class VideoEditorAudioChip extends StatelessWidget {
   }
 }
 
+/// The five-bar waveform glyph that stands in for an icon on the chip.
+///
+/// Its own build context sits below the chip's
+/// [MediaQuery.withClampedTextScaling], so reading the scaler here — rather
+/// than in the chip's `build` — is what keeps the bars inside the clamp the
+/// label beside them obeys.
+class _AudioBars extends StatelessWidget {
+  const _AudioBars();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      spacing: DivineIcon.scaleSize(context, 1.5),
+      children: const [
+        _AudioBar(height: 7),
+        _AudioBar(height: 16),
+        _AudioBar(height: 13),
+        _AudioBar(height: 7),
+        _AudioBar(height: 10),
+      ],
+    );
+  }
+}
+
 class _AudioBar extends StatelessWidget {
   const _AudioBar({required this.height});
 
+  /// Height at 1.0x text scale. Scaled here rather than by the caller so
+  /// the value stays inside the chip's clamped subtree.
   final double height;
 
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 150),
-      width: 2,
-      height: height,
+      width: DivineIcon.scaleSize(context, 2),
+      height: DivineIcon.scaleSize(context, height),
       decoration: BoxDecoration(
         color: VineTheme.whiteText,
         borderRadius: .circular(2),
