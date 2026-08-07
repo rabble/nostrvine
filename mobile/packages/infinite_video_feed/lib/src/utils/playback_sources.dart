@@ -84,7 +84,7 @@ VideoErrorType classifyVideoError({
   // Divine derivative URLs can legitimately return HTTP 202 while MP4/HLS
   // processing catches up after upload. Treat that as transient playback
   // failure, not as proof that the blob is missing.
-  if (_mentionsHttpStatus(lower, 202)) {
+  if (_mentionsHttpStatus(lower, 202) || _mentionsHttpStatus(lower, 422)) {
     return VideoErrorType.generic;
   }
   if (lower.contains('401') || lower.contains('unauthorized')) {
@@ -110,11 +110,12 @@ VideoErrorType classifyVideoError({
 /// Whether an error represents Divine media still preparing renditions.
 ///
 /// Freshly-published Divine derivative URLs can return HTTP 202 while the
-/// server finishes MP4/HLS processing. Playback should retry the same source
-/// for these responses instead of treating the rendition as failed.
+/// server finishes MP4/HLS processing. Some derived renditions also return
+/// HTTP 422 while the raw blob is already available. Playback should treat both
+/// as transient source failures instead of terminal missing-media evidence.
 bool isMediaProcessingError(Object? error, {String? errorMessage}) {
   final lower = '${errorMessage ?? ''} ${error ?? ''}'.toLowerCase();
-  return _mentionsHttpStatus(lower, 202);
+  return _mentionsHttpStatus(lower, 202) || _mentionsHttpStatus(lower, 422);
 }
 
 /// Extracts a canonical native player error code from method-channel failures.

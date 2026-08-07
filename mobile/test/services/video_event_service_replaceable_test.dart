@@ -123,6 +123,51 @@ void main() {
       expect(videos[0].createdAt, 3000, reason: 'Should have newer timestamp');
     });
 
+    test('equal timestamp keeps the lower event id per NIP-01', () async {
+      const pubkey =
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
+      const vineId = 'test-vine-equal-timestamp';
+      const videoUrl = 'https://example.com/video-equal.mp4';
+
+      final eventA = sdk.Event(
+        pubkey,
+        NIP71VideoKinds.addressableShortVideo,
+        [
+          ['d', vineId],
+          ['url', videoUrl],
+          ['title', 'Equal A'],
+        ],
+        'Equal A',
+        createdAt: 4000,
+      );
+      final eventB = sdk.Event(
+        pubkey,
+        NIP71VideoKinds.addressableShortVideo,
+        [
+          ['d', vineId],
+          ['url', videoUrl],
+          ['title', 'Equal B'],
+        ],
+        'Equal B',
+        createdAt: 4000,
+      );
+      final orderedById = [eventA, eventB]
+        ..sort((a, b) => a.id.compareTo(b.id));
+      final lowerIdEvent = orderedById.first;
+      final higherIdEvent = orderedById.last;
+
+      service.handleEventForTesting(higherIdEvent, SubscriptionType.discovery);
+      service.handleEventForTesting(lowerIdEvent, SubscriptionType.discovery);
+
+      final videos = service.discoveryVideos;
+      expect(videos, hasLength(1));
+      expect(videos.single.id, lowerIdEvent.id);
+      expect(
+        videos.single.title,
+        lowerIdEvent == eventA ? 'Equal A' : 'Equal B',
+      );
+    });
+
     test('different d-tags create separate videos', () async {
       // Arrange: Same pubkey, different d-tags
       const pubkey =
@@ -442,77 +487,71 @@ void main() {
       },
     );
 
-    test(
-      'updateVideoEvent preserves nostrLikeCount from existing video',
-      () {
-        // Arrange: Add a video and inject a live like count (simulating a
-        // batch relay fetch that ran before the user edited their hashtags).
-        const pubkey =
-            '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
-        const vineId = 'like-count-preserve-vine';
-        const videoUrl = 'https://example.com/video.mp4';
+    test('updateVideoEvent preserves nostrLikeCount from existing video', () {
+      // Arrange: Add a video and inject a live like count (simulating a
+      // batch relay fetch that ran before the user edited their hashtags).
+      const pubkey =
+          '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+      const vineId = 'like-count-preserve-vine';
+      const videoUrl = 'https://example.com/video.mp4';
 
-        final originalEvent = sdk.Event(
-          pubkey,
-          NIP71VideoKinds.addressableShortVideo,
-          [
-            ['d', vineId],
-            ['url', videoUrl],
-            ['title', 'Original Title'],
-          ],
-          'Original',
-          createdAt: 1000,
-        );
+      final originalEvent = sdk.Event(
+        pubkey,
+        NIP71VideoKinds.addressableShortVideo,
+        [
+          ['d', vineId],
+          ['url', videoUrl],
+          ['title', 'Original Title'],
+        ],
+        'Original',
+        createdAt: 1000,
+      );
 
-        service.handleEventForTesting(
-          originalEvent,
-          SubscriptionType.discovery,
-        );
+      service.handleEventForTesting(originalEvent, SubscriptionType.discovery);
 
-        // Simulate the batch like-count fetch result arriving and being stored.
-        // VideoEvent.fromNostrEvent() always produces nostrLikeCount: null, so
-        // we use copyWith to represent the runtime-injected state.
-        final videoWithLikes = VideoEvent.fromNostrEvent(
-          originalEvent,
-        ).copyWith(nostrLikeCount: 42);
-        service.updateVideoEvent(videoWithLikes);
-        expect(
-          service.discoveryVideos[0].nostrLikeCount,
-          42,
-          reason: 'Pre-condition: like count should be injected',
-        );
+      // Simulate the batch like-count fetch result arriving and being stored.
+      // VideoEvent.fromNostrEvent() always produces nostrLikeCount: null, so
+      // we use copyWith to represent the runtime-injected state.
+      final videoWithLikes = VideoEvent.fromNostrEvent(
+        originalEvent,
+      ).copyWith(nostrLikeCount: 42);
+      service.updateVideoEvent(videoWithLikes);
+      expect(
+        service.discoveryVideos[0].nostrLikeCount,
+        42,
+        reason: 'Pre-condition: like count should be injected',
+      );
 
-        // Act: User edits hashtags — republishes with createdAt + 1.
-        // VideoEvent.fromNostrEvent() on the new event yields nostrLikeCount: null.
-        final editedEvent = sdk.Event(
-          pubkey,
-          NIP71VideoKinds.addressableShortVideo,
-          [
-            ['d', vineId],
-            ['url', videoUrl],
-            ['title', 'Original Title'],
-            ['t', 'newtag'],
-          ],
-          'Original',
-          createdAt: 1001,
-        );
+      // Act: User edits hashtags — republishes with createdAt + 1.
+      // VideoEvent.fromNostrEvent() on the new event yields nostrLikeCount: null.
+      final editedEvent = sdk.Event(
+        pubkey,
+        NIP71VideoKinds.addressableShortVideo,
+        [
+          ['d', vineId],
+          ['url', videoUrl],
+          ['title', 'Original Title'],
+          ['t', 'newtag'],
+        ],
+        'Original',
+        createdAt: 1001,
+      );
 
-        final editedVideoEvent = VideoEvent.fromNostrEvent(editedEvent);
-        expect(
-          editedVideoEvent.nostrLikeCount,
-          isNull,
-          reason: 'Pre-condition: parsed event has no like count',
-        );
-        service.updateVideoEvent(editedVideoEvent);
+      final editedVideoEvent = VideoEvent.fromNostrEvent(editedEvent);
+      expect(
+        editedVideoEvent.nostrLikeCount,
+        isNull,
+        reason: 'Pre-condition: parsed event has no like count',
+      );
+      service.updateVideoEvent(editedVideoEvent);
 
-        // Assert: Like count must survive the metadata edit.
-        expect(
-          service.discoveryVideos[0].nostrLikeCount,
-          42,
-          reason: 'nostrLikeCount should be preserved across a metadata edit',
-        );
-      },
-    );
+      // Assert: Like count must survive the metadata edit.
+      expect(
+        service.discoveryVideos[0].nostrLikeCount,
+        42,
+        reason: 'nostrLikeCount should be preserved across a metadata edit',
+      );
+    });
 
     test('updateVideoEvent calls notifyListeners when video is updated', () {
       // Arrange

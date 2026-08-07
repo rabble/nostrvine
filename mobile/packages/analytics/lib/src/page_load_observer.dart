@@ -21,7 +21,7 @@ class PageLoadObserver extends NavigatorObserver {
     }
 
     final routeName = _routeName(route);
-    final screenName = AnalyticsSurface.routeSurfaceName(route.settings.name);
+    final screenName = AnalyticsSurface.routeSurfaceName(routeName);
     _analytics.startScreenLoad(screenName);
     _analytics.trackScreenView(
       screenName,
@@ -50,7 +50,7 @@ class PageLoadObserver extends NavigatorObserver {
       return;
     }
 
-    final screenName = AnalyticsSurface.routeSurfaceName(route.settings.name);
+    final screenName = AnalyticsSurface.routeSurfaceName(_routeName(route));
     _analytics.endScreen(screenName);
 
     Log.debug(

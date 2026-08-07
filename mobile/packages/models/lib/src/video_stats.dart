@@ -139,7 +139,22 @@ class VideoStats {
     var title = eventData['title']?.toString() ?? '';
     var thumbnail = eventData['thumbnail']?.toString() ?? '';
     var videoUrl = eventData['video_url']?.toString() ?? '';
-    var dTag = eventData['d_tag']?.toString() ?? '';
+    var dTag =
+        _firstNonEmptyString([
+          eventData['d_tag'],
+          eventData['dTag'],
+          eventData['addressable_d_tag'],
+          eventData['addressableDTag'],
+          json['d_tag'],
+          json['dTag'],
+          json['addressable_d_tag'],
+          json['addressableDTag'],
+          _dTagFromAddressableId(eventData['addressable_id']),
+          _dTagFromAddressableId(eventData['addressableId']),
+          _dTagFromAddressableId(json['addressable_id']),
+          _dTagFromAddressableId(json['addressableId']),
+        ]) ??
+        '';
     var sha256 = eventData['sha256']?.toString() ?? json['sha256']?.toString();
 
     // Parse description from event content (NIP-71: content = description)
@@ -222,6 +237,9 @@ class VideoStats {
           }
           if (tagName == 'url' && videoUrl.isEmpty) videoUrl = tagValue;
           if (tagName == 'd' && dTag.isEmpty) dTag = tagValue;
+          if ((tagName == 'a' || tagName == 'A') && dTag.isEmpty) {
+            dTag = _dTagFromAddressableId(tagValue) ?? '';
+          }
           if (tagName == 'x' && (sha256 == null || sha256.isEmpty)) {
             sha256 = tagValue; // x tag often contains sha256 hash
           }
@@ -633,6 +651,28 @@ List<String> _parseModerationLabels(dynamic value) {
 ProofVerificationSummary? _parseProofSummary(dynamic value) {
   if (value is! Map<String, dynamic>) return null;
   return ProofVerificationSummary.fromJson(value);
+}
+
+String? _firstNonEmptyString(Iterable<Object?> values) {
+  for (final value in values) {
+    final normalized = value?.toString().trim();
+    if (normalized != null && normalized.isNotEmpty) {
+      return normalized;
+    }
+  }
+  return null;
+}
+
+String? _dTagFromAddressableId(Object? value) {
+  final addressableId = value?.toString().trim();
+  if (addressableId == null || addressableId.isEmpty) return null;
+
+  final parts = addressableId.split(':');
+  if (parts.length < 3) return null;
+  if (int.tryParse(parts.first) == null) return null;
+
+  final dTag = parts.sublist(2).join(':').trim();
+  return dTag.isEmpty ? null : dTag;
 }
 
 String? _normalizeModerationLabel(String value) {

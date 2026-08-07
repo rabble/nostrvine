@@ -1210,6 +1210,70 @@ void main() {
         }
       });
 
+      testWidgets('deactivation cancels slow-load failover watchdog', (
+        tester,
+      ) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        final harness = _NativePlayerHarness(tester);
+        await harness.install(playerIds: const <int>[0]);
+
+        const divineUrl =
+            'https://media.divine.video/'
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/'
+            '720p.mp4';
+
+        try {
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                videos: [_makeVideo('inactive_watchdog', videoUrl: divineUrl)],
+                cache: cache,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+                slowLoadThreshold: const Duration(seconds: 1),
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          expect(harness.countCalls('setClips'), equals(1));
+          expect(harness.countCalls('play'), equals(1));
+
+          await harness.sendEvent(0, const <Object?, Object?>{
+            'status': 'buffering',
+          });
+          await tester.pump();
+
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                videos: [_makeVideo('inactive_watchdog', videoUrl: divineUrl)],
+                cache: cache,
+                isActive: false,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+                slowLoadThreshold: const Duration(seconds: 1),
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 2));
+
+          expect(
+            harness.countCalls('setClips'),
+            equals(1),
+            reason:
+                'inactive feeds must not let wall-clock watchdog timers '
+                'advance into source failover',
+          );
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await harness.dispose();
+        }
+      });
+
       testWidgets('autoplays current controller when reactivated', (
         tester,
       ) async {
@@ -1617,92 +1681,88 @@ void main() {
         },
       );
 
-      testWidgets(
-        'tail replacement clears stale index-scoped error state',
-        (tester) async {
-          DivineVideoPlayerController.resetIdCounterForTesting();
-          final harness = _NativePlayerHarness(tester);
-          await harness.install(playerIds: const <int>[0, 1, 2, 3]);
-          final key = GlobalKey<InfiniteVideoFeedState>();
-          final videos1 = List.generate(4, (i) => _makeVideo('old$i'));
+      testWidgets('tail replacement clears stale index-scoped error state', (
+        tester,
+      ) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        final harness = _NativePlayerHarness(tester);
+        await harness.install(playerIds: const <int>[0, 1, 2, 3]);
+        final key = GlobalKey<InfiniteVideoFeedState>();
+        final videos1 = List.generate(4, (i) => _makeVideo('old$i'));
 
-          harness.setClipsFailures[2] = <Exception>[
-            PlatformException(
-              code: 'HTTP_ERROR',
-              message: 'HTTP 403 Forbidden',
+        harness.setClipsFailures[2] = <Exception>[
+          PlatformException(code: 'HTTP_ERROR', message: 'HTTP 403 Forbidden'),
+        ];
+        harness.setClipsDelays[3] = Completer<void>();
+
+        try {
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos1,
+                cache: cache,
+                preloadGracePeriod: Duration.zero,
+                prefetchCount: 0,
+                errorBuilder: (_, _, _, errorType) =>
+                    Text('ERROR:${errorType.name}'),
+                loadingBuilder: (_, index, {required isSquare}) =>
+                    Text('LOADING:$index'),
+              ),
             ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          unawaited(key.currentState!.animateToPage(1));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+          await tester.pump();
+          expect(key.currentState!.currentIndex, equals(1));
+
+          // Index 2 failed during neighbor init and has no live controller,
+          // leaving only index-scoped error state behind.
+          expect(find.text('ERROR:forbidden'), findsNothing);
+
+          final videos2 = [
+            videos1[0],
+            videos1[1],
+            _makeVideo('fresh2'),
+            _makeVideo('fresh3'),
           ];
-          harness.setClipsDelays[3] = Completer<void>();
-
-          try {
-            await tester.pumpWidget(
-              _wrapFeed(
-                InfiniteVideoFeed(
-                  key: key,
-                  videos: videos1,
-                  cache: cache,
-                  preloadGracePeriod: Duration.zero,
-                  prefetchCount: 0,
-                  errorBuilder: (_, _, _, errorType) =>
-                      Text('ERROR:${errorType.name}'),
-                  loadingBuilder: (_, index, {required isSquare}) =>
-                      Text('LOADING:$index'),
-                ),
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos2,
+                cache: cache,
+                preloadGracePeriod: Duration.zero,
+                prefetchCount: 0,
+                errorBuilder: (_, _, _, errorType) =>
+                    Text('ERROR:${errorType.name}'),
+                loadingBuilder: (_, index, {required isSquare}) =>
+                    Text('LOADING:$index'),
               ),
-            );
-            await tester.pump();
-            await tester.pump();
+            ),
+          );
+          await tester.pump();
 
-            unawaited(key.currentState!.animateToPage(1));
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 400));
-            await tester.pump();
-            expect(key.currentState!.currentIndex, equals(1));
+          unawaited(key.currentState!.animateToPage(2));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
 
-            // Index 2 failed during neighbor init and has no live controller,
-            // leaving only index-scoped error state behind.
-            expect(find.text('ERROR:forbidden'), findsNothing);
-
-            final videos2 = [
-              videos1[0],
-              videos1[1],
-              _makeVideo('fresh2'),
-              _makeVideo('fresh3'),
-            ];
-            await tester.pumpWidget(
-              _wrapFeed(
-                InfiniteVideoFeed(
-                  key: key,
-                  videos: videos2,
-                  cache: cache,
-                  preloadGracePeriod: Duration.zero,
-                  prefetchCount: 0,
-                  errorBuilder: (_, _, _, errorType) =>
-                      Text('ERROR:${errorType.name}'),
-                  loadingBuilder: (_, index, {required isSquare}) =>
-                      Text('LOADING:$index'),
-                ),
-              ),
-            );
-            await tester.pump();
-
-            unawaited(key.currentState!.animateToPage(2));
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 400));
-
-            expect(key.currentState!.currentIndex, equals(2));
-            expect(find.text('ERROR:forbidden'), findsNothing);
-            expect(find.textContaining('ERROR:'), findsNothing);
-          } finally {
-            if (harness.setClipsDelays[3]?.isCompleted == false) {
-              harness.setClipsDelays[3]!.complete();
-            }
-            await tester.pumpWidget(const SizedBox.shrink());
-            await tester.pump();
-            await harness.dispose();
+          expect(key.currentState!.currentIndex, equals(2));
+          expect(find.text('ERROR:forbidden'), findsNothing);
+          expect(find.textContaining('ERROR:'), findsNothing);
+        } finally {
+          if (harness.setClipsDelays[3]?.isCompleted == false) {
+            harness.setClipsDelays[3]!.complete();
           }
-        },
-      );
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await harness.dispose();
+        }
+      });
     });
 
     group('overlayBuilder', () {
@@ -2924,13 +2984,7 @@ void main() {
       );
 
       const permanentErrorScenarios =
-          <
-            ({
-              String name,
-              String message,
-              String typeName,
-            })
-          >[
+          <({String name, String message, String typeName})>[
             (
               name: '403 forbidden',
               message: 'HTTP 403 Forbidden',
@@ -3007,56 +3061,55 @@ void main() {
         );
       }
 
-      testWidgets(
-        'does not fail over typed auth-required runtime failures',
-        (tester) async {
-          DivineVideoPlayerController.resetIdCounterForTesting();
-          final harness = _NativePlayerHarness(tester);
-          await harness.install(playerIds: const <int>[0, 1, 2, 3]);
-          const divineUrl =
-              'https://media.divine.video/'
-              '10fe4777d60fa224878fd9be348a3410e6b70ba2d865e5ae82526a8f1d053326/'
-              '720p.mp4';
+      testWidgets('does not fail over typed auth-required runtime failures', (
+        tester,
+      ) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        final harness = _NativePlayerHarness(tester);
+        await harness.install(playerIds: const <int>[0, 1, 2, 3]);
+        const divineUrl =
+            'https://media.divine.video/'
+            '10fe4777d60fa224878fd9be348a3410e6b70ba2d865e5ae82526a8f1d053326/'
+            '720p.mp4';
 
-          try {
-            await tester.pumpWidget(
-              _wrapFeed(
-                InfiniteVideoFeed(
-                  videos: [_makeVideo('auth_required', videoUrl: divineUrl)],
-                  cache: cache,
-                  prefetchCount: 0,
-                  preloadGracePeriod: Duration.zero,
-                  autoRetryBaseDelay: const Duration(milliseconds: 200),
-                  errorBuilder: (_, _, _, errorType) =>
-                      Text('VIDEO_ERROR:${errorType.name}'),
-                ),
+        try {
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                videos: [_makeVideo('auth_required', videoUrl: divineUrl)],
+                cache: cache,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+                autoRetryBaseDelay: const Duration(milliseconds: 200),
+                errorBuilder: (_, _, _, errorType) =>
+                    Text('VIDEO_ERROR:${errorType.name}'),
               ),
-            );
-            await tester.pump();
-            await tester.pump();
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
 
-            await harness.sendEvent(0, const <Object?, Object?>{
-              'status': 'error',
-              'errorCode': 'auth_required',
-              'errorMessage': 'NSURLErrorDomain error -1013',
-            });
-            await tester.pump();
-            await tester.pump();
+          await harness.sendEvent(0, const <Object?, Object?>{
+            'status': 'error',
+            'errorCode': 'auth_required',
+            'errorMessage': 'NSURLErrorDomain error -1013',
+          });
+          await tester.pump();
+          await tester.pump();
 
-            expect(find.text('VIDEO_ERROR:ageRestricted'), findsOneWidget);
-            final setClipsAfterError = harness.countCalls('setClips');
+          expect(find.text('VIDEO_ERROR:ageRestricted'), findsOneWidget);
+          final setClipsAfterError = harness.countCalls('setClips');
 
-            await tester.pump(const Duration(milliseconds: 400));
-            await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+          await tester.pump();
 
-            expect(harness.countCalls('setClips'), equals(setClipsAfterError));
-          } finally {
-            await tester.pumpWidget(const SizedBox.shrink());
-            await tester.pump();
-            await harness.dispose();
-          }
-        },
-      );
+          expect(harness.countCalls('setClips'), equals(setClipsAfterError));
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await harness.dispose();
+        }
+      });
 
       testWidgets(
         'classifies typed auth-required composition failures as age restricted',

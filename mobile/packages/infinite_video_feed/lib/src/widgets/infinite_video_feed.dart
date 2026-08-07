@@ -711,6 +711,8 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
         unawaited(_onIndexChanged(_currentIndex));
       }
     } else {
+      _watchdog.disposeAll();
+      _staleDetector.disposeAll();
       _pauseCurrentPlayback();
       _cancelAutoRetry(_currentIndex);
       if (widget.releaseCurrentWhenInactive) {

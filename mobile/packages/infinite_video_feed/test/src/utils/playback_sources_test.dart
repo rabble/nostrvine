@@ -134,9 +134,7 @@ void main() {
 
     test('keeps null typed code on the existing generic path', () {
       expect(
-        classifyVideoError(
-          errorMessage: 'NSURLErrorDomain error -1013',
-        ),
+        classifyVideoError(errorMessage: 'NSURLErrorDomain error -1013'),
         equals(VideoErrorType.generic),
       );
     });
@@ -187,6 +185,16 @@ void main() {
       expect(
         classifyVideoError(
           errorMessage: 'CoreMediaErrorDomain error -12667 - HTTP 202',
+          source: 'https://media.divine.video/$_hash/720p.mp4',
+        ),
+        equals(VideoErrorType.generic),
+      );
+    });
+
+    test('returns generic for HTTP 422 while Divine derivatives process', () {
+      expect(
+        classifyVideoError(
+          errorMessage: 'HTTP 422 Unprocessable Entity',
           source: 'https://media.divine.video/$_hash/720p.mp4',
         ),
         equals(VideoErrorType.generic),
@@ -262,6 +270,13 @@ void main() {
     test('matches Android response-code 202 messages', () {
       expect(
         isMediaProcessingError(Exception('Source error. Response code: 202')),
+        isTrue,
+      );
+    });
+
+    test('matches derived-rendition HTTP 422 messages', () {
+      expect(
+        isMediaProcessingError(Exception('Source error. Response code: 422')),
         isTrue,
       );
     });
