@@ -219,7 +219,9 @@ class _EditClipPreview extends StatelessWidget {
           height: 200,
           width: 200 * ratio,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(
+              VideoEditorConstants.clipPreviewCornerRadius,
+            ),
             child: Stack(
               fit: StackFit.expand,
               children: [
