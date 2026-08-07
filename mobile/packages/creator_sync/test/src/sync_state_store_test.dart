@@ -72,6 +72,23 @@ void main() {
       );
     });
 
+    test('ignores key order in maps nested inside lists', () {
+      expect(
+        syncBodyHash(<String, dynamic>{
+          'clips': [
+            <String, dynamic>{'y': 1, 'x': 2},
+          ],
+        }),
+        equals(
+          syncBodyHash(<String, dynamic>{
+            'clips': [
+              <String, dynamic>{'x': 2, 'y': 1},
+            ],
+          }),
+        ),
+      );
+    });
+
     test('preserves list order as significant', () {
       expect(
         syncBodyHash(const {
