@@ -17,8 +17,10 @@ a fix. See [`pr_takeover.md`](pr_takeover.md).
 
 - [ ] **Whose PR is this?** `gh pr view <n> --json author,isCrossRepository,isDraft,maintainerCanModify`
   vs `gh api user --jq .login`. Your own PR, a same-repo takeover, and
-  a fork PR each carry different gates. Learning the answer from a
-  GitHub API rejection means you skipped this and re-triage is required.
+  a fork PR each carry different gates. Treat `maintainerCanModify` as
+  fork-only; same-repo PRs can report `false` even when mutable.
+  Learning the answer from a GitHub API rejection means you skipped this
+  and re-triage is required.
 - [ ] If it's **your own** PR: you cannot review or approve it, and no
   reviewer is downstream to catch a red build. Blockers go in a regular
   issue comment, clearly labelled.

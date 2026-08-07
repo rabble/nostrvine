@@ -67,6 +67,7 @@ If a Divine Brain search or ask tool is available, you may use it for company me
 > See `.claude/rules/pr_takeover.md` for the full gates. The bullets below are the operational summary. These apply whether or not the `divine-context` `PR_REVIEW.md` handbook is loaded — do not assume it is.
 
 - **Establish authorship first**, before reading the diff, running tests, or planning a fix: `gh pr view <n> --json author,isCrossRepository,isDraft,maintainerCanModify` compared against `gh api user --jq .login`.
+  `maintainerCanModify` is meaningful only for fork PRs; same-repo PRs can report `false` even when you can push.
   - **Your own PR** — not a takeover. You cannot review or approve it. Findings you can't resolve go in a regular issue comment, labelled as a blocker. There is no reviewer downstream to catch a red build.
   - **Someone else's PR, same repo** — a takeover. Clear every gate in `PR_REVIEW.md` before pushing.
   - **Fork PR** (`isCrossRepository` true) — takeover gates *plus* `maintainerCanModify`. If false, you cannot push: use suggested changes or a review comment.

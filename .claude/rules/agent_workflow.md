@@ -230,10 +230,14 @@ Before you may claim this, prove it. Two checks, both required:
    branch. Different errors mean you have two problems, one of them
    yours.
 
-Then find what unblocks it — usually an open PR already fixing it:
+Then find what unblocks it — usually an open PR already fixing it. Do
+not trust PR prose search by itself: GitHub tokenizes terms and can
+return noisy matches. Start from the code history, then verify any
+candidate PR by reading its diff:
 
 ```bash
-gh pr list --state open --search "<failing symbol>"
+git log --oneline -S"<failing symbol>" origin/main
+gh pr list --state open --search "<failing symbol>"   # hint only
 ```
 
 Having proven it, **stop and report**. Do not patch around a broken

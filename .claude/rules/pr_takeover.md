@@ -11,7 +11,10 @@ it lives outside this repo — loaded via a SessionStart hook for Claude
 Code and via `~/.codex/AGENTS.md` for Codex. **Do not depend on it
 being loaded.** The gates below are the repo-local minimum and apply
 whether or not the handbook is in context. Where the two overlap,
-`PR_REVIEW.md` is authoritative and this file is the floor.
+`PR_REVIEW.md` is authoritative and this file is the floor. If
+`PR_REVIEW.md` or its team mapping is unavailable, same-repo takeover
+must stop: leave the PR open and report the missing runbook as the
+blocker.
 
 ---
 
@@ -28,6 +31,8 @@ gh api user --jq .login   # who am I authenticated as?
 ```
 
 Compare `author.login` against the authenticated account.
+`maintainerCanModify` is meaningful only when `isCrossRepository` is
+true; same-repo PRs can report `false` even when you can push.
 
 | Case | What it means | Which rules apply |
 |---|---|---|
