@@ -2312,13 +2312,34 @@ class RelayPool {
     // Still carrying work for somebody — never reap.
     if (relay.hasSubscription() || relay.getQueries().isNotEmpty) return false;
 
+    // Queued frames are work too. A disconnected relay replays these the
+    // moment it reconnects (`Relay.onConnected`), and `pendingAuthedMessages`
+    // is specifically a publish parked behind a NIP-42 handshake. Reaping
+    // disconnects and disposes, which clears `_shouldReconnect` — so without
+    // this the sweep would cancel the very reconnect the caller is waiting on
+    // and the publish would be reported unanswered instead of being resent.
+    if (relay.pendingMessages.isNotEmpty ||
+        relay.pendingAuthedMessages.isNotEmpty) {
+      return false;
+    }
+
     // A relay that failed to connect, or has since dropped, is doing nothing
     // for anyone. [RelayBase.isSilentSince] deliberately answers false for a
     // socket that is not connected — it exists to spot *live* zombie sockets —
     // so the disconnected case has to be caught separately or those entries
     // would accumulate forever, which is the half of the leak that a failed
     // send used to produce.
-    if (relay.relayStatus.connected == ClientConnected.disconnect) return true;
+    //
+    // Give it one idle window first. `connect()` is async, so an entry is in
+    // the map before its socket opens; `RelayStatus.connectTime` is stamped
+    // when the status is built and never reset, which for a temp relay is its
+    // creation time. Without this the branch depends on every `Relay`
+    // implementation advancing to `connecting` before the first sweep can
+    // observe it — true for the ones here, but by scheduler accident rather
+    // than by contract, and not true of a manually driven sweep.
+    if (relay.relayStatus.connected == ClientConnected.disconnect) {
+      return relay.relayStatus.connectTime.isBefore(idleSince);
+    }
 
     // Connected: reap only once genuinely quiet. The connection stamps its
     // activity clock on connect, so a freshly opened socket is never silent.
