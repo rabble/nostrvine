@@ -67,6 +67,7 @@ import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/providers/container_swap_host.dart';
+import 'package:openvine/providers/creator_sync_provider.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/deep_link_provider.dart';
 import 'package:openvine/providers/device_scope.dart';
@@ -2712,6 +2713,7 @@ class _DivineAppState extends ConsumerState<DivineApp>
       // eager (`lazy: false`) wiring that stops the #6115 re-entrant create.
       child: SavedSoundsScope(
         service: ref.watch(savedSoundsServiceProvider),
+        syncRepository: ref.watch(soundSyncRepositoryProvider).value,
         child: AppShellBadgeScope(
           child: MultiBlocProvider(
             providers: [

@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:bloc/bloc.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:creator_sync/creator_sync.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +13,16 @@ import 'package:openvine/blocs/creator_sync/sound_sync_state.dart';
 import 'package:openvine/observability/reportable_error.dart';
 
 class _MockRepository extends Mock implements SoundSyncRepository {}
+
+class _CapturingObserver extends BlocObserver {
+  final errors = <Object>[];
+
+  @override
+  void onError(BlocBase<dynamic> bloc, Object error, StackTrace stackTrace) {
+    errors.add(error);
+    super.onError(bloc, error, stackTrace);
+  }
+}
 
 void main() {
   group(SoundSyncCubit, () {
@@ -132,10 +143,20 @@ void main() {
     );
 
     test(
-      'does not throw when the cubit closes while reconcile is in flight',
+      'does not throw or report a spurious error when the cubit closes '
+      'while reconcile is in flight',
       () async {
+        // Pins the success-path `isClosed` guard in syncNow(): without it,
+        // emitting after close throws a StateError that the catch-all
+        // wraps as Reportable and forwards to the observer — a spurious
+        // Crashlytics report on every close-mid-sync navigation.
         final completer = Completer<SoundSyncOutcome>();
         when(repository.reconcile).thenAnswer((_) => completer.future);
+        final observer = _CapturingObserver();
+        final priorObserver = Bloc.observer;
+        Bloc.observer = observer;
+        addTearDown(() => Bloc.observer = priorObserver);
+
         final cubit = SoundSyncCubit(repository: repository);
         addTearDown(() {
           if (!cubit.isClosed) cubit.close();
@@ -148,6 +169,7 @@ void main() {
         );
 
         await expectLater(syncFuture, completes);
+        expect(observer.errors, isEmpty);
       },
     );
   });

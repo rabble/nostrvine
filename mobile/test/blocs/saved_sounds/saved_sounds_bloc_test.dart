@@ -3,13 +3,17 @@
 
 import 'dart:async';
 
+import 'package:creator_sync/creator_sync.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/saved_sounds/saved_sound_media_probe.dart';
 import 'package:openvine/blocs/saved_sounds/saved_sounds_bloc.dart';
 import 'package:openvine/models/saved_sound.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+class _MockSoundSyncRepository extends Mock implements SoundSyncRepository {}
 
 class _ControlledProbe implements SavedSoundMediaProbe {
   final calls = <AudioEvent>[];
@@ -60,15 +64,19 @@ void main() {
   late _ControlledProbe probe;
   late SavedSoundsBloc bloc;
 
+  SavedSoundsBloc buildBloc({SoundSyncRepository? syncRepository}) =>
+      SavedSoundsBloc(
+        service: service,
+        mediaProbe: probe,
+        syncRepository: syncRepository,
+        now: () => DateTime.utc(2026, 7, 31),
+      );
+
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     service = SavedSoundsService(await SharedPreferences.getInstance());
     probe = _ControlledProbe();
-    bloc = SavedSoundsBloc(
-      service: service,
-      mediaProbe: probe,
-      now: () => DateTime.utc(2026, 7, 31),
-    );
+    bloc = buildBloc();
   });
 
   tearDown(() => bloc.close());
@@ -235,6 +243,105 @@ void main() {
       failingBloc.state.sounds,
       hasLength(1),
       reason: 'a delete that did not persist must not clear the row',
+    );
+  });
+
+  group('sync triggers', () {
+    late _MockSoundSyncRepository syncRepository;
+
+    setUp(() {
+      syncRepository = _MockSoundSyncRepository();
+      when(
+        () => syncRepository.publishLocalChange(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => syncRepository.publishLocalDeletion(any()),
+      ).thenAnswer((_) async {});
+    });
+
+    test('publishes a change after a successful save', () async {
+      final syncedBloc = buildBloc(syncRepository: syncRepository);
+      addTearDown(syncedBloc.close);
+
+      await syncedBloc.saveSound(_sound(id: 'a' * 64));
+
+      verify(() => syncRepository.publishLocalChange('a' * 64)).called(1);
+    });
+
+    test('publishes a tombstone after a successful removal', () async {
+      final syncedBloc = buildBloc(syncRepository: syncRepository);
+      addTearDown(syncedBloc.close);
+      await syncedBloc.saveSound(_sound(id: 'b' * 64));
+
+      await syncedBloc.removeSound('b' * 64);
+
+      verify(
+        () => syncRepository.publishLocalDeletion('b' * 64),
+      ).called(1);
+    });
+
+    test('a sync failure does not fail the local save', () async {
+      when(
+        () => syncRepository.publishLocalChange(any()),
+      ).thenThrow(SyncIndexException('relay down'));
+      final syncedBloc = buildBloc(syncRepository: syncRepository);
+      addTearDown(syncedBloc.close);
+
+      await expectLater(
+        syncedBloc.saveSound(_sound(id: 'c' * 64)),
+        completes,
+      );
+      expect(service.loadSavedSounds(), hasLength(1));
+    });
+
+    test('saves normally when no sync repository is available', () async {
+      final unsyncedBloc = buildBloc();
+      addTearDown(unsyncedBloc.close);
+
+      await unsyncedBloc.saveSound(_sound(id: 'd' * 64));
+
+      expect(service.loadSavedSounds(), hasLength(1));
+    });
+
+    test(
+      'publishes a change again after editing personal details',
+      () async {
+        final syncedBloc = buildBloc(syncRepository: syncRepository);
+        addTearDown(syncedBloc.close);
+        await syncedBloc.saveSound(_sound(id: 'e' * 64));
+
+        syncedBloc.add(
+          SavedSoundDetailsChanged(
+            soundId: 'e' * 64,
+            label: 'Warm up',
+            hashtags: const ['practice'],
+          ),
+        );
+        await _settle();
+
+        verify(
+          () => syncRepository.publishLocalChange('e' * 64),
+        ).called(2);
+      },
+    );
+
+    test(
+      'publishes a change again after waveform enrichment completes',
+      () async {
+        probe.result = const SavedSoundMediaResult(
+          durationSeconds: 4.5,
+          waveformSamples: [0.1, 0.8],
+        );
+        final syncedBloc = buildBloc(syncRepository: syncRepository);
+        addTearDown(syncedBloc.close);
+
+        await syncedBloc.saveSound(_sound(id: 'f' * 64));
+        await _settle();
+
+        verify(
+          () => syncRepository.publishLocalChange('f' * 64),
+        ).called(2);
+      },
     );
   });
 }

@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:creator_sync/creator_sync.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/saved_sounds/saved_sound_media_probe.dart';
 import 'package:openvine/blocs/saved_sounds/saved_sounds_event.dart';
@@ -19,9 +20,11 @@ class SavedSoundsBloc extends Bloc<SavedSoundsEvent, SavedSoundsState> {
   SavedSoundsBloc({
     required SavedSoundsService service,
     required SavedSoundMediaProbe mediaProbe,
+    SoundSyncRepository? syncRepository,
     DateTime Function()? now,
   }) : _service = service,
        _mediaProbe = mediaProbe,
+       _syncRepository = syncRepository,
        _now = now ?? DateTime.now,
        super(const SavedSoundsState()) {
     on<SavedSoundsEvent>(_onEvent, transformer: sequential());
@@ -29,7 +32,27 @@ class SavedSoundsBloc extends Bloc<SavedSoundsEvent, SavedSoundsState> {
 
   final SavedSoundsService _service;
   final SavedSoundMediaProbe _mediaProbe;
+
+  /// Cross-device sync, or null until the vault key resolves.
+  final SoundSyncRepository? _syncRepository;
+
   final DateTime Function() _now;
+
+  /// Mirrors a local mutation to the user's other devices.
+  ///
+  /// Sync is best-effort: the local write has already succeeded, and a
+  /// relay outage must never surface as a failed save. The next reconcile
+  /// pass picks up anything that did not publish.
+  Future<void> _mirror(Future<void> Function() publish) async {
+    if (_syncRepository == null) return;
+    try {
+      await publish();
+    } on SyncIndexException catch (e, stackTrace) {
+      addError(e, stackTrace);
+    } on VaultKeyUnavailableException catch (e, stackTrace) {
+      addError(e, stackTrace);
+    }
+  }
 
   Future<SavedSoundSaveResult> saveSound(
     AudioEvent sound, {
@@ -95,6 +118,7 @@ class SavedSoundsBloc extends Bloc<SavedSoundsEvent, SavedSoundsState> {
     );
     try {
       final result = await _service.saveSavedSound(record);
+      await _mirror(() => _syncRepository!.publishLocalChange(record.id));
       if (!event.completer.isCompleted) event.completer.complete(result);
       if (emit.isDone) return;
       emit(
@@ -139,6 +163,7 @@ class SavedSoundsBloc extends Bloc<SavedSoundsEvent, SavedSoundsState> {
     );
     try {
       await _service.replaceSavedSound(updated);
+      await _mirror(() => _syncRepository!.publishLocalChange(updated.id));
     } catch (_) {
       if (!emit.isDone) {
         emit(
@@ -167,6 +192,8 @@ class SavedSoundsBloc extends Bloc<SavedSoundsEvent, SavedSoundsState> {
       }
       return;
     }
+
+    await _mirror(() => _syncRepository!.publishLocalDeletion(event.soundId));
 
     if (completer != null && !completer.isCompleted) completer.complete();
     if (emit.isDone) return;
@@ -198,6 +225,7 @@ class SavedSoundsBloc extends Bloc<SavedSoundsEvent, SavedSoundsState> {
     );
     try {
       await _service.replaceSavedSound(updated);
+      await _mirror(() => _syncRepository!.publishLocalChange(updated.id));
       if (emit.isDone) return;
       emit(state.copyWith(sounds: [...state.sounds]..[index] = updated));
     } catch (_) {

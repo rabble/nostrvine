@@ -8,10 +8,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show AudioEvent;
+import 'package:openvine/blocs/creator_sync/sound_sync_cubit.dart';
+import 'package:openvine/blocs/creator_sync/sound_sync_state.dart';
 import 'package:openvine/blocs/saved_sounds/saved_sounds_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/saved_sound.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/creator_sync_provider.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/widgets/library/saved_sound_card.dart';
@@ -159,7 +162,8 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    final syncRepository = ref.watch(soundSyncRepositoryProvider).value;
+    final column = Column(
       children: [
         _SearchInput(
           controller: _searchController,
@@ -167,8 +171,15 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
         ),
         if (kDebugMode && !kIsWeb)
           _DebugAudioPickerLauncher(onTap: _onAddAudioTap),
+        if (syncRepository != null) const _SyncStatusBanner(),
         Expanded(child: _buildContent()),
       ],
+    );
+    if (syncRepository == null) return column;
+    return BlocProvider<SoundSyncCubit>(
+      key: ValueKey(syncRepository),
+      create: (_) => SoundSyncCubit(repository: syncRepository)..syncNow(),
+      child: column,
     );
   }
 
@@ -247,6 +258,37 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SyncStatusBanner extends StatelessWidget {
+  const _SyncStatusBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocSelector<SoundSyncCubit, SoundSyncState, SoundSyncStatus>(
+      selector: (state) => state.status,
+      builder: (context, status) {
+        final message = switch (status) {
+          SoundSyncStatus.idle => null,
+          SoundSyncStatus.syncing => context.l10n.soundSyncStatusSyncing,
+          SoundSyncStatus.success => context.l10n.soundSyncStatusSynced,
+          SoundSyncStatus.failure => context.l10n.soundSyncStatusFailed,
+          SoundSyncStatus.locked => context.l10n.soundSyncStatusLocked,
+        };
+        if (message == null) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Text(
+            message,
+            style: TextStyle(
+              color: context.vineColors.onSurfaceMuted,
+              fontSize: 12,
+            ),
+          ),
+        );
+      },
     );
   }
 }
