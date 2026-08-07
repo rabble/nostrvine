@@ -300,6 +300,30 @@ void main() {
         expect(find.byType(NotificationCommentQuote), findsOneWidget);
       });
 
+      testWidgets('quotes the liked comment beneath a likeComment message', (
+        tester,
+      ) async {
+        // Without the quote the row reads "Alice liked your comment" and
+        // names neither the comment nor the video it lives on.
+        await _pump(
+          tester,
+          notification: _actor(
+            type: NotificationKind.likeComment,
+            commentText: 'this vine still holds up',
+          ),
+        );
+
+        expect(
+          find.textContaining(_l10n.notificationLikedYourComment('Alice')),
+          findsOneWidget,
+        );
+        expect(find.byType(NotificationCommentQuote), findsOneWidget);
+        final quote = tester.widget<NotificationCommentQuote>(
+          find.byType(NotificationCommentQuote),
+        );
+        expect(quote.text, equals('this vine still holds up'));
+      });
+
       testWidgets('timestamp moves to the quote when commentText is present', (
         tester,
       ) async {

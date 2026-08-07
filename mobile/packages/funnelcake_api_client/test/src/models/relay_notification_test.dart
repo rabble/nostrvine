@@ -433,6 +433,61 @@ void main() {
         );
       });
 
+      test('parses comment_content as the liked comment body', () {
+        // A reaction on a comment: `content` is the reaction emoji, and
+        // `comment_content` carries the body of the comment that was
+        // liked — the only context a "liked your comment" row can show.
+        final json = {
+          'id': 'notif_123',
+          'source_pubkey': 'aabbccdd' * 8,
+          'source_event_id': '11223344' * 8,
+          'source_kind': 7,
+          'notification_type': 'reaction',
+          'created_at': 1712345678,
+          'read': false,
+          'content': '+',
+          'target_comment_id': '55667788' * 8,
+          'comment_content': 'this vine still holds up',
+        };
+
+        final notification = RelayNotification.fromJson(json);
+
+        expect(notification.content, equals('+'));
+        expect(
+          notification.commentContent,
+          equals('this vine still holds up'),
+        );
+      });
+
+      test('treats empty comment_content as null', () {
+        final json = {
+          'id': 'notif_123',
+          'source_pubkey': 'aabbccdd' * 8,
+          'source_event_id': '11223344' * 8,
+          'source_kind': 7,
+          'notification_type': 'reaction',
+          'created_at': 1712345678,
+          'read': false,
+          'comment_content': '',
+        };
+
+        expect(RelayNotification.fromJson(json).commentContent, isNull);
+      });
+
+      test('leaves comment_content null when the server omits it', () {
+        final json = {
+          'id': 'notif_123',
+          'source_pubkey': 'aabbccdd' * 8,
+          'source_event_id': '11223344' * 8,
+          'source_kind': 7,
+          'notification_type': 'reaction',
+          'created_at': 1712345678,
+          'read': false,
+        };
+
+        expect(RelayNotification.fromJson(json).commentContent, isNull);
+      });
+
       test('treats empty root coordinate fields as null', () {
         final json = {
           'id': 'notif_123',

@@ -134,6 +134,7 @@ void main() {
     String? rootAddressableId,
     String? targetCommentId,
     String? content,
+    String? commentContent,
     bool isReferencedVideo = true,
     String? referencedVideoTitle,
     String? referencedVideoThumbnail,
@@ -157,6 +158,7 @@ void main() {
       rootAddressableId: rootAddressableId,
       targetCommentId: targetCommentId,
       content: content,
+      commentContent: commentContent,
       isReferencedVideo: isReferencedVideo,
       referencedVideoTitle: referencedVideoTitle,
       referencedVideoThumbnail: referencedVideoThumbnail,
@@ -2137,21 +2139,38 @@ void main() {
         expect(page.items, isEmpty);
       });
 
-      test('reaction on a non-video target maps to likeComment '
-          '($ActorNotification)', () async {
-        stubNotifications([makeNotification(isReferencedVideo: false)]);
-        stubProfiles({});
+      test(
+        'reaction without a target comment stays like when the referenced '
+        'video did not resolve',
+        () async {
+          // An unresolved root video leaves referenced_video absent, which is
+          // a Funnelcake join miss (unindexed / deleted video), not evidence
+          // of a comment target. Reading it as one relabelled ordinary video
+          // likes "liked your comment" — with no thumbnail and no quote, so
+          // the row named neither a comment nor a video.
+          stubNotifications([
+            makeNotification(
+              isReferencedVideo: false,
+              referencedEventId: 'my_video',
+            ),
+          ]);
+          stubProfiles({});
 
-        final page = await repository.getNotifications();
-        final item = page.items.single as ActorNotification;
-        expect(item.type, equals(NotificationKind.likeComment));
-      });
+          final page = await repository.getNotifications();
+          final item = page.items.single as VideoNotification;
+          expect(item.type, equals(NotificationKind.like));
+          expect(item.videoEventId, equals('my_video'));
+        },
+      );
 
-      test('likeComment carries referencedEventId as targetEventId', () async {
+      test('likeComment quotes the liked comment body', () async {
+        // The source event is a kind 7 reaction, so `content` is the emoji.
+        // Funnelcake resolves the liked comment's text into comment_content.
         stubNotifications([
           makeNotification(
-            isReferencedVideo: false,
-            referencedEventId: 'comment_event_xyz',
+            targetCommentId: 'comment_event_xyz',
+            content: '+',
+            commentContent: 'this vine still holds up',
           ),
         ]);
         stubProfiles({});
@@ -2159,8 +2178,44 @@ void main() {
         final page = await repository.getNotifications();
         final item = page.items.single as ActorNotification;
         expect(item.type, equals(NotificationKind.likeComment));
-        expect(item.targetEventId, equals('comment_event_xyz'));
+        expect(item.commentText, equals('this vine still holds up'));
       });
+
+      test('likeComment truncates a long liked comment body', () async {
+        final body = 'a' * 120;
+        stubNotifications([
+          makeNotification(
+            targetCommentId: 'comment_event_xyz',
+            content: '+',
+            commentContent: body,
+          ),
+        ]);
+        stubProfiles({});
+
+        final page = await repository.getNotifications();
+        final item = page.items.single as ActorNotification;
+        expect(item.commentText, equals('${'a' * 50}...'));
+      });
+
+      test(
+        'likeComment leaves commentText null when the server omits the body',
+        () async {
+          stubNotifications([
+            makeNotification(
+              targetCommentId: 'comment_event_xyz',
+              content: '+',
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as ActorNotification;
+          expect(item.type, equals(NotificationKind.likeComment));
+          // Never the reaction emoji — a row quoting "+" is worse than one
+          // quoting nothing.
+          expect(item.commentText, isNull);
+        },
+      );
 
       test(
         'likeComment carries root addressable id for direct video routing',
@@ -2169,8 +2224,7 @@ void main() {
               '${NIP71VideoKinds.addressableShortVideo}:other_owner:root-d-tag';
           stubNotifications([
             makeNotification(
-              isReferencedVideo: false,
-              referencedEventId: 'comment_event_xyz',
+              targetCommentId: 'comment_event_xyz',
               rootAddressableId: rootAddressableId,
             ),
           ]);
@@ -2189,8 +2243,7 @@ void main() {
         () async {
           stubNotifications([
             makeNotification(
-              isReferencedVideo: false,
-              referencedEventId: 'comment_event_xyz',
+              targetCommentId: 'comment_event_xyz',
               referencedDTag: 'vine-abc',
             ),
           ]);
@@ -2208,8 +2261,7 @@ void main() {
         () async {
           stubNotifications([
             makeNotification(
-              isReferencedVideo: false,
-              referencedEventId: 'comment_event_xyz',
+              targetCommentId: 'comment_event_xyz',
               // referencedDTag intentionally omitted
             ),
           ]);

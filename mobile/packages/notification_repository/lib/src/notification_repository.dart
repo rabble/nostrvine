@@ -1868,13 +1868,17 @@ class NotificationRepository {
     NotificationKind? commentKind,
     String? targetEventId,
   }) {
+    final quoteKind = commentKind ?? type;
     return ActorNotification(
       id: notification.dedupeKey,
       type: type,
       actor: _buildActor(notification.sourcePubkey, profiles),
       timestamp: notification.createdAt,
       isRead: notification.read,
-      commentText: _truncateComment(notification.content, commentKind ?? type),
+      commentText: _truncateComment(
+        _commentQuoteSource(notification, quoteKind),
+        quoteKind,
+      ),
       targetEventId: targetEventId ?? _actorTargetEventId(type, notification),
       sourceEventIds: notification.sourceEventId.isNotEmpty
           ? [notification.sourceEventId]
@@ -1886,6 +1890,20 @@ class NotificationRepository {
       hasCommentTarget: _actorHasCommentTarget(type, notification),
     );
   }
+
+  /// Raw text a row quotes beneath its message, before truncation.
+  ///
+  /// `comment` and `reply` quote the source event's own body. A
+  /// `likeComment` row instead quotes the comment that was liked: its
+  /// source event is a kind 7 reaction whose `content` is just the emoji,
+  /// so without `comment_content` the row states that someone liked a
+  /// comment while naming neither the comment nor its video.
+  static String? _commentQuoteSource(
+    RelayNotification notification,
+    NotificationKind kind,
+  ) => kind == NotificationKind.likeComment
+      ? notification.commentContent
+      : notification.content;
 
   static bool _actorHasCommentTarget(
     NotificationKind type,
@@ -2263,10 +2281,24 @@ class NotificationRepository {
   /// so the UI can render "liked your comment" instead of "liked your
   /// video". A comment target is identified by a non-empty
   /// `targetCommentId`, which Funnelcake sets to the comment's event ID
-  /// for reactions on a kind 1111 comment. `isReferencedVideo` cannot be
-  /// used for this split: Funnelcake populates `referenced_video` from the
-  /// notification's root video, so it is set for a like on a comment (whose
-  /// root is that video) exactly as it is for a like on the video itself.
+  /// for reactions on a kind 1111 comment. That signal is the *only* one
+  /// used for the split.
+  ///
+  /// `isReferencedVideo` deliberately plays no part. It reports whether
+  /// Funnelcake managed to attach a `referenced_video` block, which it
+  /// builds from the notification's *root* video — so it is set for a like
+  /// on a comment (whose root is that video) exactly as it is for a like on
+  /// the video itself, and it is unset whenever the root video simply
+  /// failed to resolve. Treating its absence as evidence of a comment
+  /// target relabelled ordinary video likes as "liked your comment"
+  /// whenever the video was unindexed or deleted.
+  ///
+  /// A reaction on a comment that Funnelcake could not resolve leaves
+  /// `targetCommentId` empty and so lands here as [NotificationKind.like].
+  /// That residual case is caught downstream by
+  /// [_hasKnownReferencedVideoOwnerMismatch], which reclassifies it to
+  /// `likeComment` once a confirmed metadata 404 plus a foreign
+  /// `root_event_pubkey` prove the anchor is not the user's own video.
   ///
   /// Replies (kind 1111) split by the immediate target, not by whether the
   /// payload also carries root video metadata. A reply directly on a video
@@ -2283,10 +2315,9 @@ class NotificationRepository {
       final targetCommentId = n.targetCommentId;
       final targetsComment =
           targetCommentId != null && targetCommentId.isNotEmpty;
-      if (targetsComment) return NotificationKind.likeComment;
-      return n.isReferencedVideo
-          ? NotificationKind.like
-          : NotificationKind.likeComment;
+      return targetsComment
+          ? NotificationKind.likeComment
+          : NotificationKind.like;
     }
     if (_isNestedCommentReply(n)) {
       return NotificationKind.reply;
@@ -2420,7 +2451,9 @@ class NotificationRepository {
   /// Truncates comment text to [_maxCommentLength] characters, except for
   /// bounded leading Nostr references that the UI can resolve.
   ///
-  /// Only applies to comment and reply notifications.
+  /// Only applies to the kinds that render a quote: comment, reply, and
+  /// likeComment. Pair it with [_commentQuoteSource], which picks the text
+  /// each kind should quote.
   ///
   /// The cut avoids splitting a Nostr reference the UI can decode — bech32
   /// (`npub1...`, `nprofile1...`, `note1...`, `nevent1...`, `naddr1...`) or a
@@ -2430,7 +2463,9 @@ class NotificationRepository {
   /// intact lets the UI linkifier resolve it to `@<name>`.
   static String? _truncateComment(String? content, NotificationKind kind) {
     if (content == null) return null;
-    if (kind != NotificationKind.comment && kind != NotificationKind.reply) {
+    if (kind != NotificationKind.comment &&
+        kind != NotificationKind.reply &&
+        kind != NotificationKind.likeComment) {
       return null;
     }
     if (content.length <= _maxCommentLength) return content;
