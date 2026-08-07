@@ -1521,6 +1521,14 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoDetailLoadError => 'Gagal memuat video';
 
   @override
+  String get videoDetailLoadErrorBody =>
+      'Ada yang meleset di jalan. Coba lagi, ya.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Mungkin sudah dihapus, di luar jangkauan, atau disembunyikan sama pengaturanmu.';
+
+  @override
   String get databaseCorruptionTitle => 'Data lokalmu rusak';
 
   @override

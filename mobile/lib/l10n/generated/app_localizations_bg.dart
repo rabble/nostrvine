@@ -1580,6 +1580,13 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoDetailLoadError => 'Неуспешно зареждане на видеото';
 
   @override
+  String get videoDetailLoadErrorBody => 'Нещо се обърка по пътя. Опитай пак.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Може да е изтрито, да е извън обсега ни или да е скрито от твоите настройки.';
+
+  @override
   String get databaseCorruptionTitle => 'Локалните ти данни се повредиха';
 
   @override

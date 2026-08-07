@@ -4430,6 +4430,8 @@
     "videoErrorAdultContentHiddenAction": "Deschide filtrele de conținut",
     "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
     "videoDetailLoadError": "N-am putut încărca videoclipul",
+    "videoDetailLoadErrorBody": "Ceva a mers prost pe drum. Mai încearcă o dată.",
+    "videoDetailNotFoundBody": "Poate a fost șters, e în afara razei noastre sau ascuns de setările tale.",
     "databaseCorruptionTitle": "Datele tale locale s-au deteriorat",
     "databaseCorruptionBody": "Închide Divine și deschide-l din nou — reparăm automat. Salvăm ce putem din ciornele și clipurile tale, restul se reîncarcă.",
     "databaseCorruptionCloseButton": "Închide Divine",

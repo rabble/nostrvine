@@ -4430,6 +4430,8 @@
     "videoErrorAdultContentHiddenAction": "فتح مرشّحات المحتوى",
     "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
     "videoDetailLoadError": "فشل تحميل الفيديو",
+    "videoDetailLoadErrorBody": "حدث خطأ ما في الطريق. جرّب مرة أخرى.",
+    "videoDetailNotFoundBody": "قد يكون محذوفًا، أو بعيدًا عن متناولنا، أو مخفيًا بواسطة إعداداتك.",
     "databaseCorruptionTitle": "بياناتك المحلية تعرضت للتلف",
     "databaseCorruptionBody": "أغلق Divine وافتحه من جديد — سنصلح ذلك تلقائيًا. سنحفظ ما نستطيع من مسوداتك ومقاطعك، وسيُعاد تحميل الباقي.",
     "databaseCorruptionCloseButton": "إغلاق Divine",

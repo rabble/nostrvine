@@ -4555,6 +4555,8 @@
     "videoErrorAdultContentHiddenAction": "የይዘት ማጣሪያዎችን ክፈት",
     "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
     "videoDetailLoadError": "ቪዲዮ መጫን አልተሳካም",
+    "videoDetailLoadErrorBody": "እዚህ ሲደርስ የሆነ ችግር ተፈጥሯል። እንደገና ሞክር።",
+    "videoDetailNotFoundBody": "ተሰርዞ ሊሆን ይችላል፣ ከአቅም ውጭ ሊሆን ይችላል፣ ወይም በቅንብሮችህ ተደብቆ ሊሆን ይችላል።",
     "databaseCorruptionTitle": "የአካባቢዎ ውሂብ ተበላሽቷል",
     "databaseCorruptionBody": "Divine ን ዘግተው እንደገና ይክፈቱት — በራስ-ሰር እናስተካክለዋለን። የቻልነውን ያህል ረቂቆችዎን እና ክሊፖችዎን እናስቀራለን፣ የቀረው እንደገና ይጫናል።",
     "databaseCorruptionCloseButton": "Divine ን ዝጋ",

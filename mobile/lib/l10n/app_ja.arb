@@ -4430,6 +4430,8 @@
     "videoErrorAdultContentHiddenAction": "コンテンツフィルターを開く",
     "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
     "videoDetailLoadError": "動画の読み込みに失敗したよ",
+    "videoDetailLoadErrorBody": "途中で何かがうまくいきませんでした。もう一度お試しください。",
+    "videoDetailNotFoundBody": "削除されたか、こちらから届かないか、設定で非表示になっているのかもしれません。",
     "databaseCorruptionTitle": "ローカルデータが壊れちゃった",
     "databaseCorruptionBody": "Divine を閉じてもう一度開いてね。自動で直すよ。下書きとクリップはできるだけ残すよ。ほかは読み込み直すよ。",
     "databaseCorruptionCloseButton": "Divine を閉じる",

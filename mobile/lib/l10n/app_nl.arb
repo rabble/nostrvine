@@ -4430,6 +4430,8 @@
     "videoErrorAdultContentHiddenAction": "Inhoudsfilters openen",
     "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
     "videoDetailLoadError": "Video laden mislukt",
+    "videoDetailLoadErrorBody": "Er ging onderweg iets mis. Probeer het nog eens.",
+    "videoDetailNotFoundBody": "Misschien is hij verwijderd, buiten bereik, of verborgen door je instellingen.",
     "databaseCorruptionTitle": "Je lokale gegevens zijn beschadigd",
     "databaseCorruptionBody": "Sluit Divine en open het opnieuw — we repareren het automatisch. We redden wat we kunnen van je concepten en clips, de rest laadt opnieuw.",
     "databaseCorruptionCloseButton": "Divine sluiten",

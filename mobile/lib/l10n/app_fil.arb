@@ -3016,6 +3016,8 @@
     "videoErrorAdultContentHiddenAction": "Buksan ang Content Filters",
     "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
     "videoDetailLoadError": "Hindi ma-load ang video",
+    "videoDetailLoadErrorBody": "May sumablay sa daan. Subukan ulit.",
+    "videoDetailNotFoundBody": "Baka nabura na, wala sa abot, o nakatago dahil sa mga setting mo.",
     "databaseCorruptionTitle": "Nasira ang local data mo",
     "databaseCorruptionBody": "Isara ang Divine at buksan ulit — awtomatiko naming aayusin. Ise-save namin ang makakaya sa mga draft at clip mo, mag-reload na lang ang iba.",
     "databaseCorruptionCloseButton": "Isara ang Divine",

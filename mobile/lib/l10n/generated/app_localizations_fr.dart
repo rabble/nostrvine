@@ -1586,6 +1586,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get videoDetailLoadError => 'Échec du chargement de la vidéo';
 
   @override
+  String get videoDetailLoadErrorBody =>
+      'Quelque chose a déraillé en chemin. Réessaie.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Elle a peut-être été supprimée, elle est hors de portée, ou tes réglages la masquent.';
+
+  @override
   String get databaseCorruptionTitle => 'Tes données locales sont abîmées';
 
   @override

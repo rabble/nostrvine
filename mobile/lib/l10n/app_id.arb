@@ -4430,6 +4430,8 @@
     "videoErrorAdultContentHiddenAction": "Buka Filter Konten",
     "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
     "videoDetailLoadError": "Gagal memuat video",
+    "videoDetailLoadErrorBody": "Ada yang meleset di jalan. Coba lagi, ya.",
+    "videoDetailNotFoundBody": "Mungkin sudah dihapus, di luar jangkauan, atau disembunyikan sama pengaturanmu.",
     "databaseCorruptionTitle": "Data lokalmu rusak",
     "databaseCorruptionBody": "Tutup Divine lalu buka lagi — kami perbaiki otomatis. Kami simpan draf dan klipmu semampu kami, sisanya dimuat ulang.",
     "databaseCorruptionCloseButton": "Tutup Divine",

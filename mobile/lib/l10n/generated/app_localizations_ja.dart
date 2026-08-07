@@ -1448,6 +1448,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoDetailLoadError => '動画の読み込みに失敗したよ';
 
   @override
+  String get videoDetailLoadErrorBody => '途中で何かがうまくいきませんでした。もう一度お試しください。';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      '削除されたか、こちらから届かないか、設定で非表示になっているのかもしれません。';
+
+  @override
   String get databaseCorruptionTitle => 'ローカルデータが壊れちゃった';
 
   @override

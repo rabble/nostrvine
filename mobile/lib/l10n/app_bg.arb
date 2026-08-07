@@ -4561,6 +4561,8 @@
     "videoErrorAdultContentHiddenAction": "Отвори филтрите за съдържание",
     "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
     "videoDetailLoadError": "Неуспешно зареждане на видеото",
+    "videoDetailLoadErrorBody": "Нещо се обърка по пътя. Опитай пак.",
+    "videoDetailNotFoundBody": "Може да е изтрито, да е извън обсега ни или да е скрито от твоите настройки.",
     "databaseCorruptionTitle": "Локалните ти данни се повредиха",
     "databaseCorruptionBody": "Затвори Divine и го отвори пак — ще го поправим автоматично. Ще запазим каквото можем от черновите и клиповете ти, останалото се презарежда.",
     "databaseCorruptionCloseButton": "Затвори Divine",

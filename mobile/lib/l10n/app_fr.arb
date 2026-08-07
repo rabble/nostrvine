@@ -4430,6 +4430,8 @@
     "videoErrorAdultContentHiddenAction": "Ouvrir les filtres de contenu",
     "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
     "videoDetailLoadError": "Échec du chargement de la vidéo",
+    "videoDetailLoadErrorBody": "Quelque chose a déraillé en chemin. Réessaie.",
+    "videoDetailNotFoundBody": "Elle a peut-être été supprimée, elle est hors de portée, ou tes réglages la masquent.",
     "databaseCorruptionTitle": "Tes données locales sont abîmées",
     "databaseCorruptionBody": "Ferme Divine et rouvre-la : on répare ça automatiquement. On sauve ce qu'on peut de tes brouillons et clips, le reste se recharge.",
     "databaseCorruptionCloseButton": "Fermer Divine",

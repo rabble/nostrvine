@@ -4430,6 +4430,8 @@
     "videoErrorAdultContentHiddenAction": "Apri filtri contenuti",
     "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
     "videoDetailLoadError": "Impossibile caricare il video",
+    "videoDetailLoadErrorBody": "Qualcosa è andato storto lungo la strada. Riprova.",
+    "videoDetailNotFoundBody": "Forse è stato eliminato, non è raggiungibile o è nascosto dalle tue impostazioni.",
     "databaseCorruptionTitle": "I tuoi dati locali si sono rovinati",
     "databaseCorruptionBody": "Chiudi Divine e riaprila: sistemiamo tutto in automatico. Salviamo quello che possiamo delle tue bozze e clip, il resto si ricarica.",
     "databaseCorruptionCloseButton": "Chiudi Divine",

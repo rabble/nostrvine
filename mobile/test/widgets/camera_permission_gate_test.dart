@@ -215,6 +215,29 @@ void main() {
       expect(bloc.addedEvents.last, isA<CameraPermissionRefresh>());
     });
 
+    testWidgets('the permission prompt closes via its labelled X', (
+      tester,
+    ) async {
+      // The prompt renders through the shared TvStaticMessageScreen, so its
+      // close wiring and label have to survive that hop.
+      final bloc = _FakeCameraPermissionBloc(
+        const CameraPermissionLoaded(CameraPermissionStatus.requiresSettings),
+      );
+      addTearDown(bloc.close);
+      final goRouter = MockGoRouter();
+      when(goRouter.canPop).thenReturn(true);
+
+      await tester.pumpWidget(buildSubject(bloc, goRouter));
+      await tester.pump();
+
+      await tester.tap(
+        find.bySemanticsLabel(l10n.videoRecorderCloseLabel),
+      );
+      await tester.pump();
+
+      verify(goRouter.pop).called(1);
+    });
+
     testWidgets('a stuck loading state offers a close affordance to bail out', (
       tester,
     ) async {

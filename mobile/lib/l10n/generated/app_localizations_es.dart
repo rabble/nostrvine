@@ -1577,6 +1577,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoDetailLoadError => 'Error al cargar el video';
 
   @override
+  String get videoDetailLoadErrorBody =>
+      'Algo se torció por el camino. Inténtalo otra vez.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Puede que se haya borrado, que esté fuera de nuestro alcance o que lo oculten tus ajustes.';
+
+  @override
   String get databaseCorruptionTitle => 'Tus datos locales se estropearon';
 
   @override

@@ -1599,6 +1599,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoDetailLoadError => 'N-am putut încărca videoclipul';
 
   @override
+  String get videoDetailLoadErrorBody =>
+      'Ceva a mers prost pe drum. Mai încearcă o dată.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Poate a fost șters, e în afara razei noastre sau ascuns de setările tale.';
+
+  @override
   String get databaseCorruptionTitle => 'Datele tale locale s-au deteriorat';
 
   @override

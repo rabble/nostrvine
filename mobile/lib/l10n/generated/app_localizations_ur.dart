@@ -1558,6 +1558,14 @@ class AppLocalizationsUr extends AppLocalizations {
   String get videoDetailLoadError => 'ویڈیو لوڈ نہیں ہو سکی';
 
   @override
+  String get videoDetailLoadErrorBody =>
+      'یہاں پہنچتے پہنچتے کچھ گڑبڑ ہو گئی۔ دوبارہ کوشش کریں۔';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'ہو سکتا ہے یہ حذف ہو چکی ہو، ہماری پہنچ سے باہر ہو، یا آپ کی ترتیبات نے اسے چھپا دیا ہو۔';
+
+  @override
   String get databaseCorruptionTitle => 'آپ کا مقامی ڈیٹا بگڑ گیا';
 
   @override

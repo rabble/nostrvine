@@ -1465,6 +1465,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoDetailLoadError => '视频加载失败';
 
   @override
+  String get videoDetailLoadErrorBody => '路上出了点岔子，再试一次吧。';
+
+  @override
+  String get videoDetailNotFoundBody => '可能被删了，可能够不到，也可能被你的设置隐藏了。';
+
+  @override
   String get databaseCorruptionTitle => '你的本地数据乱套了';
 
   @override

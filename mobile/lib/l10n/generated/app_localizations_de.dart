@@ -1575,6 +1575,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoDetailLoadError => 'Video konnte nicht geladen werden';
 
   @override
+  String get videoDetailLoadErrorBody =>
+      'Auf dem Weg hierher ist was schiefgelaufen. Probier\'s nochmal.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Vielleicht ist es gelöscht, gerade nicht erreichbar oder durch deine Einstellungen ausgeblendet.';
+
+  @override
   String get databaseCorruptionTitle => 'Deine lokalen Daten sind beschädigt';
 
   @override

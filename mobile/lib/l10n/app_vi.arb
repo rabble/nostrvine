@@ -743,6 +743,8 @@
   "videoErrorAdultContentHiddenAction": "Mở bộ lọc nội dung",
   "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
   "videoDetailLoadError": "Không thể tải video",
+  "videoDetailLoadErrorBody": "Có gì đó trục trặc trên đường tới đây. Thử lại nhé.",
+  "videoDetailNotFoundBody": "Có thể nó đã bị xoá, ngoài tầm với, hoặc bị ẩn bởi cài đặt của bạn.",
   "databaseCorruptionTitle": "Dữ liệu cục bộ của bạn bị rối tung",
   "@databaseCorruptionTitle": {
     "description": "Title of the full-screen takeover shown when the local database reports on-disk corruption at runtime. 'Scrambled' is deliberately non-technical: the user did nothing wrong and cannot act on the real cause."

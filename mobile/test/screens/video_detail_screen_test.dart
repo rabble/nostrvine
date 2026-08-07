@@ -8,6 +8,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -33,8 +34,8 @@ class _MockContentBlocklistRepository extends Mock
 
 class _MockVideosRepository extends Mock implements VideosRepository {}
 
-Finder _divineIcon(DivineIconName name) =>
-    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
+Finder _divineSticker(DivineStickerName name) =>
+    find.byWidgetPredicate((w) => w is DivineSticker && w.sticker == name);
 
 void main() {
   final l10n = lookupAppLocalizations(const Locale('en'));
@@ -134,6 +135,153 @@ void main() {
         expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
         expect(find.byType(CircularProgressIndicator), findsNothing);
       });
+
+      testWidgets(
+        'leaves the screen via the close button while still fetching',
+        (tester) async {
+          // A lookup that never resolves — cold start before the relays are
+          // queryable — used to strand the user on the spinner with no exit.
+          final completer = Completer<VideoEvent?>();
+          when(
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+          ).thenAnswer((_) => completer.future);
+          addTearDown(() => completer.complete(null));
+
+          final router = GoRouter(
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (_, _) => const Scaffold(body: Text('caller screen')),
+              ),
+              GoRoute(
+                path: VideoDetailScreen.path,
+                builder: (_, state) => VideoDetailScreen(
+                  videoId: state.pathParameters['id']!,
+                ),
+              ),
+            ],
+          );
+          addTearDown(router.dispose);
+
+          await tester.pumpWidget(
+            testProviderScope(
+              mockNostrService: mockNostrClient,
+              mockFollowRepository: mockFollowRepository,
+              additionalOverrides: [
+                videoEventServiceProvider.overrideWithValue(
+                  mockVideoEventService,
+                ),
+                contentBlocklistRepositoryProvider.overrideWithValue(
+                  mockBlocklistRepository,
+                ),
+                videosRepositoryProvider.overrideWithValue(
+                  mockVideosRepository,
+                ),
+              ],
+              child: MaterialApp.router(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                routerConfig: router,
+              ),
+            ),
+          );
+
+          unawaited(router.push(VideoDetailScreen.pathForId('test_video_id')));
+          // The branded indicator animates forever, so settle would time out.
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+
+          expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
+
+          await tester.tap(
+            find.bySemanticsLabel(l10n.videoDetailCloseSemanticLabel),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+
+          expect(find.byType(BrandedLoadingIndicator), findsNothing);
+          expect(find.text('caller screen'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'does not resume the lookup after leaving a deferred cold start',
+        (tester) async {
+          // Cold start: no relay is queryable yet, so the first lookup defers
+          // until one connects. The user leaves before that happens.
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(0);
+          var attempts = 0;
+          when(
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+          ).thenAnswer((_) async {
+            attempts++;
+            return null;
+          });
+
+          final router = GoRouter(
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (_, _) => const Scaffold(body: Text('caller screen')),
+              ),
+              GoRoute(
+                path: VideoDetailScreen.path,
+                builder: (_, state) => VideoDetailScreen(
+                  videoId: state.pathParameters['id']!,
+                ),
+              ),
+            ],
+          );
+          addTearDown(router.dispose);
+
+          await tester.pumpWidget(
+            testProviderScope(
+              mockNostrService: mockNostrClient,
+              mockFollowRepository: mockFollowRepository,
+              additionalOverrides: [
+                videoEventServiceProvider.overrideWithValue(
+                  mockVideoEventService,
+                ),
+                contentBlocklistRepositoryProvider.overrideWithValue(
+                  mockBlocklistRepository,
+                ),
+                videosRepositoryProvider.overrideWithValue(
+                  mockVideosRepository,
+                ),
+              ],
+              child: MaterialApp.router(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                routerConfig: router,
+              ),
+            ),
+          );
+
+          unawaited(router.push(VideoDetailScreen.pathForId('test_video_id')));
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+
+          expect(attempts, equals(1));
+
+          await tester.tap(
+            find.bySemanticsLabel(l10n.videoDetailCloseSemanticLabel),
+          );
+          // A relay comes up mid-transition, while the popped route's State is
+          // still alive and its listener has not yet been disposed.
+          await tester.pump();
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(1);
+          relayStatusController.add({
+            'wss://relay.divine.video': RelayConnectionStatus.connected(
+              'wss://relay.divine.video',
+            ),
+          });
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+
+          expect(attempts, equals(1));
+          expect(find.text('caller screen'), findsOneWidget);
+        },
+      );
     });
 
     group('video found', () {
@@ -392,6 +540,7 @@ void main() {
           await tester.pump();
 
           expect(find.text(l10n.videoErrorNotFound), findsOneWidget);
+          expect(find.text(l10n.videoDetailNotFoundBody), findsOneWidget);
           // Prove the copy resolves through l10n rather than a hardcoded
           // English string (#5125).
           expect(
@@ -400,7 +549,7 @@ void main() {
             ),
             findsNothing,
           );
-          expect(_divineIcon(DivineIconName.warningCircle), findsOneWidget);
+          expect(_divineSticker(DivineStickerName.alert), findsOneWidget);
           expect(
             find.bySemanticsLabel(l10n.videoDetailCloseSemanticLabel),
             findsOneWidget,
@@ -429,7 +578,8 @@ void main() {
           await tester.pump();
 
           expect(find.text(l10n.videoErrorNotFound), findsOneWidget);
-          expect(_divineIcon(DivineIconName.warningCircle), findsOneWidget);
+          expect(find.text(l10n.videoDetailNotFoundBody), findsOneWidget);
+          expect(_divineSticker(DivineStickerName.alert), findsOneWidget);
           expect(
             find.bySemanticsLabel(l10n.videoDetailCloseSemanticLabel),
             findsOneWidget,
@@ -503,7 +653,8 @@ void main() {
           await tester.pump();
 
           expect(find.text(l10n.videoDetailLoadError), findsOneWidget);
-          expect(_divineIcon(DivineIconName.warningCircle), findsOneWidget);
+          expect(find.text(l10n.videoDetailLoadErrorBody), findsOneWidget);
+          expect(_divineSticker(DivineStickerName.alert), findsOneWidget);
           expect(
             find.bySemanticsLabel(l10n.videoDetailCloseSemanticLabel),
             findsOneWidget,
@@ -534,6 +685,96 @@ void main() {
         expect(find.textContaining('SqliteException'), findsNothing);
         expect(find.textContaining('SELECT'), findsNothing);
       });
+
+      testWidgets('refetches the video when retry is tapped', (tester) async {
+        final video = createTestVideoEvent(
+          id: 'test_video_id',
+          pubkey: 'test_pubkey',
+          title: 'Deep Link Video',
+        );
+        var attempts = 0;
+        when(
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+        ).thenAnswer((_) {
+          attempts++;
+          return attempts == 1
+              ? Future<VideoEvent?>.error(Exception('Network error'))
+              : Future<VideoEvent?>.value(video);
+        });
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        expect(find.text(l10n.videoDetailLoadError), findsOneWidget);
+
+        await tester.tap(find.text(l10n.videoErrorRetry));
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byKey(const Key('video-feed-placeholder')), findsOneWidget);
+        expect(attempts, equals(2));
+      });
+
+      testWidgets('shows the loading state while the retry is in flight', (
+        tester,
+      ) async {
+        final refetch = Completer<VideoEvent?>();
+        var attempts = 0;
+        when(
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+        ).thenAnswer((_) {
+          attempts++;
+          return attempts == 1
+              ? Future<VideoEvent?>.error(Exception('Network error'))
+              : refetch.future;
+        });
+        addTearDown(() => refetch.complete(null));
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        expect(find.text(l10n.videoDetailLoadError), findsOneWidget);
+
+        await tester.tap(find.text(l10n.videoErrorRetry));
+        await tester.pump();
+
+        // The error takeover must give way to the spinner immediately, rather
+        // than sitting there unchanged for the length of the refetch.
+        expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
+        expect(find.text(l10n.videoDetailLoadError), findsNothing);
+      });
+
+      testWidgets(
+        'retry surfaces the error again when the relays are unreachable',
+        (tester) async {
+          // Regression: a retry that deferred to the relay-ready listener left
+          // the user on an unbounded spinner with no way back to Retry.
+          var attempts = 0;
+          when(
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+          ).thenAnswer((_) {
+            attempts++;
+            return Future<VideoEvent?>.error(Exception('Network error'));
+          });
+
+          await tester.pumpWidget(buildSubject());
+          await tester.pump();
+
+          expect(find.text(l10n.videoErrorRetry), findsOneWidget);
+
+          // The last relay drops while the user sits on the error screen.
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(0);
+
+          await tester.tap(find.text(l10n.videoErrorRetry));
+          await tester.pump();
+          await tester.pump();
+
+          expect(attempts, equals(2));
+          expect(find.byType(BrandedLoadingIndicator), findsNothing);
+          expect(find.text(l10n.videoDetailLoadError), findsOneWidget);
+          expect(find.text(l10n.videoErrorRetry), findsOneWidget);
+        },
+      );
     });
 
     group('explicit route block filtering', () {

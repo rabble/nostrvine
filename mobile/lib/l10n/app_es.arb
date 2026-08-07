@@ -4430,6 +4430,8 @@
     "videoErrorAdultContentHiddenAction": "Abrir filtros de contenido",
     "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
     "videoDetailLoadError": "Error al cargar el video",
+    "videoDetailLoadErrorBody": "Algo se torció por el camino. Inténtalo otra vez.",
+    "videoDetailNotFoundBody": "Puede que se haya borrado, que esté fuera de nuestro alcance o que lo oculten tus ajustes.",
     "databaseCorruptionTitle": "Tus datos locales se estropearon",
     "databaseCorruptionBody": "Cierra Divine y ábrelo de nuevo: lo arreglamos automáticamente. Guardamos los borradores y clips que podamos, lo demás se recarga.",
     "databaseCorruptionCloseButton": "Cerrar Divine",

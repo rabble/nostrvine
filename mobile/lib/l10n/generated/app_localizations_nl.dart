@@ -1565,6 +1565,14 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoDetailLoadError => 'Video laden mislukt';
 
   @override
+  String get videoDetailLoadErrorBody =>
+      'Er ging onderweg iets mis. Probeer het nog eens.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Misschien is hij verwijderd, buiten bereik, of verborgen door je instellingen.';
+
+  @override
   String get databaseCorruptionTitle => 'Je lokale gegevens zijn beschadigd';
 
   @override

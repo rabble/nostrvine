@@ -1556,6 +1556,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoDetailLoadError => 'Failed to load video';
 
   @override
+  String get videoDetailLoadErrorBody =>
+      'Something went sideways on the way here. Give it another try.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'It could be gone, out of reach, or hidden by your settings.';
+
+  @override
   String get databaseCorruptionTitle => 'Your local data got scrambled';
 
   @override

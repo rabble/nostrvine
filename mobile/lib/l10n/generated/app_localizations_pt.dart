@@ -1574,6 +1574,14 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoDetailLoadError => 'Falha ao carregar o vídeo';
 
   @override
+  String get videoDetailLoadErrorBody =>
+      'Alguma coisa deu errado no caminho. Tenta de novo.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Pode ter sido apagado, estar fora de alcance ou escondido pelas tuas definições.';
+
+  @override
   String get databaseCorruptionTitle => 'Seus dados locais foram corrompidos';
 
   @override

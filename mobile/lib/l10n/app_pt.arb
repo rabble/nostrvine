@@ -4430,6 +4430,8 @@
     "videoErrorAdultContentHiddenAction": "Abrir filtros de conteúdo",
     "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
     "videoDetailLoadError": "Falha ao carregar o vídeo",
+    "videoDetailLoadErrorBody": "Alguma coisa deu errado no caminho. Tenta de novo.",
+    "videoDetailNotFoundBody": "Pode ter sido apagado, estar fora de alcance ou escondido pelas tuas definições.",
     "databaseCorruptionTitle": "Seus dados locais foram corrompidos",
     "databaseCorruptionBody": "Feche o Divine e abra de novo — a gente conserta automaticamente. A gente salva o que der dos seus rascunhos e clipes, o resto recarrega.",
     "databaseCorruptionCloseButton": "Fechar o Divine",

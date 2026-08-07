@@ -1523,6 +1523,14 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoDetailLoadError => 'Video yüklenemedi';
 
   @override
+  String get videoDetailLoadErrorBody =>
+      'Yolda bir şeyler ters gitti. Bir daha dene.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Silinmiş, ulaşılamıyor ya da ayarların yüzünden gizlenmiş olabilir.';
+
+  @override
   String get databaseCorruptionTitle => 'Yerel verilerin bozuldu';
 
   @override

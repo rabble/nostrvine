@@ -4430,6 +4430,8 @@
     "videoErrorAdultContentHiddenAction": "İçerik Filtreleri'ni aç",
     "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
     "videoDetailLoadError": "Video yüklenemedi",
+    "videoDetailLoadErrorBody": "Yolda bir şeyler ters gitti. Bir daha dene.",
+    "videoDetailNotFoundBody": "Silinmiş, ulaşılamıyor ya da ayarların yüzünden gizlenmiş olabilir.",
     "databaseCorruptionTitle": "Yerel verilerin bozuldu",
     "databaseCorruptionBody": "Divine'ı kapatıp yeniden aç — bunu otomatik olarak onarıyoruz. Taslaklarından ve kliplerinden kurtarabildiğimizi saklıyoruz, gerisi yeniden yükleniyor.",
     "databaseCorruptionCloseButton": "Divine'ı kapat",

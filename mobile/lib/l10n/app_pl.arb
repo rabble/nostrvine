@@ -4430,6 +4430,8 @@
     "videoErrorAdultContentHiddenAction": "Otwórz filtry treści",
     "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
     "videoDetailLoadError": "Nie udało się wczytać filmu",
+    "videoDetailLoadErrorBody": "Coś poszło nie tak po drodze. Spróbuj jeszcze raz.",
+    "videoDetailNotFoundBody": "Mógł zostać usunięty, być poza zasięgiem albo ukryty przez twoje ustawienia.",
     "databaseCorruptionTitle": "Twoje lokalne dane się uszkodziły",
     "databaseCorruptionBody": "Zamknij Divine i otwórz ponownie — naprawimy to automatycznie. Zachowamy tyle Twoich szkiców i klipów, ile się da, reszta wczyta się na nowo.",
     "databaseCorruptionCloseButton": "Zamknij Divine",
