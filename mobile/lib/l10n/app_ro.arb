@@ -1875,6 +1875,7 @@
     "userPickerSearchByName": "Caută după nume",
     "userPickerFilterByNameHint": "Filtrează după nume...",
     "userPickerSearchByNameHint": "Caută după nume...",
+    "userPickerClearSearchSemantics": "Șterge căutarea",
     "userPickerAlreadyAddedSemantics": "{name} este deja adăugat",
     "@userPickerAlreadyAddedSemantics": {
         "placeholders": {

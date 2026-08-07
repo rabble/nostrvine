@@ -1203,6 +1203,7 @@
     "userPickerSearchByName": "이름으로 검색",
     "userPickerFilterByNameHint": "이름으로 필터링...",
     "userPickerSearchByNameHint": "이름으로 검색...",
+    "userPickerClearSearchSemantics": "검색 지우기",
     "userPickerAlreadyAddedSemantics": "{name} 이미 추가됨",
     "@userPickerAlreadyAddedSemantics": {
         "placeholders": {

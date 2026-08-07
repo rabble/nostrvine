@@ -4408,6 +4408,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get userPickerSearchByNameHint => '按名字搜索...';
 
   @override
+  String get userPickerClearSearchSemantics => '清除搜索';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name 已添加';
   }

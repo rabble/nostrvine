@@ -4621,6 +4621,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Ada göre ara...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Aramayı temizle';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name zaten eklendi';
   }

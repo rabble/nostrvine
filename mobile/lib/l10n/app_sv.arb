@@ -1875,6 +1875,7 @@
     "userPickerSearchByName": "Sök efter namn",
     "userPickerFilterByNameHint": "Filtrera efter namn...",
     "userPickerSearchByNameHint": "Sök efter namn...",
+    "userPickerClearSearchSemantics": "Rensa sökning",
     "userPickerAlreadyAddedSemantics": "{name} har redan lagts till",
     "@userPickerAlreadyAddedSemantics": {
         "placeholders": {

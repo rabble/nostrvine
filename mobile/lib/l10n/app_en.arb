@@ -2761,6 +2761,10 @@
   "userPickerSearchByName": "Search by name",
   "userPickerFilterByNameHint": "Filter by name...",
   "userPickerSearchByNameHint": "Search by name...",
+  "userPickerClearSearchSemantics": "Clear search",
+  "@userPickerClearSearchSemantics": {
+    "description": "Semantic label for the button that clears the text in the user picker search field."
+  },
   "userPickerAlreadyAddedSemantics": "{name} already added",
   "@userPickerAlreadyAddedSemantics": {
     "placeholders": {

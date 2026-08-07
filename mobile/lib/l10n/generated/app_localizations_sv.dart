@@ -4649,6 +4649,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Sök efter namn...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Rensa sökning';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name har redan lagts till';
   }

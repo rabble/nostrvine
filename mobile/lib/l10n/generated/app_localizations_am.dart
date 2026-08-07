@@ -4560,6 +4560,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get userPickerSearchByNameHint => 'በስም ፈልግ...';
 
   @override
+  String get userPickerClearSearchSemantics => 'ፍለጋን አጽዳ';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name አስቀድሞ ታክሏል።';
   }

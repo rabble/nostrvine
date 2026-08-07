@@ -4671,6 +4671,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Zoeken op naam...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Zoekopdracht wissen';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name al toegevoegd';
   }

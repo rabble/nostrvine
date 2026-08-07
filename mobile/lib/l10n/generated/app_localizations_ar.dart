@@ -4614,6 +4614,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get userPickerSearchByNameHint => 'İsme göre ara...';
 
   @override
+  String get userPickerClearSearchSemantics => 'مسح البحث';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name zaten eklendi';
   }

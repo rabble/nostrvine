@@ -1865,6 +1865,7 @@
     "userPickerSearchByName": "名前で検索",
     "userPickerFilterByNameHint": "名前で絞り込み...",
     "userPickerSearchByNameHint": "名前で検索...",
+    "userPickerClearSearchSemantics": "検索をクリア",
     "userPickerAlreadyAddedSemantics": "{name} はすでに追加済みです",
     "@userPickerAlreadyAddedSemantics": {
         "placeholders": {

@@ -4771,6 +4771,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Szukaj po nazwie...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Wyczyść wyszukiwanie';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name już dodano';
   }

@@ -618,6 +618,119 @@ void main() {
         expect(find.text('Your crew is out there'), findsNothing);
       });
 
+      testWidgets('clear button restores the unfiltered follow list', (
+        tester,
+      ) async {
+        final profiles = [
+          UserProfile(
+            pubkey: 'pubkey1',
+            name: 'Alpha',
+            rawData: const {'name': 'Alpha'},
+            createdAt: DateTime.now(),
+            eventId: 'event1',
+          ),
+          UserProfile(
+            pubkey: 'pubkey2',
+            name: 'Bravo',
+            rawData: const {'name': 'Bravo'},
+            createdAt: DateTime.now(),
+            eventId: 'event2',
+          ),
+        ];
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              profileRepositoryProvider.overrideWithValue(
+                _createMockProfileRepository(cachedProfiles: profiles),
+              ),
+              followRepositoryProvider.overrideWithValue(
+                _createMockFollowRepository(
+                  followingPubkeys: ['pubkey1', 'pubkey2'],
+                ),
+              ),
+              contentBlocklistRepositoryProvider.overrideWithValue(
+                _createMockContentBlocklistRepository(),
+              ),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: UserPickerSheet(
+                  title: 'Title',
+                  filterMode: UserPickerFilterMode.mutualFollowsOnly,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byType(TextField), 'Alpha');
+        await tester.pumpAndSettle();
+        expect(find.text('Bravo'), findsNothing);
+
+        // TextEditingController.clear() alone does not fire onChanged, so the
+        // button has to dispatch the reset itself.
+        final clearButton = find.descendant(
+          of: find.byType(TextField),
+          matching: find.byType(DivineIconButton),
+        );
+        expect(clearButton, findsOneWidget);
+        await tester.tap(clearButton);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Alpha'), findsOneWidget);
+        expect(find.text('Bravo'), findsOneWidget);
+      });
+
+      testWidgets('clear button carries a semantic label', (tester) async {
+        final profile = UserProfile(
+          pubkey: 'pubkey1',
+          name: 'Alpha',
+          rawData: const {'name': 'Alpha'},
+          createdAt: DateTime.now(),
+          eventId: 'event1',
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              profileRepositoryProvider.overrideWithValue(
+                _createMockProfileRepository(cachedProfiles: [profile]),
+              ),
+              followRepositoryProvider.overrideWithValue(
+                _createMockFollowRepository(followingPubkeys: ['pubkey1']),
+              ),
+              contentBlocklistRepositoryProvider.overrideWithValue(
+                _createMockContentBlocklistRepository(),
+              ),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: UserPickerSheet(
+                  title: 'Title',
+                  filterMode: UserPickerFilterMode.mutualFollowsOnly,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byType(TextField), 'Alpha');
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          find.bySemanticsLabel(l10n.userPickerClearSearchSemantics),
+          findsOneWidget,
+        );
+      });
+
       testWidgets('filters blocked users from the follow list', (tester) async {
         final allowedProfile = UserProfile(
           pubkey: 'pubkey1',

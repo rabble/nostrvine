@@ -1875,6 +1875,7 @@
     "userPickerSearchByName": "Pesquisar por nome",
     "userPickerFilterByNameHint": "Filtrar por nome...",
     "userPickerSearchByNameHint": "Pesquisar por nome...",
+    "userPickerClearSearchSemantics": "Limpar pesquisa",
     "userPickerAlreadyAddedSemantics": "{name} já adicionado",
     "@userPickerAlreadyAddedSemantics": {
         "placeholders": {

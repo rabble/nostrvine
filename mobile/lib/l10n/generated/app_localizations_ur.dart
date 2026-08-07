@@ -4659,6 +4659,9 @@ class AppLocalizationsUr extends AppLocalizations {
   String get userPickerSearchByNameHint => 'نام سے تلاش کریں...';
 
   @override
+  String get userPickerClearSearchSemantics => 'تلاش صاف کریں';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name پہلے سے شامل ہے';
   }

@@ -2606,6 +2606,7 @@
   "userPickerSearchByName": "Cari mengikut nama",
   "userPickerFilterByNameHint": "Tapis mengikut nama...",
   "userPickerSearchByNameHint": "Cari mengikut nama...",
+  "userPickerClearSearchSemantics": "Kosongkan carian",
   "userPickerAlreadyAddedSemantics": "{name} sudah ditambah",
   "@userPickerAlreadyAddedSemantics": {
     "placeholders": {

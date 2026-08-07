@@ -4656,6 +4656,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Tìm theo tên...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Xóa tìm kiếm';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name đã được thêm';
   }

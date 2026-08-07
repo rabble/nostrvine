@@ -1872,6 +1872,7 @@
     "userPickerSearchByName": "Cari berdasarkan nama",
     "userPickerFilterByNameHint": "Filter berdasarkan nama...",
     "userPickerSearchByNameHint": "Cari berdasarkan nama...",
+    "userPickerClearSearchSemantics": "Hapus pencarian",
     "userPickerAlreadyAddedSemantics": "{name} sudah ditambahkan",
     "@userPickerAlreadyAddedSemantics": {
         "placeholders": {

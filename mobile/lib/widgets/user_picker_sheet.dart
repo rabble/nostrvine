@@ -281,6 +281,16 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     }
   }
 
+  /// Empties the search field and re-runs the search for the now-empty query.
+  ///
+  /// [TextEditingController.clear] does not fire [TextField.onChanged] — that
+  /// only runs for platform input — so the reset has to be dispatched by hand
+  /// or the results stay filtered under an empty field.
+  void _clearSearch() {
+    _searchController.clear();
+    _onSearchChanged('');
+  }
+
   void _filterFollowProfiles(String query) {
     setState(() {
       _filteredFollowProfiles = _matchingFollowProfiles(query, _followProfiles);
@@ -427,11 +437,13 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
                   valueListenable: _searchController,
                   builder: (context, value, child) => AnimatedSwitcher(
                     duration: const Duration(milliseconds: 180),
-                    child: _searchController.text.isEmpty
+                    child: value.text.isEmpty
                         ? const SizedBox.shrink()
                         : DivineIconButton(
-                            onPressed: _searchController.clear,
+                            onPressed: _clearSearch,
                             icon: .x,
+                            semanticLabel:
+                                context.l10n.userPickerClearSearchSemantics,
                             backgroundColor: VineTheme.transparent,
                             foregroundColor: context.vineColors.onSurfaceMuted,
                           ),
