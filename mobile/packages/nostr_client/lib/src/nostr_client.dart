@@ -509,7 +509,16 @@ class NostrClient {
 
     try {
       await _refreshPublicKeyFromSigner();
-    } on Object {
+    } on Object catch (e, st) {
+      // Non-fatal: the caller skips its author-scoped query. Logged so a
+      // failed signer stays distinguishable from a signed-out session —
+      // callers report both as "no public key".
+      log(
+        'Signer refresh failed while resolving the public key',
+        name: 'NostrClient',
+        error: e,
+        stackTrace: st,
+      );
       return null;
     }
 
