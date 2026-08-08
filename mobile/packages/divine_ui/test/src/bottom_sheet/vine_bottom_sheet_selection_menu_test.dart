@@ -1,8 +1,6 @@
 // ABOUTME: Tests for VineBottomSheetSelectionMenu component
 // ABOUTME: Verifies modal behavior and selection return values
 
-import 'dart:ui' show SemanticsAction, SemanticsFlag;
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -118,23 +116,27 @@ void main() {
         await tester.tap(find.text('Show Menu'));
         await tester.pumpAndSettle();
 
-        final selected = tester
-            .getSemantics(find.bySemanticsLabel('Popular'))
-            .getSemanticsData();
-        // Exactly the option label — the wrapper must not concatenate the
-        // child Text on top of it.
-        expect(selected.label, equals('Popular'));
-        expect(selected.hasFlag(SemanticsFlag.isButton), isTrue);
-        expect(selected.hasFlag(SemanticsFlag.isSelected), isTrue);
-        expect(selected.hasAction(SemanticsAction.tap), isTrue);
+        // The label is exactly the option label — the wrapper must not
+        // concatenate the child Text on top of it.
+        expect(
+          tester.getSemantics(find.bySemanticsLabel('Popular')),
+          isSemantics(
+            label: 'Popular',
+            isButton: true,
+            isSelected: true,
+            hasTapAction: true,
+          ),
+        );
 
-        final unselected = tester
-            .getSemantics(find.bySemanticsLabel('New'))
-            .getSemanticsData();
-        expect(unselected.label, equals('New'));
-        expect(unselected.hasFlag(SemanticsFlag.isButton), isTrue);
-        expect(unselected.hasFlag(SemanticsFlag.isSelected), isFalse);
-        expect(unselected.hasAction(SemanticsAction.tap), isTrue);
+        expect(
+          tester.getSemantics(find.bySemanticsLabel('New')),
+          isSemantics(
+            label: 'New',
+            isButton: true,
+            isSelected: false,
+            hasTapAction: true,
+          ),
+        );
       } finally {
         semanticsHandle.dispose();
       }
