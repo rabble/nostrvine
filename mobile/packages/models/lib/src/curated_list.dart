@@ -138,7 +138,9 @@ class CuratedList extends Equatable {
   /// Whether this list's video references are readable by anyone.
   ///
   /// `false` publishes them NIP-44 encrypted to the owner instead of as plain
-  /// tags. The list's existence, name and description stay public either way.
+  /// tags. The event envelope and list metadata stay public either way. A
+  /// relay that retained or rejected replacement of an earlier public event
+  /// may also continue serving that event's plaintext item tags.
   final bool isPublic;
 
   /// The Nostr event ID when published to relays.

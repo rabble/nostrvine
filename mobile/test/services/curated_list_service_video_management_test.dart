@@ -68,7 +68,7 @@ void main() {
 
     setUp(() async {
       mockNostr = _MockNostrClient();
-      stubListSigner(mockNostr);
+      stubListSigner(mockNostr, 'test_pubkey_123456789abcdef');
       mockAuth = _MockAuthService();
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
@@ -215,7 +215,7 @@ void main() {
         );
         reset(mockNostr);
         stubMocks();
-        stubListSigner(mockNostr);
+        stubListSigner(mockNostr, 'test_pubkey_123456789abcdef');
 
         await service.addVideoToList(list!.id, 'video_event_123');
 
@@ -337,7 +337,7 @@ void main() {
         await service.addVideoToList(list!.id, 'video_event_123');
         reset(mockNostr);
         stubMocks();
-        stubListSigner(mockNostr);
+        stubListSigner(mockNostr, 'test_pubkey_123456789abcdef');
 
         await service.removeVideoFromList(list.id, 'video_event_123');
 

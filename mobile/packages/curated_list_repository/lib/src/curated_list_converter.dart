@@ -3,7 +3,7 @@
 // ABOUTME: a-tags for addressable video references (NIP-71).
 
 import 'package:models/models.dart';
-import 'package:nostr_sdk/nostr_sdk.dart' show Event;
+import 'package:nostr_sdk/nostr_sdk.dart' show Event, NIP04, NIP44V2;
 
 /// NIP-71 addressable video kind numbers accepted in `a` tags.
 const Set<int> _nip71AddressableVideoKinds = {
@@ -125,15 +125,30 @@ abstract final class CuratedListConverter {
   }
 
   static bool _hasSealedItemShape(List<List<String>> tags, String content) {
-    if (!_looksLikeSealedItemContent(content)) return false;
+    if (!isEncryptedItemPayload(content)) return false;
     return !tags.any(
       (tag) => tag.isNotEmpty && (tag.first == 'e' || tag.first == 'a'),
     );
   }
 
-  static bool _looksLikeSealedItemContent(String content) {
-    if (content.length < 100) return false;
-    return RegExp(r'^[A-Za-z0-9+/]+={0,2}$').hasMatch(content);
+  /// Whether [content] has the exact binary envelope shape of NIP-44 v2.
+  ///
+  /// This does not decrypt or authenticate the payload. It only distinguishes
+  /// encrypted list items from ordinary descriptions without broad base64
+  /// heuristics leaking into production behavior.
+  static bool isNip44Payload(String content) {
+    try {
+      NIP44V2.decodePayload(content);
+      return true;
+    } on Object {
+      return false;
+    }
+  }
+
+  /// Whether [content] is either the current NIP-44 envelope or the legacy
+  /// NIP-04 `ciphertext?iv=...` form allowed by NIP-51 readers.
+  static bool isEncryptedItemPayload(String content) {
+    return isNip44Payload(content) || NIP04.isEncrypted(content);
   }
 
   /// Converts a [CuratedList] to Nostr event tags for publishing.
@@ -152,6 +167,21 @@ abstract final class CuratedListConverter {
   /// These stay readable on a relay even for a private list: NIP-51 hides a
   /// list's items, not the fact that the list exists or what it is called.
   static List<List<String>> toPublicMetadataTags(CuratedList list) {
+    return _toMetadataTags(list, includeThumbnail: true);
+  }
+
+  /// Public metadata for a private list, excluding item-derived fields.
+  ///
+  /// A thumbnail is itself a video reference, so publishing it beside an
+  /// encrypted item set would reveal one member of the private list.
+  static List<List<String>> toPrivateMetadataTags(CuratedList list) {
+    return _toMetadataTags(list, includeThumbnail: false);
+  }
+
+  static List<List<String>> _toMetadataTags(
+    CuratedList list, {
+    required bool includeThumbnail,
+  }) {
     final tags = <List<String>>[
       ['d', list.id],
       ['title', list.name],
@@ -176,7 +206,7 @@ abstract final class CuratedListConverter {
       }
     }
 
-    if (list.thumbnailEventId != null) {
+    if (includeThumbnail && list.thumbnailEventId != null) {
       tags.add(['thumbnail', list.thumbnailEventId!]);
     }
 

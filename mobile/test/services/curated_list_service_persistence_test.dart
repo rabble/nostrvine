@@ -45,7 +45,7 @@ void main() {
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       mockNostr = _MockNostrClient();
-      stubListSigner(mockNostr);
+      stubListSigner(mockNostr, 'test_pubkey_123456789abcdef');
       mockAuth = _MockAuthService();
       prefs = await SharedPreferences.getInstance();
 

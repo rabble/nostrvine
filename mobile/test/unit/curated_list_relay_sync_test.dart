@@ -32,7 +32,10 @@ void main() {
 
     setUp(() async {
       mockNostrService = _MockNostrClient();
-      stubListSigner(mockNostrService);
+      stubListSigner(
+        mockNostrService,
+        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+      );
       mockAuthService = _MockAuthService();
 
       // Set up SharedPreferences with empty state for each test

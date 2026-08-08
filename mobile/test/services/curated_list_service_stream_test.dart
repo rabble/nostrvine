@@ -89,7 +89,7 @@ void main() {
 
       mockNostr = _MockNostrClient();
 
-      stubListSigner(mockNostr);
+      stubListSigner(mockNostr, 'test_pubkey');
       mockAuth = _MockAuthService();
       prefs = await SharedPreferences.getInstance();
       eventController = StreamController<Event>.broadcast();

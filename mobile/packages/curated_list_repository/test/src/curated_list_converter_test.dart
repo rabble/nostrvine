@@ -1,17 +1,20 @@
+import 'dart:convert';
+
 import 'package:curated_list_repository/curated_list_repository.dart';
 import 'package:models/models.dart';
-import 'package:nostr_sdk/nostr_sdk.dart' show Event;
+import 'package:nostr_sdk/nostr_sdk.dart' show Event, NIP44V2;
 import 'package:test/test.dart';
 
 /// 64-char hex pubkey for test events.
 const _testPubkey =
     'aabbccddaabbccddaabbccddaabbccdd'
     'aabbccddaabbccddaabbccddaabbccdd';
-const _sealedPayload =
-    'Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
-    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
-    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
-    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+final String _sealedPayload = base64Encode([
+  2,
+  ...List<int>.filled(32, 0),
+  ...NIP44V2.pad('private items'),
+  ...List<int>.filled(32, 0),
+]);
 
 /// Creates a kind 30005 Nostr event with the given [tags] and [content].
 Event _makeEvent({
@@ -591,6 +594,36 @@ void main() {
         expect(
           tags.any((tag) => tag.first == 'e' || tag.first == 'a'),
           isFalse,
+        );
+      });
+
+      test('toPrivateMetadataTags omits an item-derived thumbnail', () {
+        final tags = CuratedListConverter.toPrivateMetadataTags(
+          listWith(const ['abc123']).copyWith(thumbnailEventId: 'abc123'),
+        );
+
+        expect(tags, contains(equals(['d', 'my-list'])));
+        expect(tags.any((tag) => tag.first == 'thumbnail'), isFalse);
+      });
+
+      test('only exact NIP-44 envelopes are classified as sealed', () {
+        expect(CuratedListConverter.isNip44Payload(_sealedPayload), isTrue);
+        expect(
+          CuratedListConverter.isNip44Payload('sealed:private items'),
+          isFalse,
+        );
+        expect(
+          CuratedListConverter.isNip44Payload(base64Encode(List.filled(99, 1))),
+          isFalse,
+        );
+      });
+
+      test('recognizes the legacy NIP-04 encrypted shape', () {
+        expect(
+          CuratedListConverter.isEncryptedItemPayload(
+            'Y2lwaGVydGV4dA==?iv=aW5pdGlhbGl6YXRpb252ZWN0b3I=',
+          ),
+          isTrue,
         );
       });
 
