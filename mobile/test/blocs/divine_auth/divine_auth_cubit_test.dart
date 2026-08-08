@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:analytics/analytics.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,6 +25,32 @@ class _MockPendingVerificationService extends Mock
     implements PendingVerificationService {}
 
 class _MockInviteApiClient extends Mock implements InviteApiClient {}
+
+class _RecordingAnalytics implements AnalyticsEventSink {
+  final properties = <({String name, String? value})>[];
+
+  @override
+  Future<void> setUserProperty({
+    required String name,
+    required String? value,
+  }) async => properties.add((name: name, value: value));
+
+  @override
+  Future<void> setUserId(String? userId) async {}
+
+  @override
+  Future<void> logEvent({
+    required String name,
+    required Map<String, Object> parameters,
+  }) async {}
+
+  @override
+  Future<void> logScreenView({
+    required String screenName,
+    String? screenClass,
+    Map<String, Object>? parameters,
+  }) async {}
+}
 
 class _FakeKeycastSession extends Fake implements KeycastSession {}
 
@@ -61,6 +88,7 @@ void main() {
     late _MockAuthService mockAuthService;
     late _MockPendingVerificationService mockPendingVerification;
     late _MockInviteApiClient mockInviteApiClient;
+    late _RecordingAnalytics analytics;
 
     const testEmail = 'test@example.com';
     const testPassword = 'password123';
@@ -74,6 +102,7 @@ void main() {
       mockAuthService = _MockAuthService();
       mockPendingVerification = _MockPendingVerificationService();
       mockInviteApiClient = _MockInviteApiClient();
+      analytics = _RecordingAnalytics();
       when(
         () => mockAuthService.clearPendingDivineOAuthSession(),
       ).thenAnswer((_) async {});
@@ -94,6 +123,7 @@ void main() {
         inviteApiClient: mockInviteApiClient,
         inviteCode: inviteCode,
         validationMessages: AuthValidationMessages.englishDefaults,
+        analytics: analytics,
       );
     }
 
@@ -477,6 +507,9 @@ void main() {
                 session: any(named: 'session'),
               ),
               () => mockAuthService.signInWithDivineOAuth(any()),
+            ]);
+            expect(analytics.properties, [
+              (name: AnalyticsUserProperty.inviteCode, value: 'AB12-EF34'),
             ]);
           },
         );

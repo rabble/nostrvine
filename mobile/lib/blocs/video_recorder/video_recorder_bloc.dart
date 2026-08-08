@@ -85,6 +85,9 @@ typedef ReadVideoEditorState = VideoEditorProviderState Function();
 /// Accessor for the [SharedPreferences] instance.
 typedef ReadSharedPreferences = SharedPreferences Function();
 
+/// Reports the recorder mode only after media capture actually starts.
+typedef RecordingStartedCallback = void Function(VideoRecorderMode mode);
+
 /// Default [CountdownSoundService] factory.
 ///
 /// Forwards `handleAudioSessionActivation: false` to [JustAudioSimplePlayer]
@@ -155,6 +158,7 @@ class VideoRecorderBloc
     CountdownSoundServiceFactory? countdownSoundServiceFactory,
     AudioPlaybackServiceFactory? audioPlaybackServiceFactory,
     PerformanceTraceMonitor? performanceMonitor,
+    RecordingStartedCallback? onRecordingStarted,
   }) : _readClipManager = readClipManager,
        _readVideoEditor = readVideoEditor,
        _readVideoEditorState = readVideoEditorState,
@@ -166,6 +170,7 @@ class VideoRecorderBloc
            audioPlaybackServiceFactory ?? defaultAudioPlaybackServiceFactory,
        _performanceMonitor =
            performanceMonitor ?? const NoOpPerformanceTraceMonitor(),
+       _onRecordingStarted = onRecordingStarted,
        super(const VideoRecorderBlocState()) {
     _cameraService =
         _cameraServiceOverride ??
@@ -260,6 +265,7 @@ class VideoRecorderBloc
   final CountdownSoundServiceFactory _countdownSoundServiceFactory;
   final AudioPlaybackServiceFactory _audioPlaybackServiceFactory;
   final PerformanceTraceMonitor _performanceMonitor;
+  final RecordingStartedCallback? _onRecordingStarted;
 
   late final CameraService _cameraService;
   AudioPlaybackService? _audioPlaybackService;
@@ -865,6 +871,7 @@ class VideoRecorderBloc
         name: 'VideoRecorderBloc',
         category: LogCategory.video,
       );
+      _onRecordingStarted?.call(state.recorderMode);
       await WakelockPlus.enable();
       if (state.recordingLockedForNavigation) {
         // Navigation locked during the wakelock-enable await, after the native
@@ -1701,6 +1708,9 @@ class VideoRecorderBloc
     }
 
     final framePaths = [...state.stopMotionFrames, photo.filePath];
+    if (state.stopMotionFrames.isEmpty) {
+      _onRecordingStarted?.call(state.recorderMode);
+    }
     // Back to idle so a retry after a failed assemble re-emits the failure the
     // status listener only fires on transitions.
     emit(

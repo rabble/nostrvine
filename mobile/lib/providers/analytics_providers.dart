@@ -3,11 +3,89 @@
 
 import 'package:analytics/analytics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/features/creation_analytics/creation_analytics_tracker.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:unified_logger/unified_logger.dart';
+
+typedef CrashUserIdSetter = Future<void> Function(String? userId);
+
+/// Keeps Firebase Analytics and Crashlytics on the same authenticated identity.
+class AnalyticsIdentityCoordinator {
+  AnalyticsIdentityCoordinator({
+    required AnalyticsEventSink analytics,
+    required CrashUserIdSetter setCrashUserId,
+  }) : _analytics = analytics,
+       _setCrashUserId = setCrashUserId;
+
+  final AnalyticsEventSink _analytics;
+  final CrashUserIdSetter _setCrashUserId;
+
+  Future<void> setUserId(String? pubkeyHex) async {
+    if (pubkeyHex != null &&
+        !RegExp(r'^[0-9a-fA-F]{64}$').hasMatch(pubkeyHex)) {
+      Log.error(
+        'Refusing to set a non-hex analytics user ID',
+        name: 'AnalyticsIdentityCoordinator',
+        category: LogCategory.auth,
+      );
+      return;
+    }
+
+    try {
+      await _analytics.setUserId(pubkeyHex);
+    } catch (error) {
+      Log.warning(
+        'Failed to update the Firebase Analytics identity: $error',
+        name: 'AnalyticsIdentityCoordinator',
+        category: LogCategory.auth,
+      );
+    }
+
+    if (pubkeyHex == null) {
+      try {
+        await _analytics.setUserProperty(
+          name: AnalyticsUserProperty.inviteCode,
+          value: null,
+        );
+      } catch (error) {
+        Log.warning(
+          'Failed to clear Firebase Analytics invite attribution: $error',
+          name: 'AnalyticsIdentityCoordinator',
+          category: LogCategory.auth,
+        );
+      }
+    }
+
+    try {
+      await _setCrashUserId(pubkeyHex);
+    } catch (error) {
+      Log.warning(
+        'Failed to update the Crashlytics identity: $error',
+        name: 'AnalyticsIdentityCoordinator',
+        category: LogCategory.auth,
+      );
+    }
+  }
+}
 
 /// Provides the low-level analytics event sink for feature-specific events.
 final analyticsEventSinkProvider = Provider<AnalyticsEventSink>(
   (ref) => FirebaseAnalyticsEventSink(),
 );
+
+final creationAnalyticsTrackerProvider = Provider<CreationAnalyticsTracker>(
+  (ref) => CreationAnalyticsTracker(
+    analytics: ref.watch(analyticsEventSinkProvider),
+  ),
+);
+
+final analyticsIdentityCoordinatorProvider =
+    Provider<AnalyticsIdentityCoordinator>(
+      (ref) => AnalyticsIdentityCoordinator(
+        analytics: ref.watch(analyticsEventSinkProvider),
+        setCrashUserId: CrashReportingService.instance.setUserId,
+      ),
+    );
 
 /// Provides the app's shared [SurfacePerformanceTracker].
 ///

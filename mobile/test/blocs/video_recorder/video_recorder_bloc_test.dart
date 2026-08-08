@@ -242,13 +242,16 @@ void main() {
   });
 
   /// Builds a bloc with all dependencies wired to the mocks.
-  VideoRecorderBloc buildBloc() {
+  VideoRecorderBloc buildBloc({
+    RecordingStartedCallback? onRecordingStarted,
+  }) {
     return VideoRecorderBloc(
       readClipManager: () => clipManager,
       readVideoEditor: () => videoEditor,
       readVideoEditorState: VideoEditorProviderState.new,
       readSharedPreferences: () => prefs,
       cameraService: cameraService,
+      onRecordingStarted: onRecordingStarted,
     );
   }
 
@@ -1184,6 +1187,46 @@ void main() {
     });
 
     group('RecordingStartRequested → flags-in-state migration', () {
+      test('reports analytics only after native recording succeeds', () async {
+        final reportedModes = <VideoRecorderMode>[];
+        when(
+          () => cameraService.startRecording(
+            maxDuration: any(named: 'maxDuration'),
+          ),
+        ).thenAnswer((_) async => true);
+        final bloc = buildBloc(onRecordingStarted: reportedModes.add);
+        addTearDown(bloc.close);
+
+        bloc.add(const VideoRecorderRecordingStartRequested());
+        await bloc.stream.firstWhere(
+          (state) =>
+              state.recordingState == VideoRecorderState.recording &&
+              !state.isStartingRecording,
+        );
+
+        expect(reportedModes, [VideoRecorderMode.capture]);
+      });
+
+      test('does not report analytics when native recording fails', () async {
+        final reportedModes = <VideoRecorderMode>[];
+        when(
+          () => cameraService.startRecording(
+            maxDuration: any(named: 'maxDuration'),
+          ),
+        ).thenAnswer((_) async => false);
+        final bloc = buildBloc(onRecordingStarted: reportedModes.add);
+        addTearDown(bloc.close);
+
+        bloc.add(const VideoRecorderRecordingStartRequested());
+        await bloc.stream.firstWhere(
+          (state) =>
+              state.recordingState == VideoRecorderState.idle &&
+              !state.isStartingRecording,
+        );
+
+        expect(reportedModes, isEmpty);
+      });
+
       blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
         'sets isStartingRecording true before the camera call and false '
         'after, with recordingState transitioning to recording',

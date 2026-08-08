@@ -5,6 +5,7 @@
 
 import 'dart:async';
 
+import 'package:analytics/analytics.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -12,10 +13,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
+import 'package:openvine/features/post_publish/post_publish_experiment.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/main.dart' as app;
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/post_publish_providers.dart';
 import 'package:openvine/router/navigator_keys.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
@@ -39,6 +42,41 @@ class _FakeDraft extends Fake implements DivineVideoDraft {
   String get id => _id;
 }
 
+class _EnabledFlags implements PostPublishFlagClient {
+  @override
+  bool get createAgainEnabled => true;
+
+  @override
+  void dispose() {}
+
+  @override
+  Future<void> initialize() async {}
+}
+
+class _NoOpAnalytics implements AnalyticsEventSink {
+  @override
+  Future<void> logEvent({
+    required String name,
+    required Map<String, Object> parameters,
+  }) async {}
+
+  @override
+  Future<void> logScreenView({
+    required String screenName,
+    String? screenClass,
+    Map<String, Object>? parameters,
+  }) async {}
+
+  @override
+  Future<void> setUserId(String? userId) async {}
+
+  @override
+  Future<void> setUserProperty({
+    required String name,
+    required String? value,
+  }) async {}
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -54,9 +92,14 @@ Widget _buildHarness({
   required _MockBackgroundPublishBloc publishBloc,
   required _MockAuthService authService,
   bool wireRootNavigatorKey = true,
+  PostPublishExperiment? experiment,
 }) {
   return ProviderScope(
-    overrides: [authServiceProvider.overrideWithValue(authService)],
+    overrides: [
+      authServiceProvider.overrideWithValue(authService),
+      if (experiment != null)
+        postPublishExperimentProvider.overrideWithValue(experiment),
+    ],
     child: BlocProvider<BackgroundPublishBloc>.value(
       value: publishBloc,
       child: app.UploadFailureListener(
@@ -153,6 +196,38 @@ void main() {
       expect(tester.takeException(), isNull);
       final l10n = lookupAppLocalizations(const Locale('en'));
       expect(find.text(l10n.uploadPublishedCountMessage(2)), findsOneWidget);
+    });
+
+    testWidgets('shows create-again action for the treatment variant', (
+      tester,
+    ) async {
+      stubPublishBloc(const BackgroundPublishState());
+      when(() => authService.isAuthenticated).thenReturn(true);
+      final experiment = PostPublishExperiment(
+        flags: _EnabledFlags(),
+        analytics: _NoOpAnalytics(),
+      );
+      await experiment.screenShown(
+        publishId: 'draft-treatment',
+        destination: 'profile',
+        variant: PostPublishVariant.createAgain,
+      );
+
+      await tester.pumpWidget(
+        _buildHarness(
+          publishBloc: publishBloc,
+          authService: authService,
+          experiment: experiment,
+        ),
+      );
+
+      publishStream.add(_succeededState('draft-treatment'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.uploadPublishedCountMessage(1)), findsOneWidget);
+      expect(find.text(l10n.libraryRecordVideo), findsOneWidget);
     });
 
     testWidgets(

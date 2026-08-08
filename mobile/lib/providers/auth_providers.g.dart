@@ -688,7 +688,7 @@ final class ZendeskIdentitySyncProvider
 }
 
 String _$zendeskIdentitySyncHash() =>
-    r'e49d4f9cedf56ec4131b30a6f1d9d45dada68bed';
+    r'536f40b1c768ff2922aac6b05adac94f81ef8c81';
 
 /// Provider for [VerifierClient] pointed at the current environment's
 /// verifier base URL. Stateless — every call hits the network.

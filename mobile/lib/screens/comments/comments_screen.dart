@@ -1032,7 +1032,11 @@ class _MainCommentInputState extends ConsumerState<MainCommentInput> {
     );
     unawaited(
       context
-          .push(VideoRecorderScreen.path)
+          .push(
+            VideoRecorderScreen.pathForEntryPoint(
+              CreationEntryPoint.videoReply,
+            ),
+          )
           .then((_) => replyContextNotifier.clear()),
     );
   }

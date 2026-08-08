@@ -29,11 +29,14 @@ extension CameraPermissionNavigation on BuildContext {
   /// the back button — keeps the user here so the next camera tap re-prompts.
   ///
   /// Returns `true` if navigation occurred.
-  Future<bool> pushToCameraWithPermission() async {
+  Future<bool> pushToCameraWithPermission({
+    String entryPoint = CreationEntryPoint.cameraFab,
+  }) async {
     final bloc = read<CameraPermissionBloc>();
+    final recorderPath = VideoRecorderScreen.pathForEntryPoint(entryPoint);
 
     if (kIsWeb) {
-      await pushWithVideoPause(VideoRecorderScreen.path);
+      await pushWithVideoPause(recorderPath);
       return true;
     }
 
@@ -56,7 +59,7 @@ extension CameraPermissionNavigation on BuildContext {
     // requiresSettings shows the settings prompt) or when the entry check
     // couldn't settle (`resolved == null`: an errored/stalled pre-nav check) so
     // the gate surfaces its Error + Retry screen instead of dead-waiting here.
-    await pushWithVideoPause(VideoRecorderScreen.path);
+    await pushWithVideoPause(recorderPath);
     return true;
   }
 }

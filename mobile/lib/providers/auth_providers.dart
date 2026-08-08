@@ -13,6 +13,7 @@ import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/models/known_account.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -305,6 +306,7 @@ void zendeskIdentitySync(Ref ref) {
         await _setZendeskIdentity(pubkeyHex, profileRepository, ref);
       }
     } else if (authState == AuthState.unauthenticated) {
+      await ref.read(analyticsIdentityCoordinatorProvider).setUserId(null);
       await ZendeskSupportService.clearUserIdentity();
       Log.info(
         'Zendesk identity cleared on logout',
@@ -323,6 +325,8 @@ Future<void> _setZendeskIdentity(
   ProfileRepository? profileRepository,
   Ref ref,
 ) async {
+  await ref.read(analyticsIdentityCoordinatorProvider).setUserId(pubkeyHex);
+
   try {
     final npub = NostrKeyUtils.encodePubKey(pubkeyHex);
     final profile = await profileRepository?.getCachedProfile(

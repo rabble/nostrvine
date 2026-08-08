@@ -14,6 +14,15 @@ class _RecordingSink implements AnalyticsEventSink {
   final List<({String name, Map<String, Object> parameters})> events = [];
 
   @override
+  Future<void> setUserId(String? userId) async {}
+
+  @override
+  Future<void> setUserProperty({
+    required String name,
+    required String? value,
+  }) async {}
+
+  @override
   Future<void> logEvent({
     required String name,
     required Map<String, Object> parameters,
@@ -121,10 +130,7 @@ void main() {
     test('does not burn cooldown when native review is unavailable', () async {
       platform.available = false;
 
-      final evaluation = cubit.evaluate(
-        inputs: inputs(),
-        isActive: () => true,
-      );
+      final evaluation = cubit.evaluate(inputs: inputs(), isActive: () => true);
       frameScheduler.complete();
       await evaluation;
 
@@ -135,10 +141,7 @@ void main() {
     });
 
     test('does not burn cooldown when the frame wait fails', () async {
-      final evaluation = cubit.evaluate(
-        inputs: inputs(),
-        isActive: () => true,
-      );
+      final evaluation = cubit.evaluate(inputs: inputs(), isActive: () => true);
       frameScheduler.complete(false);
       await evaluation;
 
@@ -200,10 +203,7 @@ void main() {
         expect(prefs.getInt('review_prompt_attempted_at_$pubkey'), isNotNull);
       };
 
-      final evaluation = cubit.evaluate(
-        inputs: inputs(),
-        isActive: () => true,
-      );
+      final evaluation = cubit.evaluate(inputs: inputs(), isActive: () => true);
       frameScheduler.complete();
       await evaluation;
 
@@ -248,10 +248,7 @@ void main() {
     });
 
     test('stops cleanly when closed during frame wait', () async {
-      final evaluation = cubit.evaluate(
-        inputs: inputs(),
-        isActive: () => true,
-      );
+      final evaluation = cubit.evaluate(inputs: inputs(), isActive: () => true);
 
       await cubit.close();
       frameScheduler.complete();

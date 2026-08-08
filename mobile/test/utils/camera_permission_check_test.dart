@@ -90,7 +90,7 @@ void main() {
   void verifyNavigated() {
     verify(
       () => mockGoRouter.push<Object?>(
-        VideoRecorderScreen.path,
+        VideoRecorderScreen.pathForEntryPoint(CreationEntryPoint.cameraFab),
         extra: any(named: 'extra'),
       ),
     ).called(1);
@@ -99,7 +99,7 @@ void main() {
   void verifyNotNavigated() {
     verifyNever(
       () => mockGoRouter.push<Object?>(
-        VideoRecorderScreen.path,
+        VideoRecorderScreen.pathForEntryPoint(CreationEntryPoint.cameraFab),
         extra: any(named: 'extra'),
       ),
     );
