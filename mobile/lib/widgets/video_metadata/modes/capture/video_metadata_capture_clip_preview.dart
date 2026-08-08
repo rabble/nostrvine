@@ -90,27 +90,29 @@ class VideoMetadataCaptureClipPreview extends ConsumerWidget {
                   child: Stack(
                     children: [
                       // Video thumbnail or placeholder
-                      AnimatedSwitcher(
-                        layoutBuilder: (currentChild, previousChildren) =>
-                            Stack(
-                              fit: .expand,
-                              alignment: .center,
-                              children: [...previousChildren, ?currentChild],
-                            ),
-
-                        duration: const Duration(milliseconds: 150),
-                        child: clip.thumbnailPath != null
-                            ? // Video thumbnail image
-                              VideoMetadataCapturePreviewThumbnail(clip: clip)
-                            : // Fallback placeholder
-                              ColoredBox(
-                                color: context.vineColors.onSurfaceMuted,
-                                child: const DivineIcon(
-                                  icon: .playCircle,
-                                  size: 64,
-                                  color: VineTheme.whiteText,
-                                ),
+                      ExcludeSemantics(
+                        child: AnimatedSwitcher(
+                          layoutBuilder: (currentChild, previousChildren) =>
+                              Stack(
+                                fit: .expand,
+                                alignment: .center,
+                                children: [...previousChildren, ?currentChild],
                               ),
+
+                          duration: const Duration(milliseconds: 150),
+                          child: clip.thumbnailPath != null
+                              ? // Video thumbnail image
+                                VideoMetadataCapturePreviewThumbnail(clip: clip)
+                              : // Fallback placeholder
+                                ColoredBox(
+                                  color: context.vineColors.onSurfaceMuted,
+                                  child: const DivineIcon(
+                                    icon: .playCircle,
+                                    size: 64,
+                                    color: VineTheme.whiteText,
+                                  ),
+                                ),
+                        ),
                       ),
                       // Processing overlay with edit-cover icon
                       VideoEditorProcessingOverlay(

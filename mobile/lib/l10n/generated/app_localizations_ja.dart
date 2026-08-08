@@ -9178,7 +9178,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorLevelSemanticLabel => 'レベル';
 
   @override
-  String get videoMetadataBackSemanticLabel => '戻る';
+  String get videoMetadataClosePostDetailsSemanticLabel => '投稿の詳細を閉じる';
 
   @override
   String get videoMetadataDismissHelpDialogSemanticLabel => 'ヘルプダイアログを閉じる';
@@ -9995,10 +9995,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoMetadataEditCoverTitle => 'カバーを編集';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => 'カバーエディターを閉じる';
+  String get videoMetadataEditCoverCloseSemanticLabel => 'カバーの変更を破棄';
 
   @override
-  String get videoMetadataEditCoverConfirmSemanticLabel => 'カバー選択を確認';
+  String get videoMetadataEditCoverConfirmSemanticLabel => '選択したフレームを動画のカバーに使用';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
@@ -10630,4 +10630,27 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+
+  @override
+  String get videoMetadataTagsPickerCancelSemanticLabel => 'タグの選択をキャンセル';
+
+  @override
+  String get videoMetadataTagsPickerConfirmSemanticLabel => '選択したタグを適用';
+
+  @override
+  String get userPickerCancelSemanticLabel => 'ユーザー選択をキャンセル';
+
+  @override
+  String get userPickerConfirmSemanticLabel => '選択したユーザーを確定';
+
+  @override
+  String get userPickerClearSelectionSemanticLabel => 'ユーザー選択をクリア';
+
+  @override
+  String get videoMetadataContentWarningsPickerCancelSemanticLabel =>
+      'コンテンツ警告の選択をキャンセル';
+
+  @override
+  String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
+      '選択したコンテンツ警告を適用';
 }

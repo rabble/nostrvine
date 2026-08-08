@@ -3230,7 +3230,7 @@
     "videoEditorCloseSemanticLabel": "Cerrar",
     "videoEditorDoneSemanticLabel": "Listo",
     "videoEditorLevelSemanticLabel": "Nivel",
-    "videoMetadataBackSemanticLabel": "Atrás",
+    "videoMetadataClosePostDetailsSemanticLabel": "Cerrar detalles de la publicación",
     "videoMetadataDismissHelpDialogSemanticLabel": "Cerrar diálogo de ayuda",
     "videoMetadataGotItButton": "¡Entendido!",
     "videoMetadataLimitReachedWarning": "Se alcanzó el límite de 64 KB. Elimina parte del contenido para continuar.",
@@ -4036,8 +4036,8 @@
     "bugReportRemoveImage": "Remove image",
     "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
     "videoMetadataEditCoverTitle": "Editar portada",
-    "videoMetadataEditCoverCloseSemanticLabel": "Cerrar editor de portada",
-    "videoMetadataEditCoverConfirmSemanticLabel": "Confirmar selección de portada",
+    "videoMetadataEditCoverCloseSemanticLabel": "Descartar cambios de portada",
+    "videoMetadataEditCoverConfirmSemanticLabel": "Usar el fotograma seleccionado como portada del vídeo",
     "videoMetadataEditCoverStripSemanticLabel": "Desliza el video para seleccionar el fotograma de portada",
     "userPickerRemoveSelectionSemantics": "Eliminar a {name}",
     "@userPickerRemoveSelectionSemantics": {
@@ -4932,5 +4932,12 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "Quitar relay"
+  "relaySettingsRemoveRelayTooltip": "Quitar relay",
+  "videoMetadataTagsPickerCancelSemanticLabel": "Cancelar selección de etiquetas",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "Aplicar etiquetas seleccionadas",
+  "userPickerCancelSemanticLabel": "Cancelar selección de usuarios",
+  "userPickerConfirmSemanticLabel": "Confirmar usuarios seleccionados",
+  "userPickerClearSelectionSemanticLabel": "Borrar selección de usuarios",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "Cancelar selección de advertencias de contenido",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Aplicar advertencias de contenido seleccionadas"
 }

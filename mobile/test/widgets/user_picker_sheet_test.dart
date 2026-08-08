@@ -116,6 +116,86 @@ void main() {
 
   group(UserPickerSheet, () {
     group('renders', () {
+      testWidgets('header describes cancel and confirm actions', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              profileRepositoryProvider.overrideWithValue(
+                _createMockProfileRepository(),
+              ),
+              followRepositoryProvider.overrideWithValue(
+                _createMockFollowRepository(),
+              ),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: UserPickerSheet(
+                  title: 'Title',
+                  filterMode: UserPickerFilterMode.allUsers,
+                  maxCount: 2,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          find.bySemanticsLabel(l10n.userPickerCancelSemanticLabel),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsLabel(l10n.userPickerConfirmSemanticLabel),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('header describes clearing an existing selection', (
+        tester,
+      ) async {
+        final selectedProfile = UserProfile(
+          pubkey: 'selected-pubkey',
+          name: 'Selected User',
+          rawData: const {'name': 'Selected User'},
+          createdAt: DateTime(2026),
+          eventId: 'selected-event',
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              profileRepositoryProvider.overrideWithValue(
+                _createMockProfileRepository(),
+              ),
+              followRepositoryProvider.overrideWithValue(
+                _createMockFollowRepository(),
+              ),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: UserPickerSheet(
+                  title: 'Title',
+                  filterMode: UserPickerFilterMode.allUsers,
+                  initialSelectedProfiles: [selectedProfile],
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          find.bySemanticsLabel(l10n.userPickerClearSelectionSemanticLabel),
+          findsOneWidget,
+        );
+      });
+
       testWidgets('search text field', (tester) async {
         await tester.pumpWidget(
           ProviderScope(

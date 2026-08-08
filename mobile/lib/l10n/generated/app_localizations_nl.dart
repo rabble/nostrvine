@@ -9638,7 +9638,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoEditorLevelSemanticLabel => 'Niveau';
 
   @override
-  String get videoMetadataBackSemanticLabel => 'Terug';
+  String get videoMetadataClosePostDetailsSemanticLabel =>
+      'Berichtdetails sluiten';
 
   @override
   String get videoMetadataDismissHelpDialogSemanticLabel =>
@@ -10474,11 +10475,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoMetadataEditCoverTitle => 'Omslag bewerken';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => 'Omslageditor sluiten';
+  String get videoMetadataEditCoverCloseSemanticLabel =>
+      'Wijzigingen aan omslag negeren';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Omslagselectie bevestigen';
+      'Geselecteerd frame als video-omslag gebruiken';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
@@ -11138,4 +11140,31 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+
+  @override
+  String get videoMetadataTagsPickerCancelSemanticLabel =>
+      'Tagselectie annuleren';
+
+  @override
+  String get videoMetadataTagsPickerConfirmSemanticLabel =>
+      'Geselecteerde tags toepassen';
+
+  @override
+  String get userPickerCancelSemanticLabel => 'Gebruikersselectie annuleren';
+
+  @override
+  String get userPickerConfirmSemanticLabel =>
+      'Geselecteerde gebruikers bevestigen';
+
+  @override
+  String get userPickerClearSelectionSemanticLabel =>
+      'Gebruikersselectie wissen';
+
+  @override
+  String get videoMetadataContentWarningsPickerCancelSemanticLabel =>
+      'Selectie van inhoudswaarschuwingen annuleren';
+
+  @override
+  String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
+      'Geselecteerde inhoudswaarschuwingen toepassen';
 }

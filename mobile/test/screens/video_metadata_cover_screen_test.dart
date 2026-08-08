@@ -353,9 +353,16 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
 
       final l10n = lookupAppLocalizations(const Locale('en'));
+      final closeFinder = find.bySemanticsLabel(
+        l10n.videoMetadataEditCoverCloseSemanticLabel,
+      );
+      expect(closeFinder, findsOneWidget);
       expect(
-        find.bySemanticsLabel(l10n.videoMetadataEditCoverCloseSemanticLabel),
-        findsOneWidget,
+        tester
+            .getSemantics(closeFinder)
+            .getSemanticsData()
+            .hasAction(SemanticsAction.tap),
+        isTrue,
       );
     });
 
@@ -369,9 +376,16 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
 
       final l10n = lookupAppLocalizations(const Locale('en'));
+      final confirmFinder = find.bySemanticsLabel(
+        l10n.videoMetadataEditCoverConfirmSemanticLabel,
+      );
+      expect(confirmFinder, findsOneWidget);
       expect(
-        find.bySemanticsLabel(l10n.videoMetadataEditCoverConfirmSemanticLabel),
-        findsOneWidget,
+        tester
+            .getSemantics(confirmFinder)
+            .getSemanticsData()
+            .hasAction(SemanticsAction.tap),
+        isTrue,
       );
     });
 
