@@ -43,4 +43,16 @@ abstract class RepostsRepositoryReportableSites {
   /// `toggleRepost`: the authoritative already-reposted read threw, so the
   /// toggle falls back to the in-memory cache to decide its direction.
   static const String toggleRepostReadState = 'toggleRepost.readState';
+
+  /// `syncUserReposts`: the warm read of persisted records threw, so the
+  /// sync runs on relay data alone.
+  static const String syncUserRepostsLoadRecords =
+      'syncUserReposts.loadRecords';
+
+  /// `syncUserReposts`: persisting the freshly-synced relay records threw.
+  static const String syncUserRepostsSaveBatch = 'syncUserReposts.saveBatch';
+
+  /// `initialize`: the startup read of persisted records threw, so the
+  /// session continues on an in-memory-only cache.
+  static const String initializeLoadRecords = 'initialize.loadRecords';
 }

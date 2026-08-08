@@ -41,4 +41,22 @@ abstract class LikesRepositoryReportableSites {
   /// `toggleLike`: the authoritative already-liked read threw, so the toggle
   /// falls back to the in-memory cache to decide its direction.
   static const String toggleLikeReadState = 'toggleLike.readState';
+
+  /// `syncUserReactions`: the warm read of persisted records threw, so the
+  /// sync runs on relay data alone.
+  static const String syncUserReactionsLoadRecords =
+      'syncUserReactions.loadRecords';
+
+  /// `syncUserReactions`: dropping a record whose reaction was deleted on
+  /// the wire threw, so a stale row survives locally.
+  static const String syncUserReactionsDeleteRecord =
+      'syncUserReactions.deleteRecord';
+
+  /// `syncUserReactions`: persisting the freshly-synced relay records threw.
+  static const String syncUserReactionsSaveBatch =
+      'syncUserReactions.saveBatch';
+
+  /// `initialize`: the startup read of persisted records threw, so the
+  /// session continues on an in-memory-only cache.
+  static const String initializeLoadRecords = 'initialize.loadRecords';
 }

@@ -475,6 +475,95 @@ void main() {
           ).called(1);
         },
       );
+
+      test('syncs from relays when the persisted read fails', () async {
+        // The relay half is the authoritative one. A cache read that throws
+        // used to escape syncUserReactions before the fetch below ever ran,
+        // so the profile Likes tab errored while relays were reachable.
+        const targetId = 'sync_target_1234567890abcdef';
+        const reactionId = 'sync_reaction_1234567890abcdef';
+        when(
+          () => mockLocalStorage.getAllLikeRecords(),
+        ).thenThrow(storageFailure);
+        mockQueryEventsSequence([
+          [createMockReaction(id: reactionId, targetEventId: targetId)],
+          [],
+        ]);
+
+        repository = createRepository();
+        final result = await repository.syncUserReactions();
+
+        expect(result.orderedEventIds, contains(targetId));
+      });
+
+      test('completes the sync when the batch save fails', () async {
+        const targetId = 'batch_target_1234567890abcdef';
+        const reactionId = 'batch_reaction_1234567890abcdef';
+        when(
+          () => mockLocalStorage.saveLikeRecordsBatch(any()),
+        ).thenThrow(storageFailure);
+        mockQueryEventsSequence([
+          [createMockReaction(id: reactionId, targetEventId: targetId)],
+          [],
+        ]);
+
+        repository = createRepository();
+        final result = await repository.syncUserReactions();
+
+        expect(result.orderedEventIds, contains(targetId));
+      });
+
+      test('completes the sync when the deleted-record purge fails', () async {
+        const targetId = 'purge_target_1234567890abcdef';
+        const reactionId = 'purge_reaction_1234567890abcdef';
+        when(() => mockLocalStorage.getAllLikeRecords()).thenAnswer(
+          (_) async => [
+            createLikeRecord(
+              targetEventId: targetId,
+              reactionEventId: reactionId,
+            ),
+          ],
+        );
+        when(
+          () => mockLocalStorage.deleteLikeRecord(any()),
+        ).thenThrow(storageFailure);
+        mockQueryEventsSequence([
+          [createMockReaction(id: reactionId, targetEventId: targetId)],
+          [
+            createMockDeletion([reactionId]),
+          ],
+        ]);
+
+        repository = createRepository();
+        final result = await repository.syncUserReactions();
+
+        expect(result.orderedEventIds, isNot(contains(targetId)));
+      });
+
+      test('still subscribes when the startup read fails', () async {
+        // initialize() reads storage before _subscribeToReactions, so a
+        // throw there costs the session its cross-device sync too.
+        when(
+          () => mockLocalStorage.getAllLikeRecords(),
+        ).thenThrow(storageFailure);
+        when(() => mockNostrClient.hasKeys).thenReturn(true);
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => const Stream.empty());
+
+        repository = createRepository();
+        await repository.initialize();
+
+        verify(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).called(1);
+      });
     });
 
     group('likeEvent', () {

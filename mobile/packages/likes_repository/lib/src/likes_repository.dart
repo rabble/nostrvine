@@ -1502,11 +1502,20 @@ class LikesRepository {
   ///
   /// Throws `SyncFailedException` if syncing fails.
   Future<LikesSyncResult> syncUserReactions() async {
-    // First, load from local storage (fast)
-    if (_localStorage != null) {
-      final records = await _localStorage.getAllLikeRecords();
-      records.forEach(_indexLikeRecord);
-      _emitLikedIds();
+    // First, load from local storage (fast). Best-effort and deliberately
+    // outside the relay try/catch below: an unreadable cache must not skip
+    // the authoritative relay fetch, which is the whole point of a sync.
+    final localStorage = _localStorage;
+    if (localStorage != null) {
+      final records = await _bestEffortLocalStorage(
+        localStorage.getAllLikeRecords,
+        description: 'loading persisted reactions for sync',
+        site: LikesRepositoryReportableSites.syncUserReactionsLoadRecords,
+      );
+      if (records != null) {
+        records.forEach(_indexLikeRecord);
+        _emitLikedIds();
+      }
     }
 
     try {
@@ -1632,7 +1641,11 @@ class LikesRepository {
       // Remove deleted likes from cache and storage
       for (final targetId in deletedTargetIds) {
         _deindexLikeRecord(targetId);
-        await _localStorage?.deleteLikeRecord(targetId);
+        await _bestEffortLocalStorage(
+          () async => localStorage?.deleteLikeRecord(targetId),
+          description: 'dropping a deleted reaction',
+          site: LikesRepositoryReportableSites.syncUserReactionsDeleteRecord,
+        );
       }
 
       // Remove deleted downvotes from in-memory cache (no local storage in v1)
@@ -1642,8 +1655,12 @@ class LikesRepository {
       }
 
       // Batch save new records to storage
-      if (newRecords.isNotEmpty && _localStorage != null) {
-        await _localStorage.saveLikeRecordsBatch(newRecords);
+      if (newRecords.isNotEmpty && localStorage != null) {
+        await _bestEffortLocalStorage(
+          () => localStorage.saveLikeRecordsBatch(newRecords),
+          description: 'persisting the synced reactions',
+          site: LikesRepositoryReportableSites.syncUserReactionsSaveBatch,
+        );
       }
 
       _emitLikedIds();
@@ -1929,15 +1946,24 @@ class LikesRepository {
   Future<void> initialize() async {
     if (_isInitialized) return;
 
-    // Load from local storage first for immediate UI display
+    // Load from local storage first for immediate UI display. Best-effort:
+    // throwing here would skip _subscribeToReactions below, so an unreadable
+    // cache would also cost the session its cross-device sync.
     var hasCoordinatelessRecords = false;
-    if (_localStorage != null) {
-      final records = await _localStorage.getAllLikeRecords();
-      records.forEach(_indexLikeRecord);
-      hasCoordinatelessRecords = records.any(
-        (r) => r.addressableId == null || r.addressableId!.isEmpty,
+    final localStorage = _localStorage;
+    if (localStorage != null) {
+      final records = await _bestEffortLocalStorage(
+        localStorage.getAllLikeRecords,
+        description: 'loading persisted reactions at startup',
+        site: LikesRepositoryReportableSites.initializeLoadRecords,
       );
-      _emitLikedIds();
+      if (records != null) {
+        records.forEach(_indexLikeRecord);
+        hasCoordinatelessRecords = records.any(
+          (r) => r.addressableId == null || r.addressableId!.isEmpty,
+        );
+        _emitLikedIds();
+      }
     }
 
     final pubkey = await _currentUserPubkey();

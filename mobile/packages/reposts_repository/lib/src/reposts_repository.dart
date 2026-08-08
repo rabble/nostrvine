@@ -678,13 +678,22 @@ class RepostsRepository {
   ///
   /// Throws `SyncFailedException` if syncing fails.
   Future<RepostsSyncResult> syncUserReposts() async {
-    // First, load from local storage (fast)
-    if (_localStorage != null) {
-      final records = await _localStorage.getAllRepostRecords();
-      for (final record in records) {
-        _repostRecords[record.addressableId] = record;
+    // First, load from local storage (fast). Best-effort and deliberately
+    // outside the relay try/catch below: an unreadable cache must not skip
+    // the authoritative relay fetch, which is the whole point of a sync.
+    final localStorage = _localStorage;
+    if (localStorage != null) {
+      final records = await _bestEffortLocalStorage(
+        localStorage.getAllRepostRecords,
+        description: 'loading persisted reposts for sync',
+        site: RepostsRepositoryReportableSites.syncUserRepostsLoadRecords,
+      );
+      if (records != null) {
+        for (final record in records) {
+          _repostRecords[record.addressableId] = record;
+        }
+        _emitRepostedIds();
       }
-      _emitRepostedIds();
     }
 
     try {
@@ -735,8 +744,12 @@ class RepostsRepository {
       }
 
       // Batch save new records to storage
-      if (newRecords.isNotEmpty && _localStorage != null) {
-        await _localStorage.saveRepostRecordsBatch(newRecords);
+      if (newRecords.isNotEmpty && localStorage != null) {
+        await _bestEffortLocalStorage(
+          () => localStorage.saveRepostRecordsBatch(newRecords),
+          description: 'persisting the synced reposts',
+          site: RepostsRepositoryReportableSites.syncUserRepostsSaveBatch,
+        );
       }
 
       _emitRepostedIds();
@@ -981,13 +994,22 @@ class RepostsRepository {
   Future<void> initialize() async {
     if (_isInitialized) return;
 
-    // Load from local storage first for immediate UI display
-    if (_localStorage != null) {
-      final records = await _localStorage.getAllRepostRecords();
-      for (final record in records) {
-        _repostRecords[record.addressableId] = record;
+    // Load from local storage first for immediate UI display. Best-effort:
+    // throwing here would skip _subscribeToReposts below, so an unreadable
+    // cache would also cost the session its cross-device sync.
+    final localStorage = _localStorage;
+    if (localStorage != null) {
+      final records = await _bestEffortLocalStorage(
+        localStorage.getAllRepostRecords,
+        description: 'loading persisted reposts at startup',
+        site: RepostsRepositoryReportableSites.initializeLoadRecords,
+      );
+      if (records != null) {
+        for (final record in records) {
+          _repostRecords[record.addressableId] = record;
+        }
+        _emitRepostedIds();
       }
-      _emitRepostedIds();
     }
 
     final pubkey = await _currentUserPubkey();

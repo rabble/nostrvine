@@ -539,6 +539,94 @@ void main() {
         expect(isNowReposted, isFalse);
         verify(() => mockNostrClient.deleteEvent(testRepostEventId)).called(1);
       });
+
+      test('syncs from relays when the persisted read fails', () async {
+        // The relay half is the authoritative one. A cache read that throws
+        // used to escape syncUserReposts before the fetch below ever ran,
+        // so the profile Reposts tab errored while relays were reachable.
+        when(
+          () => mockLocalStorage.getAllRepostRecords(),
+        ).thenThrow(storageFailure);
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            createMockEvent(
+              id: testRepostEventId,
+              kind: EventKind.genericRepost,
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              tags: [
+                ['a', testAddressableId],
+                ['p', testAuthorPubkey],
+              ],
+            ),
+          ],
+        );
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final result = await repository.syncUserReposts();
+
+        expect(result.orderedAddressableIds, equals([testAddressableId]));
+      });
+
+      test('completes the sync when the batch save fails', () async {
+        when(
+          () => mockLocalStorage.saveRepostRecordsBatch(any()),
+        ).thenThrow(storageFailure);
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            createMockEvent(
+              id: testRepostEventId,
+              kind: EventKind.genericRepost,
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              tags: [
+                ['a', testAddressableId],
+                ['p', testAuthorPubkey],
+              ],
+            ),
+          ],
+        );
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final result = await repository.syncUserReposts();
+
+        expect(result.orderedAddressableIds, equals([testAddressableId]));
+      });
+
+      test('still subscribes when the startup read fails', () async {
+        // initialize() reads storage before _subscribeToReposts, so a throw
+        // there costs the session its cross-device sync too.
+        when(
+          () => mockLocalStorage.getAllRepostRecords(),
+        ).thenThrow(storageFailure);
+        when(() => mockNostrClient.hasKeys).thenReturn(true);
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => const Stream.empty());
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        await repository.initialize();
+
+        verify(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).called(1);
+      });
     });
 
     group('repostVideo', () {
