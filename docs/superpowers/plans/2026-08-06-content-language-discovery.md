@@ -66,13 +66,13 @@ Two bugs, same file family, same PR because they share the `FeedViewerPreference
 - Modify: `mobile/packages/videos_repository/lib/src/videos_repository.dart:146-161`
 - Test: `mobile/test/services/language_preference_service_test.dart`
 - Test: `mobile/test/services/video_publish/video_publish_service_test.dart`
-- Test: `mobile/packages/videos_repository/test/src/popular_videos_page_test.dart`
+- Test: `mobile/packages/videos_repository/test/src/videos_repository_test.dart`
 
 **Interfaces:**
 - Produces: `LanguagePreferenceService.declaredContentLanguage` → `String?`, returning the user's explicit choice or `null` when unset. `contentLanguage` → `String` keeps its current OS-locale-fallback behaviour and stays the value used for *viewer-side* hints (asking for content in a language is fine to infer from the phone; *claiming* content is in a language is not).
 - Produces: `_popularPreferenceCacheSuffix` no longer accepts `viewerCountry`; signature becomes `_popularPreferenceCacheSuffix({List<String> preferredLanguages = const []})`.
 
-- [ ] **Step 1: Write the failing test for the declared-vs-inferred split**
+- [x] **Step 1: Write the failing test for the declared-vs-inferred split**
 
 In `mobile/test/services/language_preference_service_test.dart`, inside the existing top-level `group`:
 
@@ -109,7 +109,7 @@ group('declaredContentLanguage', () {
 });
 ```
 
-- [ ] **Step 2: Run it and confirm it fails**
+- [x] **Step 2: Run it and confirm it fails**
 
 ```bash
 cd mobile && flutter test test/services/language_preference_service_test.dart
@@ -117,7 +117,7 @@ cd mobile && flutter test test/services/language_preference_service_test.dart
 
 Expected: FAIL, `The getter 'declaredContentLanguage' isn't defined for the class 'LanguagePreferenceService'`.
 
-- [ ] **Step 3: Add the getter**
+- [x] **Step 3: Add the getter**
 
 In `mobile/lib/services/language_preference_service.dart`, directly above the existing `contentLanguage` getter:
 
@@ -130,7 +130,7 @@ In `mobile/lib/services/language_preference_service.dart`, directly above the ex
   String? get declaredContentLanguage => _customLanguage;
 ```
 
-- [ ] **Step 4: Run it and confirm it passes**
+- [x] **Step 4: Run it and confirm it passes**
 
 ```bash
 cd mobile && flutter test test/services/language_preference_service_test.dart
@@ -138,7 +138,7 @@ cd mobile && flutter test test/services/language_preference_service_test.dart
 
 Expected: PASS.
 
-- [ ] **Step 5: Write the failing test for publish-time behaviour**
+- [x] **Step 5: Write the failing test for publish-time behaviour**
 
 In `mobile/test/services/video_publish/video_publish_service_test.dart`, add to the group that already exercises publish argument forwarding:
 
@@ -172,9 +172,11 @@ group('content language self-labelling', () {
     ).publishVideo(draft: _createTestDraft());
 
     final captured = verify(
-      () => mockVideoEventPublisher.publishVideoEvent(
-        upload: any(named: 'upload'),
+      () => _verifyPublishVideoEvent(
+        mockVideoEventPublisher,
         language: captureAny(named: 'language'),
+        textTrackRefs: any(named: 'textTrackRefs'),
+        textTrackLang: any(named: 'textTrackLang'),
       ),
     ).captured;
     expect(captured.single, isNull);
@@ -191,9 +193,11 @@ group('content language self-labelling', () {
     ).publishVideo(draft: _createTestDraft());
 
     final captured = verify(
-      () => mockVideoEventPublisher.publishVideoEvent(
-        upload: any(named: 'upload'),
+      () => _verifyPublishVideoEvent(
+        mockVideoEventPublisher,
         language: captureAny(named: 'language'),
+        textTrackRefs: any(named: 'textTrackRefs'),
+        textTrackLang: any(named: 'textTrackLang'),
       ),
     ).captured;
     expect(captured.single, equals('pt'));
@@ -201,11 +205,11 @@ group('content language self-labelling', () {
 });
 ```
 
-**`publishVideoEvent` takes ~20 named parameters.** `verify` requires *every* one to be matched by an `any(named:)` / `captureAny(named:)` matcher — a partial argument list will not compile. Copy the full parameter list from the existing `verify(() => mockVideoEventPublisher.publishVideoEvent(...))` block at `:390-400` and change only the `language:` entry to `captureAny(named: 'language')`. The two-parameter form above is illustrative shorthand, not the literal call.
+**`publishVideoEvent` takes ~20 named parameters.** `verify` requires *every* one to be matched by an `any(named:)` / `captureAny(named:)` matcher, so route these tests through the existing `_verifyPublishVideoEvent` helper. Extend that helper with an optional `language` matcher and keep the other existing capture parameters unchanged.
 
 Set up the mocks these tests need the same way the neighbouring tests do (`mockAuthService.isAuthenticated` → true, etc.) — copy the arrangement from a passing publish test rather than guessing.
 
-- [ ] **Step 6: Run it and confirm the first test fails**
+- [x] **Step 6: Run it and confirm the first test fails**
 
 ```bash
 cd mobile && flutter test test/services/video_publish/video_publish_service_test.dart
@@ -213,7 +217,7 @@ cd mobile && flutter test test/services/video_publish/video_publish_service_test
 
 Expected: FAIL on "omits the language tag" — actual is the OS locale (`'en'` in CI), expected `null`.
 
-- [ ] **Step 7: Switch the publish call site to the declared value**
+- [x] **Step 7: Switch the publish call site to the declared value**
 
 `mobile/lib/services/video_publish/video_publish_service.dart:390`:
 
@@ -223,7 +227,7 @@ Expected: FAIL on "omits the language tag" — actual is the OS locale (`'en'` i
 
 `video_event_publisher.dart:1344` already guards `if (language != null && language.isNotEmpty)`, so a null value correctly emits no `L`/`l` tag pair. No change needed there.
 
-- [ ] **Step 8: Run both suites and confirm they pass**
+- [x] **Step 8: Run both suites and confirm they pass**
 
 ```bash
 cd mobile && flutter test test/services/video_publish/ test/services/language_preference_service_test.dart
@@ -231,36 +235,74 @@ cd mobile && flutter test test/services/video_publish/ test/services/language_pr
 
 Expected: PASS.
 
-- [ ] **Step 9: Write the failing test for the cache-key bug**
+- [x] **Step 9: Write the failing test for the cache-key bug**
 
-In `mobile/packages/videos_repository/test/src/popular_videos_page_test.dart`:
+In `mobile/packages/videos_repository/test/src/videos_repository_test.dart`, inside the existing `getPopularVideosPage` group:
 
 ```dart
-test('popular cache key is stable regardless of the geo country hint', () {
+test('reuses the cached page when only the country hint changes', () async {
   // The country hint comes from a 250ms-timeout geo lookup that yields
-  // null on a slow network. If it reached the key, the key would flip
-  // between two values and miss the cache exactly when the network is
-  // worst — so the suffix must carry no country segment at all.
-  expect(
-    popularPreferenceCacheSuffixForTest(preferredLanguages: const ['pt']),
-    equals(':lang=pt'),
+  // null on a slow network. If it forked the cache key, this second call
+  // would miss the cache and hit the API again.
+  when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+  when(
+    () => mockFunnelcakeClient.getV2PopularVideos(
+      variant: any(named: 'variant'),
+      limit: any(named: 'limit'),
+      before: any(named: 'before'),
+      preferredLanguages: any(named: 'preferredLanguages'),
+      viewerCountry: any(named: 'viewerCountry'),
+    ),
+  ).thenAnswer((_) async => [
+        _createVideoStats(
+          id: 'native-1',
+          pubkey: 'pubkey-1',
+          dTag: 'native-dtag-1',
+          videoUrl: 'https://example.com/native-1.mp4',
+        ),
+      ]);
+
+  final feedCache = InMemoryFeedCache();
+  final repositoryWithCache = VideosRepository(
+    nostrClient: mockNostrClient,
+    funnelcakeApiClient: mockFunnelcakeClient,
+    inMemoryFeedCache: feedCache,
   );
-  expect(
-    popularPreferenceCacheSuffixForTest(preferredLanguages: const []),
-    isEmpty,
+
+  final first = await repositoryWithCache.getPopularVideosPage(
+    variant: PopularVideosVariant.native,
+    preferredLanguages: const ['pt'],
   );
+  final second = await repositoryWithCache.getPopularVideosPage(
+    variant: PopularVideosVariant.native,
+    preferredLanguages: const ['pt'],
+    viewerCountry: 'BR',
+  );
+
+  expect(
+    second.videos.map((video) => video.id),
+    equals(first.videos.map((video) => video.id)),
+  );
+  verify(
+    () => mockFunnelcakeClient.getV2PopularVideosPage(
+      variant: PopularVideosVariant.native,
+      limit: 25,
+      preferredLanguages: const ['pt'],
+      viewerCountry: any(named: 'viewerCountry'),
+    ),
+  ).called(1);
 });
 ```
 
-- [ ] **Step 10: Run it and confirm it fails**
+- [x] **Step 10: Run it and confirm it fails**
 
 ```bash
-cd mobile/packages/videos_repository && flutter test test/src/popular_videos_page_test.dart
+cd mobile/packages/videos_repository && flutter test test/src/videos_repository_test.dart
 ```
 
-Expected: FAIL, `':lang=pt:country=BR' is not equal to ':lang=pt:country='`.
+Expected: FAIL because the second call hits `getV2PopularVideosPage` again when `viewerCountry` is still part of the in-memory cache key.
 
-- [ ] **Step 11: Drop the country from the cache key**
+- [x] **Step 11: Drop the country from the cache key**
 
 In `mobile/packages/videos_repository/lib/src/videos_repository.dart`, replace lines 146-161 with:
 
@@ -283,18 +325,9 @@ String _popularPreferenceCacheSuffix({
 }
 ```
 
-Then update the three call sites (lines ~950, ~1112, ~2613) to stop passing `viewerCountry:`. Leave the `viewerCountry` *parameter* on the public repository and API-client methods — it still goes out on the wire and Phase 5 will start honoring it server-side. Export a test seam next to the function:
+Then update the three call sites (lines ~950, ~1112, ~2613) to stop passing `viewerCountry:`. Leave the `viewerCountry` *parameter* on the public repository and API-client methods — it still goes out on the wire and Phase 5 will start honoring it server-side. Do not add a visible test seam for the private suffix helper; the behavior test above proves the call-site cache key stays stable when only the country hint changes.
 
-```dart
-@visibleForTesting
-String popularPreferenceCacheSuffixForTest({
-  List<String> preferredLanguages = const [],
-}) => _popularPreferenceCacheSuffix(preferredLanguages: preferredLanguages);
-```
-
-The seam takes no `viewerCountry` — a parameter the function accepted and ignored would be dead API surface. The test asserts the suffix's exact shape instead, which fails just as loudly if a country segment is ever reintroduced.
-
-- [ ] **Step 12: Run the package suite with coverage**
+- [x] **Step 12: Run the package suite with coverage**
 
 ```bash
 cd mobile/packages/videos_repository && flutter test --coverage
@@ -302,7 +335,7 @@ cd mobile/packages/videos_repository && flutter test --coverage
 
 Expected: PASS, coverage still satisfies the package's `min_coverage`.
 
-- [ ] **Step 13: Analyze and format**
+- [x] **Step 13: Analyze and format**
 
 ```bash
 cd mobile && dart format lib/services/language_preference_service.dart lib/services/video_publish/video_publish_service.dart packages/videos_repository/lib/src/videos_repository.dart && flutter analyze lib test integration_test
@@ -310,7 +343,7 @@ cd mobile && dart format lib/services/language_preference_service.dart lib/servi
 
 Expected: no issues.
 
-- [ ] **Step 14: Commit and open the PR**
+- [x] **Step 14: Commit and open the PR**
 
 ```bash
 git add mobile/lib/services/language_preference_service.dart \
@@ -318,7 +351,7 @@ git add mobile/lib/services/language_preference_service.dart \
         mobile/packages/videos_repository/lib/src/videos_repository.dart \
         mobile/test/services/language_preference_service_test.dart \
         mobile/test/services/video_publish/video_publish_service_test.dart \
-        mobile/packages/videos_repository/test/src/popular_videos_page_test.dart
+        mobile/packages/videos_repository/test/src/videos_repository_test.dart
 git commit -m "fix(publish): only self-label language when the user declared one
 
 The NIP-32 l/ISO-639-1 tag was being stamped from the OS locale whenever

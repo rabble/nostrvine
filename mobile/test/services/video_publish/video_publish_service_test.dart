@@ -2141,53 +2141,31 @@ void main() {
             ({required double progress, required String draftId}) {},
       );
 
-      test(
-        'omits the language tag when the user never declared one',
-        () async {
-          _setupSuccessfulPublish(
-            mockAuthService: mockAuthService,
-            mockUploadManager: mockUploadManager,
-            mockDraftService: mockDraftService,
-            mockVideoEventPublisher: mockVideoEventPublisher,
-          );
-          SharedPreferences.setMockInitialValues(<String, Object>{});
-          final languageService = LanguagePreferenceService();
-          await languageService.initialize();
+      test('omits the language tag when the user never declared one', () async {
+        _setupSuccessfulPublish(
+          mockAuthService: mockAuthService,
+          mockUploadManager: mockUploadManager,
+          mockDraftService: mockDraftService,
+          mockVideoEventPublisher: mockVideoEventPublisher,
+        );
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final languageService = LanguagePreferenceService();
+        await languageService.initialize();
 
-          await buildServiceWithLanguage(
-            languageService,
-          ).publishVideo(draft: _createTestDraft());
+        await buildServiceWithLanguage(
+          languageService,
+        ).publishVideo(draft: _createTestDraft());
 
-          final captured = verify(
-            () => mockVideoEventPublisher.publishVideoEvent(
-              upload: any(named: 'upload'),
-              title: any(named: 'title'),
-              description: any(named: 'description'),
-              hashtags: any(named: 'hashtags'),
-              expirationTimestamp: any(named: 'expirationTimestamp'),
-              allowAudioReuse: any(named: 'allowAudioReuse'),
-              collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
-              mentionedPubkeys: any(named: 'mentionedPubkeys'),
-              inspiredByAddressableId: any(named: 'inspiredByAddressableId'),
-              inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
-              inspiredByNpub: any(named: 'inspiredByNpub'),
-              selectedAudio: any(named: 'selectedAudio'),
-              audioShareAttribution: any(named: 'audioShareAttribution'),
-              selectedAudioEventId: any(named: 'selectedAudioEventId'),
-              selectedAudioRelay: any(named: 'selectedAudioRelay'),
-              language: captureAny(named: 'language'),
-              contentWarning: any(named: 'contentWarning'),
-              thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
-              replyContext: any(named: 'replyContext'),
-              addReplyToFeed: any(named: 'addReplyToFeed'),
-              textTrackRefs: any(named: 'textTrackRefs'),
-              textTrackLang: any(named: 'textTrackLang'),
-              onEventSigned: any(named: 'onEventSigned'),
-            ),
-          ).captured;
-          expect(captured.single, isNull);
-        },
-      );
+        final captured = verify(
+          () => _verifyPublishVideoEvent(
+            mockVideoEventPublisher,
+            language: captureAny(named: 'language'),
+            textTrackRefs: any(named: 'textTrackRefs'),
+            textTrackLang: any(named: 'textTrackLang'),
+          ),
+        ).captured;
+        expect(captured.single, isNull);
+      });
 
       test('sends the declared language when the user chose one', () async {
         _setupSuccessfulPublish(
@@ -2206,30 +2184,11 @@ void main() {
         ).publishVideo(draft: _createTestDraft());
 
         final captured = verify(
-          () => mockVideoEventPublisher.publishVideoEvent(
-            upload: any(named: 'upload'),
-            title: any(named: 'title'),
-            description: any(named: 'description'),
-            hashtags: any(named: 'hashtags'),
-            expirationTimestamp: any(named: 'expirationTimestamp'),
-            allowAudioReuse: any(named: 'allowAudioReuse'),
-            collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
-            mentionedPubkeys: any(named: 'mentionedPubkeys'),
-            inspiredByAddressableId: any(named: 'inspiredByAddressableId'),
-            inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
-            inspiredByNpub: any(named: 'inspiredByNpub'),
-            selectedAudio: any(named: 'selectedAudio'),
-            audioShareAttribution: any(named: 'audioShareAttribution'),
-            selectedAudioEventId: any(named: 'selectedAudioEventId'),
-            selectedAudioRelay: any(named: 'selectedAudioRelay'),
+          () => _verifyPublishVideoEvent(
+            mockVideoEventPublisher,
             language: captureAny(named: 'language'),
-            contentWarning: any(named: 'contentWarning'),
-            thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
-            replyContext: any(named: 'replyContext'),
-            addReplyToFeed: any(named: 'addReplyToFeed'),
             textTrackRefs: any(named: 'textTrackRefs'),
             textTrackLang: any(named: 'textTrackLang'),
-            onEventSigned: any(named: 'onEventSigned'),
           ),
         ).captured;
         expect(captured.single, equals('pt'));
@@ -2319,6 +2278,7 @@ void _stubPublishVideoEventThrows(
       inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
       inspiredByNpub: any(named: 'inspiredByNpub'),
       selectedAudio: any(named: 'selectedAudio'),
+      audioShareAttribution: any(named: 'audioShareAttribution'),
       selectedAudioEventId: any(named: 'selectedAudioEventId'),
       selectedAudioRelay: any(named: 'selectedAudioRelay'),
       language: any(named: 'language'),
@@ -2336,10 +2296,13 @@ void _stubPublishVideoEventThrows(
 /// A full-argument `publishVideoEvent` matcher for `verify`, so tests only
 /// spell out the arguments they capture. Mocktail's verify needs every named
 /// argument of the actual invocation to be matched.
+const Object _anyLanguageMatcher = Object();
+
 Future<bool> _verifyPublishVideoEvent(
   MockVideoEventPublisher publisher, {
   required List<String> textTrackRefs,
   required String textTrackLang,
+  dynamic language = _anyLanguageMatcher,
 }) => publisher.publishVideoEvent(
   upload: any(named: 'upload'),
   title: any(named: 'title'),
@@ -2353,9 +2316,12 @@ Future<bool> _verifyPublishVideoEvent(
   inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
   inspiredByNpub: any(named: 'inspiredByNpub'),
   selectedAudio: any(named: 'selectedAudio'),
+  audioShareAttribution: any(named: 'audioShareAttribution'),
   selectedAudioEventId: any(named: 'selectedAudioEventId'),
   selectedAudioRelay: any(named: 'selectedAudioRelay'),
-  language: any(named: 'language'),
+  language: identical(language, _anyLanguageMatcher)
+      ? any(named: 'language') as String?
+      : language as String?,
   contentWarning: any(named: 'contentWarning'),
   thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
   replyContext: any(named: 'replyContext'),
@@ -2440,6 +2406,7 @@ void _setupSuccessfulPublish({
       inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
       inspiredByNpub: any(named: 'inspiredByNpub'),
       selectedAudio: any(named: 'selectedAudio'),
+      audioShareAttribution: any(named: 'audioShareAttribution'),
       selectedAudioEventId: any(named: 'selectedAudioEventId'),
       selectedAudioRelay: any(named: 'selectedAudioRelay'),
       language: any(named: 'language'),
