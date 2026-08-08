@@ -6476,6 +6476,10 @@ class AppLocalizationsPl extends AppLocalizations {
       'Poświadczenia treści wymagają połączenia z internetem.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Wygeneruj ponownie';
 
   @override

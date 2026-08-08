@@ -6070,6 +6070,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoMetadataC2paMissingNote => '콘텐츠 자격 증명에는 인터넷 연결이 필요합니다.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => '재생성';
 
   @override

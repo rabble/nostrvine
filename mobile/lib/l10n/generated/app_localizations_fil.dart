@@ -6401,6 +6401,10 @@ class AppLocalizationsFil extends AppLocalizations {
       'Kailangan ng internet connection ang content credentials.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'I-regenerate';
 
   @override

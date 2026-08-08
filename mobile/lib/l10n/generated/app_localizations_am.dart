@@ -6197,6 +6197,10 @@ class AppLocalizationsAm extends AppLocalizations {
       'የይዘት መታወቂያዎች የበይነመረብ ግንኙነት ያስፈልጋቸዋል።';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'እንደገና ፍጠር';
 
   @override

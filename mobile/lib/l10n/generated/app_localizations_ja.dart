@@ -6048,6 +6048,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoMetadataC2paMissingNote => 'コンテンツ認証情報にはインターネット接続が必要です。';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => '再生成';
 
   @override

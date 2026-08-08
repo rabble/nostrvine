@@ -6378,6 +6378,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Las credenciales de contenido necesitan conexión a internet.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Volver a generar';
 
   @override
