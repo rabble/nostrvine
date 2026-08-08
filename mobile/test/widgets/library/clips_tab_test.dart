@@ -234,17 +234,14 @@ void main() {
     });
   });
 
-  group(ClipSelectionHeader, () {
+  group(ClipSelectionFooter, () {
     late _MockClipsLibraryBloc mockBloc;
 
     setUp(() {
       mockBloc = _MockClipsLibraryBloc();
     });
 
-    Widget buildWidget({
-      Duration remainingDuration = const Duration(seconds: 30),
-      VoidCallback? onCreate,
-    }) {
+    Widget buildWidget({VoidCallback? onCreate}) {
       return MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -252,26 +249,15 @@ void main() {
         home: Scaffold(
           body: BlocProvider<ClipsLibraryBloc>.value(
             value: mockBloc,
-            child: ClipSelectionHeader(onCreate: onCreate ?? () {}),
+            child: ClipSelectionFooter(onCreate: onCreate ?? () {}),
           ),
         ),
       );
     }
 
-    testWidgets('renders Clips title', (tester) async {
-      when(() => mockBloc.state).thenReturn(
-        const ClipsLibraryState(
-          status: ClipsLibraryStatus.loaded,
-          selectedClipIds: {'clip1', 'clip2'},
-        ),
-      );
-
-      await tester.pumpWidget(buildWidget());
-
-      expect(find.text('Clips'), findsOneWidget);
-    });
-
-    testWidgets('calls onCreate when Add button is tapped', (tester) async {
+    testWidgets('calls onCreate when the select button is tapped', (
+      tester,
+    ) async {
       when(() => mockBloc.state).thenReturn(
         const ClipsLibraryState(
           status: ClipsLibraryStatus.loaded,
@@ -282,11 +268,24 @@ void main() {
       var created = false;
       await tester.pumpWidget(buildWidget(onCreate: () => created = true));
 
-      // Find and tap the Select button
-      final selectButton = find.text('Select');
-      expect(selectButton, findsOneWidget);
-      await tester.tap(selectButton);
+      await tester.tap(find.text(en.librarySelect));
+
       expect(created, isTrue);
+    });
+
+    testWidgets('disables the select button without a selection', (
+      tester,
+    ) async {
+      when(() => mockBloc.state).thenReturn(
+        const ClipsLibraryState(status: ClipsLibraryStatus.loaded),
+      );
+
+      var created = false;
+      await tester.pumpWidget(buildWidget(onCreate: () => created = true));
+
+      await tester.tap(find.text(en.librarySelect));
+
+      expect(created, isFalse);
     });
   });
 }
