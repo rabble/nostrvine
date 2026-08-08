@@ -460,7 +460,7 @@ class _ProfileBadgeDetailsSheet extends StatelessWidget {
               Text(
                 l10n.profileBadgeFooterBody,
                 style: VineTheme.bodySmallFont(
-                  color: VineTheme.onSurfaceVariant,
+                  color: context.vineColors.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 10),
