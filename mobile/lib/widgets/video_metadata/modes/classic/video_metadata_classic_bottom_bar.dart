@@ -57,10 +57,12 @@ class _PostButton extends ConsumerWidget {
       opacity: isValidToPost ? 1 : 0.32,
       child: Semantics(
         identifier: 'post_button',
-        label: context.l10n.videoMetadataOpenPreviewSemanticLabel,
+        label: context.l10n.videoMetadataPostSemanticLabel,
         hint: context.l10n.videoMetadataPublishVideoHint,
         button: true,
         enabled: isValidToPost,
+        excludeSemantics: true,
+        onTap: isValidToPost ? onTap : null,
         child: DivineButton(
           onPressed: isValidToPost ? onTap : null,
           expanded: true,

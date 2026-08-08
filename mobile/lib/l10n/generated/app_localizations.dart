@@ -16516,11 +16516,11 @@ abstract class AppLocalizations {
   /// **'Level'**
   String get videoEditorLevelSemanticLabel;
 
-  /// No description provided for @videoMetadataBackSemanticLabel.
+  /// No description provided for @videoMetadataClosePostDetailsSemanticLabel.
   ///
   /// In en, this message translates to:
-  /// **'Back'**
-  String get videoMetadataBackSemanticLabel;
+  /// **'Close post details'**
+  String get videoMetadataClosePostDetailsSemanticLabel;
 
   /// No description provided for @videoMetadataDismissHelpDialogSemanticLabel.
   ///
@@ -17917,13 +17917,13 @@ abstract class AppLocalizations {
   /// No description provided for @videoMetadataEditCoverCloseSemanticLabel.
   ///
   /// In en, this message translates to:
-  /// **'Close cover editor'**
+  /// **'Discard cover changes'**
   String get videoMetadataEditCoverCloseSemanticLabel;
 
   /// No description provided for @videoMetadataEditCoverConfirmSemanticLabel.
   ///
   /// In en, this message translates to:
-  /// **'Confirm cover selection'**
+  /// **'Use selected frame as video cover'**
   String get videoMetadataEditCoverConfirmSemanticLabel;
 
   /// No description provided for @videoMetadataEditCoverStripSemanticLabel.
@@ -19071,6 +19071,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Public hashtags'**
   String get soundCreditPublicHashtagsLabel;
+
+  /// No description provided for @videoMetadataTagsPickerCancelSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel tag selection'**
+  String get videoMetadataTagsPickerCancelSemanticLabel;
+
+  /// No description provided for @videoMetadataTagsPickerConfirmSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply selected tags'**
+  String get videoMetadataTagsPickerConfirmSemanticLabel;
+
+  /// No description provided for @userPickerCancelSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel user selection'**
+  String get userPickerCancelSemanticLabel;
+
+  /// No description provided for @userPickerConfirmSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm selected users'**
+  String get userPickerConfirmSemanticLabel;
+
+  /// No description provided for @userPickerClearSelectionSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear user selection'**
+  String get userPickerClearSelectionSemanticLabel;
+
+  /// No description provided for @videoMetadataContentWarningsPickerCancelSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel content warning selection'**
+  String get videoMetadataContentWarningsPickerCancelSemanticLabel;
+
+  /// No description provided for @videoMetadataContentWarningsPickerConfirmSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply selected content warnings'**
+  String get videoMetadataContentWarningsPickerConfirmSemanticLabel;
 }
 
 class _AppLocalizationsDelegate

@@ -9383,7 +9383,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorLevelSemanticLabel => 'ደረጃ';
 
   @override
-  String get videoMetadataBackSemanticLabel => 'ተመለስ';
+  String get videoMetadataClosePostDetailsSemanticLabel => 'የልጥፍ ዝርዝሮችን ዝጋ';
 
   @override
   String get videoMetadataDismissHelpDialogSemanticLabel => 'የእገዛ ንግግርን አሰናብት';
@@ -10202,11 +10202,11 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoMetadataEditCoverTitle => 'Edit cover';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => 'Close cover editor';
+  String get videoMetadataEditCoverCloseSemanticLabel => 'የሽፋን ለውጦችን አስወግድ';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Confirm cover selection';
+      'የተመረጠውን ፍሬም እንደ ቪዲዮ ሽፋን ተጠቀም';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
@@ -10845,4 +10845,27 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+
+  @override
+  String get videoMetadataTagsPickerCancelSemanticLabel => 'የመለያ ምርጫን ሰርዝ';
+
+  @override
+  String get videoMetadataTagsPickerConfirmSemanticLabel => 'የተመረጡ መለያዎችን ተግብር';
+
+  @override
+  String get userPickerCancelSemanticLabel => 'የተጠቃሚ ምርጫን ሰርዝ';
+
+  @override
+  String get userPickerConfirmSemanticLabel => 'የተመረጡ ተጠቃሚዎችን አረጋግጥ';
+
+  @override
+  String get userPickerClearSelectionSemanticLabel => 'የተጠቃሚ ምርጫን አጽዳ';
+
+  @override
+  String get videoMetadataContentWarningsPickerCancelSemanticLabel =>
+      'የይዘት ማስጠንቀቂያ ምርጫን ሰርዝ';
+
+  @override
+  String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
+      'የተመረጡ የይዘት ማስጠንቀቂያዎችን ተግብር';
 }

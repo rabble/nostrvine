@@ -156,6 +156,32 @@ void main() {
       expect(find.text('Alcohol'), findsOneWidget);
     });
 
+    testWidgets('bottom sheet header describes cancel and apply actions', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildWidget());
+
+      await tester.tap(
+        find.bySemanticsLabel(
+          l10n.videoMetadataSelectContentWarningsSemanticLabel,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.bySemanticsLabel(
+          l10n.videoMetadataContentWarningsPickerCancelSemanticLabel,
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel(
+          l10n.videoMetadataContentWarningsPickerConfirmSemanticLabel,
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('tapping confirm button pops with selected labels', (
       tester,
     ) async {
@@ -240,6 +266,46 @@ void main() {
       verify(
         () => mockGoRouter.pop<Set<ContentLabel>>(<ContentLabel>{}),
       ).called(1);
+    });
+
+    testWidgets('announces each option as a checkbox with its checked state', (
+      tester,
+    ) async {
+      addTearDown(tester.view.reset);
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1;
+      final handle = tester.ensureSemantics();
+
+      await tester.pumpWidget(buildWidget());
+
+      await tester.tap(
+        find.bySemanticsLabel(
+          l10n.videoMetadataSelectContentWarningsSemanticLabel,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getSemantics(find.text('Nudity')),
+        isSemantics(
+          // The label rides up from the child Text rather than being repeated
+          // in `label:`, so it cannot drift from the rendered string.
+          label: 'Nudity',
+          hasCheckedState: true,
+          isChecked: false,
+          hasTapAction: true,
+        ),
+      );
+
+      await tester.tap(find.text('Nudity'));
+      await tester.pump();
+
+      expect(
+        tester.getSemantics(find.text('Nudity')),
+        isSemantics(label: 'Nudity', hasCheckedState: true, isChecked: true),
+      );
+
+      handle.dispose();
     });
 
     testWidgets('tapping an option toggles its checkbox state', (tester) async {

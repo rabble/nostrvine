@@ -3136,7 +3136,7 @@
     "videoEditorUnmuteAudioSemanticLabel": "إلغاء كتم الصوت",
     "videoEditorVideoTimelineSemanticLabel": "الجدول الزمني للفيديو",
     "videoMetadataAddCollaboratorSemanticLabel": "إضافة متعاون",
-    "videoMetadataBackSemanticLabel": "رجوع",
+    "videoMetadataClosePostDetailsSemanticLabel": "إغلاق تفاصيل المنشور",
     "videoMetadataClassicDoneButton": "تم",
     "videoMetadataClosePreviewSemanticLabel": "إغلاق معاينة الفيديو",
     "videoMetadataCollaboratorsCount": "{count}/{max} متعاونين",
@@ -4036,8 +4036,8 @@
     "bugReportRemoveImage": "Remove image",
     "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
     "videoMetadataEditCoverTitle": "تعديل الغلاف",
-    "videoMetadataEditCoverCloseSemanticLabel": "إغلاق محرر الغلاف",
-    "videoMetadataEditCoverConfirmSemanticLabel": "تأكيد اختيار الغلاف",
+    "videoMetadataEditCoverCloseSemanticLabel": "تجاهل تغييرات الغلاف",
+    "videoMetadataEditCoverConfirmSemanticLabel": "استخدام الإطار المحدد كغلاف للفيديو",
     "videoMetadataEditCoverStripSemanticLabel": "التنقل عبر الفيديو لاختيار إطار الغلاف",
     "userPickerRemoveSelectionSemantics": "إزالة {name}",
     "@userPickerRemoveSelectionSemantics": {
@@ -4932,5 +4932,12 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "إزالة المحوّل"
+  "relaySettingsRemoveRelayTooltip": "إزالة المحوّل",
+  "videoMetadataTagsPickerCancelSemanticLabel": "إلغاء اختيار الوسوم",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "تطبيق الوسوم المحددة",
+  "userPickerCancelSemanticLabel": "إلغاء اختيار المستخدمين",
+  "userPickerConfirmSemanticLabel": "تأكيد المستخدمين المحددين",
+  "userPickerClearSelectionSemanticLabel": "مسح اختيار المستخدمين",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "إلغاء اختيار تحذيرات المحتوى",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "تطبيق تحذيرات المحتوى المحددة"
 }
