@@ -38,6 +38,13 @@ definitions:
     - &check_ios_extension_signing_contract
       name: Check iOS extension signing contract
       script: ./scripts/check_ios_extension_signing_contract.sh
+    - &check_signing_endpoint
+      name: Check C2PA signing endpoint
+      script: |
+        # Every build step below interpolates this variable unconditionally, so
+        # an unset variable ships an empty --dart-define that overrides the
+        # in-app default and breaks signing on every capture. Require it here.
+        REQUIRE_SIGNING_ENDPOINT=1 ./scripts/check_signing_endpoint.sh
     - &clean_ios_workspace_state
       name: Clean stale Xcode/SPM workspace state
       script: |
@@ -482,6 +489,7 @@ workflows:
     triggering:
       events: []
     scripts:
+      - *check_signing_endpoint
       - *check_ios_extension_signing_contract
       - *setup_code_signing_xcode
       - *clean_ios_workspace_state
@@ -536,6 +544,7 @@ workflows:
     triggering:
       events: []
     scripts:
+      - *check_signing_endpoint
       - *clean_ios_workspace_state
       - *enable_spm
       - *flutter_pub_get
@@ -586,6 +595,7 @@ workflows:
     triggering:
       events: []
     scripts:
+      - *check_signing_endpoint
       - *enable_spm
       - *setup_local_properties
       - *configure_gradle_memory
@@ -644,6 +654,7 @@ workflows:
     triggering:
       events: []
     scripts:
+      - *check_signing_endpoint
       - *install_flutterfire
       - *enable_spm
       - *flutter_pub_get
@@ -677,6 +688,7 @@ workflows:
     triggering:
       events: []
     scripts:
+      - *check_signing_endpoint
       - *clean_ios_workspace_state
       - *enable_spm
       - *flutter_pub_get
@@ -712,6 +724,7 @@ workflows:
     triggering:
       events: []
     scripts:
+      - *check_signing_endpoint
       - *flutter_pub_get
       - *setup_local_properties
       - *build_android_e2e

@@ -341,6 +341,23 @@ class ProfileRepository implements ProfileReader {
     return _userProfilesDao.getProfile(pubkey);
   }
 
+  /// Returns the cached profiles for [pubkeys] in a single query.
+  ///
+  /// The batch counterpart to [getCachedProfile]: same local-storage-only
+  /// semantics, but one `WHERE pubkey IN (...)` round trip instead of one per
+  /// pubkey. Callers resolving a whole list (follow lists, pickers) should use
+  /// this — the per-pubkey variant costs a Drift round trip each.
+  ///
+  /// Pubkeys without a cached profile are absent from the result, so the
+  /// returned list may be shorter than [pubkeys] and is not order-aligned
+  /// with it.
+  Future<List<UserProfile>> getCachedProfiles({
+    required List<String> pubkeys,
+  }) async {
+    if (pubkeys.isEmpty) return const [];
+    return _userProfilesDao.getProfilesByPubkeys(pubkeys);
+  }
+
   /// Persists a profile to local storage (SQLite).
   ///
   /// Use this to cache profiles obtained from relay events or REST APIs.

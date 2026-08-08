@@ -642,6 +642,10 @@
     "description": "Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently off."
   },
   "videoSettingsCaptionsDisable": "Lumpuhkan sarikata",
+  "videoSettingsAutoAdvanceOn": "Maju automatik dihidupkan",
+  "videoSettingsAutoAdvanceOff": "Maju automatik dimatikan",
+  "videoSettingsCaptionsOn": "Sarikata dihidupkan",
+  "videoSettingsCaptionsOff": "Sarikata dimatikan",
   "@videoSettingsCaptionsDisable": {
     "description": "Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently on."
   },
@@ -739,6 +743,8 @@
   "videoErrorAdultContentHiddenAction": "Buka Penapis Kandungan",
   "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
   "videoDetailLoadError": "Gagal memuatkan video",
+  "videoDetailLoadErrorBody": "Ada yang tak kena dalam perjalanan. Cuba lagi.",
+  "videoDetailNotFoundBody": "Mungkin ia dipadam, di luar capaian, atau disembunyikan oleh tetapan anda.",
   "databaseCorruptionTitle": "Data setempat anda bercelaru",
   "@databaseCorruptionTitle": {
     "description": "Title of the full-screen takeover shown when the local database reports on-disk corruption at runtime. 'Scrambled' is deliberately non-technical: the user did nothing wrong and cannot act on the real cause."
@@ -2600,6 +2606,7 @@
   "userPickerSearchByName": "Cari mengikut nama",
   "userPickerFilterByNameHint": "Tapis mengikut nama...",
   "userPickerSearchByNameHint": "Cari mengikut nama...",
+  "userPickerClearSearchSemantics": "Kosongkan carian",
   "userPickerAlreadyAddedSemantics": "{name} sudah ditambah",
   "@userPickerAlreadyAddedSemantics": {
     "placeholders": {
@@ -4272,6 +4279,7 @@
   "publishErrorLowStorage": "Storan tidak mencukupi pada peranti anda. Kosongkan sedikit ruang dan cuba lagi.",
   "publishErrorThumbnailFailed": "Video dimuat naik, tetapi lakaran kecil tidak dapat disediakan. Sila cuba lagi.",
   "publishErrorNostrPublishFailed": "Video dimuat naik tetapi siaran tidak dapat diterbitkan. Semak tetapan relay anda dan cuba lagi.",
+  "publishErrorAudioReuseNotPermitted": "Video dimuat naik tetapi bunyinya tidak dibenarkan untuk digunakan semula. Pilih bunyi lain untuk menyiarkannya.",
   "publishErrorInterrupted": "Muat naik ini terganggu. Adakah anda mahu cuba lagi?",
   "publishErrorAccountChanged": "Video ini milik akaun lain. Tukar kembali ke akaun itu untuk menyiarkannya.",
   "publishErrorGeneric": "Sesuatu telah berlaku. Sila cuba lagi.",
@@ -4402,6 +4410,8 @@
   },
   "bugReportSendReport": "Hantar Laporan",
   "supportSubjectRequiredLabel": "Subjek *",
+  "supportPublicSubmissionTitle": "Siaran GitHub awam",
+  "supportPublicSubmissionMessage": "Semua yang anda hantar di sini akan disiarkan dalam repositori sumber terbuka kami di GitHub supaya pembangun boleh mengendalikannya. Siaran ini dan akaun yang anda log masuk boleh dilihat oleh semua orang.",
   "supportRequiredHelper": "Diperlukan",
   "bugReportSubjectHint": "Ringkasan ringkas isu itu",
   "bugReportDescriptionRequiredLabel": "Apa yang berlaku? *",

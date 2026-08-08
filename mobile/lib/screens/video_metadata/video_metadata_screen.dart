@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
+import 'package:openvine/providers/relay_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
@@ -99,6 +100,13 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
 
   Future<void> _showC2paMissingPrompt() async {
     final l10n = context.l10n;
+    // Blaming connectivity for a service-side failure sends users to debug wifi
+    // that is working. Only claim the connection when the device is actually
+    // offline; otherwise say the service didn't respond.
+    final isOnline = ref.read(connectionStatusServiceProvider).isOnline;
+    final note = isOnline
+        ? l10n.videoMetadataC2paMissingNoteServiceUnavailable
+        : l10n.videoMetadataC2paMissingNote;
     // Non-dismissible: forfeiting the content credential is a provenance
     // decision, so require an explicit button rather than letting an accidental
     // barrier tap / swipe silently post without it (#6058).
@@ -107,7 +115,7 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
       sticker: .alert,
       title: l10n.videoMetadataC2paMissingTitle,
       subtitle: l10n.videoMetadataC2paMissingBody,
-      additionalText: l10n.videoMetadataC2paMissingNote,
+      additionalText: note,
       primaryButtonText: l10n.videoMetadataC2paMissingRegenerate,
       onPrimaryPressed: () =>
           Navigator.of(context).pop(_C2paMissingChoice.regenerate),

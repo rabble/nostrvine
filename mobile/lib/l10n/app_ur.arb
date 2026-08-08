@@ -642,6 +642,10 @@
     "description": "Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently off."
   },
   "videoSettingsCaptionsDisable": "کیپشن غیر فعال کریں",
+  "videoSettingsAutoAdvanceOn": "خودکار آگے بڑھنا آن",
+  "videoSettingsAutoAdvanceOff": "خودکار آگے بڑھنا آف",
+  "videoSettingsCaptionsOn": "کیپشن آن",
+  "videoSettingsCaptionsOff": "کیپشن آف",
   "@videoSettingsCaptionsDisable": {
     "description": "Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently on."
   },
@@ -739,6 +743,8 @@
   "videoErrorAdultContentHiddenAction": "مواد فلٹرز کھولیں",
   "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
   "videoDetailLoadError": "ویڈیو لوڈ نہیں ہو سکی",
+  "videoDetailLoadErrorBody": "یہاں پہنچتے پہنچتے کچھ گڑبڑ ہو گئی۔ دوبارہ کوشش کریں۔",
+  "videoDetailNotFoundBody": "ہو سکتا ہے یہ حذف ہو چکی ہو، ہماری پہنچ سے باہر ہو، یا آپ کی ترتیبات نے اسے چھپا دیا ہو۔",
   "databaseCorruptionTitle": "آپ کا مقامی ڈیٹا بگڑ گیا",
   "@databaseCorruptionTitle": {
     "description": "Title of the full-screen takeover shown when the local database reports on-disk corruption at runtime. 'Scrambled' is deliberately non-technical: the user did nothing wrong and cannot act on the real cause."
@@ -2600,6 +2606,7 @@
   "userPickerSearchByName": "نام سے تلاش کریں",
   "userPickerFilterByNameHint": "نام سے فلٹر کریں...",
   "userPickerSearchByNameHint": "نام سے تلاش کریں...",
+  "userPickerClearSearchSemantics": "تلاش صاف کریں",
   "userPickerAlreadyAddedSemantics": "{name} پہلے سے شامل ہے",
   "@userPickerAlreadyAddedSemantics": {
     "placeholders": {
@@ -4272,6 +4279,7 @@
   "publishErrorLowStorage": "آپ کی ڈیوائس میں جگہ کافی نہیں۔ کچھ جگہ خالی کر کے دوبارہ کوشش کریں۔",
   "publishErrorThumbnailFailed": "ویڈیو اپلوڈ ہو گئی، لیکن تھمب نیل تیار نہیں ہو سکا۔ براہ کرم دوبارہ کوشش کریں۔",
   "publishErrorNostrPublishFailed": "ویڈیو اپلوڈ ہو گئی لیکن پوسٹ شائع نہیں ہو سکی۔ اپنی ریلے ترتیبات چیک کر کے دوبارہ کوشش کریں۔",
+  "publishErrorAudioReuseNotPermitted": "ویڈیو اپلوڈ ہو گئی لیکن اس کی آڈیو دوبارہ استعمال کے لیے دستیاب نہیں۔ پوسٹ کرنے کے لیے کوئی دوسری آڈیو منتخب کریں۔",
   "publishErrorInterrupted": "یہ اپلوڈ رک گیا۔ کیا آپ دوبارہ کوشش کرنا چاہیں گے؟",
   "publishErrorAccountChanged": "یہ ویڈیو کسی اور اکاؤنٹ کی ہے۔ اسے پوسٹ کرنے کے لیے اُسی اکاؤنٹ پر واپس جائیں۔",
   "publishErrorGeneric": "کچھ غلط ہو گیا۔ براہ کرم دوبارہ کوشش کریں۔",
@@ -4402,6 +4410,8 @@
   },
   "bugReportSendReport": "رپورٹ بھیجیں",
   "supportSubjectRequiredLabel": "موضوع *",
+  "supportPublicSubmissionTitle": "عوامی GitHub پوسٹ",
+  "supportPublicSubmissionMessage": "آپ یہاں جو کچھ بھی جمع کرائیں گے وہ ہمارے اوپن سورس GitHub ریپوزٹری میں پوسٹ کیا جائے گا تاکہ ڈویلپرز اس پر کام کر سکیں۔ یہ پوسٹ اور وہ اکاؤنٹ جس سے آپ سائن اِن ہیں، سب کو عوامی طور پر نظر آئیں گے۔",
   "supportRequiredHelper": "درکار",
   "bugReportSubjectHint": "مسئلے کا مختصر خلاصہ",
   "bugReportDescriptionRequiredLabel": "کیا ہوا؟ *",

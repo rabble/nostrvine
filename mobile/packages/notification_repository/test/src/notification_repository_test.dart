@@ -3097,6 +3097,179 @@ void main() {
         },
       );
 
+      test('keeps a bounded leading 64-hex reference intact', () async {
+        // LinkifiedTextSpanBuilder decodes a bare 64-char hex pubkey / event
+        // id the same way it decodes bech32. A hex reference is always
+        // longer than the 50-char cap, so before it was protected the cut
+        // sliced it every time and the row rendered raw hex.
+        const hex64 =
+            'a1b2c3d4e5f60718293a4b5c6d7e8f90'
+            'a1b2c3d4e5f60718293a4b5c6d7e8f90';
+        const content = '$hex64 and some trailing words';
+        stubNotifications([
+          makeNotification(
+            notificationType: 'comment',
+            sourceKind: 1,
+            content: content,
+          ),
+        ]);
+        stubProfiles({});
+
+        final page = await repository.getNotifications();
+        final item = page.items.single as VideoNotification;
+        expect(item.commentText, equals('$hex64...'));
+      });
+
+      test(
+        'omits a 64-hex reference straddling the cut instead of splitting it',
+        () async {
+          const hex64 =
+              'a1b2c3d4e5f60718293a4b5c6d7e8f90'
+              'a1b2c3d4e5f60718293a4b5c6d7e8f90';
+          const content = 'Reply to $hex64 more';
+          stubNotifications([
+            makeNotification(
+              notificationType: 'comment',
+              sourceKind: 1,
+              content: content,
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as VideoNotification;
+          expect(item.commentText, equals('Reply to...'));
+          expect(item.commentText, isNot(contains(hex64.substring(0, 16))));
+        },
+      );
+
+      test('applies the preview cap to non-Latin lead-in text', () async {
+        // The leading-token allowance is bounded at four times the cap, and
+        // is only meant to fire when nothing but whitespace or punctuation
+        // precedes the token. Testing only ASCII letters classified every
+        // non-Latin script as punctuation, so Cyrillic / CJK / accented
+        // lead-ins silently got a 200-char preview of remote-controlled
+        // content while the Latin equivalent got 50.
+        const npub =
+            'npub180cvv07tjdrrgpa9jzd0cdkej42kwsaxq9rz7gvdpjx6nz004f9uulstw6';
+        const cyrillic = 'Привет всем друзьям сегодня';
+        const content = '$cyrillic nostr:$npub и ещё немного текста';
+        stubNotifications([
+          makeNotification(
+            notificationType: 'comment',
+            sourceKind: 1,
+            content: content,
+          ),
+        ]);
+        stubProfiles({});
+
+        final page = await repository.getNotifications();
+        final item = page.items.single as VideoNotification;
+        expect(item.commentText, equals('$cyrillic...'));
+        expect(item.commentText!.length, lessThanOrEqualTo(53));
+        expect(item.commentText, isNot(contains('npub1')));
+      });
+
+      test(
+        'still treats punctuation-only lead-in as leading for a bech32 token',
+        () async {
+          // Guards the other side of the non-Latin fix: real punctuation and
+          // whitespace must keep qualifying as "leading", including
+          // non-ASCII punctuation such as guillemets and an em dash.
+          const npub =
+              'npub180cvv07tjdrrgpa9jzd0cdkej42kwsaxq9rz7gvdpjx6nz004f9uulstw6';
+          const content = '«— » $npub';
+          stubNotifications([
+            makeNotification(
+              notificationType: 'comment',
+              sourceKind: 1,
+              content: content,
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as VideoNotification;
+          expect(item.commentText, equals(content));
+        },
+      );
+
+      test('leaves a hex run inside a URL to the plain cut', () async {
+        // The UI's URL alternative starts earlier than the hex one and wins,
+        // so https://host/<64-hex> is a single URL token and the hex inside
+        // it is never linked. Pulling the cut back to it would shorten the
+        // preview for a span the UI never resolves. Blossom and CDN media
+        // URLs are exactly this shape, so this is the common case, not an
+        // edge case.
+        const hex64 =
+            'a1b2c3d4e5f60718293a4b5c6d7e8f90'
+            'a1b2c3d4e5f60718293a4b5c6d7e8f90';
+        const content =
+            'Look at this https://blossom.divine.video/$hex64.mp4 great stuff';
+        stubNotifications([
+          makeNotification(
+            notificationType: 'comment',
+            sourceKind: 1,
+            content: content,
+          ),
+        ]);
+        stubProfiles({});
+
+        final page = await repository.getNotifications();
+        final item = page.items.single as VideoNotification;
+        expect(
+          item.commentText,
+          equals('Look at this https://blossom.divine.video/a1b2c3d4...'),
+        );
+      });
+
+      test('leaves a bech32 token inside a URL to the plain cut', () async {
+        // Same rule as the hex case: a share link is one URL token in the UI,
+        // so the npub in its path is not a reference either.
+        const npub =
+            'npub180cvv07tjdrrgpa9jzd0cdkej42kwsaxq9rz7gvdpjx6nz004f9uulstw6';
+        const content = 'Follow https://divine.video/$npub please';
+        stubNotifications([
+          makeNotification(
+            notificationType: 'comment',
+            sourceKind: 1,
+            content: content,
+          ),
+        ]);
+        stubProfiles({});
+
+        final page = await repository.getNotifications();
+        final item = page.items.single as VideoNotification;
+        expect(item.commentText, equals('${content.substring(0, 50)}...'));
+        expect(
+          item.commentText,
+          startsWith('Follow https://divine.video/npub1'),
+        );
+      });
+
+      test('leaves a hex run behind a hashtag to the plain cut', () async {
+        // The hashtag alternative also starts earlier and swallows the run.
+        const hex64 =
+            'a1b2c3d4e5f60718293a4b5c6d7e8f90'
+            'a1b2c3d4e5f60718293a4b5c6d7e8f90';
+        const content = 'nice one #$hex64 keep going with more words here';
+        stubNotifications([
+          makeNotification(
+            notificationType: 'comment',
+            sourceKind: 1,
+            content: content,
+          ),
+        ]);
+        stubProfiles({});
+
+        final page = await repository.getNotifications();
+        final item = page.items.single as VideoNotification;
+        expect(
+          item.commentText,
+          equals('nice one #a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4...'),
+        );
+      });
+
       test(
         'like / repost on video leaves commentText null (no body text)',
         () async {

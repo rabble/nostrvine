@@ -103,6 +103,14 @@ jobs:
           fi
           echo "Native transport-security inputs changed: $native"
 
+  codex-config:
+    name: Codex Configuration
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify generated skills and lifecycle hooks
+        run: bash .codex/scripts/test-config.sh
+
   generated-files:
     name: Generated Files
     needs: changes

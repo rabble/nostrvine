@@ -1323,6 +1323,18 @@ class AppLocalizationsFr extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'Désactiver les sous-titres';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'Passage automatique activé';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'Passage automatique désactivé';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Sous-titres activés';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Sous-titres désactivés';
+
+  @override
   String get contentWarningLabel => 'Avertissement de contenu';
 
   @override
@@ -1572,6 +1584,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get videoDetailLoadError => 'Échec du chargement de la vidéo';
+
+  @override
+  String get videoDetailLoadErrorBody =>
+      'Quelque chose a déraillé en chemin. Réessaie.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Elle a peut-être été supprimée, elle est hors de portée, ou tes réglages la masquent.';
 
   @override
   String get databaseCorruptionTitle => 'Tes données locales sont abîmées';
@@ -4702,6 +4722,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Rechercher par nom...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Effacer la recherche';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name déjà ajouté';
   }
@@ -6383,6 +6406,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Les informations d’authenticité nécessitent une connexion internet.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Régénérer';
 
   @override
@@ -7453,6 +7480,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'La vidéo a été envoyée, mais la publication n\'a pas pu être diffusée. Vérifie tes réglages de relais et réessaie.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'La vidéo a été envoyée, mais cet audio n\'est pas autorisé à la réutilisation. Choisis un autre son pour publier.';
+
+  @override
   String get publishErrorInterrupted =>
       'Cet envoi a été interrompu. Tu veux réessayer ?';
 
@@ -7596,6 +7627,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'Sujet *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'Publication GitHub publique';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Tout ce que tu envoies ici sera publié dans notre dépôt open source sur GitHub afin que les développeurs puissent s\'en charger. La publication et le compte avec lequel tu es connecté seront visibles par tout le monde.';
 
   @override
   String get supportRequiredHelper => 'Requis';

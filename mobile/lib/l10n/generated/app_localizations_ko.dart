@@ -1215,6 +1215,18 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoSettingsCaptionsDisable => '자막 사용 안 함';
 
   @override
+  String get videoSettingsAutoAdvanceOn => '자동 넘기기 켜짐';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => '자동 넘기기 꺼짐';
+
+  @override
+  String get videoSettingsCaptionsOn => '자막 켜짐';
+
+  @override
+  String get videoSettingsCaptionsOff => '자막 꺼짐';
+
+  @override
   String get contentWarningLabel => '콘텐츠 경고';
 
   @override
@@ -1444,6 +1456,13 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoDetailLoadError => '영상을 불러오지 못했어요';
+
+  @override
+  String get videoDetailLoadErrorBody => '오는 길에 뭔가 어긋났어요. 다시 시도해 보세요.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      '삭제됐거나, 닿을 수 없는 곳에 있거나, 설정 때문에 숨겨진 걸 수도 있어요.';
 
   @override
   String get databaseCorruptionTitle => '로컬 데이터가 손상됐어요';
@@ -4421,6 +4440,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get userPickerSearchByNameHint => '이름으로 검색...';
 
   @override
+  String get userPickerClearSearchSemantics => '검색 지우기';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name 이미 추가됨';
   }
@@ -6048,6 +6070,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoMetadataC2paMissingNote => '콘텐츠 자격 증명에는 인터넷 연결이 필요합니다.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => '재생성';
 
   @override
@@ -7053,6 +7079,10 @@ class AppLocalizationsKo extends AppLocalizations {
       '영상은 업로드됐지만 게시물을 올리지 못했어요. 릴레이 설정을 확인하고 다시 시도해주세요.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      '영상은 업로드됐지만 이 사운드는 재사용이 허용되지 않았어요. 다른 사운드를 골라서 올려주세요.';
+
+  @override
   String get publishErrorInterrupted => '업로드가 중단됐어요. 다시 시도할까요?';
 
   @override
@@ -7191,6 +7221,13 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => '제목 *';
+
+  @override
+  String get supportPublicSubmissionTitle => '공개 GitHub 게시물';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      '여기에 제출하는 모든 내용은 개발자가 작업을 맡을 수 있도록 GitHub의 오픈 소스 저장소에 게시됩니다. 게시물과 로그인한 계정은 누구나 공개적으로 볼 수 있습니다.';
 
   @override
   String get supportRequiredHelper => '필수';

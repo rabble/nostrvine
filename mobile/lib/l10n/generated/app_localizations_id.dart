@@ -1262,6 +1262,18 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'Nonaktifkan teks';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'Lanjut otomatis aktif';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'Lanjut otomatis nonaktif';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Teks aktif';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Teks nonaktif';
+
+  @override
   String get contentWarningLabel => 'Peringatan Konten';
 
   @override
@@ -1507,6 +1519,14 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get videoDetailLoadError => 'Gagal memuat video';
+
+  @override
+  String get videoDetailLoadErrorBody =>
+      'Ada yang meleset di jalan. Coba lagi, ya.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Mungkin sudah dihapus, di luar jangkauan, atau disembunyikan sama pengaturanmu.';
 
   @override
   String get databaseCorruptionTitle => 'Data lokalmu rusak';
@@ -4591,6 +4611,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Cari berdasarkan nama...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Hapus pencarian';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name sudah ditambahkan';
   }
@@ -6264,6 +6287,10 @@ class AppLocalizationsId extends AppLocalizations {
       'Kredensial konten memerlukan koneksi internet.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Buat ulang';
 
   @override
@@ -7314,6 +7341,10 @@ class AppLocalizationsId extends AppLocalizations {
       'Video berhasil diunggah, tapi posting tidak bisa dipublikasikan. Periksa pengaturan relay-mu dan coba lagi.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Video berhasil diunggah, tapi suaranya tidak diizinkan untuk dipakai ulang. Pilih suara lain untuk memposting.';
+
+  @override
   String get publishErrorInterrupted =>
       'Unggahan ini terganggu. Mau coba lagi?';
 
@@ -7457,6 +7488,13 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'Subjek *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'Kiriman GitHub publik';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Semua yang kamu kirim di sini akan diposting ke repositori sumber terbuka kami di GitHub agar pengembang dapat menanganinya. Kiriman tersebut dan akun yang kamu gunakan untuk masuk dapat dilihat secara publik oleh siapa saja.';
 
   @override
   String get supportRequiredHelper => 'Wajib';

@@ -1336,6 +1336,18 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'Dezactivează subtitrările';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'Avansare automată activată';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'Avansare automată dezactivată';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Subtitrări activate';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Subtitrări dezactivate';
+
+  @override
   String get contentWarningLabel => 'Atenționare de conținut';
 
   @override
@@ -1585,6 +1597,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get videoDetailLoadError => 'N-am putut încărca videoclipul';
+
+  @override
+  String get videoDetailLoadErrorBody =>
+      'Ceva a mers prost pe drum. Mai încearcă o dată.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Poate a fost șters, e în afara razei noastre sau ascuns de setările tale.';
 
   @override
   String get databaseCorruptionTitle => 'Datele tale locale s-au deteriorat';
@@ -4766,6 +4786,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Caută după nume...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Șterge căutarea';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name este deja adăugat';
   }
@@ -6460,6 +6483,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Acreditările de conținut necesită o conexiune la internet.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Regenerează';
 
   @override
@@ -7525,6 +7552,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Videoclipul s-a încărcat, dar postarea nu a putut fi publicată. Verifică-ți setările relay-urilor și încearcă din nou.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Videoclipul s-a încărcat, dar sunetul lui nu este permis pentru reutilizare. Alege alt sunet ca să postezi.';
+
+  @override
   String get publishErrorInterrupted =>
       'Această încărcare a fost întreruptă. Vrei să încerci din nou?';
 
@@ -7670,6 +7701,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'Subiect *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'Postare publică pe GitHub';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Tot ce trimiți aici va fi publicat în depozitul nostru open-source de pe GitHub, pentru ca dezvoltatorii să se poată ocupa. Postarea și contul cu care ești conectat vor fi vizibile public pentru toată lumea.';
 
   @override
   String get supportRequiredHelper => 'Obligatoriu';

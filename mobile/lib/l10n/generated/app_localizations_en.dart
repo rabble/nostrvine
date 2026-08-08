@@ -1298,6 +1298,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'Disable captions';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'Auto advance on';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'Auto advance off';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Captions on';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Captions off';
+
+  @override
   String get contentWarningLabel => 'Content Warning';
 
   @override
@@ -1542,6 +1554,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoDetailLoadError => 'Failed to load video';
+
+  @override
+  String get videoDetailLoadErrorBody =>
+      'Something went sideways on the way here. Give it another try.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'It could be gone, out of reach, or hidden by your settings.';
 
   @override
   String get databaseCorruptionTitle => 'Your local data got scrambled';
@@ -4631,6 +4651,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Search by name...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Clear search';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name already added';
   }
@@ -6298,6 +6321,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Content credentials need an internet connection.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Regenerate';
 
   @override
@@ -7345,6 +7372,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'The video uploaded but the post could not be published. Check your relay settings and try again.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'The video uploaded, but its sound isn\'t cleared for reuse. Pick a different sound to post it.';
+
+  @override
   String get publishErrorInterrupted =>
       'This upload was interrupted. Would you like to try again?';
 
@@ -7488,6 +7519,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'Subject *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'Public GitHub post';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Everything you submit here will be posted to our open-source repository on GitHub so developers can pick it up. Your post and the account you\'re signed in with will be publicly visible to everyone.';
 
   @override
   String get supportRequiredHelper => 'Required';

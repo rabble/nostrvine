@@ -1312,6 +1312,20 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'Изключи субтитрите';
 
   @override
+  String get videoSettingsAutoAdvanceOn =>
+      'Автоматичното продължаване е включено';
+
+  @override
+  String get videoSettingsAutoAdvanceOff =>
+      'Автоматичното продължаване е изключено';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Субтитрите са включени';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Субтитрите са изключени';
+
+  @override
   String get contentWarningLabel => 'Предупреждение за съдържание';
 
   @override
@@ -1564,6 +1578,13 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get videoDetailLoadError => 'Неуспешно зареждане на видеото';
+
+  @override
+  String get videoDetailLoadErrorBody => 'Нещо се обърка по пътя. Опитай пак.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Може да е изтрито, да е извън обсега ни или да е скрито от твоите настройки.';
 
   @override
   String get databaseCorruptionTitle => 'Локалните ти данни се повредиха';
@@ -4679,6 +4700,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Търсене по име...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Изчистване на търсенето';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name вече е добавен';
   }
@@ -6356,6 +6380,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Удостоверенията за съдържание изискват интернет връзка.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Генерирай отново';
 
   @override
@@ -7428,6 +7456,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Видеото се качи, но публикацията не можа да се пусне. Провери настройките за релета и опитай пак.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Видеото се качи, но звукът не е разрешен за повторна употреба. Избери друг звук, за да публикуваш.';
+
+  @override
   String get publishErrorInterrupted =>
       'Качването беше прекъснато. Искаш ли да опиташ пак?';
 
@@ -7571,6 +7603,13 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'Тема *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'Публична публикация в GitHub';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Всичко, което изпратиш тук, ще бъде публикувано в нашето хранилище с отворен код в GitHub, за да могат разработчиците да го поемат. Публикацията и профилът, с който си влязъл, ще бъдат видими за всички.';
 
   @override
   String get supportRequiredHelper => 'Задължително';

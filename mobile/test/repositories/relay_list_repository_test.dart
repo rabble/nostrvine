@@ -58,7 +58,6 @@ void main() {
         any(),
         targetRelays: any(named: 'targetRelays'),
         timeout: any(named: 'timeout'),
-        diagnosticTag: any(named: 'diagnosticTag'),
       ),
     ).thenAnswer((invocation) async {
       final event = invocation.positionalArguments.first as Event;
@@ -99,7 +98,6 @@ void main() {
           captureAny(),
           targetRelays: captureAny(named: 'targetRelays'),
           timeout: captureAny(named: 'timeout'),
-          diagnosticTag: 'relay-list-kind-10002',
         ),
       ).captured;
       // mocktail returns captures ordered by argument name, not call order.
@@ -139,7 +137,6 @@ void main() {
         any(),
         targetRelays: any(named: 'targetRelays'),
         timeout: any(named: 'timeout'),
-        diagnosticTag: any(named: 'diagnosticTag'),
       ),
     );
     expect(buildRepository().isDirty(pubkey), isFalse);
@@ -156,7 +153,6 @@ void main() {
         any(),
         targetRelays: any(named: 'targetRelays'),
         timeout: any(named: 'timeout'),
-        diagnosticTag: any(named: 'diagnosticTag'),
       ),
     );
     expect(buildRepository().isDirty(pubkey), isFalse);
@@ -170,7 +166,6 @@ void main() {
           any(),
           targetRelays: any(named: 'targetRelays'),
           timeout: any(named: 'timeout'),
-          diagnosticTag: any(named: 'diagnosticTag'),
         ),
       ).thenAnswer((invocation) async {
         final event = invocation.positionalArguments.first as Event;
@@ -211,7 +206,6 @@ void main() {
           any(),
           targetRelays: any(named: 'targetRelays'),
           timeout: any(named: 'timeout'),
-          diagnosticTag: any(named: 'diagnosticTag'),
         ),
       );
 
@@ -224,7 +218,6 @@ void main() {
           any(),
           targetRelays: any(named: 'targetRelays'),
           timeout: any(named: 'timeout'),
-          diagnosticTag: any(named: 'diagnosticTag'),
         ),
       ).called(1);
       expect(repository.isDirty(pubkey), isFalse);

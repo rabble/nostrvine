@@ -1289,6 +1289,18 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'Avaktivera textning';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'Automatisk fortsättning på';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'Automatisk fortsättning av';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Textning på';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Textning av';
+
+  @override
   String get contentWarningLabel => 'Innehållsvarning';
 
   @override
@@ -1539,6 +1551,14 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoDetailLoadError => 'Kunde inte läsa in videon';
+
+  @override
+  String get videoDetailLoadErrorBody =>
+      'Något gick snett på vägen hit. Testa igen.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Den kan vara borttagen, utom räckhåll eller dold av dina inställningar.';
 
   @override
   String get databaseCorruptionTitle => 'Dina lokala data har skadats';
@@ -4629,6 +4649,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Sök efter namn...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Rensa sökning';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name har redan lagts till';
   }
@@ -6298,6 +6321,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Innehållsuppgifter kräver en internetanslutning.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Generera om';
 
   @override
@@ -7350,6 +7377,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Videon laddades upp men inlägget kunde inte publiceras. Kontrollera dina relinställningar och försök igen.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Videon laddades upp men ljudet får inte återanvändas. Välj ett annat ljud för att posta.';
+
+  @override
   String get publishErrorInterrupted =>
       'Uppladdningen avbröts. Vill du försöka igen?';
 
@@ -7493,6 +7524,13 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'Ämne *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'Offentligt GitHub-inlägg';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Allt du skickar in här publiceras i vårt öppna GitHub-arkiv så att utvecklare kan ta hand om det. Inlägget och kontot du är inloggad med blir offentligt synliga för alla.';
 
   @override
   String get supportRequiredHelper => 'Obligatoriskt';

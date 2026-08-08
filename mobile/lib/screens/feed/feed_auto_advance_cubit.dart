@@ -1,8 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:flutter/semantics.dart' show SemanticsService, TextDirection;
-import 'package:flutter/widgets.dart' show BuildContext, View;
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:openvine/l10n/l10n.dart';
 
 /// Feed-scoped runtime state for the Auto playback mode.
 ///
@@ -64,18 +61,15 @@ class FeedAutoAdvanceCubit extends Cubit<FeedAutoAdvanceState> {
     emit(state.copyWith(enabled: true, suppressed: false));
   }
 
-  /// Toggle behaviour for the rail control.
+  /// Flips the Auto toggle.
   ///
-  /// - If Auto is enabled and suppressed, tapping resumes (not disables).
-  /// - Otherwise, flips the enabled bit.
-  void toggle() {
-    if (state.enabled && state.suppressed) {
-      emit(state.copyWith(suppressed: false));
-      return;
-    }
-
-    setEnabled(enabled: !state.enabled);
-  }
+  /// Always moves `enabled`, including while Auto is suppressed. The pill is
+  /// the only caller, and on the paused-video overlay suppressed-and-enabled
+  /// is its normal state — the tap that reveals the overlay is the one that
+  /// suppresses. A resume-instead-of-disable branch there would leave the
+  /// control reporting "on" after a press on "Disable auto advance".
+  /// Suppression is lifted by a manual swipe ([resumeAfterSwipe]) instead.
+  void toggle() => setEnabled(enabled: !state.enabled);
 
   /// Temporarily suppress Auto for a non-swipe interaction.
   void suppressForInteraction() {
@@ -102,20 +96,4 @@ class FeedAutoAdvanceCubit extends Cubit<FeedAutoAdvanceState> {
     if (!state.pendingPaginationAdvance) return;
     emit(state.copyWith(pendingPaginationAdvance: false));
   }
-}
-
-/// Announce the new Auto playback toggle state to screen readers.
-///
-/// Called from the screen right after [FeedAutoAdvanceCubit.toggle] because
-/// the rail control is small and its visual state may be easy to miss.
-void announceAutoAdvanceToggle(BuildContext context, {required bool enabled}) {
-  final l10n = context.l10n;
-  final message = enabled
-      ? l10n.videoActionEnableAutoAdvance
-      : l10n.videoActionDisableAutoAdvance;
-  SemanticsService.sendAnnouncement(
-    View.of(context),
-    message,
-    TextDirection.ltr,
-  );
 }

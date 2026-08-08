@@ -1313,6 +1313,18 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'Desativar legendas';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'Avanço automático ativado';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'Avanço automático desativado';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Legendas ativadas';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Legendas desativadas';
+
+  @override
   String get contentWarningLabel => 'Aviso de conteúdo';
 
   @override
@@ -1560,6 +1572,14 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get videoDetailLoadError => 'Falha ao carregar o vídeo';
+
+  @override
+  String get videoDetailLoadErrorBody =>
+      'Alguma coisa deu errado no caminho. Tenta de novo.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Pode ter sido apagado, estar fora de alcance ou escondido pelas tuas definições.';
 
   @override
   String get databaseCorruptionTitle => 'Seus dados locais foram corrompidos';
@@ -4663,6 +4683,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Pesquisar por nome...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Limpar pesquisa';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name já adicionado';
   }
@@ -6345,6 +6368,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'As credenciais de conteúdo precisam de conexão com a internet.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Gerar novamente';
 
   @override
@@ -7408,6 +7435,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'O vídeo foi enviado, mas não foi possível publicar o post. Verifique suas configurações de relay e tente novamente.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'O vídeo foi enviado, mas o áudio dele não está liberado para reutilização. Escolha outro áudio para publicar.';
+
+  @override
   String get publishErrorInterrupted =>
       'Este envio foi interrompido. Quer tentar de novo?';
 
@@ -7552,6 +7583,13 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'Assunto *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'Publicação pública no GitHub';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Tudo o que você enviar aqui será publicado no nosso repositório de código aberto no GitHub para que os desenvolvedores possam cuidar disso. A publicação e a conta com que você entrou ficarão visíveis para todos.';
 
   @override
   String get supportRequiredHelper => 'Obrigatório';

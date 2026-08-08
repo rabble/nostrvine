@@ -2292,6 +2292,30 @@ abstract class AppLocalizations {
   /// **'Disable captions'**
   String get videoSettingsCaptionsDisable;
 
+  /// Snackbar confirming that auto advance was just turned on from the playback-settings pill.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto advance on'**
+  String get videoSettingsAutoAdvanceOn;
+
+  /// Snackbar confirming that auto advance was just turned off from the playback-settings pill.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto advance off'**
+  String get videoSettingsAutoAdvanceOff;
+
+  /// Snackbar confirming that captions were just turned on from the playback-settings pill.
+  ///
+  /// In en, this message translates to:
+  /// **'Captions on'**
+  String get videoSettingsCaptionsOn;
+
+  /// Snackbar confirming that captions were just turned off from the playback-settings pill.
+  ///
+  /// In en, this message translates to:
+  /// **'Captions off'**
+  String get videoSettingsCaptionsOff;
+
   /// No description provided for @contentWarningLabel.
   ///
   /// In en, this message translates to:
@@ -2747,6 +2771,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to load video'**
   String get videoDetailLoadError;
+
+  /// Supporting copy under the 'Failed to load video' title on the shared-link video screen, shown next to a Retry button. Deliberately vague about the cause because the failure can be network, relay, or parsing.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went sideways on the way here. Give it another try.'**
+  String get videoDetailLoadErrorBody;
+
+  /// Supporting copy under the 'Video not found' title on the shared-link video screen. The screen shows this for three different causes it cannot tell apart: the video was deleted, it cannot be fetched from any connected relay, or it is hidden by a filter (a blocked or muted author, or the default-on Divine-hosted-only setting). It must not promise the video is gone for good, and it must not be read as covering only the first two.
+  ///
+  /// In en, this message translates to:
+  /// **'It could be gone, out of reach, or hidden by your settings.'**
+  String get videoDetailNotFoundBody;
 
   /// Title of the full-screen takeover shown when the local database reports on-disk corruption at runtime. 'Scrambled' is deliberately non-technical: the user did nothing wrong and cannot act on the real cause.
   ///
@@ -8030,6 +8066,12 @@ abstract class AppLocalizations {
   /// **'Search by name...'**
   String get userPickerSearchByNameHint;
 
+  /// Semantic label for the button that clears the text in the user picker search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get userPickerClearSearchSemantics;
+
   /// No description provided for @userPickerAlreadyAddedSemantics.
   ///
   /// In en, this message translates to:
@@ -11012,11 +11054,17 @@ abstract class AppLocalizations {
   /// **'We couldn\'t add content credentials, so this video won\'t be confirmed as Human-Made. Regenerate to try again, or post it as-is.'**
   String get videoMetadataC2paMissingBody;
 
-  /// Small trailing note under the missing-content-credential bottom sheet, hinting that the (remote) content-credential signing step requires connectivity. Not phrased as the definitive cause, since signing can also fail for other reasons.
+  /// Small trailing note under the missing-content-credential bottom sheet, shown when the device is offline, where connectivity really is the likely cause. When the device is online, videoMetadataC2paMissingNoteServiceUnavailable is shown instead.
   ///
   /// In en, this message translates to:
   /// **'Content credentials need an internet connection.'**
   String get videoMetadataC2paMissingNote;
+
+  /// Small trailing note under the missing-content-credential bottom sheet, shown when the device IS online, so signing failed on the service side (outage, misconfigured endpoint, rejected request). Explicitly rules out the user's connection, because the previous connectivity-only wording sent users to debug working wifi.
+  ///
+  /// In en, this message translates to:
+  /// **'The content credential service didn\'t respond. This isn\'t your connection.'**
+  String get videoMetadataC2paMissingNoteServiceUnavailable;
 
   /// Primary button on the missing-content-credential bottom sheet. Re-renders the video to attempt the C2PA signature again.
   ///
@@ -12761,6 +12809,12 @@ abstract class AppLocalizations {
   /// **'The video uploaded but the post could not be published. Check your relay settings and try again.'**
   String get publishErrorNostrPublishFailed;
 
+  /// No description provided for @publishErrorAudioReuseNotPermitted.
+  ///
+  /// In en, this message translates to:
+  /// **'The video uploaded, but its sound isn\'t cleared for reuse. Pick a different sound to post it.'**
+  String get publishErrorAudioReuseNotPermitted;
+
   /// No description provided for @publishErrorInterrupted.
   ///
   /// In en, this message translates to:
@@ -12961,6 +13015,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Subject *'**
   String get supportSubjectRequiredLabel;
+
+  /// No description provided for @supportPublicSubmissionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Public GitHub post'**
+  String get supportPublicSubmissionTitle;
+
+  /// No description provided for @supportPublicSubmissionMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything you submit here will be posted to our open-source repository on GitHub so developers can pick it up. Your post and the account you\'re signed in with will be publicly visible to everyone.'**
+  String get supportPublicSubmissionMessage;
 
   /// No description provided for @supportRequiredHelper.
   ///

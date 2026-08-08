@@ -134,9 +134,7 @@ void main() {
 
     test('keeps null typed code on the existing generic path', () {
       expect(
-        classifyVideoError(
-          errorMessage: 'NSURLErrorDomain error -1013',
-        ),
+        classifyVideoError(errorMessage: 'NSURLErrorDomain error -1013'),
         equals(VideoErrorType.generic),
       );
     });
@@ -193,10 +191,31 @@ void main() {
       );
     });
 
+    test('returns generic for HTTP 422 while Divine derivatives process', () {
+      expect(
+        classifyVideoError(
+          errorMessage: 'HTTP 422 Unprocessable Entity',
+          source: 'https://media.divine.video/$_hash/720p.mp4',
+        ),
+        equals(VideoErrorType.generic),
+      );
+    });
+
     test('returns notFound for explicit HTTP 404 on a Divine blob URL', () {
       expect(
         classifyVideoError(
           errorMessage: 'HTTP 404 Not Found',
+          source: 'https://media.divine.video/$_hash/720p.mp4',
+        ),
+        equals(VideoErrorType.notFound),
+      );
+    });
+
+    test('does not let a hash-like 422 mask explicit HTTP 404', () {
+      expect(
+        classifyVideoError(
+          errorMessage:
+              'HTTP 404 Not Found: https://media.divine.video/a422b/video.mp4',
           source: 'https://media.divine.video/$_hash/720p.mp4',
         ),
         equals(VideoErrorType.notFound),
@@ -266,9 +285,25 @@ void main() {
       );
     });
 
+    test('matches derived-rendition HTTP 422 messages', () {
+      expect(
+        isMediaProcessingError(Exception('Source error. Response code: 422')),
+        isTrue,
+      );
+    });
+
     test('does not match unrelated 202 numbers', () {
       expect(
         isMediaProcessingError(Exception('Response completed in 2025 ms')),
+        isFalse,
+      );
+    });
+
+    test('does not match status-like numbers inside hex hashes', () {
+      expect(
+        isMediaProcessingError(
+          Exception('HTTP load failed for https://media.divine.video/a422b'),
+        ),
         isFalse,
       );
     });

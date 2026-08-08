@@ -1302,6 +1302,18 @@ class AppLocalizationsUr extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'کیپشن غیر فعال کریں';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'خودکار آگے بڑھنا آن';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'خودکار آگے بڑھنا آف';
+
+  @override
+  String get videoSettingsCaptionsOn => 'کیپشن آن';
+
+  @override
+  String get videoSettingsCaptionsOff => 'کیپشن آف';
+
+  @override
   String get contentWarningLabel => 'مواد انتباہ';
 
   @override
@@ -1544,6 +1556,14 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get videoDetailLoadError => 'ویڈیو لوڈ نہیں ہو سکی';
+
+  @override
+  String get videoDetailLoadErrorBody =>
+      'یہاں پہنچتے پہنچتے کچھ گڑبڑ ہو گئی۔ دوبارہ کوشش کریں۔';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'ہو سکتا ہے یہ حذف ہو چکی ہو، ہماری پہنچ سے باہر ہو، یا آپ کی ترتیبات نے اسے چھپا دیا ہو۔';
 
   @override
   String get databaseCorruptionTitle => 'آپ کا مقامی ڈیٹا بگڑ گیا';
@@ -4639,6 +4659,9 @@ class AppLocalizationsUr extends AppLocalizations {
   String get userPickerSearchByNameHint => 'نام سے تلاش کریں...';
 
   @override
+  String get userPickerClearSearchSemantics => 'تلاش صاف کریں';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name پہلے سے شامل ہے';
   }
@@ -6307,6 +6330,10 @@ class AppLocalizationsUr extends AppLocalizations {
       'مواد اسناد کے لیے انٹرنیٹ کنکشن درکار ہے۔';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'دوبارہ بنائیں';
 
   @override
@@ -7358,6 +7385,10 @@ class AppLocalizationsUr extends AppLocalizations {
       'ویڈیو اپلوڈ ہو گئی لیکن پوسٹ شائع نہیں ہو سکی۔ اپنی ریلے ترتیبات چیک کر کے دوبارہ کوشش کریں۔';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'ویڈیو اپلوڈ ہو گئی لیکن اس کی آڈیو دوبارہ استعمال کے لیے دستیاب نہیں۔ پوسٹ کرنے کے لیے کوئی دوسری آڈیو منتخب کریں۔';
+
+  @override
   String get publishErrorInterrupted =>
       'یہ اپلوڈ رک گیا۔ کیا آپ دوبارہ کوشش کرنا چاہیں گے؟';
 
@@ -7502,6 +7533,13 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'موضوع *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'عوامی GitHub پوسٹ';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'آپ یہاں جو کچھ بھی جمع کرائیں گے وہ ہمارے اوپن سورس GitHub ریپوزٹری میں پوسٹ کیا جائے گا تاکہ ڈویلپرز اس پر کام کر سکیں۔ یہ پوسٹ اور وہ اکاؤنٹ جس سے آپ سائن اِن ہیں، سب کو عوامی طور پر نظر آئیں گے۔';
 
   @override
   String get supportRequiredHelper => 'درکار';

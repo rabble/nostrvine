@@ -1304,6 +1304,18 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'Ondertiteling uitschakelen';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'Automatisch doorgaan aan';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'Automatisch doorgaan uit';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Ondertiteling aan';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Ondertiteling uit';
+
+  @override
   String get contentWarningLabel => 'Inhoudswaarschuwing';
 
   @override
@@ -1551,6 +1563,14 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get videoDetailLoadError => 'Video laden mislukt';
+
+  @override
+  String get videoDetailLoadErrorBody =>
+      'Er ging onderweg iets mis. Probeer het nog eens.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Misschien is hij verwijderd, buiten bereik, of verborgen door je instellingen.';
 
   @override
   String get databaseCorruptionTitle => 'Je lokale gegevens zijn beschadigd';
@@ -4651,6 +4671,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Zoeken op naam...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Zoekopdracht wissen';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name al toegevoegd';
   }
@@ -6330,6 +6353,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Content credentials hebben een internetverbinding nodig.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Opnieuw genereren';
 
   @override
@@ -7385,6 +7412,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'De video is geüpload, maar de post kon niet worden gepubliceerd. Controleer je relay-instellingen en probeer het opnieuw.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'De video is geüpload, maar de sound mag niet hergebruikt worden. Kies een andere sound om te posten.';
+
+  @override
   String get publishErrorInterrupted =>
       'Deze upload is onderbroken. Wil je het opnieuw proberen?';
 
@@ -7529,6 +7560,13 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'Onderwerp *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'Openbaar GitHub-bericht';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Alles wat je hier indient, wordt in onze opensource-repository op GitHub geplaatst, zodat ontwikkelaars ermee aan de slag kunnen. Het bericht en het account waarmee je bent ingelogd zijn voor iedereen openbaar zichtbaar.';
 
   @override
   String get supportRequiredHelper => 'Verplicht';

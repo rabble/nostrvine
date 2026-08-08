@@ -1225,6 +1225,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoSettingsCaptionsDisable => '关闭字幕';
 
   @override
+  String get videoSettingsAutoAdvanceOn => '自动连播已开启';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => '自动连播已关闭';
+
+  @override
+  String get videoSettingsCaptionsOn => '字幕已开启';
+
+  @override
+  String get videoSettingsCaptionsOff => '字幕已关闭';
+
+  @override
   String get contentWarningLabel => '内容警告';
 
   @override
@@ -1451,6 +1463,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get videoDetailLoadError => '视频加载失败';
+
+  @override
+  String get videoDetailLoadErrorBody => '路上出了点岔子，再试一次吧。';
+
+  @override
+  String get videoDetailNotFoundBody => '可能被删了，可能够不到，也可能被你的设置隐藏了。';
 
   @override
   String get databaseCorruptionTitle => '你的本地数据乱套了';
@@ -4390,6 +4408,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get userPickerSearchByNameHint => '按名字搜索...';
 
   @override
+  String get userPickerClearSearchSemantics => '清除搜索';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name 已添加';
   }
@@ -5999,6 +6020,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoMetadataC2paMissingNote => '添加内容凭证需要网络连接。';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => '重新生成';
 
   @override
@@ -6985,6 +7010,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get publishErrorNostrPublishFailed => '视频已上传，但帖子没能发布。请检查你的中继设置后重试。';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      '视频已上传，但这段音频未开放二次使用。换一段音频再发布吧。';
+
+  @override
   String get publishErrorInterrupted => '上传被中断。要重试吗？';
 
   @override
@@ -7121,6 +7150,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => '主题 *';
+
+  @override
+  String get supportPublicSubmissionTitle => '公开的 GitHub 帖子';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      '你在这里提交的所有内容都会发布到我们在 GitHub 上的开源仓库中，以便开发者处理。该帖子和你登录使用的账号都会被所有人公开查看。';
 
   @override
   String get supportRequiredHelper => '必填';

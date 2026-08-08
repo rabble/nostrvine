@@ -51,7 +51,6 @@ void main() {
         final event = invocation.positionalArguments[0] as Event;
         return PublishOutcome(
           eventId: event.id,
-          eventKind: event.kind,
           acceptedBy: const ['wss://relay.test'],
           rejectedBy: const {},
           noResponseFrom: const [],
@@ -87,7 +86,6 @@ void main() {
         final event = invocation.positionalArguments[0] as Event;
         return PublishOutcome(
           eventId: event.id,
-          eventKind: event.kind,
           acceptedBy: const ['wss://relay.test'],
           rejectedBy: const {},
           noResponseFrom: const [],

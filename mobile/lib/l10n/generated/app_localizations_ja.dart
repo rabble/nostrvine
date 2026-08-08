@@ -1206,6 +1206,18 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoSettingsCaptionsDisable => '字幕を無効にする';
 
   @override
+  String get videoSettingsAutoAdvanceOn => '自動送りオン';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => '自動送りオフ';
+
+  @override
+  String get videoSettingsCaptionsOn => '字幕オン';
+
+  @override
+  String get videoSettingsCaptionsOff => '字幕オフ';
+
+  @override
   String get contentWarningLabel => 'コンテンツ警告';
 
   @override
@@ -1434,6 +1446,13 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get videoDetailLoadError => '動画の読み込みに失敗したよ';
+
+  @override
+  String get videoDetailLoadErrorBody => '途中で何かがうまくいきませんでした。もう一度お試しください。';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      '削除されたか、こちらから届かないか、設定で非表示になっているのかもしれません。';
 
   @override
   String get databaseCorruptionTitle => 'ローカルデータが壊れちゃった';
@@ -4401,6 +4420,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get userPickerSearchByNameHint => '名前で検索...';
 
   @override
+  String get userPickerClearSearchSemantics => '検索をクリア';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name はすでに追加済みです';
   }
@@ -6026,6 +6048,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoMetadataC2paMissingNote => 'コンテンツ認証情報にはインターネット接続が必要です。';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => '再生成';
 
   @override
@@ -7027,6 +7053,10 @@ class AppLocalizationsJa extends AppLocalizations {
       '動画はアップロードできたけど、投稿を公開できなかったよ。リレー設定を確認して、もう一回試してみて。';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      '動画はアップロードできたけど、この音源は再利用が許可されてないよ。別の音源を選んで投稿してね。';
+
+  @override
   String get publishErrorInterrupted => 'アップロードが中断されたよ。もう一回試す？';
 
   @override
@@ -7166,6 +7196,13 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => '件名 *';
+
+  @override
+  String get supportPublicSubmissionTitle => '公開 GitHub 投稿';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'ここで送信した内容はすべて、開発者が対応できるよう GitHub 上のオープンソースリポジトリに投稿されます。投稿とログイン中のアカウントは誰でも閲覧できます。';
 
   @override
   String get supportRequiredHelper => '必須';

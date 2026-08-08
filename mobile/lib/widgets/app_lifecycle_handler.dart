@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:analytics/analytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -102,9 +103,7 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
       // Inactive is routine on desktop, but this no-ops unless an editor
       // autosave debounce is pending. Detached may be the only signal before
       // process teardown, so flush before the state-specific work below.
-      unawaited(
-        ref.read(videoEditorProvider.notifier).flushPendingAutosave(),
-      );
+      unawaited(ref.read(videoEditorProvider.notifier).flushPendingAutosave());
     }
 
     switch (state) {
@@ -159,13 +158,24 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
         );
 
       case AppLifecycleState.inactive:
-        // On desktop, inactive happens during normal UI operations (clicking, menu interactions, etc.)
-        // Don't treat this as backgrounded - videos should continue playing
-        Log.debug(
-          '📱 App became inactive (normal on desktop) - keeping videos active',
-          name: 'AppLifecycleHandler',
-          category: LogCategory.system,
-        );
+        if (_inactiveDisablesForegroundPlayback(defaultTargetPlatform)) {
+          Log.info(
+            '📱 App became inactive - disabling foreground playback gates',
+            name: 'AppLifecycleHandler',
+            category: LogCategory.system,
+          );
+          ref.read(appForegroundProvider.notifier).setForeground(false);
+          if (_tickersEnabled) {
+            setState(() => _tickersEnabled = false);
+          }
+        } else {
+          // Desktop inactive is common during menu/window focus changes.
+          Log.debug(
+            '📱 App became inactive (desktop focus change) - keeping videos active',
+            name: 'AppLifecycleHandler',
+            category: LogCategory.system,
+          );
+        }
 
       case AppLifecycleState.paused:
       case AppLifecycleState.hidden:
@@ -218,3 +228,6 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
   Widget build(BuildContext context) =>
       TickerMode(enabled: _tickersEnabled, child: widget.child);
 }
+
+bool _inactiveDisablesForegroundPlayback(TargetPlatform platform) =>
+    platform == TargetPlatform.android || platform == TargetPlatform.iOS;

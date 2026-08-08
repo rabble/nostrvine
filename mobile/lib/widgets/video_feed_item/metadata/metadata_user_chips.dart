@@ -3,6 +3,7 @@
 // ABOUTME: using tappable chips that navigate to user profiles.
 
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:collaborator_repository/collaborator_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
@@ -22,6 +23,7 @@ import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_section.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/video_reposters_cubit.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 /// Whether every chip in [pubkeys] already knows the name it will render.
 ///
@@ -62,7 +64,8 @@ class MetadataCreatorSection extends StatelessWidget {
 /// `ignored` for this video. Pending collaborator chips are dimmed when
 /// the current user is the video's creator.
 ///
-/// Renders nothing while the resulting list is empty.
+/// Shows placeholder chips while the names of the resulting list resolve,
+/// and renders nothing while that list is empty.
 class MetadataCollaboratorsSection extends ConsumerWidget {
   const MetadataCollaboratorsSection({required this.video, super.key});
 
@@ -168,25 +171,35 @@ class _MetadataCollaboratorsSectionBodyState
     // A tagged collaborator stays hidden until their confirmation status
     // resolves, so this section arrives late on videos that have one. Profile
     // names get a short grace window to avoid common label reflows without
-    // hiding the whole section behind network tails.
-    return AnimatedReveal(
-      child: canReveal
-          ? MetadataSection(
-              label: context.l10n.metadataCollaboratorsLabel,
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final pubkey in visible)
-                    _TappableUserChip(
-                      pubkey: pubkey,
-                      isPending: widget.visibility.isPendingForInviter(pubkey),
-                    ),
-                ],
+    // hiding the whole section behind network tails — the tagged list is
+    // known up front, so placeholders of the right count hold the row open
+    // meanwhile.
+    final Widget? content;
+    if (canReveal) {
+      content = MetadataSection(
+        label: context.l10n.metadataCollaboratorsLabel,
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final pubkey in visible)
+              _TappableUserChip(
+                pubkey: pubkey,
+                isPending: widget.visibility.isPendingForInviter(pubkey),
               ),
-            )
-          : null,
-    );
+          ],
+        ),
+      );
+    } else if (visible.isNotEmpty) {
+      content = _UserChipsSkeleton(
+        label: context.l10n.metadataCollaboratorsLabel,
+        chipCount: visible.length,
+      );
+    } else {
+      content = null;
+    }
+
+    return AnimatedReveal(child: content);
   }
 
   void _syncGraceTimer(List<String> visible, bool namesSettled) {
@@ -245,7 +258,8 @@ class MetadataInspiredBySection extends StatelessWidget {
 /// Reads reposter pubkeys from [VideoRepostersCubit] (provided by the
 /// metadata sheet) and merges with any pre-populated
 /// [VideoEvent.reposterPubkeys] from feed consolidation.
-/// Renders nothing while no reposters are found.
+/// Renders skeleton chips while the relay query runs and the feed's repost
+/// count promises at least one, and nothing once no reposters are found.
 class MetadataRepostedBySection extends StatelessWidget {
   const MetadataRepostedBySection({required this.video, super.key});
 
@@ -260,14 +274,11 @@ class MetadataRepostedBySection extends StatelessWidget {
           ...state.pubkeys,
         }.toList();
 
-        if (state.isLoading && allPubkeys.isEmpty) {
-          return _RepostedByContent(
-            pubkeys: video.reposterPubkeys ?? [],
-            video: video,
-          );
-        }
-
-        return _RepostedByContent(pubkeys: allPubkeys, video: video);
+        return _RepostedByContent(
+          pubkeys: allPubkeys,
+          video: video,
+          isLoading: state.isLoading,
+        );
       },
     );
   }
@@ -280,12 +291,18 @@ class MetadataRepostedBySection extends StatelessWidget {
 /// times, and every chip resolves its own profile — rendering the full set
 /// would fire a profile fetch per reposter and lay them all out at once.
 ///
-/// Renders nothing until the first capped set of chip names has resolved,
-/// and while [pubkeys] is empty. The reposters resolve from a relay
-/// round-trip, so the section is revealed through an [AnimatedReveal] rather
-/// than snapping the sections below it down on arrival.
+/// Holds the row open with placeholder chips until the first capped set of
+/// chip names has resolved: the feed already knows how many reposts the video
+/// has, so the section can take its final shape before the relay answers
+/// instead of appearing out of nowhere. Renders nothing while nothing is
+/// promised, and collapses through an [AnimatedReveal] when the relay
+/// contradicts the promise.
 class _RepostedByContent extends ConsumerStatefulWidget {
-  const _RepostedByContent({required this.pubkeys, required this.video});
+  const _RepostedByContent({
+    required this.pubkeys,
+    required this.video,
+    required this.isLoading,
+  });
 
   /// Roughly three rows of chips on a phone — nine came out at five.
   ///
@@ -295,6 +312,9 @@ class _RepostedByContent extends ConsumerStatefulWidget {
 
   final List<String> pubkeys;
   final VideoEvent video;
+
+  /// Whether the relay query behind [pubkeys] is still in flight.
+  final bool isLoading;
 
   @override
   ConsumerState<_RepostedByContent> createState() => _RepostedByContentState();
@@ -335,24 +355,58 @@ class _RepostedByContentState extends ConsumerState<_RepostedByContent> {
     final visible = _revealed;
     final hiddenCount = widget.pubkeys.length - candidate.length;
 
-    return AnimatedReveal(
-      child: visible.isEmpty
+    final Widget? content;
+    if (visible.isNotEmpty) {
+      content = MetadataSection(
+        label: context.l10n.metadataRepostedByLabel,
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            for (final pubkey in visible) _TappableUserChip(pubkey: pubkey),
+            if (hiddenCount > 0)
+              _MoreRepostersChip(count: hiddenCount, video: widget.video),
+          ],
+        ),
+      );
+    } else {
+      final placeholderCount = _placeholderChipCount(candidate);
+      content = placeholderCount <= 0
           ? null
-          : MetadataSection(
+          : _UserChipsSkeleton(
               label: context.l10n.metadataRepostedByLabel,
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  for (final pubkey in visible)
-                    _TappableUserChip(pubkey: pubkey),
-                  if (hiddenCount > 0)
-                    _MoreRepostersChip(count: hiddenCount, video: widget.video),
-                ],
-              ),
-            ),
+              chipCount: placeholderCount,
+            );
+    }
+
+    return AnimatedReveal(child: content);
+  }
+
+  /// Placeholder chips to hold the row open with while nothing is revealed.
+  ///
+  /// Once the relay has named someone — including a reposter the feed
+  /// pre-populated — that count is exact and only the labels are still
+  /// resolving. Before then the feed's Nostr repost count stands in, since it
+  /// arrives with the video. Archival Vine reposts are left out: they carry
+  /// no pubkey and never become a chip. When the eventual row includes the
+  /// "+N more" action, one extra placeholder reserves that chip too. Drops to
+  /// zero when the relay has answered with nobody, so a stale feed count cannot
+  /// leave a shimmer on screen forever.
+  int _placeholderChipCount(List<String> candidate) {
+    if (candidate.isNotEmpty) {
+      return candidate.length +
+          (widget.pubkeys.length > candidate.length ? 1 : 0);
+    }
+    if (!widget.isLoading) return 0;
+    final promisedCount = widget.video.nostrRepostCount ?? 0;
+    if (promisedCount <= 0) return 0;
+    final visibleCount = math.min(
+      promisedCount,
+      _RepostedByContent._maxVisibleReposters,
     );
+    return visibleCount +
+        (promisedCount > _RepostedByContent._maxVisibleReposters ? 1 : 0);
   }
 
   void _syncGraceTimer(List<String> candidate, bool namesSettled) {
@@ -383,6 +437,67 @@ class _RepostedByContentState extends ConsumerState<_RepostedByContent> {
   void _cancelGraceTimer() {
     _graceTimer?.cancel();
     _graceTimer = null;
+  }
+}
+
+/// Placeholder chip row shown while a section's chip names resolve.
+///
+/// Sized from the chip count the caller already knows, so the section
+/// reaches roughly its final height on first paint instead of dropping in
+/// and pushing everything below it down a round-trip later.
+class _UserChipsSkeleton extends StatelessWidget {
+  const _UserChipsSkeleton({required this.label, required this.chipCount});
+
+  /// Varied so the row reads as a set of names. No width can be truthful
+  /// here — the names that decide them are exactly what is still missing.
+  static const _chipWidths = [112.0, 88.0, 128.0, 96.0, 104.0];
+
+  /// Section header the placeholders sit under.
+  final String label;
+
+  final int chipCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return MetadataSection(
+      label: label,
+      child: Semantics(
+        label: context.l10n.commonLoading,
+        child: Skeletonizer(
+          effect: vineSkeletonEffectOf(context),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (var i = 0; i < chipCount; i++)
+                _UserChipSkeleton(width: _chipWidths[i % _chipWidths.length]),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A single placeholder pill matching [_TappableUserChip]'s 40 px height and
+/// 16 px radius.
+class _UserChipSkeleton extends StatelessWidget {
+  const _UserChipSkeleton({required this.width});
+
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    return Skeleton.leaf(
+      child: Container(
+        width: width,
+        height: 40,
+        decoration: BoxDecoration(
+          color: context.vineColors.skeleton,
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+    );
   }
 }
 

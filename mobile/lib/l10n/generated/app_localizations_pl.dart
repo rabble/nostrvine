@@ -1324,6 +1324,20 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'Wyłącz napisy';
 
   @override
+  String get videoSettingsAutoAdvanceOn =>
+      'Automatyczne przechodzenie włączone';
+
+  @override
+  String get videoSettingsAutoAdvanceOff =>
+      'Automatyczne przechodzenie wyłączone';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Napisy włączone';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Napisy wyłączone';
+
+  @override
   String get contentWarningLabel => 'Ostrzeżenie o treści';
 
   @override
@@ -1569,6 +1583,14 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get videoDetailLoadError => 'Nie udało się wczytać filmu';
+
+  @override
+  String get videoDetailLoadErrorBody =>
+      'Coś poszło nie tak po drodze. Spróbuj jeszcze raz.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Mógł zostać usunięty, być poza zasięgiem albo ukryty przez twoje ustawienia.';
 
   @override
   String get databaseCorruptionTitle => 'Twoje lokalne dane się uszkodziły';
@@ -4749,6 +4771,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Szukaj po nazwie...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Wyczyść wyszukiwanie';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name już dodano';
   }
@@ -6451,6 +6476,10 @@ class AppLocalizationsPl extends AppLocalizations {
       'Poświadczenia treści wymagają połączenia z internetem.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Wygeneruj ponownie';
 
   @override
@@ -7521,6 +7550,10 @@ class AppLocalizationsPl extends AppLocalizations {
       'Film został przesłany, ale nie udało się opublikować posta. Sprawdź ustawienia przekaźników i spróbuj ponownie.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Film został przesłany, ale ten dźwięk nie jest dopuszczony do ponownego użycia. Wybierz inny dźwięk, żeby opublikować.';
+
+  @override
   String get publishErrorInterrupted =>
       'Przesyłanie zostało przerwane. Chcesz spróbować ponownie?';
 
@@ -7666,6 +7699,13 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'Temat *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'Publiczny wpis na GitHubie';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Wszystko, co tu prześlesz, zostanie opublikowane w naszym repozytorium open source na GitHubie, aby deweloperzy mogli się tym zająć. Wpis oraz konto, na które jesteś zalogowany, będą publicznie widoczne dla wszystkich.';
 
   @override
   String get supportRequiredHelper => 'Wymagane';

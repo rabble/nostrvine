@@ -1287,6 +1287,18 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'إيقاف الترجمة';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'التشغيل التلقائي مفعّل';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'التشغيل التلقائي متوقف';
+
+  @override
+  String get videoSettingsCaptionsOn => 'الترجمة مفعّلة';
+
+  @override
+  String get videoSettingsCaptionsOff => 'الترجمة متوقفة';
+
+  @override
   String get contentWarningLabel => 'تحذير محتوى';
 
   @override
@@ -1525,6 +1537,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get videoDetailLoadError => 'فشل تحميل الفيديو';
+
+  @override
+  String get videoDetailLoadErrorBody => 'حدث خطأ ما في الطريق. جرّب مرة أخرى.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'قد يكون محذوفًا، أو بعيدًا عن متناولنا، أو مخفيًا بواسطة إعداداتك.';
 
   @override
   String get databaseCorruptionTitle => 'بياناتك المحلية تعرضت للتلف';
@@ -4595,6 +4614,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get userPickerSearchByNameHint => 'İsme göre ara...';
 
   @override
+  String get userPickerClearSearchSemantics => 'مسح البحث';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name zaten eklendi';
   }
@@ -6256,6 +6278,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'تتطلب بيانات اعتماد المحتوى اتصالاً بالإنترنت.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'إعادة الإنشاء';
 
   @override
@@ -7302,6 +7328,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'تم رفع الفيديو لكن تعذّر نشر المنشور. تحقّق من إعدادات المحوّلات وحاول مرّة أخرى.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'تم رفع الفيديو، لكن الصوت غير مسموح بإعادة استخدامه. اختر صوتًا آخر لنشره.';
+
+  @override
   String get publishErrorInterrupted =>
       'تم قطع هذا الرفع. هل ترغب في المحاولة مرّة أخرى؟';
 
@@ -7449,6 +7479,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'الموضوع *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'منشور عام على GitHub';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'سيُنشر كل ما ترسله هنا في مستودعنا مفتوح المصدر على GitHub ليتمكن المطورون من العمل عليه. سيكون المنشور والحساب الذي سجّلت الدخول به متاحين للجميع علنًا.';
 
   @override
   String get supportRequiredHelper => 'مطلوب';

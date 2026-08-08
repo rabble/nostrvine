@@ -1303,6 +1303,18 @@ class AppLocalizationsMs extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'Lumpuhkan sarikata';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'Maju automatik dihidupkan';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'Maju automatik dimatikan';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Sarikata dihidupkan';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Sarikata dimatikan';
+
+  @override
   String get contentWarningLabel => 'Amaran Kandungan';
 
   @override
@@ -1553,6 +1565,14 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get videoDetailLoadError => 'Gagal memuatkan video';
+
+  @override
+  String get videoDetailLoadErrorBody =>
+      'Ada yang tak kena dalam perjalanan. Cuba lagi.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Mungkin ia dipadam, di luar capaian, atau disembunyikan oleh tetapan anda.';
 
   @override
   String get databaseCorruptionTitle => 'Data setempat anda bercelaru';
@@ -4667,6 +4687,9 @@ class AppLocalizationsMs extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Cari mengikut nama...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Kosongkan carian';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name sudah ditambah';
   }
@@ -6349,6 +6372,10 @@ class AppLocalizationsMs extends AppLocalizations {
       'Kelayakan kandungan memerlukan sambungan internet.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Jana semula';
 
   @override
@@ -7405,6 +7432,10 @@ class AppLocalizationsMs extends AppLocalizations {
       'Video dimuat naik tetapi siaran tidak dapat diterbitkan. Semak tetapan relay anda dan cuba lagi.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Video dimuat naik tetapi bunyinya tidak dibenarkan untuk digunakan semula. Pilih bunyi lain untuk menyiarkannya.';
+
+  @override
   String get publishErrorInterrupted =>
       'Muat naik ini terganggu. Adakah anda mahu cuba lagi?';
 
@@ -7548,6 +7579,13 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'Subjek *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'Siaran GitHub awam';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Semua yang anda hantar di sini akan disiarkan dalam repositori sumber terbuka kami di GitHub supaya pembangun boleh mengendalikannya. Siaran ini dan akaun yang anda log masuk boleh dilihat oleh semua orang.';
 
   @override
   String get supportRequiredHelper => 'Diperlukan';
