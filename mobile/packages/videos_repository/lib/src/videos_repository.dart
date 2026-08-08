@@ -932,26 +932,23 @@ class VideosRepository {
       if (cached != null) {
         // Classics uses drop-filtering; cached page was already filtered &
         // shuffled, so re-apply freshness in case seen set grew since cache.
-        final ordered = await _orderBySeenFreshness(cached.videos);
+        await _seenVideoLookup?.ensureInitialized();
+        final filtered = filterOutRecentlySeenVideos(
+          cached.videos,
+          seenVideoLookup: _seenVideoLookup,
+          retainAllWhenAllSeen: false,
+        );
         // If drop would empty it, return cached as-is to avoid empty feed.
-        // coverage:ignore-start
-        if (ordered.length != cached.videos.length) {
-          final filtered = filterOutRecentlySeenVideos(
-            cached.videos,
-            seenVideoLookup: _seenVideoLookup,
-          );
-          if (filtered.isEmpty) return cached;
-          // For drop policy, filtered cache may be short; return filtered
-          // and let pagination deep-fetch on next page rather than blocking
-          // here.
-          return HomeFeedResult(
-            videos: filtered..shuffle(_random),
-            paginationCursor: cached.paginationCursor,
-            hasMore: cached.hasMore,
-          );
+        if (filtered.isEmpty || filtered.length == cached.videos.length) {
+          return cached;
         }
-        // coverage:ignore-end
-        return cached;
+        // For drop policy, filtered cache may be short; return filtered and
+        // let pagination deep-fetch on next page rather than blocking here.
+        return HomeFeedResult(
+          videos: filtered..shuffle(_random),
+          paginationCursor: cached.paginationCursor,
+          hasMore: cached.hasMore,
+        );
       }
     }
 
@@ -1004,6 +1001,7 @@ class VideosRepository {
             : filterOutRecentlySeenVideos(
                 pageVideos,
                 seenVideoLookup: _seenVideoLookup,
+                retainAllWhenAllSeen: false,
               );
 
         // If filtering would drop an entire page but we have no filtered
@@ -1028,7 +1026,6 @@ class VideosRepository {
     // archive slices rather than showing nothing forever. If we did collect
     // something, shuffle as before (classic is leaderboard-sorted, shuffle
     // gives per-session variety).
-    // coverage:ignore-start
     if (collected.isEmpty &&
         !exhausted &&
         !failed &&
@@ -1042,7 +1039,6 @@ class VideosRepository {
         hasMore: true,
       );
     }
-    // coverage:ignore-end
 
     collected.shuffle(_random);
 

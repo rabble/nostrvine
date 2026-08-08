@@ -239,7 +239,10 @@ void main() {
     test(
       'classic deep-fetch triggers when filtering removes most of page',
       () async {
-        final seenPage = List.generate(5, (i) => _stats('seen-$i'));
+        final seenPage = List.generate(
+          5,
+          (i) => _stats('seen-$i', platform: 'vine'),
+        );
         final freshPage = [
           _stats('fresh-0', platform: 'vine'),
           _stats('fresh-1', platform: 'vine'),
@@ -274,6 +277,134 @@ void main() {
         expect(result.videos.any((v) => v.id.startsWith('seen-')), isFalse);
         expect(result.videos.any((v) => v.id.startsWith('fresh-')), isTrue);
         expect(call, greaterThan(1));
+      },
+    );
+
+    test('classic returns a cursor after eight all-seen pages', () async {
+      when(
+        () => mockFunnelcake.getClassicVines(
+          limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+        ),
+      ).thenAnswer((invocation) async {
+        final offset = invocation.namedArguments[#offset] as int;
+        return [
+          _stats('seen-$offset-a', platform: 'vine'),
+          _stats('seen-$offset-b', platform: 'vine'),
+        ];
+      });
+      when(
+        () => mockFunnelcake.getBulkVideoStats(any()),
+      ).thenAnswer((_) async => const BulkVideoStatsResponse(stats: {}));
+
+      final repo = VideosRepository(
+        nostrClient: mockNostr,
+        funnelcakeApiClient: mockFunnelcake,
+        seenVideoLookup: SeenVideoLookup(
+          wasSeenRecently: (_, {within = const Duration(hours: 24)}) => true,
+        ),
+        random: StubRandom(offsetPage: 0),
+      );
+
+      final result = await repo.getClassicVideos(limit: 2);
+
+      expect(result.videos, isEmpty);
+      expect(result.paginationCursor, 'classic-offset:16');
+      expect(result.hasMore, isTrue);
+      verify(
+        () => mockFunnelcake.getClassicVines(
+          limit: 2,
+          offset: any(named: 'offset'),
+        ),
+      ).called(8);
+    });
+
+    test('classic cache drops videos watched after it was populated', () async {
+      final seenIds = <String>{};
+      when(
+        () => mockFunnelcake.getClassicVines(
+          limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          _stats('cached-seen', platform: 'vine'),
+          _stats('cached-fresh', platform: 'vine'),
+        ],
+      );
+      when(
+        () => mockFunnelcake.getBulkVideoStats(any()),
+      ).thenAnswer((_) async => const BulkVideoStatsResponse(stats: {}));
+
+      final repo = VideosRepository(
+        nostrClient: mockNostr,
+        funnelcakeApiClient: mockFunnelcake,
+        inMemoryFeedCache: InMemoryFeedCache(),
+        seenVideoLookup: SeenVideoLookup(
+          wasSeenRecently: (id, {within = const Duration(hours: 24)}) =>
+              seenIds.contains(id),
+        ),
+        random: StubRandom(offsetPage: 0),
+      );
+
+      final initial = await repo.getClassicVideos(limit: 2);
+      seenIds.add('cached-seen');
+      final cached = await repo.getClassicVideos(limit: 2);
+
+      expect(initial.videos, hasLength(2));
+      expect(cached.videos.map((video) => video.id), ['cached-fresh']);
+      verify(
+        () => mockFunnelcake.getClassicVines(
+          limit: 2,
+          offset: any(named: 'offset'),
+        ),
+      ).called(1);
+    });
+
+    test(
+      'classic cache stays non-empty when every cached video was seen',
+      () async {
+        var allSeen = false;
+        when(
+          () => mockFunnelcake.getClassicVines(
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            _stats('cached-a', platform: 'vine'),
+            _stats('cached-b', platform: 'vine'),
+          ],
+        );
+        when(
+          () => mockFunnelcake.getBulkVideoStats(any()),
+        ).thenAnswer((_) async => const BulkVideoStatsResponse(stats: {}));
+
+        final repo = VideosRepository(
+          nostrClient: mockNostr,
+          funnelcakeApiClient: mockFunnelcake,
+          inMemoryFeedCache: InMemoryFeedCache(),
+          seenVideoLookup: SeenVideoLookup(
+            wasSeenRecently: (_, {within = const Duration(hours: 24)}) =>
+                allSeen,
+          ),
+          random: StubRandom(offsetPage: 0),
+        );
+
+        final initial = await repo.getClassicVideos(limit: 2);
+        allSeen = true;
+        final cached = await repo.getClassicVideos(limit: 2);
+
+        expect(
+          cached.videos.map((video) => video.id),
+          unorderedEquals(initial.videos.map((video) => video.id)),
+        );
+        verify(
+          () => mockFunnelcake.getClassicVines(
+            limit: 2,
+            offset: any(named: 'offset'),
+          ),
+        ).called(1);
       },
     );
 

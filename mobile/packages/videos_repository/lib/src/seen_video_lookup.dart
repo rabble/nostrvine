@@ -62,11 +62,16 @@ List<VideoEvent> prioritizeNotRecentlySeenVideos(
 ///
 /// Used for classics/discovery where inventory is effectively unlimited and
 /// repeating the same leaderboard top would otherwise trap heavy viewers.
-/// Returns all candidates if none were recently seen or all were.
+/// Returns all candidates if none were recently seen. By default it also
+/// retains all candidates when every candidate was seen, so callers with a
+/// finite candidate pool do not accidentally create an empty feed. Callers
+/// that can fetch deeper may set [retainAllWhenAllSeen] to `false` and decide
+/// how to recover from an empty filtered page themselves.
 List<VideoEvent> filterOutRecentlySeenVideos(
   Iterable<VideoEvent> videos, {
   SeenVideoLookup? seenVideoLookup,
   Duration recencyWindow = defaultRecentlySeenVideoWindow,
+  bool retainAllWhenAllSeen = true,
 }) {
   final candidates = videos is List<VideoEvent> ? videos : videos.toList();
   if (seenVideoLookup == null || candidates.isEmpty) return candidates;
@@ -83,7 +88,10 @@ List<VideoEvent> filterOutRecentlySeenVideos(
   }
   // If we would drop everything, return original to avoid empty feed
   // (caller can decide to deep-fetch instead).
-  if (filtered.isEmpty && dropped > 0 && candidates.isNotEmpty) {
+  if (retainAllWhenAllSeen &&
+      filtered.isEmpty &&
+      dropped > 0 &&
+      candidates.isNotEmpty) {
     return candidates;
   }
   return filtered;
