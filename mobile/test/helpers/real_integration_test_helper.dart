@@ -1,6 +1,8 @@
 // ABOUTME: Helper utilities for real integration tests without over-mocking
 // ABOUTME: Provides real Nostr relay connections and minimal platform channel mocking
 
+import 'dart:io';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -14,6 +16,32 @@ import 'shared_channel_override.dart';
 /// Only mocks platform channels that can't be tested, uses real Nostr connections
 class RealIntegrationTestHelper {
   static bool _isSetup = false;
+
+  /// Per-process root for the directories `path_provider` hands back.
+  ///
+  /// `very_good test --optimization` runs the merged bundle and every
+  /// `skip_very_good_optimization` file as *separate, concurrent* processes.
+  /// These paths were hardcoded to `/tmp/test_documents` and
+  /// `/tmp/test_support`, so every one of those processes resolved to the
+  /// same directory — and therefore the same Hive boxes on disk.
+  ///
+  /// Sixteen suites open the `pending_uploads` box; eleven live in the
+  /// bundle and five run standalone. When a standalone suite called
+  /// `Hive.deleteBoxFromDisk('pending_uploads')` while a bundled one was
+  /// reading it, whichever lost the race failed on a box it did not mutate —
+  /// a seed-dependent failure with no connection to the diff under test.
+  /// Keying the root on the process id removes the shared resource.
+  static final Directory _processRoot = Directory.systemTemp.createTempSync(
+    'divine_test_${pid}_',
+  );
+
+  static final Directory _documentsDirectory = Directory(
+    '${_processRoot.path}/documents',
+  )..createSync(recursive: true);
+
+  static final Directory _supportDirectory = Directory(
+    '${_processRoot.path}/support',
+  )..createSync(recursive: true);
 
   static const MethodChannel _prefsChannel = MethodChannel(
     'plugins.flutter.io/shared_preferences',
@@ -135,13 +163,13 @@ class RealIntegrationTestHelper {
 
     overrideSharedChannel(_pathProviderChannel, (MethodCall methodCall) async {
       if (methodCall.method == 'getApplicationDocumentsDirectory') {
-        return '/tmp/test_documents';
+        return _documentsDirectory.path;
       }
       if (methodCall.method == 'getTemporaryDirectory') {
         return '/tmp';
       }
       if (methodCall.method == 'getApplicationSupportDirectory') {
-        return '/tmp/test_support';
+        return _supportDirectory.path;
       }
       return null;
     });
