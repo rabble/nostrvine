@@ -20,8 +20,6 @@ void main() {
     addTearDown(bloc.close);
     final bodySizeNotifier = ValueNotifier(Size.zero);
     addTearDown(bodySizeNotifier.dispose);
-    final zoomNotifier = ValueNotifier(Matrix4.identity());
-    addTearDown(zoomNotifier.dispose);
 
     await tester.pumpWidget(
       MaterialApp(
@@ -41,7 +39,6 @@ void main() {
             onAddEditTextLayer: ([_]) async => null,
             originalClipAspectRatio: 9 / 16,
             bodySizeNotifier: bodySizeNotifier,
-            zoomMatrixNotifier: zoomNotifier,
             playTimeNotifier: ValueNotifier(Duration.zero),
             fromLibrary: false,
             child: const Scaffold(body: VideoEditorTuneBottomBar()),

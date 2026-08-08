@@ -17,8 +17,6 @@ void main() {
   VideoEditorScope buildScope() {
     final bodySize = ValueNotifier(Size.zero);
     addTearDown(bodySize.dispose);
-    final zoom = ValueNotifier(Matrix4.identity());
-    addTearDown(zoom.dispose);
     return VideoEditorScope(
       editorKey: GlobalKey<ProImageEditorState>(),
       removeAreaKey: GlobalKey(),
@@ -31,7 +29,6 @@ void main() {
       onOpenCaptions: () {},
       originalClipAspectRatio: 9 / 16,
       bodySizeNotifier: bodySize,
-      zoomMatrixNotifier: zoom,
       playTimeNotifier: ValueNotifier(Duration.zero),
       fromLibrary: false,
     );

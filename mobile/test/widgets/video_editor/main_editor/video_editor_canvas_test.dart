@@ -13,6 +13,8 @@ import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.d
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
+import 'package:openvine/models/video_editor/clip_history_direction.dart';
+import 'package:openvine/models/video_editor/clip_snapshot_sync_op.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_canvas.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:pro_image_editor/pro_image_editor.dart' show ProVideoController;
@@ -46,7 +48,6 @@ void main() {
               onAddEditTextLayer: ([_]) async => null,
               originalClipAspectRatio: 9 / 16,
               bodySizeNotifier: bodySizeNotifier,
-              zoomMatrixNotifier: ValueNotifier(Matrix4.identity()),
               playTimeNotifier: ValueNotifier(Duration.zero),
               fromLibrary: false,
               child: const Scaffold(body: VideoEditorCanvas()),
@@ -383,107 +384,6 @@ void main() {
             'PLAYER_ERROR',
           ),
         ),
-      );
-    });
-  });
-
-  group('interpolatePlayheadPosition', () {
-    const maxDuration = Duration(seconds: 10);
-
-    test('advances from the anchor by the elapsed wall-clock at 1x', () {
-      expect(
-        interpolatePlayheadPosition(
-          anchor: const Duration(seconds: 2),
-          elapsed: const Duration(milliseconds: 100),
-          speed: 1,
-          maxDuration: maxDuration,
-        ),
-        const Duration(milliseconds: 2100),
-      );
-    });
-
-    test('scales the elapsed by the playback speed', () {
-      expect(
-        interpolatePlayheadPosition(
-          anchor: const Duration(seconds: 1),
-          elapsed: const Duration(milliseconds: 200),
-          speed: 2,
-          maxDuration: maxDuration,
-        ),
-        const Duration(milliseconds: 1400),
-      );
-    });
-
-    test('clamps to the max duration past the end', () {
-      expect(
-        interpolatePlayheadPosition(
-          anchor: const Duration(seconds: 9, milliseconds: 950),
-          elapsed: const Duration(milliseconds: 200),
-          speed: 1,
-          maxDuration: maxDuration,
-        ),
-        maxDuration,
-      );
-    });
-
-    test('never returns a negative position', () {
-      expect(
-        interpolatePlayheadPosition(
-          anchor: Duration.zero,
-          elapsed: const Duration(milliseconds: 100),
-          speed: -1,
-          maxDuration: maxDuration,
-        ),
-        Duration.zero,
-      );
-    });
-  });
-
-  group('stopMotionLoopPosition', () {
-    const total = Duration(milliseconds: 300);
-
-    test('advances from the anchor by the elapsed wall-clock', () {
-      expect(
-        stopMotionLoopPosition(
-          anchor: const Duration(milliseconds: 100),
-          elapsed: const Duration(milliseconds: 50),
-          total: total,
-        ),
-        const Duration(milliseconds: 150),
-      );
-    });
-
-    test('wraps around the total so playback loops', () {
-      // 250 + 100 = 350, 350 % 300 = 50.
-      expect(
-        stopMotionLoopPosition(
-          anchor: const Duration(milliseconds: 250),
-          elapsed: const Duration(milliseconds: 100),
-          total: total,
-        ),
-        const Duration(milliseconds: 50),
-      );
-    });
-
-    test('returns zero exactly at a full loop boundary', () {
-      expect(
-        stopMotionLoopPosition(
-          anchor: Duration.zero,
-          elapsed: total,
-          total: total,
-        ),
-        Duration.zero,
-      );
-    });
-
-    test('returns zero when total is non-positive', () {
-      expect(
-        stopMotionLoopPosition(
-          anchor: const Duration(milliseconds: 100),
-          elapsed: const Duration(milliseconds: 50),
-          total: Duration.zero,
-        ),
-        Duration.zero,
       );
     });
   });
