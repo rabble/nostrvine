@@ -19,7 +19,7 @@ runs should be short — the ledger below tells you what's already handled.
 ## Hard rules (non-negotiable)
 
 1. **NEVER close, delete, or mutate the state of Crashlytics issues, events, or any
-   hosted data.** You may add notes (`crashlytics_add_note`) — nothing else. Do not
+   hosted data.** You may add notes (`crashlytics_create_note`) — nothing else. Do not
    use `crashlytics_update_issue` to change state; do not use `crashlytics_delete_note`.
 2. **Never run destructive local commands** (`git reset --hard`, `git clean`, `rm -rf`,
    branch force-deletes) on anything you didn't create this run.
@@ -39,20 +39,27 @@ say so rather than guessing at crash data.
 
 Using the Firebase MCP tools against project `openvine-co`:
 
-1. `crashlytics_list_top_issues` for **both** the iOS and Android apps. It takes
-   `{app_id, issue_count, issue_type}` — `issue_type` is one of `FATAL`, `NON-FATAL`,
-   `ANR`. Ask for a generous `issue_count` (30+); see the ranking note below.
-2. For candidates, `crashlytics_get_issue_details` (`{app_id, issue_id}`), and
-   `crashlytics_get_sample_crash_for_issue`
-   (`{app_id, issue_id, sample_count, variant_id}`) for representative stack traces.
-   `crashlytics_list_top_devices`, `crashlytics_list_top_operating_systems` and
-   `crashlytics_list_top_versions` give the device / OS / version breakdown.
+1. `crashlytics_get_report` with `report: topIssues` for **both** the iOS and Android
+   apps. It takes `{appId, report, filter, pageSize}`. Set both `filter.intervalStartTime`
+   and `filter.intervalEndTime` (ISO 8601, within the last 90 days) — left unset it
+   defaults to the last 7 days. `filter.issueErrorTypes` is one of `FATAL`, `NON_FATAL`,
+   `ANR`; `filter.issueSignals` accepts `SIGNAL_EARLY`, `SIGNAL_FRESH`,
+   `SIGNAL_REGRESSED`, `SIGNAL_REPETITIVE`. `pageSize` defaults to 10 — ask for more.
+2. For candidates, `crashlytics_get_issue` to get details, and
+   `crashlytics_list_events` / `crashlytics_batch_get_events` for representative stack
+   traces. The `topOperatingSystems`, `topAppleDevices`, `topAndroidDevices` and
+   `topVersions` reports give the OS / device / version breakdown.
 
-Note: the tool takes **no time-window and no sort parameter** — it returns the top
-issues as Crashlytics ranks them, by event count. Rank your own candidates by
-**impacted users** from the issue details, because event count over-weights a single
-user who crash-loops. That means pulling more rows than you think you need and sorting
-them yourself, rather than trusting the returned order.
+Note: the `topIssues` report is sorted by **event count**, but rank your candidates by
+**impacted users** (with `SIGNAL_FRESH` / `SIGNAL_REGRESSED` / velocity as tiebreakers).
+Every report aggregates both events and impacted users, so you have the number you need.
+Event count over-weights a single user who crash-loops; impacted-users is the better
+severity signal. Read enough rows that a high-user issue ranked below a high-event one
+isn't missed.
+
+The Firebase MCP server pins `firebase-tools@latest`, so this tool surface can drift.
+If a name or parameter here doesn't match what the server advertises, trust the live
+tool schema and update this runbook.
 
 ## Step 2 — Triage filter
 
