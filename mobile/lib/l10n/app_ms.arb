@@ -3851,6 +3851,7 @@
   "libraryAddClips": "Tambah",
   "libraryRecordVideo": "Rakam Video",
   "videoClipSemanticLabel": "Klip video, {duration} saat",
+  "videoClipStopMotionSemanticLabel": "Klip stop-motion, {frames}",
   "@videoClipSemanticLabel": {
     "description": "Accessibility label for a video clip thumbnail. Duration is formatted as seconds with 2 decimal places, e.g. '5.73'.",
     "placeholders": {
@@ -3859,7 +3860,7 @@
       }
     }
   },
-  "videoClipSemanticValueSelected": "Dipilih",
+  "videoClipSemanticValueSelectedAtPosition": "Dipilih, nombor {position}",
   "videoClipSemanticValueNotSelected": "Tidak dipilih",
   "videoClipSemanticHintDisabled": "Dilumpuhkan",
   "videoClipSemanticHintSelect": "Ketik untuk memilih, tekan lama untuk pratonton",
@@ -5384,10 +5385,6 @@
   "videoEditorStopMotionFramesPerImageButtonLabel": "Bingkai",
   "@videoEditorStopMotionFramesPerImageButtonLabel": {
     "description": "Short label under the stop-motion frames-per-image action button in the timeline edit bar."
-  },
-  "libraryStopMotionClipLabel": "Klip stop-motion",
-  "@libraryStopMotionClipLabel": {
-    "description": "Accessibility label for the badge that marks a clip in the library as a stop-motion recording."
   },
   "videoEditorStopMotionFramesPerImageValueSemanticLabel": "{count} bingkai setiap imej",
   "@videoEditorStopMotionFramesPerImageValueSemanticLabel": {

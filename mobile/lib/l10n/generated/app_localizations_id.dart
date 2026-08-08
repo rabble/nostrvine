@@ -6552,7 +6552,14 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String get videoClipSemanticValueSelected => 'Dipilih';
+  String videoClipStopMotionSemanticLabel(String frames) {
+    return 'Klip stop-motion, $frames';
+  }
+
+  @override
+  String videoClipSemanticValueSelectedAtPosition(int position) {
+    return 'Dipilih, nomor $position';
+  }
 
   @override
   String get videoClipSemanticValueNotSelected => 'Tidak dipilih';
@@ -9066,9 +9073,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get videoEditorStopMotionFramesPerImageButtonLabel => 'Bingkai';
-
-  @override
-  String get libraryStopMotionClipLabel => 'Klip stop-motion';
 
   @override
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {

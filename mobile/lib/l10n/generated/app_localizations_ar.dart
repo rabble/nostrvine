@@ -6542,7 +6542,14 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get videoClipSemanticValueSelected => 'محدد';
+  String videoClipStopMotionSemanticLabel(String frames) {
+    return 'مقطع حركة إيقافية، $frames';
+  }
+
+  @override
+  String videoClipSemanticValueSelectedAtPosition(int position) {
+    return 'محدد، رقم $position';
+  }
 
   @override
   String get videoClipSemanticValueNotSelected => 'غير محدد';
@@ -9053,9 +9060,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get videoEditorStopMotionFramesPerImageButtonLabel => 'إطارات';
-
-  @override
-  String get libraryStopMotionClipLabel => 'مقطع الحركة الإيقافية';
 
   @override
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {

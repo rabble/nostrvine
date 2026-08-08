@@ -3851,6 +3851,7 @@
   "libraryAddClips": "Thêm",
   "libraryRecordVideo": "Quay video",
   "videoClipSemanticLabel": "Clip video, {duration} giây",
+  "videoClipStopMotionSemanticLabel": "Đoạn stop-motion, {frames}",
   "@videoClipSemanticLabel": {
     "description": "Accessibility label for a video clip thumbnail. Duration is formatted as seconds with 2 decimal places, e.g. '5.73'.",
     "placeholders": {
@@ -3859,7 +3860,7 @@
       }
     }
   },
-  "videoClipSemanticValueSelected": "Đã chọn",
+  "videoClipSemanticValueSelectedAtPosition": "Đã chọn, số {position}",
   "videoClipSemanticValueNotSelected": "Chưa chọn",
   "videoClipSemanticHintDisabled": "Đã tắt",
   "videoClipSemanticHintSelect": "Chạm để chọn, nhấn giữ để xem thử",
@@ -5384,10 +5385,6 @@
   "videoEditorStopMotionFramesPerImageButtonLabel": "Khung hình",
   "@videoEditorStopMotionFramesPerImageButtonLabel": {
     "description": "Short label under the stop-motion frames-per-image action button in the timeline edit bar."
-  },
-  "libraryStopMotionClipLabel": "Clip stop-motion",
-  "@libraryStopMotionClipLabel": {
-    "description": "Accessibility label for the badge that marks a clip in the library as a stop-motion recording."
   },
   "videoEditorStopMotionFramesPerImageValueSemanticLabel": "{count} khung hình mỗi ảnh",
   "@videoEditorStopMotionFramesPerImageValueSemanticLabel": {

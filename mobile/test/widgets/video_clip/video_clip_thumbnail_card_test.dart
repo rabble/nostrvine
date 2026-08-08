@@ -83,12 +83,15 @@ void main() {
 
       testWidgets('stop-motion badge for a stop-motion clip', (tester) async {
         await tester.pumpWidget(
-          buildWidget(clip: createClip(stopMotion: true)),
+          buildWidget(
+            clip: createClip(stopMotion: true, stopMotionFrameCount: 4),
+          ),
         );
-        final l10n = lookupAppLocalizations(const Locale('en'));
 
         expect(
-          find.bySemanticsLabel(l10n.libraryStopMotionClipLabel),
+          find.byWidgetPredicate(
+            (w) => w is DivineIcon && w.icon == DivineIconName.imagesSquare,
+          ),
           findsOneWidget,
         );
       });
@@ -121,10 +124,11 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(buildWidget());
-        final l10n = lookupAppLocalizations(const Locale('en'));
 
         expect(
-          find.bySemanticsLabel(l10n.libraryStopMotionClipLabel),
+          find.byWidgetPredicate(
+            (w) => w is DivineIcon && w.icon == DivineIconName.imagesSquare,
+          ),
           findsNothing,
         );
       });
@@ -228,13 +232,62 @@ void main() {
         expect(find.bySemanticsLabel('5.00'), findsNothing);
       });
 
-      testWidgets('has correct semantics value when selected', (tester) async {
-        await tester.pumpWidget(buildWidget(selectionIndex: 1));
+      testWidgets('announces the selection position when selected', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget(selectionIndex: 3));
+        final l10n = lookupAppLocalizations(const Locale('en'));
 
         final semantics = tester.getSemantics(
           find.byType(VideoClipThumbnailCard),
         );
-        expect(semantics.value, equals('Selected'));
+        expect(
+          semantics.value,
+          equals(l10n.videoClipSemanticValueSelectedAtPosition(3)),
+        );
+        // The badge's digits must not merge into the card label as a bare
+        // number the way the duration badge used to.
+        expect(
+          semantics.label,
+          equals(l10n.videoClipSemanticLabel('5.00')),
+        );
+      });
+
+      testWidgets('describes a stop-motion clip by its still count', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(
+            clip: createClip(
+              stopMotion: true,
+              stopMotionFrameCount: 4,
+              duration: const Duration(seconds: 3),
+            ),
+          ),
+        );
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        final semantics = tester.getSemantics(
+          find.byType(VideoClipThumbnailCard),
+        );
+
+        expect(
+          semantics.label,
+          equals(
+            l10n.videoClipStopMotionSemanticLabel(
+              l10n.videoEditorStopMotionFramesCount(4),
+            ),
+          ),
+        );
+        // The duration badge is hidden for stop-motion because the number is
+        // misleading; the announcement must withhold it too.
+        expect(semantics.label, isNot(contains('3.00')));
+        // And the badge must not add a second, non-actionable node inside the
+        // card's button.
+        expect(
+          find.bySemanticsLabel(l10n.videoEditorStopMotionFramesCount(4)),
+          findsNothing,
+        );
       });
     });
   });

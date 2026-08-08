@@ -6624,7 +6624,14 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get videoClipSemanticValueSelected => 'Geselecteerd';
+  String videoClipStopMotionSemanticLabel(String frames) {
+    return 'Stop-motionclip, $frames';
+  }
+
+  @override
+  String videoClipSemanticValueSelectedAtPosition(int position) {
+    return 'Geselecteerd, nummer $position';
+  }
 
   @override
   String get videoClipSemanticValueNotSelected => 'Niet geselecteerd';
@@ -9153,9 +9160,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get videoEditorStopMotionFramesPerImageButtonLabel => 'Frames';
-
-  @override
-  String get libraryStopMotionClipLabel => 'Stop-motion-clip';
 
   @override
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {

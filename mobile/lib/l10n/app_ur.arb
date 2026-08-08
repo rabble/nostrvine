@@ -3851,6 +3851,7 @@
   "libraryAddClips": "شامل کریں",
   "libraryRecordVideo": "ویڈیو ریکارڈ کریں",
   "videoClipSemanticLabel": "ویڈیو کلپ، {duration} سیکنڈ",
+  "videoClipStopMotionSemanticLabel": "اسٹاپ موشن کلپ، {frames}",
   "@videoClipSemanticLabel": {
     "description": "Accessibility label for a video clip thumbnail. Duration is formatted as seconds with 2 decimal places, e.g. '5.73'.",
     "placeholders": {
@@ -3859,7 +3860,7 @@
       }
     }
   },
-  "videoClipSemanticValueSelected": "منتخب",
+  "videoClipSemanticValueSelectedAtPosition": "منتخب، نمبر {position}",
   "videoClipSemanticValueNotSelected": "منتخب نہیں",
   "videoClipSemanticHintDisabled": "غیر فعال",
   "videoClipSemanticHintSelect": "منتخب کرنے کے لیے ٹیپ کریں، پیش منظر کے لیے دیر تک دبائیں",
@@ -5384,10 +5385,6 @@
   "videoEditorStopMotionFramesPerImageButtonLabel": "فریم",
   "@videoEditorStopMotionFramesPerImageButtonLabel": {
     "description": "Short label under the stop-motion frames-per-image action button in the timeline edit bar."
-  },
-  "libraryStopMotionClipLabel": "اسٹاپ موشن کلپ",
-  "@libraryStopMotionClipLabel": {
-    "description": "Accessibility label for the badge that marks a clip in the library as a stop-motion recording."
   },
   "videoEditorStopMotionFramesPerImageValueSemanticLabel": "فی تصویر {count} فریم",
   "@videoEditorStopMotionFramesPerImageValueSemanticLabel": {

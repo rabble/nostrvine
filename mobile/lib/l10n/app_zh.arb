@@ -3851,6 +3851,7 @@
   "libraryAddClips": "添加",
   "libraryRecordVideo": "录制视频",
   "videoClipSemanticLabel": "视频片段，{duration} 秒",
+  "videoClipStopMotionSemanticLabel": "定格动画片段，{frames}",
   "@videoClipSemanticLabel": {
     "description": "Accessibility label for a video clip thumbnail. Duration is formatted as seconds with 2 decimal places, e.g. '5.73'.",
     "placeholders": {
@@ -3859,7 +3860,7 @@
       }
     }
   },
-  "videoClipSemanticValueSelected": "已选中",
+  "videoClipSemanticValueSelectedAtPosition": "已选中，第 {position} 个",
   "videoClipSemanticValueNotSelected": "未选中",
   "videoClipSemanticHintDisabled": "已禁用",
   "videoClipSemanticHintSelect": "点按选择，长按预览",
@@ -5384,10 +5385,6 @@
   "videoEditorStopMotionFramesPerImageButtonLabel": "帧数",
   "@videoEditorStopMotionFramesPerImageButtonLabel": {
     "description": "Short label under the stop-motion frames-per-image action button in the timeline edit bar."
-  },
-  "libraryStopMotionClipLabel": "定格动画片段",
-  "@libraryStopMotionClipLabel": {
-    "description": "Accessibility label for the badge that marks a clip in the library as a stop-motion recording."
   },
   "videoEditorStopMotionFramesPerImageValueSemanticLabel": "每图 {count} 帧",
   "@videoEditorStopMotionFramesPerImageValueSemanticLabel": {

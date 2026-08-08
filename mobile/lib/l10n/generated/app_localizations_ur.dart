@@ -6597,7 +6597,14 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String get videoClipSemanticValueSelected => 'منتخب';
+  String videoClipStopMotionSemanticLabel(String frames) {
+    return 'اسٹاپ موشن کلپ، $frames';
+  }
+
+  @override
+  String videoClipSemanticValueSelectedAtPosition(int position) {
+    return 'منتخب، نمبر $position';
+  }
 
   @override
   String get videoClipSemanticValueNotSelected => 'منتخب نہیں';
@@ -9111,9 +9118,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get videoEditorStopMotionFramesPerImageButtonLabel => 'فریم';
-
-  @override
-  String get libraryStopMotionClipLabel => 'اسٹاپ موشن کلپ';
 
   @override
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {

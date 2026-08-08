@@ -4072,7 +4072,24 @@
       }
     }
   },
-  "videoClipSemanticValueSelected": "Selected",
+  "videoClipStopMotionSemanticLabel": "Stop-motion clip, {frames}",
+  "@videoClipStopMotionSemanticLabel": {
+    "description": "Accessibility label for a stop-motion clip thumbnail. {frames} is the already-localized frame count from videoEditorStopMotionFramesCount. Replaces the duration label, which is a misleading value for stop-motion and is hidden visually for the same reason.",
+    "placeholders": {
+      "frames": {
+        "type": "String"
+      }
+    }
+  },
+  "videoClipSemanticValueSelectedAtPosition": "Selected, number {position}",
+  "@videoClipSemanticValueSelectedAtPosition": {
+    "description": "Accessibility value for a selected video clip thumbnail, announcing its position in the selection order. Mirrors the number shown in the on-screen selection badge.",
+    "placeholders": {
+      "position": {
+        "type": "int"
+      }
+    }
+  },
   "videoClipSemanticValueNotSelected": "Not selected",
   "videoClipSemanticHintDisabled": "Disabled",
   "videoClipSemanticHintSelect": "Tap to select, long press to preview",
@@ -5379,10 +5396,6 @@
   "videoEditorStopMotionFramesPerImageButtonLabel": "Frames",
   "@videoEditorStopMotionFramesPerImageButtonLabel": {
     "description": "Short label under the stop-motion frames-per-image action button in the timeline edit bar."
-  },
-  "libraryStopMotionClipLabel": "Stop-motion clip",
-  "@libraryStopMotionClipLabel": {
-    "description": "Accessibility label for the badge that marks a clip in the library as a stop-motion recording."
   },
   "videoEditorStopMotionFramesPerImageValueSemanticLabel": "{count} frames per image",
   "@videoEditorStopMotionFramesPerImageValueSemanticLabel": {

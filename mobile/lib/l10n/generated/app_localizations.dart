@@ -11486,11 +11486,17 @@ abstract class AppLocalizations {
   /// **'Video clip, {duration} seconds'**
   String videoClipSemanticLabel(String duration);
 
-  /// No description provided for @videoClipSemanticValueSelected.
+  /// Accessibility label for a stop-motion clip thumbnail. {frames} is the already-localized frame count from videoEditorStopMotionFramesCount. Replaces the duration label, which is a misleading value for stop-motion and is hidden visually for the same reason.
   ///
   /// In en, this message translates to:
-  /// **'Selected'**
-  String get videoClipSemanticValueSelected;
+  /// **'Stop-motion clip, {frames}'**
+  String videoClipStopMotionSemanticLabel(String frames);
+
+  /// Accessibility value for a selected video clip thumbnail, announcing its position in the selection order. Mirrors the number shown in the on-screen selection badge.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected, number {position}'**
+  String videoClipSemanticValueSelectedAtPosition(int position);
 
   /// No description provided for @videoClipSemanticValueNotSelected.
   ///
@@ -15719,12 +15725,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Frames'**
   String get videoEditorStopMotionFramesPerImageButtonLabel;
-
-  /// Accessibility label for the badge that marks a clip in the library as a stop-motion recording.
-  ///
-  /// In en, this message translates to:
-  /// **'Stop-motion clip'**
-  String get libraryStopMotionClipLabel;
 
   /// Accessibility value announcing the current stop-motion hold length, in output frames per still.
   ///

@@ -6459,7 +6459,14 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get videoClipSemanticValueSelected => 'ተመርጧል';
+  String videoClipStopMotionSemanticLabel(String frames) {
+    return 'የእንቅስቃሴ-አልባ ቅንጥብ፣ $frames';
+  }
+
+  @override
+  String videoClipSemanticValueSelectedAtPosition(int position) {
+    return 'ተመርጧል፣ ቁጥር $position';
+  }
 
   @override
   String get videoClipSemanticValueNotSelected => 'አልተመረጠም';
@@ -8922,9 +8929,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoEditorStopMotionFramesPerImageButtonLabel => 'ፍሬሞች';
-
-  @override
-  String get libraryStopMotionClipLabel => 'የስቶፕ-ሞሽን ክሊፕ';
 
   @override
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {

@@ -75,11 +75,24 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
     final l10n = context.l10n;
     return Semantics(
       container: true,
-      label: l10n.videoClipSemanticLabel(
-        widget.clip.duration.toFormattedSeconds(),
-      ),
+      // A stop-motion clip's playback length is a tiny, misleading value, which
+      // is why the duration badge is hidden for it. Announcing that same number
+      // would leak to screen readers exactly what the UI withholds, so describe
+      // the clip by its still count instead.
+      label: widget.clip.isStopMotion
+          ? l10n.videoClipStopMotionSemanticLabel(
+              l10n.videoEditorStopMotionFramesCount(
+                widget.clip.stopMotionFrames?.length ?? 0,
+              ),
+            )
+          : l10n.videoClipSemanticLabel(
+              widget.clip.duration.toFormattedSeconds(),
+            ),
       value: _isSelected
-          ? l10n.videoClipSemanticValueSelected
+          // The selection badge shows the pick order, which decides the order
+          // clips are stitched into. Announce it here rather than letting the
+          // badge's bare digits merge into the label.
+          ? l10n.videoClipSemanticValueSelectedAtPosition(widget.selectionIndex)
           : l10n.videoClipSemanticValueNotSelected,
       button: true,
       selected: _isSelected,
@@ -217,34 +230,30 @@ class _StopMotionBadge extends StatelessWidget {
     return PositionedDirectional(
       start: 6,
       top: 6,
-      child: Semantics(
-        label: context.l10n.libraryStopMotionClipLabel,
-        value: context.l10n.videoEditorStopMotionFramesCount(frameCount),
-        // The icon + count are decorative here; the count is already announced
-        // via the badge's semantics value, so exclude the visual content to
-        // keep a single, clean semantics node.
-        child: ExcludeSemantics(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-            decoration: BoxDecoration(
-              color: VineTheme.scrim65,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              spacing: 3,
-              children: [
-                const DivineIcon(
-                  icon: .imagesSquare,
-                  color: VineTheme.lightText,
-                  size: 14,
-                ),
-                Text(
-                  '$frameCount',
-                  style: VineTheme.labelSmallFont(color: VineTheme.whiteText),
-                ),
-              ],
-            ),
+      // Fully decorative: the card's own label already announces that this is
+      // a stop-motion clip and how many stills it holds. Emitting a node here
+      // too would put a second, non-actionable node inside the card's button.
+      child: ExcludeSemantics(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          decoration: BoxDecoration(
+            color: VineTheme.scrim65,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 3,
+            children: [
+              const DivineIcon(
+                icon: .imagesSquare,
+                color: VineTheme.lightText,
+                size: 14,
+              ),
+              Text(
+                '$frameCount',
+                style: VineTheme.labelSmallFont(color: VineTheme.whiteText),
+              ),
+            ],
           ),
         ),
       ),
@@ -319,16 +328,18 @@ class _SelectionOverlay extends StatelessWidget {
             child: _isSelected
                 ? Center(
                     child: MediaQuery.withNoTextScaling(
-                      child: Text(
-                        selectionIndex.toString(),
-                        maxLines: 1,
-                        style:
-                            VineTheme.labelLargeFont(
-                              color: VineTheme.primaryText,
-                            ).copyWith(
-                              fontFeatures: [const .tabularFigures()],
-                              height: 1,
-                            ),
+                      child: ExcludeSemantics(
+                        child: Text(
+                          selectionIndex.toString(),
+                          maxLines: 1,
+                          style:
+                              VineTheme.labelLargeFont(
+                                color: VineTheme.primaryText,
+                              ).copyWith(
+                                fontFeatures: [const .tabularFigures()],
+                                height: 1,
+                              ),
+                        ),
                       ),
                     ),
                   )

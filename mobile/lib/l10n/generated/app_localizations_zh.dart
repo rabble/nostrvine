@@ -6280,7 +6280,14 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get videoClipSemanticValueSelected => '已选中';
+  String videoClipStopMotionSemanticLabel(String frames) {
+    return '定格动画片段，$frames';
+  }
+
+  @override
+  String videoClipSemanticValueSelectedAtPosition(int position) {
+    return '已选中，第 $position 个';
+  }
 
   @override
   String get videoClipSemanticValueNotSelected => '未选中';
@@ -8663,9 +8670,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get videoEditorStopMotionFramesPerImageButtonLabel => '帧数';
-
-  @override
-  String get libraryStopMotionClipLabel => '定格动画片段';
 
   @override
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {

@@ -6598,7 +6598,14 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get videoClipSemanticValueSelected => 'Đã chọn';
+  String videoClipStopMotionSemanticLabel(String frames) {
+    return 'Đoạn stop-motion, $frames';
+  }
+
+  @override
+  String videoClipSemanticValueSelectedAtPosition(int position) {
+    return 'Đã chọn, số $position';
+  }
 
   @override
   String get videoClipSemanticValueNotSelected => 'Chưa chọn';
@@ -9117,9 +9124,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get videoEditorStopMotionFramesPerImageButtonLabel => 'Khung hình';
-
-  @override
-  String get libraryStopMotionClipLabel => 'Clip stop-motion';
 
   @override
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
