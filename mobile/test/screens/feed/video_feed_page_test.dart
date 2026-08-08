@@ -65,6 +65,17 @@ List<Object?> _captureAnnouncements(WidgetTester tester) {
   return announced;
 }
 
+VideoFeedSource _sourceFor(VideoFeedSourceType type) => switch (type) {
+  VideoFeedSourceType.forYou => const VideoFeedSource.forYou(),
+  VideoFeedSourceType.following => const VideoFeedSource.following(),
+  VideoFeedSourceType.subscribedList => const VideoFeedSource.subscribedList(
+    listId: 'list-id',
+    listName: 'Curated List',
+  ),
+  VideoFeedSourceType.newVideos => const VideoFeedSource.newVideos(),
+  VideoFeedSourceType.classic => const VideoFeedSource.classic(),
+};
+
 Widget _buildEmptyFeedSubject(VideoFeedBlocState state, {GoRouter? router}) {
   final child = Scaffold(body: FeedEmptyWidget(state: state));
 
@@ -245,44 +256,54 @@ void main() {
   });
 
   group(VideoFeedView, () {
-    testWidgets('passes home traffic attribution to FeedVideos', (
-      tester,
-    ) async {
-      final video = createTestVideoEvent();
-      final state = VideoFeedBlocState(
-        status: VideoFeedStatus.success,
-        videos: [video],
-      );
-      when(() => videoFeedBloc.state).thenReturn(state);
-      whenListen(
-        videoFeedBloc,
-        const Stream<VideoFeedBlocState>.empty(),
-        initialState: state,
-      );
+    // Every home feed mode renders through this one page and reports
+    // `source=home`, so the source detail is the only thing distinguishing
+    // them in view_traffic_sources. Parameterised over the enum so a new feed
+    // mode is covered the moment it is added.
+    for (final sourceType in VideoFeedSourceType.values) {
+      testWidgets(
+        'passes home traffic attribution and the ${sourceType.name} source '
+        'detail to FeedVideos',
+        (tester) async {
+          final video = createTestVideoEvent();
+          final state = VideoFeedBlocState(
+            status: VideoFeedStatus.success,
+            videos: [video],
+            source: _sourceFor(sourceType),
+          );
+          when(() => videoFeedBloc.state).thenReturn(state);
+          whenListen(
+            videoFeedBloc,
+            const Stream<VideoFeedBlocState>.empty(),
+            initialState: state,
+          );
 
-      await tester.pumpWidget(
-        testMaterialApp(
-          home: MultiBlocProvider(
-            providers: [
-              BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
-              BlocProvider<VideoPlaybackStatusCubit>(
-                create: (_) => VideoPlaybackStatusCubit(),
+          await tester.pumpWidget(
+            testMaterialApp(
+              home: MultiBlocProvider(
+                providers: [
+                  BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+                  BlocProvider<VideoPlaybackStatusCubit>(
+                    create: (_) => VideoPlaybackStatusCubit(),
+                  ),
+                  BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
+                ],
+                child: const VideoFeedView(),
               ),
-              BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
-            ],
-            child: const VideoFeedView(),
-          ),
-        ),
+            ),
+          );
+          await tester.pump();
+
+          final feedVideos = tester.widget<FeedVideos>(find.byType(FeedVideos));
+          expect(feedVideos.trafficSource, ViewTrafficSource.home);
+          expect(feedVideos.sourceDetail, sourceType.analyticsTag);
+
+          await tester.pump(const Duration(seconds: 3));
+          await tester.pumpWidget(const SizedBox());
+          await tester.pump();
+        },
       );
-      await tester.pump();
-
-      final feedVideos = tester.widget<FeedVideos>(find.byType(FeedVideos));
-      expect(feedVideos.trafficSource, ViewTrafficSource.home);
-
-      await tester.pump(const Duration(seconds: 3));
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump();
-    });
+    }
 
     testWidgets(
       'builds without a $HomeFeedRetapCubit ancestor (direct construction)',
