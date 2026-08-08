@@ -24,7 +24,8 @@ import 'dart:async';
 /// [rejectedBy], [noResponseFrom] or [unreachableTargets], and no other relay
 /// appears at all. "Targeted" means every relay the fan-out reached, plus the
 /// relays it meant to count if a write failed. Configured relays that were
-/// plainly disconnected and never attempted normally do not appear, unless the
+/// plainly disconnected and never attempted normally do not appear — except
+/// when the caller named them in `targetRelays`/`tempRelays`, or when the
 /// publish reached nothing at all. Relays whose in-flight connection was
 /// actually attempted can still be reported as unreachable (see
 /// [PublishTracker.countedTargets]).
