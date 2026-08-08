@@ -8,6 +8,13 @@ abstract final class AnalyticsSurface {
   static const profile = 'profile';
   static const videoDetail = 'video_detail';
   static const commentsSheet = 'comments_sheet';
+
+  /// A server-configured featured collection tab.
+  ///
+  /// Deliberately generic and shared by every such tab: the editorial theme
+  /// travels as [AnalyticsParam.configId], so dashboards and exports never
+  /// inherit a schema per campaign.
+  static const featuredTab = 'featured_tab';
   static const settings = 'settings';
   static const searchResults = 'search_results';
   static const videoRecorder = 'video_recorder';
@@ -70,6 +77,12 @@ abstract final class AnalyticsParam {
   static const hasMore = 'has_more';
   static const featureFlag = 'feature_flag';
   static const sortMode = 'sort_mode';
+
+  /// Opaque server configuration id (e.g. a featured tab's `ft_…`).
+  ///
+  /// Safe to export: it identifies a configuration, not a person, and carries
+  /// no editorial name.
+  static const configId = 'config_id';
 }
 
 abstract final class SurfaceLoadResult {

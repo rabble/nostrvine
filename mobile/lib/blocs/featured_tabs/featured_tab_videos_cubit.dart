@@ -5,6 +5,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/featured_tabs/featured_tab_surface_telemetry.dart';
 import 'package:openvine/repositories/featured_tabs_repository.dart';
 
 part 'featured_tab_videos_state.dart';
@@ -19,16 +20,20 @@ class FeaturedTabVideosCubit extends Cubit<FeaturedTabVideosState> {
   FeaturedTabVideosCubit({
     required FeaturedTabsRepository repository,
     required String tabId,
+    FeaturedTabSurfaceTelemetry? telemetry,
   }) : _repository = repository,
        _tabId = tabId,
+       _telemetry = telemetry ?? FeaturedTabSurfaceTelemetry(configId: tabId),
        super(const FeaturedTabVideosState());
 
   final FeaturedTabsRepository _repository;
   final String _tabId;
+  final FeaturedTabSurfaceTelemetry _telemetry;
 
   /// Loads the first page, replacing anything already loaded.
   Future<void> load() async {
     if (isClosed) return;
+    _telemetry.start();
     emit(state.copyWith(status: FeaturedTabVideosStatus.loading));
 
     try {
@@ -42,10 +47,15 @@ class FeaturedTabVideosCubit extends Cubit<FeaturedTabVideosState> {
           hasMore: page.hasMore,
         ),
       );
+      await _telemetry.completeLoaded(
+        itemCount: page.videos.length,
+        hasMore: page.hasMore,
+      );
     } on FunnelcakeException catch (e, stackTrace) {
       if (isClosed) return;
       addError(e, stackTrace);
       emit(state.copyWith(status: FeaturedTabVideosStatus.failure));
+      await _telemetry.completeFailure();
     }
   }
 

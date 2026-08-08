@@ -53,6 +53,10 @@ class _ExploreViewState extends ConsumerState<ExploreView>
   /// configuration arrives so a deep link can still land on it.
   String? _pendingFeaturedSlug;
 
+  /// Refetches the featured configuration on foreground so a backend kill
+  /// switch lands without waiting out the poll interval.
+  late final AppLifecycleListener _lifecycleListener;
+
   ExploreTabsCubit get _tabs => context.read<ExploreTabsCubit>();
   ExploreTabsState get _tabsState => _tabs.state;
 
@@ -101,6 +105,10 @@ class _ExploreViewState extends ConsumerState<ExploreView>
       _pendingFeaturedSlug = widget.initialTabSlug;
     }
 
+    _lifecycleListener = AppLifecycleListener(
+      onResume: () => context.read<FeaturedTabsCubit>().refresh(),
+    );
+
     // Track Explore-specific data load completion from child tabs.
     _tabs.trackScreenLoad();
 
@@ -142,6 +150,12 @@ class _ExploreViewState extends ConsumerState<ExploreView>
     if (mounted) {
       setState(() {});
     }
+  }
+
+  @override
+  void dispose() {
+    _lifecycleListener.dispose();
+    super.dispose();
   }
 
   void _openSearchPage() {
