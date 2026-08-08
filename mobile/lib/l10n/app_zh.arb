@@ -642,6 +642,10 @@
     "description": "Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently off."
   },
   "videoSettingsCaptionsDisable": "关闭字幕",
+  "videoSettingsAutoAdvanceOn": "自动连播已开启",
+  "videoSettingsAutoAdvanceOff": "自动连播已关闭",
+  "videoSettingsCaptionsOn": "字幕已开启",
+  "videoSettingsCaptionsOff": "字幕已关闭",
   "@videoSettingsCaptionsDisable": {
     "description": "Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently on."
   },
@@ -732,11 +736,15 @@
   "@videoErrorVerifyAgeSignerUnreachable": {
     "description": "Snackbar shown when tapping Verify age on an age-restricted video and the remote signer didn't respond in time (timeout). Distinct from videoErrorVerifyAgeFailed because the remedy is checking connectivity, not re-verifying age."
   },
-  "videoErrorAdultContentHidden": "成人内容已关闭。你可以在“设置 → 内容过滤”中开启。",
-  "@videoErrorAdultContentHidden": {
-    "description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."
-  },
+  "videoErrorAdultContentHiddenTitle": "成人内容已关闭",
+  "@videoErrorAdultContentHiddenTitle": {"description": "Title of the bottom sheet shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden."},
+  "videoErrorAdultContentHiddenBody": "在内容过滤中开启后就能看这个视频了。",
+  "@videoErrorAdultContentHiddenBody": {"description": "Body of the adult-content-hidden sheet. The remedy is switching adult content on in Content Filters, not re-verifying age."},
+  "videoErrorAdultContentHiddenAction": "打开内容过滤",
+  "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
   "videoDetailLoadError": "视频加载失败",
+  "videoDetailLoadErrorBody": "路上出了点岔子，再试一次吧。",
+  "videoDetailNotFoundBody": "可能被删了，可能够不到，也可能被你的设置隐藏了。",
   "databaseCorruptionTitle": "你的本地数据乱套了",
   "@databaseCorruptionTitle": {
     "description": "Title of the full-screen takeover shown when the local database reports on-disk corruption at runtime. 'Scrambled' is deliberately non-technical: the user did nothing wrong and cannot act on the real cause."
@@ -989,6 +997,16 @@
   "metadataPgpSignature": "PGP 签名",
   "metadataC2paCredentials": "C2PA 内容凭证",
   "metadataProofManifest": "证明清单",
+  "metadataVerificationInfoTooltip": "这些检查是什么意思？",
+    "metadataSectionInfoSemanticsLabel": "{section}。{question}",
+  "metadataVerificationInfoTitle": "这些检查的含义",
+  "metadataVerificationInfoIntro": "这些信号来自摄像头和视频文件本身。一个视频带的信号越多，我们能证明的来源信息就越多。",
+  "metadataVerificationInfoDeviceAttestation": "手机操作系统为录制这段视频的应用作了担保。这有力地表明它来自摄像头，而不是别人上传的文件。",
+  "metadataVerificationInfoPgpSignature": "视频在拍摄的那一刻就完成了加密签名。之后哪怕只改动一帧，签名就会失效。",
+  "metadataVerificationInfoC2paCredentials": "随文件一同携带的行业标准来源记录——所以 Divine 之外的应用也能验证。",
+  "metadataVerificationInfoProofManifest": "完整的 ProofMode 记录：文件指纹、时间戳和拍摄环境信息，与视频打包在一起。",
+  "metadataVerificationInfoFootnote": "缺少某项检查并不代表视频是假的。较早的片段和上传的视频本来就没有——这只说明我们无法证明那一部分。",
+  "metadataVerificationInfoLearnMore": "了解更多：{url}",
   "metadataCreatorLabel": "创作者",
   "metadataCollaboratorsLabel": "协作者",
   "metadataInspiredByLabel": "灵感来自",
@@ -2588,6 +2606,7 @@
   "userPickerSearchByName": "按名字搜索",
   "userPickerFilterByNameHint": "按名字筛选...",
   "userPickerSearchByNameHint": "按名字搜索...",
+  "userPickerClearSearchSemantics": "清除搜索",
   "userPickerAlreadyAddedSemantics": "{name} 已添加",
   "@userPickerAlreadyAddedSemantics": {
     "placeholders": {
@@ -3651,6 +3670,7 @@
   "commonCancel": "取消",
   "commonBack": "返回",
   "commonClose": "关闭",
+  "commonNotNow": "暂不",
   "commonLoading": "加载中",
   "@commonLoading": {
     "description": "Screen-reader label for a blocking progress spinner that covers the screen while an action is being prepared. Announced instead of the content behind it, which is not reachable while the spinner is up."
@@ -4220,20 +4240,6 @@
       }
     }
   },
-  "proofmodeBadgeAiScanPending": "AI 扫描中",
-  "proofmodeBadgeHumanMade": "人类创作",
-  "proofmodeBadgeNotDivineHosted": "非 Divine 托管",
-  "proofmodeBadgeOriginal": "原创",
-  "proofmodeBadgePossiblyAiGenerated": "疑似 AI 生成",
-  "proofmodeBadgeUnverified": "未验证",
-  "proofmodeConfirmedByModerator": "已由真人管理员确认",
-  "proofmodeExternalContentTitle": "外部内容",
-  "proofmodeHostedOnLabel": "该视频托管于：",
-  "proofmodeLikelyHumanCreated": "大概率为人类创作",
-  "proofmodeNoProofDataAttached": "未附带 ProofMode 数据",
-  "proofmodeNotDivineHostedDisclaimer": "该内容未托管在 Divine 服务器上，我们无法完全保证其真实性。",
-  "proofmodePossiblyAiGenerated": "疑似 AI 生成",
-  "proofmodePublishedByLabel": "发布者：",
   "publishErrorNotSignedIn": "请登录后再发布视频。",
   "publishErrorNoRetry": "没有可重试的上传。",
   "publishErrorNoInternet": "没有网络连接。请检查 Wi-Fi 或移动数据后重试。",
@@ -4273,6 +4279,7 @@
   "publishErrorLowStorage": "设备存储空间不足。清理一些空间后再试。",
   "publishErrorThumbnailFailed": "视频已上传，但缩略图没能准备好。请重试。",
   "publishErrorNostrPublishFailed": "视频已上传，但帖子没能发布。请检查你的中继设置后重试。",
+  "publishErrorAudioReuseNotPermitted": "视频已上传，但这段音频未开放二次使用。换一段音频再发布吧。",
   "publishErrorInterrupted": "上传被中断。要重试吗？",
   "publishErrorAccountChanged": "这个视频属于另一个账号。切回那个账号才能发布。",
   "publishErrorGeneric": "出了点问题，请重试。",
@@ -4403,6 +4410,8 @@
   },
   "bugReportSendReport": "发送报告",
   "supportSubjectRequiredLabel": "主题 *",
+  "supportPublicSubmissionTitle": "公开的 GitHub 帖子",
+  "supportPublicSubmissionMessage": "你在这里提交的所有内容都会发布到我们在 GitHub 上的开源仓库中，以便开发者处理。该帖子和你登录使用的账号都会被所有人公开查看。",
   "supportRequiredHelper": "必填",
   "bugReportSubjectHint": "简要概括问题",
   "bugReportDescriptionRequiredLabel": "发生了什么？*",

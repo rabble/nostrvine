@@ -117,7 +117,7 @@ PersonalEventCacheService personalEventCacheService(Ref ref) {
 SeenVideosService seenVideosService(Ref ref) {
   final service = SeenVideosService();
   unawaited(service.initialize());
-  ref.onDispose(service.dispose);
+  ref.onDispose(() => unawaited(service.dispose()));
   return service;
 }
 

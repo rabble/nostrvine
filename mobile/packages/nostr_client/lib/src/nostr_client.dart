@@ -698,7 +698,6 @@ class NostrClient {
     Event event, {
     List<String>? targetRelays,
     Duration timeout = const Duration(seconds: 15),
-    String? diagnosticTag,
   }) async {
     final effectiveTargets = _allowedRelays(targetRelays);
     await _prepareEventForPublish(event);
@@ -733,20 +732,12 @@ class NostrClient {
     }
 
     final outcome =
-        await (diagnosticTag == null
-            ? _nostr.sendEventAwaitOk(
-                event,
-                targetRelays: effectiveTargets,
-                tempRelays: effectiveTargets,
-                timeout: timeout,
-              )
-            : _nostr.sendEventAwaitOk(
-                event,
-                targetRelays: effectiveTargets,
-                tempRelays: effectiveTargets,
-                timeout: timeout,
-                diagnosticTag: diagnosticTag,
-              )) ??
+        await _nostr.sendEventAwaitOk(
+          event,
+          targetRelays: effectiveTargets,
+          tempRelays: effectiveTargets,
+          timeout: timeout,
+        ) ??
         PublishOutcome(
           eventId: event.id,
           acceptedBy: const [],

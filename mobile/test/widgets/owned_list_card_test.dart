@@ -30,6 +30,10 @@ void main() {
       return CuratedList(
         id: 'puppets',
         name: 'Puppets',
+        // Owned lists always carry the owner's pubkey — CuratedListService
+        // stamps it at creation — so the fixture must too.
+        pubkey:
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         videoEventIds: const [],
         createdAt: now,
         updatedAt: now,
@@ -96,6 +100,12 @@ void main() {
       await tester.pumpWidget(buildSubject(isPublic: false));
 
       expect(find.text(l10n.listVisibilityPrivateDevice), findsOneWidget);
+    });
+
+    testWidgets('does not credit the owner as the list author', (tester) async {
+      await tester.pumpWidget(buildSubject());
+
+      expect(find.text(l10n.listByAuthorPrefix), findsNothing);
     });
   });
 }

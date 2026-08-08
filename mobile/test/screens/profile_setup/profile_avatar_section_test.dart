@@ -19,6 +19,7 @@ import 'package:openvine/screens/image_crop_editor/image_crop_editor.dart';
 import 'package:openvine/screens/profile_setup/widgets/profile_avatar_section.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
+import '../../helpers/image_picker_stub.dart';
 import '../../helpers/test_provider_overrides.dart';
 
 class _MockProfileEditorBloc
@@ -207,6 +208,19 @@ void main() {
     });
 
     group('pick → crop → dispatch', () {
+      late Directory tempDir;
+
+      setUp(() async {
+        tempDir = await Directory.systemTemp.createTemp('avatar_section_test');
+      });
+
+      tearDown(() async {
+        if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+      });
+
+      File stubPickedFile(List<int> bytes) =>
+          stubPickedImageFile(tempDir, bytes);
+
       // Gallery picks route through file_selector on desktop and image_picker
       // on mobile; force a mobile platform so the mocked image_picker channel
       // is exercised. The sources moved behind the pencil, so each pick is now
@@ -225,6 +239,7 @@ void main() {
         (tester) async {
           debugDefaultTargetPlatformOverride = TargetPlatform.android;
           try {
+            stubPickedFile([9, 9, 9]);
             final croppedBytes = Uint8List.fromList([1, 2, 3, 4]);
             final launcher = _FakeCropLauncher(croppedBytes);
             await pump(tester, cropLauncher: launcher.launch);
@@ -254,6 +269,7 @@ void main() {
       ) async {
         debugDefaultTargetPlatformOverride = TargetPlatform.android;
         try {
+          stubPickedFile([9, 9, 9]);
           final launcher = _FakeCropLauncher(null);
           await pump(tester, cropLauncher: launcher.launch);
 
@@ -261,6 +277,50 @@ void main() {
 
           expect(launcher.callCount, 1);
           verifyNever(() => bloc.add(any()));
+        } finally {
+          debugDefaultTargetPlatformOverride = null;
+        }
+      });
+
+      testWidgets('rejects a zero-byte pick before opening the crop editor', (
+        tester,
+      ) async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
+        try {
+          // iOS occasionally hands back an empty temporary JPEG; decoding it
+          // inside the crop editor is what crashed (#6276).
+          stubPickedFile([]);
+          final launcher = _FakeCropLauncher(Uint8List.fromList([1, 2, 3]));
+          await pump(tester, cropLauncher: launcher.launch);
+
+          await pickFromGallery(tester);
+
+          expect(launcher.callCount, 0);
+          verifyNever(() => bloc.add(any()));
+          expect(
+            find.text(l10n.profileSetupImageSelectionFailed),
+            findsOneWidget,
+          );
+        } finally {
+          debugDefaultTargetPlatformOverride = null;
+        }
+      });
+
+      testWidgets('rejects a pick whose file is gone', (tester) async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
+        try {
+          stubPickedFile([9, 9, 9]).deleteSync();
+          final launcher = _FakeCropLauncher(Uint8List.fromList([1, 2, 3]));
+          await pump(tester, cropLauncher: launcher.launch);
+
+          await pickFromGallery(tester);
+
+          expect(launcher.callCount, 0);
+          verifyNever(() => bloc.add(any()));
+          expect(
+            find.text(l10n.profileSetupImageSelectionFailed),
+            findsOneWidget,
+          );
         } finally {
           debugDefaultTargetPlatformOverride = null;
         }

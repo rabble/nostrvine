@@ -642,6 +642,10 @@
     "description": "Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently off."
   },
   "videoSettingsCaptionsDisable": "Tắt phụ đề",
+  "videoSettingsAutoAdvanceOn": "Đã bật tự động chuyển video",
+  "videoSettingsAutoAdvanceOff": "Đã tắt tự động chuyển video",
+  "videoSettingsCaptionsOn": "Đã bật phụ đề",
+  "videoSettingsCaptionsOff": "Đã tắt phụ đề",
   "@videoSettingsCaptionsDisable": {
     "description": "Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently on."
   },
@@ -732,11 +736,15 @@
   "@videoErrorVerifyAgeSignerUnreachable": {
     "description": "Snackbar shown when tapping Verify age on an age-restricted video and the remote signer didn't respond in time (timeout). Distinct from videoErrorVerifyAgeFailed because the remedy is checking connectivity, not re-verifying age."
   },
-  "videoErrorAdultContentHidden": "Nội dung người lớn đang tắt. Bạn có thể bật trong Cài đặt → Bộ lọc nội dung.",
-  "@videoErrorAdultContentHidden": {
-    "description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."
-  },
+  "videoErrorAdultContentHiddenTitle": "Nội dung người lớn đang tắt",
+  "@videoErrorAdultContentHiddenTitle": {"description": "Title of the bottom sheet shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden."},
+  "videoErrorAdultContentHiddenBody": "Bật trong bộ lọc nội dung để xem video này.",
+  "@videoErrorAdultContentHiddenBody": {"description": "Body of the adult-content-hidden sheet. The remedy is switching adult content on in Content Filters, not re-verifying age."},
+  "videoErrorAdultContentHiddenAction": "Mở bộ lọc nội dung",
+  "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
   "videoDetailLoadError": "Không thể tải video",
+  "videoDetailLoadErrorBody": "Có gì đó trục trặc trên đường tới đây. Thử lại nhé.",
+  "videoDetailNotFoundBody": "Có thể nó đã bị xoá, ngoài tầm với, hoặc bị ẩn bởi cài đặt của bạn.",
   "databaseCorruptionTitle": "Dữ liệu cục bộ của bạn bị rối tung",
   "@databaseCorruptionTitle": {
     "description": "Title of the full-screen takeover shown when the local database reports on-disk corruption at runtime. 'Scrambled' is deliberately non-technical: the user did nothing wrong and cannot act on the real cause."
@@ -989,6 +997,16 @@
   "metadataPgpSignature": "Chữ ký PGP",
   "metadataC2paCredentials": "Chứng nhận nội dung C2PA",
   "metadataProofManifest": "Tệp chứng minh",
+  "metadataVerificationInfoTooltip": "Những kiểm tra này nghĩa là gì?",
+    "metadataSectionInfoSemanticsLabel": "{section}. {question}",
+  "metadataVerificationInfoTitle": "Ý nghĩa của những kiểm tra này",
+  "metadataVerificationInfoIntro": "Các tín hiệu này đến từ máy ảnh và từ chính tệp video. Video mang càng nhiều tín hiệu, chúng tôi càng chứng minh được nhiều điều về nguồn gốc của nó.",
+  "metadataVerificationInfoDeviceAttestation": "Hệ điều hành của điện thoại đã bảo chứng cho ứng dụng đã quay video này. Bằng chứng mạnh cho thấy nó đến từ camera, không phải tệp ai đó tải lên.",
+  "metadataVerificationInfoPgpSignature": "Video được ký bằng mật mã ngay khoảnh khắc quay. Sau đó chỉ cần đổi một khung hình là chữ ký hỏng.",
+  "metadataVerificationInfoC2paCredentials": "Bản ghi nguồn gốc theo chuẩn ngành, đi kèm bên trong tệp — nên các ứng dụng khác ngoài Divine cũng kiểm tra được.",
+  "metadataVerificationInfoProofManifest": "Bản ghi ProofMode đầy đủ: dấu vân tay tệp, dấu thời gian và bối cảnh quay, đi cùng video.",
+  "metadataVerificationInfoFootnote": "Thiếu một kiểm tra không có nghĩa video là giả. Các clip cũ và video tải lên vốn chưa từng có — chỉ là chúng tôi không chứng minh được phần đó.",
+  "metadataVerificationInfoLearnMore": "Tìm hiểu thêm tại {url}",
   "metadataCreatorLabel": "Nhà sáng tạo",
   "metadataCollaboratorsLabel": "Cộng tác viên",
   "metadataInspiredByLabel": "Lấy cảm hứng từ",
@@ -2588,6 +2606,7 @@
   "userPickerSearchByName": "Tìm theo tên",
   "userPickerFilterByNameHint": "Lọc theo tên...",
   "userPickerSearchByNameHint": "Tìm theo tên...",
+  "userPickerClearSearchSemantics": "Xóa tìm kiếm",
   "userPickerAlreadyAddedSemantics": "{name} đã được thêm",
   "@userPickerAlreadyAddedSemantics": {
     "placeholders": {
@@ -3651,6 +3670,7 @@
   "commonCancel": "Hủy",
   "commonBack": "Quay lại",
   "commonClose": "Đóng",
+  "commonNotNow": "Để sau",
   "commonLoading": "Đang tải",
   "@commonLoading": {
     "description": "Screen-reader label for a blocking progress spinner that covers the screen while an action is being prepared. Announced instead of the content behind it, which is not reachable while the spinner is up."
@@ -4220,20 +4240,6 @@
       }
     }
   },
-  "proofmodeBadgeAiScanPending": "Đang chờ quét AI",
-  "proofmodeBadgeHumanMade": "Do người làm",
-  "proofmodeBadgeNotDivineHosted": "Không do Divine lưu trữ",
-  "proofmodeBadgeOriginal": "Nguyên bản",
-  "proofmodeBadgePossiblyAiGenerated": "Có thể do AI tạo ra",
-  "proofmodeBadgeUnverified": "Chưa xác minh",
-  "proofmodeConfirmedByModerator": "Được kiểm duyệt viên xác nhận",
-  "proofmodeExternalContentTitle": "Nội dung bên ngoài",
-  "proofmodeHostedOnLabel": "Video này được lưu trữ trên:",
-  "proofmodeLikelyHumanCreated": "Có vẻ do người tạo",
-  "proofmodeNoProofDataAttached": "Không có dữ liệu ProofMode đính kèm",
-  "proofmodeNotDivineHostedDisclaimer": "Nội dung này không được lưu trữ trên máy chủ Divine. Bọn mình không thể đảm bảo hoàn toàn tính xác thực của nó.",
-  "proofmodePossiblyAiGenerated": "Có thể do AI tạo ra",
-  "proofmodePublishedByLabel": "Đăng bởi:",
   "publishErrorNotSignedIn": "Vui lòng đăng nhập để đăng video.",
   "publishErrorNoRetry": "Không có lần tải lên nào để thử lại.",
   "publishErrorNoInternet": "Không có kết nối internet. Kiểm tra Wi-Fi hoặc dữ liệu di động rồi thử lại.",
@@ -4273,6 +4279,7 @@
   "publishErrorLowStorage": "Thiết bị của bạn không đủ dung lượng. Giải phóng bớt chỗ rồi thử lại nhé.",
   "publishErrorThumbnailFailed": "Video đã tải lên nhưng không chuẩn bị được ảnh thu nhỏ. Vui lòng thử lại.",
   "publishErrorNostrPublishFailed": "Video đã tải lên nhưng không đăng được bài. Kiểm tra cài đặt relay rồi thử lại.",
+  "publishErrorAudioReuseNotPermitted": "Video đã tải lên nhưng âm thanh này không được phép dùng lại. Chọn âm thanh khác để đăng nhé.",
   "publishErrorInterrupted": "Lần tải lên này đã bị gián đoạn. Bạn có muốn thử lại không?",
   "publishErrorAccountChanged": "Video này thuộc về một tài khoản khác. Chuyển lại tài khoản đó để đăng nhé.",
   "publishErrorGeneric": "Có gì đó không ổn. Vui lòng thử lại.",
@@ -4403,6 +4410,8 @@
   },
   "bugReportSendReport": "Gửi báo cáo",
   "supportSubjectRequiredLabel": "Chủ đề *",
+  "supportPublicSubmissionTitle": "Bài đăng GitHub công khai",
+  "supportPublicSubmissionMessage": "Mọi nội dung bạn gửi tại đây sẽ được đăng lên kho mã nguồn mở của chúng tôi trên GitHub để các nhà phát triển có thể xử lý. Bài đăng và tài khoản bạn đang đăng nhập sẽ hiển thị công khai với tất cả mọi người.",
   "supportRequiredHelper": "Bắt buộc",
   "bugReportSubjectHint": "Tóm tắt ngắn gọn vấn đề",
   "bugReportDescriptionRequiredLabel": "Chuyện gì đã xảy ra? *",

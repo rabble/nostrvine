@@ -36,6 +36,12 @@ List<RouteBase> shellRoutes() {
       // #5242 in its post-splash form. Pinned by shell_transition_test.
       pageBuilder: (context, state, navigationShell) => NoTransitionPage<void>(
         key: state.pageKey,
+        name: state.name ?? state.path,
+        arguments: <String, String>{
+          ...state.pathParameters,
+          ...state.uri.queryParameters,
+        },
+        restorationId: state.pageKey.value,
         // Provided above AppShell so both consumers can reach the same
         // instance: VineBottomNav (inside AppShell) signals a home-tab retap
         // and renders the refresh spinner; VideoFeedView (inside the home
@@ -182,6 +188,12 @@ List<RouteBase> shellRoutes() {
 Page<void> _branchPage(GoRouterState state, Widget child) {
   return NoTransitionPage<void>(
     key: state.pageKey,
+    name: state.name ?? state.path,
+    arguments: <String, String>{
+      ...state.pathParameters,
+      ...state.uri.queryParameters,
+    },
+    restorationId: state.pageKey.value,
     child: ProviderScope(
       overrides: [
         pageContextProvider.overrideWith(

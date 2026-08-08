@@ -1046,7 +1046,6 @@ Event _profileBadgesEvent({
 PublishOutcome _acceptedPublishOutcome(Event event) {
   return PublishOutcome(
     eventId: event.id,
-    eventKind: event.kind,
     acceptedBy: const ['wss://relay.divine.video'],
     rejectedBy: const {},
     noResponseFrom: const [],
@@ -1056,7 +1055,6 @@ PublishOutcome _acceptedPublishOutcome(Event event) {
 PublishOutcome _rejectedPublishOutcome(Event event) {
   return PublishOutcome(
     eventId: event.id,
-    eventKind: event.kind,
     acceptedBy: const [],
     rejectedBy: const {
       'wss://relay.divine.video': 'blocked: kind 10008 not in allowed list',

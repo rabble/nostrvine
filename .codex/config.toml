@@ -1,0 +1,13 @@
+[mcp_servers.dart]
+command = "dart"
+args = ["mcp-server"]
+
+[mcp_servers.figma]
+url = "https://mcp.figma.com/mcp"
+
+[mcp_servers.nostr]
+command = "npx"
+args = [
+    "-y",
+    "@nostrbook/mcp@latest",
+]

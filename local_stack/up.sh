@@ -3,6 +3,12 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE_FILE="${SCRIPT_DIR}/docker-compose.yml"
+ENV_FILE="${SCRIPT_DIR}/.env"
+
+if [[ -f "$ENV_FILE" ]]; then
+  # shellcheck source=/dev/null
+  source "$ENV_FILE"
+fi
 
 # shellcheck source=preflight.sh
 source "${SCRIPT_DIR}/preflight.sh"
@@ -29,13 +35,19 @@ SERVICES=(
 
 # SERVICES plus the one-shot jobs compose pulls in as dependencies. Failures
 # often land in those, so the post-mortem has to be able to see them.
-REPORT_SERVICES=("${SERVICES[@]}" keycast-migrate funnelcake-migrate minio-init)
+REPORT_SERVICES=(
+  "${SERVICES[@]}"
+  keycast-migrate funnelcake-migrate funnelcake-local-tuning minio-init
+)
 
 # Fail early and by name on port clashes, instead of letting the daemon report
 # an anonymous "port is already allocated" partway through startup.
 if ! preflight_ports "$COMPOSE_FILE"; then
   exit 1
 fi
+
+# Advisory only — a stale mirror still starts, it just cannot serve NIP-17.
+preflight_image_staleness "$SCRIPT_DIR"
 
 UP_CMD=(docker compose -f "$COMPOSE_FILE" up -d --wait)
 if ((${#PULL_ARGS[@]} > 0)); then
@@ -77,6 +89,51 @@ while true; do
   stack_failure_report "$COMPOSE_FILE" "$SCRIPT_DIR" "${REPORT_SERVICES[@]}"
   exit "$UP_RC"
 done
+
+# Snapshot read models rebuild on production cadences (5-60 minutes), which
+# makes a freshly published video invisible to the REST API for far longer than
+# any test waits. Shorten the intervals the app and the e2e actually read.
+# Every statement is optional — none of these views exist on the pinned schema.
+set +e
+TUNING_OUTPUT="$(docker compose -f "$COMPOSE_FILE" run --rm funnelcake-local-tuning 2>&1)"
+TUNING_RC=$?
+set -e
+printf '%s\n' "$TUNING_OUTPUT"
+
+# Report the applied schema version. The pre-flight check can only say the image
+# is old; this names the actual gap, and it is the first thing to look at when a
+# relay behaviour does not match production.
+#
+# Two bookkeeping tables, because funnelcake replaced golang-migrate with a
+# first-party Rust migrator in 2026-05. The pinned 2026-02-24 image is still
+# golang-migrate and writes `schema_migrations`; anything built from current
+# main writes `funnelcake_schema_migrations`. Ask for the new one first — on an
+# upgraded volume both exist and only the new one keeps advancing.
+_stack_schema_version() {
+  local table
+  for table in funnelcake_schema_migrations schema_migrations; do
+    docker compose -f "$COMPOSE_FILE" exec -T funnelcake-clickhouse \
+      clickhouse-client --password clickhouse \
+      --query "SELECT max(version) FROM nostr.${table}" 2>/dev/null |
+      tr -d '[:space:]' | grep -E '^[0-9]+$' && return 0
+  done
+  return 1
+}
+
+SCHEMA_VERSION="$(_stack_schema_version || true)"
+if [[ -n "$SCHEMA_VERSION" ]]; then
+  echo "funnelcake schema version: ${SCHEMA_VERSION}"
+fi
+
+if [[ "$TUNING_RC" -ne 0 ]]; then
+  echo "WARNING: refresh-interval tuning failed; local API reads may lag production cadences." >&2
+elif [[ "$SCHEMA_VERSION" =~ ^[0-9]+$ && "$SCHEMA_VERSION" -ge 143 ]]; then
+  TUNING_APPLIED="$(sed -n 's/.*refresh-interval tuning: applied=\([0-9][0-9]*\) skipped=.*/\1/p' <<<"$TUNING_OUTPUT" | tail -n 1)"
+  EXPECTED_TUNING_APPLIED=5
+  if [[ -z "$TUNING_APPLIED" || "$TUNING_APPLIED" -lt "$EXPECTED_TUNING_APPLIED" ]]; then
+    echo "WARNING: refresh-interval tuning applied ${TUNING_APPLIED:-unknown}/${EXPECTED_TUNING_APPLIED} expected statements on schema ${SCHEMA_VERSION}; local API reads may lag production cadences." >&2
+  fi
+fi
 
 # `--rm` takes the seed container away with it, so its logs are gone by the
 # time a post-mortem could ask for them. Keep a copy.

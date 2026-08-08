@@ -16,10 +16,12 @@ import 'package:openvine/models/video_publish/video_publish_provider_state.dart'
 import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/relay_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
+import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_stack.dart';
 import 'package:openvine/widgets/video_metadata/modes/classic/video_metadata_classic_stack.dart';
@@ -414,6 +416,9 @@ void main() {
         final container = ProviderContainer(
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
+            connectionStatusServiceProvider.overrideWithValue(
+              _StubConnectionStatusService(),
+            ),
             clipManagerProvider.overrideWith(
               () => _MockClipManagerNotifier([testClip]),
             ),
@@ -486,6 +491,9 @@ void main() {
           final container = ProviderContainer(
             overrides: [
               sharedPreferencesProvider.overrideWithValue(prefs),
+              connectionStatusServiceProvider.overrideWithValue(
+                _StubConnectionStatusService(),
+              ),
               clipManagerProvider.overrideWith(
                 () => _MockClipManagerNotifier([testClip]),
               ),
@@ -566,6 +574,9 @@ void main() {
           final container = ProviderContainer(
             overrides: [
               sharedPreferencesProvider.overrideWithValue(prefs),
+              connectionStatusServiceProvider.overrideWithValue(
+                _StubConnectionStatusService(),
+              ),
               clipManagerProvider.overrideWith(
                 () => _MockClipManagerNotifier([testClip]),
               ),
@@ -631,6 +642,9 @@ void main() {
           final container = ProviderContainer(
             overrides: [
               sharedPreferencesProvider.overrideWithValue(prefs),
+              connectionStatusServiceProvider.overrideWithValue(
+                _StubConnectionStatusService(),
+              ),
               clipManagerProvider.overrideWith(
                 () => _MockClipManagerNotifier([testClip]),
               ),
@@ -737,6 +751,16 @@ void main() {
 }
 
 /// Mock clip manager notifier for testing.
+/// [ConnectionStatusService] starts a `Timer.periodic` from its constructor,
+/// which survives the widget test and trips `!timersPending` at teardown. The
+/// C2PA prompt only reads `isOnline`, so cancelling the poll leaves the value
+/// under test intact.
+class _StubConnectionStatusService extends ConnectionStatusService {
+  _StubConnectionStatusService() {
+    stopMonitoring();
+  }
+}
+
 class _MockClipManagerNotifier extends ClipManagerNotifier {
   _MockClipManagerNotifier(this._clips);
 

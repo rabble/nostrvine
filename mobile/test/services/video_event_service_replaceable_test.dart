@@ -123,6 +123,51 @@ void main() {
       expect(videos[0].createdAt, 3000, reason: 'Should have newer timestamp');
     });
 
+    test('equal timestamp keeps the lower event id per NIP-01', () async {
+      const pubkey =
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
+      const vineId = 'test-vine-equal-timestamp';
+      const videoUrl = 'https://example.com/video-equal.mp4';
+
+      final eventA = sdk.Event(
+        pubkey,
+        NIP71VideoKinds.addressableShortVideo,
+        [
+          ['d', vineId],
+          ['url', videoUrl],
+          ['title', 'Equal A'],
+        ],
+        'Equal A',
+        createdAt: 4000,
+      );
+      final eventB = sdk.Event(
+        pubkey,
+        NIP71VideoKinds.addressableShortVideo,
+        [
+          ['d', vineId],
+          ['url', videoUrl],
+          ['title', 'Equal B'],
+        ],
+        'Equal B',
+        createdAt: 4000,
+      );
+      final orderedById = [eventA, eventB]
+        ..sort((a, b) => a.id.compareTo(b.id));
+      final lowerIdEvent = orderedById.first;
+      final higherIdEvent = orderedById.last;
+
+      service.handleEventForTesting(higherIdEvent, SubscriptionType.discovery);
+      service.handleEventForTesting(lowerIdEvent, SubscriptionType.discovery);
+
+      final videos = service.discoveryVideos;
+      expect(videos, hasLength(1));
+      expect(videos.single.id, lowerIdEvent.id);
+      expect(
+        videos.single.title,
+        lowerIdEvent == eventA ? 'Equal A' : 'Equal B',
+      );
+    });
+
     test('different d-tags create separate videos', () async {
       // Arrange: Same pubkey, different d-tags
       const pubkey =

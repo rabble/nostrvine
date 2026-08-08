@@ -11,6 +11,7 @@ import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/exceptions/video_exceptions.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/models/video_editor/caption_track.dart';
@@ -377,10 +378,7 @@ class VideoPublishService {
             )
           : const <String>[];
 
-      onProgressChanged(
-        draftId: draft.id,
-        progress: _progressAfterMetadata,
-      );
+      onProgressChanged(draftId: draft.id, progress: _progressAfterMetadata);
 
       final published = await timeline.measure(
         PublishPhases.nostr,
@@ -910,6 +908,13 @@ class VideoPublishService {
   /// don't recognize), which the UI renders verbatim.
   Future<({PublishErrorKind kind, String? serverName, String? rawFallback})>
   _classifyError(Object? e) async {
+    // Typed refusals are classified by type, before the substring matcher can
+    // read an HTTP status out of the Nostr id their message carries.
+    final typed = classifyPublishErrorObject(e);
+    if (typed != null) {
+      return (kind: typed, serverName: null, rawFallback: null);
+    }
+
     final raw = e.toString();
 
     final matched = classifyPublishErrorMessage(raw);
@@ -960,6 +965,28 @@ class VideoPublishService {
         return Uri.tryParse(serverUrl)?.host ?? serverUrl;
       }
     } catch (_) {}
+    return null;
+  }
+
+  /// Maps a typed publish refusal to its [PublishErrorKind], or null when [e]
+  /// is not one.
+  ///
+  /// These are deliberate refusals rather than transport failures, so they are
+  /// matched on type and must be consulted *before*
+  /// [classifyPublishErrorMessage].
+  ///
+  /// The precedence is load-bearing: a refusal's message interpolates a
+  /// 64-character hex Nostr id, and hex digits include every digit the
+  /// matcher reads as an HTTP status — `404` becomes `serverNotFound`, `500`
+  /// `serverInternalError`, `502` and `503` `serverDown`, `401`
+  /// `notSignedIn`, `403` `forbidden`, `413` `fileTooLarge`, `429`
+  /// `rateLimited`. Roughly one id in nine hits one of them, and
+  /// `serverNotFound` even names the Blossom host in the copy.
+  @visibleForTesting
+  static PublishErrorKind? classifyPublishErrorObject(Object? e) {
+    if (e is AudioReuseNotPermittedException) {
+      return PublishErrorKind.audioReuseNotPermitted;
+    }
     return null;
   }
 

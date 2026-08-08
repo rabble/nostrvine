@@ -26,16 +26,22 @@ import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_badges_row.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
+import 'package:openvine/widgets/video_feed_item/metadata/metadata_section.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_sounds_section.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_stats_row.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_tags_section.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_user_chips.dart';
+import 'package:openvine/widgets/video_feed_item/metadata/metadata_verification_info_sheet.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_verification_section.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/video_reposters_cubit.dart';
+import 'package:openvine/widgets/video_recorder/modes/upload/upload_explainer_constants.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:skeletonizer/skeletonizer.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
+import '../../../helpers/url_launcher_test_double.dart';
 
 class _MockVideoInteractionsBloc extends Mock
     implements VideoInteractionsBloc {}
@@ -70,6 +76,10 @@ const _parentAddressableId =
 Finder _dimmed() =>
     find.byWidgetPredicate((widget) => widget is Opacity && widget.opacity < 1);
 
+/// Placeholder pills painted by `Skeletonizer` while chip names resolve.
+Finder _skeletonChips() =>
+    find.byWidgetPredicate((widget) => widget is Skeleton);
+
 AppLocalizations _l10n(WidgetTester tester) =>
     AppLocalizations.of(tester.element(find.byType(Scaffold).first));
 
@@ -90,6 +100,7 @@ VideoEvent _makeVideo({
   List<String> collaboratorPubkeys = const [],
   InspiredByInfo? inspiredByVideo,
   List<String>? reposterPubkeys,
+  int? nostrRepostCount,
   String? audioEventId,
   String? title,
   String content = '',
@@ -111,6 +122,7 @@ VideoEvent _makeVideo({
   collaboratorPubkeys: collaboratorPubkeys,
   inspiredByVideo: inspiredByVideo,
   reposterPubkeys: reposterPubkeys,
+  nostrRepostCount: nostrRepostCount,
   audioEventId: audioEventId,
   originalLoops: originalLoops,
   rawTags: rawTags,
@@ -131,8 +143,14 @@ void main() {
   late _MockVideoInteractionsBloc mockInteractionsBloc;
   late _MockVideoRepostersCubit mockRepostersCubit;
   late _MockVideosRepository mockVideosRepository;
+  late UrlLauncherPlatform originalUrlLauncherPlatform;
+  late UrlLauncherTestDouble urlLauncher;
 
   setUp(() {
+    originalUrlLauncherPlatform = UrlLauncherPlatform.instance;
+    urlLauncher = UrlLauncherTestDouble();
+    UrlLauncherPlatform.instance = urlLauncher;
+
     mockVideosRepository = _MockVideosRepository();
     mockInteractionsBloc = _MockVideoInteractionsBloc();
     when(
@@ -158,6 +176,10 @@ void main() {
     when(
       () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
     ).thenAnswer((_) async => null);
+  });
+
+  tearDown(() {
+    UrlLauncherPlatform.instance = originalUrlLauncherPlatform;
   });
 
   /// Pumps a metadata widget inside the required provider tree.
@@ -1094,17 +1116,50 @@ void main() {
         await tester.pump();
 
         final l10n = _l10n(tester);
-        expect(find.text(l10n.metadataCollaboratorsLabel), findsNothing);
+        expect(_skeletonChips(), findsNWidgets(1));
+        expect(find.byType(UserAvatar), findsNothing);
 
         await tester.pump(const Duration(seconds: 1));
         await tester.pumpAndSettle();
 
         expect(find.text(l10n.metadataCollaboratorsLabel), findsOneWidget);
+        expect(_skeletonChips(), findsNothing);
 
         profile.complete(_makeProfile(_collaborator1, 'Alice'));
         await tester.pumpAndSettle();
 
         expect(find.text('Alice'), findsOneWidget);
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
+      'holds the row open with one placeholder per tagged collaborator',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            providerOverrides: [
+              for (final pubkey in [_collaborator1, _collaborator2])
+                fetchUserProfileProvider(
+                  pubkey,
+                ).overrideWith((ref) => Completer<UserProfile?>().future),
+            ],
+            child: const MetadataCollaboratorsSectionBody(
+              visibility: CollaboratorVisibility.fallback(
+                taggedPubkeys: [_collaborator1, _collaborator2],
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // The tagged list is known synchronously, so the row can take its
+        // final size while only the names are still in flight.
+        expect(
+          find.text(_l10n(tester).metadataCollaboratorsLabel),
+          findsOneWidget,
+        );
+        expect(_skeletonChips(), findsNWidgets(2));
+        expect(find.byType(UserAvatar), findsNothing);
       },
     );
   });
@@ -1154,6 +1209,128 @@ void main() {
   // Reposted By section
   // ---------------------------------------------------------------------------
   group(MetadataRepostedBySection, () {
+    testWidgetsWithSurfaceSize(
+      'holds the row open with one chip per known repost while loading',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            repostersState: const VideoRepostersState(),
+            child: MetadataRepostedBySection(
+              video: _makeVideo(nostrRepostCount: 3),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(
+          find.text(_l10n(tester).metadataRepostedByLabel),
+          findsOneWidget,
+        );
+        expect(_skeletonChips(), findsNWidgets(3));
+        expect(find.byType(UserAvatar), findsNothing);
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
+      'reserves the more button placeholder for popular videos',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            repostersState: const VideoRepostersState(),
+            child: MetadataRepostedBySection(
+              video: _makeVideo(nostrRepostCount: 4200),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(_skeletonChips(), findsNWidgets(6));
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
+      'keeps the more button space while fetched reposter names resolve',
+      (tester) async {
+        final reposterPubkeys = List.generate(
+          7,
+          (index) => (index + 1).toRadixString(16).padLeft(64, '0'),
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            repostersState: VideoRepostersState(pubkeys: reposterPubkeys),
+            providerOverrides: [
+              for (final pubkey in reposterPubkeys.take(5))
+                fetchUserProfileProvider(
+                  pubkey,
+                ).overrideWith((ref) => Completer<UserProfile?>().future),
+            ],
+            child: MetadataRepostedBySection(video: _makeVideo()),
+          ),
+        );
+        await tester.pump();
+
+        expect(
+          find.text(_l10n(tester).metadataRepostedByLabel),
+          findsOneWidget,
+        );
+        expect(_skeletonChips(), findsNWidgets(6));
+        expect(find.byType(UserAvatar), findsNothing);
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
+      'stays hidden while loading when the feed knows of no reposts',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            repostersState: const VideoRepostersState(),
+            child: MetadataRepostedBySection(video: _makeVideo()),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(_l10n(tester).metadataRepostedByLabel), findsNothing);
+        expect(_skeletonChips(), findsNothing);
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
+      'stays hidden when the promised repost count is negative',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            repostersState: const VideoRepostersState(),
+            child: MetadataRepostedBySection(
+              video: _makeVideo(nostrRepostCount: -1),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(_l10n(tester).metadataRepostedByLabel), findsNothing);
+        expect(_skeletonChips(), findsNothing);
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
+      'drops the placeholders when the relay finds no reposters',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            repostersState: const VideoRepostersState(isLoading: false),
+            child: MetadataRepostedBySection(
+              video: _makeVideo(nostrRepostCount: 3),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(_l10n(tester).metadataRepostedByLabel), findsNothing);
+        expect(_skeletonChips(), findsNothing);
+      },
+    );
+
     testWidgetsWithSurfaceSize('renders reposters fetched from relay', (
       tester,
     ) async {
@@ -1175,7 +1352,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Reposted by'), findsOneWidget);
+      expect(find.text(_l10n(tester).metadataRepostedByLabel), findsOneWidget);
       expect(find.text('Improvising'), findsOneWidget);
     });
 
@@ -1196,7 +1373,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Reposted by'), findsOneWidget);
+      expect(find.text(_l10n(tester).metadataRepostedByLabel), findsOneWidget);
       expect(find.text('Improvising'), findsOneWidget);
     });
 
@@ -1310,7 +1487,10 @@ void main() {
         await tester.pumpAndSettle();
 
         final moreLabel = _l10n(tester).metadataMoreReposters(7);
-        expect(find.text('Reposted by'), findsOneWidget);
+        expect(
+          find.text(_l10n(tester).metadataRepostedByLabel),
+          findsOneWidget,
+        );
 
         await tester.tap(find.text(moreLabel));
         await tester.pumpAndSettle();
@@ -1325,12 +1505,12 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('open sheet'), findsOneWidget);
-        expect(find.text('Reposted by'), findsNothing);
+        expect(find.text(_l10n(tester).metadataRepostedByLabel), findsNothing);
       },
     );
 
     testWidgetsWithSurfaceSize(
-      'waits for the chip names before revealing the section',
+      'waits for the chip names before swapping the placeholders out',
       (tester) async {
         final profile = Completer<UserProfile?>();
 
@@ -1351,14 +1531,21 @@ void main() {
         await tester.pump();
 
         // A chip falls back to a generated name while its profile loads.
-        // Showing the row first would swap every label a moment later and
-        // reflow the rows around the new widths.
-        expect(find.text('Reposted by'), findsNothing);
+        // Showing the real chips first would swap every label a moment later
+        // and reflow the rows around the new widths, so a placeholder of the
+        // known size stands in.
+        expect(
+          find.text(_l10n(tester).metadataRepostedByLabel),
+          findsOneWidget,
+        );
+        expect(_skeletonChips(), findsNWidgets(1));
+        expect(find.byType(UserAvatar), findsNothing);
 
         profile.complete(_makeProfile(_reposterPubkey, 'Improvising'));
         await tester.pumpAndSettle();
 
         expect(find.text('Improvising'), findsOneWidget);
+        expect(_skeletonChips(), findsNothing);
       },
     );
 
@@ -1383,12 +1570,17 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.text('Reposted by'), findsNothing);
+        expect(_skeletonChips(), findsNWidgets(1));
 
         await tester.pump(const Duration(seconds: 1));
         await tester.pumpAndSettle();
 
-        expect(find.text('Reposted by'), findsOneWidget);
+        expect(
+          find.text(_l10n(tester).metadataRepostedByLabel),
+          findsOneWidget,
+        );
+        expect(_skeletonChips(), findsNothing);
+        expect(find.byType(UserAvatar), findsOneWidget);
 
         profile.complete(_makeProfile(_reposterPubkey, 'Improvising'));
         await tester.pumpAndSettle();
@@ -1431,7 +1623,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Reposted by'), findsNothing);
+        expect(find.text(_l10n(tester).metadataRepostedByLabel), findsNothing);
       },
     );
 
@@ -1466,7 +1658,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('Reposted by'), findsOneWidget);
+      expect(find.text(_l10n(tester).metadataRepostedByLabel), findsOneWidget);
       expect(revealingHeight, lessThan(tester.getSize(section).height));
     });
 
@@ -1580,6 +1772,158 @@ void main() {
       final l10n = _l10n(tester);
       expect(find.text(l10n.metadataVerificationLabel), findsNothing);
     });
+
+    testWidgetsWithSurfaceSize(
+      'tapping the header explains every check and the missing-check caveat',
+      (tester) async {
+        final video = _makeVideo(rawTags: {'verification': 'verified_mobile'});
+        await tester.pumpWidget(
+          buildSubject(child: MetadataVerificationSection(video: video)),
+        );
+
+        final l10n = _l10n(tester);
+        await tester.tap(find.text(l10n.metadataVerificationLabel));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(MetadataVerificationInfoSheet), findsOneWidget);
+        expect(find.text(l10n.metadataVerificationInfoTitle), findsOneWidget);
+        expect(
+          find.text(l10n.metadataVerificationInfoDeviceAttestation),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n.metadataVerificationInfoPgpSignature),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n.metadataVerificationInfoC2paCredentials),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n.metadataVerificationInfoProofManifest),
+          findsOneWidget,
+        );
+        // The caveat is the load-bearing half of the sheet: without it the
+        // four ticks over-claim, since a muted X only means "not proven".
+        expect(
+          find.text(l10n.metadataVerificationInfoFootnote),
+          findsOneWidget,
+        );
+        // The URL is a placeholder inside the sentence, so a locale that
+        // moves it still renders one continuous line.
+        final learnMore = find.text(
+          l10n.metadataVerificationInfoLearnMore('divine.video/proofmode'),
+          findRichText: true,
+        );
+        expect(learnMore, findsOneWidget);
+        expect(
+          tester
+              .getSize(
+                find
+                    .ancestor(
+                      of: learnMore,
+                      matching: find.byType(GestureDetector),
+                    )
+                    .first,
+              )
+              .height,
+          greaterThanOrEqualTo(48),
+        );
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
+      'learn-more tap opens proofmode URL externally',
+      (tester) async {
+        final video = _makeVideo(rawTags: {'verification': 'verified_mobile'});
+        await tester.pumpWidget(
+          buildSubject(child: MetadataVerificationSection(video: video)),
+        );
+
+        final l10n = _l10n(tester);
+        await tester.tap(find.text(l10n.metadataVerificationLabel));
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.text(
+            l10n.metadataVerificationInfoLearnMore('divine.video/proofmode'),
+            findRichText: true,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(urlLauncher.launched, isNotEmpty);
+        expect(urlLauncher.launched.last.url, equals(proofmodeLearnMoreUrl));
+        expect(urlLauncher.launched.last.useExternalApplication, isTrue);
+      },
+    );
+
+    testWidgetsWithSurfaceSize('header info affordance is a labeled button', (
+      tester,
+    ) async {
+      final video = _makeVideo(rawTags: {'verification': 'verified_mobile'});
+      await tester.pumpWidget(
+        buildSubject(child: MetadataVerificationSection(video: video)),
+      );
+
+      final l10n = _l10n(tester);
+      // The label names the section as well as the explainer: the visible
+      // "Verification" text is excluded from semantics, so dropping it here
+      // would leave the checklist with no announced section at all.
+      final semantics = tester.getSemantics(
+        find.bySemanticsLabel(
+          l10n.metadataSectionInfoSemanticsLabel(
+            l10n.metadataVerificationLabel,
+            l10n.metadataVerificationInfoTooltip,
+          ),
+        ),
+      );
+      expect(semantics.flagsCollection.isButton, isTrue);
+      // The tooltip carries the same string; announcing it again as a
+      // tooltip duplicates it on both platforms.
+      expect(semantics.tooltip, isEmpty);
+    });
+
+    testWidgetsWithSurfaceSize(
+      'header tap target clears 48 dp without moving the label',
+      (tester) async {
+        final video = _makeVideo(rawTags: {'verification': 'verified_mobile'});
+        await tester.pumpWidget(
+          buildSubject(child: MetadataVerificationSection(video: video)),
+        );
+
+        final l10n = _l10n(tester);
+        final tapTarget = find
+            .ancestor(
+              of: find.text(l10n.metadataVerificationLabel),
+              matching: find.byType(GestureDetector),
+            )
+            .first;
+        expect(tester.getSize(tapTarget).height, greaterThanOrEqualTo(48));
+
+        // The extra height is slack around the row, not layout: the Figma
+        // spec's 16 px above the header and 16 px below it both survive.
+        final headerRow = find
+            .ancestor(
+              of: find.text(l10n.metadataVerificationLabel),
+              matching: find.byType(Row),
+            )
+            .first;
+        final firstCheckRow = find
+            .ancestor(
+              of: find.text(l10n.metadataDeviceAttestation),
+              matching: find.byType(Row),
+            )
+            .first;
+
+        final sectionTop = tester.getTopLeft(find.byType(MetadataSection)).dy;
+        expect(tester.getTopLeft(headerRow).dy - sectionTop, 16);
+        expect(
+          tester.getTopLeft(firstCheckRow).dy -
+              tester.getBottomLeft(headerRow).dy,
+          16,
+        );
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------
@@ -1764,9 +2108,12 @@ void main() {
         expect(find.text('hello'), findsOneWidget);
 
         // Absent
-        expect(find.text('Collaborators'), findsNothing);
+        expect(
+          find.text(_l10n(tester).metadataCollaboratorsLabel),
+          findsNothing,
+        );
         expect(find.text('Inspired by'), findsNothing);
-        expect(find.text('Reposted by'), findsNothing);
+        expect(find.text(_l10n(tester).metadataRepostedByLabel), findsNothing);
 
         // Sounds section is always present (shows "Original sound")
         // Scroll down to find it

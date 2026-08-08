@@ -1303,6 +1303,18 @@ class AppLocalizationsVi extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'Tắt phụ đề';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'Đã bật tự động chuyển video';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'Đã tắt tự động chuyển video';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Đã bật phụ đề';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Đã tắt phụ đề';
+
+  @override
   String get contentWarningLabel => 'Cảnh báo nội dung';
 
   @override
@@ -1537,11 +1549,25 @@ class AppLocalizationsVi extends AppLocalizations {
       'Xác minh đã hết thời gian chờ. Kiểm tra kết nối của bạn hoặc thử lại sau ít phút.';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      'Nội dung người lớn đang tắt. Bạn có thể bật trong Cài đặt → Bộ lọc nội dung.';
+  String get videoErrorAdultContentHiddenTitle => 'Nội dung người lớn đang tắt';
+
+  @override
+  String get videoErrorAdultContentHiddenBody =>
+      'Bật trong bộ lọc nội dung để xem video này.';
+
+  @override
+  String get videoErrorAdultContentHiddenAction => 'Mở bộ lọc nội dung';
 
   @override
   String get videoDetailLoadError => 'Không thể tải video';
+
+  @override
+  String get videoDetailLoadErrorBody =>
+      'Có gì đó trục trặc trên đường tới đây. Thử lại nhé.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Có thể nó đã bị xoá, ngoài tầm với, hoặc bị ẩn bởi cài đặt của bạn.';
 
   @override
   String get databaseCorruptionTitle => 'Dữ liệu cục bộ của bạn bị rối tung';
@@ -1823,6 +1849,47 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get metadataProofManifest => 'Tệp chứng minh';
+
+  @override
+  String get metadataVerificationInfoTooltip =>
+      'Những kiểm tra này nghĩa là gì?';
+
+  @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
+  String get metadataVerificationInfoTitle => 'Ý nghĩa của những kiểm tra này';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'Các tín hiệu này đến từ máy ảnh và từ chính tệp video. Video mang càng nhiều tín hiệu, chúng tôi càng chứng minh được nhiều điều về nguồn gốc của nó.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'Hệ điều hành của điện thoại đã bảo chứng cho ứng dụng đã quay video này. Bằng chứng mạnh cho thấy nó đến từ camera, không phải tệp ai đó tải lên.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'Video được ký bằng mật mã ngay khoảnh khắc quay. Sau đó chỉ cần đổi một khung hình là chữ ký hỏng.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'Bản ghi nguồn gốc theo chuẩn ngành, đi kèm bên trong tệp — nên các ứng dụng khác ngoài Divine cũng kiểm tra được.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'Bản ghi ProofMode đầy đủ: dấu vân tay tệp, dấu thời gian và bối cảnh quay, đi cùng video.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'Thiếu một kiểm tra không có nghĩa video là giả. Các clip cũ và video tải lên vốn chưa từng có — chỉ là chúng tôi không chứng minh được phần đó.';
+
+  @override
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'Tìm hiểu thêm tại $url';
+  }
 
   @override
   String get metadataCreatorLabel => 'Nhà sáng tạo';
@@ -4589,6 +4656,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Tìm theo tên...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Xóa tìm kiếm';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name đã được thêm';
   }
@@ -6237,6 +6307,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get commonClose => 'Đóng';
 
   @override
+  String get commonNotNow => 'Để sau';
+
+  @override
   String get commonLoading => 'Đang tải';
 
   @override
@@ -6257,6 +6330,10 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get videoMetadataC2paMissingNote =>
       'Chứng nhận nội dung cần kết nối internet.';
+
+  @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
 
   @override
   String get videoMetadataC2paMissingRegenerate => 'Tạo lại';
@@ -7254,50 +7331,6 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get proofmodeBadgeAiScanPending => 'Đang chờ quét AI';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'Do người làm';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Không do Divine lưu trữ';
-
-  @override
-  String get proofmodeBadgeOriginal => 'Nguyên bản';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'Có thể do AI tạo ra';
-
-  @override
-  String get proofmodeBadgeUnverified => 'Chưa xác minh';
-
-  @override
-  String get proofmodeConfirmedByModerator => 'Được kiểm duyệt viên xác nhận';
-
-  @override
-  String get proofmodeExternalContentTitle => 'Nội dung bên ngoài';
-
-  @override
-  String get proofmodeHostedOnLabel => 'Video này được lưu trữ trên:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'Có vẻ do người tạo';
-
-  @override
-  String get proofmodeNoProofDataAttached =>
-      'Không có dữ liệu ProofMode đính kèm';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'Nội dung này không được lưu trữ trên máy chủ Divine. Bọn mình không thể đảm bảo hoàn toàn tính xác thực của nó.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'Có thể do AI tạo ra';
-
-  @override
-  String get proofmodePublishedByLabel => 'Đăng bởi:';
-
-  @override
   String get publishErrorNotSignedIn => 'Vui lòng đăng nhập để đăng video.';
 
   @override
@@ -7356,6 +7389,10 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get publishErrorNostrPublishFailed =>
       'Video đã tải lên nhưng không đăng được bài. Kiểm tra cài đặt relay rồi thử lại.';
+
+  @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Video đã tải lên nhưng âm thanh này không được phép dùng lại. Chọn âm thanh khác để đăng nhé.';
 
   @override
   String get publishErrorInterrupted =>
@@ -7501,6 +7538,13 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'Chủ đề *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'Bài đăng GitHub công khai';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Mọi nội dung bạn gửi tại đây sẽ được đăng lên kho mã nguồn mở của chúng tôi trên GitHub để các nhà phát triển có thể xử lý. Bài đăng và tài khoản bạn đang đăng nhập sẽ hiển thị công khai với tất cả mọi người.';
 
   @override
   String get supportRequiredHelper => 'Bắt buộc';

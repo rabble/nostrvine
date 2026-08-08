@@ -27,8 +27,10 @@ import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_coordinator.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_error_listener.dart';
+import 'package:openvine/screens/feed/feed_immersive_cubit.dart';
 import 'package:openvine/screens/feed/pooled_age_restricted_retry.dart';
 import 'package:openvine/services/community_content_label_service.dart';
+import 'package:openvine/services/haptic_service.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/services/view_event_publisher.dart'
@@ -39,6 +41,7 @@ import 'package:openvine/widgets/video_feed_item/blurred_video_backdrop.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_like_helpers.dart';
+import 'package:openvine/widgets/video_feed_item/feed_immersive_chrome.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/paused_video_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
@@ -252,23 +255,6 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
   void didPopNext() {
     if (_routeAllowsPlayback) return;
     setState(() => _routeAllowsPlayback = true);
-  }
-
-  bool _isAutoAdvanceAvailable() {
-    if (!mounted) return false;
-    return !MediaQuery.disableAnimationsOf(context);
-  }
-
-  void _toggleAutoAdvance() {
-    if (!_isAutoAdvanceAvailable()) return;
-    _autoAdvanceCubit.toggle();
-    if (!_autoAdvanceCubit.state.isEffectivelyActive) {
-      _autoAdvanceCubit.clearPendingPaginationAdvance();
-    }
-    announceAutoAdvanceToggle(
-      context,
-      enabled: _autoAdvanceCubit.state.enabled,
-    );
   }
 
   void _suppressAutoAdvance() => _autoAdvanceCubit.suppressForInteraction();
@@ -495,12 +481,12 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
               video: video,
               index: index,
               isActive: isActive,
+              isFeedActive: isFeedActive,
               contextTitle: widget.contextTitle,
               contentWarningRevealed: _revealedContentWarningVideoIds.contains(
                 video.id,
               ),
               onContentWarningRevealed: () => _revealContentWarning(video.id),
-              onToggleAutoAdvance: _toggleAutoAdvance,
               onSuppressAutoAdvance: _suppressAutoAdvance,
             ),
           );
@@ -517,9 +503,9 @@ class _Overlay extends ConsumerStatefulWidget {
     required this.video,
     required this.index,
     required this.isActive,
+    required this.isFeedActive,
     required this.contentWarningRevealed,
     required this.onContentWarningRevealed,
-    this.onToggleAutoAdvance,
     this.onSuppressAutoAdvance,
   });
 
@@ -527,7 +513,15 @@ class _Overlay extends ConsumerStatefulWidget {
   final DivineVideoPlayerController? controller;
   final VideoEvent video;
   final int index;
+
+  /// Whether this item is the current page of the feed.
   final bool isActive;
+
+  /// Whether the feed itself may play: the home tab is current, no route or
+  /// overlay covers it, and the app is foregrounded. A paused player while
+  /// this is `false` is a temporary pause that resumes on its own, so the
+  /// paused affordance stays hidden.
+  final bool isFeedActive;
 
   /// Whether the user already dismissed this video's content warning.
   /// Owned by [FeedVideosState] so the autoplay gate can read it too.
@@ -536,7 +530,6 @@ class _Overlay extends ConsumerStatefulWidget {
   /// Called when the user taps "View Anyway" on the content warning.
   final VoidCallback onContentWarningRevealed;
 
-  final VoidCallback? onToggleAutoAdvance;
   final VoidCallback? onSuppressAutoAdvance;
 
   @override
@@ -593,6 +586,19 @@ class __OverlayState extends ConsumerState<_Overlay> {
   InfiniteVideoFeedState? _feedState;
   ValueListenable<double>? _pagePositionListenable;
 
+  /// Page-scoped immersive state, cached so [dispose] can lower the flag
+  /// without reaching through a deactivated [BuildContext].
+  FeedImmersiveCubit? _immersiveCubit;
+
+  /// Whether *this* item raised the immersive flag. Guards enter/exit so an
+  /// unrelated pointer can't clear a hold we never started.
+  bool _isHoldingForImmersive = false;
+
+  /// Pointers currently down over this item. The peek ends only when the last
+  /// one lifts, so an incidental second finger (a resting thumb, a pinch
+  /// attempt) can't restore the chrome while the hold finger is still down.
+  final Set<int> _immersivePointers = <int>{};
+
   @override
   void initState() {
     super.initState();
@@ -626,12 +632,56 @@ class __OverlayState extends ConsumerState<_Overlay> {
     super.didChangeDependencies();
     _feedState = context.findAncestorStateOfType<InfiniteVideoFeedState>();
     _pagePositionListenable = _feedState?.pagePositionListenable;
+    _immersiveCubit = context.read<FeedImmersiveCubit?>();
   }
 
   @override
   void dispose() {
+    // An item can be torn down mid-hold (feed rebuild, route replacement).
+    // The cubit outlives this overlay, so the flag has to come down here or
+    // the surface would be left with permanently hidden chrome.
+    _exitImmersive();
+    // [didUpdateWidget] re-points this State at a different video, so the
+    // pointer set must not outlive the item that filled it.
+    _immersivePointers.clear();
     _heartTrigger.dispose();
     super.dispose();
+  }
+
+  /// Hides the chrome for as long as the viewer keeps their finger down.
+  void _enterImmersive() {
+    final cubit = _immersiveCubit;
+    if (cubit == null || cubit.isClosed || _isHoldingForImmersive) return;
+    _isHoldingForImmersive = true;
+    // Confirms the hold registered — the gesture has no other affordance.
+    unawaited(HapticService.immersiveModeFeedback());
+    cubit.enter();
+  }
+
+  /// Drops a lifted/cancelled pointer and, once none remain, brings the chrome
+  /// back.
+  ///
+  /// Driven off the raw [Listener] rather than the gesture callbacks.
+  /// `LongPressGestureRecognizer` does not report `onLongPressEnd` for a
+  /// pointer cancelled after the press was accepted (`onLongPressCancel`
+  /// does fire), and neither callback can distinguish an incidental second
+  /// finger lifting from the hold finger lifting — only counting pointers
+  /// can. Flutter still delivers the terminal event to the down-time hit
+  /// path even after the [Listener] has unmounted (a mode flip mid-hold),
+  /// so this stays the reliable exit.
+  void _handleImmersivePointerEnd(int pointer) {
+    _immersivePointers.remove(pointer);
+    if (_immersivePointers.isEmpty) _exitImmersive();
+  }
+
+  /// Brings the chrome back. Idempotent — the no-op guard lets [dispose] and
+  /// the last-pointer-up path both call it unconditionally.
+  void _exitImmersive() {
+    if (!_isHoldingForImmersive) return;
+    _isHoldingForImmersive = false;
+    final cubit = _immersiveCubit;
+    if (cubit == null || cubit.isClosed) return;
+    cubit.exit();
   }
 
   // Single definition of "what counts as warned" for this overlay: the
@@ -756,20 +806,16 @@ class __OverlayState extends ConsumerState<_Overlay> {
     final isOwnVideo =
         currentUserPubkey != null && currentUserPubkey == widget.video.pubkey;
 
-    // Subscribe only to the Auto flags this overlay renders — the rail being
-    // toggled (enabled) and suppressed/resumed (isEffectivelyActive) — so
-    // unrelated cubit changes (e.g. pendingPaginationAdvance) don't rebuild
-    // every visible feed item while scrolling.
-    final (autoEnabled, autoEffectivelyActive) = context.select(
-      (FeedAutoAdvanceCubit cubit) =>
-          (cubit.state.enabled, cubit.state.isEffectivelyActive),
+    // Subscribe only to `isEffectivelyActive` — the single Auto flag this
+    // overlay reads — so unrelated cubit changes don't rebuild every visible
+    // feed item while scrolling.
+    final autoEffectivelyActive = context.select(
+      (FeedAutoAdvanceCubit cubit) => cubit.state.isEffectivelyActive,
     );
 
-    // Gate the rail + runtime on both the feature flag and the
-    // user's reduced-motion preference. When Auto is unavailable,
-    // force it "off" at the view layer regardless of cubit state.
+    // Gate the runtime on the user's reduced-motion preference. When Auto is
+    // unavailable, force it "off" at the view layer regardless of cubit state.
     final autoAdvanceAvailable = !MediaQuery.disableAnimationsOf(context);
-    final effectiveAutoEnabled = autoAdvanceAvailable && autoEnabled;
 
     // Watch the kill-switch so the blur re-evaluates on a flip, and start
     // prefetching if it flips on for an already-mounted overlay (initState's
@@ -905,32 +951,113 @@ class __OverlayState extends ConsumerState<_Overlay> {
                   button: true,
                   label: context.l10n.videoPlayerPlayVideo,
                   hint: isOwnVideo ? null : context.l10n.videoPlayerTapHint,
-                  child: GestureDetector(
-                    behavior: .translucent,
-                    onTap: interactiveReady ? _handlePlayerTap : null,
-                    onDoubleTapDown: interactiveReady
-                        ? (details) => _handleDoubleTapLike(
-                            context,
-                            details,
-                            isOwnVideo: isOwnVideo,
-                          )
-                        : null,
-                    child: Stack(
-                      children: [
-                        if (widget.controller != null)
-                          PausedVideoOverlay(
-                            controller: widget.controller!,
-                            isVisible: widget.isActive,
+                  // The chrome layers are SIBLINGS above the gesture surface,
+                  // never descendants of it. As descendants, any press held
+                  // past `kLongPressTimeout` anywhere on the action rail was
+                  // claimed by the video's long-press: the rail's own tap
+                  // recognizer only accepts on pointer-up, so it lost the
+                  // arena, and Report/More/Share swallowed the tap and faded
+                  // out under the viewer's finger. Keeping them siblings lets
+                  // an opaque button win the hit test outright, so the peek
+                  // never sees that pointer.
+                  child: Stack(
+                    children: [
+                      // The raw [Listener] owns immersive mode's release: it
+                      // counts the pointers over the item and exits once the
+                      // last lifts. `onLongPressEnd` alone would not do —
+                      // it does not fire for a pointer cancelled after the
+                      // press was accepted (`onLongPressCancel` does), and
+                      // neither callback can tell an incidental second finger
+                      // lifting from the hold finger lifting. A Listener also
+                      // sits outside the gesture arena, so it can't steal the
+                      // press.
+                      Positioned.fill(
+                        child: Listener(
+                          // Must match the translucent child below: with
+                          // `deferToChild` a press on empty video area never
+                          // adds this Listener to the hit-test path (the
+                          // translucent GestureDetector adds itself but still
+                          // reports a miss), so the pointer events would never
+                          // arrive.
+                          behavior: HitTestBehavior.translucent,
+                          onPointerDown: (event) {
+                            // An empty set means nothing is down, so any hold
+                            // this item still believes it owns is stale — its
+                            // terminal event was lost (a touch dropped on
+                            // backgrounding, a platform view taking over).
+                            // Without this the item could never peek again.
+                            if (_immersivePointers.isEmpty) _exitImmersive();
+                            _immersivePointers.add(event.pointer);
+                          },
+                          onPointerUp: (event) =>
+                              _handleImmersivePointerEnd(event.pointer),
+                          onPointerCancel: (event) =>
+                              _handleImmersivePointerEnd(event.pointer),
+                          child: GestureDetector(
+                            behavior: .translucent,
+                            onTap: interactiveReady ? _handlePlayerTap : null,
+                            onDoubleTapDown: interactiveReady
+                                ? (details) => _handleDoubleTapLike(
+                                    context,
+                                    details,
+                                    isOwnVideo: isOwnVideo,
+                                  )
+                                : null,
+                            child: GestureDetector(
+                              behavior: .translucent,
+                              // Press and hold to peek at the unobstructed
+                              // frame. Deliberately not gated on
+                              // [interactiveReady] the way tap and double-tap
+                              // are: those mutate the player or publish a
+                              // like, while this only hides chrome, which is
+                              // just as valid over a still-loading frame.
+                              //
+                              // Excluded from semantics, and kept on its own
+                              // detector so the tap action above still is
+                              // published. A `GestureDetector` publishes
+                              // `SemanticsAction.longPress` for ANY long-press
+                              // callback, `onLongPressStart` included — and
+                              // firing that action delivers no pointer events,
+                              // so the release path below would never run and
+                              // a screen-reader user would be left with every
+                              // control hidden and pointer-blocked until the
+                              // item was disposed.
+                              excludeFromSemantics: true,
+                              onLongPressStart: (_) => _enterImmersive(),
+                              child: const SizedBox.expand(),
+                            ),
                           ),
-                        _FeedItemActions(
+                        ),
+                      ),
+                      if (widget.controller != null)
+                        // The paused play indicator is chrome too — it
+                        // covers the frame the peek is meant to reveal,
+                        // and holding never resumes playback, so leaving
+                        // it up would contradict the gesture.
+                        FeedImmersiveChrome(
+                          child: PausedVideoOverlay(
+                            controller: widget.controller!,
+                            // Only a pause the user can undo gets the
+                            // affordance. A comments/share sheet, a pushed
+                            // route or a backgrounded app pauses the player
+                            // too, but resumes it on its own — showing a play
+                            // button behind the sheet just reads as broken.
+                            isVisible: widget.isActive && widget.isFeedActive,
+                          ),
+                        ),
+                      FeedImmersiveChrome(
+                        child: _FeedItemActions(
                           video: video,
                           index: widget.index,
                           contextTitle: widget.contextTitle,
                           isOwnVideo: isOwnVideo,
-                          autoAdvanceAvailable: autoAdvanceAvailable,
-                          effectiveAutoEnabled: effectiveAutoEnabled,
-                          onToggleAutoAdvance: widget.onToggleAutoAdvance,
                           onSuppressAutoAdvance: widget.onSuppressAutoAdvance,
+                          // Captions fade with the rest of the chrome, by
+                          // design: the hold reveals the frame the UI covers,
+                          // and the caption is an overlay over that same frame,
+                          // so keeping it up would re-cover exactly what the
+                          // peek exposes. It is gone only while the viewer
+                          // holds, and returns the instant they release.
                           subtitleLayer:
                               video.hasSubtitles && widget.controller != null
                               ? _SubtitleLayer(
@@ -940,11 +1067,11 @@ class __OverlayState extends ConsumerState<_Overlay> {
                               : null,
                           pagePositionListenable: pagePositionListenable,
                         ),
-                        Positioned.fill(
-                          child: DoubleTapHeartOverlay(trigger: _heartTrigger),
-                        ),
-                      ],
-                    ),
+                      ),
+                      Positioned.fill(
+                        child: DoubleTapHeartOverlay(trigger: _heartTrigger),
+                      ),
+                    ],
                   ),
                 );
               },
@@ -961,9 +1088,6 @@ class _FeedItemActions extends StatelessWidget {
     required this.index,
     required this.contextTitle,
     required this.isOwnVideo,
-    required this.autoAdvanceAvailable,
-    required this.effectiveAutoEnabled,
-    required this.onToggleAutoAdvance,
     required this.onSuppressAutoAdvance,
     this.subtitleLayer,
     this.pagePositionListenable,
@@ -973,9 +1097,6 @@ class _FeedItemActions extends StatelessWidget {
   final int index;
   final String? contextTitle;
   final bool isOwnVideo;
-  final bool autoAdvanceAvailable;
-  final bool effectiveAutoEnabled;
-  final VoidCallback? onToggleAutoAdvance;
   final VoidCallback? onSuppressAutoAdvance;
   final Widget? subtitleLayer;
   final ValueListenable<double>? pagePositionListenable;
@@ -988,9 +1109,6 @@ class _FeedItemActions extends StatelessWidget {
         video: video,
         contextTitle: contextTitle,
         isOwnVideo: isOwnVideo,
-        autoAdvanceAvailable: autoAdvanceAvailable,
-        effectiveAutoEnabled: effectiveAutoEnabled,
-        onToggleAutoAdvance: onToggleAutoAdvance,
         onSuppressAutoAdvance: onSuppressAutoAdvance,
         subtitleLayer: subtitleLayer,
       );
@@ -1009,9 +1127,6 @@ class _FeedItemActions extends StatelessWidget {
         video: video,
         contextTitle: contextTitle,
         isOwnVideo: isOwnVideo,
-        autoAdvanceAvailable: autoAdvanceAvailable,
-        effectiveAutoEnabled: effectiveAutoEnabled,
-        onToggleAutoAdvance: onToggleAutoAdvance,
         onSuppressAutoAdvance: onSuppressAutoAdvance,
         subtitleLayer: subtitleLayer,
       ),
@@ -1066,9 +1181,6 @@ class _FeedItemOverlayActions extends StatelessWidget {
     required this.video,
     required this.contextTitle,
     required this.isOwnVideo,
-    required this.autoAdvanceAvailable,
-    required this.effectiveAutoEnabled,
-    required this.onToggleAutoAdvance,
     required this.onSuppressAutoAdvance,
     this.subtitleLayer,
   });
@@ -1076,9 +1188,6 @@ class _FeedItemOverlayActions extends StatelessWidget {
   final VideoEvent video;
   final String? contextTitle;
   final bool isOwnVideo;
-  final bool autoAdvanceAvailable;
-  final bool effectiveAutoEnabled;
-  final VoidCallback? onToggleAutoAdvance;
   final VoidCallback? onSuppressAutoAdvance;
   final Widget? subtitleLayer;
 
@@ -1095,7 +1204,6 @@ class _FeedItemOverlayActions extends StatelessWidget {
       contextTitle: contextTitle,
       isFullscreen: true,
       topOffset: isOwnVideo ? 64 : 8,
-      showAutoButton: autoAdvanceAvailable,
       onInteracted: onSuppressAutoAdvance,
       subtitleLayer: subtitleLayer,
     );

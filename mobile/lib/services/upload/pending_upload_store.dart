@@ -187,6 +187,48 @@ class PendingUploadStore {
     await _box!.delete(id);
   }
 
+  /// Delete every upload persisted for [ownerPubkey].
+  ///
+  /// This is intentionally not owner-scoped to [currentNostrPubkey]: destructive
+  /// account cleanup passes the departing account explicitly, and must work even
+  /// after provider auth state has moved on.
+  Future<int> deleteAllForOwner(String ownerPubkey) async {
+    final queueIds = _pendingSaveQueue.entries
+        .where((entry) => entry.value.nostrPubkey == ownerPubkey)
+        .map((entry) => entry.key)
+        .toList();
+    for (final id in queueIds) {
+      _pendingSaveQueue.remove(id);
+    }
+    if (_pendingSaveQueue.isEmpty) {
+      _saveQueueTimer?.cancel();
+      _saveQueueTimer = null;
+    }
+
+    if (_box == null || !_box!.isOpen) {
+      try {
+        await ensureOpen();
+      } catch (e) {
+        Log.warning(
+          'Unable to open pending uploads box for owner cleanup: $e',
+          name: 'UploadManager',
+          category: LogCategory.video,
+        );
+        return 0;
+      }
+    }
+    if (_box == null || !_box!.isOpen) return 0;
+
+    final uploadIds = _allUploads
+        .where((upload) => upload.nostrPubkey == ownerPubkey)
+        .map((upload) => upload.id)
+        .toList();
+    for (final id in uploadIds) {
+      await _box!.delete(id);
+    }
+    return uploadIds.length;
+  }
+
   // ---------------------------------------------------------------------------
   // Deferred-save queue
   // ---------------------------------------------------------------------------
@@ -301,6 +343,13 @@ class PendingUploadStore {
     if (!scopeUploadsToCurrentUser) return uploads;
     return uploads.where(_isVisibleToCurrentOwner).toList();
   }
+
+  /// All uploads persisted for [ownerPubkey], ignoring current-user scoping.
+  ///
+  /// Destructive account cleanup passes the departing owner explicitly and can
+  /// run after auth state has already moved to another account.
+  List<PendingUpload> uploadsForOwner(String ownerPubkey) =>
+      _allUploads.where((upload) => upload.nostrPubkey == ownerPubkey).toList();
 
   bool _isVisibleToCurrentOwner(PendingUpload upload) {
     if (!scopeUploadsToCurrentUser) return true;

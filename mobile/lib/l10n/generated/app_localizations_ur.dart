@@ -1302,6 +1302,18 @@ class AppLocalizationsUr extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'کیپشن غیر فعال کریں';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'خودکار آگے بڑھنا آن';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'خودکار آگے بڑھنا آف';
+
+  @override
+  String get videoSettingsCaptionsOn => 'کیپشن آن';
+
+  @override
+  String get videoSettingsCaptionsOff => 'کیپشن آف';
+
+  @override
   String get contentWarningLabel => 'مواد انتباہ';
 
   @override
@@ -1533,11 +1545,25 @@ class AppLocalizationsUr extends AppLocalizations {
       'تصدیق کا وقت ختم ہو گیا۔ اپنا کنکشن چیک کریں یا تھوڑی دیر بعد دوبارہ کوشش کریں۔';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      'بالغ مواد بند ہے۔ آپ اسے ترتیبات → مواد فلٹرز میں چالو کر سکتے ہیں۔';
+  String get videoErrorAdultContentHiddenTitle => 'بالغ مواد بند ہے';
+
+  @override
+  String get videoErrorAdultContentHiddenBody =>
+      'یہ ویڈیو دیکھنے کے لیے اسے مواد فلٹرز میں چالو کریں۔';
+
+  @override
+  String get videoErrorAdultContentHiddenAction => 'مواد فلٹرز کھولیں';
 
   @override
   String get videoDetailLoadError => 'ویڈیو لوڈ نہیں ہو سکی';
+
+  @override
+  String get videoDetailLoadErrorBody =>
+      'یہاں پہنچتے پہنچتے کچھ گڑبڑ ہو گئی۔ دوبارہ کوشش کریں۔';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'ہو سکتا ہے یہ حذف ہو چکی ہو، ہماری پہنچ سے باہر ہو، یا آپ کی ترتیبات نے اسے چھپا دیا ہو۔';
 
   @override
   String get databaseCorruptionTitle => 'آپ کا مقامی ڈیٹا بگڑ گیا';
@@ -1818,6 +1844,46 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get metadataProofManifest => 'ثبوت مینی فیسٹ';
+
+  @override
+  String get metadataVerificationInfoTooltip => 'ان جانچوں کا کیا مطلب ہے؟';
+
+  @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
+  String get metadataVerificationInfoTitle => 'ان جانچوں کا مطلب';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'یہ اشارے کیمرے اور خود ویڈیو فائل سے آتے ہیں۔ ویڈیو کے پاس جتنے زیادہ اشارے ہوں، ہم اس کے ماخذ کے بارے میں اتنا ہی زیادہ ثابت کر سکتے ہیں۔';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'فون کے آپریٹنگ سسٹم نے اُس ایپ کی ضمانت دی جس نے یہ ریکارڈ کیا۔ یہ اس بات کا مضبوط ثبوت ہے کہ یہ کیمرے سے آیا، نہ کہ کسی کی اپ لوڈ کی ہوئی فائل سے۔';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'ویڈیو کو ریکارڈ ہوتے ہی خفیہ نگاری سے دستخط کیا گیا۔ بعد میں ایک فریم بھی بدلے تو دستخط ٹوٹ جاتا ہے۔';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'صنعتی معیار کا ماخذ ریکارڈ جو فائل کے اندر ساتھ سفر کرتا ہے — اس لیے Divine کے علاوہ ایپس بھی اسے جانچ سکتی ہیں۔';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'مکمل ProofMode ریکارڈ: فائل کا فنگر پرنٹ، وقت کی مہر اور ریکارڈنگ کا سیاق، ویڈیو کے ساتھ منسلک۔';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'کسی جانچ کا نہ ہونا ویڈیو کو جعلی نہیں بناتا۔ پرانی کلپس اور اپ لوڈز کے پاس یہ کبھی تھا ہی نہیں — اس کا مطلب صرف یہ ہے کہ ہم وہ حصہ ثابت نہیں کر سکتے۔';
+
+  @override
+  String metadataVerificationInfoLearnMore(String url) {
+    return '$url پر مزید جانیں';
+  }
 
   @override
   String get metadataCreatorLabel => 'کریئیٹر';
@@ -4593,6 +4659,9 @@ class AppLocalizationsUr extends AppLocalizations {
   String get userPickerSearchByNameHint => 'نام سے تلاش کریں...';
 
   @override
+  String get userPickerClearSearchSemantics => 'تلاش صاف کریں';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name پہلے سے شامل ہے';
   }
@@ -6236,6 +6305,9 @@ class AppLocalizationsUr extends AppLocalizations {
   String get commonClose => 'بند کریں';
 
   @override
+  String get commonNotNow => 'ابھی نہیں';
+
+  @override
   String get commonLoading => 'لوڈ ہو رہا ہے';
 
   @override
@@ -6256,6 +6328,10 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get videoMetadataC2paMissingNote =>
       'مواد اسناد کے لیے انٹرنیٹ کنکشن درکار ہے۔';
+
+  @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
 
   @override
   String get videoMetadataC2paMissingRegenerate => 'دوبارہ بنائیں';
@@ -7247,49 +7323,6 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String get proofmodeBadgeAiScanPending => 'AI اسکین زیر التواء';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'انسان کی بنائی ہوئی';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Divine ہوسٹ شدہ نہیں';
-
-  @override
-  String get proofmodeBadgeOriginal => 'اصل';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'ممکنہ AI تیار کردہ';
-
-  @override
-  String get proofmodeBadgeUnverified => 'غیر تصدیق شدہ';
-
-  @override
-  String get proofmodeConfirmedByModerator => 'انسانی موڈریٹر نے تصدیق کی';
-
-  @override
-  String get proofmodeExternalContentTitle => 'بیرونی مواد';
-
-  @override
-  String get proofmodeHostedOnLabel => 'یہ ویڈیو ہوسٹ ہے:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'غالباً انسان کی تخلیق';
-
-  @override
-  String get proofmodeNoProofDataAttached => 'کوئی ProofMode ڈیٹا منسلک نہیں';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'یہ مواد Divine سرورز پر ہوسٹ نہیں ہے۔ ہم اس کی اصالت کی مکمل ضمانت نہیں دے سکتے۔';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'ممکنہ AI تیار کردہ';
-
-  @override
-  String get proofmodePublishedByLabel => 'شائع کنندہ:';
-
-  @override
   String get publishErrorNotSignedIn =>
       'ویڈیوز شائع کرنے کے لیے براہ کرم سائن ان کریں۔';
 
@@ -7350,6 +7383,10 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get publishErrorNostrPublishFailed =>
       'ویڈیو اپلوڈ ہو گئی لیکن پوسٹ شائع نہیں ہو سکی۔ اپنی ریلے ترتیبات چیک کر کے دوبارہ کوشش کریں۔';
+
+  @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'ویڈیو اپلوڈ ہو گئی لیکن اس کی آڈیو دوبارہ استعمال کے لیے دستیاب نہیں۔ پوسٹ کرنے کے لیے کوئی دوسری آڈیو منتخب کریں۔';
 
   @override
   String get publishErrorInterrupted =>
@@ -7496,6 +7533,13 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'موضوع *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'عوامی GitHub پوسٹ';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'آپ یہاں جو کچھ بھی جمع کرائیں گے وہ ہمارے اوپن سورس GitHub ریپوزٹری میں پوسٹ کیا جائے گا تاکہ ڈویلپرز اس پر کام کر سکیں۔ یہ پوسٹ اور وہ اکاؤنٹ جس سے آپ سائن اِن ہیں، سب کو عوامی طور پر نظر آئیں گے۔';
 
   @override
   String get supportRequiredHelper => 'درکار';

@@ -179,6 +179,8 @@ void main() {
       );
       await tester.pump();
       expect(container.read(subtitleVisibilityProvider), isFalse);
+
+      expect(find.text(l10n.videoSettingsCaptionsOff), findsOneWidget);
     });
 
     testWidgets(
@@ -190,6 +192,9 @@ void main() {
         await tester.pump();
 
         verify(() => volumeCubit.onPlaybackVolumeChanged(0)).called(1);
+        // Muting is self-evident — the sound stops and the icon flips — so it
+        // deliberately stays banner-free.
+        expect(find.byType(SnackBar), findsNothing);
       },
     );
 
@@ -205,8 +210,59 @@ void main() {
         await tester.pump();
 
         expect(autoAdvanceCubit.state.enabled, isTrue);
+        expect(find.text(l10n.videoSettingsAutoAdvanceOn), findsOneWidget);
       },
     );
+
+    testWidgets('turns Auto off in one tap while it is suppressed', (
+      tester,
+    ) async {
+      // The paused-video overlay's own reveal tap suppresses Auto
+      // (`_handlePlayerTap` calls `onSuppressAutoAdvance` before pausing), so
+      // enabled-and-suppressed is the normal state of the pill on that
+      // surface — not an edge case.
+      autoAdvanceCubit
+        ..toggle()
+        ..suppressForInteraction();
+      expect(autoAdvanceCubit.state.enabled, isTrue);
+      expect(autoAdvanceCubit.state.suppressed, isTrue);
+
+      await tester.pumpWidget(buildSubject());
+
+      await tester.tap(
+        find.bySemanticsLabel(l10n.videoActionDisableAutoAdvance),
+      );
+      await tester.pump();
+
+      expect(autoAdvanceCubit.state.enabled, isFalse);
+      expect(find.text(l10n.videoSettingsAutoAdvanceOff), findsOneWidget);
+    });
+
+    testWidgets('re-toggling replaces the banner instead of queueing it', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject());
+
+      await tester.tap(
+        find.bySemanticsLabel(l10n.videoActionEnableAutoAdvance),
+      );
+      await tester.pump();
+      // Let the first banner finish animating in before re-toggling. With no
+      // elapsed time its entrance controller sits at 0, so dismissing it
+      // collapses to a zero-duration reverse and the second banner takes over
+      // no matter how it was requested — which is exactly the distinction this
+      // test exists to pin.
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text(l10n.videoSettingsAutoAdvanceOn), findsOneWidget);
+
+      await tester.tap(
+        find.bySemanticsLabel(l10n.videoActionDisableAutoAdvance),
+      );
+      await tester.pump();
+
+      expect(find.text(l10n.videoSettingsAutoAdvanceOn), findsNothing);
+      expect(find.text(l10n.videoSettingsAutoAdvanceOff), findsOneWidget);
+    });
 
     testWidgets('renders without the compilations toggle when '
         'FeedAutoAdvanceCubit is not provided', (tester) async {

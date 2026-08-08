@@ -300,6 +300,26 @@ void main() {
       expect(factory.clients.last.publicKey, equals(pubkeyA));
     });
 
+    test('does not initialize the signed-out placeholder client', () async {
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      container.read(nostrServiceProvider);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(factory.callCount, equals(1));
+      expect(factory.signers.single, isNull);
+      expect(
+        factory.initializePubkeys,
+        isEmpty,
+        reason:
+            'signed-out startup should expose a placeholder client without '
+            'connecting relays or completing stale build-path initialization',
+      );
+      expect(container.read(nostrInitializationInProgressProvider), isFalse);
+    });
+
     test('recreates with null-signer placeholder on signOut '
         '(identity → null transition)', () async {
       // Start authenticated as A.

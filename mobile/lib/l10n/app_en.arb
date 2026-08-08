@@ -707,6 +707,22 @@
   "@videoSettingsCaptionsDisable": {
     "description": "Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently on."
   },
+  "videoSettingsAutoAdvanceOn": "Auto advance on",
+  "@videoSettingsAutoAdvanceOn": {
+    "description": "Snackbar confirming that auto advance was just turned on from the playback-settings pill."
+  },
+  "videoSettingsAutoAdvanceOff": "Auto advance off",
+  "@videoSettingsAutoAdvanceOff": {
+    "description": "Snackbar confirming that auto advance was just turned off from the playback-settings pill."
+  },
+  "videoSettingsCaptionsOn": "Captions on",
+  "@videoSettingsCaptionsOn": {
+    "description": "Snackbar confirming that captions were just turned on from the playback-settings pill."
+  },
+  "videoSettingsCaptionsOff": "Captions off",
+  "@videoSettingsCaptionsOff": {
+    "description": "Snackbar confirming that captions were just turned off from the playback-settings pill."
+  },
   "contentWarningLabel": "Content Warning",
   "contentWarningNudity": "Nudity",
   "contentWarningSexualContent": "Sexual Content",
@@ -800,11 +816,27 @@
   "@videoErrorVerifyAgeSignerUnreachable": {
     "description": "Snackbar shown when tapping Verify age on an age-restricted video and the remote signer didn't respond in time (timeout). Distinct from videoErrorVerifyAgeFailed because the remedy is checking connectivity, not re-verifying age."
   },
-  "videoErrorAdultContentHidden": "Adult content is switched off. You can turn it on in Settings → Content Filters.",
-  "@videoErrorAdultContentHidden": {
-    "description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."
+  "videoErrorAdultContentHiddenTitle": "Adult content is switched off",
+  "@videoErrorAdultContentHiddenTitle": {
+    "description": "Title of the bottom sheet shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden."
+  },
+  "videoErrorAdultContentHiddenBody": "Turn it on in your content filters to watch this one.",
+  "@videoErrorAdultContentHiddenBody": {
+    "description": "Body of the adult-content-hidden sheet. The remedy is switching adult content on in Content Filters, not re-verifying age."
+  },
+  "videoErrorAdultContentHiddenAction": "Open Content Filters",
+  "@videoErrorAdultContentHiddenAction": {
+    "description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."
   },
   "videoDetailLoadError": "Failed to load video",
+  "videoDetailLoadErrorBody": "Something went sideways on the way here. Give it another try.",
+  "@videoDetailLoadErrorBody": {
+    "description": "Supporting copy under the 'Failed to load video' title on the shared-link video screen, shown next to a Retry button. Deliberately vague about the cause because the failure can be network, relay, or parsing."
+  },
+  "videoDetailNotFoundBody": "It could be gone, out of reach, or hidden by your settings.",
+  "@videoDetailNotFoundBody": {
+    "description": "Supporting copy under the 'Video not found' title on the shared-link video screen. The screen shows this for three different causes it cannot tell apart: the video was deleted, it cannot be fetched from any connected relay, or it is hidden by a filter (a blocked or muted author, or the default-on Divine-hosted-only setting). It must not promise the video is gone for good, and it must not be read as covering only the first two."
+  },
   "databaseCorruptionTitle": "Your local data got scrambled",
   "@databaseCorruptionTitle": {
     "description": "Title of the full-screen takeover shown when the local database reports on-disk corruption at runtime. 'Scrambled' is deliberately non-technical: the user did nothing wrong and cannot act on the real cause."
@@ -1057,6 +1089,59 @@
   "metadataPgpSignature": "PGP signature",
   "metadataC2paCredentials": "C2PA Content Credentials",
   "metadataProofManifest": "Proof manifest",
+  "metadataVerificationInfoTooltip": "What do these checks mean?",
+  "@metadataVerificationInfoTooltip": {
+    "description": "Accessibility label and tooltip for the info button next to the Verification section header in the video metadata sheet. Opens a sheet explaining the four verification checks."
+  },
+  "metadataSectionInfoSemanticsLabel": "{section}. {question}",
+  "@metadataSectionInfoSemanticsLabel": {
+    "description": "Accessibility label for a metadata section header that also opens an info sheet. {section} is the visible section title, e.g. 'Verification'. {question} describes the info action, e.g. 'What do these checks mean?'.",
+    "placeholders": {
+      "section": {
+        "type": "String"
+      },
+      "question": {
+        "type": "String"
+      }
+    }
+  },
+  "metadataVerificationInfoTitle": "What these checks mean",
+  "@metadataVerificationInfoTitle": {
+    "description": "Title of the bottom sheet explaining the four ProofMode/C2PA verification checks shown in the video metadata sheet."
+  },
+  "metadataVerificationInfoIntro": "These signals come from the camera and the video file itself. The more of them a video carries, the more we can prove about where it came from.",
+  "@metadataVerificationInfoIntro": {
+    "description": "Intro paragraph of the verification explainer sheet, framing the four checks as evidence about a video's origin."
+  },
+  "metadataVerificationInfoDeviceAttestation": "The phone's operating system vouched for the app that recorded this. Strong evidence it came off a camera, not a file someone uploaded.",
+  "@metadataVerificationInfoDeviceAttestation": {
+    "description": "Explanation of the 'Device attestation' check in the verification explainer sheet."
+  },
+  "metadataVerificationInfoPgpSignature": "The video was cryptographically signed the moment it was captured. Change a single frame afterwards and the signature breaks.",
+  "@metadataVerificationInfoPgpSignature": {
+    "description": "Explanation of the 'PGP signature' check in the verification explainer sheet."
+  },
+  "metadataVerificationInfoC2paCredentials": "An industry-standard record of where the video came from, carried inside the file — so apps other than Divine can check it too.",
+  "@metadataVerificationInfoC2paCredentials": {
+    "description": "Explanation of the 'C2PA Content Credentials' check in the verification explainer sheet."
+  },
+  "metadataVerificationInfoProofManifest": "The full ProofMode record: file fingerprint, timestamp and capture context, bundled with the video.",
+  "@metadataVerificationInfoProofManifest": {
+    "description": "Explanation of the 'Proof manifest' check in the verification explainer sheet."
+  },
+  "metadataVerificationInfoFootnote": "A missing check doesn't make a video fake. Older clips and uploads never got one — it only means we can't prove that part.",
+  "@metadataVerificationInfoFootnote": {
+    "description": "Closing caveat of the verification explainer sheet. States the deliberate limit of the claim — a missing check is not evidence of forgery. Do not strengthen this into a guarantee."
+  },
+  "metadataVerificationInfoLearnMore": "Learn more at {url}",
+  "@metadataVerificationInfoLearnMore": {
+    "description": "Sentence linking out to the public ProofMode page at the bottom of the verification explainer sheet. {url} is the scheme-less URL and is not translated; it is rendered underlined, so keep it as one placeholder and place it wherever the sentence reads naturally.",
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
   "metadataCreatorLabel": "Creator",
   "metadataCollaboratorsLabel": "Collaborators",
   "metadataInspiredByLabel": "Inspired by",
@@ -2676,6 +2761,10 @@
   "userPickerSearchByName": "Search by name",
   "userPickerFilterByNameHint": "Filter by name...",
   "userPickerSearchByNameHint": "Search by name...",
+  "userPickerClearSearchSemantics": "Clear search",
+  "@userPickerClearSearchSemantics": {
+    "description": "Semantic label for the button that clears the text in the user picker search field."
+  },
   "userPickerAlreadyAddedSemantics": "{name} already added",
   "@userPickerAlreadyAddedSemantics": {
     "placeholders": {
@@ -3775,6 +3864,7 @@
   "commonCancel": "Cancel",
   "commonBack": "Back",
   "commonClose": "Close",
+  "commonNotNow": "Not now",
   "commonLoading": "Loading",
   "@commonLoading": {
     "description": "Screen-reader label for a blocking progress spinner that covers the screen while an action is being prepared. Announced instead of the content behind it, which is not reachable while the spinner is up."
@@ -3797,7 +3887,11 @@
   },
   "videoMetadataC2paMissingNote": "Content credentials need an internet connection.",
   "@videoMetadataC2paMissingNote": {
-    "description": "Small trailing note under the missing-content-credential bottom sheet, hinting that the (remote) content-credential signing step requires connectivity. Not phrased as the definitive cause, since signing can also fail for other reasons."
+    "description": "Small trailing note under the missing-content-credential bottom sheet, shown when the device is offline, where connectivity really is the likely cause. When the device is online, videoMetadataC2paMissingNoteServiceUnavailable is shown instead."
+  },
+  "videoMetadataC2paMissingNoteServiceUnavailable": "The content credential service didn't respond. This isn't your connection.",
+  "@videoMetadataC2paMissingNoteServiceUnavailable": {
+    "description": "Small trailing note under the missing-content-credential bottom sheet, shown when the device IS online, so signing failed on the service side (outage, misconfigured endpoint, rejected request). Explicitly rules out the user's connection, because the previous connectivity-only wording sent users to debug working wifi."
   },
   "videoMetadataC2paMissingRegenerate": "Regenerate",
   "@videoMetadataC2paMissingRegenerate": {
@@ -4219,20 +4313,6 @@
   "videoIconPlaceholderLabel": "Video",
   "videoInspiredByAttributionSemanticLabel": "Inspired by {creatorName}. Tap to view their profile.",
   "@videoInspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
-  "proofmodeBadgeAiScanPending": "AI scan pending",
-  "proofmodeBadgeHumanMade": "Human Made",
-  "proofmodeBadgeNotDivineHosted": "Not Divine Hosted",
-  "proofmodeBadgeOriginal": "Original",
-  "proofmodeBadgePossiblyAiGenerated": "Possibly AI-Generated",
-  "proofmodeBadgeUnverified": "Unverified",
-  "proofmodeConfirmedByModerator": "Confirmed by human moderator",
-  "proofmodeExternalContentTitle": "External Content",
-  "proofmodeHostedOnLabel": "This video is hosted on:",
-  "proofmodeLikelyHumanCreated": "Likely human-created",
-  "proofmodeNoProofDataAttached": "No ProofMode data attached",
-  "proofmodeNotDivineHostedDisclaimer": "This content is not hosted on Divine servers. We cannot fully guarantee its authenticity.",
-  "proofmodePossiblyAiGenerated": "Possibly AI-generated",
-  "proofmodePublishedByLabel": "Published by:",
   "publishErrorNotSignedIn": "Please sign in to publish videos.",
   "publishErrorNoRetry": "No upload to retry.",
   "publishErrorNoInternet": "No internet connection. Check your Wi-Fi or mobile data and try again.",
@@ -4251,6 +4331,7 @@
   "publishErrorLowStorage": "Not enough storage on your device. Free up some space and try again.",
   "publishErrorThumbnailFailed": "The video uploaded, but the thumbnail could not be prepared. Please try again.",
   "publishErrorNostrPublishFailed": "The video uploaded but the post could not be published. Check your relay settings and try again.",
+  "publishErrorAudioReuseNotPermitted": "The video uploaded, but its sound isn't cleared for reuse. Pick a different sound to post it.",
   "publishErrorInterrupted": "This upload was interrupted. Would you like to try again?",
   "publishErrorAccountChanged": "This video belongs to a different account. Switch back to that account to post it.",
   "publishErrorGeneric": "Something went wrong. Please try again.",
@@ -4297,6 +4378,8 @@
   "@inspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
   "bugReportSendReport": "Send Report",
   "supportSubjectRequiredLabel": "Subject *",
+  "supportPublicSubmissionTitle": "Public GitHub post",
+  "supportPublicSubmissionMessage": "Everything you submit here will be posted to our open-source repository on GitHub so developers can pick it up. Your post and the account you're signed in with will be publicly visible to everyone.",
   "supportRequiredHelper": "Required",
   "bugReportSubjectHint": "Brief summary of the issue",
   "bugReportDescriptionRequiredLabel": "What happened? *",

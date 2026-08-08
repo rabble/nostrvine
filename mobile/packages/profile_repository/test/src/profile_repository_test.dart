@@ -190,6 +190,35 @@ void main() {
       });
     });
 
+    group('getCachedProfiles', () {
+      test('returns the cached profiles in a single query', () async {
+        final profile = UserProfile.fromNostrEvent(mockProfileEvent);
+        when(
+          () => mockUserProfilesDao.getProfilesByPubkeys(any()),
+        ).thenAnswer((_) async => [profile]);
+
+        final result = await profileRepository.getCachedProfiles(
+          pubkeys: [testPubkey, 'uncached-pubkey'],
+        );
+
+        expect(result, equals([profile]));
+        verify(
+          () => mockUserProfilesDao.getProfilesByPubkeys([
+            testPubkey,
+            'uncached-pubkey',
+          ]),
+        ).called(1);
+        verifyNever(() => mockNostrClient.fetchProfile(any()));
+      });
+
+      test('does not hit the database for an empty pubkey list', () async {
+        final result = await profileRepository.getCachedProfiles(pubkeys: []);
+
+        expect(result, isEmpty);
+        verifyNever(() => mockUserProfilesDao.getProfilesByPubkeys(any()));
+      });
+    });
+
     group('cacheProfile', () {
       test('delegates to userProfilesDao.upsertProfile', () async {
         final profile = UserProfile.fromNostrEvent(mockProfileEvent);

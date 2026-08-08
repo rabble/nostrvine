@@ -4,6 +4,11 @@
 
 set -e
 
+# Fail fast on a malformed C2PA signing endpoint. A bare host silently collapses
+# to the service root at call time and surfaces as an opaque signing error
+# during capture rather than a build failure.
+"$(dirname "${BASH_SOURCE[0]:-$0}")/scripts/check_signing_endpoint.sh"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'

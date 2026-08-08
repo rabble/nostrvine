@@ -14,8 +14,8 @@ import 'package:openvine/widgets/video_editor/video_editor_color_picker_sheet.da
 class ChromaKeyControls extends StatelessWidget {
   const ChromaKeyControls({required this.onPickBackground, super.key});
 
-  /// Opens the picker for [type]. Owned by the screen because an image comes
-  /// from the photo library and a video from the clip library.
+  /// Opens the picker for [type]. Owned by the screen because an image is shot
+  /// with the camera and a video comes from the clip library.
   final ValueChanged<ClipChromaKeyBackgroundType> onPickBackground;
 
   @override

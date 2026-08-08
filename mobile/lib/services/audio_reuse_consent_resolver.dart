@@ -1,5 +1,5 @@
 // ABOUTME: Verifies reuse consent for legacy audio events without consent tags.
-// ABOUTME: Fails closed unless one unambiguous source-video event grants reuse.
+// ABOUTME: Answers false unless one unambiguous source-video event grants reuse.
 
 import 'package:models/models.dart';
 import 'package:sounds_repository/sounds_repository.dart';
@@ -15,6 +15,15 @@ class AudioReuseConsentResolver {
   final SoundsRepository _soundsRepository;
   final VideosRepository _videosRepository;
 
+  /// Whether [sound] may be reused, judged from its source video's current
+  /// `allow_audio_reuse` tag.
+  ///
+  /// Fails closed: `false` covers a confirmed revocation, missing or ambiguous
+  /// evidence, *and* a lookup that never completed. Those are not the same
+  /// fact, and this answer cannot tell them apart — an unreachable relay, a
+  /// source video outside the query window, and one the viewer's own filters
+  /// dropped all arrive as an empty list. Callers must therefore treat `false`
+  /// as "not verified", never as "the creator said no".
   Future<bool> verify(AudioEvent sound) async {
     if (sound.allowsReuse) return true;
     if (sound.hasExplicitReuseConsent) return false;
@@ -22,8 +31,16 @@ class AudioReuseConsentResolver {
     final sourceAddress = sound.sourceVideoReference;
     if (sourceAddress == null || sourceAddress.isEmpty) return false;
 
+    // Query the id reusing videos tag, not [AudioEvent.id]: an editor timeline
+    // track carries a `-<timestamp>` uniqueness suffix and an original sound a
+    // `video_` prefix, so the raw id matches no `["e", …, "audio"]` tag. Under
+    // that id every legacy sound failed closed the moment it reached the
+    // timeline — including ones the picker had already verified.
+    final audioEventId = sound.attributionEventId;
+    if (audioEventId == null) return false;
+
     try {
-      final ids = await _soundsRepository.fetchVideosUsingSound(sound.id);
+      final ids = await _soundsRepository.fetchVideosUsingSound(audioEventId);
       if (ids.isEmpty) return false;
       final candidates = await _videosRepository.getVideosByIds(
         ids,

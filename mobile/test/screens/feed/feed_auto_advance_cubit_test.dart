@@ -63,11 +63,11 @@ void main() {
       );
 
       blocTest<FeedAutoAdvanceCubit, FeedAutoAdvanceState>(
-        'resumes (clears suppression) when enabled and suppressed',
+        'disables (not resumes) when enabled and suppressed',
         build: FeedAutoAdvanceCubit.new,
         seed: () => const FeedAutoAdvanceState(enabled: true, suppressed: true),
         act: (cubit) => cubit.toggle(),
-        expect: () => const [FeedAutoAdvanceState(enabled: true)],
+        expect: () => const [FeedAutoAdvanceState()],
       );
     });
 

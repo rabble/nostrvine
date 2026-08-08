@@ -232,8 +232,10 @@ void _setupPlatformChannelMocks() {
 void _setupImagePickerMock() {
   // image_picker plugin: return a synthetic file path so widget tests that
   // exercise the picker entry point can proceed without a real platform
-  // implementation. The path does not need to point at a real file because
-  // upload-service mocks intercept the bytes before any I/O happens.
+  // implementation. The path is never written, so a flow that stats or reads
+  // the pick (e.g. the profile image-selection boundary) sees it as invalid.
+  // Tests needing a pick to survive that check must point the channel at a
+  // real file — see `stubPickedImageFile` in helpers/image_picker_stub.dart.
   _installShared(
     const MethodChannel(_imagePickerChannelName),
     _imagePickerHandler,

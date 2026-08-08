@@ -20,6 +20,7 @@ import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:nostr_sdk/relay/relay_pool.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/exceptions/video_exceptions.dart';
 import 'package:openvine/models/audio_share_attribution.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/models/video_reply_context.dart';
@@ -216,9 +217,14 @@ class VideoEventPublisher {
   ///
   /// Bundled and local sounds do not represent another creator's Nostr
   /// event. A creator may also reuse their own sound. Every other sound must
-  /// have explicit consent or pass the legacy source-video resolver; missing
-  /// verification fails closed so a private sound cannot be remixed by
-  /// accident.
+  /// have explicit consent or pass the legacy source-video resolver; anything
+  /// short of a granted answer blocks the publish so a private sound cannot be
+  /// remixed by accident.
+  ///
+  /// This answer is fail-closed, not a verdict: it is `false` for a refusal,
+  /// for missing evidence, and for a lookup that never completed. Only
+  /// [AudioEvent.hasExplicitReuseConsent] separates a real refusal out, and
+  /// the publish path handles that case before reaching here.
   Future<bool> _canReuseSelectedAudio(AudioEvent sound) async {
     if (sound.isBundled ||
         sound.isLocalImport ||
@@ -860,6 +866,9 @@ class VideoEventPublisher {
   };
 
   /// Publish a video event with custom metadata
+  ///
+  /// Throws [AudioReuseNotPermittedException] when [selectedAudio] is not
+  /// cleared for reuse — see [publishDirectUpload].
   Future<bool> publishVideoEvent({
     required PendingUpload upload,
     String? title,
@@ -924,6 +933,19 @@ class VideoEventPublisher {
   /// a duplicate event with a fresh id (#6018). The audio-reuse step can
   /// keep a publish in flight for 20s+, which is the window where the
   /// duplicates were minted.
+  ///
+  /// Returns `false` when the event could not be signed or broadcast, and
+  /// when `selectedAudio`'s reuse consent could not be verified — the legacy
+  /// source-video lookup cannot tell a refusal from an unreachable relay, so
+  /// it is treated as a transport failure a retry can clear.
+  ///
+  /// Throws:
+  ///
+  /// * [AudioReuseNotPermittedException] if `selectedAudio`'s own event
+  ///   forbids reuse ([AudioEvent.hasExplicitReuseConsent] without
+  ///   [AudioEvent.allowsReuse]). That evidence needs no relay, so it is a
+  ///   refusal rather than a transport failure and is raised instead of
+  ///   folded into `false`.
   Future<bool> publishDirectUpload(
     PendingUpload upload, {
     int? expirationTimestamp,
@@ -1437,8 +1459,28 @@ class VideoEventPublisher {
 
       if (selectedAudio != null &&
           !await _canReuseSelectedAudio(selectedAudio)) {
+        // Only the sound's own event carries evidence strong enough to tell
+        // the user the sound is the blocker: `hasExplicitReuseConsent` is read
+        // off the event already in hand, with no relay in the way. The legacy
+        // resolver's `false` is fail-closed rather than a verdict — it also
+        // covers an unreachable relay, a source video outside the 50-event
+        // query window, and one the viewer's own block/content filters
+        // dropped — so it stays an ordinary publish failure the user can
+        // retry.
+        if (selectedAudio.hasExplicitReuseConsent &&
+            !selectedAudio.allowsReuse) {
+          Log.warning(
+            'Selected audio explicitly forbids reuse; blocking video publish',
+            name: 'VideoEventPublisher',
+            category: LogCategory.video,
+          );
+          throw AudioReuseNotPermittedException(
+            selectedAudio.attributionEventId ?? selectedAudio.id,
+          );
+        }
         Log.warning(
-          'Selected audio does not permit reuse; blocking video publish',
+          'Could not verify selected audio reuse consent; blocking video '
+          'publish',
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
@@ -1899,6 +1941,12 @@ class VideoEventPublisher {
         );
         return false;
       }
+    } on AudioReuseNotPermittedException {
+      // Not a publish failure the user can retry their way out of: the sound's
+      // creator withheld reuse. Escape the generic catch below so the publish
+      // layer can classify it and name the sound as the blocker.
+      _totalEventsFailed++;
+      rethrow;
     } catch (e, stackTrace) {
       Log.error(
         'Error publishing direct upload: $e',

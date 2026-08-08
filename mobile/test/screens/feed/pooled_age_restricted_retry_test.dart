@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:infinite_video_feed/infinite_video_feed.dart'
     show VideoErrorType;
 import 'package:mocktail/mocktail.dart';
@@ -16,6 +17,8 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_state
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/overlay_visibility_provider.dart';
+import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/feed/pooled_age_restricted_retry.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
@@ -34,6 +37,9 @@ const _pubkey =
 const _sha256 =
     'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210';
 const _videoUrl = 'https://media.divine.video/$_sha256/720p.mp4';
+
+/// Stands in for the Content Filters screen in the harness router.
+const _contentFiltersRouteMarker = 'content filters screen';
 
 String get _failureText =>
     lookupAppLocalizations(const Locale('en')).videoErrorVerifyAgeFailed;
@@ -60,8 +66,19 @@ String get _signerUnreachableText => lookupAppLocalizations(
   const Locale('en'),
 ).videoErrorVerifyAgeSignerUnreachable;
 
-String get _adultContentHiddenText =>
-    lookupAppLocalizations(const Locale('en')).videoErrorAdultContentHidden;
+String get _adultContentHiddenTitle => lookupAppLocalizations(
+  const Locale('en'),
+).videoErrorAdultContentHiddenTitle;
+
+String get _adultContentHiddenBody =>
+    lookupAppLocalizations(const Locale('en')).videoErrorAdultContentHiddenBody;
+
+String get _adultContentHiddenAction => lookupAppLocalizations(
+  const Locale('en'),
+).videoErrorAdultContentHiddenAction;
+
+String get _notNowText =>
+    lookupAppLocalizations(const Locale('en')).commonNotNow;
 
 AgeVerificationService _ageService({required bool verified}) {
   final service = _MockAgeVerificationService();
@@ -422,17 +439,115 @@ void main() {
       expect(find.text(_unavailableText), findsNothing);
     });
 
+    testWidgets('offers the Content Filters sheet when playback is blocked by '
+        'preference', (tester) async {
+      final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+      final playbackStatusCubit = VideoPlaybackStatusCubit();
+      late ProviderContainer container;
+      var retryCount = 0;
+      addTearDown(playbackStatusCubit.close);
+
+      // A verified viewer whose Content Filters keep adult content hidden
+      // (the default) is blocked; the remedy is opting in via settings.
+      when(
+        () => mediaAuthInterceptor.handleUnauthorizedMedia(
+          context: any(named: 'context'),
+          sha256Hash: _sha256,
+          url: _videoUrl,
+          serverUrl: 'https://media.divine.video',
+          category: 'video',
+        ),
+      ).thenAnswer((_) async => const ViewerAuthBlockedByPreference());
+
+      await tester.pumpWidget(
+        _RetryHarness(
+          mediaAuthInterceptor: mediaAuthInterceptor,
+          playbackStatusCubit: playbackStatusCubit,
+          ageVerificationService: _ageService(verified: true),
+          onContainerReady: (value) => container = value,
+          retryPlayback: (_) {
+            retryCount++;
+            return _retryRecovered;
+          },
+        ),
+      );
+
+      playbackStatusCubit.report(_videoId, PlaybackStatus.ageRestricted);
+
+      await tester.tap(find.text('Verify'));
+      await tester.pumpAndSettle();
+
+      expect(retryCount, 0);
+      expect(
+        playbackStatusCubit.state.statusFor(_videoId),
+        PlaybackStatus.ageRestricted,
+      );
+      // The settings-specific sheet, not the generic verify failure.
+      expect(find.text(_adultContentHiddenTitle), findsOneWidget);
+      expect(find.text(_adultContentHiddenBody), findsOneWidget);
+      expect(find.text(_adultContentHiddenAction), findsOneWidget);
+      expect(find.text(_failureText), findsNothing);
+      expect(
+        container.read(overlayVisibilityProvider).isBottomSheetOpen,
+        isTrue,
+      );
+      // The spinner clears while the sheet is still up, so the age-gate
+      // card behind it isn't stuck in a loading state.
+      expect(playbackStatusCubit.state.isVerifying(_videoId), isFalse);
+    });
+
+    testWidgets('opens Content Filters from the blocked-by-preference sheet', (
+      tester,
+    ) async {
+      final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+      final playbackStatusCubit = VideoPlaybackStatusCubit();
+      late ProviderContainer container;
+      addTearDown(playbackStatusCubit.close);
+
+      when(
+        () => mediaAuthInterceptor.handleUnauthorizedMedia(
+          context: any(named: 'context'),
+          sha256Hash: _sha256,
+          url: _videoUrl,
+          serverUrl: 'https://media.divine.video',
+          category: 'video',
+        ),
+      ).thenAnswer((_) async => const ViewerAuthBlockedByPreference());
+
+      await tester.pumpWidget(
+        _RetryHarness(
+          mediaAuthInterceptor: mediaAuthInterceptor,
+          playbackStatusCubit: playbackStatusCubit,
+          ageVerificationService: _ageService(verified: true),
+          onContainerReady: (value) => container = value,
+          retryPlayback: (_) => _retryRecovered,
+        ),
+      );
+
+      await tester.tap(find.text('Verify'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(_adultContentHiddenAction));
+      await tester.pumpAndSettle();
+
+      // The sheet is a dead end without this jump — the remedy lives in the
+      // Content Filters screen, not in re-verifying age.
+      expect(find.text(_contentFiltersRouteMarker), findsOneWidget);
+      expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
+      expect(
+        container.read(overlayVisibilityProvider).isBottomSheetOpen,
+        isFalse,
+      );
+    });
+
     testWidgets(
-      'surfaces the Content Filters message when playback is blocked by '
-      'preference',
+      'dismisses the blocked-by-preference sheet without navigating on Not now',
       (tester) async {
         final mediaAuthInterceptor = _MockMediaAuthInterceptor();
         final playbackStatusCubit = VideoPlaybackStatusCubit();
-        var retryCount = 0;
+        late ProviderContainer container;
         addTearDown(playbackStatusCubit.close);
 
-        // A verified viewer whose Content Filters keep adult content hidden
-        // (the default) is blocked; the remedy is opting in via settings.
         when(
           () => mediaAuthInterceptor.handleUnauthorizedMedia(
             context: any(named: 'context'),
@@ -448,27 +563,25 @@ void main() {
             mediaAuthInterceptor: mediaAuthInterceptor,
             playbackStatusCubit: playbackStatusCubit,
             ageVerificationService: _ageService(verified: true),
-            retryPlayback: (_) {
-              retryCount++;
-              return _retryRecovered;
-            },
+            onContainerReady: (value) => container = value,
+            retryPlayback: (_) => _retryRecovered,
           ),
         );
 
-        playbackStatusCubit.report(_videoId, PlaybackStatus.ageRestricted);
-
         await tester.tap(find.text('Verify'));
-        await tester.pump();
-        await tester.pump();
+        await tester.pumpAndSettle();
 
-        expect(retryCount, 0);
+        await tester.tap(find.text(_notNowText));
+        await tester.pumpAndSettle();
+
+        // "Not now" closes the sheet and leaves the viewer on the feed — it
+        // must not fall through to the Content Filters push.
+        expect(find.text(_adultContentHiddenTitle), findsNothing);
+        expect(find.text(_contentFiltersRouteMarker), findsNothing);
         expect(
-          playbackStatusCubit.state.statusFor(_videoId),
-          PlaybackStatus.ageRestricted,
+          container.read(overlayVisibilityProvider).hasVisibleOverlay,
+          isFalse,
         );
-        // The settings-specific copy, not the generic verify failure.
-        expect(find.text(_adultContentHiddenText), findsOneWidget);
-        expect(find.text(_failureText), findsNothing);
       },
     );
 
@@ -678,13 +791,14 @@ void main() {
   });
 }
 
-class _RetryHarness extends StatelessWidget {
+class _RetryHarness extends StatefulWidget {
   const _RetryHarness({
     required this.mediaAuthInterceptor,
     required this.playbackStatusCubit,
     required this.retryPlayback,
     this.video,
     this.ageVerificationService,
+    this.onContainerReady,
   });
 
   final MediaAuthInterceptor mediaAuthInterceptor;
@@ -692,40 +806,77 @@ class _RetryHarness extends StatelessWidget {
   final PooledRetryPlayback retryPlayback;
   final VideoEvent? video;
   final AgeVerificationService? ageVerificationService;
+  final ValueChanged<ProviderContainer>? onContainerReady;
+
+  @override
+  State<_RetryHarness> createState() => _RetryHarnessState();
+}
+
+class _RetryHarnessState extends State<_RetryHarness> {
+  // A real router, so the sheet's "Open Content Filters" push is exercised
+  // rather than stubbed out.
+  late final GoRouter _router = GoRouter(
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (_, _) => Scaffold(
+          body: Consumer(
+            builder: (context, ref, _) {
+              return TextButton(
+                onPressed: () => retryAgeRestrictedPooledVideo(
+                  context: context,
+                  ref: ref,
+                  video: widget.video ?? _video,
+                  index: 0,
+                  resolveSha256: _resolveSha256,
+                  retryPlayback: widget.retryPlayback,
+                ),
+                child: const Text('Verify'),
+              );
+            },
+          ),
+        ),
+      ),
+      GoRoute(
+        path: ContentFiltersScreen.path,
+        builder: (_, _) =>
+            const Scaffold(body: Text(_contentFiltersRouteMarker)),
+      ),
+    ],
+  );
+
+  @override
+  void dispose() {
+    _router.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return ProviderScope(
       overrides: [
-        mediaAuthInterceptorProvider.overrideWithValue(mediaAuthInterceptor),
-        if (ageVerificationService != null)
+        mediaAuthInterceptorProvider.overrideWithValue(
+          widget.mediaAuthInterceptor,
+        ),
+        if (widget.ageVerificationService != null)
           ageVerificationServiceProvider.overrideWithValue(
-            ageVerificationService!,
+            widget.ageVerificationService!,
           ),
       ],
-      child: BlocProvider<VideoPlaybackStatusCubit>.value(
-        value: playbackStatusCubit,
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: Consumer(
-              builder: (context, ref, _) {
-                return TextButton(
-                  onPressed: () => retryAgeRestrictedPooledVideo(
-                    context: context,
-                    ref: ref,
-                    video: video ?? _video,
-                    index: 0,
-                    resolveSha256: _resolveSha256,
-                    retryPlayback: retryPlayback,
-                  ),
-                  child: const Text('Verify'),
-                );
-              },
+      child: Consumer(
+        builder: (context, _, _) {
+          widget.onContainerReady?.call(
+            ProviderScope.containerOf(context, listen: false),
+          );
+          return BlocProvider<VideoPlaybackStatusCubit>.value(
+            value: widget.playbackStatusCubit,
+            child: MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: _router,
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

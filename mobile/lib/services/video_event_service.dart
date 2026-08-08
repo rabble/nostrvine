@@ -2686,10 +2686,22 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       final (oldVideoEvent, oldTimestamp) =
           _replaceableVideoEvents[replaceKey]!;
 
-      if (originalEvent.createdAt > oldTimestamp) {
-        // New event is newer - replace the old one
+      final isNewer = originalEvent.createdAt > oldTimestamp;
+      final isTieBreakWinner =
+          originalEvent.createdAt == oldTimestamp &&
+          originalEvent.id.compareTo(oldVideoEvent.id) < 0;
+
+      if (isNewer || isTieBreakWinner) {
+        // New event is newer, or wins the NIP-01 equal-timestamp event-id
+        // tie-break for replaceable events.
+        final replacementReason = isNewer
+            ? 'newer'
+            : 'same timestamp, lower event id';
         Log.info(
-          '🔄 Replacing old kind ${originalEvent.kind} event (ts:$oldTimestamp) with newer (ts:${originalEvent.createdAt})',
+          '🔄 Replacing old kind ${originalEvent.kind} event '
+          '(ts:$oldTimestamp, id:${oldVideoEvent.id}) with '
+          '$replacementReason version '
+          '(ts:${originalEvent.createdAt}, id:${originalEvent.id})',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -2707,9 +2719,13 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         );
         return true; // Allow new event to be added
       } else {
-        // Incoming event is older - drop it
+        final skipReason = originalEvent.createdAt == oldTimestamp
+            ? 'same timestamp, higher event id'
+            : 'older';
         Log.info(
-          '⏩ Skipping older kind ${originalEvent.kind} event (ts:${originalEvent.createdAt}) - newer version exists (ts:$oldTimestamp)',
+          '⏩ Skipping $skipReason kind ${originalEvent.kind} event '
+          '(ts:${originalEvent.createdAt}, id:${originalEvent.id}) - '
+          'kept version exists (ts:$oldTimestamp, id:${oldVideoEvent.id})',
           name: 'VideoEventService',
           category: LogCategory.video,
         );

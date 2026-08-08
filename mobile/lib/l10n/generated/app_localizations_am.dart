@@ -1273,6 +1273,18 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'መግለጫ ጽሑፎችን አሰናክል';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'ራስ-ሰር ማስቀደም በርቷል';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'ራስ-ሰር ማስቀደም ጠፍቷል';
+
+  @override
+  String get videoSettingsCaptionsOn => 'መግለጫ ጽሑፎች በርተዋል';
+
+  @override
+  String get videoSettingsCaptionsOff => 'መግለጫ ጽሑፎች ጠፍተዋል';
+
+  @override
   String get contentWarningLabel => 'የይዘት ማስጠንቀቂያ';
 
   @override
@@ -1497,11 +1509,24 @@ class AppLocalizationsAm extends AppLocalizations {
       'ማረጋገጡ ጊዜው አልፎበታል። ግንኙነትህን አረጋግጥ ወይም ትንሽ ቆይተህ እንደገና ሞክር።';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      'የአዋቂዎች ይዘት ጠፍቷል። በቅንብሮች → የይዘት ማጣሪያዎች ውስጥ ማብራት ይችላሉ።';
+  String get videoErrorAdultContentHiddenTitle => 'የአዋቂዎች ይዘት ጠፍቷል';
+
+  @override
+  String get videoErrorAdultContentHiddenBody =>
+      'ይህን ቪዲዮ ለማየት በይዘት ማጣሪያዎችዎ ውስጥ ያብሩት።';
+
+  @override
+  String get videoErrorAdultContentHiddenAction => 'የይዘት ማጣሪያዎችን ክፈት';
 
   @override
   String get videoDetailLoadError => 'ቪዲዮ መጫን አልተሳካም';
+
+  @override
+  String get videoDetailLoadErrorBody => 'እዚህ ሲደርስ የሆነ ችግር ተፈጥሯል። እንደገና ሞክር።';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'ተሰርዞ ሊሆን ይችላል፣ ከአቅም ውጭ ሊሆን ይችላል፣ ወይም በቅንብሮችህ ተደብቆ ሊሆን ይችላል።';
 
   @override
   String get databaseCorruptionTitle => 'የአካባቢዎ ውሂብ ተበላሽቷል';
@@ -1782,6 +1807,46 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get metadataProofManifest => 'ማረጋገጫ አንጸባራቂ';
+
+  @override
+  String get metadataVerificationInfoTooltip => 'እነዚህ ማረጋገጫዎች ምን ማለት ናቸው?';
+
+  @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
+  String get metadataVerificationInfoTitle => 'እነዚህ ማረጋገጫዎች ምን ማለት እንደሆኑ';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'እነዚህ ምልክቶች ከካሜራውና ከቪዲዮ ፋይሉ ራሱ ይመጣሉ። አንድ ቪዲዮ ብዙ ምልክቶች ሲኖሩት፣ ስለ መነሻው ማረጋገጥ የምንችለው ነገር ይበዛል።';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'የስልኩ ኦፕሬቲንግ ሲስተም ይህን የቀረጸውን መተግበሪያ አረጋግጦለታል። ይህ ከካሜራ እንደመጣ እንጂ አንድ ሰው የጫነው ፋይል እንዳልሆነ ጠንካራ ማስረጃ ነው።';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'ቪዲዮው በተቀረጸበት ቅጽበት በምስጠራ ተፈርሟል። ከዚያ በኋላ አንድ ፍሬም እንኳ ከተቀየረ ፊርማው ይሰበራል።';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'በፋይሉ ውስጥ አብሮ የሚጓዝ የኢንዱስትሪ ደረጃ የመነሻ መዝገብ — ስለዚህ ከDivine ውጪ ያሉ መተግበሪያዎችም ሊያረጋግጡት ይችላሉ።';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'ሙሉው የProofMode መዝገብ፦ የፋይል አሻራ፣ የጊዜ ማህተም እና የቀረጻ አውድ ከቪዲዮው ጋር አብረው።';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'አንድ ማረጋገጫ መጥፋቱ ቪዲዮውን ሐሰተኛ አያደርገውም። የቆዩ ክሊፖችና የተጫኑ ፋይሎች ከመጀመሪያውም አልነበራቸውም — ያንን ክፍል ማረጋገጥ አንችልም ማለት ብቻ ነው።';
+
+  @override
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'ተጨማሪ በ$url ይመልከቱ';
+  }
 
   @override
   String get metadataCreatorLabel => 'ፈጣሪ';
@@ -4495,6 +4560,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get userPickerSearchByNameHint => 'በስም ፈልግ...';
 
   @override
+  String get userPickerClearSearchSemantics => 'ፍለጋን አጽዳ';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name አስቀድሞ ታክሏል።';
   }
@@ -6105,6 +6173,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get commonClose => 'ዝጋ';
 
   @override
+  String get commonNotNow => 'አሁን አይደለም';
+
+  @override
   String get commonLoading => 'በመጫን ላይ';
 
   @override
@@ -6124,6 +6195,10 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get videoMetadataC2paMissingNote =>
       'የይዘት መታወቂያዎች የበይነመረብ ግንኙነት ያስፈልጋቸዋል።';
+
+  @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
 
   @override
   String get videoMetadataC2paMissingRegenerate => 'እንደገና ፍጠር';
@@ -7094,49 +7169,6 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get proofmodeBadgeAiScanPending => 'የAI ቅኝት በመጠባበቅ ላይ';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'በሰው የተሰራ';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'በDivine ያልተስተናገደ';
-
-  @override
-  String get proofmodeBadgeOriginal => 'ኦሪጅናል';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'ምናልባት በAI የተፈጠረ';
-
-  @override
-  String get proofmodeBadgeUnverified => 'ያልተረጋገጠ';
-
-  @override
-  String get proofmodeConfirmedByModerator => 'በሰው አወያይ የተረጋገጠ';
-
-  @override
-  String get proofmodeExternalContentTitle => 'ውጫዊ ይዘት';
-
-  @override
-  String get proofmodeHostedOnLabel => 'ይህ ቪዲዮ የተስተናገደው በ፦';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'ምናልባት በሰው የተፈጠረ';
-
-  @override
-  String get proofmodeNoProofDataAttached => 'ምንም የProofMode ውሂብ አልተያያዘም';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'ይህ ይዘት በDivine አገልጋዮች ላይ አልተስተናገደም። ትክክለኛነቱን ሙሉ በሙሉ ማረጋገጥ አንችልም።';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'ምናልባት በAI የተፈጠረ';
-
-  @override
-  String get proofmodePublishedByLabel => 'የታተመው በ፦';
-
-  @override
   String get publishErrorNotSignedIn => 'ቪዲዮዎችን ለማተም እባክዎ ይግቡ።';
 
   @override
@@ -7195,6 +7227,10 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get publishErrorNostrPublishFailed =>
       'ቪዲዮው ተሰቅሏል ነገር ግን ልጥፉ ሊታተም አልቻለም። የቅብብሎሽ ቅንብሮችዎን ይፈትሹ እና እንደገና ይሞክሩ።';
+
+  @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'ቪዲዮው ተሰቅሏል፣ ነገር ግን ድምፁ ለዳግም ጥቅም አልተፈቀደም። ለመለጠፍ ሌላ ድምፅ ይምረጡ።';
 
   @override
   String get publishErrorInterrupted => 'ይህ ስቀላ ተቋርጧል። እንደገና መሞከር ይፈልጋሉ?';
@@ -7338,6 +7374,13 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'ርዕስ *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'ይፋዊ የGitHub ልጥፍ';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'እዚህ የምታስገባው ሁሉ ገንቢዎች እንዲሰሩበት በGitHub ላይ ባለው ክፍት ምንጭ ማከማቻችን ውስጥ ይለጠፋል። ልጥፉንና የገባህበትን መለያ ማንኛውም ሰው በይፋ ማየት ይችላል።';
 
   @override
   String get supportRequiredHelper => 'ያስፈልጋል';

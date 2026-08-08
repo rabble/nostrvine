@@ -251,6 +251,71 @@ void main() {
       },
     );
 
+    testWidgets('route without extras shows stored author and video count', (
+      tester,
+    ) async {
+      when(() => mockService.isOwnedList('external-list')).thenReturn(false);
+      when(() => mockService.getListById('external-list')).thenReturn(
+        CuratedList(
+          id: 'external-list',
+          name: 'Subscribed List',
+          pubkey:
+              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          videoEventIds: const ['one', 'two', 'three'],
+          createdAt: DateTime(2026),
+          updatedAt: DateTime(2026),
+        ),
+      );
+
+      await tester.pumpWidget(
+        buildSubject(
+          listName: 'Subscribed List',
+          authorPubkey: null,
+          videoIds: null,
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text(l10n.listByAuthorPrefix), findsOneWidget);
+      expect(find.text(' • ${l10n.listVideoCount(3)}'), findsOneWidget);
+    });
+
+    testWidgets('owned list suppresses author attribution', (tester) async {
+      when(() => mockService.isOwnedList('owned-list')).thenReturn(true);
+      when(
+        () => mockService.isSubscribedToList('owned-list'),
+      ).thenReturn(false);
+      when(() => mockService.getListById('owned-list')).thenReturn(
+        CuratedList(
+          id: 'owned-list',
+          name: 'Puppets',
+          pubkey:
+              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          videoEventIds: const ['one', 'two', 'three'],
+          createdAt: DateTime(2026),
+          updatedAt: DateTime(2026),
+        ),
+      );
+
+      await tester.pumpWidget(
+        buildSubject(
+          listId: 'owned-list',
+          listName: 'Puppets',
+          authorPubkey: null,
+          videoIds: null,
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text(l10n.listByAuthorPrefix), findsNothing);
+      expect(
+        find.text(
+          '${l10n.listVideoCount(3)} • ${l10n.listVisibilityPublic}',
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('owned public list offers edit, share, and delete', (
       tester,
     ) async {

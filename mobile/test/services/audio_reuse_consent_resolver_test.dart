@@ -15,13 +15,18 @@ class _MockVideosRepository extends Mock implements VideosRepository {}
 const _pubkey =
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
+/// A real Kind 1063 id: the lookup only matches a 32-byte-hex event id.
+const _audioEventId =
+    'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+
 AudioEvent _sound({
   bool allowsReuse = false,
   bool hasExplicitReuseConsent = false,
   String? sourceVideoReference = '34236:$_pubkey:source-video',
+  String id = _audioEventId,
 }) {
   return AudioEvent(
-    id: 'audio-event',
+    id: id,
     pubkey: _pubkey,
     createdAt: 100,
     sourceVideoReference: sourceVideoReference,
@@ -67,6 +72,13 @@ void main() {
     );
   });
 
+  /// Stubs the sound lookup with [ids].
+  void stubLookup(List<String> ids) {
+    when(
+      () => soundsRepository.fetchVideosUsingSound(_audioEventId),
+    ).thenAnswer((_) async => ids);
+  }
+
   test('accepts explicit true without a legacy lookup', () async {
     expect(await resolver.verify(_sound(allowsReuse: true)), isTrue);
     verifyNever(() => soundsRepository.fetchVideosUsingSound(any()));
@@ -74,23 +86,20 @@ void main() {
 
   test('honors explicit false without a legacy lookup', () async {
     expect(
-      await resolver.verify(
-        _sound(hasExplicitReuseConsent: true),
-      ),
+      await resolver.verify(_sound(hasExplicitReuseConsent: true)),
       isFalse,
     );
     verifyNever(() => soundsRepository.fetchVideosUsingSound(any()));
   });
 
   test('uses newest matching source video for a legacy event', () async {
+    stubLookup(['later', 'earliest', 'wrong']);
     when(
-      () => soundsRepository.fetchVideosUsingSound('audio-event'),
-    ).thenAnswer((_) async => ['later', 'earliest', 'wrong']);
-    when(
-      () => videosRepository.getVideosByIds(
-        ['later', 'earliest', 'wrong'],
-        hydrateBulkStats: false,
-      ),
+      () => videosRepository.getVideosByIds([
+        'later',
+        'earliest',
+        'wrong',
+      ], hydrateBulkStats: false),
     ).thenAnswer(
       (_) async => [
         _video(id: 'later', createdAt: 120),
@@ -103,14 +112,12 @@ void main() {
   });
 
   test('honours a revocation on the newest revision', () async {
+    stubLookup(['revoked', 'original']);
     when(
-      () => soundsRepository.fetchVideosUsingSound('audio-event'),
-    ).thenAnswer((_) async => ['revoked', 'original']);
-    when(
-      () => videosRepository.getVideosByIds(
-        ['revoked', 'original'],
-        hydrateBulkStats: false,
-      ),
+      () => videosRepository.getVideosByIds([
+        'revoked',
+        'original',
+      ], hydrateBulkStats: false),
     ).thenAnswer(
       (_) async => [
         _video(id: 'revoked', createdAt: 120, allowsReuse: false),
@@ -122,14 +129,12 @@ void main() {
   });
 
   test('fails closed on ambiguous newest source events', () async {
+    stubLookup(['first', 'second']);
     when(
-      () => soundsRepository.fetchVideosUsingSound('audio-event'),
-    ).thenAnswer((_) async => ['first', 'second']);
-    when(
-      () => videosRepository.getVideosByIds(
-        ['first', 'second'],
-        hydrateBulkStats: false,
-      ),
+      () => videosRepository.getVideosByIds([
+        'first',
+        'second',
+      ], hydrateBulkStats: false),
     ).thenAnswer(
       (_) async => [
         _video(id: 'first', createdAt: 110),
@@ -140,31 +145,74 @@ void main() {
     expect(await resolver.verify(_sound()), isFalse);
   });
 
-  test(
-    'fails closed on missing, mismatched, old, or failed evidence',
-    () async {
-      expect(
-        await resolver.verify(_sound(sourceVideoReference: null)),
-        isFalse,
-      );
+  test('answers false on missing, mismatched, or old evidence', () async {
+    expect(await resolver.verify(_sound(sourceVideoReference: null)), isFalse);
 
-      when(
-        () => soundsRepository.fetchVideosUsingSound('audio-event'),
-      ).thenAnswer((_) async => ['candidate']);
-      when(
-        () => videosRepository.getVideosByIds(
-          ['candidate'],
-          hydrateBulkStats: false,
-        ),
-      ).thenAnswer(
-        (_) async => [_video(vineId: 'other-video', createdAt: 99)],
-      );
-      expect(await resolver.verify(_sound()), isFalse);
+    stubLookup(['candidate']);
+    when(
+      () => videosRepository.getVideosByIds([
+        'candidate',
+      ], hydrateBulkStats: false),
+    ).thenAnswer((_) async => [_video(vineId: 'other-video', createdAt: 99)]);
+    expect(await resolver.verify(_sound()), isFalse);
+  });
 
-      when(
-        () => soundsRepository.fetchVideosUsingSound('audio-event'),
-      ).thenThrow(StateError('relay unavailable'));
-      expect(await resolver.verify(_sound()), isFalse);
-    },
-  );
+  // Every way the lookup can come back without evidence — an unreachable
+  // relay answering empty, a named video that cannot be fetched, an outright
+  // error — is fail-closed rather than a verdict. `false` here means "not
+  // verified", which is why the publish path does not report it as a refusal.
+  test('answers false when the lookup yields no evidence', () async {
+    stubLookup([]);
+    expect(await resolver.verify(_sound()), isFalse);
+
+    stubLookup(['granting']);
+    when(
+      () => videosRepository.getVideosByIds([
+        'granting',
+      ], hydrateBulkStats: false),
+    ).thenAnswer((_) async => []);
+    expect(await resolver.verify(_sound()), isFalse);
+
+    when(
+      () => soundsRepository.fetchVideosUsingSound(_audioEventId),
+    ).thenThrow(StateError('relay unavailable'));
+    expect(await resolver.verify(_sound()), isFalse);
+  });
+
+  // The editor stamps a `-<timestamp>` uniqueness suffix onto every timeline
+  // track, so the sound the publisher re-verifies is never the one the picker
+  // verified. Querying the raw id found no reusing videos and blocked a
+  // publish the creator had explicitly allowed.
+  test('looks past an editor timeline uniqueness suffix', () async {
+    stubLookup(['granting']);
+    when(
+      () => videosRepository.getVideosByIds([
+        'granting',
+      ], hydrateBulkStats: false),
+    ).thenAnswer((_) async => [_video(id: 'granting', createdAt: 120)]);
+
+    expect(
+      await resolver.verify(_sound(id: '$_audioEventId-1786032375630')),
+      isTrue,
+    );
+    verify(
+      () => soundsRepository.fetchVideosUsingSound(_audioEventId),
+    ).called(1);
+  });
+
+  test('resolves an original sound through its source video id', () async {
+    stubLookup(['granting']);
+    when(
+      () => videosRepository.getVideosByIds([
+        'granting',
+      ], hydrateBulkStats: false),
+    ).thenAnswer((_) async => [_video(id: 'granting', createdAt: 120)]);
+
+    expect(await resolver.verify(_sound(id: 'video_$_audioEventId')), isTrue);
+  });
+
+  test('fails closed when the sound has no referenceable event id', () async {
+    expect(await resolver.verify(_sound(id: 'not-a-nostr-event-id')), isFalse);
+    verifyNever(() => soundsRepository.fetchVideosUsingSound(any()));
+  });
 }

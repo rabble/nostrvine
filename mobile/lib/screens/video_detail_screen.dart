@@ -20,6 +20,8 @@ import 'package:openvine/screens/feed/dm_reply_context.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/takeover_close_button.dart';
+import 'package:openvine/widgets/tv_static_message_screen.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 class VideoDetailRouteExtra {
@@ -270,63 +272,30 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
     final videoEventService = ref.read(videoEventServiceProvider);
 
     if (_isLoading) {
-      return Scaffold(
-        backgroundColor: context.vineColors.background,
-        body: Center(
-          child: Semantics(
-            identifier: SemanticIds.videoDetailLoading,
-            child: const BrandedLoadingIndicator(),
-          ),
-        ),
-      );
+      return _LoadingScreen(onClose: () => _handleExit(context));
     }
 
-    if (_error != null) {
-      final message = switch (_error!) {
-        _VideoDetailError.notFound => context.l10n.videoErrorNotFound,
-        _VideoDetailError.loadFailed => context.l10n.videoDetailLoadError,
-      };
-      return Scaffold(
-        backgroundColor: context.vineColors.background,
-        appBar: _buildExitAppBar(context),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const DivineIcon(
-                icon: DivineIconName.warningCircle,
-                color: VineTheme.error,
-                size: 64,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                message,
-                style: VineTheme.bodyLargeFont(
-                  color: context.vineColors.primaryText,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+    if (_error case final error?) {
+      return switch (error) {
+        _VideoDetailError.notFound => _NotFoundScreen(
+          onClose: () => _handleExit(context),
         ),
-      );
+        _VideoDetailError.loadFailed => TvStaticMessageScreen(
+          sticker: .alert,
+          title: context.l10n.videoDetailLoadError,
+          description: context.l10n.videoDetailLoadErrorBody,
+          actionLabel: context.l10n.videoErrorRetry,
+          onAction: _retry,
+          onClose: () => _handleExit(context),
+          closeSemanticLabel: context.l10n.videoDetailCloseSemanticLabel,
+        ),
+      };
     }
 
     if (_video == null ||
         videoEventService.shouldHideVideo(_video!) ||
         videoEventService.isVideoEventKnownDeleted(_video!)) {
-      return Scaffold(
-        backgroundColor: context.vineColors.background,
-        appBar: _buildExitAppBar(context),
-        body: Center(
-          child: Text(
-            context.l10n.videoErrorNotFound,
-            style: VineTheme.bodyMediumFont(
-              color: context.vineColors.primaryText,
-            ),
-          ),
-        ),
-      );
+      return _NotFoundScreen(onClose: () => _handleExit(context));
     }
 
     // Display video in full-screen pooled player
@@ -342,22 +311,84 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
         );
   }
 
-  DiVineAppBar _buildExitAppBar(BuildContext context) {
-    return DiVineAppBar(
-      title: '',
-      showBackButton: true,
-      onBackPressed: () => _handleExit(context),
-      backButtonSemanticLabel: context.l10n.videoDetailCloseSemanticLabel,
-      backgroundMode: DiVineAppBarBackgroundMode.transparent,
-    );
+  void _retry() {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    // A user-initiated retry must end in a definite state. Deferring to the
+    // relay-ready listener would swallow the failure and park the screen on an
+    // unbounded spinner with the Retry button gone; the user can always tap
+    // again once they are back online.
+    unawaited(_loadVideo(allowRelayReadyRetry: false));
   }
 
   void _handleExit(BuildContext context) {
+    // The loading state can now be dismissed mid-fetch. Without this, a relay
+    // connecting during the pop transition would restart the lookup for a
+    // screen the user has already left.
+    _relayReadySubscription?.cancel();
+    _relayReadySubscription = null;
+    _retryScheduled = false;
+
     if (context.canPop()) {
       context.pop();
       return;
     }
     context.go('/');
+  }
+}
+
+/// Shown while the route's video is still being resolved.
+///
+/// Carries the same top-left close affordance as the dead-end states, so a slow
+/// or relay-stalled lookup never strands the user on a spinner with no way out.
+class _LoadingScreen extends StatelessWidget {
+  const _LoadingScreen({required this.onClose});
+
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: context.vineColors.background,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Center(
+            child: Semantics(
+              identifier: SemanticIds.videoDetailLoading,
+              child: const BrandedLoadingIndicator(),
+            ),
+          ),
+          SafeArea(
+            child: TakeoverCloseButton(
+              onPressed: onClose,
+              semanticLabel: context.l10n.videoDetailCloseSemanticLabel,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Shown when the route's video cannot be resolved, is hidden by a filter, or
+/// was deleted — the three ways a shared link lands on nothing to play.
+class _NotFoundScreen extends StatelessWidget {
+  const _NotFoundScreen({required this.onClose});
+
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return TvStaticMessageScreen(
+      sticker: .alert,
+      title: context.l10n.videoErrorNotFound,
+      description: context.l10n.videoDetailNotFoundBody,
+      onClose: onClose,
+      closeSemanticLabel: context.l10n.videoDetailCloseSemanticLabel,
+    );
   }
 }
 

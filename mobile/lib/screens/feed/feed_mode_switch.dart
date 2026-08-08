@@ -9,6 +9,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/feed/feed_settings_menu.dart';
+import 'package:openvine/utils/pause_aware_modals.dart';
+import 'package:openvine/widgets/video_feed_item/feed_immersive_chrome.dart';
 
 /// Feed mode picker overlay that displays the current feed mode
 /// and allows users to switch between modes via a bottom sheet.
@@ -29,40 +31,45 @@ class FeedModeSwitch extends StatelessWidget {
       top: 0,
       left: 0,
       right: 0,
-      child: Container(
-        decoration: isPreviewMode
-            ? null
-            : const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [VineTheme.innerShadowPressed, VineTheme.transparent],
-                ),
-              ),
-        child: SafeArea(
-          bottom: false,
-          child: Padding(
-            // Left padding (16) matches the video metadata container's
-            // `start: 16` on the overlay below, so the feed-mode label
-            // lines up with the avatar.
-            // Right padding (12) gives the trailing More popover a hair
-            // more breathing room from the screen edge — matches the
-            // fullscreen app bar and the profile screen's nav-button row.
-            padding: const EdgeInsetsDirectional.fromSTEB(16, 16, 12, 16),
-            child: isPreviewMode
-                ? _FeedModeContent(
-                    label: _labelForMode(FeedMode.forYou, context.l10n),
-                  )
-                : BlocBuilder<VideoFeedBloc, VideoFeedBlocState>(
-                    buildWhen: (prev, curr) =>
-                        prev.source != curr.source ||
-                        prev.subscribedLists != curr.subscribedLists,
-                    builder: (context, state) => _FeedModeContent(
-                      onTap: () => _showFeedModeBottomSheet(context, state),
-                      label: _labelForSource(state, context.l10n),
-                      trailing: const FeedSettingsMenu(),
-                    ),
+      child: FeedImmersiveChrome(
+        child: Container(
+          decoration: isPreviewMode
+              ? null
+              : const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      VineTheme.innerShadowPressed,
+                      VineTheme.transparent,
+                    ],
                   ),
+                ),
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              // Left padding (16) matches the video metadata container's
+              // `start: 16` on the overlay below, so the feed-mode label
+              // lines up with the avatar.
+              // Right padding (12) gives the trailing More popover a hair
+              // more breathing room from the screen edge — matches the
+              // fullscreen app bar and the profile screen's nav-button row.
+              padding: const EdgeInsetsDirectional.fromSTEB(16, 16, 12, 16),
+              child: isPreviewMode
+                  ? _FeedModeContent(
+                      label: _labelForMode(FeedMode.forYou, context.l10n),
+                    )
+                  : BlocBuilder<VideoFeedBloc, VideoFeedBlocState>(
+                      buildWhen: (prev, curr) =>
+                          prev.source != curr.source ||
+                          prev.subscribedLists != curr.subscribedLists,
+                      builder: (context, state) => _FeedModeContent(
+                        onTap: () => _showFeedModeBottomSheet(context, state),
+                        label: _labelForSource(state, context.l10n),
+                        trailing: const FeedSettingsMenu(),
+                      ),
+                    ),
+            ),
           ),
         ),
       ),
@@ -74,8 +81,7 @@ class FeedModeSwitch extends StatelessWidget {
     VideoFeedBlocState state,
   ) async {
     final l10n = context.l10n;
-    final selected = await VineBottomSheetSelectionMenu.show(
-      context: context,
+    final selected = await context.showVideoPausingSelectionMenu(
       selectedValue: state.source.persistenceValue,
       options: [
         VineBottomSheetSelectionOptionData(

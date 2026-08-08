@@ -29,6 +29,13 @@ Read `<context-dir>/AGENT_CONTEXT.md` and follow its instructions. If unavailabl
 Before working on a pull request, follow `<context-dir>/PR_REVIEW.md` and use `<context-dir>/PR_REVIEW_TEAMS.md` to request the normal team and check takeover authority. Ordinary review remains open to any eligible Divine human. Before modifying a pull-request branch, enforce the mapping and every takeover gate; if the mapping cannot be read, feedback-only review may continue but automated takeover must stop. Request and verify required human review automatically when tooling permits. If the runbook is unavailable, leave the pull request open and report the blocker.
 
 If a Divine Brain search or ask tool is available, you may use it for company memory. Treat it as optional and credentialed: tool names vary by client, and work must continue when Brain is unavailable. When Brain results influence work, cite the returned document ids. Never commit Brain credentials or expose Brain-derived sensitive content in public PRs, issues, branch names, commit messages, code comments, logs, screenshots, release notes, or externally shared agent transcripts.
+
+## Codex Project Configuration
+
+- Project-scoped settings and lifecycle hooks live under `.codex/`. Codex loads this layer only after the repository or worktree is trusted; use `/hooks` to review and trust changed hook definitions.
+- `.claude/skills/` is the canonical source for repository skills. `.agents/skills/` is the generated Codex-compatible mirror and must not be edited directly.
+- After changing a canonical skill or a Codex-specific transformation, run `.codex/scripts/sync-agent-skills.sh --write`, then `.codex/scripts/test-config.sh`. CI runs the same sync and hook regression checks.
+
 ## Worktree-First Task Workflow
 
 > See `.claude/rules/agent_workflow.md` for detailed rationale and forbidden patterns. The bullets below are the operational summary.
@@ -62,10 +69,27 @@ If a Divine Brain search or ask tool is available, you may use it for company me
 - Open a pull request for that branch once the change is ready for review. Do not leave finished work sitting only in a local branch or worktree.
 - Keep PRs focused and reviewable. If two pieces of work are *truly independent*, split them into separate PRs each targeting `main`. If they depend on each other, **combine them into one PR** rather than splitting and stacking.
 
+## Working On An Existing PR
+
+> See `.claude/rules/pr_takeover.md` for the full gates. The bullets below are the operational summary. These apply whether or not the `divine-context` `PR_REVIEW.md` handbook is loaded — do not assume it is.
+
+- **Establish authorship first**, before reading the diff, running tests, or planning a fix: `gh pr view <n> --json author,isCrossRepository,isDraft,maintainerCanModify` compared against `gh api user --jq .login`.
+  `maintainerCanModify` is meaningful only for fork PRs; same-repo PRs can report `false` even when you can push.
+  - **Your own PR** — not a takeover. You cannot review or approve it. Findings you can't resolve go in a regular issue comment, labelled as a blocker. There is no reviewer downstream to catch a red build.
+  - **Someone else's PR, same repo** — a takeover. Clear every gate in `PR_REVIEW.md` before pushing.
+  - **Fork PR** (`isCrossRepository` true) — takeover gates *plus* `maintainerCanModify`. If false, you cannot push: use suggested changes or a review comment.
+  - Draft PRs and feedback-only requests are read-only unless the author explicitly asks for implementation.
+- Never discover authorship by trial and error. GitHub refusing the call with `Can not request changes on your own pull request` means the triage step was skipped and every decision after it was made under the wrong model.
+- **Answer every review item.** Sort each into fixed / escalated / declined and say which in the handback. An item you skip silently reads as an item you fixed. Fetch inline threads via GraphQL too — substantive findings can live entirely in the review body, or only in outdated threads.
+- Flag unrequested changes separately from review fixes, especially anything with user-visible blast radius (cache-key bumps, migrations, changed defaults).
+- **Do not hand back until checks are green.** After every push: `gh pr checks <n> --watch`, read the result, *then* comment. Posting "I pushed the fixes" before checks finish is forbidden. The only acceptable red handback is a failure positively proven not to come from your diff, with the breaking commit named — see the broken-`main` procedure in `.claude/rules/agent_workflow.md`.
+- The author keeps the merge decision. Takeover never includes merging.
+
 ## No Technical Debt, No Failing Tests
 
 - Do not accumulate technical debt. Fix issues in the PR that touches them; do not defer with TODOs, follow-up issues, skipped tests, or commented-out code. The only acceptable TODO is a transitional-code TODO with a tracking-issue link (see `.claude/rules/code_style.md`).
-- **`origin/main` always passes.** Any failing test on a feature branch is caused by that branch's diff. Never claim flakiness, never `@Skip` to silence a failure, never push red "to see what CI says." Run affected tests + `flutter analyze` before every push. See `.claude/rules/agent_workflow.md` for the diagnostic recipe when a test fails.
+- **Assume any failing test on a feature branch is caused by that branch's diff.** Never claim flakiness, never `@Skip` to silence a failure, never push red "to see what CI says." Run affected tests + `flutter analyze` before every push. See `.claude/rules/agent_workflow.md` for the diagnostic recipe when a test fails.
+- A red commit can occasionally land on `main` anyway — required checks pass but go **stale**, so PR A removing an API and PR B adding a caller can both be green and still break `main` when the second merges without re-running. Every open PR behind it then inherits the failure. That is rare and never your first hypothesis. Before claiming it, prove it: the failing symbol is outside your diff **and** `main`'s own latest run failed with the same errors (`gh run list --branch main --workflow "Mobile CI"`). Then report the breaking commit and the PR that unblocks it — do not patch someone else's fix into your PR.
 
 ## Bug-Fix Workflow
 
@@ -122,7 +146,7 @@ If a Divine Brain search or ask tool is available, you may use it for company me
 ## Local Stack Development
 
 - The local Docker stack (`local_stack/`) speaks cleartext on `10.0.2.2`, `localhost`, and `127.0.0.1`. Cleartext to those loopback hosts is permitted in every build type on both platforms — Android via the `<domain-config>` block in `mobile/android/app/src/main/res/xml/network_security_config.xml`, iOS via `NSAllowsLocalNetworking=true` in `mobile/ios/Runner/Info.plist`. Remote cleartext is rejected on both platforms in every build type.
-- Either Android emulator (`10.0.2.2` → host) or iOS Simulator (`localhost` → host) works against the local stack out of the box.
+- The Android emulator works against the local stack out of the box. **The iOS Simulator does not**: `mobile/lib/models/environment_config.dart` hardcodes `localHost = '10.0.2.2'` with no platform branch, and `10.0.2.2` is an Android-emulator-only alias for the host — from the Simulator it routes out the default gateway and never reaches the stack. A `DEFAULT_ENV=LOCAL` build on the Simulator just retries `client.connectingRelays` until it times out. Use the Android emulator, or the `test/manual/*` acceptance tests, which dial `localhost` directly.
 - User-installed CAs are not trusted in any build. If you need to proxy-debug with Charles or mitmproxy, add a single `<certificates src="user" />` line to `<trust-anchors>` in `mobile/android/app/src/main/res/xml/network_security_config.xml` in your working copy and don't commit it; CI's transport-security guard will block any commit that re-enables user-CA trust. (For iOS, plist-edit `NSAppTransportSecurity` similarly and revert before commit.)
 - If you add a new exception to either native config, update `mobile/scripts/check_native_transport_security.sh` so the guard recognises the allowance.
 
@@ -140,7 +164,7 @@ If a Divine Brain search or ask tool is available, you may use it for company me
 - Delete temporary debugging artifacts before commit.
 - If a generated file must be committed, make sure it is reproducible and relevant to the change.
 - Before opening the PR, review the diff and remove stray edits, generated junk, logs, scratch files, and half-finished experiments.
-- After opening or updating a PR, inspect GitHub checks and rerun stale semantic jobs if needed.
+- After opening or updating a PR, wait for GitHub checks to finish (`gh pr checks <n> --watch`), fix anything red, and rerun stale semantic jobs if needed. Do not report the task complete while checks are red or still running.
 - After a branch is merged or abandoned, prune the worktree and branch so stale task state does not accumulate.
 
 ## metaswarm

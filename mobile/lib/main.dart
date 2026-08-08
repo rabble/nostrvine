@@ -93,6 +93,7 @@ import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/app_engagement_store.dart';
 import 'package:openvine/services/back_button_handler.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
+import 'package:openvine/services/c2pa_signing_service.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/corrupted_video_repair_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
@@ -834,6 +835,11 @@ Future<void> _startOpenVineApp() async {
 
   // Ensure bindings are initialized first (required for everything)
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+
+  // Fail the launch on a malformed C2PA signing endpoint rather than letting it
+  // surface mid-capture as an opaque "Signature: internal error", which reads
+  // as a server outage and sends users to debug their own connection.
+  C2paSigningService.assertSigningEndpointValid();
 
   // Register bundled OFL font licenses so they surface on the in-app
   // Open Source Licenses page (Settings → Legal). See #3659.

@@ -81,12 +81,6 @@ VideoErrorType classifyVideoError({
   if (typedErrorType != null) return typedErrorType;
 
   final lower = (errorMessage ?? '').toLowerCase();
-  // Divine derivative URLs can legitimately return HTTP 202 while MP4/HLS
-  // processing catches up after upload. Treat that as transient playback
-  // failure, not as proof that the blob is missing.
-  if (_mentionsHttpStatus(lower, 202)) {
-    return VideoErrorType.generic;
-  }
   if (lower.contains('401') || lower.contains('unauthorized')) {
     return VideoErrorType.ageRestricted;
   }
@@ -95,6 +89,12 @@ VideoErrorType classifyVideoError({
   }
   if (lower.contains('404') || lower.contains('not found')) {
     return VideoErrorType.notFound;
+  }
+  // Divine derivative URLs can legitimately return HTTP 202/422 while MP4/HLS
+  // processing catches up after upload. Treat those as transient playback
+  // failures, not as proof that the blob is missing.
+  if (_mentionsHttpStatus(lower, 202) || _mentionsHttpStatus(lower, 422)) {
+    return VideoErrorType.generic;
   }
 
   // Only use the Divine blob heuristic when a concrete source was provided
@@ -110,11 +110,12 @@ VideoErrorType classifyVideoError({
 /// Whether an error represents Divine media still preparing renditions.
 ///
 /// Freshly-published Divine derivative URLs can return HTTP 202 while the
-/// server finishes MP4/HLS processing. Playback should retry the same source
-/// for these responses instead of treating the rendition as failed.
+/// server finishes MP4/HLS processing. Some derived renditions also return
+/// HTTP 422 while the raw blob is already available. Playback should treat both
+/// as transient source failures instead of terminal missing-media evidence.
 bool isMediaProcessingError(Object? error, {String? errorMessage}) {
   final lower = '${errorMessage ?? ''} ${error ?? ''}'.toLowerCase();
-  return _mentionsHttpStatus(lower, 202);
+  return _mentionsHttpStatus(lower, 202) || _mentionsHttpStatus(lower, 422);
 }
 
 /// Extracts a canonical native player error code from method-channel failures.
@@ -140,5 +141,5 @@ bool _mentionsHttpStatus(String lower, int status) {
       !lower.contains('response code')) {
     return false;
   }
-  return RegExp('(^|[^0-9])$status([^0-9]|\$)').hasMatch(lower);
+  return RegExp('(^|[^0-9a-f])$status([^0-9a-f]|\$)').hasMatch(lower);
 }

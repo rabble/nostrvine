@@ -1032,23 +1032,13 @@ class FollowRepository {
       return [];
     }
 
-    // Run all three sources in parallel for best coverage
-    final apiFuture = (_funnelcakeApiClient?.isAvailable ?? false)
-        ? _funnelcakeApiClient!
-              .getFollowers(pubkey: pubkey, limit: 5000)
-              .then((r) => r.pubkeys)
-              .catchError((_) => <String>[])
-        : Future<List<String>>.value(const []);
-
-    final relayFuture = _fetchFollowersFromRelays(pubkey);
-    final indexerFuture = _fetchFollowerPubkeysFromIndexers(
-      pubkey,
-    ).catchError((_) => <String>[]);
-
+    // The API and indexer sources are best-effort here; a connected-relay
+    // failure still fails the whole call, as it always has.
+    final sources = _followerSources(pubkey);
     final results = await Future.wait<List<String>>([
-      apiFuture,
-      relayFuture,
-      indexerFuture,
+      sources[0].catchError((_) => <String>[]),
+      sources[1],
+      sources[2].catchError((_) => <String>[]),
     ]);
     final apiFollowers = results[0];
     final relayFollowers = results[1];
@@ -1072,6 +1062,93 @@ class FollowRepository {
     );
 
     return merged.toList();
+  }
+
+  /// The three follower sources, started in parallel.
+  ///
+  /// Order is fixed — `[REST API, connected relays, indexer relays]` — because
+  /// [_fetchFollowers] indexes into the results to log per-source counts.
+  /// Failures are *not* swallowed here; each caller applies its own policy.
+  List<Future<List<String>>> _followerSources(String pubkey) {
+    final apiFuture = (_funnelcakeApiClient?.isAvailable ?? false)
+        ? _funnelcakeApiClient!
+              .getFollowers(pubkey: pubkey, limit: 5000)
+              .then((r) => r.pubkeys)
+        : Future<List<String>>.value(const []);
+
+    return [
+      apiFuture,
+      _fetchFollowersFromRelays(pubkey),
+      _fetchFollowerPubkeysFromIndexers(pubkey),
+    ];
+  }
+
+  /// Streams the current user's followers as each source resolves.
+  ///
+  /// Every emission is the union of all sources that have answered so far, so
+  /// the list only ever grows and a pubkey that has been emitted is always
+  /// backed by a live source. Consumers that must not show a stale follower
+  /// (the mutual-follow user picker) can therefore render the first emission
+  /// immediately instead of waiting for the slowest relay.
+  ///
+  /// The REST API typically answers in ~150ms while indexer relays take up to
+  /// ~2s, so the first emission carries the large majority of the final list.
+  ///
+  /// A failing source is skipped — a working one still yields a usable list,
+  /// and a strict consumer keeps filtering rather than falling back. The
+  /// stream only emits an error when it ends up with *no* followers at all
+  /// and at least one source failed, which is the case where the caller
+  /// genuinely cannot tell "you have no followers" from "the lookup broke".
+  Stream<List<String>> streamMyFollowers() =>
+      _streamFollowers(_nostrClient.publicKey);
+
+  Stream<List<String>> _streamFollowers(String pubkey) async* {
+    if (pubkey.isEmpty) {
+      yield const [];
+      return;
+    }
+
+    final merged = <String>{};
+    Object? lastError;
+    StackTrace? lastStackTrace;
+
+    final guarded = _followerSources(pubkey).map(
+      (source) => source.then<(List<String>, Object?, StackTrace?)>(
+        (pubkeys) => (pubkeys, null, null),
+        onError: (Object error, StackTrace stackTrace) =>
+            (const <String>[], error, stackTrace),
+      ),
+    );
+
+    await for (final (pubkeys, error, stackTrace)
+        in Stream<(List<String>, Object?, StackTrace?)>.fromFutures(guarded)) {
+      if (error != null) {
+        lastError = error;
+        lastStackTrace = stackTrace;
+        Log.warning(
+          'Follower source failed: $error',
+          name: 'FollowRepository',
+          category: LogCategory.system,
+        );
+        continue;
+      }
+      final before = merged.length;
+      merged.addAll(pubkeys);
+      // The union only grows, so an unchanged size means this source added
+      // nobody — emitting again would just churn the consumer's UI.
+      if (merged.length != before) {
+        yield List<String>.unmodifiable(merged);
+      }
+    }
+
+    if (merged.isEmpty && lastError != null) {
+      Error.throwWithStackTrace(lastError, lastStackTrace ?? StackTrace.empty);
+    }
+
+    if (pubkey == _nostrClient.publicKey) {
+      _cachedMyFollowersPubkeys = merged.toList();
+      _hasMyFollowersCache = true;
+    }
   }
 
   /// Query connected relays for kind 3 events mentioning a pubkey.

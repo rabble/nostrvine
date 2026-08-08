@@ -134,6 +134,7 @@ DivineVideoClip _createClip(int index) {
     recordedAt: DateTime(2026, 6, 5, 12, index),
     targetAspectRatio: model.AspectRatio.vertical,
     originalAspectRatio: 9 / 16,
+    thumbnailPath: '${Directory.systemTemp.path}/clip-$index-thumb.jpg',
   );
 }
 
@@ -264,6 +265,13 @@ void main() {
 
         expect(result, isNotNull);
         expect(result?.$2, isNotNull);
+        // Cover extraction cannot succeed here (the render output is never
+        // written), so the clip must fall back to the first source clip's
+        // thumbnail rather than being left without a preview.
+        expect(
+          result?.$1.thumbnailPath,
+          equals('${Directory.systemTemp.path}/clip-0-thumb.jpg'),
+        );
         expect(
           proofCallClipCounts,
           equals([null, null, null, 3]),

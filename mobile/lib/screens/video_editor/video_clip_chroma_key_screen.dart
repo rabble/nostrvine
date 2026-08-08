@@ -201,19 +201,24 @@ class _VideoClipChromaKeyScreenState extends State<VideoClipChromaKeyScreen> {
     }
   }
 
+  /// Shoots a photo to sit behind the keyed subject.
+  ///
+  /// Camera only, deliberately: the gallery is a route for AI-generated
+  /// imagery to enter a Divine video, and a backdrop the user photographs on
+  /// the spot cannot be one.
   Future<void> _pickImageBackground() async {
-    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (picked == null) return;
     try {
+      final picked = await ImagePicker().pickImage(source: ImageSource.camera);
+      if (picked == null) return;
       // `image_picker` hands back a cache path the OS may prune, while clip
       // state persists as a documents-relative basename — so take a copy we
       // own before pointing the key at it.
       //
-      // The copy is normalized rather than byte-for-byte: a portrait photo is
-      // usually stored as landscape pixels plus an EXIF orientation tag, and
-      // the renderer decodes raw bytes, so it would show the backdrop rotated.
-      // Baking the rotation in also caps the photo to a sane size for a
-      // backdrop that is stretched to the video frame anyway.
+      // The copy is normalized rather than byte-for-byte: a photo shot in
+      // portrait is stored as landscape pixels plus an EXIF orientation tag,
+      // and the renderer decodes raw bytes, so it would show the backdrop
+      // rotated. Baking the rotation in also caps the photo to a sane size for
+      // a backdrop that is stretched to the video frame anyway.
       final documentsPath = await getDocumentsPath();
       final target = p.join(
         documentsPath,
@@ -235,7 +240,7 @@ class _VideoClipChromaKeyScreenState extends State<VideoClipChromaKeyScreen> {
       unawaited(_pruneCreatedImages(keep: target));
     } catch (error, stackTrace) {
       Log.error(
-        'Failed to copy the chroma-key background image',
+        'Failed to capture the chroma-key background image',
         name: 'VideoClipChromaKeyScreen',
         error: error,
         stackTrace: stackTrace,

@@ -1298,6 +1298,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'Disable captions';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'Auto advance on';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'Auto advance off';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Captions on';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Captions off';
+
+  @override
   String get contentWarningLabel => 'Content Warning';
 
   @override
@@ -1530,11 +1542,26 @@ class AppLocalizationsEn extends AppLocalizations {
       'Verification timed out. Check your connection or try again shortly.';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      'Adult content is switched off. You can turn it on in Settings → Content Filters.';
+  String get videoErrorAdultContentHiddenTitle =>
+      'Adult content is switched off';
+
+  @override
+  String get videoErrorAdultContentHiddenBody =>
+      'Turn it on in your content filters to watch this one.';
+
+  @override
+  String get videoErrorAdultContentHiddenAction => 'Open Content Filters';
 
   @override
   String get videoDetailLoadError => 'Failed to load video';
+
+  @override
+  String get videoDetailLoadErrorBody =>
+      'Something went sideways on the way here. Give it another try.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'It could be gone, out of reach, or hidden by your settings.';
 
   @override
   String get databaseCorruptionTitle => 'Your local data got scrambled';
@@ -1815,6 +1842,46 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get metadataProofManifest => 'Proof manifest';
+
+  @override
+  String get metadataVerificationInfoTooltip => 'What do these checks mean?';
+
+  @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
+  String get metadataVerificationInfoTitle => 'What these checks mean';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'These signals come from the camera and the video file itself. The more of them a video carries, the more we can prove about where it came from.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'The phone\'s operating system vouched for the app that recorded this. Strong evidence it came off a camera, not a file someone uploaded.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'The video was cryptographically signed the moment it was captured. Change a single frame afterwards and the signature breaks.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'An industry-standard record of where the video came from, carried inside the file — so apps other than Divine can check it too.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'The full ProofMode record: file fingerprint, timestamp and capture context, bundled with the video.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'A missing check doesn\'t make a video fake. Older clips and uploads never got one — it only means we can\'t prove that part.';
+
+  @override
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'Learn more at $url';
+  }
 
   @override
   String get metadataCreatorLabel => 'Creator';
@@ -4584,6 +4651,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Search by name...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Clear search';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name already added';
   }
@@ -6226,6 +6296,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonClose => 'Close';
 
   @override
+  String get commonNotNow => 'Not now';
+
+  @override
   String get commonLoading => 'Loading';
 
   @override
@@ -6246,6 +6319,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get videoMetadataC2paMissingNote =>
       'Content credentials need an internet connection.';
+
+  @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
 
   @override
   String get videoMetadataC2paMissingRegenerate => 'Regenerate';
@@ -7234,49 +7311,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get proofmodeBadgeAiScanPending => 'AI scan pending';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'Human Made';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Not Divine Hosted';
-
-  @override
-  String get proofmodeBadgeOriginal => 'Original';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'Possibly AI-Generated';
-
-  @override
-  String get proofmodeBadgeUnverified => 'Unverified';
-
-  @override
-  String get proofmodeConfirmedByModerator => 'Confirmed by human moderator';
-
-  @override
-  String get proofmodeExternalContentTitle => 'External Content';
-
-  @override
-  String get proofmodeHostedOnLabel => 'This video is hosted on:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'Likely human-created';
-
-  @override
-  String get proofmodeNoProofDataAttached => 'No ProofMode data attached';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'This content is not hosted on Divine servers. We cannot fully guarantee its authenticity.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'Possibly AI-generated';
-
-  @override
-  String get proofmodePublishedByLabel => 'Published by:';
-
-  @override
   String get publishErrorNotSignedIn => 'Please sign in to publish videos.';
 
   @override
@@ -7336,6 +7370,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get publishErrorNostrPublishFailed =>
       'The video uploaded but the post could not be published. Check your relay settings and try again.';
+
+  @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'The video uploaded, but its sound isn\'t cleared for reuse. Pick a different sound to post it.';
 
   @override
   String get publishErrorInterrupted =>
@@ -7481,6 +7519,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'Subject *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'Public GitHub post';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Everything you submit here will be posted to our open-source repository on GitHub so developers can pick it up. Your post and the account you\'re signed in with will be publicly visible to everyone.';
 
   @override
   String get supportRequiredHelper => 'Required';
