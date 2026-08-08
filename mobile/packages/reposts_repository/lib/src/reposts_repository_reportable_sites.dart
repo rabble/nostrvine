@@ -39,4 +39,8 @@ abstract class RepostsRepositoryReportableSites {
   /// threw, so the optimistic removal is not undone locally.
   static const String unrepostVideoRestoreRecord =
       'unrepostVideo.restoreRecord';
+
+  /// `toggleRepost`: the authoritative already-reposted read threw, so the
+  /// toggle falls back to the in-memory cache to decide its direction.
+  static const String toggleRepostReadState = 'toggleRepost.readState';
 }

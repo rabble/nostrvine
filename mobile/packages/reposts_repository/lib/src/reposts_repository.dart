@@ -633,9 +633,17 @@ class RepostsRepository {
     await _ensureInitialized();
 
     // Query the database directly as source of truth to avoid cache/db
-    // inconsistency after app restart
+    // inconsistency after app restart. Best-effort for the same reason
+    // [repostVideo]'s writes are: this is the only entry point the repost
+    // button uses, so an unreadable cache throwing here costs the Kind 16
+    // outright. A swallowed read falls back to the in-memory cache, which is
+    // exactly what the null-storage branch of the `??` already does.
     final isCurrentlyReposted =
-        await _localStorage?.isReposted(addressableId) ??
+        await _bestEffortLocalStorage<bool?>(
+          () async => _localStorage?.isReposted(addressableId),
+          description: 'checking the repost state',
+          site: RepostsRepositoryReportableSites.toggleRepostReadState,
+        ) ??
         _repostRecords.containsKey(addressableId);
 
     if (isCurrentlyReposted) {

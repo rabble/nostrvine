@@ -412,6 +412,69 @@ void main() {
 
         expect(reportCount, isZero);
       });
+
+      test('publishes the like when the toggle state read fails', () async {
+        // The like button only ever reaches the repository through
+        // toggleLike (video_interactions_bloc.dart), so a storage read that
+        // throws there costs the Kind 7 just as surely as one inside
+        // likeEvent. likeEvent's own guard never gets a chance to run.
+        final mockEvent = MockEvent();
+        when(() => mockEvent.id).thenReturn(testReactionEventId);
+        stubSendLike(mockEvent);
+        when(
+          () => mockLocalStorage.getAllLikeRecords(),
+        ).thenThrow(storageFailure);
+        when(() => mockLocalStorage.isLiked(any())).thenThrow(storageFailure);
+
+        repository = createRepository();
+        final isNowLiked = await repository.toggleLike(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+        );
+
+        expect(isNowLiked, isTrue);
+        verify(
+          () => mockNostrClient.sendLike(
+            testEventId,
+            content: '+',
+            targetAuthorPubkey: testAuthorPubkey,
+          ),
+        ).called(1);
+      });
+
+      test(
+        'unlikes from the in-memory cache when the state read fails',
+        () async {
+          // The swallowed read must fall back to the cache, not to "not
+          // liked" — otherwise the toggle publishes a duplicate reaction
+          // instead of deleting the live one.
+          final mockEvent = MockEvent();
+          when(() => mockEvent.id).thenReturn(testReactionEventId);
+          stubSendLike(mockEvent);
+          final deletionEvent = MockEvent();
+          when(() => deletionEvent.id).thenReturn('deletion_event_id');
+          when(
+            () => mockNostrClient.deleteEvent(any()),
+          ).thenAnswer((_) async => deletionEvent);
+
+          repository = createRepository();
+          await repository.likeEvent(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+          );
+          when(() => mockLocalStorage.isLiked(any())).thenThrow(storageFailure);
+
+          final isNowLiked = await repository.toggleLike(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+          );
+
+          expect(isNowLiked, isFalse);
+          verify(
+            () => mockNostrClient.deleteEvent(testReactionEventId),
+          ).called(1);
+        },
+      );
     });
 
     group('likeEvent', () {

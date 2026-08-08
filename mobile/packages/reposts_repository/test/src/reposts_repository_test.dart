@@ -471,6 +471,74 @@ void main() {
 
         expect(reportCount, isZero);
       });
+
+      test('publishes the repost when the toggle state read fails', () async {
+        // The repost button only ever reaches the repository through
+        // toggleRepost (video_interactions_bloc.dart), so a storage read
+        // that throws there costs the Kind 16 just as surely as one inside
+        // repostVideo. repostVideo's own guard never gets a chance to run.
+        when(
+          () => mockLocalStorage.getAllRepostRecords(),
+        ).thenThrow(storageFailure);
+        when(
+          () => mockLocalStorage.isReposted(any()),
+        ).thenThrow(storageFailure);
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final isNowReposted = await repository.toggleRepost(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+        );
+
+        expect(isNowReposted, isTrue);
+        verify(
+          () => mockNostrClient.sendGenericRepost(
+            addressableId: testAddressableId,
+            targetKind: EventKind.videoVertical,
+            authorPubkey: testAuthorPubkey,
+            content: any(named: 'content'),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).called(1);
+      });
+
+      test('unreposts from the in-memory cache when the read fails', () async {
+        // The swallowed read must fall back to the cache, not to "not
+        // reposted" — otherwise the toggle publishes a duplicate Kind 16
+        // instead of deleting the live one.
+        when(() => mockNostrClient.deleteEvent(any())).thenAnswer(
+          (_) async => createMockEvent(
+            id: 'deletion_event_id',
+            kind: EventKind.eventDeletion,
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        );
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+        await repository.repostVideo(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+        );
+        when(
+          () => mockLocalStorage.isReposted(any()),
+        ).thenThrow(storageFailure);
+
+        final isNowReposted = await repository.toggleRepost(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+        );
+
+        expect(isNowReposted, isFalse);
+        verify(() => mockNostrClient.deleteEvent(testRepostEventId)).called(1);
+      });
     });
 
     group('repostVideo', () {

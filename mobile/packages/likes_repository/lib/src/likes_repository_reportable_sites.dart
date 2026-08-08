@@ -37,4 +37,8 @@ abstract class LikesRepositoryReportableSites {
   /// `unlikeEvent`: restoring the record after a deletion-publish failure
   /// threw, so the optimistic removal is not undone locally.
   static const String unlikeEventRestoreRecord = 'unlikeEvent.restoreRecord';
+
+  /// `toggleLike`: the authoritative already-liked read threw, so the toggle
+  /// falls back to the in-memory cache to decide its direction.
+  static const String toggleLikeReadState = 'toggleLike.readState';
 }

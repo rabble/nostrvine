@@ -909,8 +909,16 @@ class LikesRepository {
     // than the one being toggled here (#6020) — without this check,
     // toggling the (correctly, post-fix) filled heart on the current
     // version would try to *like* again instead of unliking the original.
+    // Best-effort for the same reason [likeEvent]'s writes are: this is the
+    // only entry point the like button uses, so an unreadable cache throwing
+    // here costs the Kind 7 outright. A swallowed read falls back to the
+    // in-memory cache, which is what the null-storage branch already does.
     final likedByEventId =
-        await _localStorage?.isLiked(eventId) ??
+        await _bestEffortLocalStorage<bool?>(
+          () async => _localStorage?.isLiked(eventId),
+          description: 'checking the like state',
+          site: LikesRepositoryReportableSites.toggleLikeReadState,
+        ) ??
         _likeRecords.containsKey(eventId);
     final likedByCoordinate =
         addressableId != null &&
