@@ -119,7 +119,15 @@ class PostPublishExperiment {
   final PostPublishFlagClient _flags;
   final AnalyticsEventSink _analytics;
   final DateTime Function() _now;
+
+  /// Pending assignments, oldest first. A publish that neither succeeds nor
+  /// fails in this app session (a vanished background entry, a kill before
+  /// the upload resolves) never reaches [completed] or [failed], so the map
+  /// is capped and evicts its oldest entry instead of growing for the
+  /// lifetime of the process.
   final Map<String, PostPublishVariant> _publishVariants = {};
+
+  static const _maxPendingVariants = 32;
 
   Future<void> initialize() => _flags.initialize();
 
@@ -138,7 +146,12 @@ class PostPublishExperiment {
     required String destination,
     required PostPublishVariant variant,
   }) async {
-    _publishVariants[publishId] = variant;
+    _publishVariants
+      ..remove(publishId)
+      ..[publishId] = variant;
+    while (_publishVariants.length > _maxPendingVariants) {
+      _publishVariants.remove(_publishVariants.keys.first);
+    }
     await _logEvent(
       name: 'post_publish_screen_shown',
       parameters: {

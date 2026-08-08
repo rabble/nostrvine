@@ -111,6 +111,30 @@ void main() {
     expect(sink.events.last.parameters, {'seconds_since_publish': 17});
   });
 
+  test('bounds pending assignments that never resolve', () async {
+    final experiment = PostPublishExperiment(
+      flags: _FakeFlags(true),
+      analytics: _RecordingSink(),
+    );
+
+    await experiment.screenShown(
+      publishId: 'stranded',
+      destination: 'profile',
+      variant: PostPublishVariant.createAgain,
+    );
+    for (var i = 0; i < 32; i++) {
+      await experiment.screenShown(
+        publishId: 'publish-$i',
+        destination: 'profile',
+        variant: PostPublishVariant.createAgain,
+      );
+    }
+
+    // The oldest stranded entry is evicted; the newest 32 still resolve.
+    expect(experiment.completed({'stranded'}), isNull);
+    expect(experiment.completed({'publish-31'}), isNotNull);
+  });
+
   test('drops treatment state when a publish fails', () async {
     final experiment = PostPublishExperiment(
       flags: _FakeFlags(true),
