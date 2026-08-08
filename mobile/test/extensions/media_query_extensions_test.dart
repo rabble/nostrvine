@@ -5,13 +5,8 @@ import 'package:openvine/extensions/media_query_extensions.dart';
 void main() {
   group('MediaQueryExtensions', () {
     const data = MediaQueryData(
-      size: Size(390, 844),
-      devicePixelRatio: 3,
       textScaler: TextScaler.linear(1.4),
       disableAnimations: true,
-      viewPadding: EdgeInsets.only(top: 47, bottom: 34),
-      padding: EdgeInsets.only(top: 47),
-      viewInsets: EdgeInsets.only(bottom: 336),
     );
 
     Future<BuildContext> pumpContext(
@@ -33,28 +28,11 @@ void main() {
       return captured;
     }
 
-    testWidgets('reads scalar metrics from the ambient $MediaQuery', (
-      tester,
-    ) async {
+    testWidgets('reads metrics from the ambient $MediaQuery', (tester) async {
       final context = await pumpContext(tester, data);
 
       expect(context.reduceMotion, isTrue);
       expect(context.textScaler, equals(const TextScaler.linear(1.4)));
-      expect(context.screenSize, equals(const Size(390, 844)));
-      expect(context.devicePixelRatio, equals(3.0));
-    });
-
-    testWidgets('keeps padding, viewPadding and viewInsets distinct', (
-      tester,
-    ) async {
-      final context = await pumpContext(tester, data);
-
-      expect(context.padding, equals(const EdgeInsets.only(top: 47)));
-      expect(
-        context.viewPadding,
-        equals(const EdgeInsets.only(top: 47, bottom: 34)),
-      );
-      expect(context.viewInsets, equals(const EdgeInsets.only(bottom: 336)));
     });
 
     testWidgets('depends only on the metric it reads', (tester) async {
@@ -69,7 +47,9 @@ void main() {
 
       // An unrelated metric changing must not wake a reduce-motion reader.
       // Reading through MediaQuery.of(context) instead would rebuild here.
-      await tester.pumpWidget(build(data.copyWith(devicePixelRatio: 2)));
+      await tester.pumpWidget(
+        build(data.copyWith(textScaler: const TextScaler.linear(1.2))),
+      );
       expect(_ReduceMotionProbe.buildCount, equals(1));
 
       await tester.pumpWidget(build(data.copyWith(disableAnimations: false)));

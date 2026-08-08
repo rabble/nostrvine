@@ -297,7 +297,6 @@ class _VideoRecorderModeSelectorWheelState
                             behavior: HitTestBehavior.opaque,
                             onTap: () {
                               _selectIndex(i, animate: true);
-                              if (!_isSnapping) _moveTo(i);
                             },
                             child: Center(
                               child: AnimatedDefaultTextStyle(
