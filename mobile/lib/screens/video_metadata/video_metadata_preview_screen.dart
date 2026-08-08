@@ -9,11 +9,13 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
 import 'package:openvine/widgets/stop_motion/stop_motion_player.dart';
+import 'package:openvine/widgets/video_feed_item/blurred_video_backdrop.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_bottom_bar.dart';
 import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_preview_thumbnail.dart';
@@ -90,9 +92,7 @@ class _VideoMetadataPreviewScreenState
     _controller = DivineVideoPlayerController(useTexture: true);
     if (mounted) await _controller!.initialize();
     if (mounted) {
-      await _controller!.setSource(
-        VideoClip.file(await video.safeFilePath()),
-      );
+      await _controller!.setSource(VideoClip.file(await video.safeFilePath()));
     }
     if (mounted) await _controller!.setLooping(looping: true);
     if (mounted) await _controller!.play();
@@ -118,17 +118,31 @@ class _VideoMetadataPreviewScreenState
           children: [
             // Video preview area with close button
             Expanded(
-              child: Stack(
-                fit: .expand,
-                children: [
-                  _VideoPreviewContent(
-                    clip: widget.clip,
-                    controller: _controller,
-                  ),
-                  if (!widget.previewOnly)
-                    _PreviewOverlay(isPreviewReady: _isPreviewReady),
-                  const _CloseButton(),
-                ],
+              child: _PreviewStage(
+                roundBottom: !widget.previewOnly,
+                child: Stack(
+                  fit: .expand,
+                  children: [
+                    _VideoPreviewContent(
+                      clip: widget.clip,
+                      controller: _controller,
+                    ),
+                    if (!widget.previewOnly)
+                      // The overlay offsets its caption and action column
+                      // above the system bottom inset for the feed, where it
+                      // spans the whole screen. Here the stage already ends
+                      // above the post bar's [SafeArea], so that inset would
+                      // be counted twice and float the buttons off the bottom
+                      // edge. Same removal the fullscreen feed applies around
+                      // its own [FeedVideos].
+                      MediaQuery.removePadding(
+                        context: context,
+                        removeBottom: true,
+                        child: _PreviewOverlay(isPreviewReady: _isPreviewReady),
+                      ),
+                    const _CloseButton(),
+                  ],
+                ),
               ),
             ),
             // Post button at bottom
@@ -144,20 +158,64 @@ class _VideoMetadataPreviewScreenState
   }
 }
 
+/// Rounds the bottom corners of the preview area so it seams into the post
+/// bar the way the feed seams into the bottom nav
+/// ([VineTheme.shellCornerRadius], via `NavRoundedShell`). The corners reveal
+/// the scaffold surface the post bar sits on, so no extra fill is painted
+/// behind them.
+///
+/// The preview-only route has no bottom chrome to seam into and stays edge to
+/// edge — the same branch the fullscreen feed takes in `_MaybeRoundFeedBottom`.
+class _PreviewStage extends StatelessWidget {
+  const _PreviewStage({required this.roundBottom, required this.child});
+
+  final bool roundBottom;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!roundBottom) return child;
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(
+        bottom: Radius.circular(VineTheme.shellCornerRadius),
+      ),
+      child: child,
+    );
+  }
+}
+
 /// Container widget that wraps the video player in a hero transition.
-class _VideoPreviewContent extends ConsumerWidget {
+///
+/// Frames the clip to match the feed: non-square clips fill the preview edge to
+/// edge and crop like `VideoItemWidget`'s cover branch, square clips stay
+/// contain-fit on the blurred poster backdrop the feed paints in their
+/// letterbox bars. Without that mirroring the preview showed more of the frame
+/// than the feed does, so the metadata overlay sat over a different crop than
+/// the published post.
+///
+/// The video surface is sized from the live decoded ratio when the native
+/// player has reported dimensions, with [DivineVideoClip.targetAspectRatio] as
+/// the pre-decode fallback. That keeps raw draft previews from squeezing an
+/// uncropped source into the target-ratio box while still matching the rendered
+/// post path once the render has baked the target crop into the file.
+class _VideoPreviewContent extends StatelessWidget {
   /// Creates the video preview content wrapper.
-  const _VideoPreviewContent({
-    required this.clip,
-    required this.controller,
-  });
+  const _VideoPreviewContent({required this.clip, required this.controller});
 
   final DivineVideoClip clip;
   final DivineVideoPlayerController? controller;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final aspectRatio = clip.targetAspectRatio.value;
+    // The feed leaves portrait expansion on (FeedVideos defaults it to true
+    // and no caller overrides it), so the preview mirrors that branch.
+    final coversViewport = videoCoversFeedViewport(
+      aspectRatio: aspectRatio,
+      shouldPortraitExpand: true,
+    );
+    final fit = coversViewport ? BoxFit.cover : BoxFit.contain;
+    final thumbnailPath = clip.thumbnailPath;
     final stopMotionFrames = clip.stopMotionFrames;
 
     // Hero animation from metadata screen
@@ -165,28 +223,146 @@ class _VideoPreviewContent extends ConsumerWidget {
       tag: VideoEditorConstants.heroMetaPreviewId,
       // Use linear flight path instead of curved arc
       createRectTween: (begin, end) => RectTween(begin: begin, end: end),
-      child: Center(
-        child: AspectRatio(
-          aspectRatio: aspectRatio,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: stopMotionFrames != null
-                ? StopMotionPlayer(
-                    frames: stopMotionFrames,
-                    cacheHeight:
-                        (MediaQuery.sizeOf(context).height *
-                                MediaQuery.devicePixelRatioOf(context))
-                            .round(),
-                  )
-                : DivineVideoPlayer(
-                    controller: controller,
-                    placeholder: VideoMetadataCapturePreviewThumbnail(
-                      clip: clip,
-                    ),
-                  ),
+      child: Stack(
+        fit: .expand,
+        children: [
+          if (!coversViewport && thumbnailPath != null)
+            BlurredVideoBackdrop(
+              filePath: thumbnailPath,
+              videoAspectRatio: aspectRatio,
+            ),
+          if (stopMotionFrames != null)
+            _FittedStopMotion(
+              frames: stopMotionFrames,
+              aspectRatio: aspectRatio,
+              coversViewport: coversViewport,
+            )
+          else
+            _FittedVideoSurface(
+              clip: clip,
+              controller: controller,
+              aspectRatio: aspectRatio,
+              fit: fit,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Inscribes the player surface into the preview the way the feed does.
+///
+/// The native surface has no intrinsic size and stretches to whatever box it
+/// gets, so the video is laid out at the decoded video ratio inside a
+/// [FittedBox] — the same construction `VideoItemWidget` uses in the feed.
+class _FittedVideoSurface extends StatefulWidget {
+  const _FittedVideoSurface({
+    required this.clip,
+    required this.controller,
+    required this.aspectRatio,
+    required this.fit,
+  });
+
+  final DivineVideoClip clip;
+  final DivineVideoPlayerController? controller;
+  final double aspectRatio;
+  final BoxFit fit;
+
+  @override
+  State<_FittedVideoSurface> createState() => _FittedVideoSurfaceState();
+}
+
+class _FittedVideoSurfaceState extends State<_FittedVideoSurface> {
+  StreamSubscription<DivineVideoPlayerState>? _sub;
+  double _videoAspectRatio = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _subscribeToController(widget.controller);
+  }
+
+  @override
+  void didUpdateWidget(_FittedVideoSurface oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      unawaited(_sub?.cancel());
+      _subscribeToController(widget.controller);
+    }
+  }
+
+  void _subscribeToController(DivineVideoPlayerController? controller) {
+    _videoAspectRatio = controller?.state.aspectRatio ?? 0;
+    _sub = controller?.stateStream.listen((state) {
+      final aspectRatio = state.aspectRatio;
+      if (aspectRatio > 0 && aspectRatio != _videoAspectRatio) {
+        setState(() => _videoAspectRatio = aspectRatio);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    unawaited(_sub?.cancel());
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final videoAspectRatio = _videoAspectRatio > 0
+        ? _videoAspectRatio
+        : widget.aspectRatio;
+    return ClipRect(
+      child: FittedBox(
+        fit: widget.fit,
+        child: SizedBox(
+          width: videoAspectRatio * 100,
+          height: 100,
+          child: DivineVideoPlayer(
+            controller: widget.controller,
+            placeholder: VideoMetadataCapturePreviewThumbnail(
+              clip: widget.clip,
+            ),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Frames a stop-motion clip the way the feed and the export do.
+///
+/// Export center-crops the raw stills to the target box (`StopMotionFit.cover`
+/// in `StopMotionRenderService`) and the feed then fits that already-cropped
+/// mp4 per cover/contain. Reproduce both from the stills: [StopMotionPlayer]
+/// cover-crops them, and for the letterboxed (square) case they are constrained
+/// to the target-ratio box so the blurred backdrop fills the bars — instead of
+/// contain-fitting the whole non-square still, which showed more frame than the
+/// published post.
+class _FittedStopMotion extends StatelessWidget {
+  const _FittedStopMotion({
+    required this.frames,
+    required this.aspectRatio,
+    required this.coversViewport,
+  });
+
+  final List<StopMotionClipFrame> frames;
+  final double aspectRatio;
+  final bool coversViewport;
+
+  @override
+  Widget build(BuildContext context) {
+    // Default fit is BoxFit.cover — the centered crop the export bakes in.
+    final player = StopMotionPlayer(
+      frames: frames,
+      cacheHeight:
+          (MediaQuery.sizeOf(context).height *
+                  MediaQuery.devicePixelRatioOf(context))
+              .round(),
+    );
+    if (coversViewport) return player;
+    return Center(
+      child: AspectRatio(aspectRatio: aspectRatio, child: player),
     );
   }
 }

@@ -66,7 +66,6 @@ class VideoOverlayActions extends ConsumerWidget {
     this.showBottomGradient = true,
     this.showTopGradient = false,
     this.topOffset = 8.0,
-    this.showAutoButton = false,
     this.onInteracted,
     this.omitAuthorBlock = false,
     this.omitActionColumn = false,
@@ -87,7 +86,6 @@ class VideoOverlayActions extends ConsumerWidget {
     this.showBottomGradient = true,
     this.showTopGradient = false,
     this.topOffset = 8.0,
-    this.showAutoButton = false,
     this.onInteracted,
     this.omitAuthorBlock = false,
     this.omitActionColumn = false,
@@ -137,7 +135,6 @@ class VideoOverlayActions extends ConsumerWidget {
   /// doesn't have a transparent AppBar over the video) is unaffected.
   final bool showTopGradient;
 
-  final bool showAutoButton;
   final VoidCallback? onInteracted;
 
   @override
@@ -589,7 +586,6 @@ class VideoOverlayActions extends ConsumerWidget {
                         video: video,
                         isFullscreen: isFullscreen,
                         isPreviewMode: isPreviewMode,
-                        showAutoButton: showAutoButton,
                         onInteracted: onInteracted,
                       ),
               ),
@@ -656,14 +652,12 @@ class VideoOverlayActionColumn extends ConsumerWidget {
     super.key,
     this.isPreviewMode = false,
     this.isFullscreen = false,
-    this.showAutoButton = false,
     this.onInteracted,
   });
 
   final VideoEvent video;
   final bool isPreviewMode;
   final bool isFullscreen;
-  final bool showAutoButton;
   final VoidCallback? onInteracted;
 
   @override

@@ -191,5 +191,24 @@ void main() {
 
       expect(box.values, isEmpty);
     });
+
+    test(
+      'owner cleanup scans all accounts even when manager is scoped elsewhere',
+      () async {
+        final manager = await createManager(currentPubkey: pubkeyB);
+        addTearDown(manager.dispose);
+        final uploads = await seedUploads();
+        manager.startProcessingPoll(uploads['aProcessing']!);
+
+        final deleted = await manager.deleteAllForOwner(pubkeyA);
+
+        final box = Hive.box<PendingUpload>('pending_uploads');
+        expect(deleted, equals(2));
+        expect(box.get(uploads['aPending']!.id), isNull);
+        expect(box.get(uploads['aProcessing']!.id), isNull);
+        expect(box.get(uploads['bPending']!.id), isNotNull);
+        expect(box.get(uploads['bProcessing']!.id), isNotNull);
+      },
+    );
   });
 }

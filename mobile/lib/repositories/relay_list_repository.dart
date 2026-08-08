@@ -176,7 +176,6 @@ class RelayListRepository {
       signed,
       targetRelays: targetRelays,
       timeout: _relayListPublishTimeout,
-      diagnosticTag: 'relay-list-kind-10002',
     );
     final acceptedByIndexer = outcome.acceptedBy.any(
       _environment.indexerRelays.contains,

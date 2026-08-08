@@ -11,7 +11,10 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/overlay_visibility_provider.dart';
+import 'package:openvine/screens/feed/feed_immersive_cubit.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
+import 'package:openvine/widgets/video_feed_item/feed_immersive_chrome.dart';
 
 class _MockVideoFeedBloc extends MockBloc<VideoFeedEvent, VideoFeedBlocState>
     implements VideoFeedBloc {}
@@ -297,6 +300,80 @@ void main() {
 
         verifyNever(() => mockBloc.add(any()));
       });
+
+      testWidgets('pauses video playback while the mode sheet is open', (
+        tester,
+      ) async {
+        // Regression: the mode sheet used to bypass the overlay-visibility
+        // integration, so the video behind it kept playing.
+        when(() => mockBloc.state).thenReturn(
+          const VideoFeedBlocState(
+            status: VideoFeedStatus.success,
+            source: VideoFeedSource.forYou(),
+          ),
+        );
+        await tester.pumpWidget(createTestWidget());
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(FeedModeSwitch)),
+          listen: false,
+        );
+
+        await tester.tap(find.text(l10n.feedModeForYou));
+        await tester.pumpAndSettle();
+
+        expect(
+          container.read(overlayVisibilityProvider).isBottomSheetOpen,
+          isTrue,
+        );
+
+        await tester.tap(find.text(l10n.feedModeFollowing));
+        await tester.pumpAndSettle();
+
+        expect(
+          container.read(overlayVisibilityProvider).isBottomSheetOpen,
+          isFalse,
+        );
+      });
+
+      testWidgets(
+        'clears the pause flag when the mode sheet is dismissed without a '
+        'selection',
+        (tester) async {
+          // Regression guard: dismissing via the scrim (no option tapped)
+          // must still resume playback. The clear lives in the extension's
+          // whenComplete, so it fires on cancel too — this pins that path.
+          when(() => mockBloc.state).thenReturn(
+            const VideoFeedBlocState(
+              status: VideoFeedStatus.success,
+              source: VideoFeedSource.forYou(),
+            ),
+          );
+          await tester.pumpWidget(createTestWidget());
+
+          final container = ProviderScope.containerOf(
+            tester.element(find.byType(FeedModeSwitch)),
+            listen: false,
+          );
+
+          await tester.tap(find.text(l10n.feedModeForYou));
+          await tester.pumpAndSettle();
+
+          expect(
+            container.read(overlayVisibilityProvider).isBottomSheetOpen,
+            isTrue,
+          );
+
+          // Dismiss by tapping outside (on the barrier), no option selected.
+          await tester.tapAt(const Offset(10, 10));
+          await tester.pumpAndSettle();
+
+          expect(
+            container.read(overlayVisibilityProvider).isBottomSheetOpen,
+            isFalse,
+          );
+        },
+      );
     });
 
     group('Tap Area Coverage', () {
@@ -372,6 +449,64 @@ void main() {
           expect(find.byType(VineBottomSheet), findsOneWidget);
         },
       );
+    });
+
+    group('Immersive mode', () {
+      testWidgets('fades the header out while the viewer holds the video', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          const VideoFeedBlocState(
+            status: VideoFeedStatus.success,
+            source: VideoFeedSource.forYou(),
+          ),
+        );
+        final immersiveCubit = FeedImmersiveCubit();
+        addTearDown(immersiveCubit.close);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: Stack(
+                  children: [
+                    MultiBlocProvider(
+                      providers: [
+                        BlocProvider<VideoFeedBloc>.value(value: mockBloc),
+                        BlocProvider<FeedImmersiveCubit>.value(
+                          value: immersiveCubit,
+                        ),
+                      ],
+                      child: const FeedModeSwitch(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        double headerOpacity() => tester
+            .widget<AnimatedOpacity>(
+              find
+                  .descendant(
+                    of: find.byType(FeedImmersiveChrome),
+                    matching: find.byType(AnimatedOpacity),
+                  )
+                  .first,
+            )
+            .opacity;
+
+        expect(headerOpacity(), equals(1.0));
+
+        immersiveCubit.enter();
+        await tester.pumpAndSettle();
+
+        expect(headerOpacity(), equals(0.0));
+      });
     });
 
     group('Accessibility', () {

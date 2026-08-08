@@ -1289,6 +1289,18 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'Avaktivera textning';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'Automatisk fortsättning på';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'Automatisk fortsättning av';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Textning på';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Textning av';
+
+  @override
   String get contentWarningLabel => 'Innehållsvarning';
 
   @override
@@ -1527,11 +1539,26 @@ class AppLocalizationsSv extends AppLocalizations {
       'Timeout vid verifiering. Kontrollera din anslutning eller försök igen om en stund.';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      'Innehåll för vuxna är avstängt. Du kan slå på det i Inställningar → Innehållsfilter.';
+  String get videoErrorAdultContentHiddenTitle =>
+      'Innehåll för vuxna är avstängt';
+
+  @override
+  String get videoErrorAdultContentHiddenBody =>
+      'Slå på det i dina innehållsfilter för att se den här videon.';
+
+  @override
+  String get videoErrorAdultContentHiddenAction => 'Öppna innehållsfilter';
 
   @override
   String get videoDetailLoadError => 'Kunde inte läsa in videon';
+
+  @override
+  String get videoDetailLoadErrorBody =>
+      'Något gick snett på vägen hit. Testa igen.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Den kan vara borttagen, utom räckhåll eller dold av dina inställningar.';
 
   @override
   String get databaseCorruptionTitle => 'Dina lokala data har skadats';
@@ -1814,6 +1841,47 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get metadataProofManifest => 'Bevismanifest';
+
+  @override
+  String get metadataVerificationInfoTooltip =>
+      'Vad betyder de här kontrollerna?';
+
+  @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
+  String get metadataVerificationInfoTitle => 'Vad kontrollerna betyder';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'Signalerna kommer från kameran och från själva videofilen. Ju fler en video bär med sig, desto mer kan vi bevisa om var den kommer ifrån.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'Telefonens operativsystem gick i god för appen som spelade in. Starkt stöd för att det kommer från en kamera och inte från en uppladdad fil.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'Videon signerades kryptografiskt i samma stund den spelades in. Ändras en enda bildruta efteråt bryts signaturen.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'Ett ursprungsintyg enligt branschstandard som följer med i filen – så att även andra appar än Divine kan kontrollera det.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'Hela ProofMode-posten: filens fingeravtryck, tidsstämpel och inspelningskontext, tillsammans med videon.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'En kontroll som saknas gör inte videon falsk. Äldre klipp och uppladdningar fick aldrig någon – det betyder bara att vi inte kan bevisa den delen.';
+
+  @override
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'Läs mer på $url';
+  }
 
   @override
   String get metadataCreatorLabel => 'Kreatör';
@@ -4581,6 +4649,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Sök efter namn...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Rensa sökning';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name har redan lagts till';
   }
@@ -6226,6 +6297,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get commonClose => 'Stäng';
 
   @override
+  String get commonNotNow => 'Inte nu';
+
+  @override
   String get commonLoading => 'Läser in';
 
   @override
@@ -6245,6 +6319,10 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get videoMetadataC2paMissingNote =>
       'Innehållsuppgifter kräver en internetanslutning.';
+
+  @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
 
   @override
   String get videoMetadataC2paMissingRegenerate => 'Generera om';
@@ -7238,49 +7316,6 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get proofmodeBadgeAiScanPending => 'AI-skanning väntar';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'Gjord av människa';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Inte värd hos Divine';
-
-  @override
-  String get proofmodeBadgeOriginal => 'Original';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'Möjligen AI-genererad';
-
-  @override
-  String get proofmodeBadgeUnverified => 'Overifierad';
-
-  @override
-  String get proofmodeConfirmedByModerator => 'Bekräftad av mänsklig moderator';
-
-  @override
-  String get proofmodeExternalContentTitle => 'Externt innehåll';
-
-  @override
-  String get proofmodeHostedOnLabel => 'Den här videon är värd på:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'Troligen skapad av människa';
-
-  @override
-  String get proofmodeNoProofDataAttached => 'Ingen ProofMode-data bifogad';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'Det här innehållet är inte värd på Divines servrar. Vi kan inte helt garantera dess äkthet.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'Möjligen AI-genererad';
-
-  @override
-  String get proofmodePublishedByLabel => 'Publicerad av:';
-
-  @override
   String get publishErrorNotSignedIn => 'Logga in för att publicera videor.';
 
   @override
@@ -7340,6 +7375,10 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get publishErrorNostrPublishFailed =>
       'Videon laddades upp men inlägget kunde inte publiceras. Kontrollera dina relinställningar och försök igen.';
+
+  @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Videon laddades upp men ljudet får inte återanvändas. Välj ett annat ljud för att posta.';
 
   @override
   String get publishErrorInterrupted =>
@@ -7485,6 +7524,13 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'Ämne *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'Offentligt GitHub-inlägg';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Allt du skickar in här publiceras i vårt öppna GitHub-arkiv så att utvecklare kan ta hand om det. Inlägget och kontot du är inloggad med blir offentligt synliga för alla.';
 
   @override
   String get supportRequiredHelper => 'Obligatoriskt';

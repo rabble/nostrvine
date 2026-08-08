@@ -35,13 +35,11 @@ void expectPartitions(PublishOutcome outcome, Set<String> targets) {
 PublishTracker trackerFor(
   Set<String> targets, {
   String eventId = 'event-1',
-  int? eventKind,
   Duration timeout = const Duration(seconds: 30),
   Duration settleWindow = const Duration(milliseconds: 50),
 }) {
   return PublishTracker(
     eventId: eventId,
-    eventKind: eventKind,
     expectedRelays: targets,
     timeout: timeout,
     settleWindow: settleWindow,
@@ -456,32 +454,6 @@ void main() {
           throwsUnsupportedError,
         );
         tracker.cancel();
-      });
-
-      test('keeps diagnostic tag caller-supplied and domain-neutral', () {
-        final tracker = PublishTracker(
-          eventId: 'note-1',
-          eventKind: 1,
-          diagnosticTag: 'rollout-diagnostic',
-          expectedRelays: {'wss://relay.divine.video'},
-          timeout: const Duration(seconds: 30),
-        );
-
-        expect(tracker.diagnosticTag, equals('rollout-diagnostic'));
-        tracker.cancel();
-      });
-
-      test('propagates event kind to publish outcome', () async {
-        final tracker = trackerFor(
-          {'wss://relay.divine.video'},
-          eventId: 'accepted-event',
-          eventKind: 1,
-        );
-
-        tracker.onAccepted('wss://relay.divine.video');
-        final outcome = await tracker.future;
-
-        expect(outcome.eventKind, equals(1));
       });
     });
   });

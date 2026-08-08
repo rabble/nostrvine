@@ -1215,6 +1215,18 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoSettingsCaptionsDisable => '자막 사용 안 함';
 
   @override
+  String get videoSettingsAutoAdvanceOn => '자동 넘기기 켜짐';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => '자동 넘기기 꺼짐';
+
+  @override
+  String get videoSettingsCaptionsOn => '자막 켜짐';
+
+  @override
+  String get videoSettingsCaptionsOff => '자막 꺼짐';
+
+  @override
   String get contentWarningLabel => '콘텐츠 경고';
 
   @override
@@ -1434,11 +1446,23 @@ class AppLocalizationsKo extends AppLocalizations {
       '확인 시간이 초과되었습니다. 연결을 확인하거나 잠시 후 다시 시도해보세요';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      '성인 콘텐츠가 꺼져 있어요. 설정 → 콘텐츠 필터에서 켤 수 있어요.';
+  String get videoErrorAdultContentHiddenTitle => '성인 콘텐츠가 꺼져 있어요';
+
+  @override
+  String get videoErrorAdultContentHiddenBody => '이 영상을 보려면 콘텐츠 필터에서 켜 주세요.';
+
+  @override
+  String get videoErrorAdultContentHiddenAction => '콘텐츠 필터 열기';
 
   @override
   String get videoDetailLoadError => '영상을 불러오지 못했어요';
+
+  @override
+  String get videoDetailLoadErrorBody => '오는 길에 뭔가 어긋났어요. 다시 시도해 보세요.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      '삭제됐거나, 닿을 수 없는 곳에 있거나, 설정 때문에 숨겨진 걸 수도 있어요.';
 
   @override
   String get databaseCorruptionTitle => '로컬 데이터가 손상됐어요';
@@ -1716,6 +1740,46 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get metadataProofManifest => '증명 매니페스트';
+
+  @override
+  String get metadataVerificationInfoTooltip => '이 검사들은 무슨 뜻인가요?';
+
+  @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
+  String get metadataVerificationInfoTitle => '이 검사들의 의미';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      '이 신호들은 카메라와 영상 파일 자체에서 나옵니다. 영상이 담고 있는 신호가 많을수록 출처에 대해 더 많은 것을 증명할 수 있습니다.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      '휴대폰 운영체제가 이 영상을 녹화한 앱을 보증했습니다. 누군가 올린 파일이 아니라 카메라에서 나왔다는 강력한 근거입니다.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      '영상은 촬영되는 순간 암호학적으로 서명되었습니다. 이후 한 프레임만 바뀌어도 서명은 깨집니다.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      '파일 안에 함께 담겨 이동하는 업계 표준 출처 기록입니다. Divine이 아닌 앱에서도 확인할 수 있습니다.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      '전체 ProofMode 기록: 파일 지문, 타임스탬프, 촬영 정황이 영상과 함께 묶여 있습니다.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      '검사가 없다고 해서 영상이 가짜인 것은 아닙니다. 예전 클립과 업로드에는 애초에 없었습니다. 그 부분을 증명할 수 없다는 뜻일 뿐입니다.';
+
+  @override
+  String metadataVerificationInfoLearnMore(String url) {
+    return '자세한 내용은 $url에서 확인하세요';
+  }
 
   @override
   String get metadataCreatorLabel => '크리에이터';
@@ -4376,6 +4440,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get userPickerSearchByNameHint => '이름으로 검색...';
 
   @override
+  String get userPickerClearSearchSemantics => '검색 지우기';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name 이미 추가됨';
   }
@@ -5980,6 +6047,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get commonClose => '닫기';
 
   @override
+  String get commonNotNow => '나중에';
+
+  @override
   String get commonLoading => '불러오는 중';
 
   @override
@@ -5998,6 +6068,10 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoMetadataC2paMissingNote => '콘텐츠 자격 증명에는 인터넷 연결이 필요합니다.';
+
+  @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
 
   @override
   String get videoMetadataC2paMissingRegenerate => '재생성';
@@ -6947,49 +7021,6 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get proofmodeBadgeAiScanPending => 'AI 검사 대기 중';
-
-  @override
-  String get proofmodeBadgeHumanMade => '사람이 제작';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Divine 호스팅 아님';
-
-  @override
-  String get proofmodeBadgeOriginal => '오리지널';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'AI 생성 가능성 있음';
-
-  @override
-  String get proofmodeBadgeUnverified => '미인증';
-
-  @override
-  String get proofmodeConfirmedByModerator => '사람 조절자가 확인함';
-
-  @override
-  String get proofmodeExternalContentTitle => '외부 콘텐츠';
-
-  @override
-  String get proofmodeHostedOnLabel => '이 영상은 여기에 호스팅돼 있어요:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => '사람이 만들었을 가능성 높음';
-
-  @override
-  String get proofmodeNoProofDataAttached => 'ProofMode 데이터가 첨부되지 않음';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      '이 콘텐츠는 Divine 서버에 호스팅돼 있지 않아요. 진위를 완전히 보장할 수는 없어요.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'AI 생성 가능성 있음';
-
-  @override
-  String get proofmodePublishedByLabel => '게시자:';
-
-  @override
   String get publishErrorNotSignedIn => '영상을 게시하려면 로그인해주세요.';
 
   @override
@@ -7046,6 +7077,10 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get publishErrorNostrPublishFailed =>
       '영상은 업로드됐지만 게시물을 올리지 못했어요. 릴레이 설정을 확인하고 다시 시도해주세요.';
+
+  @override
+  String get publishErrorAudioReuseNotPermitted =>
+      '영상은 업로드됐지만 이 사운드는 재사용이 허용되지 않았어요. 다른 사운드를 골라서 올려주세요.';
 
   @override
   String get publishErrorInterrupted => '업로드가 중단됐어요. 다시 시도할까요?';
@@ -7186,6 +7221,13 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => '제목 *';
+
+  @override
+  String get supportPublicSubmissionTitle => '공개 GitHub 게시물';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      '여기에 제출하는 모든 내용은 개발자가 작업을 맡을 수 있도록 GitHub의 오픈 소스 저장소에 게시됩니다. 게시물과 로그인한 계정은 누구나 공개적으로 볼 수 있습니다.';
 
   @override
   String get supportRequiredHelper => '필수';

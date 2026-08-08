@@ -164,7 +164,7 @@ final class SeenVideosServiceProvider
   }
 }
 
-String _$seenVideosServiceHash() => r'933e55ea8a18eee2890da07089a3164a8ec424de';
+String _$seenVideosServiceHash() => r'b980fc7c86abd4229783e3c7066c8883d4d56558';
 
 /// Subscription manager for centralized subscription management
 

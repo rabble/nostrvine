@@ -11,6 +11,7 @@ import 'package:openvine/features/feature_flags/services/feature_flag_service.da
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/community_content_label_provider.dart';
+import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/repositories/community_content_label_repository.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/widgets/video_feed_item/actions/help_classify_action_button.dart';
@@ -159,6 +160,38 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.communitySuggestTitle), findsOneWidget);
+    });
+
+    testWidgets('pauses video playback while the suggestion sheet is open', (
+      tester,
+    ) async {
+      // Regression: the suggestion sheet used to bypass the
+      // overlay-visibility integration, so the video behind it kept playing.
+      await tester.pumpWidget(wrap(repo: repository));
+      await tester.pumpAndSettle();
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(HelpClassifyActionButton)),
+        listen: false,
+      );
+
+      await tester.tap(find.byType(VideoActionButton));
+      await tester.pumpAndSettle();
+
+      expect(
+        container.read(overlayVisibilityProvider).isBottomSheetOpen,
+        isTrue,
+      );
+
+      Navigator.of(
+        tester.element(find.text(l10n.communitySuggestTitle)),
+      ).pop();
+      await tester.pumpAndSettle();
+
+      expect(
+        container.read(overlayVisibilityProvider).isBottomSheetOpen,
+        isFalse,
+      );
     });
   });
 }

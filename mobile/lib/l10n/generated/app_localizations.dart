@@ -2292,6 +2292,30 @@ abstract class AppLocalizations {
   /// **'Disable captions'**
   String get videoSettingsCaptionsDisable;
 
+  /// Snackbar confirming that auto advance was just turned on from the playback-settings pill.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto advance on'**
+  String get videoSettingsAutoAdvanceOn;
+
+  /// Snackbar confirming that auto advance was just turned off from the playback-settings pill.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto advance off'**
+  String get videoSettingsAutoAdvanceOff;
+
+  /// Snackbar confirming that captions were just turned on from the playback-settings pill.
+  ///
+  /// In en, this message translates to:
+  /// **'Captions on'**
+  String get videoSettingsCaptionsOn;
+
+  /// Snackbar confirming that captions were just turned off from the playback-settings pill.
+  ///
+  /// In en, this message translates to:
+  /// **'Captions off'**
+  String get videoSettingsCaptionsOff;
+
   /// No description provided for @contentWarningLabel.
   ///
   /// In en, this message translates to:
@@ -2724,17 +2748,41 @@ abstract class AppLocalizations {
   /// **'Verification timed out. Check your connection or try again shortly.'**
   String get videoErrorVerifyAgeSignerUnreachable;
 
-  /// Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age.
+  /// Title of the bottom sheet shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden.
   ///
   /// In en, this message translates to:
-  /// **'Adult content is switched off. You can turn it on in Settings → Content Filters.'**
-  String get videoErrorAdultContentHidden;
+  /// **'Adult content is switched off'**
+  String get videoErrorAdultContentHiddenTitle;
+
+  /// Body of the adult-content-hidden sheet. The remedy is switching adult content on in Content Filters, not re-verifying age.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn it on in your content filters to watch this one.'**
+  String get videoErrorAdultContentHiddenBody;
+
+  /// Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Content Filters'**
+  String get videoErrorAdultContentHiddenAction;
 
   /// No description provided for @videoDetailLoadError.
   ///
   /// In en, this message translates to:
   /// **'Failed to load video'**
   String get videoDetailLoadError;
+
+  /// Supporting copy under the 'Failed to load video' title on the shared-link video screen, shown next to a Retry button. Deliberately vague about the cause because the failure can be network, relay, or parsing.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went sideways on the way here. Give it another try.'**
+  String get videoDetailLoadErrorBody;
+
+  /// Supporting copy under the 'Video not found' title on the shared-link video screen. The screen shows this for three different causes it cannot tell apart: the video was deleted, it cannot be fetched from any connected relay, or it is hidden by a filter (a blocked or muted author, or the default-on Divine-hosted-only setting). It must not promise the video is gone for good, and it must not be read as covering only the first two.
+  ///
+  /// In en, this message translates to:
+  /// **'It could be gone, out of reach, or hidden by your settings.'**
+  String get videoDetailNotFoundBody;
 
   /// Title of the full-screen takeover shown when the local database reports on-disk corruption at runtime. 'Scrambled' is deliberately non-technical: the user did nothing wrong and cannot act on the real cause.
   ///
@@ -3209,6 +3257,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Proof manifest'**
   String get metadataProofManifest;
+
+  /// Accessibility label and tooltip for the info button next to the Verification section header in the video metadata sheet. Opens a sheet explaining the four verification checks.
+  ///
+  /// In en, this message translates to:
+  /// **'What do these checks mean?'**
+  String get metadataVerificationInfoTooltip;
+
+  /// Accessibility label for a metadata section header that also opens an info sheet. {section} is the visible section title, e.g. 'Verification'. {question} describes the info action, e.g. 'What do these checks mean?'.
+  ///
+  /// In en, this message translates to:
+  /// **'{section}. {question}'**
+  String metadataSectionInfoSemanticsLabel(String section, String question);
+
+  /// Title of the bottom sheet explaining the four ProofMode/C2PA verification checks shown in the video metadata sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'What these checks mean'**
+  String get metadataVerificationInfoTitle;
+
+  /// Intro paragraph of the verification explainer sheet, framing the four checks as evidence about a video's origin.
+  ///
+  /// In en, this message translates to:
+  /// **'These signals come from the camera and the video file itself. The more of them a video carries, the more we can prove about where it came from.'**
+  String get metadataVerificationInfoIntro;
+
+  /// Explanation of the 'Device attestation' check in the verification explainer sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'The phone\'s operating system vouched for the app that recorded this. Strong evidence it came off a camera, not a file someone uploaded.'**
+  String get metadataVerificationInfoDeviceAttestation;
+
+  /// Explanation of the 'PGP signature' check in the verification explainer sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'The video was cryptographically signed the moment it was captured. Change a single frame afterwards and the signature breaks.'**
+  String get metadataVerificationInfoPgpSignature;
+
+  /// Explanation of the 'C2PA Content Credentials' check in the verification explainer sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'An industry-standard record of where the video came from, carried inside the file — so apps other than Divine can check it too.'**
+  String get metadataVerificationInfoC2paCredentials;
+
+  /// Explanation of the 'Proof manifest' check in the verification explainer sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'The full ProofMode record: file fingerprint, timestamp and capture context, bundled with the video.'**
+  String get metadataVerificationInfoProofManifest;
+
+  /// Closing caveat of the verification explainer sheet. States the deliberate limit of the claim — a missing check is not evidence of forgery. Do not strengthen this into a guarantee.
+  ///
+  /// In en, this message translates to:
+  /// **'A missing check doesn\'t make a video fake. Older clips and uploads never got one — it only means we can\'t prove that part.'**
+  String get metadataVerificationInfoFootnote;
+
+  /// Sentence linking out to the public ProofMode page at the bottom of the verification explainer sheet. {url} is the scheme-less URL and is not translated; it is rendered underlined, so keep it as one placeholder and place it wherever the sentence reads naturally.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn more at {url}'**
+  String metadataVerificationInfoLearnMore(String url);
 
   /// No description provided for @metadataCreatorLabel.
   ///
@@ -7958,6 +8066,12 @@ abstract class AppLocalizations {
   /// **'Search by name...'**
   String get userPickerSearchByNameHint;
 
+  /// Semantic label for the button that clears the text in the user picker search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get userPickerClearSearchSemantics;
+
   /// No description provided for @userPickerAlreadyAddedSemantics.
   ///
   /// In en, this message translates to:
@@ -10904,6 +11018,12 @@ abstract class AppLocalizations {
   /// **'Close'**
   String get commonClose;
 
+  /// No description provided for @commonNotNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get commonNotNow;
+
   /// Screen-reader label for a blocking progress spinner that covers the screen while an action is being prepared. Announced instead of the content behind it, which is not reachable while the spinner is up.
   ///
   /// In en, this message translates to:
@@ -10934,11 +11054,17 @@ abstract class AppLocalizations {
   /// **'We couldn\'t add content credentials, so this video won\'t be confirmed as Human-Made. Regenerate to try again, or post it as-is.'**
   String get videoMetadataC2paMissingBody;
 
-  /// Small trailing note under the missing-content-credential bottom sheet, hinting that the (remote) content-credential signing step requires connectivity. Not phrased as the definitive cause, since signing can also fail for other reasons.
+  /// Small trailing note under the missing-content-credential bottom sheet, shown when the device is offline, where connectivity really is the likely cause. When the device is online, videoMetadataC2paMissingNoteServiceUnavailable is shown instead.
   ///
   /// In en, this message translates to:
   /// **'Content credentials need an internet connection.'**
   String get videoMetadataC2paMissingNote;
+
+  /// Small trailing note under the missing-content-credential bottom sheet, shown when the device IS online, so signing failed on the service side (outage, misconfigured endpoint, rejected request). Explicitly rules out the user's connection, because the previous connectivity-only wording sent users to debug working wifi.
+  ///
+  /// In en, this message translates to:
+  /// **'The content credential service didn\'t respond. This isn\'t your connection.'**
+  String get videoMetadataC2paMissingNoteServiceUnavailable;
 
   /// Primary button on the missing-content-credential bottom sheet. Re-renders the video to attempt the C2PA signature again.
   ///
@@ -12593,90 +12719,6 @@ abstract class AppLocalizations {
   /// **'Inspired by {creatorName}. Tap to view their profile.'**
   String videoInspiredByAttributionSemanticLabel(String creatorName);
 
-  /// No description provided for @proofmodeBadgeAiScanPending.
-  ///
-  /// In en, this message translates to:
-  /// **'AI scan pending'**
-  String get proofmodeBadgeAiScanPending;
-
-  /// No description provided for @proofmodeBadgeHumanMade.
-  ///
-  /// In en, this message translates to:
-  /// **'Human Made'**
-  String get proofmodeBadgeHumanMade;
-
-  /// No description provided for @proofmodeBadgeNotDivineHosted.
-  ///
-  /// In en, this message translates to:
-  /// **'Not Divine Hosted'**
-  String get proofmodeBadgeNotDivineHosted;
-
-  /// No description provided for @proofmodeBadgeOriginal.
-  ///
-  /// In en, this message translates to:
-  /// **'Original'**
-  String get proofmodeBadgeOriginal;
-
-  /// No description provided for @proofmodeBadgePossiblyAiGenerated.
-  ///
-  /// In en, this message translates to:
-  /// **'Possibly AI-Generated'**
-  String get proofmodeBadgePossiblyAiGenerated;
-
-  /// No description provided for @proofmodeBadgeUnverified.
-  ///
-  /// In en, this message translates to:
-  /// **'Unverified'**
-  String get proofmodeBadgeUnverified;
-
-  /// No description provided for @proofmodeConfirmedByModerator.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirmed by human moderator'**
-  String get proofmodeConfirmedByModerator;
-
-  /// No description provided for @proofmodeExternalContentTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'External Content'**
-  String get proofmodeExternalContentTitle;
-
-  /// No description provided for @proofmodeHostedOnLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'This video is hosted on:'**
-  String get proofmodeHostedOnLabel;
-
-  /// No description provided for @proofmodeLikelyHumanCreated.
-  ///
-  /// In en, this message translates to:
-  /// **'Likely human-created'**
-  String get proofmodeLikelyHumanCreated;
-
-  /// No description provided for @proofmodeNoProofDataAttached.
-  ///
-  /// In en, this message translates to:
-  /// **'No ProofMode data attached'**
-  String get proofmodeNoProofDataAttached;
-
-  /// No description provided for @proofmodeNotDivineHostedDisclaimer.
-  ///
-  /// In en, this message translates to:
-  /// **'This content is not hosted on Divine servers. We cannot fully guarantee its authenticity.'**
-  String get proofmodeNotDivineHostedDisclaimer;
-
-  /// No description provided for @proofmodePossiblyAiGenerated.
-  ///
-  /// In en, this message translates to:
-  /// **'Possibly AI-generated'**
-  String get proofmodePossiblyAiGenerated;
-
-  /// No description provided for @proofmodePublishedByLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Published by:'**
-  String get proofmodePublishedByLabel;
-
   /// No description provided for @publishErrorNotSignedIn.
   ///
   /// In en, this message translates to:
@@ -12766,6 +12808,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The video uploaded but the post could not be published. Check your relay settings and try again.'**
   String get publishErrorNostrPublishFailed;
+
+  /// No description provided for @publishErrorAudioReuseNotPermitted.
+  ///
+  /// In en, this message translates to:
+  /// **'The video uploaded, but its sound isn\'t cleared for reuse. Pick a different sound to post it.'**
+  String get publishErrorAudioReuseNotPermitted;
 
   /// No description provided for @publishErrorInterrupted.
   ///
@@ -12967,6 +13015,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Subject *'**
   String get supportSubjectRequiredLabel;
+
+  /// No description provided for @supportPublicSubmissionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Public GitHub post'**
+  String get supportPublicSubmissionTitle;
+
+  /// No description provided for @supportPublicSubmissionMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything you submit here will be posted to our open-source repository on GitHub so developers can pick it up. Your post and the account you\'re signed in with will be publicly visible to everyone.'**
+  String get supportPublicSubmissionMessage;
 
   /// No description provided for @supportRequiredHelper.
   ///

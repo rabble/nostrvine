@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' as models;
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
@@ -127,6 +128,51 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: VideoMetadataCoverScreen(clip: clip ?? _createTestClip()),
+          ),
+        ),
+      );
+    }
+
+    /// Wraps the screen behind a push so the route transition — and with it
+    /// the hero flight — actually runs. Pumped directly as `home:` the route
+    /// animation is already completed and never animates.
+    Widget buildPushableApp(DivineVideoClip clip) {
+      return ProviderScope(
+        overrides: [
+          videoEditorProvider.overrideWith(
+            () => _MockVideoEditorNotifier(VideoEditorProviderState()),
+          ),
+        ],
+        child: MockGoRouterProvider(
+          goRouter: mockGoRouter,
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Builder(
+              builder: (context) => Center(
+                // A matching hero on the source side, so the push runs a real
+                // flight through the navigator overlay rather than a bare
+                // route transition.
+                child: Hero(
+                  tag: VideoEditorConstants.heroMetaPreviewId,
+                  child: SizedBox(
+                    width: 200,
+                    height: 200,
+                    child: TextButton(
+                      // Mirrors the production push in
+                      // video_metadata_capture_clip_preview.dart.
+                      onPressed: () => Navigator.of(context).push(
+                        PageRouteBuilder<void>(
+                          pageBuilder: (_, _, _) =>
+                              VideoMetadataCoverScreen(clip: clip),
+                        ),
+                      ),
+                      child: const Text('open'),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       );
@@ -309,7 +355,7 @@ void main() {
           find.text(l10n.videoMetadataEditCoverFailedSnackbar),
           findsOneWidget,
         );
-        expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(find.byType(BrandedLoadingIndicator), findsNothing);
       },
     );
 
@@ -322,7 +368,7 @@ void main() {
       await tester.pumpWidget(buildWidget());
       await tester.pump(const Duration(milliseconds: 400));
 
-      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byType(BrandedLoadingIndicator), findsNothing);
       expect(
         find.byWidgetPredicate(
           (w) => w is DivineIconButton && w.icon == DivineIconName.check,
@@ -330,6 +376,123 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets('dims the strip either side of the selection cursor', (
+      tester,
+    ) async {
+      setUpPlayerChannel();
+      addTearDown(tearDownPlayerChannel);
+
+      await tester.pumpWidget(buildWidget());
+      await tester.pump(const Duration(milliseconds: 400));
+
+      final dimFinder = find.byWidgetPredicate(
+        (w) => w is ColoredBox && w.color == VineTheme.scrim35,
+      );
+      expect(dimFinder, findsNWidgets(2));
+
+      Rect leftDim() => tester.getRect(dimFinder.first);
+      Rect rightDim() => tester.getRect(dimFinder.last);
+
+      // The dims span the strip between them, flanking the cursor.
+      final stripLeft = leftDim().left;
+      final stripRight = rightDim().right;
+      expect(rightDim().left - leftDim().right, equals(36.0));
+
+      // The default cover sits inside the cursor's own width, so the clamp
+      // collapses the leading dim rather than giving it a negative width.
+      expect(leftDim().width, equals(0.0));
+
+      final midY = leftDim().center.dy;
+      await tester.tapAt(
+        Offset(stripLeft + (stripRight - stripLeft) * 0.6, midY),
+      );
+      await tester.pump();
+
+      // Moving the selection later widens the dim behind it. The strip's own
+      // bounds do not move, and the cursor-sized gap is preserved.
+      expect(leftDim().width, greaterThan(0));
+      expect(leftDim().left, equals(stripLeft));
+      expect(rightDim().right, equals(stripRight));
+      expect(rightDim().left - leftDim().right, equals(36.0));
+
+      // Clamped at the far end too: the trailing dim collapses rather than
+      // running past the strip.
+      await tester.tapAt(Offset(stripRight - 1, midY));
+      await tester.pump();
+      expect(rightDim().width, equals(0.0));
+      expect(stripRight - leftDim().right, equals(36.0));
+
+      // And back to the start.
+      await tester.tapAt(Offset(stripLeft + 1, midY));
+      await tester.pump();
+      expect(leftDim().width, equals(0.0));
+      expect(rightDim().left - stripLeft, equals(36.0));
+    });
+
+    testWidgets('keeps the top bar hidden until the route transition lands', (
+      tester,
+    ) async {
+      setUpPlayerChannel();
+      addTearDown(tearDownPlayerChannel);
+
+      await tester.pumpWidget(buildPushableApp(_createTestClip()));
+      await tester.tap(find.text('open'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final topBar = find.ancestor(
+        of: find.text(l10n.videoMetadataEditCoverTitle),
+        matching: find.byType(AnimatedOpacity),
+      );
+
+      // Mid-flight the hero is painted by the navigator overlay, on top of
+      // anything the route draws — the bar must stay out of the way.
+      expect(tester.widget<AnimatedOpacity>(topBar).opacity, equals(0.0));
+
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(tester.widget<AnimatedOpacity>(topBar).opacity, equals(1.0));
+    });
+
+    testWidgets(
+      'loads the preview at the cover position instead of seeking after '
+      'load',
+      (tester) async {
+        addTearDown(tearDownPlayerChannel);
+        final calls = <MethodCall>[];
+        _setHandler(const MethodChannel('divine_video_player/player_0'), (
+          call,
+        ) async {
+          calls.add(call);
+          return null;
+        });
+        _setHandler(
+          const MethodChannel('divine_video_player/player_0/events'),
+          (call) async => null,
+        );
+
+        await tester.pumpWidget(
+          buildWidget(
+            clip: _createTestClip().copyWith(
+              thumbnailTimestamp: const Duration(milliseconds: 1500),
+            ),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 400));
+
+        final setClipsCalls = calls.where((c) => c.method == 'setClips');
+        expect(setClipsCalls, hasLength(1));
+        final setClips = setClipsCalls.first;
+        expect(
+          (setClips.arguments as Map)['startPositionMs'],
+          equals(1500),
+          reason: 'the first decoded frame must already be the cover frame',
+        );
+        expect(calls.where((c) => c.method == 'seekTo'), isEmpty);
+      },
+    );
 
     testWidgets(
       'a permanently failed preview still generates the cover strip, hides '

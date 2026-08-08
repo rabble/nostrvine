@@ -1317,6 +1317,18 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'I-disable ang captions';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'Naka-on ang auto advance';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'Naka-off ang auto advance';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Naka-on ang captions';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Naka-off ang captions';
+
+  @override
   String get contentWarningLabel => 'Content Warning';
 
   @override
@@ -1561,11 +1573,24 @@ class AppLocalizationsFil extends AppLocalizations {
       'Nag-timeout ang pag-verify. I-check ang koneksyon mo o subukan ulit mamaya.';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      'Naka-off ang adult content. Puwede mong i-on sa Settings → Content Filters.';
+  String get videoErrorAdultContentHiddenTitle => 'Naka-off ang adult content';
+
+  @override
+  String get videoErrorAdultContentHiddenBody =>
+      'I-on mo ito sa Content Filters mo para mapanood ang video na ito.';
+
+  @override
+  String get videoErrorAdultContentHiddenAction => 'Buksan ang Content Filters';
 
   @override
   String get videoDetailLoadError => 'Hindi ma-load ang video';
+
+  @override
+  String get videoDetailLoadErrorBody => 'May sumablay sa daan. Subukan ulit.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Baka nabura na, wala sa abot, o nakatago dahil sa mga setting mo.';
 
   @override
   String get databaseCorruptionTitle => 'Nasira ang local data mo';
@@ -1848,6 +1873,48 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get metadataProofManifest => 'Proof manifest';
+
+  @override
+  String get metadataVerificationInfoTooltip =>
+      'Ano ang ibig sabihin ng mga pagsusuring ito?';
+
+  @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
+  String get metadataVerificationInfoTitle =>
+      'Ang ibig sabihin ng mga pagsusuring ito';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'Nanggagaling ang mga senyas na ito sa camera at sa mismong video file. Kapag mas marami nito ang dala ng isang video, mas marami kaming mapapatunayan tungkol sa pinanggalingan nito.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'Pinanindigan ng operating system ng telepono ang app na nag-record nito. Malakas na patunay na galing ito sa camera, hindi sa file na may nag-upload.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'Cryptographic na nilagdaan ang video sa mismong sandali ng pagkuha. Baguhin ang kahit isang frame pagkatapos, masisira ang lagda.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'Isang industry-standard na tala ng pinagmulan na dala mismo ng file — kaya kayang suriin ito ng ibang app bukod sa Divine.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'Ang buong ProofMode record: fingerprint ng file, timestamp at konteksto ng pagkuha, kasama ng video.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'Ang kulang na pagsusuri ay hindi nangangahulugang peke ang video. Ang mga lumang clip at upload ay wala talaga nito — ibig lang sabihin, hindi namin mapapatunayan ang bahaging iyon.';
+
+  @override
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'Matuto pa sa $url';
+  }
 
   @override
   String get metadataCreatorLabel => 'Creator';
@@ -4649,6 +4716,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Hanapin ayon sa pangalan...';
 
   @override
+  String get userPickerClearSearchSemantics => 'I-clear ang paghahanap';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return 'Naidagdag na si $name';
   }
@@ -6306,6 +6376,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get commonClose => 'Isara';
 
   @override
+  String get commonNotNow => 'Hindi muna';
+
+  @override
   String get commonLoading => 'Naglo-load';
 
   @override
@@ -6326,6 +6399,10 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get videoMetadataC2paMissingNote =>
       'Kailangan ng internet connection ang content credentials.';
+
+  @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
 
   @override
   String get videoMetadataC2paMissingRegenerate => 'I-regenerate';
@@ -7329,50 +7406,6 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String get proofmodeBadgeAiScanPending => 'Nakabinbin ang AI scan';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'Gawa ng Tao';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Hindi Naka-host sa Divine';
-
-  @override
-  String get proofmodeBadgeOriginal => 'Original';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'Posibleng AI-Generated';
-
-  @override
-  String get proofmodeBadgeUnverified => 'Hindi Na-verify';
-
-  @override
-  String get proofmodeConfirmedByModerator => 'Kinumpirma ng human moderator';
-
-  @override
-  String get proofmodeExternalContentTitle => 'External na Content';
-
-  @override
-  String get proofmodeHostedOnLabel => 'Naka-host ang video na ito sa:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'Malamang na gawa ng tao';
-
-  @override
-  String get proofmodeNoProofDataAttached =>
-      'Walang naka-attach na ProofMode data';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'Hindi naka-host sa mga Divine server ang content na ito. Hindi namin lubusang magagarantiya ang pagiging tunay nito.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'Posibleng AI-generated';
-
-  @override
-  String get proofmodePublishedByLabel => 'Ni-publish ni:';
-
-  @override
   String get publishErrorNotSignedIn =>
       'Mag-sign in muna para makapag-publish ng video.';
 
@@ -7433,6 +7466,10 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get publishErrorNostrPublishFailed =>
       'Na-upload ang video pero hindi na-publish ang post. Tingnan ang iyong relay settings at subukan ulit.';
+
+  @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Na-upload ang video pero hindi pinapayagang gamitin ulit ang sound nito. Pumili ng ibang sound para makapag-post.';
 
   @override
   String get publishErrorInterrupted =>
@@ -7579,6 +7616,13 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'Subject *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'Pampublikong GitHub post';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Lahat ng isusumite mo rito ay ipo-post sa aming open-source repository sa GitHub para maasikaso ito ng mga developer. Makikita ng lahat ang post at ang account na ginamit mong mag-sign in.';
 
   @override
   String get supportRequiredHelper => 'Kailangan';

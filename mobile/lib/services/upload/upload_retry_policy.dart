@@ -24,6 +24,7 @@ class UploadRetryPolicy {
 
   final Map<String, Future<void>> _sessionPersistFutures = {};
   final Map<String, Completer<void>> _backoffWakeCompleters = {};
+  final Set<String> _discardedUploadIds = <String>{};
   bool _isDisposed = false;
 
   // ---------------------------------------------------------------------------
@@ -36,6 +37,7 @@ class UploadRetryPolicy {
     required bool Function(dynamic) isRetriable,
   }) async {
     if (_isDisposed) return;
+    if (_discardedUploadIds.contains(upload.id)) return;
 
     // Local-only counter for how many auto-attempts have been made in this
     // call. Must NOT be persisted to Hive: PendingUpload.retryCount is the
@@ -46,8 +48,10 @@ class UploadRetryPolicy {
 
     try {
       while (!_isDisposed && autoAttempt <= _retryConfig.maxRetries) {
+        if (_discardedUploadIds.contains(upload.id)) return;
         try {
           await drainSessionPersist(upload.id);
+          if (_discardedUploadIds.contains(upload.id)) return;
           final currentUpload = _store.getUpload(upload.id) ?? upload;
 
           // autoAttempt is local to this performWithRetry invocation and is
@@ -59,6 +63,7 @@ class UploadRetryPolicy {
             category: LogCategory.video,
           );
 
+          if (_discardedUploadIds.contains(upload.id)) return;
           await _store.update(
             currentUpload.copyWith(
               status: autoAttempt == 1
@@ -112,7 +117,7 @@ class UploadRetryPolicy {
           );
 
           await _waitForBackoff(upload.id, delay);
-          if (_isDisposed) return;
+          if (_isDisposed || _discardedUploadIds.contains(upload.id)) return;
         }
       }
     } catch (e) {
@@ -138,14 +143,27 @@ class UploadRetryPolicy {
   bool isWaitingForBackoff(String uploadId) =>
       _backoffWakeCompleters.containsKey(uploadId);
 
+  void discardUploads(Iterable<String> uploadIds) {
+    for (final uploadId in uploadIds) {
+      _discardedUploadIds.add(uploadId);
+      final completer = _backoffWakeCompleters.remove(uploadId);
+      if (completer != null && !completer.isCompleted) {
+        completer.complete();
+      }
+      _sessionPersistFutures.remove(uploadId);
+    }
+  }
+
   void enqueueSessionPersist(
     String uploadId,
     BlossomResumableUploadSession session,
     int fileSizeBytes,
   ) {
+    if (_discardedUploadIds.contains(uploadId)) return;
     final previous = _sessionPersistFutures[uploadId] ?? Future<void>.value();
     final persistFuture = previous.then((_) async {
       try {
+        if (_discardedUploadIds.contains(uploadId)) return;
         await _storeResumableSessionProgress(uploadId, session, fileSizeBytes);
       } catch (e, s) {
         Log.error(
@@ -168,6 +186,7 @@ class UploadRetryPolicy {
   }
 
   Future<void> drainSessionPersist(String uploadId) async {
+    if (_discardedUploadIds.contains(uploadId)) return;
     await (_sessionPersistFutures[uploadId] ?? Future<void>.value());
   }
 
@@ -214,6 +233,7 @@ class UploadRetryPolicy {
     String uploadId, {
     required Future<void> Function(PendingUpload) performUpload,
   }) {
+    if (_discardedUploadIds.contains(uploadId)) return;
     final upload = _store.getUpload(uploadId);
     if (upload == null) return;
     if (upload.status != UploadStatus.uploading &&
@@ -396,6 +416,7 @@ class UploadRetryPolicy {
     }
     _backoffWakeCompleters.clear();
     _sessionPersistFutures.clear();
+    _discardedUploadIds.clear();
   }
 
   // ---------------------------------------------------------------------------
@@ -429,6 +450,7 @@ class UploadRetryPolicy {
     BlossomResumableUploadSession session,
     int fileSizeBytes,
   ) async {
+    if (_discardedUploadIds.contains(uploadId)) return;
     final upload = _store.getUpload(uploadId);
     if (upload == null) return;
 
@@ -445,6 +467,7 @@ class UploadRetryPolicy {
         ? upload.uploadProgress
         : math.max(checkpoint, upload.uploadProgress ?? 0.0);
 
+    if (_discardedUploadIds.contains(uploadId)) return;
     await _store.update(
       upload.copyWith(
         resumableSession: session,

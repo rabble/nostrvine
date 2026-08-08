@@ -1225,6 +1225,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoSettingsCaptionsDisable => '关闭字幕';
 
   @override
+  String get videoSettingsAutoAdvanceOn => '自动连播已开启';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => '自动连播已关闭';
+
+  @override
+  String get videoSettingsCaptionsOn => '字幕已开启';
+
+  @override
+  String get videoSettingsCaptionsOff => '字幕已关闭';
+
+  @override
   String get contentWarningLabel => '内容警告';
 
   @override
@@ -1441,10 +1453,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoErrorVerifyAgeSignerUnreachable => '验证超时。请检查网络连接，或稍后再试。';
 
   @override
-  String get videoErrorAdultContentHidden => '成人内容已关闭。你可以在“设置 → 内容过滤”中开启。';
+  String get videoErrorAdultContentHiddenTitle => '成人内容已关闭';
+
+  @override
+  String get videoErrorAdultContentHiddenBody => '在内容过滤中开启后就能看这个视频了。';
+
+  @override
+  String get videoErrorAdultContentHiddenAction => '打开内容过滤';
 
   @override
   String get videoDetailLoadError => '视频加载失败';
+
+  @override
+  String get videoDetailLoadErrorBody => '路上出了点岔子，再试一次吧。';
+
+  @override
+  String get videoDetailNotFoundBody => '可能被删了，可能够不到，也可能被你的设置隐藏了。';
 
   @override
   String get databaseCorruptionTitle => '你的本地数据乱套了';
@@ -1725,6 +1749,46 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get metadataProofManifest => '证明清单';
+
+  @override
+  String get metadataVerificationInfoTooltip => '这些检查是什么意思？';
+
+  @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section。$question';
+  }
+
+  @override
+  String get metadataVerificationInfoTitle => '这些检查的含义';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      '这些信号来自摄像头和视频文件本身。一个视频带的信号越多，我们能证明的来源信息就越多。';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      '手机操作系统为录制这段视频的应用作了担保。这有力地表明它来自摄像头，而不是别人上传的文件。';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      '视频在拍摄的那一刻就完成了加密签名。之后哪怕只改动一帧，签名就会失效。';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      '随文件一同携带的行业标准来源记录——所以 Divine 之外的应用也能验证。';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      '完整的 ProofMode 记录：文件指纹、时间戳和拍摄环境信息，与视频打包在一起。';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      '缺少某项检查并不代表视频是假的。较早的片段和上传的视频本来就没有——这只说明我们无法证明那一部分。';
+
+  @override
+  String metadataVerificationInfoLearnMore(String url) {
+    return '了解更多：$url';
+  }
 
   @override
   String get metadataCreatorLabel => '创作者';
@@ -4344,6 +4408,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get userPickerSearchByNameHint => '按名字搜索...';
 
   @override
+  String get userPickerClearSearchSemantics => '清除搜索';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name 已添加';
   }
@@ -5931,6 +5998,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get commonClose => '关闭';
 
   @override
+  String get commonNotNow => '暂不';
+
+  @override
   String get commonLoading => '加载中';
 
   @override
@@ -5948,6 +6018,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get videoMetadataC2paMissingNote => '添加内容凭证需要网络连接。';
+
+  @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
 
   @override
   String get videoMetadataC2paMissingRegenerate => '重新生成';
@@ -6885,49 +6959,6 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get proofmodeBadgeAiScanPending => 'AI 扫描中';
-
-  @override
-  String get proofmodeBadgeHumanMade => '人类创作';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => '非 Divine 托管';
-
-  @override
-  String get proofmodeBadgeOriginal => '原创';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => '疑似 AI 生成';
-
-  @override
-  String get proofmodeBadgeUnverified => '未验证';
-
-  @override
-  String get proofmodeConfirmedByModerator => '已由真人管理员确认';
-
-  @override
-  String get proofmodeExternalContentTitle => '外部内容';
-
-  @override
-  String get proofmodeHostedOnLabel => '该视频托管于：';
-
-  @override
-  String get proofmodeLikelyHumanCreated => '大概率为人类创作';
-
-  @override
-  String get proofmodeNoProofDataAttached => '未附带 ProofMode 数据';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      '该内容未托管在 Divine 服务器上，我们无法完全保证其真实性。';
-
-  @override
-  String get proofmodePossiblyAiGenerated => '疑似 AI 生成';
-
-  @override
-  String get proofmodePublishedByLabel => '发布者：';
-
-  @override
   String get publishErrorNotSignedIn => '请登录后再发布视频。';
 
   @override
@@ -6977,6 +7008,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get publishErrorNostrPublishFailed => '视频已上传，但帖子没能发布。请检查你的中继设置后重试。';
+
+  @override
+  String get publishErrorAudioReuseNotPermitted =>
+      '视频已上传，但这段音频未开放二次使用。换一段音频再发布吧。';
 
   @override
   String get publishErrorInterrupted => '上传被中断。要重试吗？';
@@ -7115,6 +7150,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => '主题 *';
+
+  @override
+  String get supportPublicSubmissionTitle => '公开的 GitHub 帖子';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      '你在这里提交的所有内容都会发布到我们在 GitHub 上的开源仓库中，以便开发者处理。该帖子和你登录使用的账号都会被所有人公开查看。';
 
   @override
   String get supportRequiredHelper => '必填';

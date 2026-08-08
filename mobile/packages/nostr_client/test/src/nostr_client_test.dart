@@ -830,39 +830,6 @@ void main() {
         ).called(1);
       });
 
-      test('forwards caller diagnostic tag to the SDK publish path', () async {
-        final event = _createTestEvent();
-        const targetRelays = ['wss://relay.divine.video'];
-        const timeout = Duration(seconds: 5);
-        when(() => mockRelayManager.connectedRelays).thenReturn([]);
-        when(
-          () => mockNostr.sendEventAwaitOk(
-            any(),
-            tempRelays: any(named: 'tempRelays'),
-            targetRelays: any(named: 'targetRelays'),
-            timeout: any(named: 'timeout'),
-            diagnosticTag: any(named: 'diagnosticTag'),
-          ),
-        ).thenAnswer((_) async => accepted(event.id));
-
-        await client.publishEventAwaitOk(
-          event,
-          targetRelays: targetRelays,
-          timeout: timeout,
-          diagnosticTag: 'push-control',
-        );
-
-        verify(
-          () => mockNostr.sendEventAwaitOk(
-            event,
-            targetRelays: targetRelays,
-            tempRelays: targetRelays,
-            timeout: timeout,
-            diagnosticTag: 'push-control',
-          ),
-        ).called(1);
-      });
-
       test(
         'removes target events from cache after confirmed deletion',
         () async {

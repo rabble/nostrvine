@@ -1,7 +1,8 @@
 // ABOUTME: Scrim-30 capsule with three playback toggles
 // ABOUTME: (compilations / mute / closed-captions). Rendered both as
 // ABOUTME: the body of the top-bar settings popover and above the play
-// ABOUTME: affordance in the paused-video overlay.
+// ABOUTME: affordance in the paused-video overlay. Compilations and
+// ABOUTME: captions confirm their new state in a snackbar.
 
 import 'dart:ui';
 
@@ -72,7 +73,8 @@ class FeedPlaybackTogglesPill extends ConsumerWidget {
   }
 }
 
-/// Auto-advance ("compilations") toggle. Hidden when the OS-level
+/// Auto-advance ("compilations") toggle. Confirms its new state in a
+/// snackbar. Hidden when the OS-level
 /// reduced-motion preference is set — auto-advance is unavailable in
 /// that state. Also hidden when no [FeedAutoAdvanceCubit] is provided
 /// in the surrounding scope, so the pill can be rendered in any
@@ -105,7 +107,15 @@ class _PlaybackModeToggle extends StatelessWidget {
             if (!cubit.state.isEffectivelyActive) {
               cubit.clearPendingPaginationAdvance();
             }
-            announceAutoAdvanceToggle(context, enabled: cubit.state.enabled);
+            // The snackbar is a live region, so it carries the screen-reader
+            // announcement on its own — no separate `sendAnnouncement`, which
+            // would make a reader speak twice with two different strings.
+            _showToggleFeedback(
+              context,
+              cubit.state.enabled
+                  ? context.l10n.videoSettingsAutoAdvanceOn
+                  : context.l10n.videoSettingsAutoAdvanceOff,
+            );
           },
           child: DivineIcon(
             icon: enabled
@@ -156,6 +166,7 @@ class _AudioToggle extends StatelessWidget {
 }
 
 /// Closed-captions toggle. Active state means subtitles are visible.
+/// Confirms its new state in a snackbar.
 class _CaptionsToggle extends ConsumerWidget {
   const _CaptionsToggle({required this.foregroundColor});
 
@@ -171,6 +182,12 @@ class _CaptionsToggle extends ConsumerWidget {
           : context.l10n.videoSettingsCaptionsEnable,
       onTap: () {
         ref.read(subtitleVisibilityProvider.notifier).toggle();
+        _showToggleFeedback(
+          context,
+          enabled
+              ? context.l10n.videoSettingsCaptionsOff
+              : context.l10n.videoSettingsCaptionsOn,
+        );
       },
       child: DivineIcon(
         icon: enabled
@@ -227,3 +244,32 @@ class _PopoverToggle extends StatelessWidget {
 
 FeedAutoAdvanceCubit? _maybeReadFeedAutoAdvanceCubit(BuildContext context) =>
     context.read<FeedAutoAdvanceCubit?>();
+
+/// Confirms a toggle's new state in a snackbar.
+///
+/// The icons alone don't say what auto-advance and captions actually do, and
+/// unlike mute neither has an immediately perceivable effect, so the banner
+/// names the state the tap just produced. Any banner still on screen is
+/// replaced rather than queued, so rapid toggling always shows the current
+/// state.
+///
+/// Uses `removeCurrentSnackBar` rather than `hideCurrentSnackBar`: hiding only
+/// *starts* the exit animation, and the entry leaves `ScaffoldMessenger`'s
+/// queue when that animation reports `dismissed`, so the banner shown next
+/// lands behind the departing one. Removing drops it in the same frame, which
+/// is what makes this a replace instead of a queue.
+void _showToggleFeedback(BuildContext context, String message) {
+  ScaffoldMessenger.of(context)
+    ..removeCurrentSnackBar()
+    ..showSnackBar(
+      DivineSnackbarContainer.snackBar(
+        message,
+        duration: _FeedPlaybackToggles.feedbackDuration,
+      ),
+    );
+}
+
+abstract class _FeedPlaybackToggles {
+  /// Long enough to read two words, short enough not to sit over the video.
+  static const feedbackDuration = Duration(seconds: 2);
+}

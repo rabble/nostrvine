@@ -1336,6 +1336,18 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'Dezactivează subtitrările';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'Avansare automată activată';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'Avansare automată dezactivată';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Subtitrări activate';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Subtitrări dezactivate';
+
+  @override
   String get contentWarningLabel => 'Atenționare de conținut';
 
   @override
@@ -1572,11 +1584,27 @@ class AppLocalizationsRo extends AppLocalizations {
       'Timpul de verificare a expirat. Verifică-ți conexiunea sau încearcă din nou în scurt timp.';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      'Conținutul pentru adulți este dezactivat. Îl poți activa în Setări → Filtre de conținut.';
+  String get videoErrorAdultContentHiddenTitle =>
+      'Conținutul pentru adulți este dezactivat';
+
+  @override
+  String get videoErrorAdultContentHiddenBody =>
+      'Activează-l în filtrele de conținut ca să vezi acest videoclip.';
+
+  @override
+  String get videoErrorAdultContentHiddenAction =>
+      'Deschide filtrele de conținut';
 
   @override
   String get videoDetailLoadError => 'N-am putut încărca videoclipul';
+
+  @override
+  String get videoDetailLoadErrorBody =>
+      'Ceva a mers prost pe drum. Mai încearcă o dată.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Poate a fost șters, e în afara razei noastre sau ascuns de setările tale.';
 
   @override
   String get databaseCorruptionTitle => 'Datele tale locale s-au deteriorat';
@@ -1862,6 +1890,47 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get metadataProofManifest => 'Manifest de dovezi';
+
+  @override
+  String get metadataVerificationInfoTooltip =>
+      'Ce înseamnă aceste verificări?';
+
+  @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
+  String get metadataVerificationInfoTitle => 'Ce înseamnă aceste verificări';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'Aceste semnale vin de la cameră și din fișierul video în sine. Cu cât un videoclip are mai multe, cu atât putem dovedi mai multe despre proveniența lui.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'Sistemul de operare al telefonului a garantat pentru aplicația care a filmat. Un indiciu puternic că vine de la o cameră, nu dintr-un fișier încărcat.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'Videoclipul a fost semnat criptografic chiar în momentul filmării. Dacă se schimbă ulterior un singur cadru, semnătura se rupe.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'O înregistrare a provenienței, conform standardului din industrie, care călătorește în interiorul fișierului — așa că o pot verifica și alte aplicații decât Divine.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'Înregistrarea ProofMode completă: amprenta fișierului, marcajul de timp și contextul filmării, împreună cu videoclipul.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'O verificare lipsă nu face videoclipul fals. Clipurile mai vechi și încărcările nu au avut niciodată una — înseamnă doar că nu putem dovedi acea parte.';
+
+  @override
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'Află mai multe pe $url';
+  }
 
   @override
   String get metadataCreatorLabel => 'Creator';
@@ -4717,6 +4786,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Caută după nume...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Șterge căutarea';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name este deja adăugat';
   }
@@ -6385,6 +6457,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get commonClose => 'Închide';
 
   @override
+  String get commonNotNow => 'Nu acum';
+
+  @override
   String get commonLoading => 'Se încarcă';
 
   @override
@@ -6406,6 +6481,10 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get videoMetadataC2paMissingNote =>
       'Acreditările de conținut necesită o conexiune la internet.';
+
+  @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
 
   @override
   String get videoMetadataC2paMissingRegenerate => 'Regenerează';
@@ -7411,49 +7490,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get proofmodeBadgeAiScanPending => 'Scanare AI în așteptare';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'Făcut de om';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Negăzduit de Divine';
-
-  @override
-  String get proofmodeBadgeOriginal => 'Original';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'Posibil generat de AI';
-
-  @override
-  String get proofmodeBadgeUnverified => 'Neverificat';
-
-  @override
-  String get proofmodeConfirmedByModerator => 'Confirmat de un moderator uman';
-
-  @override
-  String get proofmodeExternalContentTitle => 'Conținut extern';
-
-  @override
-  String get proofmodeHostedOnLabel => 'Acest videoclip este găzduit pe:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'Probabil creat de om';
-
-  @override
-  String get proofmodeNoProofDataAttached => 'Niciun date ProofMode atașate';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'Acest conținut nu este găzduit pe serverele Divine. Nu îi putem garanta complet autenticitatea.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'Posibil generat de AI';
-
-  @override
-  String get proofmodePublishedByLabel => 'Publicat de:';
-
-  @override
   String get publishErrorNotSignedIn =>
       'Autentifică-te ca să publici videoclipuri.';
 
@@ -7514,6 +7550,10 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get publishErrorNostrPublishFailed =>
       'Videoclipul s-a încărcat, dar postarea nu a putut fi publicată. Verifică-ți setările relay-urilor și încearcă din nou.';
+
+  @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Videoclipul s-a încărcat, dar sunetul lui nu este permis pentru reutilizare. Alege alt sunet ca să postezi.';
 
   @override
   String get publishErrorInterrupted =>
@@ -7661,6 +7701,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'Subiect *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'Postare publică pe GitHub';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Tot ce trimiți aici va fi publicat în depozitul nostru open-source de pe GitHub, pentru ca dezvoltatorii să se poată ocupa. Postarea și contul cu care ești conectat vor fi vizibile public pentru toată lumea.';
 
   @override
   String get supportRequiredHelper => 'Obligatoriu';

@@ -202,7 +202,6 @@ void main() {
           {'id': eventId, 'kind': EventKind.giftWrap},
         ],
         eventId: eventId,
-        eventKind: EventKind.giftWrap,
         targetRelays: [relay.url],
         timeout: const Duration(seconds: 1),
       );
@@ -273,7 +272,6 @@ void main() {
           {'id': eventId, 'kind': EventKind.giftWrap},
         ],
         eventId: eventId,
-        eventKind: EventKind.giftWrap,
         targetRelays: [relay.url],
         timeout: const Duration(seconds: 1),
       );
@@ -306,7 +304,6 @@ void main() {
           {'id': eventId, 'kind': EventKind.giftWrap},
         ],
         eventId: eventId,
-        eventKind: EventKind.giftWrap,
         targetRelays: [relay.url],
         timeout: const Duration(seconds: 1),
       );
@@ -350,7 +347,6 @@ void main() {
           {'id': eventId, 'kind': EventKind.giftWrap},
         ],
         eventId: eventId,
-        eventKind: EventKind.giftWrap,
         targetRelays: [relay.url],
         timeout: const Duration(seconds: 1),
       );
@@ -387,7 +383,6 @@ void main() {
           {'id': eventId, 'kind': EventKind.giftWrap},
         ],
         eventId: eventId,
-        eventKind: EventKind.giftWrap,
         targetRelays: [relay.url],
         timeout: const Duration(seconds: 1),
       );
@@ -430,7 +425,6 @@ void main() {
           {'id': eventId, 'kind': EventKind.giftWrap},
         ],
         eventId: eventId,
-        eventKind: EventKind.giftWrap,
         targetRelays: [relay.url],
         timeout: const Duration(milliseconds: 10),
       );
@@ -473,7 +467,6 @@ void main() {
           {'id': eventId, 'kind': EventKind.giftWrap},
         ],
         eventId: eventId,
-        eventKind: EventKind.giftWrap,
         targetRelays: [unauthenticatedRelay.url],
         timeout: const Duration(seconds: 1),
       );
@@ -507,7 +500,6 @@ void main() {
             {'id': eventId, 'kind': EventKind.giftWrap},
           ],
           eventId: eventId,
-          eventKind: EventKind.giftWrap,
           targetRelays: [relay.url],
           timeout: const Duration(seconds: 1),
         );

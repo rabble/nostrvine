@@ -17,6 +17,7 @@ Generic Flutter and Dart standards live in `.claude/rules/`:
 
 - `rules/self_review_checklist.md`: consolidated pre-plan / pre-commit / pre-PR checklist
 - `rules/agent_workflow.md`: worktree-from-`origin/main`, rebase-at-boundaries, no-stacked-PRs, no-tech-debt, failing-tests-are-your-fault
+- `rules/pr_takeover.md`: check PR authorship *first*, takeover gates, answer every review item, never hand back before CI is green
 - `rules/architecture.md`: layered flow, package boundaries, barrel files
 - `rules/state_management.md`: BLoC-first UI, BlocProvider laziness, cross-route state persistence, Riverpod legacy rules, event transformers
 - `rules/code_style.md`: naming, widget composition, Effective Dart guidance

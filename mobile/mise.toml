@@ -48,6 +48,10 @@ docker compose -f ../local_stack/docker-compose.yml down -v
 bash ../local_stack/up.sh
 """
 
+[tasks.local_build_funnelcake]
+description = "Build funnelcake images from a local divine-funnelcake checkout"
+run = "bash ../local_stack/build_funnelcake.sh"
+
 [tasks.local_setup]
 description = "First-time setup for local E2E"
 run = "bash ../local_stack/setup.sh"

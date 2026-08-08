@@ -642,6 +642,10 @@
     "description": "Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently off."
   },
   "videoSettingsCaptionsDisable": "Lumpuhkan sarikata",
+  "videoSettingsAutoAdvanceOn": "Maju automatik dihidupkan",
+  "videoSettingsAutoAdvanceOff": "Maju automatik dimatikan",
+  "videoSettingsCaptionsOn": "Sarikata dihidupkan",
+  "videoSettingsCaptionsOff": "Sarikata dimatikan",
   "@videoSettingsCaptionsDisable": {
     "description": "Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently on."
   },
@@ -732,11 +736,15 @@
   "@videoErrorVerifyAgeSignerUnreachable": {
     "description": "Snackbar shown when tapping Verify age on an age-restricted video and the remote signer didn't respond in time (timeout). Distinct from videoErrorVerifyAgeFailed because the remedy is checking connectivity, not re-verifying age."
   },
-  "videoErrorAdultContentHidden": "Kandungan dewasa dimatikan. Anda boleh menghidupkannya dalam Tetapan → Penapis Kandungan.",
-  "@videoErrorAdultContentHidden": {
-    "description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."
-  },
+  "videoErrorAdultContentHiddenTitle": "Kandungan dewasa dimatikan",
+  "@videoErrorAdultContentHiddenTitle": {"description": "Title of the bottom sheet shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden."},
+  "videoErrorAdultContentHiddenBody": "Hidupkan dalam Penapis Kandungan anda untuk menonton video ini.",
+  "@videoErrorAdultContentHiddenBody": {"description": "Body of the adult-content-hidden sheet. The remedy is switching adult content on in Content Filters, not re-verifying age."},
+  "videoErrorAdultContentHiddenAction": "Buka Penapis Kandungan",
+  "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
   "videoDetailLoadError": "Gagal memuatkan video",
+  "videoDetailLoadErrorBody": "Ada yang tak kena dalam perjalanan. Cuba lagi.",
+  "videoDetailNotFoundBody": "Mungkin ia dipadam, di luar capaian, atau disembunyikan oleh tetapan anda.",
   "databaseCorruptionTitle": "Data setempat anda bercelaru",
   "@databaseCorruptionTitle": {
     "description": "Title of the full-screen takeover shown when the local database reports on-disk corruption at runtime. 'Scrambled' is deliberately non-technical: the user did nothing wrong and cannot act on the real cause."
@@ -989,6 +997,16 @@
   "metadataPgpSignature": "Tandatangan PGP",
   "metadataC2paCredentials": "Kelayakan Kandungan C2PA",
   "metadataProofManifest": "Manifes bukti",
+  "metadataVerificationInfoTooltip": "Apakah maksud pemeriksaan ini?",
+    "metadataSectionInfoSemanticsLabel": "{section}. {question}",
+  "metadataVerificationInfoTitle": "Apa maksud pemeriksaan ini",
+  "metadataVerificationInfoIntro": "Isyarat ini datang daripada kamera dan daripada fail video itu sendiri. Lebih banyak yang dibawa sesebuah video, lebih banyak yang boleh kami buktikan tentang asalnya.",
+  "metadataVerificationInfoDeviceAttestation": "Sistem pengendalian telefon menjamin apl yang merakam ini. Bukti kukuh bahawa ia datang daripada kamera, bukan fail yang dimuat naik seseorang.",
+  "metadataVerificationInfoPgpSignature": "Video ditandatangani secara kriptografi pada saat ia dirakam. Ubah satu bingkai selepas itu, tandatangan akan rosak.",
+  "metadataVerificationInfoC2paCredentials": "Rekod asal usul berstandard industri yang dibawa di dalam fail — jadi apl selain Divine pun boleh menyemaknya.",
+  "metadataVerificationInfoProofManifest": "Rekod ProofMode penuh: cap jari fail, cap masa dan konteks rakaman, disatukan dengan video.",
+  "metadataVerificationInfoFootnote": "Pemeriksaan yang tiada tidak menjadikan video itu palsu. Klip lama dan muat naik memang tidak pernah ada — ia cuma bermakna kami tidak dapat membuktikan bahagian itu.",
+  "metadataVerificationInfoLearnMore": "Ketahui lebih lanjut di {url}",
   "metadataCreatorLabel": "Pencipta",
   "metadataCollaboratorsLabel": "Kolaborator",
   "metadataInspiredByLabel": "Diilhamkan oleh",
@@ -2588,6 +2606,7 @@
   "userPickerSearchByName": "Cari mengikut nama",
   "userPickerFilterByNameHint": "Tapis mengikut nama...",
   "userPickerSearchByNameHint": "Cari mengikut nama...",
+  "userPickerClearSearchSemantics": "Kosongkan carian",
   "userPickerAlreadyAddedSemantics": "{name} sudah ditambah",
   "@userPickerAlreadyAddedSemantics": {
     "placeholders": {
@@ -3651,6 +3670,7 @@
   "commonCancel": "Batal",
   "commonBack": "Kembali",
   "commonClose": "Tutup",
+  "commonNotNow": "Bukan Sekarang",
   "commonLoading": "Memuatkan",
   "@commonLoading": {
     "description": "Screen-reader label for a blocking progress spinner that covers the screen while an action is being prepared. Announced instead of the content behind it, which is not reachable while the spinner is up."
@@ -4220,20 +4240,6 @@
       }
     }
   },
-  "proofmodeBadgeAiScanPending": "Imbasan AI belum selesai",
-  "proofmodeBadgeHumanMade": "Buatan Manusia",
-  "proofmodeBadgeNotDivineHosted": "Bukan Dihoskan Divine",
-  "proofmodeBadgeOriginal": "Asal",
-  "proofmodeBadgePossiblyAiGenerated": "Mungkin Dijana AI",
-  "proofmodeBadgeUnverified": "Tidak Disahkan",
-  "proofmodeConfirmedByModerator": "Disahkan oleh penyelia manusia",
-  "proofmodeExternalContentTitle": "Kandungan Luaran",
-  "proofmodeHostedOnLabel": "Video ini dihoskan pada:",
-  "proofmodeLikelyHumanCreated": "Kemungkinan ciptaan manusia",
-  "proofmodeNoProofDataAttached": "Tiada data ProofMode dilampirkan",
-  "proofmodeNotDivineHostedDisclaimer": "Kandungan ini tidak dihoskan pada pelayan Divine. Kami tidak dapat menjamin kesahihannya sepenuhnya.",
-  "proofmodePossiblyAiGenerated": "Mungkin dijana AI",
-  "proofmodePublishedByLabel": "Diterbitkan oleh:",
   "publishErrorNotSignedIn": "Sila log masuk untuk menerbitkan video.",
   "publishErrorNoRetry": "Tiada muat naik untuk dicuba semula.",
   "publishErrorNoInternet": "Tiada sambungan internet. Semak Wi-Fi atau data mudah alih anda dan cuba lagi.",
@@ -4273,6 +4279,7 @@
   "publishErrorLowStorage": "Storan tidak mencukupi pada peranti anda. Kosongkan sedikit ruang dan cuba lagi.",
   "publishErrorThumbnailFailed": "Video dimuat naik, tetapi lakaran kecil tidak dapat disediakan. Sila cuba lagi.",
   "publishErrorNostrPublishFailed": "Video dimuat naik tetapi siaran tidak dapat diterbitkan. Semak tetapan relay anda dan cuba lagi.",
+  "publishErrorAudioReuseNotPermitted": "Video dimuat naik tetapi bunyinya tidak dibenarkan untuk digunakan semula. Pilih bunyi lain untuk menyiarkannya.",
   "publishErrorInterrupted": "Muat naik ini terganggu. Adakah anda mahu cuba lagi?",
   "publishErrorAccountChanged": "Video ini milik akaun lain. Tukar kembali ke akaun itu untuk menyiarkannya.",
   "publishErrorGeneric": "Sesuatu telah berlaku. Sila cuba lagi.",
@@ -4403,6 +4410,8 @@
   },
   "bugReportSendReport": "Hantar Laporan",
   "supportSubjectRequiredLabel": "Subjek *",
+  "supportPublicSubmissionTitle": "Siaran GitHub awam",
+  "supportPublicSubmissionMessage": "Semua yang anda hantar di sini akan disiarkan dalam repositori sumber terbuka kami di GitHub supaya pembangun boleh mengendalikannya. Siaran ini dan akaun yang anda log masuk boleh dilihat oleh semua orang.",
   "supportRequiredHelper": "Diperlukan",
   "bugReportSubjectHint": "Ringkasan ringkas isu itu",
   "bugReportDescriptionRequiredLabel": "Apa yang berlaku? *",

@@ -1,6 +1,6 @@
 // ABOUTME: Tests for VideoSharingService social features integration
-// ABOUTME: Covers NIP-17 share path, NIP-04 fallback, getShareableUsers,
-// ABOUTME: searchUsersToShareWith, shareVideoWithUser, and sharing utilities.
+// ABOUTME: Covers NIP-17 share path, NIP-04 fallback, recents,
+// ABOUTME: shareVideoWithUser, and sharing utilities.
 
 import 'dart:async';
 
@@ -54,14 +54,141 @@ void main() {
     );
   });
 
-  group('getShareableUsers', () {
-    test('returns empty list when no recent shares exist', () async {
-      final result = await service.getShareableUsers();
+  group('$ShareableUser.fromProfile', () {
+    UserProfile profileWith({
+      String? nip05,
+      String? name,
+      String? displayName,
+    }) {
+      return UserProfile(
+        pubkey: _recipientPubkey,
+        rawData: const {},
+        createdAt: DateTime.now(),
+        eventId: 'event-handle',
+        nip05: nip05,
+        name: name,
+        displayName: displayName,
+      );
+    }
 
-      expect(result, isEmpty);
+    test('uses the full divine nip05 rather than the short form', () {
+      final user = ShareableUser.fromProfile(
+        _recipientPubkey,
+        profileWith(nip05: 'bob@divine.video', name: 'bob'),
+      );
+
+      expect(user.handle, equals('@bob.divine.video'));
     });
 
-    test('returns recently shared users after sharing', () async {
+    test('keeps an external nip05 verbatim, without a leading @', () {
+      final user = ShareableUser.fromProfile(
+        _recipientPubkey,
+        profileWith(nip05: 'dana@nostrplebs.com', name: 'dana'),
+      );
+
+      expect(user.handle, equals('dana@nostrplebs.com'));
+    });
+
+    test('trims display nip05 before rendering it as a handle', () {
+      final user = ShareableUser.fromProfile(
+        _recipientPubkey,
+        profileWith(nip05: '  dana@nostrplebs.com  ', name: 'dana'),
+      );
+
+      expect(user.handle, equals('dana@nostrplebs.com'));
+    });
+
+    test('falls back to name when nip05 is blank after trimming', () {
+      final user = ShareableUser.fromProfile(
+        _recipientPubkey,
+        profileWith(nip05: '   ', name: 'dana'),
+      );
+
+      expect(user.handle, equals('@dana'));
+    });
+
+    test('falls back to name when nip05 is not handle-shaped', () {
+      final user = ShareableUser.fromProfile(
+        _recipientPubkey,
+        profileWith(nip05: 'dana', name: 'fallback'),
+      );
+
+      expect(user.handle, equals('@fallback'));
+    });
+
+    test('falls back to name when nip05 is only an at sign', () {
+      final user = ShareableUser.fromProfile(
+        _recipientPubkey,
+        profileWith(nip05: '@', name: 'fallback'),
+      );
+
+      expect(user.handle, equals('@fallback'));
+    });
+
+    test('falls back to name when nip05 contains whitespace', () {
+      final user = ShareableUser.fromProfile(
+        _recipientPubkey,
+        profileWith(nip05: 'dana @nostrplebs.com', name: 'fallback'),
+      );
+
+      expect(user.handle, equals('@fallback'));
+    });
+
+    test('falls back to an @-prefixed name when there is no nip05', () {
+      final user = ShareableUser.fromProfile(
+        _recipientPubkey,
+        profileWith(name: 'alice'),
+      );
+
+      expect(user.handle, equals('@alice'));
+    });
+
+    test('does not double the @ on an email-shaped name', () {
+      final user = ShareableUser.fromProfile(
+        _recipientPubkey,
+        profileWith(name: 'dana@nostrplebs.com'),
+      );
+
+      expect(user.handle, equals('dana@nostrplebs.com'));
+    });
+
+    test('does not double the @ on an already-prefixed name', () {
+      final user = ShareableUser.fromProfile(
+        _recipientPubkey,
+        profileWith(name: '@dana'),
+      );
+
+      expect(user.handle, equals('@dana'));
+    });
+
+    test(
+      'leaves the handle null when the profile has no nip05 and no name',
+      () {
+        final user = ShareableUser.fromProfile(
+          _recipientPubkey,
+          profileWith(displayName: 'Display Only'),
+        );
+
+        expect(user.handle, isNull);
+        expect(user.displayName, equals('Display Only'));
+      },
+    );
+
+    test('leaves the handle null when there is no profile at all', () {
+      final user = ShareableUser.fromProfile(_recipientPubkey, null);
+
+      expect(user.handle, isNull);
+      expect(user.displayName, isNull);
+      expect(user.pubkey, equals(_recipientPubkey));
+    });
+  });
+
+  group('recentlySharedWith', () {
+    test('starts empty', () {
+      expect(service.recentlySharedWith, isEmpty);
+    });
+
+    test('includes profile data after sharing', () async {
       // Arrange - set up successful share
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(() => mockAuthService.canPublishNostrWritesNow).thenReturn(true);
@@ -110,7 +237,7 @@ void main() {
       // event loop so the background insert completes before asserting.
       await Future<void>.delayed(Duration.zero);
 
-      final result = await service.getShareableUsers();
+      final result = service.recentlySharedWith;
 
       // Assert
       expect(result, hasLength(1));
@@ -119,7 +246,7 @@ void main() {
       expect(result[0].picture, 'https://example.com/alice.jpg');
     });
 
-    test('respects limit parameter', () async {
+    test('keeps only the ten most recent users', () async {
       // Arrange - share with multiple users
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(() => mockAuthService.canPublishNostrWritesNow).thenReturn(true);
@@ -152,8 +279,8 @@ void main() {
         content: 'Test video',
       );
 
-      // Share with 6 users to exceed the limit of 5 recent
-      for (var i = 0; i < 6; i++) {
+      // Share with 11 users to exceed the recent list cap.
+      for (var i = 0; i < 11; i++) {
         final hexI = i.toRadixString(16).padLeft(64, '0');
         await service.shareVideoWithUser(
           video: testVideo,
@@ -165,78 +292,11 @@ void main() {
       // event loop so all background inserts complete before asserting.
       await Future<void>.delayed(Duration.zero);
 
-      // Act - request with limit 3
-      final result = await service.getShareableUsers(limit: 3);
+      final result = service.recentlySharedWith;
 
-      // Assert - getShareableUsers takes up to 5 recent, then limits
-      expect(result.length, 3);
-    });
-  });
-
-  group('searchUsersToShareWith', () {
-    test('returns empty list for empty query', () async {
-      final result = await service.searchUsersToShareWith('');
-
-      expect(result, isEmpty);
-    });
-
-    test('returns user by hex pubkey lookup', () async {
-      final hexPubkey = 'a' * 64;
-      final profile = UserProfile(
-        pubkey: hexPubkey,
-        rawData: const {},
-        createdAt: DateTime.now(),
-        eventId: 'event1',
-        displayName: 'Charlie',
-        picture: 'https://example.com/charlie.jpg',
-      );
-
-      when(
-        () => mockProfileRepository.fetchFreshProfile(pubkey: hexPubkey),
-      ).thenAnswer((_) async => profile);
-
-      final result = await service.searchUsersToShareWith(hexPubkey);
-
-      expect(result, hasLength(1));
-      expect(result[0].pubkey, hexPubkey);
-      expect(result[0].displayName, 'Charlie');
-      expect(result[0].picture, 'https://example.com/charlie.jpg');
-      verify(
-        () => mockProfileRepository.fetchFreshProfile(pubkey: hexPubkey),
-      ).called(1);
-    });
-
-    test(
-      'returns user with null profile data for unknown hex pubkey',
-      () async {
-        final hexPubkey = 'b' * 64;
-
-        when(
-          () => mockProfileRepository.fetchFreshProfile(pubkey: hexPubkey),
-        ).thenAnswer((_) async => null);
-
-        final result = await service.searchUsersToShareWith(hexPubkey);
-
-        // Implementation always returns a ShareableUser for hex pubkeys,
-        // even when profile is null
-        expect(result, hasLength(1));
-        expect(result[0].pubkey, hexPubkey);
-        expect(result[0].displayName, isNull);
-      },
-    );
-
-    test('returns empty list for non-hex text queries', () async {
-      // Name-based search is not yet implemented
-      final result = await service.searchUsersToShareWith('alice');
-
-      expect(result, isEmpty);
-    });
-
-    test('returns empty list for short hex-like queries', () async {
-      // Must be exactly 64 chars to be treated as a pubkey
-      final result = await service.searchUsersToShareWith('abcdef');
-
-      expect(result, isEmpty);
+      expect(result.length, 10);
+      expect(result.first.pubkey, 'a'.padLeft(64, '0'));
+      expect(result.last.pubkey, '1'.padLeft(64, '0'));
     });
   });
 
@@ -266,9 +326,7 @@ void main() {
       // the whole service null and Share a silent dead tap. Now the sheet
       // opens on the read-only handle and the send path owns the requirement.
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
-      when(
-        () => mockAuthService.canPublishNostrWritesNow,
-      ).thenReturn(false);
+      when(() => mockAuthService.canPublishNostrWritesNow).thenReturn(false);
 
       final now = DateTime.now();
       final result = await service.shareVideoWithUser(
@@ -1016,9 +1074,6 @@ void main() {
       // Assert
       expect(service.recentlySharedWith, isEmpty);
       expect(service.hasSharedWithRecently(_recipientPubkey), isFalse);
-
-      final shareableUsers = await service.getShareableUsers();
-      expect(shareableUsers, isEmpty);
     });
   });
 }

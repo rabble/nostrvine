@@ -1,7 +1,4 @@
-import 'dart:io';
-
 import 'package:divine_ui/divine_ui.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +12,7 @@ import 'package:openvine/screens/profile_setup/widgets/banner_color_swatches.dar
 import 'package:openvine/screens/profile_setup/widgets/image_url_sheet.dart';
 import 'package:openvine/screens/profile_setup/widgets/profile_avatar_section.dart';
 import 'package:openvine/screens/profile_setup/widgets/profile_image_actions_sheet.dart';
+import 'package:openvine/screens/profile_setup/widgets/profile_image_picker.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -229,24 +227,22 @@ class _BannerEditButton extends ConsumerWidget {
     }
     if (picked == null) return;
 
-    final cropLauncher = ref.read(imageCropLauncherProvider);
-    Uint8List? cropped;
-    if (kIsWeb) {
-      final bytes = await picked.readAsBytes();
-      if (!context.mounted) return;
-      cropped = await cropLauncher(
-        context,
-        kind: ImageCropKind.banner,
-        bytes: bytes,
-      );
-    } else {
-      if (!context.mounted) return;
-      cropped = await cropLauncher(
-        context,
-        kind: ImageCropKind.banner,
-        file: File(picked.path),
-      );
+    // An empty pick would blow up inside the crop editor's image providers,
+    // so it is rejected here instead.
+    final selection = await resolveProfileImageSelection(picked);
+    if (!context.mounted) return;
+    if (selection == null) {
+      showProfileImageSelectionFailed(context);
+      return;
     }
+
+    final cropLauncher = ref.read(imageCropLauncherProvider);
+    final cropped = await cropLauncher(
+      context,
+      kind: ImageCropKind.banner,
+      file: selection.file,
+      bytes: selection.bytes,
+    );
 
     if (cropped == null) return;
 

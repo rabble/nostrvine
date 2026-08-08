@@ -2,6 +2,8 @@
 // ABOUTME: Supports filtering by mutual follows (fast local search)
 // ABOUTME: or all users (network search) with mute-check validation
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,6 +13,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
 /// Filter mode for user search in [UserPickerSheet].
@@ -123,6 +126,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
   List<UserProfile> _followProfiles = [];
   List<UserProfile> _filteredFollowProfiles = [];
   bool _followListLoaded = false;
+  StreamSubscription<List<String>>? _followersSubscription;
   final _selectedProfiles = <UserProfile>[];
 
   /// Whether the profile repository was unavailable at init time.
@@ -161,7 +165,16 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     }
   }
 
-  /// Loads followed profiles and fetches followers in parallel for mutual mode.
+  /// Loads followed profiles, then narrows them to mutuals as each follower
+  /// source answers.
+  ///
+  /// The follower sources differ by an order of magnitude in latency (REST
+  /// ~150ms, indexer relays up to ~2s) while the slow ones rarely add anyone.
+  /// Rendering each emission as it arrives shows the bulk of the list roughly
+  /// ten times sooner. Emissions only ever grow
+  /// ([FollowRepository.streamMyFollowers]), so everyone on screen is a
+  /// mutual confirmed by a live source — a late source can add rows, never
+  /// invalidate one already shown.
   Future<void> _loadFollowProfiles() async {
     final followRepo = ref.read(followRepositoryProvider);
     final profileRepo = ref.read(profileRepositoryProvider);
@@ -173,54 +186,23 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     final followingPubkeys = followRepo.followingPubkeys;
     final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
 
-    final profilesFuture = Future.wait(
-      followingPubkeys.map((pk) => profileRepo.getCachedProfile(pubkey: pk)),
-    );
+    final List<UserProfile> candidates;
     try {
-      final myFollowersFuture =
-          widget.filterMode == UserPickerFilterMode.mutualFollowsOnly
-          ? followRepo
-                .getMyFollowers()
-                .then<Set<String>?>((followers) => followers.toSet())
-                // Relay/network failures should not block sheet loading.
-                .catchError((Object _, StackTrace _) => null)
-          : Future<Set<String>?>.value(const <String>{});
-
-      final (rawProfiles, myFollowersSet) = await (
-        profilesFuture,
-        myFollowersFuture,
-      ).wait;
-
-      var profiles = rawProfiles.whereType<UserProfile>().toList();
-      profiles = profiles
-          .where(
-            (profile) =>
-                !blocklistRepository.shouldFilterFromFeeds(profile.pubkey),
-          )
-          .toList();
-
-      // When mutual-follow fetch fails, fall back to local follows so the
-      // picker remains usable instead of hanging in loading.
-      if (widget.filterMode == UserPickerFilterMode.mutualFollowsOnly &&
-          myFollowersSet != null) {
-        profiles = profiles
-            .where((p) => myFollowersSet.contains(p.pubkey))
-            .toList();
-      }
-
-      profiles.sort(
-        (a, b) => a.bestDisplayName.toLowerCase().compareTo(
-          b.bestDisplayName.toLowerCase(),
-        ),
+      final cached = await profileRepo.getCachedProfiles(
+        pubkeys: followingPubkeys,
       );
-
-      if (mounted) {
-        setState(() {
-          _followProfiles = profiles;
-          _filteredFollowProfiles = profiles;
-          _followListLoaded = true;
-        });
-      }
+      candidates =
+          cached
+              .where(
+                (profile) =>
+                    !blocklistRepository.shouldFilterFromFeeds(profile.pubkey),
+              )
+              .toList()
+            ..sort(
+              (a, b) => a.bestDisplayName.toLowerCase().compareTo(
+                b.bestDisplayName.toLowerCase(),
+              ),
+            );
     } catch (_) {
       if (mounted) {
         setState(() {
@@ -229,11 +211,60 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
           _followListLoaded = true;
         });
       }
+      return;
     }
+
+    if (!mounted) return;
+
+    if (candidates.isEmpty) {
+      setState(() => _followListLoaded = true);
+      return;
+    }
+
+    _followersSubscription = followRepo.streamMyFollowers().listen(
+      (followers) {
+        if (!mounted) return;
+        final followerSet = followers.toSet();
+        final mutuals = candidates
+            .where((profile) => followerSet.contains(profile.pubkey))
+            .toList();
+
+        // An early source can legitimately return nothing; showing the empty
+        // state before the slower ones answer would flash "you follow nobody".
+        if (mutuals.isEmpty && !_followListLoaded) return;
+
+        setState(() {
+          _followProfiles = mutuals;
+          _filteredFollowProfiles = _matchingFollowProfiles(
+            _searchController.text,
+            mutuals,
+          );
+          _followListLoaded = true;
+        });
+      },
+      // Every source failed. Fall back to local follows so the picker stays
+      // usable instead of hanging in loading.
+      onError: (Object _) {
+        if (!mounted) return;
+        setState(() {
+          _followProfiles = candidates;
+          _filteredFollowProfiles = _matchingFollowProfiles(
+            _searchController.text,
+            candidates,
+          );
+          _followListLoaded = true;
+        });
+      },
+      onDone: () {
+        if (!mounted || _followListLoaded) return;
+        setState(() => _followListLoaded = true);
+      },
+    );
   }
 
   @override
   void dispose() {
+    unawaited(_followersSubscription?.cancel());
     _searchController.dispose();
     _searchBloc?.close();
     super.dispose();
@@ -251,20 +282,38 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     }
   }
 
-  void _filterFollowProfiles(String query) {
-    final trimmed = query.trim().toLowerCase();
-    if (trimmed.isEmpty) {
-      setState(() => _filteredFollowProfiles = _followProfiles);
-      return;
-    }
+  /// Empties the search field and re-runs the search for the now-empty query.
+  ///
+  /// [TextEditingController.clear] does not fire [TextField.onChanged] — that
+  /// only runs for platform input — so the reset has to be dispatched by hand
+  /// or the results stay filtered under an empty field.
+  void _clearSearch() {
+    _searchController.clear();
+    _onSearchChanged('');
+  }
 
+  void _filterFollowProfiles(String query) {
     setState(() {
-      _filteredFollowProfiles = _followProfiles.where((profile) {
-        final name = profile.bestDisplayName.toLowerCase();
-        final nip05 = (profile.nip05 ?? '').toLowerCase();
-        return name.contains(trimmed) || nip05.contains(trimmed);
-      }).toList();
+      _filteredFollowProfiles = _matchingFollowProfiles(query, _followProfiles);
     });
+  }
+
+  /// The subset of [profiles] matching [query] by display name or NIP-05.
+  ///
+  /// Kept separate from [_filterFollowProfiles] because the follower stream
+  /// re-applies the active query every time it adds rows.
+  List<UserProfile> _matchingFollowProfiles(
+    String query,
+    List<UserProfile> profiles,
+  ) {
+    final trimmed = query.trim().toLowerCase();
+    if (trimmed.isEmpty) return profiles;
+
+    return profiles.where((profile) {
+      final name = profile.bestDisplayName.toLowerCase();
+      final nip05 = (profile.nip05 ?? '').toLowerCase();
+      return name.contains(trimmed) || nip05.contains(trimmed);
+    }).toList();
   }
 
   void _onUserSelected(UserProfile profile) {
@@ -383,6 +432,22 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
                   child: DivineIcon(
                     icon: DivineIconName.search,
                     color: context.vineColors.onSurfaceMuted,
+                  ),
+                ),
+                suffixIcon: ValueListenableBuilder(
+                  valueListenable: _searchController,
+                  builder: (context, value, child) => AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    child: value.text.isEmpty
+                        ? const SizedBox.shrink()
+                        : DivineIconButton(
+                            onPressed: _clearSearch,
+                            icon: .x,
+                            semanticLabel:
+                                context.l10n.userPickerClearSearchSemantics,
+                            backgroundColor: VineTheme.transparent,
+                            foregroundColor: context.vineColors.onSurfaceMuted,
+                          ),
                   ),
                 ),
                 border: .none,
@@ -769,7 +834,7 @@ class _NetworkResults extends StatelessWidget {
               hidePubkeys: hidePubkeys,
             ),
           UserSearchStatus.loading => const Center(
-            child: CircularProgressIndicator(color: VineTheme.vineGreen),
+            child: BrandedLoadingIndicator(),
           ),
           UserSearchStatus.failure => const _ErrorState(),
           UserSearchStatus.success when state.results.isEmpty =>
@@ -812,9 +877,7 @@ class _LocalResults extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!followListLoaded) {
-      return const Center(
-        child: CircularProgressIndicator(color: VineTheme.vineGreen),
-      );
+      return const Center(child: BrandedLoadingIndicator());
     }
 
     if (followProfiles.isEmpty) {

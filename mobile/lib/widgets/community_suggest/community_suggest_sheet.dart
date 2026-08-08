@@ -12,6 +12,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_content_label_name.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/repositories/community_content_label_repository.dart';
+import 'package:openvine/utils/pause_aware_modals.dart';
 
 /// The "Help classify this" content-warning suggestion sheet.
 class CommunitySuggestSheet {
@@ -24,13 +25,15 @@ class CommunitySuggestSheet {
     required CommunityContentLabelRepository repository,
     required String myPubkey,
   }) {
-    return VineBottomSheet.show<void>(
-      context: context,
+    return context.showVideoPausingVineBottomSheet<void>(
       maxChildSize: 1,
       initialChildSize: 0.9,
       minChildSize: 0.7,
       showHeader: false,
       showDragHandle: false,
+      // Preserves the pre-pause-integration presentation: the sheet stays in
+      // the shell navigator rather than covering the tab bar.
+      useRootNavigator: false,
       buildScrollBody: (scrollController) => BlocProvider(
         create: (_) => CommunitySuggestCubit(
           repository: repository,

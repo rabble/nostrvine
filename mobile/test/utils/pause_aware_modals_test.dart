@@ -3,6 +3,7 @@
 // ABOUTME: Comments after migration) rely on for tap-outside dismissal
 // ABOUTME: and overlay-visibility integration.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -145,6 +146,65 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Pinned Body'), findsOneWidget);
+      },
+    );
+  });
+
+  group('showVideoPausingSelectionMenu', () {
+    testWidgets(
+      'sets and clears isBottomSheetOpen on the overlay visibility provider',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(800, 1200));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () {
+                      context.showVideoPausingSelectionMenu(
+                        options: const [
+                          VineBottomSheetSelectionOptionData(
+                            label: 'Option A',
+                            value: 'a',
+                          ),
+                        ],
+                      );
+                    },
+                    child: const Text('Open'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.text('Open')),
+          listen: false,
+        );
+        expect(
+          container.read(overlayVisibilityProvider).isBottomSheetOpen,
+          isFalse,
+        );
+
+        await tester.tap(find.text('Open'));
+        await tester.pumpAndSettle();
+
+        expect(
+          container.read(overlayVisibilityProvider).isBottomSheetOpen,
+          isTrue,
+        );
+
+        await tester.tap(find.text('Option A'));
+        await tester.pumpAndSettle();
+
+        expect(
+          container.read(overlayVisibilityProvider).isBottomSheetOpen,
+          isFalse,
+        );
       },
     );
   });

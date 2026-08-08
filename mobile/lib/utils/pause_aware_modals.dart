@@ -110,6 +110,7 @@ extension PauseAwareModals on BuildContext {
     Widget? bottomInput,
     bool expanded = true,
     bool showHeaderDivider = true,
+    bool showDragHandle = true,
     bool? isScrollControlled,
     double initialChildSize = 0.6,
     double minChildSize = 0.3,
@@ -164,6 +165,7 @@ extension PauseAwareModals on BuildContext {
       bottomInput: bottomInput,
       expanded: expanded,
       showHeaderDivider: showHeaderDivider,
+      showDragHandle: showDragHandle,
       isScrollControlled: isScrollControlled,
       initialChildSize: initialChildSize,
       minChildSize: minChildSize,
@@ -177,5 +179,37 @@ extension PauseAwareModals on BuildContext {
       onShow: () => overlayNotifier.setBottomSheetOpen(true),
       onDismiss: () => overlayNotifier.setBottomSheetOpen(false),
     );
+  }
+
+  /// Shows a [VineBottomSheetSelectionMenu] that automatically pauses video
+  /// playback.
+  ///
+  /// [VineBottomSheetSelectionMenu.show] does not expose
+  /// `onShow`/`onDismiss`, so the overlay flag is toggled here around the
+  /// returned future. Uses `setBottomSheetOpen` — same semantics as
+  /// [showVideoPausingVineBottomSheet], so the current player is paused but
+  /// retained for instant resume.
+  Future<String?> showVideoPausingSelectionMenu({
+    required List<VineBottomSheetSelectionOptionData> options,
+    Widget? title,
+    String? selectedValue,
+    EdgeInsetsGeometry? headerPadding,
+    DivineIconButton? headerLeadingAction,
+    DivineIconButton? headerTrailingAction,
+  }) {
+    final container = ProviderScope.containerOf(this, listen: false);
+    final overlayNotifier = container.read(overlayVisibilityProvider.notifier);
+
+    overlayNotifier.setBottomSheetOpen(true);
+
+    return VineBottomSheetSelectionMenu.show(
+      context: this,
+      options: options,
+      title: title,
+      selectedValue: selectedValue,
+      headerPadding: headerPadding,
+      headerLeadingAction: headerLeadingAction,
+      headerTrailingAction: headerTrailingAction,
+    ).whenComplete(() => overlayNotifier.setBottomSheetOpen(false));
   }
 }

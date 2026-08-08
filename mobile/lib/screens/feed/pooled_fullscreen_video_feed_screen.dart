@@ -28,6 +28,7 @@ import 'package:openvine/screens/comments/comments_screen.dart';
 import 'package:openvine/screens/feed/dm_reply_context.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_coordinator.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
+import 'package:openvine/screens/feed/feed_immersive_cubit.dart';
 import 'package:openvine/screens/feed/feed_settings_menu.dart';
 import 'package:openvine/screens/feed/feed_tuning_snackbar.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
@@ -35,6 +36,7 @@ import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/feed_tuning/feed_tuning_swipe_overlay.dart';
 import 'package:openvine/widgets/nav_rounded_shell.dart';
+import 'package:openvine/widgets/video_feed_item/feed_immersive_chrome.dart';
 import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
 import 'package:openvine/widgets/video_feed_item/inline_comment_composer_bar.dart';
 import 'package:openvine/widgets/video_feed_item/reaction_overlay.dart';
@@ -419,6 +421,11 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   /// `BlocProvider.value` in [build].
   final FeedAutoAdvanceCubit _autoAdvanceCubit = FeedAutoAdvanceCubit();
 
+  /// Feed-scoped immersive (hold-to-peek) state. Owned here so it sits above
+  /// both [FeedVideos] — which raises it on a long press — and this screen's
+  /// app bar, which fades out against it.
+  final FeedImmersiveCubit _immersiveCubit = FeedImmersiveCubit();
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -443,6 +450,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
     routeObserver.unsubscribe(this);
     _pagePosition.dispose();
     unawaited(_autoAdvanceCubit.close());
+    unawaited(_immersiveCubit.close());
     super.dispose();
   }
 
@@ -607,8 +615,11 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
       key: ValueKey(commentsRepository),
       create: (_) =>
           InlineCommentComposerCubit(commentsRepository: commentsRepository),
-      child: BlocProvider.value(
-        value: _autoAdvanceCubit,
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: _autoAdvanceCubit),
+          BlocProvider.value(value: _immersiveCubit),
+        ],
         child: MultiBlocListener(
           listeners: [
             BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
@@ -836,9 +847,15 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                 // [TextFieldTapRegion] inside [_FeedSettingsOverlay] so
                 // taps on the playback controls (which render outside
                 // this widget tree via [OverlayPortal]) are covered too.
+                // [FeedImmersiveChrome] fades the bar out while the viewer
+                // holds the video, matching the per-item overlay below. The
+                // slot keeps its height either way, which is what the
+                // already-`extendBodyBehindAppBar` body expects.
                 appBar: PreferredSize(
                   preferredSize: appBar.preferredSize,
-                  child: TextFieldTapRegion(child: appBar),
+                  child: FeedImmersiveChrome(
+                    child: TextFieldTapRegion(child: appBar),
+                  ),
                 ),
                 body: Stack(
                   children: [

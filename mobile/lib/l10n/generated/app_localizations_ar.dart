@@ -1287,6 +1287,18 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'إيقاف الترجمة';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'التشغيل التلقائي مفعّل';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'التشغيل التلقائي متوقف';
+
+  @override
+  String get videoSettingsCaptionsOn => 'الترجمة مفعّلة';
+
+  @override
+  String get videoSettingsCaptionsOff => 'الترجمة متوقفة';
+
+  @override
   String get contentWarningLabel => 'تحذير محتوى';
 
   @override
@@ -1514,11 +1526,24 @@ class AppLocalizationsAr extends AppLocalizations {
       'انتهت مهلة التحقق. تحقّق من اتصالك أو حاول مرّة أخرى بعد قليل.';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      'المحتوى للبالغين مُعطَّل. يمكنك تفعيله من الإعدادات ← مرشّحات المحتوى.';
+  String get videoErrorAdultContentHiddenTitle => 'المحتوى للبالغين مُعطَّل';
+
+  @override
+  String get videoErrorAdultContentHiddenBody =>
+      'فعّله من مرشّحات المحتوى لمشاهدة هذا الفيديو.';
+
+  @override
+  String get videoErrorAdultContentHiddenAction => 'فتح مرشّحات المحتوى';
 
   @override
   String get videoDetailLoadError => 'فشل تحميل الفيديو';
+
+  @override
+  String get videoDetailLoadErrorBody => 'حدث خطأ ما في الطريق. جرّب مرة أخرى.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'قد يكون محذوفًا، أو بعيدًا عن متناولنا، أو مخفيًا بواسطة إعداداتك.';
 
   @override
   String get databaseCorruptionTitle => 'بياناتك المحلية تعرضت للتلف';
@@ -1806,6 +1831,46 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get metadataProofManifest => 'بيان الإثبات';
+
+  @override
+  String get metadataVerificationInfoTooltip => 'ماذا تعني هذه الفحوصات؟';
+
+  @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
+  String get metadataVerificationInfoTitle => 'ماذا تعني هذه الفحوصات';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'تأتي هذه الإشارات من الكاميرا ومن ملف الفيديو نفسه. كلما حمل الفيديو عددًا أكبر منها، زاد ما يمكننا إثباته عن مصدره.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'ضمِن نظام تشغيل الهاتف التطبيق الذي سجّل هذا المقطع. دليل قوي على أنه جاء من كاميرا، لا من ملف رفعه أحدهم.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'وُقّع الفيديو تشفيريًا لحظة تصويره. غيّر إطارًا واحدًا بعد ذلك ينكسر التوقيع.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'سجل مصدر وفق معيار الصناعة يُحمل داخل الملف، فتستطيع تطبيقات غير Divine التحقق منه أيضًا.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'سجل ProofMode الكامل: بصمة الملف والطابع الزمني وسياق التصوير، مرفقة مع الفيديو.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'غياب فحص لا يجعل الفيديو مزيفًا. المقاطع القديمة والملفات المرفوعة لم تحصل عليه أصلًا، وهذا يعني فقط أننا لا نستطيع إثبات ذلك الجزء.';
+
+  @override
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'اعرف المزيد على $url';
+  }
 
   @override
   String get metadataCreatorLabel => 'الصانع';
@@ -4549,6 +4614,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get userPickerSearchByNameHint => 'İsme göre ara...';
 
   @override
+  String get userPickerClearSearchSemantics => 'مسح البحث';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name zaten eklendi';
   }
@@ -6185,6 +6253,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get commonClose => 'إغلاق';
 
   @override
+  String get commonNotNow => 'ليس الآن';
+
+  @override
   String get commonLoading => 'جارٍ التحميل';
 
   @override
@@ -6205,6 +6276,10 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get videoMetadataC2paMissingNote =>
       'تتطلب بيانات اعتماد المحتوى اتصالاً بالإنترنت.';
+
+  @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
 
   @override
   String get videoMetadataC2paMissingRegenerate => 'إعادة الإنشاء';
@@ -7193,50 +7268,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get proofmodeBadgeAiScanPending => 'فحص الذكاء الاصطناعي قيد الانتظار';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'من صنع إنسان';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'ليس مستضافًا على Divine';
-
-  @override
-  String get proofmodeBadgeOriginal => 'أصلي';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated =>
-      'ربما مُولَّد بالذكاء الاصطناعي';
-
-  @override
-  String get proofmodeBadgeUnverified => 'غير مُوثَّق';
-
-  @override
-  String get proofmodeConfirmedByModerator => 'مؤكَّد من مُشرِف بشري';
-
-  @override
-  String get proofmodeExternalContentTitle => 'محتوى خارجي';
-
-  @override
-  String get proofmodeHostedOnLabel => 'هذا الفيديو مستضاف على:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'على الأرجح من صنع إنسان';
-
-  @override
-  String get proofmodeNoProofDataAttached => 'لا توجد بيانات ProofMode مرفقة';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'هذا المحتوى غير مستضاف على خوادم Divine. لا يمكننا ضمان أصالته بالكامل.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'ربما مُولَّد بالذكاء الاصطناعي';
-
-  @override
-  String get proofmodePublishedByLabel => 'نُشر بواسطة:';
-
-  @override
   String get publishErrorNotSignedIn => 'يرجى تسجيل الدخول لنشر الفيديوهات.';
 
   @override
@@ -7295,6 +7326,10 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get publishErrorNostrPublishFailed =>
       'تم رفع الفيديو لكن تعذّر نشر المنشور. تحقّق من إعدادات المحوّلات وحاول مرّة أخرى.';
+
+  @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'تم رفع الفيديو، لكن الصوت غير مسموح بإعادة استخدامه. اختر صوتًا آخر لنشره.';
 
   @override
   String get publishErrorInterrupted =>
@@ -7444,6 +7479,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'الموضوع *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'منشور عام على GitHub';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'سيُنشر كل ما ترسله هنا في مستودعنا مفتوح المصدر على GitHub ليتمكن المطورون من العمل عليه. سيكون المنشور والحساب الذي سجّلت الدخول به متاحين للجميع علنًا.';
 
   @override
   String get supportRequiredHelper => 'مطلوب';

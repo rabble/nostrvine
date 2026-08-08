@@ -5,8 +5,8 @@ COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 [ -z "$COMMAND" ] && exit 0
 
 # Only care about git commit/push commands
-FIRST_CMD=$(echo "$COMMAND" | head -1 | sed 's/\s*&&.*//' | sed 's/\s*|.*//' | sed 's/\s*;.*//')
-echo "$FIRST_CMD" | grep -qE '^\s*git\s+(commit|push)\b' || exit 0
+FIRST_CMD=$(echo "$COMMAND" | head -1 | sed 's/[[:space:]]*&&.*//' | sed 's/[[:space:]]*|.*//' | sed 's/[[:space:]]*;.*//')
+echo "$FIRST_CMD" | grep -qE '^[[:space:]]*git[[:space:]]+(commit|push)([[:space:]]|$)' || exit 0
 
 REPO_ROOT=$(git -C "$CLAUDE_PROJECT_DIR" rev-parse --show-toplevel 2>/dev/null) || exit 0
 GIT_COMMON_DIR=$(git -C "$REPO_ROOT" rev-parse --git-common-dir 2>/dev/null) || exit 0

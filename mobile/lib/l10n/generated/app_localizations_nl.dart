@@ -1304,6 +1304,18 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'Ondertiteling uitschakelen';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'Automatisch doorgaan aan';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'Automatisch doorgaan uit';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Ondertiteling aan';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Ondertiteling uit';
+
+  @override
   String get contentWarningLabel => 'Inhoudswaarschuwing';
 
   @override
@@ -1539,11 +1551,26 @@ class AppLocalizationsNl extends AppLocalizations {
       'Verificatie duurde te lang. Controleer je verbinding of probeer het straks opnieuw.';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      'Inhoud voor volwassenen staat uit. Je kunt dit aanzetten via Instellingen → Inhoudsfilters.';
+  String get videoErrorAdultContentHiddenTitle =>
+      'Inhoud voor volwassenen staat uit';
+
+  @override
+  String get videoErrorAdultContentHiddenBody =>
+      'Zet het aan in je inhoudsfilters om deze video te bekijken.';
+
+  @override
+  String get videoErrorAdultContentHiddenAction => 'Inhoudsfilters openen';
 
   @override
   String get videoDetailLoadError => 'Video laden mislukt';
+
+  @override
+  String get videoDetailLoadErrorBody =>
+      'Er ging onderweg iets mis. Probeer het nog eens.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Misschien is hij verwijderd, buiten bereik, of verborgen door je instellingen.';
 
   @override
   String get databaseCorruptionTitle => 'Je lokale gegevens zijn beschadigd';
@@ -1827,6 +1854,46 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get metadataProofManifest => 'Proof-manifest';
+
+  @override
+  String get metadataVerificationInfoTooltip => 'Wat betekenen deze controles?';
+
+  @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
+  String get metadataVerificationInfoTitle => 'Wat deze controles betekenen';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'Deze signalen komen van de camera en uit het videobestand zelf. Hoe meer een video er heeft, hoe meer we over de herkomst kunnen aantonen.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'Het besturingssysteem van de telefoon stond in voor de app die dit opnam. Sterk bewijs dat het van een camera komt en niet van een geüpload bestand.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'De video is op het moment van opname cryptografisch ondertekend. Verandert daarna één beeldje, dan breekt de handtekening.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'Een herkomstbewijs volgens de industriestandaard dat in het bestand meereist — zo kunnen ook andere apps dan Divine het controleren.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'Het volledige ProofMode-record: bestandsvingerafdruk, tijdstempel en opnamecontext, samen met de video.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'Een ontbrekende controle maakt een video niet nep. Oudere clips en uploads kregen er nooit een — het betekent alleen dat we dat deel niet kunnen aantonen.';
+
+  @override
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'Meer weten op $url';
+  }
 
   @override
   String get metadataCreatorLabel => 'Maker';
@@ -4604,6 +4671,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Zoeken op naam...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Zoekopdracht wissen';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name al toegevoegd';
   }
@@ -6258,6 +6328,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get commonClose => 'Sluiten';
 
   @override
+  String get commonNotNow => 'Niet nu';
+
+  @override
   String get commonLoading => 'Laden';
 
   @override
@@ -6278,6 +6351,10 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get videoMetadataC2paMissingNote =>
       'Content credentials hebben een internetverbinding nodig.';
+
+  @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
 
   @override
   String get videoMetadataC2paMissingRegenerate => 'Opnieuw genereren';
@@ -7274,52 +7351,6 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get proofmodeBadgeAiScanPending => 'AI-scan in behandeling';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'Door mensen gemaakt';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Niet op Divine gehost';
-
-  @override
-  String get proofmodeBadgeOriginal => 'Origineel';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'Mogelijk AI-gegenereerd';
-
-  @override
-  String get proofmodeBadgeUnverified => 'Niet geverifieerd';
-
-  @override
-  String get proofmodeConfirmedByModerator =>
-      'Bevestigd door een menselijke moderator';
-
-  @override
-  String get proofmodeExternalContentTitle => 'Externe inhoud';
-
-  @override
-  String get proofmodeHostedOnLabel => 'Deze video wordt gehost op:';
-
-  @override
-  String get proofmodeLikelyHumanCreated =>
-      'Waarschijnlijk door een mens gemaakt';
-
-  @override
-  String get proofmodeNoProofDataAttached =>
-      'Geen ProofMode-gegevens bijgevoegd';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'Deze inhoud wordt niet op Divine-servers gehost. We kunnen de authenticiteit ervan niet volledig garanderen.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'Mogelijk AI-gegenereerd';
-
-  @override
-  String get proofmodePublishedByLabel => 'Gepubliceerd door:';
-
-  @override
   String get publishErrorNotSignedIn => 'Log in om video\'s te publiceren.';
 
   @override
@@ -7379,6 +7410,10 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get publishErrorNostrPublishFailed =>
       'De video is geüpload, maar de post kon niet worden gepubliceerd. Controleer je relay-instellingen en probeer het opnieuw.';
+
+  @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'De video is geüpload, maar de sound mag niet hergebruikt worden. Kies een andere sound om te posten.';
 
   @override
   String get publishErrorInterrupted =>
@@ -7525,6 +7560,13 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'Onderwerp *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'Openbaar GitHub-bericht';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Alles wat je hier indient, wordt in onze opensource-repository op GitHub geplaatst, zodat ontwikkelaars ermee aan de slag kunnen. Het bericht en het account waarmee je bent ingelogd zijn voor iedereen openbaar zichtbaar.';
 
   @override
   String get supportRequiredHelper => 'Verplicht';

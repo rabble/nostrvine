@@ -86,6 +86,16 @@ class _AppsDirectoryContent extends StatelessWidget {
                   onRefresh: () =>
                       context.read<AppsDirectoryCubit>().refreshApps(),
                   child: ListView.builder(
+                    // A null padding makes Flutter fall back to the vertical
+                    // MediaQuery.padding — both insets. Embedded in Explore
+                    // there is no app bar above, so the top inset is still
+                    // the status bar and would gap the intro card; standalone
+                    // the bottom inset is real (no bottom nav) and has to stay
+                    // so the last card clears the gesture bar. Resolved here,
+                    // below the Scaffold: 0 embedded, the inset standalone.
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.paddingOf(context).bottom,
+                    ),
                     itemCount: state.apps.length + 1,
                     itemBuilder: (context, index) {
                       if (index == 0) {

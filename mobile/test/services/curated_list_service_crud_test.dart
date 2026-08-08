@@ -30,7 +30,6 @@ const _otherPubkey =
 /// An outcome one relay accepted — what [PublishOutcome.acceptedByAny] gates on.
 PublishOutcome _accepted(Event event) => PublishOutcome(
   eventId: event.id,
-  eventKind: event.kind,
   acceptedBy: const ['wss://relay.test'],
   rejectedBy: const {},
   noResponseFrom: const [],
@@ -39,7 +38,6 @@ PublishOutcome _accepted(Event event) => PublishOutcome(
 /// An outcome no relay accepted, so the caller may roll local state back.
 PublishOutcome _rejected(Event event) => PublishOutcome(
   eventId: event.id,
-  eventKind: event.kind,
   acceptedBy: const [],
   rejectedBy: const {'wss://relay.test': 'blocked'},
   noResponseFrom: const [],

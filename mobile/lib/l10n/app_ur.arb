@@ -642,6 +642,10 @@
     "description": "Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently off."
   },
   "videoSettingsCaptionsDisable": "کیپشن غیر فعال کریں",
+  "videoSettingsAutoAdvanceOn": "خودکار آگے بڑھنا آن",
+  "videoSettingsAutoAdvanceOff": "خودکار آگے بڑھنا آف",
+  "videoSettingsCaptionsOn": "کیپشن آن",
+  "videoSettingsCaptionsOff": "کیپشن آف",
   "@videoSettingsCaptionsDisable": {
     "description": "Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently on."
   },
@@ -732,11 +736,15 @@
   "@videoErrorVerifyAgeSignerUnreachable": {
     "description": "Snackbar shown when tapping Verify age on an age-restricted video and the remote signer didn't respond in time (timeout). Distinct from videoErrorVerifyAgeFailed because the remedy is checking connectivity, not re-verifying age."
   },
-  "videoErrorAdultContentHidden": "بالغ مواد بند ہے۔ آپ اسے ترتیبات → مواد فلٹرز میں چالو کر سکتے ہیں۔",
-  "@videoErrorAdultContentHidden": {
-    "description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."
-  },
+  "videoErrorAdultContentHiddenTitle": "بالغ مواد بند ہے",
+  "@videoErrorAdultContentHiddenTitle": {"description": "Title of the bottom sheet shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden."},
+  "videoErrorAdultContentHiddenBody": "یہ ویڈیو دیکھنے کے لیے اسے مواد فلٹرز میں چالو کریں۔",
+  "@videoErrorAdultContentHiddenBody": {"description": "Body of the adult-content-hidden sheet. The remedy is switching adult content on in Content Filters, not re-verifying age."},
+  "videoErrorAdultContentHiddenAction": "مواد فلٹرز کھولیں",
+  "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
   "videoDetailLoadError": "ویڈیو لوڈ نہیں ہو سکی",
+  "videoDetailLoadErrorBody": "یہاں پہنچتے پہنچتے کچھ گڑبڑ ہو گئی۔ دوبارہ کوشش کریں۔",
+  "videoDetailNotFoundBody": "ہو سکتا ہے یہ حذف ہو چکی ہو، ہماری پہنچ سے باہر ہو، یا آپ کی ترتیبات نے اسے چھپا دیا ہو۔",
   "databaseCorruptionTitle": "آپ کا مقامی ڈیٹا بگڑ گیا",
   "@databaseCorruptionTitle": {
     "description": "Title of the full-screen takeover shown when the local database reports on-disk corruption at runtime. 'Scrambled' is deliberately non-technical: the user did nothing wrong and cannot act on the real cause."
@@ -989,6 +997,16 @@
   "metadataPgpSignature": "PGP دستخط",
   "metadataC2paCredentials": "C2PA مواد اسناد",
   "metadataProofManifest": "ثبوت مینی فیسٹ",
+  "metadataVerificationInfoTooltip": "ان جانچوں کا کیا مطلب ہے؟",
+    "metadataSectionInfoSemanticsLabel": "{section}. {question}",
+  "metadataVerificationInfoTitle": "ان جانچوں کا مطلب",
+  "metadataVerificationInfoIntro": "یہ اشارے کیمرے اور خود ویڈیو فائل سے آتے ہیں۔ ویڈیو کے پاس جتنے زیادہ اشارے ہوں، ہم اس کے ماخذ کے بارے میں اتنا ہی زیادہ ثابت کر سکتے ہیں۔",
+  "metadataVerificationInfoDeviceAttestation": "فون کے آپریٹنگ سسٹم نے اُس ایپ کی ضمانت دی جس نے یہ ریکارڈ کیا۔ یہ اس بات کا مضبوط ثبوت ہے کہ یہ کیمرے سے آیا، نہ کہ کسی کی اپ لوڈ کی ہوئی فائل سے۔",
+  "metadataVerificationInfoPgpSignature": "ویڈیو کو ریکارڈ ہوتے ہی خفیہ نگاری سے دستخط کیا گیا۔ بعد میں ایک فریم بھی بدلے تو دستخط ٹوٹ جاتا ہے۔",
+  "metadataVerificationInfoC2paCredentials": "صنعتی معیار کا ماخذ ریکارڈ جو فائل کے اندر ساتھ سفر کرتا ہے — اس لیے Divine کے علاوہ ایپس بھی اسے جانچ سکتی ہیں۔",
+  "metadataVerificationInfoProofManifest": "مکمل ProofMode ریکارڈ: فائل کا فنگر پرنٹ، وقت کی مہر اور ریکارڈنگ کا سیاق، ویڈیو کے ساتھ منسلک۔",
+  "metadataVerificationInfoFootnote": "کسی جانچ کا نہ ہونا ویڈیو کو جعلی نہیں بناتا۔ پرانی کلپس اور اپ لوڈز کے پاس یہ کبھی تھا ہی نہیں — اس کا مطلب صرف یہ ہے کہ ہم وہ حصہ ثابت نہیں کر سکتے۔",
+  "metadataVerificationInfoLearnMore": "{url} پر مزید جانیں",
   "metadataCreatorLabel": "کریئیٹر",
   "metadataCollaboratorsLabel": "شریک کار",
   "metadataInspiredByLabel": "متاثر از",
@@ -2588,6 +2606,7 @@
   "userPickerSearchByName": "نام سے تلاش کریں",
   "userPickerFilterByNameHint": "نام سے فلٹر کریں...",
   "userPickerSearchByNameHint": "نام سے تلاش کریں...",
+  "userPickerClearSearchSemantics": "تلاش صاف کریں",
   "userPickerAlreadyAddedSemantics": "{name} پہلے سے شامل ہے",
   "@userPickerAlreadyAddedSemantics": {
     "placeholders": {
@@ -3651,6 +3670,7 @@
   "commonCancel": "منسوخ کریں",
   "commonBack": "واپس",
   "commonClose": "بند کریں",
+  "commonNotNow": "ابھی نہیں",
   "commonLoading": "لوڈ ہو رہا ہے",
   "@commonLoading": {
     "description": "Screen-reader label for a blocking progress spinner that covers the screen while an action is being prepared. Announced instead of the content behind it, which is not reachable while the spinner is up."
@@ -4220,20 +4240,6 @@
       }
     }
   },
-  "proofmodeBadgeAiScanPending": "AI اسکین زیر التواء",
-  "proofmodeBadgeHumanMade": "انسان کی بنائی ہوئی",
-  "proofmodeBadgeNotDivineHosted": "Divine ہوسٹ شدہ نہیں",
-  "proofmodeBadgeOriginal": "اصل",
-  "proofmodeBadgePossiblyAiGenerated": "ممکنہ AI تیار کردہ",
-  "proofmodeBadgeUnverified": "غیر تصدیق شدہ",
-  "proofmodeConfirmedByModerator": "انسانی موڈریٹر نے تصدیق کی",
-  "proofmodeExternalContentTitle": "بیرونی مواد",
-  "proofmodeHostedOnLabel": "یہ ویڈیو ہوسٹ ہے:",
-  "proofmodeLikelyHumanCreated": "غالباً انسان کی تخلیق",
-  "proofmodeNoProofDataAttached": "کوئی ProofMode ڈیٹا منسلک نہیں",
-  "proofmodeNotDivineHostedDisclaimer": "یہ مواد Divine سرورز پر ہوسٹ نہیں ہے۔ ہم اس کی اصالت کی مکمل ضمانت نہیں دے سکتے۔",
-  "proofmodePossiblyAiGenerated": "ممکنہ AI تیار کردہ",
-  "proofmodePublishedByLabel": "شائع کنندہ:",
   "publishErrorNotSignedIn": "ویڈیوز شائع کرنے کے لیے براہ کرم سائن ان کریں۔",
   "publishErrorNoRetry": "دوبارہ کوشش کے لیے کوئی اپلوڈ نہیں۔",
   "publishErrorNoInternet": "کوئی انٹرنیٹ کنکشن نہیں۔ اپنا Wi-Fi یا موبائل ڈیٹا چیک کر کے دوبارہ کوشش کریں۔",
@@ -4273,6 +4279,7 @@
   "publishErrorLowStorage": "آپ کی ڈیوائس میں جگہ کافی نہیں۔ کچھ جگہ خالی کر کے دوبارہ کوشش کریں۔",
   "publishErrorThumbnailFailed": "ویڈیو اپلوڈ ہو گئی، لیکن تھمب نیل تیار نہیں ہو سکا۔ براہ کرم دوبارہ کوشش کریں۔",
   "publishErrorNostrPublishFailed": "ویڈیو اپلوڈ ہو گئی لیکن پوسٹ شائع نہیں ہو سکی۔ اپنی ریلے ترتیبات چیک کر کے دوبارہ کوشش کریں۔",
+  "publishErrorAudioReuseNotPermitted": "ویڈیو اپلوڈ ہو گئی لیکن اس کی آڈیو دوبارہ استعمال کے لیے دستیاب نہیں۔ پوسٹ کرنے کے لیے کوئی دوسری آڈیو منتخب کریں۔",
   "publishErrorInterrupted": "یہ اپلوڈ رک گیا۔ کیا آپ دوبارہ کوشش کرنا چاہیں گے؟",
   "publishErrorAccountChanged": "یہ ویڈیو کسی اور اکاؤنٹ کی ہے۔ اسے پوسٹ کرنے کے لیے اُسی اکاؤنٹ پر واپس جائیں۔",
   "publishErrorGeneric": "کچھ غلط ہو گیا۔ براہ کرم دوبارہ کوشش کریں۔",
@@ -4403,6 +4410,8 @@
   },
   "bugReportSendReport": "رپورٹ بھیجیں",
   "supportSubjectRequiredLabel": "موضوع *",
+  "supportPublicSubmissionTitle": "عوامی GitHub پوسٹ",
+  "supportPublicSubmissionMessage": "آپ یہاں جو کچھ بھی جمع کرائیں گے وہ ہمارے اوپن سورس GitHub ریپوزٹری میں پوسٹ کیا جائے گا تاکہ ڈویلپرز اس پر کام کر سکیں۔ یہ پوسٹ اور وہ اکاؤنٹ جس سے آپ سائن اِن ہیں، سب کو عوامی طور پر نظر آئیں گے۔",
   "supportRequiredHelper": "درکار",
   "bugReportSubjectHint": "مسئلے کا مختصر خلاصہ",
   "bugReportDescriptionRequiredLabel": "کیا ہوا؟ *",

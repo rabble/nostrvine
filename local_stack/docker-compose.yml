@@ -70,6 +70,24 @@ services:
 
   # ---------------------------------------------------------------------------
   # FunnelCake (Nostr relay + analytics API)
+  #
+  # WHY THESE ARE `:latest` AND NOT PINNED DIGESTS
+  #
+  # Deliberate, and argued out in PR #2180. A reviewer asked for immutable
+  # digests ("the environment is still non-reproducible because it is pinned to
+  # a moving tag"); the author declined, on the grounds that the stack exists to
+  # track what is deployed: "Pinning to a digest would defeat that — we'd be
+  # testing against stale images that drift from what's actually deployed."
+  # That review was never withdrawn, so treat this as a live trade-off rather
+  # than a closed question.
+  #
+  # The premise it depends on — that the rolling tag actually rolls — has since
+  # failed for funnelcake specifically. Its GHCR publish has never once
+  # succeeded, so `:latest` is frozen at 2026-02-24 while `docker compose pull`
+  # keeps reporting success. keycast and divine-blossom still publish normally.
+  # See divine-mobile#6594; `preflight_image_staleness` in preflight.sh now
+  # warns rather than letting it stay silent, and build_funnelcake.sh is the
+  # escape hatch.
   # ---------------------------------------------------------------------------
   funnelcake-clickhouse:
     image: clickhouse/clickhouse-server:25.8
@@ -103,8 +121,8 @@ services:
       retries: 10
 
   funnelcake-migrate:
-    image: ghcr.io/divinevideo/funnelcake-migrate:latest
-    pull_policy: always
+    image: ${FUNNELCAKE_MIGRATE_IMAGE:-ghcr.io/divinevideo/funnelcake-migrate:latest}
+    pull_policy: ${FUNNELCAKE_PULL_POLICY:-always}
     restart: on-failure:3
     depends_on:
       funnelcake-clickhouse:
@@ -115,9 +133,39 @@ services:
       CLICKHOUSE_USER: default
       CLICKHOUSE_PASSWORD: clickhouse
 
-  funnelcake-relay:
-    image: ghcr.io/divinevideo/funnelcake-relay:latest
+  # Shortens the refreshable-MV intervals that local dev and the e2e read, so a
+  # freshly published video is visible in seconds instead of up to 15 minutes.
+  # No-op against the pinned 2026-02-24 schema, which has none of these MVs.
+  # See tuning/refresh_intervals.sql for the measurements.
+  funnelcake-local-tuning:
+    image: clickhouse/clickhouse-server:25.8
     pull_policy: always
+    profiles: ["tools"]
+    depends_on:
+      funnelcake-migrate:
+        condition: service_completed_successfully
+    volumes:
+      - ./tuning:/tuning:ro
+    entrypoint: ["/bin/bash", "-c"]
+    # Applied one statement at a time: on the pinned schema every ALTER fails
+    # because the MV does not exist, and that must not fail the stack.
+    command:
+      - |
+        applied=0; skipped=0
+        while IFS= read -r stmt; do
+          [ -z "$$stmt" ] && continue
+          if clickhouse-client --host funnelcake-clickhouse --password clickhouse \
+               --query "$$stmt" >/dev/null 2>&1; then
+            applied=$$((applied + 1))
+          else
+            skipped=$$((skipped + 1))
+          fi
+        done < <(grep -v '^--' /tuning/refresh_intervals.sql | tr '\n' ' ' | tr ';' '\n' | sed 's/^ *//')
+        echo "refresh-interval tuning: applied=$$applied skipped=$$skipped"
+
+  funnelcake-relay:
+    image: ${FUNNELCAKE_RELAY_IMAGE:-ghcr.io/divinevideo/funnelcake-relay:latest}
+    pull_policy: ${FUNNELCAKE_PULL_POLICY:-always}
     depends_on:
       funnelcake-migrate:
         condition: service_completed_successfully
@@ -127,10 +175,25 @@ services:
       CLICKHOUSE_URL: http://funnelcake-clickhouse:8123
       CLICKHOUSE_USER: default
       CLICKHOUSE_PASSWORD: clickhouse
+      # Disable the per-connection rate limiter for local runs.
+      #
+      # The relay defaults to a 10-event burst and 2 events/sec sustained per
+      # connection (funnelcake crates/relay/src/rate_limit.rs). `seed.py`
+      # publishes 100 events down a single WebSocket as fast as OK round-trips
+      # allow, so on a current relay build 90 of them come back
+      # "rate-limited: too many events, slow down", seed.py exits non-zero and
+      # `up.sh` fails. Measured against a relay built from funnelcake main:
+      # 100 events -> ok=10 rejected=90 without these, ok=100 rejected=0 with.
+      #
+      # Inert against the currently pinned 2026-02-24 image, which predates the
+      # rate limiter entirely.
+      MAX_EVENTS_PER_SECOND: "10000"
+      SUSTAINED_EVENTS_PER_SECOND: "10000"
+      MAX_EVENTS_PER_MINUTE_PER_PUBKEY: "0"
 
   funnelcake-api:
-    image: ghcr.io/divinevideo/funnelcake-api:latest
-    pull_policy: always
+    image: ${FUNNELCAKE_API_IMAGE:-ghcr.io/divinevideo/funnelcake-api:latest}
+    pull_policy: ${FUNNELCAKE_PULL_POLICY:-always}
     depends_on:
       funnelcake-migrate:
         condition: service_completed_successfully

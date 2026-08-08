@@ -354,6 +354,11 @@ const _knownUntranslatedDebt = <String>{
   'soundCreditPublicHashtagsLabel',
   'soundsSaveFailed',
   'soundsRemoveFailed',
+  // Distinguishes a signing-service failure from a genuinely offline device on
+  // the missing-content-credential sheet. English-only until the next
+  // localization pass; offline devices still get the fully translated
+  // videoMetadataC2paMissingNote.
+  'videoMetadataC2paMissingNoteServiceUnavailable',
 };
 
 const _signatureVerificationKeys = <String>{

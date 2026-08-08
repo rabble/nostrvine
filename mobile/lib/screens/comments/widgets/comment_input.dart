@@ -294,9 +294,13 @@ class _VideoReplyButton extends StatelessWidget {
             width: 40,
             height: 40,
             margin: const EdgeInsets.only(bottom: 4),
+            // The camera asset is 29x18, so `contain` sizes it off its height
+            // and it renders 35px wide inside the 40px circle. The padding
+            // caps that width; without it the glyph sits 2px from the edge.
+            padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
               color: context.vineColors.containerLow,
-              borderRadius: BorderRadius.circular(17),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: IconButton(
               onPressed: onPressed,

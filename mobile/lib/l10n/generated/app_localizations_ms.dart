@@ -1303,6 +1303,18 @@ class AppLocalizationsMs extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'Lumpuhkan sarikata';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'Maju automatik dihidupkan';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'Maju automatik dimatikan';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Sarikata dihidupkan';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Sarikata dimatikan';
+
+  @override
   String get contentWarningLabel => 'Amaran Kandungan';
 
   @override
@@ -1542,11 +1554,25 @@ class AppLocalizationsMs extends AppLocalizations {
       'Pengesahan tamat masa. Semak sambungan anda atau cuba lagi sebentar nanti.';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      'Kandungan dewasa dimatikan. Anda boleh menghidupkannya dalam Tetapan → Penapis Kandungan.';
+  String get videoErrorAdultContentHiddenTitle => 'Kandungan dewasa dimatikan';
+
+  @override
+  String get videoErrorAdultContentHiddenBody =>
+      'Hidupkan dalam Penapis Kandungan anda untuk menonton video ini.';
+
+  @override
+  String get videoErrorAdultContentHiddenAction => 'Buka Penapis Kandungan';
 
   @override
   String get videoDetailLoadError => 'Gagal memuatkan video';
+
+  @override
+  String get videoDetailLoadErrorBody =>
+      'Ada yang tak kena dalam perjalanan. Cuba lagi.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Mungkin ia dipadam, di luar capaian, atau disembunyikan oleh tetapan anda.';
 
   @override
   String get databaseCorruptionTitle => 'Data setempat anda bercelaru';
@@ -1829,6 +1855,47 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get metadataProofManifest => 'Manifes bukti';
+
+  @override
+  String get metadataVerificationInfoTooltip =>
+      'Apakah maksud pemeriksaan ini?';
+
+  @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
+  String get metadataVerificationInfoTitle => 'Apa maksud pemeriksaan ini';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'Isyarat ini datang daripada kamera dan daripada fail video itu sendiri. Lebih banyak yang dibawa sesebuah video, lebih banyak yang boleh kami buktikan tentang asalnya.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'Sistem pengendalian telefon menjamin apl yang merakam ini. Bukti kukuh bahawa ia datang daripada kamera, bukan fail yang dimuat naik seseorang.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'Video ditandatangani secara kriptografi pada saat ia dirakam. Ubah satu bingkai selepas itu, tandatangan akan rosak.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'Rekod asal usul berstandard industri yang dibawa di dalam fail — jadi apl selain Divine pun boleh menyemaknya.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'Rekod ProofMode penuh: cap jari fail, cap masa dan konteks rakaman, disatukan dengan video.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'Pemeriksaan yang tiada tidak menjadikan video itu palsu. Klip lama dan muat naik memang tidak pernah ada — ia cuma bermakna kami tidak dapat membuktikan bahagian itu.';
+
+  @override
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'Ketahui lebih lanjut di $url';
+  }
 
   @override
   String get metadataCreatorLabel => 'Pencipta';
@@ -4620,6 +4687,9 @@ class AppLocalizationsMs extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Cari mengikut nama...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Kosongkan carian';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name sudah ditambah';
   }
@@ -6276,6 +6346,9 @@ class AppLocalizationsMs extends AppLocalizations {
   String get commonClose => 'Tutup';
 
   @override
+  String get commonNotNow => 'Bukan Sekarang';
+
+  @override
   String get commonLoading => 'Memuatkan';
 
   @override
@@ -6297,6 +6370,10 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get videoMetadataC2paMissingNote =>
       'Kelayakan kandungan memerlukan sambungan internet.';
+
+  @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
 
   @override
   String get videoMetadataC2paMissingRegenerate => 'Jana semula';
@@ -7293,49 +7370,6 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String get proofmodeBadgeAiScanPending => 'Imbasan AI belum selesai';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'Buatan Manusia';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Bukan Dihoskan Divine';
-
-  @override
-  String get proofmodeBadgeOriginal => 'Asal';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'Mungkin Dijana AI';
-
-  @override
-  String get proofmodeBadgeUnverified => 'Tidak Disahkan';
-
-  @override
-  String get proofmodeConfirmedByModerator => 'Disahkan oleh penyelia manusia';
-
-  @override
-  String get proofmodeExternalContentTitle => 'Kandungan Luaran';
-
-  @override
-  String get proofmodeHostedOnLabel => 'Video ini dihoskan pada:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'Kemungkinan ciptaan manusia';
-
-  @override
-  String get proofmodeNoProofDataAttached => 'Tiada data ProofMode dilampirkan';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'Kandungan ini tidak dihoskan pada pelayan Divine. Kami tidak dapat menjamin kesahihannya sepenuhnya.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'Mungkin dijana AI';
-
-  @override
-  String get proofmodePublishedByLabel => 'Diterbitkan oleh:';
-
-  @override
   String get publishErrorNotSignedIn =>
       'Sila log masuk untuk menerbitkan video.';
 
@@ -7396,6 +7430,10 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get publishErrorNostrPublishFailed =>
       'Video dimuat naik tetapi siaran tidak dapat diterbitkan. Semak tetapan relay anda dan cuba lagi.';
+
+  @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Video dimuat naik tetapi bunyinya tidak dibenarkan untuk digunakan semula. Pilih bunyi lain untuk menyiarkannya.';
 
   @override
   String get publishErrorInterrupted =>
@@ -7541,6 +7579,13 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'Subjek *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'Siaran GitHub awam';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Semua yang anda hantar di sini akan disiarkan dalam repositori sumber terbuka kami di GitHub supaya pembangun boleh mengendalikannya. Siaran ini dan akaun yang anda log masuk boleh dilihat oleh semua orang.';
 
   @override
   String get supportRequiredHelper => 'Diperlukan';

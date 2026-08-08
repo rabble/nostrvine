@@ -7,6 +7,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
 import 'package:openvine/widgets/video_clip/clip_thumbnail_image.dart';
+import 'package:openvine/widgets/video_clip/video_clip_hero.dart';
 
 /// Thumbnail card for a single clip in the grid.
 ///
@@ -150,7 +151,7 @@ class _Thumbnail extends StatelessWidget {
     final thumbnailPath = clip.thumbnailPath;
     if (thumbnailPath != null) {
       return Hero(
-        tag: 'Video-Clip-Preview-${clip.id}',
+        tag: videoClipPreviewHeroTag(clip.id),
         // Stop-motion clips use a full-resolution still as their thumbnail;
         // bound the decode to the grid cell so it doesn't cost tens of MB.
         child: ClipThumbnailImage(
@@ -161,20 +162,12 @@ class _Thumbnail extends StatelessWidget {
                       MediaQuery.devicePixelRatioOf(context) /
                       2)
                   .round(),
-          placeholder: DivineIcon(
-            icon: DivineIconName.videoCamera,
-            color: context.vineColors.mutedText,
-            size: 32,
-          ),
+          placeholder: const VideoClipThumbnailPlaceholder(),
         ),
       );
     }
 
-    return DivineIcon(
-      icon: DivineIconName.videoCamera,
-      color: context.vineColors.mutedText,
-      size: 32,
-    );
+    return const VideoClipThumbnailPlaceholder();
   }
 }
 
@@ -278,9 +271,9 @@ class _DurationBadge extends StatelessWidget {
         ),
         child: Text(
           clip.durationInSeconds.toStringAsFixed(2),
-          style: VineTheme.labelSmallFont(color: VineTheme.whiteText).copyWith(
-            fontFeatures: [const .tabularFigures()],
-          ),
+          style: VineTheme.labelSmallFont(
+            color: VineTheme.whiteText,
+          ).copyWith(fontFeatures: [const .tabularFigures()]),
         ),
       ),
     );

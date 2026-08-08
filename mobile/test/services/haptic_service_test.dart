@@ -61,5 +61,11 @@ void main() {
 
       expect(hapticCalls, equals(['HapticFeedbackType.heavyImpact']));
     });
+
+    test('immersiveModeFeedback delegates to lightImpact', () async {
+      await HapticService.immersiveModeFeedback();
+
+      expect(hapticCalls, equals(['HapticFeedbackType.lightImpact']));
+    });
   });
 }

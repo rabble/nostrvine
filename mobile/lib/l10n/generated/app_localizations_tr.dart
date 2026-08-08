@@ -1263,6 +1263,18 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoSettingsCaptionsDisable => 'Altyazıyı devre dışı bırak';
 
   @override
+  String get videoSettingsAutoAdvanceOn => 'Otomatik ilerleme açık';
+
+  @override
+  String get videoSettingsAutoAdvanceOff => 'Otomatik ilerleme kapalı';
+
+  @override
+  String get videoSettingsCaptionsOn => 'Altyazı açık';
+
+  @override
+  String get videoSettingsCaptionsOff => 'Altyazı kapalı';
+
+  @override
   String get contentWarningLabel => 'İçerik Uyarısı';
 
   @override
@@ -1498,11 +1510,25 @@ class AppLocalizationsTr extends AppLocalizations {
       'Doğrulama zaman aşımına uğradı. Bağlantını kontrol et ya da birazdan tekrar dene.';
 
   @override
-  String get videoErrorAdultContentHidden =>
-      'Yetişkin içeriği kapalı. Ayarlar → İçerik Filtreleri\'nden açabilirsin.';
+  String get videoErrorAdultContentHiddenTitle => 'Yetişkin içeriği kapalı';
+
+  @override
+  String get videoErrorAdultContentHiddenBody =>
+      'Bu videoyu izlemek için İçerik Filtreleri\'nden aç.';
+
+  @override
+  String get videoErrorAdultContentHiddenAction => 'İçerik Filtreleri\'ni aç';
 
   @override
   String get videoDetailLoadError => 'Video yüklenemedi';
+
+  @override
+  String get videoDetailLoadErrorBody =>
+      'Yolda bir şeyler ters gitti. Bir daha dene.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Silinmiş, ulaşılamıyor ya da ayarların yüzünden gizlenmiş olabilir.';
 
   @override
   String get databaseCorruptionTitle => 'Yerel verilerin bozuldu';
@@ -1784,6 +1810,47 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get metadataProofManifest => 'Kanıt manifestosu';
+
+  @override
+  String get metadataVerificationInfoTooltip =>
+      'Bu kontroller ne anlama geliyor?';
+
+  @override
+  String metadataSectionInfoSemanticsLabel(String section, String question) {
+    return '$section. $question';
+  }
+
+  @override
+  String get metadataVerificationInfoTitle => 'Bu kontroller ne anlama geliyor';
+
+  @override
+  String get metadataVerificationInfoIntro =>
+      'Bu sinyaller kameradan ve video dosyasının kendisinden gelir. Bir video ne kadar çok sinyal taşırsa, nereden geldiğine dair o kadar çok şey kanıtlayabiliriz.';
+
+  @override
+  String get metadataVerificationInfoDeviceAttestation =>
+      'Telefonun işletim sistemi, bunu kaydeden uygulamaya kefil oldu. Bunun bir kameradan geldiğine, yüklenmiş bir dosya olmadığına dair güçlü bir kanıt.';
+
+  @override
+  String get metadataVerificationInfoPgpSignature =>
+      'Video, çekildiği anda kriptografik olarak imzalandı. Sonrasında tek bir kare değişse imza bozulur.';
+
+  @override
+  String get metadataVerificationInfoC2paCredentials =>
+      'Dosyanın içinde taşınan, sektör standardında bir köken kaydı — böylece Divine dışındaki uygulamalar da doğrulayabilir.';
+
+  @override
+  String get metadataVerificationInfoProofManifest =>
+      'Tam ProofMode kaydı: dosya parmak izi, zaman damgası ve çekim bağlamı, videoyla birlikte.';
+
+  @override
+  String get metadataVerificationInfoFootnote =>
+      'Eksik bir kontrol videoyu sahte yapmaz. Eski klipler ve yüklemeler hiç almadı — yalnızca o kısmı kanıtlayamadığımız anlamına gelir.';
+
+  @override
+  String metadataVerificationInfoLearnMore(String url) {
+    return 'Daha fazla bilgi: $url';
+  }
 
   @override
   String get metadataCreatorLabel => 'İçerik üretici';
@@ -4554,6 +4621,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Ada göre ara...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Aramayı temizle';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name zaten eklendi';
   }
@@ -6196,6 +6266,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get commonClose => 'Kapat';
 
   @override
+  String get commonNotNow => 'Şimdi Değil';
+
+  @override
   String get commonLoading => 'Yükleniyor';
 
   @override
@@ -6216,6 +6289,10 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get videoMetadataC2paMissingNote =>
       'İçerik kimlik bilgileri internet bağlantısı gerektirir.';
+
+  @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
 
   @override
   String get videoMetadataC2paMissingRegenerate => 'Yeniden oluştur';
@@ -7204,50 +7281,6 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get proofmodeBadgeAiScanPending => 'Yapay zekâ taraması bekleniyor';
-
-  @override
-  String get proofmodeBadgeHumanMade => 'İnsan Yapımı';
-
-  @override
-  String get proofmodeBadgeNotDivineHosted => 'Divine\'da Barındırılmıyor';
-
-  @override
-  String get proofmodeBadgeOriginal => 'Orijinal';
-
-  @override
-  String get proofmodeBadgePossiblyAiGenerated => 'Yapay Zekâ Üretimi Olabilir';
-
-  @override
-  String get proofmodeBadgeUnverified => 'Doğrulanmamış';
-
-  @override
-  String get proofmodeConfirmedByModerator =>
-      'İnsan moderatör tarafından onaylandı';
-
-  @override
-  String get proofmodeExternalContentTitle => 'Harici İçerik';
-
-  @override
-  String get proofmodeHostedOnLabel => 'Bu video şurada barındırılıyor:';
-
-  @override
-  String get proofmodeLikelyHumanCreated => 'Muhtemelen insan yapımı';
-
-  @override
-  String get proofmodeNoProofDataAttached => 'ProofMode verisi eklenmemiş';
-
-  @override
-  String get proofmodeNotDivineHostedDisclaimer =>
-      'Bu içerik Divine sunucularında barındırılmıyor. Gerçekliğini tam olarak garanti edemeyiz.';
-
-  @override
-  String get proofmodePossiblyAiGenerated => 'Yapay zekâ üretimi olabilir';
-
-  @override
-  String get proofmodePublishedByLabel => 'Yayınlayan:';
-
-  @override
   String get publishErrorNotSignedIn =>
       'Video yayınlamak için lütfen giriş yap.';
 
@@ -7307,6 +7340,10 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get publishErrorNostrPublishFailed =>
       'Video yüklendi ama gönderi yayınlanamadı. Röle ayarlarını kontrol edip tekrar dene.';
+
+  @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Video yüklendi ama bu ses yeniden kullanıma açık değil. Paylaşmak için başka bir ses seç.';
 
   @override
   String get publishErrorInterrupted =>
@@ -7453,6 +7490,13 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'Konu *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'Herkese açık GitHub gönderisi';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Buraya gönderdiğin her şey, geliştiricilerin ilgilenebilmesi için GitHub\'daki açık kaynak depomuzda yayınlanacak. Gönderi ve giriş yaptığın hesap herkes tarafından görülebilecek.';
 
   @override
   String get supportRequiredHelper => 'Zorunlu';

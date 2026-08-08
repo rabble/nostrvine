@@ -154,8 +154,18 @@ inherit cold.
 
 ## 5. Failing tests are never acceptable, and always your fault
 
-**`origin/main` always passes.** Therefore any failing test on a feature
-branch is caused by something in that branch's diff. Full stop.
+**`origin/main` is supposed to always pass.** So your default
+assumption is that any failing test on a feature branch is caused by
+something in that branch's diff — start there every time.
+
+That default is a starting point, not an axiom. Required checks can
+pass and still be **stale**: a PR tested days ago can merge into a
+`main` that has since gained a semantically conflicting change — no
+textual conflict, no re-run, green badge, broken `main`. When that
+happens every open PR behind it inherits the failure. Assume the
+failure is yours until you have positively proven otherwise, and prove
+it the specific way described in "When the failure is not yours"
+below. Never assert it from vibes.
 
 When an agent says *"this test is flaky"* or *"this was already broken
 on main"* or *"we'll fix it in a follow-up,"* it is almost always
@@ -190,11 +200,63 @@ the local environment differs from CI. Investigate the difference.
    pass unless the test was genuinely wrong (rare — be suspicious of
    yourself when you reach for this).
 
+### When the failure is not yours
+
+Rare, but real. The usual cause is a **stale-check merge**: PR A
+removes an API, PR B adds a caller, both go green independently, and
+whichever merges second lands without re-running against the other.
+Nothing conflicts textually, so `main` breaks and every open PR behind
+it inherits the failure.
+
+`origin/main` broke exactly this way on 2026-08-07: #6731 removed
+`diagnosticTag` / `eventKind` from `nostr_sdk` and merged with checks
+that had last run 46 hours earlier, by which point #6721 and #6617 had
+added callers.
+
+Before you may claim this, prove it. Two checks, both required:
+
+1. **The failing symbol is outside your diff.** Confirm the files and
+   identifiers in the failure do not appear in
+   `git diff origin/main... --stat`.
+2. **`main` itself is red, at its own HEAD.** Not inferred — read it:
+
+   ```bash
+   gh run list --branch main --workflow "Mobile CI" --limit 5 \
+     --json conclusion,headSha,createdAt
+   gh run view <failing-run-id> --log-failed | grep -iE "error •"
+   ```
+
+   The errors on `main`'s run must be the *same* errors as on your
+   branch. Different errors mean you have two problems, one of them
+   yours.
+
+Then find what unblocks it — usually an open PR already fixing it. Do
+not trust PR prose search by itself: GitHub tokenizes terms and can
+return noisy matches. Start from the code history, then verify any
+candidate PR by reading its diff:
+
+```bash
+git log --oneline -S"<failing symbol>" origin/main
+gh pr list --state open --search "<failing symbol>"   # hint only
+```
+
+Having proven it, **stop and report**. Do not patch around a broken
+`main` inside an unrelated PR: you would be shipping someone else's
+fix in a diff nobody expects it in, and it collides with the real fix
+when that merges. Name the breaking commit, name the fixing PR, and
+say the PR is blocked until it lands.
+
+If `main` is green and your branch is red, it is yours. Go back to
+step 1.
+
 ### Forbidden
 
 - *"Flaky, will retry"* — find the race or order-dependence and fix it.
 - `skip:` / `@Skip` / `xtest` to silence a failing test.
-- *"Already broken on main"* without verifying on `origin/main`.
+- *"Already broken on main"* without running both proof checks above
+  and naming the breaking commit.
+- Patching an unrelated broken-`main` failure inside your own PR
+  instead of reporting it.
 - Pushing with red local tests "to see what CI says."
 - Claiming "tests pass" without having actually run them — see
   `superpowers:verification-before-completion`.
@@ -208,3 +270,12 @@ the local environment differs from CI. Investigate the difference.
 - If this is a PR-review fix without a rebase, verify GitHub reports no
   merge conflicts before relying on that exception.
 - If anything is red, do not push. Fix it.
+
+### After every push
+
+Local green does not end the task — CI green does.
+
+- `gh pr checks <number> --watch`, then read the result.
+- Red → fix and push again, until green.
+- Only after checks have *finished* do you post the handback comment
+  or report the task complete. See `pr_takeover.md` §3.

@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:meta/meta.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -70,15 +71,23 @@ class SeenVideoMetrics {
 /// Service for tracking seen videos with engagement metrics
 /// REFACTORED: Extended to store timestamps, loop counts, and watch duration
 class SeenVideosService {
+  SeenVideosService({
+    @visibleForTesting Duration? saveDebounceDuration,
+  }) : _saveDebounceDuration =
+           saveDebounceDuration ?? const Duration(milliseconds: 100);
+
   static const String _seenVideosKey = 'seen_video_ids'; // Legacy key
   static const String _seenVideosMetricsKey = 'seen_video_metrics'; // New key
   static const int _maxSeenVideos =
       1000; // Limit storage to prevent unbounded growth
 
   final Map<String, SeenVideoMetrics> _seenVideos = {};
+  final Duration _saveDebounceDuration;
   SharedPreferences? _prefs;
   bool _isInitialized = false;
   Future<void>? _initializeFuture;
+  Timer? _saveDebounceTimer;
+  Completer<void>? _pendingSaveCompleter;
 
   /// Whether the service has been initialized
   bool get isInitialized => _isInitialized;
@@ -164,7 +173,7 @@ class SeenVideosService {
         );
 
         // Save in new format and remove legacy key
-        await _saveSeenVideos();
+        await _saveSeenVideosNow();
         await _prefs!.remove(_seenVideosKey);
       }
     } catch (e) {
@@ -177,7 +186,7 @@ class SeenVideosService {
   }
 
   /// Save seen videos to persistent storage
-  Future<void> _saveSeenVideos() async {
+  Future<void> _saveSeenVideosNow() async {
     if (_prefs == null) return;
 
     try {
@@ -213,6 +222,36 @@ class SeenVideosService {
         name: 'SeenVideosService',
         category: LogCategory.system,
       );
+    }
+  }
+
+  Future<void> _scheduleSeenVideosSave() {
+    if (_prefs == null) return Future.value();
+
+    _saveDebounceTimer?.cancel();
+    final completer = _pendingSaveCompleter ??= Completer<void>();
+    _saveDebounceTimer = Timer(
+      _saveDebounceDuration,
+      () => unawaited(_flushPendingSeenVideosSave()),
+    );
+    return completer.future;
+  }
+
+  Future<void> _flushPendingSeenVideosSave() async {
+    _saveDebounceTimer?.cancel();
+    _saveDebounceTimer = null;
+
+    final completer = _pendingSaveCompleter;
+    if (completer == null) return;
+    _pendingSaveCompleter = null;
+
+    try {
+      await _saveSeenVideosNow();
+      if (!completer.isCompleted) completer.complete();
+    } catch (error, stackTrace) {
+      if (!completer.isCompleted) {
+        completer.completeError(error, stackTrace);
+      }
     }
   }
 
@@ -268,8 +307,7 @@ class SeenVideosService {
       );
     }
 
-    // Save to storage asynchronously
-    await _saveSeenVideos();
+    await _scheduleSeenVideosSave();
   }
 
   /// Mark multiple videos as seen (batch operation)
@@ -289,7 +327,7 @@ class SeenVideosService {
     }
 
     if (hasChanges) {
-      await _saveSeenVideos();
+      await _scheduleSeenVideosSave();
     }
   }
 
@@ -331,6 +369,7 @@ class SeenVideosService {
       category: LogCategory.system,
     );
     _seenVideos.clear();
+    await _flushPendingSeenVideosSave();
 
     if (_prefs != null) {
       await _prefs!.remove(_seenVideosMetricsKey);
@@ -351,7 +390,7 @@ class SeenVideosService {
     );
     _seenVideos.remove(videoId);
 
-    await _saveSeenVideos();
+    await _scheduleSeenVideosSave();
   }
 
   /// Get statistics about seen videos
@@ -378,8 +417,5 @@ class SeenVideosService {
     };
   }
 
-  void dispose() {
-    // Save any pending changes before disposing
-    _saveSeenVideos();
-  }
+  Future<void> dispose() => _flushPendingSeenVideosSave();
 }
