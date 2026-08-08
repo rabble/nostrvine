@@ -119,6 +119,27 @@ void main() {
       expect(cubit.state.analyticsId, equals('ft_a1b2c3d4'));
     });
 
+    test('preserves the current tab when only status changes', () {
+      const state = FeaturedTabsState(
+        status: FeaturedTabsStatus.resolved,
+        tab: _tab,
+      );
+
+      expect(
+        state.copyWith(status: FeaturedTabsStatus.loading).tab,
+        equals(_tab),
+      );
+    });
+
+    test('clears the current tab only when requested', () {
+      const state = FeaturedTabsState(
+        status: FeaturedTabsStatus.resolved,
+        tab: _tab,
+      );
+
+      expect(state.copyWith(clearTab: true).tab, isNull);
+    });
+
     test('re-polls at the server-supplied interval', () {
       fakeAsync((async) {
         stubSnapshot(

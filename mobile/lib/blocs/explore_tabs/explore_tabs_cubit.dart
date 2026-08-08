@@ -59,6 +59,7 @@ class ExploreTabsCubit extends Cubit<ExploreTabsState> {
         forYouAvailable: forYouAvailable,
         appsAvailable: appsAvailable,
         featuredTab: featuredTab,
+        clearFeaturedTab: featuredTab == null,
       ),
     );
   }

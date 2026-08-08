@@ -39,15 +39,19 @@ class FeaturedTabsState extends Equatable {
   /// Opaque configuration id for analytics, or `null` when no tab renders.
   String? get analyticsId => tab?.id;
 
-  /// Returns a copy with the given overrides, clearing [tab] when it is null.
+  /// Returns a copy with the given overrides.
+  ///
+  /// Use [clearTab] when the server resolves no eligible tab; omitting [tab]
+  /// otherwise preserves the current tab like the rest of the fields.
   FeaturedTabsState copyWith({
     FeaturedTabsStatus? status,
     FeaturedTabConfig? tab,
+    bool clearTab = false,
     Duration? pollInterval,
   }) {
     return FeaturedTabsState(
       status: status ?? this.status,
-      tab: tab,
+      tab: clearTab ? null : tab ?? this.tab,
       pollInterval: pollInterval ?? this.pollInterval,
     );
   }

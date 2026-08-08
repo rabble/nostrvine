@@ -55,13 +55,14 @@ class FeaturedTabVideosState extends Equatable {
     FeaturedTabVideosStatus? status,
     List<VideoEvent>? videos,
     String? nextCursor,
+    bool clearNextCursor = false,
     bool? hasMore,
     bool? isLoadingMore,
   }) {
     return FeaturedTabVideosState(
       status: status ?? this.status,
       videos: videos ?? this.videos,
-      nextCursor: nextCursor,
+      nextCursor: clearNextCursor ? null : nextCursor ?? this.nextCursor,
       hasMore: hasMore ?? this.hasMore,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
     );

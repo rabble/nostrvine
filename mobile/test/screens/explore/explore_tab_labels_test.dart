@@ -108,6 +108,19 @@ void main() {
       expect(label, endsWith('…'));
     });
 
+    test('truncates a label without splitting compound emoji', () {
+      const family = '👨‍👩‍👧‍👦';
+      final label = labelForExploreTabName(
+        en,
+        exploreFeaturedTabName,
+        featuredTab: _featured({'default': family * 40}),
+      );
+
+      expect(label, startsWith(family));
+      expect(label, isNot(contains('�')));
+      expect(label, endsWith('…'));
+    });
+
     test('keeps a label at exactly the limit intact', () {
       final exact = 'x' * featuredTabLabelMaxLength;
       final label = labelForExploreTabName(

@@ -94,9 +94,7 @@ void main() {
       // The user sitting on Lists must still resolve to Lists, not to the
       // tab that inherited its old index.
       final selected = before.nameForIndex(
-        before.indexForName(
-          exploreListsTabName,
-        ),
+        before.indexForName(exploreListsTabName),
       );
       expect(
         after.nameForIndex(after.indexForName(selected)),
@@ -111,9 +109,7 @@ void main() {
       const after = ExploreTabsState();
 
       final selected = before.nameForIndex(
-        before.indexForName(
-          exploreListsTabName,
-        ),
+        before.indexForName(exploreListsTabName),
       );
       expect(
         after.nameForIndex(after.indexForName(selected)),
@@ -140,8 +136,17 @@ void main() {
       final state = ExploreTabsState(featuredTab: _featured());
 
       expect(
-        state.copyWith().tabNames,
+        state.copyWith(clearFeaturedTab: true).tabNames,
         isNot(contains(exploreFeaturedTabName)),
+      );
+    });
+
+    test('preserves the featured tab when another field changes', () {
+      final state = ExploreTabsState(featuredTab: _featured());
+
+      expect(
+        state.copyWith(classicsAvailable: true).featuredTab,
+        equals(state.featuredTab),
       );
     });
   });

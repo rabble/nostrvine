@@ -76,10 +76,9 @@ class _ExploreViewState extends ConsumerState<ExploreView>
   /// Falls back by name — never by raw index, because indices shift when
   /// optional tabs appear or disappear.
   int _indexForTabName({String? previousTabName}) {
+    final persistedTabName = ref.read(exploreTabNameProvider);
     final targetTabName =
-        widget.initialTabName ??
-        previousTabName ??
-        ref.read(exploreTabNameProvider);
+        widget.initialTabName ?? previousTabName ?? persistedTabName;
     final index = _tabsState.indexForName(targetTabName);
 
     Log.info(

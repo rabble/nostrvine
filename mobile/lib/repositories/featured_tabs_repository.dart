@@ -122,9 +122,6 @@ class FeaturedTabsRepository {
   }
 
   /// Drops any cached config, so the next [refresh] must reach the network.
-  ///
-  /// Call on sign-out and account switch: audience eligibility is per-account
-  /// and a cached answer for the previous viewer must not carry over.
   void clearCache() {
     _cached = null;
     _cachedAt = null;

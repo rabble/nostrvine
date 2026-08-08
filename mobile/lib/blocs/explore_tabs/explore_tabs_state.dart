@@ -124,19 +124,20 @@ class ExploreTabsState extends Equatable {
 
   /// Returns a copy with the given availability overrides.
   ///
-  /// [featuredTab] is passed through as-is, so a `null` clears the tab —
-  /// that is how a server kill switch removes it.
+  /// Use [clearFeaturedTab] for the server kill switch; omitting [featuredTab]
+  /// otherwise preserves the current tab like the rest of the fields.
   ExploreTabsState copyWith({
     bool? classicsAvailable,
     bool? forYouAvailable,
     bool? appsAvailable,
     FeaturedTabConfig? featuredTab,
+    bool clearFeaturedTab = false,
   }) {
     return ExploreTabsState(
       classicsAvailable: classicsAvailable ?? this.classicsAvailable,
       forYouAvailable: forYouAvailable ?? this.forYouAvailable,
       appsAvailable: appsAvailable ?? this.appsAvailable,
-      featuredTab: featuredTab,
+      featuredTab: clearFeaturedTab ? null : featuredTab ?? this.featuredTab,
     );
   }
 

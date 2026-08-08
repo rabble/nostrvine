@@ -167,6 +167,30 @@ void main() {
       expect(response.pollInterval, equals(const Duration(seconds: 120)));
     });
 
+    test('clamps a too-fast server poll interval', () {
+      final response = FeaturedTabsResponse.fromJson(const {
+        'poll_interval_seconds': 1,
+        'featured_tabs': <dynamic>[],
+      });
+
+      expect(
+        response.pollInterval,
+        equals(FeaturedTabsResponse.minPollInterval),
+      );
+    });
+
+    test('clamps a too-slow server poll interval', () {
+      final response = FeaturedTabsResponse.fromJson(const {
+        'poll_interval_seconds': 86400,
+        'featured_tabs': <dynamic>[],
+      });
+
+      expect(
+        response.pollInterval,
+        equals(FeaturedTabsResponse.maxPollInterval),
+      );
+    });
+
     test('falls back to the default interval when the server sends zero', () {
       final response = FeaturedTabsResponse.fromJson(const {
         'poll_interval_seconds': 0,

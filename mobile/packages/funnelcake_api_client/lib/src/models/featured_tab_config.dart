@@ -241,20 +241,34 @@ class FeaturedTabsResponse {
         ? rawInterval
         : int.tryParse(rawInterval?.toString() ?? '');
 
+    final requestedInterval = seconds != null && seconds > 0
+        ? Duration(seconds: seconds)
+        : defaultPollInterval;
+
     return FeaturedTabsResponse(
       tabs: tabs,
-      pollInterval: seconds != null && seconds > 0
-          ? Duration(seconds: seconds)
-          : defaultPollInterval,
+      pollInterval: _clampPollInterval(requestedInterval),
     );
   }
 
   /// Poll cadence used when the server omits or malforms the interval.
   static const defaultPollInterval = Duration(minutes: 5);
 
+  /// Fastest cadence the client accepts from the public config endpoint.
+  static const minPollInterval = Duration(seconds: 30);
+
+  /// Slowest cadence the client accepts from the public config endpoint.
+  static const maxPollInterval = Duration(hours: 1);
+
   /// Tabs the server currently considers renderable.
   final List<FeaturedTabConfig> tabs;
 
   /// Server-supplied poll cadence for refetching this config.
   final Duration pollInterval;
+
+  static Duration _clampPollInterval(Duration interval) {
+    if (interval < minPollInterval) return minPollInterval;
+    if (interval > maxPollInterval) return maxPollInterval;
+    return interval;
+  }
 }

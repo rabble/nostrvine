@@ -38,11 +38,9 @@ class FeaturedTabsCubit extends Cubit<FeaturedTabsState> {
   /// Safe to call repeatedly; the UI calls it on mount and on app foreground.
   Future<void> refresh() async {
     if (isClosed) return;
-    emit(state.copyWith(status: FeaturedTabsStatus.loading, tab: state.tab));
+    emit(state.copyWith(status: FeaturedTabsStatus.loading));
 
-    final snapshot = await _repository.refresh(
-      viewerIsMinor: _viewerIsMinor(),
-    );
+    final snapshot = await _repository.refresh(viewerIsMinor: _viewerIsMinor());
     if (isClosed) return;
 
     emit(

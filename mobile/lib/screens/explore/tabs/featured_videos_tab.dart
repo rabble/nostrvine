@@ -50,17 +50,27 @@ class _FeaturedVideosView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return BlocBuilder<FeaturedTabVideosCubit, FeaturedTabVideosState>(
+    return BlocConsumer<FeaturedTabVideosCubit, FeaturedTabVideosState>(
+      listenWhen: (previous, current) =>
+          previous.status != FeaturedTabVideosStatus.failure &&
+          current.status == FeaturedTabVideosStatus.failure &&
+          current.videos.isNotEmpty,
+      listener: (context, state) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          DivineSnackbarContainer.snackBar(
+            context.l10n.featuredTabLoadFailed,
+            error: true,
+          ),
+        );
+      },
       builder: (context, state) {
         if (state.videos.isNotEmpty) {
           return _FeaturedGrid(config: config, state: state);
         }
 
         return switch (state.status) {
-          FeaturedTabVideosStatus.initial ||
-          FeaturedTabVideosStatus.loading => const Center(
-            child: BrandedLoadingIndicator(),
-          ),
+          FeaturedTabVideosStatus.initial || FeaturedTabVideosStatus.loading =>
+            const Center(child: BrandedLoadingIndicator()),
           FeaturedTabVideosStatus.failure => const _FeaturedRetry(),
           FeaturedTabVideosStatus.ready => _FeaturedGrid(
             config: config,

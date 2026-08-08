@@ -65,13 +65,10 @@ class FeaturedTabVideosCubit extends Cubit<FeaturedTabVideosState> {
     if (isClosed || state.isLoadingMore || !state.hasMore || cursor == null) {
       return;
     }
-    emit(state.copyWith(isLoadingMore: true, nextCursor: cursor));
+    emit(state.copyWith(isLoadingMore: true));
 
     try {
-      final page = await _repository.loadVideos(
-        tabId: _tabId,
-        cursor: cursor,
-      );
+      final page = await _repository.loadVideos(tabId: _tabId, cursor: cursor);
       if (isClosed) return;
       emit(
         FeaturedTabVideosState(
@@ -84,7 +81,7 @@ class FeaturedTabVideosCubit extends Cubit<FeaturedTabVideosState> {
     } on FunnelcakeException catch (e, stackTrace) {
       if (isClosed) return;
       addError(e, stackTrace);
-      emit(state.copyWith(isLoadingMore: false, nextCursor: cursor));
+      emit(state.copyWith(isLoadingMore: false));
     }
   }
 }

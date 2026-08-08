@@ -1,6 +1,7 @@
 // ABOUTME: Shared localized labels for canonical Explore tab names.
 // ABOUTME: Keeps tab bar and feed-mode shell titles in sync.
 
+import 'package:characters/characters.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:openvine/blocs/explore_tabs/explore_tabs_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
@@ -53,6 +54,7 @@ String labelForExploreTabName(
 String _clampFeaturedLabel(String label, AppLocalizations l10n) {
   final trimmed = label.trim();
   if (trimmed.isEmpty) return l10n.navExplore;
-  if (trimmed.length <= featuredTabLabelMaxLength) return trimmed;
-  return '${trimmed.substring(0, featuredTabLabelMaxLength - 1).trimRight()}…';
+  final characters = trimmed.characters;
+  if (characters.length <= featuredTabLabelMaxLength) return trimmed;
+  return '${characters.take(featuredTabLabelMaxLength - 1).toString().trimRight()}…';
 }

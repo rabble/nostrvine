@@ -49,10 +49,7 @@ void main() {
       telemetry: telemetry,
     );
 
-    void stubPage(
-      FeaturedTabVideosPage page, {
-      String? cursor,
-    }) {
+    void stubPage(FeaturedTabVideosPage page, {String? cursor}) {
       when(
         () => repository.loadVideos(tabId: _tabId, cursor: cursor),
       ).thenAnswer((_) async => page);
@@ -111,9 +108,7 @@ void main() {
 
       blocTest<FeaturedTabVideosCubit, FeaturedTabVideosState>(
         'replaces prior videos when reloaded',
-        setUp: () => stubPage(
-          FeaturedTabVideosPage(videos: [_video('first')]),
-        ),
+        setUp: () => stubPage(FeaturedTabVideosPage(videos: [_video('first')])),
         build: buildCubit,
         act: (cubit) async {
           await cubit.load();
@@ -248,6 +243,41 @@ void main() {
           equals(['page-1', 'page-2']),
         );
       });
+
+      test(
+        'can still page after a failed refresh over loaded content',
+        () async {
+          stubPage(
+            FeaturedTabVideosPage(
+              videos: [_video('page-1')],
+              nextCursor: 'cursor-1',
+              hasMore: true,
+            ),
+          );
+          final cubit = buildCubit();
+          addTearDown(cubit.close);
+          await cubit.load();
+
+          stubFailure();
+          await cubit.load();
+
+          expect(cubit.state.videos.map((v) => v.id), equals(['page-1']));
+          expect(cubit.state.status, equals(FeaturedTabVideosStatus.failure));
+          expect(cubit.state.hasMore, isTrue);
+          expect(cubit.state.nextCursor, equals('cursor-1'));
+
+          stubPage(
+            FeaturedTabVideosPage(videos: [_video('page-2')]),
+            cursor: 'cursor-1',
+          );
+          await cubit.loadMore();
+
+          expect(
+            cubit.state.videos.map((v) => v.id),
+            equals(['page-1', 'page-2']),
+          );
+        },
+      );
     });
   });
 }
