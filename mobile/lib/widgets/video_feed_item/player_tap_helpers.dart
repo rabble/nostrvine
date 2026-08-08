@@ -6,7 +6,7 @@ import 'package:divine_video_player/divine_video_player.dart';
 
 /// The action a tap on a feed video should trigger.
 enum PlayerTapAction {
-  /// Start (or restart) playback.
+  /// Request playback.
   play,
 
   /// Stop playback.
@@ -20,8 +20,9 @@ enum PlayerTapAction {
 /// [PlaybackStatus.isPaused] is strictly `status == paused`, so a controller
 /// that initialized but never started ([PlaybackStatus.ready]) and a finished
 /// non-looping clip ([PlaybackStatus.completed]) are both stopped without being
-/// `paused`. Keying on `isPaused` sent those to `pause()`, so the viewer's first
-/// tap did nothing and they had to tap twice (#6239).
+/// `paused`. Keying on `isPaused` sent stopped states to `pause()`, which can
+/// turn the first tap into a no-op when a rendered frame is visible but playback
+/// is not running.
 ///
 /// [PlaybackStatus.buffering] counts as running, so a tap mid-load still
 /// pauses rather than issuing a redundant play.
