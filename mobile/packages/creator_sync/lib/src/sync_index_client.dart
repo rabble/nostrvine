@@ -93,8 +93,14 @@ class SyncIndexClient {
       throw SyncIndexException('signer refused to sign ${ref.dTag}');
     }
 
-    final result = await _client.publishEvent(signed);
-    if (!result.isSuccess) {
+    // publishEventAwaitOk, not publishEvent: the latter resolves once a
+    // relay's socket took the frame, so an `OK false` — wrong kind for the
+    // relay's allowlist, a clamped created_at, an oversized payload, a rate
+    // limit — reads as success. The caller records applied state off this
+    // result and then suppresses the retry while the hash matches, so a
+    // publish counted here but refused by the relay never publishes again.
+    final outcome = await _client.publishEventAwaitOk(signed);
+    if (!outcome.acceptedByAny) {
       throw SyncIndexException('no relay accepted ${ref.dTag}');
     }
     return createdAt;

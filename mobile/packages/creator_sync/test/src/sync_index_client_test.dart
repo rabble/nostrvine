@@ -7,6 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
 import 'package:test/test.dart';
 
@@ -19,6 +20,25 @@ class _MockClient extends Mock implements NostrClient {}
 ({List<Event> events, bool timedOut, bool noRelays}) _confirmed(
   List<Event> events,
 ) => (events: events, timedOut: false, noRelays: false);
+
+/// A publish one relay answered `OK true`.
+PublishOutcome _accepted(Event event) => PublishOutcome(
+  eventId: event.id,
+  eventKind: event.kind,
+  acceptedBy: const ['wss://relay.example'],
+  rejectedBy: const {},
+  noResponseFrom: const [],
+);
+
+/// A publish every targeted relay answered `OK false`.
+PublishOutcome _rejected(Event event, {String reason = 'blocked'}) =>
+    PublishOutcome(
+      eventId: event.id,
+      eventKind: event.kind,
+      acceptedBy: const [],
+      rejectedBy: {'wss://relay.example': reason},
+      noResponseFrom: const [],
+    );
 
 void main() {
   group(SyncIndexClient, () {
@@ -53,15 +73,15 @@ void main() {
       when(() => signer.signEvent(any())).thenAnswer(
         (invocation) async => invocation.positionalArguments.first as Event,
       );
-      when(() => client.publishEvent(any())).thenAnswer(
-        (invocation) async => PublishSuccess(
-          event: invocation.positionalArguments.first as Event,
+      when(() => client.publishEventAwaitOk(any())).thenAnswer(
+        (invocation) async => _accepted(
+          invocation.positionalArguments.first as Event,
         ),
       );
     });
 
     Event capturedEvent() =>
-        verify(() => client.publishEvent(captureAny())).captured.single
+        verify(() => client.publishEventAwaitOk(captureAny())).captured.single
             as Event;
 
     group('publish', () {
@@ -127,16 +147,41 @@ void main() {
         expect(stamped, equals(capturedEvent().createdAt));
       });
 
-      test('throws $SyncIndexException when no relay accepts', () async {
-        when(
-          () => client.publishEvent(any()),
-        ).thenAnswer((_) async => const PublishNoRelays());
+      test('throws $SyncIndexException when no relay is reachable', () async {
+        when(() => client.publishEventAwaitOk(any())).thenAnswer(
+          (invocation) async => PublishOutcome(
+            eventId: (invocation.positionalArguments.first as Event).id,
+            acceptedBy: const [],
+            rejectedBy: const {},
+            noResponseFrom: const [],
+          ),
+        );
 
         await expectLater(
           indexClient.publish(ref, SyncIndexEntry.tombstone()),
           throwsA(isA<SyncIndexException>()),
         );
       });
+
+      test(
+        'throws $SyncIndexException when every relay answers OK false',
+        () async {
+          // The frame reaches the relay and the socket accepts it, so the
+          // pre-OK publish path reported this as success and let the caller
+          // record applied state for an event no relay stored.
+          when(() => client.publishEventAwaitOk(any())).thenAnswer(
+            (invocation) async => _rejected(
+              invocation.positionalArguments.first as Event,
+              reason: 'blocked: kind 30078 not in allowed list',
+            ),
+          );
+
+          await expectLater(
+            indexClient.publish(ref, SyncIndexEntry.tombstone()),
+            throwsA(isA<SyncIndexException>()),
+          );
+        },
+      );
 
       test('throws $SyncIndexException when signed out', () async {
         when(signer.getPublicKey).thenAnswer((_) async => null);
@@ -145,7 +190,7 @@ void main() {
           indexClient.publish(ref, SyncIndexEntry.tombstone()),
           throwsA(isA<SyncIndexException>()),
         );
-        verifyNever(() => client.publishEvent(any()));
+        verifyNever(() => client.publishEventAwaitOk(any()));
       });
 
       test(
@@ -157,7 +202,7 @@ void main() {
             indexClient.publish(ref, SyncIndexEntry.tombstone()),
             throwsA(isA<SyncIndexException>()),
           );
-          verifyNever(() => client.publishEvent(any()));
+          verifyNever(() => client.publishEventAwaitOk(any()));
         },
       );
     });
