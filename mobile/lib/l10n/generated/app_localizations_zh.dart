@@ -8058,6 +8058,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoRecorderStopMotionAssembleFailed => '无法生成视频，请重试。';
 
   @override
+  String videoRecorderStopMotionShotsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '还剩 $count 张',
+      zero: '没有剩余张数',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get videoRecorderToggleFlashLabel => '切换闪光灯';
 
   @override

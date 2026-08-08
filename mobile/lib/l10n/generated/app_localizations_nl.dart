@@ -8516,6 +8516,18 @@ class AppLocalizationsNl extends AppLocalizations {
       'Kan de video niet maken. Probeer het opnieuw.';
 
   @override
+  String videoRecorderStopMotionShotsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Nog $count opnames over',
+      one: 'Nog 1 opname over',
+      zero: 'Geen opnames meer over',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get videoRecorderToggleFlashLabel => 'Flitser in-/uitschakelen';
 
   @override

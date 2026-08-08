@@ -211,9 +211,9 @@ class RelayDiscoveryService {
   /// rather than waiting for all indexers to finish. If all indexers return
   /// empty or fail, returns null.
   ///
-  // TODO: cancel remaining WebSocket connections on first success. Currently
-  // losing queries complete naturally (EOSE or 10s timeout) which is harmless
-  // but wastes resources.
+  // Losing queries complete naturally (EOSE or 10s timeout). Each direct
+  // query owns and disposes its RelayBase, so no connection survives that
+  // bound.
   Future<(List<DiscoveredRelay>, String)?> _queryFirstSuccess(
     String pubkeyHex,
   ) async {
@@ -269,7 +269,7 @@ class RelayDiscoveryService {
     final relayStatus = RelayStatus(indexerUrl);
     final relay = RelayBase(indexerUrl, relayStatus);
     final completer = Completer<List<DiscoveredRelay>>();
-    final events = <Map<String, dynamic>>[];
+    Event? newestEvent;
     final subscriptionId = 'rd_${DateTime.now().millisecondsSinceEpoch}';
 
     // Set up message handler before connecting
@@ -279,18 +279,23 @@ class RelayDiscoveryService {
       final messageType = json[0] as String;
 
       if (messageType == 'EVENT' && json.length >= 3) {
-        // Collect the raw event JSON
         final eventJson = json[2] as Map<String, dynamic>;
-        events.add(eventJson);
+        final event = _authenticRelayList(eventJson, indexerUrl, pubkeyHex);
+        if (event != null &&
+            (newestEvent == null || event.createdAt > newestEvent!.createdAt)) {
+          newestEvent = event;
+        }
       } else if (messageType == 'EOSE') {
         // All stored events received - parse and complete
         if (!completer.isCompleted) {
-          if (events.isEmpty) {
+          final event = newestEvent;
+          if (event == null) {
             completer.complete(<DiscoveredRelay>[]);
           } else {
-            // Parse the most recent event's relay list
-            final relays = _parseRelayListFromJson(events.first);
-            completer.complete(relays);
+            // Newest wins. Frames arrive in whatever order the indexer feels
+            // like sending them, so the first one through the socket is not
+            // the current relay list.
+            completer.complete(_parseRelayListFromEvent(event));
           }
         }
       } else if (messageType == 'NOTICE') {
@@ -335,8 +340,14 @@ class RelayDiscoveryService {
         },
       );
 
-      // Send CLOSE before disconnecting
-      await relay.send(<dynamic>['CLOSE', subscriptionId]);
+      // Send CLOSE before disconnecting. skipReconnect because the socket is
+      // about to be torn down either way: without it, a CLOSE sent after the
+      // indexer already dropped the connection walks the reconnect backoff,
+      // holding this method — and the relay it owns — open for minutes.
+      await relay.send(<dynamic>[
+        'CLOSE',
+        subscriptionId,
+      ], skipReconnect: true);
 
       Log.info(
         '  Got ${result.length} relays from $indexerUrl',
@@ -356,7 +367,71 @@ class RelayDiscoveryService {
       try {
         await relay.disconnect();
       } catch (_) {}
+      // Its own guard: a throw from disconnect must not skip the dispose,
+      // which is what releases the socket's stream subscriptions.
+      try {
+        relay.dispose();
+      } catch (_) {}
     }
+  }
+
+  /// Returns [eventJson] as an [Event] when it is genuinely [pubkeyHex]'s
+  /// kind-10002, and null otherwise.
+  ///
+  /// This query runs on a bare [RelayBase] with its own `onMessage`, so the
+  /// frame never passes through `RelayPool`, so it bypasses the normal
+  /// subscription filter and signature checks. Nothing else stands between an
+  /// indexer and the relay pool: what comes back here is adopted via
+  /// `NostrClient.addRelays` and
+  /// then used for every subsequent read and write. The indexers queried are
+  /// third-party public relays, so "it answered our REQ" is not evidence the
+  /// answer is the list we asked for — the id, the signature, the author and
+  /// the kind all have to be checked here (#6585).
+  ///
+  /// A frame that fails is logged and dropped, not reported: a broken or
+  /// hostile indexer is not something the user can act on, and routing it to
+  /// Crashlytics would bury real defects (see `error_handling.md`).
+  Event? _authenticRelayList(
+    Map<String, dynamic> eventJson,
+    String indexerUrl,
+    String pubkeyHex,
+  ) {
+    void reject(String reason) {
+      Log.warning(
+        '  Rejecting kind-10002 frame from $indexerUrl: $reason',
+        name: 'RelayDiscoveryService',
+        category: LogCategory.auth,
+      );
+    }
+
+    final Event event;
+    try {
+      event = Event.fromJson(eventJson);
+    } on Object catch (e) {
+      reject('unparseable ($e)');
+      return null;
+    }
+
+    if (event.kind != 10002) {
+      reject('kind ${event.kind}, expected 10002');
+      return null;
+    }
+    if (event.pubkey != pubkeyHex) {
+      reject('authored by ${event.pubkey}, asked for $pubkeyHex');
+      return null;
+    }
+    // `isValid` recomputes the id; `isSigned` verifies the Schnorr signature.
+    // Both are needed — the id check alone only proves internal consistency,
+    // which anyone can produce.
+    if (!event.isValid) {
+      reject('event id does not match its contents');
+      return null;
+    }
+    if (!event.isSigned) {
+      reject('missing or invalid signature');
+      return null;
+    }
+    return event;
   }
 
   /// Parse relay list from kind 10002 event JSON.
@@ -365,21 +440,40 @@ class RelayDiscoveryService {
   /// Tags: [["r", "<relay-url>"], ["r", "<relay-url>", "read"],
   ///        ["r", "<relay-url>", "write"]]
   @visibleForTesting
-  List<DiscoveredRelay> parseRelayListFromJson(Map<String, dynamic> json) =>
-      _parseRelayListFromJson(json);
+  List<DiscoveredRelay> parseRelayListFromJson(Map<String, dynamic> json) {
+    final tags = json['tags'] as List<dynamic>? ?? const [];
+    return _parseRelayListFromTags([
+      for (final tag in tags)
+        if (tag is List) [for (final value in tag) value.toString()],
+    ]);
+  }
 
-  List<DiscoveredRelay> _parseRelayListFromJson(Map<String, dynamic> json) {
-    final relays = <DiscoveredRelay>[];
-    final tags = json['tags'] as List<dynamic>? ?? [];
+  List<DiscoveredRelay> _parseRelayListFromEvent(Event event) =>
+      _parseRelayListFromTags(event.tags);
 
-    for (final tag in tags) {
-      if (tag is! List || tag.isEmpty || tag[0] != 'r') continue;
-      if (tag.length < 2) continue;
+  /// Admits a kind-10002's relays: host policy, duplicate collapse, then cap.
+  ///
+  /// The list belongs to the user but reaches us through a third-party
+  /// indexer, so it is admitted on remote-supplied terms: `wss://` only, and
+  /// never a private, loopback or link-local target (#3362, #6585).
+  ///
+  /// Duplicates collapse before the cap is counted, or a host named
+  /// [RelayListCaps.nip65] times would spend the whole budget and drop every
+  /// genuine relay after it. Markers are OR-ed rather than first-wins: NIP-65
+  /// marks a relay per `r` tag, so a host carrying a `read` row and a `write`
+  /// row is read *and* write. Keeping the pair instead would be lossy anyway —
+  /// `RelayListRepository._markerFor` takes the first match and republishes
+  /// the host as `read`-only, and the app bridge takes the last.
+  ///
+  /// Both the fresh parse and the cached read go through here, so the same
+  /// event cannot answer differently depending on which one served it.
+  List<DiscoveredRelay> _admitRelayList(Iterable<DiscoveredRelay> candidates) {
+    final byHost = <String, DiscoveredRelay>{};
+    var loggedCap = false;
 
-      final url = tag[1] as String;
-
-      // Accept wss:// for any host, ws:// only for loopback (#3362).
-      if (!isRelayUrlAllowed(url)) {
+    for (final candidate in candidates) {
+      final url = candidate.url;
+      if (!isRemoteSuppliedRelayUrlAllowed(url)) {
         Log.warning(
           '  Skipping disallowed relay URL: $url',
           name: 'RelayDiscoveryService',
@@ -388,16 +482,48 @@ class RelayDiscoveryService {
         continue;
       }
 
-      final permission = tag.length > 2 ? tag[2] as String? : null;
+      // Compare hosts the way the rest of the app does, so `wss://a.example`
+      // and `wss://a.example/` are one relay rather than two cap slots.
+      final key = normalizeRelayUrlForComparison(url) ?? url;
+      final existing = byHost[key];
+      if (existing != null) {
+        byHost[key] = DiscoveredRelay(
+          url: existing.url,
+          read: existing.read || candidate.read,
+          write: existing.write || candidate.write,
+        );
+        continue;
+      }
 
-      final relay = DiscoveredRelay(
-        url: url,
-        read: permission == null || permission == 'read',
-        write: permission == null || permission == 'write',
-      );
+      if (byHost.length >= RelayListCaps.nip65) {
+        if (!loggedCap) {
+          Log.warning(
+            '  kind-10002 lists more than ${RelayListCaps.nip65} relays; '
+            'ignoring additional hosts',
+            name: 'RelayDiscoveryService',
+            category: LogCategory.auth,
+          );
+          loggedCap = true;
+        }
+        continue;
+      }
 
-      relays.add(relay);
+      byHost[key] = candidate;
     }
+
+    return byHost.values.toList();
+  }
+
+  List<DiscoveredRelay> _parseRelayListFromTags(List<List<String>> eventTags) {
+    final relays = _admitRelayList([
+      for (final tag in eventTags)
+        if (tag.length >= 2 && tag[0] == 'r')
+          DiscoveredRelay(
+            url: tag[1],
+            read: tag.length <= 2 || tag[2] == 'read',
+            write: tag.length <= 2 || tag[2] == 'write',
+          ),
+    ]);
 
     Log.info(
       '  Parsed ${relays.length} relays from kind 10002 event',
@@ -448,10 +574,17 @@ class RelayDiscoveryService {
       }
 
       final relaysList = cacheData['relays'] as List<dynamic>;
-      return relaysList
+      final cached = relaysList
           .map((r) => DiscoveredRelay.fromJson(r as Map<String, dynamic>))
-          .where((r) => isRelayUrlAllowed(r.url))
           .toList();
+      // Re-admit on read, on the same remote-supplied terms as a fresh
+      // discovery. The cache holds a list that arrived over the network and
+      // survives for 24h, so filtering only on write would leave a day-long
+      // window in which an entry written by an older build — or by a build
+      // before this rule existed — is adopted unchecked (#6585). A pre-#6585
+      // build wrote under this same key with no author check and no cap, so
+      // these rows can still be an unauthenticated indexer's.
+      return _admitRelayList(cached);
     } catch (e) {
       Log.warning(
         'Failed to read cached relays: $e',

@@ -3566,6 +3566,14 @@
     "videoRecorderCaptureNextLabel": "ቀጥሎ",
     "videoRecorderLipSyncAddAudioFirst": "ከመቅረጽ በፊት ኦዲዮ ያክሉ",
     "videoRecorderStopMotionAssembleFailed": "ቪዲዮውን መፍጠር አልተቻለም። እንደገና ይሞክሩ።",
+    "videoRecorderStopMotionShotsLeft": "{count, plural, =0{ምንም የቀረ ፎቶ የለም} =1{1 ፎቶ ቀርቷል} other{{count} ፎቶዎች ቀርተዋል}}",
+    "@videoRecorderStopMotionShotsLeft": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "videoRecorderToggleFlashLabel": "ብልጭታ ቀያይር",
     "videoRecorderCycleTimerLabel": "የዑደት ሰዓት ቆጣሪ",
     "videoRecorderToggleAspectRatioLabel": "ምጥጥን ቀያይር",

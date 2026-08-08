@@ -8656,6 +8656,20 @@ class AppLocalizationsPl extends AppLocalizations {
       'Nie udało się utworzyć filmu. Spróbuj ponownie.';
 
   @override
+  String videoRecorderStopMotionShotsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Zostało $count ujęcia',
+      many: 'Zostało $count ujęć',
+      few: 'Zostały $count ujęcia',
+      one: 'Zostało 1 ujęcie',
+      zero: 'Brak wolnych ujęć',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get videoRecorderToggleFlashLabel => 'Przełącz lampę błyskową';
 
   @override

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as model show AspectRatio;
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
@@ -9,13 +10,14 @@ import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart' show EditorVideo;
 
 void main() {
-  // At the default 24fps base, one output frame is 1/24s.
+  // One output frame at the render frame rate, rounded up like the production
+  // helper so a hold always covers the frames it stands for.
   Duration hold(int framesPerImage) => Duration(
     microseconds:
         (framesPerImage *
                 Duration.microsecondsPerSecond /
                 StopMotionRenderService.defaultFrameRate)
-            .round(),
+            .ceil(),
   );
 
   List<StopMotionClipFrame> framesOf(List<int> holds) => [
@@ -51,6 +53,118 @@ void main() {
     });
   });
 
+  group('maxCaptureFrames / remainingCaptureFrames', () {
+    test('fits exactly the maximum clip length at one frame per still', () {
+      final max = StopMotionFrameOps.maxCaptureFrames;
+
+      expect(
+        StopMotionFrameOps.framesPerImageToDuration(
+              StopMotionFrameOps.defaultFramesPerImage,
+            ) *
+            max,
+        lessThanOrEqualTo(VideoEditorConstants.maxDuration),
+      );
+      expect(
+        StopMotionFrameOps.framesPerImageToDuration(
+              StopMotionFrameOps.defaultFramesPerImage,
+            ) *
+            (max + 1),
+        greaterThan(VideoEditorConstants.maxDuration),
+      );
+    });
+
+    test('counts down as stills are captured', () {
+      final max = StopMotionFrameOps.maxCaptureFrames;
+
+      expect(StopMotionFrameOps.remainingCaptureFrames(0), max);
+      expect(StopMotionFrameOps.remainingCaptureFrames(1), max - 1);
+      expect(StopMotionFrameOps.remainingCaptureFrames(max), 0);
+    });
+
+    test('floors at zero once the budget is blown', () {
+      expect(
+        StopMotionFrameOps.remainingCaptureFrames(
+          StopMotionFrameOps.maxCaptureFrames + 10,
+        ),
+        0,
+      );
+    });
+
+    test('leaves room only for what the committed composition has left', () {
+      // The recorder reopened from the editor shoots into a composition that
+      // already owns part of the maximum length.
+      final half = VideoEditorConstants.maxDuration ~/ 2;
+
+      expect(
+        StopMotionFrameOps.maxCaptureFramesAfter(half),
+        StopMotionFrameOps.maxCaptureFrames ~/ 2,
+      );
+      expect(
+        StopMotionFrameOps.remainingCaptureFrames(1, committed: half),
+        StopMotionFrameOps.maxCaptureFrames ~/ 2 - 1,
+      );
+    });
+
+    test('divides the room left by the hold the new stills inherit', () {
+      // Stills spliced into a clip on threes are re-held at three output
+      // frames each, so roughly a third as many fit as into an empty session.
+      final onThrees = StopMotionFrameOps.maxCaptureFramesAfter(
+        Duration.zero,
+        framesPerImage: 3,
+      );
+      final threeFrameHold = StopMotionFrameOps.framesPerImageToDuration(3);
+
+      expect(
+        threeFrameHold * onThrees,
+        lessThanOrEqualTo(VideoEditorConstants.maxDuration),
+      );
+      expect(
+        threeFrameHold * (onThrees + 1),
+        greaterThan(VideoEditorConstants.maxDuration),
+      );
+      expect(onThrees, lessThan(StopMotionFrameOps.maxCaptureFrames));
+      expect(
+        StopMotionFrameOps.remainingCaptureFrames(1, framesPerImage: 3),
+        onThrees - 1,
+      );
+    });
+
+    test('reads the inherited hold off the composition being edited', () {
+      final onThrees = DivineVideoClip(
+        id: 'on-threes',
+        stopMotionFrames: framesOf([3, 3, 3]),
+        duration: hold(3) * 3,
+        recordedAt: DateTime(2024),
+        targetAspectRatio: model.AspectRatio.vertical,
+        originalAspectRatio: 1,
+      );
+
+      expect(StopMotionFrameOps.captureFramesPerImageFor([onThrees]), 3);
+      // No composition open (fresh session) or a normal video clip: a capture
+      // starts its own set, so it keeps the default hold.
+      expect(
+        StopMotionFrameOps.captureFramesPerImageFor(const []),
+        StopMotionFrameOps.defaultFramesPerImage,
+      );
+    });
+
+    test('leaves no room once the composition fills the maximum', () {
+      expect(
+        StopMotionFrameOps.maxCaptureFramesAfter(
+          VideoEditorConstants.maxDuration,
+        ),
+        0,
+      );
+      expect(
+        StopMotionFrameOps.remainingCaptureFrames(
+          0,
+          committed: VideoEditorConstants.maxDuration * 2,
+        ),
+        0,
+      );
+    });
+  });
+
   group('initialFramesPerImage / initialHold', () {
     test('holds a lone still for the whole minimum duration', () {
       expect(
@@ -61,8 +175,8 @@ void main() {
 
     test('a session of any size fills at least the minimum duration', () {
       // Asserted on summed *duration*, which is what the editor's Done gate
-      // compares — counting output frames instead hides the rounding in
-      // framesPerImageToDuration (3 and 12 stills land 1µs and 4µs short).
+      // compares — counting output frames instead would hide any rounding in
+      // framesPerImageToDuration.
       for (var frameCount = 1; frameCount <= 40; frameCount++) {
         expect(
           StopMotionFrameOps.initialHold(frameCount) * frameCount,
@@ -73,12 +187,23 @@ void main() {
     });
 
     test('keeps the default hold once the stills fill it on their own', () {
+      // Fewest stills that reach the minimum at one output frame each — the
+      // minimum expressed in output frames. Derived rather than hardcoded so a
+      // frame-rate change moves the boundary with it, and read off the frame
+      // grid rather than by dividing microseconds so the boundary count itself
+      // is asserted: covering the microseconds a hold rounds off by adding a
+      // frame to *every* still would play these exact stills for twice the
+      // minimum.
+      final fillingCount = StopMotionFrameOps.durationToFramesPerImage(
+        StopMotionFrameOps.minimumInitialDuration,
+      );
+
       expect(
-        StopMotionFrameOps.initialFramesPerImage(24),
+        StopMotionFrameOps.initialFramesPerImage(fillingCount),
         StopMotionFrameOps.defaultFramesPerImage,
       );
       expect(
-        StopMotionFrameOps.initialFramesPerImage(100),
+        StopMotionFrameOps.initialFramesPerImage(fillingCount * 4),
         StopMotionFrameOps.defaultFramesPerImage,
       );
     });
@@ -267,9 +392,9 @@ void main() {
 
     test('returns the source list when no selected hold actually changes', () {
       final frames = [
-        const StopMotionClipFrame(
+        StopMotionClipFrame(
           path: 'f0.jpg',
-          duration: Duration(microseconds: 166667), // 4 frames @ 24fps
+          duration: hold(4),
           holdOverridden: true,
         ),
         StopMotionClipFrame(path: 'f1.jpg', duration: hold(1)),
@@ -282,7 +407,7 @@ void main() {
   });
 
   group('insertIndexAtPosition', () {
-    final frames = framesOf([1, 1, 1]); // three 1/24s stills
+    final frames = framesOf([1, 1, 1]); // three one-frame stills
 
     test('prepends at (or before) the start', () {
       expect(

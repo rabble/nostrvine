@@ -22,6 +22,13 @@ class LanguagePreferenceService {
   /// Whether the user has overridden the default device language.
   bool get isCustomLanguageSet => _customLanguage != null;
 
+  /// The language the user explicitly chose, or `null` if they never chose.
+  ///
+  /// Unlike [contentLanguage] this never falls back to the OS locale. Use it
+  /// when *claiming* what language a piece of content is in — a phone set to
+  /// German is not evidence that the video is German.
+  String? get declaredContentLanguage => _customLanguage;
+
   /// Returns the content language code (ISO-639-1).
   ///
   /// If the user has set a custom language, returns that.

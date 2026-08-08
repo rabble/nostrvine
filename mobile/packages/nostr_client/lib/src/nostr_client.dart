@@ -486,6 +486,55 @@ class NostrClient {
   /// Public key of the client
   String get publicKey => _nostr.publicKey;
 
+  /// The signed-in user's public key, or `null` when the signer has none.
+  ///
+  /// [publicKey] is a plain cache read, and the cache stays empty when the
+  /// signer had no key at [initialize] time but acquired one afterwards —
+  /// nothing re-runs the refresh on its own. Resolving through here retries
+  /// the signer on a cache miss, so a late signer is picked up on the next
+  /// call instead of leaving author-scoped queries filtering on an empty
+  /// author for the rest of the session (#6813).
+  ///
+  /// Returns `null` rather than throwing, for callers that should skip their
+  /// query when signed out. Use [Nostr.ensurePublicKey] when the absence of a
+  /// key is a programming error instead.
+  ///
+  /// Concurrent callers share one refresh. A cache miss reaches the signer,
+  /// and for NIP-55 that is an Amber intent — a user-visible prompt — so the
+  /// several repositories that resolve the key at startup must not each raise
+  /// their own.
+  Future<String?> resolvePublicKey() async {
+    final cached = _nostr.publicKey;
+    if (cached.isNotEmpty) return cached;
+
+    try {
+      await _refreshPublicKeyFromSigner();
+    } on Object catch (e, st) {
+      // Non-fatal: the caller skips its author-scoped query. Logged so a
+      // failed signer stays distinguishable from a signed-out session —
+      // callers report both as "no public key".
+      log(
+        'Signer refresh failed while resolving the public key',
+        name: 'NostrClient',
+        error: e,
+        stackTrace: st,
+      );
+      return null;
+    }
+
+    final key = _nostr.publicKey;
+    return key.isEmpty ? null : key;
+  }
+
+  /// In-flight signer refresh, shared by initialize and resolving callers.
+  Future<void>? _pendingPublicKeyRefresh;
+
+  Future<void> _refreshPublicKeyFromSigner() {
+    return _pendingPublicKeyRefresh ??= _nostr.refreshPublicKey().whenComplete(
+      () => _pendingPublicKeyRefresh = null,
+    );
+  }
+
   /// Whether the client has been initialized
   ///
   /// Returns true if the relay manager is initialized
@@ -515,7 +564,7 @@ class NostrClient {
       _reportInitializationStage(
         NostrClientInitializationStage.refreshingPublicKey,
       );
-      await _nostr.refreshPublicKey();
+      await _refreshPublicKeyFromSigner();
       // Seed the already-verified set before relays connect, so re-sent
       // events skip re-verification during the cold-start flood.
       _reportInitializationStage(
@@ -799,9 +848,23 @@ class NostrClient {
     final cacheResults = <Event>[];
 
     // 1. Get cache results (don't return early - we'll merge with network)
+    //
+    // Held to the same filter as the network leg. The local store is not an
+    // admission oracle: its rows are remote-sourced, several writers put them
+    // there without ever seeing this filter, and rows written by a build that
+    // predates the gate are still inside the cache TTL. The DAO's SQL narrows
+    // on most dimensions but not all — an empty-but-non-null list emits no
+    // condition at all, where `checkEvent` matches nothing — so relying on
+    // SQL/`checkEvent` parity would rest a boundary on a cross-package
+    // coincidence neither side declares.
     final dao = _nostrEventsDao;
     if (useCache && dao != null && filters.length == 1) {
-      cacheResults.addAll(await dao.getEventsByFilter(filters.first));
+      cacheResults.addAll(
+        _eventsMatchingAnyFilter(
+          await dao.getEventsByFilter(filters.first),
+          filters,
+        ),
+      );
     }
 
     // 2. Query via WebSocket.
@@ -849,7 +912,10 @@ class NostrClient {
           ? await _queryPool.withResource(runWebSocketQuery)
           : await runWebSocketQuery();
     }
-    final websocketEvents = websocketResult.events;
+    final websocketEvents = _eventsMatchingAnyFilter(
+      websocketResult.events,
+      filters,
+    );
 
     // Cache websocket results (fire-and-forget)
     if (websocketEvents.isNotEmpty) {
@@ -1684,6 +1750,16 @@ class NostrClient {
     final bytes = utf8.encode(jsonString);
     final digest = sha256.convert(bytes);
     return digest.toString().substring(0, 16);
+  }
+
+  List<Event> _eventsMatchingAnyFilter(
+    List<Event> events,
+    List<Filter> filters,
+  ) {
+    return [
+      for (final event in events)
+        if (filters.any((filter) => filter.checkEvent(event))) event,
+    ];
   }
 
   /// Merges cached and network events, deduplicating by event ID.

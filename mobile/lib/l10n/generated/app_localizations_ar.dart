@@ -8419,6 +8419,21 @@ class AppLocalizationsAr extends AppLocalizations {
       'تعذّر إنشاء الفيديو. حاول مرة أخرى.';
 
   @override
+  String videoRecorderStopMotionShotsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'تبقّت $count لقطة',
+      many: 'تبقّت $count لقطة',
+      few: 'تبقّت $count لقطات',
+      two: 'تبقّت لقطتان',
+      one: 'تبقّت لقطة واحدة',
+      zero: 'لم تتبقَّ لقطات',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get videoRecorderToggleFlashLabel => 'تبديل الفلاش';
 
   @override

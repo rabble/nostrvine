@@ -143,21 +143,21 @@ int? _decodeClassicsOffsetCursor(String? cursor) {
   return int.tryParse(cursor.substring(_classicsOffsetCursorPrefix.length));
 }
 
+/// Cache-key suffix for the popular feed's viewer preferences.
+///
+/// Deliberately excludes the viewer country: it is resolved through a geo
+/// lookup with a short timeout that yields null when the network is slow, so
+/// including it made the key flip between two values and miss the cache
+/// exactly when the network was worst.
 String _popularPreferenceCacheSuffix({
   List<String> preferredLanguages = const [],
-  String? viewerCountry,
 }) {
   final languages = preferredLanguages
       .map((language) => language.trim())
       .where((language) => language.isNotEmpty)
       .join(',');
-  final country = viewerCountry?.trim() ?? '';
 
-  if (languages.isEmpty && country.isEmpty) {
-    return '';
-  }
-
-  return ':lang=$languages:country=$country';
+  return languages.isEmpty ? '' : ':lang=$languages';
 }
 
 /// {@template videos_repository}
@@ -949,7 +949,6 @@ class VideosRepository {
   }) async {
     final preferenceCacheSuffix = _popularPreferenceCacheSuffix(
       preferredLanguages: preferredLanguages,
-      viewerCountry: viewerCountry,
     );
     final cacheKey = 'popular:v2:${variant.name}$preferenceCacheSuffix';
     if (!skipCache && until == null && cursor == null) {
@@ -1111,7 +1110,6 @@ class VideosRepository {
   }) async {
     final preferenceCacheSuffix = _popularPreferenceCacheSuffix(
       preferredLanguages: preferredLanguages,
-      viewerCountry: viewerCountry,
     );
     final cacheKey = variant != null
         ? 'popular:v2:${variant.name}$preferenceCacheSuffix'
@@ -2608,7 +2606,6 @@ class VideosRepository {
         (_nostrClient.publicKey.isNotEmpty ? _nostrClient.publicKey : null);
     final preferenceCacheSuffix = _popularPreferenceCacheSuffix(
       preferredLanguages: preferredLanguages,
-      viewerCountry: viewerCountry,
     );
     final cacheKey =
         'recommended:${effectiveUserPubkey ?? 'anonymous'}'

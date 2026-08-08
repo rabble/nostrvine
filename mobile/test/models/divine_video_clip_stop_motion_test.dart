@@ -7,20 +7,20 @@ import 'package:pro_video_editor/pro_video_editor.dart';
 void main() {
   group(StopMotionClipFrame, () {
     test('JSON round-trips the basename and duration exactly', () {
-      // 2 frames @ 24fps — not a whole number of milliseconds; a millisecond
+      // 2 frames @ 30fps — not a whole number of milliseconds; a millisecond
       // round-trip would shift the hold off the output frame grid.
       const frame = StopMotionClipFrame(
         path: '/some/dir/frame_1.jpg',
-        duration: Duration(microseconds: 83333),
+        duration: Duration(microseconds: 66667),
       );
 
       final json = frame.toJson();
       expect(json['path'], 'frame_1.jpg');
-      expect(json['durationUs'], 83333);
+      expect(json['durationUs'], 66667);
 
       final restored = StopMotionClipFrame.fromJson(json, '/docs');
       expect(restored.path, '/docs/frame_1.jpg');
-      expect(restored.duration, const Duration(microseconds: 83333));
+      expect(restored.duration, const Duration(microseconds: 66667));
     });
 
     test('falls back to legacy durationMs when durationUs is absent', () {
@@ -105,14 +105,14 @@ void main() {
         stopMotionFrames: const [
           StopMotionClipFrame(
             path: '/d/a.jpg',
-            duration: Duration(microseconds: 83333),
+            duration: Duration(microseconds: 66667),
           ),
           StopMotionClipFrame(
             path: '/d/b.jpg',
-            duration: Duration(microseconds: 83333),
+            duration: Duration(microseconds: 66667),
           ),
         ],
-        duration: const Duration(microseconds: 166666),
+        duration: const Duration(microseconds: 133334),
         recordedAt: DateTime(2024),
         targetAspectRatio: model.AspectRatio.vertical,
         originalAspectRatio: 9 / 16,
@@ -120,13 +120,13 @@ void main() {
 
       final json = clip.toJson();
       // The aggregate is persisted ms-truncated; the frames keep microseconds.
-      expect(json['durationMs'], 166);
+      expect(json['durationMs'], 133);
 
       final restored = DivineVideoClip.fromJson(json, '/docs');
       // Duration is recomputed from the frames' µs holds, not the truncated ms
       // value, so it stays on the frame grid after a reload.
-      expect(restored.duration, const Duration(microseconds: 166666));
-      expect(restored.duration, isNot(const Duration(milliseconds: 166)));
+      expect(restored.duration, const Duration(microseconds: 133334));
+      expect(restored.duration, isNot(const Duration(milliseconds: 133)));
     });
 
     test('a video clip is not stop-motion and exposes requireVideo', () {

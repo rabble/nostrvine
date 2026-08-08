@@ -8139,6 +8139,17 @@ class AppLocalizationsKo extends AppLocalizations {
       '동영상을 만들지 못했습니다. 다시 시도해 주세요.';
 
   @override
+  String videoRecorderStopMotionShotsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count컷 남음',
+      zero: '남은 컷 없음',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get videoRecorderToggleFlashLabel => '플래시 전환';
 
   @override
