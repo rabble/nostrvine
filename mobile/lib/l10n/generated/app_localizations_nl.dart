@@ -9698,6 +9698,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Laat anderen de audio van deze video opslaan en hergebruiken.';
 
   @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
+
+  @override
   String get videoMetadataCollaboratorsLabel => 'Samenwerkers';
 
   @override

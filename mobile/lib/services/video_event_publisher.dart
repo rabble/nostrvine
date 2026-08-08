@@ -893,6 +893,7 @@ class VideoEventPublisher {
     List<String> textTrackRefs = const [],
     String textTrackLang = 'en',
     void Function()? onEventSigned,
+    void Function()? onAudioReuseDegraded,
   }) async {
     // Create a temporary upload with updated metadata
     final updatedUpload = upload.copyWith(
@@ -922,6 +923,7 @@ class VideoEventPublisher {
       textTrackRefs: textTrackRefs,
       textTrackLang: textTrackLang,
       onEventSigned: onEventSigned,
+      onAudioReuseDegraded: onAudioReuseDegraded,
     );
   }
 
@@ -967,6 +969,7 @@ class VideoEventPublisher {
     List<String> textTrackRefs = const [],
     String textTrackLang = 'en',
     void Function()? onEventSigned,
+    void Function()? onAudioReuseDegraded,
   }) async {
     final videoId = upload.videoId;
     if (videoId == null || upload.cdnUrl == null) {
@@ -1010,6 +1013,7 @@ class VideoEventPublisher {
       textTrackRefs: textTrackRefs,
       textTrackLang: textTrackLang,
       onEventSigned: onEventSigned,
+      onAudioReuseDegraded: onAudioReuseDegraded,
     );
     _inFlightDirectPublishes[videoId] = publish;
     try {
@@ -1046,6 +1050,7 @@ class VideoEventPublisher {
     List<String> textTrackRefs = const [],
     String textTrackLang = 'en',
     void Function()? onEventSigned,
+    void Function()? onAudioReuseDegraded,
   }) async {
     // Validate that at least one video URL is a proper HTTP/HTTPS URL
     // This prevents local file paths from being published to Nostr
@@ -1611,11 +1616,16 @@ class VideoEventPublisher {
       // provider/license metadata and must not be republished as the user's
       // reusable sound.
       String? audioEventId;
+      // Set when the creator asked for reusable audio and we could not
+      // produce it. Two consequences below: the signed event must not enter
+      // the retry cache (its tags are missing markers a retry would rebuild),
+      // and the caller is told so it can say so rather than reporting a
+      // clean success.
+      var audioReuseDegraded = false;
       if (allowAudioReuse &&
           reusableSelectedAudioEventId == null &&
           selectedAudio?.isExternalProviderSound != true &&
           upload.localVideoPath.isNotEmpty) {
-        tags.add(['allow_audio_reuse', 'true']);
         Log.info(
           'Audio reuse enabled - starting audio publishing flow',
           name: 'VideoEventPublisher',
@@ -1642,7 +1652,13 @@ class VideoEventPublisher {
           );
 
           if (audioEventId != null) {
-            // Add e tag referencing the audio event
+            // Both tags are added together once the Kind 1063 exists, so this
+            // publisher never emits `allow_audio_reuse` without the matching
+            // `e` tag. That is a property of this path only — the edit flow
+            // (`video_metadata_update_service.dart`) rebuilds
+            // `allow_audio_reuse` straight from the toggle and publishes no
+            // Kind 1063, so the tag-without-`e` shape is reachable there.
+            tags.add(['allow_audio_reuse', 'true']);
             // Format: ["e", <audio-event-id>, <relay-hint>, "audio"]
             tags.add(['e', audioEventId, relayHint, 'audio']);
             Log.info(
@@ -1651,20 +1667,37 @@ class VideoEventPublisher {
               category: LogCategory.video,
             );
           } else {
-            Log.error(
-              'Requested reusable audio failed to publish',
+            // A transient extraction/upload failure degrades to a video-only
+            // publish rather than discarding an already-uploaded video over a
+            // glitch. The tag is not cosmetic — `allow_audio_reuse` is the
+            // standalone consent marker that `_canReuseSound` reads to offer
+            // in-app remixing off the video's own audio, with no Kind 1063
+            // involved — so the creator loses a feature they asked for, which
+            // is why this is reported rather than swallowed.
+            //
+            // Deliberately NOT the provider-credit bridge's rule: that block
+            // blocks when `allowAudioReuse` is true and degrades only when it
+            // is false, and this block is unreachable unless it is true. The
+            // two are disjoint. Rendered-audio extraction is treated
+            // differently on purpose — the audio it would publish is the
+            // video's own, so a retry can always reconstruct it, whereas a
+            // provider credit cannot be reconstructed after the fact.
+            audioReuseDegraded = true;
+            Log.warning(
+              'Reusable audio failed to publish; publishing the video without '
+              'it',
               name: 'VideoEventPublisher',
               category: LogCategory.video,
             );
-            return false;
           }
         } else {
-          Log.error(
-            'No user pubkey available for requested reusable audio',
+          audioReuseDegraded = true;
+          Log.warning(
+            'No user pubkey available for requested reusable audio; '
+            'publishing the video without it',
             name: 'VideoEventPublisher',
             category: LogCategory.video,
           );
-          return false;
         }
       }
 
@@ -1850,7 +1883,13 @@ class VideoEventPublisher {
       // below the null check so a failed signing cannot advance the bar.
       onEventSigned?.call();
 
-      if (upload.nostrEventId != event.id) {
+      // A degraded event carries none of the audio markers the creator asked
+      // for. Caching it would make "Try Again" reuse it verbatim (the reuse
+      // path takes `reusedEvent ?? createAndSignEvent(...tags)` above, so
+      // freshly rebuilt tags are dropped), permanently stranding the video
+      // without its sound while each retry mints another orphan Kind 1063.
+      // Skipping the write costs a re-sign on retry and lets the tags heal.
+      if (upload.nostrEventId != event.id && !audioReuseDegraded) {
         await _persistRetryableSignedEvent(upload, event);
       }
 
@@ -1873,6 +1912,9 @@ class VideoEventPublisher {
         event: event,
         isRetry: reusedEvent != null,
       );
+      if (publishResult && audioReuseDegraded) {
+        onAudioReuseDegraded?.call();
+      }
       publishWatch.stop();
       logPublishPhase(PublishPhases.nostrPublish, publishWatch.elapsed);
 

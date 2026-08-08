@@ -9708,6 +9708,10 @@ class AppLocalizationsMs extends AppLocalizations {
       'Benarkan orang lain menyimpan dan menggunakan semula audio video ini.';
 
   @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
+
+  @override
   String get videoMetadataCollaboratorsLabel => 'Tambah kolaborator';
 
   @override

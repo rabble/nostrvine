@@ -9767,6 +9767,10 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hayaan ang iba na i-save at gamitin ulit ang audio ng video na ito.';
 
   @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
+
+  @override
   String get videoMetadataCollaboratorsLabel => 'Mga Collaborator';
 
   @override

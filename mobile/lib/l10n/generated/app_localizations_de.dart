@@ -9766,6 +9766,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Lass andere den Audio dieses Videos speichern und wiederverwenden.';
 
   @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
+
+  @override
   String get videoMetadataCollaboratorsLabel => 'Mitwirkende';
 
   @override

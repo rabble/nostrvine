@@ -9160,6 +9160,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoMetadataAudioReuseSubtitle => '让其他人保存并二次使用这个视频的音频。';
 
   @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
+
+  @override
   String get videoMetadataCollaboratorsLabel => '添加协作者';
 
   @override
