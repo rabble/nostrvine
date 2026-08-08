@@ -1,7 +1,7 @@
 # Video card view-count display
 
 **Date:** 2026-08-08
-**Status:** Approved, ready for implementation planning
+**Status:** Implemented
 **Target:** Release before the ~2026-08-13 freeze
 
 ## Problem
@@ -48,8 +48,8 @@ int get totalLoops =>
 ```
 
 Archive Vine loops **plus** live Divine views, summed into one number. The two
-components are available separately, which is what makes the rule below
-non-arbitrary.
+components are available separately, which is what lets a classic Vine report
+its archival figure alone.
 
 Other surfaces carrying the same line:
 
@@ -86,34 +86,39 @@ for the same four days and the designated one to slip.
 
 ### Display rule
 
+The rule is about **size, not provenance**. A count appears publicly only
+when it is large enough to read as a recommendation; below that it reads as a
+warning and is replaced by the date. Archival Vine numbers usually clear the
+bar and our current view volume usually does not, which is the whole effect —
+but it falls out of one threshold rather than two source-specific branches.
+
 | Case | Date | Count | Renders |
 |---|---|---|---|
 | Flag off | — | `totalLoops` | `12 loops` (today's behavior, unchanged) |
-| Own video | post date | `totalLoops` | `3h ago · 12 loops` |
-| Classic vine | post date | `originalLoops` | `Apr 22, 2014 · 2.1M loops` |
-| Someone else's Divine post | post date | none | `3h ago` |
+| Own video | post date | `totalLoops`, always | `3h ago · 12 loops` |
+| Count at or above the floor | post date | public count | `Apr 22, 2014 · 2.1M loops` |
+| Count below the floor | post date | none | `3h ago` |
 | Preview mode (`video == null`) | none | none | line omitted |
 
-Cases are evaluated in the order listed, so `isOwnVideo` wins over
-`isOriginalVine`. A creator viewing their own classic vine — possible where a
-vine account has been claimed — sees `totalLoops`, the combined archive plus
-live number, because at that point it is their own performance data rather than
-a public signal.
+`publicLoopCountFloor` is **1000**. That number is a product call, not a
+technical one, and it is the single value to change if the bar sits wrong. It
+is deliberately a named constant so moving it is a one-line diff.
 
-Two further consequences worth stating explicitly:
+Cases are evaluated in the order listed, so `isOwnVideo` wins: a creator sees
+their own number however small, because correcting a creator's underestimate
+of their audience is what keeps them posting (Bernstein et al., CHI 2013).
+A claimed classic Vine shows the creator `totalLoops` — performance data, not
+the public archival figure.
 
-**Classic vines use `originalLoops`, not `totalLoops`.** The archival number is
-the historical fact being surfaced. `totalLoops` would silently fold live
-Divine views into "how famous this vine was".
+The public count is `originalLoops` for classic Vines and `totalLoops`
+otherwise. **Classic Vines never fold in live diVine views**: doing so would
+misreport how popular the Vine actually was, and our current view volume is
+too small to move the number meaningfully anyway.
 
 **Preview mode currently renders a bogus `0 loops`** — `video?.totalLoops ?? 0`
 with a null video. The rule drops the line instead. This is a behavior change
 on share previews that was not requested; it is small and an improvement, but
 it is a change.
-
-The creator's own zero stays visible. `0 loops` on your own fresh post is
-accurate, it is the status quo, and it is the number the exploration budget
-exists to move.
 
 ### Date format: age-adaptive
 
@@ -149,7 +154,7 @@ New file `mobile/lib/widgets/video_feed_item/video_card_meta.dart`:
 class VideoCardMeta {
   const VideoCardMeta({this.timestamp, this.loopCount});
   final int? timestamp;   // unix seconds; null when the date is unknown
-  final int? loopCount;   // null when the count stays private
+  final int? loopCount;   // null when the count stays hidden
   bool get isEmpty => timestamp == null && loopCount == null;
 }
 
@@ -217,28 +222,33 @@ correctly.
 
 ### 5. Analytics wording
 
-`creator_analytics_screen.dart:718` and `:930` use `analyticsViewsCount` =
-`"{count} views"`. Reaching "12 people watched this" requires a **new** key
+`creator_analytics_screen.dart:718` and `:930` both used `analyticsViewsCount`
+= `"{count} views"`. Reaching "12 people watched this" required a **new** key
 (`analyticsWatchedCount`), not an edit of the existing value: editing in place
 would leave 16 locales holding translations of "views" while English said
 something else, which `.claude/rules/localization.md` explicitly warns against.
+The new key is registered in `_knownUntranslatedDebt`, deferring translation to
+the next analytics localization pass.
 
-New key means mirroring across all `app_*.arb` locales or an entry in
-`_knownUntranslatedDebt` in `test/l10n/arb_consistency_test.dart`.
-
-**This is the most cuttable item in the change.** It is the only piece carrying
-l10n cost, and it is furthest from the stated goal — the card and the more-info
-sheet deliver the whole "hide discouraging counts, show dates" outcome without
-it. If the pre-freeze window tightens, cut §5 first.
+**Only the `:718` highlight row was changed.** `:930` is a dense per-video row
+rendering `12 views • 3 interactions`; "12 people watched this • 3
+interactions" does not fit that line. The result is that one screen names the
+same quantity two ways — "people watched this" in the headline, "views" in the
+data rows. That is a deliberate call (headline gets the human framing, data
+rows stay compact) but it is a real inconsistency a reviewer may want reversed
+in either direction.
 
 ## Testing
 
-| File | Covers |
-|---|---|
-| `test/widgets/video_feed_item/video_card_meta_test.dart` (new) | Every row of the truth table; `originalLoops` vs `totalLoops` for classic vines; `hasUnknownOriginalDate`; the empty case |
-| `test/l10n/localized_time_formatter_test.dart` (extend) | `formatPostAge` either side of the 7-day boundary, under `withClock` |
-| `test/widgets/video_feed_item/video_feed_item_meta_line_test.dart` (new) | Flag off renders today's string; flag on + own video renders date and count; flag on + another's Divine post renders no count |
-| `test/widgets/video_feed_item/metadata/metadata_stats_row_test.dart` (new) | Column order; classic-vine breakdown still rendering. This file has no test today. |
+| File | Covers | Tests |
+|---|---|---|
+| `test/widgets/video_feed_item/video_card_meta_test.dart` (new) | Every row of the truth table; the floor boundary either side; `originalLoops` vs `totalLoops` for classic Vines; `hasUnknownOriginalDate`; the empty case | 17 |
+| `test/widgets/video_feed_item/video_feed_item_meta_line_test.dart` (new) | Flag off renders today's string; flag on hides a small count from a stranger but shows a large one; creator sees their own small count; classic Vine shows archival count plus its date | 6 |
+| `test/widgets/video_feed_item/metadata/metadata_stats_row_test.dart` (new) | Loops trailing every interaction stat; the count still rendering; classic-Vine breakdown. This file had no test before. | 5 |
+| `test/l10n/localized_time_formatter_test.dart` (extend) | `formatPostAge` either side of the 7-day boundary under `withClock`; year retained on an archive date; German localization of both forms | 5 |
+
+The floor-boundary pair and the flag-off/flag-on pair over the same video are
+what make these able to fail: each asserts a behaviour its sibling contradicts.
 
 Widget tests need `AppLocalizations.localizationsDelegates` and
 `supportedLocales` on their `MaterialApp`, and must resolve expected strings
