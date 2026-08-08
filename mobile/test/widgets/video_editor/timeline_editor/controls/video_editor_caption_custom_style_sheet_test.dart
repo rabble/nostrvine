@@ -18,6 +18,8 @@ void main() {
 
   setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
 
+  final l10n = lookupAppLocalizations(const Locale('en'));
+
   testWidgets('custom color swatch exposes RGB semantics', (tester) async {
     tester.view
       ..physicalSize = const Size(1080, 2400)
@@ -38,10 +40,8 @@ void main() {
         home: Scaffold(
           body: Builder(
             builder: (context) => ElevatedButton(
-              onPressed: () => showCaptionCustomStyleSheet(
-                context,
-                initial: initial,
-              ),
+              onPressed: () =>
+                  showCaptionCustomStyleSheet(context, initial: initial),
               child: const Text('Open style sheet'),
             ),
           ),
@@ -52,9 +52,10 @@ void main() {
     await tester.tap(find.text('Open style sheet'));
     await tester.pump(const Duration(milliseconds: 300));
 
-    final semantics = tester.getSemantics(
-      find.bySemanticsLabel('Color picker, RGB 100, 20, 20'),
-    );
+    final expectedLabel =
+        '${l10n.videoEditorColorPickerSemanticLabel}, '
+        '${l10n.rgbColorSemanticLabel(100, 20, 20)}';
+    final semantics = tester.getSemantics(find.bySemanticsLabel(expectedLabel));
     final data = semantics.getSemanticsData();
 
     expect(data.flagsCollection.isButton, isTrue);

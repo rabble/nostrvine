@@ -76,6 +76,10 @@ class _FakeVideoPublishNotifier extends VideoPublishNotifier {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  final l10n = lookupAppLocalizations(const Locale('en'));
+  final closeLabel = l10n.videoEditorCloseEditorSemanticLabel;
+  final doneLabel = l10n.videoEditorContinueToPostDetailsSemanticLabel;
+
   group(VideoEditorMainOverlayActions, () {
     late _MockVideoEditorMainBloc mockBloc;
     late ClipEditorBloc clipEditorBloc;
@@ -178,7 +182,7 @@ void main() {
       testWidgets('renders Close button with caret-left icon', (tester) async {
         await tester.pumpWidget(buildWidget());
 
-        expect(find.bySemanticsLabel('Close video editor'), findsOneWidget);
+        expect(find.bySemanticsLabel(closeLabel), findsOneWidget);
         expect(
           find.byWidgetPredicate(
             (w) => w is DivineIcon && w.icon == DivineIconName.caretLeft,
@@ -191,7 +195,7 @@ void main() {
         await tester.pumpWidget(buildWidget());
 
         expect(
-          find.bySemanticsLabel('Continue to post details'),
+          find.bySemanticsLabel(doneLabel),
           findsOneWidget,
         );
         expect(
@@ -264,7 +268,7 @@ void main() {
         (tester) async {
           await tester.pumpWidget(buildWidget());
 
-          await tester.tap(find.bySemanticsLabel('Close video editor'));
+          await tester.tap(find.bySemanticsLabel(closeLabel));
 
           verify(() => mockGoRouter.pop<Object?>(any())).called(1);
         },
@@ -275,7 +279,7 @@ void main() {
       ) async {
         await tester.pumpWidget(buildWidget(isAutosavedDraft: true));
 
-        await tester.tap(find.bySemanticsLabel('Close video editor'));
+        await tester.tap(find.bySemanticsLabel(closeLabel));
         await tester.pumpAndSettle();
 
         verify(() => mockGoRouter.pop<Object?>(any())).called(1);
@@ -289,7 +293,7 @@ void main() {
           buildWidget(isAutosavedDraft: true, hasBeenEdited: true),
         );
 
-        await tester.tap(find.bySemanticsLabel('Close video editor'));
+        await tester.tap(find.bySemanticsLabel(closeLabel));
         await tester.pumpAndSettle();
 
         expect(find.text('Save your draft?'), findsOneWidget);
@@ -304,7 +308,7 @@ void main() {
             buildWidget(isAutosavedDraft: true, hasBeenEdited: true),
           );
 
-          await tester.tap(find.bySemanticsLabel('Close video editor'));
+          await tester.tap(find.bySemanticsLabel(closeLabel));
           await tester.pumpAndSettle();
 
           await tester.tap(find.text('Save draft'));
@@ -323,7 +327,7 @@ void main() {
           buildWidget(isAutosavedDraft: true, hasBeenEdited: true),
         );
 
-        await tester.tap(find.bySemanticsLabel('Close video editor'));
+        await tester.tap(find.bySemanticsLabel(closeLabel));
         await tester.pumpAndSettle();
 
         await tester.tap(find.text('Discard changes'));
@@ -344,7 +348,7 @@ void main() {
             ),
           );
 
-          await tester.tap(find.bySemanticsLabel('Close video editor'));
+          await tester.tap(find.bySemanticsLabel(closeLabel));
           await tester.pumpAndSettle();
 
           await tester.tap(find.text('Save draft'));
@@ -353,39 +357,33 @@ void main() {
           expect(fakeVideoEditorNotifier.saveAsDraftCalls, equals(1));
           verify(() => mockGoRouter.pop<Object?>(any())).called(1);
           expect(find.text('Failed to save'), findsOneWidget);
-          expect(
-            find.bySemanticsLabel('Close video editor'),
-            findsOneWidget,
-          );
+          expect(find.bySemanticsLabel(closeLabel), findsOneWidget);
         },
       );
 
-      testWidgets(
-        'save draft already in flight leaves the prompt open with no '
-        'snackbar or navigation',
-        (tester) async {
-          await tester.pumpWidget(
-            buildWidget(
-              isAutosavedDraft: true,
-              hasBeenEdited: true,
-              saveAsDraftResult: DraftSaveOutcome.alreadyInProgress,
-            ),
-          );
+      testWidgets('save draft already in flight leaves the prompt open with no '
+          'snackbar or navigation', (tester) async {
+        await tester.pumpWidget(
+          buildWidget(
+            isAutosavedDraft: true,
+            hasBeenEdited: true,
+            saveAsDraftResult: DraftSaveOutcome.alreadyInProgress,
+          ),
+        );
 
-          await tester.tap(find.bySemanticsLabel('Close video editor'));
-          await tester.pumpAndSettle();
+        await tester.tap(find.bySemanticsLabel(closeLabel));
+        await tester.pumpAndSettle();
 
-          await tester.tap(find.text('Save draft'));
-          await tester.pumpAndSettle();
+        await tester.tap(find.text('Save draft'));
+        await tester.pumpAndSettle();
 
-          expect(fakeVideoEditorNotifier.saveAsDraftCalls, equals(1));
-          verifyNever(() => mockGoRouter.pop<Object?>(any()));
-          expect(find.text('Saved to library'), findsNothing);
-          expect(find.text('Failed to save'), findsNothing);
-          // The prompt stays open so the in-flight save can land.
-          expect(find.text('Save your draft?'), findsOneWidget);
-        },
-      );
+        expect(fakeVideoEditorNotifier.saveAsDraftCalls, equals(1));
+        verifyNever(() => mockGoRouter.pop<Object?>(any()));
+        expect(find.text('Saved to library'), findsNothing);
+        expect(find.text('Failed to save'), findsNothing);
+        // The prompt stays open so the in-flight save can land.
+        expect(find.text('Save your draft?'), findsOneWidget);
+      });
     });
 
     group('stop-motion minimum length gate', () {
@@ -421,7 +419,6 @@ void main() {
         await tester.tap(doneButton());
         await tester.pump();
 
-        final l10n = lookupAppLocalizations(const Locale('en'));
         expect(
           find.text(l10n.videoEditorStopMotionTooShortSnackbar(1)),
           findsOneWidget,
@@ -440,7 +437,6 @@ void main() {
         await tester.tap(doneButton());
         await tester.pump();
 
-        final l10n = lookupAppLocalizations(const Locale('en'));
         expect(
           find.text(l10n.videoEditorStopMotionTooShortSnackbar(1)),
           findsNothing,
@@ -476,7 +472,6 @@ void main() {
         await tester.pumpWidget(buildWidget());
         await tester.pump();
 
-        final l10n = lookupAppLocalizations(const Locale('en'));
         expect(
           find.text(l10n.videoEditorStopMotionFramesCount(3)),
           findsOneWidget,
@@ -492,7 +487,6 @@ void main() {
         await tester.pumpWidget(buildWidget());
         await tester.pump();
 
-        final l10n = lookupAppLocalizations(const Locale('en'));
         final chipLabel = find.text(l10n.videoEditorStopMotionFramesCount(3));
         expect(chipLabel, findsOneWidget);
 
@@ -509,29 +503,25 @@ void main() {
         expect(size.height, lessThan(80));
       });
 
-      testWidgets(
-        'shows the most common hold instead of the bare label when '
-        'frames disagree',
-        (tester) async {
-          clipEditorBloc.add(
-            ClipEditorInitialized([
-              clipWithHolds([2, 2, 1, 2]),
-            ]),
-          );
-          await tester.pumpWidget(buildWidget());
-          await tester.pump();
+      testWidgets('shows the most common hold instead of the bare label when '
+          'frames disagree', (tester) async {
+        clipEditorBloc.add(
+          ClipEditorInitialized([
+            clipWithHolds([2, 2, 1, 2]),
+          ]),
+        );
+        await tester.pumpWidget(buildWidget());
+        await tester.pump();
 
-          final l10n = lookupAppLocalizations(const Locale('en'));
-          expect(
-            find.text(l10n.videoEditorStopMotionFramesCount(2)),
-            findsOneWidget,
-          );
-          expect(
-            find.text(l10n.videoEditorStopMotionFramesPerImageLabel),
-            findsNothing,
-          );
-        },
-      );
+        expect(
+          find.text(l10n.videoEditorStopMotionFramesCount(2)),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n.videoEditorStopMotionFramesPerImageLabel),
+          findsNothing,
+        );
+      });
     });
   });
 }
