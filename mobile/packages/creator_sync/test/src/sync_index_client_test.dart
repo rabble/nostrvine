@@ -288,6 +288,57 @@ void main() {
       });
 
       test(
+        'breaks a created_at tie on the lowest event id, whichever order '
+        'the relay returns them in',
+        () async {
+          final lowerIdContent = await cipher.seal(
+            SyncIndexEntry.item(
+              body: const {'gen': 'lower-id'},
+            ).toPayloadJson(),
+          );
+          final higherIdContent = await cipher.seal(
+            SyncIndexEntry.item(
+              body: const {'gen': 'higher-id'},
+            ).toPayloadJson(),
+          );
+          // Ids are set explicitly rather than derived from the content so
+          // the comparison under test has a known answer; a content-derived
+          // pair would make the expectation depend on a sha256 draw.
+          Event tied(String id, String content) => Event.fromJson({
+            'id': id,
+            'pubkey': pubkey,
+            'created_at': 2000,
+            'kind': 30078,
+            'tags': [
+              ['d', ref.dTag],
+            ],
+            'content': content,
+            'sig': '',
+          });
+          final lower = tied('0' * 64, lowerIdContent);
+          final higher = tied('f' * 64, higherIdContent);
+
+          // Both relay orderings must land on the same record. Comparing
+          // created_at alone passes one of these two and fails the other,
+          // which is exactly the device-to-device disagreement NIP-01's
+          // tie-break exists to stop.
+          for (final ordering in [
+            [lower, higher],
+            [higher, lower],
+          ]) {
+            when(
+              () => client.queryEventsDetailed(any()),
+            ).thenAnswer((_) async => _confirmed(ordering));
+
+            final records = await indexClient.fetch(SyncItemKind.sound);
+
+            expect(records, hasLength(1));
+            expect(records.single.entry.body, equals({'gen': 'lower-id'}));
+          }
+        },
+      );
+
+      test(
         'keeps the genuine record when a wrong-kind decoy shares its d '
         'tag with a newer created_at',
         () async {

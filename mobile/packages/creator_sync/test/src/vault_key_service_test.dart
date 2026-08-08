@@ -202,6 +202,67 @@ void main() {
       },
     );
 
+    test(
+      'breaks a created_at tie on the lowest event id, whichever order the '
+      'relay returns them in',
+      () async {
+        final lowerIdKey = base64Encode(
+          await (await AesGcm.with256bits().newSecretKey()).extractBytes(),
+        );
+        final higherIdKey = base64Encode(
+          await (await AesGcm.with256bits().newSecretKey()).extractBytes(),
+        );
+        // Ids are set explicitly rather than derived from the content so
+        // the comparison under test has a known answer; a content-derived
+        // pair would make the expectation depend on a sha256 draw.
+        Event tied(String id, String content) => Event.fromJson({
+          'id': id,
+          'pubkey': pubkey,
+          'created_at': 2000,
+          'kind': 30078,
+          'tags': [
+            ['d', vaultKeyDTag],
+          ],
+          'content': content,
+          'sig': '',
+        });
+        final lower = tied('0' * 64, 'lower-id-wrap');
+        final higher = tied('f' * 64, 'higher-id-wrap');
+        when(
+          () => signer.nip44Decrypt(pubkey, 'lower-id-wrap'),
+        ).thenAnswer((_) async => lowerIdKey);
+        when(
+          () => signer.nip44Decrypt(pubkey, 'higher-id-wrap'),
+        ).thenAnswer((_) async => higherIdKey);
+
+        // Both relay orderings must resolve to the same key. Comparing
+        // created_at alone passes one of these two and fails the other —
+        // two devices handed the same pair would each cache a different
+        // key and never be able to read each other's items again.
+        for (final ordering in [
+          [lower, higher],
+          [higher, lower],
+        ]) {
+          cache = _FakeCache();
+          service = VaultKeyService(
+            signer: signer,
+            client: client,
+            cache: cache,
+          );
+          when(
+            () => client.queryEventsDetailed(
+              any(),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) async => _confirmed(ordering));
+
+          final obtained = await service.obtain();
+
+          expect(base64Encode(await obtained.extractBytes()), lowerIdKey);
+        }
+      },
+    );
+
     test('generates and publishes a key when none exists remotely', () async {
       when(
         () => client.queryEventsDetailed(

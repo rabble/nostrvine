@@ -2,6 +2,7 @@
 // ABOUTME: Filters foreign app-data events out of the shared kind.
 
 import 'package:creator_sync/src/exceptions.dart';
+import 'package:creator_sync/src/replaceable_event_order.dart';
 import 'package:creator_sync/src/sync_cipher.dart';
 import 'package:creator_sync/src/sync_clock.dart';
 import 'package:creator_sync/src/sync_index_entry.dart';
@@ -162,8 +163,12 @@ class SyncIndexClient {
       final ref = SyncItemRef.tryParse(event.dTagValue);
       if (ref == null || ref.kind != kind) continue;
 
+      // NIP-01 precedence, not created_at alone: two devices editing the
+      // same item can stamp the same second, and resolving that by relay
+      // response order lets each device keep a different version and stay
+      // disagreeing across every later reconcile.
       final existing = newest[ref];
-      if (existing == null || event.createdAt > existing.createdAt) {
+      if (existing == null || replacesUnderNip01(event, existing)) {
         newest[ref] = event;
       }
     }

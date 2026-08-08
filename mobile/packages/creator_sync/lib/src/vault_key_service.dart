@@ -7,6 +7,7 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:creator_sync/src/exceptions.dart';
+import 'package:creator_sync/src/replaceable_event_order.dart';
 import 'package:creator_sync/src/sync_clock.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -186,16 +187,19 @@ class VaultKeyService {
     // kind, this account's pubkey, and this event's d tag before treating
     // one as the vault key — otherwise a newer foreign-author decoy
     // sharing the d tag would shadow the genuine key in the sort below.
-    final matches =
-        result.events
-            .where(
-              (event) =>
-                  event.kind == EventKind.appSpecificData &&
-                  event.pubkey == pubkey &&
-                  event.dTagValue == vaultKeyDTag,
-            )
-            .toList()
-          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final matches = result.events
+        .where(
+          (event) =>
+              event.kind == EventKind.appSpecificData &&
+              event.pubkey == pubkey &&
+              event.dTagValue == vaultKeyDTag,
+        )
+        .toList();
+    // NIP-01 precedence, not created_at alone: two devices that raced to
+    // mint a key can stamp the same second, and picking by relay response
+    // order would let each keep a different one — the fork this whole
+    // class exists to prevent.
+    sortByNip01Precedence(matches);
 
     return matches.isEmpty ? null : matches.first;
   }
