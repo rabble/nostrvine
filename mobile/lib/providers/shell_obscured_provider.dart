@@ -18,6 +18,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// without a pop event (e.g. sign-out → /welcome → back to home) cannot keep
 /// the feed paused.
 ///
+/// AppShell also clears `overlayVisibilityProvider.isPageOpen` when this flag
+/// becomes `false`. A page overlay is backed by a route above the shell, so an
+/// uncovered shell proves the page overlay should no longer block autoplay,
+/// even if go_router removed the route with `go()` and never completed the
+/// original `pushWithVideoPause` future.
+///
 /// The home feed reads this to know it is offstage behind a pushed screen.
 /// GoRouter's `routeInformationProvider` collapses to the shell location
 /// (`/home`) while popping between pushed routes, so the feed cannot rely on
