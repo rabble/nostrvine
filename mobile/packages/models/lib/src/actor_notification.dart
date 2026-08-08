@@ -1,9 +1,10 @@
-// ABOUTME: Actor-anchored notification — follows, mentions, system. No
-// ABOUTME: video reference; one row per event.
+// ABOUTME: Actor-anchored notification — follows, mentions, system, and
+// ABOUTME: reactions without an event-id anchor. One row per event.
 
 part of 'notification_item.dart';
 
-/// A notification anchored to an actor (follow, mention, system).
+/// A notification anchored to an actor (follow, mention, system, or an
+/// addressable reaction without a concrete video event ID).
 ///
 /// No video reference; one row per event.
 @immutable
@@ -24,11 +25,12 @@ class ActorNotification extends NotificationItem {
     this.hasCommentTarget = false,
   }) : assert(
          type == NotificationKind.follow ||
+             type == NotificationKind.like ||
              type == NotificationKind.mention ||
              type == NotificationKind.system ||
              type == NotificationKind.likeComment ||
              type == NotificationKind.reply,
-         'ActorNotification only supports follow, mention, system, '
+         'ActorNotification only supports follow, like, mention, system, '
          'likeComment, reply',
        );
 

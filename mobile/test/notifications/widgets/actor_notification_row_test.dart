@@ -1,5 +1,5 @@
 // ABOUTME: Tests for ActorNotificationRow — follow / mention / system /
-// ABOUTME: likeComment / reply rendering, follow-back button visibility,
+// ABOUTME: like / likeComment / reply rendering, follow-back button visibility,
 // ABOUTME: and tap callbacks.
 
 import 'package:divine_ui/divine_ui.dart';
@@ -131,6 +131,24 @@ void main() {
         expect(
           find.textContaining(_l10n.notificationLikedYourComment('Alice')),
           findsOneWidget,
+        );
+      });
+
+      testWidgets('"{actor} liked your video" for anchorless like', (
+        tester,
+      ) async {
+        await _pump(
+          tester,
+          notification: _actor(type: NotificationKind.like),
+        );
+
+        expect(
+          find.textContaining(_l10n.notificationLikedYourVideo('Alice')),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining(_l10n.notificationLikedYourComment('Alice')),
+          findsNothing,
         );
       });
 

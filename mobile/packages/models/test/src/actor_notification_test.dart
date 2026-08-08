@@ -31,6 +31,17 @@ void main() {
         );
       });
 
+      test('accepts an anchorless like as an actor-anchored kind', () {
+        // Should not throw the assert.
+        ActorNotification(
+          id: 'n1',
+          type: NotificationKind.like,
+          actor: actor,
+          timestamp: timestamp,
+          targetEventId: 'reaction-event',
+        );
+      });
+
       test('exposes targetEventId for likeComment', () {
         final notification = ActorNotification(
           id: 'n1',

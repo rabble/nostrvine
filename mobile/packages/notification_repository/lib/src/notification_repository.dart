@@ -776,8 +776,8 @@ class NotificationRepository {
       );
     }
 
-    // Actor-anchored kinds — `follow`, `mention`, `likeComment`, `reply`,
-    // `system` (and unknown future types fall through to `system`).
+    // Actor-anchored kinds — `follow`, `actorLike`, `mention`, `likeComment`,
+    // `reply`, `system` (and unknown future types fall through to `system`).
     return ActorNotification(
       id: row.id,
       type: _actorKindFromCachedType(row.type),
@@ -814,6 +814,7 @@ class NotificationRepository {
   static NotificationKind _actorKindFromCachedType(String type) =>
       switch (type) {
         'follow' => NotificationKind.follow,
+        'actorLike' => NotificationKind.like,
         'mention' => NotificationKind.mention,
         'likeComment' => NotificationKind.likeComment,
         'reply' => NotificationKind.reply,
@@ -917,6 +918,7 @@ class NotificationRepository {
   /// Inverse of [_videoKindFromCachedType] plus [_actorKindFromCachedType].
   static String _persistType(NotificationItem item) => switch (item) {
     VideoNotification(type: NotificationKind.mention) => 'videoMention',
+    ActorNotification(type: NotificationKind.like) => 'actorLike',
     NotificationItem(:final type) => _persistKind(type),
   };
 
@@ -1784,7 +1786,8 @@ class NotificationRepository {
     RelayNotification notification,
   ) => _isVideoAnchoredKind(kind) || _isVideoSourcedMention(notification);
 
-  /// Builds [ActorNotification]s for follow/mention/system kinds.
+  /// Builds [ActorNotification]s for follow/mention/system kinds and
+  /// reactions that have no concrete video event ID.
   ///
   /// `reply` and other unmapped kinds are also routed here as
   /// [ActorNotification] — they don't have a clean video anchor, so we
@@ -1796,14 +1799,21 @@ class NotificationRepository {
     final result = <ActorNotification>[];
     for (final n in raw) {
       final kind = _mapNotificationKind(n);
-      // Skip kinds that became VideoNotifications.
-      if (_isVideoAnchoredKind(kind) || _isVideoSourcedMention(n)) {
+      final isAnchorlessLike =
+          kind == NotificationKind.like &&
+          _nonEmpty(_videoAnchorEventId(kind, n)) == null;
+      // Skip kinds that became VideoNotifications. An a-tag-only reaction has
+      // no event ID to group on, so keep it as an actor-backed like instead of
+      // silently dropping it from both pipelines.
+      if ((_isVideoAnchoredKind(kind) && !isAnchorlessLike) ||
+          _isVideoSourcedMention(n)) {
         continue;
       }
-      // ActorNotification supports follow/mention/system/likeComment/reply;
-      // coerce any other kind to system.
+      // ActorNotification supports follow/like/mention/system/likeComment/
+      // reply; coerce any other kind to system.
       final mapped =
           (kind == NotificationKind.follow ||
+              kind == NotificationKind.like ||
               kind == NotificationKind.mention ||
               kind == NotificationKind.system ||
               kind == NotificationKind.likeComment ||
@@ -1952,6 +1962,8 @@ class NotificationRepository {
 
   /// Returns the `targetEventId` for an actor-anchored notification.
   ///
+  /// - anchorless `like` → the reaction event ID (resolver follows its
+  ///   address tag to the video).
   /// - `likeComment`/`reply` → the referenced comment event ID (resolver
   ///   walks its E-tags to reach the root video).
   /// - `mention` → the source event ID (the kind-1 event that mentioned
@@ -1963,6 +1975,8 @@ class NotificationRepository {
     NotificationKind mapped,
     RelayNotification n,
   ) => switch (mapped) {
+    NotificationKind.like =>
+      n.sourceEventId.isNotEmpty ? n.sourceEventId : null,
     NotificationKind.likeComment || NotificationKind.reply =>
       // Prefer the explicit parent comment ID. Some Funnelcake reply payloads
       // carry the root video in referenced_event_id and the actual parent
@@ -2065,15 +2079,17 @@ class NotificationRepository {
   /// Returns the stable NIP-33 addressable ID for an actor-anchored
   /// notification, when the server provided the root video's full coordinate.
   ///
-  /// Only populated for `likeComment` and `reply` — the tap handler uses
-  /// it to navigate directly to the video without a relay round-trip.
+  /// Populated for anchorless `like`, `likeComment`, and `reply` rows — the
+  /// tap handler uses it to navigate directly to the video without a relay
+  /// round-trip.
   ///
   /// Used by the page-load path ([_mapActorAnchored]).
   String? _actorVideoAddressableId(
     NotificationKind mapped,
     RelayNotification notification,
   ) {
-    if (mapped != NotificationKind.likeComment &&
+    if (mapped != NotificationKind.like &&
+        mapped != NotificationKind.likeComment &&
         mapped != NotificationKind.reply) {
       return null;
     }

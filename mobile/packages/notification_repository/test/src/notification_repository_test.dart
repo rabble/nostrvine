@@ -1371,16 +1371,40 @@ void main() {
       });
 
       test(
-        'video-anchored notification with null referencedEventId is dropped',
+        'a-tag-only reaction maps to an actor like instead of being dropped',
         () async {
+          const rootAddressableId =
+              '34236:user1234567890abcdef:addressable-video';
           stubNotifications([
-            makeNotification(sourcePubkey: 'pub_a', referencedEventId: null),
+            makeNotification(
+              sourcePubkey: 'pub_a',
+              sourceEventId: 'reaction_event',
+              referencedEventId: null,
+              rootAddressableId: rootAddressableId,
+            ),
           ]);
           stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
 
           final page = await repository.getNotifications();
 
-          expect(page.items, isEmpty);
+          expect(page.items, hasLength(1));
+          final item = page.items.single as ActorNotification;
+          expect(item.type, equals(NotificationKind.like));
+          expect(item.targetEventId, equals('reaction_event'));
+          expect(item.videoAddressableId, equals(rootAddressableId));
+
+          final rows =
+              verify(
+                    () => notificationsDao.replaceAll(
+                      captureAny(),
+                      ownerPubkey: any(named: 'ownerPubkey'),
+                    ),
+                  ).captured.single
+                  as List<NotificationCacheRow>;
+          final row = rows.singleWhere((r) => r.type != 'seen_marker');
+          expect(row.type, equals('actorLike'));
+          expect(row.targetEventId, equals('reaction_event'));
+          expect(row.videoAddressableId, equals(rootAddressableId));
         },
       );
 
@@ -3590,6 +3614,57 @@ void main() {
                     item.totalCount == 1 &&
                     item.commentText == null;
               }, 'placeholder is VideoNotification(like) keyed to video'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'cached "actorLike" row remains an anchorless actor like',
+        () async {
+          const rootAddressableId =
+              '34236:user1234567890abcdef:addressable-video';
+          when(
+            () => notificationsDao.getAllNotifications(
+              limit: any(named: 'limit'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              NotificationRow(
+                id: 'cached_actor_like',
+                type: 'actorLike',
+                fromPubkey: 'actor_pub',
+                timestamp: 1700000000,
+                targetEventId: 'reaction_event',
+                videoAddressableId: rootAddressableId,
+                hasCommentTarget: false,
+                isRead: false,
+                cachedAt: DateTime(2026),
+              ),
+            ],
+          );
+          final hydrated = NotificationRepository(
+            funnelcakeApiClient: funnelcakeApiClient,
+            profileRepository: profileRepository,
+            notificationsDao: notificationsDao,
+            userPubkey: userPubkey,
+          );
+          addTearDown(hydrated.close);
+
+          await expectLater(
+            hydrated.watchSnapshot(),
+            emitsThrough(
+              predicate<NotificationPage>((p) {
+                if (p.items.length != 1) return false;
+                final item = p.items.first;
+                return item is ActorNotification &&
+                    item.id == 'cached_actor_like' &&
+                    item.type == NotificationKind.like &&
+                    item.targetEventId == 'reaction_event' &&
+                    item.videoAddressableId == rootAddressableId &&
+                    item.actor.pubkey == 'actor_pub';
+              }, 'placeholder is ActorNotification(like)'),
             ),
           );
         },
