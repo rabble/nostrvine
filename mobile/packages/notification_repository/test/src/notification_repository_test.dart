@@ -1669,6 +1669,78 @@ void main() {
         },
       );
 
+      test(
+        'list_add with addressable target anchors on rootAddressableId',
+        () async {
+          const videoCoordinate = '34236:$userPubkey:addressable-vine';
+          const listCoordinate = '30005:pubkey_alice:literature';
+          stubNotifications([
+            makeNotification(
+              id: 'list_add_addressable',
+              sourceEventId: 'list_evt_1',
+              sourceKind: 30005,
+              notificationType: 'list_add',
+              referencedEventId: null,
+              rootEventKind: 34236,
+              rootEventPubkey: userPubkey,
+              rootDTag: 'addressable-vine',
+              rootAddressableId: videoCoordinate,
+              listTitle: 'Literature',
+              listCoordinate: listCoordinate,
+              isReferencedVideo: false,
+            ),
+          ]);
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+          });
+
+          final page = await repository.getNotifications();
+
+          final item = page.items.single as VideoNotification;
+          expect(item.type, equals(NotificationKind.listAdd));
+          expect(item.videoEventId, equals(videoCoordinate));
+          expect(item.videoAddressableId, equals(videoCoordinate));
+          expect(item.totalCount, equals(1));
+          expect(item.addedVideoCount, equals(1));
+          expect(item.listTitle, equals('Literature'));
+          expect(item.listCoordinate, equals(listCoordinate));
+          verifyNever(() => funnelcakeApiClient.getVideoStats(videoCoordinate));
+        },
+      );
+
+      test(
+        'list_add with foreign addressable target is not rendered as your vine',
+        () async {
+          const foreignCoordinate = '34236:pubkey_foreign:foreign-vine';
+          stubNotifications([
+            makeNotification(
+              id: 'list_add_foreign_addressable',
+              sourceEventId: 'list_evt_foreign',
+              sourceKind: 30005,
+              notificationType: 'list_add',
+              referencedEventId: null,
+              rootEventKind: 34236,
+              rootEventPubkey: 'pubkey_foreign',
+              rootDTag: 'foreign-vine',
+              rootAddressableId: foreignCoordinate,
+              listTitle: 'Literature',
+              listCoordinate: '30005:pubkey_alice:literature',
+              isReferencedVideo: false,
+            ),
+          ]);
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+          });
+
+          final page = await repository.getNotifications();
+
+          expect(page.items, isEmpty);
+          verifyNever(
+            () => funnelcakeApiClient.getVideoStats(foreignCoordinate),
+          );
+        },
+      );
+
       test('list_add groups multiple videos by list coordinate', () async {
         const listCoordinate = '30005:pubkey_alice:literature';
         stubNotifications([
@@ -1701,11 +1773,103 @@ void main() {
 
         final item = page.items.single as VideoNotification;
         expect(item.type, equals(NotificationKind.listAdd));
-        expect(item.totalCount, equals(2));
+        expect(item.totalCount, equals(1));
+        expect(item.addedVideoCount, equals(2));
         expect(item.actors, hasLength(1));
         expect(item.videoEventId, equals('video_1'));
         expect(item.sourceEventIds, equals(['list_evt_1', 'list_evt_2']));
         expect(item.notificationIds, equals(['list_add_1', 'list_add_2']));
+      });
+
+      test(
+        'list_add mixed anchor group uses newest notification '
+        'for event and route',
+        () async {
+          const listCoordinate = '30005:pubkey_alice:literature';
+          const newestCoordinate = '34236:$userPubkey:newest-vine';
+          stubNotifications([
+            makeNotification(
+              id: 'list_add_old_event',
+              sourceEventId: 'list_evt_old',
+              sourceKind: 30005,
+              notificationType: 'list_add',
+              referencedEventId: 'old_video_event',
+              referencedDTag: 'old-vine',
+              listTitle: 'Literature',
+              listCoordinate: listCoordinate,
+              createdAt: DateTime(2026),
+            ),
+            makeNotification(
+              id: 'list_add_new_addressable',
+              sourceEventId: 'list_evt_new',
+              sourceKind: 30005,
+              notificationType: 'list_add',
+              referencedEventId: null,
+              rootEventKind: 34236,
+              rootEventPubkey: userPubkey,
+              rootDTag: 'newest-vine',
+              rootAddressableId: newestCoordinate,
+              listTitle: 'Literature',
+              listCoordinate: listCoordinate,
+              isReferencedVideo: false,
+              createdAt: DateTime(2026, 1, 2),
+            ),
+          ]);
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+          });
+
+          final page = await repository.getNotifications();
+
+          final item = page.items.single as VideoNotification;
+          expect(item.videoEventId, equals(newestCoordinate));
+          expect(item.videoAddressableId, equals(newestCoordinate));
+          expect(item.addedVideoCount, equals(2));
+          verifyNever(
+            () => funnelcakeApiClient.getVideoStats(newestCoordinate),
+          );
+        },
+      );
+
+      test('block filter preserves list_add added video count', () async {
+        repository = buildRepository(
+          blockFilter: (pubkey) => pubkey == 'pubkey_bob',
+        );
+        const listCoordinate = '30005:pubkey_alice:literature';
+        stubNotifications([
+          makeNotification(
+            id: 'list_add_alice',
+            sourceEventId: 'list_evt_1',
+            sourceKind: 30005,
+            notificationType: 'list_add',
+            referencedEventId: 'video_1',
+            listTitle: 'Literature',
+            listCoordinate: listCoordinate,
+            createdAt: DateTime(2026, 1, 2),
+          ),
+          makeNotification(
+            id: 'list_add_bob',
+            sourcePubkey: 'pubkey_bob',
+            sourceEventId: 'list_evt_2',
+            sourceKind: 30005,
+            notificationType: 'list_add',
+            referencedEventId: 'video_2',
+            listTitle: 'Literature',
+            listCoordinate: listCoordinate,
+            createdAt: DateTime(2026),
+          ),
+        ]);
+        stubProfiles({
+          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+          'pubkey_bob': makeProfile('pubkey_bob', displayName: 'Bob'),
+        });
+
+        final page = await repository.getNotifications();
+
+        final item = page.items.single as VideoNotification;
+        expect(item.actors.single.pubkey, equals('pubkey_alice'));
+        expect(item.totalCount, equals(1));
+        expect(item.addedVideoCount, equals(2));
       });
 
       test('reaction with a target comment maps to likeComment even when '

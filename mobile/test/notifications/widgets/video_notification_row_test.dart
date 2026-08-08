@@ -41,6 +41,7 @@ VideoNotification _video({
   String? commentText,
   String? listTitle,
   String? listCoordinate,
+  int? addedVideoCount,
   bool isRead = false,
 }) {
   return VideoNotification(
@@ -56,6 +57,7 @@ VideoNotification _video({
     commentText: commentText,
     listTitle: listTitle,
     listCoordinate: listCoordinate,
+    addedVideoCount: addedVideoCount,
     isRead: isRead,
   );
 }
@@ -204,7 +206,7 @@ void main() {
           tester,
           notification: _video(
             type: NotificationKind.listAdd,
-            totalCount: 3,
+            addedVideoCount: 3,
             listTitle: 'Literature',
             listCoordinate: '30005:${_alice.pubkey}:literature',
           ),
@@ -220,6 +222,30 @@ void main() {
           find.textContaining(_l10n.notificationOthersCount(2)),
           findsNothing,
         );
+        expect(find.text('+2'), findsNothing);
+      });
+
+      testWidgets('listAdd avatar overflow still counts extra curators', (
+        tester,
+      ) async {
+        await _pump(
+          tester,
+          notification: _video(
+            type: NotificationKind.listAdd,
+            totalCount: 3,
+            addedVideoCount: 5,
+            listTitle: 'Literature',
+            listCoordinate: '30005:${_alice.pubkey}:literature',
+          ),
+        );
+
+        expect(
+          find.textContaining(
+            _l10n.notificationAddedYourVideosToList('Alice', 5, 'Literature'),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('+2'), findsOneWidget);
       });
 
       testWidgets('comment message for comment kind', (tester) async {
