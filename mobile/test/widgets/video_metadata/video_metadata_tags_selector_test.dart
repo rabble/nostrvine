@@ -50,6 +50,38 @@ void main() {
       expect(find.text('flutter, dart'), findsOneWidget);
     });
 
+    testWidgets('picker header describes cancel and apply actions', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _buildTestApp(
+          hashtagRepository: hashtagRepository,
+          videoEditorState: VideoEditorProviderState(),
+        ),
+      );
+
+      await tester.tap(
+        find.byType(VideoMetadataSelectionTile),
+        warnIfMissed: false,
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(
+        find.bySemanticsLabel(
+          l10n.videoMetadataTagsPickerCancelSemanticLabel,
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel(
+          l10n.videoMetadataTagsPickerConfirmSemanticLabel,
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('pasting multiple tags adds chips and clears the field', (
       tester,
     ) async {

@@ -33,7 +33,8 @@ class VideoMetadataClassicAppBar extends StatelessWidget
                 icon: .caretLeft,
                 type: .ghostSecondary,
                 size: .small,
-                semanticLabel: context.l10n.videoMetadataBackSemanticLabel,
+                semanticLabel:
+                    context.l10n.videoMetadataClosePostDetailsSemanticLabel,
                 onPressed: () => context.pop(),
               ),
             ),

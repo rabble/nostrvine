@@ -3222,7 +3222,7 @@
     "videoEditorCloseSemanticLabel": "Sluiten",
     "videoEditorDoneSemanticLabel": "Gereed",
     "videoEditorLevelSemanticLabel": "Niveau",
-    "videoMetadataBackSemanticLabel": "Terug",
+    "videoMetadataClosePostDetailsSemanticLabel": "Berichtdetails sluiten",
     "videoMetadataDismissHelpDialogSemanticLabel": "Helpdialoog sluiten",
     "videoMetadataGotItButton": "Begrepen!",
     "videoMetadataLimitReachedWarning": "Limiet van 64KB bereikt. Verwijder wat inhoud om door te gaan.",
@@ -4036,8 +4036,8 @@
     "bugReportRemoveImage": "Remove image",
     "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
     "videoMetadataEditCoverTitle": "Omslag bewerken",
-    "videoMetadataEditCoverCloseSemanticLabel": "Omslageditor sluiten",
-    "videoMetadataEditCoverConfirmSemanticLabel": "Omslagselectie bevestigen",
+    "videoMetadataEditCoverCloseSemanticLabel": "Wijzigingen aan omslag negeren",
+    "videoMetadataEditCoverConfirmSemanticLabel": "Geselecteerd frame als video-omslag gebruiken",
     "videoMetadataEditCoverStripSemanticLabel": "Door video scrollen om omslagframe te selecteren",
     "userPickerRemoveSelectionSemantics": "{name} verwijderen",
     "@userPickerRemoveSelectionSemantics": {
@@ -4932,5 +4932,12 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "Relay verwijderen"
+  "relaySettingsRemoveRelayTooltip": "Relay verwijderen",
+  "videoMetadataTagsPickerCancelSemanticLabel": "Tagselectie annuleren",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "Geselecteerde tags toepassen",
+  "userPickerCancelSemanticLabel": "Gebruikersselectie annuleren",
+  "userPickerConfirmSemanticLabel": "Geselecteerde gebruikers bevestigen",
+  "userPickerClearSelectionSemanticLabel": "Gebruikersselectie wissen",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "Selectie van inhoudswaarschuwingen annuleren",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Geselecteerde inhoudswaarschuwingen toepassen"
 }

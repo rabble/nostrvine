@@ -5829,7 +5829,7 @@
   "videoEditorCloseSemanticLabel": "Đóng",
   "videoEditorDoneSemanticLabel": "Xong",
   "videoEditorLevelSemanticLabel": "Mức",
-  "videoMetadataBackSemanticLabel": "Quay lại",
+  "videoMetadataClosePostDetailsSemanticLabel": "Đóng chi tiết bài đăng",
   "videoMetadataDismissHelpDialogSemanticLabel": "Đóng hộp thoại trợ giúp",
   "videoMetadataGotItButton": "Đã hiểu!",
   "videoMetadataLimitReachedWarning": "Đã đạt giới hạn 64KB. Bớt nội dung để tiếp tục.",
@@ -6226,8 +6226,8 @@
     "description": "Snackbar message shown when url_launcher fails to open the profile website link."
   },
   "videoMetadataEditCoverTitle": "Chỉnh sửa ảnh bìa",
-  "videoMetadataEditCoverCloseSemanticLabel": "Đóng trình chỉnh sửa ảnh bìa",
-  "videoMetadataEditCoverConfirmSemanticLabel": "Xác nhận lựa chọn ảnh bìa",
+  "videoMetadataEditCoverCloseSemanticLabel": "Hủy thay đổi ảnh bìa",
+  "videoMetadataEditCoverConfirmSemanticLabel": "Dùng khung hình đã chọn làm ảnh bìa video",
   "videoMetadataEditCoverStripSemanticLabel": "Tua video để chọn khung hình làm ảnh bìa",
   "videoMetadataTagsPickerSearchHint": "Tìm hoặc thêm thẻ",
   "videoMetadataTagsPickerEmptyHint": "Thêm thẻ để giúp mọi người khám phá video của bạn",
@@ -6777,5 +6777,12 @@
   },
   "relaySettingsRemoveRelayTooltip": "Xoá relay",
   "profileBadgeFooterBody": "Huy hiệu là những phần thưởng nhỏ mà bất kỳ ai cũng có thể tạo trên Nostr. Tặng một huy hiệu cho bạn bè, nhà sáng tạo, hoặc người đã làm bừng sáng ngày của bạn.",
-  "profileBadgeFooterLink": "Tạo huy hiệu của riêng bạn tại badges.divine.video"
+  "profileBadgeFooterLink": "Tạo huy hiệu của riêng bạn tại badges.divine.video",
+  "videoMetadataTagsPickerCancelSemanticLabel": "Hủy chọn thẻ",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "Áp dụng các thẻ đã chọn",
+  "userPickerCancelSemanticLabel": "Hủy chọn người dùng",
+  "userPickerConfirmSemanticLabel": "Xác nhận người dùng đã chọn",
+  "userPickerClearSelectionSemanticLabel": "Xóa lựa chọn người dùng",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "Hủy chọn cảnh báo nội dung",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Áp dụng các cảnh báo nội dung đã chọn"
 }

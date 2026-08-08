@@ -3222,7 +3222,7 @@
     "videoEditorCloseSemanticLabel": "Fechar",
     "videoEditorDoneSemanticLabel": "Concluído",
     "videoEditorLevelSemanticLabel": "Nível",
-    "videoMetadataBackSemanticLabel": "Voltar",
+    "videoMetadataClosePostDetailsSemanticLabel": "Fechar detalhes da publicação",
     "videoMetadataDismissHelpDialogSemanticLabel": "Fechar diálogo de ajuda",
     "videoMetadataGotItButton": "Entendi!",
     "videoMetadataLimitReachedWarning": "Limite de 64 KB atingido. Remova parte do conteúdo para continuar.",
@@ -4036,8 +4036,8 @@
     "bugReportRemoveImage": "Remove image",
     "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
     "videoMetadataEditCoverTitle": "Editar capa",
-    "videoMetadataEditCoverCloseSemanticLabel": "Fechar editor de capa",
-    "videoMetadataEditCoverConfirmSemanticLabel": "Confirmar seleção de capa",
+    "videoMetadataEditCoverCloseSemanticLabel": "Descartar alterações da capa",
+    "videoMetadataEditCoverConfirmSemanticLabel": "Usar o fotograma selecionado como capa do vídeo",
     "videoMetadataEditCoverStripSemanticLabel": "Percorra o vídeo para selecionar o quadro de capa",
     "userPickerRemoveSelectionSemantics": "Remover {name}",
     "@userPickerRemoveSelectionSemantics": {
@@ -4932,5 +4932,12 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "Remover relay"
+  "relaySettingsRemoveRelayTooltip": "Remover relay",
+  "videoMetadataTagsPickerCancelSemanticLabel": "Cancelar seleção de tags",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "Aplicar tags selecionadas",
+  "userPickerCancelSemanticLabel": "Cancelar seleção de utilizadores",
+  "userPickerConfirmSemanticLabel": "Confirmar utilizadores selecionados",
+  "userPickerClearSelectionSemanticLabel": "Limpar seleção de utilizadores",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "Cancelar seleção de avisos de conteúdo",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Aplicar avisos de conteúdo selecionados"
 }

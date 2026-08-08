@@ -116,12 +116,18 @@ class _ContentWarningMultiSelectState
             icon: .x,
             type: .secondary,
             size: .small,
+            semanticLabel: context
+                .l10n
+                .videoMetadataContentWarningsPickerCancelSemanticLabel,
             onPressed: context.pop,
           ),
           title: const _ContentWarningHeaderTitle(),
           trailingAction: DivineIconButton(
             icon: .check,
             size: .small,
+            semanticLabel: context
+                .l10n
+                .videoMetadataContentWarningsPickerConfirmSemanticLabel,
             onPressed: () => context.pop(_selected),
           ),
         ),
@@ -190,27 +196,37 @@ class _ContentLabelTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: isChecked
-          ? context.vineColors.surfaceContainer
-          : VineTheme.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          height: 64,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  localizedContentLabelName(context.l10n, label),
-                  style: VineTheme.titleMediumFont(
-                    color: context.vineColors.onSurface,
+    // The sprite checkbox carries no semantics of its own, so merge the label,
+    // the tap action and the checked flag into one node — screen readers
+    // announce e.g. "Nudity, checkbox, not checked".
+    return MergeSemantics(
+      child: Semantics(
+        checked: isChecked,
+        child: Material(
+          color: isChecked
+              ? context.vineColors.surfaceContainer
+              : VineTheme.transparent,
+          child: InkWell(
+            onTap: onTap,
+            child: Container(
+              height: 64,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      localizedContentLabelName(context.l10n, label),
+                      style: VineTheme.titleMediumFont(
+                        color: context.vineColors.onSurface,
+                      ),
+                    ),
                   ),
-                ),
+                  DivineSpriteCheckbox(
+                    state: isChecked ? .selected : .unselected,
+                  ),
+                ],
               ),
-              DivineSpriteCheckbox(state: isChecked ? .selected : .unselected),
-            ],
+            ),
           ),
         ),
       ),

@@ -1,5 +1,6 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -168,6 +169,63 @@ void main() {
             .first,
       );
       expect(animatedOpacity.opacity, equals(1.0));
+    });
+
+    testWidgets('Post and Save draft are activatable by a screen reader', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      final validState = VideoEditorProviderState(
+        title: 'Test Video',
+        finalRenderedClip: DivineVideoClip(
+          id: 'test-clip',
+          video: EditorVideo.file('test.mp4'),
+          duration: const Duration(seconds: 10),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: models.AspectRatio.square,
+          originalAspectRatio: 9 / 16,
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            videoEditorProvider.overrideWith(
+              () => _MockVideoEditorNotifier(validState),
+            ),
+            gallerySaveServiceProvider.overrideWith(
+              (ref) => mockGallerySaveService,
+            ),
+          ],
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: VideoMetadataCaptureBottomBar()),
+          ),
+        ),
+      );
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      // Both buttons exclude their child's semantics, so the label and the
+      // tap action have to meet on the wrapper node or the control is
+      // announced but not operable.
+      for (final label in [
+        l10n.videoMetadataPostSemanticLabel,
+        l10n.videoMetadataSaveForLaterSemanticLabel,
+      ]) {
+        final finder = find.bySemanticsLabel(label);
+        expect(finder, findsOneWidget, reason: label);
+        expect(
+          tester
+              .getSemantics(finder)
+              .getSemanticsData()
+              .hasAction(SemanticsAction.tap),
+          isTrue,
+          reason: label,
+        );
+      }
+
+      handle.dispose();
     });
 
     testWidgets('tapping Save draft button calls saveAsDraft', (tester) async {

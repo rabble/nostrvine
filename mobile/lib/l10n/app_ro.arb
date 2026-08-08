@@ -3222,7 +3222,7 @@
     "videoEditorCloseSemanticLabel": "Închide",
     "videoEditorDoneSemanticLabel": "Gata",
     "videoEditorLevelSemanticLabel": "Nivel",
-    "videoMetadataBackSemanticLabel": "Înapoi",
+    "videoMetadataClosePostDetailsSemanticLabel": "Închide detaliile postării",
     "videoMetadataDismissHelpDialogSemanticLabel": "Închide dialogul de ajutor",
     "videoMetadataGotItButton": "Am înțeles!",
     "videoMetadataLimitReachedWarning": "Limita de 64KB a fost atinsă. Elimină conținut pentru a continua.",
@@ -4036,8 +4036,8 @@
     "bugReportRemoveImage": "Remove image",
     "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
     "videoMetadataEditCoverTitle": "Editează coperta",
-    "videoMetadataEditCoverCloseSemanticLabel": "Închide editorul de copertă",
-    "videoMetadataEditCoverConfirmSemanticLabel": "Confirmă selecția copertei",
+    "videoMetadataEditCoverCloseSemanticLabel": "Renunță la modificările copertei",
+    "videoMetadataEditCoverConfirmSemanticLabel": "Folosește cadrul selectat drept copertă video",
     "videoMetadataEditCoverStripSemanticLabel": "Parcurge videoclipul pentru a selecta cadrul copertei",
     "userPickerRemoveSelectionSemantics": "Elimină {name}",
     "@userPickerRemoveSelectionSemantics": {
@@ -4932,5 +4932,12 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "Elimină relay-ul"
+  "relaySettingsRemoveRelayTooltip": "Elimină relay-ul",
+  "videoMetadataTagsPickerCancelSemanticLabel": "Anulează selectarea etichetelor",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "Aplică etichetele selectate",
+  "userPickerCancelSemanticLabel": "Anulează selectarea utilizatorilor",
+  "userPickerConfirmSemanticLabel": "Confirmă utilizatorii selectați",
+  "userPickerClearSelectionSemanticLabel": "Șterge selecția utilizatorilor",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "Anulează selectarea avertismentelor de conținut",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Aplică avertismentele de conținut selectate"
 }

@@ -3222,7 +3222,7 @@
     "videoEditorCloseSemanticLabel": "Schließen",
     "videoEditorDoneSemanticLabel": "Fertig",
     "videoEditorLevelSemanticLabel": "Stufe",
-    "videoMetadataBackSemanticLabel": "Zurück",
+    "videoMetadataClosePostDetailsSemanticLabel": "Beitragsdetails schließen",
     "videoMetadataDismissHelpDialogSemanticLabel": "Hilfedialog schließen",
     "videoMetadataGotItButton": "Verstanden!",
     "videoMetadataLimitReachedWarning": "64KB-Limit erreicht. Entferne einige Inhalte, um fortzufahren.",
@@ -4036,8 +4036,8 @@
     "bugReportRemoveImage": "Remove image",
     "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
     "videoMetadataEditCoverTitle": "Cover bearbeiten",
-    "videoMetadataEditCoverCloseSemanticLabel": "Cover-Editor schließen",
-    "videoMetadataEditCoverConfirmSemanticLabel": "Coverauswahl bestätigen",
+    "videoMetadataEditCoverCloseSemanticLabel": "Cover-Änderungen verwerfen",
+    "videoMetadataEditCoverConfirmSemanticLabel": "Ausgewählten Frame als Video-Cover verwenden",
     "videoMetadataEditCoverStripSemanticLabel": "Durch Video scrollen, um Cover-Frame auszuwählen",
     "userPickerRemoveSelectionSemantics": "{name} entfernen",
     "@userPickerRemoveSelectionSemantics": {
@@ -4932,5 +4932,12 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "Relay entfernen"
+  "relaySettingsRemoveRelayTooltip": "Relay entfernen",
+  "videoMetadataTagsPickerCancelSemanticLabel": "Tag-Auswahl abbrechen",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "Ausgewählte Tags anwenden",
+  "userPickerCancelSemanticLabel": "Nutzerauswahl abbrechen",
+  "userPickerConfirmSemanticLabel": "Ausgewählte Nutzer bestätigen",
+  "userPickerClearSelectionSemanticLabel": "Nutzerauswahl leeren",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "Auswahl der Inhaltswarnungen abbrechen",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Ausgewählte Inhaltswarnungen anwenden"
 }
