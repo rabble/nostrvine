@@ -155,7 +155,8 @@ class SyncIndexClient {
     // Relay filters cannot prefix-match d tags, and relays are untrusted:
     // a broad kind+author query can come back with events of the wrong
     // kind, a different author, or a d tag outside the creator-sync
-    // allowlist (DM read cursors, this package's own vault-key event).
+    // allowlist (this package's own vault-key event, or app-specific data
+    // any other app stores for this account under the same kind).
     // Trust only events that actually carry this event's own kind, this
     // account's pubkey, and an allowlisted d tag for [kind] before
     // treating one as a candidate; keep only the newest candidate per

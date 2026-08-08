@@ -35,11 +35,16 @@ class SyncItemRef {
 
   /// Parses [dTag], returning null when it is not a creator-sync item.
   ///
-  /// Matching is allowlist-based rather than prefix-based. The
-  /// subscription that feeds this also receives foreign kind-30078 events
-  /// — notably `dm_repository`'s read-state cursors and this package's own
-  /// vault key event — and treating any of them as an item would corrupt
-  /// unrelated state.
+  /// Matching is allowlist-based rather than prefix-based. The query behind
+  /// this cannot filter on `d` (item tags are per-item and unenumerable), so
+  /// it returns every kind-30078 event this account has ever published —
+  /// this package's own vault-key event, plus whatever any other app the
+  /// user runs stores under the shared app-specific-data kind. Treating one
+  /// of those as a sound would corrupt unrelated state.
+  ///
+  /// `dm_repository`'s read cursors are not among them: those are kind-30078
+  /// *rumors* sealed inside NIP-59 gift wraps, so on a relay they are
+  /// kind-1059 events and never match this filter.
   static SyncItemRef? tryParse(String dTag) {
     if (!dTag.startsWith(prefix)) return null;
 
