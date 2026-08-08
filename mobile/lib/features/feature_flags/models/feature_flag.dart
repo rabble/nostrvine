@@ -91,6 +91,11 @@ enum FeatureFlag {
         'Off by default until the push service fans out kind 34236 to '
         'subscribers — with it off, the bell would publish a subscription '
         'that nothing ever delivers.',
+  ),
+  clientSeenFiltering(
+    'Client Seen-Video Filtering',
+    'Demote recently-seen videos in home feeds and drop them from '
+        'classics/discovery. Kill-switch for the Aug 2026 campaign load.',
   );
 
   const FeatureFlag(

@@ -3,10 +3,13 @@
 
 import 'dart:async';
 
+import 'package:db_client/db_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' show Provider;
 import 'package:http/http.dart' as http;
 import 'package:likes_repository/likes_repository.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/current_app_l10n.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/creator_sync_provider.dart';
@@ -34,6 +37,7 @@ import 'package:openvine/services/dead_media_feed_guard.dart';
 import 'package:openvine/services/event_api_client.dart';
 import 'package:openvine/services/event_router.dart';
 import 'package:openvine/services/nsfw_content_filter.dart';
+// ignore: unnecessary_import
 import 'package:openvine/services/pending_action_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/seen_videos_service.dart';
@@ -114,9 +118,20 @@ PersonalEventCacheService personalEventCacheService(Ref ref) {
 }
 
 /// Seen videos service for tracking viewed content.
+///
+/// Split storage: seen set (id+lastSeen) in Drift `seen_videos` table
+/// (unbounded, ~1yr TTL) + bounded metrics blob. DB injected when
+/// available; tests get the pure-SharedPreferences fallback.
 @Riverpod(keepAlive: true)
 SeenVideosService seenVideosService(Ref ref) {
-  final service = SeenVideosService();
+  AppDatabase? db;
+  try {
+    db = ref.watch(databaseProvider);
+  } catch (_) {
+    db = null;
+  }
+  // ignore: invalid_use_of_visible_for_testing_member
+  final service = SeenVideosService(database: db);
   unawaited(service.initialize());
   ref.onDispose(() => unawaited(service.dispose()));
   return service;
@@ -507,6 +522,14 @@ VideosRepository videosRepository(Ref ref) {
   final moderationLabelService = ref.watch(moderationLabelServiceProvider);
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
   final seenVideosService = ref.watch(seenVideosServiceProvider);
+  final clientSeenFilteringEnabled = () {
+    try {
+      final flagService = ref.watch(featureFlagServiceProvider);
+      return flagService.isEnabled(FeatureFlag.clientSeenFiltering);
+    } catch (_) {
+      return true;
+    }
+  }();
   final divineHostFilterService = ref.read(divineHostFilterServiceProvider);
   final feedAspectRatioPreference = ref.watch(
     feedAspectRatioPreferenceServiceProvider,
@@ -535,10 +558,12 @@ VideosRepository videosRepository(Ref ref) {
     ),
     funnelcakeApiClient: funnelcakeClient,
     inMemoryFeedCache: InMemoryFeedCache(),
-    seenVideoLookup: SeenVideoLookup(
-      wasSeenRecently: seenVideosService.wasSeenRecently,
-      initialize: seenVideosService.initialize,
-    ),
+    seenVideoLookup: clientSeenFilteringEnabled
+        ? SeenVideoLookup(
+            wasSeenRecently: seenVideosService.wasSeenRecently,
+            initialize: seenVideosService.initialize,
+          )
+        : null,
   );
 
   // Clear the in-memory feed cache (home + per-author) on logout/account

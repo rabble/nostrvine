@@ -10,6 +10,9 @@ import 'package:openvine/providers/feed_viewer_preference_hints.dart';
 import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/preferences_providers.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
+// ignore: directives_ordering
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -156,13 +159,27 @@ class ForYouFeed extends _$ForYouFeed {
         return const VideoFeedState(videos: [], hasMoreContent: false);
       }
 
-      final freshOrderedVideos = prioritizeNotRecentlySeenVideos(
-        filteredVideos,
-        seenVideoLookup: SeenVideoLookup(
-          wasSeenRecently: seenVideosService.wasSeenRecently,
-          initialize: seenVideosService.initialize,
-        ),
-      );
+      final clientSeenFilteringEnabled = (() {
+        try {
+          return ref
+              .read(featureFlagServiceProvider)
+              .isEnabled(
+                FeatureFlag.clientSeenFiltering,
+              );
+        } catch (_) {
+          return true;
+        }
+      })();
+
+      final freshOrderedVideos = clientSeenFilteringEnabled
+          ? prioritizeNotRecentlySeenVideos(
+              filteredVideos,
+              seenVideoLookup: SeenVideoLookup(
+                wasSeenRecently: seenVideosService.wasSeenRecently,
+                initialize: seenVideosService.initialize,
+              ),
+            )
+          : filteredVideos;
 
       _sessionSeed = requestSeed;
       _nextCursor = response.nextCursor;
@@ -250,14 +267,28 @@ class ForYouFeed extends _$ForYouFeed {
       await seenVideosService.initialize();
       if (!ref.mounted) return;
 
+      final clientSeenFilteringEnabledLoadMore = (() {
+        try {
+          return ref
+              .read(featureFlagServiceProvider)
+              .isEnabled(
+                FeatureFlag.clientSeenFiltering,
+              );
+        } catch (_) {
+          return true;
+        }
+      })();
+
       final newVideos = dedupeByFeedKey(
-        prioritizeNotRecentlySeenVideos(
-          filteredVideos,
-          seenVideoLookup: SeenVideoLookup(
-            wasSeenRecently: seenVideosService.wasSeenRecently,
-            initialize: seenVideosService.initialize,
-          ),
-        ),
+        clientSeenFilteringEnabledLoadMore
+            ? prioritizeNotRecentlySeenVideos(
+                filteredVideos,
+                seenVideoLookup: SeenVideoLookup(
+                  wasSeenRecently: seenVideosService.wasSeenRecently,
+                  initialize: seenVideosService.initialize,
+                ),
+              )
+            : filteredVideos,
         alreadySeen: currentState.videos.map((video) => video.feedDedupKey),
       );
       final mergedVideos = [...currentState.videos, ...newVideos];
