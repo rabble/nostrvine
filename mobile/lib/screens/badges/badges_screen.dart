@@ -131,8 +131,9 @@ class _BadgesIntro extends StatelessWidget {
             label: context.l10n.badgesOpenApp,
             leadingIcon: DivineIconName.arrowUpRight,
             onPressed: () {
-              final app = _divineBadgesApp();
-              context.push(NostrAppSandboxScreen.pathForAppId(app.id));
+              context.push(
+                NostrAppSandboxScreen.pathForAppId(divineBadgesNostrApp.slug),
+              );
             },
           ),
         ],
@@ -519,10 +520,6 @@ class _StatusPill extends StatelessWidget {
       ),
     );
   }
-}
-
-NostrAppDirectoryEntry _divineBadgesApp() {
-  return preloadedNostrApps.where((app) => app.slug == 'badges').single;
 }
 
 String _definitionNameFromCoordinate(String coordinate) {

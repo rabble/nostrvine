@@ -9979,6 +9979,14 @@ class AppLocalizationsFil extends AppLocalizations {
   String get profileBadgeFallbackSemanticLabel => 'Badge';
 
   @override
+  String get profileBadgeFooterBody =>
+      'Ang mga badge ay maliliit na parangal na kahit sino ay puwedeng gumawa sa Nostr. Bigyan ang isang kaibigan, isang creator, o kung sino man ang nagpasaya sa araw mo.';
+
+  @override
+  String get profileBadgeFooterLink =>
+      'Gumawa ng sarili mo sa badges.divine.video';
+
+  @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';
 
   @override

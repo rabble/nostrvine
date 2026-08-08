@@ -237,6 +237,11 @@ final List<NostrAppDirectoryEntry> preloadedNostrApps = List.unmodifiable([
   ),
 ]);
 
+/// The bundled Divine Badges app (badges.divine.video), for deep-linking
+/// into the badges app from badge UI.
+final NostrAppDirectoryEntry divineBadgesNostrApp = preloadedNostrApps
+    .firstWhere((app) => app.slug == 'badges');
+
 /// Per-app localStorage seeding scripts keyed by slug.
 ///
 /// These scripts run after the NIP-07 bridge is installed.

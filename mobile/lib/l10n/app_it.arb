@@ -3919,6 +3919,8 @@
     "profileBadgeMoreRecipients": "+{count} more",
     "profileBadgeSemanticLabel": "{name} badge",
     "profileBadgeFallbackSemanticLabel": "Badge",
+    "profileBadgeFooterBody": "I badge sono piccoli riconoscimenti che chiunque può creare su Nostr. Regalane uno a un amico, a un creator o a chi ti ha svoltato la giornata.",
+    "profileBadgeFooterLink": "Crea il tuo su badges.divine.video",
     "authSignInWithBrowserExtension": "Accedi con estensione del browser",
     "authNip07ConnectionFailed": "Impossibile connettersi alla tua estensione del browser.",
     "authNip07ExtensionNotFound": "Nessuna estensione del browser trovata. Installa Alby, nos2x o un'altra estensione compatibile con NIP-07.",

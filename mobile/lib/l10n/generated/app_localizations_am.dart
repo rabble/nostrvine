@@ -9641,6 +9641,13 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileBadgeFallbackSemanticLabel => 'Badge';
 
   @override
+  String get profileBadgeFooterBody =>
+      'ባጆች በNostr ላይ ማንኛውም ሰው መፍጠር የሚችላቸው ትንንሽ ሽልማቶች ናቸው። ለጓደኛ፣ ለፈጣሪ ወይም ቀንህን ላሳመረልህ ሰው አንዷን ስጥ።';
+
+  @override
+  String get profileBadgeFooterLink => 'የራስህን በbadges.divine.video ፍጠር';
+
+  @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';
 
   @override

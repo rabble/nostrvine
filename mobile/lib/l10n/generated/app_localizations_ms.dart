@@ -9920,6 +9920,14 @@ class AppLocalizationsMs extends AppLocalizations {
   String get profileBadgeFallbackSemanticLabel => 'Lencana';
 
   @override
+  String get profileBadgeFooterBody =>
+      'Lencana ialah anugerah kecil yang sesiapa sahaja boleh buat di Nostr. Berikan satu kepada rakan, pencipta, atau seseorang yang menceriakan hari anda.';
+
+  @override
+  String get profileBadgeFooterLink =>
+      'Buat lencana anda sendiri di badges.divine.video';
+
+  @override
   String get minorAccountReviewWelcomePageTitle => 'Panduan keluarga';
 
   @override

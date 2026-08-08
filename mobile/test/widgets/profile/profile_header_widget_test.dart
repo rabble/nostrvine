@@ -14,6 +14,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
@@ -28,6 +29,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -525,6 +527,67 @@ void main() {
           OtherProfileScreen.pathForNpub(
             NostrKeyUtils.encodePubKey(issuerUserHex),
           ),
+        ),
+      ).called(1);
+    });
+
+    testWidgets('badge detail sheet links into the badges app', (
+      tester,
+    ) async {
+      final testProfile = createTestProfile(displayName: 'Badged User');
+      final mockGoRouter = MockGoRouter();
+      when(
+        () => mockGoRouter.push<Object?>(any()),
+      ).thenAnswer((_) async => null);
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: false,
+          suppliedProfile: testProfile,
+          goRouter: mockGoRouter,
+          acceptedProfileBadges: [
+            ProfileBadgeViewData(
+              badge: const Nip58ProfileBadgeRef(
+                definitionCoordinate: '30009:$issuerUserHex:daily-diviner',
+                awardEventId:
+                    '00000000000000000000000000000000000000000000000000000000000000aa',
+              ),
+              award: Nip58BadgeAward(
+                event: _badgeAwardEvent(),
+                definitionCoordinate: '30009:$issuerUserHex:daily-diviner',
+                recipientPubkeys: const [testUserHex, recipientUserHex],
+              ),
+              definition: Nip58BadgeDefinition(
+                event: _badgeDefinitionEvent(),
+                coordinate: '30009:$issuerUserHex:daily-diviner',
+                dTag: 'daily-diviner',
+                name: 'Diviner of the Day',
+              ),
+            ),
+          ],
+        ),
+      );
+      // Let the badge row's reveal animation finish; the chip does not hit
+      // test while it is still fading in.
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Diviner of the Day'));
+      await tester.pumpAndSettle();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final link = find.text(l10n.profileBadgeFooterLink);
+      expect(find.text(l10n.profileBadgeFooterBody), findsOneWidget);
+      expect(link, findsOneWidget);
+
+      await tester.ensureVisible(link);
+      await tester.pumpAndSettle();
+      await tester.tap(link);
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockGoRouter.push<Object?>(
+          NostrAppSandboxScreen.pathForAppId(divineBadgesNostrApp.slug),
         ),
       ).called(1);
     });

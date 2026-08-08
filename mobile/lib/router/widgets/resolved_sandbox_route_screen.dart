@@ -1,5 +1,5 @@
-// ABOUTME: Resolves a NostrAppDirectoryEntry by ID and renders the
-// ABOUTME: sandbox screen once the entry is available.
+// ABOUTME: Resolves a NostrAppDirectoryEntry by ID or slug and renders
+// ABOUTME: the sandbox screen once the entry is available.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -23,7 +23,7 @@ class ResolvedSandboxRouteScreen extends ConsumerWidget {
     super.key,
   });
 
-  /// The app ID to resolve.
+  /// The app ID or slug to resolve.
   final String appId;
 
   /// An optional pre-loaded entry to avoid a network call.

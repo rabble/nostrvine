@@ -6767,5 +6767,7 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "Buang relay"
+  "relaySettingsRemoveRelayTooltip": "Buang relay",
+  "profileBadgeFooterBody": "Lencana ialah anugerah kecil yang sesiapa sahaja boleh buat di Nostr. Berikan satu kepada rakan, pencipta, atau seseorang yang menceriakan hari anda.",
+  "profileBadgeFooterLink": "Buat lencana anda sendiri di badges.divine.video"
 }

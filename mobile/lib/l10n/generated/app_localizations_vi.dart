@@ -9867,6 +9867,14 @@ class AppLocalizationsVi extends AppLocalizations {
   String get profileBadgeFallbackSemanticLabel => 'Huy hiệu';
 
   @override
+  String get profileBadgeFooterBody =>
+      'Huy hiệu là những phần thưởng nhỏ mà bất kỳ ai cũng có thể tạo trên Nostr. Tặng một huy hiệu cho bạn bè, nhà sáng tạo, hoặc người đã làm bừng sáng ngày của bạn.';
+
+  @override
+  String get profileBadgeFooterLink =>
+      'Tạo huy hiệu của riêng bạn tại badges.divine.video';
+
+  @override
   String get minorAccountReviewWelcomePageTitle => 'Hướng dẫn gia đình';
 
   @override
