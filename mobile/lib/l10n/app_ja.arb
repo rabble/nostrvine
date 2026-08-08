@@ -3136,7 +3136,7 @@
     "videoEditorUnmuteAudioSemanticLabel": "音声のミュートを解除",
     "videoEditorVideoTimelineSemanticLabel": "動画タイムライン",
     "videoMetadataAddCollaboratorSemanticLabel": "コラボレーターを追加",
-    "videoMetadataBackSemanticLabel": "戻る",
+    "videoMetadataClosePostDetailsSemanticLabel": "投稿の詳細を閉じる",
     "videoMetadataClassicDoneButton": "完了",
     "videoMetadataClosePreviewSemanticLabel": "動画プレビューを閉じる",
     "videoMetadataCollaboratorsCount": "{count}/{max}人のコラボレーター",
@@ -3226,6 +3226,14 @@
     "videoRecorderCaptureNextLabel": "次へ",
     "videoRecorderLipSyncAddAudioFirst": "録画する前にオーディオを追加してください",
     "videoRecorderStopMotionAssembleFailed": "動画を作成できませんでした。もう一度お試しください。",
+    "videoRecorderStopMotionShotsLeft": "{count, plural, =0{残り0枚} other{残り{count}枚}}",
+    "@videoRecorderStopMotionShotsLeft": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "videoRecorderClipDeletedMessage": "クリップをゴミ箱に移動しました",
     "videoRecorderClipUndoLabel": "元に戻す",
     "libraryTrashTitle": "最近削除した項目",
@@ -3919,6 +3927,8 @@
     "profileBadgeMoreRecipients": "+{count} more",
     "profileBadgeSemanticLabel": "{name} badge",
     "profileBadgeFallbackSemanticLabel": "Badge",
+    "profileBadgeFooterBody": "バッジは Nostr で誰でも作れる小さな賞。友だちやクリエイター、今日をいい日にしてくれた人に贈ってみて。",
+    "profileBadgeFooterLink": "badges.divine.video で自分のバッジを作る",
     "authSignInWithBrowserExtension": "ブラウザ拡張機能でサインイン",
     "authNip07ConnectionFailed": "ブラウザ拡張機能に接続できませんでした。",
     "authNip07ExtensionNotFound": "ブラウザ拡張機能が見つかりません。Alby、nos2x、またはその他の NIP-07 対応拡張機能をインストールしてください。",
@@ -4026,8 +4036,8 @@
     "bugReportRemoveImage": "Remove image",
     "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
     "videoMetadataEditCoverTitle": "カバーを編集",
-    "videoMetadataEditCoverCloseSemanticLabel": "カバーエディターを閉じる",
-    "videoMetadataEditCoverConfirmSemanticLabel": "カバー選択を確認",
+    "videoMetadataEditCoverCloseSemanticLabel": "カバーの変更を破棄",
+    "videoMetadataEditCoverConfirmSemanticLabel": "選択したフレームを動画のカバーに使用",
     "videoMetadataEditCoverStripSemanticLabel": "カバーフレームを選択するために動画をシーク",
     "userPickerRemoveSelectionSemantics": "{name}を削除",
     "@userPickerRemoveSelectionSemantics": {
@@ -4922,5 +4932,12 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "リレーを削除"
+  "relaySettingsRemoveRelayTooltip": "リレーを削除",
+  "videoMetadataTagsPickerCancelSemanticLabel": "タグの選択をキャンセル",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "選択したタグを適用",
+  "userPickerCancelSemanticLabel": "ユーザー選択をキャンセル",
+  "userPickerConfirmSemanticLabel": "選択したユーザーを確定",
+  "userPickerClearSelectionSemanticLabel": "ユーザー選択をクリア",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "コンテンツ警告の選択をキャンセル",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "選択したコンテンツ警告を適用"
 }

@@ -6048,6 +6048,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoMetadataC2paMissingNote => 'コンテンツ認証情報にはインターネット接続が必要です。';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => '再生成';
 
   @override
@@ -8111,6 +8115,17 @@ class AppLocalizationsJa extends AppLocalizations {
       '動画を作成できませんでした。もう一度お試しください。';
 
   @override
+  String videoRecorderStopMotionShotsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '残り$count枚',
+      zero: '残り0枚',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get videoRecorderToggleFlashLabel => 'フラッシュを切り替え';
 
   @override
@@ -9163,7 +9178,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorLevelSemanticLabel => 'レベル';
 
   @override
-  String get videoMetadataBackSemanticLabel => '戻る';
+  String get videoMetadataClosePostDetailsSemanticLabel => '投稿の詳細を閉じる';
 
   @override
   String get videoMetadataDismissHelpDialogSemanticLabel => 'ヘルプダイアログを閉じる';
@@ -9430,6 +9445,13 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get profileBadgeFallbackSemanticLabel => 'Badge';
+
+  @override
+  String get profileBadgeFooterBody =>
+      'バッジは Nostr で誰でも作れる小さな賞。友だちやクリエイター、今日をいい日にしてくれた人に贈ってみて。';
+
+  @override
+  String get profileBadgeFooterLink => 'badges.divine.video で自分のバッジを作る';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';
@@ -9973,10 +9995,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoMetadataEditCoverTitle => 'カバーを編集';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => 'カバーエディターを閉じる';
+  String get videoMetadataEditCoverCloseSemanticLabel => 'カバーの変更を破棄';
 
   @override
-  String get videoMetadataEditCoverConfirmSemanticLabel => 'カバー選択を確認';
+  String get videoMetadataEditCoverConfirmSemanticLabel => '選択したフレームを動画のカバーに使用';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
@@ -10608,4 +10630,27 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+
+  @override
+  String get videoMetadataTagsPickerCancelSemanticLabel => 'タグの選択をキャンセル';
+
+  @override
+  String get videoMetadataTagsPickerConfirmSemanticLabel => '選択したタグを適用';
+
+  @override
+  String get userPickerCancelSemanticLabel => 'ユーザー選択をキャンセル';
+
+  @override
+  String get userPickerConfirmSemanticLabel => '選択したユーザーを確定';
+
+  @override
+  String get userPickerClearSelectionSemanticLabel => 'ユーザー選択をクリア';
+
+  @override
+  String get videoMetadataContentWarningsPickerCancelSemanticLabel =>
+      'コンテンツ警告の選択をキャンセル';
+
+  @override
+  String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
+      '選択したコンテンツ警告を適用';
 }

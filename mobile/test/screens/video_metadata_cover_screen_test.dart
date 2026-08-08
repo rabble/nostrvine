@@ -1,6 +1,8 @@
 // ABOUTME: Tests for VideoMetadataCoverScreen widget
 // ABOUTME: Verifies rendering, semantics, navigation, and failure handling
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/material.dart';
@@ -44,13 +46,26 @@ class _NoopInitProVideoEditor extends MethodChannelProVideoEditor {
   Stream<dynamic> initializeStream() => const Stream.empty();
 }
 
-DivineVideoClip _createTestClip({String id = 'test-clip'}) {
+class _PendingEditorVideo extends Fake implements EditorVideo {
+  _PendingEditorVideo(this.path);
+
+  final Future<String> path;
+
+  @override
+  Future<String> safeFilePath() => path;
+}
+
+DivineVideoClip _createTestClip({
+  String id = 'test-clip',
+  models.AspectRatio aspectRatio = models.AspectRatio.square,
+  EditorVideo? video,
+}) {
   return DivineVideoClip(
     id: id,
-    video: EditorVideo.file('test.mp4'),
+    video: video ?? EditorVideo.file('test.mp4'),
     duration: const Duration(seconds: 10),
     recordedAt: DateTime.now(),
-    targetAspectRatio: models.AspectRatio.square,
+    targetAspectRatio: aspectRatio,
     originalAspectRatio: 9 / 16,
   );
 }
@@ -234,6 +249,102 @@ void main() {
       expect(find.text(l10n.videoMetadataEditCoverTitle), findsOneWidget);
     });
 
+    testWidgets('morphs the hero flight corners on the way back', (
+      tester,
+    ) async {
+      setUpPlayerChannel();
+      addTearDown(tearDownPlayerChannel);
+
+      // The metadata thumbnail rounds itself from outside its Hero, so the
+      // shuttle arrives carrying no rounding of its own. Without a builder on
+      // this screen's Hero the whole flight back is square-cornered.
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            videoEditorProvider.overrideWith(
+              () => _MockVideoEditorNotifier(VideoEditorProviderState()),
+            ),
+          ],
+          child: MockGoRouterProvider(
+            goRouter: mockGoRouter,
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Builder(
+                builder: (context) => Scaffold(
+                  body: Center(
+                    child: SizedBox(
+                      height: 200,
+                      // Clip outside the Hero, the way both real thumbnails do.
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(
+                          VideoEditorConstants.clipPreviewCornerRadius,
+                        ),
+                        child: Hero(
+                          tag: VideoEditorConstants.heroMetaPreviewId,
+                          child: GestureDetector(
+                            onTap: () => Navigator.of(context).push(
+                              PageRouteBuilder<void>(
+                                pageBuilder: (_, _, _) =>
+                                    VideoMetadataCoverScreen(
+                                      clip: _createTestClip(
+                                        aspectRatio:
+                                            models.AspectRatio.vertical,
+                                      ),
+                                    ),
+                              ),
+                            ),
+                            child: const Text('open'),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Caught mid-lerp the shuttle is strictly inside both endpoints on both
+      // corners: the thumbnail's 16 all round and this screen's bottom-only 32.
+      // Neither resting shape satisfies that, so only the shuttle matches.
+      final shuttleClip = find.byWidgetPredicate((widget) {
+        if (widget is! ClipRRect) return false;
+        final radius = widget.borderRadius;
+        return radius is BorderRadius &&
+            radius.topLeft.x > 0 &&
+            radius.topLeft.x < VideoEditorConstants.clipPreviewCornerRadius &&
+            radius.bottomLeft.x >
+                VideoEditorConstants.clipPreviewCornerRadius &&
+            radius.bottomLeft.x < 32;
+      });
+      BorderRadius shuttleRadius() =>
+          tester.widget<ClipRRect>(shuttleClip).borderRadius as BorderRadius;
+
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      tester.state<NavigatorState>(find.byType(Navigator)).pop();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 40));
+
+      expect(shuttleClip, findsOneWidget);
+      final early = shuttleRadius();
+
+      await tester.pump(const Duration(milliseconds: 120));
+      final later = shuttleRadius();
+
+      // Travelling towards the thumbnail: the top tightens back to 16 as the
+      // bottom relaxes off 32. A single sample cannot tell that from a lerp
+      // running backwards or one pinned to a constant.
+      expect(later.topLeft.x, greaterThan(early.topLeft.x));
+      expect(later.bottomLeft.x, lessThan(early.bottomLeft.x));
+
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('shows DivineVideoPlayer', (tester) async {
       setUpPlayerChannel();
       addTearDown(tearDownPlayerChannel);
@@ -254,9 +365,16 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
 
       final l10n = lookupAppLocalizations(const Locale('en'));
+      final closeFinder = find.bySemanticsLabel(
+        l10n.videoMetadataEditCoverCloseSemanticLabel,
+      );
+      expect(closeFinder, findsOneWidget);
       expect(
-        find.bySemanticsLabel(l10n.videoMetadataEditCoverCloseSemanticLabel),
-        findsOneWidget,
+        tester
+            .getSemantics(closeFinder)
+            .getSemanticsData()
+            .hasAction(SemanticsAction.tap),
+        isTrue,
       );
     });
 
@@ -270,10 +388,53 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
 
       final l10n = lookupAppLocalizations(const Locale('en'));
-      expect(
-        find.bySemanticsLabel(l10n.videoMetadataEditCoverConfirmSemanticLabel),
-        findsOneWidget,
+      final confirmFinder = find.bySemanticsLabel(
+        l10n.videoMetadataEditCoverConfirmSemanticLabel,
       );
+      expect(confirmFinder, findsOneWidget);
+      expect(
+        tester
+            .getSemantics(confirmFinder)
+            .getSemanticsData()
+            .hasAction(SemanticsAction.tap),
+        isTrue,
+      );
+    });
+
+    testWidgets('confirm button keeps disabled semantics while confirming', (
+      tester,
+    ) async {
+      setUpPlayerChannel();
+      addTearDown(tearDownPlayerChannel);
+      final semanticsHandle = tester.ensureSemantics();
+      final pendingPath = Completer<String>();
+      final clip = _createTestClip(
+        video: _PendingEditorVideo(pendingPath.future),
+      );
+
+      await tester.pumpWidget(buildWidget(clip: clip));
+      await tester.pump(const Duration(milliseconds: 400));
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await triggerConfirm(tester);
+      await tester.pump();
+
+      final confirmFinder = find.bySemanticsLabel(
+        l10n.videoMetadataEditCoverConfirmSemanticLabel,
+      );
+      expect(confirmFinder, findsOneWidget);
+      expect(find.byType(BrandedLoadingIndicator), findsWidgets);
+      expect(
+        tester.getSemantics(confirmFinder),
+        isSemantics(
+          label: l10n.videoMetadataEditCoverConfirmSemanticLabel,
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: false,
+        ),
+      );
+
+      semanticsHandle.dispose();
     });
 
     testWidgets('shows thumbnail strip with correct semantics label', (
@@ -340,7 +501,14 @@ void main() {
         setUpPlayerChannel();
         addTearDown(tearDownPlayerChannel);
 
-        await tester.pumpWidget(buildWidget());
+        await tester.pumpWidget(
+          buildWidget(
+            clip: _createTestClip(
+              id: 'missing-thumbnail-source',
+              video: EditorVideo.file('__missing_cover_thumbnail_source__.mp4'),
+            ),
+          ),
+        );
         await tester.pump(const Duration(milliseconds: 400));
 
         final l10n = lookupAppLocalizations(const Locale('en'));

@@ -23,11 +23,21 @@ void main() {
       modeChanges = [];
     });
 
-    Widget buildWidget({VideoRecorderMode? mode, ThemeData? theme}) {
+    Widget buildWidget({
+      VideoRecorderMode? mode,
+      ThemeData? theme,
+      bool reduceMotion = false,
+    }) {
       return MaterialApp(
         theme: theme,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(disableAnimations: reduceMotion),
+          child: child!,
+        ),
         home: Scaffold(
           body: Center(
             child: SizedBox(
@@ -46,12 +56,15 @@ void main() {
       WidgetTester tester, {
       VideoRecorderMode? mode,
       ThemeData? theme,
+      bool reduceMotion = false,
     }) async {
       tester.view.physicalSize = const Size(surfaceWidth, 400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      await tester.pumpWidget(buildWidget(mode: mode, theme: theme));
+      await tester.pumpWidget(
+        buildWidget(mode: mode, theme: theme, reduceMotion: reduceMotion),
+      );
       await tester.pumpAndSettle();
     }
 
@@ -237,6 +250,29 @@ void main() {
             greaterThanOrEqualTo(kMinInteractiveDimension),
           );
         }
+      });
+
+      testWidgets('under reduced motion the pill resizes without tweening', (
+        tester,
+      ) async {
+        await pumpSelector(
+          tester,
+          mode: VideoRecorderMode.capture,
+          reduceMotion: true,
+        );
+        double pillWidth() =>
+            tester.getSize(find.byType(AnimatedContainer)).width;
+        final before = pillWidth();
+
+        await tester.tap(find.text(VideoRecorderMode.stopMotion.label));
+        await tester.pump();
+        final immediate = pillWidth();
+        await tester.pumpAndSettle();
+
+        // One frame after the tap the pill is already at the width it settles
+        // on — a tween would still be part-way there.
+        expect(immediate, equals(pillWidth()));
+        expect(immediate, isNot(equals(before)));
       });
     });
 

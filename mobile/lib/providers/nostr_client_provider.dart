@@ -721,6 +721,25 @@ class NostrService extends _$NostrService {
       if (targetPubkey == null || pubkey != targetPubkey || relayUrls.isEmpty) {
         return;
       }
+      // Last gate before this callback's discovered relays become permanent
+      // pool members. Discovery already applies the same rule; keeping it
+      // here protects the late-add path if a future caller hands the callback
+      // a list that did not come straight from discovery (#6585).
+      final admitted = admitRemoteSuppliedRelays(
+        relayUrls,
+        cap: RelayListCaps.nip65,
+        onRejected: (url) => Log.warning(
+          '[NostrService] Refusing discovered relay: $url',
+          name: 'NostrService',
+          category: LogCategory.system,
+        ),
+        onTruncated: (kept, total) => Log.warning(
+          '[NostrService] Discovery returned $total relays; adding $kept',
+          name: 'NostrService',
+          category: LogCategory.system,
+        ),
+      );
+      if (admitted.isEmpty) return;
       Future.microtask(() async {
         try {
           if (!_isCurrentClientForPubkey(
@@ -730,7 +749,7 @@ class NostrService extends _$NostrService {
           )) {
             return;
           }
-          final added = await client.addRelays(relayUrls);
+          final added = await client.addRelays(admitted);
           if (added > 0) {
             Log.info(
               '[NostrService] Added $added discovered relay(s) after NIP-65 discovery',

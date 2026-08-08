@@ -5124,6 +5124,14 @@
   "@videoRecorderStopMotionAssembleFailed": {
     "description": "Snackbar shown when assembling captured stop-motion frames into a video failed."
   },
+  "videoRecorderStopMotionShotsLeft": "{count, plural, =0{Tiada syot tinggal} other{Tinggal {count} syot}}",
+  "@videoRecorderStopMotionShotsLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "videoRecorderToggleFlashLabel": "Togol denyar",
   "videoRecorderCycleTimerLabel": "Tukar pemasa",
   "videoRecorderToggleAspectRatioLabel": "Togol nisbah aspek",
@@ -5821,7 +5829,7 @@
   "videoEditorCloseSemanticLabel": "Tutup",
   "videoEditorDoneSemanticLabel": "Siap",
   "videoEditorLevelSemanticLabel": "Tahap",
-  "videoMetadataBackSemanticLabel": "Kembali",
+  "videoMetadataClosePostDetailsSemanticLabel": "Tutup butiran siaran",
   "videoMetadataDismissHelpDialogSemanticLabel": "Ketepikan dialog bantuan",
   "videoMetadataGotItButton": "Faham!",
   "videoMetadataLimitReachedWarning": "Had 64KB dicapai. Alih keluar sesetengah kandungan untuk meneruskan.",
@@ -6218,8 +6226,8 @@
     "description": "Snackbar message shown when url_launcher fails to open the profile website link."
   },
   "videoMetadataEditCoverTitle": "Sunting muka depan",
-  "videoMetadataEditCoverCloseSemanticLabel": "Tutup penyunting muka depan",
-  "videoMetadataEditCoverConfirmSemanticLabel": "Sahkan pemilihan muka depan",
+  "videoMetadataEditCoverCloseSemanticLabel": "Buang perubahan muka depan",
+  "videoMetadataEditCoverConfirmSemanticLabel": "Gunakan bingkai dipilih sebagai muka depan video",
   "videoMetadataEditCoverStripSemanticLabel": "Gerak melalui video untuk memilih bingkai muka depan",
   "videoMetadataTagsPickerSearchHint": "Cari atau tambah tag",
   "videoMetadataTagsPickerEmptyHint": "Tambah tag untuk membantu orang menemui video anda",
@@ -6767,5 +6775,14 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "Buang relay"
+  "relaySettingsRemoveRelayTooltip": "Buang relay",
+  "profileBadgeFooterBody": "Lencana ialah anugerah kecil yang sesiapa sahaja boleh buat di Nostr. Berikan satu kepada rakan, pencipta, atau seseorang yang menceriakan hari anda.",
+  "profileBadgeFooterLink": "Buat lencana anda sendiri di badges.divine.video",
+  "videoMetadataTagsPickerCancelSemanticLabel": "Batalkan pemilihan tag",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "Gunakan tag yang dipilih",
+  "userPickerCancelSemanticLabel": "Batalkan pemilihan pengguna",
+  "userPickerConfirmSemanticLabel": "Sahkan pengguna yang dipilih",
+  "userPickerClearSelectionSemanticLabel": "Kosongkan pemilihan pengguna",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "Batalkan pemilihan amaran kandungan",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Gunakan amaran kandungan yang dipilih"
 }

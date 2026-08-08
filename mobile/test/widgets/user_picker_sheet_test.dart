@@ -116,6 +116,86 @@ void main() {
 
   group(UserPickerSheet, () {
     group('renders', () {
+      testWidgets('header describes cancel and confirm actions', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              profileRepositoryProvider.overrideWithValue(
+                _createMockProfileRepository(),
+              ),
+              followRepositoryProvider.overrideWithValue(
+                _createMockFollowRepository(),
+              ),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: UserPickerSheet(
+                  title: 'Title',
+                  filterMode: UserPickerFilterMode.allUsers,
+                  maxCount: 2,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          find.bySemanticsLabel(l10n.userPickerCancelSemanticLabel),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsLabel(l10n.userPickerConfirmSemanticLabel),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('header describes clearing an existing selection', (
+        tester,
+      ) async {
+        final selectedProfile = UserProfile(
+          pubkey: 'selected-pubkey',
+          name: 'Selected User',
+          rawData: const {'name': 'Selected User'},
+          createdAt: DateTime(2026),
+          eventId: 'selected-event',
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              profileRepositoryProvider.overrideWithValue(
+                _createMockProfileRepository(),
+              ),
+              followRepositoryProvider.overrideWithValue(
+                _createMockFollowRepository(),
+              ),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: UserPickerSheet(
+                  title: 'Title',
+                  filterMode: UserPickerFilterMode.allUsers,
+                  initialSelectedProfiles: [selectedProfile],
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          find.bySemanticsLabel(l10n.userPickerClearSelectionSemanticLabel),
+          findsOneWidget,
+        );
+      });
+
       testWidgets('search text field', (tester) async {
         await tester.pumpWidget(
           ProviderScope(
@@ -412,6 +492,65 @@ void main() {
         expect(find.byType(BrandedLoadingIndicator), findsNothing);
         expect(find.text('User One'), findsOneWidget);
         expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('result tile announces the action and the nip05 handle', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        final profile = UserProfile(
+          pubkey: 'pubkey1',
+          name: 'User One',
+          nip05: 'user.one@example.com',
+          rawData: const {'name': 'User One', 'nip05': 'user.one@example.com'},
+          createdAt: DateTime.now(),
+          eventId: 'event1',
+        );
+
+        final mockFollowRepo = _createMockFollowRepository(
+          followingPubkeys: ['pubkey1'],
+        );
+        when(
+          mockFollowRepo.streamMyFollowers,
+        ).thenAnswer((_) => Stream<List<String>>.value(['pubkey1']));
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              profileRepositoryProvider.overrideWithValue(
+                _createMockProfileRepository(cachedProfiles: [profile]),
+              ),
+              followRepositoryProvider.overrideWithValue(mockFollowRepo),
+              contentBlocklistRepositoryProvider.overrideWithValue(
+                _createMockContentBlocklistRepository(),
+              ),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: UserPickerSheet(
+                  title: 'Title',
+                  filterMode: UserPickerFilterMode.mutualFollowsOnly,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final label = tester
+            .getSemantics(find.text('User One'))
+            .getSemanticsData()
+            .label;
+
+        expect(label, contains(l10n.userPickerSelectSemantics('User One')));
+        // Two follows can share a display name; the handle is what tells
+        // them apart, so it must survive the tile's ExcludeSemantics.
+        expect(label, contains('user.one@example.com'));
+
+        handle.dispose();
       });
 
       testWidgets('renders mutuals from the first follower source and adds '

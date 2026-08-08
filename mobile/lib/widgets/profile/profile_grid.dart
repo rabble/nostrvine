@@ -17,6 +17,7 @@ import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.da
 import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/mixins/reduced_motion_tab_controller_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_tab_index_provider.dart';
@@ -121,8 +122,15 @@ class ProfileGridView extends ConsumerStatefulWidget {
 }
 
 class _ProfileGridViewState extends ConsumerState<ProfileGridView>
-    with TickerProviderStateMixin {
-  late TabController _tabController;
+    with TickerProviderStateMixin, ReducedMotionTabControllerMixin {
+  @override
+  int get tabCount => _tabKinds.length;
+
+  /// Restores the previously selected tab so navigating back from a fullscreen
+  /// video doesn't drop the user on Videos. The mixin clamps it.
+  @override
+  int get initialTabIndex =>
+      ref.read(profileTabIndexProvider)[_tabIndexKey] ?? 0;
 
   /// Direct references to BLoCs for refresh capability.
   ProfileLikedVideosBloc? _likedVideosBloc;
@@ -148,7 +156,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   /// Videos reads the [ProfileFeedCubit]'s refreshing flag, passed in from
   /// [build] because that cubit is provided by the ancestor `ProfileFeedScope`.
   bool _activeTabRefreshing(bool videosRefreshing) =>
-      switch (_tabKinds[_tabController.index]) {
+      switch (_tabKinds[tabController.index]) {
         ProfileTabKind.videos => videosRefreshing,
         ProfileTabKind.liked => _likedRefreshing,
         ProfileTabKind.reposts => _repostsRefreshing,
@@ -202,18 +210,13 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   @override
   void initState() {
     super.initState();
-    // Restore the previously selected tab index (if any) so navigating back
-    // from a fullscreen video doesn't drop the user on the Videos tab.
-    final tabCount = _tabKinds.length;
-    final restoredIndex = (ref.read(profileTabIndexProvider)[_tabIndexKey] ?? 0)
-        .clamp(0, tabCount - 1);
-    _tabController = TabController(
-      length: tabCount,
-      vsync: this,
-      initialIndex: restoredIndex,
-    );
-    _tabController.addListener(_onTabChanged);
     widget.refreshNotifier?.addListener(_onRefreshRequested);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    syncTabController();
   }
 
   @override
@@ -223,21 +226,12 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       oldWidget.refreshNotifier?.removeListener(_onRefreshRequested);
       widget.refreshNotifier?.addListener(_onRefreshRequested);
     }
-    final tabCount = _tabKinds.length;
-    if (_tabController.length != tabCount) {
-      final restoredIndex = _tabController.index.clamp(0, tabCount - 1);
-      _tabController.removeListener(_onTabChanged);
-      _tabController.dispose();
-      _tabController = TabController(
-        length: tabCount,
-        vsync: this,
-        initialIndex: restoredIndex,
-      );
-      _tabController.addListener(_onTabChanged);
-    }
+    // An own↔other flip changes the tab set (#5213).
+    syncTabController();
   }
 
-  void _onTabChanged() {
+  @override
+  void onTabChanged() {
     // Trigger rebuild to update SVG icon colors
     if (mounted) setState(() {});
 
@@ -245,7 +239,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     // transitions that briefly take the URL off the profile route) can
     // restore the user to the tab they were on.
     final notifier = ref.read(profileTabIndexProvider.notifier);
-    notifier.state = {...notifier.state, _tabIndexKey: _tabController.index};
+    notifier.state = {...notifier.state, _tabIndexKey: tabController.index};
 
     _syncCurrentTabIfNeeded();
   }
@@ -255,7 +249,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   /// triggered after BLoCs are created on first build — [_onTabChanged]
   /// doesn't fire for the initial [TabController] index.
   void _syncCurrentTabIfNeeded() {
-    final kind = _tabKinds[_tabController.index];
+    final kind = _tabKinds[tabController.index];
     if (_syncedKinds.contains(kind)) return;
     switch (kind) {
       case ProfileTabKind.videos:
@@ -379,8 +373,6 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   @override
   void dispose() {
     widget.refreshNotifier?.removeListener(_onRefreshRequested);
-    _tabController.removeListener(_onTabChanged);
-    _tabController.dispose();
     _likedRefreshSub?.cancel();
     _repostsRefreshSub?.cancel();
     _collabsRefreshSub?.cancel();
@@ -585,7 +577,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       child: ColoredBox(
         color: context.vineColors.surfaceContainerHigh,
         child: TabBarView(
-          controller: _tabController,
+          controller: tabController,
           children: [for (final kind in _tabKinds) _gridForKind(kind)],
         ),
       ),
@@ -642,7 +634,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
 
                 // Sticky Tab Bar
                 ProfileTabBar(
-                  controller: _tabController,
+                  controller: tabController,
                   scrollController: widget.scrollController,
                   tabs: [
                     for (final kind in _tabKinds) _tabPresentationFor(kind),

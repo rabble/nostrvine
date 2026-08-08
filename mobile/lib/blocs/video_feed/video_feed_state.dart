@@ -36,6 +36,27 @@ enum VideoFeedSourceType {
   classic,
 }
 
+extension VideoFeedSourceTypeAnalytics on VideoFeedSourceType {
+  /// Stable analytics tag for this source type.
+  ///
+  /// Published as the third element of the kind-22236 `source` tag, which
+  /// funnelcake stores in `view_traffic_sources.source_detail`. The `source`
+  /// itself stays `home` for every mode, because a single feed page renders
+  /// all of them — without this detail every mode collapses into one `home`
+  /// bucket and re-serve rates cannot be attributed to a specific feed.
+  ///
+  /// These values are persisted analytics data. Renaming one silently splits
+  /// its history in two, so add new values rather than repurposing existing
+  /// ones.
+  String get analyticsTag => switch (this) {
+    VideoFeedSourceType.forYou => 'foryou',
+    VideoFeedSourceType.following => 'following',
+    VideoFeedSourceType.subscribedList => 'list',
+    VideoFeedSourceType.newVideos => 'new',
+    VideoFeedSourceType.classic => 'classic',
+  };
+}
+
 /// Source selection for [VideoFeedBloc].
 final class VideoFeedSource extends Equatable {
   /// Personalized recommended videos.

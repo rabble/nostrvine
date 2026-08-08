@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/constants/text_scale_limits.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
@@ -26,32 +27,41 @@ class ProfileStatColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final column = Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          child: Text(
-            isLoading || count == null
-                ? '—'
-                : StringUtils.formatCompactNumber(count!),
-            key: ValueKey(isLoading ? 'loading' : count),
-            style: VineTheme.statNumberFont(
-              color: isLoading || count == null
-                  ? context.vineColors.onSurfaceMuted
-                  : context.vineColors.primaryText,
+    final column = MediaQuery.withClampedTextScaling(
+      maxScaleFactor: statColumnTextScaleLimit,
+      child: Padding(
+        padding: const .symmetric(horizontal: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: Text(
+                isLoading || count == null
+                    ? '—'
+                    : StringUtils.formatCompactNumber(count!),
+                key: ValueKey(isLoading ? 'loading' : count),
+                style: VineTheme.statNumberFont(
+                  color: isLoading || count == null
+                      ? context.vineColors.onSurfaceMuted
+                      : context.vineColors.primaryText,
+                ),
+              ),
             ),
-          ),
-        ),
-        Skeleton.keep(
-          child: Text(
-            label,
-            style: VineTheme.bodySmallFont(
-              color: context.vineColors.onSurfaceVariant,
+            Skeleton.keep(
+              child: Text(
+                label,
+                style: VineTheme.bodySmallFont(
+                  color: context.vineColors.onSurfaceVariant,
+                ),
+                softWrap: false,
+                maxLines: 1,
+                overflow: .fade,
+              ),
             ),
-          ),
+          ],
         ),
-      ],
+      ),
     );
 
     if (onTap != null) {

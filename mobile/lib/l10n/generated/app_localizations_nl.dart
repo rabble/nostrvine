@@ -6353,6 +6353,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Content credentials hebben een internetverbinding nodig.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Opnieuw genereren';
 
   @override
@@ -8512,6 +8516,18 @@ class AppLocalizationsNl extends AppLocalizations {
       'Kan de video niet maken. Probeer het opnieuw.';
 
   @override
+  String videoRecorderStopMotionShotsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Nog $count opnames over',
+      one: 'Nog 1 opname over',
+      zero: 'Geen opnames meer over',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get videoRecorderToggleFlashLabel => 'Flitser in-/uitschakelen';
 
   @override
@@ -9622,7 +9638,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoEditorLevelSemanticLabel => 'Niveau';
 
   @override
-  String get videoMetadataBackSemanticLabel => 'Terug';
+  String get videoMetadataClosePostDetailsSemanticLabel =>
+      'Berichtdetails sluiten';
 
   @override
   String get videoMetadataDismissHelpDialogSemanticLabel =>
@@ -9904,6 +9921,14 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get profileBadgeFallbackSemanticLabel => 'Badge';
+
+  @override
+  String get profileBadgeFooterBody =>
+      'Badges zijn kleine onderscheidingen die iedereen op Nostr kan maken. Geef er een aan een vriend, een creator of iemand die je dag goedmaakte.';
+
+  @override
+  String get profileBadgeFooterLink =>
+      'Maak je eigen badge op badges.divine.video';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';
@@ -10450,11 +10475,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoMetadataEditCoverTitle => 'Omslag bewerken';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => 'Omslageditor sluiten';
+  String get videoMetadataEditCoverCloseSemanticLabel =>
+      'Wijzigingen aan omslag negeren';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Omslagselectie bevestigen';
+      'Geselecteerd frame als video-omslag gebruiken';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
@@ -11114,4 +11140,31 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+
+  @override
+  String get videoMetadataTagsPickerCancelSemanticLabel =>
+      'Tagselectie annuleren';
+
+  @override
+  String get videoMetadataTagsPickerConfirmSemanticLabel =>
+      'Geselecteerde tags toepassen';
+
+  @override
+  String get userPickerCancelSemanticLabel => 'Gebruikersselectie annuleren';
+
+  @override
+  String get userPickerConfirmSemanticLabel =>
+      'Geselecteerde gebruikers bevestigen';
+
+  @override
+  String get userPickerClearSelectionSemanticLabel =>
+      'Gebruikersselectie wissen';
+
+  @override
+  String get videoMetadataContentWarningsPickerCancelSemanticLabel =>
+      'Selectie van inhoudswaarschuwingen annuleren';
+
+  @override
+  String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
+      'Geselecteerde inhoudswaarschuwingen toepassen';
 }

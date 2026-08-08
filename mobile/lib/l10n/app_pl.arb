@@ -2898,6 +2898,14 @@
     "videoRecorderCaptureNextLabel": "Dalej",
     "videoRecorderLipSyncAddAudioFirst": "Dodaj audio przed nagraniem",
     "videoRecorderStopMotionAssembleFailed": "Nie udało się utworzyć filmu. Spróbuj ponownie.",
+    "videoRecorderStopMotionShotsLeft": "{count, plural, =0{Brak wolnych ujęć} =1{Zostało 1 ujęcie} few{Zostały {count} ujęcia} many{Zostało {count} ujęć} other{Zostało {count} ujęcia}}",
+    "@videoRecorderStopMotionShotsLeft": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "videoRecorderToggleFlashLabel": "Przełącz lampę błyskową",
     "videoRecorderCycleTimerLabel": "Zmień timer",
     "videoRecorderToggleAspectRatioLabel": "Przełącz proporcje",
@@ -3214,7 +3222,7 @@
     "videoEditorCloseSemanticLabel": "Zamknij",
     "videoEditorDoneSemanticLabel": "Gotowe",
     "videoEditorLevelSemanticLabel": "Poziom",
-    "videoMetadataBackSemanticLabel": "Wstecz",
+    "videoMetadataClosePostDetailsSemanticLabel": "Zamknij szczegóły posta",
     "videoMetadataDismissHelpDialogSemanticLabel": "Zamknij okno pomocy",
     "videoMetadataGotItButton": "Rozumiem!",
     "videoMetadataLimitReachedWarning": "Osiągnięto limit 64 KB. Usuń część treści, aby kontynuować.",
@@ -3919,6 +3927,8 @@
     "profileBadgeMoreRecipients": "+{count} more",
     "profileBadgeSemanticLabel": "{name} badge",
     "profileBadgeFallbackSemanticLabel": "Badge",
+    "profileBadgeFooterBody": "Odznaki to małe wyróżnienia, które każdy może stworzyć w Nostr. Podaruj jedną przyjacielowi, twórcy albo komuś, kto umilił ci dzień.",
+    "profileBadgeFooterLink": "Stwórz własną na badges.divine.video",
     "authSignInWithBrowserExtension": "Zaloguj się przez rozszerzenie przeglądarki",
     "authNip07ConnectionFailed": "Nie udało się połączyć z rozszerzeniem przeglądarki.",
     "authNip07ExtensionNotFound": "Nie znaleziono rozszerzenia przeglądarki. Zainstaluj Alby, nos2x lub inne rozszerzenie zgodne z NIP-07.",
@@ -4026,8 +4036,8 @@
     "bugReportRemoveImage": "Remove image",
     "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
     "videoMetadataEditCoverTitle": "Edytuj okładkę",
-    "videoMetadataEditCoverCloseSemanticLabel": "Zamknij edytor okładki",
-    "videoMetadataEditCoverConfirmSemanticLabel": "Potwierdź wybór okładki",
+    "videoMetadataEditCoverCloseSemanticLabel": "Odrzuć zmiany okładki",
+    "videoMetadataEditCoverConfirmSemanticLabel": "Użyj wybranej klatki jako okładki filmu",
     "videoMetadataEditCoverStripSemanticLabel": "Przewijaj wideo, aby wybrać klatkę okładki",
     "userPickerRemoveSelectionSemantics": "Usuń {name}",
     "@userPickerRemoveSelectionSemantics": {
@@ -4922,5 +4932,12 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "Usuń przekaźnik"
+  "relaySettingsRemoveRelayTooltip": "Usuń przekaźnik",
+  "videoMetadataTagsPickerCancelSemanticLabel": "Anuluj wybór tagów",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "Zastosuj wybrane tagi",
+  "userPickerCancelSemanticLabel": "Anuluj wybór użytkowników",
+  "userPickerConfirmSemanticLabel": "Potwierdź wybranych użytkowników",
+  "userPickerClearSelectionSemanticLabel": "Wyczyść wybór użytkowników",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "Anuluj wybór ostrzeżeń o treści",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Zastosuj wybrane ostrzeżenia o treści"
 }

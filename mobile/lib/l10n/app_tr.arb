@@ -3143,7 +3143,7 @@
     "videoEditorUnmuteAudioSemanticLabel": "Sesi aç",
     "videoEditorVideoTimelineSemanticLabel": "Video zaman çizelgesi",
     "videoMetadataAddCollaboratorSemanticLabel": "Ortak çalışan ekle",
-    "videoMetadataBackSemanticLabel": "Geri",
+    "videoMetadataClosePostDetailsSemanticLabel": "Gönderi ayrıntılarını kapat",
     "videoMetadataClassicDoneButton": "Bitti",
     "videoMetadataClosePreviewSemanticLabel": "Video önizlemesini kapat",
     "videoMetadataCollaboratorsCount": "{count}/{max} Ortak çalışan",
@@ -3233,6 +3233,14 @@
     "videoRecorderCaptureNextLabel": "İleri",
     "videoRecorderLipSyncAddAudioFirst": "Kayıttan önce ses ekleyin",
     "videoRecorderStopMotionAssembleFailed": "Video oluşturulamadı. Tekrar deneyin.",
+    "videoRecorderStopMotionShotsLeft": "{count, plural, =0{Kalan çekim yok} other{{count} çekim kaldı}}",
+    "@videoRecorderStopMotionShotsLeft": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "videoRecorderClipDeletedMessage": "Klip çöp kutusuna taşındı",
     "videoRecorderClipUndoLabel": "Geri al",
     "libraryTrashTitle": "Son silinenler",
@@ -3919,6 +3927,8 @@
     "profileBadgeMoreRecipients": "+{count} more",
     "profileBadgeSemanticLabel": "{name} badge",
     "profileBadgeFallbackSemanticLabel": "Badge",
+    "profileBadgeFooterBody": "Rozetler, Nostr'da herkesin oluşturabileceği küçük ödüllerdir. Bir arkadaşına, bir içerik üreticisine ya da gününü güzelleştiren birine ver.",
+    "profileBadgeFooterLink": "Kendi rozetini badges.divine.video'da oluştur",
     "authSignInWithBrowserExtension": "Tarayıcı uzantısı ile giriş yap",
     "authNip07ConnectionFailed": "Tarayıcı uzantınıza bağlanılamadı.",
     "authNip07ExtensionNotFound": "Tarayıcı uzantısı bulunamadı. Alby, nos2x veya NIP-07 uyumlu başka bir uzantı yükleyin.",
@@ -4026,8 +4036,8 @@
     "bugReportRemoveImage": "Remove image",
     "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
     "videoMetadataEditCoverTitle": "Kapağı düzenle",
-    "videoMetadataEditCoverCloseSemanticLabel": "Kapak düzenleyicisini kapat",
-    "videoMetadataEditCoverConfirmSemanticLabel": "Kapak seçimini onayla",
+    "videoMetadataEditCoverCloseSemanticLabel": "Kapak değişikliklerini iptal et",
+    "videoMetadataEditCoverConfirmSemanticLabel": "Seçili kareyi video kapağı olarak kullan",
     "videoMetadataEditCoverStripSemanticLabel": "Kapak karesi seçmek için videoda gezin",
     "userPickerRemoveSelectionSemantics": "{name} kaldır",
     "@userPickerRemoveSelectionSemantics": {
@@ -4922,5 +4932,12 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "Röleyi kaldır"
+  "relaySettingsRemoveRelayTooltip": "Röleyi kaldır",
+  "videoMetadataTagsPickerCancelSemanticLabel": "Etiket seçimini iptal et",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "Seçili etiketleri uygula",
+  "userPickerCancelSemanticLabel": "Kullanıcı seçimini iptal et",
+  "userPickerConfirmSemanticLabel": "Seçili kullanıcıları onayla",
+  "userPickerClearSelectionSemanticLabel": "Kullanıcı seçimini temizle",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "İçerik uyarısı seçimini iptal et",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Seçili içerik uyarılarını uygula"
 }

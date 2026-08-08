@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
 import 'package:openvine/blocs/drafts_library/drafts_library_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/mixins/reduced_motion_tab_controller_mixin.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
@@ -163,9 +164,15 @@ class _LibraryView extends ConsumerStatefulWidget {
 }
 
 class _LibraryViewState extends ConsumerState<_LibraryView>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
+    with TickerProviderStateMixin, ReducedMotionTabControllerMixin {
   late int _activeTabIndex;
+
+  @override
+  int get tabCount => _isClipsOnlyMode ? 1 : 3;
+
+  @override
+  int get initialTabIndex =>
+      _isClipsOnlyMode ? 0 : widget.initialTabIndex.clamp(0, 2);
 
   bool get _isClipsOnlyMode =>
       widget.selectionMode || widget.tabsMode == LibraryTabsMode.clipsOnly;
@@ -184,15 +191,7 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
   @override
   void initState() {
     super.initState();
-    final initialIndex = _isClipsOnlyMode
-        ? 0
-        : widget.initialTabIndex.clamp(0, 2);
-    _activeTabIndex = initialIndex;
-    _tabController = TabController(
-      length: _isClipsOnlyMode ? 1 : 3,
-      initialIndex: initialIndex,
-      vsync: this,
-    )..addListener(_onTabChanged);
+    _activeTabIndex = initialTabIndex;
 
     Log.info(
       '📚 ClipLibrary opened (selectionMode: ${widget.selectionMode})',
@@ -202,22 +201,30 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
   }
 
   @override
-  void dispose() {
-    _tabController.removeListener(_onTabChanged);
-    _tabController.dispose();
-    super.dispose();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    syncTabController();
   }
 
-  void _onTabChanged() {
+  @override
+  void didUpdateWidget(_LibraryView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // selectionMode and tabsMode decide the tab count, so a flip needs a
+    // matching controller before build renders the TabBar against it.
+    if (syncTabController()) _activeTabIndex = tabController.index;
+  }
+
+  @override
+  void onTabChanged() {
     if (!mounted) return;
-    if (_activeTabIndex == _tabController.index) return;
+    if (_activeTabIndex == tabController.index) return;
     setState(() {
-      _activeTabIndex = _tabController.index;
+      _activeTabIndex = tabController.index;
     });
 
     final clipsBloc = context.read<ClipsLibraryBloc>();
     final clipsState = clipsBloc.state;
-    final isClipsTabActive = _isClipsOnlyMode || _tabController.index == 1;
+    final isClipsTabActive = _isClipsOnlyMode || tabController.index == 1;
     if (!widget.selectionMode &&
         !_isClipsOnlyMode &&
         clipsState.isLibrarySelectionMode &&
@@ -532,7 +539,7 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
                         Expanded(
                           child: _LibraryContent(
                             isClipsOnlyMode: _isClipsOnlyMode,
-                            tabController: _tabController,
+                            tabController: tabController,
                             selectionMode: widget.selectionMode,
                             scrollController: widget.scrollController,
                             targetAspectRatio: targetAspectRatio,
@@ -619,59 +626,67 @@ class _LibraryContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (!isClipsOnlyMode) const SizedBox(height: 12),
+        if (!isClipsOnlyMode)
+          TabBar(
+            controller: tabController,
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            padding: const EdgeInsetsDirectional.only(start: 16),
+            indicatorColor: VineTheme.tabIndicatorGreen,
+            indicatorWeight: 4,
+            indicatorSize: TabBarIndicatorSize.tab,
+            dividerColor: VineTheme.transparent,
+            labelColor: context.vineColors.primaryText,
+            unselectedLabelColor: context.vineColors.onSurfaceMuted,
+            labelPadding: const EdgeInsets.symmetric(horizontal: 14),
+            labelStyle: VineTheme.titleMediumFont(
+              color: context.vineColors.primaryText,
+            ),
+            unselectedLabelStyle: VineTheme.titleMediumFont(
+              color: context.vineColors.onSurfaceMuted,
+            ),
+            tabs: [
+              Tab(text: context.l10n.libraryTabDrafts),
+              Tab(text: context.l10n.libraryTabClips),
+              Tab(text: context.l10n.soundsTitle),
+            ],
+          ),
+        if (!isClipsOnlyMode) const SizedBox(height: 2),
+        Expanded(
+          child: selectionMode
+              ? _SelectionBody(
+                  scrollController: scrollController,
+                  targetAspectRatio: targetAspectRatio,
+                  onCreate: onCreateVideo,
+                )
+              : _TabBody(
+                  clips: sortedClips,
+                  selectionEnabled: selectionEnabled,
+                  isClipsOnlyMode: isClipsOnlyMode,
+                  tabController: tabController,
+                  targetAspectRatio: targetAspectRatio,
+                ),
+        ),
+      ],
+    );
+
+    // Selection mode renders inside a bottom sheet, which brings its own
+    // surface and rounded corners. Skipping the shell here keeps the sheet's
+    // colour showing through and stops the 32px corner radius from slicing
+    // the top row of thumbnails.
+    if (selectionMode) return content;
+
     return ClipRRect(
       borderRadius: const BorderRadius.all(
         Radius.circular(VineTheme.shellInnerCornerRadius),
       ),
       child: ColoredBox(
         color: context.vineColors.surfaceContainerHigh,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (!isClipsOnlyMode) const SizedBox(height: 12),
-            if (!isClipsOnlyMode)
-              TabBar(
-                controller: tabController,
-                isScrollable: true,
-                tabAlignment: TabAlignment.start,
-                padding: const EdgeInsetsDirectional.only(start: 16),
-                indicatorColor: VineTheme.tabIndicatorGreen,
-                indicatorWeight: 4,
-                indicatorSize: TabBarIndicatorSize.tab,
-                dividerColor: VineTheme.transparent,
-                labelColor: context.vineColors.primaryText,
-                unselectedLabelColor: context.vineColors.onSurfaceMuted,
-                labelPadding: const EdgeInsets.symmetric(horizontal: 14),
-                labelStyle: VineTheme.titleMediumFont(
-                  color: context.vineColors.primaryText,
-                ),
-                unselectedLabelStyle: VineTheme.titleMediumFont(
-                  color: context.vineColors.onSurfaceMuted,
-                ),
-                tabs: [
-                  Tab(text: context.l10n.libraryTabDrafts),
-                  Tab(text: context.l10n.libraryTabClips),
-                  Tab(text: context.l10n.soundsTitle),
-                ],
-              ),
-            if (!isClipsOnlyMode) const SizedBox(height: 2),
-            Expanded(
-              child: selectionMode
-                  ? _SelectionBody(
-                      scrollController: scrollController,
-                      targetAspectRatio: targetAspectRatio,
-                      onCreate: onCreateVideo,
-                    )
-                  : _TabBody(
-                      clips: sortedClips,
-                      selectionEnabled: selectionEnabled,
-                      isClipsOnlyMode: isClipsOnlyMode,
-                      tabController: tabController,
-                      targetAspectRatio: targetAspectRatio,
-                    ),
-            ),
-          ],
-        ),
+        child: content,
       ),
     );
   }
@@ -785,14 +800,15 @@ class _SelectionBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        ClipSelectionHeader(onCreate: onCreate),
         Expanded(
           child: ClipsTab(
             targetAspectRatio: targetAspectRatio,
             showRecordButton: true,
             scrollController: scrollController,
+            gridTopPadding: 8,
           ),
         ),
+        ClipSelectionFooter(onCreate: onCreate),
       ],
     );
   }

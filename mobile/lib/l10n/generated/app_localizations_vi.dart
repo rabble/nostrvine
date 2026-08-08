@@ -6332,6 +6332,10 @@ class AppLocalizationsVi extends AppLocalizations {
       'Chứng nhận nội dung cần kết nối internet.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Tạo lại';
 
   @override
@@ -8483,6 +8487,17 @@ class AppLocalizationsVi extends AppLocalizations {
       'Không tạo được video. Thử lại nhé.';
 
   @override
+  String videoRecorderStopMotionShotsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Còn $count lượt chụp',
+      zero: 'Hết lượt chụp',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get videoRecorderToggleFlashLabel => 'Bật/tắt đèn flash';
 
   @override
@@ -9580,7 +9595,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get videoEditorLevelSemanticLabel => 'Mức';
 
   @override
-  String get videoMetadataBackSemanticLabel => 'Quay lại';
+  String get videoMetadataClosePostDetailsSemanticLabel =>
+      'Đóng chi tiết bài đăng';
 
   @override
   String get videoMetadataDismissHelpDialogSemanticLabel =>
@@ -9861,6 +9877,14 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get profileBadgeFallbackSemanticLabel => 'Huy hiệu';
+
+  @override
+  String get profileBadgeFooterBody =>
+      'Huy hiệu là những phần thưởng nhỏ mà bất kỳ ai cũng có thể tạo trên Nostr. Tặng một huy hiệu cho bạn bè, nhà sáng tạo, hoặc người đã làm bừng sáng ngày của bạn.';
+
+  @override
+  String get profileBadgeFooterLink =>
+      'Tạo huy hiệu của riêng bạn tại badges.divine.video';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Hướng dẫn gia đình';
@@ -10408,12 +10432,11 @@ class AppLocalizationsVi extends AppLocalizations {
   String get videoMetadataEditCoverTitle => 'Chỉnh sửa ảnh bìa';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel =>
-      'Đóng trình chỉnh sửa ảnh bìa';
+  String get videoMetadataEditCoverCloseSemanticLabel => 'Hủy thay đổi ảnh bìa';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Xác nhận lựa chọn ảnh bìa';
+      'Dùng khung hình đã chọn làm ảnh bìa video';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
@@ -11076,4 +11099,28 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+
+  @override
+  String get videoMetadataTagsPickerCancelSemanticLabel => 'Hủy chọn thẻ';
+
+  @override
+  String get videoMetadataTagsPickerConfirmSemanticLabel =>
+      'Áp dụng các thẻ đã chọn';
+
+  @override
+  String get userPickerCancelSemanticLabel => 'Hủy chọn người dùng';
+
+  @override
+  String get userPickerConfirmSemanticLabel => 'Xác nhận người dùng đã chọn';
+
+  @override
+  String get userPickerClearSelectionSemanticLabel => 'Xóa lựa chọn người dùng';
+
+  @override
+  String get videoMetadataContentWarningsPickerCancelSemanticLabel =>
+      'Hủy chọn cảnh báo nội dung';
+
+  @override
+  String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
+      'Áp dụng các cảnh báo nội dung đã chọn';
 }

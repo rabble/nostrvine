@@ -47,7 +47,6 @@ import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:sounds_repository/sounds_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -239,12 +238,9 @@ VideoEventPublisher videoEventPublisher(Ref ref) {
   final profileRepository = ref.watch(profileRepositoryProvider);
   final profileStatsDao = ref.watch(databaseProvider).profileStatsDao;
   final savedSoundsService = ref.watch(savedSoundsServiceProvider);
-  final consentSoundsRepository = SoundsRepository(nostrClient: nostrService);
   final consentResolver = AudioReuseConsentResolver(
-    soundsRepository: consentSoundsRepository,
     videosRepository: ref.watch(videosRepositoryProvider),
   );
-  ref.onDispose(() => unawaited(consentSoundsRepository.dispose()));
 
   // REST-first publish: POST the signed event to {eventPublishBaseUrl}/api/events with
   // NIP-98 auth, falling back to the WebSocket relay pool on transient
@@ -553,8 +549,8 @@ VideosRepository videosRepository(Ref ref) {
 
 /// Provider for LikesRepository instance
 ///
-/// Creates a LikesRepository when the user is authenticated.
-/// Returns null when user is not authenticated.
+/// Creates a LikesRepository. Local storage is attached when the user is
+/// authenticated; signed-out relay queries are guarded by the repository.
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)

@@ -256,7 +256,8 @@ Useful app entry paths from `mobile/`:
 macOS debug builds are ad-hoc code signed so the native camera and
 microphone prompts work without Apple Developer team setup. See
 [mobile/docs/MACOS_DEBUG_SIGNING.md](mobile/docs/MACOS_DEBUG_SIGNING.md)
-if a fresh checkout fails to sign.
+if a fresh checkout fails to sign, or if macOS keeps asking for your
+login keychain password on every debug launch.
 
 If generated code changes:
 

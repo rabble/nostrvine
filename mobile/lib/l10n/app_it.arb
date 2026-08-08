@@ -2898,6 +2898,14 @@
     "videoRecorderCaptureNextLabel": "Avanti",
     "videoRecorderLipSyncAddAudioFirst": "Aggiungi audio prima di registrare",
     "videoRecorderStopMotionAssembleFailed": "Impossibile creare il video. Riprova.",
+    "videoRecorderStopMotionShotsLeft": "{count, plural, =0{Nessuno scatto rimasto} =1{1 scatto rimasto} other{{count} scatti rimasti}}",
+    "@videoRecorderStopMotionShotsLeft": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "videoRecorderToggleFlashLabel": "Attiva/disattiva flash",
     "videoRecorderCycleTimerLabel": "Cambia timer",
     "videoRecorderToggleAspectRatioLabel": "Cambia rapporto d'aspetto",
@@ -3214,7 +3222,7 @@
     "videoEditorCloseSemanticLabel": "Chiudi",
     "videoEditorDoneSemanticLabel": "Fatto",
     "videoEditorLevelSemanticLabel": "Livello",
-    "videoMetadataBackSemanticLabel": "Indietro",
+    "videoMetadataClosePostDetailsSemanticLabel": "Chiudi dettagli del post",
     "videoMetadataDismissHelpDialogSemanticLabel": "Chiudi finestra di aiuto",
     "videoMetadataGotItButton": "Capito!",
     "videoMetadataLimitReachedWarning": "Limite di 64 KB raggiunto. Rimuovi alcuni contenuti per continuare.",
@@ -3919,6 +3927,8 @@
     "profileBadgeMoreRecipients": "+{count} more",
     "profileBadgeSemanticLabel": "{name} badge",
     "profileBadgeFallbackSemanticLabel": "Badge",
+    "profileBadgeFooterBody": "I badge sono piccoli riconoscimenti che chiunque può creare su Nostr. Regalane uno a un amico, a un creator o a chi ti ha svoltato la giornata.",
+    "profileBadgeFooterLink": "Crea il tuo su badges.divine.video",
     "authSignInWithBrowserExtension": "Accedi con estensione del browser",
     "authNip07ConnectionFailed": "Impossibile connettersi alla tua estensione del browser.",
     "authNip07ExtensionNotFound": "Nessuna estensione del browser trovata. Installa Alby, nos2x o un'altra estensione compatibile con NIP-07.",
@@ -4026,8 +4036,8 @@
     "bugReportRemoveImage": "Remove image",
     "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
     "videoMetadataEditCoverTitle": "Modifica copertina",
-    "videoMetadataEditCoverCloseSemanticLabel": "Chiudi editor copertina",
-    "videoMetadataEditCoverConfirmSemanticLabel": "Conferma selezione copertina",
+    "videoMetadataEditCoverCloseSemanticLabel": "Annulla le modifiche alla copertina",
+    "videoMetadataEditCoverConfirmSemanticLabel": "Usa il fotogramma selezionato come copertina del video",
     "videoMetadataEditCoverStripSemanticLabel": "Scorri il video per selezionare il fotogramma di copertina",
     "userPickerRemoveSelectionSemantics": "Rimuovi {name}",
     "@userPickerRemoveSelectionSemantics": {
@@ -4922,5 +4932,12 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "Rimuovi relay"
+  "relaySettingsRemoveRelayTooltip": "Rimuovi relay",
+  "videoMetadataTagsPickerCancelSemanticLabel": "Annulla selezione tag",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "Applica i tag selezionati",
+  "userPickerCancelSemanticLabel": "Annulla selezione utenti",
+  "userPickerConfirmSemanticLabel": "Conferma utenti selezionati",
+  "userPickerClearSelectionSemanticLabel": "Cancella selezione utenti",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "Annulla selezione avvisi sui contenuti",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Applica gli avvisi sui contenuti selezionati"
 }

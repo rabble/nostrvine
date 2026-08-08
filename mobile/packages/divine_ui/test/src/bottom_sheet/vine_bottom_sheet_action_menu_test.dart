@@ -268,6 +268,53 @@ void main() {
 
       expect(find.text('Action'), findsNothing);
     });
+
+    testWidgets('leading icon grows with the system text scale', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          // Wraps the Navigator, so the sheet's own route inherits the
+          // scale too — a MediaQuery under `home` would not reach it.
+          builder: (context, child) => MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => VineBottomSheetActionMenu.show(
+                  context: context,
+                  options: [
+                    VineBottomSheetActionData(
+                      iconPath: testIconPath,
+                      label: 'Edit',
+                      onTap: () {},
+                    ),
+                  ],
+                ),
+                child: const Text('Show Menu'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Show Menu'));
+      await tester.pumpAndSettle();
+
+      final leading = tester.getSize(
+        find
+            .ancestor(
+              of: find.byType(SvgPicture),
+              matching: find.byType(SizedBox),
+            )
+            .first,
+      );
+
+      expect(leading.width, closeTo(24 * DivineIcon.maxScaleFactor, 0.001));
+      expect(leading.height, leading.width);
+    });
   });
 
   group('VineBottomSheetActionData', () {

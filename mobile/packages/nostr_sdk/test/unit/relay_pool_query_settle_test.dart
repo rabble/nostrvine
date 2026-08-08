@@ -443,6 +443,56 @@ void main() {
       );
     });
 
+    test('events the subscription filter rejects still prove the relay has '
+        'not gone silent', () async {
+      final nostr = _newNostr();
+      final fast = _SilentRelay('wss://fast.example');
+      final streaming = _SilentRelay('wss://streams-slowly.example');
+      expect(await nostr.relayPool.add(fast), isTrue);
+      expect(await nostr.relayPool.add(streaming), isTrue);
+      final pubkey = await nostr.ensurePublicKey();
+
+      final pending = nostr.queryEventsDetailed([
+        {
+          'kinds': [EventKind.textNote],
+        },
+      ], timeout: _timeout);
+
+      final subId = await fast.awaitPendingQuery();
+      await streaming.awaitPendingQuery();
+      await fast.deliver(['EOSE', subId]);
+
+      // The relay leads with events this subscription did not ask for. They
+      // are dropped at the admission gate, but arriving at all is what proves
+      // the socket is still working — the settle window bounds silence, and a
+      // relay sending the wrong events is not silent. Before #6585's gate the
+      // window expired under this and the caller was handed a truncated set
+      // with `timedOut: false`, which reads exactly like a complete one.
+      for (var i = 0; i < 5; i++) {
+        await Future<void>.delayed(RelayPool.querySettleWindow ~/ 2);
+        final unwanted = await nostr.nostrSigner.signEvent(
+          Event(pubkey, EventKind.reaction, const [], '+'),
+        );
+        await streaming.deliver(['EVENT', subId, unwanted!.toJson()]);
+      }
+
+      final wanted = await nostr.nostrSigner.signEvent(
+        Event(pubkey, EventKind.textNote, const [], 'the tail'),
+      );
+      await streaming.deliver(['EVENT', subId, wanted!.toJson()]);
+      await streaming.deliver(['EOSE', subId]);
+
+      final result = await pending;
+      expect(result.timedOut, isFalse);
+      expect(
+        result.events.map((e) => e.content),
+        ['the tail'],
+        reason:
+            'the matching tail must survive: rejected events are dropped '
+            'from the result set, not treated as the relay falling silent',
+      );
+    });
+
     test(
       'an outstanding NIP-42 handshake survives the settle window',
       () async {

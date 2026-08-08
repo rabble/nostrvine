@@ -1,5 +1,6 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart' hide AspectRatio;
+import 'package:flutter/semantics.dart';
 import 'package:flutter/widgets.dart' show AspectRatio;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -358,6 +359,63 @@ void main() {
         expect(tappable.onTap, isNotNull);
       },
     );
+
+    testWidgets('open-preview stays activatable alongside the cover button', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      final finalClip = DivineVideoClip(
+        id: 'final-clip',
+        video: EditorVideo.file('final.mp4'),
+        duration: const Duration(seconds: 15),
+        recordedAt: DateTime.now(),
+        targetAspectRatio: models.AspectRatio.square,
+        originalAspectRatio: 9 / 16,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            clipManagerProvider.overrideWith(
+              () => _MockClipManagerNotifier([testClip]),
+            ),
+            videoEditorProvider.overrideWith(
+              () => _MockVideoEditorNotifier(
+                VideoEditorProviderState(finalRenderedClip: finalClip),
+              ),
+            ),
+          ],
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: VideoMetadataCaptureClipPreview()),
+          ),
+        ),
+      );
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      // The cover button sits inside the preview's tap target. Wrapping it in
+      // an excludeSemantics Semantics() cost the enclosing preview node its
+      // tap action — the whole 200px stage went inert for TalkBack while the
+      // pointer path still worked.
+      final openPreview = find.bySemanticsLabel(
+        l10n.videoMetadataOpenPreviewSemanticLabel,
+      );
+      expect(openPreview, findsOneWidget);
+      expect(
+        tester
+            .getSemantics(openPreview)
+            .getSemanticsData()
+            .hasAction(SemanticsAction.tap),
+        isTrue,
+      );
+      expect(
+        find.bySemanticsLabel(l10n.videoMetadataEditCoverTitle),
+        findsOneWidget,
+      );
+
+      handle.dispose();
+    });
   });
 }
 

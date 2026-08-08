@@ -322,7 +322,7 @@ final class VideoEventPublisherProvider
 }
 
 String _$videoEventPublisherHash() =>
-    r'4d47f884ee710aa88188341a4dfdfd499a14b005';
+    r'47ea7b9e40b7cd95eff972cdb2995d58279e372f';
 
 /// View event publisher for kind 22236 ephemeral analytics events
 ///
@@ -942,8 +942,8 @@ String _$videosRepositoryHash() => r'f98257a666f2fede19dd41cbc4e5dca57ae65328';
 
 /// Provider for LikesRepository instance
 ///
-/// Creates a LikesRepository when the user is authenticated.
-/// Returns null when user is not authenticated.
+/// Creates a LikesRepository. Local storage is attached when the user is
+/// authenticated; signed-out relay queries are guarded by the repository.
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
@@ -954,8 +954,8 @@ final likesRepositoryProvider = LikesRepositoryProvider._();
 
 /// Provider for LikesRepository instance
 ///
-/// Creates a LikesRepository when the user is authenticated.
-/// Returns null when user is not authenticated.
+/// Creates a LikesRepository. Local storage is attached when the user is
+/// authenticated; signed-out relay queries are guarded by the repository.
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
@@ -967,8 +967,8 @@ final class LikesRepositoryProvider
     with $Provider<LikesRepository> {
   /// Provider for LikesRepository instance
   ///
-  /// Creates a LikesRepository when the user is authenticated.
-  /// Returns null when user is not authenticated.
+  /// Creates a LikesRepository. Local storage is attached when the user is
+  /// authenticated; signed-out relay queries are guarded by the repository.
   ///
   /// Uses:
   /// - NostrClient from nostrServiceProvider (for relay communication)

@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
 import 'package:openvine/constants/semantic_ids.dart';
+import 'package:openvine/constants/text_scale_limits.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -674,42 +675,48 @@ class VideoOverlayActionColumn extends ConsumerWidget {
         currentUserPubkey != null && currentUserPubkey == video.pubkey;
     final showEditButton = !isPreviewMode && isOwnVideo;
 
-    return Column(
-      spacing: 20,
-      children: [
-        if (showEditButton)
-          EditActionButton(video: video, onInteracted: onInteracted),
-        LikeActionButton(
-          video: video,
-          isPreviewMode: isPreviewMode,
-          isOwnVideo: isOwnVideo,
-          onInteracted: onInteracted,
-        ),
-        CommentActionButton(
-          video: video,
-          isPreviewMode: isPreviewMode,
-          onInteracted: onInteracted,
-        ),
-        RepostActionButton(
-          video: video,
-          isPreviewMode: isPreviewMode,
-          isOwnVideo: isOwnVideo,
-          onInteracted: onInteracted,
-        ),
-        ShareActionButton(video: video, onInteracted: onInteracted),
-        if (!isOwnVideo) ...[
-          ReportActionButton(video: video, onInteracted: onInteracted),
-          // Gate the slot itself so a default-off build inserts no child
-          // into Column(spacing: 20) — a hidden SizedBox.shrink would still
-          // add a permanent gap between Report and More. The button keeps its
-          // own defensive checks for the repository/pubkey readiness case.
-          if (ref.watch(
-            isFeatureEnabledProvider(FeatureFlag.communityContentWarnings),
-          ))
-            HelpClassifyActionButton(video: video, onInteracted: onInteracted),
+    return MediaQuery.withClampedTextScaling(
+      maxScaleFactor: overlayActionColumnTextScaleLimit,
+      child: Column(
+        spacing: 20,
+        children: [
+          if (showEditButton)
+            EditActionButton(video: video, onInteracted: onInteracted),
+          LikeActionButton(
+            video: video,
+            isPreviewMode: isPreviewMode,
+            isOwnVideo: isOwnVideo,
+            onInteracted: onInteracted,
+          ),
+          CommentActionButton(
+            video: video,
+            isPreviewMode: isPreviewMode,
+            onInteracted: onInteracted,
+          ),
+          RepostActionButton(
+            video: video,
+            isPreviewMode: isPreviewMode,
+            isOwnVideo: isOwnVideo,
+            onInteracted: onInteracted,
+          ),
+          ShareActionButton(video: video, onInteracted: onInteracted),
+          if (!isOwnVideo) ...[
+            ReportActionButton(video: video, onInteracted: onInteracted),
+            // Gate the slot itself so a default-off build inserts no child
+            // into Column(spacing: 20) — a hidden SizedBox.shrink would still
+            // add a permanent gap between Report and More. The button keeps its
+            // own defensive checks for the repository/pubkey readiness case.
+            if (ref.watch(
+              isFeatureEnabledProvider(FeatureFlag.communityContentWarnings),
+            ))
+              HelpClassifyActionButton(
+                video: video,
+                onInteracted: onInteracted,
+              ),
+          ],
+          MoreActionButton(video: video, onInteracted: onInteracted),
         ],
-        MoreActionButton(video: video, onInteracted: onInteracted),
-      ],
+      ),
     );
   }
 }

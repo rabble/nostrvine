@@ -187,6 +187,10 @@ class _VideoActionCaption extends StatelessWidget {
           shadows: VineTheme.buttonShadows,
         ),
         textAlign: TextAlign.center,
+        // `softWrap: false` keeps a long count on one line so the width
+        // genuinely overflows; with the default the text wraps, is cut at
+        // one line, and ellipsizes off the wrap instead of the width.
+        softWrap: false,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),

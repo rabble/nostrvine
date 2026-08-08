@@ -161,6 +161,100 @@ void main() {
         );
         expect(clientWithoutDb.publicKey, equals(testPublicKey));
       });
+
+      group('resolvePublicKey (#6813)', () {
+        test('returns the cached key without asking the signer', () async {
+          expect(await client.resolvePublicKey(), equals(testPublicKey));
+          verifyNever(() => mockNostr.refreshPublicKey());
+        });
+
+        test('refreshes from the signer when the cache is empty', () async {
+          // The signer acquired its key after the client initialized, so the
+          // cache is stale — the refresh is what makes it visible.
+          var cached = '';
+          when(() => mockNostr.publicKey).thenAnswer((_) => cached);
+          when(() => mockNostr.refreshPublicKey()).thenAnswer((_) async {
+            cached = testPublicKey;
+          });
+
+          expect(await client.resolvePublicKey(), equals(testPublicKey));
+          verify(() => mockNostr.refreshPublicKey()).called(1);
+        });
+
+        test('returns null when the signer still has no key', () async {
+          when(() => mockNostr.publicKey).thenReturn('');
+          when(() => mockNostr.refreshPublicKey()).thenAnswer((_) async {});
+
+          expect(await client.resolvePublicKey(), isNull);
+        });
+
+        test('returns null when the signer refresh throws', () async {
+          when(() => mockNostr.publicKey).thenReturn('');
+          when(
+            () => mockNostr.refreshPublicKey(),
+          ).thenThrow(StateError('refresh failed'));
+
+          expect(await client.resolvePublicKey(), isNull);
+        });
+
+        test('concurrent callers share a single signer refresh', () async {
+          // A cache miss reaches the signer, and under NIP-55 that is a
+          // user-visible Amber prompt — three repositories resolving the key
+          // at startup must not raise three of them.
+          var cached = '';
+          final gate = Completer<void>();
+          when(() => mockNostr.publicKey).thenAnswer((_) => cached);
+          when(() => mockNostr.refreshPublicKey()).thenAnswer((_) async {
+            await gate.future;
+            cached = testPublicKey;
+          });
+
+          final calls = Future.wait([
+            client.resolvePublicKey(),
+            client.resolvePublicKey(),
+            client.resolvePublicKey(),
+          ]);
+          gate.complete();
+
+          expect(await calls, everyElement(equals(testPublicKey)));
+          verify(() => mockNostr.refreshPublicKey()).called(1);
+        });
+
+        test(
+          'a later miss refreshes again once the first has settled',
+          () async {
+            when(() => mockNostr.publicKey).thenReturn('');
+            when(() => mockNostr.refreshPublicKey()).thenAnswer((_) async {});
+
+            expect(await client.resolvePublicKey(), isNull);
+            expect(await client.resolvePublicKey(), isNull);
+
+            verify(() => mockNostr.refreshPublicKey()).called(2);
+          },
+        );
+
+        test(
+          'shares an initialize refresh with concurrent resolvers',
+          () async {
+            var cached = '';
+            final gate = Completer<void>();
+            when(() => mockNostr.publicKey).thenAnswer((_) => cached);
+            when(() => mockNostr.refreshPublicKey()).thenAnswer((_) async {
+              await gate.future;
+              cached = testPublicKey;
+            });
+            when(() => mockRelayManager.initialize()).thenAnswer((_) async {});
+
+            final initialization = client.initialize();
+            final resolved = client.resolvePublicKey();
+            gate.complete();
+
+            await initialization;
+            expect(await resolved, equals(testPublicKey));
+            verify(() => mockNostr.refreshPublicKey()).called(1);
+          },
+        );
+      });
     });
 
     group('initialize seeds known-verified event ids', () {
@@ -274,7 +368,9 @@ void main() {
         expect(pendingQueries, hasLength(2));
         expect(activeQueries, 2);
 
-        pendingQueries.removeFirst().complete([_createTestEvent(id: 'one')]);
+        pendingQueries.removeFirst().complete([
+          _createTestEvent(id: 'one', kind: 1059),
+        ]);
         await pumpEventQueue();
 
         expect(pendingQueries, hasLength(2));
@@ -286,8 +382,12 @@ void main() {
         expect(pendingQueries, hasLength(2));
         expect(activeQueries, 2);
 
-        pendingQueries.removeFirst().complete([_createTestEvent(id: 'three')]);
-        pendingQueries.removeFirst().complete([_createTestEvent(id: 'four')]);
+        pendingQueries.removeFirst().complete([
+          _createTestEvent(id: 'three', kind: 1059),
+        ]);
+        pendingQueries.removeFirst().complete([
+          _createTestEvent(id: 'four', kind: 1059),
+        ]);
 
         await expectLater(
           Future.wait(results),
@@ -1415,6 +1515,57 @@ void main() {
           // The simple form drops the timeout signal, but must not drop the
           // events that arrived before it.
           expect(await client.queryEvents([textNoteFilter()]), equals(events));
+        },
+      );
+
+      test(
+        'drops websocket events that do not match any requested filter',
+        () async {
+          final matching = _createTestEvent(kind: EventKind.textNote);
+          final offFilter = _createTestEvent(kind: EventKind.relayListMetadata);
+          stubWebSocketEvents([offFilter, matching]);
+
+          final result = await client.queryEventsDetailed([textNoteFilter()]);
+
+          expect(result.events, [matching]);
+        },
+      );
+
+      test(
+        'drops cached events that do not match the requested filter',
+        () async {
+          final mockDbClient = _MockAppDbClient();
+          final mockDatabase = _MockAppDatabase();
+          final dao = _MockNostrEventsDao();
+          when(() => mockDbClient.database).thenReturn(mockDatabase);
+          when(() => mockDatabase.nostrEventsDao).thenReturn(dao);
+
+          final matching = _createTestEvent(kind: EventKind.textNote);
+          final offFilter = _createTestEvent(kind: EventKind.relayListMetadata);
+          // A row the cache holds but this query did not ask for — what an
+          // older build persisted before the gate existed, or what one of the
+          // other writers into this table put there.
+          when(
+            () => dao.getEventsByFilter(any()),
+          ).thenAnswer((_) async => [offFilter, matching]);
+
+          final clientWithCache = NostrClient.forTesting(
+            nostr: mockNostr,
+            relayManager: mockRelayManager,
+            dbClient: mockDbClient,
+          );
+          stubWebSocketEvents([]);
+
+          final result = await clientWithCache.queryEventsDetailed([
+            textNoteFilter(),
+          ]);
+
+          expect(
+            result.events,
+            [matching],
+            reason:
+                'the cache leg is held to the same filter as the network leg',
+          );
         },
       );
     });

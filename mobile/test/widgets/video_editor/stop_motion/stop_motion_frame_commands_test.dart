@@ -162,11 +162,12 @@ void main() {
 
     testWidgets('stretches a sound that covered the composition when a longer '
         'hold restretches it', (tester) async {
-      // #6401: nine stills at the default hold are 375ms, and a sound added
-      // there is clamped to 375ms. Holding each still for 12 output frames
-      // makes the video 4.5s — the sound has to grow with it, or publish muxes
-      // a 4.5s video with a 375ms audio track.
+      // #6401: nine stills at the default hold are a fraction of a second, and
+      // a sound added there is clamped to that. Holding each still for 12
+      // output frames stretches the video to seconds — the sound has to grow
+      // with it, or publish muxes a long video with a snippet of audio.
       final captured = framesHeldFor(StopMotionFrameOps.defaultFramesPerImage);
+      final stretched = framesHeldFor(12);
       final sound = AudioEvent(
         id: 'sound-1',
         pubkey: 'bundled',
@@ -182,11 +183,11 @@ void main() {
         () => bloc.state,
       ).thenReturn(ClipEditorState(clips: [clipWith(captured)]));
 
-      await commit(tester, frames: framesHeldFor(12));
+      await commit(tester, frames: stretched);
 
       expect(
         capturedAudio().single.endTime,
-        const Duration(milliseconds: 4500),
+        StopMotionFrameOps.totalDuration(stretched),
       );
     });
 

@@ -142,6 +142,7 @@ class _ColorSwatchButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dimension = DivineIcon.scaleSize(context, 20);
     return Semantics(
       label: semanticsLabel,
       button: true,
@@ -162,8 +163,8 @@ class _ColorSwatchButton extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(10),
             child: Container(
-              width: 20,
-              height: 20,
+              width: dimension,
+              height: dimension,
               decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             ),
           ),

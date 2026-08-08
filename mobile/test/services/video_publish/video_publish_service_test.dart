@@ -17,6 +17,7 @@ import 'package:openvine/models/video_editor/caption_track.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
+import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/mention_resolution_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/upload_manager.dart';
@@ -26,6 +27,7 @@ import 'package:openvine/services/video_publish/publish_timeline.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Mock classes
 class MockUploadManager extends Mock implements UploadManager {}
@@ -2121,6 +2123,77 @@ void main() {
         },
       );
     });
+
+    group('content language self-labelling', () {
+      VideoPublishService buildServiceWithLanguage(
+        LanguagePreferenceService languageService,
+      ) => VideoPublishService(
+        uploadManager: mockUploadManager,
+        authService: mockAuthService,
+        videoEventPublisher: mockVideoEventPublisher,
+        blossomService: mockBlossomService,
+        draftService: mockDraftService,
+        collaboratorInviteService: mockCollaboratorInviteService,
+        mentionResolutionService: mockMentionResolutionService,
+        performanceMonitor: fakePerformanceMonitor,
+        languagePreferenceService: languageService,
+        onProgressChanged:
+            ({required double progress, required String draftId}) {},
+      );
+
+      test('omits the language tag when the user never declared one', () async {
+        _setupSuccessfulPublish(
+          mockAuthService: mockAuthService,
+          mockUploadManager: mockUploadManager,
+          mockDraftService: mockDraftService,
+          mockVideoEventPublisher: mockVideoEventPublisher,
+        );
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final languageService = LanguagePreferenceService();
+        await languageService.initialize();
+
+        await buildServiceWithLanguage(
+          languageService,
+        ).publishVideo(draft: _createTestDraft());
+
+        final captured = verify(
+          () => _verifyPublishVideoEvent(
+            mockVideoEventPublisher,
+            language: captureAny(named: 'language'),
+            textTrackRefs: any(named: 'textTrackRefs'),
+            textTrackLang: any(named: 'textTrackLang'),
+          ),
+        ).captured;
+        expect(captured.single, isNull);
+      });
+
+      test('sends the declared language when the user chose one', () async {
+        _setupSuccessfulPublish(
+          mockAuthService: mockAuthService,
+          mockUploadManager: mockUploadManager,
+          mockDraftService: mockDraftService,
+          mockVideoEventPublisher: mockVideoEventPublisher,
+        );
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final languageService = LanguagePreferenceService();
+        await languageService.initialize();
+        await languageService.setContentLanguage('pt');
+
+        await buildServiceWithLanguage(
+          languageService,
+        ).publishVideo(draft: _createTestDraft());
+
+        final captured = verify(
+          () => _verifyPublishVideoEvent(
+            mockVideoEventPublisher,
+            language: captureAny(named: 'language'),
+            textTrackRefs: any(named: 'textTrackRefs'),
+            textTrackLang: any(named: 'textTrackLang'),
+          ),
+        ).captured;
+        expect(captured.single, equals('pt'));
+      });
+    });
   });
 }
 
@@ -2205,6 +2278,7 @@ void _stubPublishVideoEventThrows(
       inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
       inspiredByNpub: any(named: 'inspiredByNpub'),
       selectedAudio: any(named: 'selectedAudio'),
+      audioShareAttribution: any(named: 'audioShareAttribution'),
       selectedAudioEventId: any(named: 'selectedAudioEventId'),
       selectedAudioRelay: any(named: 'selectedAudioRelay'),
       language: any(named: 'language'),
@@ -2222,10 +2296,13 @@ void _stubPublishVideoEventThrows(
 /// A full-argument `publishVideoEvent` matcher for `verify`, so tests only
 /// spell out the arguments they capture. Mocktail's verify needs every named
 /// argument of the actual invocation to be matched.
+const Object _anyLanguageMatcher = Object();
+
 Future<bool> _verifyPublishVideoEvent(
   MockVideoEventPublisher publisher, {
   required List<String> textTrackRefs,
   required String textTrackLang,
+  dynamic language = _anyLanguageMatcher,
 }) => publisher.publishVideoEvent(
   upload: any(named: 'upload'),
   title: any(named: 'title'),
@@ -2239,9 +2316,12 @@ Future<bool> _verifyPublishVideoEvent(
   inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
   inspiredByNpub: any(named: 'inspiredByNpub'),
   selectedAudio: any(named: 'selectedAudio'),
+  audioShareAttribution: any(named: 'audioShareAttribution'),
   selectedAudioEventId: any(named: 'selectedAudioEventId'),
   selectedAudioRelay: any(named: 'selectedAudioRelay'),
-  language: any(named: 'language'),
+  language: identical(language, _anyLanguageMatcher)
+      ? any(named: 'language') as String?
+      : language as String?,
   contentWarning: any(named: 'contentWarning'),
   thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
   replyContext: any(named: 'replyContext'),
@@ -2326,6 +2406,7 @@ void _setupSuccessfulPublish({
       inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
       inspiredByNpub: any(named: 'inspiredByNpub'),
       selectedAudio: any(named: 'selectedAudio'),
+      audioShareAttribution: any(named: 'audioShareAttribution'),
       selectedAudioEventId: any(named: 'selectedAudioEventId'),
       selectedAudioRelay: any(named: 'selectedAudioRelay'),
       language: any(named: 'language'),

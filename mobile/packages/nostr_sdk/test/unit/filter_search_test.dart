@@ -1,10 +1,71 @@
-// ABOUTME: Unit tests for NIP-50 search field in Filter class
-// ABOUTME: Tests serialization and deserialization of search parameter
+// ABOUTME: Unit tests for Filter's NIP-50 search field and for checkEvent,
+// ABOUTME: which backs the RelayPool and NostrClient inbound admission gates.
+// ABOUTME: Covers search serialization plus id/author/kind matching rules.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 
 void main() {
+  group('Filter event matching', () {
+    const pubkey =
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
+    test('matches an event by exact id and author', () {
+      final event = Event(pubkey, 1, const [], 'hello', createdAt: 1);
+
+      final filter = Filter(ids: [event.id], authors: const [pubkey]);
+
+      expect(filter.checkEvent(event), isTrue);
+    });
+
+    test('a blank id or author entry matches nothing', () {
+      final event = Event(pubkey, 1, const [], 'hello', createdAt: 1);
+
+      // The discriminator against prefix matching. NIP-01 requires exact
+      // 64-character lowercase hex and dropped prefixes from the spec, and
+      // every string starts with '' — so under a prefix compare one blank
+      // entry silently turns the constraint, and the RelayPool and
+      // NostrClient gates built on checkEvent, into pass-throughs. Filter
+      // admits whatever it is handed, so this is where that is caught.
+      expect(Filter(ids: const ['']).checkEvent(event), isFalse);
+      expect(Filter(authors: const ['']).checkEvent(event), isFalse);
+    });
+
+    test('rejects a non-matching event id and author', () {
+      final event = Event(pubkey, 1, const [], 'hello', createdAt: 1);
+
+      final filter = Filter(ids: const ['bbbb'], authors: const ['cccc']);
+
+      expect(filter.checkEvent(event), isFalse);
+    });
+
+    test('matches #t tags exactly and case-sensitively', () {
+      final lowercaseEvent = Event(
+        pubkey,
+        1,
+        const [
+          ['t', 'skateboarding'],
+        ],
+        'hello',
+        createdAt: 1,
+      );
+      final mixedCaseEvent = Event(
+        pubkey,
+        1,
+        const [
+          ['t', 'Skateboarding'],
+        ],
+        'hello',
+        createdAt: 1,
+      );
+
+      final filter = Filter(t: const ['skateboarding']);
+
+      expect(filter.checkEvent(lowercaseEvent), isTrue);
+      expect(filter.checkEvent(mixedCaseEvent), isFalse);
+    });
+  });
+
   group('Filter Search Tests', () {
     test('Should serialize search field to JSON', () {
       final filter = Filter(kinds: [1], limit: 10, search: 'bitcoin');

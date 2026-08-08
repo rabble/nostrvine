@@ -13,12 +13,20 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 
+import '../helpers/test_helpers.dart';
+
 class _MockAuthService extends Mock implements AuthService {}
 
 const String _userPubkey =
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const String _otherPubkey =
     'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+
+/// Wall-clock budget for the async-settling helpers in this suite.
+///
+/// Generous enough to absorb a loaded CI isolate, and well inside the 30s
+/// per-test default so an expiry reports itself instead of hanging the shard.
+const Duration _settleTimeout = Duration(seconds: 10);
 
 String _hexId(int index) => index.toRadixString(16).padLeft(64, '0');
 
@@ -124,29 +132,32 @@ void main() {
       authStateController.add(AuthState.checking);
     }
 
-    Future<void> waitForInitialized(PersonalEventCacheService service) async {
-      for (var attempt = 0; attempt < 20; attempt++) {
-        await pumpEventQueue();
-        if (service.isInitialized) {
-          return;
-        }
-      }
-    }
+    /// Waits on wall-clock time rather than a fixed pump count because the
+    /// condition depends on real Hive file I/O.
+    Future<void> waitForPersonalCache(
+      String description,
+      bool Function() isSatisfied,
+    ) => TestHelpers.waitForCondition(
+      isSatisfied,
+      timeout: _settleTimeout,
+      description: description,
+    );
+
+    Future<void> waitForInitialized(PersonalEventCacheService service) =>
+        waitForPersonalCache(
+          'PersonalEventCacheService to finish initializing',
+          () => service.isInitialized,
+        );
 
     Future<void> waitForCachedEvent(
       PersonalEventCacheService service,
       Event event,
-    ) async {
-      for (var attempt = 0; attempt < 20; attempt++) {
-        await pumpEventQueue();
-        if (service
-            .getEventsByKind(event.kind)
-            .any((cachedEvent) => cachedEvent.id == event.id)) {
-          return;
-        }
-      }
-      fail('Event ${event.id} was not added to kind ${event.kind} index');
-    }
+    ) => waitForPersonalCache(
+      'event ${event.id} to be added to the kind ${event.kind} index',
+      () => service
+          .getEventsByKind(event.kind)
+          .any((cachedEvent) => cachedEvent.id == event.id),
+    );
 
     test(
       'initializes when auth becomes ready after provider construction',
@@ -196,29 +207,26 @@ void main() {
       },
     );
 
-    test(
-      'keeps queued events through transient non-auth states',
-      () async {
-        final container = buildContainer();
-        final subscription = container.listen(
-          personalEventCacheServiceProvider,
-          (_, _) {},
-          fireImmediately: true,
-        );
-        addTearDown(subscription.close);
-        final ownEvent = _createEvent(pubkey: _userPubkey, id: _hexId(3));
+    test('keeps queued events through transient non-auth states', () async {
+      final container = buildContainer();
+      final subscription = container.listen(
+        personalEventCacheServiceProvider,
+        (_, _) {},
+        fireImmediately: true,
+      );
+      addTearDown(subscription.close);
+      final ownEvent = _createEvent(pubkey: _userPubkey, id: _hexId(3));
 
-        final service = subscription.read();
-        service.cacheUserEvent(ownEvent);
+      final service = subscription.read();
+      service.cacheUserEvent(ownEvent);
 
-        emitChecking();
-        await authenticate();
-        await waitForInitialized(service);
+      emitChecking();
+      await authenticate();
+      await waitForInitialized(service);
 
-        expect(service.hasEvent(ownEvent.id), isTrue);
-        expect(service.getEventById(ownEvent.id)?.id, ownEvent.id);
-      },
-    );
+      expect(service.hasEvent(ownEvent.id), isTrue);
+      expect(service.getEventById(ownEvent.id)?.id, ownEvent.id);
+    });
 
     test(
       'resets active cache session when auth becomes unauthenticated',

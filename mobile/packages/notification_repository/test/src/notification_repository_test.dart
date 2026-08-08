@@ -134,6 +134,7 @@ void main() {
     String? rootAddressableId,
     String? targetCommentId,
     String? content,
+    String? commentContent,
     bool isReferencedVideo = true,
     String? referencedVideoTitle,
     String? referencedVideoThumbnail,
@@ -157,6 +158,7 @@ void main() {
       rootAddressableId: rootAddressableId,
       targetCommentId: targetCommentId,
       content: content,
+      commentContent: commentContent,
       isReferencedVideo: isReferencedVideo,
       referencedVideoTitle: referencedVideoTitle,
       referencedVideoThumbnail: referencedVideoThumbnail,
@@ -1369,16 +1371,102 @@ void main() {
       });
 
       test(
-        'video-anchored notification with null referencedEventId is dropped',
+        'a-tag-only reaction maps to an actor like instead of being dropped',
         () async {
+          const rootAddressableId =
+              '34236:user1234567890abcdef:addressable-video';
           stubNotifications([
-            makeNotification(sourcePubkey: 'pub_a', referencedEventId: null),
+            makeNotification(
+              sourcePubkey: 'pub_a',
+              sourceEventId: 'reaction_event',
+              referencedEventId: null,
+              rootAddressableId: rootAddressableId,
+            ),
           ]);
           stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
 
           final page = await repository.getNotifications();
 
-          expect(page.items, isEmpty);
+          expect(page.items, hasLength(1));
+          final item = page.items.single as ActorNotification;
+          expect(item.type, equals(NotificationKind.like));
+          expect(item.targetEventId, equals('reaction_event'));
+          expect(item.videoAddressableId, equals(rootAddressableId));
+
+          final rows =
+              verify(
+                    () => notificationsDao.replaceAll(
+                      captureAny(),
+                      ownerPubkey: any(named: 'ownerPubkey'),
+                    ),
+                  ).captured.single
+                  as List<NotificationCacheRow>;
+          final row = rows.singleWhere((r) => r.type != 'seen_marker');
+          expect(row.type, equals('actorLike'));
+          expect(row.targetEventId, equals('reaction_event'));
+          expect(row.videoAddressableId, equals(rootAddressableId));
+        },
+      );
+
+      test(
+        'anchorless actor like does not trust a foreign root coordinate',
+        () async {
+          const foreignRootAddressableId =
+              '34236:other_owner:addressable-video';
+          stubNotifications([
+            makeNotification(
+              sourcePubkey: 'pub_a',
+              sourceEventId: 'reaction_event',
+              referencedEventId: null,
+              rootAddressableId: foreignRootAddressableId,
+            ),
+          ]);
+          stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
+
+          final page = await repository.getNotifications();
+
+          expect(page.items, hasLength(1));
+          final item = page.items.single as ActorNotification;
+          expect(item.type, equals(NotificationKind.like));
+          expect(item.targetEventId, equals('reaction_event'));
+          expect(item.videoAddressableId, isNull);
+
+          final rows =
+              verify(
+                    () => notificationsDao.replaceAll(
+                      captureAny(),
+                      ownerPubkey: any(named: 'ownerPubkey'),
+                    ),
+                  ).captured.single
+                  as List<NotificationCacheRow>;
+          final row = rows.singleWhere((r) => r.type != 'seen_marker');
+          expect(row.type, equals('actorLike'));
+          expect(row.targetEventId, equals('reaction_event'));
+          expect(row.videoAddressableId, isNull);
+        },
+      );
+
+      test(
+        'likeComment can keep a foreign root coordinate for comment routing',
+        () async {
+          const foreignRootAddressableId =
+              '34236:other_owner:addressable-video';
+          stubNotifications([
+            makeNotification(
+              sourcePubkey: 'pub_a',
+              targetCommentId: 'comment_event',
+              rootAddressableId: foreignRootAddressableId,
+            ),
+          ]);
+          stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
+
+          final page = await repository.getNotifications();
+
+          expect(page.items, hasLength(1));
+          final item = page.items.single as ActorNotification;
+          expect(item.type, equals(NotificationKind.likeComment));
+          expect(item.targetEventId, equals('comment_event'));
+          expect(item.videoAddressableId, equals(foreignRootAddressableId));
         },
       );
 
@@ -1669,6 +1757,78 @@ void main() {
         },
       );
 
+      test(
+        'list_add with addressable target anchors on rootAddressableId',
+        () async {
+          const videoCoordinate = '34236:$userPubkey:addressable-vine';
+          const listCoordinate = '30005:pubkey_alice:literature';
+          stubNotifications([
+            makeNotification(
+              id: 'list_add_addressable',
+              sourceEventId: 'list_evt_1',
+              sourceKind: 30005,
+              notificationType: 'list_add',
+              referencedEventId: null,
+              rootEventKind: 34236,
+              rootEventPubkey: userPubkey,
+              rootDTag: 'addressable-vine',
+              rootAddressableId: videoCoordinate,
+              listTitle: 'Literature',
+              listCoordinate: listCoordinate,
+              isReferencedVideo: false,
+            ),
+          ]);
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+          });
+
+          final page = await repository.getNotifications();
+
+          final item = page.items.single as VideoNotification;
+          expect(item.type, equals(NotificationKind.listAdd));
+          expect(item.videoEventId, equals(videoCoordinate));
+          expect(item.videoAddressableId, equals(videoCoordinate));
+          expect(item.totalCount, equals(1));
+          expect(item.addedVideoCount, equals(1));
+          expect(item.listTitle, equals('Literature'));
+          expect(item.listCoordinate, equals(listCoordinate));
+          verifyNever(() => funnelcakeApiClient.getVideoStats(videoCoordinate));
+        },
+      );
+
+      test(
+        'list_add with foreign addressable target is not rendered as your vine',
+        () async {
+          const foreignCoordinate = '34236:pubkey_foreign:foreign-vine';
+          stubNotifications([
+            makeNotification(
+              id: 'list_add_foreign_addressable',
+              sourceEventId: 'list_evt_foreign',
+              sourceKind: 30005,
+              notificationType: 'list_add',
+              referencedEventId: null,
+              rootEventKind: 34236,
+              rootEventPubkey: 'pubkey_foreign',
+              rootDTag: 'foreign-vine',
+              rootAddressableId: foreignCoordinate,
+              listTitle: 'Literature',
+              listCoordinate: '30005:pubkey_alice:literature',
+              isReferencedVideo: false,
+            ),
+          ]);
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+          });
+
+          final page = await repository.getNotifications();
+
+          expect(page.items, isEmpty);
+          verifyNever(
+            () => funnelcakeApiClient.getVideoStats(foreignCoordinate),
+          );
+        },
+      );
+
       test('list_add groups multiple videos by list coordinate', () async {
         const listCoordinate = '30005:pubkey_alice:literature';
         stubNotifications([
@@ -1701,11 +1861,103 @@ void main() {
 
         final item = page.items.single as VideoNotification;
         expect(item.type, equals(NotificationKind.listAdd));
-        expect(item.totalCount, equals(2));
+        expect(item.totalCount, equals(1));
+        expect(item.addedVideoCount, equals(2));
         expect(item.actors, hasLength(1));
         expect(item.videoEventId, equals('video_1'));
         expect(item.sourceEventIds, equals(['list_evt_1', 'list_evt_2']));
         expect(item.notificationIds, equals(['list_add_1', 'list_add_2']));
+      });
+
+      test(
+        'list_add mixed anchor group uses newest notification '
+        'for event and route',
+        () async {
+          const listCoordinate = '30005:pubkey_alice:literature';
+          const newestCoordinate = '34236:$userPubkey:newest-vine';
+          stubNotifications([
+            makeNotification(
+              id: 'list_add_old_event',
+              sourceEventId: 'list_evt_old',
+              sourceKind: 30005,
+              notificationType: 'list_add',
+              referencedEventId: 'old_video_event',
+              referencedDTag: 'old-vine',
+              listTitle: 'Literature',
+              listCoordinate: listCoordinate,
+              createdAt: DateTime(2026),
+            ),
+            makeNotification(
+              id: 'list_add_new_addressable',
+              sourceEventId: 'list_evt_new',
+              sourceKind: 30005,
+              notificationType: 'list_add',
+              referencedEventId: null,
+              rootEventKind: 34236,
+              rootEventPubkey: userPubkey,
+              rootDTag: 'newest-vine',
+              rootAddressableId: newestCoordinate,
+              listTitle: 'Literature',
+              listCoordinate: listCoordinate,
+              isReferencedVideo: false,
+              createdAt: DateTime(2026, 1, 2),
+            ),
+          ]);
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+          });
+
+          final page = await repository.getNotifications();
+
+          final item = page.items.single as VideoNotification;
+          expect(item.videoEventId, equals(newestCoordinate));
+          expect(item.videoAddressableId, equals(newestCoordinate));
+          expect(item.addedVideoCount, equals(2));
+          verifyNever(
+            () => funnelcakeApiClient.getVideoStats(newestCoordinate),
+          );
+        },
+      );
+
+      test('block filter preserves list_add added video count', () async {
+        repository = buildRepository(
+          blockFilter: (pubkey) => pubkey == 'pubkey_bob',
+        );
+        const listCoordinate = '30005:pubkey_alice:literature';
+        stubNotifications([
+          makeNotification(
+            id: 'list_add_alice',
+            sourceEventId: 'list_evt_1',
+            sourceKind: 30005,
+            notificationType: 'list_add',
+            referencedEventId: 'video_1',
+            listTitle: 'Literature',
+            listCoordinate: listCoordinate,
+            createdAt: DateTime(2026, 1, 2),
+          ),
+          makeNotification(
+            id: 'list_add_bob',
+            sourcePubkey: 'pubkey_bob',
+            sourceEventId: 'list_evt_2',
+            sourceKind: 30005,
+            notificationType: 'list_add',
+            referencedEventId: 'video_2',
+            listTitle: 'Literature',
+            listCoordinate: listCoordinate,
+            createdAt: DateTime(2026),
+          ),
+        ]);
+        stubProfiles({
+          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+          'pubkey_bob': makeProfile('pubkey_bob', displayName: 'Bob'),
+        });
+
+        final page = await repository.getNotifications();
+
+        final item = page.items.single as VideoNotification;
+        expect(item.actors.single.pubkey, equals('pubkey_alice'));
+        expect(item.totalCount, equals(1));
+        expect(item.addedVideoCount, equals(2));
       });
 
       test('reaction with a target comment maps to likeComment even when '
@@ -1973,21 +2225,38 @@ void main() {
         expect(page.items, isEmpty);
       });
 
-      test('reaction on a non-video target maps to likeComment '
-          '($ActorNotification)', () async {
-        stubNotifications([makeNotification(isReferencedVideo: false)]);
-        stubProfiles({});
+      test(
+        'reaction without a target comment stays like when the referenced '
+        'video did not resolve',
+        () async {
+          // An unresolved root video leaves referenced_video absent, which is
+          // a Funnelcake join miss (unindexed / deleted video), not evidence
+          // of a comment target. Reading it as one relabelled ordinary video
+          // likes "liked your comment" — with no thumbnail and no quote, so
+          // the row named neither a comment nor a video.
+          stubNotifications([
+            makeNotification(
+              isReferencedVideo: false,
+              referencedEventId: 'my_video',
+            ),
+          ]);
+          stubProfiles({});
 
-        final page = await repository.getNotifications();
-        final item = page.items.single as ActorNotification;
-        expect(item.type, equals(NotificationKind.likeComment));
-      });
+          final page = await repository.getNotifications();
+          final item = page.items.single as VideoNotification;
+          expect(item.type, equals(NotificationKind.like));
+          expect(item.videoEventId, equals('my_video'));
+        },
+      );
 
-      test('likeComment carries referencedEventId as targetEventId', () async {
+      test('likeComment quotes the liked comment body', () async {
+        // The source event is a kind 7 reaction, so `content` is the emoji.
+        // Funnelcake resolves the liked comment's text into comment_content.
         stubNotifications([
           makeNotification(
-            isReferencedVideo: false,
-            referencedEventId: 'comment_event_xyz',
+            targetCommentId: 'comment_event_xyz',
+            content: '+',
+            commentContent: 'this vine still holds up',
           ),
         ]);
         stubProfiles({});
@@ -1995,8 +2264,44 @@ void main() {
         final page = await repository.getNotifications();
         final item = page.items.single as ActorNotification;
         expect(item.type, equals(NotificationKind.likeComment));
-        expect(item.targetEventId, equals('comment_event_xyz'));
+        expect(item.commentText, equals('this vine still holds up'));
       });
+
+      test('likeComment truncates a long liked comment body', () async {
+        final body = 'a' * 120;
+        stubNotifications([
+          makeNotification(
+            targetCommentId: 'comment_event_xyz',
+            content: '+',
+            commentContent: body,
+          ),
+        ]);
+        stubProfiles({});
+
+        final page = await repository.getNotifications();
+        final item = page.items.single as ActorNotification;
+        expect(item.commentText, equals('${'a' * 50}...'));
+      });
+
+      test(
+        'likeComment leaves commentText null when the server omits the body',
+        () async {
+          stubNotifications([
+            makeNotification(
+              targetCommentId: 'comment_event_xyz',
+              content: '+',
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as ActorNotification;
+          expect(item.type, equals(NotificationKind.likeComment));
+          // Never the reaction emoji — a row quoting "+" is worse than one
+          // quoting nothing.
+          expect(item.commentText, isNull);
+        },
+      );
 
       test(
         'likeComment carries root addressable id for direct video routing',
@@ -2005,8 +2310,7 @@ void main() {
               '${NIP71VideoKinds.addressableShortVideo}:other_owner:root-d-tag';
           stubNotifications([
             makeNotification(
-              isReferencedVideo: false,
-              referencedEventId: 'comment_event_xyz',
+              targetCommentId: 'comment_event_xyz',
               rootAddressableId: rootAddressableId,
             ),
           ]);
@@ -2025,8 +2329,7 @@ void main() {
         () async {
           stubNotifications([
             makeNotification(
-              isReferencedVideo: false,
-              referencedEventId: 'comment_event_xyz',
+              targetCommentId: 'comment_event_xyz',
               referencedDTag: 'vine-abc',
             ),
           ]);
@@ -2044,8 +2347,7 @@ void main() {
         () async {
           stubNotifications([
             makeNotification(
-              isReferencedVideo: false,
-              referencedEventId: 'comment_event_xyz',
+              targetCommentId: 'comment_event_xyz',
               // referencedDTag intentionally omitted
             ),
           ]);
@@ -3374,6 +3676,57 @@ void main() {
                     item.totalCount == 1 &&
                     item.commentText == null;
               }, 'placeholder is VideoNotification(like) keyed to video'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'cached "actorLike" row remains an anchorless actor like',
+        () async {
+          const rootAddressableId =
+              '34236:user1234567890abcdef:addressable-video';
+          when(
+            () => notificationsDao.getAllNotifications(
+              limit: any(named: 'limit'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              NotificationRow(
+                id: 'cached_actor_like',
+                type: 'actorLike',
+                fromPubkey: 'actor_pub',
+                timestamp: 1700000000,
+                targetEventId: 'reaction_event',
+                videoAddressableId: rootAddressableId,
+                hasCommentTarget: false,
+                isRead: false,
+                cachedAt: DateTime(2026),
+              ),
+            ],
+          );
+          final hydrated = NotificationRepository(
+            funnelcakeApiClient: funnelcakeApiClient,
+            profileRepository: profileRepository,
+            notificationsDao: notificationsDao,
+            userPubkey: userPubkey,
+          );
+          addTearDown(hydrated.close);
+
+          await expectLater(
+            hydrated.watchSnapshot(),
+            emitsThrough(
+              predicate<NotificationPage>((p) {
+                if (p.items.length != 1) return false;
+                final item = p.items.first;
+                return item is ActorNotification &&
+                    item.id == 'cached_actor_like' &&
+                    item.type == NotificationKind.like &&
+                    item.targetEventId == 'reaction_event' &&
+                    item.videoAddressableId == rootAddressableId &&
+                    item.actor.pubkey == 'actor_pub';
+              }, 'placeholder is ActorNotification(like)'),
             ),
           );
         },

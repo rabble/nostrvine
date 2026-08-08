@@ -20,7 +20,7 @@ runs should be short — the ledger below tells you what's already handled.
 
 1. **NEVER close, delete, or mutate the state of Crashlytics issues, events, or any
    hosted data.** You may add notes (`crashlytics_create_note`) — nothing else. Do not
-   use `crashlytics_update_issue` to change state; do not delete notes.
+   use `crashlytics_update_issue` to change state; do not use `crashlytics_delete_note`.
 2. **Never run destructive local commands** (`git reset --hard`, `git clean`, `rm -rf`,
    branch force-deletes) on anything you didn't create this run.
 3. One crash worked per run, maximum. If nothing qualifies, report "nothing actionable"
@@ -31,19 +31,35 @@ runs should be short — the ledger below tells you what's already handled.
 
 ## Step 1 — Pull the crash picture
 
+The Firebase MCP server is **not** in this repo's `.mcp.json` (which registers only
+`nostr`, `dart` and `figma`), so the `crashlytics_*` tools are unavailable on a clean
+checkout. Wire it up first — `firebase experimental:mcp` from the `firebase-tools` CLI —
+and confirm the tools are listed before starting. If they are not available, stop and
+say so rather than guessing at crash data.
+
 Using the Firebase MCP tools against project `openvine-co`:
 
-1. `crashlytics_get_report` (top issues) for **both** the iOS and Android apps, over
-   the last 7 days, sorted by impacted users / event count.
+1. `crashlytics_get_report` with `report: topIssues` for **both** the iOS and Android
+   apps. It takes `{appId, report, filter, pageSize}`. Set both `filter.intervalStartTime`
+   and `filter.intervalEndTime` (ISO 8601, within the last 90 days) — left unset it
+   defaults to the last 7 days. `filter.issueErrorTypes` is one of `FATAL`, `NON_FATAL`,
+   `ANR`; `filter.issueSignals` accepts `SIGNAL_EARLY`, `SIGNAL_FRESH`,
+   `SIGNAL_REGRESSED`, `SIGNAL_REPETITIVE`. `pageSize` defaults to 10 — ask for more.
 2. For candidates, `crashlytics_get_issue` to get details, and
    `crashlytics_list_events` / `crashlytics_batch_get_events` for representative stack
-   traces, device/OS breakdown, and versions.
+   traces. The `topOperatingSystems`, `topAppleDevices`, `topAndroidDevices` and
+   `topVersions` reports give the OS / device / version breakdown.
 
 Note: the `topIssues` report is sorted by **event count**, but rank your candidates by
 **impacted users** (with `SIGNAL_FRESH` / `SIGNAL_REGRESSED` / velocity as tiebreakers).
+Every report aggregates both events and impacted users, so you have the number you need.
 Event count over-weights a single user who crash-loops; impacted-users is the better
 severity signal. Read enough rows that a high-user issue ranked below a high-event one
 isn't missed.
+
+The Firebase MCP server pins `firebase-tools@latest`, so this tool surface can drift.
+If a name or parameter here doesn't match what the server advertises, trust the live
+tool schema and update this runbook.
 
 ## Step 2 — Triage filter
 

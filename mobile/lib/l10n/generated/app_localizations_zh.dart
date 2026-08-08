@@ -6020,6 +6020,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoMetadataC2paMissingNote => '添加内容凭证需要网络连接。';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => '重新生成';
 
   @override
@@ -8054,6 +8058,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoRecorderStopMotionAssembleFailed => '无法生成视频，请重试。';
 
   @override
+  String videoRecorderStopMotionShotsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '还剩 $count 张',
+      zero: '没有剩余张数',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get videoRecorderToggleFlashLabel => '切换闪光灯';
 
   @override
@@ -9092,7 +9107,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoEditorLevelSemanticLabel => '层级';
 
   @override
-  String get videoMetadataBackSemanticLabel => '返回';
+  String get videoMetadataClosePostDetailsSemanticLabel => '关闭帖子详情';
 
   @override
   String get videoMetadataDismissHelpDialogSemanticLabel => '关闭帮助对话框';
@@ -9354,6 +9369,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get profileBadgeFallbackSemanticLabel => '徽章';
+
+  @override
+  String get profileBadgeFooterBody =>
+      '徽章是任何人都可以在 Nostr 上制作的小奖励。送一个给朋友、创作者,或那个让你今天很开心的人。';
+
+  @override
+  String get profileBadgeFooterLink => '在 badges.divine.video 制作你自己的徽章';
 
   @override
   String get minorAccountReviewWelcomePageTitle => '家庭指南';
@@ -9848,10 +9870,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoMetadataEditCoverTitle => '编辑封面';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => '关闭封面编辑器';
+  String get videoMetadataEditCoverCloseSemanticLabel => '放弃封面更改';
 
   @override
-  String get videoMetadataEditCoverConfirmSemanticLabel => '确认封面选择';
+  String get videoMetadataEditCoverConfirmSemanticLabel => '将所选帧用作视频封面';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel => '拖动进度选择封面帧';
@@ -10476,4 +10498,27 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+
+  @override
+  String get videoMetadataTagsPickerCancelSemanticLabel => '取消标签选择';
+
+  @override
+  String get videoMetadataTagsPickerConfirmSemanticLabel => '应用所选标签';
+
+  @override
+  String get userPickerCancelSemanticLabel => '取消用户选择';
+
+  @override
+  String get userPickerConfirmSemanticLabel => '确认所选用户';
+
+  @override
+  String get userPickerClearSelectionSemanticLabel => '清除用户选择';
+
+  @override
+  String get videoMetadataContentWarningsPickerCancelSemanticLabel =>
+      '取消内容警告选择';
+
+  @override
+  String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
+      '应用所选内容警告';
 }

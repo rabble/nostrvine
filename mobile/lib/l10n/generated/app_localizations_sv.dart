@@ -6321,6 +6321,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Innehållsuppgifter kräver en internetanslutning.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Generera om';
 
   @override
@@ -8474,6 +8478,18 @@ class AppLocalizationsSv extends AppLocalizations {
       'Det gick inte att skapa videon. Försök igen.';
 
   @override
+  String videoRecorderStopMotionShotsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bilder kvar',
+      one: '1 bild kvar',
+      zero: 'Inga bilder kvar',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get videoRecorderToggleFlashLabel => 'Växla blixt';
 
   @override
@@ -9580,7 +9596,8 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoEditorLevelSemanticLabel => 'Nivå';
 
   @override
-  String get videoMetadataBackSemanticLabel => 'Tillbaka';
+  String get videoMetadataClosePostDetailsSemanticLabel =>
+      'Stäng inläggsdetaljer';
 
   @override
   String get videoMetadataDismissHelpDialogSemanticLabel => 'Stäng hjälpdialog';
@@ -9861,6 +9878,13 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get profileBadgeFallbackSemanticLabel => 'Badge';
+
+  @override
+  String get profileBadgeFooterBody =>
+      'Märken är små utmärkelser som vem som helst kan skapa på Nostr. Ge ett till en vän, en kreatör eller någon som gjorde din dag.';
+
+  @override
+  String get profileBadgeFooterLink => 'Skapa ditt eget på badges.divine.video';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';
@@ -10406,11 +10430,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoMetadataEditCoverCloseSemanticLabel =>
-      'Stäng omslagsredigerare';
+      'Ignorera omslagsändringar';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Bekräfta omslagsval';
+      'Använd vald bildruta som videoomslag';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
@@ -11067,4 +11091,28 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+
+  @override
+  String get videoMetadataTagsPickerCancelSemanticLabel => 'Avbryt taggval';
+
+  @override
+  String get videoMetadataTagsPickerConfirmSemanticLabel =>
+      'Använd valda taggar';
+
+  @override
+  String get userPickerCancelSemanticLabel => 'Avbryt användarval';
+
+  @override
+  String get userPickerConfirmSemanticLabel => 'Bekräfta valda användare';
+
+  @override
+  String get userPickerClearSelectionSemanticLabel => 'Rensa användarval';
+
+  @override
+  String get videoMetadataContentWarningsPickerCancelSemanticLabel =>
+      'Avbryt val av innehållsvarningar';
+
+  @override
+  String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
+      'Använd valda innehållsvarningar';
 }
