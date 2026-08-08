@@ -1,15 +1,35 @@
 // ABOUTME: Environment configuration model for poc/staging/test/production/local
 // ABOUTME: Each environment maps to exactly one relay URL and API base URL
 
+import 'package:flutter/foundation.dart';
+import 'package:openvine/config/app_config.dart';
+
 /// Host address from Android emulator to reach the host machine's localhost.
+///
+/// Only the Android emulator maps this alias to the host. Everywhere else it
+/// is an ordinary routable LAN address that is not the host machine.
+const androidEmulatorHost = '10.0.2.2';
+
+/// Host address every other target uses to reach the host machine.
+const loopbackHost = 'localhost';
+
+/// Host that reaches the local Docker stack from the current platform.
+///
+/// The Android emulator reaches the host through [androidEmulatorHost];
+/// `localhost` there resolves to the emulator itself. Every other target —
+/// iOS Simulator, macOS, web — shares the host's network stack, where
+/// [androidEmulatorHost] routes out to the LAN and times out.
 ///
 /// Mirrored in the native transport-security configs that allow cleartext
 /// to loopback hosts:
 ///   - mobile/android/app/src/main/res/xml/network_security_config.xml
 ///   - mobile/ios/Runner/Info.plist (NSAllowsLocalNetworking)
 ///   - mobile/macos/Runner/Info.plist (NSAllowsLocalNetworking)
-/// Keep this constant in sync with the Android <domain-config> list.
-const localHost = '10.0.2.2';
+/// Keep both constants in sync with the Android <domain-config> list.
+String get localHost =>
+    !kIsWeb && defaultTargetPlatform == TargetPlatform.android
+    ? androidEmulatorHost
+    : loopbackHost;
 
 /// Local Docker stack port mappings.
 const localKeycastPort = 43000;
@@ -20,6 +40,10 @@ const localRelayPort = 47777;
 const int localApiPort = localRelayPort;
 const localBlossomPort = 43003;
 const localInvitePort = 43004;
+
+/// Not in local_stack: wrangler dev default for divine-relay-manager,
+/// which is run separately.
+const localRelayManagerPort = 8787;
 const productionApiBaseUrl = 'https://api.divine.video';
 
 /// Build-time default environment
@@ -124,6 +148,21 @@ class EnvironmentConfig {
     return 'https://media.divine.video';
   }
 
+  /// Base URL for the invite service.
+  ///
+  /// LOCAL resolves to the local_stack `invite` service on the current
+  /// platform's host, so a LOCAL run cannot silently fall back to the
+  /// production invite service. An explicit
+  /// `--dart-define=INVITE_SERVER_URL` still wins, which is what
+  /// `local_stack/run_android_local.sh` passes.
+  String get inviteBaseUrl {
+    if (environment == AppEnvironment.local &&
+        !const bool.hasEnvironment('INVITE_SERVER_URL')) {
+      return 'http://$localHost:$localInvitePort';
+    }
+    return AppConfig.inviteServerBaseUrl;
+  }
+
   /// Indexer relay URLs for the current environment.
   ///
   /// In LOCAL mode, queries go to the local funnelcake relay to avoid
@@ -143,7 +182,7 @@ class EnvironmentConfig {
   String get relayManagerApiUrl {
     switch (environment) {
       case AppEnvironment.local:
-        return 'http://$localHost:8787';
+        return 'http://$localHost:$localRelayManagerPort';
       case AppEnvironment.poc:
       case AppEnvironment.test:
       case AppEnvironment.staging:
