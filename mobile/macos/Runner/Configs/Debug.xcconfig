@@ -1,2 +1,15 @@
 #include "../../Flutter/Flutter-Debug.xcconfig"
 #include "Warnings.xcconfig"
+
+// Debug code signing, indirected through variables so the Runner target's
+// Debug config can be overridden locally without touching tracked files.
+// Defaults keep debug builds ad-hoc signed, so contributors outside the Apple
+// Developer team can build. Ad-hoc signatures carry no designated requirement,
+// which is why the login keychain re-prompts for the keychain password on every
+// rebuild — see docs/MACOS_DEBUG_SIGNING.md for the local team-signing override.
+DIVINE_DEBUG_CODE_SIGN_IDENTITY = -
+DIVINE_DEBUG_CODE_SIGN_STYLE = Manual
+DIVINE_DEBUG_DEVELOPMENT_TEAM =
+
+// Optional local-only override for team-signed debug builds.
+#include? "LocalDebug.xcconfig"
