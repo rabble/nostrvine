@@ -354,7 +354,13 @@ class _DivineIconButtonContent extends StatelessWidget {
     final borderColor = _borderColor(colors);
     var iconWidget = _iconWidget(context, iconColor);
     if (tooltip != null) {
-      iconWidget = Tooltip(message: tooltip, child: iconWidget);
+      iconWidget = Tooltip(
+        message: tooltip,
+        // A tooltip is announced after the label. When both carry the same
+        // text the reader says it twice, so let the label speak alone.
+        excludeFromSemantics: tooltip == semanticLabel,
+        child: iconWidget,
+      );
     }
 
     final decoration = BoxDecoration(

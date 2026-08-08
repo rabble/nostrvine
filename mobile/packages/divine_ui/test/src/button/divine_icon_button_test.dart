@@ -690,6 +690,40 @@ void main() {
         final tooltip = tester.widget<Tooltip>(find.byType(Tooltip));
         expect(tooltip.message, 'Custom tooltip');
       });
+
+      testWidgets(
+        'is not announced when it repeats the semantic label',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              onPressed: () {},
+              tooltip: 'Copy public key',
+              semanticLabel: 'Copy public key',
+            ),
+          );
+
+          final semantics = tester.getSemantics(find.byType(DivineIconButton));
+          expect(semantics.label, 'Copy public key');
+          expect(semantics.tooltip, isEmpty);
+        },
+      );
+
+      testWidgets(
+        'is announced when it adds to the semantic label',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              onPressed: () {},
+              tooltip: 'Copies the key to your clipboard',
+              semanticLabel: 'Copy public key',
+            ),
+          );
+
+          final semantics = tester.getSemantics(find.byType(DivineIconButton));
+          expect(semantics.label, 'Copy public key');
+          expect(semantics.tooltip, 'Copies the key to your clipboard');
+        },
+      );
     });
 
     group('fromSource', () {
