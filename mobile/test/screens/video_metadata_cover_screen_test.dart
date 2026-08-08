@@ -1,6 +1,8 @@
 // ABOUTME: Tests for VideoMetadataCoverScreen widget
 // ABOUTME: Verifies rendering, semantics, navigation, and failure handling
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/material.dart';
@@ -44,13 +46,23 @@ class _NoopInitProVideoEditor extends MethodChannelProVideoEditor {
   Stream<dynamic> initializeStream() => const Stream.empty();
 }
 
+class _PendingEditorVideo extends Fake implements EditorVideo {
+  _PendingEditorVideo(this.path);
+
+  final Future<String> path;
+
+  @override
+  Future<String> safeFilePath() => path;
+}
+
 DivineVideoClip _createTestClip({
   String id = 'test-clip',
   models.AspectRatio aspectRatio = models.AspectRatio.square,
+  EditorVideo? video,
 }) {
   return DivineVideoClip(
     id: id,
-    video: EditorVideo.file('test.mp4'),
+    video: video ?? EditorVideo.file('test.mp4'),
     duration: const Duration(seconds: 10),
     recordedAt: DateTime.now(),
     targetAspectRatio: aspectRatio,
@@ -389,6 +401,42 @@ void main() {
       );
     });
 
+    testWidgets('confirm button keeps disabled semantics while confirming', (
+      tester,
+    ) async {
+      setUpPlayerChannel();
+      addTearDown(tearDownPlayerChannel);
+      final semanticsHandle = tester.ensureSemantics();
+      final pendingPath = Completer<String>();
+      final clip = _createTestClip(
+        video: _PendingEditorVideo(pendingPath.future),
+      );
+
+      await tester.pumpWidget(buildWidget(clip: clip));
+      await tester.pump(const Duration(milliseconds: 400));
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await triggerConfirm(tester);
+      await tester.pump();
+
+      final confirmFinder = find.bySemanticsLabel(
+        l10n.videoMetadataEditCoverConfirmSemanticLabel,
+      );
+      expect(confirmFinder, findsOneWidget);
+      expect(find.byType(BrandedLoadingIndicator), findsWidgets);
+      expect(
+        tester.getSemantics(confirmFinder),
+        isSemantics(
+          label: l10n.videoMetadataEditCoverConfirmSemanticLabel,
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: false,
+        ),
+      );
+
+      semanticsHandle.dispose();
+    });
+
     testWidgets('shows thumbnail strip with correct semantics label', (
       tester,
     ) async {
@@ -453,7 +501,14 @@ void main() {
         setUpPlayerChannel();
         addTearDown(tearDownPlayerChannel);
 
-        await tester.pumpWidget(buildWidget());
+        await tester.pumpWidget(
+          buildWidget(
+            clip: _createTestClip(
+              id: 'missing-thumbnail-source',
+              video: EditorVideo.file('__missing_cover_thumbnail_source__.mp4'),
+            ),
+          ),
+        );
         await tester.pump(const Duration(milliseconds: 400));
 
         final l10n = lookupAppLocalizations(const Locale('en'));

@@ -1,23 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' as models;
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/widgets/video_metadata/modes/classic/video_metadata_classic_bottom_bar.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+class _MockGallerySaveService extends Mock implements GallerySaveService {}
+
+class _FakeEditorVideo extends Fake implements EditorVideo {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(_FakeEditorVideo());
+  });
+
   group(VideoMetadataClassicBottomBar, () {
     late SharedPreferences prefs;
+    late _MockGallerySaveService mockGallerySaveService;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
+      mockGallerySaveService = _MockGallerySaveService();
+      when(
+        () => mockGallerySaveService.saveVideoToGallery(any()),
+      ).thenAnswer((_) async => const GallerySaveSuccess());
     });
 
     testWidgets('renders Post button labeled "Done"', (tester) async {
@@ -105,7 +122,12 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [videoEditorProvider.overrideWith(() => mockNotifier)],
+          overrides: [
+            videoEditorProvider.overrideWith(() => mockNotifier),
+            gallerySaveServiceProvider.overrideWith(
+              (ref) => mockGallerySaveService,
+            ),
+          ],
           child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -120,10 +142,29 @@ void main() {
       expect(postVideoCalled, isTrue);
     });
 
-    testWidgets('button has correct semantics identifier', (tester) async {
+    testWidgets('Post button is activatable by a screen reader', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      final validState = VideoEditorProviderState(
+        title: 'Test Video',
+        finalRenderedClip: DivineVideoClip(
+          id: 'test-clip',
+          video: EditorVideo.file('test.mp4'),
+          duration: const Duration(seconds: 10),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: models.AspectRatio.square,
+          originalAspectRatio: 9 / 16,
+        ),
+      );
+
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+          overrides: [
+            videoEditorProvider.overrideWith(
+              () => _MockVideoEditorNotifier(validState),
+            ),
+          ],
           child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -132,12 +173,22 @@ void main() {
         ),
       );
 
-      final semantics = tester.widget<Semantics>(
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final postFinder = find.bySemanticsLabel(
+        l10n.videoMetadataPostSemanticLabel,
+      );
+      expect(postFinder, findsOneWidget);
+      final postData = tester.getSemantics(postFinder).getSemanticsData();
+
+      expect(postData.hasAction(SemanticsAction.tap), isTrue);
+      expect(
         find.byWidgetPredicate(
           (w) => w is Semantics && w.properties.identifier == 'post_button',
         ),
+        findsOneWidget,
       );
-      expect(semantics.properties.label, equals('Open post preview screen'));
+
+      handle.dispose();
     });
   });
 }
