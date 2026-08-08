@@ -283,11 +283,10 @@ void main() {
         // misleading; the announcement must withhold it too.
         expect(semantics.label, isNot(contains('3.00')));
         // And the badge must not add a second, non-actionable node inside the
-        // card's button.
-        expect(
-          find.bySemanticsLabel(l10n.videoEditorStopMotionFramesCount(4)),
-          findsNothing,
-        );
+        // card's button. The shape this replaced carried the frame count in
+        // `value`, not `label`, so assert on the node count rather than
+        // looking the old label up.
+        expect(semantics.childrenCount, isZero);
       });
     });
   });

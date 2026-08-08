@@ -6596,6 +6596,9 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get videoClipSemanticValueSelected => 'Valt';
+
+  @override
   String get videoClipSemanticValueNotSelected => 'Inte valt';
 
   @override

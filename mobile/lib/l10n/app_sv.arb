@@ -2600,6 +2600,7 @@
     "videoClipSemanticLabel": "Videoklipp, {duration} sekunder",
     "videoClipStopMotionSemanticLabel": "Stop motion-klipp, {frames}",
     "videoClipSemanticValueSelectedAtPosition": "Valt, nummer {position}",
+    "videoClipSemanticValueSelected": "Valt",
     "videoClipSemanticValueNotSelected": "Inte valt",
     "videoClipSemanticHintDisabled": "Inaktiverat",
     "videoClipSemanticHintSelect": "Tryck för att välja, håll för förhandsgranskning",

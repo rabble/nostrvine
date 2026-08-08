@@ -57,6 +57,7 @@ void main() {
 
     Widget buildWidget({
       bool isSelectionMode = false,
+      bool selectionEnabled = true,
       double? targetAspectRatio,
     }) {
       return MaterialApp(
@@ -68,6 +69,7 @@ void main() {
             value: mockBloc,
             child: ClipsTab(
               showRecordButton: isSelectionMode,
+              selectionEnabled: selectionEnabled,
               targetAspectRatio: targetAspectRatio,
             ),
           ),
@@ -134,6 +136,33 @@ void main() {
 
         expect(find.byType(VideoClipThumbnailCard), findsNWidgets(2));
       });
+
+      testWidgets(
+        'omits the selection position when the badge is not shown',
+        (tester) async {
+          // Reachable on the ordinary library route: entering the library with
+          // clips already in the editor pre-selects them
+          // (ClipsLibraryLoadRequested.preSelectedIds) while selection mode is
+          // still off, so selectionEnabled is false and no badge is rendered.
+          when(() => mockBloc.state).thenReturn(
+            ClipsLibraryState(
+              status: ClipsLibraryStatus.loaded,
+              clips: [clip1, clip2],
+              selectedClipIds: const {'clip1'},
+            ),
+          );
+
+          await tester.pumpWidget(buildWidget(selectionEnabled: false));
+
+          final semantics = tester.getSemantics(
+            find.byType(VideoClipThumbnailCard).first,
+          );
+          // No badge on screen, so the ordinal would name a position the user
+          // cannot see.
+          expect(find.text('1'), findsNothing);
+          expect(semantics.value, equals(en.videoClipSemanticValueSelected));
+        },
+      );
     });
 
     group('interactions', () {

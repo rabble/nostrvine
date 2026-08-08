@@ -3861,6 +3861,7 @@
     }
   },
   "videoClipSemanticValueSelectedAtPosition": "已选中，第 {position} 个",
+  "videoClipSemanticValueSelected": "已选中",
   "videoClipSemanticValueNotSelected": "未选中",
   "videoClipSemanticHintDisabled": "已禁用",
   "videoClipSemanticHintSelect": "点按选择，长按预览",

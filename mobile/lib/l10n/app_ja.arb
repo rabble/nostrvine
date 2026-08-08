@@ -2592,6 +2592,7 @@
     "videoClipSemanticLabel": "動画クリップ、{duration}秒",
     "videoClipStopMotionSemanticLabel": "ストップモーションクリップ、{frames}",
     "videoClipSemanticValueSelectedAtPosition": "選択済み、{position} 番目",
+    "videoClipSemanticValueSelected": "選択済み",
     "videoClipSemanticValueNotSelected": "未選択",
     "videoClipSemanticHintDisabled": "無効",
     "videoClipSemanticHintSelect": "タップして選択、長押しでプレビュー",

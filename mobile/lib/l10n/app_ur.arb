@@ -3861,6 +3861,7 @@
     }
   },
   "videoClipSemanticValueSelectedAtPosition": "منتخب، نمبر {position}",
+  "videoClipSemanticValueSelected": "منتخب",
   "videoClipSemanticValueNotSelected": "منتخب نہیں",
   "videoClipSemanticHintDisabled": "غیر فعال",
   "videoClipSemanticHintSelect": "منتخب کرنے کے لیے ٹیپ کریں، پیش منظر کے لیے دیر تک دبائیں",

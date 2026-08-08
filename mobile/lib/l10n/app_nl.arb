@@ -2600,6 +2600,7 @@
     "videoClipSemanticLabel": "Videoclip, {duration} seconden",
     "videoClipStopMotionSemanticLabel": "Stop-motionclip, {frames}",
     "videoClipSemanticValueSelectedAtPosition": "Geselecteerd, nummer {position}",
+    "videoClipSemanticValueSelected": "Geselecteerd",
     "videoClipSemanticValueNotSelected": "Niet geselecteerd",
     "videoClipSemanticHintDisabled": "Uitgeschakeld",
     "videoClipSemanticHintSelect": "Tik om te selecteren, houd vast voor voorbeeld",

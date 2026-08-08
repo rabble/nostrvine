@@ -2600,6 +2600,7 @@
     "videoClipSemanticLabel": "Videoclip, {duration} Sekunden",
     "videoClipStopMotionSemanticLabel": "Stop-Motion-Clip, {frames}",
     "videoClipSemanticValueSelectedAtPosition": "Ausgewählt, Nummer {position}",
+    "videoClipSemanticValueSelected": "Ausgewählt",
     "videoClipSemanticValueNotSelected": "Nicht ausgewählt",
     "videoClipSemanticHintDisabled": "Deaktiviert",
     "videoClipSemanticHintSelect": "Tippen zum Auswählen, lang drücken für Vorschau",

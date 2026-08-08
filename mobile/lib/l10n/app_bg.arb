@@ -2816,6 +2816,7 @@
     "videoClipSemanticLabel": "Видео клип, {duration} секунди",
     "videoClipStopMotionSemanticLabel": "Стоп-моушън клип, {frames}",
     "videoClipSemanticValueSelectedAtPosition": "Избран, номер {position}",
+    "videoClipSemanticValueSelected": "Избран",
     "videoClipSemanticValueNotSelected": "Не е избран",
     "videoClipSemanticHintDisabled": "Деактивиран",
     "videoClipSemanticHintSelect": "Докоснете за избор, задръжте за преглед",

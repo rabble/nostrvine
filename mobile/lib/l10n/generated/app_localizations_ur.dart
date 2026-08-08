@@ -6607,6 +6607,9 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
+  String get videoClipSemanticValueSelected => 'منتخب';
+
+  @override
   String get videoClipSemanticValueNotSelected => 'منتخب نہیں';
 
   @override

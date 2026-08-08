@@ -2592,6 +2592,7 @@
     "videoClipSemanticLabel": "مقطع فيديو، {duration} ثانية",
     "videoClipStopMotionSemanticLabel": "مقطع حركة إيقافية، {frames}",
     "videoClipSemanticValueSelectedAtPosition": "محدد، رقم {position}",
+    "videoClipSemanticValueSelected": "محدد",
     "videoClipSemanticValueNotSelected": "غير محدد",
     "videoClipSemanticHintDisabled": "معطل",
     "videoClipSemanticHintSelect": "انقر للتحديد، اضغط مطولاً للمعاينة",

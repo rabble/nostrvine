@@ -2600,6 +2600,7 @@
     "videoClipSemanticLabel": "Klip wideo, {duration} sekund",
     "videoClipStopMotionSemanticLabel": "Klip poklatkowy, {frames}",
     "videoClipSemanticValueSelectedAtPosition": "Zaznaczono, numer {position}",
+    "videoClipSemanticValueSelected": "Zaznaczono",
     "videoClipSemanticValueNotSelected": "Niezaznaczono",
     "videoClipSemanticHintDisabled": "Wyłączono",
     "videoClipSemanticHintSelect": "Dotknij, aby wybrać, przytrzymaj, aby podejrzeć",

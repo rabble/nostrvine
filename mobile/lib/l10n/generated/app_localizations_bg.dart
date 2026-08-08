@@ -6666,6 +6666,9 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
+  String get videoClipSemanticValueSelected => 'Избран';
+
+  @override
   String get videoClipSemanticValueNotSelected => 'Не е избран';
 
   @override

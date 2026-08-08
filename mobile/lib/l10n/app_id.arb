@@ -2599,6 +2599,7 @@
     "videoClipSemanticLabel": "Klip video, {duration} detik",
     "videoClipStopMotionSemanticLabel": "Klip stop-motion, {frames}",
     "videoClipSemanticValueSelectedAtPosition": "Dipilih, nomor {position}",
+    "videoClipSemanticValueSelected": "Dipilih",
     "videoClipSemanticValueNotSelected": "Tidak dipilih",
     "videoClipSemanticHintDisabled": "Dinonaktifkan",
     "videoClipSemanticHintSelect": "Ketuk untuk memilih, tekan lama untuk pratinjau",

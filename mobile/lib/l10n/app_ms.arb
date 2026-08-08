@@ -3861,6 +3861,7 @@
     }
   },
   "videoClipSemanticValueSelectedAtPosition": "Dipilih, nombor {position}",
+  "videoClipSemanticValueSelected": "Dipilih",
   "videoClipSemanticValueNotSelected": "Tidak dipilih",
   "videoClipSemanticHintDisabled": "Dilumpuhkan",
   "videoClipSemanticHintSelect": "Ketik untuk memilih, tekan lama untuk pratonton",

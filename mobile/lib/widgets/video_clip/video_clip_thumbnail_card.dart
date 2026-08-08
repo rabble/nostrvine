@@ -89,10 +89,17 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
               widget.clip.duration.toFormattedSeconds(),
             ),
       value: _isSelected
-          // The selection badge shows the pick order, which decides the order
-          // clips are stitched into. Announce it here rather than letting the
-          // badge's bare digits merge into the label.
-          ? l10n.videoClipSemanticValueSelectedAtPosition(widget.selectionIndex)
+          // The badge shows the pick order, which decides the order clips are
+          // stitched into, so announce it rather than letting the badge's bare
+          // digits merge into the label. Only when the badge is actually on
+          // screen: entering the library with clips already in the editor
+          // pre-selects them while selection mode is off, so the ordinal would
+          // otherwise name a position with no visible referent.
+          ? widget.showSelectionIndicator
+                ? l10n.videoClipSemanticValueSelectedAtPosition(
+                    widget.selectionIndex,
+                  )
+                : l10n.videoClipSemanticValueSelected
           : l10n.videoClipSemanticValueNotSelected,
       button: true,
       selected: _isSelected,

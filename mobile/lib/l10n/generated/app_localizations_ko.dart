@@ -6340,6 +6340,9 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get videoClipSemanticValueSelected => '선택됨';
+
+  @override
   String get videoClipSemanticValueNotSelected => '선택 안 됨';
 
   @override

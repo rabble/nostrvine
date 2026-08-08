@@ -3054,6 +3054,7 @@
     "videoClipSemanticLabel": "የቪዲዮ ክሊፕ፣ {duration} ሰከንድ",
     "videoClipStopMotionSemanticLabel": "የእንቅስቃሴ-አልባ ቅንጥብ፣ {frames}",
     "videoClipSemanticValueSelectedAtPosition": "ተመርጧል፣ ቁጥር {position}",
+    "videoClipSemanticValueSelected": "ተመርጧል",
     "videoClipSemanticValueNotSelected": "አልተመረጠም",
     "videoClipSemanticHintDisabled": "ተሰናክሏል",
     "videoClipSemanticHintSelect": "ለመምረጥ ነካ ያድርጉ፣ ቅድሚያ ለማሳየት ረዘም ያሉ ጫን",

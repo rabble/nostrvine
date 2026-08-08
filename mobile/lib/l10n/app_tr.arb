@@ -2599,6 +2599,7 @@
     "videoClipSemanticLabel": "Video klibi, {duration} saniye",
     "videoClipStopMotionSemanticLabel": "Stop motion klibi, {frames}",
     "videoClipSemanticValueSelectedAtPosition": "Seçildi, numara {position}",
+    "videoClipSemanticValueSelected": "Seçildi",
     "videoClipSemanticValueNotSelected": "Seçilmedi",
     "videoClipSemanticHintDisabled": "Devre dışı",
     "videoClipSemanticHintSelect": "Seçmek için dokun, önizlemek için uzun bas",

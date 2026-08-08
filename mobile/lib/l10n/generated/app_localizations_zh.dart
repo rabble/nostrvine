@@ -6290,6 +6290,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get videoClipSemanticValueSelected => '已选中';
+
+  @override
   String get videoClipSemanticValueNotSelected => '未选中';
 
   @override

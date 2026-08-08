@@ -6469,6 +6469,9 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String get videoClipSemanticValueSelected => 'ተመርጧል';
+
+  @override
   String get videoClipSemanticValueNotSelected => 'አልተመረጠም';
 
   @override

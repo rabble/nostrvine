@@ -6681,6 +6681,9 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
+  String get videoClipSemanticValueSelected => 'Napili';
+
+  @override
   String get videoClipSemanticValueNotSelected => 'Hindi napili';
 
   @override

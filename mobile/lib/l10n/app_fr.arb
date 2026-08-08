@@ -2600,6 +2600,7 @@
     "videoClipSemanticLabel": "Clip vidéo, {duration} secondes",
     "videoClipStopMotionSemanticLabel": "Clip en stop-motion, {frames}",
     "videoClipSemanticValueSelectedAtPosition": "Sélectionné, numéro {position}",
+    "videoClipSemanticValueSelected": "Sélectionné",
     "videoClipSemanticValueNotSelected": "Non sélectionné",
     "videoClipSemanticHintDisabled": "Désactivé",
     "videoClipSemanticHintSelect": "Appuyer pour sélectionner, appui long pour aperçu",

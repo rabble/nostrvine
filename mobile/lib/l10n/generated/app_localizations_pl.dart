@@ -6761,6 +6761,9 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
+  String get videoClipSemanticValueSelected => 'Zaznaczono';
+
+  @override
   String get videoClipSemanticValueNotSelected => 'Niezaznaczono';
 
   @override

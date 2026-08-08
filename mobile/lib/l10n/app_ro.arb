@@ -2600,6 +2600,7 @@
     "videoClipSemanticLabel": "Clip video, {duration} secunde",
     "videoClipStopMotionSemanticLabel": "Clip stop-motion, {frames}",
     "videoClipSemanticValueSelectedAtPosition": "Selectat, numărul {position}",
+    "videoClipSemanticValueSelected": "Selectat",
     "videoClipSemanticValueNotSelected": "Neselectat",
     "videoClipSemanticHintDisabled": "Dezactivat",
     "videoClipSemanticHintSelect": "Atinge pentru a selecta, ține apăsat pentru previzualizare",

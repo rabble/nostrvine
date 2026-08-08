@@ -11498,6 +11498,12 @@ abstract class AppLocalizations {
   /// **'Selected, number {position}'**
   String videoClipSemanticValueSelectedAtPosition(int position);
 
+  /// No description provided for @videoClipSemanticValueSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected'**
+  String get videoClipSemanticValueSelected;
+
   /// No description provided for @videoClipSemanticValueNotSelected.
   ///
   /// In en, this message translates to:

@@ -1930,6 +1930,7 @@
     "videoClipSemanticLabel": "동영상 클립, {duration}초",
     "videoClipStopMotionSemanticLabel": "스톱모션 클립, {frames}",
     "videoClipSemanticValueSelectedAtPosition": "선택됨, {position}번",
+    "videoClipSemanticValueSelected": "선택됨",
     "videoClipSemanticValueNotSelected": "선택 안 됨",
     "videoClipSemanticHintDisabled": "비활성화됨",
     "videoClipSemanticHintSelect": "탭하여 선택, 길게 눌러 미리보기",

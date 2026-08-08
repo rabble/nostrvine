@@ -6608,6 +6608,9 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String get videoClipSemanticValueSelected => 'Đã chọn';
+
+  @override
   String get videoClipSemanticValueNotSelected => 'Chưa chọn';
 
   @override

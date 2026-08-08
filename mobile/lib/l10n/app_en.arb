@@ -4090,6 +4090,7 @@
       }
     }
   },
+  "videoClipSemanticValueSelected": "Selected",
   "videoClipSemanticValueNotSelected": "Not selected",
   "videoClipSemanticHintDisabled": "Disabled",
   "videoClipSemanticHintSelect": "Tap to select, long press to preview",

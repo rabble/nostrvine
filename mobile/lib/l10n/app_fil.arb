@@ -1713,6 +1713,7 @@
     "videoClipSemanticLabel": "Video clip, {duration} segundo",
     "videoClipStopMotionSemanticLabel": "Stop-motion clip, {frames}",
     "videoClipSemanticValueSelectedAtPosition": "Napili, numero {position}",
+    "videoClipSemanticValueSelected": "Napili",
     "videoClipSemanticValueNotSelected": "Hindi napili",
     "videoClipSemanticHintDisabled": "Hindi pinagana",
     "videoClipSemanticHintSelect": "I-tap para piliin, pindutin nang matagal para i-preview",

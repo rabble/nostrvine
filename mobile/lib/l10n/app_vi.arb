@@ -3861,6 +3861,7 @@
     }
   },
   "videoClipSemanticValueSelectedAtPosition": "Đã chọn, số {position}",
+  "videoClipSemanticValueSelected": "Đã chọn",
   "videoClipSemanticValueNotSelected": "Chưa chọn",
   "videoClipSemanticHintDisabled": "Đã tắt",
   "videoClipSemanticHintSelect": "Chạm để chọn, nhấn giữ để xem thử",
