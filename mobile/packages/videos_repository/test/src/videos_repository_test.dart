@@ -3590,6 +3590,64 @@ void main() {
       );
 
       test(
+        'reuses the cached page when only the country hint changes',
+        () async {
+          // The country hint comes from a 250ms-timeout geo lookup that
+          // yields null on a slow network. If it forked the cache key,
+          // this second call would miss the cache and hit the API again.
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getV2PopularVideos(
+              variant: any(named: 'variant'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+              preferredLanguages: any(named: 'preferredLanguages'),
+              viewerCountry: any(named: 'viewerCountry'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _createVideoStats(
+                id: 'native-1',
+                pubkey: 'pubkey-1',
+                dTag: 'native-dtag-1',
+                videoUrl: 'https://example.com/native-1.mp4',
+              ),
+            ],
+          );
+
+          final feedCache = InMemoryFeedCache();
+          final repositoryWithCache = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            inMemoryFeedCache: feedCache,
+          );
+
+          final first = await repositoryWithCache.getPopularVideosPage(
+            variant: PopularVideosVariant.native,
+            preferredLanguages: const ['pt'],
+          );
+          final second = await repositoryWithCache.getPopularVideosPage(
+            variant: PopularVideosVariant.native,
+            preferredLanguages: const ['pt'],
+            viewerCountry: 'BR',
+          );
+
+          expect(
+            second.videos.map((video) => video.id),
+            equals(first.videos.map((video) => video.id)),
+          );
+          verify(
+            () => mockFunnelcakeClient.getV2PopularVideosPage(
+              variant: PopularVideosVariant.native,
+              limit: 25,
+              preferredLanguages: const ['pt'],
+              viewerCountry: any(named: 'viewerCountry'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
         'native variant continues paging until it fills a native-only page',
         () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);

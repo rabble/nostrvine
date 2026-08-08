@@ -401,7 +401,7 @@ class VideoPublishService {
           audioShareAttribution: draft.audioShareAttribution,
           selectedAudioEventId: draft.selectedSound?.id,
           selectedAudioRelay: draft.selectedSound?.sourceVideoRelay,
-          language: languagePreferenceService?.contentLanguage,
+          language: languagePreferenceService?.declaredContentLanguage,
           contentWarning: draft.contentWarning,
           thumbnailTimestamp: draft.thumbnailTimestamp,
           replyContext: draft.videoReplyContext,
