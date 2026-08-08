@@ -6423,6 +6423,23 @@ class AppLocalizationsNl extends AppLocalizations {
       'Geselecteerde clips verwijderen';
 
   @override
+  String get libraryCloseSemanticLabel => 'Bibliotheek sluiten';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel =>
+      'Stoppen met clips selecteren';
+
+  @override
+  String get libraryOpenTrashSemanticLabel =>
+      'Onlangs verwijderde clips openen';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'Clips sorteren';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'Clips selecteren';
+
+  @override
   String get librarySelect => 'Selecteren';
 
   @override

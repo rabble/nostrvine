@@ -177,54 +177,62 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreview> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => context.pop(),
-      behavior: .translucent,
-      child: ColoredBox(
-        color: VineTheme.scrim65,
-        child: SafeArea(
-          child: Center(
-            child: Padding(
-              padding: const .all(36),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                spacing: 48,
-                children: [
-                  // Video preview
-                  Flexible(
-                    child: AspectRatio(
-                      aspectRatio: widget.clip.targetAspectRatio.value,
-                      child: ClipRRect(
-                        borderRadius: .circular(16),
-                        child: _ClipHero(
-                          clip: widget.clip,
-                          child: _ClipMedia(
+    return Semantics(
+      container: true,
+      explicitChildNodes: true,
+      label: context.l10n.videoMetadataClosePreviewSemanticLabel,
+      button: true,
+      onTap: context.pop,
+      child: GestureDetector(
+        excludeFromSemantics: true,
+        onTap: context.pop,
+        behavior: .translucent,
+        child: ColoredBox(
+          color: VineTheme.scrim65,
+          child: SafeArea(
+            child: Center(
+              child: Padding(
+                padding: const .all(36),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  spacing: 48,
+                  children: [
+                    // Video preview
+                    Flexible(
+                      child: AspectRatio(
+                        aspectRatio: widget.clip.targetAspectRatio.value,
+                        child: ClipRRect(
+                          borderRadius: .circular(16),
+                          child: _ClipHero(
                             clip: widget.clip,
-                            controller: _controller,
+                            child: _ClipMedia(
+                              clip: widget.clip,
+                              controller: _controller,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
 
-                  if (widget.clip.libraryTitle case final title?)
-                    Text(
-                      title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: VineTheme.titleMediumFont(
-                        color: context.vineColors.onSurface,
+                    if (widget.clip.libraryTitle case final title?)
+                      Text(
+                        title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: VineTheme.titleMediumFont(
+                          color: context.vineColors.onSurface,
+                        ),
                       ),
-                    ),
 
-                  // Action buttons row
-                  _ActionButtonsRow(
-                    isSaving: _isSaving,
-                    onSave: _saveToGallery,
-                    onDelete: widget.onDelete,
-                  ),
-                ],
+                    // Action buttons row
+                    _ActionButtonsRow(
+                      isSaving: _isSaving,
+                      onSave: _saveToGallery,
+                      onDelete: widget.onDelete,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

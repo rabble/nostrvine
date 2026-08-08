@@ -6441,6 +6441,21 @@ class AppLocalizationsMs extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'Padam klip dipilih';
 
   @override
+  String get libraryCloseSemanticLabel => 'Tutup pustaka';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel => 'Berhenti memilih klip';
+
+  @override
+  String get libraryOpenTrashSemanticLabel => 'Buka klip yang baru dipadam';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'Isih klip';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'Pilih klip';
+
+  @override
   String get librarySelect => 'Pilih';
 
   @override

@@ -6359,6 +6359,22 @@ class AppLocalizationsTr extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'Seçili klipleri sil';
 
   @override
+  String get libraryCloseSemanticLabel => 'Kitaplığı kapat';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel => 'Klip seçimini bitir';
+
+  @override
+  String get libraryOpenTrashSemanticLabel =>
+      'Yakın zamanda silinen klipleri aç';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'Klipleri sırala';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'Klip seç';
+
+  @override
   String get librarySelect => 'Seç';
 
   @override

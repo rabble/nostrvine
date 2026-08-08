@@ -6389,6 +6389,21 @@ class AppLocalizationsSv extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'Ta bort valda klipp';
 
   @override
+  String get libraryCloseSemanticLabel => 'Stäng biblioteket';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel => 'Sluta välja klipp';
+
+  @override
+  String get libraryOpenTrashSemanticLabel => 'Öppna nyligen raderade klipp';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'Sortera klipp';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'Välj klipp';
+
+  @override
   String get librarySelect => 'Välj';
 
   @override

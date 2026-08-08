@@ -102,6 +102,9 @@ class _VineBottomSheetSelectionOption extends StatelessWidget {
     return Semantics(
       button: true,
       label: label,
+      selected: isSelected,
+      onTap: onTap,
+      excludeSemantics: true,
       child: Material(
         color: isSelected
             ? context.vineColors.surfaceContainer

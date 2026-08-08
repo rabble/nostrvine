@@ -11192,6 +11192,36 @@ abstract class AppLocalizations {
   /// **'Delete selected clips'**
   String get libraryDeleteSelectedClipsTooltip;
 
+  /// Accessibility label for the library toolbar button that leaves the library screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Close library'**
+  String get libraryCloseSemanticLabel;
+
+  /// Accessibility label for the library toolbar button that exits clip-selection mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop selecting clips'**
+  String get libraryStopSelectingClipsSemanticLabel;
+
+  /// Accessibility label for the library toolbar button that opens the recently deleted clips screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open recently deleted clips'**
+  String get libraryOpenTrashSemanticLabel;
+
+  /// Accessibility label for the library toolbar button that opens clip sorting options.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort clips'**
+  String get librarySortClipsSemanticLabel;
+
+  /// Accessibility label for the library toolbar button that enters clip-selection mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Select clips'**
+  String get librarySelectClipsSemanticLabel;
+
   /// No description provided for @librarySelect.
   ///
   /// In en, this message translates to:

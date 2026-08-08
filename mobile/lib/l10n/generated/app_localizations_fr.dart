@@ -6476,6 +6476,23 @@ class AppLocalizationsFr extends AppLocalizations {
       'Supprimer les clips sélectionnés';
 
   @override
+  String get libraryCloseSemanticLabel => 'Fermer la bibliothèque';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel =>
+      'Arrêter de sélectionner des clips';
+
+  @override
+  String get libraryOpenTrashSemanticLabel =>
+      'Ouvrir les clips récemment supprimés';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'Trier les clips';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'Sélectionner des clips';
+
+  @override
   String get librarySelect => 'Sélectionner';
 
   @override

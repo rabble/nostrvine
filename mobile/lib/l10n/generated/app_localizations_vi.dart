@@ -6401,6 +6401,21 @@ class AppLocalizationsVi extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'Xóa clip đã chọn';
 
   @override
+  String get libraryCloseSemanticLabel => 'Đóng thư viện';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel => 'Dừng chọn clip';
+
+  @override
+  String get libraryOpenTrashSemanticLabel => 'Mở các clip đã xóa gần đây';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'Sắp xếp clip';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'Chọn clip';
+
+  @override
   String get librarySelect => 'Chọn';
 
   @override

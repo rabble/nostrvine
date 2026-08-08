@@ -3923,6 +3923,26 @@
   "libraryTabClips": "Clips",
   "librarySaveToCameraRollTooltip": "Save to camera roll",
   "libraryDeleteSelectedClipsTooltip": "Delete selected clips",
+  "libraryCloseSemanticLabel": "Close library",
+  "@libraryCloseSemanticLabel": {
+    "description": "Accessibility label for the library toolbar button that leaves the library screen."
+  },
+  "libraryStopSelectingClipsSemanticLabel": "Stop selecting clips",
+  "@libraryStopSelectingClipsSemanticLabel": {
+    "description": "Accessibility label for the library toolbar button that exits clip-selection mode."
+  },
+  "libraryOpenTrashSemanticLabel": "Open recently deleted clips",
+  "@libraryOpenTrashSemanticLabel": {
+    "description": "Accessibility label for the library toolbar button that opens the recently deleted clips screen."
+  },
+  "librarySortClipsSemanticLabel": "Sort clips",
+  "@librarySortClipsSemanticLabel": {
+    "description": "Accessibility label for the library toolbar button that opens clip sorting options."
+  },
+  "librarySelectClipsSemanticLabel": "Select clips",
+  "@librarySelectClipsSemanticLabel": {
+    "description": "Accessibility label for the library toolbar button that enters clip-selection mode."
+  },
   "librarySelect": "Select",
   "librarySortNewestCreation": "Newest Creation",
   "librarySortOldestCreation": "Oldest Creation",

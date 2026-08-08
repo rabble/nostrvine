@@ -6347,6 +6347,21 @@ class AppLocalizationsAr extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'حذف المقاطع المحددة';
 
   @override
+  String get libraryCloseSemanticLabel => 'إغلاق المكتبة';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel => 'إيقاف تحديد المقاطع';
+
+  @override
+  String get libraryOpenTrashSemanticLabel => 'فتح المقاطع المحذوفة مؤخرًا';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'فرز المقاطع';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'تحديد المقاطع';
+
+  @override
   String get librarySelect => 'تحديد';
 
   @override

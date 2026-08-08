@@ -446,6 +446,8 @@ class _DivineButtonContent extends StatelessWidget {
         button: true,
         enabled: _isEnabled,
         label: semanticLabel,
+        onTap: _isEnabled ? onPressed : null,
+        excludeSemantics: true,
         child: button,
       );
     }

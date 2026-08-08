@@ -6138,6 +6138,21 @@ class AppLocalizationsKo extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => '선택한 클립 삭제';
 
   @override
+  String get libraryCloseSemanticLabel => '라이브러리 닫기';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel => '클립 선택 종료';
+
+  @override
+  String get libraryOpenTrashSemanticLabel => '최근 삭제한 클립 열기';
+
+  @override
+  String get librarySortClipsSemanticLabel => '클립 정렬';
+
+  @override
+  String get librarySelectClipsSemanticLabel => '클립 선택';
+
+  @override
   String get librarySelect => '선택';
 
   @override

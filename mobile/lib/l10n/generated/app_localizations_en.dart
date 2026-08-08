@@ -6390,6 +6390,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'Delete selected clips';
 
   @override
+  String get libraryCloseSemanticLabel => 'Close library';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel => 'Stop selecting clips';
+
+  @override
+  String get libraryOpenTrashSemanticLabel => 'Open recently deleted clips';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'Sort clips';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'Select clips';
+
+  @override
   String get librarySelect => 'Select';
 
   @override

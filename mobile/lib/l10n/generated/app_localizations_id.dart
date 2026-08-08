@@ -6356,6 +6356,21 @@ class AppLocalizationsId extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'Hapus klip terpilih';
 
   @override
+  String get libraryCloseSemanticLabel => 'Tutup pustaka';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel => 'Berhenti memilih klip';
+
+  @override
+  String get libraryOpenTrashSemanticLabel => 'Buka klip yang baru dihapus';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'Urutkan klip';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'Pilih klip';
+
+  @override
   String get librarySelect => 'Pilih';
 
   @override

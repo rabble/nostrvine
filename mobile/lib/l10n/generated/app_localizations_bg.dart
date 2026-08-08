@@ -6450,6 +6450,22 @@ class AppLocalizationsBg extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'Изтрийте избраните клипове';
 
   @override
+  String get libraryCloseSemanticLabel => 'Затвори библиотеката';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel => 'Спри избора на клипове';
+
+  @override
+  String get libraryOpenTrashSemanticLabel =>
+      'Отвори наскоро изтритите клипове';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'Сортирай клиповете';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'Избери клипове';
+
+  @override
   String get librarySelect => 'Избери';
 
   @override

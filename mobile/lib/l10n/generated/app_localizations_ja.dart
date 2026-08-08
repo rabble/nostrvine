@@ -6116,6 +6116,21 @@ class AppLocalizationsJa extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => '選択したクリップを削除';
 
   @override
+  String get libraryCloseSemanticLabel => 'ライブラリを閉じる';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel => 'クリップの選択を終了';
+
+  @override
+  String get libraryOpenTrashSemanticLabel => '最近削除したクリップを開く';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'クリップを並べ替える';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'クリップを選択';
+
+  @override
   String get librarySelect => '選択';
 
   @override

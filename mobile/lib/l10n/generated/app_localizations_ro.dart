@@ -6552,6 +6552,23 @@ class AppLocalizationsRo extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'Șterge clipurile selectate';
 
   @override
+  String get libraryCloseSemanticLabel => 'Închide biblioteca';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel =>
+      'Oprește selectarea clipurilor';
+
+  @override
+  String get libraryOpenTrashSemanticLabel =>
+      'Deschide clipurile șterse recent';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'Sortează clipurile';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'Selectează clipuri';
+
+  @override
   String get librarySelect => 'Selectează';
 
   @override

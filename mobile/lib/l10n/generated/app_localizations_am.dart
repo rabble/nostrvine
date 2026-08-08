@@ -6265,6 +6265,21 @@ class AppLocalizationsAm extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'የተመረጡ ቅንጥቦችን ሰርዝ';
 
   @override
+  String get libraryCloseSemanticLabel => 'ቤተ-መጻሕፍቱን ዝጋ';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel => 'ቅንጥቦችን መምረጥ አቁም';
+
+  @override
+  String get libraryOpenTrashSemanticLabel => 'በቅርቡ የተሰረዙ ቅንጥቦችን ክፈት';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'ቅንጥቦችን ደርድር';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'ቅንጥቦችን ምረጥ';
+
+  @override
   String get librarySelect => 'ምረጥ';
 
   @override

@@ -6470,6 +6470,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'Ausgewählte Clips löschen';
 
   @override
+  String get libraryCloseSemanticLabel => 'Bibliothek schließen';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel => 'Clip-Auswahl beenden';
+
+  @override
+  String get libraryOpenTrashSemanticLabel => 'Kürzlich gelöschte Clips öffnen';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'Clips sortieren';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'Clips auswählen';
+
+  @override
   String get librarySelect => 'Auswählen';
 
   @override

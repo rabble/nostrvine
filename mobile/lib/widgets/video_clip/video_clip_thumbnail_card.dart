@@ -74,6 +74,7 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
 
     final l10n = context.l10n;
     return Semantics(
+      container: true,
       label: l10n.videoClipSemanticLabel(
         widget.clip.duration.toFormattedSeconds(),
       ),
@@ -94,6 +95,7 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
         duration: const Duration(milliseconds: 100),
         opacity: widget.disabled ? 0.4 : 1.0,
         child: GestureDetector(
+          excludeFromSemantics: true,
           onTap: widget.disabled ? null : widget.onTap,
           onLongPress: widget.disabled ? null : widget.onLongPress,
           child: ClipRRect(
@@ -269,11 +271,13 @@ class _DurationBadge extends StatelessWidget {
           color: VineTheme.scrim65,
           borderRadius: .circular(4),
         ),
-        child: Text(
-          clip.durationInSeconds.toStringAsFixed(2),
-          style: VineTheme.labelSmallFont(
-            color: VineTheme.whiteText,
-          ).copyWith(fontFeatures: [const .tabularFigures()]),
+        child: ExcludeSemantics(
+          child: Text(
+            clip.durationInSeconds.toStringAsFixed(2),
+            style: VineTheme.labelSmallFont(
+              color: VineTheme.whiteText,
+            ).copyWith(fontFeatures: [const .tabularFigures()]),
+          ),
         ),
       ),
     );

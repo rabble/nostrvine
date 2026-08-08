@@ -6471,6 +6471,23 @@ class AppLocalizationsFil extends AppLocalizations {
       'Burahin ang mga napiling clip';
 
   @override
+  String get libraryCloseSemanticLabel => 'Isara ang library';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel =>
+      'Ihinto ang pagpili ng mga clip';
+
+  @override
+  String get libraryOpenTrashSemanticLabel =>
+      'Buksan ang mga kamakailang na-delete na clip';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'Ayusin ang mga clip';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'Pumili ng mga clip';
+
+  @override
   String get librarySelect => 'Piliin';
 
   @override

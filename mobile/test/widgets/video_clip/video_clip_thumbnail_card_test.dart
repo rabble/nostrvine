@@ -1,6 +1,8 @@
 // ABOUTME: Tests for VideoClipThumbnailCard widget
 // ABOUTME: Verifies selection overlay, duration badge, and disabled state
 
+import 'dart:ui' show SemanticsAction;
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -202,11 +204,28 @@ void main() {
     group('accessibility', () {
       testWidgets('has correct semantics when not selected', (tester) async {
         await tester.pumpWidget(buildWidget());
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        final semantics = tester.getSemantics(
+          find.byType(VideoClipThumbnailCard),
+        );
 
         expect(
-          find.bySemanticsLabel(RegExp('Video clip.*seconds')),
-          findsOneWidget,
+          semantics.label,
+          equals(l10n.videoClipSemanticLabel('5.00')),
         );
+        expect(
+          semantics.value,
+          equals(l10n.videoClipSemanticValueNotSelected),
+        );
+        expect(
+          semantics.hint,
+          equals(l10n.videoClipSemanticHintSelect),
+        );
+        final semanticsData = semantics.getSemanticsData();
+        expect(semanticsData.hasAction(SemanticsAction.tap), isTrue);
+        expect(semanticsData.hasAction(SemanticsAction.longPress), isTrue);
+        expect(find.bySemanticsLabel('5.00'), findsNothing);
       });
 
       testWidgets('has correct semantics value when selected', (tester) async {
