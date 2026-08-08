@@ -123,6 +123,82 @@ void main() {
         expect(stats.trendingScore, equals(0.75));
       });
 
+      test(
+        'parses explicit addressable d tag fields from compact REST JSON',
+        () {
+          final stats = VideoStats.fromJson(const {
+            'id': 'event-id',
+            'pubkey': 'event-pubkey',
+            'created_at': 1700000000,
+            'kind': 34236,
+            'addressable_d_tag': 'real-d-tag',
+            'title': 'Compact Title',
+            'thumbnail': 'https://example.com/thumb.jpg',
+            'video_url': 'https://example.com/video.mp4',
+            'reactions': 0,
+            'comments': 0,
+            'reposts': 0,
+            'engagement_score': 0,
+          });
+
+          final videoEvent = stats.toVideoEvent();
+
+          expect(stats.dTag, equals('real-d-tag'));
+          expect(videoEvent.vineId, equals('real-d-tag'));
+          expect(videoEvent.addressableDTag, equals('real-d-tag'));
+          expect(
+            videoEvent.addressableId,
+            equals('34236:event-pubkey:real-d-tag'),
+          );
+        },
+      );
+
+      test('parses d tag from explicit REST addressable id', () {
+        final stats = VideoStats.fromJson(const {
+          'event': {
+            'id': 'event-id',
+            'pubkey': 'event-pubkey',
+            'created_at': 1700000000,
+            'kind': 34236,
+            'addressableId': '34236:event-pubkey:real-d-tag',
+            'title': 'Compact Title',
+            'thumbnail': 'https://example.com/thumb.jpg',
+            'video_url': 'https://example.com/video.mp4',
+          },
+          'stats': {
+            'reactions': 0,
+            'comments': 0,
+            'reposts': 0,
+            'engagement_score': 0,
+          },
+        });
+
+        expect(stats.dTag, equals('real-d-tag'));
+        expect(stats.toVideoEvent().addressableDTag, equals('real-d-tag'));
+      });
+
+      test('prefers event d tag over a tag addressable references', () {
+        final stats = VideoStats.fromJson(const {
+          'id': 'event-id',
+          'pubkey': 'event-pubkey',
+          'created_at': 1700000000,
+          'kind': 34236,
+          'tags': [
+            ['a', '34236:other-pubkey:referenced-d-tag', '', 'mention'],
+            ['d', 'real-d-tag'],
+          ],
+          'thumbnail': 'https://example.com/thumb.jpg',
+          'video_url': 'https://example.com/video.mp4',
+          'reactions': 0,
+          'comments': 0,
+          'reposts': 0,
+          'engagement_score': 0,
+        });
+
+        expect(stats.dTag, equals('real-d-tag'));
+        expect(stats.toVideoEvent().addressableDTag, equals('real-d-tag'));
+      });
+
       test('parses published_at from tags instead of REST fields', () {
         final stats = VideoStats.fromJson(const {
           'id': 'abc123',
