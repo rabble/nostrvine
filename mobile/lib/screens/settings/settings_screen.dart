@@ -431,24 +431,36 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 if (nostrAppsSandboxSupported)
                   DivineListTile(
-                    leading: const Icon(Icons.apps),
+                    leading: Icon(
+                      Icons.apps,
+                      size: DivineIcon.scaleSize(context, 24),
+                    ),
                     title: context.l10n.settingsIntegratedApps,
                     subtitle: context.l10n.settingsIntegratedAppsSubtitle,
                     onTap: () => context.push(AppsDirectoryScreen.path),
                   ),
                 DivineListTile(
                   title: context.l10n.settingsLegal,
-                  leading: const Icon(Icons.gavel),
+                  leading: Icon(
+                    Icons.gavel,
+                    size: DivineIcon.scaleSize(context, 24),
+                  ),
                   onTap: () => context.push(LegalScreen.path),
                 ),
                 DivineListTile(
-                  leading: const Icon(Icons.lock_open),
+                  leading: Icon(
+                    Icons.lock_open,
+                    size: DivineIcon.scaleSize(context, 24),
+                  ),
                   title: context.l10n.settingsIntegrationPermissions,
                   subtitle: context.l10n.settingsIntegrationPermissionsSubtitle,
                   onTap: () => context.push(AppsPermissionsScreen.path),
                 ),
                 DivineListTile(
-                  leading: const Icon(Icons.science),
+                  leading: Icon(
+                    Icons.science,
+                    size: DivineIcon.scaleSize(context, 24),
+                  ),
                   title: context.l10n.settingsExperimentalFeatures,
                   subtitle: context.l10n.settingsExperimentalFeaturesSubtitle,
                   onTap: () => Navigator.push(

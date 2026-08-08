@@ -1,6 +1,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart' show AudioEvent;
+import 'package:openvine/constants/text_scale_limits.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/video_editor/video_audio_editor_timing_screen.dart';
@@ -92,72 +93,64 @@ class VideoEditorAudioChip extends StatelessWidget {
       tag: VideoEditorConstants.heroAudioChipId,
       child: Material(
         type: .transparency,
-        child: InkWell(
-          onTap: () => _selectAudio(context),
-          borderRadius: .circular(16),
-          child: Container(
-            constraints: const BoxConstraints(minHeight: 40),
-            padding: const .fromLTRB(16, 8, 8, 8),
-            decoration: ShapeDecoration(
-              color: VineTheme.scrim15,
-              shape: RoundedRectangleBorder(borderRadius: .circular(16)),
-            ),
-            child: Row(
-              mainAxisSize: .min,
-              mainAxisAlignment: .center,
-              children: [
-                const Row(
-                  spacing: 1.5,
-                  children: [
-                    _AudioBar(height: 7),
-                    _AudioBar(height: 16),
-                    _AudioBar(height: 13),
-                    _AudioBar(height: 7),
-                    _AudioBar(height: 10),
-                  ],
-                ),
-                Flexible(
-                  child: Padding(
-                    padding: const .symmetric(horizontal: 8),
-                    child: hasSelectedSound
-                        ? Text.rich(
-                            textScaler: TextScaler.noScaling,
-                            TextSpan(
-                              style: VineTheme.labelLargeFont(
+        child: MediaQuery.withClampedTextScaling(
+          maxScaleFactor: chipLabelTextScaleLimit,
+          child: InkWell(
+            onTap: () => _selectAudio(context),
+            borderRadius: .circular(16),
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 40),
+              padding: const .fromLTRB(16, 8, 8, 8),
+              decoration: ShapeDecoration(
+                color: VineTheme.scrim15,
+                shape: RoundedRectangleBorder(borderRadius: .circular(16)),
+              ),
+              child: Row(
+                mainAxisSize: .min,
+                mainAxisAlignment: .center,
+                children: [
+                  const _AudioBars(),
+                  Flexible(
+                    child: Padding(
+                      padding: const .symmetric(horizontal: 8),
+                      child: hasSelectedSound
+                          ? Text.rich(
+                              TextSpan(
+                                style: VineTheme.labelLargeFont(
+                                  color: VineTheme.whiteText,
+                                ),
+                                children: [
+                                  TextSpan(
+                                    text:
+                                        selectedSound?.title ??
+                                        context.l10n.videoEditorAudioUntitled,
+                                  ),
+                                  if (selectedSound?.source != null) ...[
+                                    const TextSpan(text: ' ∙ '),
+                                    TextSpan(
+                                      text: selectedSound!.source,
+                                      style: VineTheme.bodyMediumFont(
+                                        color: VineTheme.whiteText,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              textAlign: .center,
+                              maxLines: 1,
+                              overflow: .ellipsis,
+                            )
+                          : Text(
+                              context.l10n.videoEditorAudioAddAudio,
+                              textAlign: .center,
+                              style: VineTheme.titleMediumFont(
                                 color: VineTheme.whiteText,
                               ),
-                              children: [
-                                TextSpan(
-                                  text:
-                                      selectedSound?.title ??
-                                      context.l10n.videoEditorAudioUntitled,
-                                ),
-                                if (selectedSound?.source != null) ...[
-                                  const TextSpan(text: ' ∙ '),
-                                  TextSpan(
-                                    text: selectedSound!.source,
-                                    style: VineTheme.bodyMediumFont(
-                                      color: VineTheme.whiteText,
-                                    ),
-                                  ),
-                                ],
-                              ],
                             ),
-                            textAlign: .center,
-                            maxLines: 1,
-                            overflow: .ellipsis,
-                          )
-                        : Text(
-                            context.l10n.videoEditorAudioAddAudio,
-                            textAlign: .center,
-                            textScaler: TextScaler.noScaling,
-                            style: VineTheme.titleMediumFont(
-                              color: VineTheme.whiteText,
-                            ),
-                          ),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -166,17 +159,43 @@ class VideoEditorAudioChip extends StatelessWidget {
   }
 }
 
+/// The five-bar waveform glyph that stands in for an icon on the chip.
+///
+/// Its own build context sits below the chip's
+/// [MediaQuery.withClampedTextScaling], so reading the scaler here — rather
+/// than in the chip's `build` — is what keeps the bars inside the clamp the
+/// label beside them obeys.
+class _AudioBars extends StatelessWidget {
+  const _AudioBars();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      spacing: DivineIcon.scaleSize(context, 1.5),
+      children: const [
+        _AudioBar(height: 7),
+        _AudioBar(height: 16),
+        _AudioBar(height: 13),
+        _AudioBar(height: 7),
+        _AudioBar(height: 10),
+      ],
+    );
+  }
+}
+
 class _AudioBar extends StatelessWidget {
   const _AudioBar({required this.height});
 
+  /// Height at 1.0x text scale. Scaled here rather than by the caller so
+  /// the value stays inside the chip's clamped subtree.
   final double height;
 
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 150),
-      width: 2,
-      height: height,
+      width: DivineIcon.scaleSize(context, 2),
+      height: DivineIcon.scaleSize(context, height),
       decoration: BoxDecoration(
         color: VineTheme.whiteText,
         borderRadius: .circular(2),

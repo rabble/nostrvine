@@ -36,9 +36,13 @@ class ClassicVinersSlider extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
+              spacing: 8,
               children: [
-                const Icon(Icons.star, color: VineTheme.vineGreen, size: 20),
-                const SizedBox(width: 8),
+                Icon(
+                  Icons.star,
+                  color: VineTheme.vineGreen,
+                  size: DivineIcon.scaleSize(context, 20),
+                ),
                 Text(
                   context.l10n.classicVinersTitle,
                   style: VineTheme.titleSmallFont(
