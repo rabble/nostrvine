@@ -69,6 +69,18 @@ void main() {
     );
   });
 
+  test('assigns the same bucket regardless of hex casing', () {
+    final experiment = PostPublishExperiment(
+      flags: _FakeFlags(true),
+      analytics: _RecordingSink(),
+    );
+
+    expect(
+      experiment.variantForUser(treatmentPubkey.toUpperCase()),
+      experiment.variantForUser(treatmentPubkey),
+    );
+  });
+
   test('remote flag forces every user into control', () {
     final experiment = PostPublishExperiment(
       flags: _FakeFlags(false),

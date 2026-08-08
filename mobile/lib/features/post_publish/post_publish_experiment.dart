@@ -135,7 +135,12 @@ class PostPublishExperiment {
     if (!_flags.createAgainEnabled || pubkeyHex == null) {
       return PostPublishVariant.control;
     }
-    final assignmentByte = sha256.convert(utf8.encode(pubkeyHex)).bytes.first;
+    // Lowercased so a signer that returns uppercase hex cannot move the same
+    // account between buckets.
+    final assignmentByte = sha256
+        .convert(utf8.encode(pubkeyHex.toLowerCase()))
+        .bytes
+        .first;
     return assignmentByte < 128
         ? PostPublishVariant.control
         : PostPublishVariant.createAgain;
