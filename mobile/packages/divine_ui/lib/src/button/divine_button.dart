@@ -117,8 +117,10 @@ class DivineButton extends StatelessWidget {
   /// Optional accessibility label announced by screen readers.
   ///
   /// Needed for icon-only buttons (empty [label]), which otherwise present an
-  /// unlabeled tappable node. A labelled button already derives its accessible
-  /// name from [label] and doesn't need this.
+  /// unlabeled tappable node. On a labelled button this *replaces* [label] in
+  /// the semantics tree rather than adding to it, so pass it only when the
+  /// visible text is too terse to describe the action on its own — e.g. a
+  /// "Select" chip that enters clip-selection mode.
   final String? semanticLabel;
 
   /// Called when the button is tapped.
@@ -723,10 +725,7 @@ class DivineTextLink extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
-      child: Text(
-        text,
-        style: style ?? baseStyle,
-      ),
+      child: Text(text, style: style ?? baseStyle),
     );
   }
 }
