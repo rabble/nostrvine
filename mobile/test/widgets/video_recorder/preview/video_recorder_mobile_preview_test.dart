@@ -1,7 +1,8 @@
-import 'dart:ui' show SemanticsAction;
-
 import 'package:bloc_test/bloc_test.dart';
+import 'package:divine_camera/divine_camera.dart';
+import 'package:divine_camera/divine_camera_platform_interface.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -13,17 +14,54 @@ class _MockVideoRecorderBloc
     extends MockBloc<VideoRecorderEvent, VideoRecorderBlocState>
     implements VideoRecorderBloc {}
 
+/// Reports an initialized camera so [CameraPreviewWidget] renders its live
+/// texture and gesture detector. Without this it falls back to `loadingWidget`,
+/// which contributes no semantics at all — and then nothing in this file can
+/// tell an excluded preview from an unexcluded one.
+class _FakeCameraPlatform extends DivineCameraPlatform {
+  @override
+  void Function(VideoRecordingResult result)? onRecordingAutoStopped;
+
+  @override
+  void Function(RemoteRecordTrigger trigger)? onRemoteRecordTrigger;
+
+  @override
+  Future<CameraState> initializeCamera({
+    DivineCameraLens lens = DivineCameraLens.back,
+    DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
+    bool enableScreenFlash = true,
+    bool mirrorFrontCameraOutput = true,
+    bool enableAutoLensSwitch = false,
+  }) async {
+    return const CameraState(isInitialized: true, textureId: 1);
+  }
+
+  @override
+  Future<void> disposeCamera() async {}
+}
+
 void main() {
   group(VideoRecorderMobilePreview, () {
     final l10n = lookupAppLocalizations(const Locale('en'));
+    final initialPlatform = DivineCameraPlatform.instance;
 
     late _MockVideoRecorderBloc recorderBloc;
 
-    setUp(() {
+    setUp(() async {
       recorderBloc = _MockVideoRecorderBloc();
       when(() => recorderBloc.state).thenReturn(
         const VideoRecorderBlocState(),
       );
+      DivineCameraPlatform.instance = _FakeCameraPlatform();
+      await DivineCamera.instance.initialize();
+    });
+
+    tearDown(() async {
+      // Restore both process globals: the camera singleton's state and the
+      // platform instance. Either one left mutated leaks into every later
+      // suite in the merged isolate.
+      await DivineCamera.instance.dispose();
+      DivineCameraPlatform.instance = initialPlatform;
     });
 
     Widget buildSubject({required bool enableTapToFocus}) {
@@ -41,6 +79,13 @@ void main() {
       );
     }
 
+    /// The stops a screen reader would land on, narrowed to the tappable ones.
+    Iterable<SemanticsNode> tappableStops(WidgetTester tester) {
+      return tester.semantics.simulatedAccessibilityTraversal().where(
+        (n) => n.getSemanticsData().hasAction(SemanticsAction.tap),
+      );
+    }
+
     testWidgets('describes the camera preview and tap-to-focus action', (
       tester,
     ) async {
@@ -48,27 +93,24 @@ void main() {
       try {
         await tester.pumpWidget(buildSubject(enableTapToFocus: true));
 
-        final finder = find.bySemanticsLabel(
-          l10n.videoRecorderCameraPreviewLabel,
+        final node = tester.getSemantics(
+          find.bySemanticsLabel(l10n.videoRecorderCameraPreviewLabel),
         );
-        final node = tester.getSemantics(finder);
         final data = node.getSemanticsData();
-        final semantics = tester.widget<Semantics>(
-          find.descendant(
-            of: find.byType(VideoRecorderMobilePreview),
-            matching: find.byType(Semantics),
-          ),
-        );
 
         expect(data.label, l10n.videoRecorderCameraPreviewLabel);
+        expect(data.flagsCollection.isButton, isTrue);
         expect(data.hasAction(SemanticsAction.tap), isTrue);
-        expect(semantics.properties.button, isTrue);
         expect(
-          semantics.properties.hintOverrides?.onTapHint,
+          node.hintOverrides?.onTapHint,
           l10n.videoRecorderCameraPreviewFocusHint,
         );
 
-        semantics.properties.onTap!();
+        // The preview's own gesture detector is excluded, so the labeled node
+        // is the only tappable stop — the reader gets one, not two.
+        expect(tappableStops(tester), hasLength(1));
+
+        node.owner!.performAction(node.id, SemanticsAction.tap);
         verify(
           () => recorderBloc.add(
             const VideoRecorderFocusPointSet(Offset(0.5, 0.5)),
@@ -79,7 +121,7 @@ void main() {
       }
     });
 
-    testWidgets('does not expose a button when tap-to-focus is disabled', (
+    testWidgets('is not a traversal stop when tap-to-focus is disabled', (
       tester,
     ) async {
       final semanticsHandle = tester.ensureSemantics();
@@ -90,6 +132,9 @@ void main() {
           find.bySemanticsLabel(l10n.videoRecorderCameraPreviewLabel),
           findsNothing,
         );
+        // An inert preview still builds a tappable gesture detector, so this
+        // fails the moment the ExcludeSemantics around it is dropped.
+        expect(tappableStops(tester), isEmpty);
       } finally {
         semanticsHandle.dispose();
       }
