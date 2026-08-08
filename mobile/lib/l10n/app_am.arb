@@ -19,6 +19,7 @@
     "publishErrorLowStorage": "በመሣሪያዎ ላይ በቂ ማከማቻ የለም። ትንሽ ቦታ ነፃ ያድርጉ እና እንደገና ይሞክሩ።",
     "publishErrorThumbnailFailed": "ቪዲዮው ተሰቅሏል፣ ነገር ግን ድንክዬው ሊዘጋጅ አልቻለም። እባክዎ እንደገና ይሞክሩ።",
     "publishErrorNostrPublishFailed": "ቪዲዮው ተሰቅሏል ነገር ግን ልጥፉ ሊታተም አልቻለም። የቅብብሎሽ ቅንብሮችዎን ይፈትሹ እና እንደገና ይሞክሩ።",
+    "publishErrorAudioReuseNotPermitted": "ቪዲዮው ተሰቅሏል፣ ነገር ግን ድምፁ ለዳግም ጥቅም አልተፈቀደም። ለመለጠፍ ሌላ ድምፅ ይምረጡ።",
     "publishErrorInterrupted": "ይህ ስቀላ ተቋርጧል። እንደገና መሞከር ይፈልጋሉ?",
     "publishErrorAccountChanged": "ይህ ቪዲዮ የሌላ መለያ ነው። ለመለጠፍ ወደዚያ መለያ ተመለስ።",
     "publishErrorGeneric": "የሆነ ችግር ተፈጥሯል። እባክዎ እንደገና ይሞክሩ።",
@@ -2262,6 +2263,7 @@
     "userPickerSearchByName": "በስም ፈልግ",
     "userPickerFilterByNameHint": "በስም አጣራ...",
     "userPickerSearchByNameHint": "በስም ፈልግ...",
+    "userPickerClearSearchSemantics": "ፍለጋን አጽዳ",
     "userPickerAlreadyAddedSemantics": "{name} አስቀድሞ ታክሏል።",
     "@userPickerAlreadyAddedSemantics": {
         "placeholders": {
@@ -3083,6 +3085,8 @@
     "nostrAppPermissionAllow": "ፍቀድ",
     "bugReportSendReport": "ሪፖርት ላክ",
     "supportSubjectRequiredLabel": "ርዕስ *",
+    "supportPublicSubmissionTitle": "ይፋዊ የGitHub ልጥፍ",
+    "supportPublicSubmissionMessage": "እዚህ የምታስገባው ሁሉ ገንቢዎች እንዲሰሩበት በGitHub ላይ ባለው ክፍት ምንጭ ማከማቻችን ውስጥ ይለጠፋል። ልጥፉንና የገባህበትን መለያ ማንኛውም ሰው በይፋ ማየት ይችላል።",
     "supportRequiredHelper": "ያስፈልጋል",
     "bugReportSubjectHint": "የችግሩ አጭር ማጠቃለያ",
     "bugReportDescriptionRequiredLabel": "ምን ተከሰተ? *",
@@ -4555,6 +4559,8 @@
     "videoErrorAdultContentHiddenAction": "የይዘት ማጣሪያዎችን ክፈት",
     "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
     "videoDetailLoadError": "ቪዲዮ መጫን አልተሳካም",
+    "videoDetailLoadErrorBody": "እዚህ ሲደርስ የሆነ ችግር ተፈጥሯል። እንደገና ሞክር።",
+    "videoDetailNotFoundBody": "ተሰርዞ ሊሆን ይችላል፣ ከአቅም ውጭ ሊሆን ይችላል፣ ወይም በቅንብሮችህ ተደብቆ ሊሆን ይችላል።",
     "databaseCorruptionTitle": "የአካባቢዎ ውሂብ ተበላሽቷል",
     "databaseCorruptionBody": "Divine ን ዘግተው እንደገና ይክፈቱት — በራስ-ሰር እናስተካክለዋለን። የቻልነውን ያህል ረቂቆችዎን እና ክሊፖችዎን እናስቀራለን፣ የቀረው እንደገና ይጫናል።",
     "databaseCorruptionCloseButton": "Divine ን ዝጋ",

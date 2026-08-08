@@ -1522,6 +1522,13 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoDetailLoadError => 'ቪዲዮ መጫን አልተሳካም';
 
   @override
+  String get videoDetailLoadErrorBody => 'እዚህ ሲደርስ የሆነ ችግር ተፈጥሯል። እንደገና ሞክር።';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'ተሰርዞ ሊሆን ይችላል፣ ከአቅም ውጭ ሊሆን ይችላል፣ ወይም በቅንብሮችህ ተደብቆ ሊሆን ይችላል።';
+
+  @override
   String get databaseCorruptionTitle => 'የአካባቢዎ ውሂብ ተበላሽቷል';
 
   @override
@@ -4553,6 +4560,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get userPickerSearchByNameHint => 'በስም ፈልግ...';
 
   @override
+  String get userPickerClearSearchSemantics => 'ፍለጋን አጽዳ';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name አስቀድሞ ታክሏል።';
   }
@@ -7215,6 +7225,10 @@ class AppLocalizationsAm extends AppLocalizations {
       'ቪዲዮው ተሰቅሏል ነገር ግን ልጥፉ ሊታተም አልቻለም። የቅብብሎሽ ቅንብሮችዎን ይፈትሹ እና እንደገና ይሞክሩ።';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'ቪዲዮው ተሰቅሏል፣ ነገር ግን ድምፁ ለዳግም ጥቅም አልተፈቀደም። ለመለጠፍ ሌላ ድምፅ ይምረጡ።';
+
+  @override
   String get publishErrorInterrupted => 'ይህ ስቀላ ተቋርጧል። እንደገና መሞከር ይፈልጋሉ?';
 
   @override
@@ -7356,6 +7370,13 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'ርዕስ *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'ይፋዊ የGitHub ልጥፍ';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'እዚህ የምታስገባው ሁሉ ገንቢዎች እንዲሰሩበት በGitHub ላይ ባለው ክፍት ምንጭ ማከማቻችን ውስጥ ይለጠፋል። ልጥፉንና የገባህበትን መለያ ማንኛውም ሰው በይፋ ማየት ይችላል።';
 
   @override
   String get supportRequiredHelper => 'ያስፈልጋል';

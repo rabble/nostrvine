@@ -1580,6 +1580,13 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoDetailLoadError => 'Неуспешно зареждане на видеото';
 
   @override
+  String get videoDetailLoadErrorBody => 'Нещо се обърка по пътя. Опитай пак.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Може да е изтрито, да е извън обсега ни или да е скрито от твоите настройки.';
+
+  @override
   String get databaseCorruptionTitle => 'Локалните ти данни се повредиха';
 
   @override
@@ -4693,6 +4700,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Търсене по име...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Изчистване на търсенето';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name вече е добавен';
   }
@@ -7442,6 +7452,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Видеото се качи, но публикацията не можа да се пусне. Провери настройките за релета и опитай пак.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Видеото се качи, но звукът не е разрешен за повторна употреба. Избери друг звук, за да публикуваш.';
+
+  @override
   String get publishErrorInterrupted =>
       'Качването беше прекъснато. Искаш ли да опиташ пак?';
 
@@ -7585,6 +7599,13 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'Тема *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'Публична публикация в GitHub';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Всичко, което изпратиш тук, ще бъде публикувано в нашето хранилище с отворен код в GitHub, за да могат разработчиците да го поемат. Публикацията и профилът, с който си влязъл, ще бъдат видими за всички.';
 
   @override
   String get supportRequiredHelper => 'Задължително';

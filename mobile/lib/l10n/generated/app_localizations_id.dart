@@ -1521,6 +1521,14 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoDetailLoadError => 'Gagal memuat video';
 
   @override
+  String get videoDetailLoadErrorBody =>
+      'Ada yang meleset di jalan. Coba lagi, ya.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Mungkin sudah dihapus, di luar jangkauan, atau disembunyikan sama pengaturanmu.';
+
+  @override
   String get databaseCorruptionTitle => 'Data lokalmu rusak';
 
   @override
@@ -4603,6 +4611,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Cari berdasarkan nama...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Hapus pencarian';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name sudah ditambahkan';
   }
@@ -7326,6 +7337,10 @@ class AppLocalizationsId extends AppLocalizations {
       'Video berhasil diunggah, tapi posting tidak bisa dipublikasikan. Periksa pengaturan relay-mu dan coba lagi.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Video berhasil diunggah, tapi suaranya tidak diizinkan untuk dipakai ulang. Pilih suara lain untuk memposting.';
+
+  @override
   String get publishErrorInterrupted =>
       'Unggahan ini terganggu. Mau coba lagi?';
 
@@ -7469,6 +7484,13 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'Subjek *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'Kiriman GitHub publik';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Semua yang kamu kirim di sini akan diposting ke repositori sumber terbuka kami di GitHub agar pengembang dapat menanganinya. Kiriman tersebut dan akun yang kamu gunakan untuk masuk dapat dilihat secara publik oleh siapa saja.';
 
   @override
   String get supportRequiredHelper => 'Wajib';

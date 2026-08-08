@@ -19,6 +19,7 @@
     "publishErrorLowStorage": "端末の空き容量が足りないよ。容量を空けてもう一回試してみて。",
     "publishErrorThumbnailFailed": "動画はアップロードできたけど、サムネイルを準備できなかったよ。もう一回試してみて。",
     "publishErrorNostrPublishFailed": "動画はアップロードできたけど、投稿を公開できなかったよ。リレー設定を確認して、もう一回試してみて。",
+    "publishErrorAudioReuseNotPermitted": "動画はアップロードできたけど、この音源は再利用が許可されてないよ。別の音源を選んで投稿してね。",
     "publishErrorInterrupted": "アップロードが中断されたよ。もう一回試す？",
     "publishErrorAccountChanged": "この動画は別のアカウントのものだよ。投稿するにはそのアカウントに戻ってね。",
     "publishErrorGeneric": "問題が発生したよ。もう一回試してみて。",
@@ -1865,6 +1866,7 @@
     "userPickerSearchByName": "名前で検索",
     "userPickerFilterByNameHint": "名前で絞り込み...",
     "userPickerSearchByNameHint": "名前で検索...",
+    "userPickerClearSearchSemantics": "検索をクリア",
     "userPickerAlreadyAddedSemantics": "{name} はすでに追加済みです",
     "@userPickerAlreadyAddedSemantics": {
         "placeholders": {
@@ -3750,6 +3752,8 @@
     "nostrAppPermissionAllow": "許可",
     "bugReportSendReport": "レポートを送信",
     "supportSubjectRequiredLabel": "件名 *",
+    "supportPublicSubmissionTitle": "公開 GitHub 投稿",
+    "supportPublicSubmissionMessage": "ここで送信した内容はすべて、開発者が対応できるよう GitHub 上のオープンソースリポジトリに投稿されます。投稿とログイン中のアカウントは誰でも閲覧できます。",
     "supportRequiredHelper": "必須",
     "bugReportSubjectHint": "問題の概要",
     "bugReportDescriptionRequiredLabel": "何が起きた? *",
@@ -4430,6 +4434,8 @@
     "videoErrorAdultContentHiddenAction": "コンテンツフィルターを開く",
     "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
     "videoDetailLoadError": "動画の読み込みに失敗したよ",
+    "videoDetailLoadErrorBody": "途中で何かがうまくいきませんでした。もう一度お試しください。",
+    "videoDetailNotFoundBody": "削除されたか、こちらから届かないか、設定で非表示になっているのかもしれません。",
     "databaseCorruptionTitle": "ローカルデータが壊れちゃった",
     "databaseCorruptionBody": "Divine を閉じてもう一度開いてね。自動で直すよ。下書きとクリップはできるだけ残すよ。ほかは読み込み直すよ。",
     "databaseCorruptionCloseButton": "Divine を閉じる",

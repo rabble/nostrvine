@@ -1586,6 +1586,13 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoDetailLoadError => 'Hindi ma-load ang video';
 
   @override
+  String get videoDetailLoadErrorBody => 'May sumablay sa daan. Subukan ulit.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Baka nabura na, wala sa abot, o nakatago dahil sa mga setting mo.';
+
+  @override
   String get databaseCorruptionTitle => 'Nasira ang local data mo';
 
   @override
@@ -4709,6 +4716,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Hanapin ayon sa pangalan...';
 
   @override
+  String get userPickerClearSearchSemantics => 'I-clear ang paghahanap';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return 'Naidagdag na si $name';
   }
@@ -7454,6 +7464,10 @@ class AppLocalizationsFil extends AppLocalizations {
       'Na-upload ang video pero hindi na-publish ang post. Tingnan ang iyong relay settings at subukan ulit.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Na-upload ang video pero hindi pinapayagang gamitin ulit ang sound nito. Pumili ng ibang sound para makapag-post.';
+
+  @override
   String get publishErrorInterrupted =>
       'Naputol ang upload na ito. Gusto mo bang subukan ulit?';
 
@@ -7598,6 +7612,13 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'Subject *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'Pampublikong GitHub post';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Lahat ng isusumite mo rito ay ipo-post sa aming open-source repository sa GitHub para maasikaso ito ng mga developer. Makikita ng lahat ang post at ang account na ginamit mong mag-sign in.';
 
   @override
   String get supportRequiredHelper => 'Kailangan';

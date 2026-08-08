@@ -2772,6 +2772,18 @@ abstract class AppLocalizations {
   /// **'Failed to load video'**
   String get videoDetailLoadError;
 
+  /// Supporting copy under the 'Failed to load video' title on the shared-link video screen, shown next to a Retry button. Deliberately vague about the cause because the failure can be network, relay, or parsing.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went sideways on the way here. Give it another try.'**
+  String get videoDetailLoadErrorBody;
+
+  /// Supporting copy under the 'Video not found' title on the shared-link video screen. The screen shows this for three different causes it cannot tell apart: the video was deleted, it cannot be fetched from any connected relay, or it is hidden by a filter (a blocked or muted author, or the default-on Divine-hosted-only setting). It must not promise the video is gone for good, and it must not be read as covering only the first two.
+  ///
+  /// In en, this message translates to:
+  /// **'It could be gone, out of reach, or hidden by your settings.'**
+  String get videoDetailNotFoundBody;
+
   /// Title of the full-screen takeover shown when the local database reports on-disk corruption at runtime. 'Scrambled' is deliberately non-technical: the user did nothing wrong and cannot act on the real cause.
   ///
   /// In en, this message translates to:
@@ -8054,6 +8066,12 @@ abstract class AppLocalizations {
   /// **'Search by name...'**
   String get userPickerSearchByNameHint;
 
+  /// Semantic label for the button that clears the text in the user picker search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get userPickerClearSearchSemantics;
+
   /// No description provided for @userPickerAlreadyAddedSemantics.
   ///
   /// In en, this message translates to:
@@ -12785,6 +12803,12 @@ abstract class AppLocalizations {
   /// **'The video uploaded but the post could not be published. Check your relay settings and try again.'**
   String get publishErrorNostrPublishFailed;
 
+  /// No description provided for @publishErrorAudioReuseNotPermitted.
+  ///
+  /// In en, this message translates to:
+  /// **'The video uploaded, but its sound isn\'t cleared for reuse. Pick a different sound to post it.'**
+  String get publishErrorAudioReuseNotPermitted;
+
   /// No description provided for @publishErrorInterrupted.
   ///
   /// In en, this message translates to:
@@ -12985,6 +13009,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Subject *'**
   String get supportSubjectRequiredLabel;
+
+  /// No description provided for @supportPublicSubmissionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Public GitHub post'**
+  String get supportPublicSubmissionTitle;
+
+  /// No description provided for @supportPublicSubmissionMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything you submit here will be posted to our open-source repository on GitHub so developers can pick it up. Your post and the account you\'re signed in with will be publicly visible to everyone.'**
+  String get supportPublicSubmissionMessage;
 
   /// No description provided for @supportRequiredHelper.
   ///

@@ -743,6 +743,8 @@
   "videoErrorAdultContentHiddenAction": "Mở bộ lọc nội dung",
   "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
   "videoDetailLoadError": "Không thể tải video",
+  "videoDetailLoadErrorBody": "Có gì đó trục trặc trên đường tới đây. Thử lại nhé.",
+  "videoDetailNotFoundBody": "Có thể nó đã bị xoá, ngoài tầm với, hoặc bị ẩn bởi cài đặt của bạn.",
   "databaseCorruptionTitle": "Dữ liệu cục bộ của bạn bị rối tung",
   "@databaseCorruptionTitle": {
     "description": "Title of the full-screen takeover shown when the local database reports on-disk corruption at runtime. 'Scrambled' is deliberately non-technical: the user did nothing wrong and cannot act on the real cause."
@@ -2604,6 +2606,7 @@
   "userPickerSearchByName": "Tìm theo tên",
   "userPickerFilterByNameHint": "Lọc theo tên...",
   "userPickerSearchByNameHint": "Tìm theo tên...",
+  "userPickerClearSearchSemantics": "Xóa tìm kiếm",
   "userPickerAlreadyAddedSemantics": "{name} đã được thêm",
   "@userPickerAlreadyAddedSemantics": {
     "placeholders": {
@@ -4276,6 +4279,7 @@
   "publishErrorLowStorage": "Thiết bị của bạn không đủ dung lượng. Giải phóng bớt chỗ rồi thử lại nhé.",
   "publishErrorThumbnailFailed": "Video đã tải lên nhưng không chuẩn bị được ảnh thu nhỏ. Vui lòng thử lại.",
   "publishErrorNostrPublishFailed": "Video đã tải lên nhưng không đăng được bài. Kiểm tra cài đặt relay rồi thử lại.",
+  "publishErrorAudioReuseNotPermitted": "Video đã tải lên nhưng âm thanh này không được phép dùng lại. Chọn âm thanh khác để đăng nhé.",
   "publishErrorInterrupted": "Lần tải lên này đã bị gián đoạn. Bạn có muốn thử lại không?",
   "publishErrorAccountChanged": "Video này thuộc về một tài khoản khác. Chuyển lại tài khoản đó để đăng nhé.",
   "publishErrorGeneric": "Có gì đó không ổn. Vui lòng thử lại.",
@@ -4406,6 +4410,8 @@
   },
   "bugReportSendReport": "Gửi báo cáo",
   "supportSubjectRequiredLabel": "Chủ đề *",
+  "supportPublicSubmissionTitle": "Bài đăng GitHub công khai",
+  "supportPublicSubmissionMessage": "Mọi nội dung bạn gửi tại đây sẽ được đăng lên kho mã nguồn mở của chúng tôi trên GitHub để các nhà phát triển có thể xử lý. Bài đăng và tài khoản bạn đang đăng nhập sẽ hiển thị công khai với tất cả mọi người.",
   "supportRequiredHelper": "Bắt buộc",
   "bugReportSubjectHint": "Tóm tắt ngắn gọn vấn đề",
   "bugReportDescriptionRequiredLabel": "Chuyện gì đã xảy ra? *",

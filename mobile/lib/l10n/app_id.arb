@@ -19,6 +19,7 @@
     "publishErrorLowStorage": "Penyimpanan di perangkatmu tidak cukup. Kosongkan sedikit ruang lalu coba lagi.",
     "publishErrorThumbnailFailed": "Video berhasil diunggah, tapi thumbnail tidak bisa disiapkan. Silakan coba lagi.",
     "publishErrorNostrPublishFailed": "Video berhasil diunggah, tapi posting tidak bisa dipublikasikan. Periksa pengaturan relay-mu dan coba lagi.",
+    "publishErrorAudioReuseNotPermitted": "Video berhasil diunggah, tapi suaranya tidak diizinkan untuk dipakai ulang. Pilih suara lain untuk memposting.",
     "publishErrorInterrupted": "Unggahan ini terganggu. Mau coba lagi?",
     "publishErrorAccountChanged": "Video ini milik akun lain. Balik ke akun itu untuk mempostingnya.",
     "publishErrorGeneric": "Terjadi kesalahan. Silakan coba lagi.",
@@ -1872,6 +1873,7 @@
     "userPickerSearchByName": "Cari berdasarkan nama",
     "userPickerFilterByNameHint": "Filter berdasarkan nama...",
     "userPickerSearchByNameHint": "Cari berdasarkan nama...",
+    "userPickerClearSearchSemantics": "Hapus pencarian",
     "userPickerAlreadyAddedSemantics": "{name} sudah ditambahkan",
     "@userPickerAlreadyAddedSemantics": {
         "placeholders": {
@@ -3750,6 +3752,8 @@
     "nostrAppPermissionAllow": "Izinkan",
     "bugReportSendReport": "Kirim Laporan",
     "supportSubjectRequiredLabel": "Subjek *",
+    "supportPublicSubmissionTitle": "Kiriman GitHub publik",
+    "supportPublicSubmissionMessage": "Semua yang kamu kirim di sini akan diposting ke repositori sumber terbuka kami di GitHub agar pengembang dapat menanganinya. Kiriman tersebut dan akun yang kamu gunakan untuk masuk dapat dilihat secara publik oleh siapa saja.",
     "supportRequiredHelper": "Wajib",
     "bugReportSubjectHint": "Ringkasan singkat masalahnya",
     "bugReportDescriptionRequiredLabel": "Apa yang terjadi? *",
@@ -4430,6 +4434,8 @@
     "videoErrorAdultContentHiddenAction": "Buka Filter Konten",
     "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
     "videoDetailLoadError": "Gagal memuat video",
+    "videoDetailLoadErrorBody": "Ada yang meleset di jalan. Coba lagi, ya.",
+    "videoDetailNotFoundBody": "Mungkin sudah dihapus, di luar jangkauan, atau disembunyikan sama pengaturanmu.",
     "databaseCorruptionTitle": "Data lokalmu rusak",
     "databaseCorruptionBody": "Tutup Divine lalu buka lagi — kami perbaiki otomatis. Kami simpan draf dan klipmu semampu kami, sisanya dimuat ulang.",
     "databaseCorruptionCloseButton": "Tutup Divine",

@@ -19,6 +19,7 @@
   "publishErrorLowStorage": "Spazio insufficiente sul dispositivo. Libera un po' di spazio e riprova.",
   "publishErrorThumbnailFailed": "Il video è stato caricato, ma non è stato possibile preparare la miniatura. Riprova.",
   "publishErrorNostrPublishFailed": "Il video è stato caricato, ma non è stato possibile pubblicare il post. Controlla le impostazioni dei relay e riprova.",
+  "publishErrorAudioReuseNotPermitted": "Il video è stato caricato, ma il suo audio non è autorizzato al riutilizzo. Scegli un altro audio per pubblicare.",
   "publishErrorInterrupted": "Questo caricamento è stato interrotto. Vuoi riprovare?",
   "publishErrorAccountChanged": "Questo video appartiene a un altro account. Torna su quell'account per pubblicarlo.",
   "publishErrorGeneric": "Qualcosa è andato storto. Riprova.",
@@ -1875,6 +1876,7 @@
     "userPickerSearchByName": "Cerca per nome",
     "userPickerFilterByNameHint": "Filtra per nome...",
     "userPickerSearchByNameHint": "Cerca per nome...",
+    "userPickerClearSearchSemantics": "Cancella ricerca",
     "userPickerAlreadyAddedSemantics": "{name} già aggiunto",
     "@userPickerAlreadyAddedSemantics": {
         "placeholders": {
@@ -3750,6 +3752,8 @@
     "nostrAppPermissionAllow": "Consenti",
     "bugReportSendReport": "Invia segnalazione",
     "supportSubjectRequiredLabel": "Oggetto *",
+    "supportPublicSubmissionTitle": "Post pubblico su GitHub",
+    "supportPublicSubmissionMessage": "Tutto ciò che invii qui verrà pubblicato nel nostro repository open source su GitHub, così gli sviluppatori potranno occuparsene. Il post e l'account con cui hai effettuato l'accesso saranno visibili pubblicamente a tutti.",
     "supportRequiredHelper": "Obbligatorio",
     "bugReportSubjectHint": "Breve riassunto del problema",
     "bugReportDescriptionRequiredLabel": "Cos'è successo? *",
@@ -4430,6 +4434,8 @@
     "videoErrorAdultContentHiddenAction": "Apri filtri contenuti",
     "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
     "videoDetailLoadError": "Impossibile caricare il video",
+    "videoDetailLoadErrorBody": "Qualcosa è andato storto lungo la strada. Riprova.",
+    "videoDetailNotFoundBody": "Forse è stato eliminato, non è raggiungibile o è nascosto dalle tue impostazioni.",
     "databaseCorruptionTitle": "I tuoi dati locali si sono rovinati",
     "databaseCorruptionBody": "Chiudi Divine e riaprila: sistemiamo tutto in automatico. Salviamo quello che possiamo delle tue bozze e clip, il resto si ricarica.",
     "databaseCorruptionCloseButton": "Chiudi Divine",

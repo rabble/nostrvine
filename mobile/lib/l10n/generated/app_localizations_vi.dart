@@ -1562,6 +1562,14 @@ class AppLocalizationsVi extends AppLocalizations {
   String get videoDetailLoadError => 'Không thể tải video';
 
   @override
+  String get videoDetailLoadErrorBody =>
+      'Có gì đó trục trặc trên đường tới đây. Thử lại nhé.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Có thể nó đã bị xoá, ngoài tầm với, hoặc bị ẩn bởi cài đặt của bạn.';
+
+  @override
   String get databaseCorruptionTitle => 'Dữ liệu cục bộ của bạn bị rối tung';
 
   @override
@@ -4648,6 +4656,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Tìm theo tên...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Xóa tìm kiếm';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name đã được thêm';
   }
@@ -7376,6 +7387,10 @@ class AppLocalizationsVi extends AppLocalizations {
       'Video đã tải lên nhưng không đăng được bài. Kiểm tra cài đặt relay rồi thử lại.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Video đã tải lên nhưng âm thanh này không được phép dùng lại. Chọn âm thanh khác để đăng nhé.';
+
+  @override
   String get publishErrorInterrupted =>
       'Lần tải lên này đã bị gián đoạn. Bạn có muốn thử lại không?';
 
@@ -7519,6 +7534,13 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'Chủ đề *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'Bài đăng GitHub công khai';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Mọi nội dung bạn gửi tại đây sẽ được đăng lên kho mã nguồn mở của chúng tôi trên GitHub để các nhà phát triển có thể xử lý. Bài đăng và tài khoản bạn đang đăng nhập sẽ hiển thị công khai với tất cả mọi người.';
 
   @override
   String get supportRequiredHelper => 'Bắt buộc';

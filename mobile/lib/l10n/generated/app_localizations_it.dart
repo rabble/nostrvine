@@ -1581,6 +1581,14 @@ class AppLocalizationsIt extends AppLocalizations {
   String get videoDetailLoadError => 'Impossibile caricare il video';
 
   @override
+  String get videoDetailLoadErrorBody =>
+      'Qualcosa è andato storto lungo la strada. Riprova.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Forse è stato eliminato, non è raggiungibile o è nascosto dalle tue impostazioni.';
+
+  @override
   String get databaseCorruptionTitle => 'I tuoi dati locali si sono rovinati';
 
   @override
@@ -4697,6 +4705,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Cerca per nome...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Cancella ricerca';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name già aggiunto';
   }
@@ -7441,6 +7452,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Il video è stato caricato, ma non è stato possibile pubblicare il post. Controlla le impostazioni dei relay e riprova.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Il video è stato caricato, ma il suo audio non è autorizzato al riutilizzo. Scegli un altro audio per pubblicare.';
+
+  @override
   String get publishErrorInterrupted =>
       'Questo caricamento è stato interrotto. Vuoi riprovare?';
 
@@ -7584,6 +7599,13 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'Oggetto *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'Post pubblico su GitHub';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Tutto ciò che invii qui verrà pubblicato nel nostro repository open source su GitHub, così gli sviluppatori potranno occuparsene. Il post e l\'account con cui hai effettuato l\'accesso saranno visibili pubblicamente a tutti.';
 
   @override
   String get supportRequiredHelper => 'Obbligatorio';

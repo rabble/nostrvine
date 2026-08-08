@@ -13,6 +13,18 @@ import 'package:openvine/screens/feed/home_feed_retap_cubit.dart';
 class _FakeGoRouterState extends Fake implements GoRouterState {
   @override
   ValueKey<String> get pageKey => const ValueKey('shell');
+
+  @override
+  String? get name => 'home';
+
+  @override
+  String? get path => '/home';
+
+  @override
+  Map<String, String> get pathParameters => const {'tab': 'feed'};
+
+  @override
+  Uri get uri => Uri.parse('/home?source=startup');
 }
 
 class _FakeNavigationShell extends Fake
@@ -57,6 +69,14 @@ void main() {
       expect(transitionPage.transitionDuration, Duration.zero);
       expect(transitionPage.reverseTransitionDuration, Duration.zero);
       expect(transitionPage.key, const ValueKey('shell'));
+      // Page metadata feeds PageLoadObserver; without it the shell route
+      // reports as an unnamed page and startup navigations go untracked.
+      expect(transitionPage.name, 'home');
+      expect(transitionPage.restorationId, 'shell');
+      expect(transitionPage.arguments, <String, String>{
+        'tab': 'feed',
+        'source': 'startup',
+      });
       // The retap cubit wraps AppShell so the bottom nav and the home
       // branch's feed share one instance (see shell.dart).
       expect(transitionPage.child, isA<BlocProvider<HomeFeedRetapCubit>>());

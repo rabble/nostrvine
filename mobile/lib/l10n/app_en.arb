@@ -829,6 +829,14 @@
     "description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."
   },
   "videoDetailLoadError": "Failed to load video",
+  "videoDetailLoadErrorBody": "Something went sideways on the way here. Give it another try.",
+  "@videoDetailLoadErrorBody": {
+    "description": "Supporting copy under the 'Failed to load video' title on the shared-link video screen, shown next to a Retry button. Deliberately vague about the cause because the failure can be network, relay, or parsing."
+  },
+  "videoDetailNotFoundBody": "It could be gone, out of reach, or hidden by your settings.",
+  "@videoDetailNotFoundBody": {
+    "description": "Supporting copy under the 'Video not found' title on the shared-link video screen. The screen shows this for three different causes it cannot tell apart: the video was deleted, it cannot be fetched from any connected relay, or it is hidden by a filter (a blocked or muted author, or the default-on Divine-hosted-only setting). It must not promise the video is gone for good, and it must not be read as covering only the first two."
+  },
   "databaseCorruptionTitle": "Your local data got scrambled",
   "@databaseCorruptionTitle": {
     "description": "Title of the full-screen takeover shown when the local database reports on-disk corruption at runtime. 'Scrambled' is deliberately non-technical: the user did nothing wrong and cannot act on the real cause."
@@ -2753,6 +2761,10 @@
   "userPickerSearchByName": "Search by name",
   "userPickerFilterByNameHint": "Filter by name...",
   "userPickerSearchByNameHint": "Search by name...",
+  "userPickerClearSearchSemantics": "Clear search",
+  "@userPickerClearSearchSemantics": {
+    "description": "Semantic label for the button that clears the text in the user picker search field."
+  },
   "userPickerAlreadyAddedSemantics": "{name} already added",
   "@userPickerAlreadyAddedSemantics": {
     "placeholders": {
@@ -4315,6 +4327,7 @@
   "publishErrorLowStorage": "Not enough storage on your device. Free up some space and try again.",
   "publishErrorThumbnailFailed": "The video uploaded, but the thumbnail could not be prepared. Please try again.",
   "publishErrorNostrPublishFailed": "The video uploaded but the post could not be published. Check your relay settings and try again.",
+  "publishErrorAudioReuseNotPermitted": "The video uploaded, but its sound isn't cleared for reuse. Pick a different sound to post it.",
   "publishErrorInterrupted": "This upload was interrupted. Would you like to try again?",
   "publishErrorAccountChanged": "This video belongs to a different account. Switch back to that account to post it.",
   "publishErrorGeneric": "Something went wrong. Please try again.",
@@ -4361,6 +4374,8 @@
   "@inspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
   "bugReportSendReport": "Send Report",
   "supportSubjectRequiredLabel": "Subject *",
+  "supportPublicSubmissionTitle": "Public GitHub post",
+  "supportPublicSubmissionMessage": "Everything you submit here will be posted to our open-source repository on GitHub so developers can pick it up. Your post and the account you're signed in with will be publicly visible to everyone.",
   "supportRequiredHelper": "Required",
   "bugReportSubjectHint": "Brief summary of the issue",
   "bugReportDescriptionRequiredLabel": "What happened? *",

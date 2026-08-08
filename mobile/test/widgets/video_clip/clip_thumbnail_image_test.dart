@@ -8,6 +8,16 @@ import 'package:openvine/widgets/video_clip/clip_thumbnail_image.dart';
 
 void main() {
   group(ClipThumbnailImage, () {
+    // Every test here resolves a deliberately missing file, and a failed
+    // resolution stays in the process-global cache. Under the merged-isolate
+    // test run that entry would outlive this file and deliver the error
+    // before the first build of any later test using the same path.
+    tearDown(() {
+      PaintingBinding.instance.imageCache
+        ..clear()
+        ..clearLiveImages();
+    });
+
     Future<void> pumpMissingThumbnail(
       WidgetTester tester, {
       Widget? placeholder,
@@ -56,5 +66,40 @@ void main() {
       expect(find.byKey(marker), findsOneWidget);
       expect(find.byType(DivineIcon), findsNothing);
     });
+
+    testWidgets(
+      'wraps the image with frameBuilder while decoding, and drops it for '
+      'the placeholder once decoding fails',
+      (tester) async {
+        const marker = Key('frame-builder');
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 120,
+                height: 120,
+                child: ClipThumbnailImage(
+                  path: '/nonexistent/container/frame_builder_probe.jpg',
+                  placeholder: const SizedBox.shrink(),
+                  frameBuilder: (context, child, frame, _) =>
+                      SizedBox(key: marker, child: child),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(find.byKey(marker), findsOneWidget);
+
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 100)),
+        );
+        await tester.pump();
+
+        expect(tester.takeException(), isNull);
+        expect(find.byKey(marker), findsNothing);
+      },
+    );
   });
 }

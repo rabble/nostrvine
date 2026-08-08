@@ -19,6 +19,7 @@
     "publishErrorLowStorage": "Nicht genug Speicher auf deinem Gerät. Schaffe etwas Platz und versuch es erneut.",
     "publishErrorThumbnailFailed": "Das Video wurde hochgeladen, aber das Vorschaubild konnte nicht erstellt werden. Bitte versuch es erneut.",
     "publishErrorNostrPublishFailed": "Das Video wurde hochgeladen, aber der Beitrag konnte nicht veröffentlicht werden. Prüfe deine Relay-Einstellungen und versuch es erneut.",
+    "publishErrorAudioReuseNotPermitted": "Das Video wurde hochgeladen, aber der Sound ist nicht zur Wiederverwendung freigegeben. Wähl einen anderen Sound, um zu posten.",
     "publishErrorInterrupted": "Dieser Upload wurde unterbrochen. Möchtest du es erneut versuchen?",
     "publishErrorAccountChanged": "Dieses Video gehört zu einem anderen Konto. Wechsle zurück zu diesem Konto, um es zu posten.",
     "publishErrorGeneric": "Etwas ist schiefgelaufen. Bitte versuch es erneut.",
@@ -1875,6 +1876,7 @@
     "userPickerSearchByName": "Nach Namen suchen",
     "userPickerFilterByNameHint": "Nach Namen filtern...",
     "userPickerSearchByNameHint": "Nach Namen suchen...",
+    "userPickerClearSearchSemantics": "Suche löschen",
     "userPickerAlreadyAddedSemantics": "{name} bereits hinzugefügt",
     "@userPickerAlreadyAddedSemantics": {
         "placeholders": {
@@ -3750,6 +3752,8 @@
     "nostrAppPermissionAllow": "Erlauben",
     "bugReportSendReport": "Bericht senden",
     "supportSubjectRequiredLabel": "Betreff *",
+    "supportPublicSubmissionTitle": "Öffentlicher GitHub-Beitrag",
+    "supportPublicSubmissionMessage": "Alles, was du hier sendest, wird in unserem Open-Source-Repository auf GitHub veröffentlicht, damit Entwickler den Task aufnehmen können. Der Beitrag und das Konto, mit dem du angemeldet bist, sind für alle öffentlich einsehbar.",
     "supportRequiredHelper": "Pflichtfeld",
     "bugReportSubjectHint": "Kurze Zusammenfassung des Problems",
     "bugReportDescriptionRequiredLabel": "Was ist passiert? *",
@@ -4430,6 +4434,8 @@
     "videoErrorAdultContentHiddenAction": "Inhaltsfilter öffnen",
     "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
     "videoDetailLoadError": "Video konnte nicht geladen werden",
+    "videoDetailLoadErrorBody": "Auf dem Weg hierher ist was schiefgelaufen. Probier's nochmal.",
+    "videoDetailNotFoundBody": "Vielleicht ist es gelöscht, gerade nicht erreichbar oder durch deine Einstellungen ausgeblendet.",
     "databaseCorruptionTitle": "Deine lokalen Daten sind beschädigt",
     "databaseCorruptionBody": "Schließ Divine und öffne es neu — wir reparieren das automatisch. Wir retten so viel wie möglich von deinen Entwürfen und Clips, alles andere lädt neu.",
     "databaseCorruptionCloseButton": "Divine schließen",

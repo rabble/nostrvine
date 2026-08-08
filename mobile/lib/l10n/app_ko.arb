@@ -19,6 +19,7 @@
     "publishErrorLowStorage": "기기에 저장 공간이 부족해요. 공간을 좀 확보하고 다시 시도해주세요.",
     "publishErrorThumbnailFailed": "영상은 업로드됐지만 썸네일을 준비하지 못했어요. 다시 시도해주세요.",
     "publishErrorNostrPublishFailed": "영상은 업로드됐지만 게시물을 올리지 못했어요. 릴레이 설정을 확인하고 다시 시도해주세요.",
+    "publishErrorAudioReuseNotPermitted": "영상은 업로드됐지만 이 사운드는 재사용이 허용되지 않았어요. 다른 사운드를 골라서 올려주세요.",
     "publishErrorInterrupted": "업로드가 중단됐어요. 다시 시도할까요?",
     "publishErrorAccountChanged": "이 영상은 다른 계정 거예요. 올리려면 그 계정으로 다시 전환해 주세요.",
     "publishErrorGeneric": "문제가 생겼어요. 다시 시도해주세요.",
@@ -1203,6 +1204,7 @@
     "userPickerSearchByName": "이름으로 검색",
     "userPickerFilterByNameHint": "이름으로 필터링...",
     "userPickerSearchByNameHint": "이름으로 검색...",
+    "userPickerClearSearchSemantics": "검색 지우기",
     "userPickerAlreadyAddedSemantics": "{name} 이미 추가됨",
     "@userPickerAlreadyAddedSemantics": {
         "placeholders": {
@@ -3088,6 +3090,8 @@
     "nostrAppPermissionAllow": "허용",
     "bugReportSendReport": "신고 보내기",
     "supportSubjectRequiredLabel": "제목 *",
+    "supportPublicSubmissionTitle": "공개 GitHub 게시물",
+    "supportPublicSubmissionMessage": "여기에 제출하는 모든 내용은 개발자가 작업을 맡을 수 있도록 GitHub의 오픈 소스 저장소에 게시됩니다. 게시물과 로그인한 계정은 누구나 공개적으로 볼 수 있습니다.",
     "supportRequiredHelper": "필수",
     "bugReportSubjectHint": "문제를 짧게 요약해주세요",
     "bugReportDescriptionRequiredLabel": "무슨 일이 있었나요? *",
@@ -3761,6 +3765,8 @@
     "videoErrorAdultContentHiddenAction": "콘텐츠 필터 열기",
     "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
     "videoDetailLoadError": "영상을 불러오지 못했어요",
+    "videoDetailLoadErrorBody": "오는 길에 뭔가 어긋났어요. 다시 시도해 보세요.",
+    "videoDetailNotFoundBody": "삭제됐거나, 닿을 수 없는 곳에 있거나, 설정 때문에 숨겨진 걸 수도 있어요.",
     "databaseCorruptionTitle": "로컬 데이터가 손상됐어요",
     "databaseCorruptionBody": "Divine을 껐다가 다시 열어주세요. 자동으로 고쳐드릴게요. 초안과 클립은 최대한 살려볼게요. 나머지는 다시 불러와요.",
     "databaseCorruptionCloseButton": "Divine 닫기",

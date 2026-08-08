@@ -1,0 +1,80 @@
+name: "Editorial Warmth"
+description: "Documentary-style photography with warm, human focus. Think National Geographic meets Kinfolk magazine."
+
+photography:
+  style: documentary
+  subjects:
+    preferred:
+      - hands at work
+      - candid faces in concentration
+      - real working environments
+      - natural textures and materials
+      - authentic moments (not staged)
+    avoid:
+      - posed corporate groups
+      - empty handshakes
+      - obvious stock setups
+      - sterile office environments
+      - people pointing at screens
+  lighting:
+    preferred: natural, soft, golden hour, window light
+    avoid: harsh flash, overly lit studio setups
+  composition:
+    - off-center subjects (rule of thirds)
+    - generous negative space
+    - shallow depth of field for intimacy
+    - environmental context visible
+  color:
+    treatment: warm shift, slightly desaturated, film-like
+    palette_anchors:
+      - "#D4A574"  # warm tan
+      - "#8B7355"  # muted brown
+      - "#F5E6D3"  # cream
+      - "#5C4033"  # deep brown
+
+mood:
+  primary: quiet confidence
+  supporting:
+    - authenticity
+    - warmth
+    - craftsmanship
+    - trust
+  energy: calm, contemplative
+
+lens_preferences:
+  default_order:
+    - human
+    - environmental
+    - literal
+    - metaphorical
+    - oblique
+  weight_toward: human
+  notes: "Prioritize candid human moments. Use environmental for transitions and breathing room."
+
+cliche_blacklist:
+  universal:
+    - handshake silhouette
+    - lightbulb = idea
+    - puzzle pieces connecting
+    - person on mountain summit
+    - hands holding globe
+    - diverse team pointing at whiteboard
+    - plant sprouting = growth
+    - rocket launching
+    - chess pieces = strategy
+    - maze = complexity
+  brand_specific:
+    - blue corporate tones
+    - glass building reflections
+    - sterile white backgrounds
+    - overly cheerful stock smiles
+
+ai_prompt_suffixes:
+  photography: "documentary photography, natural lighting, warm tones, Kodak Portra 400 film grain, shallow depth of field --ar 16:9 --style raw"
+  illustration: "editorial illustration style, muted warm palette, subtle paper texture, hand-drawn feel"
+
+reference_touchstones:
+  - "National Geographic documentary photography"
+  - "Kinfolk magazine aesthetic"
+  - "Patagonia brand imagery"
+  - "Apple 'Shot on iPhone' campaign naturalism"

@@ -1523,6 +1523,14 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoDetailLoadError => 'Video yüklenemedi';
 
   @override
+  String get videoDetailLoadErrorBody =>
+      'Yolda bir şeyler ters gitti. Bir daha dene.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Silinmiş, ulaşılamıyor ya da ayarların yüzünden gizlenmiş olabilir.';
+
+  @override
   String get databaseCorruptionTitle => 'Yerel verilerin bozuldu';
 
   @override
@@ -4613,6 +4621,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Ada göre ara...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Aramayı temizle';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name zaten eklendi';
   }
@@ -7327,6 +7338,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Video yüklendi ama gönderi yayınlanamadı. Röle ayarlarını kontrol edip tekrar dene.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Video yüklendi ama bu ses yeniden kullanıma açık değil. Paylaşmak için başka bir ses seç.';
+
+  @override
   String get publishErrorInterrupted =>
       'Bu yükleme yarıda kaldı. Tekrar denemek ister misin?';
 
@@ -7471,6 +7486,13 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'Konu *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'Herkese açık GitHub gönderisi';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Buraya gönderdiğin her şey, geliştiricilerin ilgilenebilmesi için GitHub\'daki açık kaynak depomuzda yayınlanacak. Gönderi ve giriş yaptığın hesap herkes tarafından görülebilecek.';
 
   @override
   String get supportRequiredHelper => 'Zorunlu';

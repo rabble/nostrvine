@@ -19,6 +19,7 @@
     "publishErrorLowStorage": "Za mało miejsca w pamięci urządzenia. Zwolnij trochę miejsca i spróbuj ponownie.",
     "publishErrorThumbnailFailed": "Film został przesłany, ale nie udało się przygotować miniatury. Spróbuj ponownie.",
     "publishErrorNostrPublishFailed": "Film został przesłany, ale nie udało się opublikować posta. Sprawdź ustawienia przekaźników i spróbuj ponownie.",
+    "publishErrorAudioReuseNotPermitted": "Film został przesłany, ale ten dźwięk nie jest dopuszczony do ponownego użycia. Wybierz inny dźwięk, żeby opublikować.",
     "publishErrorInterrupted": "Przesyłanie zostało przerwane. Chcesz spróbować ponownie?",
     "publishErrorAccountChanged": "Ten film należy do innego konta. Wróć na tamto konto, żeby go opublikować.",
     "publishErrorGeneric": "Coś poszło nie tak. Spróbuj ponownie.",
@@ -1875,6 +1876,7 @@
     "userPickerSearchByName": "Szukaj po nazwie",
     "userPickerFilterByNameHint": "Filtruj po nazwie...",
     "userPickerSearchByNameHint": "Szukaj po nazwie...",
+    "userPickerClearSearchSemantics": "Wyczyść wyszukiwanie",
     "userPickerAlreadyAddedSemantics": "{name} już dodano",
     "@userPickerAlreadyAddedSemantics": {
         "placeholders": {
@@ -3750,6 +3752,8 @@
     "nostrAppPermissionAllow": "Zezwól",
     "bugReportSendReport": "Wyślij zgłoszenie",
     "supportSubjectRequiredLabel": "Temat *",
+    "supportPublicSubmissionTitle": "Publiczny wpis na GitHubie",
+    "supportPublicSubmissionMessage": "Wszystko, co tu prześlesz, zostanie opublikowane w naszym repozytorium open source na GitHubie, aby deweloperzy mogli się tym zająć. Wpis oraz konto, na które jesteś zalogowany, będą publicznie widoczne dla wszystkich.",
     "supportRequiredHelper": "Wymagane",
     "bugReportSubjectHint": "Krótkie podsumowanie problemu",
     "bugReportDescriptionRequiredLabel": "Co się stało? *",
@@ -4430,6 +4434,8 @@
     "videoErrorAdultContentHiddenAction": "Otwórz filtry treści",
     "@videoErrorAdultContentHiddenAction": {"description": "Primary button on the adult-content-hidden sheet; opens the Content Filters settings screen."},
     "videoDetailLoadError": "Nie udało się wczytać filmu",
+    "videoDetailLoadErrorBody": "Coś poszło nie tak po drodze. Spróbuj jeszcze raz.",
+    "videoDetailNotFoundBody": "Mógł zostać usunięty, być poza zasięgiem albo ukryty przez twoje ustawienia.",
     "databaseCorruptionTitle": "Twoje lokalne dane się uszkodziły",
     "databaseCorruptionBody": "Zamknij Divine i otwórz ponownie — naprawimy to automatycznie. Zachowamy tyle Twoich szkiców i klipów, ile się da, reszta wczyta się na nowo.",
     "databaseCorruptionCloseButton": "Zamknij Divine",

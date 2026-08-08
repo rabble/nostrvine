@@ -1575,6 +1575,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoDetailLoadError => 'Video konnte nicht geladen werden';
 
   @override
+  String get videoDetailLoadErrorBody =>
+      'Auf dem Weg hierher ist was schiefgelaufen. Probier\'s nochmal.';
+
+  @override
+  String get videoDetailNotFoundBody =>
+      'Vielleicht ist es gelöscht, gerade nicht erreichbar oder durch deine Einstellungen ausgeblendet.';
+
+  @override
   String get databaseCorruptionTitle => 'Deine lokalen Daten sind beschädigt';
 
   @override
@@ -4700,6 +4708,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get userPickerSearchByNameHint => 'Nach Namen suchen...';
 
   @override
+  String get userPickerClearSearchSemantics => 'Suche löschen';
+
+  @override
   String userPickerAlreadyAddedSemantics(String name) {
     return '$name bereits hinzugefügt';
   }
@@ -7456,6 +7467,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Das Video wurde hochgeladen, aber der Beitrag konnte nicht veröffentlicht werden. Prüfe deine Relay-Einstellungen und versuch es erneut.';
 
   @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Das Video wurde hochgeladen, aber der Sound ist nicht zur Wiederverwendung freigegeben. Wähl einen anderen Sound, um zu posten.';
+
+  @override
   String get publishErrorInterrupted =>
       'Dieser Upload wurde unterbrochen. Möchtest du es erneut versuchen?';
 
@@ -7601,6 +7616,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get supportSubjectRequiredLabel => 'Betreff *';
+
+  @override
+  String get supportPublicSubmissionTitle => 'Öffentlicher GitHub-Beitrag';
+
+  @override
+  String get supportPublicSubmissionMessage =>
+      'Alles, was du hier sendest, wird in unserem Open-Source-Repository auf GitHub veröffentlicht, damit Entwickler den Task aufnehmen können. Der Beitrag und das Konto, mit dem du angemeldet bist, sind für alle öffentlich einsehbar.';
 
   @override
   String get supportRequiredHelper => 'Pflichtfeld';

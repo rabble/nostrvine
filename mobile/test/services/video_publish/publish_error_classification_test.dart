@@ -5,6 +5,7 @@ import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/exceptions/video_exceptions.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_publish/publish_error_kind.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
@@ -12,6 +13,57 @@ import 'package:openvine/services/video_publish/video_publish_service.dart';
 class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
 void main() {
+  group('classifyPublishErrorObject', () {
+    test('maps a withheld-sound refusal to its own kind', () {
+      expect(
+        VideoPublishService.classifyPublishErrorObject(
+          AudioReuseNotPermittedException('b' * 64),
+        ),
+        PublishErrorKind.audioReuseNotPermitted,
+      );
+    });
+
+    test('returns null for an untyped error', () {
+      expect(
+        VideoPublishService.classifyPublishErrorObject(
+          Exception('Failed to publish Nostr event'),
+        ),
+        isNull,
+      );
+    });
+
+    // Why the type branch has to run first: the refusal's message carries a
+    // 64-hex Nostr id, and hex digits cover every HTTP status the substring
+    // matcher looks for. Roughly one id in nine contains one of them.
+    // `video_publish_service_test.dart` pins the resulting precedence through
+    // the full publish path.
+    test('substring matcher reads an HTTP status out of a hex audio id', () {
+      const collisions = <String, PublishErrorKind>{
+        '404': PublishErrorKind.serverNotFound,
+        '500': PublishErrorKind.serverInternalError,
+        '502': PublishErrorKind.serverDown,
+        '503': PublishErrorKind.serverDown,
+        '401': PublishErrorKind.notSignedIn,
+        '403': PublishErrorKind.forbidden,
+        '413': PublishErrorKind.fileTooLarge,
+        '429': PublishErrorKind.rateLimited,
+      };
+
+      for (final MapEntry(key: digits, value: kind) in collisions.entries) {
+        final refusal = AudioReuseNotPermittedException('$digits${'b' * 61}');
+        expect(
+          VideoPublishService.classifyPublishErrorMessage(refusal.toString()),
+          kind,
+          reason: 'an audio id containing $digits must be caught by type first',
+        );
+        expect(
+          VideoPublishService.classifyPublishErrorObject(refusal),
+          PublishErrorKind.audioReuseNotPermitted,
+        );
+      }
+    });
+  });
+
   group('classifyPublishErrorMessage', () {
     test('maps raw technical exceptions to their kind', () {
       const cases = <String, PublishErrorKind>{
