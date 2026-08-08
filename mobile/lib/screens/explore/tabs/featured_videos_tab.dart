@@ -1,6 +1,7 @@
 // ABOUTME: Explore tab rendering one server-configured featured collection.
 // ABOUTME: Renders the server's order verbatim — no client sorting or filtering.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -100,9 +101,10 @@ class _FeaturedRetry extends StatelessWidget {
         spacing: 12,
         children: [
           Text(context.l10n.featuredTabLoadFailed),
-          TextButton(
+          DivineButton(
+            label: context.l10n.featuredTabRetry,
+            type: DivineButtonType.secondary,
             onPressed: context.read<FeaturedTabVideosCubit>().load,
-            child: Text(context.l10n.featuredTabRetry),
           ),
         ],
       ),
