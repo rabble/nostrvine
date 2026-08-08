@@ -545,14 +545,17 @@ class _UserSearchTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textColor = context.vineColors.onSurface;
+    final action = isDisabled
+        ? context.l10n.userPickerAlreadyAddedSemantics(profile.bestDisplayName)
+        : context.l10n.userPickerSelectSemantics(profile.bestDisplayName);
+    final nip05 = profile.nip05;
 
     return Semantics(
       button: true,
-      label: isDisabled
-          ? context.l10n.userPickerAlreadyAddedSemantics(
-              profile.bestDisplayName,
-            )
-          : context.l10n.userPickerSelectSemantics(profile.bestDisplayName),
+      // The rendered nip05 is what tells two same-named users apart, so it
+      // rides along with the action instead of being dropped by the
+      // ExcludeSemantics below.
+      label: nip05 != null && nip05.isNotEmpty ? '$action. $nip05' : action,
       child: GestureDetector(
         behavior: HitTestBehavior.translucent,
         onTap: isDisabled ? null : onTap,

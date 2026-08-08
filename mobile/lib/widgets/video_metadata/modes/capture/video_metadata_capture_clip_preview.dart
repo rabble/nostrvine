@@ -68,9 +68,7 @@ class VideoMetadataCaptureClipPreview extends ConsumerWidget {
         // child rides into the flight shuttle and fights the shape the
         // preview's flightShuttleBuilder is morphing towards.
         child: ClipRRect(
-          borderRadius: .circular(
-            VideoEditorConstants.clipPreviewCornerRadius,
-          ),
+          borderRadius: .circular(VideoEditorConstants.clipPreviewCornerRadius),
           // Hero animation to preview screen
           child: Hero(
             tag: VideoEditorConstants.heroMetaPreviewId,
@@ -125,18 +123,15 @@ class VideoMetadataCaptureClipPreview extends ConsumerWidget {
                             .read(videoEditorProvider.notifier)
                             .startRenderVideo(),
                         inactivePlaceholder: Center(
-                          child: Semantics(
-                            button: true,
-                            label: context.l10n.videoMetadataEditCoverTitle,
-                            excludeSemantics: true,
-                            child: DivineIconButton(
-                              icon: .pencilSimpleLine,
-                              type: .ghostOverMedia,
-                              size: .small,
-                              onPressed: () => _openCoverEditor(
-                                context,
-                                state.finalRenderedClip!,
-                              ),
+                          child: DivineIconButton(
+                            icon: .pencilSimpleLine,
+                            type: .ghostOverMedia,
+                            size: .small,
+                            semanticLabel:
+                                context.l10n.videoMetadataEditCoverTitle,
+                            onPressed: () => _openCoverEditor(
+                              context,
+                              state.finalRenderedClip!,
                             ),
                           ),
                         ),

@@ -494,6 +494,65 @@ void main() {
         expect(tester.takeException(), isNull);
       });
 
+      testWidgets('result tile announces the action and the nip05 handle', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        final profile = UserProfile(
+          pubkey: 'pubkey1',
+          name: 'User One',
+          nip05: 'user.one@example.com',
+          rawData: const {'name': 'User One', 'nip05': 'user.one@example.com'},
+          createdAt: DateTime.now(),
+          eventId: 'event1',
+        );
+
+        final mockFollowRepo = _createMockFollowRepository(
+          followingPubkeys: ['pubkey1'],
+        );
+        when(
+          mockFollowRepo.streamMyFollowers,
+        ).thenAnswer((_) => Stream<List<String>>.value(['pubkey1']));
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              profileRepositoryProvider.overrideWithValue(
+                _createMockProfileRepository(cachedProfiles: [profile]),
+              ),
+              followRepositoryProvider.overrideWithValue(mockFollowRepo),
+              contentBlocklistRepositoryProvider.overrideWithValue(
+                _createMockContentBlocklistRepository(),
+              ),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: UserPickerSheet(
+                  title: 'Title',
+                  filterMode: UserPickerFilterMode.mutualFollowsOnly,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final label = tester
+            .getSemantics(find.text('User One'))
+            .getSemanticsData()
+            .label;
+
+        expect(label, contains(l10n.userPickerSelectSemantics('User One')));
+        // Two follows can share a display name; the handle is what tells
+        // them apart, so it must survive the tile's ExcludeSemantics.
+        expect(label, contains('user.one@example.com'));
+
+        handle.dispose();
+      });
+
       testWidgets('renders mutuals from the first follower source and adds '
           'later ones', (tester) async {
         final profiles = [
