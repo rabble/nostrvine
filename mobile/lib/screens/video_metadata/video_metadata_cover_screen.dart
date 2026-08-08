@@ -15,6 +15,7 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_clip/clip_thumbnail_image.dart';
+import 'package:openvine/widgets/video_metadata/metadata_hero_corners.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:time_formatter/time_formatter.dart';
@@ -472,10 +473,11 @@ class _VideoAreaState extends State<_VideoArea> {
         ? _videoAR
         : widget.clip.targetAspectRatio.value;
     final isSquare = widget.clip.targetAspectRatio.value == 1.0;
+    final coverBorderRadius = isSquare
+        ? BorderRadius.circular(12)
+        : const BorderRadius.vertical(bottom: Radius.circular(32));
     final player = ClipRRect(
-      borderRadius: isSquare
-          ? .circular(12)
-          : const .vertical(bottom: .circular(32)),
+      borderRadius: coverBorderRadius,
       child: FittedBox(
         fit: isSquare ? BoxFit.contain : BoxFit.cover,
         child: SizedBox(
@@ -496,6 +498,14 @@ class _VideoAreaState extends State<_VideoArea> {
     return Hero(
       tag: VideoEditorConstants.heroMetaPreviewId,
       createRectTween: (begin, end) => RectTween(begin: begin, end: end),
+      // The thumbnails round themselves from outside their Hero, so on the way
+      // back the shuttle arrives with no rounding of its own.
+      flightShuttleBuilder: (_, animation, _, _, toHeroContext) =>
+          MetadataHeroCorners(
+            animation: animation,
+            destinationBorderRadius: coverBorderRadius,
+            child: (toHeroContext.widget as Hero).child,
+          ),
       child: AspectRatio(
         aspectRatio: widget.clip.targetAspectRatio.value,
         child: isSquare ? Center(child: player) : player,
@@ -625,8 +635,9 @@ class _TopBarContent extends StatelessWidget {
       alignment: .topCenter,
       child: SafeArea(
         bottom: false,
-        child: Padding(
-          padding: const .all(16),
+        child: Container(
+          height: kToolbarHeight,
+          padding: const .symmetric(horizontal: 16),
           child: Row(
             spacing: 16,
             children: [

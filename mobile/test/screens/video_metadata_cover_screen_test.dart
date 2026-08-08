@@ -44,13 +44,16 @@ class _NoopInitProVideoEditor extends MethodChannelProVideoEditor {
   Stream<dynamic> initializeStream() => const Stream.empty();
 }
 
-DivineVideoClip _createTestClip({String id = 'test-clip'}) {
+DivineVideoClip _createTestClip({
+  String id = 'test-clip',
+  models.AspectRatio aspectRatio = models.AspectRatio.square,
+}) {
   return DivineVideoClip(
     id: id,
     video: EditorVideo.file('test.mp4'),
     duration: const Duration(seconds: 10),
     recordedAt: DateTime.now(),
-    targetAspectRatio: models.AspectRatio.square,
+    targetAspectRatio: aspectRatio,
     originalAspectRatio: 9 / 16,
   );
 }
@@ -232,6 +235,102 @@ void main() {
 
       final l10n = lookupAppLocalizations(const Locale('en'));
       expect(find.text(l10n.videoMetadataEditCoverTitle), findsOneWidget);
+    });
+
+    testWidgets('morphs the hero flight corners on the way back', (
+      tester,
+    ) async {
+      setUpPlayerChannel();
+      addTearDown(tearDownPlayerChannel);
+
+      // The metadata thumbnail rounds itself from outside its Hero, so the
+      // shuttle arrives carrying no rounding of its own. Without a builder on
+      // this screen's Hero the whole flight back is square-cornered.
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            videoEditorProvider.overrideWith(
+              () => _MockVideoEditorNotifier(VideoEditorProviderState()),
+            ),
+          ],
+          child: MockGoRouterProvider(
+            goRouter: mockGoRouter,
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Builder(
+                builder: (context) => Scaffold(
+                  body: Center(
+                    child: SizedBox(
+                      height: 200,
+                      // Clip outside the Hero, the way both real thumbnails do.
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(
+                          VideoEditorConstants.clipPreviewCornerRadius,
+                        ),
+                        child: Hero(
+                          tag: VideoEditorConstants.heroMetaPreviewId,
+                          child: GestureDetector(
+                            onTap: () => Navigator.of(context).push(
+                              PageRouteBuilder<void>(
+                                pageBuilder: (_, _, _) =>
+                                    VideoMetadataCoverScreen(
+                                      clip: _createTestClip(
+                                        aspectRatio:
+                                            models.AspectRatio.vertical,
+                                      ),
+                                    ),
+                              ),
+                            ),
+                            child: const Text('open'),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Caught mid-lerp the shuttle is strictly inside both endpoints on both
+      // corners: the thumbnail's 16 all round and this screen's bottom-only 32.
+      // Neither resting shape satisfies that, so only the shuttle matches.
+      final shuttleClip = find.byWidgetPredicate((widget) {
+        if (widget is! ClipRRect) return false;
+        final radius = widget.borderRadius;
+        return radius is BorderRadius &&
+            radius.topLeft.x > 0 &&
+            radius.topLeft.x < VideoEditorConstants.clipPreviewCornerRadius &&
+            radius.bottomLeft.x >
+                VideoEditorConstants.clipPreviewCornerRadius &&
+            radius.bottomLeft.x < 32;
+      });
+      BorderRadius shuttleRadius() =>
+          tester.widget<ClipRRect>(shuttleClip).borderRadius as BorderRadius;
+
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      tester.state<NavigatorState>(find.byType(Navigator)).pop();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 40));
+
+      expect(shuttleClip, findsOneWidget);
+      final early = shuttleRadius();
+
+      await tester.pump(const Duration(milliseconds: 120));
+      final later = shuttleRadius();
+
+      // Travelling towards the thumbnail: the top tightens back to 16 as the
+      // bottom relaxes off 32. A single sample cannot tell that from a lerp
+      // running backwards or one pinned to a constant.
+      expect(later.topLeft.x, greaterThan(early.topLeft.x));
+      expect(later.bottomLeft.x, lessThan(early.bottomLeft.x));
+
+      await tester.pumpAndSettle();
     });
 
     testWidgets('shows DivineVideoPlayer', (tester) async {

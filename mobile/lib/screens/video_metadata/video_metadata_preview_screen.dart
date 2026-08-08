@@ -17,6 +17,7 @@ import 'package:openvine/screens/feed/feed_mode_switch.dart';
 import 'package:openvine/widgets/stop_motion/stop_motion_player.dart';
 import 'package:openvine/widgets/video_feed_item/blurred_video_backdrop.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
+import 'package:openvine/widgets/video_metadata/metadata_hero_corners.dart';
 import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_bottom_bar.dart';
 import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_preview_thumbnail.dart';
 
@@ -109,6 +110,11 @@ class _VideoMetadataPreviewScreenState
 
   @override
   Widget build(BuildContext context) {
+    final stageBorderRadius = widget.previewOnly
+        ? BorderRadius.zero
+        : const BorderRadius.vertical(
+            bottom: Radius.circular(VineTheme.shellCornerRadius),
+          );
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: VideoEditorConstants.uiOverlayStyleFor(context.vineColors),
       child: Scaffold(
@@ -119,13 +125,14 @@ class _VideoMetadataPreviewScreenState
             // Video preview area with close button
             Expanded(
               child: _PreviewStage(
-                roundBottom: !widget.previewOnly,
+                borderRadius: stageBorderRadius,
                 child: Stack(
                   fit: .expand,
                   children: [
                     _VideoPreviewContent(
                       clip: widget.clip,
                       controller: _controller,
+                      stageBorderRadius: stageBorderRadius,
                     ),
                     if (!widget.previewOnly)
                       // The overlay offsets its caption and action column
@@ -167,20 +174,15 @@ class _VideoMetadataPreviewScreenState
 /// The preview-only route has no bottom chrome to seam into and stays edge to
 /// edge — the same branch the fullscreen feed takes in `_MaybeRoundFeedBottom`.
 class _PreviewStage extends StatelessWidget {
-  const _PreviewStage({required this.roundBottom, required this.child});
+  const _PreviewStage({required this.borderRadius, required this.child});
 
-  final bool roundBottom;
+  final BorderRadius borderRadius;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    if (!roundBottom) return child;
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(
-        bottom: Radius.circular(VineTheme.shellCornerRadius),
-      ),
-      child: child,
-    );
+    if (borderRadius == BorderRadius.zero) return child;
+    return ClipRRect(borderRadius: borderRadius, child: child);
   }
 }
 
@@ -200,10 +202,17 @@ class _PreviewStage extends StatelessWidget {
 /// post path once the render has baked the target crop into the file.
 class _VideoPreviewContent extends StatelessWidget {
   /// Creates the video preview content wrapper.
-  const _VideoPreviewContent({required this.clip, required this.controller});
+  const _VideoPreviewContent({
+    required this.clip,
+    required this.controller,
+    required this.stageBorderRadius,
+  });
 
   final DivineVideoClip clip;
   final DivineVideoPlayerController? controller;
+
+  /// Shape the stage rests at, which the hero flight morphs into.
+  final BorderRadius stageBorderRadius;
 
   @override
   Widget build(BuildContext context) {
@@ -223,6 +232,12 @@ class _VideoPreviewContent extends StatelessWidget {
       tag: VideoEditorConstants.heroMetaPreviewId,
       // Use linear flight path instead of curved arc
       createRectTween: (begin, end) => RectTween(begin: begin, end: end),
+      flightShuttleBuilder: (_, animation, _, _, toHeroContext) =>
+          MetadataHeroCorners(
+            animation: animation,
+            destinationBorderRadius: stageBorderRadius,
+            child: (toHeroContext.widget as Hero).child,
+          ),
       child: Stack(
         fit: .expand,
         children: [

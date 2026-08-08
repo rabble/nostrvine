@@ -206,11 +206,11 @@ void main() {
         tester.element(find.byType(VideoMetadataFormFields)),
       );
       final tile = find.widgetWithText(
-        SwitchListTile,
+        DivineSwitchTile,
         l10n.videoMetadataShareReplyToFeedTitle,
       );
       expect(tile, findsOneWidget);
-      expect(tester.widget<SwitchListTile>(tile).value, isFalse);
+      expect(tester.widget<DivineSwitchTile>(tile).value, isFalse);
 
       await tester.ensureVisible(tile);
       await tester.pumpAndSettle();
@@ -225,7 +225,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(mockNotifier.lastShareReplyToFeed, isTrue);
-      expect(tester.widget<SwitchListTile>(tile).value, isTrue);
+      expect(tester.widget<DivineSwitchTile>(tile).value, isTrue);
     });
 
     testWidgets("audio reuse toggle is shown for the user's own audio", (
@@ -239,7 +239,7 @@ void main() {
       );
       expect(
         find.widgetWithText(
-          SwitchListTile,
+          DivineSwitchTile,
           l10n.soundAllowRemix,
         ),
         findsOneWidget,
@@ -267,7 +267,7 @@ void main() {
         );
         expect(
           find.widgetWithText(
-            SwitchListTile,
+            DivineSwitchTile,
             l10n.soundAllowRemix,
           ),
           findsNothing,
@@ -299,7 +299,7 @@ void main() {
       );
       expect(
         find.widgetWithText(
-          SwitchListTile,
+          DivineSwitchTile,
           l10n.soundAllowRemix,
         ),
         findsOneWidget,

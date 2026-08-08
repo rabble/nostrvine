@@ -64,15 +64,20 @@ class VideoMetadataCaptureClipPreview extends ConsumerWidget {
     return Center(
       child: SizedBox(
         height: 200,
-        // Hero animation to preview screen
-        child: Hero(
-          tag: VideoEditorConstants.heroMetaPreviewId,
-          // Use linear flight path instead of curved arc
-          createRectTween: (begin, end) => RectTween(begin: begin, end: end),
-          child: AspectRatio(
-            aspectRatio: clip.targetAspectRatio.value,
-            child: ClipRRect(
-              borderRadius: .circular(16),
+        // Rounds the thumbnail from outside the Hero: a clip inside the Hero
+        // child rides into the flight shuttle and fights the shape the
+        // preview's flightShuttleBuilder is morphing towards.
+        child: ClipRRect(
+          borderRadius: .circular(
+            VideoEditorConstants.clipPreviewCornerRadius,
+          ),
+          // Hero animation to preview screen
+          child: Hero(
+            tag: VideoEditorConstants.heroMetaPreviewId,
+            // Use linear flight path instead of curved arc
+            createRectTween: (begin, end) => RectTween(begin: begin, end: end),
+            child: AspectRatio(
+              aspectRatio: clip.targetAspectRatio.value,
               child: Semantics(
                 button: true,
                 enabled: isReady,
