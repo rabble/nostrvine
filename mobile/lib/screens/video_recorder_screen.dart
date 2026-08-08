@@ -140,7 +140,12 @@ class _VideoRecorderBlocScope extends ConsumerWidget {
     );
 
     return BlocProvider<VideoRecorderBloc>(
-      key: ValueKey((clipManager, videoEditor, sharedPreferences)),
+      key: ValueKey((
+        clipManager,
+        videoEditor,
+        sharedPreferences,
+        creationAnalyticsTracker,
+      )),
       create: (_) => VideoRecorderBloc(
         readClipManager: () => ref.read(clipManagerProvider.notifier),
         readVideoEditor: () => ref.read(videoEditorProvider.notifier),
