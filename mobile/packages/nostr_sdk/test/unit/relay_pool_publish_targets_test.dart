@@ -39,6 +39,8 @@ void main() {
   group('RelayPool publish targets', () {
     const liveUrl = 'wss://relay.divine.video';
     const downUrl = 'wss://relay.offline.example';
+    const secondDownUrl = 'wss://relay.offline-two.example';
+    const bystanderUrl = 'wss://relay.bystander.example';
     const eventId = 'target-denominator-event-id';
 
     late LocalNostrSigner signer;
@@ -135,22 +137,87 @@ void main() {
       },
     );
 
-    test('the disconnected relay still cannot speak for the publish', () async {
-      acceptFromLiveRelay();
+    test(
+      'a connected relay outside the target list cannot decide the publish',
+      () async {
+        // Trackers are keyed on event id alone, so without the `isTarget`
+        // gate any connected relay could accept or reject a publish it was
+        // never sent — deciding the outcome of, say, a narrowly targeted
+        // direct message it has no part in.
+        final bystanderFactory = FakeWebSocketChannelFactory();
+        await nostr.relayPool.add(
+          RelayBase(
+            bystanderUrl,
+            RelayStatus(bystanderUrl),
+            channelFactory: bystanderFactory,
+          ),
+        );
+        acceptFromLiveRelay();
+        // The bystander volunteers an OK for an event it never received.
+        Timer.run(() {
+          bystanderFactory.createdChannels.single.simulateMessage(
+            jsonEncode(['OK', eventId, true, '']),
+          );
+        });
 
-      final outcome = await nostr.relayPool.sendEventAwaitOk(
-        [
-          'EVENT',
-          {'id': eventId, 'kind': 5},
-        ],
-        eventId: eventId,
-        timeout: const Duration(milliseconds: 400),
-      );
+        final outcome = await nostr.relayPool.sendEventAwaitOk(
+          [
+            'EVENT',
+            {'id': eventId, 'kind': 5},
+          ],
+          eventId: eventId,
+          targetRelays: const [liveUrl],
+          timeout: const Duration(milliseconds: 400),
+        );
 
-      expect(outcome.acceptedBy, isNot(contains(downUrl)));
-      expect(outcome.rejectedBy.keys, isNot(contains(downUrl)));
-      expect(outcome.noResponseFrom, isNot(contains(downUrl)));
-    });
+        expect(outcome.acceptedBy, equals([liveUrl]));
+        expect(
+          outcome.acceptedBy,
+          isNot(contains(bystanderUrl)),
+          reason: 'a relay outside targetRelays must not be able to accept',
+        );
+        expect(outcome.rejectedBy.keys, isNot(contains(bystanderUrl)));
+        expect(outcome.noResponseFrom, isNot(contains(bystanderUrl)));
+      },
+    );
+
+    test(
+      'a publish that reached nothing still reports how many relays it had',
+      () async {
+        // Every relay offline. Narrowing the counted set must not collapse the
+        // outcome to targetCount 0 — "you have no relays" and "every relay you
+        // have is down" need to stay distinguishable in logs and error copy.
+        nostr.relayPool.removeAll();
+        for (final url in [downUrl, secondDownUrl]) {
+          await nostr.relayPool.add(
+            RelayBase(
+              url,
+              RelayStatus(url),
+              channelFactory: FakeWebSocketChannelFactory(
+                readyError: StateError('unreachable'),
+              ),
+            ),
+          );
+        }
+
+        final outcome = await nostr.relayPool.sendEventAwaitOk(
+          [
+            'EVENT',
+            {'id': eventId, 'kind': 5},
+          ],
+          eventId: eventId,
+          timeout: const Duration(milliseconds: 400),
+        );
+
+        expect(outcome.failed, isTrue);
+        expect(outcome.targetCount, equals(2));
+        expect(
+          outcome.unreachableTargets,
+          containsAll(<String>[downUrl, secondDownUrl]),
+        );
+        expect(outcome.summary, contains('2 unreachable'));
+      },
+    );
   });
 
   group('RelayPool publish targets while relays are still connecting', () {
