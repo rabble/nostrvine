@@ -34,6 +34,13 @@ class _RecordingSink implements AnalyticsEventSink {
 void main() {
   const pubkey =
       '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+  const otherPubkey =
+      'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210';
+
+  // The last applied identity is process-scoped, so it has to be reset between
+  // tests for the suite to be order-independent.
+  setUp(AnalyticsIdentityCoordinator.resetLastAppliedUserId);
+  tearDown(AnalyticsIdentityCoordinator.resetLastAppliedUserId);
 
   test('fans out the exact 64-character hex identity', () async {
     final sink = _RecordingSink();
@@ -64,6 +71,59 @@ void main() {
       (name: AnalyticsUserProperty.inviteCode, value: null),
     ]);
     expect(crashIds, [null]);
+  });
+
+  test('clears invite attribution when the account changes', () async {
+    final sink = _RecordingSink();
+    final coordinator = AnalyticsIdentityCoordinator(
+      analytics: sink,
+      setCrashUserId: (_) async {},
+    );
+
+    await coordinator.setUserId(pubkey);
+    expect(sink.properties, isEmpty);
+
+    // An account switch builds a fresh container, so the incoming account gets
+    // its own coordinator without ever passing through logout.
+    final switched = AnalyticsIdentityCoordinator(
+      analytics: sink,
+      setCrashUserId: (_) async {},
+    );
+    await switched.setUserId(otherPubkey);
+
+    expect(sink.userIds, [pubkey, otherPubkey]);
+    expect(sink.properties, [
+      (name: AnalyticsUserProperty.inviteCode, value: null),
+    ]);
+  });
+
+  test('keeps invite attribution set during the redeeming login', () async {
+    final sink = _RecordingSink();
+    final coordinator = AnalyticsIdentityCoordinator(
+      analytics: sink,
+      setCrashUserId: (_) async {},
+    );
+
+    // Redemption sets the property before the new account authenticates, and
+    // the sync provider can re-apply the same identity on a rebuild.
+    await coordinator.setUserId(pubkey);
+    await coordinator.setUserId(pubkey);
+
+    expect(sink.properties, isEmpty);
+  });
+
+  test('lowercases identities so the campaign join stays exact', () async {
+    final sink = _RecordingSink();
+    final crashIds = <String?>[];
+    final coordinator = AnalyticsIdentityCoordinator(
+      analytics: sink,
+      setCrashUserId: (userId) async => crashIds.add(userId),
+    );
+
+    await coordinator.setUserId(pubkey.toUpperCase());
+
+    expect(sink.userIds, [pubkey]);
+    expect(crashIds, [pubkey]);
   });
 
   test('refuses bech32 and malformed identities', () async {

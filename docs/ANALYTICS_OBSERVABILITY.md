@@ -141,8 +141,10 @@ Events:
 
 After the invite service confirms redemption, the normalized code is set as
 the Firebase Analytics user property `invite_code`. Failed redemptions do not
-set it. Logout clears it so a second account on the device cannot inherit the
-first account's attribution.
+set it. Any change of authenticated identity clears it, so a second account on
+the device cannot inherit the first account's attribution. Logout is not the
+only such change: an in-place account switch never passes through an
+unauthenticated state.
 
 ## Required Firebase Admin Setup
 
