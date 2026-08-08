@@ -8486,6 +8486,17 @@ class AppLocalizationsSv extends AppLocalizations {
       'Fortsätt till videoredigeraren';
 
   @override
+  String get videoRecorderCameraPreviewLabel => 'Kameraförhandsvisning';
+
+  @override
+  String get videoRecorderCameraPreviewFocusHint => 'Fokusera kameran';
+
+  @override
+  String videoRecorderSwitchToModeLabel(String mode) {
+    return 'Byt till läget $mode';
+  }
+
+  @override
   String get videoRecorderCaptureCloseLabel => 'Stäng';
 
   @override
@@ -8545,6 +8556,36 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoRecorderStabilizationModeAuto => 'Auto';
+
+  @override
+  String get videoRecorderFlashValueOff => 'Av';
+
+  @override
+  String get videoRecorderFlashValueOn => 'På';
+
+  @override
+  String get videoRecorderFlashValueAuto => 'Auto';
+
+  @override
+  String get videoRecorderTimerValueOff => 'Av';
+
+  @override
+  String get videoRecorderTimerValueThreeSeconds => '3 sekunder';
+
+  @override
+  String get videoRecorderTimerValueTenSeconds => '10 sekunder';
+
+  @override
+  String get videoRecorderAspectRatioValueSquare => 'Kvadratisk';
+
+  @override
+  String get videoRecorderAspectRatioValueVertical => 'Stående';
+
+  @override
+  String get videoRecorderCameraValueFront => 'Främre kamera';
+
+  @override
+  String get videoRecorderCameraValueBack => 'Bakre kamera';
 
   @override
   String get videoRecorderLibraryEmptyLabel => 'Klippbibliotek, inga klipp';

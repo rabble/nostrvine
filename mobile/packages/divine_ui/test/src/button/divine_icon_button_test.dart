@@ -3,6 +3,8 @@
 // migrate off it.
 // ignore_for_file: deprecated_member_use_from_same_package
 
+import 'dart:ui' show Tristate;
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -22,6 +24,7 @@ void main() {
       bool showShadow = true,
       String? tooltip,
       String? semanticLabel,
+      bool? semanticToggled,
       String? semanticLongPressHint,
       ThemeData? theme,
     }) {
@@ -40,6 +43,7 @@ void main() {
               showShadow: showShadow,
               tooltip: tooltip,
               semanticLabel: semanticLabel,
+              semanticToggled: semanticToggled,
               semanticLongPressHint: semanticLongPressHint,
             ),
           ),
@@ -70,6 +74,24 @@ void main() {
           find.bySemanticsLabel('Close button'),
           findsOneWidget,
         );
+      });
+
+      testWidgets('applies semantic toggled state when set', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(semanticToggled: true, onPressed: () {}),
+        );
+
+        final semantics = tester.getSemantics(find.byType(DivineIconButton));
+        expect(semantics.flagsCollection.isToggled, Tristate.isTrue);
+      });
+
+      testWidgets('has no toggled state when semanticToggled is null', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildTestWidget(onPressed: () {}));
+
+        final semantics = tester.getSemantics(find.byType(DivineIconButton));
+        expect(semantics.flagsCollection.isToggled, Tristate.none);
       });
 
       testWidgets('applies semantic long-press hint when set', (tester) async {

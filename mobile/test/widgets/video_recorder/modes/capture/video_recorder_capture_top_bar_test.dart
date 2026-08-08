@@ -22,6 +22,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group(VideoRecorderCaptureTopBar, () {
+    final l10n = lookupAppLocalizations(const Locale('en'));
+
     late _MockVideoRecorderBloc recorderBloc;
 
     setUp(() {
@@ -94,11 +96,16 @@ void main() {
         expect(find.byType(DivineIconButton), findsNWidgets(2));
       });
 
-      testWidgets('close button has Semantics label', (tester) async {
+      testWidgets('close button announces that it closes the recorder', (
+        tester,
+      ) async {
         await tester.pumpWidget(buildWidget());
         await tester.pumpAndSettle();
 
-        expect(find.bySemanticsLabel('Close'), findsOneWidget);
+        expect(
+          find.bySemanticsLabel(l10n.videoRecorderCloseLabel),
+          findsOneWidget,
+        );
       });
 
       testWidgets('next button is hidden when no clips exist', (tester) async {
@@ -133,6 +140,10 @@ void main() {
             .widgetList<AnimatedOpacity>(find.byType(AnimatedOpacity))
             .toList();
         expect(opacities.any((o) => o.opacity == 1), isTrue);
+        expect(
+          find.bySemanticsLabel(l10n.videoRecorderContinueToEditorLabel),
+          findsOneWidget,
+        );
       });
     });
 

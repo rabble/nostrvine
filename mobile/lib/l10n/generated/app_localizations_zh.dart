@@ -8068,6 +8068,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoRecorderContinueToEditorLabel => '进入视频编辑器';
 
   @override
+  String get videoRecorderCameraPreviewLabel => '相机预览';
+
+  @override
+  String get videoRecorderCameraPreviewFocusHint => '相机对焦';
+
+  @override
+  String videoRecorderSwitchToModeLabel(String mode) {
+    return '切换到$mode模式';
+  }
+
+  @override
   String get videoRecorderCaptureCloseLabel => '关闭';
 
   @override
@@ -8122,6 +8133,36 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get videoRecorderStabilizationModeAuto => '自动';
+
+  @override
+  String get videoRecorderFlashValueOff => '关闭';
+
+  @override
+  String get videoRecorderFlashValueOn => '开启';
+
+  @override
+  String get videoRecorderFlashValueAuto => '自动';
+
+  @override
+  String get videoRecorderTimerValueOff => '关闭';
+
+  @override
+  String get videoRecorderTimerValueThreeSeconds => '3秒';
+
+  @override
+  String get videoRecorderTimerValueTenSeconds => '10秒';
+
+  @override
+  String get videoRecorderAspectRatioValueSquare => '正方形';
+
+  @override
+  String get videoRecorderAspectRatioValueVertical => '竖屏';
+
+  @override
+  String get videoRecorderCameraValueFront => '前置摄像头';
+
+  @override
+  String get videoRecorderCameraValueBack => '后置摄像头';
 
   @override
   String get videoRecorderLibraryEmptyLabel => '片段库，没有片段';

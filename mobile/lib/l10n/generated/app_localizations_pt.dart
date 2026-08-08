@@ -8551,6 +8551,17 @@ class AppLocalizationsPt extends AppLocalizations {
       'Continuar para o editor de vídeo';
 
   @override
+  String get videoRecorderCameraPreviewLabel => 'Pré-visualização da câmara';
+
+  @override
+  String get videoRecorderCameraPreviewFocusHint => 'Focar a câmara';
+
+  @override
+  String videoRecorderSwitchToModeLabel(String mode) {
+    return 'Mudar para o modo $mode';
+  }
+
+  @override
   String get videoRecorderCaptureCloseLabel => 'Fechar';
 
   @override
@@ -8610,6 +8621,36 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get videoRecorderStabilizationModeAuto => 'Automática';
+
+  @override
+  String get videoRecorderFlashValueOff => 'Desativado';
+
+  @override
+  String get videoRecorderFlashValueOn => 'Ativado';
+
+  @override
+  String get videoRecorderFlashValueAuto => 'Automático';
+
+  @override
+  String get videoRecorderTimerValueOff => 'Desativado';
+
+  @override
+  String get videoRecorderTimerValueThreeSeconds => '3 segundos';
+
+  @override
+  String get videoRecorderTimerValueTenSeconds => '10 segundos';
+
+  @override
+  String get videoRecorderAspectRatioValueSquare => 'Quadrado';
+
+  @override
+  String get videoRecorderAspectRatioValueVertical => 'Vertical';
+
+  @override
+  String get videoRecorderCameraValueFront => 'Câmera frontal';
+
+  @override
+  String get videoRecorderCameraValueBack => 'Câmera traseira';
 
   @override
   String get videoRecorderLibraryEmptyLabel =>

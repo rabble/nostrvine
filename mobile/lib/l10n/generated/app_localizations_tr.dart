@@ -8448,6 +8448,17 @@ class AppLocalizationsTr extends AppLocalizations {
       'Video düzenleyiciye devam et';
 
   @override
+  String get videoRecorderCameraPreviewLabel => 'Kamera önizlemesi';
+
+  @override
+  String get videoRecorderCameraPreviewFocusHint => 'Kamerayı odakla';
+
+  @override
+  String videoRecorderSwitchToModeLabel(String mode) {
+    return '$mode moduna geç';
+  }
+
+  @override
   String get videoRecorderCaptureCloseLabel => 'Kapat';
 
   @override
@@ -8505,6 +8516,36 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoRecorderStabilizationModeAuto => 'Otomatik';
+
+  @override
+  String get videoRecorderFlashValueOff => 'Kapalı';
+
+  @override
+  String get videoRecorderFlashValueOn => 'Açık';
+
+  @override
+  String get videoRecorderFlashValueAuto => 'Otomatik';
+
+  @override
+  String get videoRecorderTimerValueOff => 'Kapalı';
+
+  @override
+  String get videoRecorderTimerValueThreeSeconds => '3 saniye';
+
+  @override
+  String get videoRecorderTimerValueTenSeconds => '10 saniye';
+
+  @override
+  String get videoRecorderAspectRatioValueSquare => 'Kare';
+
+  @override
+  String get videoRecorderAspectRatioValueVertical => 'Dikey';
+
+  @override
+  String get videoRecorderCameraValueFront => 'Ön kamera';
+
+  @override
+  String get videoRecorderCameraValueBack => 'Arka kamera';
 
   @override
   String get videoRecorderLibraryEmptyLabel => 'Klip kütüphanesi, klip yok';

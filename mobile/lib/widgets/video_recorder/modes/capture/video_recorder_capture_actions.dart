@@ -4,8 +4,11 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
+import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 
 class VideoRecorderCaptureActions extends ConsumerWidget {
@@ -13,14 +16,17 @@ class VideoRecorderCaptureActions extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final state = context.select(
       (VideoRecorderBloc b) => (
         flashMode: b.state.flashMode,
         timer: b.state.timerDuration,
         aspectRatio: b.state.aspectRatio,
         canSwitchCamera: b.state.canSwitchCamera,
+        isFrontCamera: b.state.isFrontCamera,
         hasFlash: b.state.hasFlash,
         isRecording: b.state.isRecording,
+        showGridLines: b.state.showGridLines,
         supportsTimer: b.state.recorderMode.supportsCountdownTimer,
         capturesStills: b.state.recorderMode.capturesStills,
         supportsStabilization: b.state.recorderMode.supportsVideoStabilization,
@@ -50,7 +56,8 @@ class VideoRecorderCaptureActions extends ConsumerWidget {
               children: [
                 _IconButton(
                   icon: state.flashMode.icon,
-                  label: context.l10n.videoRecorderToggleFlashLabel,
+                  label: l10n.videoRecorderToggleFlashLabel,
+                  value: _flashModeValue(l10n, state.flashMode),
                   onTap: state.hasFlash
                       ? () => context.read<VideoRecorderBloc>().add(
                           const VideoRecorderFlashToggled(),
@@ -60,7 +67,8 @@ class VideoRecorderCaptureActions extends ConsumerWidget {
                 if (state.supportsTimer)
                   _IconButton(
                     icon: state.timer.icon,
-                    label: context.l10n.videoRecorderCycleTimerLabel,
+                    label: l10n.videoRecorderCycleTimerLabel,
+                    value: _timerDurationValue(l10n, state.timer),
                     onTap: () => context.read<VideoRecorderBloc>().add(
                       const VideoRecorderTimerCycled(),
                     ),
@@ -69,7 +77,8 @@ class VideoRecorderCaptureActions extends ConsumerWidget {
                 if (state.capturesStills)
                   _IconButton(
                     icon: .gridNine,
-                    label: context.l10n.videoRecorderToggleGridLabel,
+                    label: l10n.videoRecorderToggleGridLabel,
+                    toggled: state.showGridLines,
                     onTap: () => context.read<VideoRecorderBloc>().add(
                       const VideoRecorderGridLinesToggled(),
                     ),
@@ -78,7 +87,8 @@ class VideoRecorderCaptureActions extends ConsumerWidget {
                   icon: state.aspectRatio == .square
                       ? .cropSquare
                       : .cropPortrait,
-                  label: context.l10n.videoRecorderToggleAspectRatioLabel,
+                  label: l10n.videoRecorderToggleAspectRatioLabel,
+                  value: _aspectRatioValue(l10n, state.aspectRatio),
                   onTap: !hasClips
                       ? () => context.read<VideoRecorderBloc>().add(
                           const VideoRecorderAspectRatioToggled(),
@@ -87,7 +97,10 @@ class VideoRecorderCaptureActions extends ConsumerWidget {
                 ),
                 _IconButton(
                   icon: .arrowsClockwise,
-                  label: context.l10n.videoRecorderSwitchCameraLabel,
+                  label: l10n.videoRecorderSwitchCameraLabel,
+                  value: state.isFrontCamera
+                      ? l10n.videoRecorderCameraValueFront
+                      : l10n.videoRecorderCameraValueBack,
                   onTap: state.canSwitchCamera
                       ? () => context.read<VideoRecorderBloc>().add(
                           const VideoRecorderCameraSwitched(),
@@ -111,13 +124,18 @@ class _GhostFrameButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isVisible = context.select(
+      (VideoRecorderBloc b) => b.state.showLastClipOverlay,
+    );
     return _IconButton(
       icon: .ghost,
       label: context.l10n.videoRecorderToggleGhostFrameLabel,
+      toggled: isVisible,
       onTap: () {
-        final bloc = context.read<VideoRecorderBloc>();
-        final willEnable = !bloc.state.showLastClipOverlay;
-        bloc.add(const VideoRecorderShowLastClipOverlayToggled());
+        final willEnable = !isVisible;
+        context.read<VideoRecorderBloc>().add(
+          const VideoRecorderShowLastClipOverlayToggled(),
+        );
         ScaffoldMessenger.of(context)
           ..clearSnackBars()
           ..showSnackBar(
@@ -141,12 +159,16 @@ class _StabilizationButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isSupported = context.select(
-      (VideoRecorderBloc b) => b.state.isVideoStabilizationSupported,
+    final (isSupported, mode) = context.select(
+      (VideoRecorderBloc b) => (
+        b.state.isVideoStabilizationSupported,
+        b.state.videoStabilizationMode,
+      ),
     );
     return _IconButton(
       icon: .sparkle,
       label: context.l10n.videoRecorderStabilizationLabel,
+      value: _stabilizationModeLabel(context.l10n, mode),
       onTap: isSupported ? () => _showStabilizationMenu(context) : null,
     );
   }
@@ -197,28 +219,75 @@ String _stabilizationModeLabel(
   };
 }
 
+/// Maps a [DivineFlashMode] to the localized state a screen reader announces.
+String _flashModeValue(AppLocalizations l10n, DivineFlashMode mode) {
+  return switch (mode) {
+    .off => l10n.videoRecorderFlashValueOff,
+    .torch => l10n.videoRecorderFlashValueOn,
+    .auto => l10n.videoRecorderFlashValueAuto,
+  };
+}
+
+/// Maps a [TimerDuration] to the localized state a screen reader announces.
+String _timerDurationValue(AppLocalizations l10n, TimerDuration timer) {
+  return switch (timer) {
+    .off => l10n.videoRecorderTimerValueOff,
+    .three => l10n.videoRecorderTimerValueThreeSeconds,
+    .ten => l10n.videoRecorderTimerValueTenSeconds,
+  };
+}
+
+/// Maps an [model.AspectRatio] to the localized state a screen reader
+/// announces.
+String _aspectRatioValue(AppLocalizations l10n, model.AspectRatio ratio) {
+  return switch (ratio) {
+    .square => l10n.videoRecorderAspectRatioValueSquare,
+    .vertical => l10n.videoRecorderAspectRatioValueVertical,
+  };
+}
+
 class _IconButton extends StatelessWidget {
   const _IconButton({
     required this.icon,
     required this.label,
     required this.onTap,
+    this.value,
+    this.toggled,
   });
 
   final String label;
   final DivineIconName icon;
   final VoidCallback? onTap;
 
+  /// Current setting of a control that cycles through more than two states,
+  /// announced after [label] (e.g. the active flash mode).
+  final String? value;
+
+  /// Current setting of a control that only flips on and off, announced as
+  /// "on"/"off" (e.g. the grid overlay).
+  final bool? toggled;
+
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: label,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const .all(8),
-          child: DivineIcon(
-            icon: icon,
-            color: VineTheme.whiteText.withAlpha(onTap != null ? 255 : 100),
+    return Semantics(
+      button: true,
+      enabled: onTap != null,
+      label: label,
+      value: value,
+      toggled: toggled,
+      child: Tooltip(
+        message: label,
+        // The label above already carries the message; without this the
+        // screen reader announces it a second time as a tooltip.
+        excludeFromSemantics: true,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const .all(8),
+            child: DivineIcon(
+              icon: icon,
+              color: VineTheme.whiteText.withAlpha(onTap != null ? 255 : 100),
+            ),
           ),
         ),
       ),

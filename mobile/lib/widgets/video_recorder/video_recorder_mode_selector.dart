@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/extensions/media_query_extensions.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 
 /// Horizontal picker-wheel mode selector.
@@ -221,6 +222,7 @@ class _VideoRecorderModeSelectorWheelState
     }
     final colors = context.vineColors;
     final isLight = colors.isLight;
+    final l10n = AppLocalizations.of(context);
     return LayoutBuilder(
       builder: (context, constraints) {
         final leadingPadding = (constraints.maxWidth - itemWidths.first) / 2;
@@ -290,7 +292,11 @@ class _VideoRecorderModeSelectorWheelState
                         width: itemWidths[i],
                         child: Semantics(
                           identifier: SemanticIds.cameraMode(modes[i].name),
-                          label: modes[i].label,
+                          label: isSelected
+                              ? modes[i].label
+                              : l10n.videoRecorderSwitchToModeLabel(
+                                  modes[i].label,
+                                ),
                           selected: isSelected,
                           button: true,
                           child: GestureDetector(
@@ -312,12 +318,14 @@ class _VideoRecorderModeSelectorWheelState
                                       ? colors.mutedText
                                       : colors.onSurface,
                                 ),
-                                child: Text(
-                                  modes[i].label,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.visible,
-                                  softWrap: false,
-                                  textScaler: textScaler,
+                                child: ExcludeSemantics(
+                                  child: Text(
+                                    modes[i].label,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.visible,
+                                    softWrap: false,
+                                    textScaler: textScaler,
+                                  ),
                                 ),
                               ),
                             ),

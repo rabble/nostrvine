@@ -14622,6 +14622,24 @@ abstract class AppLocalizations {
   /// **'Continue to video editor'**
   String get videoRecorderContinueToEditorLabel;
 
+  /// Accessibility label for the live camera viewfinder when tap-to-focus is enabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera preview'**
+  String get videoRecorderCameraPreviewLabel;
+
+  /// Accessibility tap-action hint for the live camera viewfinder. Screen readers add their own activation instruction.
+  ///
+  /// In en, this message translates to:
+  /// **'Focus camera'**
+  String get videoRecorderCameraPreviewFocusHint;
+
+  /// Accessibility label for an unselected video recorder mode. Announces the result of activating the mode selector.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to {mode} mode'**
+  String videoRecorderSwitchToModeLabel(String mode);
+
   /// No description provided for @videoRecorderCaptureCloseLabel.
   ///
   /// In en, this message translates to:
@@ -14717,6 +14735,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Auto'**
   String get videoRecorderStabilizationModeAuto;
+
+  /// Screen-reader state of the recorder's flash button when flash is off. Announced after the button label, e.g. 'Toggle flash, Off'.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get videoRecorderFlashValueOff;
+
+  /// Screen-reader state of the recorder's flash button when the light stays on (torch). Announced after the button label.
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get videoRecorderFlashValueOn;
+
+  /// Screen-reader state of the recorder's flash button when the camera decides whether to fire the flash. Announced after the button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto'**
+  String get videoRecorderFlashValueAuto;
+
+  /// Screen-reader state of the recorder's countdown-timer button when no delay is set. Announced after the button label, e.g. 'Cycle timer, Off'.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get videoRecorderTimerValueOff;
+
+  /// Screen-reader state of the recorder's countdown-timer button when recording starts after a 3 second delay.
+  ///
+  /// In en, this message translates to:
+  /// **'3 seconds'**
+  String get videoRecorderTimerValueThreeSeconds;
+
+  /// Screen-reader state of the recorder's countdown-timer button when recording starts after a 10 second delay.
+  ///
+  /// In en, this message translates to:
+  /// **'10 seconds'**
+  String get videoRecorderTimerValueTenSeconds;
+
+  /// Screen-reader state of the recorder's aspect-ratio button when recording in 1:1. Announced after the button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Square'**
+  String get videoRecorderAspectRatioValueSquare;
+
+  /// Screen-reader state of the recorder's aspect-ratio button when recording in 9:16. Announced after the button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Vertical'**
+  String get videoRecorderAspectRatioValueVertical;
+
+  /// Screen-reader state of the recorder's switch-camera button while the selfie camera is active. Announced after the button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Front camera'**
+  String get videoRecorderCameraValueFront;
+
+  /// Screen-reader state of the recorder's switch-camera button while the rear camera is active. Announced after the button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Back camera'**
+  String get videoRecorderCameraValueBack;
 
   /// No description provided for @videoRecorderLibraryEmptyLabel.
   ///

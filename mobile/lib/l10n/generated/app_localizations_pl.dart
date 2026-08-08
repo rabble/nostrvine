@@ -8666,6 +8666,17 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoRecorderContinueToEditorLabel => 'Przejdź do edytora wideo';
 
   @override
+  String get videoRecorderCameraPreviewLabel => 'Podgląd aparatu';
+
+  @override
+  String get videoRecorderCameraPreviewFocusHint => 'Ustaw ostrość aparatu';
+
+  @override
+  String videoRecorderSwitchToModeLabel(String mode) {
+    return 'Przełącz na tryb $mode';
+  }
+
+  @override
   String get videoRecorderCaptureCloseLabel => 'Zamknij';
 
   @override
@@ -8726,6 +8737,36 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get videoRecorderStabilizationModeAuto => 'Automatyczna';
+
+  @override
+  String get videoRecorderFlashValueOff => 'Wyłączona';
+
+  @override
+  String get videoRecorderFlashValueOn => 'Włączona';
+
+  @override
+  String get videoRecorderFlashValueAuto => 'Automatyczna';
+
+  @override
+  String get videoRecorderTimerValueOff => 'Wyłączony';
+
+  @override
+  String get videoRecorderTimerValueThreeSeconds => '3 sekundy';
+
+  @override
+  String get videoRecorderTimerValueTenSeconds => '10 sekund';
+
+  @override
+  String get videoRecorderAspectRatioValueSquare => 'Kwadratowy';
+
+  @override
+  String get videoRecorderAspectRatioValueVertical => 'Pionowy';
+
+  @override
+  String get videoRecorderCameraValueFront => 'Aparat przedni';
+
+  @override
+  String get videoRecorderCameraValueBack => 'Aparat tylny';
 
   @override
   String get videoRecorderLibraryEmptyLabel => 'Biblioteka klipów, brak klipów';

@@ -2,12 +2,15 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_mode_selector.dart';
 
 void main() {
   group(VideoRecorderModeSelectorWheel, () {
+    final l10n = lookupAppLocalizations(const Locale('en'));
+
     // Item widths follow each label's measured (wide, extra-bold) text, and
     // the wheel lazily builds only the items inside its viewport. The tests
     // below assert on every mode at once, so both the surface and the host
@@ -221,16 +224,28 @@ void main() {
         tester,
       ) async {
         await pumpSelector(tester, mode: VideoRecorderMode.capture);
+        final semanticsHandle = tester.ensureSemantics();
 
-        for (final mode in VideoRecorderMode.values) {
-          final semantics = tester
-              .widgetList<Semantics>(find.byType(Semantics))
-              .firstWhere((s) => s.properties.label == mode.label);
-          expect(semantics.properties.button, isTrue);
-          expect(
-            semantics.properties.selected,
-            mode == VideoRecorderMode.capture,
-          );
+        try {
+          for (final mode in VideoRecorderMode.values) {
+            final expectedLabel = mode == VideoRecorderMode.capture
+                ? mode.label
+                : l10n.videoRecorderSwitchToModeLabel(mode.label);
+            final semantics = tester
+                .widgetList<Semantics>(find.byType(Semantics))
+                .firstWhere((s) => s.properties.label == expectedLabel);
+            final semanticsNode = tester.getSemantics(
+              find.bySemanticsIdentifier(SemanticIds.cameraMode(mode.name)),
+            );
+            expect(semanticsNode.label, expectedLabel);
+            expect(semantics.properties.button, isTrue);
+            expect(
+              semantics.properties.selected,
+              mode == VideoRecorderMode.capture,
+            );
+          }
+        } finally {
+          semanticsHandle.dispose();
         }
       });
 

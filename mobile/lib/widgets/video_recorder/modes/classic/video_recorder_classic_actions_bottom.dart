@@ -15,20 +15,29 @@ class VideoRecorderClassicActionsBottom extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isRecording = context.select(
-      (VideoRecorderBloc b) => b.state.isRecording,
+    final l10n = context.l10n;
+    final state = context.select(
+      (VideoRecorderBloc b) => (
+        isRecording: b.state.isRecording,
+        isFrontCamera: b.state.isFrontCamera,
+        showGridLines: b.state.showGridLines,
+        showLastClipOverlay: b.state.showLastClipOverlay,
+      ),
     );
 
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 220),
-      opacity: isRecording ? 0 : 1,
+      opacity: state.isRecording ? 0 : 1,
       child: Row(
         spacing: 24,
         mainAxisAlignment: .center,
         children: [
           DivineIconButton(
             icon: .arrowsCounterClockwise,
-            semanticLabel: context.l10n.videoRecorderSwitchCameraLabel,
+            semanticLabel: l10n.videoRecorderSwitchCameraLabel,
+            semanticValue: state.isFrontCamera
+                ? l10n.videoRecorderCameraValueFront
+                : l10n.videoRecorderCameraValueBack,
             size: .small,
             type: .ghostSecondary,
             onPressed: () => context.read<VideoRecorderBloc>().add(
@@ -37,7 +46,8 @@ class VideoRecorderClassicActionsBottom extends StatelessWidget {
           ),
           DivineIconButton(
             icon: .gridNine,
-            semanticLabel: context.l10n.videoRecorderToggleGridLabel,
+            semanticLabel: l10n.videoRecorderToggleGridLabel,
+            semanticToggled: state.showGridLines,
             size: .small,
             type: .ghostSecondary,
             onPressed: () => context.read<VideoRecorderBloc>().add(
@@ -46,22 +56,20 @@ class VideoRecorderClassicActionsBottom extends StatelessWidget {
           ),
           DivineIconButton(
             icon: .ghost,
-            semanticLabel: context.l10n.videoRecorderToggleGhostFrameLabel,
+            semanticLabel: l10n.videoRecorderToggleGhostFrameLabel,
+            semanticToggled: state.showLastClipOverlay,
             size: .small,
             type: .ghostSecondary,
             onPressed: () {
-              final enabled = !context
-                  .read<VideoRecorderBloc>()
-                  .state
-                  .showLastClipOverlay;
+              final enabled = !state.showLastClipOverlay;
               context.read<VideoRecorderBloc>().add(
                 const VideoRecorderShowLastClipOverlayToggled(),
               );
               _showSnackBar(
                 context,
                 enabled
-                    ? context.l10n.videoRecorderGhostFrameEnabled
-                    : context.l10n.videoRecorderGhostFrameDisabled,
+                    ? l10n.videoRecorderGhostFrameEnabled
+                    : l10n.videoRecorderGhostFrameDisabled,
               );
             },
           ),

@@ -8495,6 +8495,17 @@ class AppLocalizationsVi extends AppLocalizations {
       'Tiếp tục tới trình chỉnh sửa video';
 
   @override
+  String get videoRecorderCameraPreviewLabel => 'Bản xem trước camera';
+
+  @override
+  String get videoRecorderCameraPreviewFocusHint => 'Lấy nét camera';
+
+  @override
+  String videoRecorderSwitchToModeLabel(String mode) {
+    return 'Chuyển sang chế độ $mode';
+  }
+
+  @override
   String get videoRecorderCaptureCloseLabel => 'Đóng';
 
   @override
@@ -8553,6 +8564,36 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get videoRecorderStabilizationModeAuto => 'Tự động';
+
+  @override
+  String get videoRecorderFlashValueOff => 'Tắt';
+
+  @override
+  String get videoRecorderFlashValueOn => 'Bật';
+
+  @override
+  String get videoRecorderFlashValueAuto => 'Tự động';
+
+  @override
+  String get videoRecorderTimerValueOff => 'Tắt';
+
+  @override
+  String get videoRecorderTimerValueThreeSeconds => '3 giây';
+
+  @override
+  String get videoRecorderTimerValueTenSeconds => '10 giây';
+
+  @override
+  String get videoRecorderAspectRatioValueSquare => 'Vuông';
+
+  @override
+  String get videoRecorderAspectRatioValueVertical => 'Dọc';
+
+  @override
+  String get videoRecorderCameraValueFront => 'Camera trước';
+
+  @override
+  String get videoRecorderCameraValueBack => 'Camera sau';
 
   @override
   String get videoRecorderLibraryEmptyLabel => 'Thư viện clip, không có clip';

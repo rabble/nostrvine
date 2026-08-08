@@ -8428,6 +8428,17 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoRecorderContinueToEditorLabel => 'المتابعة إلى محرر الفيديو';
 
   @override
+  String get videoRecorderCameraPreviewLabel => 'معاينة الكاميرا';
+
+  @override
+  String get videoRecorderCameraPreviewFocusHint => 'تركيز الكاميرا';
+
+  @override
+  String videoRecorderSwitchToModeLabel(String mode) {
+    return 'التبديل إلى وضع $mode';
+  }
+
+  @override
   String get videoRecorderCaptureCloseLabel => 'إغلاق';
 
   @override
@@ -8488,6 +8499,36 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get videoRecorderStabilizationModeAuto => 'تلقائي';
+
+  @override
+  String get videoRecorderFlashValueOff => 'إيقاف';
+
+  @override
+  String get videoRecorderFlashValueOn => 'تشغيل';
+
+  @override
+  String get videoRecorderFlashValueAuto => 'تلقائي';
+
+  @override
+  String get videoRecorderTimerValueOff => 'إيقاف';
+
+  @override
+  String get videoRecorderTimerValueThreeSeconds => '3 ثوانٍ';
+
+  @override
+  String get videoRecorderTimerValueTenSeconds => '10 ثوانٍ';
+
+  @override
+  String get videoRecorderAspectRatioValueSquare => 'مربع';
+
+  @override
+  String get videoRecorderAspectRatioValueVertical => 'عمودي';
+
+  @override
+  String get videoRecorderCameraValueFront => 'الكاميرا الأمامية';
+
+  @override
+  String get videoRecorderCameraValueBack => 'الكاميرا الخلفية';
 
   @override
   String get videoRecorderLibraryEmptyLabel => 'مكتبة المقاطع، لا توجد مقاطع';

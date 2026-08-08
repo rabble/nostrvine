@@ -8526,6 +8526,17 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoRecorderContinueToEditorLabel => 'Doorgaan naar video-editor';
 
   @override
+  String get videoRecorderCameraPreviewLabel => 'Cameravoorbeeld';
+
+  @override
+  String get videoRecorderCameraPreviewFocusHint => 'Camera scherpstellen';
+
+  @override
+  String videoRecorderSwitchToModeLabel(String mode) {
+    return 'Overschakelen naar de modus $mode';
+  }
+
+  @override
   String get videoRecorderCaptureCloseLabel => 'Sluiten';
 
   @override
@@ -8585,6 +8596,36 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get videoRecorderStabilizationModeAuto => 'Automatisch';
+
+  @override
+  String get videoRecorderFlashValueOff => 'Uit';
+
+  @override
+  String get videoRecorderFlashValueOn => 'Aan';
+
+  @override
+  String get videoRecorderFlashValueAuto => 'Automatisch';
+
+  @override
+  String get videoRecorderTimerValueOff => 'Uit';
+
+  @override
+  String get videoRecorderTimerValueThreeSeconds => '3 seconden';
+
+  @override
+  String get videoRecorderTimerValueTenSeconds => '10 seconden';
+
+  @override
+  String get videoRecorderAspectRatioValueSquare => 'Vierkant';
+
+  @override
+  String get videoRecorderAspectRatioValueVertical => 'Verticaal';
+
+  @override
+  String get videoRecorderCameraValueFront => 'Frontcamera';
+
+  @override
+  String get videoRecorderCameraValueBack => 'Achtercamera';
 
   @override
   String get videoRecorderLibraryEmptyLabel => 'Clipbibliotheek, geen clips';

@@ -8445,6 +8445,17 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoRecorderContinueToEditorLabel => 'Lanjutkan ke editor video';
 
   @override
+  String get videoRecorderCameraPreviewLabel => 'Pratinjau kamera';
+
+  @override
+  String get videoRecorderCameraPreviewFocusHint => 'Fokuskan kamera';
+
+  @override
+  String videoRecorderSwitchToModeLabel(String mode) {
+    return 'Beralih ke mode $mode';
+  }
+
+  @override
   String get videoRecorderCaptureCloseLabel => 'Tutup';
 
   @override
@@ -8503,6 +8514,36 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get videoRecorderStabilizationModeAuto => 'Otomatis';
+
+  @override
+  String get videoRecorderFlashValueOff => 'Nonaktif';
+
+  @override
+  String get videoRecorderFlashValueOn => 'Aktif';
+
+  @override
+  String get videoRecorderFlashValueAuto => 'Otomatis';
+
+  @override
+  String get videoRecorderTimerValueOff => 'Nonaktif';
+
+  @override
+  String get videoRecorderTimerValueThreeSeconds => '3 detik';
+
+  @override
+  String get videoRecorderTimerValueTenSeconds => '10 detik';
+
+  @override
+  String get videoRecorderAspectRatioValueSquare => 'Persegi';
+
+  @override
+  String get videoRecorderAspectRatioValueVertical => 'Vertikal';
+
+  @override
+  String get videoRecorderCameraValueFront => 'Kamera depan';
+
+  @override
+  String get videoRecorderCameraValueBack => 'Kamera belakang';
 
   @override
   String get videoRecorderLibraryEmptyLabel =>
