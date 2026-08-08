@@ -49,6 +49,14 @@ class SoundSyncCubit extends Cubit<SoundSyncState> {
       addError(e, stackTrace);
       if (isClosed) return;
       emit(const SoundSyncState(status: SoundSyncStatus.failure));
+    } on LocalStoreUnreadableException catch (e, stackTrace) {
+      // Expected after a downgrade from a newer build, or on a corrupt
+      // preferences payload — not Reportable. Sync stays off until the
+      // library is readable again rather than publishing deletions for a
+      // library it cannot see.
+      addError(e, stackTrace);
+      if (isClosed) return;
+      emit(const SoundSyncState(status: SoundSyncStatus.failure));
     } catch (e, stackTrace) {
       // Unexpected: e.g. a malformed remote body raising FormatException out
       // of SavedSound.fromJson. This is a programming-invariant violation

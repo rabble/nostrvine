@@ -10,9 +10,16 @@ class _MockIndexClient extends Mock implements SyncIndexClient {}
 class _FakeLocalSoundStore implements LocalSoundStore {
   final Map<String, Map<String, dynamic>> sounds = {};
 
+  /// Set to simulate a library this build cannot decode.
+  bool unreadable = false;
+
   @override
-  Future<Map<String, Map<String, dynamic>>> readAll() async =>
-      Map<String, Map<String, dynamic>>.from(sounds);
+  Future<Map<String, Map<String, dynamic>>> readAll() async {
+    if (unreadable) {
+      throw LocalStoreUnreadableException('unreadable');
+    }
+    return Map<String, Map<String, dynamic>>.from(sounds);
+  }
 
   @override
   Future<void> upsert(String id, Map<String, dynamic> body) async {
@@ -438,6 +445,51 @@ void main() {
             latestKnownRemote: any(named: 'latestKnownRemote'),
           ),
         );
+      },
+    );
+
+    test(
+      'aborts rather than tombstoning a library it could not read',
+      () async {
+        // Seed applied state for two synced sounds, then make the local
+        // library unreadable. Reading that as an empty library makes both
+        // look user-deleted, and the delete-retry loop publishes a
+        // tombstone for each — which every other device then applies.
+        local.sounds[idA] = {'label': 'intro'};
+        local.sounds[idB] = {'label': 'outro'};
+        await repository.reconcile();
+        clearInteractions(index);
+
+        local.unreadable = true;
+
+        await expectLater(
+          repository.reconcile(),
+          throwsA(isA<LocalStoreUnreadableException>()),
+        );
+        verifyNever(
+          () => index.publish(
+            any(),
+            any(),
+            latestKnownRemote: any(named: 'latestKnownRemote'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'still tombstones a sound the user genuinely deleted',
+      () async {
+        // The counterpart to the test above: an empty-but-readable library
+        // must keep retrying the deletion the push loop can never see.
+        local.sounds[idA] = {'label': 'intro'};
+        await repository.reconcile();
+        clearInteractions(index);
+
+        local.sounds.remove(idA);
+
+        final outcome = await repository.reconcile();
+
+        expect(outcome.deletionsRetried, equals(1));
       },
     );
 

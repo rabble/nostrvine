@@ -1,6 +1,7 @@
 // ABOUTME: Tests the LocalSoundStore adapter over SavedSoundsService.
 // ABOUTME: Verifies id keying and SavedSound json round-tripping.
 
+import 'package:creator_sync/creator_sync.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/creator_sync/saved_sounds_local_store.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
@@ -91,6 +92,70 @@ void main() {
       await store.remove('0' * 64);
 
       expect(await store.readAll(), isEmpty);
+    });
+
+    group('unreadable library', () {
+      /// Rebuilds the service over [raw] stored at the account's key.
+      Future<SavedSoundsLocalStore> storeOver(String raw) async {
+        SharedPreferences.setMockInitialValues({
+          SavedSoundsService.accountStorageKey(pubkey): raw,
+        });
+        return SavedSoundsLocalStore(
+          SavedSoundsService(
+            await SharedPreferences.getInstance(),
+            pubkeyHex: pubkey,
+          ),
+        );
+      }
+
+      // loadSavedSounds() answers [] for each of these exactly as it does
+      // for a genuinely empty library. Reporting that to the reconciler as
+      // an empty map makes every synced sound look user-deleted, and the
+      // delete-retry pass then tombstones the whole library on every
+      // device the account is signed in to.
+      test('throws on a payload written by a newer build', () async {
+        final store = await storeOver(
+          '{"schemaVersion":9999,"sounds":[{"id":"${'a' * 64}"}]}',
+        );
+
+        await expectLater(
+          store.readAll(),
+          throwsA(isA<LocalStoreUnreadableException>()),
+        );
+      });
+
+      test('throws on a corrupt payload', () async {
+        final store = await storeOver('not json at all');
+
+        await expectLater(
+          store.readAll(),
+          throwsA(isA<LocalStoreUnreadableException>()),
+        );
+      });
+
+      test('throws on a versioned payload with no sound list', () async {
+        final store = await storeOver('{"schemaVersion":1}');
+
+        await expectLater(
+          store.readAll(),
+          throwsA(isA<LocalStoreUnreadableException>()),
+        );
+      });
+
+      test(
+        'reads an empty versioned library as empty, not unreadable',
+        () async {
+          final store = await storeOver('{"schemaVersion":1,"sounds":[]}');
+
+          expect(await store.readAll(), isEmpty);
+        },
+      );
+
+      test('reads an empty legacy list as empty, not unreadable', () async {
+        final store = await storeOver('[]');
+
+        expect(await store.readAll(), isEmpty);
+      });
     });
   });
 }

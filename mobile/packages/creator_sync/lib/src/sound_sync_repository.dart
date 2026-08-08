@@ -26,6 +26,12 @@ typedef CreatorSyncErrorReporter =
 /// Implemented in the app layer over `SavedSoundsService`.
 abstract interface class LocalSoundStore {
   /// Returns every locally saved sound as `id -> serialized body`.
+  ///
+  /// Must throw [LocalStoreUnreadableException] rather than return an empty
+  /// map when the library exists but cannot be decoded — a corrupt payload,
+  /// or one written by a build newer than this one. An empty map is read as
+  /// "this account saved nothing", which makes every previously synced
+  /// sound look deleted.
   Future<Map<String, Map<String, dynamic>>> readAll();
 
   /// Inserts or replaces the sound [id] with [body].
@@ -212,6 +218,10 @@ class SoundSyncRepository {
       // (e.g. signed out, signer refused to sign) are both surfaced via a
       // status enum in the UI, not Crashlytics. See error_handling.md.
       rethrow;
+    } on LocalStoreUnreadableException {
+      // Also expected: a library written by a newer build, or a corrupt
+      // payload. Aborting the pass leaves every remote record intact.
+      rethrow;
     } catch (e, stackTrace) {
       _report?.call(
         e,
@@ -250,6 +260,8 @@ class SoundSyncRepository {
       );
       await _state.writeApplied(SyncItemKind.sound, applied);
     } on SyncIndexException {
+      rethrow;
+    } on LocalStoreUnreadableException {
       rethrow;
     } catch (e, stackTrace) {
       _report?.call(

@@ -14,9 +14,16 @@ class SavedSoundsLocalStore implements LocalSoundStore {
 
   @override
   Future<Map<String, Map<String, dynamic>>> readAll() async {
-    return {
-      for (final sound in _service.loadSavedSounds()) sound.id: sound.toJson(),
-    };
+    // loadSavedSounds() first: it is what kicks off the legacy-bucket
+    // migration, and an account whose bucket that migration has not written
+    // yet reads as absent rather than unreadable.
+    final sounds = _service.loadSavedSounds();
+    if (_service.isLibraryUnreadable) {
+      throw LocalStoreUnreadableException(
+        'saved sound library is present but not decodable by this build',
+      );
+    }
+    return {for (final sound in sounds) sound.id: sound.toJson()};
   }
 
   @override

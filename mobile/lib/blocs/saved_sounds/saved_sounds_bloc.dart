@@ -92,6 +92,8 @@ class SavedSoundsBloc extends Bloc<SavedSoundsEvent, SavedSoundsState> {
       addError(e, stackTrace);
     } on VaultKeyUnavailableException catch (e, stackTrace) {
       addError(e, stackTrace);
+    } on LocalStoreUnreadableException catch (e, stackTrace) {
+      addError(e, stackTrace);
     } catch (e, stackTrace) {
       addError(Reportable(e, context: context), stackTrace);
     }

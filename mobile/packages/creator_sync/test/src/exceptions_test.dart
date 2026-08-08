@@ -37,4 +37,15 @@ void main() {
       );
     });
   });
+
+  group(LocalStoreUnreadableException, () {
+    test('toString includes the message', () {
+      final exception = LocalStoreUnreadableException('payload not decodable');
+
+      expect(
+        exception.toString(),
+        equals('LocalStoreUnreadableException: payload not decodable'),
+      );
+    });
+  });
 }
