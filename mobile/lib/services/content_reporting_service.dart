@@ -429,6 +429,51 @@ class ContentReportingService {
     }
   }
 
+  /// The NIP-32 label pair identifying a report's reason on the wire.
+  ///
+  /// Built once here and emitted by both report channels — the kind-1984
+  /// event and the moderation DM — so the two can never resolve to different
+  /// report types. These label values are a cross-repo wire contract consumed
+  /// by divine-web and divine-relay-manager.
+  static List<List<String>> _nip32ReportLabelTags(ContentFilterReason reason) =>
+      [
+        ['L', kReportLabelNamespace],
+        ['l', contentFilterReasonToNip32Label(reason), kReportLabelNamespace],
+      ];
+
+  /// Machine-readable report data for divine-moderation-service's dm-reader,
+  /// carried as NIP-17 tags on the rumor rather than folded into the DM body —
+  /// the content stays plain human-readable prose, which NIP-17 mandates and
+  /// the admin Messages UI renders as-is (#6593).
+  ///
+  /// The `L`/`l` pair is the same one the kind-1984 report carries, so the
+  /// backend resolves both channels to one report type. Sending only the
+  /// NIP-56 value would let whichever channel ingested first pin a collapsed
+  /// type — `other` for an `aiGenerated` report — permanently, because
+  /// `user_reports` is written with `INSERT OR IGNORE` on
+  /// `(sha256, reporter_pubkey)`.
+  ///
+  /// `report_type` and [sha256] are DM-only: the kind-1984 event carries the
+  /// NIP-56 type as the third element of its `e`/`p` tags and carries no blob
+  /// hash.
+  ///
+  /// [sha256] is the reported video's Blossom blob hash where one resolves.
+  /// [VideoEvent.sha256] is nullable, and user reports and DM-message reports
+  /// never have one. `user_reports.sha256` is `NOT NULL` server-side, so
+  /// omitting the tag degrades to no report row rather than a malformed one —
+  /// a blank tag must never ship.
+  ///
+  /// Tag order is pinned by divine-moderation-service's
+  /// `dm-report-contract.test.mjs` fixture.
+  static List<List<String>> moderationDmTags({
+    required ContentFilterReason reason,
+    String? sha256,
+  }) => [
+    ..._nip32ReportLabelTags(reason),
+    ['report_type', contentFilterReasonToNip56Type(reason)],
+    if (sha256 != null && sha256.isNotEmpty) ['sha256', sha256],
+  ];
+
   /// Create NIP-56 reporting event (kind 1984) for Apple compliance
   Future<Event?> _createReportingEvent({
     required String reportId,
@@ -460,10 +505,7 @@ class ContentReportingService {
       final tags = <List<String>>[
         for (final nip56EventId in eventTagIds) ['e', nip56EventId, nip56Type],
         ['p', authorPubkey, nip56Type],
-        ['L', kReportLabelNamespace],
-        // These label values are a cross-repo wire contract consumed by
-        // divine-web and divine-relay-manager.
-        ['l', contentFilterReasonToNip32Label(reason), kReportLabelNamespace],
+        ..._nip32ReportLabelTags(reason),
       ];
 
       // Add hashtags as 't' tags

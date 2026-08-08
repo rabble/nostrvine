@@ -866,78 +866,35 @@ void main() {
       );
     });
 
-    testWidgets('DM carries the granular NIP-32 label for the reason', (
+    // The tag values themselves are pinned in
+    // test/services/content_reporting_service_test.dart. What only a widget
+    // test can catch is the dialog feeding the wrong inputs into the builder:
+    // the reason the user actually picked, and the reported video's hash.
+    testWidgets('DM tags carry the selected reason and the video blob hash', (
       tester,
     ) async {
+      testVideo = testVideo.copyWith(sha256: 'a' * 64);
+
       await setLargeSurface(tester);
-      await openAndSubmitReport(tester);
-
-      final tags = await captureDmTags(tester);
-
-      expect(
-        tags,
-        contains(equals(['L', kReportLabelNamespace])),
-        reason: 'NIP-32 requires the namespace to be declared with L',
+      // Not the default first option, so a dialog that ignored the selection
+      // and reported spam would fail here. aiGenerated is also the reason
+      // NIP-56 collapses to 'other' while the label stays granular — the
+      // regression this change exists to prevent (#6593).
+      await openAndSubmitReport(
+        tester,
+        reasonLabel: l10n.reportReasonTitle(ContentFilterReason.aiGenerated),
       );
-      expect(
-        tags,
-        contains(equals(['l', 'NS-spam', kReportLabelNamespace])),
-        reason:
-            'divine-moderation-service resolves report_type from this label '
-            'first, so it must carry the uncollapsed reason (#6593)',
-      );
-    });
-
-    testWidgets('DM carries the NIP-56 type as a coarse fallback', (
-      tester,
-    ) async {
-      await setLargeSurface(tester);
-      await openAndSubmitReport(tester);
 
       expect(
         await captureDmTags(tester),
-        contains(equals(['report_type', 'spam'])),
-        reason:
-            'the backend falls back to this when the NIP-32 label is absent',
+        equals([
+          ['L', kReportLabelNamespace],
+          ['l', 'NS-aiGenerated', kReportLabelNamespace],
+          ['report_type', 'other'],
+          ['sha256', 'a' * 64],
+        ]),
       );
     });
-
-    testWidgets(
-      'DM label survives a reason the NIP-56 mapping collapses to "other"',
-      (tester) async {
-        await setLargeSurface(tester);
-        await openAndSubmitReport(
-          tester,
-          reasonLabel: l10n.reportReasonTitle(ContentFilterReason.aiGenerated),
-        );
-
-        final tags = await captureDmTags(tester);
-
-        // The regression this whole change exists to prevent: report_type
-        // alone would pin user_reports.report_type to 'other' for an AI
-        // report, permanently, via INSERT OR IGNORE.
-        expect(tags, contains(equals(['report_type', 'other'])));
-        expect(
-          tags,
-          contains(equals(['l', 'NS-aiGenerated', kReportLabelNamespace])),
-        );
-      },
-    );
-
-    testWidgets(
-      'DM carries sha256 when the reported video resolves a blob hash',
-      (tester) async {
-        testVideo = testVideo.copyWith(sha256: 'a' * 64);
-
-        await setLargeSurface(tester);
-        await openAndSubmitReport(tester);
-
-        expect(
-          await captureDmTags(tester),
-          contains(equals(['sha256', 'a' * 64])),
-        );
-      },
-    );
 
     testWidgets('DM omits sha256 when the video has no blob hash', (
       tester,
