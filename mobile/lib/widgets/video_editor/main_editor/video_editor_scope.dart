@@ -29,6 +29,7 @@ class VideoEditorScope extends InheritedWidget {
     required this.onOpenCaptions,
     required this.originalClipAspectRatio,
     required this.bodySizeNotifier,
+    required this.zoomMatrixNotifier,
     required this.playTimeNotifier,
     required this.fromLibrary,
     this.editorOverride,
@@ -75,6 +76,12 @@ class VideoEditorScope extends InheritedWidget {
 
   /// Notifier for the body size, updated by [_CanvasFitter].
   final ValueNotifier<Size> bodySizeNotifier;
+
+  /// Notifier for the current editor zoom transform (identity = not zoomed),
+  /// driven by the editor's zoom matrix. The letterbox scrim applies the same
+  /// transform so the bars move/scale with the magnified frame instead of
+  /// dimming it.
+  final ValueNotifier<Matrix4> zoomMatrixNotifier;
 
   /// Notifier for the fine-grained editor play time (timeline space), updated
   /// every playhead tick — the same value that drives the burned-in layers.
@@ -165,5 +172,6 @@ class VideoEditorScope extends InheritedWidget {
   @override
   bool updateShouldNotify(VideoEditorScope oldWidget) =>
       editorKey != oldWidget.editorKey ||
-      removeAreaKey != oldWidget.removeAreaKey;
+      removeAreaKey != oldWidget.removeAreaKey ||
+      zoomMatrixNotifier != oldWidget.zoomMatrixNotifier;
 }

@@ -44,6 +44,7 @@ import 'package:openvine/utils/video_editor_playhead.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_editor/main_editor/hit_test_expander.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_clip_preview.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_cut_area_overlay.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_feed_preview_overlay.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_setup_loading_indicator.dart';
@@ -2606,6 +2607,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
           callbacks: ProImageEditorCallbacks(
             onCompleteWithParameters: _handleEditorComplete,
             mainEditorCallbacks: MainEditorCallbacks(
+              onEditorZoomMatrix4Change: (matrix) =>
+                  scope.zoomMatrixNotifier.value = matrix,
               onAfterViewInit: () {
                 _isInitialized = true;
 
@@ -2905,26 +2908,28 @@ class _CanvasFitter extends ConsumerWidget {
         // SizedBox > Navigator) owns the aspect-ratio mapping: cover-fit
         // [renderSize] into [targetSize], centered in [bodySize].
         //
-        // [HitTestExpander] wraps it so that taps in the letterbox zone
-        // (outside [targetSize]) are clamped to the nearest point inside
-        // [targetSize] and re-dispatched into the chain. Without this,
-        // `Center.hitTestChildren` drops every pointer event that falls
-        // outside its child rect, so the editor's top-level
-        // GestureDetector never opens an arena and [onScaleStart] /
-        // [onScaleUpdate] never fire.
-        return HitTestExpander(
-          visibleSize: targetSize,
-          child: Center(
-            child: SizedBox.fromSize(
-              size: targetSize,
-              child: FittedBox(
-                fit: BoxFit.cover,
-                child: SizedBox.fromSize(
-                  size: renderSize,
-                  child: Navigator(
-                    clipBehavior: Clip.none,
-                    onGenerateRoute: (_) => PageRouteBuilder(
-                      pageBuilder: (_, _, _) => builder(bodySize, renderSize),
+        // [HitTestExpander] wraps it so that taps in the scrim /
+        // letterbox zone (outside [targetSize]) are clamped to the
+        // nearest point inside [targetSize] and re-dispatched into the
+        // chain. Without this, `Center.hitTestChildren` drops every
+        // pointer event that falls outside its child rect, so the
+        // editor's top-level GestureDetector never opens an arena and
+        // [onScaleStart] / [onScaleUpdate] never fire.
+        return VideoEditorCutAreaOverlay(
+          child: HitTestExpander(
+            visibleSize: targetSize,
+            child: Center(
+              child: SizedBox.fromSize(
+                size: targetSize,
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  child: SizedBox.fromSize(
+                    size: renderSize,
+                    child: Navigator(
+                      clipBehavior: Clip.none,
+                      onGenerateRoute: (_) => PageRouteBuilder(
+                        pageBuilder: (_, _, _) => builder(bodySize, renderSize),
+                      ),
                     ),
                   ),
                 ),
