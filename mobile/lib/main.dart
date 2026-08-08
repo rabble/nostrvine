@@ -3052,13 +3052,18 @@ bool _showPublishSuccessSnackbar(
                       .read(postPublishExperimentProvider)
                       .createAgainTapped(createAgainOffer),
                 );
-                container
-                    .read(goRouterProvider)
-                    .go(
-                      VideoRecorderScreen.pathForEntryPoint(
-                        CreationEntryPoint.postPublish,
+                // Push, not go: the payoff this experiment measures is the
+                // profile the user is standing on, so closing the recorder
+                // has to pop back to it instead of resetting to the feed.
+                unawaited(
+                  container
+                      .read(goRouterProvider)
+                      .push<void>(
+                        VideoRecorderScreen.pathForEntryPoint(
+                          CreationEntryPoint.postPublish,
+                        ),
                       ),
-                    );
+                );
               },
             ),
     ),
