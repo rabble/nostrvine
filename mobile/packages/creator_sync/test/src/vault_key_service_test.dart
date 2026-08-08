@@ -49,17 +49,64 @@ void main() {
       registerFallbackValue(<Filter>[]);
     });
 
+    late List<Duration> settleWaits;
+
     setUp(() {
       signer = _MockSigner();
       client = _MockClient();
       cache = _FakeCache();
+      settleWaits = [];
       service = VaultKeyService(
         signer: signer,
         client: client,
         cache: cache,
+        settleDelay: (duration) async => settleWaits.add(duration),
       );
       when(signer.getPublicKey).thenAnswer((_) async => pubkey);
     });
+
+    /// Wires the signer and client to behave like a relay that stores the
+    /// vault-key event handed to it and serves it back on the next query,
+    /// which is what the post-publish read-back needs to see.
+    ///
+    /// Wrapping is a reversible `wrapped:<plaintext>` marker rather than
+    /// real NIP-44, so a test can assert *which* key came back.
+    List<Event> stubStoringRelay({List<Event> seed = const []}) {
+      final stored = [...seed];
+      when(
+        () => client.queryEventsDetailed(
+          any(),
+          useCache: any(named: 'useCache'),
+        ),
+      ).thenAnswer((_) async => _confirmed([...stored]));
+      when(() => signer.nip44Encrypt(pubkey, any())).thenAnswer(
+        (invocation) async => 'wrapped:${invocation.positionalArguments[1]}',
+      );
+      when(() => signer.nip44Decrypt(pubkey, any())).thenAnswer((invocation) {
+        final wrapped = invocation.positionalArguments[1] as String;
+        return Future.value(wrapped.replaceFirst('wrapped:', ''));
+      });
+      when(() => signer.signEvent(any())).thenAnswer(
+        (invocation) async => invocation.positionalArguments.first as Event,
+      );
+      when(() => client.publishEvent(any())).thenAnswer((invocation) async {
+        final event = invocation.positionalArguments.first as Event;
+        stored.add(event);
+        return PublishSuccess(event: event);
+      });
+      return stored;
+    }
+
+    /// A vault-key event as another device would have published it.
+    Event otherDeviceKeyEvent(String rawKey, {int createdAt = 5000}) => Event(
+      pubkey,
+      30078,
+      const [
+        ['d', vaultKeyDTag],
+      ],
+      'wrapped:$rawKey',
+      createdAt: createdAt,
+    );
 
     test('returns the cached key without touching the signer', () async {
       final key = await AesGcm.with256bits().newSecretKey();
@@ -112,13 +159,8 @@ void main() {
     test(
       'ignores non-matching events returned by an untrustworthy relay',
       () async {
-        when(
-          () => client.queryEventsDetailed(
-            any(),
-            useCache: any(named: 'useCache'),
-          ),
-        ).thenAnswer(
-          (_) async => _confirmed([
+        stubStoringRelay(
+          seed: [
             // Wrong kind: a relay handing back an unrelated event for the
             // same author must not be mistaken for the vault key.
             Event(pubkey, 1, const [], 'unrelated note'),
@@ -131,18 +173,7 @@ void main() {
               ],
               'not the vault key',
             ),
-          ]),
-        );
-        when(
-          () => signer.nip44Encrypt(pubkey, any()),
-        ).thenAnswer((_) async => 'freshly-wrapped');
-        when(() => signer.signEvent(any())).thenAnswer(
-          (invocation) async => invocation.positionalArguments.first as Event,
-        );
-        when(() => client.publishEvent(any())).thenAnswer(
-          (invocation) async => PublishSuccess(
-            event: invocation.positionalArguments.first as Event,
-          ),
+          ],
         );
 
         final obtained = await service.obtain();
@@ -264,23 +295,7 @@ void main() {
     );
 
     test('generates and publishes a key when none exists remotely', () async {
-      when(
-        () => client.queryEventsDetailed(
-          any(),
-          useCache: any(named: 'useCache'),
-        ),
-      ).thenAnswer((_) async => _confirmed(const []));
-      when(
-        () => signer.nip44Encrypt(pubkey, any()),
-      ).thenAnswer((_) async => 'freshly-wrapped');
-      when(() => signer.signEvent(any())).thenAnswer(
-        (invocation) async => invocation.positionalArguments.first as Event,
-      );
-      when(() => client.publishEvent(any())).thenAnswer(
-        (invocation) async => PublishSuccess(
-          event: invocation.positionalArguments.first as Event,
-        ),
-      );
+      stubStoringRelay();
 
       final obtained = await service.obtain();
 
@@ -290,25 +305,195 @@ void main() {
     });
 
     test(
-      'resolves once for two concurrent calls that both miss the cache',
+      'adopts the key another device published instead of the one it just '
+      'minted',
       () async {
+        final otherDeviceKey = base64Encode(
+          await (await AesGcm.with256bits().newSecretKey()).extractBytes(),
+        );
+        // The relay answers "no vault key" — genuinely, not a flake — so
+        // this device mints and publishes one, exactly as a second device
+        // starting up at the same moment does. By the time the read-back
+        // runs, the other device's event is the one the relays retained
+        // (addressable events keep exactly one). Caching the locally minted
+        // key here would leave this device sealing sounds under a key the
+        // other device can never open, and it would never notice, because
+        // every later obtain() short-circuits on its own cache.
+        var published = false;
+        when(
+          () => client.queryEventsDetailed(
+            any(),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer(
+          (_) async => _confirmed(
+            published ? [otherDeviceKeyEvent(otherDeviceKey)] : const [],
+          ),
+        );
+        when(() => signer.nip44Encrypt(pubkey, any())).thenAnswer(
+          (invocation) async => 'wrapped:${invocation.positionalArguments[1]}',
+        );
+        when(() => signer.nip44Decrypt(pubkey, any())).thenAnswer((invocation) {
+          final wrapped = invocation.positionalArguments[1] as String;
+          return Future.value(wrapped.replaceFirst('wrapped:', ''));
+        });
+        when(() => signer.signEvent(any())).thenAnswer(
+          (invocation) async => invocation.positionalArguments.first as Event,
+        );
+        when(() => client.publishEvent(any())).thenAnswer((invocation) async {
+          published = true;
+          return PublishSuccess(
+            event: invocation.positionalArguments.first as Event,
+          );
+        });
+
+        final obtained = await service.obtain();
+
+        expect(base64Encode(await obtained.extractBytes()), otherDeviceKey);
+        expect(await cache.read(pubkey), equals(otherDeviceKey));
+      },
+    );
+
+    test(
+      'retries the read-back until the relay serves the published key',
+      () async {
+        final stored = stubStoringRelay();
+        var queriesAfterPublish = 0;
+        when(
+          () => client.queryEventsDetailed(
+            any(),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer((_) async {
+          if (stored.isEmpty) return _confirmed(const []);
+          // The relay acknowledged the publish from an in-memory queue and
+          // commits afterwards, so the first two read-backs legitimately
+          // see nothing yet.
+          queriesAfterPublish++;
+          if (queriesAfterPublish <= 2) return _confirmed(const []);
+          return _confirmed([...stored]);
+        });
+
+        final obtained = await service.obtain();
+
+        expect((await obtained.extractBytes()).length, equals(32));
+        expect(await cache.read(pubkey), isNotNull);
+        expect(
+          settleWaits,
+          equals([
+            VaultKeyService.settleInterval,
+            VaultKeyService.settleInterval,
+          ]),
+        );
+      },
+    );
+
+    test(
+      'throws rather than caching a key the relays never served back',
+      () async {
+        stubStoringRelay();
         when(
           () => client.queryEventsDetailed(
             any(),
             useCache: any(named: 'useCache'),
           ),
         ).thenAnswer((_) async => _confirmed(const []));
+
+        await expectLater(
+          service.obtain(),
+          throwsA(isA<VaultKeyUnavailableException>()),
+        );
+
+        // Publishing did happen — this is the post-publish read-back
+        // failing, not the pre-publish lookup. Leaving the cache empty is
+        // the point: nothing was sealed under the discarded key, so the
+        // next obtain() can find the published event and adopt it, or mint
+        // again, without orphaning anything.
+        verify(() => client.publishEvent(any())).called(1);
+        expect(await cache.read(pubkey), isNull);
+        expect(settleWaits, hasLength(VaultKeyService.settleAttempts - 1));
+      },
+    );
+
+    test(
+      'throws rather than caching the minted key when the read-back cannot '
+      'reach a relay',
+      () async {
+        final stored = stubStoringRelay();
+        when(
+          () => client.queryEventsDetailed(
+            any(),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer(
+          (_) async => stored.isEmpty
+              ? _confirmed(const [])
+              : (events: <Event>[], timedOut: true, noRelays: false),
+        );
+
+        await expectLater(
+          service.obtain(),
+          throwsA(isA<VaultKeyUnavailableException>()),
+        );
+        verify(() => client.publishEvent(any())).called(1);
+        expect(await cache.read(pubkey), isNull);
+      },
+    );
+
+    test(
+      'throws rather than caching the minted key when the read-back returns '
+      'an event it cannot unwrap',
+      () async {
+        var published = false;
+        when(
+          () => client.queryEventsDetailed(
+            any(),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer(
+          (_) async => _confirmed(
+            published
+                ? [
+                    Event(
+                      pubkey,
+                      30078,
+                      const [
+                        ['d', vaultKeyDTag],
+                      ],
+                      'sealed-to-a-key-this-signer-lost',
+                    ),
+                  ]
+                : const [],
+          ),
+        );
         when(
           () => signer.nip44Encrypt(pubkey, any()),
         ).thenAnswer((_) async => 'freshly-wrapped');
+        when(
+          () => signer.nip44Decrypt(pubkey, any()),
+        ).thenAnswer((_) async => null);
         when(() => signer.signEvent(any())).thenAnswer(
           (invocation) async => invocation.positionalArguments.first as Event,
         );
-        when(() => client.publishEvent(any())).thenAnswer(
-          (invocation) async => PublishSuccess(
+        when(() => client.publishEvent(any())).thenAnswer((invocation) async {
+          published = true;
+          return PublishSuccess(
             event: invocation.positionalArguments.first as Event,
-          ),
+          );
+        });
+
+        await expectLater(
+          service.obtain(),
+          throwsA(isA<VaultKeyUnavailableException>()),
         );
+        expect(await cache.read(pubkey), isNull);
+      },
+    );
+
+    test(
+      'resolves once for two concurrent calls that both miss the cache',
+      () async {
+        stubStoringRelay();
 
         final results = await Future.wait([
           service.obtain(),
@@ -328,6 +513,7 @@ void main() {
       'and can succeed',
       () async {
         var queryCount = 0;
+        final stored = stubStoringRelay();
         when(
           () => client.queryEventsDetailed(
             any(),
@@ -338,19 +524,8 @@ void main() {
           if (queryCount == 1) {
             return (events: <Event>[], timedOut: true, noRelays: false);
           }
-          return _confirmed(const []);
+          return _confirmed([...stored]);
         });
-        when(
-          () => signer.nip44Encrypt(pubkey, any()),
-        ).thenAnswer((_) async => 'freshly-wrapped');
-        when(() => signer.signEvent(any())).thenAnswer(
-          (invocation) async => invocation.positionalArguments.first as Event,
-        );
-        when(() => client.publishEvent(any())).thenAnswer(
-          (invocation) async => PublishSuccess(
-            event: invocation.positionalArguments.first as Event,
-          ),
-        );
 
         await expectLater(
           service.obtain(),
@@ -366,7 +541,9 @@ void main() {
         final obtained = await service.obtain();
 
         expect((await obtained.extractBytes()).length, equals(32));
-        expect(queryCount, equals(2));
+        // 1: the timed-out first attempt. 2: the second attempt's lookup,
+        // which finds nothing and mints. 3: the post-publish read-back.
+        expect(queryCount, equals(3));
       },
     );
 
