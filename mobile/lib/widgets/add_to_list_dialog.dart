@@ -4,7 +4,6 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -101,7 +100,10 @@ class SelectListDialog extends StatelessWidget {
                 },
                 child: Text(l10n.listNewList),
               ),
-              TextButton(onPressed: context.pop, child: Text(l10n.listDone)),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(l10n.listDone),
+              ),
             ],
           );
         },
@@ -147,6 +149,11 @@ class SelectListDialog extends StatelessWidget {
 }
 
 /// Dialog for creating a new curated list, optionally adding [video] to it.
+///
+/// Like [SelectListDialog] this is always presented with `showDialog` and is
+/// never registered as a `go_router` route, so every dismissal here goes
+/// through [Navigator] — the navigator that owns the dialog route — rather
+/// than `context.pop`.
 class CreateListDialog extends ConsumerStatefulWidget {
   const CreateListDialog({this.video, this.existingList, super.key});
   final VideoEvent? video;
@@ -223,7 +230,10 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
         ],
       ),
       actions: [
-        TextButton(onPressed: context.pop, child: Text(l10n.listCancel)),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.listCancel),
+        ),
         TextButton(
           onPressed: _saveList,
           child: Text(_isEditing ? l10n.listSave : l10n.listCreate),
@@ -265,14 +275,14 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
         Navigator.of(context).pop();
 
         if (!await updateFuture && messenger.mounted) {
-          _showSaveFailed(
-            messenger: messenger,
-            failureMessage: failureMessage,
-          );
+          _showSaveFailedDetached(messenger, failureMessage);
         }
         return;
       }
 
+      // The create path cannot dismiss early the way the edit path does:
+      // createList rolls the new list back out of local storage when the relay
+      // rejects it, and its generated ID is only known once it returns.
       final newList = await listService?.createList(
         name: name,
         description: _descriptionController.text.trim().isEmpty
@@ -296,7 +306,7 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
       }
 
       if (mounted) {
-        context.pop();
+        Navigator.of(context).pop();
       }
     } catch (e) {
       Log.error(
@@ -348,21 +358,23 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
     return confirmed ?? false;
   }
 
-  // A retained messenger lets an edit report relay failure after dismissing.
-  void _showSaveFailed({
-    ScaffoldMessengerState? messenger,
-    String? failureMessage,
-  }) {
-    (messenger ?? ScaffoldMessenger.of(context)).showSnackBar(
-      SnackBar(
-        content: Text(
-          failureMessage ??
-              (_isEditing
-                  ? context.l10n.listUpdateFailed
-                  : context.l10n.listCreateFailed),
-        ),
-        duration: const Duration(seconds: 2),
-      ),
+  /// Reports a failure while this dialog is still on screen.
+  void _showSaveFailed() => _showSaveFailedDetached(
+    ScaffoldMessenger.of(context),
+    _isEditing ? context.l10n.listUpdateFailed : context.l10n.listCreateFailed,
+  );
+
+  /// Reports a failure once the dialog may already be gone.
+  ///
+  /// Both arguments must be resolved before the async gap: after the pop this
+  /// State can be unmounted, so neither the messenger nor the message can be
+  /// recovered from [context].
+  void _showSaveFailedDetached(
+    ScaffoldMessengerState messenger,
+    String message,
+  ) {
+    messenger.showSnackBar(
+      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
     );
   }
 

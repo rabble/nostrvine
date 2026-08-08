@@ -13,7 +13,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/widgets/add_to_list_dialog.dart';
 
-import '../helpers/go_router.dart';
 import '../helpers/test_provider_overrides.dart';
 
 class _MockCuratedListService extends Mock implements CuratedListService {}
@@ -285,32 +284,26 @@ void main() {
       updatedAt: DateTime.now(),
     );
 
-    Widget buildSubject({
+    Widget buildSubject({VideoEvent? video, CuratedList? existingList}) =>
+        testProviderScope(
+          additionalOverrides: [
+            curatedListsStateProvider.overrideWith(_FakeCuratedListsState.new),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: CreateListDialog(video: video, existingList: existingList),
+            ),
+          ),
+        );
+
+    /// Hosts the dialog on a real dialog route so dismissal — and the snackbar
+    /// that has to outlive it — can be asserted the way a user sees them.
+    Widget buildDialogLauncher({
       VideoEvent? video,
       CuratedList? existingList,
-      MockGoRouter? goRouter,
-    }) {
-      final dialog = CreateListDialog(
-        video: video,
-        existingList: existingList,
-      );
-      return testProviderScope(
-        additionalOverrides: [
-          curatedListsStateProvider.overrideWith(_FakeCuratedListsState.new),
-        ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: goRouter == null
-                ? dialog
-                : MockGoRouterProvider(goRouter: goRouter, child: dialog),
-          ),
-        ),
-      );
-    }
-
-    Widget buildDialogLauncher(CuratedList existingList) => testProviderScope(
+    }) => testProviderScope(
       additionalOverrides: [
         curatedListsStateProvider.overrideWith(_FakeCuratedListsState.new),
       ],
@@ -322,7 +315,8 @@ void main() {
             body: TextButton(
               onPressed: () => showDialog<void>(
                 context: context,
-                builder: (_) => CreateListDialog(existingList: existingList),
+                builder: (_) =>
+                    CreateListDialog(video: video, existingList: existingList),
               ),
               child: const Text('Open list editor'),
             ),
@@ -388,9 +382,6 @@ void main() {
 
     testWidgets('confirms before publishing a private list', (tester) async {
       final list = createdList('Puppets').copyWith(isPublic: false);
-      final goRouter = MockGoRouter();
-      when(goRouter.canPop).thenReturn(true);
-      when(() => goRouter.pop<Object?>()).thenReturn(null);
       when(
         () => mockListService.updateList(
           listId: any(named: 'listId'),
@@ -400,9 +391,9 @@ void main() {
         ),
       ).thenAnswer((_) async => true);
 
-      await tester.pumpWidget(
-        buildSubject(existingList: list, goRouter: goRouter),
-      );
+      await tester.pumpWidget(buildDialogLauncher(existingList: list));
+      await tester.tap(find.text('Open list editor'));
+      await tester.pumpAndSettle();
       await tester.tap(find.byType(SwitchListTile));
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
@@ -447,7 +438,7 @@ void main() {
         ),
       ).thenAnswer((_) => updateCompleter.future);
 
-      await tester.pumpWidget(buildDialogLauncher(list));
+      await tester.pumpWidget(buildDialogLauncher(existingList: list));
       await tester.tap(find.text('Open list editor'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, 'Marionettes');
@@ -489,7 +480,7 @@ void main() {
           ),
         ).thenAnswer((_) => updateCompleter.future);
 
-        await tester.pumpWidget(buildDialogLauncher(list));
+        await tester.pumpWidget(buildDialogLauncher(existingList: list));
         await tester.tap(find.text('Open list editor'));
         await tester.pumpAndSettle();
         await tester.tap(find.byType(SwitchListTile));
@@ -510,6 +501,53 @@ void main() {
 
         updateCompleter.complete(true);
         await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'drops the pending edit when publishing a private list is rejected',
+      (tester) async {
+        final list = createdList('Puppets').copyWith(isPublic: false);
+        final updateCompleter = Completer<bool>();
+        addTearDown(() {
+          if (!updateCompleter.isCompleted) updateCompleter.complete(true);
+        });
+        when(
+          () => mockListService.updateList(
+            listId: any(named: 'listId'),
+            name: any(named: 'name'),
+            description: any(named: 'description'),
+            isPublic: any(named: 'isPublic'),
+          ),
+        ).thenAnswer((_) => updateCompleter.future);
+
+        await tester.pumpWidget(buildDialogLauncher(existingList: list));
+        await tester.tap(find.text('Open list editor'));
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextField).first, 'Marionettes');
+        await tester.tap(find.byType(SwitchListTile));
+        await tester.tap(find.text(l10n.listSave));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.listContinue));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.listEditTitle), findsNothing);
+
+        updateCompleter.complete(false);
+        await tester.pumpAndSettle();
+
+        // The messenger captured before the pop belongs to the host scaffold,
+        // so the failure still reaches the user once the editor route is gone.
+        expect(find.text(l10n.listUpdateFailed), findsOneWidget);
+
+        // Nothing is left to retry from. The editor did not reopen, the typed
+        // name went with it, and the visibility switch the user flipped is no
+        // longer on screen — the service leaves isPublic at its old value on a
+        // rejected publish (curated_list_service_crud_test.dart, "keeps a list
+        // private when publication is rejected"), so that flip is lost too.
+        expect(find.text(l10n.listEditTitle), findsNothing);
+        expect(find.text('Marionettes'), findsNothing);
+        expect(find.byType(SwitchListTile), findsNothing);
       },
     );
 
@@ -534,9 +572,6 @@ void main() {
 
     testWidgets('creates list and pops without adding video when no video '
         'is provided', (tester) async {
-      final goRouter = MockGoRouter();
-      when(goRouter.canPop).thenReturn(true);
-      when(() => goRouter.pop<Object?>()).thenReturn(null);
       when(
         () => mockListService.createList(
           name: any(named: 'name'),
@@ -545,7 +580,9 @@ void main() {
         ),
       ).thenAnswer((_) async => createdList('Fresh List'));
 
-      await tester.pumpWidget(buildSubject(goRouter: goRouter));
+      await tester.pumpWidget(buildDialogLauncher());
+      await tester.tap(find.text('Open list editor'));
+      await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, 'Fresh List');
       await tester.tap(find.text(l10n.listCreate));
       await tester.pumpAndSettle();
@@ -558,15 +595,12 @@ void main() {
         ),
       ).called(1);
       verifyNever(() => mockListService.addVideoToList(any(), any()));
-      verify(() => goRouter.pop<Object?>()).called(1);
+      expect(find.text(l10n.listCreateNewList), findsNothing);
     });
 
     testWidgets('creates list and adds video when a video is provided', (
       tester,
     ) async {
-      final goRouter = MockGoRouter();
-      when(goRouter.canPop).thenReturn(true);
-      when(() => goRouter.pop<Object?>()).thenReturn(null);
       final newList = createdList('Video List');
       when(
         () => mockListService.createList(
@@ -579,9 +613,9 @@ void main() {
         () => mockListService.addVideoToList(any(), any()),
       ).thenAnswer((_) async => true);
 
-      await tester.pumpWidget(
-        buildSubject(video: testVideo, goRouter: goRouter),
-      );
+      await tester.pumpWidget(buildDialogLauncher(video: testVideo));
+      await tester.tap(find.text('Open list editor'));
+      await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, 'Video List');
       await tester.tap(find.text(l10n.listCreate));
       await tester.pumpAndSettle();
@@ -589,13 +623,11 @@ void main() {
       verify(
         () => mockListService.addVideoToList(newList.id, testVideo.id),
       ).called(1);
-      verify(() => goRouter.pop<Object?>()).called(1);
+      expect(find.text(l10n.listCreateNewList), findsNothing);
     });
 
     testWidgets('shows failure snackbar and keeps dialog open when '
         'createList returns null', (tester) async {
-      final goRouter = MockGoRouter();
-      when(goRouter.canPop).thenReturn(true);
       when(
         () => mockListService.createList(
           name: any(named: 'name'),
@@ -604,7 +636,9 @@ void main() {
         ),
       ).thenAnswer((_) async => null);
 
-      await tester.pumpWidget(buildSubject(goRouter: goRouter));
+      await tester.pumpWidget(buildDialogLauncher());
+      await tester.tap(find.text('Open list editor'));
+      await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, 'Doomed List');
       await tester.tap(find.text(l10n.listCreate));
       await tester.pumpAndSettle();
@@ -612,7 +646,6 @@ void main() {
       expect(find.text(l10n.listCreateFailed), findsOneWidget);
       expect(find.text(l10n.listCreateNewList), findsOneWidget);
       verifyNever(() => mockListService.addVideoToList(any(), any()));
-      verifyNever(() => goRouter.pop<Object?>());
     });
   });
 }
