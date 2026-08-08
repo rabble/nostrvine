@@ -165,21 +165,26 @@ class SavedSoundsBloc extends Bloc<SavedSoundsEvent, SavedSoundsState> {
     );
     try {
       final result = await _service.saveSavedSound(record);
+      // Report the local save before mirroring. _mirror is best-effort and
+      // cannot throw, so awaiting it here only made the caller wait out a
+      // relay round trip — up to perRelaySendTimeout per relay, fanned out
+      // sequentially — before the sound appeared in the library.
+      if (!event.completer.isCompleted) event.completer.complete(result);
+      if (!emit.isDone) {
+        emit(
+          state.copyWith(
+            status: SavedSoundsStatus.loaded,
+            sounds: _service.loadSavedSounds(),
+          ),
+        );
+      }
+      if (result == SavedSoundSaveResult.saved) {
+        unawaited(_probe(record));
+      }
       await _mirror(
         () => _syncRepository!.publishLocalChange(record.id),
         context: SavedSoundsReportableSites.mirrorSave,
       );
-      if (!event.completer.isCompleted) event.completer.complete(result);
-      if (emit.isDone) return;
-      emit(
-        state.copyWith(
-          status: SavedSoundsStatus.loaded,
-          sounds: _service.loadSavedSounds(),
-        ),
-      );
-      if (result == SavedSoundSaveResult.saved) {
-        unawaited(_probe(record));
-      }
     } catch (error, stackTrace) {
       if (!event.completer.isCompleted) {
         event.completer.completeError(error, stackTrace);
@@ -246,20 +251,25 @@ class SavedSoundsBloc extends Bloc<SavedSoundsEvent, SavedSoundsState> {
       return;
     }
 
+    // Drop the row before mirroring, for the reason given in _save: the
+    // local delete already succeeded and _mirror cannot fail the operation,
+    // so waiting on it only left a deleted sound on screen for the length
+    // of a relay round trip.
+    if (completer != null && !completer.isCompleted) completer.complete();
+    if (!emit.isDone) {
+      emit(
+        state.copyWith(
+          sounds: state.sounds
+              .where((sound) => sound.id != event.soundId)
+              .toList(growable: false),
+          unsavedSoundIds: {...state.unsavedSoundIds}..remove(event.soundId),
+        ),
+      );
+    }
+
     await _mirror(
       () => _syncRepository!.publishLocalDeletion(event.soundId),
       context: SavedSoundsReportableSites.mirrorRemove,
-    );
-
-    if (completer != null && !completer.isCompleted) completer.complete();
-    if (emit.isDone) return;
-    emit(
-      state.copyWith(
-        sounds: state.sounds
-            .where((sound) => sound.id != event.soundId)
-            .toList(growable: false),
-        unsavedSoundIds: {...state.unsavedSoundIds}..remove(event.soundId),
-      ),
     );
   }
 

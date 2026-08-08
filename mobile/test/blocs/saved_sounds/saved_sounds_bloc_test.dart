@@ -455,6 +455,49 @@ void main() {
         expect(service.loadSavedSounds(), isEmpty);
       },
     );
+
+    test(
+      'a save completes without waiting on the relay publish',
+      () async {
+        // The publish is best-effort, so the sound must reach the library
+        // while it is still in flight rather than after it settles.
+        final publishing = Completer<void>();
+        when(
+          () => syncRepository.publishLocalChange(any()),
+        ).thenAnswer((_) => publishing.future);
+        final syncedBloc = await buildSyncedBloc(syncRepository);
+        addTearDown(syncedBloc.close);
+
+        await syncedBloc
+            .saveSound(_sound(id: 'k' * 64))
+            .timeout(const Duration(seconds: 2));
+
+        expect(publishing.isCompleted, isFalse);
+        expect(syncedBloc.state.sounds.single.id, 'k' * 64);
+        publishing.complete();
+      },
+    );
+
+    test(
+      'a removal drops the row without waiting on the relay publish',
+      () async {
+        final publishing = Completer<void>();
+        final syncedBloc = await buildSyncedBloc(syncRepository);
+        addTearDown(syncedBloc.close);
+        await syncedBloc.saveSound(_sound(id: 'l' * 64));
+        when(
+          () => syncRepository.publishLocalDeletion(any()),
+        ).thenAnswer((_) => publishing.future);
+
+        await syncedBloc
+            .removeSound('l' * 64)
+            .timeout(const Duration(seconds: 2));
+
+        expect(publishing.isCompleted, isFalse);
+        expect(syncedBloc.state.sounds, isEmpty);
+        publishing.complete();
+      },
+    );
   });
 }
 
