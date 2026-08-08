@@ -264,6 +264,123 @@ void main() {
       });
     });
 
+    group('unavailable local storage', () {
+      // The local database is a cache, not a precondition. When it is
+      // unreadable (at-rest cipher bootstrap left it unopenable, runtime
+      // corruption, disk full) the Kind 16 must still reach relays: the signed
+      // event is the irreplaceable half of the operation, the cache row is not.
+      // Regression for the SQLITE_NOTADB launch where every repost threw
+      // before `sendGenericRepost` was ever called.
+      final storageFailure = Exception('database is unavailable');
+
+      test('publishes the repost when local storage cannot be read', () async {
+        when(
+          () => mockLocalStorage.getAllRepostRecords(),
+        ).thenThrow(storageFailure);
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final eventId = await repository.repostVideo(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+        );
+
+        expect(eventId, equals(testRepostEventId));
+        verify(
+          () => mockNostrClient.sendGenericRepost(
+            addressableId: testAddressableId,
+            targetKind: EventKind.videoVertical,
+            authorPubkey: testAuthorPubkey,
+            content: any(named: 'content'),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).called(1);
+      });
+
+      test('publishes the repost when the local write fails', () async {
+        when(
+          () => mockLocalStorage.saveRepostRecord(any()),
+        ).thenThrow(storageFailure);
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final eventId = await repository.repostVideo(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+        );
+
+        expect(eventId, equals(testRepostEventId));
+        verify(
+          () => mockNostrClient.sendGenericRepost(
+            addressableId: testAddressableId,
+            targetKind: EventKind.videoVertical,
+            authorPubkey: testAuthorPubkey,
+            content: any(named: 'content'),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).called(1);
+      });
+
+      test(
+        'a failed read does not strand the repository uninitialized',
+        () async {
+          // Without this the `_isInitialized` latch never flips and every call
+          // re-runs the throwing read — the retry storm that filled the report
+          // with 26 identical failures for two taps.
+          when(
+            () => mockLocalStorage.getAllRepostRecords(),
+          ).thenThrow(storageFailure);
+
+          final repository = RepostsRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+          );
+
+          await repository.getRepostedAddressableIds();
+          await repository.getRepostedAddressableIds();
+
+          verify(() => mockLocalStorage.getAllRepostRecords()).called(1);
+        },
+      );
+
+      test('publishes the deletion when the local delete fails', () async {
+        when(
+          () => mockLocalStorage.deleteRepostRecord(any()),
+        ).thenThrow(storageFailure);
+        when(() => mockNostrClient.deleteEvent(any())).thenAnswer(
+          (_) async => createMockEvent(
+            id: 'deletion_event_id',
+            kind: EventKind.eventDeletion,
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        );
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        // Establish the record in memory so the deletion knows which event id
+        // to reference; an unknown repost still throws NotRepostedException.
+        await repository.repostVideo(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+        );
+
+        await repository.unrepostVideo(testAddressableId);
+
+        verify(() => mockNostrClient.deleteEvent(testRepostEventId)).called(1);
+      });
+    });
+
     group('repostVideo', () {
       test('creates and publishes Kind 16 event', () async {
         final repository = RepostsRepository(nostrClient: mockNostrClient);

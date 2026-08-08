@@ -285,7 +285,10 @@ class RepostsRepository {
       createdAt: DateTime.now(),
     );
     _repostRecords[addressableId] = placeholder;
-    await _localStorage?.saveRepostRecord(placeholder);
+    await _bestEffortLocalStorage(
+      () async => _localStorage?.saveRepostRecord(placeholder),
+      description: 'saving the repost placeholder',
+    );
     if (previousCount != null) {
       _cacheRepostCount(addressableId, previousCount + 1);
     }
@@ -327,7 +330,10 @@ class RepostsRepository {
         createdAt: placeholder.createdAt,
       );
       _repostRecords[addressableId] = confirmed;
-      await _localStorage?.saveRepostRecord(confirmed);
+      await _bestEffortLocalStorage(
+        () async => _localStorage?.saveRepostRecord(confirmed),
+        description: 'saving the confirmed repost',
+      );
 
       return sentEvent.id;
     } catch (e, stackTrace) {
@@ -348,7 +354,10 @@ class RepostsRepository {
         return placeholderId;
       }
       _repostRecords.remove(addressableId);
-      await _localStorage?.deleteRepostRecord(addressableId);
+      await _bestEffortLocalStorage(
+        () async => _localStorage?.deleteRepostRecord(addressableId),
+        description: 'rolling back the repost placeholder',
+      );
       if (previousCount != null) {
         _cacheRepostCount(addressableId, previousCount);
       }
@@ -411,8 +420,12 @@ class RepostsRepository {
     // Try in-memory cache first, then fall back to database.
     // This handles the case where the cache hasn't been populated yet.
     var record = _repostRecords[addressableId];
-    if (record == null && _localStorage != null) {
-      record = await _localStorage.getRepostRecord(addressableId);
+    final localStorage = _localStorage;
+    if (record == null && localStorage != null) {
+      record = await _bestEffortLocalStorage<RepostRecord?>(
+        () => localStorage.getRepostRecord(addressableId),
+        description: 'reading the repost record',
+      );
     }
 
     if (record == null) {
@@ -427,7 +440,10 @@ class RepostsRepository {
     // watchRepostedAddressableIds stream BEFORE any network I/O (mirror of
     // repostVideo).
     _repostRecords.remove(addressableId);
-    await _localStorage?.deleteRepostRecord(addressableId);
+    await _bestEffortLocalStorage(
+      () async => _localStorage?.deleteRepostRecord(addressableId),
+      description: 'deleting the repost record',
+    );
     if (previousCount != null) {
       _cacheRepostCount(addressableId, previousCount - 1);
     }
@@ -479,7 +495,10 @@ class RepostsRepository {
         return;
       }
       _repostRecords[addressableId] = snapshotRecord;
-      await _localStorage?.saveRepostRecord(snapshotRecord);
+      await _bestEffortLocalStorage(
+        () async => _localStorage?.saveRepostRecord(snapshotRecord),
+        description: 'restoring the repost record',
+      );
       if (previousCount != null) {
         _cacheRepostCount(addressableId, previousCount);
       }
@@ -1010,14 +1029,54 @@ class RepostsRepository {
   Future<void> _ensureInitialized() async {
     if (_isInitialized) return;
 
-    if (_localStorage != null) {
-      final records = await _localStorage.getAllRepostRecords();
-      for (final record in records) {
-        _repostRecords[record.addressableId] = record;
+    final localStorage = _localStorage;
+    if (localStorage != null) {
+      try {
+        final records = await localStorage.getAllRepostRecords();
+        for (final record in records) {
+          _repostRecords[record.addressableId] = record;
+        }
+        _emitRepostedIds();
+      } on Object catch (e) {
+        // Degrade to an in-memory-only cache rather than failing the caller.
+        // Callers are publish paths: an unreadable cache costs a stale
+        // already-reposted check, while throwing here costs the Kind 16.
+        Log.warning(
+          'Repost cache unavailable; continuing without persisted records: $e',
+          name: 'RepostsRepository',
+          category: LogCategory.system,
+        );
       }
-      _emitRepostedIds();
     }
+    // Latched on both paths: an unreadable database stays unreadable for the
+    // session, so retrying would re-throw on every call instead of degrading.
     _isInitialized = true;
+  }
+
+  /// Runs a local-storage side effect that must never block a relay publish.
+  ///
+  /// The local database is a cache. A repost that reached relays survives
+  /// without its cache row; a repost blocked by an unwritable cache is lost
+  /// outright. Storage failures are therefore logged and swallowed.
+  ///
+  /// Expected IO/corruption failures are not Crashlytics-reportable (see the
+  /// decision matrix in `.claude/rules/error_handling.md`); the unified log is
+  /// where a degraded cache surfaces.
+  Future<T?> _bestEffortLocalStorage<T>(
+    Future<T> Function() operation, {
+    required String description,
+  }) async {
+    try {
+      return await operation();
+    } on Object catch (e) {
+      Log.warning(
+        'Local repost storage unavailable ($description); '
+        'continuing without it: $e',
+        name: 'RepostsRepository',
+        category: LogCategory.system,
+      );
+      return null;
+    }
   }
 
   /// Extracts the addressable ID from a repost event's 'a' tag.
