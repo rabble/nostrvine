@@ -6783,5 +6783,10 @@
   "userPickerConfirmSemanticLabel": "确认所选用户",
   "userPickerClearSelectionSemanticLabel": "清除用户选择",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "取消内容警告选择",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "应用所选内容警告"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "应用所选内容警告",
+  "videoEditorCloseEditorSemanticLabel": "关闭视频编辑器",
+  "videoEditorContinueToPostDetailsSemanticLabel": "继续前往帖子详情",
+  "videoEditorDiscardToolChangesSemanticLabel": "放弃在{tool}中的更改",
+  "videoEditorApplyToolChangesSemanticLabel": "应用在{tool}中的更改",
+  "videoEditorRemoveAudioSemanticLabel": "移除音频"
 }

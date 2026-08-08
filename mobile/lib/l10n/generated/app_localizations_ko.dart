@@ -10703,4 +10703,23 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
       '선택한 콘텐츠 경고 적용';
+
+  @override
+  String get videoEditorCloseEditorSemanticLabel => '동영상 편집기 닫기';
+
+  @override
+  String get videoEditorContinueToPostDetailsSemanticLabel => '게시물 세부 정보로 계속';
+
+  @override
+  String videoEditorDiscardToolChangesSemanticLabel(String tool) {
+    return '$tool의 변경 사항 취소';
+  }
+
+  @override
+  String videoEditorApplyToolChangesSemanticLabel(String tool) {
+    return '$tool의 변경 사항 적용';
+  }
+
+  @override
+  String get videoEditorRemoveAudioSemanticLabel => '오디오 제거';
 }

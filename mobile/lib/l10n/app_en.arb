@@ -6669,5 +6669,18 @@
   "userPickerConfirmSemanticLabel": "Confirm selected users",
   "userPickerClearSelectionSemanticLabel": "Clear user selection",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "Cancel content warning selection",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Apply selected content warnings"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Apply selected content warnings",
+  "videoEditorCloseEditorSemanticLabel": "Close video editor",
+  "videoEditorContinueToPostDetailsSemanticLabel": "Continue to post details",
+  "videoEditorDiscardToolChangesSemanticLabel": "Discard changes in {tool}",
+  "@videoEditorDiscardToolChangesSemanticLabel": {
+    "description": "Accessibility label for closing a named video-editor tool without applying its changes.",
+    "placeholders": {"tool": {"type": "String", "example": "Draw"}}
+  },
+  "videoEditorApplyToolChangesSemanticLabel": "Apply changes in {tool}",
+  "@videoEditorApplyToolChangesSemanticLabel": {
+    "description": "Accessibility label for applying changes made in a named video-editor tool.",
+    "placeholders": {"tool": {"type": "String", "example": "Draw"}}
+  },
+  "videoEditorRemoveAudioSemanticLabel": "Remove audio"
 }

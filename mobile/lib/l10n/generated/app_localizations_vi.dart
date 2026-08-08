@@ -11146,4 +11146,25 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
       'Áp dụng các cảnh báo nội dung đã chọn';
+
+  @override
+  String get videoEditorCloseEditorSemanticLabel =>
+      'Đóng trình chỉnh sửa video';
+
+  @override
+  String get videoEditorContinueToPostDetailsSemanticLabel =>
+      'Tiếp tục đến chi tiết bài đăng';
+
+  @override
+  String videoEditorDiscardToolChangesSemanticLabel(String tool) {
+    return 'Hủy thay đổi trong $tool';
+  }
+
+  @override
+  String videoEditorApplyToolChangesSemanticLabel(String tool) {
+    return 'Áp dụng thay đổi trong $tool';
+  }
+
+  @override
+  String get videoEditorRemoveAudioSemanticLabel => 'Xóa âm thanh';
 }

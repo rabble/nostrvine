@@ -12,6 +12,14 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/widgets/color_swatch_button.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Returns a precise screen-reader label for an arbitrary editor color.
+String videoEditorRgbColorSemanticLabel(Color color) {
+  final r = (color.r * 255.0).round().clamp(0, 255);
+  final g = (color.g * 255.0).round().clamp(0, 255);
+  final b = (color.b * 255.0).round().clamp(0, 255);
+  return 'RGB $r, $g, $b';
+}
+
 /// Shows the full HSV color picker as a bottom sheet, resolving with the
 /// picked color, or `null` when dismissed.
 ///
@@ -223,20 +231,13 @@ class _ColorButton extends StatelessWidget {
   final bool isEmpty;
   final VoidCallback onTap;
 
-  String _getColorName(Color color) {
-    final r = (color.r * 255.0).round().clamp(0, 255);
-    final g = (color.g * 255.0).round().clamp(0, 255);
-    final b = (color.b * 255.0).round().clamp(0, 255);
-    return 'RGB $r, $g, $b';
-  }
-
   @override
   Widget build(BuildContext context) {
     final String label;
     if (isColorPicker) {
       label = context.l10n.videoEditorColorPickerSemanticLabel;
     } else {
-      final colorName = _getColorName(color);
+      final colorName = videoEditorRgbColorSemanticLabel(color);
       label = isSelected
           ? context.l10n.videoEditorColorSelectedSemanticLabel(colorName)
           : colorName;

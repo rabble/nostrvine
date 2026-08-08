@@ -11093,4 +11093,24 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
       'Terapkan peringatan konten yang dipilih';
+
+  @override
+  String get videoEditorCloseEditorSemanticLabel => 'Tutup editor video';
+
+  @override
+  String get videoEditorContinueToPostDetailsSemanticLabel =>
+      'Lanjutkan ke detail postingan';
+
+  @override
+  String videoEditorDiscardToolChangesSemanticLabel(String tool) {
+    return 'Buang perubahan di $tool';
+  }
+
+  @override
+  String videoEditorApplyToolChangesSemanticLabel(String tool) {
+    return 'Terapkan perubahan di $tool';
+  }
+
+  @override
+  String get videoEditorRemoveAudioSemanticLabel => 'Hapus audio';
 }

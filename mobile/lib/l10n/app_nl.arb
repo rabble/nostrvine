@@ -4944,5 +4944,10 @@
   "userPickerConfirmSemanticLabel": "Geselecteerde gebruikers bevestigen",
   "userPickerClearSelectionSemanticLabel": "Gebruikersselectie wissen",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "Selectie van inhoudswaarschuwingen annuleren",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Geselecteerde inhoudswaarschuwingen toepassen"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Geselecteerde inhoudswaarschuwingen toepassen",
+  "videoEditorCloseEditorSemanticLabel": "Video-editor sluiten",
+  "videoEditorContinueToPostDetailsSemanticLabel": "Doorgaan naar berichtdetails",
+  "videoEditorDiscardToolChangesSemanticLabel": "Wijzigingen in {tool} negeren",
+  "videoEditorApplyToolChangesSemanticLabel": "Wijzigingen in {tool} toepassen",
+  "videoEditorRemoveAudioSemanticLabel": "Audio verwijderen"
 }

@@ -6783,5 +6783,10 @@
   "userPickerConfirmSemanticLabel": "Sahkan pengguna yang dipilih",
   "userPickerClearSelectionSemanticLabel": "Kosongkan pemilihan pengguna",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "Batalkan pemilihan amaran kandungan",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Gunakan amaran kandungan yang dipilih"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Gunakan amaran kandungan yang dipilih",
+  "videoEditorCloseEditorSemanticLabel": "Tutup editor video",
+  "videoEditorContinueToPostDetailsSemanticLabel": "Teruskan ke butiran siaran",
+  "videoEditorDiscardToolChangesSemanticLabel": "Buang perubahan dalam {tool}",
+  "videoEditorApplyToolChangesSemanticLabel": "Gunakan perubahan dalam {tool}",
+  "videoEditorRemoveAudioSemanticLabel": "Alih keluar audio"
 }

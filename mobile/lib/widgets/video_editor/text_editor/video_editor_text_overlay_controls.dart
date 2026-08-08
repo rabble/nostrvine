@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_text_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/video_editor_toolbar.dart';
 import 'package:openvine/widgets/video_editor/video_editor_vertical_slider.dart';
@@ -39,6 +40,14 @@ class VideoEditorTextOverlayControls extends StatelessWidget {
         Align(
           alignment: .topCenter,
           child: VideoEditorToolbar(
+            closeSemanticLabel: context.l10n
+                .videoEditorDiscardToolChangesSemanticLabel(
+                  context.l10n.videoEditorTextLabel,
+                ),
+            doneSemanticLabel: context.l10n
+                .videoEditorApplyToolChangesSemanticLabel(
+                  context.l10n.videoEditorTextLabel,
+                ),
             // This screen paints a fixed 61 % black scrim over everything
             // (`VideoEditorConstants.textEditorBackground`), so the close
             // button cannot follow the palette into light mode.

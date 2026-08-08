@@ -11141,4 +11141,24 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
       'منتخب مواد کی وارننگز لاگو کریں';
+
+  @override
+  String get videoEditorCloseEditorSemanticLabel => 'ویڈیو ایڈیٹر بند کریں';
+
+  @override
+  String get videoEditorContinueToPostDetailsSemanticLabel =>
+      'پوسٹ کی تفصیلات پر جائیں';
+
+  @override
+  String videoEditorDiscardToolChangesSemanticLabel(String tool) {
+    return '$tool میں تبدیلیاں مسترد کریں';
+  }
+
+  @override
+  String videoEditorApplyToolChangesSemanticLabel(String tool) {
+    return '$tool میں تبدیلیاں لاگو کریں';
+  }
+
+  @override
+  String get videoEditorRemoveAudioSemanticLabel => 'آڈیو ہٹائیں';
 }

@@ -4944,5 +4944,10 @@
   "userPickerConfirmSemanticLabel": "Confirmă utilizatorii selectați",
   "userPickerClearSelectionSemanticLabel": "Șterge selecția utilizatorilor",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "Anulează selectarea avertismentelor de conținut",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Aplică avertismentele de conținut selectate"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Aplică avertismentele de conținut selectate",
+  "videoEditorCloseEditorSemanticLabel": "Închide editorul video",
+  "videoEditorContinueToPostDetailsSemanticLabel": "Continuă la detaliile postării",
+  "videoEditorDiscardToolChangesSemanticLabel": "Renunță la modificările din {tool}",
+  "videoEditorApplyToolChangesSemanticLabel": "Aplică modificările din {tool}",
+  "videoEditorRemoveAudioSemanticLabel": "Elimină sunetul"
 }

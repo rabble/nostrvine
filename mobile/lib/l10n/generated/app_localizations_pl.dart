@@ -11336,4 +11336,24 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
       'Zastosuj wybrane ostrzeżenia o treści';
+
+  @override
+  String get videoEditorCloseEditorSemanticLabel => 'Zamknij edytor wideo';
+
+  @override
+  String get videoEditorContinueToPostDetailsSemanticLabel =>
+      'Przejdź do szczegółów posta';
+
+  @override
+  String videoEditorDiscardToolChangesSemanticLabel(String tool) {
+    return 'Odrzuć zmiany w $tool';
+  }
+
+  @override
+  String videoEditorApplyToolChangesSemanticLabel(String tool) {
+    return 'Zastosuj zmiany w $tool';
+  }
+
+  @override
+  String get videoEditorRemoveAudioSemanticLabel => 'Usuń dźwięk';
 }

@@ -2431,419 +2431,429 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
           },
         ),
       ],
-      child: ProImageEditor.video(
-        _proVideoController,
-        key: scope.editorKey,
-        configs: ProImageEditorConfigs(
-          stateHistory: StateHistoryConfigs(
-            initStateHistory: editorStateHistory.isNotEmpty
-                ? .fromMap(
-                    editorStateHistory,
-                    configs: const ImportEditorConfigs(
-                      widgetLoader: videoEditorStickerWidgetLoader,
-                    ),
-                  )
-                : null,
-          ),
-          imageGeneration: ImageGenerationConfigs(
-            captureImageByteFormat: .rawStraightRgba,
-            outputFormat: .png,
-            enableBackgroundGeneration: false,
-            enableUseOriginalBytes: false,
-            // Disabled in debug mode: combined RAM usage from the editor
-            // and MediaKit (background) causes crashes on hot-reload.
-            // Release builds are unaffected.
-            enableIsolateGeneration: kReleaseMode,
-            processorConfigs: const ProcessorConfigs(
-              numberOfBackgroundProcessors: 3,
-              processorMode: .limit,
-              initializationDelay:
-                  VideoEditorConstants.isolatesInitialisationDelay,
+      child: ExcludeSemantics(
+        child: ProImageEditor.video(
+          _proVideoController,
+          key: scope.editorKey,
+          configs: ProImageEditorConfigs(
+            stateHistory: StateHistoryConfigs(
+              initStateHistory: editorStateHistory.isNotEmpty
+                  ? .fromMap(
+                      editorStateHistory,
+                      configs: const ImportEditorConfigs(
+                        widgetLoader: videoEditorStickerWidgetLoader,
+                      ),
+                    )
+                  : null,
             ),
-            customPixelRatio: max(
-              1,
-              max(
-                VideoEditorConstants.quality.resolution.height /
-                    widget.renderSize.height,
-                VideoEditorConstants.quality.resolution.width /
-                    widget.renderSize.width,
+            imageGeneration: ImageGenerationConfigs(
+              captureImageByteFormat: .rawStraightRgba,
+              outputFormat: .png,
+              enableBackgroundGeneration: false,
+              enableUseOriginalBytes: false,
+              // Disabled in debug mode: combined RAM usage from the editor
+              // and MediaKit (background) causes crashes on hot-reload.
+              // Release builds are unaffected.
+              enableIsolateGeneration: kReleaseMode,
+              processorConfigs: const ProcessorConfigs(
+                numberOfBackgroundProcessors: 3,
+                processorMode: .limit,
+                initializationDelay:
+                    VideoEditorConstants.isolatesInitialisationDelay,
+              ),
+              customPixelRatio: max(
+                1,
+                max(
+                  VideoEditorConstants.quality.resolution.height /
+                      widget.renderSize.height,
+                  VideoEditorConstants.quality.resolution.width /
+                      widget.renderSize.width,
+                ),
               ),
             ),
-          ),
-          mainEditor: MainEditorConfigs(
-            enableZoom: true,
-            interactiveViewerClipBehavior: .none,
-            safeArea: const EditorSafeArea.none(),
-            style: MainEditorStyle(
-              uiOverlayStyle: VideoEditorConstants.uiOverlayStyleFor(
-                context.vineColors,
+            mainEditor: MainEditorConfigs(
+              enableZoom: true,
+              interactiveViewerClipBehavior: .none,
+              safeArea: const EditorSafeArea.none(),
+              style: MainEditorStyle(
+                uiOverlayStyle: VideoEditorConstants.uiOverlayStyleFor(
+                  context.vineColors,
+                ),
+                background: context.vineColors.surfaceContainerHigh,
               ),
-              background: context.vineColors.surfaceContainerHigh,
-            ),
-            captureLayersOnDone: true,
-            captureImageOnDone: false,
-            widgets: MainEditorWidgets(
-              appBar: (_, _) => null,
-              bottomBar: (_, _, key) => null,
-              removeLayerArea: (key, _, _, _) => SizedBox.shrink(key: key),
-              bodyItems: (editor, rebuildStream) {
-                return [
-                  ReactiveWidget(
-                    builder: (context) =>
-                        BlocSelector<
-                          VideoEditorMainBloc,
-                          VideoEditorMainState,
-                          ({
-                            bool isOver,
-                            bool isReordering,
-                            bool isSubEditorOpen,
-                          })
-                        >(
-                          selector: (state) => (
-                            isOver:
-                                state.currentPosition.inMilliseconds >
-                                VideoEditorConstants.maxDuration.inMilliseconds,
-                            isReordering: state.isReordering,
-                            isSubEditorOpen: state.isSubEditorOpen,
+              captureLayersOnDone: true,
+              captureImageOnDone: false,
+              widgets: MainEditorWidgets(
+                appBar: (_, _) => null,
+                bottomBar: (_, _, key) => null,
+                removeLayerArea: (key, _, _, _) => SizedBox.shrink(key: key),
+                bodyItems: (editor, rebuildStream) {
+                  return [
+                    ReactiveWidget(
+                      builder: (context) =>
+                          BlocSelector<
+                            VideoEditorMainBloc,
+                            VideoEditorMainState,
+                            ({
+                              bool isOver,
+                              bool isReordering,
+                              bool isSubEditorOpen,
+                            })
+                          >(
+                            selector: (state) => (
+                              isOver:
+                                  state.currentPosition.inMilliseconds >
+                                  VideoEditorConstants
+                                      .maxDuration
+                                      .inMilliseconds,
+                              isReordering: state.isReordering,
+                              isSubEditorOpen: state.isSubEditorOpen,
+                            ),
+                            builder: (context, record) {
+                              if (!record.isOver ||
+                                  record.isReordering ||
+                                  record.isSubEditorOpen) {
+                                return const SizedBox.shrink();
+                              }
+                              return IgnorePointer(
+                                child: ColoredBox(
+                                  color: context.vineColors.background
+                                      .withAlpha(
+                                        128,
+                                      ),
+                                  child: const SizedBox.expand(),
+                                ),
+                              );
+                            },
                           ),
-                          builder: (context, record) {
-                            if (!record.isOver ||
-                                record.isReordering ||
-                                record.isSubEditorOpen) {
-                              return const SizedBox.shrink();
-                            }
-                            return IgnorePointer(
-                              child: ColoredBox(
-                                color: context.vineColors.background.withAlpha(
-                                  128,
-                                ),
-                                child: const SizedBox.expand(),
-                              ),
-                            );
-                          },
-                        ),
-                    stream: rebuildStream,
-                  ),
-                  ReactiveWidget(
-                    builder: (context) => VideoEditorFeedPreviewOverlay(
-                      targetAspectRatio: targetAspectRatio.value,
-                      isFeedPreviewVisible: editor.isLayerBeingTransformed,
+                      stream: rebuildStream,
                     ),
-                    stream: rebuildStream,
-                  ),
-                ];
-              },
+                    ReactiveWidget(
+                      builder: (context) => VideoEditorFeedPreviewOverlay(
+                        targetAspectRatio: targetAspectRatio.value,
+                        isFeedPreviewVisible: editor.isLayerBeingTransformed,
+                      ),
+                      stream: rebuildStream,
+                    ),
+                  ];
+                },
+              ),
             ),
-          ),
-          paintEditor: PaintEditorConfigs(
-            eraserSize:
-                DrawToolType.eraser.config.strokeWidth /
-                scope.fittedBoxScale /
-                2,
-            safeArea: const EditorSafeArea.none(),
-            enableEdit: false,
-            style: PaintEditorStyle(
-              background: context.vineColors.surfaceContainerHigh,
+            paintEditor: PaintEditorConfigs(
+              eraserSize:
+                  DrawToolType.eraser.config.strokeWidth /
+                  scope.fittedBoxScale /
+                  2,
+              safeArea: const EditorSafeArea.none(),
+              enableEdit: false,
+              style: PaintEditorStyle(
+                background: context.vineColors.surfaceContainerHigh,
+              ),
+              widgets: PaintEditorWidgets(
+                appBar: (_, _) => null,
+                bottomBar: (_, _) => null,
+                colorPicker: (_, _, _, _) => null,
+              ),
             ),
-            widgets: PaintEditorWidgets(
-              appBar: (_, _) => null,
-              bottomBar: (_, _) => null,
-              colorPicker: (_, _, _, _) => null,
+            filterEditor: FilterEditorConfigs(
+              safeArea: const EditorSafeArea.none(),
+              enableMultiSelection: false,
+              style: FilterEditorStyle(
+                background: context.vineColors.surfaceContainerHigh,
+              ),
+              widgets: FilterEditorWidgets(
+                appBar: (_, _) => null,
+                bottomBar: (_, _) => null,
+              ),
             ),
-          ),
-          filterEditor: FilterEditorConfigs(
-            safeArea: const EditorSafeArea.none(),
-            enableMultiSelection: false,
-            style: FilterEditorStyle(
-              background: context.vineColors.surfaceContainerHigh,
+            tuneEditor: TuneEditorConfigs(
+              safeArea: const EditorSafeArea.none(),
+              tuneAdjustmentOptions: VideoEditorConstants.tuneAdjustments,
+              style: TuneEditorStyle(
+                background: context.vineColors.surfaceContainerHigh,
+              ),
+              widgets: TuneEditorWidgets(
+                appBar: (_, _) => null,
+                bottomBar: (_, _) => null,
+              ),
             ),
-            widgets: FilterEditorWidgets(
-              appBar: (_, _) => null,
-              bottomBar: (_, _) => null,
+            helperLines: HelperLineConfigs(
+              style: HelperLineStyle(
+                // 1.25 is the pro_image_editor default; we divide by fittedBoxScale
+                // to compensate for the FittedBox transformation.
+                strokeWidth: 1.25 / scope.fittedBoxScale,
+                horizontalColor: VideoEditorConstants.primaryColor,
+                verticalColor: VideoEditorConstants.primaryColor,
+                rotateColor: VideoEditorConstants.primaryColor,
+                layerAlignColor: VideoEditorConstants.primaryColor,
+              ),
             ),
-          ),
-          tuneEditor: TuneEditorConfigs(
-            safeArea: const EditorSafeArea.none(),
-            tuneAdjustmentOptions: VideoEditorConstants.tuneAdjustments,
-            style: TuneEditorStyle(
-              background: context.vineColors.surfaceContainerHigh,
+            dialogConfigs: DialogConfigs(
+              widgets: DialogWidgets(
+                loadingDialog: (message, configs) => const SizedBox.shrink(),
+              ),
             ),
-            widgets: TuneEditorWidgets(
-              appBar: (_, _) => null,
-              bottomBar: (_, _) => null,
-            ),
-          ),
-          helperLines: HelperLineConfigs(
-            style: HelperLineStyle(
-              // 1.25 is the pro_image_editor default; we divide by fittedBoxScale
-              // to compensate for the FittedBox transformation.
-              strokeWidth: 1.25 / scope.fittedBoxScale,
-              horizontalColor: VideoEditorConstants.primaryColor,
-              verticalColor: VideoEditorConstants.primaryColor,
-              rotateColor: VideoEditorConstants.primaryColor,
-              layerAlignColor: VideoEditorConstants.primaryColor,
-            ),
-          ),
-          dialogConfigs: DialogConfigs(
-            widgets: DialogWidgets(
-              loadingDialog: (message, configs) => const SizedBox.shrink(),
-            ),
-          ),
-          videoEditor: VideoEditorConfigs(
-            showControls: false,
-            widgets: VideoEditorWidgets(
-              videoSetupLoadingIndicator: _VideoSetupLoadingIndicator(
-                renderSize: widget.renderSize,
-                bodySize: widget.bodySize,
-                targetAspectRatio: targetAspectRatio,
+            videoEditor: VideoEditorConfigs(
+              showControls: false,
+              widgets: VideoEditorWidgets(
+                videoSetupLoadingIndicator: _VideoSetupLoadingIndicator(
+                  renderSize: widget.renderSize,
+                  bodySize: widget.bodySize,
+                  targetAspectRatio: targetAspectRatio,
+                ),
               ),
             ),
           ),
-        ),
-        callbacks: ProImageEditorCallbacks(
-          onCompleteWithParameters: _handleEditorComplete,
-          mainEditorCallbacks: MainEditorCallbacks(
-            onEditorZoomMatrix4Change: (matrix) =>
-                scope.zoomMatrixNotifier.value = matrix,
-            onAfterViewInit: () {
-              _isInitialized = true;
+          callbacks: ProImageEditorCallbacks(
+            onCompleteWithParameters: _handleEditorComplete,
+            mainEditorCallbacks: MainEditorCallbacks(
+              onEditorZoomMatrix4Change: (matrix) =>
+                  scope.zoomMatrixNotifier.value = matrix,
+              onAfterViewInit: () {
+                _isInitialized = true;
 
-              if (editorStateHistory.isEmpty) {
-                final clips = ref.read(clipManagerProvider).clips;
-                final editorState = ref.read(videoEditorProvider);
-                final selectedSound = editorState.selectedSound;
-                final shouldSeedSelectedSound =
-                    VideoEditorCanvas.shouldSeedSelectedSoundAsAudioTrack(
-                      hasSelectedSound: selectedSound != null,
-                      seedSelectedSoundAsAudioTrack:
-                          editorState.seedSelectedSoundAsAudioTrack,
-                    );
+                if (editorStateHistory.isEmpty) {
+                  final clips = ref.read(clipManagerProvider).clips;
+                  final editorState = ref.read(videoEditorProvider);
+                  final selectedSound = editorState.selectedSound;
+                  final shouldSeedSelectedSound =
+                      VideoEditorCanvas.shouldSeedSelectedSoundAsAudioTrack(
+                        hasSelectedSound: selectedSound != null,
+                        seedSelectedSoundAsAudioTrack:
+                            editorState.seedSelectedSoundAsAudioTrack,
+                      );
 
-                scope.requireEditor.stateManager.replaceHistory(
-                  scope.requireEditor.stateHistory.first.copyWith(
-                    meta: {
-                      ...scope.requireEditor.stateManager.activeMeta,
-                      VideoEditorConstants.clipsStateHistoryKey: clips
-                          .map((e) => e.toJson())
-                          .toList(),
-                      // Lip-sync: the recorder picked a sound the clips were
-                      // recorded against (and muted on handoff). Seed it as the
-                      // timeline's audio track only when the recorder marked
-                      // this as a handoff, not for every selected editor/draft
-                      // sound. The editor re-clamps the window to the real
-                      // video duration on the next
-                      // TimelineOverlayTotalDurationChanged.
-                      if (shouldSeedSelectedSound)
-                        VideoEditorConstants.audioStateHistoryKey: [
-                          selectedSound!
-                              .copyWith(
-                                id:
-                                    '${selectedSound.id}-'
-                                    '${DateTime.now().millisecondsSinceEpoch}',
-                                startTime: Duration.zero,
-                                endTime: _lipSyncAudioEndTime(
-                                  selectedSound.duration,
-                                ),
-                              )
-                              .toJson(),
-                        ],
-                    },
-                  ),
-                  index: 0,
-                );
-              }
-
-              _syncMainCapabilities(scope, bloc);
-            },
-            onDone: _handleDone,
-            onImportHistoryStart: (state, import) {
-              Log.debug(
-                '🎬 Importing history started',
-                name: 'VideoEditorCanvas',
-                category: LogCategory.video,
-              );
-              _isImportingHistory = true;
-            },
-            onImportHistoryEnd: (state, import) {
-              Log.debug(
-                '🎬 Importing history completed',
-                name: 'VideoEditorCanvas',
-                category: LogCategory.video,
-              );
-              _isImportingHistory = false;
-              _syncMainCapabilities(scope, bloc);
-            },
-            onStateHistoryChange: (_, _) => _onStateHistoryChange(scope, bloc),
-            onOpenSubEditor: (editorMode) {
-              Log.debug(
-                '🎬 Opening sub-editor: $editorMode',
-                name: 'VideoEditorCanvas',
-                category: LogCategory.video,
-              );
-              final SubEditorType? subEditorType = switch (editorMode) {
-                .paint => .draw,
-                .text => .text,
-                .filter => .filter,
-                .tune => .tune,
-                .sticker => .stickers,
-                _ => null,
-              };
-              if (subEditorType != null) {
-                bloc.add(VideoEditorMainOpenSubEditor(subEditorType));
-              }
-            },
-            onStartCloseSubEditor: (_) {
-              Log.debug(
-                '🎬 Closing sub-editor',
-                name: 'VideoEditorCanvas',
-                category: LogCategory.video,
-              );
-              bloc.add(const VideoEditorMainSubEditorClosed());
-            },
-            onScaleStart: (_) {
-              Log.debug(
-                '🎬 Layer interaction started',
-                name: 'VideoEditorCanvas',
-                category: LogCategory.video,
-              );
-              bloc.add(const VideoEditorLayerInteractionStarted());
-              _selectedLayer = scope.editor?.selectedLayer;
-            },
-            onScaleUpdate: (details) {
-              if (!_isLayerBeingTransformed) return;
-              final isOverRemoveArea = scope.isOverRemoveArea(
-                details.focalPoint,
-              );
-
-              // Trigger haptic feedback when entering the remove area
-              if (isOverRemoveArea && !_wasOverRemoveArea) {
-                unawaited(HapticService.destructiveZoneFeedback());
-              }
-              _wasOverRemoveArea = isOverRemoveArea;
-
-              bloc.add(
-                VideoEditorLayerOverRemoveAreaChanged(isOver: isOverRemoveArea),
-              );
-            },
-            onScaleEnd: (_) {
-              if (_isLayerBeingTransformed) {
-                final removed = _selectedLayer;
-                final captionCueId =
-                    bloc.state.isLayerOverRemoveArea && removed != null
-                    ? captionCueIdOf(removed)
-                    : null;
-
-                if (captionCueId != null) {
-                  // Burn-in caption: drop the cue and its layer together in one
-                  // history step, so the track meta and the exported video stay
-                  // consistent (never leave an orphaned cue behind).
-                  Log.debug(
-                    '🎬 Caption layer removed via drag',
-                    name: 'VideoEditorCanvas',
-                    category: LogCategory.video,
+                  scope.requireEditor.stateManager.replaceHistory(
+                    scope.requireEditor.stateHistory.first.copyWith(
+                      meta: {
+                        ...scope.requireEditor.stateManager.activeMeta,
+                        VideoEditorConstants.clipsStateHistoryKey: clips
+                            .map((e) => e.toJson())
+                            .toList(),
+                        // Lip-sync: the recorder picked a sound the clips were
+                        // recorded against (and muted on handoff). Seed it as the
+                        // timeline's audio track only when the recorder marked
+                        // this as a handoff, not for every selected editor/draft
+                        // sound. The editor re-clamps the window to the real
+                        // video duration on the next
+                        // TimelineOverlayTotalDurationChanged.
+                        if (shouldSeedSelectedSound)
+                          VideoEditorConstants.audioStateHistoryKey: [
+                            selectedSound!
+                                .copyWith(
+                                  id:
+                                      '${selectedSound.id}-'
+                                      '${DateTime.now().millisecondsSinceEpoch}',
+                                  startTime: Duration.zero,
+                                  endTime: _lipSyncAudioEndTime(
+                                    selectedSound.duration,
+                                  ),
+                                )
+                                .toJson(),
+                          ],
+                      },
+                    ),
+                    index: 0,
                   );
-                  scope.editor?.removeCaptionCue(captionCueId);
-                } else {
-                  if (bloc.state.isLayerOverRemoveArea) {
+                }
+
+                _syncMainCapabilities(scope, bloc);
+              },
+              onDone: _handleDone,
+              onImportHistoryStart: (state, import) {
+                Log.debug(
+                  '🎬 Importing history started',
+                  name: 'VideoEditorCanvas',
+                  category: LogCategory.video,
+                );
+                _isImportingHistory = true;
+              },
+              onImportHistoryEnd: (state, import) {
+                Log.debug(
+                  '🎬 Importing history completed',
+                  name: 'VideoEditorCanvas',
+                  category: LogCategory.video,
+                );
+                _isImportingHistory = false;
+                _syncMainCapabilities(scope, bloc);
+              },
+              onStateHistoryChange: (_, _) =>
+                  _onStateHistoryChange(scope, bloc),
+              onOpenSubEditor: (editorMode) {
+                Log.debug(
+                  '🎬 Opening sub-editor: $editorMode',
+                  name: 'VideoEditorCanvas',
+                  category: LogCategory.video,
+                );
+                final SubEditorType? subEditorType = switch (editorMode) {
+                  .paint => .draw,
+                  .text => .text,
+                  .filter => .filter,
+                  .tune => .tune,
+                  .sticker => .stickers,
+                  _ => null,
+                };
+                if (subEditorType != null) {
+                  bloc.add(VideoEditorMainOpenSubEditor(subEditorType));
+                }
+              },
+              onStartCloseSubEditor: (_) {
+                Log.debug(
+                  '🎬 Closing sub-editor',
+                  name: 'VideoEditorCanvas',
+                  category: LogCategory.video,
+                );
+                bloc.add(const VideoEditorMainSubEditorClosed());
+              },
+              onScaleStart: (_) {
+                Log.debug(
+                  '🎬 Layer interaction started',
+                  name: 'VideoEditorCanvas',
+                  category: LogCategory.video,
+                );
+                bloc.add(const VideoEditorLayerInteractionStarted());
+                _selectedLayer = scope.editor?.selectedLayer;
+              },
+              onScaleUpdate: (details) {
+                if (!_isLayerBeingTransformed) return;
+                final isOverRemoveArea = scope.isOverRemoveArea(
+                  details.focalPoint,
+                );
+
+                // Trigger haptic feedback when entering the remove area
+                if (isOverRemoveArea && !_wasOverRemoveArea) {
+                  unawaited(HapticService.destructiveZoneFeedback());
+                }
+                _wasOverRemoveArea = isOverRemoveArea;
+
+                bloc.add(
+                  VideoEditorLayerOverRemoveAreaChanged(
+                    isOver: isOverRemoveArea,
+                  ),
+                );
+              },
+              onScaleEnd: (_) {
+                if (_isLayerBeingTransformed) {
+                  final removed = _selectedLayer;
+                  final captionCueId =
+                      bloc.state.isLayerOverRemoveArea && removed != null
+                      ? captionCueIdOf(removed)
+                      : null;
+
+                  if (captionCueId != null) {
+                    // Burn-in caption: drop the cue and its layer together in one
+                    // history step, so the track meta and the exported video stay
+                    // consistent (never leave an orphaned cue behind).
                     Log.debug(
-                      '🎬 Layer removed via drag',
+                      '🎬 Caption layer removed via drag',
                       name: 'VideoEditorCanvas',
                       category: LogCategory.video,
                     );
-                    scope.editor?.activeLayers.remove(removed);
+                    scope.editor?.removeCaptionCue(captionCueId);
+                  } else {
+                    if (bloc.state.isLayerOverRemoveArea) {
+                      Log.debug(
+                        '🎬 Layer removed via drag',
+                        name: 'VideoEditorCanvas',
+                        category: LogCategory.video,
+                      );
+                      scope.editor?.activeLayers.remove(removed);
+                    }
+                    _onStateHistoryChange(scope, bloc);
                   }
-                  _onStateHistoryChange(scope, bloc);
+                  _selectedLayer = null;
                 }
-                _selectedLayer = null;
-              }
 
-              _wasOverRemoveArea = false;
-              bloc.add(const VideoEditorLayerInteractionEnded());
-            },
-            onAddLayer: (layer) {
-              Log.debug(
-                '🎬 Layer added: ${layer.runtimeType}',
-                name: 'VideoEditorCanvas',
-                category: LogCategory.video,
-              );
-              _syncMainCapabilities(scope, bloc);
-            },
-            onRemoveLayer: (layer) {
-              Log.debug(
-                '🎬 Layer removed: ${layer.runtimeType}',
-                name: 'VideoEditorCanvas',
-                category: LogCategory.video,
-              );
-              _syncMainCapabilities(scope, bloc);
-            },
-            onRedo: () => _syncMainCapabilities(
-              scope,
-              bloc,
-              direction: ClipHistoryDirection.redo,
+                _wasOverRemoveArea = false;
+                bloc.add(const VideoEditorLayerInteractionEnded());
+              },
+              onAddLayer: (layer) {
+                Log.debug(
+                  '🎬 Layer added: ${layer.runtimeType}',
+                  name: 'VideoEditorCanvas',
+                  category: LogCategory.video,
+                );
+                _syncMainCapabilities(scope, bloc);
+              },
+              onRemoveLayer: (layer) {
+                Log.debug(
+                  '🎬 Layer removed: ${layer.runtimeType}',
+                  name: 'VideoEditorCanvas',
+                  category: LogCategory.video,
+                );
+                _syncMainCapabilities(scope, bloc);
+              },
+              onRedo: () => _syncMainCapabilities(
+                scope,
+                bloc,
+                direction: ClipHistoryDirection.redo,
+              ),
+              onUndo: () => _syncMainCapabilities(
+                scope,
+                bloc,
+                direction: ClipHistoryDirection.undo,
+              ),
+              onCreateTextLayer: scope.onAddEditTextLayer,
+              // Burned-in caption layers are edited through the captions sheet,
+              // not the text editor: tapping one on the canvas must not reopen
+              // it as a plain text layer.
+              onEditTextLayer: (layer) async => isCaptionCueLayer(layer)
+                  ? null
+                  : scope.onAddEditTextLayer(layer),
+              helperLines: HelperLinesCallbacks(
+                onLineHit: () => unawaited(HapticService.snapFeedback()),
+              ),
             ),
-            onUndo: () => _syncMainCapabilities(
-              scope,
-              bloc,
-              direction: ClipHistoryDirection.undo,
-            ),
-            onCreateTextLayer: scope.onAddEditTextLayer,
-            // Burned-in caption layers are edited through the captions sheet,
-            // not the text editor: tapping one on the canvas must not reopen
-            // it as a plain text layer.
-            onEditTextLayer: (layer) async => isCaptionCueLayer(layer)
-                ? null
-                : scope.onAddEditTextLayer(layer),
-            helperLines: HelperLinesCallbacks(
-              onLineHit: () => unawaited(HapticService.snapFeedback()),
-            ),
-          ),
-          paintEditorCallbacks: PaintEditorCallbacks(
-            onInit: () {
-              drawBloc.add(const VideoEditorDrawReset());
+            paintEditorCallbacks: PaintEditorCallbacks(
+              onInit: () {
+                drawBloc.add(const VideoEditorDrawReset());
 
-              final paintEditor = scope.paintEditor;
-              final drawState = context.read<VideoEditorDrawBloc>().state;
-              final toolConfig = drawState.selectedTool.config;
-              // Sync editor with current BLoC state - use tool config for
-              // strokeWidth/opacity/mode to ensure consistency with tool switch
-              paintEditor
-                ?..setColor(drawState.selectedColor)
-                ..setStrokeWidth(toolConfig.strokeWidth / scope.fittedBoxScale)
-                ..setOpacity(toolConfig.opacity)
-                ..setMode(toolConfig.mode);
-            },
-            onDrawingDone: () => _syncDrawCapabilities(scope, drawBloc),
-            onRedo: () => _syncDrawCapabilities(scope, drawBloc),
-            onUndo: () => _syncDrawCapabilities(scope, drawBloc),
-          ),
-          filterEditorCallbacks: FilterEditorCallbacks(
-            onInit: () {
-              final filterBloc = context.read<VideoEditorFilterBloc>();
-              filterBloc.add(const VideoEditorFilterEditorInitialized());
-            },
-          ),
-          tuneEditorCallbacks: TuneEditorCallbacks(
-            // A new session starts neutral; an edit session seeds the bottom-bar
-            // sliders from the set being edited. See TuneSet.sessionSeed and
-            // VideoEditorTuneOverlayControls._commit.
-            onInit: () {
-              final tuneBloc = context.read<VideoEditorTuneBloc>();
-              tuneBloc.add(
-                VideoEditorTuneEditorInitialized(
-                  TuneSet.sessionSeed(
-                    scope.editor?.stateManager.activeTuneAdjustments ??
-                        const [],
-                    tuneBloc.state.editingSetId,
+                final paintEditor = scope.paintEditor;
+                final drawState = context.read<VideoEditorDrawBloc>().state;
+                final toolConfig = drawState.selectedTool.config;
+                // Sync editor with current BLoC state - use tool config for
+                // strokeWidth/opacity/mode to ensure consistency with tool switch
+                paintEditor
+                  ?..setColor(drawState.selectedColor)
+                  ..setStrokeWidth(
+                    toolConfig.strokeWidth / scope.fittedBoxScale,
+                  )
+                  ..setOpacity(toolConfig.opacity)
+                  ..setMode(toolConfig.mode);
+              },
+              onDrawingDone: () => _syncDrawCapabilities(scope, drawBloc),
+              onRedo: () => _syncDrawCapabilities(scope, drawBloc),
+              onUndo: () => _syncDrawCapabilities(scope, drawBloc),
+            ),
+            filterEditorCallbacks: FilterEditorCallbacks(
+              onInit: () {
+                final filterBloc = context.read<VideoEditorFilterBloc>();
+                filterBloc.add(const VideoEditorFilterEditorInitialized());
+              },
+            ),
+            tuneEditorCallbacks: TuneEditorCallbacks(
+              // A new session starts neutral; an edit session seeds the bottom-bar
+              // sliders from the set being edited. See TuneSet.sessionSeed and
+              // VideoEditorTuneOverlayControls._commit.
+              onInit: () {
+                final tuneBloc = context.read<VideoEditorTuneBloc>();
+                tuneBloc.add(
+                  VideoEditorTuneEditorInitialized(
+                    TuneSet.sessionSeed(
+                      scope.editor?.stateManager.activeTuneAdjustments ??
+                          const [],
+                      tuneBloc.state.editingSetId,
+                    ),
                   ),
-                ),
-              );
-            },
-            // The editor seeds its own preview neutral (set members carry unique
-            // ids, not preset ids), so seed the live preview from the edited set
-            // once the view is up.
-            onAfterViewInit: () => _seedTuneEditorPreview(
-              scope,
-              context.read<VideoEditorTuneBloc>().state.editingSetId,
+                );
+              },
+              // The editor seeds its own preview neutral (set members carry unique
+              // ids, not preset ids), so seed the live preview from the edited set
+              // once the view is up.
+              onAfterViewInit: () => _seedTuneEditorPreview(
+                scope,
+                context.read<VideoEditorTuneBloc>().state.editingSetId,
+              ),
             ),
           ),
         ),

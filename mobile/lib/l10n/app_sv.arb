@@ -4944,5 +4944,10 @@
   "userPickerConfirmSemanticLabel": "Bekräfta valda användare",
   "userPickerClearSelectionSemanticLabel": "Rensa användarval",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "Avbryt val av innehållsvarningar",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Använd valda innehållsvarningar"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Använd valda innehållsvarningar",
+  "videoEditorCloseEditorSemanticLabel": "Stäng videoredigeraren",
+  "videoEditorContinueToPostDetailsSemanticLabel": "Fortsätt till inläggsinformation",
+  "videoEditorDiscardToolChangesSemanticLabel": "Ignorera ändringar i {tool}",
+  "videoEditorApplyToolChangesSemanticLabel": "Tillämpa ändringar i {tool}",
+  "videoEditorRemoveAudioSemanticLabel": "Ta bort ljud"
 }

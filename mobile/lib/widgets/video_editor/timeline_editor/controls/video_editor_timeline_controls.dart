@@ -277,9 +277,13 @@ class _ControlButton extends StatelessWidget {
             type: type,
             size: .small,
           ),
-        Text(
-          label,
-          style: VineTheme.bodySmallFont(color: context.vineColors.primaryText),
+        ExcludeSemantics(
+          child: Text(
+            label,
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.primaryText,
+            ),
+          ),
         ),
       ],
     );

@@ -5069,5 +5069,10 @@
   "userPickerConfirmSemanticLabel": "የተመረጡ ተጠቃሚዎችን አረጋግጥ",
   "userPickerClearSelectionSemanticLabel": "የተጠቃሚ ምርጫን አጽዳ",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "የይዘት ማስጠንቀቂያ ምርጫን ሰርዝ",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "የተመረጡ የይዘት ማስጠንቀቂያዎችን ተግብር"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "የተመረጡ የይዘት ማስጠንቀቂያዎችን ተግብር",
+  "videoEditorCloseEditorSemanticLabel": "የቪዲዮ አርታዒውን ዝጋ",
+  "videoEditorContinueToPostDetailsSemanticLabel": "ወደ ልጥፍ ዝርዝሮች ቀጥል",
+  "videoEditorDiscardToolChangesSemanticLabel": "በ{tool} ውስጥ የተደረጉ ለውጦችን አስወግድ",
+  "videoEditorApplyToolChangesSemanticLabel": "በ{tool} ውስጥ የተደረጉ ለውጦችን ተግብር",
+  "videoEditorRemoveAudioSemanticLabel": "ኦዲዮን አስወግድ"
 }

@@ -10891,4 +10891,24 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
       'የተመረጡ የይዘት ማስጠንቀቂያዎችን ተግብር';
+
+  @override
+  String get videoEditorCloseEditorSemanticLabel => 'የቪዲዮ አርታዒውን ዝጋ';
+
+  @override
+  String get videoEditorContinueToPostDetailsSemanticLabel =>
+      'ወደ ልጥፍ ዝርዝሮች ቀጥል';
+
+  @override
+  String videoEditorDiscardToolChangesSemanticLabel(String tool) {
+    return 'በ$tool ውስጥ የተደረጉ ለውጦችን አስወግድ';
+  }
+
+  @override
+  String videoEditorApplyToolChangesSemanticLabel(String tool) {
+    return 'በ$tool ውስጥ የተደረጉ ለውጦችን ተግብር';
+  }
+
+  @override
+  String get videoEditorRemoveAudioSemanticLabel => 'ኦዲዮን አስወግድ';
 }

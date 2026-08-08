@@ -4944,5 +4944,10 @@
   "userPickerConfirmSemanticLabel": "Confirmar usuarios seleccionados",
   "userPickerClearSelectionSemanticLabel": "Borrar selección de usuarios",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "Cancelar selección de advertencias de contenido",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Aplicar advertencias de contenido seleccionadas"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Aplicar advertencias de contenido seleccionadas",
+  "videoEditorCloseEditorSemanticLabel": "Cerrar el editor de vídeo",
+  "videoEditorContinueToPostDetailsSemanticLabel": "Continuar a los detalles de la publicación",
+  "videoEditorDiscardToolChangesSemanticLabel": "Descartar cambios en {tool}",
+  "videoEditorApplyToolChangesSemanticLabel": "Aplicar cambios en {tool}",
+  "videoEditorRemoveAudioSemanticLabel": "Eliminar audio"
 }

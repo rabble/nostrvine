@@ -4944,5 +4944,10 @@
   "userPickerConfirmSemanticLabel": "Konfirmasi pengguna yang dipilih",
   "userPickerClearSelectionSemanticLabel": "Hapus pilihan pengguna",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "Batalkan pemilihan peringatan konten",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Terapkan peringatan konten yang dipilih"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Terapkan peringatan konten yang dipilih",
+  "videoEditorCloseEditorSemanticLabel": "Tutup editor video",
+  "videoEditorContinueToPostDetailsSemanticLabel": "Lanjutkan ke detail postingan",
+  "videoEditorDiscardToolChangesSemanticLabel": "Buang perubahan di {tool}",
+  "videoEditorApplyToolChangesSemanticLabel": "Terapkan perubahan di {tool}",
+  "videoEditorRemoveAudioSemanticLabel": "Hapus audio"
 }

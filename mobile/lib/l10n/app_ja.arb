@@ -4944,5 +4944,10 @@
   "userPickerConfirmSemanticLabel": "選択したユーザーを確定",
   "userPickerClearSelectionSemanticLabel": "ユーザー選択をクリア",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "コンテンツ警告の選択をキャンセル",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "選択したコンテンツ警告を適用"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "選択したコンテンツ警告を適用",
+  "videoEditorCloseEditorSemanticLabel": "動画エディターを閉じる",
+  "videoEditorContinueToPostDetailsSemanticLabel": "投稿の詳細に進む",
+  "videoEditorDiscardToolChangesSemanticLabel": "{tool}での変更を破棄",
+  "videoEditorApplyToolChangesSemanticLabel": "{tool}での変更を適用",
+  "videoEditorRemoveAudioSemanticLabel": "音声を削除"
 }

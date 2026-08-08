@@ -10676,4 +10676,23 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
       '選択したコンテンツ警告を適用';
+
+  @override
+  String get videoEditorCloseEditorSemanticLabel => '動画エディターを閉じる';
+
+  @override
+  String get videoEditorContinueToPostDetailsSemanticLabel => '投稿の詳細に進む';
+
+  @override
+  String videoEditorDiscardToolChangesSemanticLabel(String tool) {
+    return '$toolでの変更を破棄';
+  }
+
+  @override
+  String videoEditorApplyToolChangesSemanticLabel(String tool) {
+    return '$toolでの変更を適用';
+  }
+
+  @override
+  String get videoEditorRemoveAudioSemanticLabel => '音声を削除';
 }

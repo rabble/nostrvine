@@ -3530,5 +3530,10 @@
   "userPickerConfirmSemanticLabel": "Kumpirmahin ang mga napiling user",
   "userPickerClearSelectionSemanticLabel": "I-clear ang pagpili ng user",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "Kanselahin ang pagpili ng mga babala sa content",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Ilapat ang mga napiling babala sa content"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Ilapat ang mga napiling babala sa content",
+  "videoEditorCloseEditorSemanticLabel": "Isara ang video editor",
+  "videoEditorContinueToPostDetailsSemanticLabel": "Magpatuloy sa mga detalye ng post",
+  "videoEditorDiscardToolChangesSemanticLabel": "I-discard ang mga pagbabago sa {tool}",
+  "videoEditorApplyToolChangesSemanticLabel": "Ilapat ang mga pagbabago sa {tool}",
+  "videoEditorRemoveAudioSemanticLabel": "Alisin ang audio"
 }

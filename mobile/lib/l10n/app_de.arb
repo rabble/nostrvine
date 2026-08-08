@@ -4944,5 +4944,10 @@
   "userPickerConfirmSemanticLabel": "Ausgewählte Nutzer bestätigen",
   "userPickerClearSelectionSemanticLabel": "Nutzerauswahl leeren",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "Auswahl der Inhaltswarnungen abbrechen",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Ausgewählte Inhaltswarnungen anwenden"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Ausgewählte Inhaltswarnungen anwenden",
+  "videoEditorCloseEditorSemanticLabel": "Videoeditor schließen",
+  "videoEditorContinueToPostDetailsSemanticLabel": "Weiter zu den Beitragsdetails",
+  "videoEditorDiscardToolChangesSemanticLabel": "Änderungen in „{tool}“ verwerfen",
+  "videoEditorApplyToolChangesSemanticLabel": "Änderungen in „{tool}“ anwenden",
+  "videoEditorRemoveAudioSemanticLabel": "Audio entfernen"
 }

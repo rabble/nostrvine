@@ -178,7 +178,7 @@ void main() {
       testWidgets('renders Close button with caret-left icon', (tester) async {
         await tester.pumpWidget(buildWidget());
 
-        expect(find.bySemanticsLabel('Close'), findsOneWidget);
+        expect(find.bySemanticsLabel('Close video editor'), findsOneWidget);
         expect(
           find.byWidgetPredicate(
             (w) => w is DivineIcon && w.icon == DivineIconName.caretLeft,
@@ -190,7 +190,10 @@ void main() {
       testWidgets('renders Done button with caret-right icon', (tester) async {
         await tester.pumpWidget(buildWidget());
 
-        expect(find.bySemanticsLabel('Done'), findsOneWidget);
+        expect(
+          find.bySemanticsLabel('Continue to post details'),
+          findsOneWidget,
+        );
         expect(
           find.byWidgetPredicate(
             (w) => w is DivineIcon && w.icon == DivineIconName.arrowRight,
@@ -261,7 +264,7 @@ void main() {
         (tester) async {
           await tester.pumpWidget(buildWidget());
 
-          await tester.tap(find.bySemanticsLabel('Close'));
+          await tester.tap(find.bySemanticsLabel('Close video editor'));
 
           verify(() => mockGoRouter.pop<Object?>(any())).called(1);
         },
@@ -272,7 +275,7 @@ void main() {
       ) async {
         await tester.pumpWidget(buildWidget(isAutosavedDraft: true));
 
-        await tester.tap(find.bySemanticsLabel('Close'));
+        await tester.tap(find.bySemanticsLabel('Close video editor'));
         await tester.pumpAndSettle();
 
         verify(() => mockGoRouter.pop<Object?>(any())).called(1);
@@ -286,7 +289,7 @@ void main() {
           buildWidget(isAutosavedDraft: true, hasBeenEdited: true),
         );
 
-        await tester.tap(find.bySemanticsLabel('Close'));
+        await tester.tap(find.bySemanticsLabel('Close video editor'));
         await tester.pumpAndSettle();
 
         expect(find.text('Save your draft?'), findsOneWidget);
@@ -301,7 +304,7 @@ void main() {
             buildWidget(isAutosavedDraft: true, hasBeenEdited: true),
           );
 
-          await tester.tap(find.bySemanticsLabel('Close'));
+          await tester.tap(find.bySemanticsLabel('Close video editor'));
           await tester.pumpAndSettle();
 
           await tester.tap(find.text('Save draft'));
@@ -320,7 +323,7 @@ void main() {
           buildWidget(isAutosavedDraft: true, hasBeenEdited: true),
         );
 
-        await tester.tap(find.bySemanticsLabel('Close'));
+        await tester.tap(find.bySemanticsLabel('Close video editor'));
         await tester.pumpAndSettle();
 
         await tester.tap(find.text('Discard changes'));
@@ -341,7 +344,7 @@ void main() {
             ),
           );
 
-          await tester.tap(find.bySemanticsLabel('Close'));
+          await tester.tap(find.bySemanticsLabel('Close video editor'));
           await tester.pumpAndSettle();
 
           await tester.tap(find.text('Save draft'));
@@ -350,7 +353,10 @@ void main() {
           expect(fakeVideoEditorNotifier.saveAsDraftCalls, equals(1));
           verify(() => mockGoRouter.pop<Object?>(any())).called(1);
           expect(find.text('Failed to save'), findsOneWidget);
-          expect(find.bySemanticsLabel('Close'), findsOneWidget);
+          expect(
+            find.bySemanticsLabel('Close video editor'),
+            findsOneWidget,
+          );
         },
       );
 
@@ -366,7 +372,7 @@ void main() {
             ),
           );
 
-          await tester.tap(find.bySemanticsLabel('Close'));
+          await tester.tap(find.bySemanticsLabel('Close video editor'));
           await tester.pumpAndSettle();
 
           await tester.tap(find.text('Save draft'));

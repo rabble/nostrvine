@@ -10544,4 +10544,23 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
       '应用所选内容警告';
+
+  @override
+  String get videoEditorCloseEditorSemanticLabel => '关闭视频编辑器';
+
+  @override
+  String get videoEditorContinueToPostDetailsSemanticLabel => '继续前往帖子详情';
+
+  @override
+  String videoEditorDiscardToolChangesSemanticLabel(String tool) {
+    return '放弃在$tool中的更改';
+  }
+
+  @override
+  String videoEditorApplyToolChangesSemanticLabel(String tool) {
+    return '应用在$tool中的更改';
+  }
+
+  @override
+  String get videoEditorRemoveAudioSemanticLabel => '移除音频';
 }
