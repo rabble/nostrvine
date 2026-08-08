@@ -43,6 +43,7 @@ class SoundSyncOutcome {
     required this.pulled,
     required this.pushed,
     required this.deleted,
+    required this.deletionsRetried,
   });
 
   /// Remote sounds applied locally.
@@ -53,6 +54,10 @@ class SoundSyncOutcome {
 
   /// Local sounds removed by a remote tombstone.
   final int deleted;
+
+  /// Tombstones published for sounds already gone locally whose earlier
+  /// (or first) publish attempt never reached a relay.
+  final int deletionsRetried;
 }
 
 /// Mirrors the saved sound library across a user's devices.
@@ -149,11 +154,58 @@ class SoundSyncRepository {
         pushed++;
       }
 
+      // Commits push progress before the delete-retry phase runs, for the
+      // same reason pull progress is committed before push: a publish
+      // failure below must not roll back the pushes that already landed.
+      await _state.writeApplied(SyncItemKind.sound, applied);
+
+      // Delete retry: a tombstone publish that failed leaves no trace in
+      // `localSounds` (the item is gone by definition), so the push loop
+      // above — which only iterates local items — can never see it or
+      // retry it. Find it instead from `applied`: an entry with a real
+      // (non-tombstone) hash whose id is no longer in `localSounds` is a
+      // sound this device already dropped locally but never confirmed
+      // deleted on the relay. Keys are collected before mutating `applied`
+      // in the loop below, rather than mutating while iterating it.
+      //
+      // This also covers a first-time drift: a sound removed locally
+      // between reconciles without going through `publishLocalDeletion`
+      // (e.g. a crash mid-delete) looks identical to a failed retry here,
+      // and both are correctly resolved the same way.
+      //
+      // Excluded by construction: an item just tombstoned by a remote
+      // record in the pull loop above already carries `tombstoneHash`,
+      // and an item just pulled from remote is back in `localSounds`.
+      final missingLocally = <String>[];
+      for (final entry in applied.entries) {
+        if (entry.value.bodyHash == SyncItemState.tombstoneHash) continue;
+        final ref = SyncItemRef.tryParse(entry.key);
+        if (ref == null || localSounds.containsKey(ref.id)) continue;
+        missingLocally.add(entry.key);
+      }
+
+      var deletionsRetried = 0;
+      for (final dTag in missingLocally) {
+        final ref = SyncItemRef.tryParse(dTag)!;
+        final seen = applied[dTag]!;
+        final stamped = await _index.publish(
+          ref,
+          SyncIndexEntry.tombstone(),
+          latestKnownRemote: seen.createdAt,
+        );
+        applied[dTag] = SyncItemState(
+          createdAt: stamped,
+          bodyHash: SyncItemState.tombstoneHash,
+        );
+        deletionsRetried++;
+      }
+
       await _state.writeApplied(SyncItemKind.sound, applied);
       return SoundSyncOutcome(
         pulled: pulled,
         pushed: pushed,
         deleted: deleted,
+        deletionsRetried: deletionsRetried,
       );
     } on SyncIndexException {
       // Expected relay/network failures and expected auth/signer failures

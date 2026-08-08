@@ -34,7 +34,12 @@ void main() {
       'emits syncing then success on a clean pass',
       build: () {
         when(repository.reconcile).thenAnswer(
-          (_) async => const SoundSyncOutcome(pulled: 2, pushed: 1, deleted: 0),
+          (_) async => const SoundSyncOutcome(
+            pulled: 2,
+            pushed: 1,
+            deleted: 0,
+            deletionsRetried: 0,
+          ),
         );
         return SoundSyncCubit(repository: repository);
       },
@@ -82,7 +87,12 @@ void main() {
       build: () {
         when(repository.reconcile).thenAnswer((_) async {
           await Future<void>.delayed(const Duration(milliseconds: 20));
-          return const SoundSyncOutcome(pulled: 0, pushed: 0, deleted: 0);
+          return const SoundSyncOutcome(
+            pulled: 0,
+            pushed: 0,
+            deleted: 0,
+            deletionsRetried: 0,
+          );
         });
         return SoundSyncCubit(repository: repository);
       },
@@ -165,7 +175,12 @@ void main() {
         final syncFuture = cubit.syncNow();
         await cubit.close();
         completer.complete(
-          const SoundSyncOutcome(pulled: 0, pushed: 0, deleted: 0),
+          const SoundSyncOutcome(
+            pulled: 0,
+            pushed: 0,
+            deleted: 0,
+            deletionsRetried: 0,
+          ),
         );
 
         await expectLater(syncFuture, completes);

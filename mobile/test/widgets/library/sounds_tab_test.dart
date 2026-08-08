@@ -270,7 +270,12 @@ void main() {
         verify(syncRepository.reconcile).called(1);
 
         completer.complete(
-          const SoundSyncOutcome(pulled: 0, pushed: 0, deleted: 0),
+          const SoundSyncOutcome(
+            pulled: 0,
+            pushed: 0,
+            deleted: 0,
+            deletionsRetried: 0,
+          ),
         );
         await tester.pumpAndSettle();
       });
@@ -286,7 +291,12 @@ void main() {
         expect(find.text(l10n.soundSyncStatusSynced), findsNothing);
 
         completer.complete(
-          const SoundSyncOutcome(pulled: 1, pushed: 0, deleted: 0),
+          const SoundSyncOutcome(
+            pulled: 1,
+            pushed: 0,
+            deleted: 0,
+            deletionsRetried: 0,
+          ),
         );
         await tester.pumpAndSettle();
 

@@ -343,6 +343,105 @@ void main() {
     });
 
     test(
+      'republishes a tombstone for a sound whose earlier delete never '
+      'landed, and does not repeat it on a later pass',
+      () async {
+        // The sound is already gone locally — as it would be after a
+        // failed publishLocalDeletion — but `applied` still carries the
+        // real body hash from when it was last successfully synced.
+        await state.writeApplied(SyncItemKind.sound, {
+          'divine:sync:sound:$idA': SyncItemState(
+            createdAt: 1000,
+            bodyHash: syncBodyHash(const {'label': 'doomed'}),
+          ),
+        });
+
+        final outcome = await repository.reconcile();
+
+        final captured = verify(
+          () => index.publish(
+            captureAny(),
+            captureAny(),
+            latestKnownRemote: captureAny(named: 'latestKnownRemote'),
+          ),
+        ).captured;
+        expect((captured[0] as SyncItemRef).id, equals(idA));
+        expect((captured[1] as SyncIndexEntry).deleted, isTrue);
+        expect(captured[2], equals(1000));
+        expect(outcome.deletionsRetried, equals(1));
+        expect(
+          (await state.readApplied(
+            SyncItemKind.sound,
+          ))['divine:sync:sound:$idA']!.bodyHash,
+          equals(SyncItemState.tombstoneHash),
+        );
+
+        // Second pass: the retry landed, so nothing should republish. The
+        // first pass's publish call above was already consumed by the
+        // `verify(...).captured` call, so any further matching call here
+        // would be a fresh, unverified interaction — exactly what
+        // `verifyNever` catches.
+        await repository.reconcile();
+
+        verifyNever(
+          () => index.publish(
+            any(),
+            any(),
+            latestKnownRemote: any(named: 'latestKnownRemote'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'does not retry a delete for a sound tombstoned by a remote record '
+      'this same pass',
+      () async {
+        local.sounds[idA] = {'label': 'doomed'};
+        when(
+          () => index.fetch(SyncItemKind.sound, since: any(named: 'since')),
+        ).thenAnswer((_) async => [record(idA, 3000)]);
+
+        final outcome = await repository.reconcile();
+
+        expect(outcome.deletionsRetried, equals(0));
+        verifyNever(
+          () => index.publish(
+            any(),
+            any(),
+            latestKnownRemote: any(named: 'latestKnownRemote'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'does not retry a delete for a sound pulled from remote this same '
+      'pass',
+      () async {
+        when(
+          () => index.fetch(SyncItemKind.sound, since: any(named: 'since')),
+        ).thenAnswer(
+          (_) async => [
+            record(idA, 1000, body: {'label': 'intro'}),
+          ],
+        );
+
+        final outcome = await repository.reconcile();
+
+        expect(outcome.pulled, equals(1));
+        expect(outcome.deletionsRetried, equals(0));
+        verifyNever(
+          () => index.publish(
+            any(),
+            any(),
+            latestKnownRemote: any(named: 'latestKnownRemote'),
+          ),
+        );
+      },
+    );
+
+    test(
       're-adding a tombstoned sound survives a repeated tombstone fetch',
       () async {
         local.sounds[idA] = {'label': 'doomed'};
