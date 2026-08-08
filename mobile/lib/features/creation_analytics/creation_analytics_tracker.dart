@@ -105,7 +105,7 @@ class CreationAnalyticsTracker {
       name: 'publish_started',
       parameters: {
         'mode': mode.name,
-        'time_since_camera_open_ms': _elapsedSinceCameraOpenMs,
+        'time_since_camera_open_ms': ?_elapsedSinceCameraOpenMs,
       },
     );
   }
@@ -117,7 +117,7 @@ class CreationAnalyticsTracker {
       name: 'publish_succeeded',
       parameters: {
         'mode': mode.name,
-        'time_since_camera_open_ms': _elapsedSinceCameraOpenMs,
+        'time_since_camera_open_ms': ?_elapsedSinceCameraOpenMs,
       },
     );
     _terminal = true;
@@ -146,9 +146,12 @@ class CreationAnalyticsTracker {
     _terminal = true;
   }
 
-  int get _elapsedSinceCameraOpenMs {
+  /// Null when the active session never opened the camera (an editor-only
+  /// restored draft). Reporting `0` there would be indistinguishable from an
+  /// instant publish and would drag the funnel's timing distribution down.
+  int? get _elapsedSinceCameraOpenMs {
     final openedAt = _cameraOpenedAt;
-    if (openedAt == null) return 0;
+    if (openedAt == null) return null;
     final elapsed = _now().difference(openedAt).inMilliseconds;
     return elapsed < 0 ? 0 : elapsed;
   }

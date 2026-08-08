@@ -110,9 +110,11 @@ or `upload`.
 
 The tracker is app-scoped so recorder, editor, metadata, and publish routes
 contribute to one session. Creation metadata remains local analytics state and
-is not written into Nostr video events. `time_since_camera_open_ms` is `0` for
-an editor-only restored draft that did not open the camera in the active
-session.
+is not written into Nostr video events. `time_since_camera_open_ms` is
+**omitted entirely** — not sent as `0` — for an editor-only restored draft
+that did not open the camera in the active session, so those publishes cannot
+drag the timing distribution toward zero. Query it with `IS NOT NULL` rather
+than treating a missing value as instant.
 
 ## Post-Publish Experiment
 

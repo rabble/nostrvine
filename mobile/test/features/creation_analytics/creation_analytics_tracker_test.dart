@@ -135,19 +135,30 @@ void main() {
     });
   });
 
-  test(
-    'does not invent camera elapsed time for an editor-only draft',
-    () async {
-      final sink = _RecordingSink();
-      var now = DateTime.utc(2026, 8, 8, 12);
-      final tracker = CreationAnalyticsTracker(analytics: sink, now: () => now);
+  test('omits camera elapsed time entirely for an editor-only draft', () async {
+    final sink = _RecordingSink();
+    var now = DateTime.utc(2026, 8, 8, 12);
+    final tracker = CreationAnalyticsTracker(analytics: sink, now: () => now);
 
-      await tracker.editorOpened(VideoRecorderMode.upload);
-      now = now.add(const Duration(minutes: 2));
-      await tracker.publishStarted(VideoRecorderMode.upload);
+    await tracker.editorOpened(VideoRecorderMode.upload);
+    now = now.add(const Duration(minutes: 2));
+    await tracker.publishStarted(VideoRecorderMode.upload);
+    await tracker.publishSucceeded(VideoRecorderMode.upload);
 
-      expect(sink.events.last.name, 'publish_started');
-      expect(sink.events.last.parameters['time_since_camera_open_ms'], 0);
-    },
-  );
+    // A `0` here would be indistinguishable from an instant publish and
+    // would drag the campaign's timing distribution down.
+    expect(sink.events.map((event) => event.name), [
+      'editor_opened',
+      'publish_started',
+      'publish_succeeded',
+    ]);
+    expect(
+      sink.events[1].parameters,
+      isNot(contains('time_since_camera_open_ms')),
+    );
+    expect(
+      sink.events[2].parameters,
+      isNot(contains('time_since_camera_open_ms')),
+    );
+  });
 }
