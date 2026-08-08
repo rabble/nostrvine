@@ -3887,7 +3887,11 @@
   },
   "videoMetadataC2paMissingNote": "Content credentials need an internet connection.",
   "@videoMetadataC2paMissingNote": {
-    "description": "Small trailing note under the missing-content-credential bottom sheet, hinting that the (remote) content-credential signing step requires connectivity. Not phrased as the definitive cause, since signing can also fail for other reasons."
+    "description": "Small trailing note under the missing-content-credential bottom sheet, shown when the device is offline, where connectivity really is the likely cause. When the device is online, videoMetadataC2paMissingNoteServiceUnavailable is shown instead."
+  },
+  "videoMetadataC2paMissingNoteServiceUnavailable": "The content credential service didn't respond. This isn't your connection.",
+  "@videoMetadataC2paMissingNoteServiceUnavailable": {
+    "description": "Small trailing note under the missing-content-credential bottom sheet, shown when the device IS online, so signing failed on the service side (outage, misconfigured endpoint, rejected request). Explicitly rules out the user's connection, because the previous connectivity-only wording sent users to debug working wifi."
   },
   "videoMetadataC2paMissingRegenerate": "Regenerate",
   "@videoMetadataC2paMissingRegenerate": {

@@ -1,6 +1,11 @@
 #!/bin/bash
 set -euo pipefail
 
+# Fail fast on a malformed C2PA signing endpoint. A bare host silently collapses
+# to the service root at call time and surfaces as an opaque signing error
+# during capture rather than a build failure.
+"$(dirname "${BASH_SOURCE[0]:-$0}")/scripts/check_signing_endpoint.sh"
+
 usage() {
     cat <<'EOF'
 Usage: ./build_ios.sh [debug|release] [options]

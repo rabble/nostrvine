@@ -6483,6 +6483,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Acreditările de conținut necesită o conexiune la internet.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Regenerează';
 
   @override

@@ -6321,6 +6321,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Innehållsuppgifter kräver en internetanslutning.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Generera om';
 
   @override

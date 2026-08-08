@@ -4,6 +4,11 @@
 
 set -e
 
+# Fail fast on a malformed C2PA signing endpoint. A bare host silently collapses
+# to the service root at call time and surfaces as an opaque signing error
+# during capture rather than a build failure.
+"$(dirname "${BASH_SOURCE[0]:-$0}")/scripts/check_signing_endpoint.sh"
+
 # Default to Chrome if no device specified
 DEVICE_ARG="${1:-chrome}"
 BUILD_MODE="${2:-debug}"

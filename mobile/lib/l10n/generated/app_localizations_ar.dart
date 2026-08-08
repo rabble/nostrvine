@@ -6278,6 +6278,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'تتطلب بيانات اعتماد المحتوى اتصالاً بالإنترنت.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'إعادة الإنشاء';
 
   @override

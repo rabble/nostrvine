@@ -6372,6 +6372,10 @@ class AppLocalizationsMs extends AppLocalizations {
       'Kelayakan kandungan memerlukan sambungan internet.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Jana semula';
 
   @override
