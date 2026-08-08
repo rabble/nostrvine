@@ -6380,6 +6380,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Удостоверенията за съдържание изискват интернет връзка.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Генерирай отново';
 
   @override
@@ -7450,6 +7454,10 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get publishErrorNostrPublishFailed =>
       'Видеото се качи, но публикацията не можа да се пусне. Провери настройките за релета и опитай пак.';
+
+  @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Видеото се качи, но звукът не е разрешен за повторна употреба. Избери друг звук, за да публикуваш.';
 
   @override
   String get publishErrorInterrupted =>

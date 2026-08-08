@@ -18,6 +18,7 @@ import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:openvine/services/video_editor/native_render_task_registry.dart';
 import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
 import 'package:openvine/services/video_editor/video_editor_audio_render.dart';
+import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -503,6 +504,17 @@ class VideoEditorRenderService {
         );
       }
 
+      // The cover must come from the rendered file, not from the first source
+      // clip: the render trims, re-times, crops and filters, so an inherited
+      // frame has no matching position in the output. That mismatch is visible
+      // in the cover picker, which opens the preview at the clip's
+      // thumbnailTimestamp and would land on a different frame than the cover
+      // it just showed. Falling back to the source thumbnail keeps a render
+      // whose extraction failed from losing its preview entirely.
+      final cover = await VideoThumbnailService.extractThumbnail(
+        videoPath: outputPath,
+      );
+
       final clip = DivineVideoClip(
         id: 'clip-${DateTime.now().millisecondsSinceEpoch}',
         video: EditorVideo.file(outputPath),
@@ -510,7 +522,8 @@ class VideoEditorRenderService {
         recordedAt: DateTime.now(),
         originalAspectRatio: clips.first.originalAspectRatio,
         targetAspectRatio: clips.first.targetAspectRatio,
-        thumbnailPath: clips.first.thumbnailPath,
+        thumbnailPath: cover?.path ?? clips.first.thumbnailPath,
+        thumbnailTimestamp: cover?.timestamp,
       );
 
       return (clip, proofManifestJson);

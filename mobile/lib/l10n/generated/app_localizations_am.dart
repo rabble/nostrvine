@@ -6197,6 +6197,10 @@ class AppLocalizationsAm extends AppLocalizations {
       'የይዘት መታወቂያዎች የበይነመረብ ግንኙነት ያስፈልጋቸዋል።';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'እንደገና ፍጠር';
 
   @override
@@ -7223,6 +7227,10 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get publishErrorNostrPublishFailed =>
       'ቪዲዮው ተሰቅሏል ነገር ግን ልጥፉ ሊታተም አልቻለም። የቅብብሎሽ ቅንብሮችዎን ይፈትሹ እና እንደገና ይሞክሩ።';
+
+  @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'ቪዲዮው ተሰቅሏል፣ ነገር ግን ድምፁ ለዳግም ጥቅም አልተፈቀደም። ለመለጠፍ ሌላ ድምፅ ይምረጡ።';
 
   @override
   String get publishErrorInterrupted => 'ይህ ስቀላ ተቋርጧል። እንደገና መሞከር ይፈልጋሉ?';

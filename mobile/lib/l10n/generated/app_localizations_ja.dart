@@ -6048,6 +6048,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoMetadataC2paMissingNote => 'コンテンツ認証情報にはインターネット接続が必要です。';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => '再生成';
 
   @override
@@ -7047,6 +7051,10 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get publishErrorNostrPublishFailed =>
       '動画はアップロードできたけど、投稿を公開できなかったよ。リレー設定を確認して、もう一回試してみて。';
+
+  @override
+  String get publishErrorAudioReuseNotPermitted =>
+      '動画はアップロードできたけど、この音源は再利用が許可されてないよ。別の音源を選んで投稿してね。';
 
   @override
   String get publishErrorInterrupted => 'アップロードが中断されたよ。もう一回試す？';

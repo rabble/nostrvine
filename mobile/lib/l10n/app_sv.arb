@@ -19,6 +19,7 @@
     "publishErrorLowStorage": "Det finns inte tillräckligt med lagringsutrymme på enheten. Frigör utrymme och försök igen.",
     "publishErrorThumbnailFailed": "Videon laddades upp, men miniatyrbilden kunde inte skapas. Försök igen.",
     "publishErrorNostrPublishFailed": "Videon laddades upp men inlägget kunde inte publiceras. Kontrollera dina relinställningar och försök igen.",
+    "publishErrorAudioReuseNotPermitted": "Videon laddades upp men ljudet får inte återanvändas. Välj ett annat ljud för att posta.",
     "publishErrorInterrupted": "Uppladdningen avbröts. Vill du försöka igen?",
     "publishErrorAccountChanged": "Den här videon hör till ett annat konto. Byt tillbaka till det kontot för att posta den.",
     "publishErrorGeneric": "Något gick fel. Försök igen.",

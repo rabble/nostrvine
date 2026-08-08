@@ -6476,6 +6476,10 @@ class AppLocalizationsPl extends AppLocalizations {
       'Poświadczenia treści wymagają połączenia z internetem.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Wygeneruj ponownie';
 
   @override
@@ -7544,6 +7548,10 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get publishErrorNostrPublishFailed =>
       'Film został przesłany, ale nie udało się opublikować posta. Sprawdź ustawienia przekaźników i spróbuj ponownie.';
+
+  @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Film został przesłany, ale ten dźwięk nie jest dopuszczony do ponownego użycia. Wybierz inny dźwięk, żeby opublikować.';
 
   @override
   String get publishErrorInterrupted =>

@@ -6483,6 +6483,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Acreditările de conținut necesită o conexiune la internet.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Regenerează';
 
   @override
@@ -7546,6 +7550,10 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get publishErrorNostrPublishFailed =>
       'Videoclipul s-a încărcat, dar postarea nu a putut fi publicată. Verifică-ți setările relay-urilor și încearcă din nou.';
+
+  @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Videoclipul s-a încărcat, dar sunetul lui nu este permis pentru reutilizare. Alege alt sunet ca să postezi.';
 
   @override
   String get publishErrorInterrupted =>

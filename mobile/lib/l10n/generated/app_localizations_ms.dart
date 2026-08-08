@@ -6372,6 +6372,10 @@ class AppLocalizationsMs extends AppLocalizations {
       'Kelayakan kandungan memerlukan sambungan internet.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Jana semula';
 
   @override
@@ -7426,6 +7430,10 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get publishErrorNostrPublishFailed =>
       'Video dimuat naik tetapi siaran tidak dapat diterbitkan. Semak tetapan relay anda dan cuba lagi.';
+
+  @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Video dimuat naik tetapi bunyinya tidak dibenarkan untuk digunakan semula. Pilih bunyi lain untuk menyiarkannya.';
 
   @override
   String get publishErrorInterrupted =>

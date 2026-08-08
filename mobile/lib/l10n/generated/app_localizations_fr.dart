@@ -6406,6 +6406,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Les informations d’authenticité nécessitent une connexion internet.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Régénérer';
 
   @override
@@ -7474,6 +7478,10 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get publishErrorNostrPublishFailed =>
       'La vidéo a été envoyée, mais la publication n\'a pas pu être diffusée. Vérifie tes réglages de relais et réessaie.';
+
+  @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'La vidéo a été envoyée, mais cet audio n\'est pas autorisé à la réutilisation. Choisis un autre son pour publier.';
 
   @override
   String get publishErrorInterrupted =>

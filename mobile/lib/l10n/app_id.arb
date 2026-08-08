@@ -19,6 +19,7 @@
     "publishErrorLowStorage": "Penyimpanan di perangkatmu tidak cukup. Kosongkan sedikit ruang lalu coba lagi.",
     "publishErrorThumbnailFailed": "Video berhasil diunggah, tapi thumbnail tidak bisa disiapkan. Silakan coba lagi.",
     "publishErrorNostrPublishFailed": "Video berhasil diunggah, tapi posting tidak bisa dipublikasikan. Periksa pengaturan relay-mu dan coba lagi.",
+    "publishErrorAudioReuseNotPermitted": "Video berhasil diunggah, tapi suaranya tidak diizinkan untuk dipakai ulang. Pilih suara lain untuk memposting.",
     "publishErrorInterrupted": "Unggahan ini terganggu. Mau coba lagi?",
     "publishErrorAccountChanged": "Video ini milik akun lain. Balik ke akun itu untuk mempostingnya.",
     "publishErrorGeneric": "Terjadi kesalahan. Silakan coba lagi.",

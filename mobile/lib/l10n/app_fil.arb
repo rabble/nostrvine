@@ -19,6 +19,7 @@
     "publishErrorLowStorage": "Kulang ang storage sa device mo. Magbakante ng espasyo at subukan ulit.",
     "publishErrorThumbnailFailed": "Na-upload ang video, pero hindi naihanda ang thumbnail. Pakisubukan ulit.",
     "publishErrorNostrPublishFailed": "Na-upload ang video pero hindi na-publish ang post. Tingnan ang iyong relay settings at subukan ulit.",
+    "publishErrorAudioReuseNotPermitted": "Na-upload ang video pero hindi pinapayagang gamitin ulit ang sound nito. Pumili ng ibang sound para makapag-post.",
     "publishErrorInterrupted": "Naputol ang upload na ito. Gusto mo bang subukan ulit?",
     "publishErrorAccountChanged": "Sa ibang account ang video na ito. Bumalik sa account na iyon para i-post.",
     "publishErrorGeneric": "May nangyaring problema. Pakisubukan ulit.",

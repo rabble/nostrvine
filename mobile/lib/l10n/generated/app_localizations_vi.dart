@@ -6332,6 +6332,10 @@ class AppLocalizationsVi extends AppLocalizations {
       'Chứng nhận nội dung cần kết nối internet.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Tạo lại';
 
   @override
@@ -7385,6 +7389,10 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get publishErrorNostrPublishFailed =>
       'Video đã tải lên nhưng không đăng được bài. Kiểm tra cài đặt relay rồi thử lại.';
+
+  @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Video đã tải lên nhưng âm thanh này không được phép dùng lại. Chọn âm thanh khác để đăng nhé.';
 
   @override
   String get publishErrorInterrupted =>

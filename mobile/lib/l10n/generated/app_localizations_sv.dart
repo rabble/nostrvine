@@ -6321,6 +6321,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Innehållsuppgifter kräver en internetanslutning.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Generera om';
 
   @override
@@ -7371,6 +7375,10 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get publishErrorNostrPublishFailed =>
       'Videon laddades upp men inlägget kunde inte publiceras. Kontrollera dina relinställningar och försök igen.';
+
+  @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Videon laddades upp men ljudet får inte återanvändas. Välj ett annat ljud för att posta.';
 
   @override
   String get publishErrorInterrupted =>

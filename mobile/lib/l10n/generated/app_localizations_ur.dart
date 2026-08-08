@@ -6330,6 +6330,10 @@ class AppLocalizationsUr extends AppLocalizations {
       'مواد اسناد کے لیے انٹرنیٹ کنکشن درکار ہے۔';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'دوبارہ بنائیں';
 
   @override
@@ -7379,6 +7383,10 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get publishErrorNostrPublishFailed =>
       'ویڈیو اپلوڈ ہو گئی لیکن پوسٹ شائع نہیں ہو سکی۔ اپنی ریلے ترتیبات چیک کر کے دوبارہ کوشش کریں۔';
+
+  @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'ویڈیو اپلوڈ ہو گئی لیکن اس کی آڈیو دوبارہ استعمال کے لیے دستیاب نہیں۔ پوسٹ کرنے کے لیے کوئی دوسری آڈیو منتخب کریں۔';
 
   @override
   String get publishErrorInterrupted =>

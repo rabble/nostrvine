@@ -6020,6 +6020,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoMetadataC2paMissingNote => '添加内容凭证需要网络连接。';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => '重新生成';
 
   @override
@@ -7004,6 +7008,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get publishErrorNostrPublishFailed => '视频已上传，但帖子没能发布。请检查你的中继设置后重试。';
+
+  @override
+  String get publishErrorAudioReuseNotPermitted =>
+      '视频已上传，但这段音频未开放二次使用。换一段音频再发布吧。';
 
   @override
   String get publishErrorInterrupted => '上传被中断。要重试吗？';

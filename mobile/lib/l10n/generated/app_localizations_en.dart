@@ -6321,6 +6321,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Content credentials need an internet connection.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Regenerate';
 
   @override
@@ -7366,6 +7370,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get publishErrorNostrPublishFailed =>
       'The video uploaded but the post could not be published. Check your relay settings and try again.';
+
+  @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'The video uploaded, but its sound isn\'t cleared for reuse. Pick a different sound to post it.';
 
   @override
   String get publishErrorInterrupted =>

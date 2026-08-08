@@ -19,6 +19,7 @@
     "publishErrorLowStorage": "端末の空き容量が足りないよ。容量を空けてもう一回試してみて。",
     "publishErrorThumbnailFailed": "動画はアップロードできたけど、サムネイルを準備できなかったよ。もう一回試してみて。",
     "publishErrorNostrPublishFailed": "動画はアップロードできたけど、投稿を公開できなかったよ。リレー設定を確認して、もう一回試してみて。",
+    "publishErrorAudioReuseNotPermitted": "動画はアップロードできたけど、この音源は再利用が許可されてないよ。別の音源を選んで投稿してね。",
     "publishErrorInterrupted": "アップロードが中断されたよ。もう一回試す？",
     "publishErrorAccountChanged": "この動画は別のアカウントのものだよ。投稿するにはそのアカウントに戻ってね。",
     "publishErrorGeneric": "問題が発生したよ。もう一回試してみて。",

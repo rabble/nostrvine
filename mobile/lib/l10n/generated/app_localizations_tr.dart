@@ -6291,6 +6291,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'İçerik kimlik bilgileri internet bağlantısı gerektirir.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Yeniden oluştur';
 
   @override
@@ -7336,6 +7340,10 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get publishErrorNostrPublishFailed =>
       'Video yüklendi ama gönderi yayınlanamadı. Röle ayarlarını kontrol edip tekrar dene.';
+
+  @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'Video yüklendi ama bu ses yeniden kullanıma açık değil. Paylaşmak için başka bir ses seç.';
 
   @override
   String get publishErrorInterrupted =>

@@ -6278,6 +6278,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'تتطلب بيانات اعتماد المحتوى اتصالاً بالإنترنت.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'إعادة الإنشاء';
 
   @override
@@ -7322,6 +7326,10 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get publishErrorNostrPublishFailed =>
       'تم رفع الفيديو لكن تعذّر نشر المنشور. تحقّق من إعدادات المحوّلات وحاول مرّة أخرى.';
+
+  @override
+  String get publishErrorAudioReuseNotPermitted =>
+      'تم رفع الفيديو، لكن الصوت غير مسموح بإعادة استخدامه. اختر صوتًا آخر لنشره.';
 
   @override
   String get publishErrorInterrupted =>
