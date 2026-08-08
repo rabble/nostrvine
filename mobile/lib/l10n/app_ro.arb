@@ -2898,6 +2898,14 @@
     "videoRecorderCaptureNextLabel": "Următorul",
     "videoRecorderLipSyncAddAudioFirst": "Adaugă audio înainte de înregistrare",
     "videoRecorderStopMotionAssembleFailed": "Videoclipul nu a putut fi creat. Încearcă din nou.",
+    "videoRecorderStopMotionShotsLeft": "{count, plural, =0{Nu mai sunt cadre} =1{A mai rămas 1 cadru} few{Au mai rămas {count} cadre} other{Au mai rămas {count} de cadre}}",
+    "@videoRecorderStopMotionShotsLeft": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "videoRecorderToggleFlashLabel": "Activează/dezactivează blițul",
     "videoRecorderCycleTimerLabel": "Schimbă temporizatorul",
     "videoRecorderToggleAspectRatioLabel": "Schimbă raportul de aspect",
@@ -3214,7 +3222,7 @@
     "videoEditorCloseSemanticLabel": "Închide",
     "videoEditorDoneSemanticLabel": "Gata",
     "videoEditorLevelSemanticLabel": "Nivel",
-    "videoMetadataBackSemanticLabel": "Înapoi",
+    "videoMetadataClosePostDetailsSemanticLabel": "Închide detaliile postării",
     "videoMetadataDismissHelpDialogSemanticLabel": "Închide dialogul de ajutor",
     "videoMetadataGotItButton": "Am înțeles!",
     "videoMetadataLimitReachedWarning": "Limita de 64KB a fost atinsă. Elimină conținut pentru a continua.",
@@ -3919,6 +3927,8 @@
     "profileBadgeMoreRecipients": "+{count} more",
     "profileBadgeSemanticLabel": "{name} badge",
     "profileBadgeFallbackSemanticLabel": "Badge",
+    "profileBadgeFooterBody": "Insignele sunt mici recompense pe care oricine le poate crea pe Nostr. Dăruiește una unui prieten, unui creator sau cuiva care ți-a făcut ziua mai bună.",
+    "profileBadgeFooterLink": "Creează-ți propria insignă pe badges.divine.video",
     "authSignInWithBrowserExtension": "Conectare cu extensia browserului",
     "authNip07ConnectionFailed": "Nu s-a putut conecta la extensia browserului.",
     "authNip07ExtensionNotFound": "Nu a fost găsită nicio extensie de browser. Instalează Alby, nos2x sau altă extensie compatibilă cu NIP-07.",
@@ -4026,8 +4036,8 @@
     "bugReportRemoveImage": "Remove image",
     "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
     "videoMetadataEditCoverTitle": "Editează coperta",
-    "videoMetadataEditCoverCloseSemanticLabel": "Închide editorul de copertă",
-    "videoMetadataEditCoverConfirmSemanticLabel": "Confirmă selecția copertei",
+    "videoMetadataEditCoverCloseSemanticLabel": "Renunță la modificările copertei",
+    "videoMetadataEditCoverConfirmSemanticLabel": "Folosește cadrul selectat drept copertă video",
     "videoMetadataEditCoverStripSemanticLabel": "Parcurge videoclipul pentru a selecta cadrul copertei",
     "userPickerRemoveSelectionSemantics": "Elimină {name}",
     "@userPickerRemoveSelectionSemantics": {
@@ -4922,5 +4932,12 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "Elimină relay-ul"
+  "relaySettingsRemoveRelayTooltip": "Elimină relay-ul",
+  "videoMetadataTagsPickerCancelSemanticLabel": "Anulează selectarea etichetelor",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "Aplică etichetele selectate",
+  "userPickerCancelSemanticLabel": "Anulează selectarea utilizatorilor",
+  "userPickerConfirmSemanticLabel": "Confirmă utilizatorii selectați",
+  "userPickerClearSelectionSemanticLabel": "Șterge selecția utilizatorilor",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "Anulează selectarea avertismentelor de conținut",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Aplică avertismentele de conținut selectate"
 }

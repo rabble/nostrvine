@@ -22,7 +22,7 @@ class ExploreTabBar extends StatelessWidget {
   });
 
   /// Controller driving tab selection; must match [tabsState.tabCount].
-  final TabController? controller;
+  final TabController controller;
 
   /// Current tab availability/order.
   final ExploreTabsState tabsState;

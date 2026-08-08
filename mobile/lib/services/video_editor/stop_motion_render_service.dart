@@ -27,10 +27,11 @@ class StopMotionRenderService {
 
   /// Output frame rate of the assembled video.
   ///
-  /// 24fps is the classic stop-motion base: "frames per image" counts film
-  /// frames, so a hold of 2 ("on twos") shows 12 images per second — N stills
-  /// at the default hold play as N/12 s.
-  static const double defaultFrameRate = 24;
+  /// Matches the frame grid the rest of the app works on — the editor
+  /// timeline's frame ruler labels ticks at 30fps — so "frames per image"
+  /// counts the same frames everywhere: a hold of 2 shows 15 images per
+  /// second, and N stills at the default hold play as N/30 s.
+  static const double defaultFrameRate = 30;
 
   /// Test-only override for [assemble].
   ///
@@ -212,7 +213,7 @@ class StopMotionRenderService {
   /// duration (each frame held for its own hold time) reaches
   /// [VideoEditorConstants.stopMotionMinOutputDuration].
   ///
-  /// Ultra-short clips (a single still ≈ 83ms) make looping players
+  /// Ultra-short clips (a single still ≈ 33ms) make looping players
   /// stutter/oscillate; repeating preserves the per-frame timing and keeps the
   /// loop seam clean (last frame → first frame). A sequence already at or above
   /// the minimum is returned unchanged.

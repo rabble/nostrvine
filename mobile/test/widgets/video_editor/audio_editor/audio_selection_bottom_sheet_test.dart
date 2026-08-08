@@ -243,6 +243,43 @@ void main() {
         expect(find.byType(AudioEditorSelectionOverlay), findsNothing);
       });
 
+      testWidgets('collapses repeated reuse-blocked toasts into one', (
+        tester,
+      ) async {
+        // Regression (#6769): each blocked tap used to enqueue its own
+        // snackbar, so a burst of taps left ~20s of backlog that trailed the
+        // user out of the sheet and misattributed itself to whatever sound
+        // they picked next.
+        final explicitForbidden = _createTestAudioEvent(
+          id: 'forbidden-sound',
+          title: 'Credit only',
+        ).copyWith(allowsReuse: false, hasExplicitReuseConsent: true);
+
+        await tester.pumpWidget(
+          buildWidget(
+            trendingSoundsAsync: AsyncValue.data([explicitForbidden]),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.videoEditorAudioCategoryCommunity));
+        await tester.pumpAndSettle();
+
+        for (var i = 0; i < 3; i++) {
+          await tester.tap(find.text('Credit only'));
+          await tester.pump();
+        }
+        await tester.pumpAndSettle();
+        expect(find.text(l10n.soundReuseUnavailable), findsOneWidget);
+
+        // One toast's lifetime clears the whole burst rather than the first
+        // of three.
+        await tester.pump(const Duration(seconds: 2));
+        await tester.pumpAndSettle();
+        expect(find.text(l10n.soundReuseUnavailable), findsNothing);
+      });
+
       testWidgets("selects the creator's own legacy sound", (tester) async {
         const ownerPubkey = 'owner-pubkey-hex';
         final audioService = _MockAudioPlaybackService();

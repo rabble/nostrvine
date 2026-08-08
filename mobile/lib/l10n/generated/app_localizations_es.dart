@@ -6378,6 +6378,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Las credenciales de contenido necesitan conexión a internet.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Volver a generar';
 
   @override
@@ -8558,6 +8562,18 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudo crear el vídeo. Inténtalo de nuevo.';
 
   @override
+  String videoRecorderStopMotionShotsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Quedan $count tomas',
+      one: 'Queda 1 toma',
+      zero: 'No quedan tomas',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get videoRecorderToggleFlashLabel => 'Activar o desactivar flash';
 
   @override
@@ -9676,7 +9692,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoEditorLevelSemanticLabel => 'Nivel';
 
   @override
-  String get videoMetadataBackSemanticLabel => 'Atrás';
+  String get videoMetadataClosePostDetailsSemanticLabel =>
+      'Cerrar detalles de la publicación';
 
   @override
   String get videoMetadataDismissHelpDialogSemanticLabel =>
@@ -9960,6 +9977,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get profileBadgeFallbackSemanticLabel => 'Badge';
+
+  @override
+  String get profileBadgeFooterBody =>
+      'Las insignias son pequeños premios que cualquiera puede crear en Nostr. Regalale una a un amigo, a un creador o a alguien que te alegró el día.';
+
+  @override
+  String get profileBadgeFooterLink => 'Creá la tuya en badges.divine.video';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';
@@ -10508,11 +10532,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get videoMetadataEditCoverCloseSemanticLabel =>
-      'Cerrar editor de portada';
+      'Descartar cambios de portada';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Confirmar selección de portada';
+      'Usar el fotograma seleccionado como portada del vídeo';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
@@ -11176,4 +11200,31 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+
+  @override
+  String get videoMetadataTagsPickerCancelSemanticLabel =>
+      'Cancelar selección de etiquetas';
+
+  @override
+  String get videoMetadataTagsPickerConfirmSemanticLabel =>
+      'Aplicar etiquetas seleccionadas';
+
+  @override
+  String get userPickerCancelSemanticLabel => 'Cancelar selección de usuarios';
+
+  @override
+  String get userPickerConfirmSemanticLabel =>
+      'Confirmar usuarios seleccionados';
+
+  @override
+  String get userPickerClearSelectionSemanticLabel =>
+      'Borrar selección de usuarios';
+
+  @override
+  String get videoMetadataContentWarningsPickerCancelSemanticLabel =>
+      'Cancelar selección de advertencias de contenido';
+
+  @override
+  String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
+      'Aplicar advertencias de contenido seleccionadas';
 }

@@ -3566,6 +3566,14 @@
     "videoRecorderCaptureNextLabel": "ቀጥሎ",
     "videoRecorderLipSyncAddAudioFirst": "ከመቅረጽ በፊት ኦዲዮ ያክሉ",
     "videoRecorderStopMotionAssembleFailed": "ቪዲዮውን መፍጠር አልተቻለም። እንደገና ይሞክሩ።",
+    "videoRecorderStopMotionShotsLeft": "{count, plural, =0{ምንም የቀረ ፎቶ የለም} =1{1 ፎቶ ቀርቷል} other{{count} ፎቶዎች ቀርተዋል}}",
+    "@videoRecorderStopMotionShotsLeft": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "videoRecorderToggleFlashLabel": "ብልጭታ ቀያይር",
     "videoRecorderCycleTimerLabel": "የዑደት ሰዓት ቆጣሪ",
     "videoRecorderToggleAspectRatioLabel": "ምጥጥን ቀያይር",
@@ -3884,7 +3892,7 @@
     "videoEditorCloseSemanticLabel": "ገጠመ",
     "videoEditorDoneSemanticLabel": "ተከናውኗል",
     "videoEditorLevelSemanticLabel": "ደረጃ",
-    "videoMetadataBackSemanticLabel": "ተመለስ",
+    "videoMetadataClosePostDetailsSemanticLabel": "የልጥፍ ዝርዝሮችን ዝጋ",
     "videoMetadataDismissHelpDialogSemanticLabel": "የእገዛ ንግግርን አሰናብት",
     "videoMetadataGotItButton": "ገባኝ!",
     "videoMetadataLimitReachedWarning": "64KB ገደብ ላይ ደርሷል። ለመቀጠል አንዳንድ ይዘቶችን ያስወግዱ።",
@@ -4044,6 +4052,8 @@
     "profileBadgeMoreRecipients": "+{count} more",
     "profileBadgeSemanticLabel": "{name} badge",
     "profileBadgeFallbackSemanticLabel": "Badge",
+    "profileBadgeFooterBody": "ባጆች በNostr ላይ ማንኛውም ሰው መፍጠር የሚችላቸው ትንንሽ ሽልማቶች ናቸው። ለጓደኛ፣ ለፈጣሪ ወይም ቀንህን ላሳመረልህ ሰው አንዷን ስጥ።",
+    "profileBadgeFooterLink": "የራስህን በbadges.divine.video ፍጠር",
     "authSignInWithBrowserExtension": "በአሳሽ ቅጥያ ይግቡ",
     "authNip07ConnectionFailed": "ከአሳሽ ቅጥያዎ ጋር መገናኘት አልተቻለም።",
     "authNip07ExtensionNotFound": "የአሳሽ ቅጥያ አልተገኘም። Alby፣ nos2x ወይም ሌላ ከ NIP-07 ጋር ተኳሃኝ የሆነ ቅጥያ ይጫኑ።",
@@ -4174,8 +4184,8 @@
         "description": "Screen-reader announcement spoken after the user confirms a new cover thumbnail and the screen is about to close. Visual users get the screen pop as feedback; this is the audio equivalent."
     },
     "videoMetadataEditCoverTitle": "Edit cover",
-    "videoMetadataEditCoverCloseSemanticLabel": "Close cover editor",
-    "videoMetadataEditCoverConfirmSemanticLabel": "Confirm cover selection",
+    "videoMetadataEditCoverCloseSemanticLabel": "የሽፋን ለውጦችን አስወግድ",
+    "videoMetadataEditCoverConfirmSemanticLabel": "የተመረጠውን ፍሬም እንደ ቪዲዮ ሽፋን ተጠቀም",
     "videoMetadataEditCoverStripSemanticLabel": "Seek through video to select cover frame",
     "videoMetadataTagsPickerSearchHint": "መለያዎችን ይፈልጉ ወይም ያክሉ",
     "videoMetadataTagsPickerEmptyHint": "ሰዎች ቪዲዮዎን እንዲያገኙ መለያዎችን ያክሉ",
@@ -5047,5 +5057,12 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "ቅብብሎሽ አስወግድ"
+  "relaySettingsRemoveRelayTooltip": "ቅብብሎሽ አስወግድ",
+  "videoMetadataTagsPickerCancelSemanticLabel": "የመለያ ምርጫን ሰርዝ",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "የተመረጡ መለያዎችን ተግብር",
+  "userPickerCancelSemanticLabel": "የተጠቃሚ ምርጫን ሰርዝ",
+  "userPickerConfirmSemanticLabel": "የተመረጡ ተጠቃሚዎችን አረጋግጥ",
+  "userPickerClearSelectionSemanticLabel": "የተጠቃሚ ምርጫን አጽዳ",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "የይዘት ማስጠንቀቂያ ምርጫን ሰርዝ",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "የተመረጡ የይዘት ማስጠንቀቂያዎችን ተግብር"
 }

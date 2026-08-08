@@ -5124,6 +5124,14 @@
   "@videoRecorderStopMotionAssembleFailed": {
     "description": "Snackbar shown when assembling captured stop-motion frames into a video failed."
   },
+  "videoRecorderStopMotionShotsLeft": "{count, plural, =0{کوئی شاٹ باقی نہیں} =1{1 شاٹ باقی} other{{count} شاٹس باقی}}",
+  "@videoRecorderStopMotionShotsLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "videoRecorderToggleFlashLabel": "فلیش ٹوگل کریں",
   "videoRecorderCycleTimerLabel": "ٹائمر تبدیل کریں",
   "videoRecorderToggleAspectRatioLabel": "ایسپیکٹ ریشو ٹوگل کریں",
@@ -5821,7 +5829,7 @@
   "videoEditorCloseSemanticLabel": "بند کریں",
   "videoEditorDoneSemanticLabel": "ہو گیا",
   "videoEditorLevelSemanticLabel": "سطح",
-  "videoMetadataBackSemanticLabel": "واپس",
+  "videoMetadataClosePostDetailsSemanticLabel": "پوسٹ کی تفصیلات بند کریں",
   "videoMetadataDismissHelpDialogSemanticLabel": "مدد کا ڈائیلاگ ہٹائیں",
   "videoMetadataGotItButton": "سمجھ گیا!",
   "videoMetadataLimitReachedWarning": "64KB کی حد پوری ہو گئی۔ جاری رکھنے کے لیے کچھ مواد ہٹائیں۔",
@@ -6218,8 +6226,8 @@
     "description": "Snackbar message shown when url_launcher fails to open the profile website link."
   },
   "videoMetadataEditCoverTitle": "کور میں ترمیم کریں",
-  "videoMetadataEditCoverCloseSemanticLabel": "کور ایڈیٹر بند کریں",
-  "videoMetadataEditCoverConfirmSemanticLabel": "کور انتخاب کی تصدیق کریں",
+  "videoMetadataEditCoverCloseSemanticLabel": "کور کی تبدیلیاں مسترد کریں",
+  "videoMetadataEditCoverConfirmSemanticLabel": "منتخب فریم کو ویڈیو کور کے طور پر استعمال کریں",
   "videoMetadataEditCoverStripSemanticLabel": "کور فریم منتخب کرنے کے لیے ویڈیو میں آگے پیچھے جائیں",
   "videoMetadataTagsPickerSearchHint": "ٹیگز تلاش یا شامل کریں",
   "videoMetadataTagsPickerEmptyHint": "لوگوں کی آپ کی ویڈیو دریافت کرنے میں مدد کے لیے ٹیگز شامل کریں",
@@ -6767,5 +6775,14 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "ریلے ہٹائیں"
+  "relaySettingsRemoveRelayTooltip": "ریلے ہٹائیں",
+  "profileBadgeFooterBody": "بیجز چھوٹے انعامات ہیں جو کوئی بھی Nostr پر بنا سکتا ہے۔ کسی دوست، تخلیق کار، یا اس شخص کو دیں جس نے آپ کا دن بنا دیا۔",
+  "profileBadgeFooterLink": "badges.divine.video پر اپنا بیج بنائیں",
+  "videoMetadataTagsPickerCancelSemanticLabel": "ٹیگ کا انتخاب منسوخ کریں",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "منتخب ٹیگز لاگو کریں",
+  "userPickerCancelSemanticLabel": "صارف کا انتخاب منسوخ کریں",
+  "userPickerConfirmSemanticLabel": "منتخب صارفین کی تصدیق کریں",
+  "userPickerClearSelectionSemanticLabel": "صارف کا انتخاب صاف کریں",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "مواد کی وارننگز کا انتخاب منسوخ کریں",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "منتخب مواد کی وارننگز لاگو کریں"
 }

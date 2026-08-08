@@ -10,6 +10,7 @@ import 'package:models/models.dart' show AudioEvent, VineSound;
 import 'package:openvine/blocs/saved_sounds/saved_sounds_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/mixins/reduced_motion_tab_controller_mixin.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -97,7 +98,7 @@ class AudioSelectionBottomSheet extends ConsumerStatefulWidget {
 
 class _AudioSelectionBottomSheetState
     extends ConsumerState<AudioSelectionBottomSheet>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin, ReducedMotionTabControllerMixin {
   late final AudioPlaybackService _audioService;
   final _searchController = TextEditingController();
   String? _loadedSoundId;
@@ -106,29 +107,32 @@ class _AudioSelectionBottomSheetState
   String _searchQuery = '';
   bool _isLoadingAudio = false;
 
-  late final _tabController = TabController(
-    length: AudioCategory.values.length,
-    vsync: this,
-  );
+  @override
+  int get tabCount => AudioCategory.values.length;
 
   @override
   void initState() {
     super.initState();
     _audioService = widget.audioService ?? AudioPlaybackService();
-    _tabController.addListener(_onTabChanged);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    syncTabController();
   }
 
   @override
   void dispose() {
     _audioService.dispose();
     _searchController.dispose();
-    _tabController.dispose();
     super.dispose();
   }
 
-  void _onTabChanged() {
-    if (_tabController.indexIsChanging) return;
-    final newCategory = AudioCategory.values[_tabController.index];
+  @override
+  void onTabChanged() {
+    if (tabController.indexIsChanging) return;
+    final newCategory = AudioCategory.values[tabController.index];
     if (_category != newCategory) {
       setState(() => _category = newCategory);
     }
@@ -137,7 +141,7 @@ class _AudioSelectionBottomSheetState
   void _selectCategory(AudioCategory category) {
     setState(() {
       _category = category;
-      _tabController.animateTo(
+      tabController.animateTo(
         AudioCategory.values.indexWhere((el) => el == category),
       );
     });
@@ -256,12 +260,17 @@ class _AudioSelectionBottomSheetState
         name: 'AudioSelectionBottomSheet',
         category: LogCategory.ui,
       );
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.soundReuseUnavailable),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      // Replace rather than enqueue: the messenger outlives this sheet, so a
+      // burst of blocked taps would otherwise leave a backlog of identical
+      // toasts trailing the user into the editor (#6769).
+      ScaffoldMessenger.of(context)
+        ..removeCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.soundReuseUnavailable),
+            duration: const Duration(seconds: 2),
+          ),
+        );
       return;
     }
 
@@ -459,7 +468,7 @@ class _AudioSelectionBottomSheetState
             _ImportAudioAction(onTap: _importAudio),
             Expanded(
               child: TabBarView(
-                controller: _tabController,
+                controller: tabController,
                 children: [
                   _SoundsContent(
                     scrollController: widget.scrollController,

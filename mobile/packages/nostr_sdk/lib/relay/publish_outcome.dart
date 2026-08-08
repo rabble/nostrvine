@@ -30,6 +30,7 @@ import 'dart:async';
 class PublishOutcome {
   const PublishOutcome({
     required this.eventId,
+    this.eventKind,
     required this.acceptedBy,
     required this.rejectedBy,
     required this.noResponseFrom,
@@ -38,6 +39,9 @@ class PublishOutcome {
 
   /// The id of the event that was published.
   final String eventId;
+
+  /// The kind of the event that was published, when the caller has it handy.
+  final int? eventKind;
 
   /// Relay URLs that returned `OK true`.
   final List<String> acceptedBy;
@@ -121,7 +125,8 @@ class PublishOutcome {
 
   @override
   String toString() =>
-      'PublishOutcome(eventId: $eventId, accepted: $acceptedBy, '
+      'PublishOutcome(eventId: $eventId, eventKind: $eventKind, '
+      'accepted: $acceptedBy, '
       'rejected: $rejectedBy, noResponse: $noResponseFrom, '
       'unreachable: $unreachableTargets)';
 }

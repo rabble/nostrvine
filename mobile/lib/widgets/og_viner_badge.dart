@@ -12,26 +12,32 @@ class OgVinerBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dimension = DivineIcon.scaleSize(context, size);
     return Semantics(
       label: context.l10n.ogVinerBadgeLabel,
       container: true,
-      child: Padding(
-        padding: const EdgeInsetsDirectional.only(start: 4),
-        child: Container(
-          width: size,
-          height: size,
-          alignment: Alignment.center,
-          decoration: const BoxDecoration(
-            color: VineTheme.primary,
-            shape: BoxShape.circle,
-          ),
+      child: Container(
+        margin: const EdgeInsetsDirectional.only(start: 4),
+        width: dimension,
+        height: dimension,
+        alignment: Alignment.center,
+        decoration: const BoxDecoration(
+          color: VineTheme.primary,
+          shape: BoxShape.circle,
+        ),
+        // The glyph is a logo mark sized off the circle, not readable text:
+        // `dimension` already carries the text scale, so scaling the font
+        // again would square the factor. `FittedBox` stays as a guard
+        // against font-fallback metrics overflowing the circle.
+        child: FittedBox(
           child: Text(
             'V',
             textAlign: TextAlign.center,
+            textScaler: TextScaler.noScaling,
             style: TextStyle(
               color: VineTheme.onPrimary,
               fontFamily: 'Pacifico',
-              fontSize: size * 0.85,
+              fontSize: dimension * 0.85,
               height: 1,
             ),
           ),

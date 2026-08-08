@@ -120,11 +120,11 @@ void main() {
         expect(find.byType(ClipsTab), findsOneWidget);
       });
 
-      testWidgets('$ClipSelectionHeader in selection mode', (tester) async {
+      testWidgets('$ClipSelectionFooter in selection mode', (tester) async {
         await tester.pumpWidget(buildWidget(selectionMode: true));
         await tester.pump();
 
-        expect(find.byType(ClipSelectionHeader), findsOneWidget);
+        expect(find.byType(ClipSelectionFooter), findsOneWidget);
       });
 
       testWidgets('no app bar in selection mode', (tester) async {
@@ -366,7 +366,7 @@ void main() {
           await tester.pumpAndSettle();
 
           // Clips tab should show the clip
-          expect(find.byType(ClipSelectionHeader), findsOneWidget);
+          expect(find.byType(ClipSelectionFooter), findsOneWidget);
 
           // Locate a clip thumbnail card and tap to select it
           final clipCard = find.byType(VideoClipThumbnailCard);
@@ -374,7 +374,7 @@ void main() {
           await tester.tap(clipCard);
           await tester.pumpAndSettle();
 
-          // Tap "Select" button (visible in the header)
+          // Tap "Select" button (visible in the footer)
           await tester.tap(find.text(en.librarySelect).first);
           await tester.pumpAndSettle();
 

@@ -10,6 +10,7 @@ import 'package:openvine/blocs/explore_tabs/explore_tabs_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/mixins/reduced_motion_tab_controller_mixin.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/providers/for_you_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
@@ -38,46 +39,51 @@ class ExploreView extends ConsumerStatefulWidget {
 }
 
 class _ExploreViewState extends ConsumerState<ExploreView>
-    with TickerProviderStateMixin {
-  TabController? _tabController;
+    with TickerProviderStateMixin, ReducedMotionTabControllerMixin {
   // Feed mode and videos are derived from URL + providers - no internal state.
 
   ExploreTabsCubit get _tabs => context.read<ExploreTabsCubit>();
   ExploreTabsState get _tabsState => _tabs.state;
 
-  /// Build a new [TabController]. [previousTabName] is the name of the tab the
-  /// user was on before a rebuild (resolved while the old availability flags
-  /// were still in effect). Resolution order:
+  @override
+  int get tabCount => _tabsState.tabCount;
+
+  @override
+  int get initialTabIndex => _indexForTabName();
+
+  /// Index the controller should open on, resolved by name.
+  ///
+  /// [previousTabName] is the tab the user was on before a rebuild (resolved
+  /// while the old availability flags were still in effect). Resolution order:
   /// [ExploreView.initialTabName] > previous tab > persisted tab > default.
   /// Falls back by name — never by raw index, because indices shift when
   /// optional tabs appear or disappear.
-  void _initTabController({String? previousTabName}) {
+  int _indexForTabName({String? previousTabName}) {
     final targetTabName =
         widget.initialTabName ??
         previousTabName ??
         ref.read(exploreTabNameProvider) ??
         exploreDefaultTabName;
-    final initialIndex = _tabsState.indexForName(targetTabName);
+    final index = _tabsState.indexForName(targetTabName);
 
     Log.info(
-      '🎯 ExploreScreen: Using tab "$targetTabName" -> index $initialIndex',
+      '🎯 ExploreScreen: Using tab "$targetTabName" -> index $index',
       name: 'ExploreScreen',
       category: LogCategory.ui,
     );
 
-    _tabController = TabController(
-      length: _tabsState.tabCount,
-      vsync: this,
-      initialIndex: initialIndex,
-    );
-    _tabController!.addListener(_onTabChanged);
+    return index;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    syncTabController();
   }
 
   @override
   void initState() {
     super.initState();
-
-    _initTabController();
 
     // Track Explore-specific data load completion from child tabs.
     _tabs.trackScreenLoad();
@@ -110,23 +116,17 @@ class _ExploreViewState extends ConsumerState<ExploreView>
     }
   }
 
-  @override
-  void dispose() {
-    _tabController?.removeListener(_onTabChanged);
-    _tabController?.dispose();
-    super.dispose();
-  }
-
   void _openSearchPage() {
     context.push(
       SearchResultsPage.pathForEmptyQuery(requestFocusOnMount: true),
     );
   }
 
-  void _onTabChanged() {
-    if (!mounted || _tabController == null) return;
+  @override
+  void onTabChanged() {
+    if (!mounted) return;
 
-    final index = _tabController!.index;
+    final index = tabController.index;
     final tabName = _tabsState.nameForIndex(index);
 
     // Persist the selected tab by stable name because optional tabs can shift
@@ -176,14 +176,10 @@ class _ExploreViewState extends ConsumerState<ExploreView>
     if (_tabsState != previousState) {
       // Resolve the current tab name using the PREVIOUS state, because indices
       // are about to shift.
-      final previousTabName = previousState.nameForIndex(
-        _tabController?.index ?? 0,
+      final previousTabName = previousState.nameForIndex(tabController.index);
+      syncTabController(
+        index: _indexForTabName(previousTabName: previousTabName),
       );
-
-      _tabController?.removeListener(_onTabChanged);
-      final oldController = _tabController;
-      _initTabController(previousTabName: previousTabName);
-      oldController?.dispose();
     }
 
     // Derive feed mode from URL
@@ -228,7 +224,7 @@ class _ExploreViewState extends ConsumerState<ExploreView>
                   children: [
                     const SizedBox(height: 12),
                     ExploreTabBar(
-                      controller: _tabController,
+                      controller: tabController,
                       tabsState: _tabsState,
                       onTap: _onTabTap,
                     ),
@@ -246,7 +242,7 @@ class _ExploreViewState extends ConsumerState<ExploreView>
   void _onTabTap(int index) {
     // Tapping the active tab exits feed/hashtag mode; otherwise switching tabs
     // resets to grid mode if needed.
-    if (index == _tabController?.index) {
+    if (index == tabController.index) {
       final isInFeedMode =
           ref
               .read(pageContextProvider)
@@ -277,7 +273,7 @@ class _ExploreViewState extends ConsumerState<ExploreView>
             }
 
             return ExploreTabView(
-              controller: _tabController,
+              controller: tabController,
               tabsState: _tabsState,
             );
           },

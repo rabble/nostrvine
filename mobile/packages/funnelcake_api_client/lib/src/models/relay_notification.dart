@@ -24,6 +24,7 @@ class RelayNotification {
     this.rootDTag,
     this.rootAddressableId,
     this.targetCommentId,
+    this.commentContent,
     this.listTitle,
     this.listCoordinate,
   });
@@ -81,6 +82,7 @@ class RelayNotification {
       rootDTag: _nonEmpty(json['root_d_tag'] as String?),
       rootAddressableId: _nonEmpty(json['root_addressable_id'] as String?),
       targetCommentId: _nonEmpty(json['target_comment_id'] as String?),
+      commentContent: _nonEmpty(json['comment_content'] as String?),
       listTitle: _nonEmpty(json['list_title'] as String?),
       listCoordinate: _nonEmpty(json['list_coordinate'] as String?),
     );
@@ -113,9 +115,12 @@ class RelayNotification {
   /// Optional content from the source event (e.g. reaction emoji).
   final String? content;
 
-  /// Whether the referenced event is a video. Set when the API populates
-  /// `referenced_video` (only present for video kinds). Lets the client
-  /// distinguish a like on a video from a like on a comment.
+  /// Whether the API populated a `referenced_video` join result for the
+  /// notification's root video.
+  ///
+  /// This is enrichment metadata, not a reliable target-type signal: comment
+  /// likes can include it because their root is a video, and video likes can
+  /// omit it when that root video fails to resolve.
   final bool isReferencedVideo;
 
   /// Title of the referenced video, when the referenced event is a video
@@ -175,6 +180,15 @@ class RelayNotification {
 
   /// Comment event ID included by Funnelcake for NIP-22 comment notifications.
   final String? targetCommentId;
+
+  /// Body of the comment identified by [targetCommentId], when Funnelcake
+  /// resolves it.
+  ///
+  /// For a reaction this is the *liked* comment's text — [content] carries
+  /// only the reaction emoji, so this is the sole source of context for a
+  /// "liked your comment" row. For a comment or reply notification it is
+  /// the source event's own body, which duplicates [content].
+  final String? commentContent;
 
   /// Curated-list title for `notification_type: "list_add"`.
   final String? listTitle;

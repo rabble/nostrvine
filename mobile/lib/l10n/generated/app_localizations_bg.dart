@@ -6380,6 +6380,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Удостоверенията за съдържание изискват интернет връзка.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'Генерирай отново';
 
   @override
@@ -8553,6 +8557,18 @@ class AppLocalizationsBg extends AppLocalizations {
       'Видеото не можа да се създаде. Опитайте отново.';
 
   @override
+  String videoRecorderStopMotionShotsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Остават $count кадъра',
+      one: 'Остава 1 кадър',
+      zero: 'Няма останали кадри',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get videoRecorderToggleFlashLabel => 'Превключване на светкавицата';
 
   @override
@@ -9673,7 +9689,8 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorLevelSemanticLabel => 'Ниво';
 
   @override
-  String get videoMetadataBackSemanticLabel => 'Назад';
+  String get videoMetadataClosePostDetailsSemanticLabel =>
+      'Затваряне на подробностите за публикацията';
 
   @override
   String get videoMetadataDismissHelpDialogSemanticLabel =>
@@ -9957,6 +9974,13 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get profileBadgeFallbackSemanticLabel => 'Badge';
+
+  @override
+  String get profileBadgeFooterBody =>
+      'Значките са малки награди, които всеки може да създаде в Nostr. Подари една на приятел, на творец или на някой, който ти е разведрил деня.';
+
+  @override
+  String get profileBadgeFooterLink => 'Създай своя на badges.divine.video';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';
@@ -10503,11 +10527,12 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoMetadataEditCoverTitle => 'Edit cover';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => 'Close cover editor';
+  String get videoMetadataEditCoverCloseSemanticLabel =>
+      'Отхвърляне на промените по корицата';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Confirm cover selection';
+      'Използване на избрания кадър като корица на видеото';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
@@ -11172,4 +11197,31 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+
+  @override
+  String get videoMetadataTagsPickerCancelSemanticLabel =>
+      'Отказ от избора на тагове';
+
+  @override
+  String get videoMetadataTagsPickerConfirmSemanticLabel =>
+      'Прилагане на избраните тагове';
+
+  @override
+  String get userPickerCancelSemanticLabel => 'Отказ от избора на потребители';
+
+  @override
+  String get userPickerConfirmSemanticLabel =>
+      'Потвърждаване на избраните потребители';
+
+  @override
+  String get userPickerClearSelectionSemanticLabel =>
+      'Изчистване на избора на потребители';
+
+  @override
+  String get videoMetadataContentWarningsPickerCancelSemanticLabel =>
+      'Отказ от избора на предупреждения за съдържание';
+
+  @override
+  String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
+      'Прилагане на избраните предупреждения за съдържание';
 }

@@ -9,8 +9,10 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_navigation.dart';
+import 'package:openvine/widgets/video_recorder/video_recorder_progress_bar.dart';
 
-/// Top bar for capture mode with close and confirm buttons.
+/// Top bar for capture mode with close and confirm buttons, replaced by the
+/// recording-progress bar while recording.
 class VideoRecorderCaptureTopBar extends ConsumerWidget {
   const VideoRecorderCaptureTopBar({
     required this.fromEditor,
@@ -25,7 +27,8 @@ class VideoRecorderCaptureTopBar extends ConsumerWidget {
   final bool fromEditor;
 
   /// Optional widget rendered between the close and next buttons while not
-  /// recording. Lip-sync mode uses this slot for the audio-select chip.
+  /// recording. Lip-sync mode uses this slot for the audio-select chip,
+  /// stop-motion for its shot budget.
   final Widget? center;
 
   /// Whether the thin recording-progress bar is shown while recording.
@@ -122,45 +125,13 @@ class _RecordingProgressBar extends ConsumerWidget {
     final remainingMs = (maxMs - currentMs).clamp(0, maxMs);
     final overflowMs = (currentMs - maxMs).clamp(0, currentMs);
 
-    return RepaintBoundary(
-      child: Padding(
-        padding: const .fromLTRB(18, 16, 18, 0),
-        child: Column(
-          spacing: 14,
-          children: [
-            Container(
-              height: 4,
-              decoration: BoxDecoration(
-                borderRadius: .circular(2),
-                color: VineTheme.onSurfaceDisabled,
-              ),
-              clipBehavior: .antiAlias,
-              child: Row(
-                children: [
-                  if (primaryMs > 0)
-                    Flexible(
-                      flex: primaryMs,
-                      child: Container(color: VineTheme.primary),
-                    ),
-                  if (remainingMs > 0)
-                    Flexible(
-                      flex: remainingMs,
-                      child: Container(color: VineTheme.onSurfaceDisabled),
-                    ),
-                  if (overflowMs > 0)
-                    Flexible(
-                      flex: overflowMs,
-                      child: Container(color: VineTheme.primaryContainer),
-                    ),
-                ],
-              ),
-            ),
-            Text(
-              (totalDuration + activeDuration).toMmSs(),
-              style: VineTheme.titleSmallFont(color: VineTheme.whiteText),
-            ),
-          ],
-        ),
+    return Padding(
+      padding: const .fromLTRB(18, 16, 18, 0),
+      child: VideoRecorderProgressBar(
+        filled: primaryMs,
+        remaining: remainingMs,
+        overflow: overflowMs,
+        label: (totalDuration + activeDuration).toMmSs(),
       ),
     );
   }

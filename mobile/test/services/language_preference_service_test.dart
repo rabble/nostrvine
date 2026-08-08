@@ -242,18 +242,43 @@ void main() {
           LanguagePreferenceService.displayNameFor('zh'),
           equals('Chinese'),
         );
-        expect(
-          LanguagePreferenceService.displayNameFor('ur'),
-          equals('Urdu'),
-        );
-        expect(
-          LanguagePreferenceService.displayNameFor('ms'),
-          equals('Malay'),
-        );
+        expect(LanguagePreferenceService.displayNameFor('ur'), equals('Urdu'));
+        expect(LanguagePreferenceService.displayNameFor('ms'), equals('Malay'));
       });
 
       test('returns uppercased code for unknown language codes', () {
         expect(LanguagePreferenceService.displayNameFor('xx'), equals('XX'));
+      });
+    });
+
+    group('declaredContentLanguage', () {
+      test('is null when the user never chose a language', () async {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final service = LanguagePreferenceService();
+        await service.initialize();
+
+        expect(service.declaredContentLanguage, isNull);
+        expect(service.contentLanguage, isNotEmpty);
+      });
+
+      test('is the explicit choice once the user sets one', () async {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final service = LanguagePreferenceService();
+        await service.initialize();
+        await service.setContentLanguage('pt');
+
+        expect(service.declaredContentLanguage, equals('pt'));
+      });
+
+      test('returns to null after the choice is cleared', () async {
+        SharedPreferences.setMockInitialValues(<String, Object>{
+          LanguagePreferenceService.prefsKey: 'pt',
+        });
+        final service = LanguagePreferenceService();
+        await service.initialize();
+        await service.clearContentLanguage();
+
+        expect(service.declaredContentLanguage, isNull);
       });
     });
   });

@@ -124,7 +124,10 @@ void main() {
       // Verify we're showing the app bar
       expect(find.byType(VideoMetadataCaptureAppBar), findsOneWidget);
 
-      await tester.tap(find.bySemanticsLabel('Back'));
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await tester.tap(
+        find.bySemanticsLabel(l10n.videoMetadataClosePostDetailsSemanticLabel),
+      );
       await tester.pumpAndSettle();
 
       verify(() => mockGoRouter.pop<Object?>(any())).called(1);

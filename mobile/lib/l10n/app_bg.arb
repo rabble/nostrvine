@@ -3166,6 +3166,14 @@
     "videoRecorderCaptureNextLabel": "Следваща",
     "videoRecorderLipSyncAddAudioFirst": "Добавете аудио преди запис",
     "videoRecorderStopMotionAssembleFailed": "Видеото не можа да се създаде. Опитайте отново.",
+    "videoRecorderStopMotionShotsLeft": "{count, plural, =0{Няма останали кадри} =1{Остава 1 кадър} other{Остават {count} кадъра}}",
+    "@videoRecorderStopMotionShotsLeft": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "videoRecorderToggleFlashLabel": "Превключване на светкавицата",
     "videoRecorderCycleTimerLabel": "Цикъл таймер",
     "videoRecorderToggleAspectRatioLabel": "Превключване на пропорциите",
@@ -3484,7 +3492,7 @@
     "videoEditorCloseSemanticLabel": "Затвори",
     "videoEditorDoneSemanticLabel": "Готово",
     "videoEditorLevelSemanticLabel": "Ниво",
-    "videoMetadataBackSemanticLabel": "Назад",
+    "videoMetadataClosePostDetailsSemanticLabel": "Затваряне на подробностите за публикацията",
     "videoMetadataDismissHelpDialogSemanticLabel": "Отхвърляне на диалоговия прозорец за помощ",
     "videoMetadataGotItButton": "Разбрах!",
     "videoMetadataLimitReachedWarning": "Лимитът от 64 KB е достигнат. Премахни малко съдържание, за да продължиш.",
@@ -4050,6 +4058,8 @@
     "profileBadgeMoreRecipients": "+{count} more",
     "profileBadgeSemanticLabel": "{name} badge",
     "profileBadgeFallbackSemanticLabel": "Badge",
+    "profileBadgeFooterBody": "Значките са малки награди, които всеки може да създаде в Nostr. Подари една на приятел, на творец или на някой, който ти е разведрил деня.",
+    "profileBadgeFooterLink": "Създай своя на badges.divine.video",
     "authSignInWithBrowserExtension": "Вход с разширение за браузър",
     "authNip07ConnectionFailed": "Неуспешно свързване с разширението на браузъра.",
     "authNip07ExtensionNotFound": "Не е открито разширение за браузър. Инсталирайте Alby, nos2x или друго съвместимо с NIP-07 разширение.",
@@ -4180,8 +4190,8 @@
         "description": "Screen-reader announcement spoken after the user confirms a new cover thumbnail and the screen is about to close. Visual users get the screen pop as feedback; this is the audio equivalent."
     },
     "videoMetadataEditCoverTitle": "Edit cover",
-    "videoMetadataEditCoverCloseSemanticLabel": "Close cover editor",
-    "videoMetadataEditCoverConfirmSemanticLabel": "Confirm cover selection",
+    "videoMetadataEditCoverCloseSemanticLabel": "Отхвърляне на промените по корицата",
+    "videoMetadataEditCoverConfirmSemanticLabel": "Използване на избрания кадър като корица на видеото",
     "videoMetadataEditCoverStripSemanticLabel": "Seek through video to select cover frame",
     "videoMetadataTagsPickerSearchHint": "Търсене или добавяне на тагове",
     "videoMetadataTagsPickerEmptyHint": "Добавете тагове, за да открият хората вашето видео",
@@ -5053,5 +5063,12 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "Премахване на релето"
+  "relaySettingsRemoveRelayTooltip": "Премахване на релето",
+  "videoMetadataTagsPickerCancelSemanticLabel": "Отказ от избора на тагове",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "Прилагане на избраните тагове",
+  "userPickerCancelSemanticLabel": "Отказ от избора на потребители",
+  "userPickerConfirmSemanticLabel": "Потвърждаване на избраните потребители",
+  "userPickerClearSelectionSemanticLabel": "Изчистване на избора на потребители",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "Отказ от избора на предупреждения за съдържание",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Прилагане на избраните предупреждения за съдържание"
 }

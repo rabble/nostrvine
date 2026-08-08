@@ -2474,7 +2474,7 @@
     "videoEditorUnmuteAudioSemanticLabel": "오디오 음소거 해제",
     "videoEditorVideoTimelineSemanticLabel": "동영상 타임라인",
     "videoMetadataAddCollaboratorSemanticLabel": "협업자 추가",
-    "videoMetadataBackSemanticLabel": "뒤로",
+    "videoMetadataClosePostDetailsSemanticLabel": "게시물 세부 정보 닫기",
     "videoMetadataClassicDoneButton": "완료",
     "videoMetadataClosePreviewSemanticLabel": "동영상 미리보기 닫기",
     "videoMetadataCollaboratorsCount": "{count}/{max}명의 협업자",
@@ -2564,6 +2564,14 @@
     "videoRecorderCaptureNextLabel": "다음",
     "videoRecorderLipSyncAddAudioFirst": "녹화하기 전에 오디오를 추가하세요",
     "videoRecorderStopMotionAssembleFailed": "동영상을 만들지 못했습니다. 다시 시도해 주세요.",
+    "videoRecorderStopMotionShotsLeft": "{count, plural, =0{남은 컷 없음} other{{count}컷 남음}}",
+    "@videoRecorderStopMotionShotsLeft": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "videoRecorderClipDeletedMessage": "클립이 휴지통으로 이동되었습니다",
     "videoRecorderClipUndoLabel": "실행 취소",
     "libraryTrashTitle": "최근 삭제된 항목",
@@ -3257,6 +3265,8 @@
     "profileBadgeMoreRecipients": "+{count} more",
     "profileBadgeSemanticLabel": "{name} badge",
     "profileBadgeFallbackSemanticLabel": "Badge",
+    "profileBadgeFooterBody": "배지는 Nostr에서 누구나 만들 수 있는 작은 상이에요. 친구나 크리에이터, 오늘 하루를 즐겁게 해준 사람에게 하나 보내보세요.",
+    "profileBadgeFooterLink": "badges.divine.video에서 직접 만들기",
     "authSignInWithBrowserExtension": "브라우저 확장 프로그램으로 로그인",
     "authNip07ConnectionFailed": "브라우저 확장 프로그램에 연결할 수 없습니다.",
     "authNip07ExtensionNotFound": "브라우저 확장 프로그램을 찾을 수 없습니다. Alby, nos2x 또는 다른 NIP-07 호환 확장 프로그램을 설치하세요.",
@@ -3364,8 +3374,8 @@
     "bugReportRemoveImage": "Remove image",
     "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
     "videoMetadataEditCoverTitle": "커버 편집",
-    "videoMetadataEditCoverCloseSemanticLabel": "커버 편집기 닫기",
-    "videoMetadataEditCoverConfirmSemanticLabel": "커버 선택 확인",
+    "videoMetadataEditCoverCloseSemanticLabel": "커버 변경 사항 취소",
+    "videoMetadataEditCoverConfirmSemanticLabel": "선택한 프레임을 동영상 커버로 사용",
     "videoMetadataEditCoverStripSemanticLabel": "커버 프레임 선택을 위해 동영상 탐색",
     "userPickerRemoveSelectionSemantics": "{name} 제거",
     "@userPickerRemoveSelectionSemantics": {
@@ -4253,5 +4263,12 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "릴레이 제거"
+  "relaySettingsRemoveRelayTooltip": "릴레이 제거",
+  "videoMetadataTagsPickerCancelSemanticLabel": "태그 선택 취소",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "선택한 태그 적용",
+  "userPickerCancelSemanticLabel": "사용자 선택 취소",
+  "userPickerConfirmSemanticLabel": "선택한 사용자 확인",
+  "userPickerClearSelectionSemanticLabel": "사용자 선택 지우기",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "콘텐츠 경고 선택 취소",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "선택한 콘텐츠 경고 적용"
 }

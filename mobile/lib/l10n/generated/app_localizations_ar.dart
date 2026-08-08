@@ -6278,6 +6278,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'تتطلب بيانات اعتماد المحتوى اتصالاً بالإنترنت.';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'إعادة الإنشاء';
 
   @override
@@ -8415,6 +8419,21 @@ class AppLocalizationsAr extends AppLocalizations {
       'تعذّر إنشاء الفيديو. حاول مرة أخرى.';
 
   @override
+  String videoRecorderStopMotionShotsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'تبقّت $count لقطة',
+      many: 'تبقّت $count لقطة',
+      few: 'تبقّت $count لقطات',
+      two: 'تبقّت لقطتان',
+      one: 'تبقّت لقطة واحدة',
+      zero: 'لم تتبقَّ لقطات',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get videoRecorderToggleFlashLabel => 'تبديل الفلاش';
 
   @override
@@ -9508,7 +9527,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorLevelSemanticLabel => 'المستوى';
 
   @override
-  String get videoMetadataBackSemanticLabel => 'رجوع';
+  String get videoMetadataClosePostDetailsSemanticLabel =>
+      'إغلاق تفاصيل المنشور';
 
   @override
   String get videoMetadataDismissHelpDialogSemanticLabel =>
@@ -9781,6 +9801,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get profileBadgeFallbackSemanticLabel => 'Badge';
+
+  @override
+  String get profileBadgeFooterBody =>
+      'الشارات جوائز صغيرة يمكن لأي شخص إنشاؤها على Nostr. امنح واحدة لصديق أو لصانع محتوى أو لشخص أسعد يومك.';
+
+  @override
+  String get profileBadgeFooterLink => 'أنشئ شارتك على badges.divine.video';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';
@@ -10325,11 +10352,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoMetadataEditCoverTitle => 'تعديل الغلاف';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => 'إغلاق محرر الغلاف';
+  String get videoMetadataEditCoverCloseSemanticLabel => 'تجاهل تغييرات الغلاف';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'تأكيد اختيار الغلاف';
+      'استخدام الإطار المحدد كغلاف للفيديو';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
@@ -10980,4 +11007,29 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+
+  @override
+  String get videoMetadataTagsPickerCancelSemanticLabel =>
+      'إلغاء اختيار الوسوم';
+
+  @override
+  String get videoMetadataTagsPickerConfirmSemanticLabel =>
+      'تطبيق الوسوم المحددة';
+
+  @override
+  String get userPickerCancelSemanticLabel => 'إلغاء اختيار المستخدمين';
+
+  @override
+  String get userPickerConfirmSemanticLabel => 'تأكيد المستخدمين المحددين';
+
+  @override
+  String get userPickerClearSelectionSemanticLabel => 'مسح اختيار المستخدمين';
+
+  @override
+  String get videoMetadataContentWarningsPickerCancelSemanticLabel =>
+      'إلغاء اختيار تحذيرات المحتوى';
+
+  @override
+  String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
+      'تطبيق تحذيرات المحتوى المحددة';
 }

@@ -2898,6 +2898,14 @@
     "videoRecorderCaptureNextLabel": "Nästa",
     "videoRecorderLipSyncAddAudioFirst": "Lägg till ljud innan inspelning",
     "videoRecorderStopMotionAssembleFailed": "Det gick inte att skapa videon. Försök igen.",
+    "videoRecorderStopMotionShotsLeft": "{count, plural, =0{Inga bilder kvar} =1{1 bild kvar} other{{count} bilder kvar}}",
+    "@videoRecorderStopMotionShotsLeft": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "videoRecorderToggleFlashLabel": "Växla blixt",
     "videoRecorderCycleTimerLabel": "Växla timer",
     "videoRecorderToggleAspectRatioLabel": "Växla bildförhållande",
@@ -3214,7 +3222,7 @@
     "videoEditorCloseSemanticLabel": "Stäng",
     "videoEditorDoneSemanticLabel": "Klar",
     "videoEditorLevelSemanticLabel": "Nivå",
-    "videoMetadataBackSemanticLabel": "Tillbaka",
+    "videoMetadataClosePostDetailsSemanticLabel": "Stäng inläggsdetaljer",
     "videoMetadataDismissHelpDialogSemanticLabel": "Stäng hjälpdialog",
     "videoMetadataGotItButton": "Jag fattar!",
     "videoMetadataLimitReachedWarning": "Gränsen på 64KB är nådd. Ta bort innehåll för att fortsätta.",
@@ -3919,6 +3927,8 @@
     "profileBadgeMoreRecipients": "+{count} more",
     "profileBadgeSemanticLabel": "{name} badge",
     "profileBadgeFallbackSemanticLabel": "Badge",
+    "profileBadgeFooterBody": "Märken är små utmärkelser som vem som helst kan skapa på Nostr. Ge ett till en vän, en kreatör eller någon som gjorde din dag.",
+    "profileBadgeFooterLink": "Skapa ditt eget på badges.divine.video",
     "authSignInWithBrowserExtension": "Logga in med webbläsartillägg",
     "authNip07ConnectionFailed": "Det gick inte att ansluta till ditt webbläsartillägg.",
     "authNip07ExtensionNotFound": "Inget webbläsartillägg hittades. Installera Alby, nos2x eller ett annat NIP-07-kompatibelt tillägg.",
@@ -4026,8 +4036,8 @@
     "bugReportRemoveImage": "Remove image",
     "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
     "videoMetadataEditCoverTitle": "Redigera omslag",
-    "videoMetadataEditCoverCloseSemanticLabel": "Stäng omslagsredigerare",
-    "videoMetadataEditCoverConfirmSemanticLabel": "Bekräfta omslagsval",
+    "videoMetadataEditCoverCloseSemanticLabel": "Ignorera omslagsändringar",
+    "videoMetadataEditCoverConfirmSemanticLabel": "Använd vald bildruta som videoomslag",
     "videoMetadataEditCoverStripSemanticLabel": "Sök igenom videon för att välja omslagsbild",
     "userPickerRemoveSelectionSemantics": "Ta bort {name}",
     "@userPickerRemoveSelectionSemantics": {
@@ -4922,5 +4932,12 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "Ta bort rel"
+  "relaySettingsRemoveRelayTooltip": "Ta bort rel",
+  "videoMetadataTagsPickerCancelSemanticLabel": "Avbryt taggval",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "Använd valda taggar",
+  "userPickerCancelSemanticLabel": "Avbryt användarval",
+  "userPickerConfirmSemanticLabel": "Bekräfta valda användare",
+  "userPickerClearSelectionSemanticLabel": "Rensa användarval",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "Avbryt val av innehållsvarningar",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Använd valda innehållsvarningar"
 }

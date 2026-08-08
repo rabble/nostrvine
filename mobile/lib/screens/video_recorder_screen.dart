@@ -26,6 +26,7 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/widgets/camera_permission_gate.dart';
 import 'package:openvine/widgets/video_recorder/modes/capture/video_recorder_capture_stack.dart';
+import 'package:openvine/widgets/video_recorder/modes/capture/video_recorder_stop_motion_budget.dart';
 import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_stack.dart';
 import 'package:openvine/widgets/video_recorder/modes/lip_sync/video_recorder_lip_sync_stack.dart';
 import 'package:openvine/widgets/video_recorder/modes/upload/video_recorder_upload_stack.dart';
@@ -422,12 +423,18 @@ class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
                         (VideoRecorderBloc b) => b.state.recorderMode,
                       )) {
                         .upload => const VideoRecorderUploadStack(),
+                        .capture => VideoRecorderCaptureStack(
+                          fromEditor: widget.fromEditor,
+                        ),
                         // Stop-motion reuses the capture stack — each shutter
                         // tap captures a still that becomes a 1-frame video
                         // clip, so the capture flow (clips, library, editor,
-                        // ghost) applies unchanged.
-                        .capture || .stopMotion => VideoRecorderCaptureStack(
+                        // ghost) applies unchanged. It only fills the top
+                        // bar's center slot, which capture mode leaves empty,
+                        // with the session's remaining-shots budget.
+                        .stopMotion => VideoRecorderCaptureStack(
                           fromEditor: widget.fromEditor,
+                          topBarCenter: const VideoRecorderStopMotionBudget(),
                         ),
                         .lipSync => const VideoRecorderLipSyncStack(),
                         .classic => const VideoRecorderClassicStack(),

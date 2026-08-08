@@ -70,6 +70,7 @@ void main() {
     MockNostrClient createClient() {
       final client = MockNostrClient();
       when(() => client.publicKey).thenReturn(testUserPubkey);
+      when(client.resolvePublicKey).thenAnswer((_) async => testUserPubkey);
       when(() => client.hasKeys).thenReturn(true);
       when(() => client.unsubscribe(any())).thenAnswer((_) async {});
       when(

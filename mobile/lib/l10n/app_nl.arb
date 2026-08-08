@@ -2898,6 +2898,14 @@
     "videoRecorderCaptureNextLabel": "Volgende",
     "videoRecorderLipSyncAddAudioFirst": "Voeg audio toe vóór de opname",
     "videoRecorderStopMotionAssembleFailed": "Kan de video niet maken. Probeer het opnieuw.",
+    "videoRecorderStopMotionShotsLeft": "{count, plural, =0{Geen opnames meer over} =1{Nog 1 opname over} other{Nog {count} opnames over}}",
+    "@videoRecorderStopMotionShotsLeft": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "videoRecorderToggleFlashLabel": "Flitser in-/uitschakelen",
     "videoRecorderCycleTimerLabel": "Timer wisselen",
     "videoRecorderToggleAspectRatioLabel": "Beeldverhouding wisselen",
@@ -3214,7 +3222,7 @@
     "videoEditorCloseSemanticLabel": "Sluiten",
     "videoEditorDoneSemanticLabel": "Gereed",
     "videoEditorLevelSemanticLabel": "Niveau",
-    "videoMetadataBackSemanticLabel": "Terug",
+    "videoMetadataClosePostDetailsSemanticLabel": "Berichtdetails sluiten",
     "videoMetadataDismissHelpDialogSemanticLabel": "Helpdialoog sluiten",
     "videoMetadataGotItButton": "Begrepen!",
     "videoMetadataLimitReachedWarning": "Limiet van 64KB bereikt. Verwijder wat inhoud om door te gaan.",
@@ -3919,6 +3927,8 @@
     "profileBadgeMoreRecipients": "+{count} more",
     "profileBadgeSemanticLabel": "{name} badge",
     "profileBadgeFallbackSemanticLabel": "Badge",
+    "profileBadgeFooterBody": "Badges zijn kleine onderscheidingen die iedereen op Nostr kan maken. Geef er een aan een vriend, een creator of iemand die je dag goedmaakte.",
+    "profileBadgeFooterLink": "Maak je eigen badge op badges.divine.video",
     "authSignInWithBrowserExtension": "Aanmelden met browserextensie",
     "authNip07ConnectionFailed": "Kan geen verbinding maken met je browserextensie.",
     "authNip07ExtensionNotFound": "Geen browserextensie gevonden. Installeer Alby, nos2x of een andere NIP-07-compatibele extensie.",
@@ -4026,8 +4036,8 @@
     "bugReportRemoveImage": "Remove image",
     "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
     "videoMetadataEditCoverTitle": "Omslag bewerken",
-    "videoMetadataEditCoverCloseSemanticLabel": "Omslageditor sluiten",
-    "videoMetadataEditCoverConfirmSemanticLabel": "Omslagselectie bevestigen",
+    "videoMetadataEditCoverCloseSemanticLabel": "Wijzigingen aan omslag negeren",
+    "videoMetadataEditCoverConfirmSemanticLabel": "Geselecteerd frame als video-omslag gebruiken",
     "videoMetadataEditCoverStripSemanticLabel": "Door video scrollen om omslagframe te selecteren",
     "userPickerRemoveSelectionSemantics": "{name} verwijderen",
     "@userPickerRemoveSelectionSemantics": {
@@ -4922,5 +4932,12 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "Relay verwijderen"
+  "relaySettingsRemoveRelayTooltip": "Relay verwijderen",
+  "videoMetadataTagsPickerCancelSemanticLabel": "Tagselectie annuleren",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "Geselecteerde tags toepassen",
+  "userPickerCancelSemanticLabel": "Gebruikersselectie annuleren",
+  "userPickerConfirmSemanticLabel": "Geselecteerde gebruikers bevestigen",
+  "userPickerClearSelectionSemanticLabel": "Gebruikersselectie wissen",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "Selectie van inhoudswaarschuwingen annuleren",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Geselecteerde inhoudswaarschuwingen toepassen"
 }

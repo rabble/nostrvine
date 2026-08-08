@@ -37,6 +37,14 @@ class NotificationTargetResolver {
       }
     }
 
+    // NIP-25 reactions on addressable videos use a lowercase a tag. This path
+    // supports anchorless actor-like rows whose target is the reaction event.
+    for (final tag in event.tags) {
+      if (tag.length >= 2 && tag[0] == 'a' && _isVideoAddressableId(tag[1])) {
+        return tag[1];
+      }
+    }
+
     // NIP-22: uppercase E tag = root scope, points to root video event.
     for (final tag in event.tags) {
       if (tag.length >= 2 && tag[0] == 'E' && tag[1].isNotEmpty) {

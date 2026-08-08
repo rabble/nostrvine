@@ -6330,6 +6330,10 @@ class AppLocalizationsUr extends AppLocalizations {
       'مواد اسناد کے لیے انٹرنیٹ کنکشن درکار ہے۔';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'دوبارہ بنائیں';
 
   @override
@@ -8478,6 +8482,18 @@ class AppLocalizationsUr extends AppLocalizations {
       'ویڈیو نہیں بن سکی۔ دوبارہ کوشش کریں۔';
 
   @override
+  String videoRecorderStopMotionShotsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count شاٹس باقی',
+      one: '1 شاٹ باقی',
+      zero: 'کوئی شاٹ باقی نہیں',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get videoRecorderToggleFlashLabel => 'فلیش ٹوگل کریں';
 
   @override
@@ -9578,7 +9594,8 @@ class AppLocalizationsUr extends AppLocalizations {
   String get videoEditorLevelSemanticLabel => 'سطح';
 
   @override
-  String get videoMetadataBackSemanticLabel => 'واپس';
+  String get videoMetadataClosePostDetailsSemanticLabel =>
+      'پوسٹ کی تفصیلات بند کریں';
 
   @override
   String get videoMetadataDismissHelpDialogSemanticLabel =>
@@ -9858,6 +9875,13 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get profileBadgeFallbackSemanticLabel => 'بیج';
+
+  @override
+  String get profileBadgeFooterBody =>
+      'بیجز چھوٹے انعامات ہیں جو کوئی بھی Nostr پر بنا سکتا ہے۔ کسی دوست، تخلیق کار، یا اس شخص کو دیں جس نے آپ کا دن بنا دیا۔';
+
+  @override
+  String get profileBadgeFooterLink => 'badges.divine.video پر اپنا بیج بنائیں';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'خاندانی رہنما';
@@ -10402,11 +10426,12 @@ class AppLocalizationsUr extends AppLocalizations {
   String get videoMetadataEditCoverTitle => 'کور میں ترمیم کریں';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => 'کور ایڈیٹر بند کریں';
+  String get videoMetadataEditCoverCloseSemanticLabel =>
+      'کور کی تبدیلیاں مسترد کریں';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'کور انتخاب کی تصدیق کریں';
+      'منتخب فریم کو ویڈیو کور کے طور پر استعمال کریں';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
@@ -11067,4 +11092,29 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+
+  @override
+  String get videoMetadataTagsPickerCancelSemanticLabel =>
+      'ٹیگ کا انتخاب منسوخ کریں';
+
+  @override
+  String get videoMetadataTagsPickerConfirmSemanticLabel =>
+      'منتخب ٹیگز لاگو کریں';
+
+  @override
+  String get userPickerCancelSemanticLabel => 'صارف کا انتخاب منسوخ کریں';
+
+  @override
+  String get userPickerConfirmSemanticLabel => 'منتخب صارفین کی تصدیق کریں';
+
+  @override
+  String get userPickerClearSelectionSemanticLabel => 'صارف کا انتخاب صاف کریں';
+
+  @override
+  String get videoMetadataContentWarningsPickerCancelSemanticLabel =>
+      'مواد کی وارننگز کا انتخاب منسوخ کریں';
+
+  @override
+  String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
+      'منتخب مواد کی وارننگز لاگو کریں';
 }

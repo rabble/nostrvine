@@ -6197,6 +6197,10 @@ class AppLocalizationsAm extends AppLocalizations {
       'የይዘት መታወቂያዎች የበይነመረብ ግንኙነት ያስፈልጋቸዋል።';
 
   @override
+  String get videoMetadataC2paMissingNoteServiceUnavailable =>
+      'The content credential service didn\'t respond. This isn\'t your connection.';
+
+  @override
   String get videoMetadataC2paMissingRegenerate => 'እንደገና ፍጠር';
 
   @override
@@ -8300,6 +8304,18 @@ class AppLocalizationsAm extends AppLocalizations {
       'ቪዲዮውን መፍጠር አልተቻለም። እንደገና ይሞክሩ።';
 
   @override
+  String videoRecorderStopMotionShotsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ፎቶዎች ቀርተዋል',
+      one: '1 ፎቶ ቀርቷል',
+      zero: 'ምንም የቀረ ፎቶ የለም',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get videoRecorderToggleFlashLabel => 'ብልጭታ ቀያይር';
 
   @override
@@ -9367,7 +9383,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorLevelSemanticLabel => 'ደረጃ';
 
   @override
-  String get videoMetadataBackSemanticLabel => 'ተመለስ';
+  String get videoMetadataClosePostDetailsSemanticLabel => 'የልጥፍ ዝርዝሮችን ዝጋ';
 
   @override
   String get videoMetadataDismissHelpDialogSemanticLabel => 'የእገዛ ንግግርን አሰናብት';
@@ -9635,6 +9651,13 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get profileBadgeFallbackSemanticLabel => 'Badge';
+
+  @override
+  String get profileBadgeFooterBody =>
+      'ባጆች በNostr ላይ ማንኛውም ሰው መፍጠር የሚችላቸው ትንንሽ ሽልማቶች ናቸው። ለጓደኛ፣ ለፈጣሪ ወይም ቀንህን ላሳመረልህ ሰው አንዷን ስጥ።';
+
+  @override
+  String get profileBadgeFooterLink => 'የራስህን በbadges.divine.video ፍጠር';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';
@@ -10179,11 +10202,11 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoMetadataEditCoverTitle => 'Edit cover';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => 'Close cover editor';
+  String get videoMetadataEditCoverCloseSemanticLabel => 'የሽፋን ለውጦችን አስወግድ';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Confirm cover selection';
+      'የተመረጠውን ፍሬም እንደ ቪዲዮ ሽፋን ተጠቀም';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
@@ -10822,4 +10845,27 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+
+  @override
+  String get videoMetadataTagsPickerCancelSemanticLabel => 'የመለያ ምርጫን ሰርዝ';
+
+  @override
+  String get videoMetadataTagsPickerConfirmSemanticLabel => 'የተመረጡ መለያዎችን ተግብር';
+
+  @override
+  String get userPickerCancelSemanticLabel => 'የተጠቃሚ ምርጫን ሰርዝ';
+
+  @override
+  String get userPickerConfirmSemanticLabel => 'የተመረጡ ተጠቃሚዎችን አረጋግጥ';
+
+  @override
+  String get userPickerClearSelectionSemanticLabel => 'የተጠቃሚ ምርጫን አጽዳ';
+
+  @override
+  String get videoMetadataContentWarningsPickerCancelSemanticLabel =>
+      'የይዘት ማስጠንቀቂያ ምርጫን ሰርዝ';
+
+  @override
+  String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
+      'የተመረጡ የይዘት ማስጠንቀቂያዎችን ተግብር';
 }

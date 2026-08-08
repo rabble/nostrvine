@@ -3143,7 +3143,7 @@
     "videoEditorUnmuteAudioSemanticLabel": "Aktifkan suara",
     "videoEditorVideoTimelineSemanticLabel": "Timeline video",
     "videoMetadataAddCollaboratorSemanticLabel": "Tambah kolaborator",
-    "videoMetadataBackSemanticLabel": "Kembali",
+    "videoMetadataClosePostDetailsSemanticLabel": "Tutup detail postingan",
     "videoMetadataClassicDoneButton": "Selesai",
     "videoMetadataClosePreviewSemanticLabel": "Tutup pratinjau video",
     "videoMetadataCollaboratorsCount": "{count}/{max} Kolaborator",
@@ -3233,6 +3233,14 @@
     "videoRecorderCaptureNextLabel": "Berikutnya",
     "videoRecorderLipSyncAddAudioFirst": "Tambahkan audio sebelum merekam",
     "videoRecorderStopMotionAssembleFailed": "Tidak dapat membuat video. Coba lagi.",
+    "videoRecorderStopMotionShotsLeft": "{count, plural, =0{Tidak ada jepretan tersisa} other{Sisa {count} jepretan}}",
+    "@videoRecorderStopMotionShotsLeft": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "videoRecorderClipDeletedMessage": "Klip dipindahkan ke sampah",
     "videoRecorderClipUndoLabel": "Urungkan",
     "libraryTrashTitle": "Baru-baru ini dihapus",
@@ -3919,6 +3927,8 @@
     "profileBadgeMoreRecipients": "+{count} more",
     "profileBadgeSemanticLabel": "{name} badge",
     "profileBadgeFallbackSemanticLabel": "Badge",
+    "profileBadgeFooterBody": "Badge adalah penghargaan kecil yang bisa dibuat siapa saja di Nostr. Beri satu untuk teman, kreator, atau siapa pun yang membuat harimu.",
+    "profileBadgeFooterLink": "Buat milikmu di badges.divine.video",
     "authSignInWithBrowserExtension": "Masuk dengan ekstensi peramban",
     "authNip07ConnectionFailed": "Tidak dapat terhubung ke ekstensi peramban Anda.",
     "authNip07ExtensionNotFound": "Tidak ditemukan ekstensi peramban. Pasang Alby, nos2x, atau ekstensi lain yang kompatibel dengan NIP-07.",
@@ -4026,8 +4036,8 @@
     "bugReportRemoveImage": "Remove image",
     "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
     "videoMetadataEditCoverTitle": "Edit sampul",
-    "videoMetadataEditCoverCloseSemanticLabel": "Tutup editor sampul",
-    "videoMetadataEditCoverConfirmSemanticLabel": "Konfirmasi pilihan sampul",
+    "videoMetadataEditCoverCloseSemanticLabel": "Buang perubahan sampul",
+    "videoMetadataEditCoverConfirmSemanticLabel": "Gunakan bingkai yang dipilih sebagai sampul video",
     "videoMetadataEditCoverStripSemanticLabel": "Gulir video untuk memilih bingkai sampul",
     "userPickerRemoveSelectionSemantics": "Hapus {name}",
     "@userPickerRemoveSelectionSemantics": {
@@ -4922,5 +4932,12 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "Hapus relay"
+  "relaySettingsRemoveRelayTooltip": "Hapus relay",
+  "videoMetadataTagsPickerCancelSemanticLabel": "Batalkan pemilihan tag",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "Terapkan tag yang dipilih",
+  "userPickerCancelSemanticLabel": "Batalkan pemilihan pengguna",
+  "userPickerConfirmSemanticLabel": "Konfirmasi pengguna yang dipilih",
+  "userPickerClearSelectionSemanticLabel": "Hapus pilihan pengguna",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "Batalkan pemilihan peringatan konten",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Terapkan peringatan konten yang dipilih"
 }

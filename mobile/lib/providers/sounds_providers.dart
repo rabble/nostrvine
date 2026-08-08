@@ -161,7 +161,6 @@ Future<bool> audioReuseTerms(Ref ref, AudioEvent sound) {
   final knownTerms = audioReuseTermsFromEvent(sound);
   if (knownTerms != null) return Future.value(knownTerms);
   return AudioReuseConsentResolver(
-    soundsRepository: ref.watch(soundsRepositoryProvider),
     videosRepository: ref.watch(videosRepositoryProvider),
   ).verify(sound);
 }
@@ -184,7 +183,6 @@ Future<bool> audioReuseConsent(Ref ref, AudioEvent sound) {
   }
   if (knownTerms == false) return Future.value(false);
   return AudioReuseConsentResolver(
-    soundsRepository: ref.watch(soundsRepositoryProvider),
     videosRepository: ref.watch(videosRepositoryProvider),
   ).verify(sound);
 }

@@ -18,12 +18,20 @@ import 'package:openvine/providers/popular_videos_feed_provider.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
+import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/feed_refresh_control.dart';
 import 'package:openvine/widgets/scroll_to_hide_mixin.dart';
 import 'package:openvine/widgets/trending_hashtags_section.dart';
 import 'package:unified_logger/unified_logger.dart';
+
+/// Cross-fade used when the feed swaps between loading, error and data —
+/// including the native/classic variant switch.
+const _feedStateTransitionDuration = Duration(milliseconds: 250);
+
+/// Elapsed first-page load time past which the load is reported as slow.
+const _slowFeedLoadThresholdMs = 5000;
 
 /// Tab widget displaying popular videos by current watch volume.
 ///
@@ -39,12 +47,20 @@ class PopularVideosTab extends ConsumerStatefulWidget {
     this.screenAnalytics,
     this.feedTracker,
     this.errorTracker,
+    this.slowLoadThresholdMs = _slowFeedLoadThresholdMs,
   });
 
   /// Optional analytics services (for testing, defaults to singletons)
   final ScreenAnalyticsService? screenAnalytics;
   final FeedPerformanceTracker? feedTracker;
   final ErrorAnalyticsTracker? errorTracker;
+
+  /// Elapsed load time past which the load is reported as slow.
+  ///
+  /// Overridable because the elapsed time comes from the wall clock, which
+  /// `fakeAsync` cannot advance — a test would otherwise have to sleep for
+  /// [_slowFeedLoadThresholdMs] to reach the branch.
+  final int slowLoadThresholdMs;
 
   @override
   ConsumerState<PopularVideosTab> createState() => _PopularVideosTabState();
@@ -55,6 +71,15 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
   late final FeedPerformanceTracker _feedTracker;
   late final ErrorAnalyticsTracker _errorTracker;
   DateTime? _feedLoadStartTime;
+  bool _slowFeedLoadReported = false;
+
+  /// Page currently painted, together with the variant it belongs to.
+  ///
+  /// Keeps the previous grid on screen while a variant switch loads, so the
+  /// toggle cross-fades between two feeds instead of dropping to a spinner.
+  /// It also survives an error that arrives after a successful load, so a
+  /// failed refresh leaves the working grid up instead of blanking it.
+  ({PopularVideosVariant variant, VideoFeedState state})? _rendered;
 
   @override
   void initState() {
@@ -83,34 +108,65 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
     // Track feed loading start
     if (feedAsync.isLoading && _feedLoadStartTime == null) {
       _feedLoadStartTime = DateTime.now();
+      _slowFeedLoadReported = false;
       _feedTracker.startFeedLoad('popular');
     }
 
-    // CRITICAL: Check hasValue FIRST before isLoading
-    if (feedAsync.hasValue &&
-        feedAsync.value != null &&
-        loadedVariant == selectedVariant) {
-      return _buildDataState(feedAsync.value!.videos);
+    // A held page outranks an in-flight load. A hard error outranks both.
+    final feedState = feedAsync.value;
+    final showsSelectedVariant =
+        feedState != null && loadedVariant == selectedVariant;
+    if (showsSelectedVariant) {
+      // Captured here rather than from a listener because the very first
+      // frame that carries the new variant must already paint it: a
+      // `ref.listen` callback runs after this build, so the tab would paint
+      // the outgoing page for one extra frame and the cross-fade would start
+      // late. Assigning from build is safe because the value is derived
+      // entirely from providers this build already read.
+      _rendered = (variant: selectedVariant, state: feedState);
+      _trackDataState(feedState.videos);
     }
 
-    if (feedAsync.hasError) {
+    // While a variant switch loads, keep painting the page we last rendered,
+    // keyed by its own variant, so the newly selected variant cross-fades in
+    // instead of flashing a full-screen spinner.
+    final rendered = _rendered;
+
+    final Widget content;
+    if (feedAsync.hasError && !showsSelectedVariant) {
       _trackErrorState(feedAsync.error);
-      return RefreshableFeedStateView(
+      content = RefreshableFeedStateView(
+        key: const ValueKey('error'),
         onRefresh: _refreshPopularVideos,
         child: const _PopularVideosErrorState(),
       );
+    } else if (rendered != null) {
+      _trackSlowLoadIfNeeded();
+      content = _PopularVideosTrendingContent(
+        key: ValueKey(rendered.variant),
+        videos: rendered.state.videos,
+        isLoadingMore: rendered.state.isLoadingMore,
+        hasMoreContent: rendered.state.hasMoreContent,
+      );
+    } else {
+      // Only show loading if we truly have no data yet
+      _trackLoadingState();
+      content = const _PopularVideosLoadingState(key: ValueKey('loading'));
     }
 
-    // Only show loading if we truly have no data yet
-    _trackLoadingState();
-    return const _PopularVideosLoadingState();
+    return AnimatedSwitcher(
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : _feedStateTransitionDuration,
+      child: content,
+    );
   }
 
   Future<void> _refreshPopularVideos() async {
     await ref.read(popularVideosFeedProvider.notifier).refresh();
   }
 
-  Widget _buildDataState(List<VideoEvent> videos) {
+  void _trackDataState(List<VideoEvent> videos) {
     // Videos are already sorted by current watch volume from the provider
     // (REST API sort=watching, or NIP-50 sort:hot fallback) and filtered for
     // platform compatibility
@@ -137,14 +193,6 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
     if (videos.isEmpty) {
       _feedTracker.trackEmptyFeed('popular');
     }
-
-    // Get the feed state for pagination info
-    final feedState = ref.watch(popularVideosFeedProvider).value;
-    return _PopularVideosTrendingContent(
-      videos: videos,
-      isLoadingMore: feedState?.isLoadingMore ?? false,
-      hasMoreContent: feedState?.hasMoreContent ?? false,
-    );
   }
 
   void _trackErrorState(Object? error) {
@@ -178,19 +226,33 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
       category: LogCategory.video,
     );
 
-    if (_feedLoadStartTime != null) {
-      final elapsed = DateTime.now()
-          .difference(_feedLoadStartTime!)
-          .inMilliseconds;
-      if (elapsed > 5000) {
-        _errorTracker.trackSlowOperation(
-          operation: 'popular_feed_load',
-          durationMs: elapsed,
-          thresholdMs: 5000,
-          location: 'explore_popular',
-        );
-      }
-    }
+    _trackSlowLoadIfNeeded();
+  }
+
+  /// Reports a slow first page regardless of what the tab is painting.
+  ///
+  /// A variant switch holds the previous page instead of the spinner, so
+  /// gating this on the spinner branch would drop the signal for exactly
+  /// the loads the user waits on.
+  ///
+  /// Reports at most once per load. The held-page branch runs on every
+  /// rebuild while the switch is in flight and never clears
+  /// [_feedLoadStartTime] the way [_trackDataState] does, so an unguarded
+  /// report would emit one event per rebuild for a single slow load.
+  void _trackSlowLoadIfNeeded() {
+    final startedAt = _feedLoadStartTime;
+    if (startedAt == null || _slowFeedLoadReported) return;
+
+    final elapsed = DateTime.now().difference(startedAt).inMilliseconds;
+    if (elapsed <= widget.slowLoadThresholdMs) return;
+
+    _slowFeedLoadReported = true;
+    _errorTracker.trackSlowOperation(
+      operation: 'popular_feed_load',
+      durationMs: elapsed,
+      thresholdMs: widget.slowLoadThresholdMs,
+      location: 'explore_popular',
+    );
   }
 }
 
@@ -203,6 +265,7 @@ class _PopularVideosTrendingContent extends ConsumerStatefulWidget {
     required this.videos,
     required this.isLoadingMore,
     required this.hasMoreContent,
+    super.key,
   });
 
   final List<VideoEvent> videos;
@@ -456,7 +519,7 @@ class _PopularVideosErrorState extends StatelessWidget {
 
 /// Loading state widget for PopularVideosTab
 class _PopularVideosLoadingState extends StatelessWidget {
-  const _PopularVideosLoadingState();
+  const _PopularVideosLoadingState({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -175,4 +175,74 @@ void main() {
       expect(find.byType(DivineIcon), findsOneWidget);
     });
   });
+
+  group('DivineIcon text scaling', () {
+    Widget buildSubject({required double textScale, double size = 24}) {
+      return MaterialApp(
+        home: MediaQuery(
+          data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
+          child: Scaffold(
+            body: DivineIcon(icon: DivineIconName.arrowLeft, size: size),
+          ),
+        ),
+      );
+    }
+
+    double renderedSize(WidgetTester tester) =>
+        tester.widget<SvgPicture>(find.byType(SvgPicture)).width!;
+
+    testWidgets('grows with the system text scale', (tester) async {
+      await tester.pumpWidget(buildSubject(textScale: 1.2));
+
+      expect(renderedSize(tester), closeTo(24 * 1.2, 0.001));
+    });
+
+    testWidgets('stops growing at maxScaleFactor', (tester) async {
+      await tester.pumpWidget(buildSubject(textScale: 2));
+
+      expect(
+        renderedSize(tester),
+        closeTo(24 * DivineIcon.maxScaleFactor, 0.001),
+      );
+    });
+
+    testWidgets('scales width and height together', (tester) async {
+      await tester.pumpWidget(buildSubject(textScale: 2, size: 40));
+
+      final svg = tester.widget<SvgPicture>(find.byType(SvgPicture));
+      expect(svg.width, svg.height);
+      expect(svg.width, closeTo(40 * DivineIcon.maxScaleFactor, 0.001));
+    });
+
+    testWidgets('scaleSize caps at maxScaleFactor, and a tighter ambient '
+        'clamp wins over it', (tester) async {
+      late double outer;
+      late double inner;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+            child: Builder(
+              builder: (context) {
+                outer = DivineIcon.scaleSize(context, 48);
+                return MediaQuery.withClampedTextScaling(
+                  maxScaleFactor: 1.1,
+                  child: Builder(
+                    builder: (context) {
+                      inner = DivineIcon.scaleSize(context, 48);
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(outer, closeTo(48 * DivineIcon.maxScaleFactor, 0.001));
+      expect(inner, closeTo(48 * 1.1, 0.001));
+    });
+  });
 }

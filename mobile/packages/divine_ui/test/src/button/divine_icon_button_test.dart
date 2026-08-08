@@ -774,5 +774,80 @@ void main() {
         expect(pressed, isTrue);
       });
     });
+
+    group('text scaling', () {
+      Widget buildAtScale(Widget button) {
+        return MaterialApp(
+          home: MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+            child: Scaffold(body: Center(child: button)),
+          ),
+        );
+      }
+
+      testWidgets('renders the same icon size whichever source it is built '
+          'from', (tester) async {
+        await tester.pumpWidget(
+          buildAtScale(
+            DivineIconButton(icon: DivineIconName.x, onPressed: () {}),
+          ),
+        );
+        final fromName = tester
+            .widget<SvgPicture>(find.byType(SvgPicture))
+            .width;
+
+        await tester.pumpWidget(
+          buildAtScale(
+            DivineIconButton.fromSource(
+              icon: SvgIconSource(DivineIconName.x.assetPath),
+              onPressed: () {},
+            ),
+          ),
+        );
+        final fromSvgSource = tester
+            .widget<SvgPicture>(find.byType(SvgPicture))
+            .width;
+
+        await tester.pumpWidget(
+          buildAtScale(
+            DivineIconButton.fromSource(
+              icon: const MaterialIconSource(Icons.close),
+              onPressed: () {},
+            ),
+          ),
+        );
+        final fromMaterialSource = tester.widget<Icon>(find.byType(Icon)).size;
+
+        expect(fromName, closeTo(24 * DivineIcon.maxScaleFactor, 0.001));
+        expect(fromSvgSource, fromName);
+        expect(fromMaterialSource, fromName);
+      });
+
+      testWidgets('caps the small variant tap target with the icon', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildAtScale(
+            DivineIconButton(
+              icon: DivineIconName.x,
+              size: DivineIconButtonSize.small,
+              onPressed: () {},
+            ),
+          ),
+        );
+
+        final tapTarget = tester.getSize(
+          find
+              .descendant(
+                of: find.byType(DivineIconButton),
+                matching: find.byType(SizedBox),
+              )
+              .first,
+        );
+
+        expect(tapTarget.width, closeTo(48 * DivineIcon.maxScaleFactor, 0.001));
+        expect(tapTarget.height, tapTarget.width);
+      });
+    });
   });
 }

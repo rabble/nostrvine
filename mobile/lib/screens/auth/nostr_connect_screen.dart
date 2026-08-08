@@ -696,28 +696,25 @@ class _ActionBar extends StatelessWidget {
               spacing: 10,
               children: [
                 _ActionButton(
-                  icon: DivineIcon(
+                  icon: const DivineIcon(
                     icon: DivineIconName.linkSimple,
                     color: VineTheme.vineGreen,
-                    size: MediaQuery.textScalerOf(context).scale(24),
                   ),
                   label: context.l10n.authCopyUrl,
                   onTap: isLoading ? null : onCopyUrl,
                 ),
                 _ActionButton(
-                  icon: DivineIcon(
+                  icon: const DivineIcon(
                     icon: DivineIconName.shareFat,
                     color: VineTheme.vineGreen,
-                    size: MediaQuery.textScalerOf(context).scale(24),
                   ),
                   label: context.l10n.authShare,
                   onTap: isLoading ? null : onShareUrl,
                 ),
                 _ActionButton(
-                  icon: DivineIcon(
+                  icon: const DivineIcon(
                     icon: DivineIconName.plus,
                     color: VineTheme.vineGreen,
-                    size: MediaQuery.textScalerOf(context).scale(24),
                   ),
                   label: context.l10n.authAddBunker,
                   onTap: isLoading ? null : onAddBunker,
@@ -954,9 +951,9 @@ class _ErrorContent extends StatelessWidget {
                       ),
                       elevation: 0,
                     ),
-                    icon: DivineIcon(
+                    icon: const DivineIcon(
                       icon: DivineIconName.arrowClockwise,
-                      size: MediaQuery.textScalerOf(context).scale(16),
+                      size: 16,
                       color: VineTheme.onPrimary,
                     ),
                     label: Text(

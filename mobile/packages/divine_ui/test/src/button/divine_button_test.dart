@@ -1296,6 +1296,40 @@ void main() {
         expect(spacers, isEmpty);
       });
     });
+
+    group('text scaling', () {
+      Widget buildAtScale({required bool isLoading}) {
+        return MaterialApp(
+          home: MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+            child: Scaffold(
+              body: Center(
+                child: DivineButton(
+                  label: 'Save',
+                  onPressed: _noop,
+                  leadingIcon: DivineIconName.check,
+                  isLoading: isLoading,
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+
+      testWidgets('loading spinner occupies the same box as the icon it '
+          'replaces', (tester) async {
+        await tester.pumpWidget(buildAtScale(isLoading: false));
+        final iconSize = tester.getSize(find.byType(SvgPicture));
+
+        await tester.pumpWidget(buildAtScale(isLoading: true));
+        final spinnerSize = tester.getSize(
+          find.byType(CircularProgressIndicator),
+        );
+
+        expect(iconSize.width, closeTo(24 * DivineIcon.maxScaleFactor, 0.001));
+        expect(spinnerSize, iconSize);
+      });
+    });
   });
 
   group('DivineTextLink', () {
