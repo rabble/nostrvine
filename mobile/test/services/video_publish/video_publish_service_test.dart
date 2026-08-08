@@ -2301,6 +2301,7 @@ void _stubPublishVideoEventThrows(
       textTrackRefs: any(named: 'textTrackRefs'),
       textTrackLang: any(named: 'textTrackLang'),
       onEventSigned: any(named: 'onEventSigned'),
+      onAudioReuseDegraded: any(named: 'onAudioReuseDegraded'),
     ),
   ).thenThrow(error);
 }
