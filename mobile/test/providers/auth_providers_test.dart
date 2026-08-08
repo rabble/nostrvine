@@ -54,7 +54,7 @@ void main() {
     });
   });
 
-  group('zendeskIdentitySyncProvider', () {
+  group('analyticsIdentitySyncProvider', () {
     const pubkey =
         '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
@@ -85,7 +85,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      container.read(zendeskIdentitySyncProvider);
+      container.read(analyticsIdentitySyncProvider);
       await Future<void>.delayed(Duration.zero);
 
       expect(analytics.userIds, [pubkey]);
@@ -96,6 +96,40 @@ void main() {
 
       expect(analytics.userIds, [pubkey, null]);
       expect(crashUserIds, [pubkey, null]);
+    });
+
+    test('does not depend on the Zendesk identity sync being read', () async {
+      final authStateController = StreamController<AuthState>.broadcast();
+      addTearDown(authStateController.close);
+      final authService = _MockAuthService();
+      when(() => authService.isAuthenticated).thenReturn(false);
+      when(() => authService.currentPublicKeyHex).thenReturn(null);
+      when(
+        () => authService.authStateStream,
+      ).thenAnswer((_) => authStateController.stream);
+
+      final analytics = _RecordingAnalytics();
+      final container = ProviderContainer(
+        overrides: [
+          authServiceProvider.overrideWithValue(authService),
+          profileRepositoryProvider.overrideWithValue(null),
+          analyticsIdentityCoordinatorProvider.overrideWithValue(
+            AnalyticsIdentityCoordinator(
+              analytics: analytics,
+              setCrashUserId: (_) async {},
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      // Only the analytics sync is read — the Zendesk provider stays cold.
+      container.read(analyticsIdentitySyncProvider);
+      when(() => authService.currentPublicKeyHex).thenReturn(pubkey);
+      authStateController.add(AuthState.authenticated);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(analytics.userIds, [pubkey]);
     });
   });
 }

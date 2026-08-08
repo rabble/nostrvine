@@ -45,7 +45,10 @@ the pubkey rule above. It is the authenticated account's exact 64-character hex
 pubkey, never an npub and never a hash. It is identity metadata, not a custom
 event parameter. Login and restored identity set the same value in Analytics
 and Crashlytics; logout clears both and clears account-scoped invite
-attribution.
+attribution. This is owned by `analyticsIdentitySync` in
+`mobile/lib/providers/auth_providers.dart`, kept deliberately independent of
+the Zendesk identity sync so the campaign's BigQuery/ClickHouse join cannot be
+broken by a change to the support-desk integration.
 
 ## Core Events
 

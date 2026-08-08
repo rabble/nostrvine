@@ -62,6 +62,7 @@ Widget _buildSubject({
         relayStatisticsBridgeProvider.overrideWithValue(null),
         relaySetChangeBridgeProvider.overrideWithValue(null),
         zendeskIdentitySyncProvider.overrideWithValue(null),
+        analyticsIdentitySyncProvider.overrideWithValue(null),
         pushNotificationSyncProvider.overrideWithValue(null),
         blocklistSyncBridgeProvider.overrideWithValue(null),
         authServiceProvider.overrideWithValue(mockAuthService),
