@@ -4,6 +4,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:openvine/constants/semantic_ids.dart';
+import 'package:openvine/extensions/media_query_extensions.dart';
 import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 
 /// Horizontal picker-wheel mode selector.
@@ -50,6 +51,10 @@ class _VideoRecorderModeSelectorWheelState
   /// label, so consecutive labels stay [_labelGap] apart no matter how much
   /// their text widths differ.
   static const double _labelGap = 44.0;
+
+  /// Shared length of the snap scroll, the pill resize, and the label colour
+  /// tween — the three run together and must stay in step.
+  static const Duration _animationDuration = Duration(milliseconds: 200);
 
   @override
   void initState() {
@@ -102,11 +107,17 @@ class _VideoRecorderModeSelectorWheelState
     if (!_scrollController.hasClients) return;
     _isSnapping = true;
 
-    await _scrollController.animateTo(
-      _snapOffsets[index],
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeInOut,
-    );
+    // Jump rather than animate to a zero duration — `animateTo` asserts on
+    // `Duration.zero`, so `autoReduceMotion` is not usable on this one.
+    if (context.reduceMotion) {
+      _scrollController.jumpTo(_snapOffsets[index]);
+    } else {
+      await _scrollController.animateTo(
+        _snapOffsets[index],
+        duration: _animationDuration,
+        curve: Curves.easeInOut,
+      );
+    }
     _isSnapping = false;
   }
 
@@ -194,9 +205,7 @@ class _VideoRecorderModeSelectorWheelState
   @override
   Widget build(BuildContext context) {
     const modes = VideoRecorderMode.values;
-    final textScaler = MediaQuery.textScalerOf(
-      context,
-    ).clamp(maxScaleFactor: 1.3);
+    final textScaler = context.textScaler.clamp(maxScaleFactor: 1.3);
     final itemWidths = _itemWidths(textScaler);
     _snapOffsets = _snapOffsetsFor(itemWidths);
     final pendingJumpIndex = _pendingJumpIndex;
@@ -221,7 +230,7 @@ class _VideoRecorderModeSelectorWheelState
               // Fixed pill — always centered, width follows selected label.
               IgnorePointer(
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
+                  duration: _animationDuration.autoReduceMotion(context),
                   curve: Curves.easeInOut,
                   height: _pillHeight,
                   width: _pillWidth(modes[_selectedIndex].label, textScaler),
@@ -289,7 +298,9 @@ class _VideoRecorderModeSelectorWheelState
                             },
                             child: Center(
                               child: AnimatedDefaultTextStyle(
-                                duration: const Duration(milliseconds: 200),
+                                duration: _animationDuration.autoReduceMotion(
+                                  context,
+                                ),
                                 style: VineTheme.titleSmallFont(
                                   color: isSelected
                                       ? isLight
