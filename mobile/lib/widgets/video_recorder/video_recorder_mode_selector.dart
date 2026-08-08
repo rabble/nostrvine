@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/extensions/media_query_extensions.dart';
-import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 
 /// Horizontal picker-wheel mode selector.
@@ -222,7 +222,7 @@ class _VideoRecorderModeSelectorWheelState
     }
     final colors = context.vineColors;
     final isLight = colors.isLight;
-    final l10n = AppLocalizations.of(context);
+    final l10n = context.l10n;
     return LayoutBuilder(
       builder: (context, constraints) {
         final leadingPadding = (constraints.maxWidth - itemWidths.first) / 2;
