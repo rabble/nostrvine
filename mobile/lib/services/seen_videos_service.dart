@@ -369,7 +369,9 @@ class SeenVideosService {
                   _seenVideos[videoId]!.firstSeenAt.millisecondsSinceEpoch,
               lastSeenAt: now.millisecondsSinceEpoch,
             )
-            .catchError((_) {}),
+            .catchError((Object _, StackTrace stackTrace) {
+              // best-effort prune: ignore
+            }),
       );
     }
     await _scheduleSeenVideosSave();
@@ -455,7 +457,9 @@ class SeenVideosService {
     if (_effectiveDb != null) {
       try {
         await _effectiveDb!.seenVideosDao.clearAll();
-      } catch (_) {}
+      } catch (_) {
+        // best-effort cleanup: DB clear failure is non-fatal
+      }
     }
   }
 
@@ -471,7 +475,9 @@ class SeenVideosService {
     if (_effectiveDb != null) {
       try {
         await _effectiveDb!.seenVideosDao.remove(videoId);
-      } catch (_) {}
+      } catch (_) {
+        // best-effort cleanup: remove failure is non-fatal
+      }
     }
     await _scheduleSeenVideosSave();
   }

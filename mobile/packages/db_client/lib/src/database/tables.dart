@@ -1575,7 +1575,6 @@ class IdentityVerifications extends Table {
   Set<Column> get primaryKey => {pubkey};
 }
 
-
 /// Unbounded seen-video set — id + last-seen timestamp only.
 ///
 /// Rich engagement metrics (loops, watch durations) stay in the bounded

@@ -978,9 +978,7 @@ class VideosRepository {
     try {
       for (
         var fetch = 0;
-        fetch < maxFetches &&
-            collected.length < limit &&
-            !exhausted;
+        fetch < maxFetches && collected.length < limit && !exhausted;
         fetch++
       ) {
         final stats = await _funnelcakeApiClient.getClassicVines(

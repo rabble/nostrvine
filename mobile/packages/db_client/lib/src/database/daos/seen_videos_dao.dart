@@ -107,16 +107,16 @@ class SeenVideosDao extends DatabaseAccessor<AppDatabase>
   /// Delete entries older than [ttl] (default 1 year) — called on startup.
   Future<int> pruneExpired({Duration ttl = const Duration(days: 365)}) async {
     final cutoff = DateTime.now().millisecondsSinceEpoch - ttl.inMilliseconds;
-    return (delete(seenVideos)
-          ..where((t) => t.lastSeenAt.isSmallerThanValue(cutoff)))
-        .go();
+    return (delete(
+      seenVideos,
+    )..where((t) => t.lastSeenAt.isSmallerThanValue(cutoff))).go();
   }
 
   /// Count total rows.
   Future<int> count() async {
-    final r =
-        await customSelect('SELECT COUNT(*) AS c FROM seen_videos')
-            .getSingle();
+    final r = await customSelect(
+      'SELECT COUNT(*) AS c FROM seen_videos',
+    ).getSingle();
     return r.read<int>('c');
   }
 }
