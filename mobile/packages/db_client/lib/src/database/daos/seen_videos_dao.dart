@@ -58,7 +58,9 @@ class SeenVideosDao extends DatabaseAccessor<AppDatabase>
             firstSeenAt: nowMs,
             lastSeenAt: nowMs,
           ),
-          mode: InsertMode.insertOrIgnore,
+          onConflict: DoUpdate(
+            (_) => SeenVideosCompanion(lastSeenAt: Value(nowMs)),
+          ),
         );
       }
     });

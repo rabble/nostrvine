@@ -40,9 +40,7 @@ void main() {
         expect(service.hasSeenVideo('vid-2'), isTrue);
         expect(service.getVideoMetrics('vid-1')!.loopCount, 1);
 
-        // Verify DB now has rows (migration persisted)
-        // Allow a tick for batch insert
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        // initialize does not complete until the migration is durable.
         final count = await db.seenVideosDao.count();
         expect(count, 3);
 
@@ -120,11 +118,33 @@ void main() {
       final service1 = SeenVideosService(database: db);
       await service1.initialize();
       await service1.recordVideoView('vid-persist');
+      expect(await db.seenVideosDao.hasSeen('vid-persist'), isTrue);
       await service1.dispose();
 
       final service2 = SeenVideosService(database: db);
       await service2.initialize();
       expect(service2.hasSeenVideo('vid-persist'), isTrue);
+    });
+
+    test('batch mark refreshes a hydrated DB row before returning', () async {
+      final prefs = await SharedPreferences.getInstance();
+      final old =
+          DateTime.now().millisecondsSinceEpoch -
+          const Duration(days: 2).inMilliseconds;
+      await db.seenVideosDao.markSeen(
+        'vid-batch',
+        firstSeenAt: old,
+        lastSeenAt: old,
+      );
+      await prefs.setBool('seen_videos_migrated_to_db', true);
+      final service = SeenVideosService(database: db);
+      await service.initialize();
+
+      await service.markVideosAsSeen(['vid-batch']);
+
+      final row = (await db.seenVideosDao.getAll()).single;
+      expect(row.firstSeenAt, old);
+      expect(row.lastSeenAt, greaterThan(old));
     });
 
     test('DAO pruneExpired respects 1yr TTL', () async {

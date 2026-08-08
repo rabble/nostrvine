@@ -97,8 +97,6 @@ class SeenVideosService {
   static const String _seenVideosMetricsKey = 'seen_video_metrics';
   static const String _seenVideosMigratedKey = 'seen_videos_migrated_to_db';
   static const int _maxSeenVideos = 1000;
-  // ignore: unused_field
-  static const Duration _seenTtl = Duration(days: 365);
 
   final Map<String, SeenVideoMetrics> _seenVideos = {};
   final Map<String, DateTime> _seenLastSeen = {};
@@ -360,21 +358,14 @@ class SeenVideosService {
       );
     }
     _seenLastSeen[videoId] = now;
-    if (_effectiveDb != null) {
-      unawaited(
-        _effectiveDb!.seenVideosDao
-            .markSeen(
-              videoId,
-              firstSeenAt:
-                  _seenVideos[videoId]!.firstSeenAt.millisecondsSinceEpoch,
-              lastSeenAt: now.millisecondsSinceEpoch,
-            )
-            .catchError((Object _, StackTrace stackTrace) {
-              // best-effort prune: ignore
-            }),
-      );
-    }
-    await _scheduleSeenVideosSave();
+    await Future.wait([
+      _persistSeenVideo(
+        videoId,
+        firstSeenAt: _seenVideos[videoId]!.firstSeenAt.millisecondsSinceEpoch,
+        lastSeenAt: now.millisecondsSinceEpoch,
+      ),
+      _scheduleSeenVideosSave(),
+    ]);
   }
 
   Future<void> markVideosAsSeen(List<String> videoIds) async {
@@ -403,14 +394,49 @@ class SeenVideosService {
       }
     }
     if (hasChanges) {
-      if (_effectiveDb != null) {
-        unawaited(
-          _effectiveDb!.seenVideosDao
-              .upsertBatch(videoIds, nowMs: now.millisecondsSinceEpoch)
-              .catchError((Object e, StackTrace s) => 0),
-        );
-      }
-      await _scheduleSeenVideosSave();
+      await Future.wait([
+        _persistSeenVideos(videoIds, nowMs: now.millisecondsSinceEpoch),
+        _scheduleSeenVideosSave(),
+      ]);
+    }
+  }
+
+  Future<void> _persistSeenVideo(
+    String videoId, {
+    required int firstSeenAt,
+    required int lastSeenAt,
+  }) async {
+    final database = _effectiveDb;
+    if (database == null) return;
+    try {
+      await database.seenVideosDao.markSeen(
+        videoId,
+        firstSeenAt: firstSeenAt,
+        lastSeenAt: lastSeenAt,
+      );
+    } catch (error) {
+      Log.warning(
+        'Seen DB write failed; preferences remain available: $error',
+        name: 'SeenVideosService',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  Future<void> _persistSeenVideos(
+    Iterable<String> videoIds, {
+    required int nowMs,
+  }) async {
+    final database = _effectiveDb;
+    if (database == null) return;
+    try {
+      await database.seenVideosDao.upsertBatch(videoIds, nowMs: nowMs);
+    } catch (error) {
+      Log.warning(
+        'Seen DB batch write failed; preferences remain available: $error',
+        name: 'SeenVideosService',
+        category: LogCategory.system,
+      );
     }
   }
 
