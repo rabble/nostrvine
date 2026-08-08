@@ -3222,7 +3222,7 @@
     "videoEditorCloseSemanticLabel": "Chiudi",
     "videoEditorDoneSemanticLabel": "Fatto",
     "videoEditorLevelSemanticLabel": "Livello",
-    "videoMetadataBackSemanticLabel": "Indietro",
+    "videoMetadataClosePostDetailsSemanticLabel": "Chiudi dettagli del post",
     "videoMetadataDismissHelpDialogSemanticLabel": "Chiudi finestra di aiuto",
     "videoMetadataGotItButton": "Capito!",
     "videoMetadataLimitReachedWarning": "Limite di 64 KB raggiunto. Rimuovi alcuni contenuti per continuare.",
@@ -4036,8 +4036,8 @@
     "bugReportRemoveImage": "Remove image",
     "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
     "videoMetadataEditCoverTitle": "Modifica copertina",
-    "videoMetadataEditCoverCloseSemanticLabel": "Chiudi editor copertina",
-    "videoMetadataEditCoverConfirmSemanticLabel": "Conferma selezione copertina",
+    "videoMetadataEditCoverCloseSemanticLabel": "Annulla le modifiche alla copertina",
+    "videoMetadataEditCoverConfirmSemanticLabel": "Usa il fotogramma selezionato come copertina del video",
     "videoMetadataEditCoverStripSemanticLabel": "Scorri il video per selezionare il fotogramma di copertina",
     "userPickerRemoveSelectionSemantics": "Rimuovi {name}",
     "@userPickerRemoveSelectionSemantics": {
@@ -4932,5 +4932,12 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "Rimuovi relay"
+  "relaySettingsRemoveRelayTooltip": "Rimuovi relay",
+  "videoMetadataTagsPickerCancelSemanticLabel": "Annulla selezione tag",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "Applica i tag selezionati",
+  "userPickerCancelSemanticLabel": "Annulla selezione utenti",
+  "userPickerConfirmSemanticLabel": "Conferma utenti selezionati",
+  "userPickerClearSelectionSemanticLabel": "Cancella selezione utenti",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "Annulla selezione avvisi sui contenuti",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Applica gli avvisi sui contenuti selezionati"
 }

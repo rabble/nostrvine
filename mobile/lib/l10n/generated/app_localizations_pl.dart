@@ -9780,7 +9780,8 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoEditorLevelSemanticLabel => 'Poziom';
 
   @override
-  String get videoMetadataBackSemanticLabel => 'Wstecz';
+  String get videoMetadataClosePostDetailsSemanticLabel =>
+      'Zamknij szczegóły posta';
 
   @override
   String get videoMetadataDismissHelpDialogSemanticLabel =>
@@ -10615,11 +10616,11 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get videoMetadataEditCoverCloseSemanticLabel =>
-      'Zamknij edytor okładki';
+      'Odrzuć zmiany okładki';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Potwierdź wybór okładki';
+      'Użyj wybranej klatki jako okładki filmu';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
@@ -11285,4 +11286,30 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+
+  @override
+  String get videoMetadataTagsPickerCancelSemanticLabel => 'Anuluj wybór tagów';
+
+  @override
+  String get videoMetadataTagsPickerConfirmSemanticLabel =>
+      'Zastosuj wybrane tagi';
+
+  @override
+  String get userPickerCancelSemanticLabel => 'Anuluj wybór użytkowników';
+
+  @override
+  String get userPickerConfirmSemanticLabel =>
+      'Potwierdź wybranych użytkowników';
+
+  @override
+  String get userPickerClearSelectionSemanticLabel =>
+      'Wyczyść wybór użytkowników';
+
+  @override
+  String get videoMetadataContentWarningsPickerCancelSemanticLabel =>
+      'Anuluj wybór ostrzeżeń o treści';
+
+  @override
+  String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
+      'Zastosuj wybrane ostrzeżenia o treści';
 }

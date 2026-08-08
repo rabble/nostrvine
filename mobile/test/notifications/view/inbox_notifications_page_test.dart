@@ -51,7 +51,7 @@ void main() {
       when(mockInviteCubit.load).thenAnswer((_) async {});
     });
 
-    Widget buildSubject() {
+    Widget buildSubject({bool reduceMotion = false}) {
       return testMaterialApp(
         mockFollowRepository: mockFollowRepo,
         additionalOverrides: [
@@ -59,9 +59,16 @@ void main() {
             mockNotificationRepo,
           ),
         ],
-        home: BlocProvider<InviteStatusCubit>.value(
-          value: mockInviteCubit,
-          child: Scaffold(body: const InboxNotificationsPage()),
+        home: Builder(
+          builder: (context) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(disableAnimations: reduceMotion),
+            child: BlocProvider<InviteStatusCubit>.value(
+              value: mockInviteCubit,
+              child: Scaffold(body: const InboxNotificationsPage()),
+            ),
+          ),
         ),
       );
     }
@@ -160,6 +167,56 @@ void main() {
 
       verifyNever(() => mockNotificationRepo.refreshFeed(null));
       verifyNever(() => mockNotificationRepo.markAllAsRead());
+    });
+
+    group('reduced motion', () {
+      TabController controller(WidgetTester tester) =>
+          tester.widget<TabBar>(find.byType(TabBar)).controller!;
+
+      testWidgets('switches tabs without sliding the indicator or the page', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject(reduceMotion: true));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byType(Tab).at(3));
+        await tester.pump();
+
+        // The controller's animation drives both the indicator slide and the
+        // TabBarView page offset, so landing on the target in the first frame
+        // is the whole transition resolving instantly.
+        expect(controller(tester).animation!.value, equals(3.0));
+        expect(controller(tester).indexIsChanging, isFalse);
+      });
+
+      testWidgets('still animates when reduced motion is off', (tester) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byType(Tab).at(3));
+        await tester.pump();
+
+        expect(controller(tester).animation!.value, lessThan(3.0));
+        await tester.pumpAndSettle();
+        expect(controller(tester).animation!.value, equals(3.0));
+      });
+
+      testWidgets('keeps the open tab when the setting is toggled', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+        await tester.tap(find.byType(Tab).at(2));
+        await tester.pumpAndSettle();
+
+        // The controller is rebuilt to pick up the new duration; the tab the
+        // user was reading must survive that swap.
+        await tester.pumpWidget(buildSubject(reduceMotion: true));
+        await tester.pumpAndSettle();
+
+        expect(controller(tester).index, equals(2));
+        expect(controller(tester).animationDuration, equals(Duration.zero));
+      });
     });
 
     group('invite banner', () {

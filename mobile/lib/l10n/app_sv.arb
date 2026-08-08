@@ -3222,7 +3222,7 @@
     "videoEditorCloseSemanticLabel": "Stäng",
     "videoEditorDoneSemanticLabel": "Klar",
     "videoEditorLevelSemanticLabel": "Nivå",
-    "videoMetadataBackSemanticLabel": "Tillbaka",
+    "videoMetadataClosePostDetailsSemanticLabel": "Stäng inläggsdetaljer",
     "videoMetadataDismissHelpDialogSemanticLabel": "Stäng hjälpdialog",
     "videoMetadataGotItButton": "Jag fattar!",
     "videoMetadataLimitReachedWarning": "Gränsen på 64KB är nådd. Ta bort innehåll för att fortsätta.",
@@ -4036,8 +4036,8 @@
     "bugReportRemoveImage": "Remove image",
     "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
     "videoMetadataEditCoverTitle": "Redigera omslag",
-    "videoMetadataEditCoverCloseSemanticLabel": "Stäng omslagsredigerare",
-    "videoMetadataEditCoverConfirmSemanticLabel": "Bekräfta omslagsval",
+    "videoMetadataEditCoverCloseSemanticLabel": "Ignorera omslagsändringar",
+    "videoMetadataEditCoverConfirmSemanticLabel": "Använd vald bildruta som videoomslag",
     "videoMetadataEditCoverStripSemanticLabel": "Sök igenom videon för att välja omslagsbild",
     "userPickerRemoveSelectionSemantics": "Ta bort {name}",
     "@userPickerRemoveSelectionSemantics": {
@@ -4932,5 +4932,12 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "Ta bort rel"
+  "relaySettingsRemoveRelayTooltip": "Ta bort rel",
+  "videoMetadataTagsPickerCancelSemanticLabel": "Avbryt taggval",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "Använd valda taggar",
+  "userPickerCancelSemanticLabel": "Avbryt användarval",
+  "userPickerConfirmSemanticLabel": "Bekräfta valda användare",
+  "userPickerClearSelectionSemanticLabel": "Rensa användarval",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "Avbryt val av innehållsvarningar",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Använd valda innehållsvarningar"
 }

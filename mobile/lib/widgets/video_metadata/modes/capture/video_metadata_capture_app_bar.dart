@@ -61,7 +61,8 @@ class VideoMetadataCaptureAppBar extends ConsumerWidget
                 icon: .caretLeft,
                 type: .secondary,
                 size: .small,
-                semanticLabel: context.l10n.videoMetadataBackSemanticLabel,
+                semanticLabel:
+                    context.l10n.videoMetadataClosePostDetailsSemanticLabel,
                 onPressed: () => context.pop(),
               ),
             ),
