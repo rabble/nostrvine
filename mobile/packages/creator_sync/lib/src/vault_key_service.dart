@@ -306,10 +306,10 @@ class VaultKeyService {
   /// back first makes both devices converge on the retained event before
   /// either one seals anything.
   ///
-  /// [publishEvent] resolves once the pool accepted the frame, and Divine's
-  /// relay commits to storage after acknowledging, so the first read-back
-  /// can legitimately return nothing; it is retried up to [settleAttempts]
-  /// times [settleInterval] apart.
+  /// [NostrClient.publishEvent] resolves once the pool accepted the frame,
+  /// and Divine's relay commits to storage after acknowledging, so the
+  /// first read-back can legitimately return nothing; it is retried up to
+  /// [settleAttempts] times [settleInterval] apart.
   ///
   /// Throws [VaultKeyUnavailableException] when the read-back never
   /// produces a usable key — the relays stayed empty, became unreachable,
