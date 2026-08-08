@@ -244,17 +244,31 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
             !await _confirmVisibilityChange(existingList.isPublic)) {
           return;
         }
-        final updated = await listService?.updateList(
+        if (!mounted) return;
+        if (listService == null) {
+          _showSaveFailed();
+          return;
+        }
+
+        final messenger = ScaffoldMessenger.of(context);
+        final failureMessage = context.l10n.listUpdateFailed;
+        final updateFuture = listService.updateList(
           listId: existingList.id,
           name: name,
           description: _descriptionController.text.trim(),
           isPublic: _isPublic,
         );
-        if (!mounted) return;
-        if (updated ?? false) {
-          context.pop();
-        } else {
-          _showSaveFailed();
+
+        // updateList applies local fields before waiting for the relay, and a
+        // visibility change can wait through the relay deadline. Close the
+        // editor now so a slow relay does not make the save look unresponsive.
+        Navigator.of(context).pop();
+
+        if (!await updateFuture && messenger.mounted) {
+          _showSaveFailed(
+            messenger: messenger,
+            failureMessage: failureMessage,
+          );
         }
         return;
       }
@@ -334,14 +348,18 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
     return confirmed ?? false;
   }
 
-  // Keeps the dialog open so the typed name and description survive a retry.
-  void _showSaveFailed() {
-    ScaffoldMessenger.of(context).showSnackBar(
+  // A retained messenger lets an edit report relay failure after dismissing.
+  void _showSaveFailed({
+    ScaffoldMessengerState? messenger,
+    String? failureMessage,
+  }) {
+    (messenger ?? ScaffoldMessenger.of(context)).showSnackBar(
       SnackBar(
         content: Text(
-          _isEditing
-              ? context.l10n.listUpdateFailed
-              : context.l10n.listCreateFailed,
+          failureMessage ??
+              (_isEditing
+                  ? context.l10n.listUpdateFailed
+                  : context.l10n.listCreateFailed),
         ),
         duration: const Duration(seconds: 2),
       ),

@@ -1,6 +1,8 @@
 // ABOUTME: Tests for SelectListDialog and CreateListDialog widgets
 // ABOUTME: Verifies list selection, list item interactions, and list creation form
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -308,6 +310,27 @@ void main() {
       );
     }
 
+    Widget buildDialogLauncher(CuratedList existingList) => testProviderScope(
+      additionalOverrides: [
+        curatedListsStateProvider.overrideWith(_FakeCuratedListsState.new),
+      ],
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (_) => CreateListDialog(existingList: existingList),
+              ),
+              child: const Text('Open list editor'),
+            ),
+          ),
+        ),
+      ),
+    );
+
     testWidgets('renders Create New List form', (tester) async {
       await tester.pumpWidget(buildSubject());
 
@@ -406,6 +429,89 @@ void main() {
         ),
       ).called(1);
     });
+
+    testWidgets('dismisses a renamed list before reporting relay failure', (
+      tester,
+    ) async {
+      final list = createdList('Puppets');
+      final updateCompleter = Completer<bool>();
+      addTearDown(() {
+        if (!updateCompleter.isCompleted) updateCompleter.complete(true);
+      });
+      when(
+        () => mockListService.updateList(
+          listId: any(named: 'listId'),
+          name: any(named: 'name'),
+          description: any(named: 'description'),
+          isPublic: any(named: 'isPublic'),
+        ),
+      ).thenAnswer((_) => updateCompleter.future);
+
+      await tester.pumpWidget(buildDialogLauncher(list));
+      await tester.tap(find.text('Open list editor'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, 'Marionettes');
+      await tester.tap(find.text(l10n.listSave));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockListService.updateList(
+          listId: list.id,
+          name: 'Marionettes',
+          description: '',
+          isPublic: true,
+        ),
+      ).called(1);
+      expect(find.text(l10n.listEditTitle), findsNothing);
+
+      updateCompleter.complete(false);
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.listUpdateFailed), findsOneWidget);
+    });
+
+    testWidgets(
+      'dismisses while publishing a private list with a pending relay update',
+      (
+        tester,
+      ) async {
+        final list = createdList('Puppets').copyWith(isPublic: false);
+        final updateCompleter = Completer<bool>();
+        addTearDown(() {
+          if (!updateCompleter.isCompleted) updateCompleter.complete(true);
+        });
+        when(
+          () => mockListService.updateList(
+            listId: any(named: 'listId'),
+            name: any(named: 'name'),
+            description: any(named: 'description'),
+            isPublic: any(named: 'isPublic'),
+          ),
+        ).thenAnswer((_) => updateCompleter.future);
+
+        await tester.pumpWidget(buildDialogLauncher(list));
+        await tester.tap(find.text('Open list editor'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byType(SwitchListTile));
+        await tester.tap(find.text(l10n.listSave));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.listContinue));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockListService.updateList(
+            listId: list.id,
+            name: 'Puppets',
+            description: '',
+            isPublic: true,
+          ),
+        ).called(1);
+        expect(find.text(l10n.listEditTitle), findsNothing);
+
+        updateCompleter.complete(true);
+        await tester.pump();
+      },
+    );
 
     testWidgets('Create button does nothing when name is empty', (
       tester,
