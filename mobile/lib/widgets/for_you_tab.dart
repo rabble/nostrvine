@@ -160,9 +160,8 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
       initialChildSize: 0.85,
       minChildSize: 0.5,
       maxChildSize: 0.95,
-      buildScrollBody: (scrollController) => _AlgorithmExplainerSheet(
-        scrollController: scrollController,
-      ),
+      buildScrollBody: (scrollController) =>
+          _AlgorithmExplainerSheet(scrollController: scrollController),
     );
   }
 
@@ -239,38 +238,50 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
           top: headerOffset,
           left: 0,
           right: 0,
-          child: GestureDetector(
-            key: headerKey,
-            onTap: () => _showAlgorithmExplainer(context),
-            child: ColoredBox(
-              color: context.vineColors.background,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    const DivineIcon(
-                      icon: DivineIconName.sparkle,
-                      color: VineTheme.vineGreen,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      context.l10n.forYouAlgorithmTitle,
-                      style: VineTheme.labelLargeFont(
+          child: Semantics(
+            button: true,
+            // The visible title is the button's name; the hint says what
+            // activating it does.
+            hint: context.l10n.forYouAlgorithmHowItWorksTitle,
+            child: GestureDetector(
+              key: headerKey,
+              onTap: () => _showAlgorithmExplainer(context),
+              child: ColoredBox(
+                color: context.vineColors.background,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      const DivineIcon(
+                        icon: DivineIconName.sparkle,
                         color: VineTheme.vineGreen,
+                        size: 20,
                       ),
-                    ),
-                    DivineIconButton(
-                      icon: DivineIconName.info,
-                      size: DivineIconButtonSize.small,
-                      backgroundColor: VineTheme.transparent,
-                      foregroundColor: context.vineColors.secondaryText,
-                      showShadow: false,
-                      tooltip: context.l10n.forYouAlgorithmHowItWorksTitle,
-                      semanticLabel:
-                          context.l10n.forYouAlgorithmHowItWorksTitle,
-                      onPressed: () => _showAlgorithmExplainer(context),
-                    ),
-                  ],
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          context.l10n.forYouAlgorithmTitle,
+                          style: VineTheme.labelLargeFont(
+                            color: VineTheme.vineGreen,
+                          ),
+                        ),
+                      ),
+                      // The row and the button open the same sheet, so the row
+                      // owns the semantics — otherwise a screen reader
+                      // announces one action twice.
+                      ExcludeSemantics(
+                        child: DivineIconButton(
+                          icon: DivineIconName.info,
+                          size: DivineIconButtonSize.small,
+                          backgroundColor: VineTheme.transparent,
+                          foregroundColor: context.vineColors.secondaryText,
+                          showShadow: false,
+                          tooltip: context.l10n.forYouAlgorithmHowItWorksTitle,
+                          onPressed: () => _showAlgorithmExplainer(context),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -283,9 +294,7 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
 
 /// Bottom sheet explaining how the Divine Algorithm works
 class _AlgorithmExplainerSheet extends StatelessWidget {
-  const _AlgorithmExplainerSheet({
-    required this.scrollController,
-  });
+  const _AlgorithmExplainerSheet({required this.scrollController});
 
   final ScrollController scrollController;
 
@@ -324,10 +333,7 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
         const SizedBox(height: 24),
 
         // Section: How it works
-        _buildSectionTitle(
-          context,
-          context.l10n.forYouAlgorithmHowItWorksTitle,
-        ),
+        _SectionTitle(context.l10n.forYouAlgorithmHowItWorksTitle),
         const SizedBox(height: 12),
         Text(
           context.l10n.forYouAlgorithmHowItWorksBody,
@@ -341,37 +347,30 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
         const SizedBox(height: 12),
 
         // Interaction weights
-        _buildInteractionItem(
-          context,
-          DivineIconName.repeat,
-          context.l10n.metadataRepostsLabel,
-          context.l10n.forYouAlgorithmRepostsDescription,
+        _InteractionItem(
+          icon: DivineIconName.repeat,
+          title: context.l10n.metadataRepostsLabel,
+          description: context.l10n.forYouAlgorithmRepostsDescription,
         ),
-        _buildInteractionItem(
-          context,
-          DivineIconName.chat,
-          context.l10n.profileCommentsSection,
-          context.l10n.forYouAlgorithmCommentsDescription,
+        _InteractionItem(
+          icon: DivineIconName.chat,
+          title: context.l10n.profileCommentsSection,
+          description: context.l10n.forYouAlgorithmCommentsDescription,
         ),
-        _buildInteractionItem(
-          context,
-          DivineIconName.heart,
-          context.l10n.forYouAlgorithmReactionsTitle,
-          context.l10n.forYouAlgorithmReactionsDescription,
+        _InteractionItem(
+          icon: DivineIconName.heart,
+          title: context.l10n.forYouAlgorithmReactionsTitle,
+          description: context.l10n.forYouAlgorithmReactionsDescription,
         ),
-        _buildInteractionItem(
-          context,
-          DivineIconName.playCircle,
-          context.l10n.analyticsViews,
-          context.l10n.forYouAlgorithmViewsDescription,
+        _InteractionItem(
+          icon: DivineIconName.playCircle,
+          title: context.l10n.analyticsViews,
+          description: context.l10n.forYouAlgorithmViewsDescription,
         ),
         const SizedBox(height: 24),
 
         // Section: Cold start
-        _buildSectionTitle(
-          context,
-          context.l10n.forYouAlgorithmNewToDivineTitle,
-        ),
+        _SectionTitle(context.l10n.forYouAlgorithmNewToDivineTitle),
         const SizedBox(height: 12),
         Text(
           context.l10n.forYouAlgorithmNewToDivineBody1,
@@ -385,32 +384,17 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
         const SizedBox(height: 24),
 
         // Section: Future vision
-        _buildSectionTitle(
-          context,
-          context.l10n.forYouAlgorithmChoiceTitle,
-        ),
+        _SectionTitle(context.l10n.forYouAlgorithmChoiceTitle),
         const SizedBox(height: 12),
         Text(
           context.l10n.forYouAlgorithmChoiceBody,
           style: _bodyTextStyleOf(context),
         ),
         const SizedBox(height: 12),
-        _buildFutureFeatureItem(
-          context,
-          context.l10n.forYouAlgorithmChoicePersonalizedFeed,
-        ),
-        _buildFutureFeatureItem(
-          context,
-          context.l10n.forYouAlgorithmChoiceChronological,
-        ),
-        _buildFutureFeatureItem(
-          context,
-          context.l10n.forYouAlgorithmChoiceTrending,
-        ),
-        _buildFutureFeatureItem(
-          context,
-          context.l10n.forYouAlgorithmChoiceCustomFeeds,
-        ),
+        _FutureFeatureItem(context.l10n.forYouAlgorithmChoicePersonalizedFeed),
+        _FutureFeatureItem(context.l10n.forYouAlgorithmChoiceChronological),
+        _FutureFeatureItem(context.l10n.forYouAlgorithmChoiceTrending),
+        _FutureFeatureItem(context.l10n.forYouAlgorithmChoiceCustomFeeds),
         const SizedBox(height: 16),
         Text(
           context.l10n.forYouAlgorithmChoiceClosing,
@@ -428,24 +412,45 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
       ],
     );
   }
+}
 
-  Widget _buildSectionTitle(BuildContext context, String title) {
+TextStyle _bodyTextStyleOf(BuildContext context) =>
+    VineTheme.bodyMediumFont(color: context.vineColors.primaryText);
+
+/// Heading for one section of the algorithm explainer.
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle(this.title);
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
     return Text(
       title,
       style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
     );
   }
+}
 
-  Widget _buildInteractionItem(
-    BuildContext context,
-    DivineIconName icon,
-    String title,
-    String description,
-  ) {
+/// One interaction weight row: badge icon, label and description.
+class _InteractionItem extends StatelessWidget {
+  const _InteractionItem({
+    required this.icon,
+    required this.title,
+    required this.description,
+  });
+
+  final DivineIconName icon;
+  final String title;
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 12,
         children: [
           Container(
             padding: const EdgeInsets.all(8),
@@ -455,7 +460,6 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
             ),
             child: DivineIcon(icon: icon, color: VineTheme.vineGreen, size: 18),
           ),
-          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -480,8 +484,16 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildFutureFeatureItem(BuildContext context, String text) {
+/// One bullet in the "what's coming" list.
+class _FutureFeatureItem extends StatelessWidget {
+  const _FutureFeatureItem(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsetsDirectional.only(start: 8, bottom: 8),
       child: Row(
@@ -498,9 +510,6 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
       ),
     );
   }
-
-  static TextStyle _bodyTextStyleOf(BuildContext context) =>
-      VineTheme.bodyMediumFont(color: context.vineColors.primaryText);
 }
 
 /// Unavailable state when recommendations are not available
