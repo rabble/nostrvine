@@ -456,6 +456,21 @@ class _ProfileBadgeDetailsSheet extends StatelessWidget {
                     ),
                   ),
               ],
+              const SizedBox(height: 20),
+              Text(
+                l10n.profileBadgeFooterBody,
+                style: VineTheme.bodySmallFont(
+                  color: context.vineColors.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 10),
+              DivineButton(
+                label: l10n.profileBadgeFooterLink,
+                type: DivineButtonType.secondary,
+                size: DivineButtonSize.small,
+                leadingIcon: DivineIconName.arrowUpRight,
+                onPressed: () => _openBadgesAppFromBadgeSheet(context),
+              ),
             ],
           ),
         ),
@@ -490,6 +505,12 @@ void _openProfileFromBadgeSheet(BuildContext context, String pubkey) {
   final router = GoRouter.of(context);
   Navigator.of(context).pop();
   router.push(path);
+}
+
+void _openBadgesAppFromBadgeSheet(BuildContext context) {
+  final router = GoRouter.of(context);
+  Navigator.of(context).pop();
+  router.push(NostrAppSandboxScreen.pathForAppId(divineBadgesNostrApp.slug));
 }
 
 class _VerifiedAccountsBlock extends StatelessWidget {

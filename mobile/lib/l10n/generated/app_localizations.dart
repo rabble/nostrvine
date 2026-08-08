@@ -17014,6 +17014,18 @@ abstract class AppLocalizations {
   /// **'Badge'**
   String get profileBadgeFallbackSemanticLabel;
 
+  /// Short explainer at the bottom of the profile badge detail sheet, inviting people to create their own badges.
+  ///
+  /// In en, this message translates to:
+  /// **'Badges are little awards anyone can make on Nostr. Give one to a friend, a creator, or someone who made your day.'**
+  String get profileBadgeFooterBody;
+
+  /// Link label in the profile badge detail sheet that opens the Divine Badges app (badges.divine.video).
+  ///
+  /// In en, this message translates to:
+  /// **'Make your own at badges.divine.video'**
+  String get profileBadgeFooterLink;
+
   /// No description provided for @minorAccountReviewWelcomePageTitle.
   ///
   /// In en, this message translates to:

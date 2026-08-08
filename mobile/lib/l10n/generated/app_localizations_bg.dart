@@ -9975,6 +9975,13 @@ class AppLocalizationsBg extends AppLocalizations {
   String get profileBadgeFallbackSemanticLabel => 'Badge';
 
   @override
+  String get profileBadgeFooterBody =>
+      'Значките са малки награди, които всеки може да създаде в Nostr. Подари една на приятел, на творец или на някой, който ти е разведрил деня.';
+
+  @override
+  String get profileBadgeFooterLink => 'Създай своя на badges.divine.video';
+
+  @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';
 
   @override

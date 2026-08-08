@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/blocs/comments/comment_composer/comment_composer_bloc.dart';
+import 'package:openvine/constants/text_scale_limits.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/comments/widgets/mention_overlay.dart';
 
@@ -222,27 +223,30 @@ class _CommentInputState extends State<CommentInput> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Expanded(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Flexible(
-                          child: _CommentTextField(
-                            controller: widget.controller,
-                            focusNode: _focusNode,
-                            isReplying: isReplying,
-                            isEditing: isEditing,
-                            onSubmitted: widget.onSubmit,
-                            onChanged: _handleTextChanged,
+                    child: MediaQuery.withClampedTextScaling(
+                      maxScaleFactor: fixedRowTextScaleLimit,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: _CommentTextField(
+                              controller: widget.controller,
+                              focusNode: _focusNode,
+                              isReplying: isReplying,
+                              isEditing: isEditing,
+                              onSubmitted: widget.onSubmit,
+                              onChanged: _handleTextChanged,
+                            ),
                           ),
-                        ),
-                        if (isEditing)
-                          _EditIndicator(onCancel: widget.onCancelEdit!)
-                        else if (isReplying)
-                          _ReplyIndicator(
-                            displayName: widget.replyToDisplayName!,
-                            onCancel: widget.onCancelReply!,
-                          ),
-                      ],
+                          if (isEditing)
+                            _EditIndicator(onCancel: widget.onCancelEdit!)
+                          else if (isReplying)
+                            _ReplyIndicator(
+                              displayName: widget.replyToDisplayName!,
+                              onCancel: widget.onCancelReply!,
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                   if (widget.onVideoReplyPressed != null ||
@@ -291,8 +295,8 @@ class _VideoReplyButton extends StatelessWidget {
         constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
         child: Center(
           child: Container(
-            width: 40,
-            height: 40,
+            width: DivineIcon.scaleSize(context, 40),
+            height: DivineIcon.scaleSize(context, 40),
             margin: const EdgeInsets.only(bottom: 4),
             // The camera asset is 29x18, so `contain` sizes it off its height
             // and it renders 35px wide inside the 40px circle. The padding

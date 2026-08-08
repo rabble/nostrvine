@@ -46,6 +46,7 @@ void main() {
           timestamp: timestamp,
           listTitle: 'Literature',
           listCoordinate: '30005:${actorAlice.pubkey}:literature',
+          addedVideoCount: 3,
         );
 
         expect(notification.listTitle, equals('Literature'));
@@ -53,6 +54,7 @@ void main() {
           notification.listCoordinate,
           equals('30005:${actorAlice.pubkey}:literature'),
         );
+        expect(notification.addedVideoCount, equals(3));
       });
 
       test('exposes optional commentText for comment kind', () {
@@ -198,6 +200,7 @@ void main() {
           timestamp: timestamp,
           listTitle: 'Literature',
           listCoordinate: '30005:${actorAlice.pubkey}:literature',
+          addedVideoCount: 3,
         );
 
         final updated = original.copyWith(isRead: true);
@@ -207,6 +210,23 @@ void main() {
           updated.listCoordinate,
           equals('30005:${actorAlice.pubkey}:literature'),
         );
+        expect(updated.addedVideoCount, equals(3));
+      });
+
+      test('overrides addedVideoCount', () {
+        final original = VideoNotification(
+          id: 'n1',
+          type: NotificationKind.listAdd,
+          videoEventId: 'v1',
+          actors: [actorAlice],
+          totalCount: 1,
+          timestamp: timestamp,
+          addedVideoCount: 2,
+        );
+
+        final updated = original.copyWith(addedVideoCount: 3);
+
+        expect(updated.addedVideoCount, equals(3));
       });
     });
 

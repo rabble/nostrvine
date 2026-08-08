@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/constants/text_scale_limits.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 
@@ -39,23 +40,26 @@ class TrendingHashtagsSection extends StatelessWidget {
       color: context.vineColors.background,
       child: SizedBox(
         height: 52,
-        child: Row(
-          children: [
-            if (leading != null)
-              Padding(
-                padding: const EdgeInsetsDirectional.only(start: 12, end: 6),
-                child: Center(child: leading),
+        child: MediaQuery.withClampedTextScaling(
+          maxScaleFactor: fixedRowTextScaleLimit,
+          child: Row(
+            children: [
+              if (leading != null)
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(start: 12, end: 6),
+                  child: Center(child: leading),
+                ),
+              Expanded(
+                child: hashtags.isEmpty
+                    ? const _HashtagLoadingPlaceholder()
+                    : _HashtagChipList(
+                        hashtags: hashtags,
+                        leadingInset: leading == null ? 16 : 0,
+                        onHashtagTap: onHashtagTap,
+                      ),
               ),
-            Expanded(
-              child: hashtags.isEmpty
-                  ? const _HashtagLoadingPlaceholder()
-                  : _HashtagChipList(
-                      hashtags: hashtags,
-                      leadingInset: leading == null ? 16 : 0,
-                      onHashtagTap: onHashtagTap,
-                    ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -9832,6 +9832,13 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileBadgeFallbackSemanticLabel => 'Badge';
 
   @override
+  String get profileBadgeFooterBody =>
+      'Badge adalah penghargaan kecil yang bisa dibuat siapa saja di Nostr. Beri satu untuk teman, kreator, atau siapa pun yang membuat harimu.';
+
+  @override
+  String get profileBadgeFooterLink => 'Buat milikmu di badges.divine.video';
+
+  @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';
 
   @override

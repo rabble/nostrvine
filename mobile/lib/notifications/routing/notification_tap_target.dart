@@ -100,9 +100,11 @@ bool notificationKindOpensComments(
 ///
 /// `divine-push-service` sends a lowercase vocabulary
 /// (`like`/`comment`/`follow`/`mention`/`repost`) plus the camelCase
-/// `newPost`; Funnelcake inbox rows also use `list_add`. The string is a wire
-/// contract, not a display value. It never sends `reply`, `likeComment`, or
-/// `system`. Unknown / absent values return
+/// `newPost`. `list_add` is accepted for exhaustiveness with the inbox
+/// notification vocabulary; current push payloads do not include list
+/// coordinates, so list-add push taps fall back to the video target. The string
+/// is a wire contract, not a display value. It never sends `reply`,
+/// `likeComment`, or `system`. Unknown / absent values return
 /// `null`, which [resolveNotificationTapTarget] treats as a best-effort
 /// video/profile/inbox tap.
 NotificationKind? notificationKindFromPushType(String? type) {

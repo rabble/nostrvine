@@ -256,12 +256,17 @@ class _AudioSelectionBottomSheetState
         name: 'AudioSelectionBottomSheet',
         category: LogCategory.ui,
       );
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.soundReuseUnavailable),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      // Replace rather than enqueue: the messenger outlives this sheet, so a
+      // burst of blocked taps would otherwise leave a backlog of identical
+      // toasts trailing the user into the editor (#6769).
+      ScaffoldMessenger.of(context)
+        ..removeCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.soundReuseUnavailable),
+            duration: const Duration(seconds: 2),
+          ),
+        );
       return;
     }
 

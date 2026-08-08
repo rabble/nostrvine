@@ -502,6 +502,11 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                             hasMore: state.hasMore,
                             isLoadingMore: state.isLoadingMore,
                             trafficSource: ViewTrafficSource.home,
+                            // Every feed mode renders through this one page and
+                            // reports source=home, so without this detail the
+                            // For You, following, list, new and classic feeds
+                            // are indistinguishable in view_traffic_sources.
+                            sourceDetail: state.source.type.analyticsTag,
                             onActiveVideoChanged: (video, index) {
                               final isTuningAutoAdvance =
                                   _pendingTuningAutoAdvanceIndex == index;

@@ -9879,6 +9879,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get profileBadgeFallbackSemanticLabel => 'Badge';
 
   @override
+  String get profileBadgeFooterBody =>
+      'Märken är små utmärkelser som vem som helst kan skapa på Nostr. Ge ett till en vän, en kreatör eller någon som gjorde din dag.';
+
+  @override
+  String get profileBadgeFooterLink => 'Skapa ditt eget på badges.divine.video';
+
+  @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';
 
   @override

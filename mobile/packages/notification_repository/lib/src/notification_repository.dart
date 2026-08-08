@@ -1321,12 +1321,13 @@ class NotificationRepository {
   /// the snapshot. Semantics:
   ///
   /// - `sourceEventIds` = set union of both sides (preserves uniqueness).
-  /// - `totalCount` = for mention rows, distinct actor count; otherwise size
-  ///   of the union (so the count reflects unique underlying logical events,
-  ///   not the sum of overlapping totals), floored at `mergedActors.length` so
-  ///   the constructor's `totalCount >= actors.length` invariant always holds
-  ///   even in the defensive edge case where both sides had empty
-  ///   `sourceEventIds` (server response missing `source_event_id`).
+  /// - `totalCount` = for mention and list-add rows, distinct actor count;
+  ///   otherwise size of the source-event union, floored at
+  ///   `mergedActors.length` so the constructor's `totalCount >= actors.length`
+  ///   invariant always holds even in the defensive edge case where both sides
+  ///   had empty `sourceEventIds` (server response missing `source_event_id`).
+  /// - `addedVideoCount` for list-add rows = size of the server-notification
+  ///   id union.
   /// - `actors` = the union of existing + incoming actors, then
   ///   re-ordered to keep an explicitly named actor in front and capped
   ///   at [_maxGroupActors].
@@ -1369,14 +1370,22 @@ class NotificationRepository {
         : null;
     final mergedTotalCount = existing.type == NotificationKind.mention
         ? mergedActors.length
+        : existing.type == NotificationKind.listAdd
+        ? mergedActors.length
         : (unionIds.length >= mergedActors.length
               ? unionIds.length
               : mergedActors.length);
+    final mergedAddedVideoCount = existing.type == NotificationKind.listAdd
+        ? (unionNotificationIds.length >= mergedActors.length
+              ? unionNotificationIds.length
+              : mergedActors.length)
+        : null;
     return existing.copyWith(
       sourceEventIds: unionIds,
       notificationIds: unionNotificationIds,
       actors: mergedActors,
       totalCount: mergedTotalCount,
+      addedVideoCount: mergedAddedVideoCount,
       isRead: existing.isRead && incoming.isRead,
       timestamp: mergedTimestamp,
       videoThumbnailUrl:
@@ -1494,8 +1503,8 @@ class NotificationRepository {
     List<NotificationItem> items,
     NotificationKind? filter,
   ) {
-    if (filter != NotificationKind.comment) return items;
-    return items.where(_belongsInCommentsFeed).toList();
+    if (filter == null) return items;
+    return items.where((item) => _belongsInFeed(item, filter)).toList();
   }
 
   bool _belongsInCommentsFeed(NotificationItem item) {
@@ -1571,18 +1580,22 @@ class NotificationRepository {
     return _VideoMetadataLookup(videosById: map, notFoundIds: notFoundIds);
   }
 
-  static List<String> _videoMetadataEventIds(List<RelayNotification> raw) {
+  List<String> _videoMetadataEventIds(List<RelayNotification> raw) {
     final eventIds = <String>{};
     for (final notification in raw) {
       final referencedEventId = notification.referencedEventId;
-      if (referencedEventId != null && referencedEventId.isNotEmpty) {
+      if (referencedEventId != null &&
+          referencedEventId.isNotEmpty &&
+          _isEventId(referencedEventId)) {
         eventIds.add(referencedEventId);
       }
 
       final kind = _mapNotificationKind(notification);
       if (!_isVideoAnchoredNotification(kind, notification)) continue;
       final anchorEventId = _videoAnchorEventId(kind, notification);
-      if (anchorEventId != null && anchorEventId.isNotEmpty) {
+      if (anchorEventId != null &&
+          anchorEventId.isNotEmpty &&
+          _isEventId(anchorEventId)) {
         eventIds.add(anchorEventId);
       }
     }
@@ -1652,11 +1665,12 @@ class NotificationRepository {
       final group = entry.value
         ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
       final isVideoMention = entry.key.kind == NotificationKind.mention;
+      final isListAdd = entry.key.kind == NotificationKind.listAdd;
       final actorNotifications = _orderVideoGroupActorNotifications(
         group,
         profiles,
       );
-      final displayActorNotifications = isVideoMention
+      final displayActorNotifications = isVideoMention || isListAdd
           ? _distinctActorNotificationsBySourcePubkey(actorNotifications)
           : actorNotifications;
       final actors = _orderVideoGroupActors(
@@ -1665,15 +1679,22 @@ class NotificationRepository {
             .map((n) => _buildActor(n.sourcePubkey, profiles))
             .toList(),
       );
-      final totalCount = isVideoMention
+      final rowEventId = isListAdd
+          ? _videoAnchorEventId(entry.key.kind, group.first) ??
+                entry.key.eventId
+          : entry.key.eventId;
+      final totalCount = isVideoMention || isListAdd
           ? group.map((n) => n.sourcePubkey).toSet().length
           : group.length;
-      final video = videosById[entry.key.eventId];
+      final addedVideoCount = isListAdd ? group.length : null;
+      final video = videosById[rowEventId];
       // Funnelcake sets `referenced_d_tag` from `root_d_tag`, so both name the
       // same coordinate (funnelcake `client.rs:12145`).
-      final dTag = group
-          .map((n) => n.referencedDTag)
-          .firstWhere((d) => d != null, orElse: () => null);
+      final dTag = isListAdd
+          ? group.first.referencedDTag
+          : group
+                .map((n) => n.referencedDTag)
+                .firstWhere((d) => d != null, orElse: () => null);
       final trustedRootAddressableId = isVideoMention
           ? _trustedRootAddressableIdForGroup(group, video: video)
           : null;
@@ -1685,6 +1706,8 @@ class NotificationRepository {
           !isVideoMention || trustedRootAddressableId != null;
       final addressableId = isVideoMention
           ? trustedRootAddressableId ?? _sourceVideoAddressableId(video: video)
+          : isListAdd
+          ? _listAddVideoAddressableId(group.first, dTag: dTag, video: video)
           : _recipientScopedVideoAddressableId(dTag: dTag, video: video);
       // Normal video rows prefer payload media because it is stable after
       // metadata updates. Video mentions prefer the resolved source video, and
@@ -1715,7 +1738,7 @@ class NotificationRepository {
         VideoNotification(
           id: group.first.dedupeKey,
           type: entry.key.kind,
-          videoEventId: entry.key.eventId,
+          videoEventId: rowEventId,
           videoAddressableId: addressableId,
           videoThumbnailUrl: thumbnailUrl,
           videoTitle: videoTitle,
@@ -1731,6 +1754,7 @@ class NotificationRepository {
               : null,
           actors: actors,
           totalCount: totalCount,
+          addedVideoCount: addedVideoCount,
           timestamp: group.first.createdAt,
           isRead: group.every((n) => n.read),
           commentText: commentTextForRow,
@@ -2342,7 +2366,7 @@ class NotificationRepository {
   /// `referenced_event_id` while including `root_event_id`. For comments, the
   /// root ID is the video we want to open and group on unless the referenced
   /// event is itself a video, which happens for comments on video replies.
-  static String? _videoAnchorEventId(
+  String? _videoAnchorEventId(
     NotificationKind kind,
     RelayNotification n,
   ) {
@@ -2360,10 +2384,38 @@ class NotificationRepository {
       }
     }
     if (kind == NotificationKind.listAdd) {
-      return _nonEmpty(n.referencedEventId) ?? _nonEmpty(n.rootEventId);
+      return _nonEmpty(n.referencedEventId) ??
+          _nonEmpty(n.rootEventId) ??
+          _trustedListAddRootAddressableId(n);
     }
     return n.referencedEventId;
   }
+
+  String? _listAddVideoAddressableId(
+    RelayNotification notification, {
+    required String? dTag,
+    required VideoStats? video,
+  }) {
+    final addressableId = _trustedListAddRootAddressableId(notification);
+    if (addressableId != null) {
+      return addressableId;
+    }
+    return _recipientScopedVideoAddressableId(dTag: dTag, video: video);
+  }
+
+  String? _trustedListAddRootAddressableId(RelayNotification notification) {
+    final addressableId = _nonEmpty(notification.rootAddressableId);
+    if (addressableId == null) return null;
+    final parsed = _parseAddressableId(addressableId);
+    if (parsed == null) return null;
+    final rootKind = notification.rootEventKind;
+    if (rootKind != null && parsed.kind != rootKind) return null;
+    if (!NIP71VideoKinds.isVideoKind(parsed.kind)) return null;
+    if (parsed.pubkey != _userPubkey || parsed.dTag.isEmpty) return null;
+    return addressableId;
+  }
+
+  static bool _isEventId(String id) => _parseAddressableId(id) == null;
 
   /// Truncates comment text to [_maxCommentLength] characters, except for
   /// bounded leading Nostr references that the UI can resolve.

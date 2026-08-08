@@ -8,7 +8,7 @@ part of 'notification_item.dart';
 ///
 /// One row per (video × kind) regardless of how many actors interacted.
 /// The list of [actors] is capped for stacked-avatar display; [totalCount]
-/// holds the full count.
+/// holds the full actor count.
 @immutable
 class VideoNotification extends NotificationItem {
   /// Creates a [VideoNotification].
@@ -28,6 +28,7 @@ class VideoNotification extends NotificationItem {
     this.commentText,
     this.listTitle,
     this.listCoordinate,
+    this.addedVideoCount,
   }) : assert(
          type == NotificationKind.like ||
              type == NotificationKind.likeComment ||
@@ -84,6 +85,12 @@ class VideoNotification extends NotificationItem {
   /// Full kind-30005 coordinate for the public curated list.
   final String? listCoordinate;
 
+  /// Number of the user's videos added to [listCoordinate].
+  ///
+  /// Only meaningful for [NotificationKind.listAdd]. This is intentionally
+  /// separate from [totalCount], which remains the actor/avatar count.
+  final int? addedVideoCount;
+
   /// Returns a copy with the given fields replaced.
   VideoNotification copyWith({
     String? id,
@@ -99,6 +106,7 @@ class VideoNotification extends NotificationItem {
     String? commentText,
     String? listTitle,
     String? listCoordinate,
+    int? addedVideoCount,
     List<String>? sourceEventIds,
     List<String>? notificationIds,
   }) {
@@ -116,6 +124,7 @@ class VideoNotification extends NotificationItem {
       commentText: commentText ?? this.commentText,
       listTitle: listTitle ?? this.listTitle,
       listCoordinate: listCoordinate ?? this.listCoordinate,
+      addedVideoCount: addedVideoCount ?? this.addedVideoCount,
       sourceEventIds: sourceEventIds ?? this.sourceEventIds,
       notificationIds: notificationIds ?? this.notificationIds,
     );
@@ -136,6 +145,7 @@ class VideoNotification extends NotificationItem {
     commentText,
     listTitle,
     listCoordinate,
+    addedVideoCount,
     sourceEventIds,
     notificationIds,
   ];

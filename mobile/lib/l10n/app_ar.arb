@@ -3927,6 +3927,8 @@
     "profileBadgeMoreRecipients": "+{count} more",
     "profileBadgeSemanticLabel": "{name} badge",
     "profileBadgeFallbackSemanticLabel": "Badge",
+    "profileBadgeFooterBody": "الشارات جوائز صغيرة يمكن لأي شخص إنشاؤها على Nostr. امنح واحدة لصديق أو لصانع محتوى أو لشخص أسعد يومك.",
+    "profileBadgeFooterLink": "أنشئ شارتك على badges.divine.video",
     "authSignInWithBrowserExtension": "تسجيل الدخول بإضافة المتصفح",
     "authNip07ConnectionFailed": "تعذّر الاتصال بإضافة المتصفح.",
     "authNip07ExtensionNotFound": "لم يتم العثور على إضافة متصفح. ثبّت Alby أو nos2x أو أي إضافة متوافقة مع NIP-07.",

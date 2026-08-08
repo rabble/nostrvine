@@ -209,12 +209,14 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
               notificationKind: type,
             );
           case OpenProfileTarget(:final actorPubkey):
-            // Exhaustiveness-only: VideoNotification currently always resolves
-            // to OpenVideoTarget because it always carries a video target.
+            // Exhaustiveness-only: VideoNotification currently resolves to
+            // OpenVideoTarget or OpenListTarget because it carries a video or
+            // list target.
             _navigateToProfile(context, actorPubkey);
           case OpenInboxTarget():
-            // Exhaustiveness-only: VideoNotification currently always resolves
-            // to OpenVideoTarget because it always carries a video target.
+            // Exhaustiveness-only: VideoNotification currently resolves to
+            // OpenVideoTarget or OpenListTarget because it carries a video or
+            // list target.
             break;
         }
       case ActorNotification(

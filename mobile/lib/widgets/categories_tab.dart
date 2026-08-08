@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show VideoCategory;
 import 'package:openvine/blocs/categories/categories_bloc.dart';
 import 'package:openvine/constants/semantic_ids.dart';
+import 'package:openvine/constants/text_scale_limits.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_category_name.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -178,33 +179,31 @@ class _CategoryTile extends StatelessWidget {
                     horizontal: 24,
                     vertical: 16,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        localizedName,
-                        style: TextStyle(
-                          color: visuals.foregroundColor,
-                          fontSize: 24,
-                          height: 32 / 24,
-                          fontWeight: FontWeight.w700,
+                  child: MediaQuery.withClampedTextScaling(
+                    maxScaleFactor: fixedRowTextScaleLimit,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      spacing: 4,
+                      children: [
+                        Text(
+                          localizedName,
+                          style: VineTheme.headlineSmallFont(
+                            color: visuals.foregroundColor,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        context.l10n.categoryVideoCount(
-                          _formatCount(category.videoCount),
+                        Text(
+                          context.l10n.categoryVideoCount(
+                            _formatCount(category.videoCount),
+                          ),
+                          style: VineTheme.labelMediumFont(
+                            color: visuals.foregroundColor.withValues(
+                              alpha: 0.9,
+                            ),
+                          ),
                         ),
-                        style: TextStyle(
-                          color: visuals.foregroundColor.withValues(alpha: 0.9),
-                          fontSize: 12,
-                          height: 16 / 12,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
                 PositionedDirectional(

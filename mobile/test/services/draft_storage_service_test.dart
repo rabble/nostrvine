@@ -250,6 +250,36 @@ void main() {
         expect(drafts.length, 2);
       });
 
+      test('keeps each draft own lastModified when reading the list', () async {
+        final savedAt = DateTime(2026, 5, 4, 3, 2, 1);
+        final draft = DivineVideoDraft(
+          id: 'draft_old',
+          clips: [
+            DivineVideoClip(
+              id: 'clip_old',
+              video: EditorVideo.file('/path/to/old_video.mp4'),
+              duration: const Duration(seconds: 6),
+              recordedAt: savedAt,
+              targetAspectRatio: AspectRatio.square,
+              originalAspectRatio: 9 / 16,
+            ),
+          ],
+          title: 'Old draft',
+          description: '',
+          hashtags: {},
+          selectedApproach: 'hybrid',
+          createdAt: savedAt,
+          lastModified: savedAt,
+          publishStatus: PublishStatus.draft,
+          publishAttempts: 0,
+        );
+
+        await service.saveDraft(draft);
+
+        final drafts = await service.getAllDrafts();
+        expect(drafts.single.lastModified, savedAt);
+      });
+
       test('should return empty when database is empty', () async {
         final drafts = await service.getAllDrafts();
         expect(drafts, isEmpty);
@@ -399,7 +429,9 @@ void main() {
       });
 
       test('clears missing final rendered clip references', () async {
-        final draft = DivineVideoDraft.create(
+        final savedAt = DateTime(2026, 5, 4, 3, 2, 1);
+        final draft = DivineVideoDraft(
+          id: 'draft_rendered',
           clips: [
             DivineVideoClip(
               id: 'clip_1',
@@ -414,6 +446,10 @@ void main() {
           description: '',
           hashtags: {},
           selectedApproach: 'video',
+          createdAt: savedAt,
+          lastModified: savedAt,
+          publishStatus: PublishStatus.draft,
+          publishAttempts: 0,
           finalRenderedClip: DivineVideoClip(
             id: 'rendered_clip',
             video: EditorVideo.file('/path/to/missing-render.mp4'),
@@ -432,6 +468,8 @@ void main() {
         // Dropping the dangling render does not take the draft out of play:
         // publish re-renders it from its clips and editor state.
         expect(drafts.single.canPost, isTrue);
+        // ...and it is not an edit either, so the timestamp stays put.
+        expect(drafts.single.lastModified, savedAt);
       });
     });
 
@@ -477,6 +515,38 @@ void main() {
         );
 
         expect(await service.getDraftById('draft_corrupt'), isNull);
+      });
+    });
+
+    group('getValidatedDraftById', () {
+      test('keeps the stored lastModified', () async {
+        final savedAt = DateTime(2026, 5, 4, 3, 2, 1);
+        final draft = DivineVideoDraft(
+          id: 'draft_validated',
+          clips: [
+            DivineVideoClip(
+              id: 'clip_validated',
+              video: EditorVideo.file('/path/to/old_video.mp4'),
+              duration: const Duration(seconds: 6),
+              recordedAt: savedAt,
+              targetAspectRatio: AspectRatio.square,
+              originalAspectRatio: 9 / 16,
+            ),
+          ],
+          title: 'Validated draft',
+          description: '',
+          hashtags: {},
+          selectedApproach: 'hybrid',
+          createdAt: savedAt,
+          lastModified: savedAt,
+          publishStatus: PublishStatus.draft,
+          publishAttempts: 0,
+        );
+
+        await service.saveDraft(draft);
+
+        final loaded = await service.getValidatedDraftById('draft_validated');
+        expect(loaded?.lastModified, savedAt);
       });
     });
 
@@ -1021,6 +1091,44 @@ void main() {
         );
 
         expect(updated, isFalse);
+      });
+
+      test('surfaces the new status to readers of the draft', () async {
+        final draft = DivineVideoDraft.create(
+          clips: [
+            DivineVideoClip(
+              id: 'test_clip',
+              video: EditorVideo.file('/path/to/video.mp4'),
+              duration: const Duration(seconds: 6),
+              recordedAt: DateTime.now(),
+              targetAspectRatio: AspectRatio.square,
+              originalAspectRatio: 9 / 16,
+            ),
+          ],
+          title: 'Test Vine',
+          description: '',
+          hashtags: {},
+          selectedApproach: 'hybrid',
+        );
+
+        // The publish flow writes `publishing` through a full save, then only
+        // ever touches the row columns.
+        await service.saveDraft(
+          draft.copyWith(publishStatus: PublishStatus.publishing),
+        );
+        await service.updatePublishStatus(
+          draftId: draft.id,
+          status: PublishStatus.failed,
+          publishError: 'Network error',
+          publishAttempts: 2,
+        );
+
+        // A `publishing` draft is filtered out of the library, so reading the
+        // stale blob strands the video: the user never sees it again.
+        final loaded = await service.getAllDrafts();
+        expect(loaded.single.publishStatus, PublishStatus.failed);
+        expect(loaded.single.publishError, 'Network error');
+        expect(loaded.single.publishAttempts, 2);
       });
 
       test('should update publish status with error message', () async {

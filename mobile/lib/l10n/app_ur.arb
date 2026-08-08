@@ -6775,5 +6775,7 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "ریلے ہٹائیں"
+  "relaySettingsRemoveRelayTooltip": "ریلے ہٹائیں",
+  "profileBadgeFooterBody": "بیجز چھوٹے انعامات ہیں جو کوئی بھی Nostr پر بنا سکتا ہے۔ کسی دوست، تخلیق کار، یا اس شخص کو دیں جس نے آپ کا دن بنا دیا۔",
+  "profileBadgeFooterLink": "badges.divine.video پر اپنا بیج بنائیں"
 }

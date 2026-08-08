@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/blocs/notifications/badge/notification_badge_cubit.dart';
 import 'package:openvine/constants/semantic_ids.dart';
+import 'package:openvine/constants/text_scale_limits.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -141,59 +142,62 @@ class VineBottomNav extends ConsumerWidget {
                 ((constraints.maxWidth - totalIconWidth - totalEdgePad) / 8)
                     .clamp(0.0, double.infinity);
 
-            return Row(
-              children: [
-                _HomeTabButton(
-                  semanticLabel: context.l10n.navHome,
-                  isSelected: currentIndex == 0,
-                  isRefreshing: isHomeRefreshing,
-                  onTap: () => _handleTabTap(context, ref, 0),
-                  tapTargetWidth: _kHorizontalEdgePad + iconWidth + halfGap,
-                  iconAlignment: AlignmentDirectional.centerStart,
-                  edgePadding: const EdgeInsetsDirectional.only(
-                    start: _kHorizontalEdgePad,
+            return MediaQuery.withClampedTextScaling(
+              maxScaleFactor: fixedRowTextScaleLimit,
+              child: Row(
+                children: [
+                  _HomeTabButton(
+                    semanticLabel: context.l10n.navHome,
+                    isSelected: currentIndex == 0,
+                    isRefreshing: isHomeRefreshing,
+                    onTap: () => _handleTabTap(context, ref, 0),
+                    tapTargetWidth: _kHorizontalEdgePad + iconWidth + halfGap,
+                    iconAlignment: AlignmentDirectional.centerStart,
+                    edgePadding: const EdgeInsetsDirectional.only(
+                      start: _kHorizontalEdgePad,
+                    ),
                   ),
-                ),
-                _IconTabButton(
-                  semanticIdentifier: SemanticIds.exploreTab,
-                  semanticLabel: context.l10n.navExplore,
-                  icon: DivineIconName.search,
-                  isSelected: currentIndex == 1,
-                  onTap: () => _handleTabTap(context, ref, 1),
-                  tapTargetWidth: iconWidth + halfGap * 2,
-                ),
-                // Camera button in center of bottom nav
-                _CameraButton(
-                  tapTargetWidth: cameraWidth + halfGap * 2,
-                  onTap: () {
-                    Log.info(
-                      '👆 User tapped camera button',
-                      name: 'Navigation',
-                      category: LogCategory.ui,
-                    );
-                    context.pushToCameraWithPermission();
-                  },
-                ),
-                _IconTabButton(
-                  semanticIdentifier: 'inbox_tab',
-                  semanticLabel: context.l10n.navInbox,
-                  icon: DivineIconName.chat,
-                  isSelected: currentIndex == 2,
-                  onTap: () => _handleTabTap(context, ref, 2),
-                  tapTargetWidth: iconWidth + halfGap * 2,
-                  badgeCount: _inboxUnreadCount(context, ref),
-                ),
-                _ProfileTabButton(
-                  semanticLabel: context.l10n.navProfile,
-                  isSelected: currentIndex == 3,
-                  onTap: () => _handleTabTap(context, ref, 3),
-                  tapTargetWidth: iconWidth + halfGap + _kHorizontalEdgePad,
-                  iconAlignment: AlignmentDirectional.centerEnd,
-                  edgePadding: const EdgeInsetsDirectional.only(
-                    end: _kHorizontalEdgePad,
+                  _IconTabButton(
+                    semanticIdentifier: SemanticIds.exploreTab,
+                    semanticLabel: context.l10n.navExplore,
+                    icon: DivineIconName.search,
+                    isSelected: currentIndex == 1,
+                    onTap: () => _handleTabTap(context, ref, 1),
+                    tapTargetWidth: iconWidth + halfGap * 2,
                   ),
-                ),
-              ],
+                  // Camera button in center of bottom nav
+                  _CameraButton(
+                    tapTargetWidth: cameraWidth + halfGap * 2,
+                    onTap: () {
+                      Log.info(
+                        '👆 User tapped camera button',
+                        name: 'Navigation',
+                        category: LogCategory.ui,
+                      );
+                      context.pushToCameraWithPermission();
+                    },
+                  ),
+                  _IconTabButton(
+                    semanticIdentifier: 'inbox_tab',
+                    semanticLabel: context.l10n.navInbox,
+                    icon: DivineIconName.chat,
+                    isSelected: currentIndex == 2,
+                    onTap: () => _handleTabTap(context, ref, 2),
+                    tapTargetWidth: iconWidth + halfGap * 2,
+                    badgeCount: _inboxUnreadCount(context, ref),
+                  ),
+                  _ProfileTabButton(
+                    semanticLabel: context.l10n.navProfile,
+                    isSelected: currentIndex == 3,
+                    onTap: () => _handleTabTap(context, ref, 3),
+                    tapTargetWidth: iconWidth + halfGap + _kHorizontalEdgePad,
+                    iconAlignment: AlignmentDirectional.centerEnd,
+                    edgePadding: const EdgeInsetsDirectional.only(
+                      end: _kHorizontalEdgePad,
+                    ),
+                  ),
+                ],
+              ),
             );
           },
         ),

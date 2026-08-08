@@ -3927,6 +3927,8 @@
     "profileBadgeMoreRecipients": "+{count} more",
     "profileBadgeSemanticLabel": "{name} badge",
     "profileBadgeFallbackSemanticLabel": "Badge",
+    "profileBadgeFooterBody": "Badges zijn kleine onderscheidingen die iedereen op Nostr kan maken. Geef er een aan een vriend, een creator of iemand die je dag goedmaakte.",
+    "profileBadgeFooterLink": "Maak je eigen badge op badges.divine.video",
     "authSignInWithBrowserExtension": "Aanmelden met browserextensie",
     "authNip07ConnectionFailed": "Kan geen verbinding maken met je browserextensie.",
     "authNip07ExtensionNotFound": "Geen browserextensie gevonden. Installeer Alby, nos2x of een andere NIP-07-compatibele extensie.",

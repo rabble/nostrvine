@@ -222,12 +222,23 @@ class DivineVideoDraft {
     );
   }
 
+  /// Rebuilds a draft from its [row] and [clipRows].
+  ///
+  /// Publish bookkeeping is taken from the row columns, not the `data` blob.
+  /// `DraftsDao.updatePublishStatus` writes only the columns, so after a
+  /// background publish fails or parks a draft the blob still holds the status
+  /// from the last full save — and a draft stuck at `publishing` is filtered
+  /// out of the library, stranding the video (#6833).
   factory DivineVideoDraft.fromDriftRow({
     required DraftRow row,
     required List<ClipRow> clipRows,
     required String documentsPath,
   }) {
-    final draftJson = json.decode(row.data) as Map<String, dynamic>;
+    final draftJson = json.decode(row.data) as Map<String, dynamic>
+      ..['publishStatus'] = row.publishStatus
+      ..['publishError'] = row.publishError
+      ..['publishAttempts'] = row.publishAttempts
+      ..['lastModified'] = row.lastModified.toIso8601String();
 
     // Reconstruct clips from clip rows
     final clips = clipRows.map((clipRow) {

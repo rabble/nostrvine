@@ -182,5 +182,57 @@ void main() {
         expect(VideoEditorAudioChip.shouldOpenTimingScreen(sound), isTrue);
       });
     });
+
+    group('Text scaling', () {
+      Widget buildAtScale(double scale) {
+        return ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: MediaQuery(
+              data: MediaQueryData(textScaler: TextScaler.linear(scale)),
+              child: Scaffold(
+                body: Center(
+                  child: VideoEditorAudioChip(
+                    selectedSound: null,
+                    onSoundChanged: (_) {},
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+
+      // The waveform bars sit inside the chip's clamped subtree but are
+      // sized from their own build context. Reading the scaler from the
+      // chip's `build` instead would let them grow to the raw 2.0x while
+      // the label beside them stopped at the clamp.
+      testWidgets('waveform bars stay inside the chip clamp', (tester) async {
+        await tester.pumpWidget(buildAtScale(2));
+        await tester.pumpAndSettle();
+
+        final tallest = tester
+            .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
+            .map((bar) => bar.constraints?.maxHeight ?? 0)
+            .reduce((a, b) => a > b ? a : b);
+
+        expect(tallest, closeTo(16 * DivineIcon.maxScaleFactor, 0.001));
+      });
+
+      testWidgets('waveform bars grow with a scale under the clamp', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildAtScale(1.1));
+        await tester.pumpAndSettle();
+
+        final tallest = tester
+            .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
+            .map((bar) => bar.constraints?.maxHeight ?? 0)
+            .reduce((a, b) => a > b ? a : b);
+
+        expect(tallest, closeTo(16 * 1.1, 0.001));
+      });
+    });
   });
 }

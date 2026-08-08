@@ -9447,6 +9447,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileBadgeFallbackSemanticLabel => 'Badge';
 
   @override
+  String get profileBadgeFooterBody =>
+      'バッジは Nostr で誰でも作れる小さな賞。友だちやクリエイター、今日をいい日にしてくれた人に贈ってみて。';
+
+  @override
+  String get profileBadgeFooterLink => 'badges.divine.video で自分のバッジを作る';
+
+  @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';
 
   @override

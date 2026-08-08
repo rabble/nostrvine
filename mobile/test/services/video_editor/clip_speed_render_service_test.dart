@@ -207,6 +207,92 @@ void main() {
         expect(service.render(clip('a')), completion(isNull));
         expect(service.isRendering(clip('a')), isFalse);
       });
+
+      test('reuses one render for clips that differ only by id', () async {
+        final native = _FakeProVideoEditor();
+        editor.ProVideoEditor.instance = native;
+        final service = ClipSpeedRenderService();
+
+        // A duplicated / re-split clip: fresh id, byte-identical body.
+        final original = clip('a', playbackSpeed: 2);
+        final duplicate = clip(
+          'a_copy_123',
+          playbackSpeed: 2,
+          path: '/tmp/a.mp4',
+        );
+
+        final first = service.render(original);
+        await pumpEventQueue();
+        native.allowRenderToFinishAt(0).complete();
+        await first;
+
+        expect(service.cached(duplicate), isNotNull);
+        await expectLater(service.render(duplicate), completes);
+        expect(
+          native.renderCount,
+          1,
+          reason: 'the duplicate must reuse the original body, not re-encode',
+        );
+      });
+
+      test(
+        'caps concurrent native renders so the encoder does not stall',
+        () async {
+          final native = _FakeProVideoEditor();
+          editor.ProVideoEditor.instance = native;
+          final service = ClipSpeedRenderService();
+
+          final pending = [
+            for (var i = 0; i < 3; i++)
+              service.render(clip('a$i', playbackSpeed: 2)),
+          ];
+          await pumpEventQueue();
+
+          expect(
+            native.renderCount,
+            2,
+            reason:
+                'the third clip must queue instead of opening a 3rd session',
+          );
+
+          // Freeing one slot lets exactly one queued clip through.
+          native.allowRenderToFinishAt(0).complete();
+          await pumpEventQueue();
+          expect(native.renderCount, 3);
+
+          native
+            ..allowRenderToFinishAt(1).complete()
+            ..allowRenderToFinishAt(2).complete();
+          await Future.wait(pending);
+        },
+      );
+
+      test('drops queued renders once the editor closes', () async {
+        final native = _FakeProVideoEditor();
+        editor.ProVideoEditor.instance = native;
+        final service = ClipSpeedRenderService();
+
+        final pending = [
+          for (var i = 0; i < 3; i++)
+            service.render(clip('a$i', playbackSpeed: 2)),
+        ];
+        await pumpEventQueue();
+        expect(native.renderCount, 2);
+
+        // Closing the editor must not let the backlog keep encoding.
+        service.clear();
+        native
+          ..allowRenderToFinishAt(0).complete()
+          ..allowRenderToFinishAt(1).complete();
+        await Future.wait(pending);
+        await pumpEventQueue();
+
+        expect(
+          native.renderCount,
+          2,
+          reason: 'the queued third clip must be abandoned, not encoded',
+        );
+      });
     });
 
     group('clear', () {

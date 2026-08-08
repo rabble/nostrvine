@@ -454,7 +454,9 @@ class DraftStorageService {
       );
     }
 
-    return _clearMissingFinalRenderedClip(draft.copyWith(clips: validClips));
+    return _clearMissingFinalRenderedClip(
+      draft.copyWith(clips: validClips, skipUpdateLastModified: true),
+    );
   }
 
   /// Get the autosaved draft with validation.
@@ -464,6 +466,9 @@ class DraftStorageService {
     return getValidatedDraftById(VideoEditorConstants.autoSaveId);
   }
 
+  /// Hides unusable clips from a loaded draft without counting as an edit:
+  /// the stored `lastModified` is kept, so reading the list can't restamp
+  /// every draft with the current time (and scramble its newest-first order).
   DivineVideoDraft? _validatedDraft(DivineVideoDraft draft) {
     final validClips = _filterValidClips(draft.clips);
     if (validClips.isEmpty) {
@@ -484,7 +489,9 @@ class DraftStorageService {
       );
     }
 
-    return _clearMissingFinalRenderedClip(draft.copyWith(clips: validClips));
+    return _clearMissingFinalRenderedClip(
+      draft.copyWith(clips: validClips, skipUpdateLastModified: true),
+    );
   }
 
   /// Filter clips to only those whose source media still exists.
@@ -516,7 +523,10 @@ class DraftStorageService {
       name: 'DraftStorageService',
       category: LogCategory.video,
     );
-    return draft.copyWith(clearFinalRenderedClip: true);
+    return draft.copyWith(
+      clearFinalRenderedClip: true,
+      skipUpdateLastModified: true,
+    );
   }
 
   /// Get all drafts from storage

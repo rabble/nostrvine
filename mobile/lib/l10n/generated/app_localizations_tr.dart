@@ -9831,6 +9831,14 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileBadgeFallbackSemanticLabel => 'Badge';
 
   @override
+  String get profileBadgeFooterBody =>
+      'Rozetler, Nostr\'da herkesin oluşturabileceği küçük ödüllerdir. Bir arkadaşına, bir içerik üreticisine ya da gününü güzelleştiren birine ver.';
+
+  @override
+  String get profileBadgeFooterLink =>
+      'Kendi rozetini badges.divine.video\'da oluştur';
+
+  @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';
 
   @override

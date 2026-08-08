@@ -1,6 +1,8 @@
 // ABOUTME: Pre-renders a clip's trimmed body at its playbackSpeed into a plain
 // ABOUTME: normal-rate file so the preview plays it at 1× instead of retiming live.
 
+import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
@@ -84,6 +86,42 @@ class ClipSpeedRenderService {
     return speed > 0 && speed != 1.0 && clip.video?.file != null;
   }
 
+  /// How many speed bodies may encode natively at the same time.
+  ///
+  /// The canvas asks for a render per non-1× clip on every timeline change, so
+  /// a 28-clip draft would otherwise open 28 export sessions at once. Past a
+  /// couple of concurrent sessions the platform encoder stops making progress
+  /// and `pro_video_editor` fails them with a stall (`progress=0.00` after
+  /// 20s), which is slower *and* lossier than encoding them a few at a time.
+  static const _maxConcurrentRenders = 2;
+
+  int _activeRenders = 0;
+  final _waitingForSlot = Queue<Completer<void>>();
+
+  /// Resolves once a render slot is free. Slots are handed out FIFO so the
+  /// clips at the head of the timeline — the ones the user is most likely to
+  /// play first — finish first.
+  Future<void> _acquireRenderSlot() {
+    if (_activeRenders < _maxConcurrentRenders) {
+      _activeRenders++;
+      return Future<void>.value();
+    }
+    final waiter = Completer<void>();
+    _waitingForSlot.add(waiter);
+    return waiter.future;
+  }
+
+  /// Hands this slot straight to the next waiter, or gives it back to the pool
+  /// when nobody is queued. Passing it on keeps [_activeRenders] at the cap
+  /// instead of dipping below it between renders.
+  void _releaseRenderSlot() {
+    if (_waitingForSlot.isNotEmpty) {
+      _waitingForSlot.removeFirst().complete();
+      return;
+    }
+    _activeRenders--;
+  }
+
   Future<RenderedSpeedClip?> _render(DivineVideoClip clip, String key) async {
     // Reachable only via [render], which gates on [_needsRender] (video
     // non-null). Re-checked here so the type is provably non-null below.
@@ -122,23 +160,33 @@ class ClipSpeedRenderService {
       // Render only the trimmed body at the target speed, with no crop/transform
       // — the preview player crops the texture itself, exactly as it does for
       // the raw live-retimed clip, so nothing is double-cropped.
-      await VideoEditorRenderService.renderNativeVideoToFile(
-        tempOutput,
-        VideoRenderData(
-          id: 'speed_$hash',
-          videoSegments: [
-            VideoSegment(
-              video: video,
-              startTime: clip.trimStart == Duration.zero
-                  ? null
-                  : clip.trimStart,
-              endTime: clip.trimStart + clip.trimmedDuration,
-              playbackSpeed: clip.playbackSpeed,
-            ),
-          ],
-          shouldOptimizeForNetworkUse: true,
-        ),
-      );
+      await _acquireRenderSlot();
+      try {
+        // The editor may have closed, or this clip may have been edited again,
+        // while the request waited for a slot. Bailing here keeps a queued
+        // backlog from encoding bodies nobody will play — the case that kept
+        // the encoder busy for ~20s after the editor was torn down.
+        if (_isStale(renderGeneration)) return null;
+        await VideoEditorRenderService.renderNativeVideoToFile(
+          tempOutput,
+          VideoRenderData(
+            id: 'speed_$hash',
+            videoSegments: [
+              VideoSegment(
+                video: video,
+                startTime: clip.trimStart == Duration.zero
+                    ? null
+                    : clip.trimStart,
+                endTime: clip.trimStart + clip.trimmedDuration,
+                playbackSpeed: clip.playbackSpeed,
+              ),
+            ],
+            shouldOptimizeForNetworkUse: true,
+          ),
+        );
+      } finally {
+        _releaseRenderSlot();
+      }
       if (_isStale(renderGeneration)) {
         await _deleteQuietly(tempOutput);
         return null;
@@ -302,8 +350,14 @@ class ClipSpeedRenderService {
   /// instead of replayed stale if the OS keeps temp cache files around.
   static const _cacheVersion = 1;
 
+  /// Keyed by what the render actually bakes in — source file, trims and speed
+  /// — and deliberately **not** by [DivineVideoClip.id]. Duplicating a clip,
+  /// splitting one and undoing the split, or reopening a draft all mint fresh
+  /// ids for byte-identical bodies; keying on the id re-encoded every one of
+  /// them. Two clips that agree on all of these produce the same file, so they
+  /// can share a single render.
   String _key(DivineVideoClip clip) =>
-      'v$_cacheVersion|${clip.id}:${clip.video?.file?.path}:'
+      'v$_cacheVersion|${clip.video?.file?.path}:'
       '${clip.duration.inMicroseconds}:${clip.trimStart.inMicroseconds}:'
       '${clip.trimEnd.inMicroseconds}:${clip.playbackSpeed ?? 1.0}';
 

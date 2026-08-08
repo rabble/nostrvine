@@ -5940,6 +5940,14 @@
     }
   },
   "profileBadgeFallbackSemanticLabel": "Badge",
+  "profileBadgeFooterBody": "Badges are little awards anyone can make on Nostr. Give one to a friend, a creator, or someone who made your day.",
+  "@profileBadgeFooterBody": {
+    "description": "Short explainer at the bottom of the profile badge detail sheet, inviting people to create their own badges."
+  },
+  "profileBadgeFooterLink": "Make your own at badges.divine.video",
+  "@profileBadgeFooterLink": {
+    "description": "Link label in the profile badge detail sheet that opens the Divine Badges app (badges.divine.video)."
+  },
   "minorAccountReviewWelcomePageTitle": "Family guide",
   "minorAccountReviewWelcomeCta": "Not 16 yet? That's OK. Here's what you can do.",
   "minorAccountReviewWelcomeTitle": "Not 16 yet? That's OK.",
