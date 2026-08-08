@@ -88,6 +88,7 @@ void main() {
       IsOnlineCallback? isOnline,
       QueueOfflineActionCallback? queueOfflineAction,
       BlockedLikerFilter? blockFilter,
+      LikesRepositoryErrorReporter? errorReporter,
     }) {
       return LikesRepository(
         nostrClient: mockNostrClient,
@@ -95,6 +96,7 @@ void main() {
         isOnline: isOnline,
         queueOfflineAction: queueOfflineAction,
         blockFilter: blockFilter,
+        errorReporter: errorReporter,
       );
     }
 
@@ -322,6 +324,94 @@ void main() {
           verify(() => mockLocalStorage.getAllLikeRecords()).called(1);
         },
       );
+
+      test(
+        'reports an invariant violation raised by a storage write',
+        () async {
+          // An Error from the storage layer means the storage layer itself is
+          // broken. Still swallowed so the Kind 7 goes out, but routed to the
+          // reporter — a swallowed bug nobody can see is how a real defect
+          // ships behind a warning log.
+          final mockEvent = MockEvent();
+          when(() => mockEvent.id).thenReturn(testReactionEventId);
+          stubSendLike(mockEvent);
+          final reported = <({Object error, String site})>[];
+          when(
+            () => mockLocalStorage.saveLikeRecord(any()),
+          ).thenThrow(StateError('storage invariant violated'));
+
+          repository = createRepository(
+            errorReporter: (error, stackTrace, {required site}) {
+              reported.add((error: error, site: site));
+            },
+          );
+          await repository.likeEvent(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+          );
+
+          expect(reported.first.error, isA<StateError>());
+          expect(
+            reported.map((r) => r.site),
+            equals([
+              LikesRepositoryReportableSites.likeEventSavePlaceholder,
+              LikesRepositoryReportableSites.likeEventSaveConfirmed,
+            ]),
+          );
+        },
+      );
+
+      test(
+        'reports an invariant violation raised by the initial read',
+        () async {
+          final reported = <String>[];
+          when(
+            () => mockLocalStorage.getAllLikeRecords(),
+          ).thenThrow(TypeError());
+
+          repository = createRepository(
+            errorReporter: (error, stackTrace, {required site}) {
+              reported.add(site);
+            },
+          );
+          await repository.getLikedEventIds();
+
+          expect(
+            reported,
+            equals([
+              LikesRepositoryReportableSites.ensureInitializedLoadRecords,
+            ]),
+          );
+        },
+      );
+
+      test('does not report an expected storage failure', () async {
+        // SqliteException and friends are Exceptions, not Errors: expected on
+        // a broken device and explicitly not Crashlytics-reportable per the
+        // decision matrix in `.claude/rules/error_handling.md`.
+        final mockEvent = MockEvent();
+        when(() => mockEvent.id).thenReturn(testReactionEventId);
+        stubSendLike(mockEvent);
+        var reportCount = 0;
+        when(
+          () => mockLocalStorage.getAllLikeRecords(),
+        ).thenThrow(storageFailure);
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenThrow(storageFailure);
+
+        repository = createRepository(
+          errorReporter: (error, stackTrace, {required site}) {
+            reportCount++;
+          },
+        );
+        await repository.likeEvent(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+        );
+
+        expect(reportCount, isZero);
+      });
     });
 
     group('likeEvent', () {

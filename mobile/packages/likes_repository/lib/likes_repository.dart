@@ -13,4 +13,5 @@ export 'src/db_likes_local_storage.dart';
 export 'src/exceptions.dart';
 export 'src/likes_local_storage.dart';
 export 'src/likes_repository.dart';
+export 'src/likes_repository_reportable_sites.dart';
 export 'src/models/models.dart';
