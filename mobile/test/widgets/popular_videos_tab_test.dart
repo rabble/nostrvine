@@ -201,6 +201,13 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      // A zero threshold makes the *first* load slow too, and whether that
+      // one spans a rebuild depends on how warm the isolate is — cold, the
+      // first page takes ~90ms and reports; warm, it lands inside a single
+      // build and does not. Only the variant switch is under test here, so
+      // the initial load is dropped rather than counted.
+      clearInteractions(errorTracker);
+
       final l10n = lookupAppLocalizations(const Locale('en'));
       await tester.tap(find.text(l10n.categoryGallerySortClassic));
       await tester.pump();
