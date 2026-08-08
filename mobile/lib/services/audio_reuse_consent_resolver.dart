@@ -2,6 +2,7 @@
 // ABOUTME: Fails closed unless the sound's source video grants reuse.
 
 import 'package:models/models.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 class AudioReuseConsentResolver {
@@ -34,11 +35,21 @@ class AudioReuseConsentResolver {
       // `allow_audio_reuse` is rebuilt on every edit — dropping the tag is how
       // a creator revokes consent — and an addressable read resolves to the
       // current revision, so this is the live answer. A revision predating the
-      // sound cannot speak for it.
+      // sound cannot speak for it. This does not lock out the legacy population:
+      // `VideoEventPublisher` publishes the Kind 1063 before the video event
+      // because the video needs the audio id for its `e` tag, so an unedited
+      // source is never older than its own sound.
       final source = matching.first;
       if (source.createdAt < sound.createdAt) return false;
       return source.allowAudioReuse;
-    } catch (_) {
+    } catch (error) {
+      // Fail closed, but leave a trace — otherwise "why is reuse blocked?" is
+      // unanswerable from a bug report.
+      Log.warning(
+        'Reuse consent lookup failed for source $sourceAddress: $error',
+        name: 'AudioReuseConsentResolver',
+        category: LogCategory.video,
+      );
       return false;
     }
   }
