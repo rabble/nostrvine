@@ -462,7 +462,7 @@ void main() {
     });
 
     testWidgets(
-      'dismisses while publishing a private list with a pending relay update',
+      'waits on the relay before dismissing a visibility change',
       (
         tester,
       ) async {
@@ -497,15 +497,17 @@ void main() {
             isPublic: true,
           ),
         ).called(1);
-        expect(find.text(l10n.listEditTitle), findsNothing);
+        expect(find.text(l10n.listEditTitle), findsOneWidget);
 
         updateCompleter.complete(true);
-        await tester.pump();
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.listEditTitle), findsNothing);
       },
     );
 
     testWidgets(
-      'drops the pending edit when publishing a private list is rejected',
+      'keeps a rejected visibility change on screen for a retry',
       (tester) async {
         final list = createdList('Puppets').copyWith(isPublic: false);
         final updateCompleter = Completer<bool>();
@@ -531,23 +533,21 @@ void main() {
         await tester.tap(find.text(l10n.listContinue));
         await tester.pumpAndSettle();
 
-        expect(find.text(l10n.listEditTitle), findsNothing);
-
         updateCompleter.complete(false);
         await tester.pumpAndSettle();
 
-        // The messenger captured before the pop belongs to the host scaffold,
-        // so the failure still reaches the user once the editor route is gone.
         expect(find.text(l10n.listUpdateFailed), findsOneWidget);
 
-        // Nothing is left to retry from. The editor did not reopen, the typed
-        // name went with it, and the visibility switch the user flipped is no
-        // longer on screen — the service leaves isPublic at its old value on a
-        // rejected publish (curated_list_service_crud_test.dart, "keeps a list
-        // private when publication is rejected"), so that flip is lost too.
-        expect(find.text(l10n.listEditTitle), findsNothing);
-        expect(find.text('Marionettes'), findsNothing);
-        expect(find.byType(SwitchListTile), findsNothing);
+        // The service leaves isPublic at its old value on a rejected publish
+        // (curated_list_service_crud_test.dart, "keeps a list private when
+        // publication is rejected"), so the flip only survives if the editor
+        // holding it is still on screen with the typed name intact.
+        expect(find.text(l10n.listEditTitle), findsOneWidget);
+        expect(find.text('Marionettes'), findsOneWidget);
+        expect(
+          tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
+          isTrue,
+        );
       },
     );
 

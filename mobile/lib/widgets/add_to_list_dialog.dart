@@ -250,7 +250,8 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
       final listService = ref.read(curatedListsStateProvider.notifier).service;
       final existingList = widget.existingList;
       if (existingList != null) {
-        if (existingList.isPublic != _isPublic &&
+        final visibilityChanged = existingList.isPublic != _isPublic;
+        if (visibilityChanged &&
             !await _confirmVisibilityChange(existingList.isPublic)) {
           return;
         }
@@ -260,8 +261,6 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
           return;
         }
 
-        final messenger = ScaffoldMessenger.of(context);
-        final failureMessage = context.l10n.listUpdateFailed;
         final updateFuture = listService.updateList(
           listId: existingList.id,
           name: name,
@@ -269,9 +268,28 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
           isPublic: _isPublic,
         );
 
-        // updateList applies local fields before waiting for the relay, and a
-        // visibility change can wait through the relay deadline. Close the
-        // editor now so a slow relay does not make the save look unresponsive.
+        // Visibility is the one field updateList holds back until a relay
+        // accepts the change, so a rejection means the switch the user flipped
+        // did not take. Wait for the answer and keep the editor open on
+        // failure, so that flip survives a retry.
+        if (visibilityChanged) {
+          final updated = await updateFuture;
+          if (!mounted) return;
+          if (updated) {
+            Navigator.of(context).pop();
+          } else {
+            _showSaveFailed();
+          }
+          return;
+        }
+
+        // Name and description are already stored locally before updateList
+        // awaits the relay, so nothing the user typed is riding on the answer.
+        // Close now rather than let a slow relay make the save look
+        // unresponsive; the messenger and message have to be resolved first
+        // because the pop can unmount this State.
+        final messenger = ScaffoldMessenger.of(context);
+        final failureMessage = context.l10n.listUpdateFailed;
         Navigator.of(context).pop();
 
         if (!await updateFuture && messenger.mounted) {
