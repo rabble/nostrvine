@@ -37,16 +37,19 @@ class ActorNotification extends NotificationItem {
   /// The actor who triggered this notification.
   final ActorInfo actor;
 
-  /// Optional text body (e.g. mention's surrounding text).
+  /// Optional row quote/context text.
+  ///
+  /// For comment-like rows this is the liked comment's body. For reply and
+  /// mention rows this is the source event's surrounding text/body.
   final String? commentText;
 
   /// Whether the current user already follows this actor back.
   final bool isFollowingBack;
 
-  /// Stable NIP-33 addressable ID (`34236:pubkey:d-tag`) of the video
-  /// context for [NotificationKind.likeComment] and
-  /// [NotificationKind.reply] notifications, when the server provided
-  /// the `d_tag` in the notification payload.
+  /// Stable NIP-33 addressable ID (`34236:pubkey:d-tag`) of the video context
+  /// for actor-anchored [NotificationKind.like],
+  /// [NotificationKind.likeComment], and [NotificationKind.reply]
+  /// notifications, when the server provided a usable root video coordinate.
   ///
   /// When set, the tap handler navigates directly to the video using
   /// this ID without a relay round-trip through the resolver.

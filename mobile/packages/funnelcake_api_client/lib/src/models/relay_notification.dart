@@ -115,9 +115,12 @@ class RelayNotification {
   /// Optional content from the source event (e.g. reaction emoji).
   final String? content;
 
-  /// Whether the referenced event is a video. Set when the API populates
-  /// `referenced_video` (only present for video kinds). Lets the client
-  /// distinguish a like on a video from a like on a comment.
+  /// Whether the API populated a `referenced_video` join result for the
+  /// notification's root video.
+  ///
+  /// This is enrichment metadata, not a reliable target-type signal: comment
+  /// likes can include it because their root is a video, and video likes can
+  /// omit it when that root video fails to resolve.
   final bool isReferencedVideo;
 
   /// Title of the referenced video, when the referenced event is a video

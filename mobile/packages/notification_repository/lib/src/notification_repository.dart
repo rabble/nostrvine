@@ -1962,8 +1962,8 @@ class NotificationRepository {
 
   /// Returns the `targetEventId` for an actor-anchored notification.
   ///
-  /// - anchorless `like` → the reaction event ID (resolver follows its
-  ///   address tag to the video).
+  /// - anchorless `like` → the reaction event ID (resolver follows its `a` tag
+  ///   to the video when no recipient-owned root coordinate is available).
   /// - `likeComment`/`reply` → the referenced comment event ID (resolver
   ///   walks its E-tags to reach the root video).
   /// - `mention` → the source event ID (the kind-1 event that mentioned
@@ -2079,9 +2079,12 @@ class NotificationRepository {
   /// Returns the stable NIP-33 addressable ID for an actor-anchored
   /// notification, when the server provided the root video's full coordinate.
   ///
-  /// Populated for anchorless `like`, `likeComment`, and `reply` rows — the
-  /// tap handler uses it to navigate directly to the video without a relay
-  /// round-trip.
+  /// Populated for actor-anchored rows only when the coordinate is usable for
+  /// that row's ownership claim. Anchorless `like` rows render "liked your
+  /// video", so their direct route must name the notification recipient's own
+  /// video. `likeComment` and `reply` rows may legitimately route to a foreign
+  /// root video because the notification is about the recipient's comment on
+  /// that video.
   ///
   /// Used by the page-load path ([_mapActorAnchored]).
   String? _actorVideoAddressableId(
@@ -2093,7 +2096,16 @@ class NotificationRepository {
         mapped != NotificationKind.reply) {
       return null;
     }
-    return _nonEmpty(notification.rootAddressableId);
+    final addressableId = _nonEmpty(notification.rootAddressableId);
+    if (addressableId == null) return null;
+    final parsed = _parseAddressableId(addressableId);
+    if (parsed == null) return null;
+    if (!NIP71VideoKinds.isVideoKind(parsed.kind)) return null;
+    if (parsed.pubkey.isEmpty || parsed.dTag.isEmpty) return null;
+    if (mapped == NotificationKind.like && parsed.pubkey != _userPubkey) {
+      return null;
+    }
+    return addressableId;
   }
 
   bool _hasKnownReferencedVideoOwnerMismatch({

@@ -1409,6 +1409,68 @@ void main() {
       );
 
       test(
+        'anchorless actor like does not trust a foreign root coordinate',
+        () async {
+          const foreignRootAddressableId =
+              '34236:other_owner:addressable-video';
+          stubNotifications([
+            makeNotification(
+              sourcePubkey: 'pub_a',
+              sourceEventId: 'reaction_event',
+              referencedEventId: null,
+              rootAddressableId: foreignRootAddressableId,
+            ),
+          ]);
+          stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
+
+          final page = await repository.getNotifications();
+
+          expect(page.items, hasLength(1));
+          final item = page.items.single as ActorNotification;
+          expect(item.type, equals(NotificationKind.like));
+          expect(item.targetEventId, equals('reaction_event'));
+          expect(item.videoAddressableId, isNull);
+
+          final rows =
+              verify(
+                    () => notificationsDao.replaceAll(
+                      captureAny(),
+                      ownerPubkey: any(named: 'ownerPubkey'),
+                    ),
+                  ).captured.single
+                  as List<NotificationCacheRow>;
+          final row = rows.singleWhere((r) => r.type != 'seen_marker');
+          expect(row.type, equals('actorLike'));
+          expect(row.targetEventId, equals('reaction_event'));
+          expect(row.videoAddressableId, isNull);
+        },
+      );
+
+      test(
+        'likeComment can keep a foreign root coordinate for comment routing',
+        () async {
+          const foreignRootAddressableId =
+              '34236:other_owner:addressable-video';
+          stubNotifications([
+            makeNotification(
+              sourcePubkey: 'pub_a',
+              targetCommentId: 'comment_event',
+              rootAddressableId: foreignRootAddressableId,
+            ),
+          ]);
+          stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
+
+          final page = await repository.getNotifications();
+
+          expect(page.items, hasLength(1));
+          final item = page.items.single as ActorNotification;
+          expect(item.type, equals(NotificationKind.likeComment));
+          expect(item.targetEventId, equals('comment_event'));
+          expect(item.videoAddressableId, equals(foreignRootAddressableId));
+        },
+      );
+
+      test(
         'getVideoStats throws → row still rendered with null thumbnail',
         () async {
           stubNotifications([
