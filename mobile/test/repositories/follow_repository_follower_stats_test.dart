@@ -40,6 +40,7 @@ FollowRepository _createRepository({
   when(
     () => nostrClient.subscribe(any()),
   ).thenAnswer((_) => const Stream<Event>.empty());
+  when(() => nostrClient.queryEvents(any())).thenAnswer((_) async => []);
 
   // Mock REST API response.
   when(() => apiClient.isAvailable).thenReturn(true);
@@ -48,6 +49,20 @@ FollowRepository _createRepository({
       pubkey: _testPubkey,
       followerCount: restFollowers,
       followingCount: restFollowing,
+    ),
+  );
+  when(
+    () => apiClient.getFollowers(
+      pubkey: _testPubkey,
+      limit: any(named: 'limit'),
+    ),
+  ).thenAnswer(
+    (_) async => PaginatedPubkeys(
+      pubkeys: List.generate(
+        restFollowers,
+        (index) => index.toRadixString(16).padLeft(64, '0'),
+      ),
+      total: restFollowers,
     ),
   );
 
@@ -132,6 +147,12 @@ void main() {
         when(
           () => apiClient.getSocialCounts(_testPubkey),
         ).thenThrow(Exception('network down'));
+        when(
+          () => apiClient.getFollowers(
+            pubkey: _testPubkey,
+            limit: any(named: 'limit'),
+          ),
+        ).thenThrow(Exception('network down'));
 
         final stats = await repository.getFollowerStats(_testPubkey);
 
@@ -199,31 +220,40 @@ void main() {
         expect(stats.following, equals(10));
       });
 
-      test('accepts lower count when persisted data is stale', () async {
-        final apiClient = _MockFunnelcakeApiClient();
-        final dao = _MockProfileStatsDao();
-        // Persisted 2 hours ago — stale.
-        final staleTimestamp = DateTime.now().subtract(
-          const Duration(hours: 2),
-        );
-        final repository = _createRepository(
-          apiClient: apiClient,
-          dao: dao,
-          restFollowers: 85,
-          restFollowing: 18,
-          persistedRow: _persistedRow(
-            followers: 100,
-            following: 20,
-            cachedAt: staleTimestamp,
-          ),
-        );
+      test(
+        'keeps stale persisted count when fresh fetch is incomplete',
+        () async {
+          final apiClient = _MockFunnelcakeApiClient();
+          final dao = _MockProfileStatsDao();
+          // Persisted more than a day ago, but the REST follower-list fetch is
+          // incomplete. Age alone must not allow a lower count to overwrite it.
+          final staleTimestamp = DateTime.now().subtract(
+            const Duration(days: 1, hours: 1),
+          );
+          final repository = _createRepository(
+            apiClient: apiClient,
+            dao: dao,
+            restFollowers: 85,
+            restFollowing: 18,
+            persistedRow: _persistedRow(
+              followers: 100,
+              following: 20,
+              cachedAt: staleTimestamp,
+            ),
+          );
+          when(
+            () => apiClient.getFollowers(
+              pubkey: _testPubkey,
+              limit: any(named: 'limit'),
+            ),
+          ).thenThrow(Exception('followers list timeout'));
 
-        final stats = await repository.getFollowerStats(_testPubkey);
+          final stats = await repository.getFollowerStats(_testPubkey);
 
-        // Stale → accept fresh count even though it's within threshold.
-        expect(stats.followers, equals(85));
-        expect(stats.following, equals(18));
-      });
+          expect(stats.followers, equals(100));
+          expect(stats.following, equals(20));
+        },
+      );
 
       test('does not apply hysteresis when no persisted data exists', () async {
         final apiClient = _MockFunnelcakeApiClient();

@@ -4640,7 +4640,7 @@ void main() {
         };
       }
 
-      group('_fetchFollowersCountViaIndexers', () {
+      group('indexer follower stats', () {
         test(
           'returns follower count from indexer relay',
           () async {
@@ -5099,7 +5099,7 @@ void main() {
               },
             );
 
-            // getFollowerStats triggers _fetchFollowersCountViaIndexers
+            // getFollowerStats triggers the indexer follower pubkey query
             // which times out and returns partial results
             final stats = await repository.getFollowerStats(
               testTargetPubkey,
