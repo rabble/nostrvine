@@ -1,15 +1,38 @@
 // ABOUTME: Tests for UserDataCleanupService identity change detection and cleanup
 // ABOUTME: Validates that user-specific data is cleared when switching accounts
 
+import 'package:creator_sync/creator_sync.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/services/creator_sync/prefs_sync_state_store.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+class _MockSyncIndexClient extends Mock implements SyncIndexClient {}
+
+/// A [LocalSoundStore] that is always empty, standing in for a device whose
+/// saved-sounds bucket has already been wiped by cleanup.
+class _EmptyLocalSoundStore implements LocalSoundStore {
+  @override
+  Future<Map<String, Map<String, dynamic>>> readAll() async => {};
+
+  @override
+  Future<void> upsert(String id, Map<String, dynamic> body) async {}
+
+  @override
+  Future<void> remove(String id) async {}
+}
 
 void main() {
   group('UserDataCleanupService', () {
     late SharedPreferences prefs;
     late UserDataCleanupService service;
+
+    setUpAll(() {
+      registerFallbackValue(const SyncItemRef(SyncItemKind.sound, 'x'));
+      registerFallbackValue(SyncIndexEntry.tombstone());
+    });
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
@@ -211,6 +234,101 @@ void main() {
         // A switch (not a delete) preserves the library for switching back.
         expect(prefs.containsKey(bucketKey), isTrue);
       });
+
+      test(
+        'clears the creator-sync cursor alongside the saved-sounds bucket '
+        'on destructive account delete',
+        () async {
+          const pubkey =
+              'a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456';
+          final cursorKey = PrefsSyncStateStore.appliedStorageKey(
+            SyncItemKind.sound,
+            pubkey,
+          );
+          await prefs.setString(
+            cursorKey,
+            '{"divine:sync:sound:s1":'
+            '{"createdAt":1000,"bodyHash":"h"}}',
+          );
+
+          await service.clearUserSpecificData(
+            deleteUserData: true,
+            userPubkey: pubkey,
+          );
+
+          expect(prefs.containsKey(cursorKey), isFalse);
+        },
+      );
+
+      test(
+        'keeps the creator-sync cursor on a plain account switch',
+        () async {
+          const pubkey =
+              'a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456';
+          final cursorKey = PrefsSyncStateStore.appliedStorageKey(
+            SyncItemKind.sound,
+            pubkey,
+          );
+          await prefs.setString(
+            cursorKey,
+            '{"divine:sync:sound:s1":'
+            '{"createdAt":1000,"bodyHash":"h"}}',
+          );
+
+          await service.clearUserSpecificData(
+            isIdentityChange: true,
+            userPubkey: pubkey,
+          );
+
+          expect(prefs.containsKey(cursorKey), isTrue);
+        },
+      );
+
+      test(
+        'does not let a reconcile after destructive cleanup mistake a '
+        'wiped local cache for a mass delete',
+        () async {
+          const pubkey =
+              'a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456';
+          // This device had already fully synced a 3-sound library before
+          // the destructive cleanup below wipes its saved-sounds bucket.
+          await PrefsSyncStateStore(
+            prefs,
+            pubkeyHex: pubkey,
+          ).writeApplied(SyncItemKind.sound, {
+            for (final id in ['s1', 's2', 's3'])
+              'divine:sync:sound:$id': SyncItemState(
+                createdAt: 1000,
+                bodyHash: syncBodyHash({'label': id}),
+              ),
+          });
+
+          await service.clearUserSpecificData(
+            deleteUserData: true,
+            userPubkey: pubkey,
+          );
+
+          final index = _MockSyncIndexClient();
+          when(
+            () => index.fetch(SyncItemKind.sound, since: any(named: 'since')),
+          ).thenAnswer((_) async => []);
+          final repository = SoundSyncRepository(
+            index: index,
+            state: PrefsSyncStateStore(prefs, pubkeyHex: pubkey),
+            local: _EmptyLocalSoundStore(),
+          );
+
+          await repository.reconcile();
+
+          verifyNever(
+            () => index.publish(
+              any(),
+              any(),
+              latestKnownRemote: any(named: 'latestKnownRemote'),
+            ),
+          );
+        },
+      );
 
       test('marks legacy draft owner only when legacy drafts exist', () async {
         await service.markOwnerScopedLegacyDataForUser('abc123');

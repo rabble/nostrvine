@@ -17,7 +17,16 @@ class PrefsSyncStateStore implements SyncStateStore {
 
   static const String _keyPrefix = 'creator_sync_applied';
 
-  String _keyFor(SyncItemKind kind) => '${_keyPrefix}_${kind.name}_$_pubkeyHex';
+  /// The SharedPreferences key storing [kind]'s applied cursor for
+  /// [pubkeyHex].
+  ///
+  /// Exposed so callers that need to remove the cursor without holding a
+  /// [PrefsSyncStateStore] instance (e.g. account-data cleanup) don't have
+  /// to duplicate the key format.
+  static String appliedStorageKey(SyncItemKind kind, String pubkeyHex) =>
+      '${_keyPrefix}_${kind.name}_$pubkeyHex';
+
+  String _keyFor(SyncItemKind kind) => appliedStorageKey(kind, _pubkeyHex);
 
   /// A malformed root (bad JSON, or JSON that isn't an object) discards the
   /// whole cursor and returns an empty map. This is not benign: an empty
