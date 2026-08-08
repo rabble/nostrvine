@@ -14,7 +14,7 @@ import 'package:openvine/notifications/widgets/notification_leading_type_icon.da
 import 'package:openvine/widgets/user_avatar.dart';
 
 /// Displays a single actor-anchored notification row (follow / mention /
-/// likeComment / reply / system).
+/// like / likeComment / reply / system).
 class ActorNotificationRow extends StatelessWidget {
   /// Creates an [ActorNotificationRow].
   const ActorNotificationRow({
@@ -236,6 +236,7 @@ String _messageFor(
 ) {
   return switch (type) {
     NotificationKind.follow => l10n.notificationStartedFollowing(actorName),
+    NotificationKind.like => l10n.notificationLikedYourVideo(actorName),
     NotificationKind.mention => l10n.notificationMentionedYou(actorName),
     NotificationKind.likeComment => l10n.notificationLikedYourComment(
       actorName,
@@ -244,7 +245,6 @@ String _messageFor(
     // newPost is video-anchored and never renders through the actor row;
     // listed here for switch exhaustivity only.
     NotificationKind.system ||
-    NotificationKind.like ||
     NotificationKind.comment ||
     NotificationKind.repost ||
     NotificationKind.newPost ||

@@ -776,8 +776,8 @@ class NotificationRepository {
       );
     }
 
-    // Actor-anchored kinds — `follow`, `mention`, `likeComment`, `reply`,
-    // `system` (and unknown future types fall through to `system`).
+    // Actor-anchored kinds — `follow`, `actorLike`, `mention`, `likeComment`,
+    // `reply`, `system` (and unknown future types fall through to `system`).
     return ActorNotification(
       id: row.id,
       type: _actorKindFromCachedType(row.type),
@@ -814,6 +814,7 @@ class NotificationRepository {
   static NotificationKind _actorKindFromCachedType(String type) =>
       switch (type) {
         'follow' => NotificationKind.follow,
+        'actorLike' => NotificationKind.like,
         'mention' => NotificationKind.mention,
         'likeComment' => NotificationKind.likeComment,
         'reply' => NotificationKind.reply,
@@ -917,6 +918,7 @@ class NotificationRepository {
   /// Inverse of [_videoKindFromCachedType] plus [_actorKindFromCachedType].
   static String _persistType(NotificationItem item) => switch (item) {
     VideoNotification(type: NotificationKind.mention) => 'videoMention',
+    ActorNotification(type: NotificationKind.like) => 'actorLike',
     NotificationItem(:final type) => _persistKind(type),
   };
 
@@ -1784,7 +1786,8 @@ class NotificationRepository {
     RelayNotification notification,
   ) => _isVideoAnchoredKind(kind) || _isVideoSourcedMention(notification);
 
-  /// Builds [ActorNotification]s for follow/mention/system kinds.
+  /// Builds [ActorNotification]s for follow/mention/system kinds and
+  /// reactions that have no concrete video event ID.
   ///
   /// `reply` and other unmapped kinds are also routed here as
   /// [ActorNotification] — they don't have a clean video anchor, so we
@@ -1796,14 +1799,21 @@ class NotificationRepository {
     final result = <ActorNotification>[];
     for (final n in raw) {
       final kind = _mapNotificationKind(n);
-      // Skip kinds that became VideoNotifications.
-      if (_isVideoAnchoredKind(kind) || _isVideoSourcedMention(n)) {
+      final isAnchorlessLike =
+          kind == NotificationKind.like &&
+          _nonEmpty(_videoAnchorEventId(kind, n)) == null;
+      // Skip kinds that became VideoNotifications. An a-tag-only reaction has
+      // no event ID to group on, so keep it as an actor-backed like instead of
+      // silently dropping it from both pipelines.
+      if ((_isVideoAnchoredKind(kind) && !isAnchorlessLike) ||
+          _isVideoSourcedMention(n)) {
         continue;
       }
-      // ActorNotification supports follow/mention/system/likeComment/reply;
-      // coerce any other kind to system.
+      // ActorNotification supports follow/like/mention/system/likeComment/
+      // reply; coerce any other kind to system.
       final mapped =
           (kind == NotificationKind.follow ||
+              kind == NotificationKind.like ||
               kind == NotificationKind.mention ||
               kind == NotificationKind.system ||
               kind == NotificationKind.likeComment ||
@@ -1868,13 +1878,17 @@ class NotificationRepository {
     NotificationKind? commentKind,
     String? targetEventId,
   }) {
+    final quoteKind = commentKind ?? type;
     return ActorNotification(
       id: notification.dedupeKey,
       type: type,
       actor: _buildActor(notification.sourcePubkey, profiles),
       timestamp: notification.createdAt,
       isRead: notification.read,
-      commentText: _truncateComment(notification.content, commentKind ?? type),
+      commentText: _truncateComment(
+        _commentQuoteSource(notification, quoteKind),
+        quoteKind,
+      ),
       targetEventId: targetEventId ?? _actorTargetEventId(type, notification),
       sourceEventIds: notification.sourceEventId.isNotEmpty
           ? [notification.sourceEventId]
@@ -1886,6 +1900,20 @@ class NotificationRepository {
       hasCommentTarget: _actorHasCommentTarget(type, notification),
     );
   }
+
+  /// Raw text a row quotes beneath its message, before truncation.
+  ///
+  /// `comment` and `reply` quote the source event's own body. A
+  /// `likeComment` row instead quotes the comment that was liked: its
+  /// source event is a kind 7 reaction whose `content` is just the emoji,
+  /// so without `comment_content` the row states that someone liked a
+  /// comment while naming neither the comment nor its video.
+  static String? _commentQuoteSource(
+    RelayNotification notification,
+    NotificationKind kind,
+  ) => kind == NotificationKind.likeComment
+      ? notification.commentContent
+      : notification.content;
 
   static bool _actorHasCommentTarget(
     NotificationKind type,
@@ -1934,6 +1962,8 @@ class NotificationRepository {
 
   /// Returns the `targetEventId` for an actor-anchored notification.
   ///
+  /// - anchorless `like` → the reaction event ID (resolver follows its `a` tag
+  ///   to the video when no recipient-owned root coordinate is available).
   /// - `likeComment`/`reply` → the referenced comment event ID (resolver
   ///   walks its E-tags to reach the root video).
   /// - `mention` → the source event ID (the kind-1 event that mentioned
@@ -1945,6 +1975,8 @@ class NotificationRepository {
     NotificationKind mapped,
     RelayNotification n,
   ) => switch (mapped) {
+    NotificationKind.like =>
+      n.sourceEventId.isNotEmpty ? n.sourceEventId : null,
     NotificationKind.likeComment || NotificationKind.reply =>
       // Prefer the explicit parent comment ID. Some Funnelcake reply payloads
       // carry the root video in referenced_event_id and the actual parent
@@ -2047,19 +2079,33 @@ class NotificationRepository {
   /// Returns the stable NIP-33 addressable ID for an actor-anchored
   /// notification, when the server provided the root video's full coordinate.
   ///
-  /// Only populated for `likeComment` and `reply` — the tap handler uses
-  /// it to navigate directly to the video without a relay round-trip.
+  /// Populated for actor-anchored rows only when the coordinate is usable for
+  /// that row's ownership claim. Anchorless `like` rows render "liked your
+  /// video", so their direct route must name the notification recipient's own
+  /// video. `likeComment` and `reply` rows may legitimately route to a foreign
+  /// root video because the notification is about the recipient's comment on
+  /// that video.
   ///
   /// Used by the page-load path ([_mapActorAnchored]).
   String? _actorVideoAddressableId(
     NotificationKind mapped,
     RelayNotification notification,
   ) {
-    if (mapped != NotificationKind.likeComment &&
+    if (mapped != NotificationKind.like &&
+        mapped != NotificationKind.likeComment &&
         mapped != NotificationKind.reply) {
       return null;
     }
-    return _nonEmpty(notification.rootAddressableId);
+    final addressableId = _nonEmpty(notification.rootAddressableId);
+    if (addressableId == null) return null;
+    final parsed = _parseAddressableId(addressableId);
+    if (parsed == null) return null;
+    if (!NIP71VideoKinds.isVideoKind(parsed.kind)) return null;
+    if (parsed.pubkey.isEmpty || parsed.dTag.isEmpty) return null;
+    if (mapped == NotificationKind.like && parsed.pubkey != _userPubkey) {
+      return null;
+    }
+    return addressableId;
   }
 
   bool _hasKnownReferencedVideoOwnerMismatch({
@@ -2263,10 +2309,24 @@ class NotificationRepository {
   /// so the UI can render "liked your comment" instead of "liked your
   /// video". A comment target is identified by a non-empty
   /// `targetCommentId`, which Funnelcake sets to the comment's event ID
-  /// for reactions on a kind 1111 comment. `isReferencedVideo` cannot be
-  /// used for this split: Funnelcake populates `referenced_video` from the
-  /// notification's root video, so it is set for a like on a comment (whose
-  /// root is that video) exactly as it is for a like on the video itself.
+  /// for reactions on a kind 1111 comment. That signal is the *only* one
+  /// used for the split.
+  ///
+  /// `isReferencedVideo` deliberately plays no part. It reports whether
+  /// Funnelcake managed to attach a `referenced_video` block, which it
+  /// builds from the notification's *root* video — so it is set for a like
+  /// on a comment (whose root is that video) exactly as it is for a like on
+  /// the video itself, and it is unset whenever the root video simply
+  /// failed to resolve. Treating its absence as evidence of a comment
+  /// target relabelled ordinary video likes as "liked your comment"
+  /// whenever the video was unindexed or deleted.
+  ///
+  /// A reaction on a comment that Funnelcake could not resolve leaves
+  /// `targetCommentId` empty and so lands here as [NotificationKind.like].
+  /// That residual case is caught downstream by
+  /// [_hasKnownReferencedVideoOwnerMismatch], which reclassifies it to
+  /// `likeComment` once a confirmed metadata 404 plus a foreign
+  /// `root_event_pubkey` prove the anchor is not the user's own video.
   ///
   /// Replies (kind 1111) split by the immediate target, not by whether the
   /// payload also carries root video metadata. A reply directly on a video
@@ -2283,10 +2343,9 @@ class NotificationRepository {
       final targetCommentId = n.targetCommentId;
       final targetsComment =
           targetCommentId != null && targetCommentId.isNotEmpty;
-      if (targetsComment) return NotificationKind.likeComment;
-      return n.isReferencedVideo
-          ? NotificationKind.like
-          : NotificationKind.likeComment;
+      return targetsComment
+          ? NotificationKind.likeComment
+          : NotificationKind.like;
     }
     if (_isNestedCommentReply(n)) {
       return NotificationKind.reply;
@@ -2420,7 +2479,9 @@ class NotificationRepository {
   /// Truncates comment text to [_maxCommentLength] characters, except for
   /// bounded leading Nostr references that the UI can resolve.
   ///
-  /// Only applies to comment and reply notifications.
+  /// Only applies to the kinds that render a quote: comment, reply, and
+  /// likeComment. Pair it with [_commentQuoteSource], which picks the text
+  /// each kind should quote.
   ///
   /// The cut avoids splitting a Nostr reference the UI can decode — bech32
   /// (`npub1...`, `nprofile1...`, `note1...`, `nevent1...`, `naddr1...`) or a
@@ -2430,7 +2491,9 @@ class NotificationRepository {
   /// intact lets the UI linkifier resolve it to `@<name>`.
   static String? _truncateComment(String? content, NotificationKind kind) {
     if (content == null) return null;
-    if (kind != NotificationKind.comment && kind != NotificationKind.reply) {
+    if (kind != NotificationKind.comment &&
+        kind != NotificationKind.reply &&
+        kind != NotificationKind.likeComment) {
       return null;
     }
     if (content.length <= _maxCommentLength) return content;

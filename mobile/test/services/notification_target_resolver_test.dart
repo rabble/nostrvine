@@ -109,6 +109,31 @@ void main() {
     );
 
     test(
+      'resolves addressable video from NIP-25 lowercase a tag on reaction',
+      () async {
+        const rootAddressableId =
+            '34236:'
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+            ':vine-stable-id';
+
+        when(
+          () => videoEventService.getVideoById('reaction_with_a'),
+        ).thenReturn(null);
+        when(() => nostrClient.fetchEventById('reaction_with_a')).thenAnswer(
+          (_) async => Event('b' * 64, 7, const [
+            ['a', rootAddressableId],
+            ['k', '34236'],
+          ], '+'),
+        );
+
+        final resolved = await resolver
+            .resolveVideoEventIdFromNotificationTarget('reaction_with_a');
+
+        expect(resolved, equals(rootAddressableId));
+      },
+    );
+
+    test(
       'resolves root video from NIP-22 uppercase E tag on top-level comment',
       () async {
         const rootVideoId = 'root_video_toplevel';
