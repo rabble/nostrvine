@@ -207,6 +207,14 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
   }
 
   @override
+  void didUpdateWidget(_LibraryView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // selectionMode and tabsMode decide the tab count, so a flip needs a
+    // matching controller before build renders the TabBar against it.
+    if (syncTabController()) _activeTabIndex = tabController.index;
+  }
+
+  @override
   void onTabChanged() {
     if (!mounted) return;
     if (_activeTabIndex == tabController.index) return;

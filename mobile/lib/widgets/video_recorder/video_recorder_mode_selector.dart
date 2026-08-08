@@ -103,7 +103,10 @@ class _VideoRecorderModeSelectorWheelState
     _scrollController.jumpTo(_snapOffsets[index]);
   }
 
-  Future<void> _animateTo(int index) async {
+  /// Scrolls the wheel to centre [index], animating unless reduced motion is
+  /// on. Unlike [_jumpTo] it holds [_isSnapping] for the whole move, so the
+  /// scroll it drives doesn't re-enter [_snapToNearest].
+  Future<void> _moveTo(int index) async {
     if (!_scrollController.hasClients) return;
     _isSnapping = true;
 
@@ -152,7 +155,7 @@ class _VideoRecorderModeSelectorWheelState
   }
 
   void _selectIndex(int index, {bool animate = false}) {
-    if (animate) _animateTo(index);
+    if (animate) _moveTo(index);
     if (index == _selectedIndex) return;
     setState(() => _selectedIndex = index);
     HapticFeedback.selectionClick();
@@ -294,7 +297,7 @@ class _VideoRecorderModeSelectorWheelState
                             behavior: HitTestBehavior.opaque,
                             onTap: () {
                               _selectIndex(i, animate: true);
-                              if (!_isSnapping) _animateTo(i);
+                              if (!_isSnapping) _moveTo(i);
                             },
                             child: Center(
                               child: AnimatedDefaultTextStyle(
