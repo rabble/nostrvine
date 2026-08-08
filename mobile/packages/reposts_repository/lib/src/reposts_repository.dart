@@ -1078,7 +1078,17 @@ class RepostsRepository {
     );
 
     _repostRecords[addressableId] = record;
-    unawaited(_localStorage?.saveRepostRecord(record));
+    // Best-effort: `unawaited` attaches no error handler, so a raw rejection
+    // here would surface as an uncaught async error in the app's zone guard
+    // and reach Crashlytics as exactly the expected-IO noise the decision
+    // matrix keeps out.
+    unawaited(
+      _bestEffortLocalStorage(
+        () async => _localStorage?.saveRepostRecord(record),
+        description: 'saving a repost from the live subscription',
+        site: RepostsRepositoryReportableSites.processIncomingRepostSaveRecord,
+      ),
+    );
     _emitRepostedIds();
   }
 

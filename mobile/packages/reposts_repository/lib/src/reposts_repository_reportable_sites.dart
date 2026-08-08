@@ -55,4 +55,9 @@ abstract class RepostsRepositoryReportableSites {
   /// `initialize`: the startup read of persisted records threw, so the
   /// session continues on an in-memory-only cache.
   static const String initializeLoadRecords = 'initialize.loadRecords';
+
+  /// `_processIncomingRepost`: persisting a repost that arrived on the live
+  /// cross-device subscription threw.
+  static const String processIncomingRepostSaveRecord =
+      'processIncomingRepost.saveRecord';
 }

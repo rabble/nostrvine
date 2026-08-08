@@ -2042,7 +2042,18 @@ class LikesRepository {
       );
 
       _indexLikeRecord(record);
-      unawaited(_localStorage?.saveLikeRecord(record));
+      // Best-effort: `unawaited` attaches no error handler, so a raw
+      // rejection here would surface as an uncaught async error in the app's
+      // zone guard and reach Crashlytics as exactly the expected-IO noise the
+      // decision matrix keeps out.
+      unawaited(
+        _bestEffortLocalStorage(
+          () async => _localStorage?.saveLikeRecord(record),
+          description: 'saving a reaction from the live subscription',
+          site:
+              LikesRepositoryReportableSites.processIncomingReactionSaveRecord,
+        ),
+      );
       _emitLikedIds();
     } else if (event.content == _downvoteContent) {
       // Deduplicate downvotes (in-memory only — no local persistence in v1)

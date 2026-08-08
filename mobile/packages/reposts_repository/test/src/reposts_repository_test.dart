@@ -627,6 +627,44 @@ void main() {
           ),
         ).called(1);
       });
+
+      test('caches a subscription repost when its write fails', () async {
+        // The write is fire-and-forget, so an unguarded rejection would be
+        // an uncaught async error rather than a swallowed cache miss.
+        final controller = StreamController<Event>();
+        addTearDown(controller.close);
+        when(
+          () => mockLocalStorage.saveRepostRecord(any()),
+        ).thenThrow(storageFailure);
+        when(() => mockNostrClient.hasKeys).thenReturn(true);
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => controller.stream);
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+        await repository.initialize();
+
+        controller.add(
+          createMockEvent(
+            id: testRepostEventId,
+            kind: EventKind.genericRepost,
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            tags: [
+              ['a', testAddressableId],
+              ['p', testAuthorPubkey],
+            ],
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(repository.isRepostedSync(testAddressableId), isTrue);
+      });
     });
 
     group('repostVideo', () {

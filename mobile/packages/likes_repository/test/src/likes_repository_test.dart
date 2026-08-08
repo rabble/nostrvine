@@ -564,6 +564,38 @@ void main() {
           ),
         ).called(1);
       });
+
+      test('caches a subscription reaction when its write fails', () async {
+        // The write is fire-and-forget, so an unguarded rejection would be
+        // an uncaught async error rather than a swallowed cache miss.
+        const targetId = 'live_target_1234567890abcdef';
+        final controller = StreamController<Event>();
+        addTearDown(controller.close);
+        final reaction = createMockReaction(
+          id: 'live_reaction_1234567890abcdef',
+          targetEventId: targetId,
+          authorPubkey: testUserPubkey,
+        );
+        when(() => reaction.kind).thenReturn(EventKind.reaction);
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenThrow(storageFailure);
+        when(() => mockNostrClient.hasKeys).thenReturn(true);
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => controller.stream);
+
+        repository = createRepository();
+        await repository.initialize();
+
+        controller.add(reaction);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(await repository.isLiked(targetId), isTrue);
+      });
     });
 
     group('likeEvent', () {
