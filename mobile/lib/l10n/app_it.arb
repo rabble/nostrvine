@@ -2896,7 +2896,6 @@
     "libraryTrashDeleteConfirmMessage": "Questo rimuove subito la clip dal cestino.",
     "libraryTrashEmptyConfirmTitle": "Svuotare il cestino?",
     "libraryTrashEmptyConfirmMessage": "Questo elimina definitivamente dal cestino {count, plural, =1{1 clip} other{{count} clip}} subito.",
-    "libraryTrashEntryLabel": "Eliminati di recente",
     "videoRecorderCloseLabel": "Chiudi registratore video",
     "videoRecorderContinueToEditorLabel": "Continua all'editor video",
     "videoRecorderCaptureCloseLabel": "Chiudi",

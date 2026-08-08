@@ -8052,9 +8052,6 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => '最近删除';
-
-  @override
   String get videoRecorderCloseLabel => '关闭录像机';
 
   @override

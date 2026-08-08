@@ -8550,9 +8550,6 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => 'Наскоро изтрити';
-
-  @override
   String get videoRecorderCloseLabel => 'Затворете видеорекордер';
 
   @override

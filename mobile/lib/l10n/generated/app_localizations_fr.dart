@@ -8586,9 +8586,6 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => 'Récemment supprimés';
-
-  @override
   String get videoRecorderCloseLabel => 'Fermer l\'enregistreur vidéo';
 
   @override

@@ -8132,9 +8132,6 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => '최근 삭제된 항목';
-
-  @override
   String get videoRecorderCloseLabel => '동영상 녹화기 닫기';
 
   @override

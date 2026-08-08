@@ -2896,7 +2896,6 @@
     "libraryTrashDeleteConfirmMessage": "Cela retire le clip de la corbeille tout de suite.",
     "libraryTrashEmptyConfirmTitle": "Vider la corbeille ?",
     "libraryTrashEmptyConfirmMessage": "Cela supprime définitivement de la corbeille {count, plural, =1{1 clip} other{{count} clips}} tout de suite.",
-    "libraryTrashEntryLabel": "Récemment supprimés",
     "videoRecorderCloseLabel": "Fermer l'enregistreur vidéo",
     "videoRecorderContinueToEditorLabel": "Continuer vers l'éditeur vidéo",
     "videoRecorderCaptureCloseLabel": "Fermer",

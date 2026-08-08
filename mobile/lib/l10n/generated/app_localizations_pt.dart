@@ -8534,9 +8534,6 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => 'Excluídos recentemente';
-
-  @override
   String get videoRecorderCloseLabel => 'Fechar gravador de vídeo';
 
   @override

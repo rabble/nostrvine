@@ -5113,10 +5113,6 @@
       }
     }
   },
-  "libraryTrashEntryLabel": "حال میں حذف شدہ",
-  "@libraryTrashEntryLabel": {
-    "description": "Menu/button label on the library screen that opens the trash view."
-  },
   "videoRecorderCloseLabel": "ویڈیو ریکارڈر بند کریں",
   "videoRecorderContinueToEditorLabel": "ویڈیو ایڈیٹر پر جائیں",
   "videoRecorderCaptureCloseLabel": "بند کریں",

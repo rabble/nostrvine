@@ -8572,9 +8572,6 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => 'Kamakailan lang na nabura';
-
-  @override
   String get videoRecorderCloseLabel => 'Isara ang video recorder';
 
   @override

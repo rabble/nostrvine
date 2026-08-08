@@ -2896,7 +2896,6 @@
     "libraryTrashDeleteConfirmMessage": "Dadurch wird der Clip sofort aus dem Papierkorb entfernt.",
     "libraryTrashEmptyConfirmTitle": "Papierkorb leeren?",
     "libraryTrashEmptyConfirmMessage": "{count, plural, =1{1 Clip} other{{count} Clips}} werden sofort dauerhaft aus dem Papierkorb gelöscht.",
-    "libraryTrashEntryLabel": "Kürzlich gelöscht",
     "videoRecorderCloseLabel": "Videorecorder schließen",
     "videoRecorderContinueToEditorLabel": "Zum Videoeditor weiter",
     "videoRecorderCaptureCloseLabel": "Schließen",

@@ -8297,9 +8297,6 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => 'በቅርቡ የተሰረዘ';
-
-  @override
   String get videoRecorderCloseLabel => 'የቪዲዮ መቅረጫ ዝጋ';
 
   @override

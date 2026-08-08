@@ -8412,9 +8412,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => 'المحذوفة مؤخرًا';
-
-  @override
   String get videoRecorderCloseLabel => 'إغلاق مسجل الفيديو';
 
   @override

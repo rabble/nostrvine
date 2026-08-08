@@ -8525,9 +8525,6 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => 'Baru dipadam';
-
-  @override
   String get videoRecorderCloseLabel => 'Tutup perakam video';
 
   @override

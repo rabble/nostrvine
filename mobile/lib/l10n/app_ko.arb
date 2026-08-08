@@ -2589,7 +2589,6 @@
     "libraryTrashDeleteConfirmMessage": "이 작업은 클립을 휴지통에서 바로 삭제합니다.",
     "libraryTrashEmptyConfirmTitle": "휴지통을 비울까요?",
     "libraryTrashEmptyConfirmMessage": "이 작업은 휴지통에서 {count, plural, =1{클립 1개} other{클립 {count}개}}를 바로 영구 삭제합니다.",
-    "libraryTrashEntryLabel": "최근 삭제된 항목",
     "videoRecorderCloseLabel": "동영상 녹화기 닫기",
     "videoRecorderContinueToEditorLabel": "동영상 편집기로 계속",
     "videoRecorderCycleTimerLabel": "타이머 전환",

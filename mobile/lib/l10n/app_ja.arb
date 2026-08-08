@@ -3251,7 +3251,6 @@
     "libraryTrashDeleteConfirmMessage": "これでクリップはゴミ箱からすぐに削除されます。",
     "libraryTrashEmptyConfirmTitle": "ゴミ箱を空にしますか？",
     "libraryTrashEmptyConfirmMessage": "これでゴミ箱から{count, plural, =1{1件のクリップ} other{{count}件のクリップ}}がすぐに完全に削除されます。",
-    "libraryTrashEntryLabel": "最近削除した項目",
     "videoRecorderCloseLabel": "動画レコーダーを閉じる",
     "videoRecorderContinueToEditorLabel": "動画エディタへ進む",
     "videoRecorderCycleTimerLabel": "タイマーを切り替え",

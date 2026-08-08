@@ -8475,9 +8475,6 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => 'حال میں حذف شدہ';
-
-  @override
   String get videoRecorderCloseLabel => 'ویڈیو ریکارڈر بند کریں';
 
   @override

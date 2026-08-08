@@ -8655,9 +8655,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => 'Șterse recent';
-
-  @override
   String get videoRecorderCloseLabel => 'Închide înregistratorul video';
 
   @override

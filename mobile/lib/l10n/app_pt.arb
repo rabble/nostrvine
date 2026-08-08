@@ -2896,7 +2896,6 @@
     "libraryTrashDeleteConfirmMessage": "Isso remove o clipe da lixeira imediatamente.",
     "libraryTrashEmptyConfirmTitle": "Esvaziar lixeira?",
     "libraryTrashEmptyConfirmMessage": "Isso exclui permanentemente da lixeira {count, plural, =1{1 clipe} other{{count} clipes}} agora mesmo.",
-    "libraryTrashEntryLabel": "Excluídos recentemente",
     "videoRecorderCloseLabel": "Fechar gravador de vídeo",
     "videoRecorderContinueToEditorLabel": "Continuar para o editor de vídeo",
     "videoRecorderCaptureCloseLabel": "Fechar",

@@ -3258,7 +3258,6 @@
     "libraryTrashDeleteConfirmMessage": "Bu işlem klibi hemen çöp kutusundan kaldırır.",
     "libraryTrashEmptyConfirmTitle": "Çöp kutusu boşaltılsın mı?",
     "libraryTrashEmptyConfirmMessage": "Bu işlem {count, plural, =1{1 klibi} other{{count} klibi}} hemen çöp kutusundan kalıcı olarak siler.",
-    "libraryTrashEntryLabel": "Son silinenler",
     "videoRecorderCloseLabel": "Video kaydediciyi kapat",
     "videoRecorderContinueToEditorLabel": "Video düzenleyiciye devam et",
     "videoRecorderCycleTimerLabel": "Zamanlayıcıyı değiştir",

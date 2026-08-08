@@ -3564,7 +3564,6 @@
     "libraryTrashDeleteConfirmMessage": "ይህ ክሊፑን ከቆሻሻ መጣያው ወዲያውኑ ያስወግደዋል።",
     "libraryTrashEmptyConfirmTitle": "ቆሻሻ መጣያውን ባዶ አድርግ?",
     "libraryTrashEmptyConfirmMessage": "{count, plural, =1{1 ክሊፕ} other{{count} ክሊፖች}} ከቆሻሻ መጣያው ወዲያውኑ በቋሚነት ይሰረዛሉ።",
-    "libraryTrashEntryLabel": "በቅርቡ የተሰረዘ",
     "videoRecorderCloseLabel": "የቪዲዮ መቅረጫ ዝጋ",
     "videoRecorderContinueToEditorLabel": "ወደ ቪዲዮ አርታዒ ይቀጥሉ",
     "videoRecorderCaptureCloseLabel": "ገጠመ",

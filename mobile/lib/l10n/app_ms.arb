@@ -5113,10 +5113,6 @@
       }
     }
   },
-  "libraryTrashEntryLabel": "Baru dipadam",
-  "@libraryTrashEntryLabel": {
-    "description": "Menu/button label on the library screen that opens the trash view."
-  },
   "videoRecorderCloseLabel": "Tutup perakam video",
   "videoRecorderContinueToEditorLabel": "Teruskan ke penyunting video",
   "videoRecorderCaptureCloseLabel": "Tutup",

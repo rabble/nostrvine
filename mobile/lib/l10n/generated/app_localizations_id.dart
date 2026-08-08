@@ -8429,9 +8429,6 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => 'Baru-baru ini dihapus';
-
-  @override
   String get videoRecorderCloseLabel => 'Tutup perekam video';
 
   @override

@@ -8650,9 +8650,6 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => 'Ostatnio usunięte';
-
-  @override
   String get videoRecorderCloseLabel => 'Zamknij rejestrator wideo';
 
   @override

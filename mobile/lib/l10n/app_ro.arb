@@ -2896,7 +2896,6 @@
     "libraryTrashDeleteConfirmMessage": "Asta scoate clipul din coș imediat.",
     "libraryTrashEmptyConfirmTitle": "Golești coșul?",
     "libraryTrashEmptyConfirmMessage": "Asta șterge definitiv din coș {count, plural, =1{1 clip} other{{count} clipuri}} imediat.",
-    "libraryTrashEntryLabel": "Șterse recent",
     "videoRecorderCloseLabel": "Închide înregistratorul video",
     "videoRecorderContinueToEditorLabel": "Continuă către editorul video",
     "videoRecorderCaptureCloseLabel": "Închide",

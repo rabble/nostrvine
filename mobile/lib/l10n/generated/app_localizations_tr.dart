@@ -8431,9 +8431,6 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => 'Son silinenler';
-
-  @override
   String get videoRecorderCloseLabel => 'Video kaydediciyi kapat';
 
   @override

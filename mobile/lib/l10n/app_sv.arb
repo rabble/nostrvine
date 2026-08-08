@@ -2896,7 +2896,6 @@
     "libraryTrashDeleteConfirmMessage": "Detta tar bort klippet från papperskorgen direkt.",
     "libraryTrashEmptyConfirmTitle": "Töm papperskorgen?",
     "libraryTrashEmptyConfirmMessage": "Detta raderar {count, plural, =1{1 klipp} other{{count} klipp}} permanent från papperskorgen direkt.",
-    "libraryTrashEntryLabel": "Nyligen borttagna",
     "videoRecorderCloseLabel": "Stäng videoinspelaren",
     "videoRecorderContinueToEditorLabel": "Fortsätt till videoredigeraren",
     "videoRecorderCaptureCloseLabel": "Stäng",

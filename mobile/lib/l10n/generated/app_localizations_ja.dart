@@ -8108,9 +8108,6 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => '最近削除した項目';
-
-  @override
   String get videoRecorderCloseLabel => '動画レコーダーを閉じる';
 
   @override

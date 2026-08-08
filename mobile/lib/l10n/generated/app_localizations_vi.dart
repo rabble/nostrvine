@@ -8478,9 +8478,6 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => 'Đã xóa gần đây';
-
-  @override
   String get videoRecorderCloseLabel => 'Đóng máy quay';
 
   @override

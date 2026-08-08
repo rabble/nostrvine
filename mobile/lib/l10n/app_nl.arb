@@ -2896,7 +2896,6 @@
     "libraryTrashDeleteConfirmMessage": "Hiermee wordt de clip meteen uit de prullenbak verwijderd.",
     "libraryTrashEmptyConfirmTitle": "Prullenbak legen?",
     "libraryTrashEmptyConfirmMessage": "Hiermee worden {count, plural, =1{1 clip} other{{count} clips}} meteen definitief uit de prullenbak verwijderd.",
-    "libraryTrashEntryLabel": "Recent verwijderd",
     "videoRecorderCloseLabel": "Videorecorder sluiten",
     "videoRecorderContinueToEditorLabel": "Doorgaan naar video-editor",
     "videoRecorderCaptureCloseLabel": "Sluiten",

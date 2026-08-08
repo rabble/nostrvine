@@ -2904,7 +2904,6 @@
     "libraryTrashDeleteConfirmMessage": "Esto elimina el clip de la papelera de inmediato.",
     "libraryTrashEmptyConfirmTitle": "¿Vaciar papelera?",
     "libraryTrashEmptyConfirmMessage": "Esto elimina permanentemente de la papelera {count, plural, =1{1 clip} other{{count} clips}} ahora mismo.",
-    "libraryTrashEntryLabel": "Eliminados recientemente",
     "videoRecorderCloseLabel": "Cerrar grabador de video",
     "videoRecorderContinueToEditorLabel": "Continuar al editor de video",
     "videoRecorderCaptureCloseLabel": "Cerrar",

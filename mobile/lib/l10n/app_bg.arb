@@ -3164,7 +3164,6 @@
     "libraryTrashDeleteConfirmMessage": "Това веднага премахва клипа от кошчето.",
     "libraryTrashEmptyConfirmTitle": "Да изпразня ли кошчето?",
     "libraryTrashEmptyConfirmMessage": "Това ще изтрие окончателно {count, plural, =1{1 клип} other{{count} клипа}} от кошчето веднага.",
-    "libraryTrashEntryLabel": "Наскоро изтрити",
     "videoRecorderCloseLabel": "Затворете видеорекордер",
     "videoRecorderContinueToEditorLabel": "Продължете към видеоредактора",
     "videoRecorderCaptureCloseLabel": "Затвори",

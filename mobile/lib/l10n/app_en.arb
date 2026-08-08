@@ -5104,10 +5104,6 @@
       }
     }
   },
-  "libraryTrashEntryLabel": "Recently deleted",
-  "@libraryTrashEntryLabel": {
-    "description": "Menu/button label on the library screen that opens the trash view."
-  },
   "videoRecorderCloseLabel": "Close video recorder",
   "videoRecorderContinueToEditorLabel": "Continue to video editor",
   "videoRecorderCaptureCloseLabel": "Close",

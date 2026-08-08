@@ -14598,12 +14598,6 @@ abstract class AppLocalizations {
   /// **'This permanently deletes {count, plural, =1{1 clip} other{{count} clips}} from trash right away.'**
   String libraryTrashEmptyConfirmMessage(int count);
 
-  /// Menu/button label on the library screen that opens the trash view.
-  ///
-  /// In en, this message translates to:
-  /// **'Recently deleted'**
-  String get libraryTrashEntryLabel;
-
   /// No description provided for @videoRecorderCloseLabel.
   ///
   /// In en, this message translates to:
