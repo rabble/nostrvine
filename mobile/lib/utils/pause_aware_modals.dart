@@ -32,6 +32,15 @@ extension PauseAwareModals on BuildContext {
   /// Calls [OverlayVisibility.setPageOpen(true)] before pushing and
   /// [setPageOpen(false)] when the pushed route is popped.
   /// This releases all video players to free memory.
+  ///
+  /// The returned future only completes on a **pop**: go_router completes an
+  /// `ImperativeRouteMatch` from `_completeRouteMatch`, which runs on the pop
+  /// path alone, so a `go()` that rebuilds the match list removes the route and
+  /// drops the pending completer. `AppShell` therefore also clears the flag
+  /// whenever the shell is uncovered — without that safety net a `go()`-style
+  /// back (the Android back handler, a deep link, a refresh redirect) strands
+  /// the flag `true` and the home feed never autoplays again (#6239). Do not
+  /// make this future the only clear path.
   Future<T?> pushWithVideoPause<T extends Object?>(
     String location, {
     Object? extra,

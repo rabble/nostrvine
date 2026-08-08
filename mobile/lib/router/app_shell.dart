@@ -11,6 +11,7 @@ import 'package:openvine/app_update/app_update.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/relay_list_repository_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/shell_obscured_provider.dart';
@@ -108,6 +109,14 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       ref.read(shellObscuredProvider.notifier).setObscured(obscured: obscured);
+      if (!obscured) {
+        // Every page overlay is backed by a route above the shell, so an
+        // uncovered shell proves none is open. Not redundant with
+        // `pushWithVideoPause`'s own clear, which a `go()`-style back skips
+        // entirely — see its doc comment. Without this the home feed could stay
+        // permanently unable to autoplay on scroll (#6239).
+        ref.read(overlayVisibilityProvider.notifier).setPageOpen(false);
+      }
     });
   }
 

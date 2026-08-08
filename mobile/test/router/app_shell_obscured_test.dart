@@ -16,6 +16,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/shell_obscured_provider.dart';
 import 'package:openvine/router/router.dart';
@@ -193,6 +194,52 @@ void main() {
       // didPush fires once as the fresh shell subscribes, clearing the flag so
       // the home feed can resume.
       expect(container.read(shellObscuredProvider), isFalse);
+    },
+  );
+
+  testWidgets(
+    'uncovering the shell clears a page overlay stranded by a go()-style back '
+    '(#6239)',
+    (tester) async {
+      await tester.pumpWidget(
+        _buildSubject(
+          mockAuthService: mockAuthService,
+          sharedPreferences: sharedPreferences,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(AppShell)),
+      );
+      final navigator = Navigator.of(tester.element(find.byType(AppShell)));
+
+      // `pushWithVideoPause` raises the page flag, then pushes the route.
+      container.read(overlayVisibilityProvider.notifier).setPageOpen(true);
+      unawaited(
+        navigator.push(
+          MaterialPageRoute<void>(builder: (_) => const SizedBox.shrink()),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(container.read(shellObscuredProvider), isTrue);
+      expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
+
+      // Uncover the shell without the `push` future's clear ever running —
+      // the state a `go()`-style back leaves behind, since go_router drops the
+      // pending completer when it removes the route instead of popping it
+      // (pinned by pause_aware_modals_test). A declarative `go()` removal
+      // drives the same `didPopNext` on the shell as this pop does.
+      navigator.pop();
+      await tester.pumpAndSettle();
+
+      // The shell is uncovered, so no page overlay can still be open — the
+      // home feed must be allowed to autoplay again.
+      expect(
+        container.read(overlayVisibilityProvider).isPageOpen,
+        isFalse,
+        reason: 'a stranded page flag keeps the home feed from autoplaying',
+      );
     },
   );
 
