@@ -274,7 +274,9 @@ void main() {
         expect(pendingQueries, hasLength(2));
         expect(activeQueries, 2);
 
-        pendingQueries.removeFirst().complete([_createTestEvent(id: 'one')]);
+        pendingQueries.removeFirst().complete([
+          _createTestEvent(id: 'one', kind: 1059),
+        ]);
         await pumpEventQueue();
 
         expect(pendingQueries, hasLength(2));
@@ -286,8 +288,12 @@ void main() {
         expect(pendingQueries, hasLength(2));
         expect(activeQueries, 2);
 
-        pendingQueries.removeFirst().complete([_createTestEvent(id: 'three')]);
-        pendingQueries.removeFirst().complete([_createTestEvent(id: 'four')]);
+        pendingQueries.removeFirst().complete([
+          _createTestEvent(id: 'three', kind: 1059),
+        ]);
+        pendingQueries.removeFirst().complete([
+          _createTestEvent(id: 'four', kind: 1059),
+        ]);
 
         await expectLater(
           Future.wait(results),
@@ -1415,6 +1421,57 @@ void main() {
           // The simple form drops the timeout signal, but must not drop the
           // events that arrived before it.
           expect(await client.queryEvents([textNoteFilter()]), equals(events));
+        },
+      );
+
+      test(
+        'drops websocket events that do not match any requested filter',
+        () async {
+          final matching = _createTestEvent(kind: EventKind.textNote);
+          final offFilter = _createTestEvent(kind: EventKind.relayListMetadata);
+          stubWebSocketEvents([offFilter, matching]);
+
+          final result = await client.queryEventsDetailed([textNoteFilter()]);
+
+          expect(result.events, [matching]);
+        },
+      );
+
+      test(
+        'drops cached events that do not match the requested filter',
+        () async {
+          final mockDbClient = _MockAppDbClient();
+          final mockDatabase = _MockAppDatabase();
+          final dao = _MockNostrEventsDao();
+          when(() => mockDbClient.database).thenReturn(mockDatabase);
+          when(() => mockDatabase.nostrEventsDao).thenReturn(dao);
+
+          final matching = _createTestEvent(kind: EventKind.textNote);
+          final offFilter = _createTestEvent(kind: EventKind.relayListMetadata);
+          // A row the cache holds but this query did not ask for — what an
+          // older build persisted before the gate existed, or what one of the
+          // other writers into this table put there.
+          when(
+            () => dao.getEventsByFilter(any()),
+          ).thenAnswer((_) async => [offFilter, matching]);
+
+          final clientWithCache = NostrClient.forTesting(
+            nostr: mockNostr,
+            relayManager: mockRelayManager,
+            dbClient: mockDbClient,
+          );
+          stubWebSocketEvents([]);
+
+          final result = await clientWithCache.queryEventsDetailed([
+            textNoteFilter(),
+          ]);
+
+          expect(
+            result.events,
+            [matching],
+            reason:
+                'the cache leg is held to the same filter as the network leg',
+          );
         },
       );
     });

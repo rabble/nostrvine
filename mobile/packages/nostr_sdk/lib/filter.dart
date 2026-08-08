@@ -2,10 +2,11 @@ import 'package:nostr_sdk/event.dart';
 
 /// filter is a JSON object that determines what events will be sent in that subscription
 class Filter {
-  /// a list of event ids or prefixes
+  /// a list of event ids, each an exact 64-character lowercase hex value
   List<String>? ids;
 
-  /// a list of pubkeys or prefixes, the pubkey of an event must be one of these
+  /// a list of pubkeys, each an exact 64-character lowercase hex value; the
+  /// pubkey of an event must be one of these
   List<String>? authors;
 
   /// a list of a kind numbers
@@ -149,6 +150,10 @@ class Filter {
   }
 
   bool checkEvent(Event event) {
+    // Exact, not prefix. NIP-01: "The `ids`, `authors`, `#e` and `#p` filter
+    // lists MUST contain exact 64-character lowercase hex values." A prefix
+    // compare would also make a single `''` entry match every event, turning
+    // the admission gates built on checkEvent into pass-throughs.
     if (ids != null && (!ids!.contains(event.id))) {
       return false;
     }

@@ -799,9 +799,23 @@ class NostrClient {
     final cacheResults = <Event>[];
 
     // 1. Get cache results (don't return early - we'll merge with network)
+    //
+    // Held to the same filter as the network leg. The local store is not an
+    // admission oracle: its rows are remote-sourced, several writers put them
+    // there without ever seeing this filter, and rows written by a build that
+    // predates the gate are still inside the cache TTL. The DAO's SQL narrows
+    // on most dimensions but not all — an empty-but-non-null list emits no
+    // condition at all, where `checkEvent` matches nothing — so relying on
+    // SQL/`checkEvent` parity would rest a boundary on a cross-package
+    // coincidence neither side declares.
     final dao = _nostrEventsDao;
     if (useCache && dao != null && filters.length == 1) {
-      cacheResults.addAll(await dao.getEventsByFilter(filters.first));
+      cacheResults.addAll(
+        _eventsMatchingAnyFilter(
+          await dao.getEventsByFilter(filters.first),
+          filters,
+        ),
+      );
     }
 
     // 2. Query via WebSocket.
@@ -849,7 +863,10 @@ class NostrClient {
           ? await _queryPool.withResource(runWebSocketQuery)
           : await runWebSocketQuery();
     }
-    final websocketEvents = websocketResult.events;
+    final websocketEvents = _eventsMatchingAnyFilter(
+      websocketResult.events,
+      filters,
+    );
 
     // Cache websocket results (fire-and-forget)
     if (websocketEvents.isNotEmpty) {
@@ -1684,6 +1701,16 @@ class NostrClient {
     final bytes = utf8.encode(jsonString);
     final digest = sha256.convert(bytes);
     return digest.toString().substring(0, 16);
+  }
+
+  List<Event> _eventsMatchingAnyFilter(
+    List<Event> events,
+    List<Filter> filters,
+  ) {
+    return [
+      for (final event in events)
+        if (filters.any((filter) => filter.checkEvent(event))) event,
+    ];
   }
 
   /// Merges cached and network events, deduplicating by event ID.

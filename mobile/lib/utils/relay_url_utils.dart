@@ -4,20 +4,29 @@
 import 'package:nostr_client/nostr_client.dart' as nostr_client;
 import 'package:nostr_sdk/nostr_sdk.dart' as nostr_sdk;
 
+/// The relay-URL admission policy lives in `nostr_sdk` so package-layer
+/// callers can share it without importing app code, and is re-exported here
+/// so app-layer callers keep a single import.
+///
+/// These are re-exports, not wrappers: a wrapper would be a second
+/// declaration of the same name, and any library importing both this file and
+/// the `nostr_sdk` barrel would fail with `ambiguous_import`.
+export 'package:nostr_sdk/nostr_sdk.dart'
+    show
+        RelayListCaps,
+        admitRemoteSuppliedRelays,
+        isLoopbackHost,
+        isPrivateOrLinkLocalHost,
+        isRelayUrlAllowed,
+        isRemoteSuppliedRelayUrlAllowed;
+
 const _divineRelayHost = 'relay.divine.video';
 const _divineApiBaseUrl = 'https://api.divine.video';
-
-/// True if [host] is a recognized loopback address that may be reached over
-/// cleartext (`ws://` / `http://`).
-///
-/// Delegates to the package-level source of truth in `nostr_sdk`; native
-/// cleartext transport config must mirror that predicate.
-bool isLoopbackHost(String host) => nostr_sdk.isLoopbackHost(host);
 
 /// Relay hosts operated by Divine across all environments.
 ///
 /// Matches the `EnvironmentConfig.relayUrl` hosts. Loopback (the `local`
-/// environment relay) is covered separately via [isLoopbackHost].
+/// environment relay) is covered separately via `isLoopbackHost`.
 const _divineHostedRelayHosts = <String>{
   'relay.divine.video',
   'relay.staging.divine.video',
@@ -30,7 +39,8 @@ const _divineHostedRelayHosts = <String>{
 bool isDivineHostedRelayUrl(String url) {
   final host = Uri.tryParse(url)?.host.toLowerCase();
   if (host == null || host.isEmpty) return false;
-  return _divineHostedRelayHosts.contains(host) || isLoopbackHost(host);
+  return _divineHostedRelayHosts.contains(host) ||
+      nostr_sdk.isLoopbackHost(host);
 }
 
 /// True if [configuredRelays] includes a relay the user added beyond the
@@ -55,35 +65,11 @@ bool usesUserChosenRelay(
   return configuredRelays.any((url) {
     final host = Uri.tryParse(url)?.host.toLowerCase();
     if (host == null || host.isEmpty) return false;
-    if (allowedHosts.contains(host) || isLoopbackHost(host)) return false;
+    if (allowedHosts.contains(host) || nostr_sdk.isLoopbackHost(host)) {
+      return false;
+    }
     return true;
   });
-}
-
-/// True if [url] is a relay URL the app is allowed to connect to.
-///
-/// Nostr relays speak WebSocket only — `wss://` is accepted for any host,
-/// and `ws://` is accepted only for a recognized loopback host. Any other
-/// scheme (`https://`, `http://`, `ftp://`, …), a malformed URL, or a missing
-/// host is rejected. Unlike `normalizeRelayUrl` in `nostr_client`, this
-/// requires an explicit scheme and rejects bare hosts because it validates
-/// user/app-layer input before the connection layer canonicalizes identity.
-///
-/// This predicate is the single source of truth for the application-layer
-/// relay URL allowlist. The loopback host predicate itself lives in
-/// `nostr_sdk` so package-layer callers can share it without importing app
-/// code.
-bool isRelayUrlAllowed(String url) {
-  final uri = Uri.tryParse(url.trim());
-  if (uri == null || !uri.hasAuthority || uri.host.isEmpty) return false;
-  // `wss://http://x` parses as host=`http` and path=`//x`; reject so a
-  // mis-nested URL in a NIP-65 tag or capability-service input cannot
-  // pass the allowlist and target the wrong host downstream.
-  if (uri.path.startsWith('//')) return false;
-  final scheme = uri.scheme.toLowerCase();
-  if (scheme == 'wss') return true;
-  if (scheme == 'ws') return isLoopbackHost(uri.host);
-  return false;
 }
 
 /// Normalizes a relay URL for identity comparison in UI state.

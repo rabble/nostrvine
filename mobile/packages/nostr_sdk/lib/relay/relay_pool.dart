@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:developer';
 
+import 'package:meta/meta.dart';
 import 'package:nostr_sdk/utils/relay_addr_util.dart';
 
 import '../count_response.dart';
@@ -198,7 +199,31 @@ class RelayPool {
     this.onNotice,
     this.signatureVerificationPolicy = SignatureVerificationPolicy.all,
     this.silentRepairCooldown = const Duration(seconds: 60),
+    this.tempRelayIdleTimeout = const Duration(seconds: 120),
+    this.tempRelaySweepInterval = const Duration(seconds: 60),
   });
+
+  /// How long a temp relay may sit with no inbound traffic before the sweep
+  /// closes it. Injectable so tests need no wall-clock wait.
+  ///
+  /// A temp relay is created per entry in a caller's `tempRelays` list, and
+  /// before #6585 nothing ever closed one: [_sendCollect] only tore a temp
+  /// relay down when the publish deadline had *already* expired, so any
+  /// address that answered in time kept its socket for the life of the
+  /// process. That matters most where the addresses are not ours to choose —
+  /// a NIP-17 gift wrap goes to the relays the *recipient* advertised, so an
+  /// unbounded, immortal set of connections was reachable from a counterparty
+  /// simply by listing hosts in their kind-10050.
+  ///
+  /// NIP-17's kind-10050 description says as much directly: "After sending,
+  /// disconnect from these relays unless further messages are expected."
+  final Duration tempRelayIdleTimeout;
+
+  /// How often the idle sweep runs while any temp relay exists.
+  final Duration tempRelaySweepInterval;
+
+  /// Periodic idle sweep over [_tempRelays]; null while none exist.
+  Timer? _tempRelaySweepTimer;
 
   /// Minimum gap between two silent-socket repairs of the *same* relay.
   ///
@@ -449,6 +474,11 @@ class RelayPool {
       _forgetRelayBookkeeping(url);
     }
     _relays.clear();
+    for (final url in _tempRelays.keys.toList(growable: false)) {
+      removeTempRelay(url);
+    }
+    _tempRelaySweepTimer?.cancel();
+    _tempRelaySweepTimer = null;
   }
 
   /// Drops the pool-side state keyed by [url] so a relay that comes back is
@@ -1096,6 +1126,35 @@ class RelayPool {
           _verifiesSkippedByPolicy++;
         }
 
+        final poolSubscription = _subscriptions[subId];
+        final querySubscription = poolSubscription == null
+            ? relay.getRequestSubscription(subId)
+            : null;
+        final subscription = poolSubscription ?? querySubscription;
+
+        if (subscription == null) {
+          return;
+        }
+
+        // Liveness before admission: a frame arriving is progress whether or
+        // not we wanted its contents. Both of these say "this relay is still
+        // working", which is a property of the socket, not of the payload.
+        relay.relayStatus.noteReceive();
+        if (querySubscription != null) {
+          // The relay is mid-answer for this one-shot query, so it has not
+          // gone silent. Restart the grace period rather than cutting its
+          // result set off part-way through.
+          _restartQuerySettleWindow(subId);
+        }
+
+        if (!subscription.matchesEvent(event)) {
+          log(
+            'Dropping relay event that does not match subscription filter '
+            'from ${relay.url}: eventId=${event.id}, subId=$subId',
+          );
+          return;
+        }
+
         if ((relay.relayStatus.relayType != RelayType.cache)) {
           var event = Map<String, dynamic>.from(eventJson);
           var kind = event["kind"];
@@ -1104,9 +1163,6 @@ class RelayPool {
             _broadcaseToCache(event);
           }
         }
-
-        // add some statistics
-        relay.relayStatus.noteReceive();
 
         // check block pubkey
         for (var eventFilter in eventFilters) {
@@ -1128,20 +1184,7 @@ class RelayPool {
         } else {
           event.sources.add(relay.url);
         }
-        var subscription = _subscriptions[subId];
-
-        if (subscription != null) {
-          subscription.onEvent(event);
-        } else {
-          subscription = relay.getRequestSubscription(subId);
-          if (subscription != null) {
-            // The relay is mid-answer for this one-shot query, so it has not
-            // gone silent — restart the grace period rather than cut its
-            // result set off part-way through.
-            _restartQuerySettleWindow(subId);
-            subscription.onEvent(event);
-          }
-        }
+        subscription.onEvent(event);
       } catch (err) {
         log(err.toString());
       }
@@ -1596,7 +1639,11 @@ class RelayPool {
     String? id,
     Function? onComplete,
   }) {
-    if (filtersMap.isEmpty) {
+    if (filtersMap.isEmpty ||
+        filtersMap.values.any((filters) => filters.isEmpty)) {
+      // A per-relay entry with no filters would build a Subscription that
+      // matches nothing, so every event it received would be dropped by the
+      // admission gate. The sibling entry points reject this the same way.
       throw ArgumentError("No filters given", "filters");
     }
     id ??= StringUtil.rndNameStr(16);
@@ -1780,6 +1827,12 @@ class RelayPool {
       return deadline != null && !DateTime.now().isBefore(deadline);
     }
 
+    // Only tears down a temp relay once the publish deadline has passed —
+    // before that the relay may still be carrying a concurrent publish or
+    // query, since temp relays are keyed by URL and therefore shared. The
+    // sockets this deliberately leaves behind are reclaimed by
+    // [sweepIdleTempRelays] once they go quiet, which is safe precisely
+    // because it judges idleness rather than guessing at ownership.
     void removeExpiredTempRelay(Relay relay) {
       if (!deadlineExpired()) return;
       unawaited(relay.disconnect());
@@ -2212,9 +2265,81 @@ class RelayPool {
       _observeRelayStatus(tempRelay);
       tempRelay.connect();
       _tempRelays[addr] = tempRelay;
+      _ensureTempRelaySweepScheduled();
     }
 
     return tempRelay;
+  }
+
+  void _ensureTempRelaySweepScheduled() {
+    if (_tempRelaySweepTimer != null) return;
+    _tempRelaySweepTimer = Timer.periodic(
+      tempRelaySweepInterval,
+      (_) => sweepIdleTempRelays(),
+    );
+  }
+
+  /// Closes temp relays that have gone quiet and are not serving anything.
+  ///
+  /// A temp relay exists to carry one publish or one targeted query. Once that
+  /// is done the socket is pure liability: it holds a connection open to an
+  /// address the caller may not control, and it keeps the pool paying for a
+  /// peer nothing is waiting on. This is the teardown NIP-17 asks for on the
+  /// DM path, applied uniformly so every `tempRelays` caller inherits it.
+  ///
+  /// A relay is closed only when it is **both** silent for
+  /// [tempRelayIdleTimeout] **and** holds no live subscription or unanswered
+  /// query. Temp relays are keyed by URL and therefore shared — a second
+  /// publish, or a query naming the same address, reuses the same entry — so
+  /// closing on "this publish finished" would cut a socket out from under a
+  /// concurrent caller. Idleness is the only condition that is safe to judge
+  /// without tracking ownership.
+  @visibleForTesting
+  void sweepIdleTempRelays() {
+    final idleSince = DateTime.now().subtract(tempRelayIdleTimeout);
+    for (final entry in _tempRelayEntriesSnapshot()) {
+      if (!_isTempRelayReapable(entry.value, idleSince)) continue;
+      log('Closing idle temp relay ${entry.key}');
+      removeTempRelay(entry.key);
+    }
+  }
+
+  bool _isTempRelayReapable(Relay relay, DateTime idleSince) {
+    // Still carrying work for somebody — never reap.
+    if (relay.hasSubscription() || relay.getQueries().isNotEmpty) return false;
+
+    // Queued frames are work too. A disconnected relay replays these the
+    // moment it reconnects (`Relay.onConnected`), and `pendingAuthedMessages`
+    // is specifically a publish parked behind a NIP-42 handshake. Reaping
+    // disconnects and disposes, which clears `_shouldReconnect` — so without
+    // this the sweep would cancel the very reconnect the caller is waiting on
+    // and the publish would be reported unanswered instead of being resent.
+    if (relay.pendingMessages.isNotEmpty ||
+        relay.pendingAuthedMessages.isNotEmpty) {
+      return false;
+    }
+
+    // A relay that failed to connect, or has since dropped, is doing nothing
+    // for anyone. [RelayBase.isSilentSince] deliberately answers false for a
+    // socket that is not connected — it exists to spot *live* zombie sockets —
+    // so the disconnected case has to be caught separately or those entries
+    // would accumulate forever, which is the half of the leak that a failed
+    // send used to produce.
+    //
+    // Give it one idle window first. `connect()` is async, so an entry is in
+    // the map before its socket opens; `RelayStatus.connectTime` is stamped
+    // when the status is built and never reset, which for a temp relay is its
+    // creation time. Without this the branch depends on every `Relay`
+    // implementation advancing to `connecting` before the first sweep can
+    // observe it — true for the ones here, but by scheduler accident rather
+    // than by contract, and not true of a manually driven sweep.
+    if (relay.relayStatus.connected == ClientConnected.disconnect) {
+      return relay.relayStatus.connectTime.isBefore(idleSince);
+    }
+
+    // Connected: reap only once genuinely quiet. The connection stamps its
+    // activity clock on connect, so a freshly opened socket is never silent.
+    return relay is RelayBase && relay.isSilentSince(idleSince);
   }
 
   bool _shouldReplaceTempRelay(Relay relay) {
@@ -2261,13 +2386,29 @@ class RelayPool {
     var relay = _tempRelays.remove(addr);
     if (relay != null) {
       relay.disconnect();
+      relay.dispose();
     }
     _forgetRelayBookkeeping(addr);
+    // Pairs with the arm in [checkAndGenTempRelay]: the sweep exists only to
+    // serve entries in [_tempRelays], so it stops with the last one rather
+    // than waiting for a tick to notice the map is empty.
+    if (_tempRelays.isEmpty) {
+      _tempRelaySweepTimer?.cancel();
+      _tempRelaySweepTimer = null;
+    }
   }
 
   Relay? getTempRelay(String url) {
     return _tempRelays[url];
   }
+
+  /// Addresses currently holding a temp-relay connection.
+  ///
+  /// Keys are normalised by [RelayAddrUtil.handle], so tests assert on this
+  /// rather than on the raw URL they passed in — a raw-URL lookup misses and
+  /// would make an "it was cleaned up" assertion pass vacuously.
+  @visibleForTesting
+  List<String> get tempRelayUrls => _tempRelays.keys.toList(growable: false);
 
   bool readable() {
     for (final relay in _relaysSnapshot()) {
