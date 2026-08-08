@@ -12,6 +12,7 @@ import 'package:models/models.dart';
 import 'package:notification_repository/notification_repository.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/mixins/reduced_motion_tab_controller_mixin.dart';
 import 'package:openvine/notifications/bloc/notification_feed_bloc.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/notifications/view/notifications_view.dart';
@@ -63,14 +64,13 @@ class _InboxNotificationsScaffold extends StatefulWidget {
 
 class _InboxNotificationsScaffoldState
     extends State<_InboxNotificationsScaffold>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
-  static const _tabCount = 5;
+    with TickerProviderStateMixin, ReducedMotionTabControllerMixin {
+  @override
+  int get tabCount => 5;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _tabCount, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<InviteStatusCubit>().load();
@@ -78,9 +78,9 @@ class _InboxNotificationsScaffoldState
   }
 
   @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    syncTabController();
   }
 
   @override
@@ -97,7 +97,7 @@ class _InboxNotificationsScaffoldState
             Material(
               type: MaterialType.transparency,
               child: TabBar(
-                controller: _tabController,
+                controller: tabController,
                 isScrollable: true,
                 tabAlignment: TabAlignment.start,
                 padding: const EdgeInsetsDirectional.only(start: 16),
@@ -125,7 +125,7 @@ class _InboxNotificationsScaffoldState
             ),
             Expanded(
               child: TabBarView(
-                controller: _tabController,
+                controller: tabController,
                 children: [
                   _NotificationTab(
                     notificationRepository: widget.notificationRepository,
