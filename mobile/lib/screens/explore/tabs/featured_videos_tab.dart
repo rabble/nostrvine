@@ -38,45 +38,67 @@ class FeaturedVideosTab extends ConsumerWidget {
       create: (_) =>
           FeaturedTabVideosCubit(repository: repository, tabId: config.id)
             ..load(),
-      child: const _FeaturedVideosView(),
+      child: _FeaturedVideosView(config: config),
     );
   }
 }
 
 class _FeaturedVideosView extends ConsumerWidget {
-  const _FeaturedVideosView();
+  const _FeaturedVideosView({required this.config});
+
+  final FeaturedTabConfig config;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return BlocBuilder<FeaturedTabVideosCubit, FeaturedTabVideosState>(
       builder: (context, state) {
+        if (state.videos.isNotEmpty) {
+          return _FeaturedGrid(config: config, state: state);
+        }
+
         return switch (state.status) {
           FeaturedTabVideosStatus.initial ||
           FeaturedTabVideosStatus.loading => const Center(
             child: BrandedLoadingIndicator(),
           ),
           FeaturedTabVideosStatus.failure => const _FeaturedRetry(),
-          FeaturedTabVideosStatus.ready => ComposableVideoGrid(
-            videos: state.videos,
-            useMasonryLayout: true,
-            isLoadingMore: state.isLoadingMore,
-            hasMoreContent: state.hasMore,
-            onLoadMore: context.read<FeaturedTabVideosCubit>().loadMore,
-            onRefresh: context.read<FeaturedTabVideosCubit>().load,
-            emptyBuilder: () => const _FeaturedEmpty(),
-            onVideoTap: (videos, index) => context.push(
-              PooledFullscreenVideoFeedScreen.pathForVideoId(videos[index].id),
-              extra: PooledFullscreenVideoFeedArgs(
-                source: const ExploreViewSource(),
-                feedRepository: ref.read(feedRepositoryProvider),
-                initialIndex: index,
-                initialVideoId: videos[index].id,
-                trafficSource: ViewTrafficSource.discoveryFeatured,
-              ),
-            ),
+          FeaturedTabVideosStatus.ready => _FeaturedGrid(
+            config: config,
+            state: state,
           ),
         };
       },
+    );
+  }
+}
+
+class _FeaturedGrid extends ConsumerWidget {
+  const _FeaturedGrid({required this.config, required this.state});
+
+  final FeaturedTabConfig config;
+  final FeaturedTabVideosState state;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ComposableVideoGrid(
+      videos: state.videos,
+      useMasonryLayout: true,
+      isLoadingMore: state.isLoadingMore,
+      hasMoreContent: state.hasMore,
+      onLoadMore: context.read<FeaturedTabVideosCubit>().loadMore,
+      onRefresh: context.read<FeaturedTabVideosCubit>().load,
+      emptyBuilder: () => const _FeaturedEmpty(),
+      onVideoTap: (videos, index) => context.push(
+        PooledFullscreenVideoFeedScreen.pathForVideoId(videos[index].id),
+        extra: PooledFullscreenVideoFeedArgs(
+          source: VideoListViewSource(videos),
+          feedRepository: ref.read(feedRepositoryProvider),
+          initialIndex: index,
+          initialVideoId: videos[index].id,
+          trafficSource: ViewTrafficSource.discoveryFeatured,
+          sourceDetail: config.id,
+        ),
+      ),
     );
   }
 }

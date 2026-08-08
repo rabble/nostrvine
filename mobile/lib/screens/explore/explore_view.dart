@@ -15,6 +15,7 @@ import 'package:openvine/features/feature_flags/providers/feature_flag_providers
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/reduced_motion_tab_controller_mixin.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
+import 'package:openvine/providers/featured_tabs_providers.dart';
 import 'package:openvine/providers/for_you_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/tab_visibility_provider.dart';
@@ -56,6 +57,7 @@ class _ExploreViewState extends ConsumerState<ExploreView>
   /// Refetches the featured configuration on foreground so a backend kill
   /// switch lands without waiting out the poll interval.
   late final AppLifecycleListener _lifecycleListener;
+  ProviderSubscription<bool>? _minorStatusSubscription;
 
   ExploreTabsCubit get _tabs => context.read<ExploreTabsCubit>();
   ExploreTabsState get _tabsState => _tabs.state;
@@ -108,6 +110,14 @@ class _ExploreViewState extends ConsumerState<ExploreView>
     _lifecycleListener = AppLifecycleListener(
       onResume: () => context.read<FeaturedTabsCubit>().refresh(),
     );
+    _minorStatusSubscription = ref.listenManual<bool>(
+      featuredTabViewerIsMinorProvider,
+      (previous, next) {
+        if (previous != null && previous != next) {
+          context.read<FeaturedTabsCubit>().refresh();
+        }
+      },
+    );
 
     // Track Explore-specific data load completion from child tabs.
     _tabs.trackScreenLoad();
@@ -155,6 +165,7 @@ class _ExploreViewState extends ConsumerState<ExploreView>
   @override
   void dispose() {
     _lifecycleListener.dispose();
+    _minorStatusSubscription?.close();
     super.dispose();
   }
 

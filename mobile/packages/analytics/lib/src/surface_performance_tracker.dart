@@ -22,6 +22,7 @@ const Set<String> _safeSurfaceParamKeys = {
   AnalyticsParam.hasMore,
   AnalyticsParam.featureFlag,
   AnalyticsParam.sortMode,
+  AnalyticsParam.configId,
 };
 
 /// Tracks perceived load performance for user-visible surfaces.
