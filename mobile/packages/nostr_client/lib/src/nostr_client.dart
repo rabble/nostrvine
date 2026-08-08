@@ -486,6 +486,55 @@ class NostrClient {
   /// Public key of the client
   String get publicKey => _nostr.publicKey;
 
+  /// The signed-in user's public key, or `null` when the signer has none.
+  ///
+  /// [publicKey] is a plain cache read, and the cache stays empty when the
+  /// signer had no key at [initialize] time but acquired one afterwards —
+  /// nothing re-runs the refresh on its own. Resolving through here retries
+  /// the signer on a cache miss, so a late signer is picked up on the next
+  /// call instead of leaving author-scoped queries filtering on an empty
+  /// author for the rest of the session (#6813).
+  ///
+  /// Returns `null` rather than throwing, for callers that should skip their
+  /// query when signed out. Use [Nostr.ensurePublicKey] when the absence of a
+  /// key is a programming error instead.
+  ///
+  /// Concurrent callers share one refresh. A cache miss reaches the signer,
+  /// and for NIP-55 that is an Amber intent — a user-visible prompt — so the
+  /// several repositories that resolve the key at startup must not each raise
+  /// their own.
+  Future<String?> resolvePublicKey() async {
+    final cached = _nostr.publicKey;
+    if (cached.isNotEmpty) return cached;
+
+    try {
+      await _refreshPublicKeyFromSigner();
+    } on Object catch (e, st) {
+      // Non-fatal: the caller skips its author-scoped query. Logged so a
+      // failed signer stays distinguishable from a signed-out session —
+      // callers report both as "no public key".
+      log(
+        'Signer refresh failed while resolving the public key',
+        name: 'NostrClient',
+        error: e,
+        stackTrace: st,
+      );
+      return null;
+    }
+
+    final key = _nostr.publicKey;
+    return key.isEmpty ? null : key;
+  }
+
+  /// In-flight signer refresh, shared by initialize and resolving callers.
+  Future<void>? _pendingPublicKeyRefresh;
+
+  Future<void> _refreshPublicKeyFromSigner() {
+    return _pendingPublicKeyRefresh ??= _nostr.refreshPublicKey().whenComplete(
+      () => _pendingPublicKeyRefresh = null,
+    );
+  }
+
   /// Whether the client has been initialized
   ///
   /// Returns true if the relay manager is initialized
@@ -515,7 +564,7 @@ class NostrClient {
       _reportInitializationStage(
         NostrClientInitializationStage.refreshingPublicKey,
       );
-      await _nostr.refreshPublicKey();
+      await _refreshPublicKeyFromSigner();
       // Seed the already-verified set before relays connect, so re-sent
       // events skip re-verification during the cold-start flood.
       _reportInitializationStage(
