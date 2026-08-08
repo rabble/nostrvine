@@ -4295,18 +4295,18 @@ class AppLocalizationsId extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
-  String get soundSyncStatusSyncing => 'Syncing your sounds…';
+  String get soundSyncStatusSyncing => 'Menyinkronkan suaramu…';
 
   @override
-  String get soundSyncStatusSynced => 'Sounds up to date';
+  String get soundSyncStatusSynced => 'Suara sudah terbaru';
 
   @override
   String get soundSyncStatusFailed =>
-      'Couldn\'t sync your sounds. We\'ll try again.';
+      'Tidak bisa menyinkronkan suaramu. Kami akan coba lagi.';
 
   @override
   String get soundSyncStatusLocked =>
-      'Can\'t unlock your synced library on this device.';
+      'Tidak bisa membuka pustaka tersinkronmu di perangkat ini.';
 
   @override
   String get soundsFailedToLoad => 'Gagal memuat suara';

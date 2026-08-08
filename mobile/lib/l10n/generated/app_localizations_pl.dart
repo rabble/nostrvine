@@ -4444,18 +4444,18 @@ class AppLocalizationsPl extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
-  String get soundSyncStatusSyncing => 'Syncing your sounds…';
+  String get soundSyncStatusSyncing => 'Synchronizowanie twoich dźwięków…';
 
   @override
-  String get soundSyncStatusSynced => 'Sounds up to date';
+  String get soundSyncStatusSynced => 'Dźwięki są aktualne';
 
   @override
   String get soundSyncStatusFailed =>
-      'Couldn\'t sync your sounds. We\'ll try again.';
+      'Nie udało się zsynchronizować twoich dźwięków. Spróbujemy ponownie.';
 
   @override
   String get soundSyncStatusLocked =>
-      'Can\'t unlock your synced library on this device.';
+      'Nie można odblokować zsynchronizowanej biblioteki na tym urządzeniu.';
 
   @override
   String get soundsFailedToLoad => 'Nie udało się wczytać dźwięków';

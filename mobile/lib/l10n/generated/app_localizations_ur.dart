@@ -4341,18 +4341,18 @@ class AppLocalizationsUr extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
-  String get soundSyncStatusSyncing => 'Syncing your sounds…';
+  String get soundSyncStatusSyncing => 'آپ کی آوازیں ہم آہنگ ہو رہی ہیں…';
 
   @override
-  String get soundSyncStatusSynced => 'Sounds up to date';
+  String get soundSyncStatusSynced => 'آوازیں تازہ ترین ہیں';
 
   @override
   String get soundSyncStatusFailed =>
-      'Couldn\'t sync your sounds. We\'ll try again.';
+      'آپ کی آوازیں ہم آہنگ نہیں ہو سکیں۔ ہم دوبارہ کوشش کریں گے۔';
 
   @override
   String get soundSyncStatusLocked =>
-      'Can\'t unlock your synced library on this device.';
+      'اس ڈیوائس پر آپ کی ہم آہنگ لائبریری کھولی نہیں جا سکتی۔';
 
   @override
   String get soundsFailedToLoad => 'آوازیں لوڈ نہیں ہو سکیں';

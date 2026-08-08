@@ -4364,18 +4364,18 @@ class AppLocalizationsPt extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
-  String get soundSyncStatusSyncing => 'Syncing your sounds…';
+  String get soundSyncStatusSyncing => 'Sincronizando seus sons…';
 
   @override
-  String get soundSyncStatusSynced => 'Sounds up to date';
+  String get soundSyncStatusSynced => 'Sons atualizados';
 
   @override
   String get soundSyncStatusFailed =>
-      'Couldn\'t sync your sounds. We\'ll try again.';
+      'Não foi possível sincronizar seus sons. Vamos tentar de novo.';
 
   @override
   String get soundSyncStatusLocked =>
-      'Can\'t unlock your synced library on this device.';
+      'Não dá para desbloquear sua biblioteca sincronizada neste dispositivo.';
 
   @override
   String get soundsFailedToLoad => 'Falha ao carregar sons';

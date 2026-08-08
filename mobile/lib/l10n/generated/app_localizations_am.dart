@@ -4246,18 +4246,17 @@ class AppLocalizationsAm extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
-  String get soundSyncStatusSyncing => 'Syncing your sounds…';
+  String get soundSyncStatusSyncing => 'ድምፆችዎ በማመሳሰል ላይ…';
 
   @override
-  String get soundSyncStatusSynced => 'Sounds up to date';
+  String get soundSyncStatusSynced => 'ድምፆች ወቅታዊ ናቸው';
 
   @override
-  String get soundSyncStatusFailed =>
-      'Couldn\'t sync your sounds. We\'ll try again.';
+  String get soundSyncStatusFailed => 'ድምፆችዎን ማመሳሰል አልተቻለም። እንደገና እንሞክራለን።';
 
   @override
   String get soundSyncStatusLocked =>
-      'Can\'t unlock your synced library on this device.';
+      'በዚህ መሣሪያ ላይ የተመሳሰለ ቤተ-መጻሕፍትዎን መክፈት አልተቻለም።';
 
   @override
   String get soundsFailedToLoad => 'ድምጾችን መጫን አልተሳካም።';

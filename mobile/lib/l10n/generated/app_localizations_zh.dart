@@ -4103,18 +4103,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
-  String get soundSyncStatusSyncing => 'Syncing your sounds…';
+  String get soundSyncStatusSyncing => '正在同步你的声音…';
 
   @override
-  String get soundSyncStatusSynced => 'Sounds up to date';
+  String get soundSyncStatusSynced => '声音已是最新';
 
   @override
-  String get soundSyncStatusFailed =>
-      'Couldn\'t sync your sounds. We\'ll try again.';
+  String get soundSyncStatusFailed => '无法同步你的声音，我们会再试一次。';
 
   @override
-  String get soundSyncStatusLocked =>
-      'Can\'t unlock your synced library on this device.';
+  String get soundSyncStatusLocked => '无法在此设备上解锁你的同步音库。';
 
   @override
   String get soundsFailedToLoad => '声音加载失败';

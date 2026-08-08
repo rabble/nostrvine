@@ -4294,18 +4294,17 @@ class AppLocalizationsAr extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
-  String get soundSyncStatusSyncing => 'Syncing your sounds…';
+  String get soundSyncStatusSyncing => 'جارٍ مزامنة أصواتك…';
 
   @override
-  String get soundSyncStatusSynced => 'Sounds up to date';
+  String get soundSyncStatusSynced => 'الأصوات محدَّثة';
 
   @override
-  String get soundSyncStatusFailed =>
-      'Couldn\'t sync your sounds. We\'ll try again.';
+  String get soundSyncStatusFailed => 'تعذّرت مزامنة أصواتك. سنحاول مرة أخرى.';
 
   @override
   String get soundSyncStatusLocked =>
-      'Can\'t unlock your synced library on this device.';
+      'تعذّر فتح مكتبتك المتزامنة على هذا الجهاز.';
 
   @override
   String get soundsFailedToLoad => 'تعذر تحميل الأصوات';

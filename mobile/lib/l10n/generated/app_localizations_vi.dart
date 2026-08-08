@@ -4338,18 +4338,18 @@ class AppLocalizationsVi extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
-  String get soundSyncStatusSyncing => 'Syncing your sounds…';
+  String get soundSyncStatusSyncing => 'Đang đồng bộ âm thanh của bạn…';
 
   @override
-  String get soundSyncStatusSynced => 'Sounds up to date';
+  String get soundSyncStatusSynced => 'Âm thanh đã được cập nhật';
 
   @override
   String get soundSyncStatusFailed =>
-      'Couldn\'t sync your sounds. We\'ll try again.';
+      'Không đồng bộ được âm thanh của bạn. Chúng tôi sẽ thử lại.';
 
   @override
   String get soundSyncStatusLocked =>
-      'Can\'t unlock your synced library on this device.';
+      'Không thể mở khoá thư viện đã đồng bộ trên thiết bị này.';
 
   @override
   String get soundsFailedToLoad => 'Không tải được âm thanh';
