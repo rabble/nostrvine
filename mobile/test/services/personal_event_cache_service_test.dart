@@ -8,6 +8,11 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 
+import '../helpers/test_helpers.dart';
+
+/// Wall-clock budget for waits that depend on Hive file I/O.
+const Duration _settleTimeout = Duration(seconds: 10);
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -43,15 +48,13 @@ void main() {
     // cacheUserEvent is fire-and-forget: the event record is written before
     // its kind index. Wait for the index entry instead of assuming that one
     // event-loop pump means both Hive writes have completed.
-    for (var attempt = 0; attempt < 20; attempt++) {
-      await pumpEventQueue();
-      if (service
+    await TestHelpers.waitForCondition(
+      () => service
           .getEventsByKind(event.kind)
-          .any((cachedEvent) => cachedEvent.id == event.id)) {
-        return;
-      }
-    }
-    fail('Event ${event.id} was not added to kind ${event.kind} index');
+          .any((cachedEvent) => cachedEvent.id == event.id),
+      timeout: _settleTimeout,
+      description: 'event ${event.id} to be added to kind ${event.kind} index',
+    );
   }
 
   setUp(() async {
