@@ -77,13 +77,23 @@ void main() {
         thumbnailUrl: 'https://media.divine.video/test-video-id-thumb.jpg',
       ),
     );
-    uploadManager = UploadManager(blossomService: mockUploadService);
-
-    // Initialize creates a fresh empty box
-    await uploadManager.initialize();
-
-    // CRITICAL: Explicitly clear the box after initialization to remove any stale data
+    // cleanupHiveBox swallows a failed deleteBoxFromDisk, and initialize()
+    // loads the box into an in-memory list that ensureBoxEmpty does not touch —
+    // so clearing after initialize leaves stale uploads visible through
+    // pendingUploads. Open and clear with a throwaway manager first, then read
+    // the empty box with the one under test so memory matches disk.
+    final boxOpener = UploadManager(blossomService: mockUploadService);
+    await boxOpener.initialize();
     await TestHelpers.ensureBoxEmpty<PendingUpload>('pending_uploads');
+    boxOpener.dispose();
+
+    uploadManager = UploadManager(blossomService: mockUploadService);
+    await uploadManager.initialize();
+    expect(
+      uploadManager.pendingUploads,
+      isEmpty,
+      reason: 'setUp must hand each test an empty pending_uploads box',
+    );
   });
 
   tearDown(() async {
