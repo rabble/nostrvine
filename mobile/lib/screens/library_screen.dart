@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
 import 'package:openvine/blocs/drafts_library/drafts_library_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/mixins/reduced_motion_tab_controller_mixin.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
@@ -163,9 +164,15 @@ class _LibraryView extends ConsumerStatefulWidget {
 }
 
 class _LibraryViewState extends ConsumerState<_LibraryView>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
+    with TickerProviderStateMixin, ReducedMotionTabControllerMixin {
   late int _activeTabIndex;
+
+  @override
+  int get tabCount => _isClipsOnlyMode ? 1 : 3;
+
+  @override
+  int get initialTabIndex =>
+      _isClipsOnlyMode ? 0 : widget.initialTabIndex.clamp(0, 2);
 
   bool get _isClipsOnlyMode =>
       widget.selectionMode || widget.tabsMode == LibraryTabsMode.clipsOnly;
@@ -184,15 +191,7 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
   @override
   void initState() {
     super.initState();
-    final initialIndex = _isClipsOnlyMode
-        ? 0
-        : widget.initialTabIndex.clamp(0, 2);
-    _activeTabIndex = initialIndex;
-    _tabController = TabController(
-      length: _isClipsOnlyMode ? 1 : 3,
-      initialIndex: initialIndex,
-      vsync: this,
-    )..addListener(_onTabChanged);
+    _activeTabIndex = initialTabIndex;
 
     Log.info(
       '📚 ClipLibrary opened (selectionMode: ${widget.selectionMode})',
@@ -202,22 +201,22 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
   }
 
   @override
-  void dispose() {
-    _tabController.removeListener(_onTabChanged);
-    _tabController.dispose();
-    super.dispose();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    syncTabController();
   }
 
-  void _onTabChanged() {
+  @override
+  void onTabChanged() {
     if (!mounted) return;
-    if (_activeTabIndex == _tabController.index) return;
+    if (_activeTabIndex == tabController.index) return;
     setState(() {
-      _activeTabIndex = _tabController.index;
+      _activeTabIndex = tabController.index;
     });
 
     final clipsBloc = context.read<ClipsLibraryBloc>();
     final clipsState = clipsBloc.state;
-    final isClipsTabActive = _isClipsOnlyMode || _tabController.index == 1;
+    final isClipsTabActive = _isClipsOnlyMode || tabController.index == 1;
     if (!widget.selectionMode &&
         !_isClipsOnlyMode &&
         clipsState.isLibrarySelectionMode &&
@@ -532,7 +531,7 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
                         Expanded(
                           child: _LibraryContent(
                             isClipsOnlyMode: _isClipsOnlyMode,
-                            tabController: _tabController,
+                            tabController: tabController,
                             selectionMode: widget.selectionMode,
                             scrollController: widget.scrollController,
                             targetAspectRatio: targetAspectRatio,
