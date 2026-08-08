@@ -6,6 +6,14 @@
 // Then, from mobile/:
 //   flutter test integration_test/creator_sync/sound_sync_two_device_test.dart
 //
+// That command only reaches the stack from an Android emulator. The relay
+// URL is built from `localHost`, which `environment_config.dart` hardcodes
+// to '10.0.2.2' with no platform branch — an emulator-only alias for the
+// host machine. Run from macOS it routes out the default gateway, never
+// reaches local_stack, and the harness times out waiting to connect. Use
+// the Android emulator, or point `_relayUrl` in the harness at
+// 'ws://localhost:$localRelayPort' for a local run.
+//
 // This file lives outside integration_test/e2e/ and carries no `service`
 // tag, so `mobile_service_integration_tests` (which runs
 // `flutter test integration_test/e2e/ --tags service`) never executes it.
