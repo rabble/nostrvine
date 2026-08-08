@@ -261,8 +261,6 @@ class _ProfileStatsRowState extends State<_ProfileStatsRow> {
   Widget build(BuildContext context) {
     final isLoading = widget.profileStats == null;
 
-    final hasFollowers = widget.profileStats?.followers != null;
-    final hasFollowing = widget.profileStats?.following != null;
     final hasLikes = widget.profileStats?.totalLikes != null;
     final hasLoops = widget.profileStats?.totalViews != null;
 
@@ -284,25 +282,28 @@ class _ProfileStatsRowState extends State<_ProfileStatsRow> {
           label: l10n.profileLikesLabel,
           isLoading: isLoading && _timeoutExpired,
         ),
-      if (hasFollowing || isLoading)
-        ProfileFollowingStat(
-          pubkey: widget.userIdHex,
-          displayName: widget.displayName,
-          initialCount: isLoading
-              ? _skeletonPlaceholderCount
-              : widget.profileStats!.following,
-          isLoading: isLoading && _timeoutExpired,
-        ),
-      if (hasFollowers || isLoading)
-        ProfileFollowersStat(
-          pubkey: widget.userIdHex,
-          displayName: widget.displayName,
-          isOwnProfile: widget.isOwnProfile,
-          initialCount: isLoading
-              ? _skeletonPlaceholderCount
-              : widget.profileStats!.followers,
-          isLoading: isLoading && _timeoutExpired,
-        ),
+      // Followers/following are always rendered; their counts come from
+      // FollowRepository BLoCs so they must not be gated on
+      // profileStats.{followers,following} which is no longer written by
+      // ProfileRepository after #6767 (otherwise a cold profile with no
+      // persisted followers row hides the column entirely).
+      ProfileFollowingStat(
+        pubkey: widget.userIdHex,
+        displayName: widget.displayName,
+        initialCount: isLoading
+            ? _skeletonPlaceholderCount
+            : widget.profileStats!.following,
+        isLoading: isLoading && _timeoutExpired,
+      ),
+      ProfileFollowersStat(
+        pubkey: widget.userIdHex,
+        displayName: widget.displayName,
+        isOwnProfile: widget.isOwnProfile,
+        initialCount: isLoading
+            ? _skeletonPlaceholderCount
+            : widget.profileStats!.followers,
+        isLoading: isLoading && _timeoutExpired,
+      ),
     ];
 
     return Skeletonizer(
