@@ -3225,7 +3225,6 @@
     },
     "videoEditorHueSemanticLabel": "Odcień",
     "videoEditorAddElementSemanticLabel": "Dodaj element",
-    "videoEditorCloseSemanticLabel": "Zamknij",
     "videoEditorDoneSemanticLabel": "Gotowe",
     "videoEditorLevelSemanticLabel": "Poziom",
     "videoMetadataClosePostDetailsSemanticLabel": "Zamknij szczegóły posta",
@@ -4949,5 +4948,6 @@
   "videoEditorContinueToPostDetailsSemanticLabel": "Przejdź do szczegółów posta",
   "videoEditorDiscardToolChangesSemanticLabel": "Odrzuć zmiany w {tool}",
   "videoEditorApplyToolChangesSemanticLabel": "Zastosuj zmiany w {tool}",
-  "videoEditorRemoveAudioSemanticLabel": "Usuń dźwięk"
+  "videoEditorRemoveAudioSemanticLabel": "Usuń dźwięk",
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}"
 }

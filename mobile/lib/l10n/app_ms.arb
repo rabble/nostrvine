@@ -5825,7 +5825,6 @@
   },
   "videoEditorHueSemanticLabel": "Rona",
   "videoEditorAddElementSemanticLabel": "Tambah elemen",
-  "videoEditorCloseSemanticLabel": "Tutup",
   "videoEditorDoneSemanticLabel": "Siap",
   "videoEditorLevelSemanticLabel": "Tahap",
   "videoMetadataClosePostDetailsSemanticLabel": "Tutup butiran siaran",
@@ -6788,5 +6787,6 @@
   "videoEditorContinueToPostDetailsSemanticLabel": "Teruskan ke butiran siaran",
   "videoEditorDiscardToolChangesSemanticLabel": "Buang perubahan dalam {tool}",
   "videoEditorApplyToolChangesSemanticLabel": "Gunakan perubahan dalam {tool}",
-  "videoEditorRemoveAudioSemanticLabel": "Alih keluar audio"
+  "videoEditorRemoveAudioSemanticLabel": "Alih keluar audio",
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}"
 }

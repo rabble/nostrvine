@@ -9117,9 +9117,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoEditorAddElementSemanticLabel => '添加元素';
 
   @override
-  String get videoEditorCloseSemanticLabel => '关闭';
-
-  @override
   String get videoEditorDoneSemanticLabel => '完成';
 
   @override
@@ -10563,4 +10560,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get videoEditorRemoveAudioSemanticLabel => '移除音频';
+
+  @override
+  String rgbColorSemanticLabel(int red, int green, int blue) {
+    return 'RGB $red、$green、$blue';
+  }
 }

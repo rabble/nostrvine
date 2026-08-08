@@ -16528,12 +16528,6 @@ abstract class AppLocalizations {
   /// **'Add element'**
   String get videoEditorAddElementSemanticLabel;
 
-  /// No description provided for @videoEditorCloseSemanticLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Close'**
-  String get videoEditorCloseSemanticLabel;
-
   /// No description provided for @videoEditorDoneSemanticLabel.
   ///
   /// In en, this message translates to:
@@ -19179,6 +19173,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove audio'**
   String get videoEditorRemoveAudioSemanticLabel;
+
+  /// Accessibility label announcing a color swatch as its RGB triplet, used when the color has no human-readable name.
+  ///
+  /// In en, this message translates to:
+  /// **'RGB {red}, {green}, {blue}'**
+  String rgbColorSemanticLabel(int red, int green, int blue);
 }
 
 class _AppLocalizationsDelegate

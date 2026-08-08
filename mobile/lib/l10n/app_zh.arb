@@ -5825,7 +5825,6 @@
   },
   "videoEditorHueSemanticLabel": "色相",
   "videoEditorAddElementSemanticLabel": "添加元素",
-  "videoEditorCloseSemanticLabel": "关闭",
   "videoEditorDoneSemanticLabel": "完成",
   "videoEditorLevelSemanticLabel": "层级",
   "videoMetadataClosePostDetailsSemanticLabel": "关闭帖子详情",
@@ -6788,5 +6787,6 @@
   "videoEditorContinueToPostDetailsSemanticLabel": "继续前往帖子详情",
   "videoEditorDiscardToolChangesSemanticLabel": "放弃在{tool}中的更改",
   "videoEditorApplyToolChangesSemanticLabel": "应用在{tool}中的更改",
-  "videoEditorRemoveAudioSemanticLabel": "移除音频"
+  "videoEditorRemoveAudioSemanticLabel": "移除音频",
+  "rgbColorSemanticLabel": "RGB {red}、{green}、{blue}"
 }

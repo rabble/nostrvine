@@ -3225,7 +3225,6 @@
     },
     "videoEditorHueSemanticLabel": "Nyans",
     "videoEditorAddElementSemanticLabel": "Lägg till element",
-    "videoEditorCloseSemanticLabel": "Stäng",
     "videoEditorDoneSemanticLabel": "Klar",
     "videoEditorLevelSemanticLabel": "Nivå",
     "videoMetadataClosePostDetailsSemanticLabel": "Stäng inläggsdetaljer",
@@ -4949,5 +4948,6 @@
   "videoEditorContinueToPostDetailsSemanticLabel": "Fortsätt till inläggsinformation",
   "videoEditorDiscardToolChangesSemanticLabel": "Ignorera ändringar i {tool}",
   "videoEditorApplyToolChangesSemanticLabel": "Tillämpa ändringar i {tool}",
-  "videoEditorRemoveAudioSemanticLabel": "Ta bort ljud"
+  "videoEditorRemoveAudioSemanticLabel": "Ta bort ljud",
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}"
 }

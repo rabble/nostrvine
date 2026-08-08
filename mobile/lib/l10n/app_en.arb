@@ -5828,7 +5828,6 @@
   },
   "videoEditorHueSemanticLabel": "Hue",
   "videoEditorAddElementSemanticLabel": "Add element",
-  "videoEditorCloseSemanticLabel": "Close",
   "videoEditorDoneSemanticLabel": "Done",
   "videoEditorLevelSemanticLabel": "Level",
   "videoMetadataClosePostDetailsSemanticLabel": "Close post details",
@@ -6682,5 +6681,14 @@
     "description": "Accessibility label for applying changes made in a named video-editor tool.",
     "placeholders": {"tool": {"type": "String", "example": "Draw"}}
   },
-  "videoEditorRemoveAudioSemanticLabel": "Remove audio"
+  "videoEditorRemoveAudioSemanticLabel": "Remove audio",
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
+  "@rgbColorSemanticLabel": {
+    "description": "Accessibility label announcing a color swatch as its RGB triplet, used when the color has no human-readable name.",
+    "placeholders": {
+      "red": {"type": "int", "example": "255"},
+      "green": {"type": "int", "example": "0"},
+      "blue": {"type": "int", "example": "0"}
+    }
+  }
 }

@@ -2890,7 +2890,6 @@
     "videoEditorCameraLabel": "Kamera",
     "videoEditorLibraryLabel": "Perpustakaan",
     "videoEditorCloseColorPickerSemanticLabel": "Tutup pemilih warna",
-    "videoEditorCloseSemanticLabel": "Tutup",
     "videoEditorColorPickerSemanticLabel": "Pemilih warna",
     "videoEditorColorSelectedSemanticLabel": "{colorName}, dipilih",
     "@videoEditorColorSelectedSemanticLabel": {
@@ -4949,5 +4948,6 @@
   "videoEditorContinueToPostDetailsSemanticLabel": "Lanjutkan ke detail postingan",
   "videoEditorDiscardToolChangesSemanticLabel": "Buang perubahan di {tool}",
   "videoEditorApplyToolChangesSemanticLabel": "Terapkan perubahan di {tool}",
-  "videoEditorRemoveAudioSemanticLabel": "Hapus audio"
+  "videoEditorRemoveAudioSemanticLabel": "Hapus audio",
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}"
 }

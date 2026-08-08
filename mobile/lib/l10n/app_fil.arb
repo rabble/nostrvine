@@ -2118,7 +2118,6 @@
     "videoEditorSaturationBrightnessValue": "Saturation {saturation}%, Brightness {brightness}%",
     "videoEditorHueSemanticLabel": "Hue",
     "videoEditorAddElementSemanticLabel": "Magdagdag ng element",
-    "videoEditorCloseSemanticLabel": "Isara",
     "videoEditorDoneSemanticLabel": "Tapos na",
     "videoEditorLevelSemanticLabel": "Level",
     "videoMetadataClosePostDetailsSemanticLabel": "Isara ang mga detalye ng post",
@@ -3535,5 +3534,6 @@
   "videoEditorContinueToPostDetailsSemanticLabel": "Magpatuloy sa mga detalye ng post",
   "videoEditorDiscardToolChangesSemanticLabel": "I-discard ang mga pagbabago sa {tool}",
   "videoEditorApplyToolChangesSemanticLabel": "Ilapat ang mga pagbabago sa {tool}",
-  "videoEditorRemoveAudioSemanticLabel": "Alisin ang audio"
+  "videoEditorRemoveAudioSemanticLabel": "Alisin ang audio",
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}"
 }

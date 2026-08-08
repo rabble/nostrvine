@@ -3225,7 +3225,6 @@
     },
     "videoEditorHueSemanticLabel": "Tint",
     "videoEditorAddElementSemanticLabel": "Element toevoegen",
-    "videoEditorCloseSemanticLabel": "Sluiten",
     "videoEditorDoneSemanticLabel": "Gereed",
     "videoEditorLevelSemanticLabel": "Niveau",
     "videoMetadataClosePostDetailsSemanticLabel": "Berichtdetails sluiten",
@@ -4949,5 +4948,6 @@
   "videoEditorContinueToPostDetailsSemanticLabel": "Doorgaan naar berichtdetails",
   "videoEditorDiscardToolChangesSemanticLabel": "Wijzigingen in {tool} negeren",
   "videoEditorApplyToolChangesSemanticLabel": "Wijzigingen in {tool} toepassen",
-  "videoEditorRemoveAudioSemanticLabel": "Audio verwijderen"
+  "videoEditorRemoveAudioSemanticLabel": "Audio verwijderen",
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}"
 }

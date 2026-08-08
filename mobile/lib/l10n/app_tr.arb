@@ -2890,7 +2890,6 @@
     "videoEditorCameraLabel": "Kamera",
     "videoEditorLibraryLabel": "Kütüphane",
     "videoEditorCloseColorPickerSemanticLabel": "Renk seçiciyi kapat",
-    "videoEditorCloseSemanticLabel": "Kapat",
     "videoEditorColorPickerSemanticLabel": "Renk seçici",
     "videoEditorColorSelectedSemanticLabel": "{colorName}, seçildi",
     "@videoEditorColorSelectedSemanticLabel": {
@@ -4949,5 +4948,6 @@
   "videoEditorContinueToPostDetailsSemanticLabel": "Gönderi ayrıntılarına devam et",
   "videoEditorDiscardToolChangesSemanticLabel": "{tool} içindeki değişiklikleri iptal et",
   "videoEditorApplyToolChangesSemanticLabel": "{tool} içindeki değişiklikleri uygula",
-  "videoEditorRemoveAudioSemanticLabel": "Sesi kaldır"
+  "videoEditorRemoveAudioSemanticLabel": "Sesi kaldır",
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}"
 }

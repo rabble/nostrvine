@@ -3225,7 +3225,6 @@
     },
     "videoEditorHueSemanticLabel": "Nuanță",
     "videoEditorAddElementSemanticLabel": "Adaugă element",
-    "videoEditorCloseSemanticLabel": "Închide",
     "videoEditorDoneSemanticLabel": "Gata",
     "videoEditorLevelSemanticLabel": "Nivel",
     "videoMetadataClosePostDetailsSemanticLabel": "Închide detaliile postării",
@@ -4949,5 +4948,6 @@
   "videoEditorContinueToPostDetailsSemanticLabel": "Continuă la detaliile postării",
   "videoEditorDiscardToolChangesSemanticLabel": "Renunță la modificările din {tool}",
   "videoEditorApplyToolChangesSemanticLabel": "Aplică modificările din {tool}",
-  "videoEditorRemoveAudioSemanticLabel": "Elimină sunetul"
+  "videoEditorRemoveAudioSemanticLabel": "Elimină sunetul",
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}"
 }

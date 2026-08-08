@@ -3495,7 +3495,6 @@
     },
     "videoEditorHueSemanticLabel": "Нюанс",
     "videoEditorAddElementSemanticLabel": "Добави елемент",
-    "videoEditorCloseSemanticLabel": "Затвори",
     "videoEditorDoneSemanticLabel": "Готово",
     "videoEditorLevelSemanticLabel": "Ниво",
     "videoMetadataClosePostDetailsSemanticLabel": "Затваряне на подробностите за публикацията",
@@ -5080,5 +5079,6 @@
   "videoEditorContinueToPostDetailsSemanticLabel": "Продължаване към подробностите за публикацията",
   "videoEditorDiscardToolChangesSemanticLabel": "Отхвърляне на промените в {tool}",
   "videoEditorApplyToolChangesSemanticLabel": "Прилагане на промените в {tool}",
-  "videoEditorRemoveAudioSemanticLabel": "Премахване на аудиото"
+  "videoEditorRemoveAudioSemanticLabel": "Премахване на аудиото",
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}"
 }

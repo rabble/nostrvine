@@ -3895,7 +3895,6 @@
     },
     "videoEditorHueSemanticLabel": "ሁ",
     "videoEditorAddElementSemanticLabel": "ኤለመንት አክል",
-    "videoEditorCloseSemanticLabel": "ገጠመ",
     "videoEditorDoneSemanticLabel": "ተከናውኗል",
     "videoEditorLevelSemanticLabel": "ደረጃ",
     "videoMetadataClosePostDetailsSemanticLabel": "የልጥፍ ዝርዝሮችን ዝጋ",
@@ -5074,5 +5073,6 @@
   "videoEditorContinueToPostDetailsSemanticLabel": "ወደ ልጥፍ ዝርዝሮች ቀጥል",
   "videoEditorDiscardToolChangesSemanticLabel": "በ{tool} ውስጥ የተደረጉ ለውጦችን አስወግድ",
   "videoEditorApplyToolChangesSemanticLabel": "በ{tool} ውስጥ የተደረጉ ለውጦችን ተግብር",
-  "videoEditorRemoveAudioSemanticLabel": "ኦዲዮን አስወግድ"
+  "videoEditorRemoveAudioSemanticLabel": "ኦዲዮን አስወግድ",
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}"
 }

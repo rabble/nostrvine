@@ -9606,9 +9606,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoEditorAddElementSemanticLabel => 'Lägg till element';
 
   @override
-  String get videoEditorCloseSemanticLabel => 'Stäng';
-
-  @override
   String get videoEditorDoneSemanticLabel => 'Klar';
 
   @override
@@ -11158,4 +11155,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoEditorRemoveAudioSemanticLabel => 'Ta bort ljud';
+
+  @override
+  String rgbColorSemanticLabel(int red, int green, int blue) {
+    return 'RGB $red, $green, $blue';
+  }
 }

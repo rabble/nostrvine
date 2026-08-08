@@ -3225,7 +3225,6 @@
     },
     "videoEditorHueSemanticLabel": "Teinte",
     "videoEditorAddElementSemanticLabel": "Ajouter un élément",
-    "videoEditorCloseSemanticLabel": "Fermer",
     "videoEditorDoneSemanticLabel": "Terminé",
     "videoEditorLevelSemanticLabel": "Niveau",
     "videoMetadataClosePostDetailsSemanticLabel": "Fermer les détails de la publication",
@@ -4949,5 +4948,6 @@
   "videoEditorContinueToPostDetailsSemanticLabel": "Continuer vers les détails de la publication",
   "videoEditorDiscardToolChangesSemanticLabel": "Ignorer les modifications dans {tool}",
   "videoEditorApplyToolChangesSemanticLabel": "Appliquer les modifications dans {tool}",
-  "videoEditorRemoveAudioSemanticLabel": "Supprimer l’audio"
+  "videoEditorRemoveAudioSemanticLabel": "Supprimer l’audio",
+  "rgbColorSemanticLabel": "RVB {red}, {green}, {blue}"
 }

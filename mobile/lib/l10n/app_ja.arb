@@ -2883,7 +2883,6 @@
     "videoEditorCameraLabel": "カメラ",
     "videoEditorLibraryLabel": "ライブラリ",
     "videoEditorCloseColorPickerSemanticLabel": "カラーピッカーを閉じる",
-    "videoEditorCloseSemanticLabel": "閉じる",
     "videoEditorColorPickerSemanticLabel": "カラーピッカー",
     "videoEditorColorSelectedSemanticLabel": "{colorName}、選択済み",
     "@videoEditorColorSelectedSemanticLabel": {
@@ -4949,5 +4948,6 @@
   "videoEditorContinueToPostDetailsSemanticLabel": "投稿の詳細に進む",
   "videoEditorDiscardToolChangesSemanticLabel": "{tool}での変更を破棄",
   "videoEditorApplyToolChangesSemanticLabel": "{tool}での変更を適用",
-  "videoEditorRemoveAudioSemanticLabel": "音声を削除"
+  "videoEditorRemoveAudioSemanticLabel": "音声を削除",
+  "rgbColorSemanticLabel": "RGB {red}、{green}、{blue}"
 }

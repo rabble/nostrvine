@@ -9393,9 +9393,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorAddElementSemanticLabel => 'ኤለመንት አክል';
 
   @override
-  String get videoEditorCloseSemanticLabel => 'ገጠመ';
-
-  @override
   String get videoEditorDoneSemanticLabel => 'ተከናውኗል';
 
   @override
@@ -10911,4 +10908,9 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoEditorRemoveAudioSemanticLabel => 'ኦዲዮን አስወግድ';
+
+  @override
+  String rgbColorSemanticLabel(int red, int green, int blue) {
+    return 'RGB $red, $green, $blue';
+  }
 }

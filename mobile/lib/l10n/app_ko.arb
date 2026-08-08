@@ -2221,7 +2221,6 @@
     "videoEditorCameraLabel": "카메라",
     "videoEditorLibraryLabel": "라이브러리",
     "videoEditorCloseColorPickerSemanticLabel": "색상 선택기 닫기",
-    "videoEditorCloseSemanticLabel": "닫기",
     "videoEditorColorPickerSemanticLabel": "색상 선택기",
     "videoEditorColorSelectedSemanticLabel": "{colorName}, 선택됨",
     "@videoEditorColorSelectedSemanticLabel": {
@@ -4280,5 +4279,6 @@
   "videoEditorContinueToPostDetailsSemanticLabel": "게시물 세부 정보로 계속",
   "videoEditorDiscardToolChangesSemanticLabel": "{tool}의 변경 사항 취소",
   "videoEditorApplyToolChangesSemanticLabel": "{tool}의 변경 사항 적용",
-  "videoEditorRemoveAudioSemanticLabel": "오디오 제거"
+  "videoEditorRemoveAudioSemanticLabel": "오디오 제거",
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}"
 }
