@@ -596,5 +596,78 @@ void main() {
         );
       });
     });
+
+    group('formatPostAge', () {
+      testWidgets('returns elapsed time just under a week', (tester) async {
+        final en = await _loadL10n(tester, const Locale('en'));
+
+        expect(
+          _withFixedClock(
+            () => LocalizedTimeFormatter.formatPostAge(
+              en,
+              _unixSecondsAgo(const Duration(days: 6, hours: 23)),
+            ),
+          ),
+          equals('6d ago'),
+        );
+      });
+
+      testWidgets('switches to a full date at one week', (tester) async {
+        final en = await _loadL10n(tester, const Locale('en'));
+
+        expect(
+          _withFixedClock(
+            () => LocalizedTimeFormatter.formatPostAge(
+              en,
+              _unixSecondsAgo(const Duration(days: 7)),
+            ),
+          ),
+          equals('Mar 3, 2026'),
+        );
+      });
+
+      testWidgets('carries the year on a classic Vine date', (tester) async {
+        final en = await _loadL10n(tester, const Locale('en'));
+
+        // 2014-04-22. Without the year an archive post is indistinguishable
+        // from something posted this spring.
+        expect(
+          _withFixedClock(
+            () => LocalizedTimeFormatter.formatPostAge(en, 1398124800),
+          ),
+          equals('Apr 22, 2014'),
+        );
+      });
+
+      testWidgets('localizes the absolute date', (tester) async {
+        final de = await _loadL10n(tester, const Locale('de'));
+
+        expect(
+          _withFixedClock(
+            () => LocalizedTimeFormatter.formatPostAge(
+              de,
+              1398124800,
+              locale: 'de',
+            ),
+          ),
+          equals('22. Apr. 2014'),
+        );
+      });
+
+      testWidgets('localizes the relative form', (tester) async {
+        final de = await _loadL10n(tester, const Locale('de'));
+
+        expect(
+          _withFixedClock(
+            () => LocalizedTimeFormatter.formatPostAge(
+              de,
+              _unixSecondsAgo(const Duration(hours: 3)),
+              locale: 'de',
+            ),
+          ),
+          isNot(equals('3h ago')),
+        );
+      });
+    });
   });
 }

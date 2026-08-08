@@ -2615,6 +2615,11 @@ class AppLocalizationsJa extends AppLocalizations {
   String get analyticsViewDataUnavailableShort => '視聴データなし';
 
   @override
+  String analyticsWatchedCount(String count) {
+    return '$count people watched this';
+  }
+
+  @override
   String analyticsViewsCount(String count) {
     return '$count回視聴';
   }

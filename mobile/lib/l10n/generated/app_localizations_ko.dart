@@ -2628,6 +2628,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get analyticsViewDataUnavailableShort => '조회 데이터 없음';
 
   @override
+  String analyticsWatchedCount(String count) {
+    return '$count people watched this';
+  }
+
+  @override
   String analyticsViewsCount(String count) {
     return '조회수 $count';
   }

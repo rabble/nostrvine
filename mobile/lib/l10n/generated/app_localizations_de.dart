@@ -2791,6 +2791,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get analyticsViewDataUnavailableShort => 'Aufrufdaten nicht verfügbar';
 
   @override
+  String analyticsWatchedCount(String count) {
+    return '$count people watched this';
+  }
+
+  @override
   String analyticsViewsCount(String count) {
     return '$count Aufrufe';
   }

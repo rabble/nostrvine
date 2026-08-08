@@ -2806,6 +2806,11 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi available ang view data';
 
   @override
+  String analyticsWatchedCount(String count) {
+    return '$count people watched this';
+  }
+
+  @override
   String analyticsViewsCount(String count) {
     return '$count views';
   }

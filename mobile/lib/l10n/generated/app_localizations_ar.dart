@@ -2737,6 +2737,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get analyticsViewDataUnavailableShort => 'بيانات المشاهدة غير متاحة';
 
   @override
+  String analyticsWatchedCount(String count) {
+    return '$count people watched this';
+  }
+
+  @override
   String analyticsViewsCount(String count) {
     return '$count مشاهدة';
   }

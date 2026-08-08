@@ -4826,6 +4826,12 @@ abstract class AppLocalizations {
   /// **'View data unavailable'**
   String get analyticsViewDataUnavailableShort;
 
+  /// Creator-facing count of who watched a video. Framed as people rather than "views" because at small numbers the framing does more work than the number.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} people watched this'**
+  String analyticsWatchedCount(String count);
+
   /// No description provided for @analyticsViewsCount.
   ///
   /// In en, this message translates to:

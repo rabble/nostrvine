@@ -2761,6 +2761,11 @@ class AppLocalizationsUr extends AppLocalizations {
   String get analyticsViewDataUnavailableShort => 'ویوز ڈیٹا دستیاب نہیں';
 
   @override
+  String analyticsWatchedCount(String count) {
+    return '$count people watched this';
+  }
+
+  @override
   String analyticsViewsCount(String count) {
     return '$count ویوز';
   }

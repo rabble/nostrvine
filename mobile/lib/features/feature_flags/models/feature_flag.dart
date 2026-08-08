@@ -96,6 +96,13 @@ enum FeatureFlag {
     'Client Seen-Video Filtering',
     'Demote recently-seen videos in home feeds and drop them from '
         'classics/discovery. Kill-switch for the Aug 2026 campaign load.',
+  ),
+  videoCardPostDate(
+    'Post Date On Video Cards',
+    'Show when a video was posted instead of a public loop count. Small '
+        'counts discourage viewing on exactly the new content the feed pays '
+        'to surface. Creators still see their own numbers, and counts large '
+        'enough to attract — classic Vines especially — still show.',
   );
 
   const FeatureFlag(
