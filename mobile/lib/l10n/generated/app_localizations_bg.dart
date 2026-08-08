@@ -8557,6 +8557,18 @@ class AppLocalizationsBg extends AppLocalizations {
       'Видеото не можа да се създаде. Опитайте отново.';
 
   @override
+  String videoRecorderStopMotionShotsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Остават $count кадъра',
+      one: 'Остава 1 кадър',
+      zero: 'Няма останали кадри',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get videoRecorderToggleFlashLabel => 'Превключване на светкавицата';
 
   @override

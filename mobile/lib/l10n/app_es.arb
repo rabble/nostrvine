@@ -2906,6 +2906,14 @@
     "videoRecorderCaptureNextLabel": "Siguiente",
     "videoRecorderLipSyncAddAudioFirst": "Agrega audio antes de grabar",
     "videoRecorderStopMotionAssembleFailed": "No se pudo crear el vídeo. Inténtalo de nuevo.",
+    "videoRecorderStopMotionShotsLeft": "{count, plural, =0{No quedan tomas} =1{Queda 1 toma} other{Quedan {count} tomas}}",
+    "@videoRecorderStopMotionShotsLeft": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "videoRecorderToggleFlashLabel": "Activar o desactivar flash",
     "videoRecorderCycleTimerLabel": "Cambiar temporizador",
     "videoRecorderToggleAspectRatioLabel": "Cambiar relación de aspecto",

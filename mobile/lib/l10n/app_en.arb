@@ -5100,6 +5100,15 @@
   "@videoRecorderStopMotionAssembleFailed": {
     "description": "Snackbar shown when assembling captured stop-motion frames into a video failed."
   },
+  "videoRecorderStopMotionShotsLeft": "{count, plural, =0{No shots left} =1{1 shot left} other{{count} shots left}}",
+  "@videoRecorderStopMotionShotsLeft": {
+    "description": "Label above the stop-motion budget bar in the recorder top bar, counting how many more stills fit in the maximum clip length.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "videoRecorderToggleFlashLabel": "Toggle flash",
   "videoRecorderCycleTimerLabel": "Cycle timer",
   "videoRecorderToggleAspectRatioLabel": "Toggle aspect ratio",

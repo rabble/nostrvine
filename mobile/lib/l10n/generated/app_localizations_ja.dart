@@ -8115,6 +8115,17 @@ class AppLocalizationsJa extends AppLocalizations {
       '動画を作成できませんでした。もう一度お試しください。';
 
   @override
+  String videoRecorderStopMotionShotsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '残り$count枚',
+      zero: '残り0枚',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get videoRecorderToggleFlashLabel => 'フラッシュを切り替え';
 
   @override

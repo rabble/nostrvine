@@ -3166,6 +3166,14 @@
     "videoRecorderCaptureNextLabel": "Следваща",
     "videoRecorderLipSyncAddAudioFirst": "Добавете аудио преди запис",
     "videoRecorderStopMotionAssembleFailed": "Видеото не можа да се създаде. Опитайте отново.",
+    "videoRecorderStopMotionShotsLeft": "{count, plural, =0{Няма останали кадри} =1{Остава 1 кадър} other{Остават {count} кадъра}}",
+    "@videoRecorderStopMotionShotsLeft": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "videoRecorderToggleFlashLabel": "Превключване на светкавицата",
     "videoRecorderCycleTimerLabel": "Цикъл таймер",
     "videoRecorderToggleAspectRatioLabel": "Превключване на пропорциите",

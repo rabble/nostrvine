@@ -8478,6 +8478,18 @@ class AppLocalizationsSv extends AppLocalizations {
       'Det gick inte att skapa videon. Försök igen.';
 
   @override
+  String videoRecorderStopMotionShotsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bilder kvar',
+      one: '1 bild kvar',
+      zero: 'Inga bilder kvar',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get videoRecorderToggleFlashLabel => 'Växla blixt';
 
   @override

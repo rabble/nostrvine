@@ -5124,6 +5124,14 @@
   "@videoRecorderStopMotionAssembleFailed": {
     "description": "Snackbar shown when assembling captured stop-motion frames into a video failed."
   },
+  "videoRecorderStopMotionShotsLeft": "{count, plural, =0{کوئی شاٹ باقی نہیں} =1{1 شاٹ باقی} other{{count} شاٹس باقی}}",
+  "@videoRecorderStopMotionShotsLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "videoRecorderToggleFlashLabel": "فلیش ٹوگل کریں",
   "videoRecorderCycleTimerLabel": "ٹائمر تبدیل کریں",
   "videoRecorderToggleAspectRatioLabel": "ایسپیکٹ ریشو ٹوگل کریں",

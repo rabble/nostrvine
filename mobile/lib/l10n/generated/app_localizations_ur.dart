@@ -8482,6 +8482,18 @@ class AppLocalizationsUr extends AppLocalizations {
       'ویڈیو نہیں بن سکی۔ دوبارہ کوشش کریں۔';
 
   @override
+  String videoRecorderStopMotionShotsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count شاٹس باقی',
+      one: '1 شاٹ باقی',
+      zero: 'کوئی شاٹ باقی نہیں',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get videoRecorderToggleFlashLabel => 'فلیش ٹوگل کریں';
 
   @override

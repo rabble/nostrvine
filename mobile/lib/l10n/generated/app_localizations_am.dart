@@ -8304,6 +8304,18 @@ class AppLocalizationsAm extends AppLocalizations {
       'ቪዲዮውን መፍጠር አልተቻለም። እንደገና ይሞክሩ።';
 
   @override
+  String videoRecorderStopMotionShotsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ፎቶዎች ቀርተዋል',
+      one: '1 ፎቶ ቀርቷል',
+      zero: 'ምንም የቀረ ፎቶ የለም',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get videoRecorderToggleFlashLabel => 'ብልጭታ ቀያይር';
 
   @override
