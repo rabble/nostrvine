@@ -483,7 +483,10 @@ class LikesRepository {
       addressableId: addressableId,
     );
     _indexLikeRecord(placeholder);
-    await _localStorage?.saveLikeRecord(placeholder);
+    await _bestEffortLocalStorage(
+      () async => _localStorage?.saveLikeRecord(placeholder),
+      description: 'saving the like placeholder',
+    );
     if (previousCount != null) {
       _writeCachedLikeCount(
         eventId,
@@ -533,7 +536,10 @@ class LikesRepository {
         addressableId: addressableId,
       );
       _indexLikeRecord(confirmed);
-      await _localStorage?.saveLikeRecord(confirmed);
+      await _bestEffortLocalStorage(
+        () async => _localStorage?.saveLikeRecord(confirmed),
+        description: 'saving the confirmed like',
+      );
 
       return reactionEvent.id;
     } catch (e, stackTrace) {
@@ -555,7 +561,10 @@ class LikesRepository {
         return placeholderId;
       }
       _deindexLikeRecord(eventId);
-      await _localStorage?.deleteLikeRecord(eventId);
+      await _bestEffortLocalStorage(
+        () async => _localStorage?.deleteLikeRecord(eventId),
+        description: 'rolling back the like placeholder',
+      );
       if (previousCount != null) {
         _writeCachedLikeCount(
           eventId,
@@ -671,13 +680,17 @@ class LikesRepository {
     if (record == null && addressableId != null && addressableId.isNotEmpty) {
       record = _likeRecordsByAddressableId[addressableId];
     }
-    if (record == null && _localStorage != null) {
-      record = await _localStorage.getLikeRecord(eventId);
-      if (record == null && addressableId != null && addressableId.isNotEmpty) {
-        record = await _localStorage.getLikeRecordByAddressableId(
-          addressableId,
-        );
-      }
+    final localStorage = _localStorage;
+    if (record == null && localStorage != null) {
+      record = await _bestEffortLocalStorage<LikeRecord?>(
+        () async {
+          final stored = await localStorage.getLikeRecord(eventId);
+          if (stored != null) return stored;
+          if (addressableId == null || addressableId.isEmpty) return null;
+          return localStorage.getLikeRecordByAddressableId(addressableId);
+        },
+        description: 'reading the like record',
+      );
     }
 
     if (record == null) {
@@ -699,7 +712,10 @@ class LikesRepository {
     // 1. Optimistic-first: remove from memory + local storage and tick the
     // watchLikedEventIds stream BEFORE any network I/O (mirror of likeEvent).
     _deindexLikeRecord(resolvedEventId);
-    await _localStorage?.deleteLikeRecord(resolvedEventId);
+    await _bestEffortLocalStorage(
+      () async => _localStorage?.deleteLikeRecord(resolvedEventId),
+      description: 'deleting the like record',
+    );
     _decrementLikeCountCache(eventId, addressableId: addressableId);
     _emitLikedIds();
 
@@ -747,7 +763,10 @@ class LikesRepository {
         return;
       }
       _indexLikeRecord(snapshotRecord);
-      await _localStorage?.saveLikeRecord(snapshotRecord);
+      await _bestEffortLocalStorage(
+        () async => _localStorage?.saveLikeRecord(snapshotRecord),
+        description: 'restoring the like record',
+      );
       if (previousCount != null) {
         _writeCachedLikeCount(
           eventId,
@@ -2061,12 +2080,52 @@ class LikesRepository {
   Future<void> _ensureInitialized() async {
     if (_isInitialized) return;
 
-    if (_localStorage != null) {
-      final records = await _localStorage.getAllLikeRecords();
-      records.forEach(_indexLikeRecord);
-      _emitLikedIds();
+    final localStorage = _localStorage;
+    if (localStorage != null) {
+      try {
+        final records = await localStorage.getAllLikeRecords();
+        records.forEach(_indexLikeRecord);
+        _emitLikedIds();
+      } on Object catch (e) {
+        // Degrade to an in-memory-only cache rather than failing the caller.
+        // Callers are publish paths: an unreadable cache costs a stale
+        // already-liked check, while throwing here costs the Kind 7.
+        Log.warning(
+          'Like cache unavailable; continuing without persisted records: $e',
+          name: 'LikesRepository',
+          category: LogCategory.system,
+        );
+      }
     }
+    // Latched on both paths: an unreadable database stays unreadable for the
+    // session, so retrying would re-throw on every call instead of degrading.
     _isInitialized = true;
+  }
+
+  /// Runs a local-storage side effect that must never block a relay publish.
+  ///
+  /// The local database is a cache. A reaction that reached relays survives
+  /// without its cache row; a reaction blocked by an unwritable cache is lost
+  /// outright. Storage failures are therefore logged and swallowed.
+  ///
+  /// Expected IO/corruption failures are not Crashlytics-reportable (see the
+  /// decision matrix in `.claude/rules/error_handling.md`); the unified log is
+  /// where a degraded cache surfaces.
+  Future<T?> _bestEffortLocalStorage<T>(
+    Future<T> Function() operation, {
+    required String description,
+  }) async {
+    try {
+      return await operation();
+    } on Object catch (e) {
+      Log.warning(
+        'Local like storage unavailable ($description); '
+        'continuing without it: $e',
+        name: 'LikesRepository',
+        category: LogCategory.system,
+      );
+      return null;
+    }
   }
 
   /// Extracts the target event ID from a reaction event's 'e' tag.

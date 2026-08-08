@@ -235,6 +235,95 @@ void main() {
       });
     });
 
+    group('unavailable local storage', () {
+      // The local database is a cache, not a precondition. When it is
+      // unreadable (at-rest cipher bootstrap left it unopenable, runtime
+      // corruption, disk full) the Kind 7 must still reach relays: the signed
+      // reaction is the irreplaceable half, the cache row is not. Mirrors the
+      // same guarantee in RepostsRepository.
+      final storageFailure = Exception('database is unavailable');
+
+      void stubSendLike(MockEvent event) {
+        when(
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenAnswer((_) async => event);
+      }
+
+      test('publishes the like when local storage cannot be read', () async {
+        final mockEvent = MockEvent();
+        when(() => mockEvent.id).thenReturn(testReactionEventId);
+        stubSendLike(mockEvent);
+        when(
+          () => mockLocalStorage.getAllLikeRecords(),
+        ).thenThrow(storageFailure);
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenAnswer((_) async {});
+
+        repository = createRepository();
+        final result = await repository.likeEvent(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+        );
+
+        expect(result, equals(testReactionEventId));
+        verify(
+          () => mockNostrClient.sendLike(
+            testEventId,
+            content: '+',
+            targetAuthorPubkey: testAuthorPubkey,
+          ),
+        ).called(1);
+      });
+
+      test('publishes the like when the local write fails', () async {
+        final mockEvent = MockEvent();
+        when(() => mockEvent.id).thenReturn(testReactionEventId);
+        stubSendLike(mockEvent);
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenThrow(storageFailure);
+
+        repository = createRepository();
+        final result = await repository.likeEvent(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+        );
+
+        expect(result, equals(testReactionEventId));
+        verify(
+          () => mockNostrClient.sendLike(
+            testEventId,
+            content: '+',
+            targetAuthorPubkey: testAuthorPubkey,
+          ),
+        ).called(1);
+      });
+
+      test(
+        'a failed read does not strand the repository uninitialized',
+        () async {
+          // Without the latch every call re-runs the throwing read instead of
+          // degrading once.
+          when(
+            () => mockLocalStorage.getAllLikeRecords(),
+          ).thenThrow(storageFailure);
+
+          repository = createRepository();
+          await repository.getLikedEventIds();
+          await repository.getLikedEventIds();
+
+          verify(() => mockLocalStorage.getAllLikeRecords()).called(1);
+        },
+      );
+    });
+
     group('likeEvent', () {
       test('publishes like reaction and stores record', () async {
         final mockEvent = MockEvent();
