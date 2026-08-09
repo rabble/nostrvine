@@ -45,10 +45,11 @@ class FeaturedTabVideosPage {
 ///
 /// Owns three policies the layers above must not reimplement:
 ///
-/// * **Staleness.** A successful response is cached. A later failure serves
-///   that cache until [cacheTtl] elapses, then drops the tab — so one flaky
-///   request cannot flicker the tab out mid-scroll, and a sustained outage
-///   cannot strand a killed tab on screen.
+/// * **Staleness.** A successful response is cached. A later failure keeps
+///   serving that cache for a grace window derived from the cadence in use
+///   (floor [cacheTtl]), then drops the tab — so one flaky request cannot
+///   flicker the tab out mid-scroll, and a sustained outage cannot strand a
+///   killed tab on screen.
 /// * **Eligibility.** A tab renders only when it is enabled, inside its
 ///   window, has server-side content, and passes the viewer audience rule.
 /// * **Selection.** The payload is a list; v1 renders at most one tab, so the
@@ -64,13 +65,16 @@ class FeaturedTabsRepository {
   }) : _apiClient = apiClient,
        _now = now ?? (() => DateTime.now().toUtc());
 
-  /// How long a cached config keeps serving after a failed refresh.
+  /// Floor for how long a cached config keeps serving after a failed refresh.
   static const defaultCacheTtl = Duration(minutes: 5);
 
   final FunnelcakeApiClient _apiClient;
   final DateTime Function() _now;
 
-  /// Maximum age a cached config may reach before it stops being served.
+  /// Shortest grace window a cached config gets after a failed refresh.
+  ///
+  /// The window actually applied also scales with the server's poll cadence;
+  /// see the private grace calculation below.
   final Duration cacheTtl;
 
   FeaturedTabsResponse? _cached;
@@ -79,8 +83,8 @@ class FeaturedTabsRepository {
   /// Fetches and resolves the featured tab for the current viewer.
   ///
   /// Never throws: a failed fetch degrades to the cached config while it is
-  /// fresh, and to an empty snapshot once [cacheTtl] has elapsed. Callers get
-  /// a resolved answer, not an error to interpret.
+  /// inside its grace window, and to an empty snapshot once that window has
+  /// elapsed. Callers get a resolved answer, not an error to interpret.
   ///
   /// [viewerIsMinor] hides tabs that have not explicitly opted in to a minor
   /// audience. The public config endpoint is shared-cacheable and therefore
@@ -133,11 +137,30 @@ class FeaturedTabsRepository {
     if (cached == null || cachedAt == null) {
       return const FeaturedTabsSnapshot();
     }
-    if (_now().difference(cachedAt) >= cacheTtl) {
+    if (_now().difference(cachedAt) >= _graceFor(cached)) {
       clearCache();
       return const FeaturedTabsSnapshot();
     }
     return _resolve(cached, viewerIsMinor: viewerIsMinor);
+  }
+
+  /// How stale a cached config may be before a failed refresh drops the tab.
+  ///
+  /// [cacheTtl] alone cannot deliver the anti-flicker half of this policy. The
+  /// cache is only ever consulted from a *failed* refresh, and the refresh that
+  /// fails is almost always the scheduled poll — by which point the cache is
+  /// already one full poll interval old. At the default 5-minute cadence
+  /// against a 5-minute TTL, the very first transient failure finds an
+  /// already-expired cache and the tab blinks out, which is the behaviour this
+  /// class exists to prevent. Any server-configured cadence at or above the TTL
+  /// has the same problem.
+  ///
+  /// So the floor is [cacheTtl] and the grace scales with the cadence actually
+  /// in use: one missed poll is survived, two consecutive ones are not, which
+  /// keeps a sustained outage from stranding a killed tab on screen.
+  Duration _graceFor(FeaturedTabsResponse cached) {
+    final scaled = cached.pollInterval * 1.5;
+    return scaled > cacheTtl ? scaled : cacheTtl;
   }
 
   FeaturedTabsSnapshot _resolve(

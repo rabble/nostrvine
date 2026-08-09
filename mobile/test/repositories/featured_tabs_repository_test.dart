@@ -174,16 +174,64 @@ void main() {
         expect(snapshot.hasTab, isTrue);
       });
 
-      test('drops the tab once the cache passes its TTL', () async {
+      test('drops the tab once the cache passes its grace window', () async {
         final repository = buildRepository();
         stubTabs([_tab()]);
         await repository.refresh(viewerIsMinor: false);
 
         stubFailure();
-        clock = clock.add(FeaturedTabsRepository.defaultCacheTtl);
+        clock = clock.add(const Duration(minutes: 30));
         final snapshot = await repository.refresh(viewerIsMinor: false);
 
         expect(snapshot.hasTab, isFalse);
+      });
+
+      test('survives the failure of a poll on the server cadence', () async {
+        // The cache is only ever read from a failed refresh, and the refresh
+        // that fails is normally the scheduled poll — so the cache is already
+        // a full poll interval old by the time it is needed. A grace window
+        // equal to the cadence would expire exactly then and blink the tab out
+        // on the first flaky request.
+        final repository = buildRepository();
+        stubTabs([_tab()]);
+        final first = await repository.refresh(viewerIsMinor: false);
+        expect(first.pollInterval, equals(const Duration(minutes: 5)));
+
+        stubFailure();
+        clock = clock.add(const Duration(minutes: 5, seconds: 2));
+        final snapshot = await repository.refresh(viewerIsMinor: false);
+
+        expect(snapshot.hasTab, isTrue);
+      });
+
+      test('drops the tab after two consecutive missed polls', () async {
+        final repository = buildRepository();
+        stubTabs([_tab()]);
+        await repository.refresh(viewerIsMinor: false);
+
+        stubFailure();
+        clock = clock.add(const Duration(minutes: 5, seconds: 2));
+        expect(
+          (await repository.refresh(viewerIsMinor: false)).hasTab,
+          isTrue,
+        );
+
+        clock = clock.add(const Duration(minutes: 5));
+        final snapshot = await repository.refresh(viewerIsMinor: false);
+
+        expect(snapshot.hasTab, isFalse);
+      });
+
+      test('scales the grace window with a slower server cadence', () async {
+        final repository = buildRepository();
+        stubTabs([_tab()], pollSeconds: 3600);
+        await repository.refresh(viewerIsMinor: false);
+
+        stubFailure();
+        clock = clock.add(const Duration(minutes: 61));
+        final snapshot = await repository.refresh(viewerIsMinor: false);
+
+        expect(snapshot.hasTab, isTrue);
       });
 
       test('returns no tab when the first fetch fails with no cache', () async {

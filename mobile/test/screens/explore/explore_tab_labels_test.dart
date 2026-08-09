@@ -2,7 +2,6 @@
 // ABOUTME: Covers shell titles plus the server-supplied featured tab label.
 
 import 'package:flutter/widgets.dart';
-import 'package:characters/characters.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:openvine/blocs/explore_tabs/explore_tabs_cubit.dart';

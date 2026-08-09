@@ -338,7 +338,7 @@ void main() {
 
         final pendingRefresh = Completer<FeaturedTabVideosPage>();
         when(
-          () => repository.loadVideos(tabId: _tabId, cursor: null),
+          () => repository.loadVideos(tabId: _tabId),
         ).thenAnswer((_) => pendingRefresh.future);
         final refreshing = cubit.load();
 
