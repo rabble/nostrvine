@@ -124,6 +124,7 @@ echo "Running: patrol test ${TEST_PATH} ..." >&2
 cd "$MOBILE_DIR"
 set +e
 PATH="$PUB_CACHE_BIN:$PATH" patrol test \
+    --device "$DEVICE" \
     --target "$TEST_PATH" \
     --dart-define=DEFAULT_ENV=LOCAL \
     --dart-define=INVITE_SERVER_URL="$INVITE_SERVER_URL" \

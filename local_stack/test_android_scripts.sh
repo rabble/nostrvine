@@ -248,6 +248,8 @@ assert_contains 'PATROL_CLI_VERSION=4.6.1' "${SCRIPT_DIR}/profile.sh" \
   "profile runner should pin patrol_cli to the version paired with the patrol package"
 assert_contains 'PATH="$PUB_CACHE_BIN:$PATH" patrol test' "${SCRIPT_DIR}/profile.sh" \
   "profile runner should invoke patrol from the configured PUB_CACHE"
+assert_contains '--device "$DEVICE"' "${SCRIPT_DIR}/profile.sh" \
+  "profile runner should pass the detected device to patrol so it never prompts"
 assert_contains '"${PATROL_EXTRA_ARGS[@]+"${PATROL_EXTRA_ARGS[@]}"}"' "${SCRIPT_DIR}/profile.sh" \
   "profile runner should guard the optional patrol args for bash 3.2 (macOS) under set -u"
 assert_not_contains '    "${PATROL_EXTRA_ARGS[@]}" \' "${SCRIPT_DIR}/profile.sh" \
