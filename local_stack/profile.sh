@@ -65,6 +65,33 @@ if ! local_stack_has_running_container "$COMPOSE_FILE"; then
     exit 1
 fi
 
+# --- Ensure the patrol CLI matches the patrol package ---
+# patrol_cli enforces the pairing itself and aborts the run on a mismatch
+# (patrol_cli 4.5.0+ pairs with patrol 4.7.0+). Activating the pinned CLI before
+# log capture starts keeps install/compile time out of the profiler timeline.
+# Keep in sync with the patrol constraint in mobile/pubspec.yaml.
+PATROL_CLI_VERSION=4.6.1
+PATROL_BIN=""
+if [ -x "$PUB_CACHE_BIN/patrol" ]; then
+    PATROL_BIN="$PUB_CACHE_BIN/patrol"
+elif command -v patrol >/dev/null 2>&1; then
+    PATROL_BIN="$(command -v patrol)"
+fi
+
+PATROL_CURRENT_VERSION=""
+if [ -n "$PATROL_BIN" ]; then
+    # `patrol --version` prints an update banner before the version line. The
+    # update check can fail offline, so treat probe failure as "version unknown"
+    # and let the pinned activation below repair the install.
+    PATROL_CURRENT_VERSION="$("$PATROL_BIN" --version 2>/dev/null |
+        sed -n 's/^patrol_cli v\([0-9][0-9.]*\).*/\1/p' | tail -1)" || true
+fi
+
+if [ "$PATROL_CURRENT_VERSION" != "$PATROL_CLI_VERSION" ]; then
+    echo "Installing patrol_cli ${PATROL_CLI_VERSION} (pinned to match the patrol package)..." >&2
+    dart pub global activate patrol_cli "$PATROL_CLI_VERSION" >&2
+fi
+
 # --- Start docker log capture (background, from now only) ---
 echo "Starting docker log capture..." >&2
 docker compose -f "$COMPOSE_FILE" logs -f -t --since "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
@@ -92,31 +119,6 @@ echo "Starting logcat capture..." >&2
 adb -s "$DEVICE" logcat -c 2>/dev/null || true
 adb -s "$DEVICE" logcat -v UTC -v year flutter:I BandwidthTracker:I IndividualVideoController:I C2PAManager:D OpenVineProofMode:D '*:S' > "$LOGCAT_LOG" 2>&1 &
 LOGCAT_PID=$!
-
-# --- Ensure the patrol CLI matches the patrol package ---
-# patrol_cli enforces the pairing itself and aborts the run on a mismatch
-# (patrol_cli 4.5.0+ pairs with patrol 4.7.0+). Activating the pinned CLI up
-# front means that never lands mid-run, after the stack and emulator are up.
-# Keep in sync with the patrol constraint in mobile/pubspec.yaml.
-PATROL_CLI_VERSION=4.6.1
-PATROL_BIN=""
-if [ -x "$PUB_CACHE_BIN/patrol" ]; then
-    PATROL_BIN="$PUB_CACHE_BIN/patrol"
-elif command -v patrol >/dev/null 2>&1; then
-    PATROL_BIN="$(command -v patrol)"
-fi
-
-PATROL_CURRENT_VERSION=""
-if [ -n "$PATROL_BIN" ]; then
-    # `patrol --version` prints an update banner before the version line.
-    PATROL_CURRENT_VERSION="$("$PATROL_BIN" --version 2>/dev/null |
-        sed -n 's/^patrol_cli v\([0-9][0-9.]*\).*/\1/p' | tail -1)"
-fi
-
-if [ "$PATROL_CURRENT_VERSION" != "$PATROL_CLI_VERSION" ]; then
-    echo "Installing patrol_cli ${PATROL_CLI_VERSION} (pinned to match the patrol package)..." >&2
-    dart pub global activate patrol_cli "$PATROL_CLI_VERSION" >&2
-fi
 
 # --- Run E2E test ---
 # Disable errexit so we can capture the exit code through the pipe.

@@ -358,7 +358,7 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   # Paired with patrol_cli 4.6.1, which patrol_cli itself enforces at run
-  # time. Keep this floor at 4.7.0+ so pub cannot resolve back into the
+  # time. Keep this floor at 4.8.0+ so pub cannot resolve back into the
   # 4.2.0-4.6.1 band that the installed CLI rejects.
   patrol: ^4.8.0
   flutter_launcher_icons: ^0.14.4
