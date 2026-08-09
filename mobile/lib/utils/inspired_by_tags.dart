@@ -49,7 +49,6 @@ List<String> buildClipSourceCreditPTag(String pubkeyHex, {String? relayHint}) {
 Set<String> resolveInspiredByCreatorHexes({
   String? addressableId,
   String? npub,
-  Iterable<ClipSourceCredit> clipSourceCredits = const [],
 }) {
   final hexes = <String>{};
 
@@ -67,11 +66,6 @@ Set<String> resolveInspiredByCreatorHexes({
     hexes.add(decoded);
   }
 
-  for (final credit in clipSourceCredits) {
-    final pubkey = credit.authorPubkey.trim().toLowerCase();
-    if (NostrHexUtils.isValidPubkey(pubkey)) hexes.add(pubkey);
-  }
-
   return hexes;
 }
 
@@ -87,14 +81,12 @@ List<List<String>> buildInspiredByPTags({
   required List<List<String>> existingTags,
   String? addressableId,
   String? npub,
-  Iterable<ClipSourceCredit> clipSourceCredits = const [],
   String? relayHint,
   String? selfPubkey,
 }) {
   final hexes = resolveInspiredByCreatorHexes(
     addressableId: addressableId,
     npub: npub,
-    clipSourceCredits: clipSourceCredits,
   );
   if (hexes.isEmpty) return const [];
 
