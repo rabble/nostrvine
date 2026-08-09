@@ -164,6 +164,17 @@ class RelayPool {
   /// Armed settle windows, keyed by subscription id.
   final Map<String, Timer> _querySettleTimers = {};
 
+  /// One-shot queries that opted out of [querySettleWindow].
+  ///
+  /// The window trades completeness for latency: it releases the caller on the
+  /// relays that answered and reports the result as if every relay had. That
+  /// is the right default for reads that only display what they find, but it
+  /// is unusable for a caller that is about to *replace* what it read — a
+  /// replaceable event republished from a partial answer deletes whatever only
+  /// the silent relay held. Those callers ask for full settlement instead and
+  /// take a timeout as the answer when a relay will not give one.
+  final Set<String> _queriesRequiringFullSettlement = {};
+
   /// When each one-shot query's REQ fan-out started, so an abandoned query can
   /// ask [Relay.isSilentSince] whether a relay that never answered had gone
   /// quiet altogether. Dropped when the query settles or is unsubscribed.
@@ -780,7 +791,10 @@ class RelayPool {
     for (final r in list) {
       // Some relay still owes us a terminal frame for this query.
       if (r.checkQuery(subId) && _canStillSettleQuery(r)) {
-        if (_queryAnswered.contains(subId)) _armQuerySettleWindow(subId);
+        if (_queryAnswered.contains(subId) &&
+            !_queriesRequiringFullSettlement.contains(subId)) {
+          _armQuerySettleWindow(subId);
+        }
         return;
       }
     }
@@ -854,6 +868,7 @@ class RelayPool {
   void _completeQuery(String subId, Function callback) {
     _queryCompleteCallbacks.remove(subId);
     _queryAnswered.remove(subId);
+    _queriesRequiringFullSettlement.remove(subId);
     _querySettleTimers.remove(subId)?.cancel();
     _releaseQuery(subId);
     callback();
@@ -1627,6 +1642,7 @@ class RelayPool {
       _queryCompleteCallbacks.remove(id);
       _queryFanoutInProgress.remove(id);
       _queryAnswered.remove(id);
+      _queriesRequiringFullSettlement.remove(id);
       _querySettleTimers.remove(id)?.cancel();
       _releaseQuery(id);
     }
@@ -1674,6 +1690,11 @@ class RelayPool {
   /// query info will hold in relay and close in relay when EOSE message be received.
   /// if onlyTempRelays is true and tempRelays is not empty, it will only query throw tempRelays.
   /// if onlyTempRelays is false and tempRelays is not empty, it will query bath myRelays and tempRelays.
+  /// Set [requireAllRelaysSettled] when a partial answer is worse for the
+  /// caller than no answer — see [_queriesRequiringFullSettlement]. The query
+  /// then completes only once every relay that can still answer has, so a relay
+  /// that stays connected and never sends a terminal frame runs the caller out
+  /// to its own timeout instead of being skipped past.
   Future<String> query(
     List<Map<String, dynamic>> filters,
     Function(Event) onEvent, {
@@ -1684,6 +1705,7 @@ class RelayPool {
     List<int> relayTypes = RelayType.all,
     bool sendAfterAuth =
         false, // if relay not connected, it will send after auth
+    bool requireAllRelaysSettled = false,
   }) async {
     if (filters.isEmpty) {
       throw ArgumentError("No filters given", "filters");
@@ -1697,6 +1719,9 @@ class RelayPool {
       _queryCompleteCallbacks[subscription.id] = onComplete;
       _queryFanoutInProgress.add(subscription.id);
       _querySentAt[subscription.id] = DateTime.now();
+      if (requireAllRelaysSettled) {
+        _queriesRequiringFullSettlement.add(subscription.id);
+      }
     }
 
     // Collect futures so we can await them before the early-completion

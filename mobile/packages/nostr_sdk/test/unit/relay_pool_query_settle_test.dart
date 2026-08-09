@@ -653,5 +653,85 @@ void main() {
       final result = await pending;
       expect(result.timedOut, isFalse);
     });
+
+    group('requireAllRelaysSettled', () {
+      // Long enough that the settle window would have completed the query
+      // well before it, so a timeout here can only mean the window was
+      // genuinely not armed.
+      const timeout = Duration(seconds: 2);
+
+      test(
+        'reports a mute relay as a timeout instead of an empty answer',
+        () async {
+          final nostr = _newNostr();
+          final answering = _SilentRelay('wss://answers.example');
+          final mute = _SilentRelay('wss://never-eoses.example');
+          expect(await nostr.relayPool.add(answering), isTrue);
+          expect(await nostr.relayPool.add(mute), isTrue);
+
+          final pending = nostr.queryEventsDetailed(
+            [
+              {
+                'kinds': [10003],
+              },
+            ],
+            timeout: timeout,
+            requireAllRelaysSettled: true,
+          );
+
+          final subId = await answering.awaitPendingQuery();
+          await mute.awaitPendingQuery();
+          // The one relay that answers has nothing; the relay that might hold
+          // the list stays connected and never sends a terminal frame.
+          await answering.deliver(['EOSE', subId]);
+
+          final result = await pending;
+
+          expect(result.events, isEmpty);
+          expect(
+            result.timedOut,
+            isTrue,
+            reason:
+                'default settling would have reported this same empty box as a '
+                'complete answer, which a caller about to republish a '
+                'replaceable event would act on and truncate the list',
+          );
+        },
+      );
+
+      test('still completes promptly once every relay answers', () async {
+        final nostr = _newNostr();
+        final first = _SilentRelay('wss://first.example');
+        final second = _SilentRelay('wss://second.example');
+        expect(await nostr.relayPool.add(first), isTrue);
+        expect(await nostr.relayPool.add(second), isTrue);
+
+        final stopwatch = Stopwatch()..start();
+        final pending = nostr.queryEventsDetailed(
+          [
+            {
+              'kinds': [10003],
+            },
+          ],
+          timeout: timeout,
+          requireAllRelaysSettled: true,
+        );
+
+        final firstSubId = await first.awaitPendingQuery();
+        final secondSubId = await second.awaitPendingQuery();
+        await first.deliver(['EOSE', firstSubId]);
+        await second.deliver(['EOSE', secondSubId]);
+
+        final result = await pending;
+        stopwatch.stop();
+
+        expect(result.timedOut, isFalse);
+        expect(
+          stopwatch.elapsed,
+          lessThan(timeout),
+          reason: 'full settlement is reached, so nothing has to be waited out',
+        );
+      });
+    });
   });
 }

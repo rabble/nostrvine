@@ -14,6 +14,10 @@ class _MockNostr extends Mock implements Nostr {
   /// Drives the `timedOut` field of the record synthesized below.
   bool timedOut = false;
 
+  /// What the client last asked for full relay settlement, so a test can pin
+  /// that the flag is threaded down rather than dropped on the floor.
+  bool? lastRequireAllRelaysSettled;
+
   /// Mirror of the real [Nostr.queryEvents]/[Nostr.queryEventsDetailed]
   /// relationship, inverted: the SDK delegates the list-returning method to
   /// the detailed one, so this double delegates the detailed one back to the
@@ -27,7 +31,9 @@ class _MockNostr extends Mock implements Nostr {
     List<int> relayTypes = RelayType.all,
     bool sendAfterAuth = false,
     Duration timeout = const Duration(seconds: 5),
+    bool requireAllRelaysSettled = false,
   }) async {
+    lastRequireAllRelaysSettled = requireAllRelaysSettled;
     final events = await queryEvents(
       filters,
       id: id,
@@ -1470,6 +1476,28 @@ void main() {
           expect(result.noRelays, isFalse);
         },
       );
+
+      test('does not demand full relay settlement by default', () async {
+        stubWebSocketEvents([]);
+
+        await client.queryEventsDetailed([textNoteFilter()]);
+
+        expect(mockNostr.lastRequireAllRelaysSettled, isFalse);
+      });
+
+      test('forwards a caller demand for full relay settlement', () async {
+        // Dropping this on the floor is silent: the query still succeeds, it
+        // just answers on the relays that replied first — which is what lets a
+        // replacing publish truncate a replaceable list.
+        stubWebSocketEvents([]);
+
+        await client.queryEventsDetailed(
+          [textNoteFilter()],
+          requireAllRelaysSettled: true,
+        );
+
+        expect(mockNostr.lastRequireAllRelaysSettled, isTrue);
+      });
 
       test('propagates the relay timeout alongside partial events', () async {
         final events = [_createTestEvent()];
