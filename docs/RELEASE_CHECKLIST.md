@@ -23,6 +23,7 @@ Use this checklist for P1 release prep and store submission. This replaces older
   - Dart package name: `mobile/pubspec.yaml`
   - Store bundle IDs: `co.openvine.app` and shipped child bundle IDs such as `co.openvine.app.NotificationServiceExtension`
 - Do not rename the Dart package or bundle IDs during release cleanup. They are compatibility identifiers, not brand copy drift.
+- macOS direct-download builds are not App Store submissions today, so their Xcode marketing/build settings remain intentionally separate from the iOS store version path.
 
 ## 3. Run The Required Checks
 
@@ -67,7 +68,7 @@ From `mobile/`:
 - [ ] Confirm app metadata matches the release candidate:
   - App name: `Divine`
   - Bundle identifier: `co.openvine.app`
-  - Version/build from `mobile/pubspec.yaml`
+  - Version name from `mobile/pubspec.yaml`; Codemagic build number from App Store Connect latest + 1.
 - [ ] Confirm the built IPA's app bundle and embedded extension bundle versions agree.
 - [ ] Verify `ITSAppUsesNonExemptEncryption` remains `false` in `mobile/ios/Runner/Info.plist`.
 - [ ] Re-check camera, microphone, photo-library, Bluetooth, Bonjour, and location usage strings in `Info.plist`.

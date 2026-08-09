@@ -243,12 +243,19 @@ definitions:
         # exceed the last one accepted for the version train, and it does so
         # *after* the upload succeeds — so a stale number costs a full build and
         # an emailed rejection rather than a fast failure.
-        #
         APP_STORE_APP_ID=6747959501 # co.openvine.app
-        LATEST_IOS_BUILD_NUMBER=$(app-store-connect get-latest-build-number "$APP_STORE_APP_ID" 2>/dev/null || true)
+        ASC_LOOKUP_LOG=$(mktemp)
+        trap 'rm -f "$ASC_LOOKUP_LOG"' EXIT
+        if ! LATEST_IOS_BUILD_NUMBER=$(app-store-connect get-latest-build-number "$APP_STORE_APP_ID" 2>"$ASC_LOOKUP_LOG"); then
+          LATEST_IOS_BUILD_NUMBER=
+        fi
         case "$LATEST_IOS_BUILD_NUMBER" in
           ''|*[!0-9]*)
             echo "ERROR: could not read the latest App Store Connect build number."
+            if [ -s "$ASC_LOOKUP_LOG" ]; then
+              echo "       App Store Connect lookup output:"
+              sed 's/^/       /' "$ASC_LOOKUP_LOG"
+            fi
             echo "       Refusing to guess a build number Apple may reject after upload."
             exit 1
             ;;
