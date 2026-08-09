@@ -9,6 +9,16 @@ part 'profile_stats_dao.g.dart';
 /// Default cache duration for profile stats (5 minutes)
 const profileStatsCacheDuration = Duration(minutes: 5);
 
+/// How long follower/following counts stay useful after they were written.
+///
+/// Follower counts live in this row but are owned by `FollowRepository`, which
+/// stabilizes them with hysteresis against the persisted value. That
+/// stabilization only works if the baseline survives a restart, so the counts
+/// outlive the 5-minute stats cache. One hour matches `FollowRepository`'s own
+/// staleness window: past that point a lower fresh count is accepted outright,
+/// so the persisted baseline no longer affects the result.
+const profileFollowerCountsCacheDuration = Duration(hours: 1);
+
 @DriftAccessor(tables: [ProfileStats, VanishedProfiles])
 class ProfileStatsDao extends DatabaseAccessor<AppDatabase>
     with _$ProfileStatsDaoMixin {
@@ -85,13 +95,29 @@ class ProfileStatsDao extends DatabaseAccessor<AppDatabase>
     return (delete(profileStats)..where((t) => t.pubkey.equals(pubkey))).go();
   }
 
-  /// Delete all expired stats
-  Future<int> deleteExpired({Duration expiry = profileStatsCacheDuration}) {
-    final expiryTime = DateTime.now().subtract(expiry);
+  /// Delete all expired stats.
+  ///
+  /// A row is only dropped once *both* lifecycles have expired: the general
+  /// stats cache ([expiry], measured from `cached_at`) and the follower counts
+  /// ([followerCountsExpiry], measured from `follower_counts_updated_at`).
+  /// Dropping a row that still holds fresh follower counts would destroy the
+  /// baseline `FollowRepository` stabilizes against, which is exactly the
+  /// cross-restart case its hysteresis exists for. Rows that never held
+  /// follower counts are governed by [expiry] alone.
+  Future<int> deleteExpired({
+    Duration expiry = profileStatsCacheDuration,
+    Duration followerCountsExpiry = profileFollowerCountsCacheDuration,
+  }) {
+    final now = DateTime.now();
+    final expiryTime = now.subtract(expiry);
+    final followerExpiryTime = now.subtract(followerCountsExpiry);
     return (delete(profileStats)..where(
-          (t) => t.cachedAt.isSmallerThan(
-            Variable(expiryTime),
-          ),
+          (t) =>
+              t.cachedAt.isSmallerThan(Variable(expiryTime)) &
+              (t.followerCountsUpdatedAt.isNull() |
+                  t.followerCountsUpdatedAt.isSmallerThan(
+                    Variable(followerExpiryTime),
+                  )),
         ))
         .go();
   }

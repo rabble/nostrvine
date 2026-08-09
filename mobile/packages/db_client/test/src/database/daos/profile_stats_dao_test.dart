@@ -324,6 +324,50 @@ void main() {
         expect(deleted, equals(0));
         expect(await appDbClient.countProfileStats(), equals(1));
       });
+
+      test('keeps rows whose follower counts are still fresh', () async {
+        // Startup cleanup runs on every cold start. Dropping this row would
+        // destroy the baseline FollowRepository stabilizes lower fresh counts
+        // against, so the overnight drop in #6902 would never be caught.
+        final oldTime = DateTime.now().subtract(const Duration(minutes: 10));
+        await database
+            .into(database.profileStats)
+            .insert(
+              ProfileStatsCompanion.insert(
+                pubkey: testPubkey,
+                videoCount: const Value(10),
+                cachedAt: oldTime,
+                followerCountsUpdatedAt: Value(
+                  DateTime.now().subtract(const Duration(minutes: 1)),
+                ),
+              ),
+            );
+
+        final deleted = await dao.deleteExpired();
+
+        expect(deleted, equals(0));
+        final row = await appDbClient.getProfileStatRow(testPubkey);
+        expect(row, isNotNull);
+      });
+
+      test('deletes rows whose follower counts are also expired', () async {
+        final oldTime = DateTime.now().subtract(const Duration(hours: 3));
+        await database
+            .into(database.profileStats)
+            .insert(
+              ProfileStatsCompanion.insert(
+                pubkey: testPubkey,
+                videoCount: const Value(10),
+                cachedAt: oldTime,
+                followerCountsUpdatedAt: Value(oldTime),
+              ),
+            );
+
+        final deleted = await dao.deleteExpired();
+
+        expect(deleted, equals(1));
+        expect(await appDbClient.countProfileStats(), equals(0));
+      });
     });
 
     group('clearAll', () {
