@@ -10970,7 +10970,7 @@ abstract class AppLocalizations {
   /// **'Not now'**
   String get commonNotNow;
 
-  /// Screen-reader label for a blocking progress spinner that covers the screen while an action is being prepared. Announced instead of the content behind it, which is not reachable while the spinner is up.
+  /// Screen-reader label for a progress indicator, announced while content or an action is loading. Covers both a full-screen spinner that blocks the content behind it and a small inline one next to content that stays reachable.
   ///
   /// In en, this message translates to:
   /// **'Loading'**

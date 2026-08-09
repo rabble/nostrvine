@@ -471,7 +471,10 @@ class _BakingOverlay extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               spacing: 16,
               children: [
-                const BrandedLoadingIndicator(size: 44),
+                // The label below already announces the wait.
+                const ExcludeSemantics(
+                  child: BrandedLoadingIndicator(size: 44),
+                ),
                 Text(
                   context.l10n.videoEditorChromaKeyApplying,
                   style: VineTheme.titleSmallFont(color: VineTheme.onSurface),

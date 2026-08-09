@@ -265,7 +265,10 @@ class _GeneratingView extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       spacing: 16,
       children: [
-        const Center(child: BrandedLoadingIndicator(size: 60)),
+        // The title below already announces the wait.
+        const ExcludeSemantics(
+          child: Center(child: BrandedLoadingIndicator(size: 60)),
+        ),
         Text(
           l10n.videoEditorCaptionsGeneratingTitle,
           textAlign: TextAlign.center,
