@@ -1,10 +1,12 @@
 // ABOUTME: Tests for CacheRecoveryService's directory clearing
 // ABOUTME: Pins #4968 — the durable database dir is preserved while caches are cleared
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce/hive.dart';
+import 'package:openvine/models/notification_preferences.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/cache_recovery_service.dart';
 import 'package:path/path.dart' as p;
@@ -31,11 +33,13 @@ void main() {
       setUp(() async {
         tmp = Directory.systemTemp.createTempSync('cache_recovery_hive_test');
         Hive.init(tmp.path);
+        await TestHelpers.cleanupHiveBox('notifications');
         await TestHelpers.cleanupHiveBox('pending_uploads');
         await TestHelpers.cleanupHiveBox('video_cache');
       });
 
       tearDown(() async {
+        await TestHelpers.cleanupHiveBox('notifications');
         await TestHelpers.cleanupHiveBox('pending_uploads');
         await TestHelpers.cleanupHiveBox('video_cache');
         if (tmp.existsSync()) tmp.deleteSync(recursive: true);
@@ -72,6 +76,33 @@ void main() {
           expect(reopenedVideoCache.get('cache-id'), isNull);
         },
       );
+
+      test(
+        'preserves durable notification preferences while clearing caches',
+        () async {
+          final notifications = Hive.isBoxOpen('notifications')
+              ? Hive.box('notifications')
+              : await Hive.openBox('notifications');
+          final videoCache = Hive.isBoxOpen('video_cache')
+              ? Hive.box('video_cache')
+              : await Hive.openBox('video_cache');
+          const preferences = NotificationPreferences(commentsEnabled: false);
+          final storedPreferences = jsonEncode(preferences.toJson());
+          await notifications.put('push_preferences', storedPreferences);
+          await videoCache.put('cache-id', 'cached video');
+
+          await CacheRecoveryService.clearHiveBoxesForTesting();
+
+          expect(
+            Hive.box('notifications').get('push_preferences'),
+            storedPreferences,
+          );
+          expect(Hive.isBoxOpen('video_cache'), isFalse);
+          final reopenedVideoCache = await Hive.openBox('video_cache');
+          addTearDown(reopenedVideoCache.close);
+          expect(reopenedVideoCache.get('cache-id'), isNull);
+        },
+      );
     });
 
     group('full cache recovery', () {
@@ -101,10 +132,7 @@ void main() {
       }
 
       test('preserves durable pending uploads during clearAllCaches', () async {
-        final db = write(
-          'support/openvine/database/divine_db.db',
-          'database',
-        );
+        final db = write('support/openvine/database/divine_db.db', 'database');
         final pendingUploads = write(
           'support/openvine/pending_uploads.hive',
           'pending uploads',
@@ -190,10 +218,7 @@ void main() {
           expect(top.existsSync(), isFalse);
 
           // The ancestor dir of the protected subtree is kept (it holds it).
-          expect(
-            Directory(p.join(tmp.path, 'openvine')).existsSync(),
-            isTrue,
-          );
+          expect(Directory(p.join(tmp.path, 'openvine')).existsSync(), isTrue);
           expect(cleared, greaterThan(0));
         },
       );

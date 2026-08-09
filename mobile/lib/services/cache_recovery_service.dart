@@ -54,7 +54,7 @@ class CacheRecoveryService {
     }
   }
 
-  /// Clear all Hive database boxes
+  /// Clear disposable Hive cache boxes.
   static Future<int> _clearHiveBoxes() async {
     int cleared = 0;
 
@@ -62,7 +62,6 @@ class CacheRecoveryService {
       // Get all open boxes and clear them
       // Note: We iterate over known box names instead of trying to access all open boxes
       final knownBoxNames = [
-        'notifications',
         'user_profiles',
         'personal_events',
         'personal_events_metadata',
