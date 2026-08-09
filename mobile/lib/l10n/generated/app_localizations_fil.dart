@@ -8311,6 +8311,13 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
+  String get commentsVideoReplyPending => 'Nagpo-post…';
+
+  @override
+  String get commentsVideoReplyPendingSemanticLabel =>
+      'Nagpo-post ang iyong video reply';
+
+  @override
   String get commentsSortNew => 'New';
 
   @override

@@ -8248,6 +8248,13 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get commentsVideoReplyPending => 'Plaatsen…';
+
+  @override
+  String get commentsVideoReplyPendingSemanticLabel =>
+      'Je videoreactie wordt geplaatst';
+
+  @override
   String get commentsSortNew => 'New';
 
   @override

@@ -4927,6 +4927,8 @@
       }
     }
   },
+  "commentsVideoReplyPending": "پوسٹ ہو رہا ہے…",
+  "commentsVideoReplyPendingSemanticLabel": "آپ کا ویڈیو جواب پوسٹ ہو رہا ہے",
   "commentsSortNew": "نئے",
   "@commentsSortNew": {
     "description": "Comments-sort toggle label for newest-first order."

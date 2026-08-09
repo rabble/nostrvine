@@ -10,9 +10,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide NIP71VideoKinds;
+import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/comments/comment_composer/comment_composer_bloc.dart';
 import 'package:openvine/blocs/comments/comment_reactions/comment_reactions_bloc.dart';
 import 'package:openvine/blocs/comments/comments_list/comments_list_bloc.dart';
+import 'package:openvine/blocs/comments/comments_list/comments_list_helpers.dart';
 import 'package:openvine/blocs/comments/comments_surface_performance_telemetry.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
@@ -276,6 +278,7 @@ abstract final class CommentsScreen {
             ],
             child: OutboxBridges(
               onCommentCountChanged: onCommentCountChanged,
+              currentUserPubkey: authService.currentPublicKeyHex,
               child: child,
             ),
           ),
@@ -357,10 +360,18 @@ class OutboxBridges extends StatelessWidget {
   const OutboxBridges({
     required this.onCommentCountChanged,
     required this.child,
+    this.currentUserPubkey,
     super.key,
   });
 
   final ValueChanged<int>? onCommentCountChanged;
+
+  /// Signed-in pubkey, used to author the in-flight video-reply placeholder.
+  ///
+  /// `null` while signed out, which also means no video reply can be
+  /// publishing, so the placeholder bridge is skipped entirely.
+  final String? currentUserPubkey;
+
   final Widget child;
 
   @override
@@ -430,7 +441,12 @@ class OutboxBridges extends StatelessWidget {
           listener: _bridgeReactionsOutbox,
         ),
       ],
-      child: child,
+      child: currentUserPubkey == null
+          ? child
+          : VideoReplyPlaceholderBridge(
+              currentUserPubkey: currentUserPubkey!,
+              child: child,
+            ),
     );
   }
 
@@ -472,6 +488,24 @@ class OutboxBridges extends StatelessWidget {
     ctx.read<CommentComposerBloc>().add(const ComposerOutboxConsumed());
   }
 
+  /// Whether [replyContext] targets the video this sheet is showing.
+  ///
+  /// Matches on the root event id, or on the addressable coordinate when the
+  /// reply was recorded against one — a video reply carries both (`E` and `A`),
+  /// and a sheet opened from a metadata-edited video can hold the newer id.
+  @visibleForTesting
+  static bool videoReplyTargetsRoot(
+    VideoReplyContext replyContext, {
+    required String rootEventId,
+    String? rootAddressableId,
+  }) {
+    if (replyContext.rootEventId == rootEventId) return true;
+    final coordinate = replyContext.rootAddressableId;
+    return coordinate != null &&
+        coordinate.isNotEmpty &&
+        coordinate == rootAddressableId;
+  }
+
   static void _bridgeReactionsOutbox(
     BuildContext ctx,
     CommentReactionsState state,
@@ -486,6 +520,107 @@ class OutboxBridges extends StatelessWidget {
         listBloc.add(CommentsRemovedByAuthorFromStore(authorPubkey));
     }
     ctx.read<CommentReactionsBloc>().add(const ReactionsOutboxConsumed());
+  }
+}
+
+/// Surfaces an in-flight video reply as a pending row on its destination sheet.
+///
+/// The video-reply flow publishes in the background and navigates to the root
+/// video, so this sheet mounts *after* the publish starts and there is no
+/// composer outbox to bridge — unlike a text reply, whose bloc is still alive
+/// (#5862). The in-flight set lives in [BackgroundPublishBloc], so the
+/// placeholder is derived from that state rather than from a one-shot event,
+/// which also means it survives a sheet reopen mid-publish.
+///
+/// Public-by-test only: production callers reach it through [OutboxBridges].
+@visibleForTesting
+class VideoReplyPlaceholderBridge extends StatefulWidget {
+  const VideoReplyPlaceholderBridge({
+    required this.currentUserPubkey,
+    required this.child,
+    super.key,
+  });
+
+  final String currentUserPubkey;
+  final Widget child;
+
+  @override
+  State<VideoReplyPlaceholderBridge> createState() =>
+      _VideoReplyPlaceholderBridgeState();
+}
+
+class _VideoReplyPlaceholderBridgeState
+    extends State<VideoReplyPlaceholderBridge> {
+  /// Draft ids this bridge has already inserted a placeholder for.
+  ///
+  /// Guards re-insertion after the relay echo swaps the placeholder out: the
+  /// echo lands while the upload is still registered, so a purely
+  /// store-diffing sync would see the row missing and add it back.
+  final Set<String> _inserted = {};
+
+  @override
+  void initState() {
+    super.initState();
+    // BlocListener fires on changes only, and the upload was registered before
+    // this sheet mounted — so seed from the current state once.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _sync(context.read<BackgroundPublishBloc>().state);
+    });
+  }
+
+  void _sync(BackgroundPublishState publishState) {
+    if (!mounted) return;
+    final listBloc = context.read<CommentsListBloc>();
+    final listState = listBloc.state;
+
+    final inFlightDraftIds = <String>{};
+    for (final upload in publishState.uploads) {
+      if (upload.result != null) continue;
+      final replyContext = upload.draft.videoReplyContext;
+      if (replyContext == null) continue;
+      if (!OutboxBridges.videoReplyTargetsRoot(
+        replyContext,
+        rootEventId: listState.rootEventId,
+        rootAddressableId: listState.rootAddressableId,
+      )) {
+        continue;
+      }
+      inFlightDraftIds.add(upload.draft.id);
+      if (_inserted.add(upload.draft.id)) {
+        listBloc.add(
+          OptimisticCommentInserted(
+            Comment(
+              id: pendingVideoReplyId(upload.draft.id),
+              content: upload.draft.description,
+              authorPubkey: widget.currentUserPubkey,
+              createdAt: DateTime.now(),
+              rootEventId: listState.rootEventId,
+              rootAuthorPubkey: listState.rootAuthorPubkey,
+              rootAddressableId: listState.rootAddressableId,
+              replyToEventId: replyContext.parentCommentId,
+              replyToAuthorPubkey: replyContext.parentAuthorPubkey,
+            ),
+          ),
+        );
+      }
+    }
+
+    // An upload that left the in-flight set is done — succeeded, failed, or
+    // vanished. Drop its placeholder; the real row arrives via the relay echo
+    // on success. Rollback no-ops when the echo already replaced it.
+    for (final draftId in _inserted.difference(inFlightDraftIds)) {
+      _inserted.remove(draftId);
+      listBloc.add(OptimisticCommentRolledBack(pendingVideoReplyId(draftId)));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<BackgroundPublishBloc, BackgroundPublishState>(
+      listener: (_, state) => _sync(state),
+      child: widget.child,
+    );
   }
 }
 

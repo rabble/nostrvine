@@ -4927,6 +4927,8 @@
       }
     }
   },
+  "commentsVideoReplyPending": "Menyiarkan…",
+  "commentsVideoReplyPendingSemanticLabel": "Balasan video anda sedang disiarkan",
   "commentsSortNew": "Baharu",
   "@commentsSortNew": {
     "description": "Comments-sort toggle label for newest-first order."
