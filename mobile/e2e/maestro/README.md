@@ -9,8 +9,9 @@ camera or recording.
 
 ## What the smoke suite covers today
 
-`suites/smoke.yaml` currently runs **one** flow — `loginEmailPwd`. The other
-three are held back because they cannot pass yet:
+`suites/smoke.yaml` currently runs the account-management paths that pass end
+to end today: `loginFreshInstall`, its `removeKeys` cleanup, and
+`loginEmailPwd`. The social flows are held back because they cannot pass yet:
 
 | Flow | Why it is out | Tracking |
 |---|---|---|
@@ -18,9 +19,10 @@ three are held back because they cannot pass yet:
 | `commentFlow` | `env`-vs-`output` bug and a disabled cleanup step | [#6952](https://github.com/divinevideo/divine-mobile/issues/6952) |
 | `searchUserFlow` | needs a rewrite for the current search layout | [#6952](https://github.com/divinevideo/divine-mobile/issues/6952) |
 
-So a green smoke run proves the harness, the build, and the sign-in path — not
-the social flows. Restore each flow in the PR that fixes it, and put back the
-credentials it needs (`SEARCH_USER` for `searchUserFlow`) in the same change.
+So a green smoke run proves the harness, the build, account creation, cleanup,
+and the sign-in path — not the social flows. Restore each flow in the PR that
+fixes it, and put back the credentials it needs (`SEARCH_USER` for
+`searchUserFlow`) in the same change.
 
 The `e2e-smoke-ios` and `e2e-smoke-android` Codemagic workflows are
 `triggering: events: []`, so nothing runs them automatically. They are manual
@@ -63,7 +65,7 @@ Codemagic group.
 
 | Variable | Used by |
 |---|---|
-| `USER_EMAIL`, `USER_PWD` | `flows/loginEmailPwd.yaml` — the only smoke flow |
+| `USER_EMAIL`, `USER_PWD` | `flows/loginEmailPwd.yaml` |
 | `SEARCH_USER` | `flows/searchUserFlow.yaml` — `fullRegression` only |
 | `USER_KEYS`, `SEARCH_USER_ID`, `VIDEO_USER`, `VIDEO_DESCRIPTION`, `VIDEO_DATA`, `EXISTING_USERNAME` | `suites/fullRegression.yaml` |
 

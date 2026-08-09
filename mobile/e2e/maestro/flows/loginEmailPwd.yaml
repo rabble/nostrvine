@@ -36,24 +36,6 @@ appId: co.openvine.app
 - tapOn:
           text: Sign in
           index: 1
-#Android keyboard close
-#- runFlow:
-#    when:
-#      visible: Back
-#    commands:
-#      - tapOn:
-#          id: input_method_nav_back
-#      - tapOn:
-#          text: Sign in
- #         index: 1
-#iOS keyboard close
-#- runFlow:
-#    when:
-#      visible: Sign in
-#    commands:
-#      - tapOn:
-#          text: Sign in
-#          index: 1
 
 - waitForAnimationToEnd
 - runFlow:

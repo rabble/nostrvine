@@ -13,5 +13,7 @@ name: Divine Smoke regression test
 # Put each one back in the PR that fixes it, and restore the credentials it
 # needs to the runners at the same time.
 
-#Account management tests
+# Account management tests
+- runFlow: ../tests/loginFreshInstall.yaml
+- runFlow: ../tests/removeKeys.yaml
 - runFlow: ../flows/loginEmailPwd.yaml
