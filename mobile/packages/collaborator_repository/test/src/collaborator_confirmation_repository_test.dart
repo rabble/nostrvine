@@ -52,6 +52,18 @@ Event _acceptanceEvent({
   ], '');
 }
 
+/// A divine-web acceptance: only `a` + a random-UUID `d`, with no `status`,
+/// `p`, or `role` tag. Mirrors `divine-web/src/hooks/useApproveCollab.ts`.
+Event _webAcceptanceEvent({
+  required String pubkey,
+  String videoAddress = _videoAddress,
+}) {
+  return Event(pubkey, 34238, [
+    ['a', videoAddress, 'wss://relay.divine.video', 'root'],
+    ['d', '0e737d78-e3d8-4184-9394-d11690e8269b'],
+  ], '');
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(<Filter>[]);
@@ -165,75 +177,72 @@ void main() {
       repo.release(_videoAddress);
     });
 
-    test(
-      'creator removal wins: re-watch with empty taggedPubkeys excludes '
-      'previously-confirmed collaborators',
-      () async {
-        // Spec invariant from
-        // docs/superpowers/plans/2026-04-25-collab-full-lifecycle.md:
-        // "Creator removal always wins. If the latest creator-authored video
-        // event no longer has the collaborator role `p` tag, Funnelcake must
-        // remove the pending/confirmed edge even if an old acceptance event
-        // still exists."
-        //
-        // Mobile-side analogue: even though `_relayAccepted` retains the
-        // historical acceptance, a re-watch driven by the latest creator-
-        // authored event with an empty (or shrunk) `taggedPubkeys` must
-        // produce a snapshot that does not surface the removed collaborator.
-        final repo = CollaboratorConfirmationRepository(
-          nostrClient: nostrClient,
-          localStateReader: _StaticLocalStateReader(const {}),
-          currentUserPubkey: _creatorPubkey,
-        );
+    test('creator removal wins: re-watch with empty taggedPubkeys excludes '
+        'previously-confirmed collaborators', () async {
+      // Spec invariant from
+      // docs/superpowers/plans/2026-04-25-collab-full-lifecycle.md:
+      // "Creator removal always wins. If the latest creator-authored video
+      // event no longer has the collaborator role `p` tag, Funnelcake must
+      // remove the pending/confirmed edge even if an old acceptance event
+      // still exists."
+      //
+      // Mobile-side analogue: even though `_relayAccepted` retains the
+      // historical acceptance, a re-watch driven by the latest creator-
+      // authored event with an empty (or shrunk) `taggedPubkeys` must
+      // produce a snapshot that does not surface the removed collaborator.
+      final repo = CollaboratorConfirmationRepository(
+        nostrClient: nostrClient,
+        localStateReader: _StaticLocalStateReader(const {}),
+        currentUserPubkey: _creatorPubkey,
+      );
 
-        // Initial state: B is tagged and has accepted.
-        final emissions = <VideoCollaboratorStatus>[];
-        final sub = repo
-            .watch(
-              _videoAddress,
-              creatorPubkey: _creatorPubkey,
-              taggedPubkeys: const [_collaboratorPubkey],
-            )
-            .listen(emissions.add);
+      // Initial state: B is tagged and has accepted.
+      final emissions = <VideoCollaboratorStatus>[];
+      final sub = repo
+          .watch(
+            _videoAddress,
+            creatorPubkey: _creatorPubkey,
+            taggedPubkeys: const [_collaboratorPubkey],
+          )
+          .listen(emissions.add);
 
-        await Future<void>.delayed(Duration.zero);
-        relayController.add(_acceptanceEvent(pubkey: _collaboratorPubkey));
-        await Future<void>.delayed(Duration.zero);
-        expect(
-          emissions.last.statusFor(_collaboratorPubkey),
-          equals(CollaboratorStatus.confirmed),
-        );
+      await Future<void>.delayed(Duration.zero);
+      relayController.add(_acceptanceEvent(pubkey: _collaboratorPubkey));
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        emissions.last.statusFor(_collaboratorPubkey),
+        equals(CollaboratorStatus.confirmed),
+      );
 
-        await sub.cancel();
-        repo.release(_videoAddress);
+      await sub.cancel();
+      repo.release(_videoAddress);
 
-        // Simulate the creator editing the video and removing B. A fresh
-        // watcher arrives with the new (empty) tagged list.
-        final reEmissions = <VideoCollaboratorStatus>[];
-        final reSub = repo
-            .watch(
-              _videoAddress,
-              creatorPubkey: _creatorPubkey,
-              taggedPubkeys: const <String>[],
-            )
-            .listen(reEmissions.add);
+      // Simulate the creator editing the video and removing B. A fresh
+      // watcher arrives with the new (empty) tagged list.
+      final reEmissions = <VideoCollaboratorStatus>[];
+      final reSub = repo
+          .watch(
+            _videoAddress,
+            creatorPubkey: _creatorPubkey,
+            taggedPubkeys: const <String>[],
+          )
+          .listen(reEmissions.add);
 
-        await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
-        // B was previously confirmed. The new snapshot must not surface them.
-        expect(reEmissions.last.statusByPubkey, isEmpty);
-        expect(
-          reEmissions.last.statusFor(_collaboratorPubkey),
-          equals(CollaboratorStatus.pending),
-          reason:
-              'statusFor falls back to pending for unknown pubkeys; the key '
-              'guarantee is that B is no longer in statusByPubkey.',
-        );
+      // B was previously confirmed. The new snapshot must not surface them.
+      expect(reEmissions.last.statusByPubkey, isEmpty);
+      expect(
+        reEmissions.last.statusFor(_collaboratorPubkey),
+        equals(CollaboratorStatus.pending),
+        reason:
+            'statusFor falls back to pending for unknown pubkeys; the key '
+            'guarantee is that B is no longer in statusByPubkey.',
+      );
 
-        await reSub.cancel();
-        repo.release(_videoAddress);
-      },
-    );
+      await reSub.cancel();
+      repo.release(_videoAddress);
+    });
 
     test(
       'rejects events whose only address tag is `d` (NIP-33 self-id)',
@@ -264,10 +273,7 @@ void main() {
         final beforeCount = emissions.length;
 
         relayController.add(
-          _acceptanceEvent(
-            pubkey: _collaboratorPubkey,
-            addressTag: 'd',
-          ),
+          _acceptanceEvent(pubkey: _collaboratorPubkey, addressTag: 'd'),
         );
         await Future<void>.delayed(Duration.zero);
 
@@ -282,7 +288,47 @@ void main() {
       },
     );
 
-    test('ignores events without status=accepted', () async {
+    test(
+      'confirms a divine-web acceptance that carries no status tag',
+      () async {
+        final repo = CollaboratorConfirmationRepository(
+          nostrClient: nostrClient,
+          localStateReader: _StaticLocalStateReader(const {}),
+          currentUserPubkey: _creatorPubkey,
+        );
+
+        final emissions = <VideoCollaboratorStatus>[];
+        final sub = repo
+            .watch(
+              _videoAddress,
+              creatorPubkey: _creatorPubkey,
+              taggedPubkeys: const [_collaboratorPubkey],
+            )
+            .listen(emissions.add);
+
+        await Future<void>.delayed(Duration.zero);
+        expect(
+          emissions.last.statusFor(_collaboratorPubkey),
+          equals(CollaboratorStatus.pending),
+        );
+
+        relayController.add(_webAcceptanceEvent(pubkey: _collaboratorPubkey));
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          emissions.last.statusFor(_collaboratorPubkey),
+          equals(CollaboratorStatus.confirmed),
+          reason:
+              'divine-web publishes acceptances with no status tag; requiring '
+              'one silently dropped ~15% of production acceptances.',
+        );
+
+        await sub.cancel();
+        repo.release(_videoAddress);
+      },
+    );
+
+    test('ignores events with an explicit non-accepted status', () async {
       final repo = CollaboratorConfirmationRepository(
         nostrClient: nostrClient,
         localStateReader: _StaticLocalStateReader(const {}),
@@ -302,10 +348,7 @@ void main() {
       final beforeCount = emissions.length;
 
       relayController.add(
-        _acceptanceEvent(
-          pubkey: _collaboratorPubkey,
-          statusValue: 'declined',
-        ),
+        _acceptanceEvent(pubkey: _collaboratorPubkey, statusValue: 'declined'),
       );
       await Future<void>.delayed(Duration.zero);
 
@@ -319,52 +362,49 @@ void main() {
       repo.release(_videoAddress);
     });
 
-    test(
-      'recipient view: current user local store override flips current user '
-      'status without a relay subscription',
-      () async {
-        // No NostrClient.subscribe call expected because current user is
-        // NOT the creator.
-        final repo = CollaboratorConfirmationRepository(
-          nostrClient: nostrClient,
-          localStateReader: _StaticLocalStateReader(const {
-            '$_videoAddress|$_creatorPubkey|$_collaboratorPubkey':
-                CollaboratorStatus.ignored,
-          }),
-          currentUserPubkey: _collaboratorPubkey,
-        );
+    test('recipient view: current user local store override flips current user '
+        'status without a relay subscription', () async {
+      // No NostrClient.subscribe call expected because current user is
+      // NOT the creator.
+      final repo = CollaboratorConfirmationRepository(
+        nostrClient: nostrClient,
+        localStateReader: _StaticLocalStateReader(const {
+          '$_videoAddress|$_creatorPubkey|$_collaboratorPubkey':
+              CollaboratorStatus.ignored,
+        }),
+        currentUserPubkey: _collaboratorPubkey,
+      );
 
-        final emissions = <VideoCollaboratorStatus>[];
-        final sub = repo
-            .watch(
-              _videoAddress,
-              creatorPubkey: _creatorPubkey,
-              taggedPubkeys: const [_collaboratorPubkey],
-            )
-            .listen(emissions.add);
+      final emissions = <VideoCollaboratorStatus>[];
+      final sub = repo
+          .watch(
+            _videoAddress,
+            creatorPubkey: _creatorPubkey,
+            taggedPubkeys: const [_collaboratorPubkey],
+          )
+          .listen(emissions.add);
 
-        await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
-        expect(
-          emissions.last.statusFor(_collaboratorPubkey),
-          equals(CollaboratorStatus.ignored),
-        );
-        verifyNever(
-          () => nostrClient.subscribe(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-            tempRelays: any(named: 'tempRelays'),
-            targetRelays: any(named: 'targetRelays'),
-            relayTypes: any(named: 'relayTypes'),
-            sendAfterAuth: any(named: 'sendAfterAuth'),
-            onEose: any(named: 'onEose'),
-          ),
-        );
+      expect(
+        emissions.last.statusFor(_collaboratorPubkey),
+        equals(CollaboratorStatus.ignored),
+      );
+      verifyNever(
+        () => nostrClient.subscribe(
+          any(),
+          subscriptionId: any(named: 'subscriptionId'),
+          tempRelays: any(named: 'tempRelays'),
+          targetRelays: any(named: 'targetRelays'),
+          relayTypes: any(named: 'relayTypes'),
+          sendAfterAuth: any(named: 'sendAfterAuth'),
+          onEose: any(named: 'onEose'),
+        ),
+      );
 
-        await sub.cancel();
-        repo.release(_videoAddress);
-      },
-    );
+      await sub.cancel();
+      repo.release(_videoAddress);
+    });
 
     test(
       'markLocal emits a new snapshot for the current user immediately',
@@ -499,42 +539,39 @@ void main() {
       },
     );
 
-    test(
-      'does not open a relay subscription when current user is not the '
-      'creator',
-      () async {
-        final repo = CollaboratorConfirmationRepository(
-          nostrClient: nostrClient,
-          localStateReader: _StaticLocalStateReader(const {}),
-          currentUserPubkey: _strangerPubkey,
-        );
+    test('does not open a relay subscription when current user is not the '
+        'creator', () async {
+      final repo = CollaboratorConfirmationRepository(
+        nostrClient: nostrClient,
+        localStateReader: _StaticLocalStateReader(const {}),
+        currentUserPubkey: _strangerPubkey,
+      );
 
-        final sub = repo
-            .watch(
-              _videoAddress,
-              creatorPubkey: _creatorPubkey,
-              taggedPubkeys: const [_collaboratorPubkey],
-            )
-            .listen((_) {});
+      final sub = repo
+          .watch(
+            _videoAddress,
+            creatorPubkey: _creatorPubkey,
+            taggedPubkeys: const [_collaboratorPubkey],
+          )
+          .listen((_) {});
 
-        await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
-        verifyNever(
-          () => nostrClient.subscribe(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-            tempRelays: any(named: 'tempRelays'),
-            targetRelays: any(named: 'targetRelays'),
-            relayTypes: any(named: 'relayTypes'),
-            sendAfterAuth: any(named: 'sendAfterAuth'),
-            onEose: any(named: 'onEose'),
-          ),
-        );
+      verifyNever(
+        () => nostrClient.subscribe(
+          any(),
+          subscriptionId: any(named: 'subscriptionId'),
+          tempRelays: any(named: 'tempRelays'),
+          targetRelays: any(named: 'targetRelays'),
+          relayTypes: any(named: 'relayTypes'),
+          sendAfterAuth: any(named: 'sendAfterAuth'),
+          onEose: any(named: 'onEose'),
+        ),
+      );
 
-        await sub.cancel();
-        repo.release(_videoAddress);
-      },
-    );
+      await sub.cancel();
+      repo.release(_videoAddress);
+    });
 
     test('close cancels relay subs and clears state', () async {
       final repo = CollaboratorConfirmationRepository(

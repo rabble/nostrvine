@@ -236,10 +236,16 @@ class CollaboratorConfirmationRepository {
     );
     if (!addressMatches) return;
 
-    final hasAcceptedStatus = event.tags.any(
-      (tag) => tag.length >= 2 && tag[0] == 'status' && tag[1] == 'accepted',
+    // A missing `status` tag means accepted. divine-web publishes acceptances
+    // as `[['a', coord], ['d', uuid]]` with no `status`, and Funnelcake's
+    // confirmed read model does not require one either — requiring it here
+    // silently dropped every web-made acceptance. Only an explicit
+    // non-accepted status rejects the event.
+    final statusTag = event.tags.firstWhere(
+      (tag) => tag.length >= 2 && tag[0] == 'status',
+      orElse: () => const <String>[],
     );
-    if (!hasAcceptedStatus) return;
+    if (statusTag.length >= 2 && statusTag[1] != 'accepted') return;
 
     if (!taggedPubkeys.contains(event.pubkey)) {
       Log.info(
