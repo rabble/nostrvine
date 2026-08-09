@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/featured_tabs/featured_tab_videos_cubit.dart';
+import 'package:openvine/blocs/featured_tabs/featured_tabs_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/view_traffic_source.dart';
 import 'package:openvine/providers/featured_tabs_providers.dart';
@@ -42,7 +43,37 @@ class FeaturedVideosTab extends ConsumerWidget {
       create: (_) =>
           FeaturedTabVideosCubit(repository: repository, tabId: config.id)
             ..load(),
-      child: _FeaturedVideosView(config: config),
+      child: _FeaturedVideosRetryOnPoll(
+        child: _FeaturedVideosView(config: config),
+      ),
+    );
+  }
+}
+
+/// Refetches the page when a config poll lands while the tab is empty.
+///
+/// `has_content` runs on a 15-minute snapshot cadence and can lead the videos
+/// endpoint, so funnelcake's integration guide asks clients to treat an empty
+/// page as transient and retry on the next poll.
+/// [FeaturedTabVideosState.isEmpty] already says as much; this is what acts on
+/// it. Only the empty case retries, so a populated grid never loses the user's
+/// scroll position to a background poll.
+class _FeaturedVideosRetryOnPoll extends StatelessWidget {
+  const _FeaturedVideosRetryOnPoll({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<FeaturedTabsCubit, FeaturedTabsState>(
+      listenWhen: (previous, current) =>
+          previous.status != FeaturedTabsStatus.resolved &&
+          current.status == FeaturedTabsStatus.resolved,
+      listener: (context, _) {
+        final videos = context.read<FeaturedTabVideosCubit>();
+        if (videos.state.isEmpty) videos.load();
+      },
+      child: child,
     );
   }
 }

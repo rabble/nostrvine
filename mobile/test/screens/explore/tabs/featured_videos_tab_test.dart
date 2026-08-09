@@ -3,10 +3,12 @@
 
 import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/featured_tabs/featured_tabs_cubit.dart';
 import 'package:openvine/models/view_traffic_source.dart';
 import 'package:openvine/providers/featured_tabs_providers.dart';
 import 'package:openvine/providers/feed_repository_provider.dart';
@@ -53,11 +55,26 @@ void main() {
     late _MockFeaturedTabsRepository featuredRepository;
     late _MockFeedRepository feedRepository;
     late MockGoRouter router;
+    late FeaturedTabsCubit featuredTabsCubit;
 
     setUp(() {
       featuredRepository = _MockFeaturedTabsRepository();
       feedRepository = _MockFeedRepository();
       router = MockGoRouter();
+      when(
+        () => featuredRepository.refresh(
+          viewerIsMinor: any(named: 'viewerIsMinor'),
+        ),
+      ).thenAnswer(
+        // Zero cadence keeps the cubit from arming a poll timer that would
+        // outlive the widget test.
+        (_) async => const FeaturedTabsSnapshot(pollInterval: Duration.zero),
+      );
+      featuredTabsCubit = FeaturedTabsCubit(
+        repository: featuredRepository,
+        viewerIsMinor: () => false,
+      );
+      addTearDown(featuredTabsCubit.close);
       when(
         () => featuredRepository.loadVideos(
           tabId: 'ft_a1b2c3d4',
@@ -80,9 +97,12 @@ void main() {
           feedRepositoryProvider.overrideWithValue(feedRepository),
           subscribedListVideoCacheProvider.overrideWithValue(null),
         ],
-        home: MockGoRouterProvider(
-          goRouter: router,
-          child: FeaturedVideosTab(config: config ?? _config()),
+        home: BlocProvider<FeaturedTabsCubit>.value(
+          value: featuredTabsCubit,
+          child: MockGoRouterProvider(
+            goRouter: router,
+            child: FeaturedVideosTab(config: config ?? _config()),
+          ),
         ),
       );
     }
@@ -113,6 +133,51 @@ void main() {
 
       final source = args.source as VideoListViewSource;
       expect(source.videos.map((video) => video.id), ['first', 'second']);
+    });
+
+    testWidgets('refetches an empty page when a config poll lands', (
+      tester,
+    ) async {
+      // has_content runs on a 15-minute snapshot cadence and can lead the
+      // videos endpoint, so funnelcake asks clients to treat an empty page as
+      // transient and retry on the next poll. FeaturedTabVideosState.isEmpty
+      // already documented that; nothing acted on it.
+      when(
+        () => featuredRepository.loadVideos(
+          tabId: 'ft_a1b2c3d4',
+          cursor: any(named: 'cursor'),
+        ),
+      ).thenAnswer((_) async => const FeaturedTabVideosPage(videos: []));
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+      verify(
+        () => featuredRepository.loadVideos(tabId: 'ft_a1b2c3d4'),
+      ).called(1);
+
+      await featuredTabsCubit.refresh();
+      await tester.pumpAndSettle();
+
+      verify(
+        () => featuredRepository.loadVideos(tabId: 'ft_a1b2c3d4'),
+      ).called(1);
+    });
+
+    testWidgets('leaves a populated page alone when a config poll lands', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+      verify(
+        () => featuredRepository.loadVideos(tabId: 'ft_a1b2c3d4'),
+      ).called(1);
+
+      await featuredTabsCubit.refresh();
+      await tester.pumpAndSettle();
+
+      verifyNever(
+        () => featuredRepository.loadVideos(tabId: 'ft_a1b2c3d4'),
+      );
     });
 
     testWidgets('reloads when the configuration is retargeted in place', (
