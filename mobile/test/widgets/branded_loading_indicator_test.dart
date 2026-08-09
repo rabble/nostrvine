@@ -99,7 +99,6 @@ void main() {
       expect(find.semantics.byLabel(en.commonLoading), findsOneWidget);
 
       semantics.dispose();
-      await tester.pumpWidget(const MaterialApp(home: SizedBox()));
     });
 
     testWidgets('announces a caller-supplied label instead', (tester) async {
@@ -115,7 +114,6 @@ void main() {
       expect(find.semantics.byLabel(en.commonLoading), findsNothing);
 
       semantics.dispose();
-      await tester.pumpWidget(const MaterialApp(home: SizedBox()));
     });
 
     // The sprite sheet is an unlabelled [Image]; left in the tree it reaches
@@ -134,7 +132,6 @@ void main() {
       expect(node.childrenCount, isZero);
 
       semantics.dispose();
-      await tester.pumpWidget(const MaterialApp(home: SizedBox()));
     });
 
     testWidgets('advances through the sheet while loading', (tester) async {
