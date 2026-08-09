@@ -154,11 +154,21 @@ class ProfileSavedVideosBloc
     }
   }
 
-  /// Reads the event-type bookmark IDs from [BookmarkService]. The service
-  /// keeps a SharedPreferences-cached list and reconciles with the relay on
-  /// initialize, so this read is cheap (no relay round-trip).
+  /// Reconciles the bookmark list against the relay, then reads the
+  /// event-type IDs from it.
+  ///
+  /// Bookmarks are a NIP-51 kind 10003 list, and this is the only read
+  /// surface for it — without the sync, Saved would show the
+  /// SharedPreferences cache alone and stay empty on a fresh install. Mirrors
+  /// how the Liked and Reposted tabs call `syncUserReactions()` /
+  /// `syncUserReposts()` from their own sync handlers.
+  ///
+  /// A failed sync is not fatal here: the cached list is still worth showing,
+  /// and the caller is only reading. (The write path treats the same failure
+  /// as fatal, because republishing an unreconciled list destroys bookmarks.)
   Future<List<String>> _resolveSavedIds() async {
     final bookmarkService = await _bookmarkServiceFuture;
+    await bookmarkService.syncGlobalBookmarks();
     return bookmarkService.globalBookmarks
         .where((item) => item.type == 'e')
         .map((item) => item.id)
