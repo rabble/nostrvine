@@ -20,6 +20,8 @@ import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/models/view_traffic_source.dart'
+    show ViewTrafficSource;
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/community_content_label_provider.dart';
@@ -33,8 +35,6 @@ import 'package:openvine/services/community_content_label_service.dart';
 import 'package:openvine/services/haptic_service.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
-import 'package:openvine/services/view_event_publisher.dart'
-    show ViewTrafficSource;
 import 'package:openvine/utils/scroll_driven_opacity.dart';
 import 'package:openvine/widgets/divine_video_metrics_tracker.dart';
 import 'package:openvine/widgets/video_feed_item/blurred_video_backdrop.dart';

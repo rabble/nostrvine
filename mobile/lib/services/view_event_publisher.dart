@@ -7,11 +7,6 @@ import 'package:openvine/models/view_traffic_source.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-/// Re-exported so existing callers keep importing the source enum from here.
-/// Presentation code should import `openvine/models/view_traffic_source.dart`
-/// directly rather than reaching into the service layer.
-export 'package:openvine/models/view_traffic_source.dart';
-
 /// Kind 22236 - Ephemeral video view event (NIP-71 extension)
 const int viewEventKind = 22236;
 

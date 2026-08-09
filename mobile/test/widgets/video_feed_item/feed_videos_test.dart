@@ -30,6 +30,8 @@ import 'package:openvine/features/feature_flags/services/build_configuration.dar
 import 'package:openvine/features/feature_flags/services/feature_flag_service.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/content_label.dart';
+import 'package:openvine/models/view_traffic_source.dart'
+    show ViewTrafficSource;
 import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -46,8 +48,6 @@ import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/seen_videos_service.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
-import 'package:openvine/services/view_event_publisher.dart'
-    show ViewTrafficSource;
 import 'package:openvine/widgets/divine_video_metrics_tracker.dart';
 import 'package:openvine/widgets/video_feed_item/actions/help_classify_action_button.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';

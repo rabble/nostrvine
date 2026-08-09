@@ -4,8 +4,8 @@
 import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:openvine/models/view_traffic_source.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
-import 'package:openvine/services/view_event_publisher.dart';
 
 VideoEvent _video(String id) => VideoEvent(
   id: id,

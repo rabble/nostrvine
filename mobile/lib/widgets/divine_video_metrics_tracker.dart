@@ -7,12 +7,12 @@ import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/models/view_traffic_source.dart'
+    show ViewTrafficSource;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/seen_videos_service.dart';
-import 'package:openvine/services/view_event_publisher.dart'
-    show ViewTrafficSource;
 import 'package:unified_logger/unified_logger.dart';
 
 class DivineVideoMetricsTracker extends ConsumerStatefulWidget {
