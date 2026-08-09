@@ -49,6 +49,13 @@ submission boundary. Two gaps are known and accepted:
 - Hex-form private keys are not redacted, because 64-char hex is
   indistinguishable from public event IDs and pubkeys, and blanket redaction
   would remove the triage value the summary exists for.
+- Redaction is keyword-based, so it cuts both ways and is deliberately tuned to
+  lose triage value rather than leak. A key ending in `token`, `secret`,
+  `password` or `key` has its value redacted even when the value is not a
+  secret (`token_count: 5`, `cancellationToken: active`), because no key-only
+  rule separates those from `token_value`. Conversely, a credential written
+  without a `:` or `=` separator (`password hunter2`) is not redacted, because
+  that shape is indistinguishable from ordinary prose ("password reset failed").
 - Text typed inside the native Zendesk SDK screens is never sanitized. The
   ticket list (`ZendeskSupportService.showTicketListScreen`, reachable from the
   support center) opens the SDK's own UI, where a reply to an existing ticket is
