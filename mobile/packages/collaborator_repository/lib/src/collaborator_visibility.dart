@@ -22,12 +22,14 @@ class CollaboratorVisibility extends Equatable {
     required this.statusByPubkey,
     required this.currentUserPubkey,
     required this.creatorPubkey,
+    this.isResolved = false,
   }) : _hasStatusPipeline = true;
 
   const CollaboratorVisibility.fallback({required this.taggedPubkeys})
     : statusByPubkey = const {},
       currentUserPubkey = '',
       creatorPubkey = '',
+      isResolved = false,
       _hasStatusPipeline = false;
 
   /// Pubkeys tagged with the `'collaborator'` role on the latest
@@ -43,6 +45,10 @@ class CollaboratorVisibility extends Equatable {
 
   /// Hex pubkey of the video's author. Empty in fallback mode.
   final String creatorPubkey;
+
+  /// Whether the acceptance query has finished. Non-author viewers render
+  /// nothing until this is true — see [visiblePubkeys].
+  final bool isResolved;
 
   final bool _hasStatusPipeline;
 
@@ -64,14 +70,29 @@ class CollaboratorVisibility extends Equatable {
     return CollaboratorStatus.pending;
   }
 
-  /// Pubkeys to render. The current user's pubkey is filtered out when
-  /// they have locally ignored the invite. In fallback mode this is the
-  /// raw [taggedPubkeys] list.
+  /// Pubkeys to render.
+  ///
+  /// - Fallback mode: the raw [taggedPubkeys] list, unchanged.
+  /// - Author's own video: every tagged pubkey, minus one the current user
+  ///   has locally ignored. Unconfirmed entries stay visible and are greyed
+  ///   via [isPendingForInviter] — the author needs to see who they invited.
+  /// - Everyone else: only confirmed collaborators, and only once
+  ///   [isResolved]. A creator can tag any pubkey, so rendering an
+  ///   unconfirmed one publicly credits someone who never accepted — or who
+  ///   explicitly ignored (#6907). Before the query resolves nothing renders
+  ///   at all, so an unconfirmed name is never shown even briefly.
   List<String> get visiblePubkeys {
     if (!_hasStatusPipeline) return taggedPubkeys;
+    if (isInviterView) {
+      return [
+        for (final pubkey in taggedPubkeys)
+          if (!_isHiddenByCurrentUserIgnore(pubkey)) pubkey,
+      ];
+    }
+    if (!isResolved) return const [];
     return [
       for (final pubkey in taggedPubkeys)
-        if (!_isHiddenByCurrentUserIgnore(pubkey)) pubkey,
+        if (statusFor(pubkey) == CollaboratorStatus.confirmed) pubkey,
     ];
   }
 
@@ -102,6 +123,7 @@ class CollaboratorVisibility extends Equatable {
     statusByPubkey,
     currentUserPubkey,
     creatorPubkey,
+    isResolved,
     _hasStatusPipeline,
   ];
 }

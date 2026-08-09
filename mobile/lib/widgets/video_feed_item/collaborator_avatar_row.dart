@@ -98,12 +98,16 @@ class _StatusAwareRow extends StatelessWidget {
     final statusByPubkey = context.select(
       (VideoCollaboratorStatusCubit c) => c.state.statusByPubkey,
     );
+    final isResolved = context.select(
+      (VideoCollaboratorStatusCubit c) => c.state.isResolved,
+    );
     return CollaboratorAvatarRowBody(
       visibility: CollaboratorVisibility(
         taggedPubkeys: pubkeys,
         statusByPubkey: statusByPubkey,
         currentUserPubkey: currentUserPubkey,
         creatorPubkey: video.pubkey,
+        isResolved: isResolved,
       ),
     );
   }

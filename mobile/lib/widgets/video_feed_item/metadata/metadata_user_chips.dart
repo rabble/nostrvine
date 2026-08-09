@@ -120,12 +120,16 @@ class _CollaboratorsSectionStatusAware extends StatelessWidget {
     final statusByPubkey = context.select(
       (VideoCollaboratorStatusCubit c) => c.state.statusByPubkey,
     );
+    final isResolved = context.select(
+      (VideoCollaboratorStatusCubit c) => c.state.isResolved,
+    );
     return MetadataCollaboratorsSectionBody(
       visibility: CollaboratorVisibility(
         taggedPubkeys: pubkeys,
         statusByPubkey: statusByPubkey,
         currentUserPubkey: currentUserPubkey,
         creatorPubkey: video.pubkey,
+        isResolved: isResolved,
       ),
     );
   }

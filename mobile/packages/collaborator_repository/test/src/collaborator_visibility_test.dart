@@ -156,16 +156,6 @@ void main() {
         expect(vis.isPendingForInviter(_collab2), isFalse);
       });
 
-      test('current user filtered out when their status is ignored', () {
-        const vis = CollaboratorVisibility(
-          taggedPubkeys: [_collab1, _collab2],
-          statusByPubkey: {_collab1: CollaboratorStatus.ignored},
-          currentUserPubkey: _collab1,
-          creatorPubkey: _creator,
-        );
-        expect(vis.visiblePubkeys, equals([_collab2]));
-      });
-
       test(
         'current user ignore is hidden when visibility receives normalized tag',
         () {
@@ -174,51 +164,17 @@ void main() {
             statusByPubkey: {_collab1Upper: CollaboratorStatus.ignored},
             currentUserPubkey: _collab1Upper,
             creatorPubkey: _creator,
+            isResolved: true,
           );
           expect(vis.visiblePubkeys, isEmpty);
         },
       );
 
-      test('current user not filtered out when their status is confirmed', () {
-        const vis = CollaboratorVisibility(
-          taggedPubkeys: [_collab1, _collab2],
-          statusByPubkey: {_collab1: CollaboratorStatus.confirmed},
-          currentUserPubkey: _collab1,
-          creatorPubkey: _creator,
-        );
-        expect(vis.visiblePubkeys, equals([_collab1, _collab2]));
-      });
-
-      test(
-        'current user not filtered out when their status is missing (pending)',
-        () {
-          const vis = CollaboratorVisibility(
-            taggedPubkeys: [_collab1, _collab2],
-            statusByPubkey: {},
-            currentUserPubkey: _collab1,
-            creatorPubkey: _creator,
-          );
-          expect(vis.visiblePubkeys, equals([_collab1, _collab2]));
-        },
-      );
-
-      test(
-        'another collaborator with ignored status is NOT filtered out '
-        '(only current user is)',
-        () {
-          // `ignored` is local-only; another collaborator's `ignored` status
-          // could only come from a different device. The fast-path map is
-          // single-device, so this should never happen in practice — but the
-          // contract is: only the current user's own ignore filters them out.
-          const vis = CollaboratorVisibility(
-            taggedPubkeys: [_collab1, _collab2],
-            statusByPubkey: {_collab2: CollaboratorStatus.ignored},
-            currentUserPubkey: _collab1,
-            creatorPubkey: _creator,
-          );
-          expect(vis.visiblePubkeys, equals([_collab1, _collab2]));
-        },
-      );
+      // Pre-#6907 this group also pinned that a recipient sees the full raw
+      // tagged list — unconfirmed peers included, and their own entry visible
+      // even while pending. That contract is exactly what #6907 removes; the
+      // replacement lives in the 'tagged collaborator viewing a video they
+      // did not author' group below.
     });
 
     group('third-party view', () {
@@ -232,7 +188,7 @@ void main() {
         expect(vis.isInviterView, isFalse);
       });
 
-      test('no decoration / no filtering applied', () {
+      test('unconfirmed filtered out, and no pending decoration', () {
         const vis = CollaboratorVisibility(
           taggedPubkeys: [_collab1, _collab2],
           statusByPubkey: {
@@ -241,8 +197,9 @@ void main() {
           },
           currentUserPubkey: _viewer,
           creatorPubkey: _creator,
+          isResolved: true,
         );
-        expect(vis.visiblePubkeys, equals([_collab1, _collab2]));
+        expect(vis.visiblePubkeys, equals([_collab2]));
         expect(vis.pendingCount, equals(0));
         expect(vis.isPendingForInviter(_collab1), isFalse);
         expect(vis.isPendingForInviter(_collab2), isFalse);
@@ -277,6 +234,145 @@ void main() {
           creatorPubkey: '',
         );
         expect(fallback, isNot(equals(statusAware)));
+      });
+    });
+
+    group('third-party viewer', () {
+      test('renders nothing until the acceptance query resolves', () {
+        const vis = CollaboratorVisibility(
+          taggedPubkeys: [_collab1, _collab2],
+          statusByPubkey: {_collab1: CollaboratorStatus.confirmed},
+          currentUserPubkey: _viewer,
+          creatorPubkey: _creator,
+        );
+        expect(
+          vis.visiblePubkeys,
+          isEmpty,
+          reason:
+              'Before EOSE an absent entry means "not heard back yet"; '
+              'rendering then would flash a partial list.',
+        );
+      });
+
+      test('renders only confirmed collaborators once resolved', () {
+        const vis = CollaboratorVisibility(
+          taggedPubkeys: [_collab1, _collab2],
+          statusByPubkey: {
+            _collab1: CollaboratorStatus.confirmed,
+            _collab2: CollaboratorStatus.pending,
+          },
+          currentUserPubkey: _viewer,
+          creatorPubkey: _creator,
+          isResolved: true,
+        );
+        expect(
+          vis.visiblePubkeys,
+          equals([_collab1]),
+          reason:
+              'A creator can tag any pubkey; crediting an unconfirmed one '
+              'publicly is the #6907 leak.',
+        );
+      });
+
+      test('hides a collaborator who was tagged but never accepted', () {
+        const vis = CollaboratorVisibility(
+          taggedPubkeys: [_collab1],
+          statusByPubkey: {_collab1: CollaboratorStatus.pending},
+          currentUserPubkey: _viewer,
+          creatorPubkey: _creator,
+          isResolved: true,
+        );
+        expect(vis.visiblePubkeys, isEmpty);
+      });
+
+      test('pendingCount stays zero so no pending suffix leaks', () {
+        const vis = CollaboratorVisibility(
+          taggedPubkeys: [_collab1, _collab2],
+          statusByPubkey: {_collab1: CollaboratorStatus.pending},
+          currentUserPubkey: _viewer,
+          creatorPubkey: _creator,
+          isResolved: true,
+        );
+        expect(vis.pendingCount, isZero);
+      });
+    });
+
+    group('inviter view is unaffected by the third-party filter', () {
+      test('still shows unconfirmed collaborators once resolved', () {
+        const vis = CollaboratorVisibility(
+          taggedPubkeys: [_collab1, _collab2],
+          statusByPubkey: {
+            _collab1: CollaboratorStatus.confirmed,
+            _collab2: CollaboratorStatus.pending,
+          },
+          currentUserPubkey: _creator,
+          creatorPubkey: _creator,
+          isResolved: true,
+        );
+        expect(
+          vis.visiblePubkeys,
+          equals([_collab1, _collab2]),
+          reason: 'The author needs to see who they invited.',
+        );
+        expect(vis.pendingCount, equals(1));
+        expect(vis.isPendingForInviter(_collab2), isTrue);
+      });
+
+      test('drops the author own entry when they self-tagged then ignored', () {
+        // buildCollaboratorPTag does not exclude the author, so a creator can
+        // end up tagged on their own video; their local ignore still hides
+        // their own chip on their own view.
+        const vis = CollaboratorVisibility(
+          taggedPubkeys: [_creator, _collab1],
+          statusByPubkey: {
+            _creator: CollaboratorStatus.ignored,
+            _collab1: CollaboratorStatus.confirmed,
+          },
+          currentUserPubkey: _creator,
+          creatorPubkey: _creator,
+          isResolved: true,
+        );
+        expect(vis.visiblePubkeys, equals([_collab1]));
+      });
+
+      test('shows unconfirmed collaborators even before resolve', () {
+        const vis = CollaboratorVisibility(
+          taggedPubkeys: [_collab1],
+          statusByPubkey: {_collab1: CollaboratorStatus.pending},
+          currentUserPubkey: _creator,
+          creatorPubkey: _creator,
+        );
+        expect(
+          vis.visiblePubkeys,
+          equals([_collab1]),
+          reason:
+              'The author already knows who they tagged, so gating their own '
+              'view on EOSE would only make the row flicker.',
+        );
+      });
+    });
+
+    group('tagged collaborator viewing a video they did not author', () {
+      test('sees themselves once their acceptance is confirmed', () {
+        const vis = CollaboratorVisibility(
+          taggedPubkeys: [_collab1],
+          statusByPubkey: {_collab1: CollaboratorStatus.confirmed},
+          currentUserPubkey: _collab1,
+          creatorPubkey: _creator,
+          isResolved: true,
+        );
+        expect(vis.visiblePubkeys, equals([_collab1]));
+      });
+
+      test('does not see themselves after locally ignoring', () {
+        const vis = CollaboratorVisibility(
+          taggedPubkeys: [_collab1],
+          statusByPubkey: {_collab1: CollaboratorStatus.ignored},
+          currentUserPubkey: _collab1,
+          creatorPubkey: _creator,
+          isResolved: true,
+        );
+        expect(vis.visiblePubkeys, isEmpty);
       });
     });
   });
