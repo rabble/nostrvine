@@ -268,10 +268,14 @@ void main() {
   group('DivineVideoClip source provenance', () {
     test('round-trips through JSON when populated', () {
       final source = clip('/videos/clip.mp4').copyWith(
-        sourceAuthorPubkey: 'source-author-pubkey',
-        sourceEventId: 'source-event-id',
-        sourceAddressableId: '34236:source-author-pubkey:source-d-tag',
-        sourceRelayHint: 'wss://relay.divine.video',
+        sourceCredits: const [
+          model.ClipSourceCredit(
+            authorPubkey: 'source-author-pubkey',
+            eventId: 'source-event-id',
+            addressableId: '34236:source-author-pubkey:source-d-tag',
+            relayUrl: 'wss://relay.divine.video',
+          ),
+        ],
       );
 
       final json = source.toJson();
@@ -343,10 +347,14 @@ void main() {
 
     test('survives copyWith and can be cleared explicitly', () {
       final source = clip('/videos/clip.mp4').copyWith(
-        sourceAuthorPubkey: 'source-author-pubkey',
-        sourceEventId: 'source-event-id',
-        sourceAddressableId: '34236:source-author-pubkey:source-d-tag',
-        sourceRelayHint: 'wss://relay.divine.video',
+        sourceCredits: const [
+          model.ClipSourceCredit(
+            authorPubkey: 'source-author-pubkey',
+            eventId: 'source-event-id',
+            addressableId: '34236:source-author-pubkey:source-d-tag',
+            relayUrl: 'wss://relay.divine.video',
+          ),
+        ],
       );
 
       final copied = source.copyWith(duration: const Duration(seconds: 6));
@@ -356,17 +364,36 @@ void main() {
       expect(copied.sourceAddressableId, source.sourceAddressableId);
       expect(copied.sourceRelayHint, source.sourceRelayHint);
 
-      final cleared = copied.copyWith(
-        clearSourceAuthorPubkey: true,
-        clearSourceEventId: true,
-        clearSourceAddressableId: true,
-        clearSourceRelayHint: true,
-      );
+      final cleared = copied.copyWith(clearSourceCredits: true);
       expect(cleared.sourceAuthorPubkey, isNull);
       expect(cleared.sourceEventId, isNull);
       expect(cleared.sourceAddressableId, isNull);
       expect(cleared.sourceRelayHint, isNull);
       expect(cleared.sourceCredits, isEmpty);
+    });
+
+    test('carries every credit onto a split or duplicated clip', () {
+      final merged = clip('/videos/clip.mp4').copyWith(
+        sourceCredits: const [
+          model.ClipSourceCredit(
+            authorPubkey: 'source-author-a',
+            addressableId: '34236:source-author-a:source-a',
+            relayUrl: 'wss://relay-a.divine.video',
+          ),
+          model.ClipSourceCredit(
+            authorPubkey: 'source-author-b',
+            addressableId: '34236:source-author-b:source-b',
+          ),
+        ],
+      );
+
+      // A new id makes this a new logical clip, which resets chroma/transition
+      // state. Provenance is a fact about the footage, so it must survive.
+      final half = merged.copyWith(
+        id: 'c2',
+        trimEnd: const Duration(seconds: 1),
+      );
+      expect(half.sourceCredits, equals(merged.sourceCredits));
     });
   });
 

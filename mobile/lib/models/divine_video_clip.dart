@@ -389,47 +389,17 @@ class DivineVideoClip {
     ClipChromaKey? chromaKey,
     String? chromaKeySourcePath,
     bool clearChromaKey = false,
-    String? sourceAuthorPubkey,
-    bool clearSourceAuthorPubkey = false,
-    String? sourceEventId,
-    bool clearSourceEventId = false,
-    String? sourceAddressableId,
-    bool clearSourceAddressableId = false,
-    String? sourceRelayHint,
-    bool clearSourceRelayHint = false,
+    // Provenance is copied as a whole list: the scalar source fields are a
+    // read-only view of its first entry, so setting one here could only mean
+    // "replace the whole list with a single credit" — which silently drops the
+    // rest of a merged clip's credits.
     List<model.ClipSourceCredit>? sourceCredits,
     bool clearSourceCredits = false,
   }) {
     final isNewLogicalClip = id != null && id != this.id;
-    final sourceFieldsTouched =
-        sourceAuthorPubkey != null ||
-        sourceEventId != null ||
-        sourceAddressableId != null ||
-        sourceRelayHint != null ||
-        clearSourceAuthorPubkey ||
-        clearSourceEventId ||
-        clearSourceAddressableId ||
-        clearSourceRelayHint;
     final nextSourceCredits = clearSourceCredits
         ? const <model.ClipSourceCredit>[]
-        : sourceCredits ??
-              _normalizedSourceCredits(
-                sourceCredits: sourceFieldsTouched
-                    ? const []
-                    : this.sourceCredits,
-                sourceAuthorPubkey: clearSourceAuthorPubkey
-                    ? null
-                    : (sourceAuthorPubkey ?? this.sourceAuthorPubkey),
-                sourceEventId: clearSourceEventId
-                    ? null
-                    : (sourceEventId ?? this.sourceEventId),
-                sourceAddressableId: clearSourceAddressableId
-                    ? null
-                    : (sourceAddressableId ?? this.sourceAddressableId),
-                sourceRelayHint: clearSourceRelayHint
-                    ? null
-                    : (sourceRelayHint ?? this.sourceRelayHint),
-              );
+        : (sourceCredits ?? this.sourceCredits);
 
     return DivineVideoClip(
       id: id ?? this.id,

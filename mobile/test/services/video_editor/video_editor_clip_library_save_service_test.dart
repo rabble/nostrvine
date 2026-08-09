@@ -375,10 +375,14 @@ void main() {
         final result =
             await VideoEditorClipLibrarySaveService.flattenClipForLibrary(
               clip: _createClip().copyWith(
-                sourceAuthorPubkey: 'source-author-pubkey',
-                sourceEventId: 'source-event-id',
-                sourceAddressableId: '34236:source-author-pubkey:source-d-tag',
-                sourceRelayHint: 'wss://relay.divine.video',
+                sourceCredits: const [
+                  model.ClipSourceCredit(
+                    authorPubkey: 'source-author-pubkey',
+                    eventId: 'source-event-id',
+                    addressableId: '34236:source-author-pubkey:source-d-tag',
+                    relayUrl: 'wss://relay.divine.video',
+                  ),
+                ],
               ),
               renderId: 'save-1',
             );

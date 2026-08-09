@@ -2,7 +2,7 @@
 // ABOUTME: a single rendered clip via the concat render pipeline.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:models/models.dart' as model show AspectRatio;
+import 'package:models/models.dart' as model show AspectRatio, ClipSourceCredit;
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/video_editor/video_editor_merge_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
@@ -199,10 +199,14 @@ void main() {
 
         DivineVideoClip sameSourceClip(String id) =>
             _createClip(id: id).copyWith(
-              sourceAuthorPubkey: 'source-author-pubkey',
-              sourceEventId: 'source-event-id',
-              sourceAddressableId: '34236:source-author-pubkey:source-d-tag',
-              sourceRelayHint: 'wss://relay.divine.video',
+              sourceCredits: const [
+                model.ClipSourceCredit(
+                  authorPubkey: 'source-author-pubkey',
+                  eventId: 'source-event-id',
+                  addressableId: '34236:source-author-pubkey:source-d-tag',
+                  relayUrl: 'wss://relay.divine.video',
+                ),
+              ],
             );
 
         final result = await VideoEditorMergeService.mergeClips(
@@ -236,14 +240,22 @@ void main() {
         final result = await VideoEditorMergeService.mergeClips(
           clips: [
             _createClip(id: 'a').copyWith(
-              sourceAuthorPubkey: 'author-a',
-              sourceEventId: 'event-a',
-              sourceRelayHint: 'wss://relay-a',
+              sourceCredits: const [
+                model.ClipSourceCredit(
+                  authorPubkey: 'author-a',
+                  eventId: 'event-a',
+                  relayUrl: 'wss://relay-a',
+                ),
+              ],
             ),
             _createClip(id: 'b').copyWith(
-              sourceAuthorPubkey: 'author-b',
-              sourceEventId: 'event-b',
-              sourceRelayHint: 'wss://relay-b',
+              sourceCredits: const [
+                model.ClipSourceCredit(
+                  authorPubkey: 'author-b',
+                  eventId: 'event-b',
+                  relayUrl: 'wss://relay-b',
+                ),
+              ],
             ),
           ],
           renderId: 'merge-1',
