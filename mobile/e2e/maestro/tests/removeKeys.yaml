@@ -1,38 +1,45 @@
 appId: co.openvine.app
+tags:
+  - auth
+  - settings
 ---
-#TC to delete the user keys,
-# given the user is logged in in the app,
-# Opens the settings menu and remove the keys from the device
+#TC to remove the local account keys from the device.
+#
+# This is the teardown of every smoke flow, and it is what makes the suite
+# repeatable: the Nostr key lives in the iOS keychain and survives both
+# `launchApp: clearState` and a full app uninstall, so without this step
+# every subsequent run starts already signed in.
+#
 #Steps:
-# 1. Open the settings page: Validate the settings modal is displayed
-# 2. Tap on Remove Keys from Device: The modal Remove Keys from Device is displayed
-# 3. Tap on cancel button: Validate Cancel button works
-# 4. Reopen the Remove modal and tap on Remove Keys: Final confirmation modal is displayed
-# 5. To do... receiving yellow box on the display
+# 1. Open Settings, then Nostr Settings
+# 2. Tap Remove keys, cancel once to prove the escape hatch works
+# 3. Tap it again and confirm: the device returns to the welcome screen
 
-# 1. Open the settings page: Validate the settings modal is displayed
+# 1. Settings -> Nostr Settings
 - runFlow: '../utils/openSettings.yaml'
+- tapOn:
+    id: "nostr_settings_tile"
 
-# 2. Tap on Remove Keys from Device: The modal Remove Keys from Device is displayed
-- scrollUntilVisible:
-    element:
-      text: |-
-        Remove Keys from Device
-        Delete your private key from this device only. Your content stays on relays, but you'll need your nsec backup to access your account again.
-# 3. Tap on cancel button: Validate Cancel button works
-- tapOn: |-
-    Remove Keys from Device
-    Delete your private key from this device only. Your content stays on relays, but you'll need your nsec backup to access your account again.
-
+# 2. Remove keys, then cancel.
+#
+# Targeted by id: the row's title and subtitle both changed ("Remove Keys
+# from Device" is now "Remove this account from this device") and it moved
+# off the Settings root onto this screen.
+- extendedWaitUntil:
+    visible:
+      id: "remove_keys_tile"
+    timeout: 30000
+- tapOn:
+    id: "remove_keys_tile"
 - tapOn: Cancel
 
-- tapOn: |-
-    Remove Keys from Device
-    Delete your private key from this device only. Your content stays on relays, but you'll need your nsec backup to access your account again.
-
-# 4. Reopen the Remove modal and tap on Remove Keys: Final confirmation modal is displayed
-- assertVisible: Remove Keys
-
-- tapOn: Remove Keys
+# 3. Confirm.
+#
+# The sheet's buttons are still selected by copy: VineBottomSheetPrompt
+# takes no semantics identifier yet, and adding one is a wider change than
+# this flow needs. deleteAccountRemoveKeysConfirm is the string.
+- tapOn:
+    id: "remove_keys_tile"
+- tapOn: Remove from device
 
 - runFlow: '../asserts/assertLogin.yaml'

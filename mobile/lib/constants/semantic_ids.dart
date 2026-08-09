@@ -36,6 +36,11 @@ abstract class SemanticIds {
   static const String authInviteCodeField = 'invite_code_field';
   static const String authInviteSubmitButton = 'invite_submit_button';
 
+  /// Settings rows on the path to signing the device out. removeKeys is the
+  /// teardown of every E2E flow, so this route has to stay addressable.
+  static const String settingsNostrRow = 'nostr_settings_tile';
+  static const String settingsRemoveKeysRow = 'remove_keys_tile';
+
   static const String profileStatsRow = 'profile_stats_row';
 
   /// Opens Settings from the own-profile header. This is the only entry
