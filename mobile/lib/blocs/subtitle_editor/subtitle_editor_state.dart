@@ -83,6 +83,7 @@ class SubtitleEditorState extends Equatable {
     this.cues = const [],
     this.isDirty = false,
     this.updatedVideo,
+    this.videoDurationMs,
   });
 
   /// Current editor status.
@@ -97,8 +98,23 @@ class SubtitleEditorState extends Equatable {
   /// Updated video event returned after a successful subtitle republish.
   final VideoEvent? updatedVideo;
 
+  /// How long the video runs, in milliseconds, when the event declares it.
+  ///
+  /// `null` means unknown, in which case cue timings are not bounded.
+  final int? videoDurationMs;
+
   /// Whether [cues] can be published as they stand.
   bool get isValid => cues.isNotEmpty && cues.every((cue) => cue.isValid);
+
+  /// Whether there is room in the video for another cue.
+  ///
+  /// A cue past the end of the video would never be shown, so once the last
+  /// one reaches the end there is nothing left to caption.
+  bool get canAddCue {
+    final durationMs = videoDurationMs;
+    if (durationMs == null || durationMs <= 0 || cues.isEmpty) return true;
+    return cues.last.end < durationMs;
+  }
 
   /// Returns a copy with selected fields replaced.
   SubtitleEditorState copyWith({
@@ -106,15 +122,23 @@ class SubtitleEditorState extends Equatable {
     List<EditableCue>? cues,
     bool? isDirty,
     VideoEvent? updatedVideo,
+    int? videoDurationMs,
   }) {
     return SubtitleEditorState(
       status: status ?? this.status,
       cues: cues ?? this.cues,
       isDirty: isDirty ?? this.isDirty,
       updatedVideo: updatedVideo ?? this.updatedVideo,
+      videoDurationMs: videoDurationMs ?? this.videoDurationMs,
     );
   }
 
   @override
-  List<Object?> get props => [status, cues, isDirty, updatedVideo];
+  List<Object?> get props => [
+    status,
+    cues,
+    isDirty,
+    updatedVideo,
+    videoDurationMs,
+  ];
 }

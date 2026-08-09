@@ -18,7 +18,13 @@ class SubtitleEditorCubit extends Cubit<SubtitleEditorState> {
     required VideoEvent video,
   }) : _repository = repository,
        _video = video,
-       super(const SubtitleEditorState());
+       super(
+         SubtitleEditorState(
+           videoDurationMs: video.duration == null || video.duration! <= 0
+               ? null
+               : video.duration! * Duration.millisecondsPerSecond,
+         ),
+       );
 
   /// How long a hand-authored cue runs before the creator adjusts it.
   static const _newCueDurationMs = 2000;
@@ -35,28 +41,29 @@ class SubtitleEditorCubit extends Cubit<SubtitleEditorState> {
   ///   nothing to transcribe.
   /// - [SubtitleEditorStatus.unavailable] when no source held a track.
   /// - [SubtitleEditorStatus.failure] and calls [addError] on any exception.
+  ///
+  /// Whatever it resolves to describes the whole state: a load that finds no
+  /// track drops any cues a previous load left behind rather than leaving
+  /// them editable underneath an empty-state screen.
   Future<void> load() async {
     if (isClosed) return;
     emit(state.copyWith(status: SubtitleEditorStatus.loading));
     try {
       final result = await _repository.loadCues(_video);
       if (isClosed) return;
-      switch (result.status) {
-        case SubtitleFetchStatus.available:
-          emit(
-            state.copyWith(
-              status: SubtitleEditorStatus.ready,
-              cues: result.cues.map(EditableCue.fromCue).toList(),
-              isDirty: false,
-            ),
-          );
-        case SubtitleFetchStatus.processing:
-          emit(state.copyWith(status: SubtitleEditorStatus.processing));
-        case SubtitleFetchStatus.empty:
-          emit(state.copyWith(status: SubtitleEditorStatus.empty));
-        case SubtitleFetchStatus.unavailable:
-          emit(state.copyWith(status: SubtitleEditorStatus.unavailable));
-      }
+      final loaded = switch (result.status) {
+        SubtitleFetchStatus.available => SubtitleEditorStatus.ready,
+        SubtitleFetchStatus.processing => SubtitleEditorStatus.processing,
+        SubtitleFetchStatus.empty => SubtitleEditorStatus.empty,
+        SubtitleFetchStatus.unavailable => SubtitleEditorStatus.unavailable,
+      };
+      emit(
+        state.copyWith(
+          status: loaded,
+          cues: result.cues.map(EditableCue.fromCue).toList(),
+          isDirty: false,
+        ),
+      );
     } catch (e, st) {
       if (isClosed) return;
       addError(e, st);
@@ -92,13 +99,17 @@ class SubtitleEditorCubit extends Cubit<SubtitleEditorState> {
   /// The new cue starts where the previous one ends and runs for
   /// [_newCueDurationMs], trimmed to the video's end when its duration is
   /// known. This is the entry point for authoring captions on a video that
-  /// has none. Ignored while a save is in flight.
+  /// has none.
+  ///
+  /// Ignored while a save is in flight, and once the last cue already reaches
+  /// the end of the video — the UI keeps the action disabled in that case, so
+  /// this is the backstop rather than the message.
   void addCue() {
-    if (_rejectsEdits) return;
+    if (_rejectsEdits || !state.canAddCue) return;
     final start = state.cues.isEmpty ? 0 : state.cues.last.end;
-    final videoEndMs = (_video.duration ?? 0) * Duration.millisecondsPerSecond;
+    final videoEndMs = state.videoDurationMs;
     var end = start + _newCueDurationMs;
-    if (videoEndMs > start && end > videoEndMs) end = videoEndMs;
+    if (videoEndMs != null && end > videoEndMs) end = videoEndMs;
 
     emit(
       state.copyWith(

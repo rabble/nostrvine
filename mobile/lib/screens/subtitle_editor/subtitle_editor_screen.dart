@@ -243,7 +243,7 @@ class _CueList extends StatelessWidget {
             // stays reachable from the bottom of a long list.
             itemCount: state.cues.length + 1,
             itemBuilder: (context, index) => index == state.cues.length
-                ? const _AddCueButton()
+                ? _AddCueButton(enabled: state.canAddCue && !saving)
                 : _CueRow(index: index, cue: state.cues[index]),
           ),
         ),
@@ -276,8 +276,14 @@ class _CueList extends StatelessWidget {
   }
 }
 
+/// Appends a cue to the end of the list.
+///
+/// Disabled once the cues already reach the end of the video: a line past
+/// the end would never play, so there is nothing left to caption.
 class _AddCueButton extends StatelessWidget {
-  const _AddCueButton();
+  const _AddCueButton({required this.enabled});
+
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -287,7 +293,9 @@ class _AddCueButton extends StatelessWidget {
         label: context.l10n.subtitleEditorAddCue,
         type: DivineButtonType.secondary,
         leadingIcon: DivineIconName.plus,
-        onPressed: () => context.read<SubtitleEditorCubit>().addCue(),
+        onPressed: enabled
+            ? () => context.read<SubtitleEditorCubit>().addCue()
+            : null,
       ),
     );
   }
@@ -340,7 +348,6 @@ class _CueRow extends StatelessWidget {
             ],
           ),
           _CueTextField(
-            index: index,
             text: cue.text,
             onChanged: (value) => cubit.updateCueText(index, value),
           ),
@@ -356,13 +363,8 @@ class _CueRow extends StatelessWidget {
 /// so removing a cue slides its successor into the same element and the
 /// controller has to pick up the new text.
 class _CueTextField extends StatefulWidget {
-  const _CueTextField({
-    required this.index,
-    required this.text,
-    required this.onChanged,
-  });
+  const _CueTextField({required this.text, required this.onChanged});
 
-  final int index;
   final String text;
   final ValueChanged<String> onChanged;
 

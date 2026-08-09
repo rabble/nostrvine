@@ -121,6 +121,28 @@ void main() {
       ],
     );
 
+    test('a reload that finds no track drops the cues it had', () async {
+      when(
+        () => repo.loadCues(any()),
+      ).thenAnswer((_) async => _availableResult);
+      final cubit = SubtitleEditorCubit(repository: repo, video: _video);
+      addTearDown(cubit.close);
+
+      await cubit.load();
+      cubit.updateCueText(0, 'corrected');
+      expect(cubit.state.cues, hasLength(1));
+      expect(cubit.state.isDirty, isTrue);
+
+      when(() => repo.loadCues(any())).thenAnswer(
+        (_) async => const SubtitleFetchResult(SubtitleFetchStatus.empty),
+      );
+      await cubit.load();
+
+      expect(cubit.state.status, SubtitleEditorStatus.empty);
+      expect(cubit.state.cues, isEmpty, reason: 'no stale cues underneath');
+      expect(cubit.state.isDirty, isFalse);
+    });
+
     blocTest<SubtitleEditorCubit, SubtitleEditorState>(
       'load failure -> failure + reports error',
       setUp: () =>
@@ -254,6 +276,38 @@ void main() {
           (0, 2000),
           (2000, 4000),
         ]);
+      });
+
+      test('addCue stops once the cues reach the end of the video', () async {
+        final cubit =
+            SubtitleEditorCubit(
+                repository: repo,
+                video: _video.copyWith(duration: 4),
+              )
+              ..addCue()
+              ..addCue();
+        addTearDown(cubit.close);
+
+        expect(cubit.state.cues.last.end, 4000, reason: 'fills the video');
+        expect(cubit.state.canAddCue, isFalse);
+
+        cubit.addCue();
+
+        expect(cubit.state.cues, hasLength(2), reason: 'no cue past the end');
+      });
+
+      test('addCue keeps going when the duration is unknown', () async {
+        final cubit =
+            SubtitleEditorCubit(
+                repository: repo,
+                video: _video.copyWith(duration: 0),
+              )
+              ..addCue()
+              ..addCue();
+        addTearDown(cubit.close);
+
+        expect(cubit.state.canAddCue, isTrue);
+        expect(cubit.state.cues, hasLength(2));
       });
 
       test('addCue trims the new cue to the end of the video', () async {

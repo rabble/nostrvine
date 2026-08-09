@@ -201,6 +201,27 @@ void main() {
     verify(cubit.addCue).called(1);
   });
 
+  testWidgets('add-a-line is disabled once the cues fill the video', (
+    tester,
+  ) async {
+    when(() => cubit.state).thenReturn(
+      const SubtitleEditorState(
+        status: SubtitleEditorStatus.ready,
+        videoDurationMs: 2000,
+        cues: [EditableCue(start: 0, end: 2000, text: 'one')],
+      ),
+    );
+    when(cubit.addCue).thenReturn(null);
+    await tester.pumpWidget(pump());
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    await tester.tap(
+      find.text(l10n.subtitleEditorAddCue),
+      warnIfMissed: false,
+    );
+    verifyNever(cubit.addCue);
+  });
+
   testWidgets('the trash action removes that row', (tester) async {
     when(() => cubit.state).thenReturn(
       const SubtitleEditorState(
