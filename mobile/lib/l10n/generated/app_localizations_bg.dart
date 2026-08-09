@@ -8292,6 +8292,13 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
+  String get commentsVideoReplyPending => 'Публикуване…';
+
+  @override
+  String get commentsVideoReplyPendingSemanticLabel =>
+      'Вашият видео отговор се публикува';
+
+  @override
   String get commentsSortNew => 'New';
 
   @override

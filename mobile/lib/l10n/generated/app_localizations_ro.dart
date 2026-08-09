@@ -8393,6 +8393,13 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get commentsVideoReplyPending => 'Se publică…';
+
+  @override
+  String get commentsVideoReplyPendingSemanticLabel =>
+      'Răspunsul tău video se publică';
+
+  @override
   String get commentsSortNew => 'New';
 
   @override

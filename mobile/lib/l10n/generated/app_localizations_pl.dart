@@ -8391,6 +8391,13 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
+  String get commentsVideoReplyPending => 'Publikowanie…';
+
+  @override
+  String get commentsVideoReplyPendingSemanticLabel =>
+      'Twoja odpowiedź wideo jest publikowana';
+
+  @override
   String get commentsSortNew => 'New';
 
   @override

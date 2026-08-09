@@ -15,6 +15,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show UserProfile;
 import 'package:openvine/blocs/comments/comment_composer/comment_composer_bloc.dart';
 import 'package:openvine/blocs/comments/comment_reactions/comment_reactions_bloc.dart';
+import 'package:openvine/blocs/comments/comments_list/comments_list_helpers.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
@@ -23,6 +24,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/comments/comment_synthetic_video_event.dart';
 import 'package:openvine/screens/comments/widgets/comment_options_modal.dart';
+import 'package:openvine/screens/comments/widgets/pending_video_reply_tile.dart';
 import 'package:openvine/screens/comments/widgets/video_comment_player.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
@@ -70,25 +72,38 @@ class _CommentItemState extends ConsumerState<CommentItem> {
     final commentContent = widget.comment.content.trim();
     final showCommentText =
         commentContent.isNotEmpty && commentContent != widget.comment.videoUrl;
+    // An in-flight video reply has no network videoUrl yet, so it cannot go
+    // through VideoCommentPlayer — it renders as a pending tile instead
+    // (#5862).
+    final pendingDraftId = draftIdFromPendingVideoReplyId(widget.comment.id);
+    final isPendingComment = widget.comment.id.startsWith(
+      commentPlaceholderIdPrefix,
+    );
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaler: textScaler),
       child: GestureDetector(
-        onLongPressStart: (_) {
-          setState(() {
-            _isHeld = true;
-          });
-        },
-        onLongPress: () async {
-          setState(() {
-            _isHeld = false;
-          });
-          await _showOptionsModal(context, isCurrentUser: isCurrentUser);
-        },
-        onLongPressCancel: () {
-          setState(() {
-            _isHeld = false;
-          });
-        },
+        onLongPressStart: isPendingComment
+            ? null
+            : (_) {
+                setState(() {
+                  _isHeld = true;
+                });
+              },
+        onLongPress: isPendingComment
+            ? null
+            : () async {
+                setState(() {
+                  _isHeld = false;
+                });
+                await _showOptionsModal(context, isCurrentUser: isCurrentUser);
+              },
+        onLongPressCancel: isPendingComment
+            ? null
+            : () {
+                setState(() {
+                  _isHeld = false;
+                });
+              },
         child: ColoredBox(
           color: _isHeld
               ? context.vineColors.containerLow
@@ -147,7 +162,22 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                             parentAuthorPubkey:
                                 widget.comment.replyToAuthorPubkey!,
                           ),
-                        if (widget.comment.hasVideo) ...[
+                        if (pendingDraftId != null) ...[
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: PendingVideoReplyTile(
+                              draftId: pendingDraftId,
+                            ),
+                          ),
+                          if (showCommentText) ...[
+                            const SizedBox(height: 12),
+                            _CommentContent(
+                              commentId: widget.comment.id,
+                              content: commentContent,
+                            ),
+                          ],
+                        ] else if (widget.comment.hasVideo) ...[
                           const SizedBox(height: 12),
                           Align(
                             alignment: Alignment.centerLeft,
@@ -195,13 +225,15 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                               content: commentContent,
                             ),
                           ),
-                        const SizedBox(height: 12),
-                        _ActionsRow(
-                          commentId: widget.comment.id,
-                          authorPubkey: widget.comment.authorPubkey,
-                          addressableId: widget.comment.addressableId,
-                          targetKind: widget.comment.eventKind,
-                        ),
+                        if (!isPendingComment) ...[
+                          const SizedBox(height: 12),
+                          _ActionsRow(
+                            commentId: widget.comment.id,
+                            authorPubkey: widget.comment.authorPubkey,
+                            addressableId: widget.comment.addressableId,
+                            targetKind: widget.comment.eventKind,
+                          ),
+                        ],
                       ],
                     ),
                   ),

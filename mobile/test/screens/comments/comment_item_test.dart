@@ -15,6 +15,7 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/blocs/comments/comment_composer/comment_composer_bloc.dart';
 import 'package:openvine/blocs/comments/comment_reactions/comment_reactions_bloc.dart';
+import 'package:openvine/blocs/comments/comments_list/comments_list_helpers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -220,6 +221,40 @@ void main() {
       ).called(1);
     },
   );
+
+  testWidgets('pending placeholders do not expose live comment actions', (
+    tester,
+  ) async {
+    final mocks = buildMocks();
+    final pending = CommentBuilder()
+        .withId('${commentPlaceholderIdPrefix}1')
+        .withAuthorPubkey(_testHexPubkey)
+        .withRootEventId(_testRootEventId)
+        .withRootAuthorPubkey(_testRootAuthorPubkey)
+        .withContent('Posting...')
+        .build();
+
+    await tester.pumpWidget(
+      buildTestWidget(
+        'Posting...',
+        composerBloc: mocks.composer,
+        reactionsBloc: mocks.reactions,
+        comment: pending,
+      ),
+    );
+    await tester.pump();
+
+    expect(find.bySemanticsIdentifier('reply_button'), findsNothing);
+    expect(find.bySemanticsIdentifier('upvote_button'), findsNothing);
+    expect(find.bySemanticsIdentifier('downvote_button'), findsNothing);
+
+    await tester.longPress(find.byType(CommentItem));
+    await tester.pumpAndSettle();
+
+    expect(find.bySemanticsIdentifier('delete_comment_option'), findsNothing);
+    verifyNever(() => mocks.composer.add(any()));
+    verifyNever(() => mocks.reactions.add(any()));
+  });
 
   testWidgets('opens video comments with hydrated route data', (tester) async {
     final mocks = buildMocks();

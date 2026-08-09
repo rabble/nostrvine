@@ -8312,6 +8312,13 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get commentsVideoReplyPending => 'Wird gepostet…';
+
+  @override
+  String get commentsVideoReplyPendingSemanticLabel =>
+      'Deine Videoantwort wird gepostet';
+
+  @override
   String get commentsSortNew => 'New';
 
   @override
