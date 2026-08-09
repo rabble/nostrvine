@@ -26,33 +26,18 @@ environment:
   sdk: '>=3.4.1 <4.0.0'
   flutter: ">=1.17.0"
 
-# Fix dependency issues (see below)
+# Keep dependencies hosted on pub.dev for package publication.
 ```
 
 **Issues to Fix:**
 - ❌ Description is generic
 - ❌ Missing homepage/repository URLs  
 - ❌ Version too low (0.0.1)
-- ❌ Git dependency issue (cryptography_flutter)
 
 ### 2. Dependency Cleanup
 
-**Critical Issue**: Git dependencies aren't allowed on pub.dev:
-
-```yaml
-# PROBLEM: This will prevent publication
-cryptography_flutter:
-  git:
-    url: https://github.com/mvarendorff/cryptography
-    ref: fix/compatibility-agp-8x
-    path: cryptography_flutter
-```
-
-**Solutions:**
-1. Use official published version if available
-2. Fork and publish your own version
-3. Replace with alternative package
-4. Make it an optional dependency
+Pub.dev package dependencies must stay hosted or SDK-based. Do not add `git:`
+or local `path:` dependencies to this package.
 
 ### 3. Documentation Requirements
 
@@ -94,16 +79,7 @@ dart pub downgrade  # Test minimum versions
 
 ### Step 1: Fix Critical Issues
 
-1. **Fix Git Dependency**:
-   ```bash
-   # Option 1: Try official version
-   flutter pub add cryptography_flutter
-   
-   # Option 2: Make conditional
-   # Add platform-specific implementations
-   ```
-
-2. **Update pubspec.yaml**:
+1. **Update pubspec.yaml**:
    ```yaml
    name: nostr_sdk
    description: Comprehensive Flutter/Dart SDK for building Nostr applications. Supports 21+ NIPs including events, signing, encryption, relays, and file uploads.
@@ -333,8 +309,7 @@ pub.dev scores packages on:
 
 ## Critical Blockers
 
-1. **Git Dependency**: Must resolve `cryptography_flutter` issue
-2. **License Clarity**: Ensure license is compatible
-3. **Platform Testing**: Test on all supported platforms
+1. **License Clarity**: Ensure license is compatible
+2. **Platform Testing**: Test on all supported platforms
 
 Would you like me to help tackle any of these specific areas first?
