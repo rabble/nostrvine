@@ -400,6 +400,43 @@ void main() {
         },
       );
 
+      test('keeps a following-only count with a NULL timestamp', () async {
+        // The other pre-upgrade shape: a row carrying only following_count.
+        final writtenAt = DateTime.now().subtract(const Duration(hours: 10));
+        await database
+            .into(database.profileStats)
+            .insert(
+              ProfileStatsCompanion.insert(
+                pubkey: testPubkey,
+                followingCount: const Value(20),
+                cachedAt: writtenAt,
+              ),
+            );
+
+        expect(await dao.deleteExpired(), equals(0));
+        final row = await appDbClient.getProfileStatRow(testPubkey);
+        expect(row!.followingCount, equals(20));
+      });
+
+      test('deletes a NULL-timestamp row once cached_at passes the follower '
+          'window', () async {
+        // NULL falls back to cached_at, so a pre-upgrade row still expires
+        // eventually rather than being retained forever.
+        final writtenAt = DateTime.now().subtract(const Duration(hours: 72));
+        await database
+            .into(database.profileStats)
+            .insert(
+              ProfileStatsCompanion.insert(
+                pubkey: testPubkey,
+                followerCount: const Value(98),
+                cachedAt: writtenAt,
+              ),
+            );
+
+        expect(await dao.deleteExpired(), equals(1));
+        expect(await appDbClient.countProfileStats(), equals(0));
+      });
+
       test('deletes rows whose follower counts are also expired', () async {
         final oldTime = DateTime.now().subtract(const Duration(hours: 72));
         await database
