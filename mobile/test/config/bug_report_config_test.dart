@@ -1,25 +1,51 @@
-// ABOUTME: Pins sanitizeDiagnosticText against both failure directions:
-// ABOUTME: missed credentials in serialized payloads, and shredded user prose.
+// ABOUTME: Pins sanitizeDiagnosticText against all three failure directions:
+// ABOUTME: missed credentials, partially-redacted secrets, and shredded prose.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/config/bug_report_config.dart';
 
+/// Fragments that must never survive sanitization. Asserting on these rather
+/// than on the presence of `[REDACTED]` is what catches *partial* redaction —
+/// leaving half a secret next to a redaction marker is worse than leaving it
+/// alone, because the marker reads as proof the value was handled.
+const _secretFragments = [
+  'hunter2',
+  'eyJhbGciOi',
+  'abc123',
+  'deadbeef',
+  'YWJjOmRlZmc=',
+  'correct horse battery staple',
+  'alpha',
+  'Alice',
+];
+
 void main() {
   group('sanitizeDiagnosticText', () {
-    group('redacts credentials', () {
+    group('redacts the whole credential value', () {
       // Serialized shapes are how credentials actually reach the log buffer,
-      // so a quote between the key and the separator must not defeat the rule.
+      // so a quote between the key and the separator must not defeat the rule,
+      // and a quoted value must be consumed to its closing quote.
       const cases = <String, String>{
-        'json password': '{"password":"hunter2"}',
-        'json token': '{"token":"eyJhbGciOi"}',
-        'json suffixed key': '{"access_token":"eyJhbGciOi"}',
+        'quoted multi-word value':
+            '{"password":"correct horse battery staple"}',
+        'quoted value with comma': '{"password":"alpha,beta"}',
+        'quoted value with semicolon': '{"password":"alpha;beta"}',
+        'quoted scheme-prefixed value': '{"token":"Bearer eyJhbGciOi"}',
+        'unquoted scheme-prefixed value': 'Auth token: Bearer eyJhbGciOi',
+        'fat arrow separator': 'password => hunter2',
+        'json api key': '{"api_key":"abc123"}',
+        'camel case api key': "{'apiKey': 'abc123'}",
+        'hyphenated api key': '{"x-api-key":"abc123"}',
+        'json private key': '{"private_key":"abc123"}',
+        'underscored secret key': 'secret_key: abc123',
+        'json access token': '{"access_token":"eyJhbGciOi"}',
+        'json refresh token': '{"refresh_token":"eyJhbGciOi"}',
         'json bearer header': '{"Authorization":"Bearer eyJhbGciOi"}',
         'dart map bearer header': "{'Authorization': 'Bearer eyJhbGciOi'}",
         'basic header': 'Authorization: Basic YWJjOmRlZmc=',
         'bearer header': 'Authorization: Bearer eyJhbGciOi',
         'colon separated': 'password: hunter2',
         'equals separated': 'secret=abc123',
-        'underscored key': 'secret_key: abc123',
         'nip46 bunker secret': 'bunker://relay.example?secret=deadbeef',
       };
 
@@ -28,32 +54,36 @@ void main() {
           final sanitized = sanitizeDiagnosticText(entry.value);
 
           expect(sanitized, contains('[REDACTED]'));
-          for (final leaked in [
-            'hunter2',
-            'eyJhbGciOi',
-            'abc123',
-            'deadbeef',
-            'YWJjOmRlZmc=',
-          ]) {
-            expect(sanitized, isNot(contains(leaked)));
+          for (final fragment in _secretFragments) {
+            expect(
+              sanitized,
+              isNot(contains(fragment)),
+              reason: 'leaked "$fragment" from ${entry.value}',
+            );
           }
         });
       }
     });
 
-    group('preserves ordinary prose', () {
-      // These are real bug-report sentences. A keyword alone is not a secret,
-      // so redacting the following word would destroy the reported symptom.
+    group('preserves diagnostic signal', () {
+      // Keys that merely start with a credential word, and prose that merely
+      // uses one. Redacting these costs the reported symptom for no privacy
+      // gain — the failure mode that makes a support ticket useless.
       const cases = <String>[
+        '{"token_count":5}',
+        '{"tokenization":"failed"}',
+        '{"passwordless":true}',
+        '{"secretary":"Alice"}',
+        'Tokenization: failed',
         'Password reset failed',
         'my password reset email never arrives',
         'the login token expired instantly and I got logged out',
         'Secret DMs are not decrypting',
-        'Token refresh scheduled\nnext line here',
+        'Token refresh scheduled',
       ];
 
       for (final input in cases) {
-        test(input.replaceAll('\n', ' / '), () {
+        test(input, () {
           expect(sanitizeDiagnosticText(input), equals(input));
         });
       }

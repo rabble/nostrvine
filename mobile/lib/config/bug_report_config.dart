@@ -47,17 +47,21 @@ class BugReportConfig {
     // redact public event IDs and pubkeys. Hex-form private keys are an
     // accepted residual risk for diagnostic triage value.
     // NIP-46 bunker secrets are covered by the generic secret pattern below.
-    // Credential keys. The separator must be `:` or `=`, with optional quotes
-    // on either side, so serialized forms like {"token":"..."} are caught while
-    // ordinary prose ("password reset failed") keeps its next word. Matching
-    // starts mid-word, so `access_token` and `secret_key` are covered too.
+    // Credential key/value pairs. Three rules keep this honest:
+    //  - Keys are enumerated, never `key + any suffix`, so `token_count`,
+    //    `tokenization`, `passwordless` and `secretary` keep their values.
+    //  - A `:` or `=` separator is required (quotes optional either side), so
+    //    serialized `{"token":"..."}` is caught while the prose "password reset
+    //    failed" keeps its next word.
+    //  - A quoted value is consumed to its closing quote, so a multi-word
+    //    secret is redacted whole. Partial redaction would be worse than none:
+    //    it leaves the secret in cleartext next to a [REDACTED] marker.
     RegExp(
-      r'''(password|token|secret)[\w-]*["']?\s*[:=]\s*["']?[^\s"',;}]+''',
-      caseSensitive: false,
-    ),
-    RegExp(
-      r'''authorization["']?\s*[:=]\s*["']?'''
-      r'''(?:bearer|basic|token)\s+[^\s"',;}]+''',
+      '(?:api[_-]?key|private[_-]?key|secret[_-]?key|access[_-]?token'
+      '|refresh[_-]?token|auth[_-]?token|authorization|password|passwd'
+      '|token|secret)'
+      r'''["']?\s*(?::=?|=>?)\s*'''
+      r'''(?:"[^"]*"?|'[^']*'?|(?:(?:bearer|basic|token)\s+)?[^\s"',;}]+)''',
       caseSensitive: false,
     ),
     RegExp(r'\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b', caseSensitive: false),
