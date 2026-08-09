@@ -728,7 +728,10 @@ class _SandboxStatusCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (showSpinner) ...[
-                  const BrandedLoadingIndicator(size: 60),
+                  // [title] below already announces the wait.
+                  const ExcludeSemantics(
+                    child: BrandedLoadingIndicator(size: 60),
+                  ),
                   const SizedBox(height: 20),
                 ] else ...[
                   const DivineIcon(

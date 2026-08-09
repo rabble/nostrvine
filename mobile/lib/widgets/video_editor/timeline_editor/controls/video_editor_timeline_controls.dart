@@ -279,8 +279,8 @@ class _ControlButton extends StatelessWidget {
           ),
         // The caption repeats the button's own label, so it is excluded only
         // while that button is there to carry it. The spinner that replaces it
-        // has no semantics of its own, and dropping both would leave the
-        // control silent for the whole run.
+        // announces the wait but not what is waiting, so the caption is what
+        // names the control for the length of the run.
         ExcludeSemantics(
           excluding: !isLoading,
           child: Text(

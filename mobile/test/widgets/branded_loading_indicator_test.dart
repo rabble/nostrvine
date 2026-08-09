@@ -7,6 +7,7 @@ import 'dart:typed_data';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:yaml/yaml.dart';
 
@@ -43,13 +44,25 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group(BrandedLoadingIndicator, () {
-    testWidgets('configures the branded sprite sheet', (tester) async {
-      await tester.pumpWidget(
+    final en = lookupAppLocalizations(const Locale('en'));
+
+    Future<void> pumpIndicator(
+      WidgetTester tester, {
+      ThemeData? theme,
+      Widget indicator = const BrandedLoadingIndicator(),
+    }) {
+      return tester.pumpWidget(
         MaterialApp(
-          theme: VineTheme.theme,
-          home: const Scaffold(body: BrandedLoadingIndicator()),
+          theme: theme ?? VineTheme.theme,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: indicator),
         ),
       );
+    }
+
+    testWidgets('configures the branded sprite sheet', (tester) async {
+      await pumpIndicator(tester);
 
       final image = tester.widget<Image>(find.byType(Image));
       expect((image.image as AssetImage).assetName, equals(_spriteAssetKey));
@@ -57,12 +70,7 @@ void main() {
     });
 
     testWidgets('draws the mark alone in dark mode', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: VineTheme.theme,
-          home: const Scaffold(body: BrandedLoadingIndicator()),
-        ),
-      );
+      await pumpIndicator(tester);
 
       // White on the dark palette needs no help, so the shadow layer — and
       // its per-frame blur — stays out of the tree entirely.
@@ -71,12 +79,7 @@ void main() {
     });
 
     testWidgets('backs the mark with a shadow in light mode', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: VineTheme.lightTheme,
-          home: const Scaffold(body: BrandedLoadingIndicator()),
-        ),
-      );
+      await pumpIndicator(tester, theme: VineTheme.lightTheme);
 
       // Untinted, the white mark all but vanishes on the light surfaces.
       expect(find.byType(ImageFiltered), findsOneWidget);
@@ -87,13 +90,55 @@ void main() {
       expect(layers.last.color, isNull);
     });
 
-    testWidgets('advances through the sheet while loading', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: VineTheme.theme,
-          home: const Scaffold(body: BrandedLoadingIndicator()),
+    // Without this the spinner is silent: a screen reader user gets no signal
+    // that the screen — or the control the indicator replaced — is busy.
+    testWidgets('announces that something is loading', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpIndicator(tester);
+
+      expect(find.semantics.byLabel(en.commonLoading), findsOneWidget);
+
+      semantics.dispose();
+      await tester.pumpWidget(const MaterialApp(home: SizedBox()));
+    });
+
+    testWidgets('announces a caller-supplied label instead', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpIndicator(
+        tester,
+        indicator: const BrandedLoadingIndicator(
+          semanticsLabel: 'Rendering your video',
         ),
       );
+
+      expect(find.semantics.byLabel('Rendering your video'), findsOneWidget);
+      expect(find.semantics.byLabel(en.commonLoading), findsNothing);
+
+      semantics.dispose();
+      await tester.pumpWidget(const MaterialApp(home: SizedBox()));
+    });
+
+    // The sprite sheet is an unlabelled [Image]; left in the tree it reaches
+    // the reader as a second, meaningless "image" node beside the label.
+    testWidgets('keeps the sprite itself out of the semantics tree', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await pumpIndicator(tester, theme: VineTheme.lightTheme);
+
+      // Light mode stacks two sprite layers, so an unexcluded sheet would
+      // show up twice over.
+      final node = tester.getSemantics(find.byType(BrandedLoadingIndicator));
+      expect(node.label, equals(en.commonLoading));
+      expect(node.flagsCollection.isImage, isFalse);
+      expect(node.childrenCount, isZero);
+
+      semantics.dispose();
+      await tester.pumpWidget(const MaterialApp(home: SizedBox()));
+    });
+
+    testWidgets('advances through the sheet while loading', (tester) async {
+      await pumpIndicator(tester);
 
       // Storage index 13 is the matrix's y translation — how far up the sheet
       // has been scrolled to expose the current frame.
