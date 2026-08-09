@@ -11,7 +11,8 @@ set -euo pipefail
 #  - Verifies installation using BUNDLE_ID (co.openvine.app)
 #  - Runs Maestro suite: e2e/maestro/suites/smoke.yaml
 #
-# Build the app first, against STAGING (the suite asserts the STG badge):
+# Build the app first, against STAGING — a PRODUCTION run signs in and writes
+# test data to the live relay:
 #   cd mobile && flutter build ios --simulator --dart-define=DEFAULT_ENV=STAGING --dart-define=GH_ACTIONS_PR_PREVIEW=true
 #
 # Credentials are not committed. Supply them, as CI does:

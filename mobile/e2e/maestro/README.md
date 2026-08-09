@@ -34,9 +34,9 @@ Everything below runs from `mobile/`.
 
 ### 1. Build the app
 
-The environment is not optional. `searchTags` asserts the `STG` badge, so a
-PRODUCTION build fails it — and a PRODUCTION run would write test data to the
-live relay.
+The environment is not optional: a PRODUCTION run would write test data to the
+live relay. `fullRegression` additionally fails outright on a PRODUCTION build,
+because `searchTags` asserts the `STG` badge.
 
 ```bash
 # iOS Simulator
