@@ -58,6 +58,13 @@ class SubtitleVisibilityOverrideNotifier
     setForVideo(videoId, !currentlyVisible);
   }
 
+  void clearIfVideo(String videoId) {
+    if (!ref.mounted) return;
+    if (state?.videoId == videoId) {
+      state = null;
+    }
+  }
+
   void clearUnlessVideo(String videoId) {
     if (!ref.mounted) return;
     final current = state;

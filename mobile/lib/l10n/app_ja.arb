@@ -4052,8 +4052,6 @@
     "videoSettingsAutoAdvanceOff": "自動送りオフ",
     "videoSettingsCaptionsOn": "字幕オン",
     "videoSettingsCaptionsOff": "字幕オフ",
-    "videoSettingsCaptionsOnForVideo": "Captions on for this video",
-    "videoSettingsCaptionsOffForVideo": "Captions off for this video",
     "videoActionReportLabel": "報告",
     "videoActionReport": "動画を報告",
     "videoActionEditLabel": "編集",

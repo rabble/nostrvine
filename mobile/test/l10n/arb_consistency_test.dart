@@ -445,6 +445,10 @@ const _knownUntranslatedDebt = <String>{
   // localization pass; offline devices still get the fully translated
   // videoMetadataC2paMissingNote.
   'videoMetadataC2paMissingNoteServiceUnavailable',
+  // Scoped feed-caption snackbar copy; translation is deferred to the next
+  // playback-controls localization pass.
+  'videoSettingsCaptionsOnForVideo',
+  'videoSettingsCaptionsOffForVideo',
 };
 
 const _profileBadgeSheetKeys = <String>{

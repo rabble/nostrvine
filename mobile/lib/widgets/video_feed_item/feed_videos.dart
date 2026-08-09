@@ -161,13 +161,17 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
     _subtitleVisibilityOverrides.clearUnlessVideo(videoId);
   }
 
-  void _clearScopedSubtitleVisibility({bool defer = false}) {
+  void _clearOwnedScopedSubtitleVisibility({bool defer = false}) {
+    final videoId = _activeSubtitleVideoId;
     _activeSubtitleVideoId = null;
+    if (videoId == null) return;
     if (defer) {
-      scheduleMicrotask(_subtitleVisibilityOverrides.clear);
+      scheduleMicrotask(
+        () => _subtitleVisibilityOverrides.clearIfVideo(videoId),
+      );
       return;
     }
-    _subtitleVisibilityOverrides.clear();
+    _subtitleVisibilityOverrides.clearIfVideo(videoId);
   }
 
   /// Warn labels for [video] merging creator/trusted labels with any
@@ -245,7 +249,9 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
   void didUpdateWidget(covariant FeedVideos oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!widget.isActive) {
-      _clearScopedSubtitleVisibility(defer: true);
+      // Overlays, pushed routes, and tab switches make the feed temporarily
+      // inactive. Keep a same-video override through those pauses; the next
+      // active-video sync or dispose path owns clearing it.
     } else {
       final currentIndex =
           _feedKey.currentState?.currentIndex ?? widget.currentIndex;
@@ -255,7 +261,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
           defer: true,
         );
       } else {
-        _clearScopedSubtitleVisibility(defer: true);
+        _clearOwnedScopedSubtitleVisibility(defer: true);
       }
     }
     // When pagination settles (hasMore / isLoadingMore changed), flush any
@@ -288,7 +294,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
 
   @override
   void dispose() {
-    _clearScopedSubtitleVisibility(defer: true);
+    _clearOwnedScopedSubtitleVisibility(defer: true);
     routeObserver.unsubscribe(this);
     super.dispose();
   }
@@ -296,7 +302,6 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
   @override
   void didPushNext() {
     if (!_routeAllowsPlayback) return;
-    _clearScopedSubtitleVisibility();
     setState(() => _routeAllowsPlayback = false);
   }
 
@@ -330,9 +335,6 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
     final appForeground = ref.watch(appForegroundProvider);
     final isFeedActive =
         widget.isActive && _routeAllowsPlayback && appForeground;
-    ref.listen(appForegroundProvider, (_, isForeground) {
-      if (!isForeground) _clearScopedSubtitleVisibility();
-    });
     // Rebuild when a community-label prefetch resolves so InfiniteVideoFeed
     // re-syncs the autoplay gate (didUpdateWidget) and pauses a video whose
     // community warning just crossed the threshold. The service only

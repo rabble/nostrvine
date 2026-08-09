@@ -74,7 +74,7 @@ class FeedModeSwitch extends StatelessWidget {
                         return _FeedModeContent(
                           onTap: () => _showFeedModeBottomSheet(context, state),
                           label: _labelForSource(state, context.l10n),
-                          trailing: FeedSettingsMenu(video: activeVideo),
+                          trailing: FeedSettingsMenu(videoId: activeVideo?.id),
                         );
                       },
                     ),

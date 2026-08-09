@@ -128,7 +128,7 @@ void main() {
     });
 
     group('Feed Settings', () {
-      testWidgets('passes the active video to the trailing settings menu', (
+      testWidgets('passes only the active video id to the trailing settings menu', (
         tester,
       ) async {
         final firstVideo = video(
@@ -149,7 +149,13 @@ void main() {
 
         expect(
           tester.widget<FeedSettingsMenu>(find.byType(FeedSettingsMenu)).video,
-          same(activeVideo),
+          isNull,
+        );
+        expect(
+          tester
+              .widget<FeedSettingsMenu>(find.byType(FeedSettingsMenu))
+              .videoId,
+          activeVideo.id,
         );
       });
     });

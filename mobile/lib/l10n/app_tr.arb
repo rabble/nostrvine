@@ -4052,8 +4052,6 @@
     "videoSettingsAutoAdvanceOff": "Otomatik ilerleme kapalı",
     "videoSettingsCaptionsOn": "Altyazı açık",
     "videoSettingsCaptionsOff": "Altyazı kapalı",
-    "videoSettingsCaptionsOnForVideo": "Captions on for this video",
-    "videoSettingsCaptionsOffForVideo": "Captions off for this video",
     "videoActionReportLabel": "Bildir",
     "videoActionReport": "Videoyu bildir",
     "videoActionEditLabel": "Düzenle",

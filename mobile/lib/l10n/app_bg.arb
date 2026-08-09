@@ -4183,8 +4183,6 @@
     "videoSettingsAutoAdvanceOff": "Автоматичното продължаване е изключено",
     "videoSettingsCaptionsOn": "Субтитрите са включени",
     "videoSettingsCaptionsOff": "Субтитрите са изключени",
-    "videoSettingsCaptionsOnForVideo": "Captions on for this video",
-    "videoSettingsCaptionsOffForVideo": "Captions off for this video",
     "videoActionReportLabel": "Сигнал",
     "videoActionReport": "Подай сигнал за видеото",
     "videoActionEditLabel": "Редактирай",

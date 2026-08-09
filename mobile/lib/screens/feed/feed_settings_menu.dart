@@ -27,12 +27,14 @@ import 'package:openvine/widgets/video_feed_item/feed_playback_toggles_pill.dart
 /// controls: playback mode (auto-advance), audio mute, and closed captions.
 ///
 /// The popover content is the shared [FeedPlaybackTogglesPill] widget. Feed
-/// surfaces should pass [video] when they have current-video context so the
+/// surfaces should pass [videoId] when they have current-video context so the
 /// captions toggle stays scoped to that video instead of mutating Settings.
+/// Pass [video] only on surfaces that should expose owner edit/delete actions.
 class FeedSettingsMenu extends ConsumerStatefulWidget {
-  const FeedSettingsMenu({super.key, this.video});
+  const FeedSettingsMenu({super.key, this.video, this.videoId});
 
   final VideoEvent? video;
+  final String? videoId;
 
   @override
   ConsumerState<FeedSettingsMenu> createState() => _FeedSettingsMenuState();
@@ -146,7 +148,7 @@ class _FeedSettingsMenuState extends ConsumerState<FeedSettingsMenu> {
           isOwnVideo: _isOwnVideo,
           onEditVideo: _editVideo,
           onDeleteVideo: _confirmDeleteVideo,
-          videoId: widget.video?.id,
+          videoId: widget.videoId ?? widget.video?.id,
         ),
         child: ValueListenableBuilder<bool>(
           valueListenable: _isShowing,
