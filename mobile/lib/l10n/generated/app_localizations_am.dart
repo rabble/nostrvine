@@ -8324,12 +8324,6 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get videoRecorderCaptureCloseLabel => 'ገጠመ';
-
-  @override
-  String get videoRecorderCaptureNextLabel => 'ቀጥሎ';
-
-  @override
   String get videoRecorderLipSyncAddAudioFirst => 'ከመቅረጽ በፊት ኦዲዮ ያክሉ';
 
   @override

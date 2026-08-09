@@ -8506,12 +8506,6 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get videoRecorderCaptureCloseLabel => 'Đóng';
-
-  @override
-  String get videoRecorderCaptureNextLabel => 'Tiếp';
-
-  @override
   String get videoRecorderLipSyncAddAudioFirst =>
       'Thêm âm thanh trước khi quay';
 

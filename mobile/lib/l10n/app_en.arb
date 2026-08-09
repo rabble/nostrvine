@@ -5141,8 +5141,6 @@
       }
     }
   },
-  "videoRecorderCaptureCloseLabel": "Close",
-  "videoRecorderCaptureNextLabel": "Next",
   "videoRecorderLipSyncAddAudioFirst": "Add audio before recording",
   "@videoRecorderLipSyncAddAudioFirst": {
     "description": "Snackbar shown when the user taps the record button in lip-sync mode without first selecting a sound."

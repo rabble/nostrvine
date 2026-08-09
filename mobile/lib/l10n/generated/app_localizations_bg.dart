@@ -8578,12 +8578,6 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String get videoRecorderCaptureCloseLabel => 'Затвори';
-
-  @override
-  String get videoRecorderCaptureNextLabel => 'Следваща';
-
-  @override
   String get videoRecorderLipSyncAddAudioFirst => 'Добавете аудио преди запис';
 
   @override

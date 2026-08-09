@@ -5120,8 +5120,6 @@
   "videoRecorderCameraPreviewLabel": "Bản xem trước camera",
   "videoRecorderCameraPreviewFocusHint": "Lấy nét camera",
   "videoRecorderSwitchToModeLabel": "Chuyển sang chế độ {mode}",
-  "videoRecorderCaptureCloseLabel": "Đóng",
-  "videoRecorderCaptureNextLabel": "Tiếp",
   "videoRecorderLipSyncAddAudioFirst": "Thêm âm thanh trước khi quay",
   "@videoRecorderLipSyncAddAudioFirst": {
     "description": "Snackbar shown when the user taps the record button in lip-sync mode without first selecting a sound."

@@ -5120,8 +5120,6 @@
   "videoRecorderCameraPreviewLabel": "相机预览",
   "videoRecorderCameraPreviewFocusHint": "相机对焦",
   "videoRecorderSwitchToModeLabel": "切换到{mode}模式",
-  "videoRecorderCaptureCloseLabel": "关闭",
-  "videoRecorderCaptureNextLabel": "下一步",
   "videoRecorderLipSyncAddAudioFirst": "录制前请先添加音频",
   "@videoRecorderLipSyncAddAudioFirst": {
     "description": "Snackbar shown when the user taps the record button in lip-sync mode without first selecting a sound."

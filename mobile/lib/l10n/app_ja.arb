@@ -3232,8 +3232,6 @@
     "videoRecorderCameraPreviewLabel": "カメラプレビュー",
     "videoRecorderCameraPreviewFocusHint": "カメラの焦点を合わせる",
     "videoRecorderSwitchToModeLabel": "{mode}モードに切り替える",
-    "videoRecorderCaptureCloseLabel": "閉じる",
-    "videoRecorderCaptureNextLabel": "次へ",
     "videoRecorderLipSyncAddAudioFirst": "録画する前にオーディオを追加してください",
     "videoRecorderStopMotionAssembleFailed": "動画を作成できませんでした。もう一度お試しください。",
     "videoRecorderStopMotionShotsLeft": "{count, plural, =0{残り0枚} other{残り{count}枚}}",

@@ -8456,12 +8456,6 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String get videoRecorderCaptureCloseLabel => 'Tutup';
-
-  @override
-  String get videoRecorderCaptureNextLabel => 'Berikutnya';
-
-  @override
   String get videoRecorderLipSyncAddAudioFirst =>
       'Tambahkan audio sebelum merekam';
 

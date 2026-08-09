@@ -8135,12 +8135,6 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get videoRecorderCaptureCloseLabel => '閉じる';
-
-  @override
-  String get videoRecorderCaptureNextLabel => '次へ';
-
-  @override
   String get videoRecorderLipSyncAddAudioFirst => '録画する前にオーディオを追加してください';
 
   @override

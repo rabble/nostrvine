@@ -8159,12 +8159,6 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get videoRecorderCaptureCloseLabel => '닫기';
-
-  @override
-  String get videoRecorderCaptureNextLabel => '다음';
-
-  @override
   String get videoRecorderLipSyncAddAudioFirst => '녹화하기 전에 오디오를 추가하세요';
 
   @override

@@ -8497,12 +8497,6 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get videoRecorderCaptureCloseLabel => 'Stäng';
-
-  @override
-  String get videoRecorderCaptureNextLabel => 'Nästa';
-
-  @override
   String get videoRecorderLipSyncAddAudioFirst =>
       'Lägg till ljud innan inspelning';
 

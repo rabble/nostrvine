@@ -3571,8 +3571,6 @@
     "videoRecorderCameraPreviewLabel": "የካሜራ ቅድመ እይታ",
     "videoRecorderCameraPreviewFocusHint": "ካሜራውን አተኩር",
     "videoRecorderSwitchToModeLabel": "ወደ {mode} ሁነታ ቀይር",
-    "videoRecorderCaptureCloseLabel": "ገጠመ",
-    "videoRecorderCaptureNextLabel": "ቀጥሎ",
     "videoRecorderLipSyncAddAudioFirst": "ከመቅረጽ በፊት ኦዲዮ ያክሉ",
     "videoRecorderStopMotionAssembleFailed": "ቪዲዮውን መፍጠር አልተቻለም። እንደገና ይሞክሩ።",
     "videoRecorderStopMotionShotsLeft": "{count, plural, =0{ምንም የቀረ ፎቶ የለም} =1{1 ፎቶ ቀርቷል} other{{count} ፎቶዎች ቀርተዋል}}",

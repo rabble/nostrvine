@@ -22,6 +22,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group(VideoRecorderClassicTopBar, () {
+    final l10n = lookupAppLocalizations(const Locale('en'));
+
     late _MockVideoRecorderBloc recorderBloc;
 
     setUp(() {
@@ -77,6 +79,41 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(DivineIconButton), findsNWidgets(2));
+      });
+
+      testWidgets('close button announces that it closes the recorder', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
+
+        expect(
+          find.bySemanticsLabel(l10n.videoRecorderCloseLabel),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('next button announces that it continues to the editor', (
+        tester,
+      ) async {
+        final clips = [
+          DivineVideoClip(
+            id: 'clip1',
+            video: EditorVideo.file('/test/clip1.mp4'),
+            duration: const Duration(seconds: 3),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          ),
+        ];
+
+        await tester.pumpWidget(buildWidget(clips: clips));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.bySemanticsLabel(l10n.videoRecorderContinueToEditorLabel),
+          findsOneWidget,
+        );
       });
 
       testWidgets('uses Stack for progress bar behind buttons', (tester) async {

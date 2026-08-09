@@ -14640,18 +14640,6 @@ abstract class AppLocalizations {
   /// **'Switch to {mode} mode'**
   String videoRecorderSwitchToModeLabel(String mode);
 
-  /// No description provided for @videoRecorderCaptureCloseLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Close'**
-  String get videoRecorderCaptureCloseLabel;
-
-  /// No description provided for @videoRecorderCaptureNextLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Next'**
-  String get videoRecorderCaptureNextLabel;
-
   /// Snackbar shown when the user taps the record button in lip-sync mode without first selecting a sound.
   ///
   /// In en, this message translates to:

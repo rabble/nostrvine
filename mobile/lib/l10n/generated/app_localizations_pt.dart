@@ -8562,12 +8562,6 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get videoRecorderCaptureCloseLabel => 'Fechar';
-
-  @override
-  String get videoRecorderCaptureNextLabel => 'Próximo';
-
-  @override
   String get videoRecorderLipSyncAddAudioFirst =>
       'Adicione áudio antes de gravar';
 

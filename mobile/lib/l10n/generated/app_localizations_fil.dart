@@ -8599,12 +8599,6 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String get videoRecorderCaptureCloseLabel => 'Isara';
-
-  @override
-  String get videoRecorderCaptureNextLabel => 'Susunod';
-
-  @override
   String get videoRecorderLipSyncAddAudioFirst =>
       'Magdagdag ng audio bago mag-record';
 

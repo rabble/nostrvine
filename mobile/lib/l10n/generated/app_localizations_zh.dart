@@ -8079,12 +8079,6 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get videoRecorderCaptureCloseLabel => '关闭';
-
-  @override
-  String get videoRecorderCaptureNextLabel => '下一步';
-
-  @override
   String get videoRecorderLipSyncAddAudioFirst => '录制前请先添加音频';
 
   @override

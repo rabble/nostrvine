@@ -8683,12 +8683,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get videoRecorderCaptureCloseLabel => 'Închide';
-
-  @override
-  String get videoRecorderCaptureNextLabel => 'Următorul';
-
-  @override
   String get videoRecorderLipSyncAddAudioFirst =>
       'Adaugă audio înainte de înregistrare';
 

@@ -2903,8 +2903,6 @@
     "videoRecorderCameraPreviewLabel": "Pré-visualização da câmara",
     "videoRecorderCameraPreviewFocusHint": "Focar a câmara",
     "videoRecorderSwitchToModeLabel": "Mudar para o modo {mode}",
-    "videoRecorderCaptureCloseLabel": "Fechar",
-    "videoRecorderCaptureNextLabel": "Próximo",
     "videoRecorderLipSyncAddAudioFirst": "Adicione áudio antes de gravar",
     "videoRecorderStopMotionAssembleFailed": "Não foi possível criar o vídeo. Tente novamente.",
     "videoRecorderStopMotionShotsLeft": "{count, plural, =0{Nenhuma foto restante} =1{Resta 1 foto} other{Restam {count} fotos}}",

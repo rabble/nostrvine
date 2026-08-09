@@ -8459,12 +8459,6 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get videoRecorderCaptureCloseLabel => 'Kapat';
-
-  @override
-  String get videoRecorderCaptureNextLabel => 'İleri';
-
-  @override
   String get videoRecorderLipSyncAddAudioFirst => 'Kayıttan önce ses ekleyin';
 
   @override
