@@ -8281,6 +8281,13 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
+  String get commentsVideoReplyPending => 'Menyiarkan…';
+
+  @override
+  String get commentsVideoReplyPendingSemanticLabel =>
+      'Balasan video anda sedang disiarkan';
+
+  @override
   String get commentsSortNew => 'Baharu';
 
   @override

@@ -7878,6 +7878,12 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get commentsVideoReplyPending => '投稿中…';
+
+  @override
+  String get commentsVideoReplyPendingSemanticLabel => '動画返信を投稿しています';
+
+  @override
   String get commentsSortNew => 'New';
 
   @override

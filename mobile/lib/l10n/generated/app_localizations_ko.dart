@@ -7902,6 +7902,12 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get commentsVideoReplyPending => '게시 중…';
+
+  @override
+  String get commentsVideoReplyPendingSemanticLabel => '동영상 답글을 게시하는 중입니다';
+
+  @override
   String get commentsSortNew => 'New';
 
   @override

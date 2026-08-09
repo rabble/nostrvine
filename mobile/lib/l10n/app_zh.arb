@@ -4931,6 +4931,8 @@
       }
     }
   },
+  "commentsVideoReplyPending": "发布中…",
+  "commentsVideoReplyPendingSemanticLabel": "正在发布你的视频回复",
   "commentsSortNew": "最新",
   "@commentsSortNew": {
     "description": "Comments-sort toggle label for newest-first order."

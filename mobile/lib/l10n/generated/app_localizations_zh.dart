@@ -7824,6 +7824,12 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get commentsVideoReplyPending => '发布中…';
+
+  @override
+  String get commentsVideoReplyPendingSemanticLabel => '正在发布你的视频回复';
+
+  @override
   String get commentsSortNew => '最新';
 
   @override

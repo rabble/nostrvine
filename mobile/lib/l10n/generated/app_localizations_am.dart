@@ -8060,6 +8060,12 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String get commentsVideoReplyPending => 'በመለጠፍ ላይ…';
+
+  @override
+  String get commentsVideoReplyPendingSemanticLabel => 'የቪዲዮ ምላሽዎ በመለጠፍ ላይ ነው';
+
+  @override
   String get commentsSortNew => 'New';
 
   @override

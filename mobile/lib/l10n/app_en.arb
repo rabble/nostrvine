@@ -4950,6 +4950,14 @@
       }
     }
   },
+  "commentsVideoReplyPending": "Posting…",
+  "@commentsVideoReplyPending": {
+    "description": "Short status shown on the placeholder tile while a recorded video reply is uploading and publishing."
+  },
+  "commentsVideoReplyPendingSemanticLabel": "Your video reply is posting",
+  "@commentsVideoReplyPendingSemanticLabel": {
+    "description": "Screen-reader label for the pending video-reply row in the comments sheet."
+  },
   "commentsSortNew": "New",
   "@commentsSortNew": {
     "description": "Comments-sort toggle label for newest-first order."

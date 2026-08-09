@@ -11,5 +11,6 @@ export 'comments_header.dart';
 export 'comments_list.dart';
 export 'mention_overlay.dart';
 export 'new_comments_pill.dart';
+export 'pending_video_reply_tile.dart';
 export 'unfocus_on_sheet_dismiss.dart';
 export 'video_comment_player.dart';

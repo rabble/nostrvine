@@ -162,6 +162,44 @@ void main() {
       );
 
       blocTest<CommentsListBloc, CommentsListState>(
+        'emits failure when load throws and store has only placeholders',
+        setUp: () {
+          when(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenThrow(const LoadCommentsFailedException('boom'));
+        },
+        build: createBloc,
+        seed: () {
+          final placeholder = Comment(
+            id: '${commentPlaceholderIdPrefix}1',
+            content: 'uploading',
+            authorPubkey: validId('me'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          return CommentsListState(commentsById: {placeholder.id: placeholder});
+        },
+        act: (b) => b.add(const CommentsLoadRequested()),
+        errors: () => [isA<LoadCommentsFailedException>()],
+        expect: () => [
+          isA<CommentsListState>().having(
+            (s) => s.status,
+            'status',
+            CommentsStatus.loading,
+          ),
+          isA<CommentsListState>()
+              .having((s) => s.status, 'status', CommentsStatus.failure)
+              .having((s) => s.error, 'error', CommentsListError.loadFailed),
+        ],
+      );
+
+      blocTest<CommentsListBloc, CommentsListState>(
         'noop when status is already loading',
         build: createBloc,
         seed: () => const CommentsListState(status: CommentsStatus.loading),
@@ -411,9 +449,7 @@ void main() {
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
-          ).thenAnswer(
-            (_) async => CommentThread.empty(validId('root')),
-          );
+          ).thenAnswer((_) async => CommentThread.empty(validId('root')));
         },
         build: createBloc,
         seed: () {
@@ -540,10 +576,7 @@ void main() {
           expect(b.state.commentsById.length, 2);
           expect(
             b.state.commentsById.keys,
-            containsAll([
-              validId('c1'),
-              validId('c0'),
-            ]),
+            containsAll([validId('c1'), validId('c0')]),
           );
         },
       );
@@ -660,10 +693,7 @@ void main() {
           );
           expect(comment.videoDimensions, equals('720x1280'));
           expect(comment.videoDuration, equals(6));
-          expect(
-            comment.videoBlurhash,
-            equals('LKO2?U%2Tw=w]~RBVZRi};RPxuwH'),
-          );
+          expect(comment.videoBlurhash, equals('LKO2?U%2Tw=w]~RBVZRi};RPxuwH'));
           expect(b.state.newCommentCount, 0);
         },
       );
@@ -784,9 +814,8 @@ void main() {
       blocTest<CommentsListBloc, CommentsListState>(
         'CommentsScrollHandled clears the scroll signal (#5854)',
         build: createBloc,
-        seed: () => const CommentsListState(
-          scrollToCommentId: 'pending_comment_1',
-        ),
+        seed: () =>
+            const CommentsListState(scrollToCommentId: 'pending_comment_1'),
         act: (b) => b.add(const CommentsScrollHandled()),
         verify: (b) {
           expect(b.state.scrollToCommentId, isNull);
@@ -878,9 +907,8 @@ void main() {
           );
           return CommentsListState(commentsById: {placeholder.id: placeholder});
         },
-        act: (b) => b.add(
-          const OptimisticCommentRolledBack('pending_comment_1'),
-        ),
+        act: (b) =>
+            b.add(const OptimisticCommentRolledBack('pending_comment_1')),
         verify: (b) {
           expect(
             b.state.commentsById.containsKey('pending_comment_1'),
@@ -967,14 +995,8 @@ void main() {
       });
 
       test('engagement sort uses provided upvote counts', () {
-        final low = makeComment(
-          validId('c1'),
-          createdAt: DateTime.now(),
-        );
-        final high = makeComment(
-          validId('c2'),
-          createdAt: DateTime.now(),
-        );
+        final low = makeComment(validId('c1'), createdAt: DateTime.now());
+        final high = makeComment(validId('c2'), createdAt: DateTime.now());
         final state = CommentsListState(
           commentsById: {low.id: low, high.id: high},
           sortMode: CommentsSortMode.topEngagement,
@@ -1119,12 +1141,9 @@ void main() {
           // Emit AFTER close — the throttleListen onData wrapper guards on
           // !isClosed and silently drops. Must not throw "Cannot add events
           // after close" on the bloc.
-          expect(
-            () {
-              streamController.add(makeComment(validId('late')));
-            },
-            returnsNormally,
-          );
+          expect(() {
+            streamController.add(makeComment(validId('late')));
+          }, returnsNormally);
 
           await streamController.close();
         },

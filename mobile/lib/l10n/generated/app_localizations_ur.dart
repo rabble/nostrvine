@@ -8233,6 +8233,13 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
+  String get commentsVideoReplyPending => 'پوسٹ ہو رہا ہے…';
+
+  @override
+  String get commentsVideoReplyPendingSemanticLabel =>
+      'آپ کا ویڈیو جواب پوسٹ ہو رہا ہے';
+
+  @override
   String get commentsSortNew => 'نئے';
 
   @override

@@ -8188,6 +8188,13 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String get commentsVideoReplyPending => 'Memposting…';
+
+  @override
+  String get commentsVideoReplyPendingSemanticLabel =>
+      'Balasan video Anda sedang diposting';
+
+  @override
   String get commentsSortNew => 'New';
 
   @override

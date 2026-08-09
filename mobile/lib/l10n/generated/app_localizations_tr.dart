@@ -8188,6 +8188,13 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String get commentsVideoReplyPending => 'Gönderiliyor…';
+
+  @override
+  String get commentsVideoReplyPendingSemanticLabel =>
+      'Video yanıtınız gönderiliyor';
+
+  @override
   String get commentsSortNew => 'New';
 
   @override
