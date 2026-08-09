@@ -7652,6 +7652,18 @@ class AppLocalizationsTr extends AppLocalizations {
       'Takip durumu güncellenemedi. Lütfen tekrar dene.';
 
   @override
+  String get followersSortSemanticLabel => 'Takipçileri sırala';
+
+  @override
+  String get followersSortTitle => 'Sıralama ölçütü';
+
+  @override
+  String get followersSortNewest => 'Önce en yeniler';
+
+  @override
+  String get followersSortOldest => 'Önce en eskiler';
+
+  @override
   String get reportMessageTitle => 'Mesajı Bildir';
 
   @override

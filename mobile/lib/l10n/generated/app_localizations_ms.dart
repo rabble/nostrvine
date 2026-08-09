@@ -7743,6 +7743,18 @@ class AppLocalizationsMs extends AppLocalizations {
       'Gagal mengemas kini status ikutan. Sila cuba lagi.';
 
   @override
+  String get followersSortSemanticLabel => 'Isih pengikut';
+
+  @override
+  String get followersSortTitle => 'Isih mengikut';
+
+  @override
+  String get followersSortNewest => 'Terbaharu dahulu';
+
+  @override
+  String get followersSortOldest => 'Terlama dahulu';
+
+  @override
   String get reportMessageTitle => 'Laporkan Mesej';
 
   @override

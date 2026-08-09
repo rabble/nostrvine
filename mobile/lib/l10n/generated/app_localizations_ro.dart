@@ -7865,6 +7865,18 @@ class AppLocalizationsRo extends AppLocalizations {
       'Actualizarea stării de urmărire a eșuat. Încearcă din nou.';
 
   @override
+  String get followersSortSemanticLabel => 'Sortează urmăritorii';
+
+  @override
+  String get followersSortTitle => 'Sortează după';
+
+  @override
+  String get followersSortNewest => 'Cei mai noi primii';
+
+  @override
+  String get followersSortOldest => 'Cei mai vechi primii';
+
+  @override
   String get reportMessageTitle => 'Raportează mesajul';
 
   @override

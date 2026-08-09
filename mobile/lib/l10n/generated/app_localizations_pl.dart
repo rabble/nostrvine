@@ -7866,6 +7866,18 @@ class AppLocalizationsPl extends AppLocalizations {
       'Nie udało się zaktualizować statusu obserwowania. Spróbuj ponownie.';
 
   @override
+  String get followersSortSemanticLabel => 'Sortuj obserwujących';
+
+  @override
+  String get followersSortTitle => 'Sortuj według';
+
+  @override
+  String get followersSortNewest => 'Najpierw najnowsi';
+
+  @override
+  String get followersSortOldest => 'Najpierw najstarsi';
+
+  @override
   String get reportMessageTitle => 'Zgłoś wiadomość';
 
   @override

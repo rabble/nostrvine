@@ -7375,6 +7375,18 @@ class AppLocalizationsKo extends AppLocalizations {
   String get followersUpdateFollowFailed => '팔로우 상태를 업데이트하지 못했어요. 다시 시도해주세요.';
 
   @override
+  String get followersSortSemanticLabel => '팔로워 정렬';
+
+  @override
+  String get followersSortTitle => '정렬 기준';
+
+  @override
+  String get followersSortNewest => '최신순';
+
+  @override
+  String get followersSortOldest => '오래된순';
+
+  @override
   String get reportMessageTitle => '메시지 신고';
 
   @override

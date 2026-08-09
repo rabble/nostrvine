@@ -7651,6 +7651,18 @@ class AppLocalizationsId extends AppLocalizations {
       'Gagal memperbarui status follow. Coba lagi.';
 
   @override
+  String get followersSortSemanticLabel => 'Urutkan pengikut';
+
+  @override
+  String get followersSortTitle => 'Urutkan menurut';
+
+  @override
+  String get followersSortNewest => 'Terbaru dulu';
+
+  @override
+  String get followersSortOldest => 'Terlama dulu';
+
+  @override
   String get reportMessageTitle => 'Laporkan Pesan';
 
   @override

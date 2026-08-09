@@ -7749,6 +7749,18 @@ class AppLocalizationsPt extends AppLocalizations {
       'Falha ao atualizar status de seguir. Tente novamente.';
 
   @override
+  String get followersSortSemanticLabel => 'Ordenar seguidores';
+
+  @override
+  String get followersSortTitle => 'Ordenar por';
+
+  @override
+  String get followersSortNewest => 'Mais recentes primeiro';
+
+  @override
+  String get followersSortOldest => 'Mais antigos primeiro';
+
+  @override
   String get reportMessageTitle => 'Denunciar mensagem';
 
   @override

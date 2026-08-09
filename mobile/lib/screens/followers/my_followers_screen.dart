@@ -106,6 +106,14 @@ class _MyFollowersView extends ConsumerWidget {
         showBackButton: true,
         onBackPressed: () => Navigator.of(context).pop(),
         backButtonSemanticLabel: context.l10n.commonBack,
+        actions: [
+          DiVineAppBarAction(
+            icon: SvgIconSource(DivineIconName.funnelSimple.assetPath),
+            semanticLabel: context.l10n.followersSortSemanticLabel,
+            tooltip: context.l10n.followersSortSemanticLabel,
+            onPressed: () => _openSortMenu(context),
+          ),
+        ],
       ),
       body: MultiBlocListener(
         listeners: [
@@ -155,6 +163,37 @@ class _MyFollowersView extends ConsumerWidget {
             };
           },
         ),
+      ),
+    );
+  }
+
+  Future<void> _openSortMenu(BuildContext context) async {
+    final bloc = context.read<MyFollowersBloc>();
+    final selected = await VineBottomSheetSelectionMenu.show(
+      context: context,
+      title: Text(
+        context.l10n.followersSortTitle,
+        style: VineTheme.titleMediumFont(color: context.vineColors.onSurface),
+      ),
+      selectedValue: bloc.state.sortOrder.name,
+      options: [
+        VineBottomSheetSelectionOptionData(
+          label: context.l10n.followersSortNewest,
+          value: FollowersSortOrder.newestFirst.name,
+          leadingIcon: .arrowFatLineDown,
+        ),
+        VineBottomSheetSelectionOptionData(
+          label: context.l10n.followersSortOldest,
+          value: FollowersSortOrder.oldestFirst.name,
+          leadingIcon: .arrowFatLineUp,
+        ),
+      ],
+    );
+
+    if (selected == null) return;
+    bloc.add(
+      MyFollowersSortOrderChanged(
+        FollowersSortOrder.values.byName(selected),
       ),
     );
   }

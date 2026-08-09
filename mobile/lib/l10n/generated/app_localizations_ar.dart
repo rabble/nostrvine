@@ -7640,6 +7640,18 @@ class AppLocalizationsAr extends AppLocalizations {
       'فشل تحديث حالة المتابعة. حاول مرّة أخرى.';
 
   @override
+  String get followersSortSemanticLabel => 'ترتيب المتابِعين';
+
+  @override
+  String get followersSortTitle => 'الترتيب حسب';
+
+  @override
+  String get followersSortNewest => 'الأحدث أولاً';
+
+  @override
+  String get followersSortOldest => 'الأقدم أولاً';
+
+  @override
   String get reportMessageTitle => 'الإبلاغ عن الرسالة';
 
   @override

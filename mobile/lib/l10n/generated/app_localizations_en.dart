@@ -7681,6 +7681,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'Failed to update follow status. Please try again.';
 
   @override
+  String get followersSortSemanticLabel => 'Sort followers';
+
+  @override
+  String get followersSortTitle => 'Sort by';
+
+  @override
+  String get followersSortNewest => 'Newest first';
+
+  @override
+  String get followersSortOldest => 'Oldest first';
+
+  @override
   String get reportMessageTitle => 'Report Message';
 
   @override

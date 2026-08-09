@@ -7303,6 +7303,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get followersUpdateFollowFailed => '更新关注状态失败，请重试。';
 
   @override
+  String get followersSortSemanticLabel => '排序粉丝';
+
+  @override
+  String get followersSortTitle => '排序方式';
+
+  @override
+  String get followersSortNewest => '最新优先';
+
+  @override
+  String get followersSortOldest => '最早优先';
+
+  @override
   String get reportMessageTitle => '举报消息';
 
   @override

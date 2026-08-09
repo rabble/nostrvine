@@ -7686,6 +7686,18 @@ class AppLocalizationsSv extends AppLocalizations {
       'Kunde inte uppdatera följstatus. Försök igen.';
 
   @override
+  String get followersSortSemanticLabel => 'Sortera följare';
+
+  @override
+  String get followersSortTitle => 'Sortera efter';
+
+  @override
+  String get followersSortNewest => 'Nyaste först';
+
+  @override
+  String get followersSortOldest => 'Äldsta först';
+
+  @override
   String get reportMessageTitle => 'Rapportera meddelande';
 
   @override

@@ -7788,6 +7788,18 @@ class AppLocalizationsDe extends AppLocalizations {
       'Follow-Status konnte nicht aktualisiert werden. Versuch es nochmal.';
 
   @override
+  String get followersSortSemanticLabel => 'Follower sortieren';
+
+  @override
+  String get followersSortTitle => 'Sortieren nach';
+
+  @override
+  String get followersSortNewest => 'Neueste zuerst';
+
+  @override
+  String get followersSortOldest => 'Älteste zuerst';
+
+  @override
   String get reportMessageTitle => 'Nachricht melden';
 
   @override

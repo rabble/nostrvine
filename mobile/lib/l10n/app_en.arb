@@ -4516,6 +4516,22 @@
   "followersFailedToLoadList": "Failed to load followers list",
   "followersEmptyTitle": "No followers yet",
   "followersUpdateFollowFailed": "Failed to update follow status. Please try again.",
+  "followersSortSemanticLabel": "Sort followers",
+  "@followersSortSemanticLabel": {
+    "description": "Accessibility label for the app bar button that opens the follower sort options."
+  },
+  "followersSortTitle": "Sort by",
+  "@followersSortTitle": {
+    "description": "Header of the bottom sheet listing follower sort options."
+  },
+  "followersSortNewest": "Newest first",
+  "@followersSortNewest": {
+    "description": "Sort option showing the most recent follower at the top of the list."
+  },
+  "followersSortOldest": "Oldest first",
+  "@followersSortOldest": {
+    "description": "Sort option showing the longest-standing follower at the top of the list."
+  },
   "reportMessageTitle": "Report Message",
   "reportMessageWhyReporting": "Why are you reporting this message?",
   "reportMessageSelectReason": "Please select a reason for reporting this message",

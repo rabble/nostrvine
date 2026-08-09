@@ -13286,6 +13286,30 @@ abstract class AppLocalizations {
   /// **'Failed to update follow status. Please try again.'**
   String get followersUpdateFollowFailed;
 
+  /// Accessibility label for the app bar button that opens the follower sort options.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort followers'**
+  String get followersSortSemanticLabel;
+
+  /// Header of the bottom sheet listing follower sort options.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by'**
+  String get followersSortTitle;
+
+  /// Sort option showing the most recent follower at the top of the list.
+  ///
+  /// In en, this message translates to:
+  /// **'Newest first'**
+  String get followersSortNewest;
+
+  /// Sort option showing the longest-standing follower at the top of the list.
+  ///
+  /// In en, this message translates to:
+  /// **'Oldest first'**
+  String get followersSortOldest;
+
   /// No description provided for @reportMessageTitle.
   ///
   /// In en, this message translates to:
