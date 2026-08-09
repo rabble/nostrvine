@@ -452,13 +452,7 @@
     "videoGridEditVideoSubtitle": "Başlık, açıklama ve etiketleri güncelle",
     "videoGridDeleteVideo": "Videoyu Sil",
     "videoGridDeleteVideoSubtitle": "Bu içeriği kalıcı olarak kaldır",
-    "videoGridDeleteConfirmTitle": "Videoyu Sil",
-    "videoGridDeleteConfirmMessage": "Bu videoyu silmek istediğinden emin misin?",
-    "videoGridDeleteConfirmNote": "Bu işlem tüm rölelere bir silme isteği (NIP-09) gönderir. Bazı röleler içeriği saklamaya devam edebilir.",
-    "videoGridDeleteCancel": "İptal",
-    "videoGridDeleteConfirm": "Sil",
     "videoGridDeletingContent": "İçerik siliniyor...",
-    "videoGridDeleteSuccess": "Silme isteği başarıyla gönderildi",
     "videoGridDeleteFailure": "İçerik silinemedi: {error}",
     "@videoGridDeleteFailure": {
         "placeholders": {
@@ -1575,12 +1569,10 @@
         }
     },
     "shareMenuClose": "Kapat",
-    "shareMenuDeleteConfirmation": "Bu videoyu silmek istediğinden emin misin?",
-    "shareMenuDeleteWarning": "Bu işlem tüm rölelere bir silme isteği (NIP-09) gönderir. Bazı röleler içeriği saklamaya devam edebilir.",
+    "shareMenuDeleteConfirmation": "Bu video Divine'dan kalıcı olarak silinir. Diğer röleleri kullanan üçüncü taraf Nostr istemcilerinde hâlâ görünebilir.",
     "shareMenuCancel": "İptal",
     "shareMenuDelete": "Sil",
     "shareMenuDeletingContent": "İçerik siliniyor...",
-    "shareMenuDeleteRequestSent": "Silme isteği başarıyla gönderildi",
     "shareMenuFailedToDeleteContent": "İçerik silinemedi: {error}",
     "@shareMenuFailedToDeleteContent": {
         "placeholders": {
@@ -1624,8 +1616,7 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "Video Silinsin mi?",
-    "shareMenuDeleteRelayWarning": "Bu işlem rölelere bir silme isteği gönderir. Not: Bazı rölelerin hala önbelleğe alınmış kopyaları olabilir.",
-    "shareMenuVideoDeletionRequested": "Video silme isteği alındı",
+    "shareMenuVideoDeletionRequested": "Video silindi",
     "shareMenuFailedToDeleteVideo": "Video silinemedi: {error}",
     "@shareMenuFailedToDeleteVideo": {
         "placeholders": {

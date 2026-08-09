@@ -558,13 +558,7 @@
   "videoGridEditVideoSubtitle": "Kemas kini tajuk, keterangan dan hashtag",
   "videoGridDeleteVideo": "Padam Video",
   "videoGridDeleteVideoSubtitle": "Alih keluar video ini daripada Divine. Ia mungkin masih muncul pada klien Nostr lain.",
-  "videoGridDeleteConfirmTitle": "Padam Video",
-  "videoGridDeleteConfirmMessage": "Ini akan memadam video ini secara kekal daripada Divine. Ia mungkin masih muncul pada klien Nostr pihak ketiga yang menggunakan relay lain.",
-  "videoGridDeleteConfirmNote": "Ini akan menghantar permintaan pemadaman kepada relay. Nota: Sesetengah relay mungkin masih mempunyai salinan cache.",
-  "videoGridDeleteCancel": "Batal",
-  "videoGridDeleteConfirm": "Padam",
   "videoGridDeletingContent": "Memadam kandungan...",
-  "videoGridDeleteSuccess": "Permintaan pemadaman berjaya dihantar",
   "videoGridDeleteFailure": "Gagal memadam kandungan: {error}",
   "@videoGridDeleteFailure": {
     "placeholders": {
@@ -2204,7 +2198,6 @@
   "shareMenuEditVideoSubtitle": "Kemas kini tajuk, keterangan dan hashtag",
   "shareMenuDeleteVideo": "Padam Video",
   "shareMenuDeleteVideoSubtitle": "Alih keluar video ini daripada Divine. Ia mungkin masih muncul pada klien Nostr lain.",
-  "shareMenuDeleteWarning": "Ini menghantar permintaan pemadaman (NIP-09) kepada semua relay. Sesetengah relay mungkin masih menyimpan kandungan itu.",
   "shareMenuVideoInTheseLists": "Video berada dalam senarai ini:",
   "shareMenuVideoCount": "{count} video",
   "@shareMenuVideoCount": {
@@ -2227,7 +2220,6 @@
       }
     }
   },
-  "shareMenuDeleteRequestSent": "Video dipadam",
   "shareMenuDeleteFailedNotInitialized": "Pemadaman belum sedia. Cuba lagi sebentar nanti.",
   "shareMenuDeleteFailedNotOwner": "Anda hanya boleh memadam video anda sendiri.",
   "shareMenuDeleteFailedNotAuthenticated": "Log masuk semula, kemudian cuba memadam.",
@@ -2293,7 +2285,6 @@
     }
   },
   "shareMenuDeleteVideoQuestion": "Padam Video?",
-  "shareMenuDeleteRelayWarning": "Ini akan menghantar permintaan pemadaman kepada relay. Nota: Sesetengah relay mungkin masih mempunyai salinan cache.",
   "shareMenuVideoDeletionRequested": "Video dipadam",
   "shareMenuContentLabels": "Label kandungan",
   "shareMenuAddContentLabels": "Tambah label kandungan",

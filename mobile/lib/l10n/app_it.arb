@@ -452,13 +452,7 @@
     "videoGridEditVideoSubtitle": "Aggiorna titolo, descrizione e hashtag",
     "videoGridDeleteVideo": "Elimina video",
     "videoGridDeleteVideoSubtitle": "Rimuovi definitivamente questo contenuto",
-    "videoGridDeleteConfirmTitle": "Elimina video",
-    "videoGridDeleteConfirmMessage": "Sei sicuro di voler eliminare questo video?",
-    "videoGridDeleteConfirmNote": "Verrà inviata una richiesta di eliminazione (NIP-09) a tutti i relay. Alcuni relay potrebbero comunque conservare il contenuto.",
-    "videoGridDeleteCancel": "Annulla",
-    "videoGridDeleteConfirm": "Elimina",
     "videoGridDeletingContent": "Eliminazione contenuto...",
-    "videoGridDeleteSuccess": "Richiesta di eliminazione inviata con successo",
     "videoGridDeleteFailure": "Impossibile eliminare il contenuto: {error}",
     "@videoGridDeleteFailure": {
         "placeholders": {
@@ -1578,12 +1572,10 @@
         }
     },
     "shareMenuClose": "Chiudi",
-    "shareMenuDeleteConfirmation": "Sei sicuro di voler eliminare questo video?",
-    "shareMenuDeleteWarning": "Verrà inviata una richiesta di eliminazione (NIP-09) a tutti i relay. Alcuni relay potrebbero comunque conservare il contenuto.",
+    "shareMenuDeleteConfirmation": "Questo eliminerà definitivamente questo video da Divine. Potrebbe ancora comparire su client Nostr di terze parti che usano altri relay.",
     "shareMenuCancel": "Annulla",
     "shareMenuDelete": "Elimina",
     "shareMenuDeletingContent": "Eliminazione contenuto...",
-    "shareMenuDeleteRequestSent": "Richiesta di eliminazione inviata con successo",
     "shareMenuFailedToDeleteContent": "Impossibile eliminare il contenuto: {error}",
     "@shareMenuFailedToDeleteContent": {
         "placeholders": {
@@ -1627,8 +1619,7 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "Eliminare il video?",
-    "shareMenuDeleteRelayWarning": "Verrà inviata una richiesta di eliminazione ai relay. Nota: alcuni relay potrebbero avere ancora copie in cache.",
-    "shareMenuVideoDeletionRequested": "Eliminazione del video richiesta",
+    "shareMenuVideoDeletionRequested": "Video eliminato",
     "shareMenuFailedToDeleteVideo": "Impossibile eliminare il video: {error}",
     "@shareMenuFailedToDeleteVideo": {
         "placeholders": {

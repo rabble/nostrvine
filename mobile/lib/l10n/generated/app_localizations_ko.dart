@@ -1072,26 +1072,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoGridDeleteVideoSubtitle => '이 콘텐츠를 완전히 지워요';
 
   @override
-  String get videoGridDeleteConfirmTitle => '영상 삭제';
-
-  @override
-  String get videoGridDeleteConfirmMessage => '이 영상을 정말 삭제할까요?';
-
-  @override
-  String get videoGridDeleteConfirmNote =>
-      '모든 릴레이에 삭제 요청(NIP-09)을 보내요. 일부 릴레이에는 콘텐츠가 남아 있을 수 있어요.';
-
-  @override
-  String get videoGridDeleteCancel => '취소';
-
-  @override
-  String get videoGridDeleteConfirm => '삭제';
-
-  @override
   String get videoGridDeletingContent => '콘텐츠 삭제 중...';
-
-  @override
-  String get videoGridDeleteSuccess => '삭제 요청을 보냈어요';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -3802,10 +3783,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuDeleteVideoSubtitle => '이 콘텐츠를 완전히 지워요';
 
   @override
-  String get shareMenuDeleteWarning =>
-      '모든 릴레이에 삭제 요청(NIP-09)을 보내요. 일부 릴레이에는 콘텐츠가 남아 있을 수 있어요.';
-
-  @override
   String get shareMenuVideoInTheseLists => '영상이 다음 리스트에 있어요:';
 
   @override
@@ -3817,7 +3794,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuClose => '닫기';
 
   @override
-  String get shareMenuDeleteConfirmation => '이 영상을 정말 삭제할까요?';
+  String get shareMenuDeleteConfirmation =>
+      '이 영상은 Divine에서 영구적으로 삭제됩니다. 다른 릴레이를 사용하는 타사 Nostr 클라이언트에는 계속 표시될 수 있어요.';
 
   @override
   String get shareMenuCancel => '취소';
@@ -3832,9 +3810,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return '콘텐츠 삭제에 실패했어요: $error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent => '삭제 요청을 보냈어요';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -3946,11 +3921,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => '영상을 삭제할까요?';
 
   @override
-  String get shareMenuDeleteRelayWarning =>
-      '릴레이에 삭제 요청을 보내요. 참고: 일부 릴레이에는 캐시된 사본이 남아 있을 수 있어요.';
-
-  @override
-  String get shareMenuVideoDeletionRequested => '영상 삭제를 요청했어요';
+  String get shareMenuVideoDeletionRequested => '영상을 삭제했어요';
 
   @override
   String get shareMenuContentLabels => '콘텐츠 라벨';

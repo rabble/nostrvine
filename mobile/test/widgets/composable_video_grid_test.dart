@@ -20,17 +20,26 @@
 // refactoring where ComposableVideoGrid could accept profile data as props
 // instead of fetching via providers, which would allow isolated widget testing.
 
+import 'dart:async';
 import 'dart:ui' show PointerDeviceKind;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/broken_video_tracker.dart' as broken_tracker;
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
+
+import '../helpers/test_provider_overrides.dart';
+
+const _ownPubkey =
+    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
 void main() {
   group('ComposableVideoGrid', () {
@@ -348,6 +357,73 @@ void main() {
       expect(find.text('5s'), findsOneWidget); // duration badge
       // TODO(any): Fix and re-enable these tests
     }, skip: true);
+
+    group('delete confirmation copy', () {
+      testWidgets(
+        'uses the shared owner-delete confirmation copy for owned videos',
+        (tester) async {
+          final mockNostr = createMockNostrService();
+          when(() => mockNostr.publicKey).thenReturn(_ownPubkey);
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          final video = VideoEvent(
+            id: 'owned-video',
+            pubkey: _ownPubkey,
+            content: 'Owned video',
+            title: 'Owned video',
+            authorName: 'Creator',
+            videoUrl: 'https://example.com/owned.mp4',
+            thumbnailUrl: 'https://example.com/owned.jpg',
+            duration: 5,
+            createdAt: DateTime(2026).millisecondsSinceEpoch ~/ 1000,
+            timestamp: DateTime(2026),
+          );
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                brokenVideoTrackerProvider.overrideWith(
+                  (ref) async => mockTracker,
+                ),
+                subscribedListVideoCacheProvider.overrideWithValue(null),
+                nostrServiceProvider.overrideWithValue(mockNostr),
+                userProfileReactiveProvider.overrideWith(
+                  (ref, pubkey) => Stream.value(null),
+                ),
+              ],
+              child: MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: Scaffold(
+                  body: ComposableVideoGrid(
+                    videos: [video],
+                    onVideoTap: (videos, index) {},
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.pump();
+          await tester.longPress(
+            find.bySemanticsLabel(l10n.profileVideoThumbnailLabel(1)),
+          );
+          await tester.pumpAndSettle();
+          await tester.tap(find.text(l10n.videoGridDeleteVideo));
+          await tester.pumpAndSettle();
+
+          final dialog = tester.widget<AlertDialog>(find.byType(AlertDialog));
+          expect(dialog.title, isA<Text>());
+          expect((dialog.title! as Text).data, l10n.shareMenuDeleteVideo);
+          expect(dialog.content, isA<Text>());
+          expect(
+            (dialog.content! as Text).data,
+            l10n.shareMenuDeleteConfirmation,
+          );
+          expect(dialog.actions, hasLength(2));
+          expect(find.text(l10n.shareMenuDeleteConfirmation), findsOneWidget);
+        },
+      );
+    });
 
     group('load-more footer', () {
       // Renders the grid path with no tiles (empty list + no emptyBuilder) so

@@ -483,13 +483,7 @@
     "videoGridEditVideoSubtitle": "Актуализирай заглавие, описание и хаштагове",
     "videoGridDeleteVideo": "Изтрий видеото",
     "videoGridDeleteVideoSubtitle": "Премахни това видео от Divine. Може още да се вижда в други Nostr клиенти.",
-    "videoGridDeleteConfirmTitle": "Изтрий видеото",
-    "videoGridDeleteConfirmMessage": "Това ще изтрие за постоянно това видео от Divine. Може още да се вижда в Nostr клиенти на трети страни, които използват други релета.",
-    "videoGridDeleteConfirmNote": "Това ще изпрати заявка за изтриване до релетата. Забележка: Някои релета все още може да имат кеширани копия.",
-    "videoGridDeleteCancel": "Отказ",
-    "videoGridDeleteConfirm": "Изтрий",
     "videoGridDeletingContent": "Трием съдържанието...",
-    "videoGridDeleteSuccess": "Заявката за изтриване е изпратена",
     "videoGridDeleteFailure": "Неуспешно изтриване на съдържание: {error}",
     "@videoGridDeleteFailure": {
         "placeholders": {
@@ -1743,7 +1737,6 @@
     "shareMenuEditVideoSubtitle": "Актуализирай заглавие, описание и хаштагове",
     "shareMenuDeleteVideo": "Изтрий видеото",
     "shareMenuDeleteVideoSubtitle": "Премахни това видео от Divine. Може още да се вижда в други Nostr клиенти.",
-    "shareMenuDeleteWarning": "Това изпраща заявка за изтриване (NIP-09) до всички релета. Някои релета все още могат да запазят съдържанието.",
     "shareMenuVideoInTheseLists": "Видеото е в тези списъци:",
     "shareMenuVideoCount": "{count} видеа",
     "@shareMenuVideoCount": {
@@ -1766,7 +1759,6 @@
             }
         }
     },
-    "shareMenuDeleteRequestSent": "Видеото е изтрито",
     "shareMenuDeleteFailedNotInitialized": "Изтриването още не е готово. Опитай пак след малко.",
     "shareMenuDeleteFailedNotOwner": "Можеш да триеш само собствените си видеа.",
     "shareMenuDeleteFailedNotAuthenticated": "Влез отново, после пробвай да изтриеш.",
@@ -1818,7 +1810,6 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "Да изтрием видеото?",
-    "shareMenuDeleteRelayWarning": "Това ще изпрати заявка за изтриване до релетата. Забележка: Някои релета все още може да имат кеширани копия.",
     "shareMenuVideoDeletionRequested": "Видеото е изтрито",
     "shareMenuContentLabels": "Етикети за съдържание",
     "shareMenuAddContentLabels": "Добави етикети за съдържание",

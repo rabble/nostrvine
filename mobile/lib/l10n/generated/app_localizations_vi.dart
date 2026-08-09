@@ -1155,27 +1155,7 @@ class AppLocalizationsVi extends AppLocalizations {
       'Gỡ video này khỏi Divine. Nó vẫn có thể xuất hiện trên các ứng dụng Nostr khác.';
 
   @override
-  String get videoGridDeleteConfirmTitle => 'Xóa video';
-
-  @override
-  String get videoGridDeleteConfirmMessage =>
-      'Video này sẽ bị xóa vĩnh viễn khỏi Divine. Nó vẫn có thể xuất hiện trên các ứng dụng Nostr bên thứ ba dùng relay khác.';
-
-  @override
-  String get videoGridDeleteConfirmNote =>
-      'Thao tác này sẽ gửi yêu cầu xóa tới các relay. Lưu ý: Một số relay có thể vẫn giữ bản sao đã lưu.';
-
-  @override
-  String get videoGridDeleteCancel => 'Hủy';
-
-  @override
-  String get videoGridDeleteConfirm => 'Xóa';
-
-  @override
   String get videoGridDeletingContent => 'Đang xóa nội dung...';
-
-  @override
-  String get videoGridDeleteSuccess => 'Đã gửi yêu cầu xóa thành công';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -3998,10 +3978,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Gỡ video này khỏi Divine. Nó vẫn có thể xuất hiện trên các ứng dụng Nostr khác.';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'Thao tác này gửi yêu cầu xóa (NIP-09) tới tất cả relay. Một số relay có thể vẫn giữ nội dung.';
-
-  @override
   String get shareMenuVideoInTheseLists => 'Video nằm trong các danh sách này:';
 
   @override
@@ -4029,9 +4005,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return 'Không xóa được nội dung: $error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent => 'Đã xóa video';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4147,10 +4120,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get shareMenuDeleteVideoQuestion => 'Xóa video?';
-
-  @override
-  String get shareMenuDeleteRelayWarning =>
-      'Thao tác này sẽ gửi yêu cầu xóa tới các relay. Lưu ý: Một số relay có thể vẫn giữ bản sao đã lưu.';
 
   @override
   String get shareMenuVideoDeletionRequested => 'Đã xóa video';

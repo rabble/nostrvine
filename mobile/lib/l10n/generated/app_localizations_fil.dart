@@ -1168,28 +1168,7 @@ class AppLocalizationsFil extends AppLocalizations {
       'Tanggalin ang video na ito sa Divine. Maaari pa rin itong lumabas sa ibang Nostr client.';
 
   @override
-  String get videoGridDeleteConfirmTitle => 'Burahin ang Video';
-
-  @override
-  String get videoGridDeleteConfirmMessage =>
-      'Permanente nitong bubura ang video na ito sa Divine. Maaari pa rin itong lumabas sa third-party Nostr client na gumagamit ng ibang relay.';
-
-  @override
-  String get videoGridDeleteConfirmNote =>
-      'Magpapadala ito ng deletion request sa mga relay. Tandaan: May mga relay na maaaring may cached copy pa.';
-
-  @override
-  String get videoGridDeleteCancel => 'Cancel';
-
-  @override
-  String get videoGridDeleteConfirm => 'Burahin';
-
-  @override
   String get videoGridDeletingContent => 'Binubura ang content...';
-
-  @override
-  String get videoGridDeleteSuccess =>
-      'Matagumpay na naipadala ang delete request';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -4054,10 +4033,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Alisin ang video na ito sa Divine. Maaari pa rin itong lumitaw sa ibang Nostr clients.';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'Magpapadala ito ng delete request (NIP-09) sa lahat ng relays. May ibang relays na maaaring panatilihin pa rin ang content.';
-
-  @override
   String get shareMenuVideoInTheseLists => 'Nasa mga listahang ito ang video:';
 
   @override
@@ -4085,9 +4060,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return 'Hindi nabura ang content: $error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent => 'Nabura ang video';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4203,10 +4175,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get shareMenuDeleteVideoQuestion => 'Burahin ang Video?';
-
-  @override
-  String get shareMenuDeleteRelayWarning =>
-      'Magpapadala ito ng deletion request sa mga relays. Tandaan: May ibang relays na maaaring may cached na kopya pa rin.';
 
   @override
   String get shareMenuVideoDeletionRequested => 'Nabura ang video';
