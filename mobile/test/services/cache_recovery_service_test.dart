@@ -36,15 +36,24 @@ void main() {
         await TestHelpers.cleanupHiveBox('notifications');
         await TestHelpers.cleanupHiveBox('push_notification_preferences_dirty');
         await TestHelpers.cleanupHiveBox('pending_uploads');
-        await TestHelpers.cleanupHiveBox('video_cache');
+        await TestHelpers.cleanupHiveBox('hashtag_stats');
       });
 
       tearDown(() async {
         await TestHelpers.cleanupHiveBox('notifications');
         await TestHelpers.cleanupHiveBox('push_notification_preferences_dirty');
         await TestHelpers.cleanupHiveBox('pending_uploads');
-        await TestHelpers.cleanupHiveBox('video_cache');
+        await TestHelpers.cleanupHiveBox('hashtag_stats');
         if (tmp.existsSync()) tmp.deleteSync(recursive: true);
+      });
+
+      test('keeps durable Hive boxes out of the disposable wipe set', () {
+        expect(
+          CacheRecoveryService.disposableHiveBoxNamesForTesting.intersection(
+            CacheRecoveryService.durableHiveBoxNamesForTesting,
+          ),
+          isEmpty,
+        );
       });
 
       test(
@@ -53,16 +62,16 @@ void main() {
           final pendingUploads = Hive.isBoxOpen('pending_uploads')
               ? Hive.box<PendingUpload>('pending_uploads')
               : await Hive.openBox<PendingUpload>('pending_uploads');
-          final videoCache = Hive.isBoxOpen('video_cache')
-              ? Hive.box('video_cache')
-              : await Hive.openBox('video_cache');
+          final hashtagStats = Hive.isBoxOpen('hashtag_stats')
+              ? Hive.box('hashtag_stats')
+              : await Hive.openBox('hashtag_stats');
           final upload = PendingUpload.create(
             localVideoPath: '/tmp/durable-upload.mp4',
             nostrPubkey:
                 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
           );
           await pendingUploads.put(upload.id, upload);
-          await videoCache.put('cache-id', 'cached video');
+          await hashtagStats.put('popular_hashtags', ['divine']);
 
           await CacheRecoveryService.clearHiveBoxesForTesting();
 
@@ -72,10 +81,10 @@ void main() {
             ).get(upload.id)?.localVideoPath,
             upload.localVideoPath,
           );
-          expect(Hive.isBoxOpen('video_cache'), isFalse);
-          final reopenedVideoCache = await Hive.openBox('video_cache');
-          addTearDown(reopenedVideoCache.close);
-          expect(reopenedVideoCache.get('cache-id'), isNull);
+          expect(Hive.isBoxOpen('hashtag_stats'), isFalse);
+          final reopenedHashtagStats = await Hive.openBox('hashtag_stats');
+          addTearDown(reopenedHashtagStats.close);
+          expect(reopenedHashtagStats.get('popular_hashtags'), isNull);
         },
       );
 
@@ -89,19 +98,16 @@ void main() {
               Hive.isBoxOpen('push_notification_preferences_dirty')
               ? Hive.box('push_notification_preferences_dirty')
               : await Hive.openBox('push_notification_preferences_dirty');
-          final videoCache = Hive.isBoxOpen('video_cache')
-              ? Hive.box('video_cache')
-              : await Hive.openBox('video_cache');
+          final hashtagStats = Hive.isBoxOpen('hashtag_stats')
+              ? Hive.box('hashtag_stats')
+              : await Hive.openBox('hashtag_stats');
           const preferences = NotificationPreferences(commentsEnabled: false);
           const dirtyPreferencesKey =
               'push_preferences_dirty_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
           final storedPreferences = jsonEncode(preferences.toJson());
           await notifications.put('push_preferences', storedPreferences);
-          await dirtyNotifications.put(
-            dirtyPreferencesKey,
-            storedPreferences,
-          );
-          await videoCache.put('cache-id', 'cached video');
+          await dirtyNotifications.put(dirtyPreferencesKey, storedPreferences);
+          await hashtagStats.put('popular_hashtags', ['divine']);
 
           await CacheRecoveryService.clearHiveBoxesForTesting();
 
@@ -115,10 +121,10 @@ void main() {
             ).get(dirtyPreferencesKey),
             storedPreferences,
           );
-          expect(Hive.isBoxOpen('video_cache'), isFalse);
-          final reopenedVideoCache = await Hive.openBox('video_cache');
-          addTearDown(reopenedVideoCache.close);
-          expect(reopenedVideoCache.get('cache-id'), isNull);
+          expect(Hive.isBoxOpen('hashtag_stats'), isFalse);
+          final reopenedHashtagStats = await Hive.openBox('hashtag_stats');
+          addTearDown(reopenedHashtagStats.close);
+          expect(reopenedHashtagStats.get('popular_hashtags'), isNull);
         },
       );
     });
@@ -217,6 +223,36 @@ void main() {
           expect(scratch.existsSync(), isFalse);
           expect(temp.existsSync(), isFalse);
           expect(cache.existsSync(), isFalse);
+        },
+      );
+
+      test(
+        'cacheSizeBytes excludes protected app support state',
+        () async {
+          write('support/openvine/database/divine_db.db', 'database');
+          write('support/openvine/pending_uploads.hive', 'pending uploads');
+          write('support/openvine/pending_uploads.lock', 'lock');
+          write('support/openvine/notifications.hive', 'preferences');
+          write('support/openvine/notifications.lock', 'lock');
+          write(
+            'support/openvine/push_notification_preferences_dirty.hive',
+            'dirty preferences',
+          );
+          write(
+            'support/openvine/push_notification_preferences_dirty.lock',
+            'lock',
+          );
+          write('support/openvine/cache/cache_sync.db', 'cache');
+          write('support/openvine/scratch.txt', 'scratch');
+          write('temp/transient.tmp', 'temp');
+          write('cache/download.bin', 'cache');
+
+          final bytes = await CacheRecoveryService.cacheSizeBytes();
+
+          expect(
+            bytes,
+            'cache'.length + 'scratch'.length + 'temp'.length + 'cache'.length,
+          );
         },
       );
     });

@@ -13,6 +13,13 @@ import 'package:unified_logger/unified_logger.dart';
 class CacheRecoveryService {
   static const String _logName = 'CacheRecoveryService';
 
+  static const Set<String> _disposableHiveBoxNames = {
+    'personal_events',
+    'personal_events_metadata',
+    'hashtag_stats',
+    'people_lists_v1',
+  };
+
   /// Clear all app caches and databases to recover from corruption
   /// This works on iOS devices, Android, and desktop platforms
   static Future<bool> clearAllCaches() async {
@@ -61,15 +68,9 @@ class CacheRecoveryService {
     try {
       // Get all open boxes and clear them. We iterate over known disposable box
       // names instead of trying to access all open boxes.
-      final knownBoxNames = [
-        'personal_events',
-        'personal_events_metadata',
-        'hashtag_stats',
-        'people_lists_v1',
-        'video_cache',
-      ];
+      final boxNames = _disposableHiveBoxNames.difference(_durableHiveBoxNames);
 
-      for (final boxName in knownBoxNames) {
+      for (final boxName in boxNames) {
         try {
           if (Hive.isBoxOpen(boxName)) {
             final box = Hive.box(boxName);
@@ -91,7 +92,7 @@ class CacheRecoveryService {
       }
 
       // Also try to delete known box files from disk
-      for (final boxName in knownBoxNames) {
+      for (final boxName in boxNames) {
         try {
           await Hive.deleteBoxFromDisk(boxName);
           cleared++;
@@ -117,6 +118,10 @@ class CacheRecoveryService {
 
   @visibleForTesting
   static Future<int> clearHiveBoxesForTesting() => _clearHiveBoxes();
+
+  @visibleForTesting
+  static Set<String> get disposableHiveBoxNamesForTesting =>
+      _disposableHiveBoxNames;
 
   /// Durable database directory under Application Support that must NEVER be
   /// deleted by cache clearing. It holds the live SQLite database
@@ -148,13 +153,16 @@ class CacheRecoveryService {
   /// initializer re-points Hive's home path there during startup — which is
   /// why [_clearAppSupportDirectory] has to protect them by path as well as
   /// skipping them above.
-  static const List<String> _durableHiveBoxNames = [
+  static const Set<String> _durableHiveBoxNames = {
     'pending_uploads',
     'notifications',
     'push_notification_preferences_dirty',
-  ];
+  };
 
-  static List<List<String>> get _durableHiveBoxFileSegments => [
+  @visibleForTesting
+  static Set<String> get durableHiveBoxNamesForTesting => _durableHiveBoxNames;
+
+  static final List<List<String>> _durableHiveBoxFileSegments = [
     for (final boxName in _durableHiveBoxNames) ...[
       ['openvine', '$boxName.hive'],
       ['openvine', '$boxName.lock'],
@@ -167,18 +175,10 @@ class CacheRecoveryService {
     try {
       final appSupportDir = await getApplicationSupportDirectory();
       if (!appSupportDir.existsSync()) return 0;
-      final protectedPath = p.joinAll([
-        appSupportDir.path,
-        ..._durableDatabaseDirSegments,
-      ]);
-      final protectedHiveBoxPaths = [
-        for (final segments in _durableHiveBoxFileSegments)
-          p.joinAll([appSupportDir.path, ...segments]),
-      ];
       return await deleteDirectoryContentsExcept(
         appSupportDir,
-        protectedPath: protectedPath,
-        additionalProtectedPaths: protectedHiveBoxPaths,
+        protectedPath: _durableDatabasePath(appSupportDir),
+        additionalProtectedPaths: _durableHiveBoxPaths(appSupportDir),
       );
     } catch (e) {
       Log.warning(
@@ -244,6 +244,16 @@ class CacheRecoveryService {
     }
     return cleared;
   }
+
+  static String _durableDatabasePath(Directory appSupportDir) => p.joinAll([
+    appSupportDir.path,
+    ..._durableDatabaseDirSegments,
+  ]);
+
+  static List<String> _durableHiveBoxPaths(Directory appSupportDir) => [
+    for (final segments in _durableHiveBoxFileSegments)
+      p.joinAll([appSupportDir.path, ...segments]),
+  ];
 
   static bool _pathExists(String path) =>
       FileSystemEntity.typeSync(path) != FileSystemEntityType.notFound;
@@ -317,26 +327,35 @@ class CacheRecoveryService {
   /// Best-effort: a directory that cannot be read contributes zero. Throws if
   /// the platform cannot resolve one of the directories at all.
   static Future<int> cacheSizeBytes() async {
-    final dirs = [
-      await getApplicationSupportDirectory(),
-      await getTemporaryDirectory(),
-      await getApplicationCacheDirectory(),
-    ];
+    final appSupportDir = await getApplicationSupportDirectory();
+    final tempDir = await getTemporaryDirectory();
+    final cacheDir = await getApplicationCacheDirectory();
 
     var totalSize = 0;
-    for (final dir in dirs) {
-      if (dir.existsSync()) {
-        totalSize += await _getDirectorySize(dir);
-      }
+    if (appSupportDir.existsSync()) {
+      totalSize += await _getDirectorySize(
+        appSupportDir,
+        excludedPaths: [
+          _durableDatabasePath(appSupportDir),
+          ..._durableHiveBoxPaths(appSupportDir),
+        ],
+      );
+    }
+    for (final dir in [tempDir, cacheDir]) {
+      if (dir.existsSync()) totalSize += await _getDirectorySize(dir);
     }
     return totalSize;
   }
 
   /// Calculate directory size recursively
-  static Future<int> _getDirectorySize(Directory directory) async {
+  static Future<int> _getDirectorySize(
+    Directory directory, {
+    List<String> excludedPaths = const [],
+  }) async {
     int size = 0;
     try {
       await for (final entity in directory.list(recursive: true)) {
+        if (_isExcluded(entity.path, excludedPaths)) continue;
         if (entity is File) {
           size += await entity.length();
         }
@@ -346,4 +365,10 @@ class CacheRecoveryService {
     }
     return size;
   }
+
+  static bool _isExcluded(String path, List<String> excludedPaths) =>
+      excludedPaths.any(
+        (excludedPath) =>
+            p.equals(path, excludedPath) || p.isWithin(excludedPath, path),
+      );
 }
