@@ -17,6 +17,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MOBILE_DIR="$(cd "${SCRIPT_DIR}/../mobile" && pwd)"
 COMPOSE_FILE="${SCRIPT_DIR}/docker-compose.yml"
 MERGE_SCRIPT="${SCRIPT_DIR}/merge_logs.py"
+# Honour a relocated pub cache; $HOME/.pub-cache does not exist when
+# PUB_CACHE points elsewhere. Same resolution as mobile/mise.toml.
+PUB_CACHE_BIN="${PUB_CACHE:-$HOME/.pub-cache}/bin"
 
 # shellcheck source=android_sdk.sh
 source "${SCRIPT_DIR}/android_sdk.sh"
@@ -93,7 +96,7 @@ LOGCAT_PID=$!
 echo "Running: patrol test ${TEST_PATH} ..." >&2
 cd "$MOBILE_DIR"
 set +e
-PATH="$HOME/.pub-cache/bin:$PATH" patrol test \
+PATH="$PUB_CACHE_BIN:$PATH" patrol test \
     --target "$TEST_PATH" \
     --dart-define=DEFAULT_ENV=LOCAL \
     --dart-define=INVITE_SERVER_URL="$INVITE_SERVER_URL" \
