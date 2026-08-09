@@ -734,7 +734,11 @@ workflows:
   e2e-smoke-ios:
     name: E2E Smoke Tests (iOS)
     working_directory: mobile
-    max_build_duration: 60
+    # 40 minutes: roughly 2x the observed build-plus-smoke runtime, not the
+    # 60-minute backstop a hung simulator would otherwise burn per PR
+    # (review on #6979). Tighten again once the flake baseline produces
+    # real timings.
+    max_build_duration: 40
     instance_type: mac_mini_m2
     environment:
       flutter: 3.44.0
@@ -765,6 +769,17 @@ workflows:
           include: true
           source: false
       cancel_previous_builds: true
+    when:
+      changeset:
+        # Only PRs that can change what the iOS smoke suite exercises pay for
+        # a Mac Mini (review on #6979): anything under mobile/ — app code,
+        # native config, pubspec, the suite itself. Docs/website/CI-only PRs
+        # skip. Codemagic always runs when codemagic.yaml itself changes,
+        # runs the first build after this block lands regardless, and
+        # compares against the last successful build; a "skipped" run still
+        # starts and stops early, so it costs seconds, not a full build.
+        includes:
+          - 'mobile/'
     scripts:
       - *check_signing_endpoint
       - *clean_ios_workspace_state
