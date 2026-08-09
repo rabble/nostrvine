@@ -125,6 +125,14 @@ class _TopBarContent extends StatelessWidget {
     return Align(
       alignment: .topCenter,
       child: VideoEditorToolbar(
+        closeSemanticLabel: context.l10n
+            .videoEditorDiscardToolChangesSemanticLabel(
+              context.l10n.videoEditorTuneLabel,
+            ),
+        doneSemanticLabel: context.l10n
+            .videoEditorApplyToolChangesSemanticLabel(
+              context.l10n.videoEditorTuneLabel,
+            ),
         onClose: () {
           bloc.add(const VideoEditorTuneCancelled());
           scope.tuneEditor?.close();

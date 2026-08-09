@@ -237,9 +237,15 @@ class _VideoAudioEditorTimingScreenState
                           ? .error
                           : .ghostOverMedia,
                       closeSemanticLabel: widget.enableDeleteButton
-                          ? 'Remove audio'
-                          : 'Close',
-                      doneSemanticLabel: 'Confirm audio selection',
+                          ? context.l10n.videoEditorRemoveAudioSemanticLabel
+                          : context.l10n
+                                .videoEditorDiscardToolChangesSemanticLabel(
+                                  context.l10n.videoEditorAudioLabel,
+                                ),
+                      doneSemanticLabel: context.l10n
+                          .videoEditorApplyToolChangesSemanticLabel(
+                            context.l10n.videoEditorAudioLabel,
+                          ),
                       onClose: widget.enableDeleteButton
                           ? _deleteAudio
                           : context.pop,

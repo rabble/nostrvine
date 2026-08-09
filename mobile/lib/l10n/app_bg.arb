@@ -3495,7 +3495,6 @@
     },
     "videoEditorHueSemanticLabel": "Нюанс",
     "videoEditorAddElementSemanticLabel": "Добави елемент",
-    "videoEditorCloseSemanticLabel": "Затвори",
     "videoEditorDoneSemanticLabel": "Готово",
     "videoEditorLevelSemanticLabel": "Ниво",
     "videoMetadataClosePostDetailsSemanticLabel": "Затваряне на подробностите за публикацията",
@@ -5075,5 +5074,12 @@
   "userPickerConfirmSemanticLabel": "Потвърждаване на избраните потребители",
   "userPickerClearSelectionSemanticLabel": "Изчистване на избора на потребители",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "Отказ от избора на предупреждения за съдържание",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Прилагане на избраните предупреждения за съдържание"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Прилагане на избраните предупреждения за съдържание",
+  "videoEditorCloseEditorSemanticLabel": "Затваряне на видео редактора",
+  "videoEditorContinueToPostDetailsSemanticLabel": "Продължаване към подробностите за публикацията",
+  "videoEditorDiscardToolChangesSemanticLabel": "Отхвърляне на промените в {tool}",
+  "videoEditorApplyToolChangesSemanticLabel": "Прилагане на промените в {tool}",
+  "videoEditorRemoveAudioSemanticLabel": "Премахване на аудиото",
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
 }

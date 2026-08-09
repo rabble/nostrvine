@@ -130,6 +130,13 @@ class _Toolbar extends StatelessWidget {
     );
     final hasTakes = context.select((VoiceOverCubit c) => c.state.hasTakes);
     return VideoEditorToolbar(
+      closeSemanticLabel: context.l10n
+          .videoEditorDiscardToolChangesSemanticLabel(
+            context.l10n.videoEditorVoiceOverLabel,
+          ),
+      doneSemanticLabel: context.l10n.videoEditorApplyToolChangesSemanticLabel(
+        context.l10n.videoEditorVoiceOverLabel,
+      ),
       onClose: () => _close(context),
       onDone: (!isRecording && hasTakes) ? () => _done(context) : null,
     );

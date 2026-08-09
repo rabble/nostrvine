@@ -29,7 +29,7 @@ This is the first public release of the Nostr SDK for Flutter/Dart, extracted an
 - This is the initial release, no breaking changes from previous versions
 
 #### 📦 Dependencies
-- Uses official cryptography_flutter package instead of git dependency
+- Uses hosted cryptography packages instead of git dependencies
 - Added missing transitive dependencies for pub.dev compatibility
 
 #### 🧪 Testing

@@ -511,7 +511,11 @@ void main() {
         });
 
         await tester.tap(
-          find.bySemanticsLabel(l10n.videoEditorDoneSemanticLabel),
+          find.bySemanticsLabel(
+            l10n.videoEditorApplyToolChangesSemanticLabel(
+              l10n.videoEditorVoiceOverLabel,
+            ),
+          ),
         );
         await tester.pumpAndSettle();
 
@@ -532,7 +536,11 @@ void main() {
         });
 
         await tester.tap(
-          find.bySemanticsLabel(l10n.videoEditorCloseSemanticLabel),
+          find.bySemanticsLabel(
+            l10n.videoEditorDiscardToolChangesSemanticLabel(
+              l10n.videoEditorVoiceOverLabel,
+            ),
+          ),
         );
         await tester.pumpAndSettle();
 

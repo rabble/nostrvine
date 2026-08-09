@@ -27,6 +27,14 @@ class _MockVideoEditorMainBloc
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  final l10n = lookupAppLocalizations(const Locale('en'));
+  final closeLabel = l10n.videoEditorDiscardToolChangesSemanticLabel(
+    l10n.videoEditorFilterLabel,
+  );
+  final doneLabel = l10n.videoEditorApplyToolChangesSemanticLabel(
+    l10n.videoEditorFilterLabel,
+  );
+
   setUpAll(() {
     registerFallbackValue(VideoEditorFilterSelected(presetFiltersList.first));
     registerFallbackValue(const VideoEditorFilterCancelled());
@@ -152,20 +160,20 @@ void main() {
         await tester.pumpWidget(buildWidget());
         await tester.pump();
 
-        // Close button has Semantics label 'Close'
+        // Close button carries the discard-changes semantics label.
         expect(
           find.byWidgetPredicate(
             (widget) =>
-                widget is Semantics && widget.properties.label == 'Close',
+                widget is Semantics && widget.properties.label == closeLabel,
           ),
           findsOneWidget,
         );
 
-        // Done button has Semantics label 'Done'
+        // Done button carries the apply-changes semantics label.
         expect(
           find.byWidgetPredicate(
             (widget) =>
-                widget is Semantics && widget.properties.label == 'Done',
+                widget is Semantics && widget.properties.label == doneLabel,
           ),
           findsOneWidget,
         );
@@ -178,7 +186,7 @@ void main() {
         await tester.tap(
           find.byWidgetPredicate(
             (widget) =>
-                widget is Semantics && widget.properties.label == 'Close',
+                widget is Semantics && widget.properties.label == closeLabel,
           ),
         );
         await tester.pump();

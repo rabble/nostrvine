@@ -31,6 +31,14 @@ class VideoEditorDrawOverlayControls extends StatelessWidget {
                 (canUndo: state.canUndo, canRedo: state.canRedo),
             builder: (context, state) {
               return VideoEditorToolbar(
+                closeSemanticLabel: context.l10n
+                    .videoEditorDiscardToolChangesSemanticLabel(
+                      context.l10n.videoEditorDrawLabel,
+                    ),
+                doneSemanticLabel: context.l10n
+                    .videoEditorApplyToolChangesSemanticLabel(
+                      context.l10n.videoEditorDrawLabel,
+                    ),
                 onClose: () => scope.editor?.closeSubEditor(),
                 onDone: () => scope.paintEditor?.done(),
                 center: Row(

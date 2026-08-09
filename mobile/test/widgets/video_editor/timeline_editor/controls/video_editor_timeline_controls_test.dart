@@ -286,6 +286,39 @@ void main() {
         findsNothing,
       );
       expect(saveCount, equals(0));
+
+      // The spinner carries no semantics, so the caption has to stop being
+      // excluded — otherwise the control disappears from the traversal order
+      // for as long as the save runs.
+      expect(find.bySemanticsLabel(l10n.videoEditorSaveClip), findsOneWidget);
+    });
+
+    testWidgets('does not announce the caption twice when idle', (
+      tester,
+    ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: VideoEditorTimelineControls(
+              onSaveToLibrary: () {},
+              onDone: () {},
+            ),
+          ),
+        ),
+      );
+
+      // The button already announces the action, so the caption below it is
+      // excluded and only the button's own label reaches a screen reader.
+      expect(find.text(l10n.videoEditorSaveClip), findsOneWidget);
+      expect(find.bySemanticsLabel(l10n.videoEditorSaveClip), findsNothing);
+      expect(
+        find.bySemanticsLabel(l10n.videoEditorSaveSelectedClip),
+        findsOneWidget,
+      );
     });
   });
 }

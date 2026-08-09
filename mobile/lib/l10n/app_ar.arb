@@ -2883,7 +2883,6 @@
     "videoEditorCameraLabel": "الكاميرا",
     "videoEditorLibraryLabel": "المكتبة",
     "videoEditorCloseColorPickerSemanticLabel": "إغلاق منتقي الألوان",
-    "videoEditorCloseSemanticLabel": "إغلاق",
     "videoEditorColorPickerSemanticLabel": "منتقي الألوان",
     "videoEditorColorSelectedSemanticLabel": "{colorName}، محدد",
     "@videoEditorColorSelectedSemanticLabel": {
@@ -4944,5 +4943,12 @@
   "userPickerConfirmSemanticLabel": "تأكيد المستخدمين المحددين",
   "userPickerClearSelectionSemanticLabel": "مسح اختيار المستخدمين",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "إلغاء اختيار تحذيرات المحتوى",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "تطبيق تحذيرات المحتوى المحددة"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "تطبيق تحذيرات المحتوى المحددة",
+  "videoEditorCloseEditorSemanticLabel": "إغلاق محرر الفيديو",
+  "videoEditorContinueToPostDetailsSemanticLabel": "المتابعة إلى تفاصيل المنشور",
+  "videoEditorDiscardToolChangesSemanticLabel": "تجاهل التغييرات في {tool}",
+  "videoEditorApplyToolChangesSemanticLabel": "تطبيق التغييرات في {tool}",
+  "videoEditorRemoveAudioSemanticLabel": "إزالة الصوت",
+  "rgbColorSemanticLabel": "RGB {red}، {green}، {blue}",
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}، {color}"
 }

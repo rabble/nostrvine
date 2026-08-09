@@ -25,6 +25,14 @@ class _MockVideoEditorMainBloc
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  final l10n = lookupAppLocalizations(const Locale('en'));
+  final closeLabel = l10n.videoEditorDiscardToolChangesSemanticLabel(
+    l10n.videoEditorTuneLabel,
+  );
+  final doneLabel = l10n.videoEditorApplyToolChangesSemanticLabel(
+    l10n.videoEditorTuneLabel,
+  );
+
   setUpAll(() {
     registerFallbackValue(const VideoEditorTuneCancelled());
     registerFallbackValue(const VideoEditorTuneConfirmed());
@@ -91,15 +99,15 @@ void main() {
       await tester.pumpWidget(buildWidget());
       await tester.pump();
 
-      expect(byLabel('Close'), findsOneWidget);
-      expect(byLabel('Done'), findsOneWidget);
+      expect(byLabel(closeLabel), findsOneWidget);
+      expect(byLabel(doneLabel), findsOneWidget);
     });
 
     testWidgets('tapping Close dispatches Cancelled', (tester) async {
       await tester.pumpWidget(buildWidget());
       await tester.pump();
 
-      await tester.tap(byLabel('Close'));
+      await tester.tap(byLabel(closeLabel));
       await tester.pump();
 
       verify(() => mockBloc.add(const VideoEditorTuneCancelled())).called(1);
@@ -109,7 +117,7 @@ void main() {
       await tester.pumpWidget(buildWidget());
       await tester.pump();
 
-      await tester.tap(byLabel('Done'));
+      await tester.tap(byLabel(doneLabel));
       await tester.pump();
 
       verify(() => mockBloc.add(const VideoEditorTuneConfirmed())).called(1);

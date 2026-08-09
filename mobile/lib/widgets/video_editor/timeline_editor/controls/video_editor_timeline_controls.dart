@@ -277,9 +277,18 @@ class _ControlButton extends StatelessWidget {
             type: type,
             size: .small,
           ),
-        Text(
-          label,
-          style: VineTheme.bodySmallFont(color: context.vineColors.primaryText),
+        // The caption repeats the button's own label, so it is excluded only
+        // while that button is there to carry it. The spinner that replaces it
+        // has no semantics of its own, and dropping both would leave the
+        // control silent for the whole run.
+        ExcludeSemantics(
+          excluding: !isLoading,
+          child: Text(
+            label,
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.primaryText,
+            ),
+          ),
         ),
       ],
     );

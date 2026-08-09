@@ -5828,7 +5828,6 @@
   },
   "videoEditorHueSemanticLabel": "Hue",
   "videoEditorAddElementSemanticLabel": "Add element",
-  "videoEditorCloseSemanticLabel": "Close",
   "videoEditorDoneSemanticLabel": "Done",
   "videoEditorLevelSemanticLabel": "Level",
   "videoMetadataClosePostDetailsSemanticLabel": "Close post details",
@@ -6669,5 +6668,35 @@
   "userPickerConfirmSemanticLabel": "Confirm selected users",
   "userPickerClearSelectionSemanticLabel": "Clear user selection",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "Cancel content warning selection",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Apply selected content warnings"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Apply selected content warnings",
+  "videoEditorCloseEditorSemanticLabel": "Close video editor",
+  "videoEditorContinueToPostDetailsSemanticLabel": "Continue to post details",
+  "videoEditorDiscardToolChangesSemanticLabel": "Discard changes in {tool}",
+  "@videoEditorDiscardToolChangesSemanticLabel": {
+    "description": "Accessibility label for closing a named video-editor tool without applying its changes.",
+    "placeholders": {"tool": {"type": "String", "example": "Draw"}}
+  },
+  "videoEditorApplyToolChangesSemanticLabel": "Apply changes in {tool}",
+  "@videoEditorApplyToolChangesSemanticLabel": {
+    "description": "Accessibility label for applying changes made in a named video-editor tool.",
+    "placeholders": {"tool": {"type": "String", "example": "Draw"}}
+  },
+  "videoEditorRemoveAudioSemanticLabel": "Remove audio",
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
+  "@rgbColorSemanticLabel": {
+    "description": "Accessibility label announcing a color swatch as its RGB triplet, used when the color has no human-readable name.",
+    "placeholders": {
+      "red": {"type": "int", "example": "255"},
+      "green": {"type": "int", "example": "0"},
+      "blue": {"type": "int", "example": "0"}
+    }
+  },
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}",
+  "@videoEditorColorPickerSwatchSemanticLabel": {
+    "description": "Joins the custom color swatch's picker role and its color description into one accessibility label. Translate the separator, not the placeholders: locales that do not list with a Latin comma should use their own (for example '、' or '، '), matching rgbColorSemanticLabel.",
+    "placeholders": {
+      "picker": {"type": "String", "example": "Color picker"},
+      "color": {"type": "String", "example": "RGB 100, 20, 20"}
+    }
+  }
 }

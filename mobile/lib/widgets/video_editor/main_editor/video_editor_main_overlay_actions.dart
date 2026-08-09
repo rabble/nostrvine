@@ -91,6 +91,9 @@ class _TopActions extends ConsumerWidget {
       child: VideoEditorToolbar(
         closeIcon: .caretLeft,
         doneIcon: .arrowRight,
+        closeSemanticLabel: context.l10n.videoEditorCloseEditorSemanticLabel,
+        doneSemanticLabel:
+            context.l10n.videoEditorContinueToPostDetailsSemanticLabel,
         center: stopMotionData == null
             ? null
             : _StopMotionFramesChip(
@@ -223,21 +226,18 @@ class _BottomActions extends StatelessWidget {
       (VideoEditorMainBloc b) => b.state.isTimelineHiddenByUser,
     );
 
-    return Semantics(
-      label: isTimelineHiddenByUser
-          ? context.l10n.videoEditorShowTimelineSemanticLabel
-          : context.l10n.videoEditorHideTimelineSemanticLabel,
-      button: true,
-      child: Padding(
-        padding: const .only(bottom: 8),
-        child: DivineIconButton(
-          icon: isTimelineHiddenByUser ? .caretUp : .caretDown,
-          onPressed: () => context.read<VideoEditorMainBloc>().add(
-            const VideoEditorTimelineVisibilityToggled(),
-          ),
-          size: .small,
-          type: .ghostSecondary,
+    return Padding(
+      padding: const .only(bottom: 8),
+      child: DivineIconButton(
+        icon: isTimelineHiddenByUser ? .caretUp : .caretDown,
+        onPressed: () => context.read<VideoEditorMainBloc>().add(
+          const VideoEditorTimelineVisibilityToggled(),
         ),
+        size: .small,
+        type: .ghostSecondary,
+        semanticLabel: isTimelineHiddenByUser
+            ? context.l10n.videoEditorShowTimelineSemanticLabel
+            : context.l10n.videoEditorHideTimelineSemanticLabel,
       ),
     );
   }
