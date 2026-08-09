@@ -337,7 +337,7 @@ void main() {
         seed: () => OthersFollowersState(
           status: OthersFollowersStatus.success,
           followersPubkeys: [validPubkey('follower1')],
-          followerCount: 1,
+          authoritativeFollowerCount: 1,
           targetPubkey: validPubkey('target'),
         ),
         act: (bloc) => bloc.add(
@@ -358,6 +358,38 @@ void main() {
       );
     });
 
+    blocTest<OthersFollowersBloc, OthersFollowersState>(
+      'clears the previous target followers when switching profiles',
+      setUp: () {
+        when(
+          () => mockFollowRepository.watchOthersFollowersCached(
+            any(),
+            forceRefresh: any(named: 'forceRefresh'),
+          ),
+        ).thenAnswer(
+          (_) => const Stream<CacheResult<FollowersSnapshot>>.empty(),
+        );
+      },
+      build: createBloc,
+      seed: () => OthersFollowersState(
+        status: OthersFollowersStatus.success,
+        followersPubkeys: [validPubkey('a'), validPubkey('b')],
+        rawFollowersPubkeys: [validPubkey('a'), validPubkey('b')],
+        authoritativeFollowerCount: 500,
+        targetPubkey: validPubkey('target'),
+      ),
+      act: (bloc) =>
+          bloc.add(OthersFollowersListLoadRequested(validPubkey('other'))),
+      verify: (bloc) {
+        // Carrying the previous target's raw pubkeys over would leave the
+        // visible count deriving from someone else's follower list.
+        expect(bloc.state.rawFollowersPubkeys, isEmpty);
+        expect(bloc.state.followersPubkeys, isEmpty);
+        expect(bloc.state.authoritativeFollowerCount, equals(0));
+        expect(bloc.state.followerCount, equals(0));
+      },
+    );
+
     group('OthersFollowersIncrementRequested', () {
       blocTest<OthersFollowersBloc, OthersFollowersState>(
         'adds follower pubkey to list and increments count',
@@ -366,7 +398,7 @@ void main() {
           status: OthersFollowersStatus.success,
           followersPubkeys: [validPubkey('existing')],
           rawFollowersPubkeys: [validPubkey('existing')],
-          followerCount: 500,
+          authoritativeFollowerCount: 500,
           targetPubkey: validPubkey('target'),
         ),
         act: (bloc) =>
@@ -376,10 +408,37 @@ void main() {
             status: OthersFollowersStatus.success,
             followersPubkeys: [validPubkey('existing'), validPubkey('new')],
             rawFollowersPubkeys: [validPubkey('existing'), validPubkey('new')],
-            followerCount: 501,
+            authoritativeFollowerCount: 501,
             targetPubkey: validPubkey('target'),
           ),
         ],
+      );
+
+      blocTest<OthersFollowersBloc, OthersFollowersState>(
+        'keeps the visible count steady when the new follower is blocked',
+        setUp: () {
+          when(
+            () => mockBlocklistRepository.isBlocked(validPubkey('new')),
+          ).thenReturn(true);
+        },
+        build: createBloc,
+        seed: () => OthersFollowersState(
+          status: OthersFollowersStatus.success,
+          followersPubkeys: [validPubkey('existing')],
+          rawFollowersPubkeys: [validPubkey('existing')],
+          authoritativeFollowerCount: 500,
+          targetPubkey: validPubkey('target'),
+        ),
+        act: (bloc) =>
+            bloc.add(OthersFollowersIncrementRequested(validPubkey('new'))),
+        verify: (bloc) {
+          // The target really did gain a follower, so the authoritative count
+          // moves; the viewer just cannot see that follower, so the displayed
+          // count must not.
+          expect(bloc.state.authoritativeFollowerCount, equals(501));
+          expect(bloc.state.followersPubkeys, [validPubkey('existing')]);
+          expect(bloc.state.followerCount, equals(500));
+        },
       );
 
       blocTest<OthersFollowersBloc, OthersFollowersState>(
@@ -389,7 +448,7 @@ void main() {
           status: OthersFollowersStatus.success,
           followersPubkeys: [validPubkey('existing')],
           rawFollowersPubkeys: [validPubkey('existing')],
-          followerCount: 1,
+          authoritativeFollowerCount: 1,
           targetPubkey: validPubkey('target'),
         ),
         act: (bloc) => bloc.add(
@@ -412,7 +471,7 @@ void main() {
             status: OthersFollowersStatus.success,
             followersPubkeys: [validPubkey('first')],
             rawFollowersPubkeys: [validPubkey('first')],
-            followerCount: 1,
+            authoritativeFollowerCount: 1,
             targetPubkey: validPubkey('target'),
           ),
         ],
@@ -433,7 +492,7 @@ void main() {
             validPubkey('follower1'),
             validPubkey('follower2'),
           ],
-          followerCount: 500,
+          authoritativeFollowerCount: 500,
           targetPubkey: validPubkey('target'),
         ),
         act: (bloc) => bloc.add(
@@ -444,7 +503,7 @@ void main() {
             status: OthersFollowersStatus.success,
             followersPubkeys: [validPubkey('follower2')],
             rawFollowersPubkeys: [validPubkey('follower2')],
-            followerCount: 499,
+            authoritativeFollowerCount: 499,
             targetPubkey: validPubkey('target'),
           ),
         ],
@@ -457,7 +516,7 @@ void main() {
           status: OthersFollowersStatus.success,
           followersPubkeys: [validPubkey('existing')],
           rawFollowersPubkeys: [validPubkey('existing')],
-          followerCount: 1,
+          authoritativeFollowerCount: 1,
           targetPubkey: validPubkey('target'),
         ),
         act: (bloc) => bloc.add(
@@ -473,7 +532,7 @@ void main() {
           status: OthersFollowersStatus.success,
           followersPubkeys: [validPubkey('only')],
           rawFollowersPubkeys: [validPubkey('only')],
-          followerCount: 1,
+          authoritativeFollowerCount: 1,
           targetPubkey: validPubkey('target'),
         ),
         act: (bloc) =>
@@ -536,7 +595,7 @@ void main() {
       const state = OthersFollowersState(
         status: OthersFollowersStatus.success,
         followersPubkeys: ['pubkey1'],
-        followerCount: 10,
+        authoritativeFollowerCount: 10,
         targetPubkey: 'target',
       );
 

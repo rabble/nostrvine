@@ -26,7 +26,7 @@ final class MyFollowersState extends Equatable {
     this.rawFollowersPubkeys = const [],
     this.rawDatedCount = 0,
     this.sortOrder = FollowSortOrder.newestFirst,
-    this.followerCount = 0,
+    this.authoritativeFollowerCount = 0,
     this.isRefreshing = false,
   });
 
@@ -52,12 +52,26 @@ final class MyFollowersState extends Equatable {
   /// The order [followersPubkeys] is presented in.
   final FollowSortOrder sortOrder;
 
+  /// Follower count as reported by the repository, before any local
+  /// blocklist filtering.
+  ///
+  /// Kept verbatim rather than derived from [followerCount] so re-filtering
+  /// stays exact: reconstructing it by inverting a previous [followerCount]
+  /// emission is only correct when that emission did not clamp to the visible
+  /// list length.
+  final int authoritativeFollowerCount;
+
   /// Visible follower count after applying local blocklist filters.
   ///
-  /// Downloading all kind 3 events is limited by relay result caps, so this may
-  /// still exceed [followersPubkeys.length]. Known blocked and follow-severed
-  /// users are subtracted from the repository's authoritative count.
-  final int followerCount;
+  /// Downloading all kind 3 events is limited by relay result caps, so
+  /// [authoritativeFollowerCount] may exceed the number of pubkeys actually
+  /// fetched. Followers we know are hidden locally are subtracted from it, and
+  /// the result never drops below the number of followers on screen.
+  int get followerCount => max(
+    followersPubkeys.length,
+    authoritativeFollowerCount -
+        (rawFollowersPubkeys.length - followersPubkeys.length),
+  );
 
   /// True while cached data is shown but a fresh network fetch is in progress.
   final bool isRefreshing;
@@ -69,7 +83,7 @@ final class MyFollowersState extends Equatable {
     List<String>? rawFollowersPubkeys,
     int? rawDatedCount,
     FollowSortOrder? sortOrder,
-    int? followerCount,
+    int? authoritativeFollowerCount,
     bool? isRefreshing,
   }) {
     return MyFollowersState(
@@ -78,7 +92,8 @@ final class MyFollowersState extends Equatable {
       rawFollowersPubkeys: rawFollowersPubkeys ?? this.rawFollowersPubkeys,
       rawDatedCount: rawDatedCount ?? this.rawDatedCount,
       sortOrder: sortOrder ?? this.sortOrder,
-      followerCount: followerCount ?? this.followerCount,
+      authoritativeFollowerCount:
+          authoritativeFollowerCount ?? this.authoritativeFollowerCount,
       isRefreshing: isRefreshing ?? this.isRefreshing,
     );
   }
@@ -90,7 +105,7 @@ final class MyFollowersState extends Equatable {
     rawFollowersPubkeys,
     rawDatedCount,
     sortOrder,
-    followerCount,
+    authoritativeFollowerCount,
     isRefreshing,
   ];
 }

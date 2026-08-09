@@ -59,18 +59,6 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
     ),
   );
 
-  int _visibleFollowerCount({
-    required List<String> rawPubkeys,
-    required List<String> visiblePubkeys,
-    required int authoritativeCount,
-  }) {
-    final hiddenKnownFollowers = rawPubkeys.length - visiblePubkeys.length;
-    return max(
-      visiblePubkeys.length,
-      authoritativeCount - hiddenKnownFollowers,
-    );
-  }
-
   /// Handle request to load current user's followers list.
   ///
   /// Delegates to [FollowRepository.watchMyFollowersCached] for
@@ -101,11 +89,7 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
             rawFollowersPubkeys: result.data.pubkeys,
             rawDatedCount: result.data.datedCount,
             followersPubkeys: visiblePubkeys,
-            followerCount: _visibleFollowerCount(
-              rawPubkeys: result.data.pubkeys,
-              visiblePubkeys: visiblePubkeys,
-              authoritativeCount: result.data.count,
-            ),
+            authoritativeFollowerCount: result.data.count,
             isRefreshing: result.isStale,
           );
         },
@@ -133,19 +117,11 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
       datedCount: state.rawDatedCount,
       sortOrder: state.sortOrder,
     );
-    final previousHiddenKnownFollowers =
-        state.rawFollowersPubkeys.length - state.followersPubkeys.length;
-    final authoritativeCount =
-        state.followerCount + previousHiddenKnownFollowers;
-
+    // followerCount derives from the unchanged authoritative count, so
+    // re-filtering alone updates it.
     emit(
       state.copyWith(
         followersPubkeys: visiblePubkeys,
-        followerCount: _visibleFollowerCount(
-          rawPubkeys: state.rawFollowersPubkeys,
-          visiblePubkeys: visiblePubkeys,
-          authoritativeCount: authoritativeCount,
-        ),
       ),
     );
   }
@@ -162,10 +138,6 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
       datedCount: state.rawDatedCount,
       sortOrder: event.sortOrder,
     );
-    final previousHiddenKnownFollowers =
-        state.rawFollowersPubkeys.length - state.followersPubkeys.length;
-    final authoritativeCount =
-        state.followerCount + previousHiddenKnownFollowers;
 
     // The sort is remembered even before the first load resolves, so the
     // pending list arrives in the order the user already asked for.
@@ -173,11 +145,6 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
       state.copyWith(
         sortOrder: event.sortOrder,
         followersPubkeys: visiblePubkeys,
-        followerCount: _visibleFollowerCount(
-          rawPubkeys: state.rawFollowersPubkeys,
-          visiblePubkeys: visiblePubkeys,
-          authoritativeCount: authoritativeCount,
-        ),
       ),
     );
   }

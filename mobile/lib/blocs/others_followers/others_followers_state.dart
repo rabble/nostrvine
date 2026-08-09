@@ -24,7 +24,7 @@ final class OthersFollowersState extends Equatable {
     this.status = OthersFollowersStatus.initial,
     this.followersPubkeys = const [],
     this.rawFollowersPubkeys = const [],
-    this.followerCount = 0,
+    this.authoritativeFollowerCount = 0,
     this.targetPubkey,
     this.isRefreshing = false,
     this.isFollowingTarget = false,
@@ -42,12 +42,27 @@ final class OthersFollowersState extends Equatable {
   /// replay the full list without waiting for a new network event.
   final List<String> rawFollowersPubkeys;
 
-  /// Authoritative follower count (max of list length and COUNT query).
+  /// Follower count as reported by the repository, before any local
+  /// blocklist filtering.
   ///
-  /// Downloading all kind 3 events is limited by relay result caps,
-  /// so [followersPubkeys.length] may undercount. This field uses
-  /// the higher of the list length and a COUNT query result.
-  final int followerCount;
+  /// Kept verbatim rather than derived from [followerCount] so optimistic
+  /// mutations stay exact: reconstructing it by inverting a previous
+  /// [followerCount] emission is only correct when that emission did not
+  /// clamp to the visible list length.
+  final int authoritativeFollowerCount;
+
+  /// Visible follower count after applying local blocklist filters.
+  ///
+  /// Downloading all kind 3 events is limited by relay result caps, so
+  /// [authoritativeFollowerCount] may exceed the number of pubkeys actually
+  /// fetched. Followers we know are hidden locally (blocked, or a
+  /// follow-severed viewer) are subtracted from it, and the result never
+  /// drops below the number of followers on screen.
+  int get followerCount => max(
+    followersPubkeys.length,
+    authoritativeFollowerCount -
+        (rawFollowersPubkeys.length - followersPubkeys.length),
+  );
 
   /// The pubkey whose followers list is being viewed (for retry)
   final String? targetPubkey;
@@ -69,7 +84,7 @@ final class OthersFollowersState extends Equatable {
     OthersFollowersStatus? status,
     List<String>? followersPubkeys,
     List<String>? rawFollowersPubkeys,
-    int? followerCount,
+    int? authoritativeFollowerCount,
     String? targetPubkey,
     bool? isRefreshing,
     bool? isFollowingTarget,
@@ -78,7 +93,8 @@ final class OthersFollowersState extends Equatable {
       status: status ?? this.status,
       followersPubkeys: followersPubkeys ?? this.followersPubkeys,
       rawFollowersPubkeys: rawFollowersPubkeys ?? this.rawFollowersPubkeys,
-      followerCount: followerCount ?? this.followerCount,
+      authoritativeFollowerCount:
+          authoritativeFollowerCount ?? this.authoritativeFollowerCount,
       targetPubkey: targetPubkey ?? this.targetPubkey,
       isRefreshing: isRefreshing ?? this.isRefreshing,
       isFollowingTarget: isFollowingTarget ?? this.isFollowingTarget,
@@ -90,7 +106,7 @@ final class OthersFollowersState extends Equatable {
     status,
     followersPubkeys,
     rawFollowersPubkeys,
-    followerCount,
+    authoritativeFollowerCount,
     targetPubkey,
     isRefreshing,
     isFollowingTarget,
