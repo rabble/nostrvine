@@ -8,15 +8,16 @@ file documents Divine's override-specific rationale.
 
 Mobile platform/security maintainers. The app uses this plugin from
 `lib/services/ios_device_attestation_service.dart` for publish-time App Attest
-payloads and from `lib/services/native_proofmode_service.dart` for native proof
-device attestation.
+payloads.
 
 ## Rationale
 
 The upstream Android plugin leaves `ActivityAware` detach/configuration-change
-callbacks as throwing TODO stubs. Flutter can call those callbacks during
-activity teardown, which makes the upstream package unsafe for the app's native
-proof path.
+callbacks as throwing TODO stubs. This package declares an Android plugin, so
+Flutter registers it in Android builds and can call those callbacks during
+activity teardown even though Divine only requests App Attest on iOS. The
+upstream stubs can therefore crash app teardown regardless of method-channel
+use.
 
 This fork keeps the package API and version at 1.1.0 while carrying the minimum
 local fixes needed by Divine.
