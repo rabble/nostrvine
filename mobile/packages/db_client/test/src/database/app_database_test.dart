@@ -87,8 +87,7 @@ void main() {
         expect(result.expiredEventsDeleted, equals(1));
       });
 
-      test('deletes expired profile stats', () async {
-        // Insert stats with old cachedAt using proper Drift insert
+      test('preserves stale profile stats for count baselines', () async {
         final oldTime = DateTime.now().subtract(const Duration(minutes: 10));
         await database
             .into(database.profileStats)
@@ -101,14 +100,16 @@ void main() {
               ),
             );
 
-        // Run cleanup (default expiry is 5 minutes, entry is 10 minutes old)
         final result = await database.runStartupCleanup();
 
-        // Expired stats should be deleted
-        final stats = await database.profileStatsDao.getStats(testPubkey);
-        expect(stats, isNull);
+        final rawStats = await database.profileStatsDao.getStatsRaw(testPubkey);
+        expect(rawStats, isNotNull);
+        expect(rawStats!.followerCount, equals(100));
 
-        expect(result.expiredProfileStatsDeleted, equals(1));
+        final freshStats = await database.profileStatsDao.getStats(testPubkey);
+        expect(freshStats, isNull);
+
+        expect(result.expiredProfileStatsDeleted, equals(0));
       });
 
       test('deletes expired hashtag stats', () async {

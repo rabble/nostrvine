@@ -221,12 +221,12 @@ void main() {
       });
 
       test(
-        'keeps stale persisted count when fresh fetch is incomplete',
+        'keeps cold-start persisted count when fresh fetch is incomplete',
         () async {
           final apiClient = _MockFunnelcakeApiClient();
           final dao = _MockProfileStatsDao();
-          // Persisted more than a day ago, but the REST follower-list fetch is
-          // incomplete. Age alone must not allow a lower count to overwrite it.
+          // Simulates a new repository instance after app restart: no in-memory
+          // cache, an old Drift baseline, and an incomplete follower-list fetch.
           final staleTimestamp = DateTime.now().subtract(
             const Duration(days: 1, hours: 1),
           );

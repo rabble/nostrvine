@@ -18,6 +18,9 @@ class CleanupResult {
   final int expiredEventsDeleted;
 
   /// Number of expired profile stats deleted.
+  ///
+  /// Startup cleanup currently preserves profile stats so stale rows can act as
+  /// cross-session baselines for count stabilization.
   final int expiredProfileStatsDeleted;
 
   /// Number of expired hashtag stats deleted.

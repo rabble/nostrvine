@@ -1040,7 +1040,6 @@ class AppDatabase extends _$AppDatabase {
   ///
   /// This method should be called during app startup to remove:
   /// - Expired Nostr events (based on expire_at timestamp, including NULL)
-  /// - Expired profile stats (older than 5 minutes)
   /// - Expired hashtag stats (older than 1 hour)
   /// - Notification cache rows written more than 7 days ago
   ///
@@ -1049,8 +1048,10 @@ class AppDatabase extends _$AppDatabase {
     // Delete expired events (also deletes events with NULL expire_at)
     final expiredEventsDeleted = await nostrEventsDao.deleteExpiredEvents(null);
 
-    // Delete expired profile stats (5 minute expiry)
-    final expiredProfileStatsDeleted = await profileStatsDao.deleteExpired();
+    // Profile stats are intentionally retained across cold starts. Callers that
+    // require freshness use ProfileStatsDao.getStats(), while getStatsRaw()
+    // provides the stale baseline needed for count stabilization.
+    const expiredProfileStatsDeleted = 0;
 
     // Delete expired hashtag stats (1 hour expiry)
     final expiredHashtagStatsDeleted = await hashtagStatsDao.deleteExpired();
