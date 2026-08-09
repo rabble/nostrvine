@@ -127,13 +127,19 @@ void main() {
             ),
           );
 
-          // The wrapper only takes over the child's semantics when a label is
-          // replacing the visible text. An identifier on its own must not
-          // leave the button with a test anchor and no accessible name.
+          // The anchor and the accessible name have to land on the same
+          // node. Declaring button/onTap on the wrapper splits them in two
+          // and assistive tech reads an unnamed button ahead of the real
+          // one, so assert the identified node itself carries the label
+          // rather than that both exist somewhere in the tree.
           expect(find.bySemanticsLabel('Sign in'), findsOneWidget);
+          final node = tester.getSemantics(
+            find.bySemanticsIdentifier('sign_in_button'),
+          );
+          expect(node.label, equals('Sign in'));
           expect(
-            tester.getSemantics(find.byType(DivineButton)).identifier,
-            equals('sign_in_button'),
+            node.getSemanticsData().hasAction(SemanticsAction.tap),
+            isTrue,
           );
         } finally {
           semanticsHandle.dispose();
@@ -188,9 +194,7 @@ void main() {
           ),
         );
 
-        final divineIcon = tester.widget<DivineIcon>(
-          find.byType(DivineIcon),
-        );
+        final divineIcon = tester.widget<DivineIcon>(find.byType(DivineIcon));
         expect(divineIcon.color, VineTheme.onPrimary);
       });
 
@@ -203,9 +207,7 @@ void main() {
           ),
         );
 
-        final divineIcon = tester.widget<DivineIcon>(
-          find.byType(DivineIcon),
-        );
+        final divineIcon = tester.widget<DivineIcon>(find.byType(DivineIcon));
         expect(divineIcon.color, VineTheme.primary);
       });
 
@@ -221,9 +223,7 @@ void main() {
           ),
         );
 
-        final divineIcon = tester.widget<DivineIcon>(
-          find.byType(DivineIcon),
-        );
+        final divineIcon = tester.widget<DivineIcon>(find.byType(DivineIcon));
         expect(divineIcon.color, VineTheme.lightColors.onSurface);
       });
 
@@ -238,9 +238,7 @@ void main() {
           ),
         );
 
-        final divineIcon = tester.widget<DivineIcon>(
-          find.byType(DivineIcon),
-        );
+        final divineIcon = tester.widget<DivineIcon>(find.byType(DivineIcon));
         expect(divineIcon.color, VineTheme.inverseOnSurface);
       });
 
@@ -253,9 +251,7 @@ void main() {
           ),
         );
 
-        final divineIcon = tester.widget<DivineIcon>(
-          find.byType(DivineIcon),
-        );
+        final divineIcon = tester.widget<DivineIcon>(find.byType(DivineIcon));
         expect(divineIcon.color, VineTheme.onSurface);
       });
 
@@ -271,9 +267,7 @@ void main() {
           ),
         );
 
-        final divineIcon = tester.widget<DivineIcon>(
-          find.byType(DivineIcon),
-        );
+        final divineIcon = tester.widget<DivineIcon>(find.byType(DivineIcon));
         expect(divineIcon.color, VineTheme.lightColors.onSurface);
       });
 
@@ -288,9 +282,7 @@ void main() {
           ),
         );
 
-        final divineIcon = tester.widget<DivineIcon>(
-          find.byType(DivineIcon),
-        );
+        final divineIcon = tester.widget<DivineIcon>(find.byType(DivineIcon));
         expect(divineIcon.color, VineTheme.onErrorContainer);
       });
     });
@@ -304,9 +296,7 @@ void main() {
           ),
         );
 
-        final divineIcon = tester.widget<DivineIcon>(
-          find.byType(DivineIcon),
-        );
+        final divineIcon = tester.widget<DivineIcon>(find.byType(DivineIcon));
         expect(divineIcon.size, 24);
       });
 
@@ -319,9 +309,7 @@ void main() {
           ),
         );
 
-        final divineIcon = tester.widget<DivineIcon>(
-          find.byType(DivineIcon),
-        );
+        final divineIcon = tester.widget<DivineIcon>(find.byType(DivineIcon));
         expect(divineIcon.size, 24);
       });
 
@@ -337,9 +325,7 @@ void main() {
           ),
         );
 
-        final divineIcon = tester.widget<DivineIcon>(
-          find.byType(DivineIcon),
-        );
+        final divineIcon = tester.widget<DivineIcon>(find.byType(DivineIcon));
         expect(divineIcon.size, 20);
       });
     });
@@ -359,9 +345,7 @@ void main() {
 
       testWidgets('does not call onPressed when disabled', (tester) async {
         const pressed = false;
-        await tester.pumpWidget(
-          buildTestWidget(),
-        );
+        await tester.pumpWidget(buildTestWidget());
 
         await tester.tap(find.byType(DivineButton));
         await tester.pump();
@@ -372,10 +356,7 @@ void main() {
       testWidgets('does not call onPressed while loading', (tester) async {
         var pressed = false;
         await tester.pumpWidget(
-          buildTestWidget(
-            onPressed: () => pressed = true,
-            isLoading: true,
-          ),
+          buildTestWidget(onPressed: () => pressed = true, isLoading: true),
         );
 
         await tester.tap(find.byType(DivineButton));
@@ -387,21 +368,14 @@ void main() {
 
     group('button types', () {
       testWidgets('renders primary type', (tester) async {
-        await tester.pumpWidget(
-          buildTestWidget(
-            onPressed: () {},
-          ),
-        );
+        await tester.pumpWidget(buildTestWidget(onPressed: () {}));
 
         expect(find.byType(DivineButton), findsOneWidget);
       });
 
       testWidgets('renders secondary type', (tester) async {
         await tester.pumpWidget(
-          buildTestWidget(
-            type: DivineButtonType.secondary,
-            onPressed: () {},
-          ),
+          buildTestWidget(type: DivineButtonType.secondary, onPressed: () {}),
         );
 
         expect(find.byType(DivineButton), findsOneWidget);
@@ -409,10 +383,7 @@ void main() {
 
       testWidgets('renders tertiary type', (tester) async {
         await tester.pumpWidget(
-          buildTestWidget(
-            type: DivineButtonType.tertiary,
-            onPressed: () {},
-          ),
+          buildTestWidget(type: DivineButtonType.tertiary, onPressed: () {}),
         );
 
         expect(find.byType(DivineButton), findsOneWidget);
@@ -420,10 +391,7 @@ void main() {
 
       testWidgets('renders ghost type', (tester) async {
         await tester.pumpWidget(
-          buildTestWidget(
-            type: DivineButtonType.ghost,
-            onPressed: () {},
-          ),
+          buildTestWidget(type: DivineButtonType.ghost, onPressed: () {}),
         );
 
         expect(find.byType(DivineButton), findsOneWidget);
@@ -442,10 +410,7 @@ void main() {
 
       testWidgets('renders link type', (tester) async {
         await tester.pumpWidget(
-          buildTestWidget(
-            type: DivineButtonType.link,
-            onPressed: () {},
-          ),
+          buildTestWidget(type: DivineButtonType.link, onPressed: () {}),
         );
 
         expect(find.byType(DivineButton), findsOneWidget);
@@ -453,10 +418,7 @@ void main() {
 
       testWidgets('renders error type', (tester) async {
         await tester.pumpWidget(
-          buildTestWidget(
-            type: DivineButtonType.error,
-            onPressed: () {},
-          ),
+          buildTestWidget(type: DivineButtonType.error, onPressed: () {}),
         );
 
         expect(find.byType(DivineButton), findsOneWidget);
@@ -466,10 +428,7 @@ void main() {
     group('button sizes', () {
       testWidgets('renders tiny size', (tester) async {
         await tester.pumpWidget(
-          buildTestWidget(
-            size: DivineButtonSize.tiny,
-            onPressed: () {},
-          ),
+          buildTestWidget(size: DivineButtonSize.tiny, onPressed: () {}),
         );
 
         expect(find.byType(DivineButton), findsOneWidget);
@@ -477,21 +436,14 @@ void main() {
 
       testWidgets('renders small size', (tester) async {
         await tester.pumpWidget(
-          buildTestWidget(
-            size: DivineButtonSize.small,
-            onPressed: () {},
-          ),
+          buildTestWidget(size: DivineButtonSize.small, onPressed: () {}),
         );
 
         expect(find.byType(DivineButton), findsOneWidget);
       });
 
       testWidgets('renders base size', (tester) async {
-        await tester.pumpWidget(
-          buildTestWidget(
-            onPressed: () {},
-          ),
-        );
+        await tester.pumpWidget(buildTestWidget(onPressed: () {}));
 
         expect(find.byType(DivineButton), findsOneWidget);
       });
@@ -504,9 +456,7 @@ void main() {
           // compensates so a bordered button does not render larger than an
           // unbordered one of the same size (regression: secondary was 4px
           // wider and taller than primary).
-          await tester.pumpWidget(
-            buildTestWidget(onPressed: () {}),
-          );
+          await tester.pumpWidget(buildTestWidget(onPressed: () {}));
           final unbordered = tester.getSize(find.byType(DivineButton));
 
           await tester.pumpWidget(
@@ -519,61 +469,55 @@ void main() {
         },
       );
 
-      testWidgets(
-        'tiny footprint and tap target both stay 32px tall',
-        (tester) async {
-          await tester.pumpWidget(
-            buildTestWidget(
-              size: DivineButtonSize.tiny,
-              onPressed: () {},
-            ),
-          );
+      testWidgets('tiny footprint and tap target both stay 32px tall', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(size: DivineButtonSize.tiny, onPressed: () {}),
+        );
 
-          // Tiny keeps a 32px painted/layout height AND a 32px tap target so
-          // it sits flush with the 32px module of the avatar / type icon it
-          // usually sits next to, with no invisible hit area bleeding into
-          // that neighbor. A row that swaps the button in and out (e.g. a
-          // Follow back affordance) keeps the same intrinsic height.
-          final outerSize = tester.getSize(find.byType(DivineButton));
-          final chipSize = tester.getSize(find.byType(Ink));
-          final tapTarget = tester.getSize(find.byType(InkWell));
-          expect(outerSize.height, equals(32));
-          expect(chipSize.height, equals(32));
-          expect(tapTarget.height, equals(32));
-        },
-      );
+        // Tiny keeps a 32px painted/layout height AND a 32px tap target so
+        // it sits flush with the 32px module of the avatar / type icon it
+        // usually sits next to, with no invisible hit area bleeding into
+        // that neighbor. A row that swaps the button in and out (e.g. a
+        // Follow back affordance) keeps the same intrinsic height.
+        final outerSize = tester.getSize(find.byType(DivineButton));
+        final chipSize = tester.getSize(find.byType(Ink));
+        final tapTarget = tester.getSize(find.byType(InkWell));
+        expect(outerSize.height, equals(32));
+        expect(chipSize.height, equals(32));
+        expect(tapTarget.height, equals(32));
+      });
 
-      testWidgets(
-        'tiny uses 12.8 corner radius (matches 32px UserAvatar)',
-        (tester) async {
-          await tester.pumpWidget(
-            buildTestWidget(size: DivineButtonSize.tiny, onPressed: () {}),
-          );
+      testWidgets('tiny uses 12.8 corner radius (matches 32px UserAvatar)', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(size: DivineButtonSize.tiny, onPressed: () {}),
+        );
 
-          // The Ink widget owns the decorated background; its border
-          // radius is the source of truth for the chip's corner.
-          final ink = tester.widget<Ink>(find.byType(Ink));
-          final decoration = ink.decoration! as BoxDecoration;
-          final radius = decoration.borderRadius! as BorderRadius;
-          expect(radius.topLeft, equals(const Radius.circular(12.8)));
-        },
-      );
+        // The Ink widget owns the decorated background; its border
+        // radius is the source of truth for the chip's corner.
+        final ink = tester.widget<Ink>(find.byType(Ink));
+        final decoration = ink.decoration! as BoxDecoration;
+        final radius = decoration.borderRadius! as BorderRadius;
+        expect(radius.topLeft, equals(const Radius.circular(12.8)));
+      });
 
-      testWidgets(
-        'tiny uses titleSmallFont (Bricolage Grotesque 800 14/20)',
-        (tester) async {
-          await tester.pumpWidget(
-            buildTestWidget(size: DivineButtonSize.tiny, onPressed: () {}),
-          );
+      testWidgets('tiny uses titleSmallFont (Bricolage Grotesque 800 14/20)', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(size: DivineButtonSize.tiny, onPressed: () {}),
+        );
 
-          final text = tester.widget<Text>(find.text('Test'));
-          // titleSmallFont = Bricolage 800 14/20/0.1.  Bigger weight
-          // than labelLargeFont (Inter 600) so the small chip still
-          // reads as a primary action.
-          expect(text.style?.fontWeight, equals(FontWeight.w800));
-          expect(text.style?.fontSize, equals(14));
-        },
-      );
+        final text = tester.widget<Text>(find.text('Test'));
+        // titleSmallFont = Bricolage 800 14/20/0.1.  Bigger weight
+        // than labelLargeFont (Inter 600) so the small chip still
+        // reads as a primary action.
+        expect(text.style?.fontWeight, equals(FontWeight.w800));
+        expect(text.style?.fontSize, equals(14));
+      });
 
       testWidgets(
         'small uses titleMediumFont (Bricolage Grotesque 800 16/24)',
@@ -591,27 +535,23 @@ void main() {
         },
       );
 
-      testWidgets(
-        'small visible chip is 40px tall with a 48dp tap target',
-        (tester) async {
-          await tester.pumpWidget(
-            buildTestWidget(
-              size: DivineButtonSize.small,
-              onPressed: () {},
-            ),
-          );
+      testWidgets('small visible chip is 40px tall with a 48dp tap target', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(size: DivineButtonSize.small, onPressed: () {}),
+        );
 
-          // The visible chip stays 40px; the InkWell tap target is padded out
-          // to the 48dp minimum inside, so the footprint is 48 with no dead
-          // (non-tappable) outer margin.
-          final tapTarget = tester.getSize(find.byType(DivineButton));
-          final chipSize = tester.getSize(find.byType(Ink));
-          final inkWellSize = tester.getSize(find.byType(InkWell));
-          expect(tapTarget.height, equals(48));
-          expect(chipSize.height, equals(40));
-          expect(inkWellSize.height, equals(40));
-        },
-      );
+        // The visible chip stays 40px; the InkWell tap target is padded out
+        // to the 48dp minimum inside, so the footprint is 48 with no dead
+        // (non-tappable) outer margin.
+        final tapTarget = tester.getSize(find.byType(DivineButton));
+        final chipSize = tester.getSize(find.byType(Ink));
+        final inkWellSize = tester.getSize(find.byType(InkWell));
+        expect(tapTarget.height, equals(48));
+        expect(chipSize.height, equals(40));
+        expect(inkWellSize.height, equals(40));
+      });
 
       testWidgets(
         'small outer halo is tappable without expanding pressed ink',
@@ -634,45 +574,41 @@ void main() {
         },
       );
 
-      testWidgets(
-        'small button stretches to fill a tight/Expanded slot',
-        (tester) async {
-          // The 48dp tap-target wrapper must not shrink-wrap a small button to
-          // its label: inside an Expanded (tight width) the button fills the
-          // slot, and the visible chip keeps its original 4px-each-side halo
-          // (rowWidth - 8) rather than touching the slot's edges.
-          const rowWidth = 300.0;
-          await tester.pumpWidget(
-            const MaterialApp(
-              home: Scaffold(
-                body: SizedBox(
-                  width: rowWidth,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: DivineButton(
-                          label: 'Save',
-                          size: DivineButtonSize.small,
-                          onPressed: _noop,
-                        ),
+      testWidgets('small button stretches to fill a tight/Expanded slot', (
+        tester,
+      ) async {
+        // The 48dp tap-target wrapper must not shrink-wrap a small button to
+        // its label: inside an Expanded (tight width) the button fills the
+        // slot, and the visible chip keeps its original 4px-each-side halo
+        // (rowWidth - 8) rather than touching the slot's edges.
+        const rowWidth = 300.0;
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: rowWidth,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: DivineButton(
+                        label: 'Save',
+                        size: DivineButtonSize.small,
+                        onPressed: _noop,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          );
+          ),
+        );
 
-          expect(
-            tester.getSize(find.byType(DivineButton)).width,
-            equals(rowWidth),
-          );
-          expect(
-            tester.getSize(find.byType(Ink)).width,
-            equals(rowWidth - 8),
-          );
-        },
-      );
+        expect(
+          tester.getSize(find.byType(DivineButton)).width,
+          equals(rowWidth),
+        );
+        expect(tester.getSize(find.byType(Ink)).width, equals(rowWidth - 8));
+      });
     });
 
     group('accessibility', () {
@@ -753,37 +689,36 @@ void main() {
         },
       );
 
-      testWidgets(
-        'icon-only enabled button with semanticLabel is actionable',
-        (tester) async {
-          final handle = tester.ensureSemantics();
-          await tester.pumpWidget(
-            const MaterialApp(
-              home: Scaffold(
-                body: Center(
-                  child: DivineButton(
-                    label: '',
-                    leadingIcon: DivineIconName.heart,
-                    semanticLabel: 'Like',
-                    onPressed: _noop,
-                  ),
+      testWidgets('icon-only enabled button with semanticLabel is actionable', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: DivineButton(
+                  label: '',
+                  leadingIcon: DivineIconName.heart,
+                  semanticLabel: 'Like',
+                  onPressed: _noop,
                 ),
               ),
             ),
-          );
+          ),
+        );
 
-          expect(
-            tester.getSemantics(find.byType(DivineButton)),
-            isSemantics(
-              label: 'Like',
-              isButton: true,
-              hasEnabledState: true,
-              isEnabled: true,
-            ),
-          );
-          handle.dispose();
-        },
-      );
+        expect(
+          tester.getSemantics(find.byType(DivineButton)),
+          isSemantics(
+            label: 'Like',
+            isButton: true,
+            hasEnabledState: true,
+            isEnabled: true,
+          ),
+        );
+        handle.dispose();
+      });
     });
 
     group('label inner padding', () {
@@ -1129,9 +1064,7 @@ void main() {
 
     group('disabled state', () {
       testWidgets('shows reduced opacity when disabled', (tester) async {
-        await tester.pumpWidget(
-          buildTestWidget(),
-        );
+        await tester.pumpWidget(buildTestWidget());
 
         final animatedOpacity = tester.widget<AnimatedOpacity>(
           find.byType(AnimatedOpacity),
@@ -1140,11 +1073,7 @@ void main() {
       });
 
       testWidgets('error type has 0.5 opacity when disabled', (tester) async {
-        await tester.pumpWidget(
-          buildTestWidget(
-            type: DivineButtonType.error,
-          ),
-        );
+        await tester.pumpWidget(buildTestWidget(type: DivineButtonType.error));
 
         final animatedOpacity = tester.widget<AnimatedOpacity>(
           find.byType(AnimatedOpacity),
@@ -1153,9 +1082,7 @@ void main() {
       });
 
       testWidgets('shows full opacity when enabled', (tester) async {
-        await tester.pumpWidget(
-          buildTestWidget(onPressed: () {}),
-        );
+        await tester.pumpWidget(buildTestWidget(onPressed: () {}));
 
         final animatedOpacity = tester.widget<AnimatedOpacity>(
           find.byType(AnimatedOpacity),
@@ -1190,9 +1117,7 @@ void main() {
         expect(buttonSize.width, containerWidth);
       });
 
-      testWidgets('works inside a Row with Expanded wrappers', (
-        tester,
-      ) async {
+      testWidgets('works inside a Row with Expanded wrappers', (tester) async {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
@@ -1229,20 +1154,15 @@ void main() {
     group('all types render in both sizes', () {
       for (final type in DivineButtonType.values) {
         for (final size in DivineButtonSize.values) {
-          testWidgets(
-            '${type.name} renders in ${size.name} size',
-            (tester) async {
-              await tester.pumpWidget(
-                buildTestWidget(
-                  type: type,
-                  size: size,
-                  onPressed: () {},
-                ),
-              );
+          testWidgets('${type.name} renders in ${size.name} size', (
+            tester,
+          ) async {
+            await tester.pumpWidget(
+              buildTestWidget(type: type, size: size, onPressed: () {}),
+            );
 
-              expect(find.byType(DivineButton), findsOneWidget);
-            },
-          );
+            expect(find.byType(DivineButton), findsOneWidget);
+          });
         }
       }
     });
@@ -1252,16 +1172,10 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(
-          buildTestWidget(
-            isLoading: true,
-            onPressed: () {},
-          ),
+          buildTestWidget(isLoading: true, onPressed: () {}),
         );
 
-        expect(
-          find.byType(CircularProgressIndicator),
-          findsOneWidget,
-        );
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
 
       testWidgets('does not render leading icon when isLoading', (
@@ -1281,10 +1195,7 @@ void main() {
 
       testWidgets('shows reduced opacity when isLoading', (tester) async {
         await tester.pumpWidget(
-          buildTestWidget(
-            isLoading: true,
-            onPressed: () {},
-          ),
+          buildTestWidget(isLoading: true, onPressed: () {}),
         );
 
         final animatedOpacity = tester.widget<AnimatedOpacity>(
@@ -1297,11 +1208,7 @@ void main() {
     group('all types render disabled', () {
       for (final type in DivineButtonType.values) {
         testWidgets('${type.name} renders disabled', (tester) async {
-          await tester.pumpWidget(
-            buildTestWidget(
-              type: type,
-            ),
-          );
+          await tester.pumpWidget(buildTestWidget(type: type));
 
           expect(find.byType(DivineButton), findsOneWidget);
 
@@ -1430,17 +1337,11 @@ void main() {
   });
 
   group('DivineTextLink', () {
-    Widget buildTestWidget({
-      String text = 'Link',
-      VoidCallback? onTap,
-    }) {
+    Widget buildTestWidget({String text = 'Link', VoidCallback? onTap}) {
       return MaterialApp(
         home: Scaffold(
           body: Center(
-            child: DivineTextLink(
-              text: text,
-              onTap: onTap,
-            ),
+            child: DivineTextLink(text: text, onTap: onTap),
           ),
         ),
       );
@@ -1454,9 +1355,7 @@ void main() {
 
     testWidgets('calls onTap when tapped', (tester) async {
       var tapped = false;
-      await tester.pumpWidget(
-        buildTestWidget(onTap: () => tapped = true),
-      );
+      await tester.pumpWidget(buildTestWidget(onTap: () => tapped = true));
 
       await tester.tap(find.byType(DivineTextLink));
       await tester.pumpAndSettle();

@@ -456,20 +456,22 @@ class _DivineButtonContent extends StatelessWidget {
     // exposes one via its Text child, so this is only wired when provided.
     // Expose the enabled state too, so assistive tech doesn't announce a
     // disabled labelled button as actionable (matches DivineIconButton).
-    if (semanticLabel != null || semanticIdentifier != null) {
+    if (semanticLabel != null) {
       button = Semantics(
         button: true,
         enabled: _isEnabled,
         label: semanticLabel,
         identifier: semanticIdentifier,
         onTap: _isEnabled ? onPressed : null,
-        // Only take over the child's semantics when a label is actually
-        // replacing the visible text. A button carrying an identifier alone
-        // must keep announcing its label -- excluding here would leave it
-        // with a test anchor and no accessible name at all.
-        excludeSemantics: semanticLabel != null,
+        excludeSemantics: true,
         child: button,
       );
+    } else if (semanticIdentifier != null) {
+      // Identifier only: annotate the node the label already lives on rather
+      // than adding an actionable one above it. Declaring `button`/`onTap`
+      // here forces a second node that carries the identifier and no name,
+      // so assistive tech announces an unnamed button ahead of the real one.
+      button = Semantics(identifier: semanticIdentifier, child: button);
     }
 
     return button;
