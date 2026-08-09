@@ -167,19 +167,19 @@ void main() {
         test('returns API results when Funnelcake succeeds', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
           when(
-            () => mockFunnelcakeClient.getRecentVideos(
+            () => mockFunnelcakeClient.getRecentVideosPage(
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
           ).thenAnswer(
-            (_) async => [
+            (_) async => _recentPage([
               _createVideoStats(
                 id: 'event-1',
                 pubkey: 'pubkey-1',
                 dTag: 'dtag-1',
                 videoUrl: 'https://example.com/video.mp4',
               ),
-            ],
+            ]),
           );
 
           final repositoryWithApi = VideosRepository(
@@ -203,19 +203,19 @@ void main() {
           () async {
             when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
             when(
-              () => mockFunnelcakeClient.getRecentVideos(
+              () => mockFunnelcakeClient.getRecentVideosPage(
                 limit: any(named: 'limit'),
                 before: any(named: 'before'),
               ),
             ).thenAnswer(
-              (_) async => [
+              (_) async => _recentPage([
                 _createVideoStats(
                   id: 'api-video',
                   pubkey: 'api-pubkey',
                   dTag: 'api-dtag',
                   videoUrl: 'https://example.com/api.mp4',
                 ),
-              ],
+              ]),
             );
             when(() => mockNostrClient.queryEvents(any())).thenAnswer(
               (_) async => [
@@ -248,19 +248,19 @@ void main() {
         test('passes limit and before to Funnelcake API', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
           when(
-            () => mockFunnelcakeClient.getRecentVideos(
+            () => mockFunnelcakeClient.getRecentVideosPage(
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
           ).thenAnswer(
-            (_) async => [
+            (_) async => _recentPage([
               _createVideoStats(
                 id: 'event-1',
                 pubkey: 'pubkey-1',
                 dTag: 'dtag-1',
                 videoUrl: 'https://example.com/video.mp4',
               ),
-            ],
+            ]),
           );
 
           final repositoryWithApi = VideosRepository(
@@ -271,7 +271,7 @@ void main() {
           await repositoryWithApi.getNewVideos(limit: 10, until: 1704067200);
 
           verify(
-            () => mockFunnelcakeClient.getRecentVideos(
+            () => mockFunnelcakeClient.getRecentVideosPage(
               limit: 10,
               before: 1704067200,
             ),
@@ -281,7 +281,7 @@ void main() {
         test('falls back to Nostr when Funnelcake throws', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
           when(
-            () => mockFunnelcakeClient.getRecentVideos(
+            () => mockFunnelcakeClient.getRecentVideosPage(
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
@@ -314,11 +314,11 @@ void main() {
           () async {
             when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
             when(
-              () => mockFunnelcakeClient.getRecentVideos(
+              () => mockFunnelcakeClient.getRecentVideosPage(
                 limit: any(named: 'limit'),
                 before: any(named: 'before'),
               ),
-            ).thenAnswer((_) async => <VideoStats>[]);
+            ).thenAnswer((_) async => _recentPage(<VideoStats>[]));
 
             final nostrEvent = _createVideoEvent(
               id: 'nostr-video',
@@ -347,19 +347,19 @@ void main() {
           () async {
             when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
             when(
-              () => mockFunnelcakeClient.getRecentVideos(
+              () => mockFunnelcakeClient.getRecentVideosPage(
                 limit: any(named: 'limit'),
                 before: any(named: 'before'),
               ),
             ).thenAnswer(
-              (_) async => [
+              (_) async => _recentPage([
                 _createVideoStats(
                   id: 'event-1',
                   pubkey: 'blocked-pubkey',
                   dTag: 'dtag-1',
                   videoUrl: 'https://example.com/video.mp4',
                 ),
-              ],
+              ]),
             );
 
             final nostrEvent = _createVideoEvent(
@@ -413,7 +413,7 @@ void main() {
           await repositoryWithApi.getNewVideos();
 
           verifyNever(
-            () => mockFunnelcakeClient.getRecentVideos(
+            () => mockFunnelcakeClient.getRecentVideosPage(
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
@@ -424,12 +424,12 @@ void main() {
         test('applies content filters to API results', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
           when(
-            () => mockFunnelcakeClient.getRecentVideos(
+            () => mockFunnelcakeClient.getRecentVideosPage(
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
           ).thenAnswer(
-            (_) async => [
+            (_) async => _recentPage([
               _createVideoStats(
                 id: 'event-1',
                 pubkey: 'blocked-pubkey',
@@ -442,7 +442,7 @@ void main() {
                 dTag: 'dtag-2',
                 videoUrl: 'https://example.com/allowed.mp4',
               ),
-            ],
+            ]),
           );
 
           final blockFilter = TestContentFilter(
@@ -466,7 +466,7 @@ void main() {
         test('continues past a full API page of reply-only videos', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
           when(
-            () => mockFunnelcakeClient.getRecentVideos(
+            () => mockFunnelcakeClient.getRecentVideosPage(
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
@@ -475,7 +475,7 @@ void main() {
             final limit = invocation.namedArguments[#limit] as int? ?? 5;
 
             if (before != null) {
-              return [
+              return _recentPage([
                 _createVideoStats(
                   id: 'feed-video',
                   pubkey: 'test-pubkey',
@@ -483,25 +483,27 @@ void main() {
                   videoUrl: 'https://example.com/feed.mp4',
                   createdAt: 1704060000,
                 ),
-              ];
+              ]);
             }
 
-            return List.generate(
-              limit,
-              (index) => _createVideoStats(
-                id: 'video-reply-$index',
-                pubkey: 'test-pubkey',
-                dTag: 'reply-dtag-$index',
-                videoUrl: 'https://example.com/reply-$index.mp4',
-                createdAt: 1704070000 - index,
-                rawTags: const {
-                  'E': 'root-event-id',
-                  'K': '34236',
-                  'P': 'root-author',
-                  'e': 'root-event-id',
-                  'k': '34236',
-                  'p': 'root-author',
-                },
+            return _recentPage(
+              List.generate(
+                limit,
+                (index) => _createVideoStats(
+                  id: 'video-reply-$index',
+                  pubkey: 'test-pubkey',
+                  dTag: 'reply-dtag-$index',
+                  videoUrl: 'https://example.com/reply-$index.mp4',
+                  createdAt: 1704070000 - index,
+                  rawTags: const {
+                    'E': 'root-event-id',
+                    'K': '34236',
+                    'P': 'root-author',
+                    'e': 'root-event-id',
+                    'k': '34236',
+                    'p': 'root-author',
+                  },
+                ),
               ),
             );
           });
@@ -515,7 +517,7 @@ void main() {
 
           expect(result.map((video) => video.id), equals(['feed-video']));
           verify(
-            () => mockFunnelcakeClient.getRecentVideos(
+            () => mockFunnelcakeClient.getRecentVideosPage(
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
@@ -528,14 +530,14 @@ void main() {
           () async {
             when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
             when(
-              () => mockFunnelcakeClient.getRecentVideos(
+              () => mockFunnelcakeClient.getRecentVideosPage(
                 limit: any(named: 'limit'),
                 before: any(named: 'before'),
               ),
             ).thenAnswer((invocation) async {
               final before = invocation.namedArguments[#before] as int?;
               if (before == null) {
-                return [
+                return _recentPage([
                   _createVideoStats(
                     id: 'video-reply-1',
                     pubkey: 'test-pubkey',
@@ -603,10 +605,10 @@ void main() {
                     videoUrl: 'https://example.com/feed-1.mp4',
                     createdAt: 1704069996,
                   ),
-                ];
+                ]);
               }
 
-              return [
+              return _recentPage([
                 _createVideoStats(
                   id: 'feed-video-2',
                   pubkey: 'test-pubkey',
@@ -614,7 +616,7 @@ void main() {
                   videoUrl: 'https://example.com/feed-2.mp4',
                   createdAt: 1704069000,
                 ),
-              ];
+              ]);
             });
 
             final repositoryWithApi = VideosRepository(
@@ -631,7 +633,7 @@ void main() {
               equals(['feed-video-1', 'feed-video-2']),
             );
             verify(
-              () => mockFunnelcakeClient.getRecentVideos(
+              () => mockFunnelcakeClient.getRecentVideosPage(
                 limit: any(named: 'limit'),
                 before: any(named: 'before'),
               ),
@@ -968,25 +970,25 @@ void main() {
 
         test('returns cached result without network call', () async {
           when(
-            () => mockFunnelcakeClient.getRecentVideos(
+            () => mockFunnelcakeClient.getRecentVideosPage(
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
           ).thenAnswer(
-            (_) async => [
+            (_) async => _recentPage([
               _createVideoStats(
                 id: 'v1',
                 pubkey: 'p1',
                 dTag: 'd1',
                 videoUrl: 'https://example.com/v1.mp4',
               ),
-            ],
+            ]),
           );
 
           // First call → network
           await repoWithCache.getNewVideos();
           verify(
-            () => mockFunnelcakeClient.getRecentVideos(
+            () => mockFunnelcakeClient.getRecentVideosPage(
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
@@ -995,7 +997,7 @@ void main() {
           // Second call → served from cache, no new network call
           final cached = (await repoWithCache.getNewVideos()).videos;
           verifyNever(
-            () => mockFunnelcakeClient.getRecentVideos(
+            () => mockFunnelcakeClient.getRecentVideosPage(
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
@@ -1006,19 +1008,19 @@ void main() {
 
         test('skipCache bypasses the in-memory cache', () async {
           when(
-            () => mockFunnelcakeClient.getRecentVideos(
+            () => mockFunnelcakeClient.getRecentVideosPage(
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
           ).thenAnswer(
-            (_) async => [
+            (_) async => _recentPage([
               _createVideoStats(
                 id: 'v1',
                 pubkey: 'p1',
                 dTag: 'd1',
                 videoUrl: 'https://example.com/v1.mp4',
               ),
-            ],
+            ]),
           );
 
           // First call populates cache
@@ -1027,7 +1029,7 @@ void main() {
           // skipCache: true → hits network again
           await repoWithCache.getNewVideos(skipCache: true);
           verify(
-            () => mockFunnelcakeClient.getRecentVideos(
+            () => mockFunnelcakeClient.getRecentVideosPage(
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
@@ -1036,19 +1038,19 @@ void main() {
 
         test('pagination calls bypass cache', () async {
           when(
-            () => mockFunnelcakeClient.getRecentVideos(
+            () => mockFunnelcakeClient.getRecentVideosPage(
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
           ).thenAnswer(
-            (_) async => [
+            (_) async => _recentPage([
               _createVideoStats(
                 id: 'v1',
                 pubkey: 'p1',
                 dTag: 'd1',
                 videoUrl: 'https://example.com/v1.mp4',
               ),
-            ],
+            ]),
           );
 
           // Populate cache
@@ -1057,7 +1059,7 @@ void main() {
           // Pagination (until != null) always hits network
           await repoWithCache.getNewVideos(until: 1000);
           verify(
-            () => mockFunnelcakeClient.getRecentVideos(
+            () => mockFunnelcakeClient.getRecentVideosPage(
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
@@ -1069,13 +1071,13 @@ void main() {
         // opens.
         Future<HomeFeedResult> warmSmallPageThenReadLarger() async {
           when(
-            () => mockFunnelcakeClient.getRecentVideos(
+            () => mockFunnelcakeClient.getRecentVideosPage(
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
           ).thenAnswer((invocation) async {
             final limit = invocation.namedArguments[#limit] as int;
-            return [
+            return _recentPage([
               for (var i = 0; i < limit; i++)
                 _createVideoStats(
                   id: 'v$i',
@@ -1083,7 +1085,7 @@ void main() {
                   dTag: 'd$i',
                   videoUrl: 'https://example.com/v$i.mp4',
                 ),
-            ];
+            ]);
           });
 
           await repoWithCache.getNewVideos(limit: 2);
@@ -1097,7 +1099,7 @@ void main() {
 
           expect(cached.videos, hasLength(2));
           verify(
-            () => mockFunnelcakeClient.getRecentVideos(
+            () => mockFunnelcakeClient.getRecentVideosPage(
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
@@ -1115,24 +1117,90 @@ void main() {
 
         test('reports no more content when the source ran dry', () async {
           when(
-            () => mockFunnelcakeClient.getRecentVideos(
+            () => mockFunnelcakeClient.getRecentVideosPage(
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
           ).thenAnswer(
-            (_) async => [
+            (_) async => _recentPage([
               _createVideoStats(
                 id: 'v1',
                 pubkey: 'p1',
                 dTag: 'd1',
                 videoUrl: 'https://example.com/v1.mp4',
               ),
-            ],
+            ]),
           );
 
           final page = await repoWithCache.getNewVideos(limit: 5);
 
           expect(page.videos, hasLength(1));
+          expect(page.hasMore, isFalse);
+        });
+
+        // The client drops rows with an empty id or videoUrl before the
+        // repository ever sees them, so a full server page can arrive short.
+        // Reading that as exhaustion pinned `hasMore: false` into the cache
+        // for the rest of the process and killed pagination.
+        test('keeps paging when the server filled the page but a row was '
+            'dropped', () async {
+          var call = 0;
+          when(
+            () => mockFunnelcakeClient.getRecentVideosPage(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((invocation) async {
+            final limit = invocation.namedArguments[#limit] as int;
+            final offset = call++ * limit;
+            return _recentPage(
+              [
+                for (var i = 0; i < limit - 1; i++)
+                  _createVideoStats(
+                    id: 'v${offset + i}',
+                    pubkey: 'p${offset + i}',
+                    dTag: 'd${offset + i}',
+                    videoUrl: 'https://example.com/v${offset + i}.mp4',
+                    createdAt: 1704060000 - offset - i,
+                  ),
+              ],
+              // The server sent a full page; one row was unusable.
+              serverItemCount: limit,
+            );
+          });
+
+          final page = await repoWithCache.getNewVideos(limit: 4);
+
+          expect(page.videos, hasLength(4));
+          expect(page.hasMore, isTrue);
+        });
+
+        test('prefers the server hasMore flag over the page count', () async {
+          when(
+            () => mockFunnelcakeClient.getRecentVideosPage(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((invocation) async {
+            final limit = invocation.namedArguments[#limit] as int;
+            return _recentPage(
+              [
+                for (var i = 0; i < limit; i++)
+                  _createVideoStats(
+                    id: 'v$i',
+                    pubkey: 'p$i',
+                    dTag: 'd$i',
+                    videoUrl: 'https://example.com/v$i.mp4',
+                    createdAt: 1704060000 - i,
+                  ),
+              ],
+              hasMore: false,
+            );
+          });
+
+          final page = await repoWithCache.getNewVideos(limit: 3);
+
+          expect(page.videos, hasLength(3));
           expect(page.hasMore, isFalse);
         });
       });
@@ -1154,19 +1222,19 @@ void main() {
           'hydrates Funnelcake videos that lack views with bulk stats',
           () async {
             when(
-              () => mockFunnelcakeClient.getRecentVideos(
+              () => mockFunnelcakeClient.getRecentVideosPage(
                 limit: any(named: 'limit'),
                 before: any(named: 'before'),
               ),
             ).thenAnswer(
-              (_) async => [
+              (_) async => _recentPage([
                 _createVideoStats(
                   id: 'event-1',
                   pubkey: 'author',
                   dTag: 'dtag-1',
                   videoUrl: 'https://example.com/video.mp4',
                 ),
-              ],
+              ]),
             );
             when(
               () => mockFunnelcakeClient.getBulkVideoStats(['event-1']),
@@ -1202,7 +1270,7 @@ void main() {
           'hydrates relay-fallback videos that lack views with bulk stats',
           () async {
             when(
-              () => mockFunnelcakeClient.getRecentVideos(
+              () => mockFunnelcakeClient.getRecentVideosPage(
                 limit: any(named: 'limit'),
                 before: any(named: 'before'),
               ),
@@ -1248,7 +1316,7 @@ void main() {
           'keeps relay archival tags separate from bulk live engagement stats',
           () async {
             when(
-              () => mockFunnelcakeClient.getRecentVideos(
+              () => mockFunnelcakeClient.getRecentVideosPage(
                 limit: any(named: 'limit'),
                 before: any(named: 'before'),
               ),
@@ -1302,12 +1370,12 @@ void main() {
           'them',
           () async {
             when(
-              () => mockFunnelcakeClient.getRecentVideos(
+              () => mockFunnelcakeClient.getRecentVideosPage(
                 limit: any(named: 'limit'),
                 before: any(named: 'before'),
               ),
             ).thenAnswer(
-              (_) async => [
+              (_) async => _recentPage([
                 _createVideoStats(
                   id: 'event-1',
                   pubkey: 'author',
@@ -1316,7 +1384,7 @@ void main() {
                   reactions: 2,
                   comments: 1,
                 ),
-              ],
+              ]),
             );
             when(
               () => mockFunnelcakeClient.getBulkVideoStats(['event-1']),
@@ -1368,19 +1436,19 @@ void main() {
             inMemoryFeedCache: feedCache,
           );
           when(
-            () => mockFunnelcakeClient.getRecentVideos(
+            () => mockFunnelcakeClient.getRecentVideosPage(
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
           ).thenAnswer(
-            (_) async => [
+            (_) async => _recentPage([
               _createVideoStats(
                 id: 'event-1',
                 pubkey: 'author',
                 dTag: 'dtag-1',
                 videoUrl: 'https://example.com/video.mp4',
               ),
-            ],
+            ]),
           );
           when(
             () => mockFunnelcakeClient.getBulkVideoStats(['event-1']),
@@ -12454,19 +12522,19 @@ void main() {
 
       test('clears a single key', () async {
         when(
-          () => mockFunnelcakeClient.getRecentVideos(
+          () => mockFunnelcakeClient.getRecentVideosPage(
             limit: any(named: 'limit'),
             before: any(named: 'before'),
           ),
         ).thenAnswer(
-          (_) async => [
+          (_) async => _recentPage([
             _createVideoStats(
               id: 'v1',
               pubkey: 'p1',
               dTag: 'd1',
               videoUrl: 'https://example.com/v1.mp4',
             ),
-          ],
+          ]),
         );
 
         // Populate cache
@@ -12478,7 +12546,7 @@ void main() {
         // Next call hits network again
         await repoWithCache.getNewVideos();
         verify(
-          () => mockFunnelcakeClient.getRecentVideos(
+          () => mockFunnelcakeClient.getRecentVideosPage(
             limit: any(named: 'limit'),
             before: any(named: 'before'),
           ),
@@ -12487,19 +12555,19 @@ void main() {
 
       test('clears all keys', () async {
         when(
-          () => mockFunnelcakeClient.getRecentVideos(
+          () => mockFunnelcakeClient.getRecentVideosPage(
             limit: any(named: 'limit'),
             before: any(named: 'before'),
           ),
         ).thenAnswer(
-          (_) async => [
+          (_) async => _recentPage([
             _createVideoStats(
               id: 'v1',
               pubkey: 'p1',
               dTag: 'd1',
               videoUrl: 'https://example.com/v1.mp4',
             ),
-          ],
+          ]),
         );
         when(
           () => mockFunnelcakeClient.getWatchingVideos(
@@ -12529,7 +12597,7 @@ void main() {
         await repoWithCache.getPopularVideos();
 
         verify(
-          () => mockFunnelcakeClient.getRecentVideos(
+          () => mockFunnelcakeClient.getRecentVideosPage(
             limit: any(named: 'limit'),
             before: any(named: 'before'),
           ),
@@ -12767,12 +12835,12 @@ void main() {
 
         test('filters out non-loopback http:// video URLs', () async {
           when(
-            () => mockFunnelcakeClient.getRecentVideos(
+            () => mockFunnelcakeClient.getRecentVideosPage(
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
           ).thenAnswer(
-            (_) async => [
+            (_) async => _recentPage([
               _createVideoStats(
                 id: 'cleartext-id',
                 pubkey: 'pubkey-1',
@@ -12785,7 +12853,7 @@ void main() {
                 dTag: 'dtag-2',
                 videoUrl: 'https://example.com/video.mp4',
               ),
-            ],
+            ]),
           );
 
           final repositoryWithApi = VideosRepository(
@@ -12929,6 +12997,20 @@ void main() {
     });
   });
 }
+
+/// Wraps [videos] as a recent-videos page.
+///
+/// [serverItemCount] defaults to the length of [videos]; pass it explicitly to
+/// model the server returning rows the client then dropped as malformed.
+RecentVideosResponse _recentPage(
+  List<VideoStats> videos, {
+  int? serverItemCount,
+  bool? hasMore,
+}) => RecentVideosResponse(
+  videos: videos,
+  serverItemCount: serverItemCount ?? videos.length,
+  hasMore: hasMore,
+);
 
 /// Creates a mock video event for testing.
 Event _createVideoEvent({
