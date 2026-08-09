@@ -30,6 +30,58 @@ void main() {
       expect(scale, greaterThan(0));
     });
 
+    test('calculateFittedBoxScale matches square canvas on portrait body', () {
+      final scale = VideoEditorScope.calculateFittedBoxScale(
+        const Size(400, 800),
+        1,
+        targetAspectRatio: 1,
+      );
+
+      expect(scale, equals(1));
+    });
+
+    test('calculateFittedBoxScale covers contained vertical target area', () {
+      final scale = VideoEditorScope.calculateFittedBoxScale(
+        const Size(400, 800),
+        9 / 16,
+        targetAspectRatio: 9 / 16,
+      );
+
+      expect(scale, closeTo(16 / 9, 0.001));
+    });
+
+    test('calculateFittedBoxScale covers target area on wide body', () {
+      final scale = VideoEditorScope.calculateFittedBoxScale(
+        const Size(800, 400),
+        1,
+        targetAspectRatio: 9 / 16,
+      );
+
+      expect(scale, closeTo(1, 0.001));
+    });
+
+    test('calculateFittedBoxScale uses target aspect ratio separately', () {
+      final scale = VideoEditorScope.calculateFittedBoxScale(
+        const Size(400, 800),
+        1,
+        targetAspectRatio: 9 / 16,
+      );
+
+      // A square render covers a vertical target, so the height ratio wins.
+      expect(scale, closeTo(16 / 9, 0.001));
+    });
+
+    test('calculateTargetSize contains target ratio inside the body', () {
+      expect(
+        VideoEditorScope.calculateTargetSize(const Size(400, 800), 9 / 16),
+        equals(const Size(400, 400 / (9 / 16))),
+      );
+      expect(
+        VideoEditorScope.calculateTargetSize(const Size(800, 400), 9 / 16),
+        equals(const Size(400 * 9 / 16, 400)),
+      );
+    });
+
     testWidgets('of returns nearest scope from context', (tester) async {
       final editorKey = GlobalKey<ProImageEditorState>();
       final removeAreaKey = GlobalKey();

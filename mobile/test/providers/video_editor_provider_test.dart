@@ -970,6 +970,34 @@ void main() {
           expect(cleared.c2paSigningFailed, isFalse);
         },
       );
+
+      test('keeps editorEditingParameters when the clip is cleared', () {
+        final params = CompleteParameters.fromMap(
+          <String, dynamic>{},
+        ).copyWith(blur: 0.25);
+        final state = VideoEditorProviderState(
+          finalRenderedClip: DivineVideoClip(
+            id: 'rendered',
+            video: EditorVideo.file('/docs/rendered.mp4'),
+            duration: const Duration(seconds: 3),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          ),
+          editorEditingParameters: params,
+        );
+
+        final cleared = state.copyWith(clearFinalRenderedClip: true);
+
+        expect(cleared.finalRenderedClip, isNull);
+        expect(
+          cleared.editorEditingParameters,
+          same(params),
+          reason:
+              'restoring a draft with a missing cached render must keep the '
+              'editing parameters needed to re-render overlays at publish time',
+        );
+      });
     });
 
     group('acknowledgeC2paSigningFailure (#6058)', () {

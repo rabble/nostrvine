@@ -2887,22 +2887,10 @@ class _CanvasFitter extends ConsumerWidget {
         // Notify parent about body size
         scope.bodySizeNotifier.value = bodySize;
 
-        // Contain mode: fit targetAspectRatio within bodySize,
-        // then cover that area with the original aspect ratio
-        final Size targetSize;
-        if (bodySize.aspectRatio > clip.targetAspectRatio.value) {
-          // Body is wider, height is limiting
-          targetSize = Size(
-            bodySize.height * clip.targetAspectRatio.value,
-            bodySize.height,
-          );
-        } else {
-          // Body is narrower, width is limiting
-          targetSize = Size(
-            bodySize.width,
-            bodySize.width / clip.targetAspectRatio.value,
-          );
-        }
+        final targetSize = VideoEditorScope.calculateTargetSize(
+          bodySize,
+          clip.targetAspectRatio.value,
+        );
 
         // The visual chain below (Center > SizedBox > FittedBox >
         // SizedBox > Navigator) owns the aspect-ratio mapping: cover-fit
