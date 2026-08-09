@@ -1653,9 +1653,7 @@
     "shareMenuSetNameHint": "Bijv. favorieten, later bekijken, enz.",
     "shareMenuCreateNewSet": "Nieuwe set maken",
     "shareMenuStartNewBookmarkCollection": "Begin een nieuwe bladwijzercollectie",
-    "shareMenuNoBookmarkSets": "Nog geen bladwijzersets. Maak je eerste!",
     "shareMenuError": "Fout",
-    "shareMenuFailedToLoadBookmarkSets": "Laden van bladwijzersets mislukt",
     "shareMenuCreatedSetAndAddedVideo": "\"{name}\" aangemaakt en video toegevoegd",
     "@shareMenuCreatedSetAndAddedVideo": {
         "placeholders": {

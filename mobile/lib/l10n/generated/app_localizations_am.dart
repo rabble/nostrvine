@@ -4089,14 +4089,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get shareMenuStartNewBookmarkCollection => 'አዲስ የዕልባት ስብስብ ጀምር';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'እስካሁን ምንም ዕልባት አልተዘጋጀም። የመጀመሪያዎን ይፍጠሩ!';
-
-  @override
   String get shareMenuError => 'ስህተት';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets => 'የዕልባቶች ስብስቦችን መጫን አልተሳካም።';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

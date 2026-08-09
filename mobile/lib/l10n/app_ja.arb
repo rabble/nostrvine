@@ -1643,9 +1643,7 @@
     "shareMenuSetNameHint": "例: お気に入り、あとで見るなど",
     "shareMenuCreateNewSet": "新しいセットを作る",
     "shareMenuStartNewBookmarkCollection": "新しいブックマークコレクションを始めよう",
-    "shareMenuNoBookmarkSets": "ブックマークセットはまだないよ。最初のセットを作ろう！",
     "shareMenuError": "エラー",
-    "shareMenuFailedToLoadBookmarkSets": "ブックマークセットの読み込みがうまくいかなかった",
     "shareMenuCreatedSetAndAddedVideo": "「{name}」を作って動画を追加したよ",
     "@shareMenuCreatedSetAndAddedVideo": {
         "placeholders": {

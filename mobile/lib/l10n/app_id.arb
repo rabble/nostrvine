@@ -1650,9 +1650,7 @@
     "shareMenuSetNameHint": "contoh: Favorit, Tonton Nanti, dll.",
     "shareMenuCreateNewSet": "Buat Set Baru",
     "shareMenuStartNewBookmarkCollection": "Mulai koleksi bookmark baru",
-    "shareMenuNoBookmarkSets": "Belum ada set bookmark. Buat yang pertama!",
     "shareMenuError": "Kesalahan",
-    "shareMenuFailedToLoadBookmarkSets": "Gagal memuat set bookmark",
     "shareMenuCreatedSetAndAddedVideo": "\"{name}\" dibuat dan video ditambahkan",
     "@shareMenuCreatedSetAndAddedVideo": {
         "placeholders": {

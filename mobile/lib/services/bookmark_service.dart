@@ -103,7 +103,6 @@ class BookmarkService {
   final SharedPreferences _prefs;
 
   static const String globalBookmarksStorageKey = 'global_bookmarks';
-  static const String globalBookmarksId = 'global_bookmarks';
 
   /// NIP-51 kind for the uncategorized ("global") bookmark list.
   static const int globalBookmarksKind = 10003;
@@ -189,22 +188,6 @@ class BookmarkService {
     }
   }
 
-  /// Add a video event to global bookmarks
-  Future<bool> addVideoToGlobalBookmarks(
-    String videoEventId, {
-    String? relay,
-    String? petname,
-  }) async {
-    return addToGlobalBookmarks(
-      BookmarkItem(type: 'e', id: videoEventId, relay: relay, petname: petname),
-    );
-  }
-
-  /// Remove a video event from global bookmarks (kind 10003 `e` tag).
-  Future<bool> removeVideoFromGlobalBookmarks(String videoEventId) async {
-    return removeFromGlobalBookmarks(BookmarkItem(type: 'e', id: videoEventId));
-  }
-
   /// If [videoEventId] is globally bookmarked, removes it; otherwise adds it.
   ///
   /// The direction is decided *after* reconciling with the relay, so a video
@@ -283,7 +266,7 @@ class BookmarkService {
       }
 
       _globalBookmarks.add(item);
-      await _saveBookmarks();
+      await _saveBookmarksToSharedPreferences();
 
       final published = await _publishGlobalBookmarksToNostr();
       if (!published) return false;
@@ -334,7 +317,7 @@ class BookmarkService {
         return false;
       }
 
-      await _saveBookmarks();
+      await _saveBookmarksToSharedPreferences();
 
       final published = await _publishGlobalBookmarksToNostr();
       if (!published) return false;
@@ -443,13 +426,7 @@ class BookmarkService {
 
     for (final tag in event.tags) {
       if (tag.length >= 2 && ['e', 'a', 't', 'r'].contains(tag[0])) {
-        final item = BookmarkItem(
-          type: tag[0],
-          id: tag[1],
-          relay: tag.length > 2 ? tag[2] : null,
-          petname: tag.length > 3 ? tag[3] : null,
-        );
-        _globalBookmarks.add(item);
+        _globalBookmarks.add(BookmarkItem.fromTag(tag));
       }
     }
   }
@@ -502,10 +479,5 @@ class BookmarkService {
         category: LogCategory.system,
       );
     }
-  }
-
-  /// Save bookmarks to local storage (backwards compatibility)
-  Future<void> _saveBookmarks() async {
-    await _saveBookmarksToSharedPreferences();
   }
 }

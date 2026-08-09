@@ -4179,14 +4179,7 @@ class AppLocalizationsVi extends AppLocalizations {
       'Bắt đầu bộ sưu tập dấu trang mới';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Chưa có bộ dấu trang nào. Tạo bộ đầu tiên của bạn!';
-
-  @override
   String get shareMenuError => 'Lỗi';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets => 'Không tải được bộ dấu trang';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

@@ -1650,9 +1650,7 @@
     "shareMenuSetNameHint": "örn. Favoriler, Sonra İzle vb.",
     "shareMenuCreateNewSet": "Yeni Set Oluştur",
     "shareMenuStartNewBookmarkCollection": "Yeni bir yer imi koleksiyonu başlat",
-    "shareMenuNoBookmarkSets": "Henüz yer imi seti yok. İlk setini oluştur!",
     "shareMenuError": "Hata",
-    "shareMenuFailedToLoadBookmarkSets": "Yer imi setleri yüklenemedi",
     "shareMenuCreatedSetAndAddedVideo": "\"{name}\" oluşturuldu ve video eklendi",
     "@shareMenuCreatedSetAndAddedVideo": {
         "placeholders": {

@@ -4137,14 +4137,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareMenuStartNewBookmarkCollection => 'ابدأ مجموعة إشارات جديدة';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'لا توجد مجموعات إشارات بعد. أنشئ أول واحدة!';
-
-  @override
   String get shareMenuError => 'خطأ';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets => 'فشل تحميل مجموعات الإشارات';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

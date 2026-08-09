@@ -1657,9 +1657,7 @@
     "shareMenuSetNameHint": "ej: Favoritos, Para ver después, etc.",
     "shareMenuCreateNewSet": "Crear nuevo set",
     "shareMenuStartNewBookmarkCollection": "Arrancá una colección nueva de marcadores",
-    "shareMenuNoBookmarkSets": "Todavía no tenés sets de marcadores. ¡Creá el primero!",
     "shareMenuError": "Error",
-    "shareMenuFailedToLoadBookmarkSets": "No se pudieron cargar los sets de marcadores",
     "shareMenuCreatedSetAndAddedVideo": "Se creó \"{name}\" y se agregó el video",
     "@shareMenuCreatedSetAndAddedVideo": {
         "placeholders": {

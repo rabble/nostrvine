@@ -1653,9 +1653,7 @@
     "shareMenuSetNameHint": "ex. Preferate, De vizionat mai târziu etc.",
     "shareMenuCreateNewSet": "Creează un set nou",
     "shareMenuStartNewBookmarkCollection": "Începe o colecție nouă de semne de carte",
-    "shareMenuNoBookmarkSets": "Încă nu ai seturi de semne de carte. Creează-l pe primul!",
     "shareMenuError": "Eroare",
-    "shareMenuFailedToLoadBookmarkSets": "N-am putut încărca seturile de semne de carte",
     "shareMenuCreatedSetAndAddedVideo": "Set \"{name}\" creat și videoclipul adăugat",
     "@shareMenuCreatedSetAndAddedVideo": {
         "placeholders": {

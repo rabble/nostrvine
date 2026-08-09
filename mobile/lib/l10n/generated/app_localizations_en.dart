@@ -4172,15 +4172,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Start a new bookmark collection';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'No bookmark sets yet. Create your first one!';
-
-  @override
   String get shareMenuError => 'Error';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Failed to load bookmark sets';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

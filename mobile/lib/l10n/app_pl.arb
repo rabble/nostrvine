@@ -1653,9 +1653,7 @@
     "shareMenuSetNameHint": "np. Ulubione, Obejrzyj później itp.",
     "shareMenuCreateNewSet": "Utwórz nowy zestaw",
     "shareMenuStartNewBookmarkCollection": "Zacznij nową kolekcję zakładek",
-    "shareMenuNoBookmarkSets": "Brak zestawów zakładek. Utwórz swój pierwszy!",
     "shareMenuError": "Błąd",
-    "shareMenuFailedToLoadBookmarkSets": "Nie udało się wczytać zestawów zakładek",
     "shareMenuCreatedSetAndAddedVideo": "Utworzono \"{name}\" i dodano film",
     "@shareMenuCreatedSetAndAddedVideo": {
         "placeholders": {

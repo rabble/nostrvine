@@ -1836,9 +1836,7 @@
     "shareMenuSetNameHint": "Напр. Любими, Гледай по-късно и т.н.",
     "shareMenuCreateNewSet": "Създаване на нов набор",
     "shareMenuStartNewBookmarkCollection": "Започни нова колекция от отметки",
-    "shareMenuNoBookmarkSets": "Още няма набори с отметки. Създай първия си.",
     "shareMenuError": "Грешка",
-    "shareMenuFailedToLoadBookmarkSets": "Неуспешно зареждане на набори от отметки",
     "shareMenuCreatedSetAndAddedVideo": "Създаде „{name}“ и добави видео",
     "@shareMenuCreatedSetAndAddedVideo": {
         "placeholders": {

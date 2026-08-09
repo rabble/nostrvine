@@ -2022,9 +2022,7 @@
     "shareMenuSetNameHint": "ለምሳሌ፡ ተወዳጆች፡ በኋላ ይመልከቱ፡ ወዘተ",
     "shareMenuCreateNewSet": "አዲስ ስብስብ ይፍጠሩ",
     "shareMenuStartNewBookmarkCollection": "አዲስ የዕልባት ስብስብ ጀምር",
-    "shareMenuNoBookmarkSets": "እስካሁን ምንም ዕልባት አልተዘጋጀም። የመጀመሪያዎን ይፍጠሩ!",
     "shareMenuError": "ስህተት",
-    "shareMenuFailedToLoadBookmarkSets": "የዕልባቶች ስብስቦችን መጫን አልተሳካም።",
     "shareMenuCreatedSetAndAddedVideo": "\"{name}\" ተፈጥሯል እና ቪዲዮ ታክሏል",
     "@shareMenuCreatedSetAndAddedVideo": {
         "placeholders": {

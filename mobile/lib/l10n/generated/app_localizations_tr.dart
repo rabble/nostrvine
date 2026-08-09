@@ -4141,14 +4141,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Yeni bir yer imi koleksiyonu başlat';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Henüz yer imi seti yok. İlk setini oluştur!';
-
-  @override
   String get shareMenuError => 'Hata';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets => 'Yer imi setleri yüklenemedi';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

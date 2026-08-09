@@ -3976,13 +3976,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuStartNewBookmarkCollection => '새 북마크 컴렉션 시작';
 
   @override
-  String get shareMenuNoBookmarkSets => '아직 북마크 세트가 없어요. 첫 세트를 만들어보세요!';
-
-  @override
   String get shareMenuError => '오류';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets => '북마크 세트를 불러오지 못했어요';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

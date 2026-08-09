@@ -4222,15 +4222,7 @@ class AppLocalizationsBg extends AppLocalizations {
       'Започни нова колекция от отметки';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Още няма набори с отметки. Създай първия си.';
-
-  @override
   String get shareMenuError => 'Грешка';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Неуспешно зареждане на набори от отметки';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

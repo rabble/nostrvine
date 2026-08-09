@@ -3956,13 +3956,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareMenuStartNewBookmarkCollection => '新しいブックマークコレクションを始めよう';
 
   @override
-  String get shareMenuNoBookmarkSets => 'ブックマークセットはまだないよ。最初のセットを作ろう！';
-
-  @override
   String get shareMenuError => 'エラー';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets => 'ブックマークセットの読み込みがうまくいかなかった';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

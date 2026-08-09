@@ -4135,14 +4135,7 @@ class AppLocalizationsId extends AppLocalizations {
       'Mulai koleksi bookmark baru';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Belum ada set bookmark. Buat yang pertama!';
-
-  @override
   String get shareMenuError => 'Kesalahan';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets => 'Gagal memuat set bookmark';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

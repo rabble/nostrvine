@@ -4234,15 +4234,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Démarrer une nouvelle collection de favoris';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Pas encore d\'ensembles de favoris. Crée ton premier !';
-
-  @override
   String get shareMenuError => 'Erreur';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Échec du chargement des ensembles de favoris';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

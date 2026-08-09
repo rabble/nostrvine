@@ -2310,9 +2310,7 @@
   "shareMenuSetNameHint": "例如：最爱、稍后再看等",
   "shareMenuCreateNewSet": "创建新集合",
   "shareMenuStartNewBookmarkCollection": "开始一个新的收藏合集",
-  "shareMenuNoBookmarkSets": "还没有收藏集，创建第一个吧！",
   "shareMenuError": "错误",
-  "shareMenuFailedToLoadBookmarkSets": "加载收藏集失败",
   "shareMenuCreatedSetAndAddedVideo": "已创建“{name}”并添加视频",
   "@shareMenuCreatedSetAndAddedVideo": {
     "placeholders": {

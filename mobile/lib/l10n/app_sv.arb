@@ -1653,9 +1653,7 @@
     "shareMenuSetNameHint": "t.ex. Favoriter, Titta senare osv.",
     "shareMenuCreateNewSet": "Skapa ny samling",
     "shareMenuStartNewBookmarkCollection": "Starta en ny bokmärkessamling",
-    "shareMenuNoBookmarkSets": "Inga bokmärkessamlingar än. Skapa din första!",
     "shareMenuError": "Fel",
-    "shareMenuFailedToLoadBookmarkSets": "Kunde inte läsa in bokmärkessamlingar",
     "shareMenuCreatedSetAndAddedVideo": "Skapade \"{name}\" och la till videon",
     "@shareMenuCreatedSetAndAddedVideo": {
         "placeholders": {

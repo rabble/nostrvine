@@ -4220,15 +4220,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Inizia una nuova collezione di segnalibri';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Ancora nessun set di segnalibri. Crea il tuo primo!';
-
-  @override
   String get shareMenuError => 'Errore';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Impossibile caricare i set di segnalibri';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

@@ -4190,15 +4190,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Begin een nieuwe bladwijzercollectie';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Nog geen bladwijzersets. Maak je eerste!';
-
-  @override
   String get shareMenuError => 'Fout';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Laden van bladwijzersets mislukt';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

@@ -1653,9 +1653,7 @@
     "shareMenuSetNameHint": "z.B. Favoriten, Später ansehen usw.",
     "shareMenuCreateNewSet": "Neues Set erstellen",
     "shareMenuStartNewBookmarkCollection": "Eine neue Lesezeichen-Sammlung starten",
-    "shareMenuNoBookmarkSets": "Noch keine Lesezeichen-Sets. Erstelle dein erstes!",
     "shareMenuError": "Fehler",
-    "shareMenuFailedToLoadBookmarkSets": "Lesezeichen-Sets konnten nicht geladen werden",
     "shareMenuCreatedSetAndAddedVideo": "\"{name}\" erstellt und Video hinzugefügt",
     "@shareMenuCreatedSetAndAddedVideo": {
         "placeholders": {

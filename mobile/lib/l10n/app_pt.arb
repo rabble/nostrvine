@@ -1653,9 +1653,7 @@
     "shareMenuSetNameHint": "ex.: Favoritos, Ver depois, etc.",
     "shareMenuCreateNewSet": "Criar nova coleção",
     "shareMenuStartNewBookmarkCollection": "Comece uma nova coleção de favoritos",
-    "shareMenuNoBookmarkSets": "Ainda sem coleções de favoritos. Crie a primeira!",
     "shareMenuError": "Erro",
-    "shareMenuFailedToLoadBookmarkSets": "Falha ao carregar coleções de favoritos",
     "shareMenuCreatedSetAndAddedVideo": "\"{name}\" criada e vídeo adicionado",
     "@shareMenuCreatedSetAndAddedVideo": {
         "placeholders": {

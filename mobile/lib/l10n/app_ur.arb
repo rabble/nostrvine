@@ -2310,9 +2310,7 @@
   "shareMenuSetNameHint": "مثلاً پسندیدہ، بعد میں دیکھیں وغیرہ",
   "shareMenuCreateNewSet": "نیا سیٹ بنائیں",
   "shareMenuStartNewBookmarkCollection": "نیا بک مارک مجموعہ شروع کریں",
-  "shareMenuNoBookmarkSets": "ابھی کوئی بک مارک سیٹ نہیں۔ اپنا پہلا بنائیں!",
   "shareMenuError": "خرابی",
-  "shareMenuFailedToLoadBookmarkSets": "بک مارک سیٹس لوڈ نہیں ہو سکے",
   "shareMenuCreatedSetAndAddedVideo": "\"{name}\" بنایا اور ویڈیو شامل کی",
   "@shareMenuCreatedSetAndAddedVideo": {
     "placeholders": {

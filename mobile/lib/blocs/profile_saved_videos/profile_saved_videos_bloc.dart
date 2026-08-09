@@ -79,8 +79,8 @@ class ProfileSavedVideosBloc
   /// Handle sync request using stale-while-revalidate backed by [CacheSync].
   ///
   /// On reopen the persisted snapshot is served immediately; revalidation then
-  /// re-reads the (in-memory, SharedPreferences-cached) bookmark list and only
-  /// reconciles it against the shown videos — no bulk re-fetch / re-serialize.
+  /// syncs the bookmark list from the relay and reconciles it against the shown
+  /// videos — no bulk re-fetch / re-serialize.
   ///
   /// [ProfileSavedVideosSyncRequested.completer] fires only once all of that is
   /// done, snapshot write included, so a refresh waiter is released exactly

@@ -4216,15 +4216,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Arrancá una colección nueva de marcadores';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Todavía no tenés sets de marcadores. ¡Creá el primero!';
-
-  @override
   String get shareMenuError => 'Error';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'No se pudieron cargar los sets de marcadores';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

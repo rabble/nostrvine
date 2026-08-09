@@ -1653,9 +1653,7 @@
     "shareMenuSetNameHint": "es. Preferiti, Guarda dopo, ecc.",
     "shareMenuCreateNewSet": "Crea nuovo set",
     "shareMenuStartNewBookmarkCollection": "Inizia una nuova collezione di segnalibri",
-    "shareMenuNoBookmarkSets": "Ancora nessun set di segnalibri. Crea il tuo primo!",
     "shareMenuError": "Errore",
-    "shareMenuFailedToLoadBookmarkSets": "Impossibile caricare i set di segnalibri",
     "shareMenuCreatedSetAndAddedVideo": "Creato \"{name}\" e aggiunto il video",
     "@shareMenuCreatedSetAndAddedVideo": {
         "placeholders": {

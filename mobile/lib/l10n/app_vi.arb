@@ -2310,9 +2310,7 @@
   "shareMenuSetNameHint": "VD: Yêu thích, Xem sau...",
   "shareMenuCreateNewSet": "Tạo bộ mới",
   "shareMenuStartNewBookmarkCollection": "Bắt đầu bộ sưu tập dấu trang mới",
-  "shareMenuNoBookmarkSets": "Chưa có bộ dấu trang nào. Tạo bộ đầu tiên của bạn!",
   "shareMenuError": "Lỗi",
-  "shareMenuFailedToLoadBookmarkSets": "Không tải được bộ dấu trang",
   "shareMenuCreatedSetAndAddedVideo": "Đã tạo \"{name}\" và thêm video",
   "@shareMenuCreatedSetAndAddedVideo": {
     "placeholders": {

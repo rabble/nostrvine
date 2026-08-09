@@ -2472,9 +2472,7 @@
   "shareMenuSetNameHint": "e.g., Favorites, Watch Later, etc.",
   "shareMenuCreateNewSet": "Create New Set",
   "shareMenuStartNewBookmarkCollection": "Start a new bookmark collection",
-  "shareMenuNoBookmarkSets": "No bookmark sets yet. Create your first one!",
   "shareMenuError": "Error",
-  "shareMenuFailedToLoadBookmarkSets": "Failed to load bookmark sets",
   "shareMenuCreatedSetAndAddedVideo": "Created \"{name}\" and added video",
   "@shareMenuCreatedSetAndAddedVideo": {
     "placeholders": {

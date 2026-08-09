@@ -4203,15 +4203,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Comece uma nova coleção de favoritos';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Ainda sem coleções de favoritos. Crie a primeira!';
-
-  @override
   String get shareMenuError => 'Erro';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Falha ao carregar coleções de favoritos';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

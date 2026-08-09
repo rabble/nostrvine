@@ -1643,9 +1643,7 @@
     "shareMenuSetNameHint": "مثل: المفضلة، مشاهدة لاحقًا، إلخ.",
     "shareMenuCreateNewSet": "إنشاء مجموعة جديدة",
     "shareMenuStartNewBookmarkCollection": "ابدأ مجموعة إشارات جديدة",
-    "shareMenuNoBookmarkSets": "لا توجد مجموعات إشارات بعد. أنشئ أول واحدة!",
     "shareMenuError": "خطأ",
-    "shareMenuFailedToLoadBookmarkSets": "فشل تحميل مجموعات الإشارات",
     "shareMenuCreatedSetAndAddedVideo": "تم إنشاء \"{name}\" وإضافة الفيديو",
     "@shareMenuCreatedSetAndAddedVideo": {
         "placeholders": {

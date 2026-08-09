@@ -3950,13 +3950,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shareMenuStartNewBookmarkCollection => '开始一个新的收藏合集';
 
   @override
-  String get shareMenuNoBookmarkSets => '还没有收藏集，创建第一个吧！';
-
-  @override
   String get shareMenuError => '错误';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets => '加载收藏集失败';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

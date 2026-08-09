@@ -4222,15 +4222,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Eine neue Lesezeichen-Sammlung starten';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Noch keine Lesezeichen-Sets. Erstelle dein erstes!';
-
-  @override
   String get shareMenuError => 'Fehler';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Lesezeichen-Sets konnten nicht geladen werden';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

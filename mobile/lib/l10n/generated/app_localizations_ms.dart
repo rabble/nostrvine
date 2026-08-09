@@ -4205,15 +4205,7 @@ class AppLocalizationsMs extends AppLocalizations {
       'Mulakan koleksi penanda buku baharu';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Belum ada set penanda buku. Cipta yang pertama!';
-
-  @override
   String get shareMenuError => 'Ralat';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Gagal memuatkan set penanda buku';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

@@ -4177,15 +4177,7 @@ class AppLocalizationsUr extends AppLocalizations {
       'نیا بک مارک مجموعہ شروع کریں';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'ابھی کوئی بک مارک سیٹ نہیں۔ اپنا پہلا بنائیں!';
-
-  @override
   String get shareMenuError => 'خرابی';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'بک مارک سیٹس لوڈ نہیں ہو سکے';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

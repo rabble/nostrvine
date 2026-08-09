@@ -4171,15 +4171,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Starta en ny bokmärkessamling';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Inga bokmärkessamlingar än. Skapa din första!';
-
-  @override
   String get shareMenuError => 'Fel';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Kunde inte läsa in bokmärkessamlingar';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

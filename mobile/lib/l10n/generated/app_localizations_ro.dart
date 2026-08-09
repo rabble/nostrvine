@@ -4293,15 +4293,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Începe o colecție nouă de semne de carte';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Încă nu ai seturi de semne de carte. Creează-l pe primul!';
-
-  @override
   String get shareMenuError => 'Eroare';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'N-am putut încărca seturile de semne de carte';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

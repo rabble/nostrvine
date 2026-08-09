@@ -4234,15 +4234,7 @@ class AppLocalizationsFil extends AppLocalizations {
       'Magsimula ng bagong koleksyon ng bookmark';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Wala pang bookmark sets. Gumawa ng una mo!';
-
-  @override
   String get shareMenuError => 'Error';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Hindi na-load ang mga bookmark set';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

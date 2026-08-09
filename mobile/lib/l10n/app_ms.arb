@@ -2310,9 +2310,7 @@
   "shareMenuSetNameHint": "cth. Kegemaran, Tonton Nanti, dsb.",
   "shareMenuCreateNewSet": "Cipta Set Baharu",
   "shareMenuStartNewBookmarkCollection": "Mulakan koleksi penanda buku baharu",
-  "shareMenuNoBookmarkSets": "Belum ada set penanda buku. Cipta yang pertama!",
   "shareMenuError": "Ralat",
-  "shareMenuFailedToLoadBookmarkSets": "Gagal memuatkan set penanda buku",
   "shareMenuCreatedSetAndAddedVideo": "\"{name}\" dicipta dan video ditambah",
   "@shareMenuCreatedSetAndAddedVideo": {
     "placeholders": {
