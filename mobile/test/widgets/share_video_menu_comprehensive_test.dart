@@ -117,7 +117,13 @@ void main() {
     ).thenReturn(false);
     when(
       () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
-    ).thenAnswer((_) async => true);
+    ).thenAnswer(
+      (_) async => const BookmarkToggleResult(
+        succeeded: true,
+        wasBookmarked: false,
+        isBookmarked: true,
+      ),
+    );
     when(
       () => mockBookmarkService.getVideoBookmarkSummary(any()),
     ).thenReturn('Not bookmarked');
@@ -348,7 +354,13 @@ void main() {
       ).thenReturn(false);
       when(
         () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
-      ).thenAnswer((_) async => true);
+      ).thenAnswer(
+        (_) async => const BookmarkToggleResult(
+          succeeded: true,
+          wasBookmarked: false,
+          isBookmarked: true,
+        ),
+      );
 
       await tester.pumpWidget(buildSubject());
       await tester.tap(find.byType(ShareActionButton));
@@ -372,7 +384,13 @@ void main() {
       ).thenReturn(false);
       when(
         () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
-      ).thenAnswer((_) async => false);
+      ).thenAnswer(
+        (_) async => const BookmarkToggleResult(
+          succeeded: false,
+          wasBookmarked: false,
+          isBookmarked: false,
+        ),
+      );
 
       await tester.pumpWidget(buildSubject());
       await tester.tap(find.byType(ShareActionButton));

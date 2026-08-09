@@ -5,8 +5,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/nostr_list_service_mixin.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -130,8 +130,31 @@ class BookmarkSet {
   );
 }
 
+/// Outcome of [BookmarkService.toggleVideoInGlobalBookmarks].
+///
+/// Carries the state observed *after* reconciling with the relay, so callers
+/// render "Saved" / "Removed" from what actually happened rather than from a
+/// local read that predates the sync.
+class BookmarkToggleResult {
+  const BookmarkToggleResult({
+    required this.succeeded,
+    required this.wasBookmarked,
+    required this.isBookmarked,
+  });
+
+  /// Whether the change reconciled and a relay accepted the new list.
+  final bool succeeded;
+
+  /// Whether the video was bookmarked before the toggle, per the relay.
+  final bool wasBookmarked;
+
+  /// Whether the video is bookmarked now. Equals [wasBookmarked] when the
+  /// toggle failed, since nothing was published.
+  final bool isBookmarked;
+}
+
 /// Service for managing NIP-51 bookmarks and bookmark sets
-class BookmarkService with NostrListServiceMixin {
+class BookmarkService {
   BookmarkService({
     required NostrClient nostrService,
     required AuthService authService,
@@ -146,15 +169,12 @@ class BookmarkService with NostrListServiceMixin {
   final AuthService _authService;
   final SharedPreferences _prefs;
 
-  // Mixin interface implementations
-  @override
-  NostrClient get nostrService => _nostrService;
-  @override
-  AuthService get authService => _authService;
-
   static const String globalBookmarksStorageKey = 'global_bookmarks';
   static const String bookmarkSetsStorageKey = 'bookmark_sets';
   static const String globalBookmarksId = 'global_bookmarks';
+
+  /// NIP-51 kind for the uncategorized ("global") bookmark list.
+  static const int globalBookmarksKind = 10003;
 
   // Global bookmarks (Kind 10003)
   final List<BookmarkItem> _globalBookmarks = [];
@@ -162,50 +182,87 @@ class BookmarkService with NostrListServiceMixin {
   // Bookmark sets (Kind 30003)
   final List<BookmarkSet> _bookmarkSets = [];
 
-  bool _isInitialized = false;
+  /// The `content` of the newest kind-10003 we have seen for this user.
+  ///
+  /// NIP-51 reserves `.content` for the NIP-44-encrypted private item array.
+  /// Divine cannot read those items yet, so it carries the ciphertext through
+  /// untouched instead of overwriting another client's private bookmarks.
+  String _lastKnownRemoteContent = '';
 
   // Getters
   List<BookmarkItem> get globalBookmarks => List.unmodifiable(_globalBookmarks);
   List<BookmarkSet> get bookmarkSets => List.unmodifiable(_bookmarkSets);
-  bool get isInitialized => _isInitialized;
 
-  /// Initialize the service
-  Future<void> initialize() async {
+  // === GLOBAL BOOKMARKS (Kind 10003) ===
+
+  /// Reconciles [globalBookmarks] against the user's kind-10003 on the relay.
+  ///
+  /// Returns `false` when the remote list could not be established — signed
+  /// out, no reachable relay, or a timed-out query. **Callers that are about
+  /// to publish must not write on `false`**: kind 10003 is replaceable, so
+  /// republishing a list this device never reconciled deletes every bookmark
+  /// it has not seen (see `replaceable-event-preservation`).
+  ///
+  /// A zero-event answer is only trusted when the relay actually answered,
+  /// which is why this uses [NostrClient.queryEventsDetailed] rather than
+  /// [NostrClient.queryEvents] — the latter cannot tell "you have no
+  /// bookmarks" apart from "nobody replied", and treating the second as the
+  /// first is precisely how the list gets destroyed.
+  Future<bool> syncGlobalBookmarks() async {
+    final pubkey = _authService.currentPublicKeyHex;
+    if (!_authService.isAuthenticated || pubkey == null) {
+      Log.warning(
+        'Skipping bookmark sync - user not authenticated',
+        name: 'BookmarkService',
+        category: LogCategory.system,
+      );
+      return false;
+    }
+
     try {
-      if (!_authService.isAuthenticated) {
+      final result = await _nostrService.queryEventsDetailed([
+        Filter(kinds: [globalBookmarksKind], authors: [pubkey], limit: 1),
+      ]);
+
+      if (result.timedOut || result.noRelays) {
         Log.warning(
-          'Cannot initialize bookmarks - user not authenticated',
+          'Bookmark sync inconclusive (timedOut=${result.timedOut}, '
+          'noRelays=${result.noRelays}) - remote list left unchanged',
           name: 'BookmarkService',
           category: LogCategory.system,
         );
-        return;
+        return false;
       }
 
-      // 1. Load from SharedPreferences cache (fast, may be stale)
-      _loadBookmarksFromSharedPreferences();
+      final events = result.events
+          .where((event) => event.kind == globalBookmarksKind)
+          .toList();
+      if (events.isEmpty) {
+        // The relay answered and has nothing: a genuinely empty list.
+        _globalBookmarks.clear();
+        _lastKnownRemoteContent = '';
+      } else {
+        events.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        _adoptGlobalBookmarksFromEvent(events.first);
+      }
 
-      // 2. Load from relay (authoritative)
-      await _loadBookmarksFromNostr();
-
-      // 3. Update SharedPreferences cache for next startup
       await _saveBookmarksToSharedPreferences();
 
-      _isInitialized = true;
       Log.info(
-        'Bookmark service initialized with ${_globalBookmarks.length} global bookmarks and ${_bookmarkSets.length} bookmark sets',
+        'Synced ${_globalBookmarks.length} global bookmarks from relay',
         name: 'BookmarkService',
         category: LogCategory.system,
       );
+      return true;
     } catch (e) {
       Log.error(
-        'Failed to initialize bookmark service: $e',
+        'Failed to sync global bookmarks from relay: $e',
         name: 'BookmarkService',
         category: LogCategory.system,
       );
+      return false;
     }
   }
-
-  // === GLOBAL BOOKMARKS (Kind 10003) ===
 
   /// Add a video event to global bookmarks
   Future<bool> addVideoToGlobalBookmarks(
@@ -225,26 +282,71 @@ class BookmarkService with NostrListServiceMixin {
 
   /// If [videoEventId] is globally bookmarked, removes it; otherwise adds it.
   ///
-  /// Uses the same persistence and Nostr publish path as
-  /// [addVideoToGlobalBookmarks] / [removeVideoFromGlobalBookmarks].
-  Future<bool> toggleVideoInGlobalBookmarks(
+  /// The direction is decided *after* reconciling with the relay, so a video
+  /// bookmarked on another device is removed rather than added a second time.
+  /// The returned [BookmarkToggleResult] carries both the reconciled
+  /// before-state and the resulting state; callers must not assume the
+  /// direction from their own pre-read.
+  Future<BookmarkToggleResult> toggleVideoInGlobalBookmarks(
     String videoEventId, {
     String? relay,
     String? petname,
   }) async {
-    if (isVideoBookmarkedGlobally(videoEventId)) {
-      return removeVideoFromGlobalBookmarks(videoEventId);
+    final reconciled = await syncGlobalBookmarks();
+    final wasBookmarked = isVideoBookmarkedGlobally(videoEventId);
+
+    if (!reconciled) {
+      return BookmarkToggleResult(
+        succeeded: false,
+        wasBookmarked: wasBookmarked,
+        isBookmarked: wasBookmarked,
+      );
     }
-    return addVideoToGlobalBookmarks(
-      videoEventId,
-      relay: relay,
-      petname: petname,
+
+    final succeeded = wasBookmarked
+        ? await removeFromGlobalBookmarks(
+            BookmarkItem(type: 'e', id: videoEventId),
+            alreadyReconciled: true,
+          )
+        : await addToGlobalBookmarks(
+            BookmarkItem(
+              type: 'e',
+              id: videoEventId,
+              relay: relay,
+              petname: petname,
+            ),
+            alreadyReconciled: true,
+          );
+
+    return BookmarkToggleResult(
+      succeeded: succeeded,
+      wasBookmarked: wasBookmarked,
+      isBookmarked: succeeded ? !wasBookmarked : wasBookmarked,
     );
   }
 
-  /// Add an item to global bookmarks
-  Future<bool> addToGlobalBookmarks(BookmarkItem item) async {
+  /// Add an item to global bookmarks.
+  ///
+  /// Reconciles with the relay first and refuses to publish if that fails, so
+  /// a device whose cache is empty (fresh install, second device) cannot
+  /// replace the user's list with a one-item one.
+  ///
+  /// Pass [alreadyReconciled] when the caller has just run
+  /// [syncGlobalBookmarks] and the extra round trip would be redundant.
+  Future<bool> addToGlobalBookmarks(
+    BookmarkItem item, {
+    bool alreadyReconciled = false,
+  }) async {
     try {
+      if (!alreadyReconciled && !await syncGlobalBookmarks()) {
+        Log.warning(
+          'Not adding to global bookmarks: could not reconcile with relay',
+          name: 'BookmarkService',
+          category: LogCategory.system,
+        );
+        return false;
+      }
+
       // Check if already bookmarked
       if (_globalBookmarks.contains(item)) {
         Log.debug(
@@ -258,10 +360,8 @@ class BookmarkService with NostrListServiceMixin {
       _globalBookmarks.add(item);
       await _saveBookmarks();
 
-      // Publish to Nostr if authenticated
-      if (_authService.isAuthenticated) {
-        await _publishGlobalBookmarksToNostr();
-      }
+      final published = await _publishGlobalBookmarksToNostr();
+      if (!published) return false;
 
       Log.info(
         'Added item to global bookmarks: ${item.id}',
@@ -280,9 +380,25 @@ class BookmarkService with NostrListServiceMixin {
     }
   }
 
-  /// Remove an item from global bookmarks
-  Future<bool> removeFromGlobalBookmarks(BookmarkItem item) async {
+  /// Remove an item from global bookmarks.
+  ///
+  /// Reconciles with the relay first for the same reason as
+  /// [addToGlobalBookmarks] — the republished list must be the user's real
+  /// one minus [item], not this device's cache minus [item].
+  Future<bool> removeFromGlobalBookmarks(
+    BookmarkItem item, {
+    bool alreadyReconciled = false,
+  }) async {
     try {
+      if (!alreadyReconciled && !await syncGlobalBookmarks()) {
+        Log.warning(
+          'Not removing from global bookmarks: could not reconcile with relay',
+          name: 'BookmarkService',
+          category: LogCategory.system,
+        );
+        return false;
+      }
+
       final removed = _globalBookmarks.remove(item);
       if (!removed) {
         Log.warning(
@@ -295,10 +411,8 @@ class BookmarkService with NostrListServiceMixin {
 
       await _saveBookmarks();
 
-      // Update on Nostr if authenticated
-      if (_authService.isAuthenticated) {
-        await _publishGlobalBookmarksToNostr();
-      }
+      final published = await _publishGlobalBookmarksToNostr();
+      if (!published) return false;
 
       Log.info(
         'Removed item from global bookmarks: ${item.id}',
@@ -600,8 +714,12 @@ class BookmarkService with NostrListServiceMixin {
     }
   }
 
-  /// Publish global bookmarks to Nostr as NIP-51 kind 10003 event
-  Future<void> _publishGlobalBookmarksToNostr() async {
+  /// Publish global bookmarks to Nostr as NIP-51 kind 10003 event.
+  ///
+  /// Returns whether a relay accepted the event. Callers treat `false` as a
+  /// failed mutation so the UI can say the save did not stick, rather than
+  /// showing a bookmark that exists only on this device.
+  Future<bool> _publishGlobalBookmarksToNostr() async {
     try {
       if (!_authService.isAuthenticated) {
         Log.warning(
@@ -609,7 +727,7 @@ class BookmarkService with NostrListServiceMixin {
           name: 'BookmarkService',
           category: LogCategory.system,
         );
-        return;
+        return false;
       }
 
       // Create NIP-51 kind 10003 tags
@@ -621,27 +739,38 @@ class BookmarkService with NostrListServiceMixin {
       }
 
       final event = await _authService.createAndSignEvent(
-        kind: 10003, // NIP-51 global bookmarks
-        content: 'Divine global bookmarks',
+        kind: globalBookmarksKind,
+        // NIP-51 reserves `content` for the encrypted private item array, so
+        // it is either the ciphertext we read back or empty — never prose.
+        content: _lastKnownRemoteContent,
         tags: tags,
       );
 
-      if (event != null) {
-        final sentEvent = await _nostrService.publishEvent(event);
-        if (sentEvent is PublishSuccess) {
-          Log.debug(
-            'Published global bookmarks to Nostr: ${event.id}',
-            name: 'BookmarkService',
-            category: LogCategory.system,
-          );
-        }
+      if (event == null) return false;
+
+      final sentEvent = await _nostrService.publishEvent(event);
+      if (sentEvent is! PublishSuccess) {
+        Log.warning(
+          'Relay did not accept global bookmarks: ${event.id}',
+          name: 'BookmarkService',
+          category: LogCategory.system,
+        );
+        return false;
       }
+
+      Log.debug(
+        'Published global bookmarks to Nostr: ${event.id}',
+        name: 'BookmarkService',
+        category: LogCategory.system,
+      );
+      return true;
     } catch (e) {
       Log.error(
         'Failed to publish global bookmarks to Nostr: $e',
         name: 'BookmarkService',
         category: LogCategory.system,
       );
+      return false;
     }
   }
 
@@ -713,61 +842,13 @@ class BookmarkService with NostrListServiceMixin {
 
   // === NOSTR LOADING ===
 
-  /// Load bookmarks from relay (authoritative)
-  Future<void> _loadBookmarksFromNostr() async {
-    try {
-      // Get all our published events using the universal query
-      final myEvents = await getMyPublishedEvents();
-
-      // Filter for bookmark-related events
-      final bookmarkEvents = filterMyEventsByKind(myEvents, [10003, 30003]);
-
-      if (bookmarkEvents.isEmpty) {
-        Log.debug(
-          'No bookmark events found in relay',
-          name: 'BookmarkService',
-          category: LogCategory.system,
-        );
-        return;
-      }
-
-      // Process global bookmarks (kind 10003) - latest replaces previous
-      final globalBookmarkEvents = bookmarkEvents
-          .where((e) => e.kind == 10003)
-          .toList();
-      if (globalBookmarkEvents.isNotEmpty) {
-        // Sort by created_at to get the latest
-        globalBookmarkEvents.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        _parseGlobalBookmarksFromEvent(globalBookmarkEvents.first);
-        Log.debug(
-          'Loaded global bookmarks from Nostr event: ${globalBookmarkEvents.first.id}',
-          name: 'BookmarkService',
-          category: LogCategory.system,
-        );
-      }
-
-      // Process bookmark sets (kind 30003) - latest per d-tag
-      final bookmarkSetEvents = filterMyParameterizedEvents(myEvents, [30003]);
-      for (final event in bookmarkSetEvents.values) {
-        _parseBookmarkSetFromEvent(event);
-      }
-
-      Log.info(
-        'Loaded ${_globalBookmarks.length} global bookmarks and ${_bookmarkSets.length} bookmark sets from relay',
-        name: 'BookmarkService',
-        category: LogCategory.system,
-      );
-    } catch (e) {
-      Log.error(
-        'Failed to load bookmarks from relay: $e',
-        name: 'BookmarkService',
-        category: LogCategory.system,
-      );
-    }
-  }
-
-  /// Parse global bookmarks from NIP-51 kind 10003 event
-  void _parseGlobalBookmarksFromEvent(Event event) {
+  /// Replace the in-memory list with the contents of a kind-10003 [event].
+  ///
+  /// Also captures `event.content`. Divine cannot decrypt NIP-51 private
+  /// items, so carrying the ciphertext through unchanged is what keeps a
+  /// republish from deleting bookmarks another client stored privately.
+  void _adoptGlobalBookmarksFromEvent(Event event) {
+    _lastKnownRemoteContent = event.content;
     _globalBookmarks.clear();
 
     for (final tag in event.tags) {
@@ -781,68 +862,6 @@ class BookmarkService with NostrListServiceMixin {
         _globalBookmarks.add(item);
       }
     }
-  }
-
-  /// Parse bookmark set from NIP-51 kind 30003 event
-  void _parseBookmarkSetFromEvent(Event event) {
-    // Extract d-tag (identifier)
-    String? dTag;
-    String? title;
-    String? description;
-    String? imageUrl;
-
-    for (final tag in event.tags) {
-      if (tag.length >= 2) {
-        switch (tag[0]) {
-          case 'd':
-            dTag = tag[1];
-          case 'title':
-            title = tag[1];
-          case 'description':
-            description = tag[1];
-          case 'image':
-            imageUrl = tag[1];
-        }
-      }
-    }
-
-    if (dTag == null) {
-      Log.warning(
-        'Bookmark set event missing d-tag: ${event.id}',
-        name: 'BookmarkService',
-        category: LogCategory.system,
-      );
-      return;
-    }
-
-    // Parse bookmark items from tags
-    final items = <BookmarkItem>[];
-    for (final tag in event.tags) {
-      if (tag.length >= 2 && ['e', 'a', 't', 'r'].contains(tag[0])) {
-        final item = BookmarkItem(
-          type: tag[0],
-          id: tag[1],
-          relay: tag.length > 2 ? tag[2] : null,
-          petname: tag.length > 3 ? tag[3] : null,
-        );
-        items.add(item);
-      }
-    }
-
-    final bookmarkSet = BookmarkSet(
-      id: dTag,
-      name: title ?? dTag,
-      description: description,
-      imageUrl: imageUrl,
-      items: items,
-      createdAt: event.createdAtDateTime,
-      updatedAt: event.createdAtDateTime,
-      nostrEventId: event.id,
-    );
-
-    // Remove existing set with same ID and add updated one
-    _bookmarkSets.removeWhere((set) => set.id == dTag);
-    _bookmarkSets.add(bookmarkSet);
   }
 
   // === STORAGE ===
