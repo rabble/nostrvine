@@ -1,5 +1,6 @@
 # ABOUTME: Codemagic CI/CD configuration for Divine mobile app builds.
-# ABOUTME: Configured for iOS and Android builds with manual triggering only.
+# ABOUTME: iOS and Android builds trigger manually; e2e-smoke-ios also runs
+# ABOUTME: on pull requests targeting main (non-blocking until baselined).
 
 # Steps to setup:
 # 1 - Create the Codemagic project with access to the repository.
@@ -378,6 +379,11 @@ definitions:
       name: Install Maestro CLI
       script: |
         set -e
+        # Pinned: 2.1.0 is the version the smoke suite was repaired and
+        # verified against on real devices (#6948). An unpinned install lets
+        # a Maestro release break CI with no commit on our side. Bump
+        # deliberately and re-verify the suite before merging the bump.
+        export MAESTRO_VERSION=2.1.0
         curl -Ls "https://get.maestro.mobile.dev" | bash
         export PATH="$PATH:$HOME/.maestro/bin"
         maestro --version
@@ -392,10 +398,15 @@ definitions:
         for var in MAESTRO_USER_EMAIL MAESTRO_USER_PWD; do
           if [ -z "$(eval echo \"\$$var\")" ]; then
             echo "Missing $var — add it to the maestro_e2e_credentials group." >&2
+            echo "If this build is for a pull request from a FORK: Codemagic" >&2
+            echo "withholds secure variables from outside-contributor builds by" >&2
+            echo "design, so the suite cannot run here. Not a code failure — a" >&2
+            echo "maintainer can re-run it for you." >&2
             exit 1
           fi
         done
         maestro test \
+          --format junit --output report.xml \
           -e USER_EMAIL="$MAESTRO_USER_EMAIL" \
           -e USER_PWD="$MAESTRO_USER_PWD" \
           e2e/maestro/suites/smoke.yaml
@@ -741,7 +752,19 @@ workflows:
         - $HOME/Library/Caches/CocoaPods
         - $HOME/.pub-cache
     triggering:
-      events: []
+      events:
+        # Runs on every PR targeting main, on the proposed changes in the
+        # source branch. Credentials reach same-repo PRs; Codemagic withholds
+        # secure variables from fork builds, which then stop at the
+        # credential guard with an explanation. NON-BLOCKING by team decision
+        # until a flake baseline exists — do not mark this workflow as a
+        # required check yet.
+        - pull_request
+      branch_patterns:
+        - pattern: 'main'
+          include: true
+          source: false
+      cancel_previous_builds: true
     scripts:
       - *check_signing_endpoint
       - *clean_ios_workspace_state
@@ -758,6 +781,8 @@ workflows:
       - build/ios/iphonesimulator/Runner.app
       - /tmp/xcodebuild_logs/*.log
       - ~/.maestro/tests/**
+      - report.xml
+    test_report: report.xml
 
   e2e-smoke-android:
     name: E2E Smoke Tests (Android)
@@ -792,3 +817,5 @@ workflows:
     artifacts:
       - build/app/outputs/flutter-apk/app-debug.apk
       - ~/.maestro/tests/**
+      - report.xml
+    test_report: report.xml
