@@ -8,6 +8,7 @@ import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
+import 'package:openvine/blocs/followers/follower_visibility.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part 'others_followers_event.dart';
@@ -44,18 +45,6 @@ class OthersFollowersBloc
   final FollowRepository _followRepository;
   final ContentBlocklistRepository _blocklistRepository;
   final String _currentUserPubkey;
-
-  /// Filter pubkeys by removing blocked users.
-  List<String> _filterPubkeys(
-    List<String> pubkeys, {
-    required bool isFollowingTarget,
-  }) => pubkeys
-      .where(
-        (pk) =>
-            !_blocklistRepository.isBlocked(pk) &&
-            !(!isFollowingTarget && pk == _currentUserPubkey),
-      )
-      .toList();
 
   /// Handle request to load another user's followers list.
   ///
@@ -96,9 +85,11 @@ class OthersFollowersBloc
           final isFollowingTarget = _followRepository.isFollowing(
             event.targetPubkey,
           );
-          final visiblePubkeys = _filterPubkeys(
-            result.data.pubkeys,
+          final visiblePubkeys = filterOtherFollowerPubkeys(
+            pubkeys: result.data.pubkeys,
+            blocklistRepository: _blocklistRepository,
             isFollowingTarget: isFollowingTarget,
+            currentUserPubkey: _currentUserPubkey,
           );
           return state.copyWith(
             status: .success,
@@ -148,9 +139,11 @@ class OthersFollowersBloc
     // Only increment if not already in the list
     if (!rawPubkeys.contains(event.followerPubkey)) {
       final newRaw = [...rawPubkeys, event.followerPubkey];
-      final visiblePubkeys = _filterPubkeys(
-        newRaw,
+      final visiblePubkeys = filterOtherFollowerPubkeys(
+        pubkeys: newRaw,
+        blocklistRepository: _blocklistRepository,
         isFollowingTarget: state.isFollowingTarget,
+        currentUserPubkey: _currentUserPubkey,
       );
       emit(
         state.copyWith(
@@ -179,9 +172,11 @@ class OthersFollowersBloc
       final newRaw = rawPubkeys
           .where((pubkey) => pubkey != event.followerPubkey)
           .toList();
-      final visiblePubkeys = _filterPubkeys(
-        newRaw,
+      final visiblePubkeys = filterOtherFollowerPubkeys(
+        pubkeys: newRaw,
+        blocklistRepository: _blocklistRepository,
         isFollowingTarget: state.isFollowingTarget,
+        currentUserPubkey: _currentUserPubkey,
       );
       emit(
         state.copyWith(
@@ -207,9 +202,11 @@ class OthersFollowersBloc
     Emitter<OthersFollowersState> emit,
   ) {
     if (state.status != OthersFollowersStatus.success) return;
-    final visiblePubkeys = _filterPubkeys(
-      state.rawFollowersPubkeys,
+    final visiblePubkeys = filterOtherFollowerPubkeys(
+      pubkeys: state.rawFollowersPubkeys,
+      blocklistRepository: _blocklistRepository,
       isFollowingTarget: state.isFollowingTarget,
+      currentUserPubkey: _currentUserPubkey,
     );
     // followerCount derives from the unchanged authoritative count, so
     // re-filtering alone updates it.

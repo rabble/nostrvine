@@ -18,6 +18,7 @@ class ProfileFollowingStat extends ConsumerWidget {
   const ProfileFollowingStat({
     required this.pubkey,
     required this.displayName,
+    required this.isOwnProfile,
     this.initialCount,
     super.key,
   });
@@ -28,6 +29,9 @@ class ProfileFollowingStat extends ConsumerWidget {
   /// The display name of the user for the following screen title.
   final String? displayName;
 
+  /// Whether this is the current user's own profile.
+  final bool isOwnProfile;
+
   /// Initial count from profile data, shown while the BLoC loads.
   final int? initialCount;
 
@@ -36,10 +40,10 @@ class ProfileFollowingStat extends ConsumerWidget {
     final followRepository = ref.watch(followRepositoryProvider);
     final nostrClient = ref.watch(nostrServiceProvider);
     final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
-    final isCurrentUser = pubkey == nostrClient.publicKey;
 
-    if (isCurrentUser) {
+    if (isOwnProfile) {
       return BlocProvider(
+        key: ValueKey((followRepository, blocklistRepository, pubkey)),
         create: (_) => MyFollowingBloc(
           followRepository: followRepository,
           contentBlocklistRepository: blocklistRepository,
@@ -52,6 +56,14 @@ class ProfileFollowingStat extends ConsumerWidget {
       );
     } else {
       return BlocProvider(
+        key: ValueKey(
+          (
+            followRepository,
+            blocklistRepository,
+            nostrClient.publicKey,
+            pubkey,
+          ),
+        ),
         create: (_) => OthersFollowingBloc(
           followRepository: followRepository,
           contentBlocklistRepository: blocklistRepository,

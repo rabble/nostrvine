@@ -67,10 +67,10 @@ final class MyFollowersState extends Equatable {
   /// [authoritativeFollowerCount] may exceed the number of pubkeys actually
   /// fetched. Followers we know are hidden locally are subtracted from it, and
   /// the result never drops below the number of followers on screen.
-  int get followerCount => max(
-    followersPubkeys.length,
-    authoritativeFollowerCount -
-        (rawFollowersPubkeys.length - followersPubkeys.length),
+  int get followerCount => visibleFollowerCount(
+    visiblePubkeyCount: followersPubkeys.length,
+    rawPubkeyCount: rawFollowersPubkeys.length,
+    authoritativeFollowerCount: authoritativeFollowerCount,
   );
 
   /// True while cached data is shown but a fresh network fetch is in progress.

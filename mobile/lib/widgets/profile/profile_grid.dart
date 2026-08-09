@@ -671,6 +671,12 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     // follow/unfollow action.
     if (!widget.isOwnProfile) {
       return BlocProvider<OthersFollowersBloc>(
+        key: ValueKey((
+          followRepository,
+          contentBlocklistRepository,
+          currentUserPubkey,
+          widget.userIdHex,
+        )),
         create: (_) => OthersFollowersBloc(
           followRepository: followRepository,
           contentBlocklistRepository: contentBlocklistRepository,

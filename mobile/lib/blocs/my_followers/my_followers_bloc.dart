@@ -1,12 +1,11 @@
 // ABOUTME: BLoC for displaying current user's followers list
 // ABOUTME: Fetches Kind 3 events that mention current user in 'p' tags
 
-import 'dart:math';
-
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
+import 'package:openvine/blocs/followers/follower_visibility.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part 'my_followers_event.dart';
@@ -35,15 +34,6 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
   final FollowRepository _followRepository;
   final ContentBlocklistRepository _blocklistRepository;
 
-  /// Filter pubkeys by removing blocked and follow-severed users.
-  List<String> _filterPubkeys(List<String> pubkeys) => pubkeys
-      .where(
-        (pk) =>
-            !_blocklistRepository.isBlocked(pk) &&
-            !_blocklistRepository.isFollowSevered(pk),
-      )
-      .toList();
-
   /// The rows to show: [rawPubkeys] arranged for [sortOrder], then filtered.
   ///
   /// Ordering runs first because filtering preserves relative order, so the
@@ -52,11 +42,12 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
     required List<String> rawPubkeys,
     required int datedCount,
     required FollowSortOrder sortOrder,
-  }) => _filterPubkeys(
-    sortOrder.fromNewestFirst(
+  }) => filterMyFollowerPubkeys(
+    pubkeys: sortOrder.fromNewestFirst(
       rawPubkeys,
       datedCount: datedCount,
     ),
+    blocklistRepository: _blocklistRepository,
   );
 
   /// Handle request to load current user's followers list.

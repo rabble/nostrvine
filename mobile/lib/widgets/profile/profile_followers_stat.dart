@@ -41,6 +41,7 @@ class ProfileFollowersStat extends ConsumerWidget {
 
     if (isOwnProfile) {
       return BlocProvider(
+        key: ValueKey((followRepository, blocklistRepository, pubkey)),
         create: (_) => MyFollowersBloc(
           followRepository: followRepository,
           contentBlocklistRepository: blocklistRepository,
@@ -128,7 +129,9 @@ class _OthersFollowersStatView extends ConsumerWidget {
         final isLoading =
             state.status == OthersFollowersStatus.initial ||
             state.status == OthersFollowersStatus.loading;
-        final hasLoadedCount = state.status == OthersFollowersStatus.success;
+        final hasLoadedCount =
+            state.status == OthersFollowersStatus.success &&
+            state.targetPubkey == pubkey;
 
         return ProfileStatColumn(
           count: hasLoadedCount ? state.followerCount : initialCount,

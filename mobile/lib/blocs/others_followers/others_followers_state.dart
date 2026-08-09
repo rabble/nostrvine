@@ -58,10 +58,10 @@ final class OthersFollowersState extends Equatable {
   /// fetched. Followers we know are hidden locally (blocked, or a
   /// follow-severed viewer) are subtracted from it, and the result never
   /// drops below the number of followers on screen.
-  int get followerCount => max(
-    followersPubkeys.length,
-    authoritativeFollowerCount -
-        (rawFollowersPubkeys.length - followersPubkeys.length),
+  int get followerCount => visibleFollowerCount(
+    visiblePubkeyCount: followersPubkeys.length,
+    rawPubkeyCount: rawFollowersPubkeys.length,
+    authoritativeFollowerCount: authoritativeFollowerCount,
   );
 
   /// The pubkey whose followers list is being viewed (for retry)

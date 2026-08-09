@@ -337,6 +337,7 @@ class _ProfileStatsRowState extends State<_ProfileStatsRow> {
         ProfileFollowingStat(
           pubkey: widget.userIdHex,
           displayName: widget.displayName,
+          isOwnProfile: widget.isOwnProfile,
           initialCount: widget.profileStats!.following,
         ),
       if (isLoading)
