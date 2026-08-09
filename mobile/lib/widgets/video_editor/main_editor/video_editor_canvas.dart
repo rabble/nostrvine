@@ -8,13 +8,11 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/foundation.dart' show kReleaseMode, listEquals;
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart' hide Layer;
 import 'package:flutter/scheduler.dart' show Ticker;
 import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/draw_editor/video_editor_draw_bloc.dart';
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
@@ -27,9 +25,10 @@ import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
-import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:openvine/models/video_editor/caption_layer_mapping.dart';
+import 'package:openvine/models/video_editor/clip_history_direction.dart';
+import 'package:openvine/models/video_editor/clip_snapshot_sync_op.dart';
 import 'package:openvine/models/video_editor/transition_geometry.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -41,11 +40,14 @@ import 'package:openvine/services/video_editor/transition_seam_render_service.da
 import 'package:openvine/utils/await_push_transition.dart';
 import 'package:openvine/utils/mounted_post_frame.dart';
 import 'package:openvine/utils/path_resolver.dart';
+import 'package:openvine/utils/video_editor_playhead.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/video_editor/main_editor/hit_test_expander.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_clip_preview.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_cut_area_overlay.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_feed_preview_overlay.dart';
-import 'package:openvine/widgets/video_editor/main_editor/video_editor_player.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
-import 'package:openvine/widgets/video_editor/main_editor/video_editor_thumbnail.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_setup_loading_indicator.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
 import 'package:openvine/widgets/video_editor/tune_editor/tune_set_timeline_ops.dart';
@@ -54,28 +56,6 @@ import 'package:pro_image_editor/pro_image_editor.dart'
 import 'package:pro_video_editor/pro_video_editor.dart' show ClipTransition;
 import 'package:sound_service/sound_service.dart' show AudioSourceConfig;
 import 'package:unified_logger/unified_logger.dart';
-
-/// Direction an undo/redo navigation moved, used to bias which way
-/// [VideoEditorCanvas.resolveClipSnapshotSync] steps past an orphan-only
-/// history entry. [none] is for non-navigation syncs (init, add/remove layer).
-enum ClipHistoryDirection { undo, redo, none }
-
-/// What `_VideoEditorState._syncMainCapabilities` should do with the clip
-/// snapshot read from the editor's current undo/redo history entry.
-enum ClipSnapshotSyncOp {
-  /// Mirror the resolvable clips into the app clip state (normal path).
-  sync,
-
-  /// The entry carries no clip metadata at all — nothing to reconcile.
-  skip,
-
-  /// The entry's clips are all orphaned; step the editor history backward to
-  /// the nearest state whose media still exists.
-  stepBackward,
-
-  /// As [stepBackward], but step forward.
-  stepForward,
-}
 
 /// The main canvas area for the video editor.
 ///
@@ -1344,7 +1324,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
                   return Stack(
                     fit: StackFit.passthrough,
                     children: [
-                      _ClipPreview(
+                      VideoEditorClipPreview(
                         clip: clip,
                         controller: _videoPlayer,
                         bodySize: widget.bodySize,
@@ -2616,7 +2596,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
             videoEditor: VideoEditorConfigs(
               showControls: false,
               widgets: VideoEditorWidgets(
-                videoSetupLoadingIndicator: _VideoSetupLoadingIndicator(
+                videoSetupLoadingIndicator: VideoEditorSetupLoadingIndicator(
                   renderSize: widget.renderSize,
                   bodySize: widget.bodySize,
                   targetAspectRatio: targetAspectRatio,
@@ -2882,40 +2862,6 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
   }
 }
 
-class _VideoSetupLoadingIndicator extends StatelessWidget {
-  const _VideoSetupLoadingIndicator({
-    required this.renderSize,
-    required this.bodySize,
-    required this.targetAspectRatio,
-  });
-
-  final Size renderSize;
-  final Size bodySize;
-  final model.AspectRatio targetAspectRatio;
-
-  @override
-  Widget build(BuildContext context) {
-    // Contain mode: the visible area is targetAspectRatio fitted in renderSize
-    final containSize = Size(
-      renderSize.height * targetAspectRatio.value,
-      renderSize.height,
-    );
-    final containRadius = Radius.circular(
-      VideoEditorConstants.canvasRadius * containSize.width / bodySize.width,
-    );
-
-    return Center(
-      child: ClipRRect(
-        borderRadius: BorderRadius.all(containRadius),
-        child: SizedBox.fromSize(
-          size: containSize,
-          child: VideoEditorThumbnail(contentSize: containSize),
-        ),
-      ),
-    );
-  }
-}
-
 class _CanvasFitter extends ConsumerWidget {
   const _CanvasFitter({required this.builder});
 
@@ -2959,9 +2905,8 @@ class _CanvasFitter extends ConsumerWidget {
         }
 
         // The visual chain below (Center > SizedBox > FittedBox >
-        // SizedBox > Navigator) is unchanged — it owns the aspect-ratio
-        // mapping (cover-fit [renderSize] into [targetSize], centered
-        // in [bodySize]).
+        // SizedBox > Navigator) owns the aspect-ratio mapping: cover-fit
+        // [renderSize] into [targetSize], centered in [bodySize].
         //
         // [HitTestExpander] wraps it so that taps in the scrim /
         // letterbox zone (outside [targetSize]) are clamped to the
@@ -2970,7 +2915,7 @@ class _CanvasFitter extends ConsumerWidget {
         // pointer event that falls outside its child rect, so the
         // editor's top-level GestureDetector never opens an arena and
         // [onScaleStart] / [onScaleUpdate] never fire.
-        return _OverlayCutArea(
+        return VideoEditorCutAreaOverlay(
           child: HitTestExpander(
             visibleSize: targetSize,
             child: Center(
@@ -2995,379 +2940,4 @@ class _CanvasFitter extends ConsumerWidget {
       },
     );
   }
-}
-
-/// Maps the editor's zoom [editorMatrix] (expressed in the editor's
-/// render-space, where pinch translation is in render pixels) into the
-/// body-space transform for the letterbox scrim, so the bars track the
-/// magnified video instead of lagging behind it.
-///
-/// The editor content is cover-fitted from its render size into
-/// [targetSize] and centered in [boxSize]. With that fit+centre affine
-/// `A`, the on-screen effect of `editorMatrix` (`M`) in body coordinates is
-/// `A · M · A⁻¹`. For a zoom-only `M` (uniform scale `k`, translation `t`),
-/// that reduces to: same scale `k`, translation `coverScale·t + (1-k)·d`,
-/// where `d` is the body-space offset of the render origin. Without the
-/// `coverScale` factor the bars move too little.
-///
-/// Assumes a scale+translate matrix (pinch zoom on the canvas); any
-/// rotation/skew is collapsed to a uniform scale by
-/// [Matrix4.getMaxScaleOnAxis]. Returns the identity transform for a
-/// degenerate (zero-area) box so the scrim renders untransformed.
-@visibleForTesting
-Matrix4 scrimZoomTransform({
-  required Matrix4 editorMatrix,
-  required Size boxSize,
-  required Size targetSize,
-  required double originalAspectRatio,
-}) {
-  final renderHeight = boxSize.shortestSide;
-  final renderWidth = renderHeight * originalAspectRatio;
-  if (renderWidth <= 0 || renderHeight <= 0) return Matrix4.identity();
-
-  final coverScale = max(
-    targetSize.width / renderWidth,
-    targetSize.height / renderHeight,
-  );
-  final dx = (boxSize.width - coverScale * renderWidth) / 2;
-  final dy = (boxSize.height - coverScale * renderHeight) / 2;
-
-  final k = editorMatrix.getMaxScaleOnAxis();
-  final t = editorMatrix.getTranslation();
-
-  return Matrix4.identity()
-    ..setEntry(0, 0, k)
-    ..setEntry(1, 1, k)
-    ..setEntry(0, 3, coverScale * t.x + (1 - k) * dx)
-    ..setEntry(1, 3, coverScale * t.y + (1 - k) * dy);
-}
-
-class _OverlayCutArea extends ConsumerWidget {
-  const _OverlayCutArea({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final targetAspectRatio = ref.watch(
-      clipManagerProvider.select((s) => s.firstClipOrNull?.targetAspectRatio),
-    );
-    if (targetAspectRatio == null) return const SizedBox.shrink();
-
-    // Dims the area outside the target aspect ratio toward the canvas
-    // backdrop, so the two stay in step across appearance modes.
-    final overlayColor = context.vineColors.surfaceContainerHigh.withAlpha(
-      166,
-    );
-    final safeArea = MediaQuery.paddingOf(context);
-    final scope = VideoEditorScope.of(context);
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final boxSize = constraints.biggest;
-        // Compute the visible child size: largest rect with
-        // targetAspectRatio that fits inside boxSize (BoxFit.contain).
-        final double childWidth;
-        final double childHeight;
-        if (boxSize.width / boxSize.height > targetAspectRatio.value) {
-          childHeight = boxSize.height;
-          childWidth = boxSize.height * targetAspectRatio.value;
-        } else {
-          childWidth = boxSize.width;
-          childHeight = boxSize.width / targetAspectRatio.value;
-        }
-        final verticalGap = (boxSize.height - childHeight) / 2;
-        final horizontalGap = (boxSize.width - childWidth) / 2;
-
-        final scrimBars = _ScrimBars(
-          overlayColor: overlayColor,
-          verticalGap: verticalGap,
-          horizontalGap: horizontalGap,
-          safeAreaTop: safeArea.top,
-        );
-
-        return Stack(
-          fit: StackFit.expand,
-          clipBehavior: .none,
-          children: [
-            child,
-
-            ValueListenableBuilder<Matrix4>(
-              valueListenable: scope.zoomMatrixNotifier,
-              builder: (context, matrix, child) => Transform(
-                transform: scrimZoomTransform(
-                  editorMatrix: matrix,
-                  boxSize: boxSize,
-                  targetSize: Size(childWidth, childHeight),
-                  originalAspectRatio: scope.originalClipAspectRatio,
-                ),
-                child: child,
-              ),
-              child: scrimBars,
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-/// The dark letterbox bars that frame the visible target rect. The bars sit
-/// outside the [verticalGap] / [horizontalGap] cut area and are non-
-/// interactive; [_OverlayCutArea] applies the zoom transform around them.
-class _ScrimBars extends StatelessWidget {
-  const _ScrimBars({
-    required this.overlayColor,
-    required this.verticalGap,
-    required this.horizontalGap,
-    required this.safeAreaTop,
-  });
-
-  final Color overlayColor;
-  final double verticalGap;
-  final double horizontalGap;
-  final double safeAreaTop;
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Stack(
-        fit: StackFit.expand,
-        clipBehavior: .none,
-        children: [
-          // Top bar — extends up into the safe area so there is no
-          // uncovered strip above the scrim when the canvas is padded
-          // below the status bar.
-          if (verticalGap > 0 || safeAreaTop > 0)
-            Positioned(
-              top: -safeAreaTop,
-              left: 0,
-              right: 0,
-              height: verticalGap + safeAreaTop,
-              child: ColoredBox(color: overlayColor),
-            ),
-          // Bottom bar
-          if (verticalGap > 0)
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: verticalGap,
-              child: ColoredBox(color: overlayColor),
-            ),
-          // Left bar
-          if (horizontalGap > 0)
-            Positioned(
-              top: 0,
-              bottom: 0,
-              left: 0,
-              width: horizontalGap,
-              child: ColoredBox(color: overlayColor),
-            ),
-          // Right bar
-          if (horizontalGap > 0)
-            Positioned(
-              top: 0,
-              bottom: 0,
-              right: 0,
-              width: horizontalGap,
-              child: ColoredBox(color: overlayColor),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Forwards hit-tests from the entire parent box into [child], even
-/// when the pointer falls outside [child]'s painted area.
-///
-/// Layout / paint are unchanged — [child] is laid out with the parent
-/// constraints and painted at offset zero, exactly like a passthrough
-/// wrapper. Only [hitTest] is customised: positions outside the
-/// centered [visibleSize] rect are clamped to its nearest edge so the
-/// downstream hit-test chain (which clips to `Center > SizedBox`) sees
-/// a position it accepts and forwards the down event normally.
-///
-/// Subsequent move events flow through the gesture arena that the
-/// initial down opens, so [GestureDetector.onScaleUpdate] still
-/// receives real-pointer deltas.
-@visibleForTesting
-class HitTestExpander extends SingleChildRenderObjectWidget {
-  /// Creates a [HitTestExpander].
-  @visibleForTesting
-  const HitTestExpander({
-    required this.visibleSize,
-    required Widget super.child,
-    super.key,
-  });
-
-  /// The size of the painted, hit-testable region inside the parent
-  /// box, centered on both axes. Hits outside this rect are clamped
-  /// onto its nearest edge before being forwarded.
-  final Size visibleSize;
-
-  // The render object is a true implementation detail; the widget is
-  // only public for `@visibleForTesting`.
-  @override
-  // ignore: library_private_types_in_public_api
-  _RenderHitTestExpander createRenderObject(BuildContext context) {
-    return _RenderHitTestExpander(visibleSize: visibleSize);
-  }
-
-  @override
-  void updateRenderObject(
-    BuildContext context,
-    // ignore: library_private_types_in_public_api
-    _RenderHitTestExpander renderObject,
-  ) {
-    renderObject.visibleSize = visibleSize;
-  }
-}
-
-class _RenderHitTestExpander extends RenderProxyBox {
-  _RenderHitTestExpander({required Size visibleSize})
-    : _visibleSize = visibleSize;
-
-  /// Symmetric 1 px inset applied when clamping a hit position onto
-  /// the visible rect. Required because downstream transforms
-  /// (FittedBox cover-fit) can map an exact `left`/`top` value to a
-  /// slightly negative local coordinate after float multiplication,
-  /// which then fails `Rect.contains` and drops the hit. The trailing
-  /// inset is needed because `Rect.contains` excludes the right /
-  /// bottom edge.
-  static const double _hitTestEpsilon = 1.0;
-
-  Size _visibleSize;
-  set visibleSize(Size value) {
-    if (value == _visibleSize) return;
-    _visibleSize = value;
-    // No markNeedsLayout/Paint: layout and paint don't depend on
-    // [visibleSize] — only [hitTest] does, and that runs per-event.
-  }
-
-  @override
-  bool hitTest(BoxHitTestResult result, {required Offset position}) {
-    final c = child;
-    if (c == null) return false;
-    final left = (size.width - _visibleSize.width) / 2;
-    final top = (size.height - _visibleSize.height) / 2;
-    final clampedDx = position.dx.clamp(
-      left + _hitTestEpsilon,
-      left + _visibleSize.width - _hitTestEpsilon,
-    );
-    final clampedDy = position.dy.clamp(
-      top + _hitTestEpsilon,
-      top + _visibleSize.height - _hitTestEpsilon,
-    );
-    return c.hitTest(result, position: Offset(clampedDx, clampedDy));
-  }
-}
-
-/// The preview surface for the current clip: a [DivineVideoPlayer] for a normal
-/// clip, or a controlled [StopMotionPlayer] for a frames-only stop-motion clip.
-///
-/// The stop-motion branch subscribes to the editor's `currentPosition` so the
-/// shown frame follows play/pause and timeline scrubbing. That subscription is
-/// scoped here — a normal clip never rebuilds on position ticks.
-class _ClipPreview extends StatelessWidget {
-  const _ClipPreview({
-    required this.clip,
-    required this.controller,
-    required this.bodySize,
-    required this.renderSize,
-  });
-
-  final DivineVideoClip clip;
-  final DivineVideoPlayerController? controller;
-  final Size bodySize;
-  final Size renderSize;
-
-  @override
-  Widget build(BuildContext context) {
-    final clipManagerFrames = clip.stopMotionFrames;
-    if (clipManagerFrames == null) {
-      return VideoEditorPlayer(
-        controller: controller,
-        targetAspectRatio: clip.targetAspectRatio,
-        originalAspectRatio: clip.originalAspectRatio,
-        bodySize: bodySize,
-        renderSize: renderSize,
-      );
-    }
-
-    // Read the live frame list from the clip editor, not the clip-manager copy:
-    // frame edits (delete / reorder / frames-per-image) land in ClipEditorBloc
-    // immediately, whereas the clip-manager copy syncs one post-frame later
-    // through the history path.
-    return BlocSelector<
-      ClipEditorBloc,
-      ClipEditorState,
-      List<StopMotionClipFrame>?
-    >(
-      selector: (state) {
-        for (final c in state.clips) {
-          if (c.id == clip.id) return c.stopMotionFrames;
-        }
-        return null;
-      },
-      builder: (context, liveFrames) {
-        final frames = liveFrames ?? clipManagerFrames;
-        return BlocSelector<
-          VideoEditorMainBloc,
-          VideoEditorMainState,
-          Duration
-        >(
-          selector: (state) => state.currentPosition,
-          builder: (context, position) => VideoEditorPlayer(
-            controller: controller,
-            targetAspectRatio: clip.targetAspectRatio,
-            originalAspectRatio: clip.originalAspectRatio,
-            bodySize: bodySize,
-            renderSize: renderSize,
-            stopMotionFrames: frames,
-            stopMotionPosition: position,
-          ),
-        );
-      },
-    );
-  }
-}
-
-/// Interpolates a composite playback position forward from [anchor] by the
-/// wall-clock [elapsed] since the anchor was captured, scaled by playback
-/// [speed], and clamped to `[Duration.zero, maxDuration]`.
-///
-/// Drives the layer overlay's play time at display refresh rate between the
-/// native player's coarse (~5 Hz) position reports so enter/leave animations
-/// animate smoothly during playback instead of stepping.
-@visibleForTesting
-Duration interpolatePlayheadPosition({
-  required Duration anchor,
-  required Duration elapsed,
-  required double speed,
-  required Duration maxDuration,
-}) {
-  final raw = anchor + elapsed * speed;
-  if (raw < Duration.zero) return Duration.zero;
-  if (raw > maxDuration) return maxDuration;
-  return raw;
-}
-
-/// Advances the frames-only stop-motion playhead forward from [anchor] by the
-/// wall-clock [elapsed], wrapping around [total] so playback loops seamlessly.
-///
-/// A frames-only stop-motion clip has no native player to report position, so
-/// this drives the editor timeline directly (see
-/// `_VideoEditorState._onStopMotionTick`). Returns [Duration.zero] when [total]
-/// is non-positive.
-@visibleForTesting
-Duration stopMotionLoopPosition({
-  required Duration anchor,
-  required Duration elapsed,
-  required Duration total,
-}) {
-  if (total <= Duration.zero) return Duration.zero;
-  final raw = (anchor + elapsed).inMicroseconds;
-  return Duration(microseconds: raw % total.inMicroseconds);
 }
