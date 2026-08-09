@@ -331,6 +331,8 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
                     icon: DivineIconName.gear,
                     type: DivineIconButtonType.ghostSecondary,
                     size: DivineIconButtonSize.small,
+                    semanticLabel: context.l10n.settingsTitle,
+                    semanticIdentifier: SemanticIds.profileSettingsButton,
                     onPressed: () => context.push(SettingsScreen.path),
                   )
                 else if (widget.onBack != null)
@@ -338,6 +340,8 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
                     icon: DivineIconName.caretLeft,
                     type: DivineIconButtonType.ghostSecondary,
                     size: DivineIconButtonSize.small,
+                    semanticLabel: context.l10n.commonBack,
+                    semanticIdentifier: SemanticIds.profileBackButton,
                     onPressed: widget.onBack,
                   ),
                 if (widget.onMore != null)
@@ -345,6 +349,8 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
                     icon: DivineIconName.dotsThree,
                     type: DivineIconButtonType.ghostSecondary,
                     size: DivineIconButtonSize.small,
+                    semanticLabel: context.l10n.profileMoreTooltip,
+                    semanticIdentifier: SemanticIds.profileMoreButton,
                     onPressed: widget.onMore,
                   ),
               ],

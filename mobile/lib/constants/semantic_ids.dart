@@ -24,6 +24,13 @@ abstract class SemanticIds {
 
   static const String profileStatsRow = 'profile_stats_row';
 
+  /// Opens Settings from the own-profile header. This is the only entry
+  /// point to Settings in the app, so it gates every E2E flow that ends in
+  /// key removal.
+  static const String profileSettingsButton = 'settings_button';
+  static const String profileBackButton = 'profile_back_button';
+  static const String profileMoreButton = 'profile_more_button';
+
   static String listCard(int index) => 'list_card_$index';
 
   static String categoryTile(int index) => 'category_tile_$index';
