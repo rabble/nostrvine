@@ -34,12 +34,14 @@ void main() {
         tmp = Directory.systemTemp.createTempSync('cache_recovery_hive_test');
         Hive.init(tmp.path);
         await TestHelpers.cleanupHiveBox('notifications');
+        await TestHelpers.cleanupHiveBox('push_notification_preferences_dirty');
         await TestHelpers.cleanupHiveBox('pending_uploads');
         await TestHelpers.cleanupHiveBox('video_cache');
       });
 
       tearDown(() async {
         await TestHelpers.cleanupHiveBox('notifications');
+        await TestHelpers.cleanupHiveBox('push_notification_preferences_dirty');
         await TestHelpers.cleanupHiveBox('pending_uploads');
         await TestHelpers.cleanupHiveBox('video_cache');
         if (tmp.existsSync()) tmp.deleteSync(recursive: true);
@@ -83,18 +85,34 @@ void main() {
           final notifications = Hive.isBoxOpen('notifications')
               ? Hive.box('notifications')
               : await Hive.openBox('notifications');
+          final dirtyNotifications =
+              Hive.isBoxOpen('push_notification_preferences_dirty')
+              ? Hive.box('push_notification_preferences_dirty')
+              : await Hive.openBox('push_notification_preferences_dirty');
           final videoCache = Hive.isBoxOpen('video_cache')
               ? Hive.box('video_cache')
               : await Hive.openBox('video_cache');
           const preferences = NotificationPreferences(commentsEnabled: false);
+          const dirtyPreferencesKey =
+              'push_preferences_dirty_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
           final storedPreferences = jsonEncode(preferences.toJson());
           await notifications.put('push_preferences', storedPreferences);
+          await dirtyNotifications.put(
+            dirtyPreferencesKey,
+            storedPreferences,
+          );
           await videoCache.put('cache-id', 'cached video');
 
           await CacheRecoveryService.clearHiveBoxesForTesting();
 
           expect(
             Hive.box('notifications').get('push_preferences'),
+            storedPreferences,
+          );
+          expect(
+            Hive.box(
+              'push_notification_preferences_dirty',
+            ).get(dirtyPreferencesKey),
             storedPreferences,
           );
           expect(Hive.isBoxOpen('video_cache'), isFalse);
@@ -160,6 +178,47 @@ void main() {
         expect(temp.existsSync(), isFalse);
         expect(cache.existsSync(), isFalse);
       });
+
+      test(
+        'preserves durable notification preferences during clearAllCaches',
+        () async {
+          final notifications = write(
+            'support/openvine/notifications.hive',
+            'preferences',
+          );
+          final notificationsLock = write(
+            'support/openvine/notifications.lock',
+            'lock',
+          );
+          final dirtyPreferences = write(
+            'support/openvine/push_notification_preferences_dirty.hive',
+            'dirty preferences',
+          );
+          final dirtyPreferencesLock = write(
+            'support/openvine/push_notification_preferences_dirty.lock',
+            'lock',
+          );
+          final cacheSync = write(
+            'support/openvine/cache/cache_sync.db',
+            'cache',
+          );
+          final scratch = write('support/openvine/scratch.txt', 'scratch');
+          final temp = write('temp/transient.tmp', 'temp');
+          final cache = write('cache/download.bin', 'cache');
+
+          final recovered = await CacheRecoveryService.clearAllCaches();
+
+          expect(recovered, isTrue);
+          expect(notifications.existsSync(), isTrue);
+          expect(notificationsLock.existsSync(), isTrue);
+          expect(dirtyPreferences.existsSync(), isTrue);
+          expect(dirtyPreferencesLock.existsSync(), isTrue);
+          expect(cacheSync.existsSync(), isFalse);
+          expect(scratch.existsSync(), isFalse);
+          expect(temp.existsSync(), isFalse);
+          expect(cache.existsSync(), isFalse);
+        },
+      );
     });
 
     group('deleteDirectoryContentsExcept', () {

@@ -59,15 +59,14 @@ class CacheRecoveryService {
     int cleared = 0;
 
     try {
-      // Get all open boxes and clear them
-      // Note: We iterate over known box names instead of trying to access all open boxes
+      // Get all open boxes and clear them. We iterate over known disposable box
+      // names instead of trying to access all open boxes.
       final knownBoxNames = [
-        'user_profiles',
         'personal_events',
         'personal_events_metadata',
-        'bookmarks',
+        'hashtag_stats',
+        'people_lists_v1',
         'video_cache',
-        'secure_keys',
       ];
 
       for (final boxName in knownBoxNames) {
@@ -134,9 +133,17 @@ class CacheRecoveryService {
     'database',
   ];
 
-  static const List<List<String>> _durablePendingUploadsBoxSegments = [
-    ['openvine', 'pending_uploads.hive'],
-    ['openvine', 'pending_uploads.lock'],
+  static const List<String> _durableHiveBoxNames = [
+    'pending_uploads',
+    'notifications',
+    'push_notification_preferences_dirty',
+  ];
+
+  static List<List<String>> get _durableHiveBoxFileSegments => [
+    for (final boxName in _durableHiveBoxNames) ...[
+      ['openvine', '$boxName.hive'],
+      ['openvine', '$boxName.lock'],
+    ],
   ];
 
   /// Clear app support directory (NOT Documents - that's sandboxed on macOS),
@@ -149,14 +156,14 @@ class CacheRecoveryService {
         appSupportDir.path,
         ..._durableDatabaseDirSegments,
       ]);
-      final protectedPendingUploadsPaths = [
-        for (final segments in _durablePendingUploadsBoxSegments)
+      final protectedHiveBoxPaths = [
+        for (final segments in _durableHiveBoxFileSegments)
           p.joinAll([appSupportDir.path, ...segments]),
       ];
       return await deleteDirectoryContentsExcept(
         appSupportDir,
         protectedPath: protectedPath,
-        additionalProtectedPaths: protectedPendingUploadsPaths,
+        additionalProtectedPaths: protectedHiveBoxPaths,
       );
     } catch (e) {
       Log.warning(
