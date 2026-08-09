@@ -42,8 +42,11 @@ class BugReportConfig {
       'nsec1[a-z0-9]{58}',
       caseSensitive: false,
     ), // nsec private keys (bech32)
-    // Note: We do NOT redact 64-char hex strings because that would redact public event IDs and pubkeys
-    // Private keys should always be in nsec format anyway
+    RegExp('ncryptsec1[a-z0-9]+', caseSensitive: false),
+    // Note: we do not redact 64-char hex strings because that would also
+    // redact public event IDs and pubkeys. Hex-form private keys are an
+    // accepted residual risk for diagnostic triage value.
+    // NIP-46 bunker secrets are covered by the generic secret pattern below.
     RegExp(r'password[:\s=]+\S+', caseSensitive: false),
     RegExp(r'token[:\s=]+\S+', caseSensitive: false),
     RegExp(r'secret[:\s=]+\S+', caseSensitive: false),
@@ -59,4 +62,14 @@ class BugReportConfig {
     LogLevel.warning,
     LogLevel.error,
   };
+}
+
+/// Sanitize one user-provided or diagnostic text field before it reaches a
+/// public or shareable support payload.
+String sanitizeDiagnosticText(String input) {
+  var sanitized = input;
+  for (final pattern in BugReportConfig.sensitivePatterns) {
+    sanitized = sanitized.replaceAll(pattern, '[REDACTED]');
+  }
+  return sanitized;
 }

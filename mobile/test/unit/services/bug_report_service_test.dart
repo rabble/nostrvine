@@ -10,6 +10,10 @@ import 'package:models/models.dart' show BugReportData, LogEntry, LogLevel;
 import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/services/bug_report_service.dart';
 
+const _rawNsec =
+    'nsec1qqqsyrhq4p4d8hf40q7tlujzw87hqhz9axhfnm35s2a3u3rrnwsq9sp5p6';
+const _rawNcryptsec = 'ncryptsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq';
+
 void main() {
   group('BugReportService', () {
     late BugReportService service;
@@ -99,6 +103,16 @@ void main() {
       expect(data.errorCounts, {'NewVideosTab:feed_load_failed': 1});
     });
 
+    test('collectDiagnostics returns sanitized description', () async {
+      final data = await service.collectDiagnostics(
+        userDescription: 'My key is $_rawNsec and email liz@example.com',
+      );
+
+      expect(data.userDescription, isNot(contains(_rawNsec)));
+      expect(data.userDescription, isNot(contains('liz@example.com')));
+      expect(data.userDescription, contains('[REDACTED]'));
+    });
+
     test(
       'should populate deviceInfo on mobile platforms',
       () async {
@@ -118,8 +132,7 @@ void main() {
       final input = BugReportData(
         reportId: 'test-123',
         timestamp: DateTime.now(),
-        userDescription:
-            'My nsec is nsec1qqqsyrhq4p4d8hf40q7tlujzw87hqhz9axhfnm35s2a3u3rrnwsq9sp5p6',
+        userDescription: 'My nsec is $_rawNsec',
         deviceInfo: {},
         appVersion: '1.0.0',
         recentLogs: [],
@@ -129,6 +142,23 @@ void main() {
       final sanitized = service.sanitizeSensitiveData(input);
 
       expect(sanitized.userDescription, isNot(contains('nsec1')));
+      expect(sanitized.userDescription, contains('[REDACTED]'));
+    });
+
+    test('should sanitize ncryptsec keys from description', () {
+      final input = BugReportData(
+        reportId: 'test-123',
+        timestamp: DateTime.now(),
+        userDescription: 'My encrypted key is $_rawNcryptsec',
+        deviceInfo: {},
+        appVersion: '1.0.0',
+        recentLogs: [],
+        errorCounts: {},
+      );
+
+      final sanitized = service.sanitizeSensitiveData(input);
+
+      expect(sanitized.userDescription, isNot(contains('ncryptsec1')));
       expect(sanitized.userDescription, contains('[REDACTED]'));
     });
 
@@ -244,6 +274,36 @@ void main() {
       expect(log.stackTrace, isNot(contains('liz@example.com')));
       expect(sanitized.userDescription, contains('[REDACTED]'));
       expect(log.message, contains('[REDACTED]'));
+    });
+
+    test('should sanitize nsec keys from log entries', () {
+      final input = BugReportData(
+        reportId: 'test-123',
+        timestamp: DateTime.now(),
+        userDescription: 'Normal description',
+        deviceInfo: {},
+        appVersion: '1.0.0',
+        recentLogs: [
+          LogEntry(
+            timestamp: DateTime.now(),
+            level: LogLevel.error,
+            message: 'Message included $_rawNsec',
+            error: 'Error included $_rawNsec',
+            stackTrace: 'Stack included $_rawNsec',
+          ),
+        ],
+        errorCounts: {},
+      );
+
+      final sanitized = service.sanitizeSensitiveData(input);
+      final log = sanitized.recentLogs.single;
+
+      expect(log.message, isNot(contains(_rawNsec)));
+      expect(log.error, isNot(contains(_rawNsec)));
+      expect(log.stackTrace, isNot(contains(_rawNsec)));
+      expect(log.message, contains('[REDACTED]'));
+      expect(log.error, contains('[REDACTED]'));
+      expect(log.stackTrace, contains('[REDACTED]'));
     });
 
     test('should redact device names from diagnostic device info', () {

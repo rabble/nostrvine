@@ -4,6 +4,10 @@ import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 
+const _rawNsec =
+    'nsec1qqqsyrhq4p4d8hf40q7tlujzw87hqhz9axhfnm35s2a3u3rrnwsq9sp5p6';
+const _rawNcryptsec = 'ncryptsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -443,6 +447,46 @@ void main() {
       expect(capturedDescription, 'Something broke');
       expect(capturedTags, ['mobile', 'bug']);
     });
+
+    test('sanitizes public ticket fields before native submission', () async {
+      Map<String, dynamic>? capturedArgs;
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (MethodCall call) async {
+            if (call.method == 'initialize') return true;
+            if (call.method == 'createTicket') {
+              capturedArgs = Map<String, dynamic>.from(call.arguments as Map);
+              return true;
+            }
+            return null;
+          });
+
+      await ZendeskSupportService.initialize(
+        appId: 'test',
+        clientId: 'test',
+        zendeskUrl: 'https://test.zendesk.com',
+      );
+
+      await ZendeskSupportService.createTicket(
+        subject: 'Bug $_rawNsec',
+        description: 'Description $_rawNcryptsec and liz@example.com',
+        customFields: [
+          {'id': 123, 'value': 'Field $_rawNsec'},
+        ],
+      );
+
+      expect(capturedArgs, isNotNull);
+      final customFields = capturedArgs!['customFields'] as List<dynamic>;
+      final customField = customFields.single as Map<dynamic, dynamic>;
+
+      expect(capturedArgs!['subject'], isNot(contains(_rawNsec)));
+      expect(capturedArgs!['description'], isNot(contains(_rawNcryptsec)));
+      expect(capturedArgs!['description'], isNot(contains('liz@example.com')));
+      expect(customField['value'], isNot(contains(_rawNsec)));
+      expect(capturedArgs!['subject'], contains('[REDACTED]'));
+      expect(capturedArgs!['description'], contains('[REDACTED]'));
+      expect(customField['value'], contains('[REDACTED]'));
+    });
   });
 
   group('ZendeskSupportService.createTicket attachmentPaths', () {
@@ -821,6 +865,51 @@ void main() {
         (f) => (f as Map)['id'] == 14884184890511,
       );
       expect((buildField as Map)['value'], '99');
+    });
+
+    test('sanitizes feature request fields before native submission', () async {
+      Map<String, dynamic>? capturedArgs;
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (MethodCall call) async {
+            if (call.method == 'initialize') return true;
+            if (call.method == 'createTicket') {
+              capturedArgs = Map<String, dynamic>.from(call.arguments as Map);
+              return true;
+            }
+            return null;
+          });
+
+      await ZendeskSupportService.initialize(
+        appId: 'test',
+        clientId: 'test',
+        zendeskUrl: 'https://test.zendesk.com',
+      );
+
+      final result = await ZendeskSupportService.createFeatureRequest(
+        subject: 'Feature $_rawNsec',
+        description: 'Description $_rawNcryptsec',
+        usefulness: 'Useful for liz@example.com',
+        whenToUse: 'When importing $_rawNsec',
+      );
+
+      expect(result, isTrue);
+      expect(capturedArgs, isNotNull);
+      final customFields = capturedArgs!['customFields'] as List<dynamic>;
+      final values = customFields
+          .map((field) {
+            return (field as Map<dynamic, dynamic>)['value'] as String;
+          })
+          .join('\n');
+
+      expect(capturedArgs!['subject'], isNot(contains(_rawNsec)));
+      expect(capturedArgs!['description'], isNot(contains(_rawNsec)));
+      expect(capturedArgs!['description'], isNot(contains(_rawNcryptsec)));
+      expect(capturedArgs!['description'], isNot(contains('liz@example.com')));
+      expect(values, isNot(contains(_rawNsec)));
+      expect(values, isNot(contains('liz@example.com')));
+      expect(capturedArgs!['description'], contains('[REDACTED]'));
+      expect(values, contains('[REDACTED]'));
     });
   });
 

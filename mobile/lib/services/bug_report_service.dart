@@ -185,6 +185,8 @@ class BugReportService {
   /// Upload full diagnostic logs to Blossom server.
   /// Returns the Blossom URL on success, null on any failure.
   /// Best-effort: failures are logged and return null, never throws.
+  // TODO(#6941): Wire only through a private diagnostic-log channel with
+  // documented storage, retention, access controls, and deletion ownership.
   Future<String?> uploadFullLogs(BugReportData data) async {
     if (_blossomUploadService == null) {
       Log.debug(
@@ -245,7 +247,7 @@ class BugReportService {
         name: log.name,
         error: log.error != null ? _sanitizeString(log.error!) : null,
         stackTrace: log.stackTrace != null
-            ? sanitizeText(log.stackTrace.toString())
+            ? _sanitizeString(log.stackTrace!)
             : null,
       );
     }).toList();
@@ -264,9 +266,6 @@ class BugReportService {
     );
   }
 
-  /// Sanitize one user-provided or diagnostic text field.
-  String sanitizeText(String input) => _sanitizeString(input);
-
   /// Estimate report size in bytes
   int estimateReportSize(BugReportData data) {
     final jsonString = jsonEncode(data.toJson());
@@ -277,6 +276,8 @@ class BugReportService {
   ///
   /// This method uploads the full bug report file to Blossom server,
   /// then sends a lightweight NIP-17 message with the URL
+  // TODO(#6941): Keep this out of public Zendesk/GitHub support paths until
+  // private full-log handling is defined.
   Future<BugReportResult> sendBugReportToRecipient(
     BugReportData data,
     String recipientPubkey,
@@ -1209,13 +1210,7 @@ class BugReportService {
 
   /// Sanitize a string by removing sensitive patterns
   String _sanitizeString(String input) {
-    String sanitized = input;
-
-    for (final pattern in BugReportConfig.sensitivePatterns) {
-      sanitized = sanitized.replaceAll(pattern, '[REDACTED]');
-    }
-
-    return sanitized;
+    return sanitizeDiagnosticText(input);
   }
 
   /// Sanitize a map by removing sensitive values

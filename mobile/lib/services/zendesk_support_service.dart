@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
@@ -80,6 +81,20 @@ class ZendeskSupportService {
     _nip98Service = null;
     _relayManagerUrl = null;
     _lastJwtRefreshAt = null;
+  }
+
+  static List<Map<String, dynamic>>? _sanitizeCustomFields(
+    List<Map<String, dynamic>>? customFields,
+  ) {
+    if (customFields == null) return null;
+    return [
+      for (final field in customFields)
+        {
+          ...field,
+          if (field['value'] is String)
+            'value': sanitizeDiagnosticText(field['value'] as String),
+        },
+    ];
   }
 
   /// Initialize Zendesk SDK
@@ -439,10 +454,16 @@ class ZendeskSupportService {
 
     await _ensureFreshJwt();
 
+    final sanitizedSubject = subject != null
+        ? sanitizeDiagnosticText(subject)
+        : null;
+    final sanitizedDescription = description != null
+        ? sanitizeDiagnosticText(description)
+        : null;
     try {
       await _channel.invokeMethod('showNewTicket', {
-        'subject': subject,
-        'description': description,
+        'subject': sanitizedSubject,
+        'description': sanitizedDescription,
         'tags': tags,
       });
 
@@ -464,8 +485,8 @@ class ZendeskSupportService {
         if (identitySet) {
           try {
             await _channel.invokeMethod('showNewTicket', {
-              'subject': subject,
-              'description': description,
+              'subject': sanitizedSubject,
+              'description': sanitizedDescription,
               'tags': tags,
             });
             return true;
@@ -581,30 +602,35 @@ class ZendeskSupportService {
     // This gets a fresh token every time, regardless of how long the user waited.
     await _ensureFreshJwt();
 
+    final sanitizedSubject = sanitizeDiagnosticText(subject);
+    final sanitizedDescription = sanitizeDiagnosticText(description);
+    final sanitizedCustomFields = _sanitizeCustomFields(customFields);
     try {
       final result = await _channel.invokeMethod('createTicket', {
-        'subject': subject,
-        'description': description,
+        'subject': sanitizedSubject,
+        'description': sanitizedDescription,
         'tags': tags ?? [],
         'ticketFormId': ?ticketFormId,
-        if (customFields != null && customFields.isNotEmpty)
-          'customFields': customFields,
+        if (sanitizedCustomFields != null && sanitizedCustomFields.isNotEmpty)
+          'customFields': sanitizedCustomFields,
         if (attachmentPaths != null && attachmentPaths.isNotEmpty)
           'attachmentPaths': attachmentPaths,
       });
 
       if (result == true) {
         Log.info(
-          'Zendesk ticket created successfully: $subject',
+          'Zendesk ticket created successfully: $sanitizedSubject',
           category: LogCategory.system,
         );
         return true;
       } else {
         Log.warning(
-          'Failed to create Zendesk ticket: $subject',
+          'Failed to create Zendesk ticket: $sanitizedSubject',
           category: LogCategory.system,
         );
-        _crashlytics.log('Zendesk SDK returned false for ticket: $subject');
+        _crashlytics.log(
+          'Zendesk SDK returned false for ticket: $sanitizedSubject',
+        );
         unawaited(
           _crashlytics.recordError(
             Exception('Zendesk SDK returned false'),
@@ -622,8 +648,8 @@ class ZendeskSupportService {
         category: LogCategory.system,
       );
       return createTicketViaApi(
-        subject: subject,
-        description: description,
+        subject: sanitizedSubject,
+        description: sanitizedDescription,
         requesterName: _userName,
         requesterEmail: _userEmail,
         tags: tags,
@@ -657,12 +683,13 @@ class ZendeskSupportService {
           final anonymousSet = await setAnonymousIdentityWithUserInfo();
           if (anonymousSet) {
             final retryResult = await _channel.invokeMethod('createTicket', {
-              'subject': subject,
-              'description': description,
+              'subject': sanitizedSubject,
+              'description': sanitizedDescription,
               'tags': tags ?? [],
               'ticketFormId': ?ticketFormId,
-              if (customFields != null && customFields.isNotEmpty)
-                'customFields': customFields,
+              if (sanitizedCustomFields != null &&
+                  sanitizedCustomFields.isNotEmpty)
+                'customFields': sanitizedCustomFields,
               if (attachmentPaths != null && attachmentPaths.isNotEmpty)
                 'attachmentPaths': attachmentPaths,
             });
@@ -688,8 +715,8 @@ class ZendeskSupportService {
         category: LogCategory.system,
       );
       return createTicketViaApi(
-        subject: subject,
-        description: description,
+        subject: sanitizedSubject,
+        description: sanitizedDescription,
         requesterName: _userName,
         requesterEmail: _userEmail,
         tags: tags,
@@ -699,7 +726,7 @@ class ZendeskSupportService {
         'Unexpected error creating Zendesk ticket: $e',
         category: LogCategory.system,
       );
-      _crashlytics.log('Zendesk createTicket failed: $subject');
+      _crashlytics.log('Zendesk createTicket failed: $sanitizedSubject');
       unawaited(
         _crashlytics.recordError(
           e,
@@ -754,16 +781,18 @@ class ZendeskSupportService {
       return false;
     }
 
+    final sanitizedSubject = sanitizeDiagnosticText(subject);
+    final sanitizedDescription = sanitizeDiagnosticText(description);
     try {
       Log.info(
-        'Creating Zendesk ticket via REST API: $subject',
+        'Creating Zendesk ticket via REST API: $sanitizedSubject',
         category: LogCategory.system,
       );
 
       final requestBody = {
         'ticket': {
-          'subject': subject,
-          'comment': {'body': description},
+          'subject': sanitizedSubject,
+          'comment': {'body': sanitizedDescription},
           'requester': _buildRequester(
             name: requesterName,
             email: requesterEmail,
@@ -794,7 +823,7 @@ class ZendeskSupportService {
         final responseData = jsonDecode(response.body);
         final ticketId = responseData['ticket']?['id'];
         Log.info(
-          '✅ Zendesk ticket created via API: #$ticketId - $subject',
+          '✅ Zendesk ticket created via API: #$ticketId - $sanitizedSubject',
           category: LogCategory.system,
         );
         return true;
@@ -804,7 +833,7 @@ class ZendeskSupportService {
           category: LogCategory.system,
         );
         _crashlytics.log(
-          'Zendesk REST API error ${response.statusCode}: $subject',
+          'Zendesk REST API error ${response.statusCode}: $sanitizedSubject',
         );
         unawaited(
           _crashlytics.recordError(
@@ -822,7 +851,9 @@ class ZendeskSupportService {
         error: e,
         stackTrace: stackTrace,
       );
-      _crashlytics.log('Zendesk REST API exception for ticket: $subject');
+      _crashlytics.log(
+        'Zendesk REST API exception for ticket: $sanitizedSubject',
+      );
       unawaited(
         _crashlytics.recordError(
           e,
@@ -1003,15 +1034,18 @@ class ZendeskSupportService {
       return false;
     }
 
+    final sanitizedSubject = sanitizeDiagnosticText(subject);
+    final sanitizedDescription = sanitizeDiagnosticText(description);
+    final sanitizedCustomFields = _sanitizeCustomFields(customFields) ?? [];
     try {
       final requestBody = {
         'ticket': {
-          'subject': subject,
-          'comment': {'body': description},
+          'subject': sanitizedSubject,
+          'comment': {'body': sanitizedDescription},
           'requester': _buildRequester(),
           'ticket_form_id': ticketFormId,
           'tags': tags,
-          'custom_fields': customFields,
+          'custom_fields': sanitizedCustomFields,
         },
       };
 

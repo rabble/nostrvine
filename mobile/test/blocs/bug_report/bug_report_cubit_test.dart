@@ -18,10 +18,6 @@ const _rawNsec =
     'nsec1qqqsyrhq4p4d8hf40q7tlujzw87hqhz9axhfnm35s2a3u3rrnwsq9sp5p6';
 const _rawEmail = 'liz@example.com';
 
-String _sanitizeLikeBugReportService(String input) => input
-    .replaceAll(_rawNsec, '[REDACTED]')
-    .replaceAll(_rawEmail, '[REDACTED]');
-
 BugReportData _makeReportData({
   String userDescription = '',
   List<LogEntry> recentLogs = const [],
@@ -49,10 +45,6 @@ void main() {
           additionalContext: any(named: 'additionalContext'),
         ),
       ).thenAnswer((_) async => _makeReportData());
-      when(() => service.sanitizeText(any())).thenAnswer((invocation) {
-        final input = invocation.positionalArguments.single as String;
-        return _sanitizeLikeBugReportService(input);
-      });
     });
 
     SubmitBugReportAction buildSubmit({
@@ -183,7 +175,7 @@ void main() {
     );
 
     blocTest<BugReportCubit, BugReportState>(
-      'submit sends sanitized fields and logs to Zendesk',
+      'submit sends sanitized diagnostics and logs to Zendesk',
       setUp: () {
         when(
           () => service.collectDiagnostics(
@@ -228,15 +220,15 @@ void main() {
                 List<String>? attachmentPaths,
               }) async {
                 final submitted = [
-                  subject,
                   description,
-                  stepsToReproduce,
-                  expectedBehavior,
                   logsSummary,
                 ].join('\n');
                 expect(submitted, isNot(contains(_rawNsec)));
                 expect(submitted, isNot(contains(_rawEmail)));
                 expect(submitted, contains('[REDACTED]'));
+                expect(subject, 'Crash $_rawNsec');
+                expect(stepsToReproduce, 'Step $_rawNsec');
+                expect(expectedBehavior, 'Expected $_rawEmail');
                 return true;
               },
         );
