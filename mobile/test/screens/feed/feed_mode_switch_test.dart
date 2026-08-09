@@ -14,6 +14,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/screens/feed/feed_immersive_cubit.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
+import 'package:openvine/screens/feed/feed_settings_menu.dart';
 import 'package:openvine/widgets/video_feed_item/feed_immersive_chrome.dart';
 
 class _MockVideoFeedBloc extends MockBloc<VideoFeedEvent, VideoFeedBlocState>
@@ -69,6 +70,18 @@ void main() {
       );
     }
 
+    VideoEvent video({required String id}) {
+      return VideoEvent(
+        id: id,
+        pubkey:
+            'd4e5f6789012345678901234567890abcdef123456789012345678901234a1b2c3',
+        createdAt: 1700000000,
+        content: 'Test video',
+        timestamp: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
+        videoUrl: 'https://example.com/video.mp4',
+      );
+    }
+
     group('Feed Source Labels', () {
       testWidgets('displays "For You" label for the default home source', (
         tester,
@@ -111,6 +124,33 @@ void main() {
         await tester.pumpWidget(createTestWidget());
 
         expect(find.text('Best Vines'), findsOneWidget);
+      });
+    });
+
+    group('Feed Settings', () {
+      testWidgets('passes the active video to the trailing settings menu', (
+        tester,
+      ) async {
+        final firstVideo = video(
+          id: 'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234',
+        );
+        final activeVideo = video(
+          id: 'b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234a1',
+        );
+        when(() => mockBloc.state).thenReturn(
+          VideoFeedBlocState(
+            status: VideoFeedStatus.success,
+            videos: [firstVideo, activeVideo],
+            currentIndex: 1,
+          ),
+        );
+
+        await tester.pumpWidget(createTestWidget());
+
+        expect(
+          tester.widget<FeedSettingsMenu>(find.byType(FeedSettingsMenu)).video,
+          same(activeVideo),
+        );
       });
     });
 
@@ -439,10 +479,7 @@ void main() {
           final caretRect = tester.getRect(caretIcon);
 
           await tester.tapAt(
-            Offset(
-              (textRect.right + caretRect.left) / 2,
-              textRect.center.dy,
-            ),
+            Offset((textRect.right + caretRect.left) / 2, textRect.center.dy),
           );
           await tester.pumpAndSettle();
 
@@ -549,37 +586,34 @@ void main() {
         },
       );
 
-      testWidgets(
-        'semantics label updates when the feed source changes',
-        (tester) async {
-          whenListen(
-            mockBloc,
-            Stream.fromIterable([
-              const VideoFeedBlocState(
-                status: VideoFeedStatus.success,
-                source: VideoFeedSource.following(),
-              ),
-            ]),
-            initialState: const VideoFeedBlocState(
+      testWidgets('semantics label updates when the feed source changes', (
+        tester,
+      ) async {
+        whenListen(
+          mockBloc,
+          Stream.fromIterable([
+            const VideoFeedBlocState(
               status: VideoFeedStatus.success,
-              source: VideoFeedSource.forYou(),
+              source: VideoFeedSource.following(),
             ),
-          );
-          await tester.pumpWidget(createTestWidget());
-          await tester.pump();
+          ]),
+          initialState: const VideoFeedBlocState(
+            status: VideoFeedStatus.success,
+            source: VideoFeedSource.forYou(),
+          ),
+        );
+        await tester.pumpWidget(createTestWidget());
+        await tester.pump();
 
-          final semanticsWidget = findFeedModeSemanticsWidget(
-            tester,
-            l10n.feedModeFollowing,
-          );
-          expect(
-            semanticsWidget.properties.label,
-            equals(
-              l10n.feedModeSemanticLabel(l10n.feedModeFollowing),
-            ),
-          );
-        },
-      );
+        final semanticsWidget = findFeedModeSemanticsWidget(
+          tester,
+          l10n.feedModeFollowing,
+        );
+        expect(
+          semanticsWidget.properties.label,
+          equals(l10n.feedModeSemanticLabel(l10n.feedModeFollowing)),
+        );
+      });
 
       testWidgets(
         'opens bottom sheet when the Semantics button area is tapped',

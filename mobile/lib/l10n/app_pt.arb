@@ -4052,6 +4052,8 @@
     "videoSettingsAutoAdvanceOff": "Avanço automático desativado",
     "videoSettingsCaptionsOn": "Legendas ativadas",
     "videoSettingsCaptionsOff": "Legendas desativadas",
+    "videoSettingsCaptionsOnForVideo": "Captions on for this video",
+    "videoSettingsCaptionsOffForVideo": "Captions off for this video",
     "videoActionReportLabel": "Denunciar",
     "videoActionReport": "Denunciar vídeo",
     "videoActionEditLabel": "Editar",

@@ -1214,6 +1214,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoSettingsCaptionsOff => '字幕オフ';
 
   @override
+  String get videoSettingsCaptionsOnForVideo => 'Captions on for this video';
+
+  @override
+  String get videoSettingsCaptionsOffForVideo => 'Captions off for this video';
+
+  @override
   String get contentWarningLabel => 'コンテンツ警告';
 
   @override

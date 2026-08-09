@@ -2,6 +2,7 @@
 // ABOUTME: Delegates fetch logic to fetchSubtitleCues in subtitle_fetcher.dart.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:http/http.dart' as http;
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -13,6 +14,8 @@ part 'subtitle_providers.g.dart';
 
 const _subtitleVisibilityPreferenceKey = 'subtitle_visibility_enabled';
 
+typedef SubtitleVisibilityOverride = ({String videoId, bool visible});
+
 final subtitleHttpClientProvider = Provider<http.Client>((ref) {
   final client = http.Client();
   ref.onDispose(client.close);
@@ -22,6 +25,47 @@ final subtitleHttpClientProvider = Provider<http.Client>((ref) {
 final subtitlePollDelayProvider = Provider<SubtitlePollDelay>(
   (_) => Future<void>.delayed,
 );
+
+final subtitleVisibilityOverrideProvider =
+    NotifierProvider<
+      SubtitleVisibilityOverrideNotifier,
+      SubtitleVisibilityOverride?
+    >(SubtitleVisibilityOverrideNotifier.new);
+
+final ProviderFamily<bool, String> subtitleVisibilityForVideoProvider = Provider
+    .autoDispose
+    .family<bool, String>((ref, videoId) {
+      final override = ref.watch(subtitleVisibilityOverrideProvider);
+      if (override?.videoId == videoId) return override!.visible;
+      return ref.watch(subtitleVisibilityProvider);
+    });
+
+class SubtitleVisibilityOverrideNotifier
+    extends Notifier<SubtitleVisibilityOverride?> {
+  @override
+  SubtitleVisibilityOverride? build() => null;
+
+  void setForVideo(String videoId, bool visible) {
+    if (!ref.mounted) return;
+    state = (videoId: videoId, visible: visible);
+  }
+
+  void toggleForVideo(String videoId) {
+    final current = state;
+    final currentlyVisible = current?.videoId == videoId
+        ? current!.visible
+        : ref.read(subtitleVisibilityProvider);
+    setForVideo(videoId, !currentlyVisible);
+  }
+
+  void clearUnlessVideo(String videoId) {
+    if (!ref.mounted) return;
+    final current = state;
+    if (current != null && current.videoId != videoId) {
+      state = null;
+    }
+  }
+}
 
 /// Fetches subtitle cues for a video, using ordered fallback.
 ///
@@ -47,9 +91,7 @@ Future<List<SubtitleCue>> subtitleCues(
 
   final refs = textTrackRefs.isNotEmpty
       ? textTrackRefs
-      : [
-          if (textTrackRef != null && textTrackRef.isNotEmpty) textTrackRef,
-        ];
+      : [if (textTrackRef != null && textTrackRef.isNotEmpty) textTrackRef];
   final result = await fetchSubtitleCues(
     httpClient: ref.read(subtitleHttpClientProvider),
     nostrClient: ref.read(nostrServiceProvider),

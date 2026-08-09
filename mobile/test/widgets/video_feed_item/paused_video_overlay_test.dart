@@ -75,7 +75,13 @@ void main() {
               BlocProvider<FeedAutoAdvanceCubit>.value(value: autoAdvanceCubit),
               BlocProvider<VideoVolumeCubit>.value(value: volumeCubit),
             ],
-            child: Scaffold(body: PausedVideoOverlay(controller: controller)),
+            child: Scaffold(
+              body: PausedVideoOverlay(
+                controller: controller,
+                videoId:
+                    'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234',
+              ),
+            ),
           ),
         ),
       );

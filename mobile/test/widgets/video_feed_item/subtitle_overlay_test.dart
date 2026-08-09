@@ -5,11 +5,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-VideoEvent _makeVideo() => VideoEvent(
-  id: 'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234',
+VideoEvent _makeVideo({
+  String id =
+      'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234',
+}) => VideoEvent(
+  id: id,
   pubkey: 'd4e5f6789012345678901234567890abcdef123456789012345678901234a1b2c3',
   createdAt: 1700000000,
   content: 'Test video',
@@ -146,6 +150,66 @@ void main() {
     expect(find.text('Hello there'), findsOneWidget);
 
     hostKey.currentState!.rebuildAt(const Duration(milliseconds: 1050));
+    await tester.pump();
+
+    expect(find.text('Hello there'), findsOneWidget);
+  });
+
+  testWidgets("one video's captions override does not affect another video", (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final positions = StreamController<Duration>.broadcast();
+    addTearDown(positions.close);
+    final container = ProviderContainer(
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+    );
+    addTearDown(container.dispose);
+    const videoAId =
+        'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234';
+    const videoBId =
+        'b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234a1';
+
+    container
+        .read(subtitleVisibilityOverrideProvider.notifier)
+        .setForVideo(videoAId, false);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: SubtitleCueStreamPill(
+                video: _makeVideo(),
+                positionStream: positions.stream,
+                initialPosition: const Duration(milliseconds: 300),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.text('Hello there'), findsNothing);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: SubtitleCueStreamPill(
+                video: _makeVideo(id: videoBId),
+                positionStream: positions.stream,
+                initialPosition: const Duration(milliseconds: 300),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
     await tester.pump();
 
     expect(find.text('Hello there'), findsOneWidget);

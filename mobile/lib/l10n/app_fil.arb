@@ -2666,6 +2666,8 @@
     "videoSettingsAutoAdvanceOff": "Naka-off ang auto advance",
     "videoSettingsCaptionsOn": "Naka-on ang captions",
     "videoSettingsCaptionsOff": "Naka-off ang captions",
+    "videoSettingsCaptionsOnForVideo": "Captions on for this video",
+    "videoSettingsCaptionsOffForVideo": "Captions off for this video",
     "videoActionReportLabel": "I-report",
     "videoActionReport": "I-report ang video",
     "videoActionEditLabel": "I-edit",

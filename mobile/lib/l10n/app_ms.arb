@@ -645,6 +645,8 @@
   "videoSettingsAutoAdvanceOff": "Maju automatik dimatikan",
   "videoSettingsCaptionsOn": "Sarikata dihidupkan",
   "videoSettingsCaptionsOff": "Sarikata dimatikan",
+  "videoSettingsCaptionsOnForVideo": "Captions on for this video",
+  "videoSettingsCaptionsOffForVideo": "Captions off for this video",
   "@videoSettingsCaptionsDisable": {
     "description": "Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently on."
   },

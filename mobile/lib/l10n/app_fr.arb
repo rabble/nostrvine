@@ -4052,6 +4052,8 @@
     "videoSettingsAutoAdvanceOff": "Passage automatique désactivé",
     "videoSettingsCaptionsOn": "Sous-titres activés",
     "videoSettingsCaptionsOff": "Sous-titres désactivés",
+    "videoSettingsCaptionsOnForVideo": "Captions on for this video",
+    "videoSettingsCaptionsOffForVideo": "Captions off for this video",
     "videoActionReportLabel": "Signaler",
     "videoActionReport": "Signaler la vidéo",
     "videoActionEditLabel": "Modifier",

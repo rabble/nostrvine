@@ -4052,6 +4052,8 @@
     "videoSettingsAutoAdvanceOff": "Avansare automată dezactivată",
     "videoSettingsCaptionsOn": "Subtitrări activate",
     "videoSettingsCaptionsOff": "Subtitrări dezactivate",
+    "videoSettingsCaptionsOnForVideo": "Captions on for this video",
+    "videoSettingsCaptionsOffForVideo": "Captions off for this video",
     "videoActionReportLabel": "Raportează",
     "videoActionReport": "Raportează videoclipul",
     "videoActionEditLabel": "Editează",

@@ -23,6 +23,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/community_content_label_provider.dart';
+import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_coordinator.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
@@ -137,6 +138,37 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
   /// [InfiniteVideoFeed.canAutoPlay] must consult it before starting
   /// playback — a warned video must stay paused until revealed.
   final Set<String> _revealedContentWarningVideoIds = <String>{};
+  String? _activeSubtitleVideoId;
+  late final SubtitleVisibilityOverrideNotifier _subtitleVisibilityOverrides;
+
+  @override
+  void initState() {
+    super.initState();
+    _subtitleVisibilityOverrides = ref.read(
+      subtitleVisibilityOverrideProvider.notifier,
+    );
+  }
+
+  void _syncScopedSubtitleVisibility(String videoId, {bool defer = false}) {
+    if (_activeSubtitleVideoId == videoId) return;
+    _activeSubtitleVideoId = videoId;
+    if (defer) {
+      scheduleMicrotask(
+        () => _subtitleVisibilityOverrides.clearUnlessVideo(videoId),
+      );
+      return;
+    }
+    _subtitleVisibilityOverrides.clearUnlessVideo(videoId);
+  }
+
+  void _clearScopedSubtitleVisibility({bool defer = false}) {
+    _activeSubtitleVideoId = null;
+    if (defer) {
+      scheduleMicrotask(_subtitleVisibilityOverrides.clear);
+      return;
+    }
+    _subtitleVisibilityOverrides.clear();
+  }
 
   /// Warn labels for [video] merging creator/trusted labels with any
   /// crossed-threshold community labels (#4771), so the autoplay gate and
@@ -212,6 +244,20 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
   @override
   void didUpdateWidget(covariant FeedVideos oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (!widget.isActive) {
+      _clearScopedSubtitleVisibility(defer: true);
+    } else {
+      final currentIndex =
+          _feedKey.currentState?.currentIndex ?? widget.currentIndex;
+      if (currentIndex >= 0 && currentIndex < widget.videos.length) {
+        _syncScopedSubtitleVisibility(
+          widget.videos[currentIndex].id,
+          defer: true,
+        );
+      } else {
+        _clearScopedSubtitleVisibility(defer: true);
+      }
+    }
     // When pagination settles (hasMore / isLoadingMore changed), flush any
     // pending auto-advance that was waiting on more content.
     if (widget.hasMore != oldWidget.hasMore ||
@@ -242,6 +288,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
 
   @override
   void dispose() {
+    _clearScopedSubtitleVisibility(defer: true);
     routeObserver.unsubscribe(this);
     super.dispose();
   }
@@ -249,6 +296,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
   @override
   void didPushNext() {
     if (!_routeAllowsPlayback) return;
+    _clearScopedSubtitleVisibility();
     setState(() => _routeAllowsPlayback = false);
   }
 
@@ -282,6 +330,9 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
     final appForeground = ref.watch(appForegroundProvider);
     final isFeedActive =
         widget.isActive && _routeAllowsPlayback && appForeground;
+    ref.listen(appForegroundProvider, (_, isForeground) {
+      if (!isForeground) _clearScopedSubtitleVisibility();
+    });
     // Rebuild when a community-label prefetch resolves so InfiniteVideoFeed
     // re-syncs the autoplay gate (didUpdateWidget) and pauses a video whose
     // community warning just crossed the threshold. The service only
@@ -346,6 +397,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
             .read<VideoVolumeCubit>()
             .onPlaybackVolumeChanged,
         onActiveVideoChanged: (video, index) {
+          _syncScopedSubtitleVisibility(video.id);
           _resumeAutoAdvanceAfterSwipe();
           widget.onActiveVideoChanged?.call(video, index);
         },
@@ -1039,6 +1091,7 @@ class __OverlayState extends ConsumerState<_Overlay> {
                         FeedImmersiveChrome(
                           child: PausedVideoOverlay(
                             controller: widget.controller!,
+                            videoId: video.id,
                             // Only a pause the user can undo gets the
                             // affordance. A comments/share sheet, a pushed
                             // route or a backgrounded app pauses the player

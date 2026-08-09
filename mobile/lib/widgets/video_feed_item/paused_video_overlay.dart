@@ -10,11 +10,13 @@ import 'package:openvine/widgets/video_feed_item/feed_playback_toggles_pill.dart
 class PausedVideoOverlay extends StatefulWidget {
   const PausedVideoOverlay({
     required this.controller,
+    required this.videoId,
     this.isVisible = true,
     super.key,
   });
 
   final DivineVideoPlayerController controller;
+  final String videoId;
   final bool isVisible;
 
   @override
@@ -255,7 +257,7 @@ class _PausedVideoOverlayState extends State<PausedVideoOverlay>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const FeedPlaybackTogglesPill(),
+                FeedPlaybackTogglesPill(videoId: widget.videoId),
                 const SizedBox(height: 16),
                 IgnorePointer(
                   child: CenterPlaybackControl(

@@ -1321,6 +1321,12 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoSettingsCaptionsOff => 'Субтитрите са изключени';
 
   @override
+  String get videoSettingsCaptionsOnForVideo => 'Captions on for this video';
+
+  @override
+  String get videoSettingsCaptionsOffForVideo => 'Captions off for this video';
+
+  @override
   String get contentWarningLabel => 'Предупреждение за съдържание';
 
   @override

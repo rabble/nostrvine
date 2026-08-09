@@ -1294,6 +1294,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoSettingsCaptionsOff => 'الترجمة متوقفة';
 
   @override
+  String get videoSettingsCaptionsOnForVideo => 'Captions on for this video';
+
+  @override
+  String get videoSettingsCaptionsOffForVideo => 'Captions off for this video';
+
+  @override
   String get contentWarningLabel => 'تحذير محتوى';
 
   @override

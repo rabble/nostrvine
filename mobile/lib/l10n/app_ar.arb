@@ -4052,6 +4052,8 @@
     "videoSettingsAutoAdvanceOff": "التشغيل التلقائي متوقف",
     "videoSettingsCaptionsOn": "الترجمة مفعّلة",
     "videoSettingsCaptionsOff": "الترجمة متوقفة",
+    "videoSettingsCaptionsOnForVideo": "Captions on for this video",
+    "videoSettingsCaptionsOffForVideo": "Captions off for this video",
     "videoActionReportLabel": "إبلاغ",
     "videoActionReport": "أبلِغ عن الفيديو",
     "videoActionEditLabel": "تعديل",

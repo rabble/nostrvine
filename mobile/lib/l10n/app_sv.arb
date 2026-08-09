@@ -4052,6 +4052,8 @@
     "videoSettingsAutoAdvanceOff": "Automatisk fortsättning av",
     "videoSettingsCaptionsOn": "Textning på",
     "videoSettingsCaptionsOff": "Textning av",
+    "videoSettingsCaptionsOnForVideo": "Captions on for this video",
+    "videoSettingsCaptionsOffForVideo": "Captions off for this video",
     "videoActionReportLabel": "Anmäl",
     "videoActionReport": "Anmäl video",
     "videoActionEditLabel": "Redigera",

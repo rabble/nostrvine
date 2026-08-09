@@ -3390,6 +3390,8 @@
     "videoSettingsAutoAdvanceOff": "자동 넘기기 꺼짐",
     "videoSettingsCaptionsOn": "자막 켜짐",
     "videoSettingsCaptionsOff": "자막 꺼짐",
+    "videoSettingsCaptionsOnForVideo": "Captions on for this video",
+    "videoSettingsCaptionsOffForVideo": "Captions off for this video",
     "videoActionReportLabel": "신고",
     "videoActionReport": "동영상 신고",
     "videoActionEditLabel": "편집",

@@ -1311,6 +1311,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoSettingsCaptionsOff => 'Ondertiteling uit';
 
   @override
+  String get videoSettingsCaptionsOnForVideo => 'Captions on for this video';
+
+  @override
+  String get videoSettingsCaptionsOffForVideo => 'Captions off for this video';
+
+  @override
   String get contentWarningLabel => 'Inhoudswaarschuwing';
 
   @override
