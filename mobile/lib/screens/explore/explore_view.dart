@@ -172,6 +172,17 @@ class _ExploreViewState extends ConsumerState<ExploreView>
     _pendingFeaturedSlug = null;
   }
 
+  /// Drops both launch targets once the user has chosen a tab themselves.
+  ///
+  /// The featured slug is the more damaging of the two to leave pending: its
+  /// configuration can resolve a whole poll interval later — or whenever
+  /// `starts_at` opens — so an unspent slug pulls the user off their tab long
+  /// after they moved.
+  void _spendLaunchIntent() {
+    _pendingInitialTabName = null;
+    _pendingFeaturedSlug = null;
+  }
+
   /// Releases the launch tab once it exists to be selected.
   ///
   /// A launch name for a tab that has not appeared yet is kept, so a deep link
@@ -207,6 +218,11 @@ class _ExploreViewState extends ConsumerState<ExploreView>
   @override
   void onTabChanged() {
     if (!mounted) return;
+
+    // Reached by a tap and by a swipe across TabBarView, but not by the
+    // programmatic resyncs — those install a fresh controller, which does not
+    // notify. So this is the point where a choice is known to be the user's.
+    _spendLaunchIntent();
 
     final index = tabController.index;
     final tabName = _tabsState.nameForIndex(index);
@@ -341,9 +357,9 @@ class _ExploreViewState extends ConsumerState<ExploreView>
   }
 
   void _onTabTap(int index) {
-    // An explicit choice spends the launch tab even if it never became
-    // available, so a later availability change cannot pull the user back.
-    _pendingInitialTabName = null;
+    // Covers tapping the already-active tab, which changes no index and so
+    // never reaches onTabChanged.
+    _spendLaunchIntent();
 
     // Tapping the active tab exits feed/hashtag mode; otherwise switching tabs
     // resets to grid mode if needed.

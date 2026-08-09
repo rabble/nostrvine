@@ -231,5 +231,51 @@ void main() {
 
       expect(selectedTabName(tester), equals(exploreFeaturedTabName));
     });
+
+    testWidgets('a tap before the featured config resolves wins', (
+      tester,
+    ) async {
+      // The featured slug is the worse of the two launch targets to leave
+      // pending: its configuration can arrive a whole poll interval later, or
+      // whenever starts_at opens.
+      final repository = _StagedFeaturedTabsRepository();
+      await pumpExplore(
+        tester,
+        repository: repository,
+        initialTabSlug: _featuredConfig.slug,
+      );
+
+      await tester.tap(find.text('Categories'));
+      await tester.pumpAndSettle();
+      expect(selectedTabName(tester), equals(exploreCategoriesTabName));
+
+      await tester.pump(_pollInterval + const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Spotlight'), findsOneWidget);
+      expect(selectedTabName(tester), equals(exploreCategoriesTabName));
+    });
+
+    testWidgets('a swipe before the featured config resolves wins', (
+      tester,
+    ) async {
+      // A swipe never reaches TabBar.onTap, only the controller listener.
+      final repository = _StagedFeaturedTabsRepository();
+      await pumpExplore(
+        tester,
+        repository: repository,
+        initialTabSlug: _featuredConfig.slug,
+      );
+
+      await tester.drag(find.byType(TabBarView), const Offset(-500, 0));
+      await tester.pumpAndSettle();
+      final chosen = selectedTabName(tester);
+      expect(chosen, isNot(exploreFeaturedTabName));
+
+      await tester.pump(_pollInterval + const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+
+      expect(selectedTabName(tester), equals(chosen));
+    });
   });
 }

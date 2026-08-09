@@ -156,8 +156,10 @@ class FeaturedTabsRepository {
   /// has the same problem.
   ///
   /// So the floor is [cacheTtl] and the grace scales with the cadence actually
-  /// in use: one missed poll is survived, two consecutive ones are not, which
-  /// keeps a sustained outage from stranding a killed tab on screen.
+  /// in use. Above the floor that means one missed poll is survived and two
+  /// consecutive ones are not; below it the floor dominates and buys more
+  /// retries, which is the point of having a floor at all. Either way the
+  /// window is bounded, so a sustained outage cannot strand a killed tab.
   Duration _graceFor(FeaturedTabsResponse cached) {
     final scaled = cached.pollInterval * 1.5;
     return scaled > cacheTtl ? scaled : cacheTtl;
