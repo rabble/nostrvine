@@ -4,7 +4,9 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/screens/inbox/widgets/moderation_identity.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
 /// Profile card shown when a conversation has no messages yet.
@@ -49,6 +51,9 @@ class EmptyConversation extends StatelessWidget {
             name: displayName,
             placeholderSeed: pubkey,
             size: 96,
+            contentOverride: isModerationAccount(pubkey)
+                ? const ModerationAvatar()
+                : null,
           ),
           const SizedBox(height: 32),
           // User info
