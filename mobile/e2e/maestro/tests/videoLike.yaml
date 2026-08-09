@@ -50,7 +50,8 @@ tags:
 # 4. Tap on the likes tab: Validate likes tab is loaded and video is listed
 - tapOn:
     id: "liked_tab"
-- tapOn: liked_video_thumbnail_0
+- tapOn:
+    id: "liked_video_thumbnail_0"
 - runFlow: "../asserts/assertVideoLiked.yaml"
 # The liked-grid tap opens PooledFullscreenVideoFeedScreen, which has no
 # "Close video player" control -- that label belongs to VideoDetailScreen,

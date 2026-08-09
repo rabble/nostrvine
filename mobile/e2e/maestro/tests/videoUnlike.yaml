@@ -18,7 +18,8 @@ tags:
     id: "liked_tab"
 
 # 2. Tap on 1st video of the liked tab and unlike the video: Validate video is unliked
-- tapOn: liked_video_thumbnail_0
+- tapOn:
+    id: "liked_video_thumbnail_0"
 - waitForAnimationToEnd
 - tapOn:
     id: like_button
@@ -33,4 +34,5 @@ tags:
     id: "back_button"
 - tapOn:
     id: "liked_tab"
-- assertNotVisible: liked_video_thumbnail_0
+- assertNotVisible:
+    id: "liked_video_thumbnail_0"
