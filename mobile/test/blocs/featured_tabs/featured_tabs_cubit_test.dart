@@ -190,5 +190,40 @@ void main() {
         );
       });
     });
+
+    test('a slower earlier refresh cannot resurrect a killed tab', () async {
+      // The poll timer, the foreground listener, and the minor-status
+      // listener all call refresh(). If a request issued before the kill
+      // lands after the one that resolved the tab away, the tab comes back
+      // on screen and the kill switch is defeated until the next poll.
+      final beforeKill = Completer<FeaturedTabsSnapshot>();
+      final afterKill = Completer<FeaturedTabsSnapshot>();
+      var call = 0;
+      when(
+        () => repository.refresh(viewerIsMinor: any(named: 'viewerIsMinor')),
+      ).thenAnswer((_) {
+        call++;
+        return call == 1 ? beforeKill.future : afterKill.future;
+      });
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+
+      final stale = cubit.refresh();
+      final fresh = cubit.refresh();
+
+      afterKill.complete(const FeaturedTabsSnapshot());
+      await fresh;
+      expect(cubit.state.hasTab, isFalse);
+
+      beforeKill.complete(const FeaturedTabsSnapshot(tab: _tab));
+      await stale;
+
+      expect(
+        cubit.state.hasTab,
+        isFalse,
+        reason: 'a superseded refresh must not publish',
+      );
+    });
   });
 }

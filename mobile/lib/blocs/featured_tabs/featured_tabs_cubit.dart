@@ -33,15 +33,29 @@ class FeaturedTabsCubit extends Cubit<FeaturedTabsState> {
 
   Timer? _pollTimer;
 
+  /// Sequence number of the newest started refresh.
+  ///
+  /// Request bookkeeping rather than UI state, like [_pollTimer] beside it:
+  /// nothing renders from it, so it stays off the state object.
+  int _refreshGeneration = 0;
+
   /// Fetches the configuration and reschedules the poll timer.
   ///
   /// Safe to call repeatedly; the UI calls it on mount and on app foreground.
+  ///
+  /// Three callers can overlap — the poll timer, the foreground listener, and
+  /// the minor-status listener — so a slower earlier request must not publish
+  /// after a faster later one. Without that ordering the kill switch is
+  /// defeatable: a request issued before the kill can land after the refresh
+  /// that resolved the tab away and put it back on screen until the next poll.
+  /// Only the newest generation may emit.
   Future<void> refresh() async {
     if (isClosed) return;
+    final generation = ++_refreshGeneration;
     emit(state.copyWith(status: FeaturedTabsStatus.loading));
 
     final snapshot = await _repository.refresh(viewerIsMinor: _viewerIsMinor());
-    if (isClosed) return;
+    if (isClosed || generation != _refreshGeneration) return;
 
     emit(
       FeaturedTabsState(
