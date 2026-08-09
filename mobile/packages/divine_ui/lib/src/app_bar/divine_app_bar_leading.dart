@@ -91,6 +91,18 @@ class DiVineAppBarLeading extends StatelessWidget {
   /// Asset path for the menu button icon.
   static const String menuIconAsset = 'assets/icon/menu.svg';
 
+  /// `Semantics(identifier:)` anchor for the back button.
+  ///
+  /// Only applied when [expandHitArea] is set, since that is the case where
+  /// the announced node is the outer one this widget owns.
+  static const String backButtonSemanticId = 'back_button';
+
+  /// `Semantics(identifier:)` anchor for the menu button.
+  static const String menuButtonSemanticId = 'menu_button';
+
+  /// `Semantics(identifier:)` anchor for a custom leading icon.
+  static const String leadingActionSemanticId = 'leading_action_button';
+
   @override
   Widget build(BuildContext context) {
     if (showBackButton) {
@@ -98,6 +110,7 @@ class DiVineAppBarLeading extends StatelessWidget {
         icon: const SvgIconSource(backIconAsset),
         onPressed: onBackPressed ?? () => Navigator.of(context).pop(),
         semanticLabel: backButtonSemanticLabel ?? 'Go back',
+        semanticIdentifier: backButtonSemanticId,
         tooltip: backButtonSemanticLabel == null ? backButtonTooltip : null,
         style: style,
         expandHitArea: expandHitArea,
@@ -113,6 +126,7 @@ class DiVineAppBarLeading extends StatelessWidget {
         icon: const SvgIconSource(menuIconAsset),
         onPressed: onMenuPressed,
         semanticLabel: menuButtonSemanticLabel,
+        semanticIdentifier: menuButtonSemanticId,
         tooltip: menuButtonTooltip,
         style: style,
         expandHitArea: expandHitArea,
@@ -124,6 +138,7 @@ class DiVineAppBarLeading extends StatelessWidget {
         icon: leadingIcon!,
         onPressed: onLeadingPressed,
         semanticLabel: leadingActionSemanticLabel,
+        semanticIdentifier: leadingActionSemanticId,
         style: style,
         expandHitArea: expandHitArea,
       );
@@ -139,6 +154,7 @@ class _LeadingIconButton extends StatelessWidget {
     required this.icon,
     required this.onPressed,
     required this.semanticLabel,
+    required this.semanticIdentifier,
     required this.style,
     required this.expandHitArea,
     this.tooltip,
@@ -147,6 +163,7 @@ class _LeadingIconButton extends StatelessWidget {
   final IconSource icon;
   final VoidCallback? onPressed;
   final String semanticLabel;
+  final String semanticIdentifier;
   final String? tooltip;
   final DiVineAppBarStyle style;
   final bool expandHitArea;
@@ -181,7 +198,7 @@ class _LeadingIconButton extends StatelessWidget {
     // not the node that could be activated -- assistive tech and UI tests
     // both target the labelled node, and here that node did nothing.
     return Semantics(
-      identifier: 'back_button',
+      identifier: semanticIdentifier,
       label: semanticLabel,
       button: true,
       onTap: onPressed,

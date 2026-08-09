@@ -337,6 +337,42 @@ void main() {
       );
 
       testWidgets(
+        'expandLeadingHitArea anchors each leading variant to its own id',
+        (tester) async {
+          // One widget renders all three variants, so a single hardcoded id
+          // would label a menu or a custom leading action 'back_button'.
+          await tester.pumpWidget(
+            buildTestWidget(
+              title: 'Test',
+              showMenuButton: true,
+              onMenuPressed: () {},
+              expandLeadingHitArea: true,
+            ),
+          );
+
+          expect(find.bySemanticsIdentifier('menu_button'), findsOneWidget);
+          expect(find.bySemanticsIdentifier('back_button'), findsNothing);
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              title: 'Test',
+              leadingIcon: const SvgIconSource(
+                DiVineAppBarLeading.menuIconAsset,
+              ),
+              onLeadingPressed: () {},
+              expandLeadingHitArea: true,
+            ),
+          );
+
+          expect(
+            find.bySemanticsIdentifier('leading_action_button'),
+            findsOneWidget,
+          );
+          expect(find.bySemanticsIdentifier('back_button'), findsNothing);
+        },
+      );
+
+      testWidgets(
         'default behavior: taps outside the visible button do NOT fire '
         'onBackPressed',
         (tester) async {
