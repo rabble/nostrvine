@@ -82,7 +82,7 @@ bool isDuplicatePendingReplySubmission({
   final normalized = _normalizeCommentText(content);
   return comments.any(
     (c) =>
-        c.id.startsWith('pending_comment_') &&
+        c.id.startsWith(commentPlaceholderIdPrefix) &&
         c.authorPubkey == authorPubkey &&
         c.replyToEventId == parentCommentId &&
         _normalizeCommentText(c.content) == normalized,
@@ -406,7 +406,7 @@ class OutboxBridges extends StatelessWidget {
             final newIds = state.commentsById.keys
                 .where(
                   (id) =>
-                      !id.startsWith('pending_comment_') &&
+                      !id.startsWith(commentPlaceholderIdPrefix) &&
                       !prevKeys.contains(id),
                 )
                 .toList();
@@ -551,12 +551,24 @@ class VideoReplyPlaceholderBridge extends StatefulWidget {
 
 class _VideoReplyPlaceholderBridgeState
     extends State<VideoReplyPlaceholderBridge> {
+  static const _relayEchoGrace = Duration(seconds: 5);
+
   /// Draft ids this bridge has already inserted a placeholder for.
   ///
   /// Guards re-insertion after the relay echo swaps the placeholder out: the
   /// echo lands while the upload is still registered, so a purely
   /// store-diffing sync would see the row missing and add it back.
   final Set<String> _inserted = {};
+  final Set<String> _awaitingRelayEcho = {};
+  final Map<String, Timer> _relayEchoGraceTimers = {};
+
+  @override
+  void dispose() {
+    for (final timer in _relayEchoGraceTimers.values) {
+      timer.cancel();
+    }
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -606,11 +618,35 @@ class _VideoReplyPlaceholderBridgeState
       }
     }
 
-    // An upload that left the in-flight set is done — succeeded, failed, or
-    // vanished. Drop its placeholder; the real row arrives via the relay echo
-    // on success. Rollback no-ops when the echo already replaced it.
+    for (final draftId in publishState.recentlySucceededIds) {
+      if (!_inserted.contains(draftId)) continue;
+      _awaitingRelayEcho.add(draftId);
+      _relayEchoGraceTimers.putIfAbsent(
+        draftId,
+        () => Timer(_relayEchoGrace, () {
+          if (!mounted) return;
+          _awaitingRelayEcho.remove(draftId);
+          _inserted.remove(draftId);
+          _relayEchoGraceTimers.remove(draftId);
+          context.read<CommentsListBloc>().add(
+            OptimisticCommentRolledBack(pendingVideoReplyId(draftId)),
+          );
+        }),
+      );
+    }
+
+    // A successful publish leaves the upload set before the relay echo is
+    // guaranteed to reach this sheet. Keep those placeholders briefly so the
+    // normal author+content echo swap can replace them without a disappearance
+    // or a self-authored "new comment" pill. Failed and vanished uploads still
+    // roll back immediately.
     for (final draftId in _inserted.difference(inFlightDraftIds)) {
+      if (_awaitingRelayEcho.contains(draftId) ||
+          publishState.recentlySucceededIds.contains(draftId)) {
+        continue;
+      }
       _inserted.remove(draftId);
+      _relayEchoGraceTimers.remove(draftId)?.cancel();
       listBloc.add(OptimisticCommentRolledBack(pendingVideoReplyId(draftId)));
     }
   }

@@ -6,6 +6,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/comments/comment_composer/mention_search.dart';
 import 'package:openvine/blocs/comments/comment_composer/reportable_sites.dart';
+import 'package:openvine/blocs/comments/comments_list/comments_list_helpers.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/mention_resolution_service.dart';
@@ -193,7 +194,7 @@ class CommentComposerBloc
     // success (confirm), failure (rollback), or relay-echo (NewCommentReceived
     // matches placeholder by author+content and swaps in-place).
     final placeholderId =
-        'pending_comment_${DateTime.now().microsecondsSinceEpoch}';
+        '$commentPlaceholderIdPrefix${DateTime.now().microsecondsSinceEpoch}';
     final placeholder = Comment(
       id: placeholderId,
       content: text,

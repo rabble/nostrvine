@@ -209,7 +209,7 @@ void main() {
       expectNoInserts(list);
     });
 
-    testWidgets('rolls the placeholder back when the upload finishes', (
+    testWidgets('rolls the placeholder back when the upload vanishes', (
       tester,
     ) async {
       final draft = _replyDraft(id: 'draft-1', rootEventId: _rootEventId);
@@ -224,6 +224,51 @@ void main() {
 
       await pumpBridge(tester);
       await tester.pump();
+
+      final rollbacks = verify(
+        () => list.add(captureAny()),
+      ).captured.whereType<OptimisticCommentRolledBack>().toList();
+      expect(rollbacks, hasLength(1));
+      expect(rollbacks.single.placeholderId, pendingVideoReplyId('draft-1'));
+    });
+
+    testWidgets('keeps a successful publish placeholder for relay echo swap', (
+      tester,
+    ) async {
+      final draft = _replyDraft(id: 'draft-1', rootEventId: _rootEventId);
+      whenListen(
+        publish,
+        Stream.fromIterable([
+          _publishing([draft]),
+          const BackgroundPublishState(recentlySucceededIds: {'draft-1'}),
+        ]),
+        initialState: _publishing([draft]),
+      );
+
+      await pumpBridge(tester);
+      await tester.pump();
+
+      final events = verify(() => list.add(captureAny())).captured;
+      expect(events.whereType<OptimisticCommentInserted>(), hasLength(1));
+      expect(events.whereType<OptimisticCommentRolledBack>(), isEmpty);
+    });
+
+    testWidgets('rolls a successful publish back after the echo grace window', (
+      tester,
+    ) async {
+      final draft = _replyDraft(id: 'draft-1', rootEventId: _rootEventId);
+      whenListen(
+        publish,
+        Stream.fromIterable([
+          _publishing([draft]),
+          const BackgroundPublishState(recentlySucceededIds: {'draft-1'}),
+        ]),
+        initialState: _publishing([draft]),
+      );
+
+      await pumpBridge(tester);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 5));
 
       final rollbacks = verify(
         () => list.add(captureAny()),

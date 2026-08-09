@@ -76,25 +76,34 @@ class _CommentItemState extends ConsumerState<CommentItem> {
     // through VideoCommentPlayer — it renders as a pending tile instead
     // (#5862).
     final pendingDraftId = draftIdFromPendingVideoReplyId(widget.comment.id);
+    final isPendingComment = widget.comment.id.startsWith(
+      commentPlaceholderIdPrefix,
+    );
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaler: textScaler),
       child: GestureDetector(
-        onLongPressStart: (_) {
-          setState(() {
-            _isHeld = true;
-          });
-        },
-        onLongPress: () async {
-          setState(() {
-            _isHeld = false;
-          });
-          await _showOptionsModal(context, isCurrentUser: isCurrentUser);
-        },
-        onLongPressCancel: () {
-          setState(() {
-            _isHeld = false;
-          });
-        },
+        onLongPressStart: isPendingComment
+            ? null
+            : (_) {
+                setState(() {
+                  _isHeld = true;
+                });
+              },
+        onLongPress: isPendingComment
+            ? null
+            : () async {
+                setState(() {
+                  _isHeld = false;
+                });
+                await _showOptionsModal(context, isCurrentUser: isCurrentUser);
+              },
+        onLongPressCancel: isPendingComment
+            ? null
+            : () {
+                setState(() {
+                  _isHeld = false;
+                });
+              },
         child: ColoredBox(
           color: _isHeld
               ? context.vineColors.containerLow
@@ -216,13 +225,15 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                               content: commentContent,
                             ),
                           ),
-                        const SizedBox(height: 12),
-                        _ActionsRow(
-                          commentId: widget.comment.id,
-                          authorPubkey: widget.comment.authorPubkey,
-                          addressableId: widget.comment.addressableId,
-                          targetKind: widget.comment.eventKind,
-                        ),
+                        if (!isPendingComment) ...[
+                          const SizedBox(height: 12),
+                          _ActionsRow(
+                            commentId: widget.comment.id,
+                            authorPubkey: widget.comment.authorPubkey,
+                            addressableId: widget.comment.addressableId,
+                            targetKind: widget.comment.eventKind,
+                          ),
+                        ],
                       ],
                     ),
                   ),
