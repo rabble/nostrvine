@@ -11,6 +11,7 @@ import 'package:invite_api_client/invite_api_client.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_state.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/utils/validators.dart';
@@ -332,6 +333,8 @@ class _InviteCodeEntryPage extends StatelessWidget {
                               DivineButton(
                                 expanded: true,
                                 label: context.l10n.authNext,
+                                semanticIdentifier:
+                                    SemanticIds.authInviteSubmitButton,
                                 isLoading: state.isValidatingCode,
                                 onPressed: state.isValidatingCode
                                     ? null
@@ -399,63 +402,67 @@ class _InviteCodeInput extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextField(
-          controller: controller,
-          enabled: enabled,
-          autofocus: true,
-          textCapitalization: TextCapitalization.characters,
-          textInputAction: TextInputAction.done,
-          inputFormatters: [
-            FilteringTextInputFormatter.allow(RegExp('[A-Za-z0-9-]')),
-            _InviteCodeTextInputFormatter(),
-          ],
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w400,
-            color: context.vineColors.primaryText,
-            letterSpacing: 0.15,
-          ),
-          decoration: InputDecoration(
-            labelText: context.l10n.authInviteCodeLabel,
-            labelStyle: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-              color: hasError ? VineTheme.error : VineTheme.vineGreen,
-            ),
-            floatingLabelBehavior: FloatingLabelBehavior.always,
-            hintText: context.l10n.authEnterYourCode,
-            hintStyle: TextStyle(
+        Semantics(
+          identifier: SemanticIds.authInviteCodeField,
+          textField: true,
+          child: TextField(
+            controller: controller,
+            enabled: enabled,
+            autofocus: true,
+            textCapitalization: TextCapitalization.characters,
+            textInputAction: TextInputAction.done,
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp('[A-Za-z0-9-]')),
+              _InviteCodeTextInputFormatter(),
+            ],
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w400,
-              color: context.vineColors.disabled,
+              color: context.vineColors.primaryText,
               letterSpacing: 0.15,
             ),
-            filled: true,
-            fillColor: context.vineColors.surfaceContainer,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(24),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(24),
-              borderSide: hasError
-                  ? const BorderSide(color: VineTheme.error)
-                  : BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(24),
-              borderSide: BorderSide(
+            decoration: InputDecoration(
+              labelText: context.l10n.authInviteCodeLabel,
+              labelStyle: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
                 color: hasError ? VineTheme.error : VineTheme.vineGreen,
               ),
+              floatingLabelBehavior: FloatingLabelBehavior.always,
+              hintText: context.l10n.authEnterYourCode,
+              hintStyle: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
+                color: context.vineColors.disabled,
+                letterSpacing: 0.15,
+              ),
+              filled: true,
+              fillColor: context.vineColors.surfaceContainer,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: hasError
+                    ? const BorderSide(color: VineTheme.error)
+                    : BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: BorderSide(
+                  color: hasError ? VineTheme.error : VineTheme.vineGreen,
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 24,
+              ),
             ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 24,
-            ),
+            onChanged: (_) => onChanged(),
+            onSubmitted: (_) => onSubmitted(),
           ),
-          onChanged: (_) => onChanged(),
-          onSubmitted: (_) => onSubmitted(),
         ),
         if (hasError) ...[
           const SizedBox(height: 6),

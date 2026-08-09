@@ -12,7 +12,7 @@ set -euo pipefail
 #  - Runs Maestro suite: e2e/maestro/suites/smoke.yaml
 #
 # Build the app first, against STAGING (the suite asserts the STG badge):
-#   cd mobile && flutter build ios --simulator --dart-define=DEFAULT_ENV=STAGING
+#   cd mobile && flutter build ios --simulator --dart-define=DEFAULT_ENV=STAGING --dart-define=GH_ACTIONS_PR_PREVIEW=true
 #
 # Credentials are not committed. Supply them, as CI does:
 #   MAESTRO_USER_EMAIL=... MAESTRO_USER_PWD=... MAESTRO_SEARCH_USER=... \
@@ -65,7 +65,7 @@ require_cmd "${MAESTRO_CLI}" "Install Maestro: brew install maestro"
 [[ -d "${APP_PATH}" ]] || fail "Runner.app not found at: ${APP_PATH}
 
 Fix:
-  cd ${MOBILE_DIR} && flutter build ios --simulator --dart-define=DEFAULT_ENV=STAGING"
+  cd ${MOBILE_DIR} && flutter build ios --simulator --dart-define=DEFAULT_ENV=STAGING --dart-define=GH_ACTIONS_PR_PREVIEW=true"
 [[ -f "${APP_INFO_PLIST}" ]] || fail "Info.plist not found at: ${APP_INFO_PLIST}"
 
 for required in MAESTRO_USER_EMAIL MAESTRO_USER_PWD MAESTRO_SEARCH_USER; do
@@ -96,7 +96,7 @@ else
   fail "Runner.app does NOT look like a Simulator build.
 
 Fix:
-  cd ${MOBILE_DIR} && flutter build ios --simulator --dart-define=DEFAULT_ENV=STAGING
+  cd ${MOBILE_DIR} && flutter build ios --simulator --dart-define=DEFAULT_ENV=STAGING --dart-define=GH_ACTIONS_PR_PREVIEW=true
 "
 fi
 

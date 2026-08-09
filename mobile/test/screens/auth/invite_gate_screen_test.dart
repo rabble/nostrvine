@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:invite_api_client/invite_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/auth/invite_gate_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
@@ -148,6 +149,29 @@ void main() {
 
       expect(find.text('Create Account'), findsOneWidget);
       verify(() => mockInviteApiClient.validateCode('AB12-EF34')).called(1);
+    });
+
+    testWidgets('code entry carries stable test anchors', (tester) async {
+      when(() => mockInviteApiClient.getClientConfig()).thenAnswer(
+        (_) async => const InviteClientConfig(
+          mode: OnboardingMode.inviteCodeRequired,
+          supportEmail: 'support@divine.video',
+        ),
+      );
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Account creation is gated here, so the E2E suite has to drive this
+      // screen. Both anchors are on the critical path of every sign-up flow.
+      expect(
+        find.bySemanticsIdentifier(SemanticIds.authInviteCodeField),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsIdentifier(SemanticIds.authInviteSubmitButton),
+        findsOneWidget,
+      );
     });
 
     testWidgets('typing the fourth invite character shows dash hint', (

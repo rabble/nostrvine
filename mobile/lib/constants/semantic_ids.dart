@@ -31,6 +31,11 @@ abstract class SemanticIds {
   static const String authUseAnotherAccountButton =
       'use_another_account_button';
 
+  /// Invite gate. Account creation is gated on a code here, so these two sit
+  /// on the critical path of every flow that signs up.
+  static const String authInviteCodeField = 'invite_code_field';
+  static const String authInviteSubmitButton = 'invite_submit_button';
+
   static const String profileStatsRow = 'profile_stats_row';
 
   /// Opens Settings from the own-profile header. This is the only entry
