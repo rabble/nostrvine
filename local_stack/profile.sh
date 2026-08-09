@@ -17,6 +17,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MOBILE_DIR="$(cd "${SCRIPT_DIR}/../mobile" && pwd)"
 COMPOSE_FILE="${SCRIPT_DIR}/docker-compose.yml"
 MERGE_SCRIPT="${SCRIPT_DIR}/merge_logs.py"
+# Honour a relocated pub cache; $HOME/.pub-cache does not exist when
+# PUB_CACHE points elsewhere. Same resolution as mobile/mise.toml.
+PUB_CACHE_BIN="${PUB_CACHE:-$HOME/.pub-cache}/bin"
 
 # shellcheck source=android_sdk.sh
 source "${SCRIPT_DIR}/android_sdk.sh"
@@ -62,6 +65,33 @@ if ! local_stack_has_running_container "$COMPOSE_FILE"; then
     exit 1
 fi
 
+# --- Ensure the patrol CLI matches the patrol package ---
+# patrol_cli enforces the pairing itself and aborts the run on a mismatch
+# (patrol_cli 4.5.0+ pairs with patrol 4.7.0+). Activating the pinned CLI before
+# log capture starts keeps install/compile time out of the profiler timeline.
+# Keep in sync with the patrol constraint in mobile/pubspec.yaml.
+PATROL_CLI_VERSION=4.6.1
+PATROL_BIN=""
+if [ -x "$PUB_CACHE_BIN/patrol" ]; then
+    PATROL_BIN="$PUB_CACHE_BIN/patrol"
+elif command -v patrol >/dev/null 2>&1; then
+    PATROL_BIN="$(command -v patrol)"
+fi
+
+PATROL_CURRENT_VERSION=""
+if [ -n "$PATROL_BIN" ]; then
+    # `patrol --version` prints an update banner before the version line. The
+    # update check can fail offline, so treat probe failure as "version unknown"
+    # and let the pinned activation below repair the install.
+    PATROL_CURRENT_VERSION="$("$PATROL_BIN" --version 2>/dev/null |
+        sed -n 's/^patrol_cli v\([0-9][0-9.]*\).*/\1/p' | tail -1)" || true
+fi
+
+if [ "$PATROL_CURRENT_VERSION" != "$PATROL_CLI_VERSION" ]; then
+    echo "Installing patrol_cli ${PATROL_CLI_VERSION} (pinned to match the patrol package)..." >&2
+    dart pub global activate patrol_cli "$PATROL_CLI_VERSION" >&2
+fi
+
 # --- Start docker log capture (background, from now only) ---
 echo "Starting docker log capture..." >&2
 docker compose -f "$COMPOSE_FILE" logs -f -t --since "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
@@ -77,6 +107,8 @@ if [[ -z "$DEVICE" ]]; then
 fi
 echo "Device:     ${DEVICE}" >&2
 
+# Expanded below with the "${a[@]+"${a[@]}"}" guard: macOS ships bash 3.2,
+# where a plain "${a[@]}" on an empty array trips `set -u`.
 PATROL_EXTRA_ARGS=()
 if [[ "${PATROL_NO_UNINSTALL:-}" == "true" ]]; then
     PATROL_EXTRA_ARGS+=(--no-uninstall)
@@ -93,11 +125,12 @@ LOGCAT_PID=$!
 echo "Running: patrol test ${TEST_PATH} ..." >&2
 cd "$MOBILE_DIR"
 set +e
-PATH="$HOME/.pub-cache/bin:$PATH" patrol test \
+PATH="$PUB_CACHE_BIN:$PATH" patrol test \
+    --device "$DEVICE" \
     --target "$TEST_PATH" \
     --dart-define=DEFAULT_ENV=LOCAL \
     --dart-define=INVITE_SERVER_URL="$INVITE_SERVER_URL" \
-    "${PATROL_EXTRA_ARGS[@]}" \
+    "${PATROL_EXTRA_ARGS[@]+"${PATROL_EXTRA_ARGS[@]}"}" \
     2>&1 | tee "$APP_LOG"
 TEST_EXIT="${PIPESTATUS[0]}"
 set -e
