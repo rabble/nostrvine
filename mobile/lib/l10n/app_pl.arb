@@ -4994,7 +4994,7 @@
   "settingsStorageRepairDescription": "Jeśli aplikacja się wysypuje albo dziwnie działa, zresetowanie danych lokalnych zwykle pomaga. Twoje klipy i wersje robocze zostają.",
   "settingsStorageRepairButton": "Zresetuj dane aplikacji",
   "settingsStorageRepairConfirmTitle": "Zresetować dane aplikacji?",
-  "settingsStorageRepairConfirmMessage": "To usunie powiadomienia, zapisane profile, zakładki i pliki tymczasowe. Twoje klipy i wersje robocze zostaną, ale wylogujemy Cię i trzeba będzie zrestartować aplikację.",
+  "settingsStorageRepairConfirmMessage": "To usunie zapisane dane kanału i pliki tymczasowe. Twoje klipy, wersje robocze, ustawienia i zalogowanie zostaną, ale trzeba będzie potem zrestartować aplikację.",
   "settingsStorageRepairFootprint": "Zostanie usunięte: {size}",
   "settingsStorageRepairConfirmAction": "Zresetuj",
   "settingsStorageRepairInProgress": "Resetowanie…",

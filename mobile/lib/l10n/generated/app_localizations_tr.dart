@@ -11148,7 +11148,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get settingsStorageRepairConfirmMessage =>
-      'Bu; bildirimleri, önbellekteki profilleri, yer imlerini ve geçici dosyaları siler. Kliplerin ve taslakların kalır ama oturumun kapanır ve uygulamayı yeniden başlatman gerekir.';
+      'Bu; önbellekteki akış verilerini ve geçici dosyaları siler. Kliplerin, taslakların, ayarların ve oturumun kalır ama sonrasında uygulamayı yeniden başlatman gerekir.';
 
   @override
   String settingsStorageRepairFootprint(String size) {

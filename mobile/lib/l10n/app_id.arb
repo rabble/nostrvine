@@ -4994,7 +4994,7 @@
   "settingsStorageRepairDescription": "Kalau aplikasi sering crash atau berperilaku aneh, reset data lokalnya biasanya menyelesaikan masalah. Klip dan draf kamu tetap aman.",
   "settingsStorageRepairButton": "Reset data aplikasi",
   "settingsStorageRepairConfirmTitle": "Reset data aplikasi?",
-  "settingsStorageRepairConfirmMessage": "Ini menghapus notifikasi, profil di cache, bookmark, dan file sementara. Klip dan draf kamu tetap ada, tapi kamu akan keluar dari akun dan harus memulai ulang aplikasi.",
+  "settingsStorageRepairConfirmMessage": "Ini menghapus data feed di cache dan file sementara. Klip, draf, pengaturan, dan sesi login kamu tetap ada, tapi setelahnya kamu harus memulai ulang aplikasi.",
   "settingsStorageRepairFootprint": "{size} akan dihapus",
   "settingsStorageRepairConfirmAction": "Reset",
   "settingsStorageRepairInProgress": "Mereset…",

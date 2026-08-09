@@ -11410,7 +11410,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsStorageRepairConfirmMessage =>
-      'Asta șterge notificările, profilurile din cache, marcajele și fișierele temporare. Clipurile și schițele tale rămân, dar vei fi deconectat și va trebui să repornești aplicația.';
+      'Asta șterge datele din feed salvate în cache și fișierele temporare. Clipurile, schițele, setările și contul tău conectat rămân, dar va trebui să repornești aplicația după.';
 
   @override
   String settingsStorageRepairFootprint(String size) {

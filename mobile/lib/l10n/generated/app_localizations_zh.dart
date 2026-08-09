@@ -10596,7 +10596,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsStorageRepairConfirmMessage =>
-      '这会清除通知、缓存的资料、书签和临时文件。你的片段和草稿会保留，但会退出登录，需要重启应用。';
+      '这会清除缓存的信息流数据和临时文件。你的片段、草稿、设置和登录状态会保留，但之后需要重启应用。';
 
   @override
   String settingsStorageRepairFootprint(String size) {

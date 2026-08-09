@@ -4994,7 +4994,7 @@
   "settingsStorageRepairDescription": "Wenn die App ständig abstürzt oder sich seltsam verhält, hilft meist ein Zurücksetzen der lokalen Daten. Deine Clips und Entwürfe bleiben.",
   "settingsStorageRepairButton": "App-Daten zurücksetzen",
   "settingsStorageRepairConfirmTitle": "App-Daten zurücksetzen?",
-  "settingsStorageRepairConfirmMessage": "Das löscht Benachrichtigungen, zwischengespeicherte Profile, Lesezeichen und temporäre Dateien. Deine Clips und Entwürfe bleiben, aber du wirst abgemeldet und musst die App neu starten.",
+  "settingsStorageRepairConfirmMessage": "Das löscht zwischengespeicherte Feed-Daten und temporäre Dateien. Deine Clips, Entwürfe, Einstellungen und Anmeldung bleiben, aber du musst die App danach neu starten.",
   "settingsStorageRepairFootprint": "{size} werden gelöscht",
   "settingsStorageRepairConfirmAction": "Zurücksetzen",
   "settingsStorageRepairInProgress": "Wird zurückgesetzt…",

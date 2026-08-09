@@ -11190,7 +11190,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get settingsStorageRepairConfirmMessage =>
-      'اس سے اطلاعات، کیش شدہ پروفائلز، بک مارکس اور عارضی فائلیں مٹ جائیں گی۔ آپ کی کلپس اور ڈرافٹس رہیں گے، لیکن آپ لاگ آؤٹ ہو جائیں گے اور ایپ دوبارہ شروع کرنی ہوگی۔';
+      'اس سے کیش شدہ فیڈ ڈیٹا اور عارضی فائلیں مٹ جائیں گی۔ آپ کی کلپس، ڈرافٹس، ترتیبات اور لاگ اِن رہیں گے، لیکن بعد میں ایپ دوبارہ شروع کرنی ہوگی۔';
 
   @override
   String settingsStorageRepairFootprint(String size) {

@@ -11106,7 +11106,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settingsStorageRepairConfirmMessage =>
-      'سيؤدي هذا إلى حذف الإشعارات والملفات الشخصية المخزنة مؤقتًا والإشارات المرجعية والملفات المؤقتة. تبقى مقاطعك ومسوداتك، لكن سيتم تسجيل خروجك وعليك إعادة تشغيل التطبيق.';
+      'سيؤدي هذا إلى مسح بيانات الموجز المخزنة مؤقتًا والملفات المؤقتة. تبقى مقاطعك ومسوداتك وإعداداتك وتسجيل دخولك، لكن عليك إعادة تشغيل التطبيق بعد ذلك.';
 
   @override
   String settingsStorageRepairFootprint(String size) {

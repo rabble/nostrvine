@@ -4994,7 +4994,7 @@
   "settingsStorageRepairDescription": "Dacă aplicația se blochează sau se comportă ciudat, resetarea datelor locale rezolvă de obicei. Clipurile și schițele tale rămân.",
   "settingsStorageRepairButton": "Resetează datele aplicației",
   "settingsStorageRepairConfirmTitle": "Resetezi datele aplicației?",
-  "settingsStorageRepairConfirmMessage": "Asta șterge notificările, profilurile din cache, marcajele și fișierele temporare. Clipurile și schițele tale rămân, dar vei fi deconectat și va trebui să repornești aplicația.",
+  "settingsStorageRepairConfirmMessage": "Asta șterge datele din feed salvate în cache și fișierele temporare. Clipurile, schițele, setările și contul tău conectat rămân, dar va trebui să repornești aplicația după.",
   "settingsStorageRepairFootprint": "Se vor șterge {size}",
   "settingsStorageRepairConfirmAction": "Resetează",
   "settingsStorageRepairInProgress": "Se resetează…",

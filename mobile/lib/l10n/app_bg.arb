@@ -5125,7 +5125,7 @@
   "settingsStorageRepairDescription": "Ако приложението постоянно се срива или се държи странно, нулирането на локалните данни обикновено помага. Клиповете и черновите ти остават.",
   "settingsStorageRepairButton": "Нулиране на данните",
   "settingsStorageRepairConfirmTitle": "Да нулираме ли данните?",
-  "settingsStorageRepairConfirmMessage": "Това изтрива известията, кешираните профили, отметките и временните файлове. Клиповете и черновите ти остават, но ще излезеш от профила си и ще трябва да рестартираш приложението.",
+  "settingsStorageRepairConfirmMessage": "Това изчиства кешираните данни от емисията и временните файлове. Клиповете, черновите, настройките и профилът ти остават, но след това ще трябва да рестартираш приложението.",
   "settingsStorageRepairFootprint": "Ще бъдат изтрити {size}",
   "settingsStorageRepairConfirmAction": "Нулирай",
   "settingsStorageRepairInProgress": "Нулиране…",

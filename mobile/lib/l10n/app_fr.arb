@@ -4994,7 +4994,7 @@
   "settingsStorageRepairDescription": "Si l'appli plante ou se comporte bizarrement, réinitialiser ses données locales règle souvent le problème. Tes clips et brouillons restent.",
   "settingsStorageRepairButton": "Réinitialiser les données",
   "settingsStorageRepairConfirmTitle": "Réinitialiser les données ?",
-  "settingsStorageRepairConfirmMessage": "Ça efface les notifications, les profils en cache, les favoris et les fichiers temporaires. Tes clips et brouillons restent, mais tu devras te reconnecter et redémarrer l'appli.",
+  "settingsStorageRepairConfirmMessage": "Ça efface les données de fil en cache et les fichiers temporaires. Tes clips, brouillons, réglages et ta connexion restent, mais tu devras redémarrer l'appli après.",
   "settingsStorageRepairFootprint": "{size} seront supprimés",
   "settingsStorageRepairConfirmAction": "Réinitialiser",
   "settingsStorageRepairInProgress": "Réinitialisation…",

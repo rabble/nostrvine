@@ -4994,7 +4994,7 @@
   "settingsStorageRepairDescription": "Se o app trava ou age de forma estranha, redefinir os dados locais costuma resolver. Seus clipes e rascunhos ficam.",
   "settingsStorageRepairButton": "Redefinir dados do app",
   "settingsStorageRepairConfirmTitle": "Redefinir dados do app?",
-  "settingsStorageRepairConfirmMessage": "Isso apaga notificações, perfis em cache, favoritos e arquivos temporários. Seus clipes e rascunhos ficam, mas você sairá da conta e terá que reiniciar o app.",
+  "settingsStorageRepairConfirmMessage": "Isso apaga os dados do feed em cache e os arquivos temporários. Seus clipes, rascunhos, configurações e login ficam, mas você terá que reiniciar o app depois.",
   "settingsStorageRepairFootprint": "{size} serão removidos",
   "settingsStorageRepairConfirmAction": "Redefinir",
   "settingsStorageRepairInProgress": "Redefinindo…",

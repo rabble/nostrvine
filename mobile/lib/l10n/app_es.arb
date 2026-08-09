@@ -4994,7 +4994,7 @@
   "settingsStorageRepairDescription": "Si la app se cierra o se comporta raro, restablecer sus datos locales suele arreglarlo. Tus clips y borradores se quedan.",
   "settingsStorageRepairButton": "Restablecer datos de la app",
   "settingsStorageRepairConfirmTitle": "¿Restablecer datos de la app?",
-  "settingsStorageRepairConfirmMessage": "Esto borra notificaciones, perfiles en caché, marcadores y archivos temporales. Tus clips y borradores se quedan, pero cerrarás sesión y tendrás que reiniciar la app.",
+  "settingsStorageRepairConfirmMessage": "Esto borra los datos del feed en caché y los archivos temporales. Tus clips, borradores, ajustes y sesión se quedan, pero tendrás que reiniciar la app después.",
   "settingsStorageRepairFootprint": "Se borrarán {size}",
   "settingsStorageRepairConfirmAction": "Restablecer",
   "settingsStorageRepairInProgress": "Restableciendo…",

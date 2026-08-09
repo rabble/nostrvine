@@ -10728,7 +10728,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get settingsStorageRepairConfirmMessage =>
-      '通知、キャッシュ済みのプロフィール、ブックマーク、一時ファイルを消すよ。クリップと下書きは残るけど、ログアウトされるからアプリを再起動してね。';
+      'キャッシュ済みのフィードデータと一時ファイルを消すよ。クリップ、下書き、設定、ログインは残るけど、あとでアプリを再起動してね。';
 
   @override
   String settingsStorageRepairFootprint(String size) {

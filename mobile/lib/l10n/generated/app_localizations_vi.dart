@@ -11198,7 +11198,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get settingsStorageRepairConfirmMessage =>
-      'Thao tác này xóa thông báo, hồ sơ đã lưu tạm, dấu trang và tệp tạm. Clip và bản nháp của bạn vẫn còn, nhưng bạn sẽ bị đăng xuất và phải khởi động lại ứng dụng.';
+      'Thao tác này xóa dữ liệu bảng tin đã lưu tạm và tệp tạm. Clip, bản nháp, cài đặt và phiên đăng nhập của bạn vẫn còn, nhưng sau đó bạn phải khởi động lại ứng dụng.';
 
   @override
   String settingsStorageRepairFootprint(String size) {

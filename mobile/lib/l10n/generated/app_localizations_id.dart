@@ -11149,7 +11149,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get settingsStorageRepairConfirmMessage =>
-      'Ini menghapus notifikasi, profil di cache, bookmark, dan file sementara. Klip dan draf kamu tetap ada, tapi kamu akan keluar dari akun dan harus memulai ulang aplikasi.';
+      'Ini menghapus data feed di cache dan file sementara. Klip, draf, pengaturan, dan sesi login kamu tetap ada, tapi setelahnya kamu harus memulai ulang aplikasi.';
 
   @override
   String settingsStorageRepairFootprint(String size) {
