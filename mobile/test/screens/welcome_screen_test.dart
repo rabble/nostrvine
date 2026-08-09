@@ -14,6 +14,7 @@ import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -172,6 +173,31 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Sign in with an existing account'), findsOneWidget);
+      });
+
+      testWidgets('primary actions carry stable test anchors', (tester) async {
+        // The default 800x600 surface overflows the hero column by 13px on
+        // the fresh-install variant. That is pre-existing on origin/main and
+        // out of scope here; size the surface so this test fails only for
+        // its own reason.
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        // The E2E suite targets these ids instead of the button copy, which
+        // has changed twice since the flows were written.
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.authCreateAccountButton),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.authSignInButton),
+          findsOneWidget,
+        );
       });
 
       testWidgets('displays terms notice with legal links', (tester) async {

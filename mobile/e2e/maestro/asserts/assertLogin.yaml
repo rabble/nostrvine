@@ -1,13 +1,28 @@
 appId: co.openvine.app
 ---
-- waitForAnimationToEnd # Divine logo may take some time to load
-- assertVisible: Authentic moments.
-- assertVisible: Human creativity.
-- assertVisible: Create a new Divine account
-- assertVisible: Sign in with a different account
-- assertVisible: "By selecting an option above, you confirm you are at least 16 years old and agree to the "
+# Asserts the welcome screen, whichever variant it renders.
+#
+# There are two: a fresh install shows the hero taglines with
+# "Create a new Divine account" / "Sign in with an existing account", while a
+# device that already holds a key shows "Continue as <name>" / "Use another
+# account" / "Create new account".
+#
+# The second variant is not an edge case -- the Nostr key lives in the iOS
+# keychain and survives both `launchApp: clearState` and a full app
+# uninstall, so every run after the first sees it until removeKeys (the
+# teardown of each flow) signs the device out. Asserting fresh-install-only
+# copy here is what made this file pass exactly once per simulator.
+#
+# So: only the invariants. create_account_button is present in both variants
+# by design -- both branches carry the same identifier.
+
+- extendedWaitUntil:
+    visible:
+      id: "create_account_button"
+    timeout: 30000
+
+# The legal notice renders on both variants and is worth pinning: these
+# links are a compliance surface, not decoration.
 - assertVisible: Terms of Service
-- assertVisible: ", "
 - assertVisible: Privacy Policy
-- assertVisible: ", and "
 - assertVisible: Safety Standards

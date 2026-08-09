@@ -101,6 +101,7 @@ class DivineIconButton extends StatelessWidget {
     this.showShadow = true,
     this.tooltip,
     this.semanticLabel,
+    this.semanticIdentifier,
     this.semanticValue,
     this.semanticToggled,
     this.semanticLongPressHint,
@@ -125,6 +126,7 @@ class DivineIconButton extends StatelessWidget {
     this.showShadow = true,
     this.tooltip,
     this.semanticLabel,
+    this.semanticIdentifier,
     this.semanticValue,
     this.semanticToggled,
     this.semanticLongPressHint,
@@ -179,6 +181,14 @@ class DivineIconButton extends StatelessWidget {
   /// Semantic label for accessibility.
   final String? semanticLabel;
 
+  /// Stable `Semantics(identifier:)` value used as a UI-test anchor.
+  ///
+  /// Surfaces as an iOS `accessibilityIdentifier` / Android resource id, so
+  /// E2E tests can target the button by id instead of by its localized
+  /// label. Unlike [semanticLabel] it is never announced to the user, so it
+  /// must not be used to convey meaning.
+  final String? semanticIdentifier;
+
   /// Semantic value for accessibility (e.g. a count or status).
   final String? semanticValue;
 
@@ -205,6 +215,7 @@ class DivineIconButton extends StatelessWidget {
       showShadow: showShadow,
       tooltip: tooltip,
       semanticLabel: semanticLabel,
+      semanticIdentifier: semanticIdentifier,
       semanticValue: semanticValue,
       semanticToggled: semanticToggled,
       semanticLongPressHint: semanticLongPressHint,
@@ -225,6 +236,7 @@ class _DivineIconButtonContent extends StatelessWidget {
     this.showShadow = true,
     this.tooltip,
     this.semanticLabel,
+    this.semanticIdentifier,
     this.semanticValue,
     this.semanticToggled,
     this.semanticLongPressHint,
@@ -241,6 +253,7 @@ class _DivineIconButtonContent extends StatelessWidget {
   final bool showShadow;
   final String? tooltip;
   final String? semanticLabel;
+  final String? semanticIdentifier;
   final String? semanticValue;
   final bool? semanticToggled;
   final String? semanticLongPressHint;
@@ -393,6 +406,7 @@ class _DivineIconButtonContent extends StatelessWidget {
 
     return Semantics(
       label: semanticLabel,
+      identifier: semanticIdentifier,
       value: semanticValue,
       toggled: semanticToggled,
       onLongPress: onLongPress,

@@ -91,6 +91,15 @@ class DiVineAppBarLeading extends StatelessWidget {
   /// Asset path for the menu button icon.
   static const String menuIconAsset = 'assets/icon/menu.svg';
 
+  /// `Semantics(identifier:)` anchor for the back button.
+  static const String backButtonSemanticId = 'back_button';
+
+  /// `Semantics(identifier:)` anchor for the menu button.
+  static const String menuButtonSemanticId = 'menu_button';
+
+  /// `Semantics(identifier:)` anchor for a custom leading icon.
+  static const String leadingActionSemanticId = 'leading_action_button';
+
   @override
   Widget build(BuildContext context) {
     if (showBackButton) {
@@ -98,6 +107,7 @@ class DiVineAppBarLeading extends StatelessWidget {
         icon: const SvgIconSource(backIconAsset),
         onPressed: onBackPressed ?? () => Navigator.of(context).pop(),
         semanticLabel: backButtonSemanticLabel ?? 'Go back',
+        semanticIdentifier: backButtonSemanticId,
         tooltip: backButtonSemanticLabel == null ? backButtonTooltip : null,
         style: style,
         expandHitArea: expandHitArea,
@@ -113,6 +123,7 @@ class DiVineAppBarLeading extends StatelessWidget {
         icon: const SvgIconSource(menuIconAsset),
         onPressed: onMenuPressed,
         semanticLabel: menuButtonSemanticLabel,
+        semanticIdentifier: menuButtonSemanticId,
         tooltip: menuButtonTooltip,
         style: style,
         expandHitArea: expandHitArea,
@@ -124,6 +135,7 @@ class DiVineAppBarLeading extends StatelessWidget {
         icon: leadingIcon!,
         onPressed: onLeadingPressed,
         semanticLabel: leadingActionSemanticLabel,
+        semanticIdentifier: leadingActionSemanticId,
         style: style,
         expandHitArea: expandHitArea,
       );
@@ -139,6 +151,7 @@ class _LeadingIconButton extends StatelessWidget {
     required this.icon,
     required this.onPressed,
     required this.semanticLabel,
+    required this.semanticIdentifier,
     required this.style,
     required this.expandHitArea,
     this.tooltip,
@@ -147,6 +160,7 @@ class _LeadingIconButton extends StatelessWidget {
   final IconSource icon;
   final VoidCallback? onPressed;
   final String semanticLabel;
+  final String semanticIdentifier;
   final String? tooltip;
   final DiVineAppBarStyle style;
   final bool expandHitArea;
@@ -161,6 +175,7 @@ class _LeadingIconButton extends StatelessWidget {
           icon: icon,
           onPressed: onPressed,
           semanticLabel: semanticLabel,
+          semanticIdentifier: semanticIdentifier,
           tooltip: tooltip,
           backgroundColor: style.iconButtonBackgroundColor,
           borderSide: style.iconButtonBorderSide,
@@ -171,15 +186,25 @@ class _LeadingIconButton extends StatelessWidget {
 
     if (!expandHitArea) return visibleButton;
 
-    // Stretch the tap target to the whole leading slot. The inner
-    // [DivineAppBarIconButton] keeps its semantics for screen readers
-    // but [AbsorbPointer] stops it from receiving pointer events, so
-    // taps don't double-fire and the outer [GestureDetector] is the
-    // single source of truth for hit testing.
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
+    // Stretch the tap target to the whole leading slot. [AbsorbPointer]
+    // stops the inner [DivineAppBarIconButton] from receiving pointer
+    // events so taps don't double-fire, leaving the outer
+    // [GestureDetector] as the single source of truth for hit testing.
+    //
+    // The semantics move out with the gestures. Leaving the label on the
+    // absorbed inner button meant the node that announced "Go back" was
+    // not the node that could be activated -- assistive tech and UI tests
+    // both target the labelled node, and here that node did nothing.
+    return Semantics(
+      identifier: semanticIdentifier,
+      label: semanticLabel,
+      button: true,
       onTap: onPressed,
-      child: AbsorbPointer(child: visibleButton),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onPressed,
+        child: ExcludeSemantics(child: AbsorbPointer(child: visibleButton)),
+      ),
     );
   }
 }

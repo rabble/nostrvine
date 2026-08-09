@@ -14,20 +14,25 @@ tags:
 - tapOn:
     id: profile_tab
 - runFlow: ../asserts/assertProfile.yaml
-- tapOn: |-
-    Tab 2 of 4
-    liked_tab
+- tapOn:
+    id: "liked_tab"
 
 # 2. Tap on 1st video of the liked tab and unlike the video: Validate video is unliked
-- tapOn: liked_video_thumbnail_0
+- tapOn:
+    id: "liked_video_thumbnail_0"
 - waitForAnimationToEnd
 - tapOn:
     id: like_button
 - runFlow: "../asserts/assertVideoUnliked.yaml"
 
 # 3. Close the video and Tap on profile, liked tab: Validate tab is loaded and video is not listed
-- tapOn: Close video player
-- tapOn: |-
-    Tab 2 of 4
-    liked_tab
-- assertNotVisible: liked_video_thumbnail_0
+# The liked-grid tap opens PooledFullscreenVideoFeedScreen, which has no
+# "Close video player" control -- that label belongs to VideoDetailScreen,
+# a different route. This screen dismisses through the app bar's back
+# button, whose default label is "Go back".
+- tapOn:
+    id: "back_button"
+- tapOn:
+    id: "liked_tab"
+- assertNotVisible:
+    id: "liked_video_thumbnail_0"

@@ -22,7 +22,33 @@ abstract class SemanticIds {
   static String cameraMode(String mode) => 'camera_mode_$mode';
   static const String cameraRecordButton = 'camera_record_button';
 
+  /// Welcome screen. The fresh-install and returning-user branches show
+  /// different buttons, so each action gets its own id rather than being
+  /// disambiguated by position.
+  static const String authCreateAccountButton = 'create_account_button';
+  static const String authSignInButton = 'sign_in_button';
+  static const String authContinueAsButton = 'continue_as_button';
+  static const String authUseAnotherAccountButton =
+      'use_another_account_button';
+
+  /// Invite gate. Account creation is gated on a code here, so these two sit
+  /// on the critical path of every flow that signs up.
+  static const String authInviteCodeField = 'invite_code_field';
+  static const String authInviteSubmitButton = 'invite_submit_button';
+
+  /// Settings rows on the path to signing the device out. removeKeys is the
+  /// teardown of every E2E flow, so this route has to stay addressable.
+  static const String settingsNostrRow = 'nostr_settings_tile';
+  static const String settingsRemoveKeysRow = 'remove_keys_tile';
+
   static const String profileStatsRow = 'profile_stats_row';
+
+  /// Opens Settings from the own-profile header. This is the only entry
+  /// point to Settings in the app, so it gates every E2E flow that ends in
+  /// key removal.
+  static const String profileSettingsButton = 'settings_button';
+  static const String profileBackButton = 'profile_back_button';
+  static const String profileMoreButton = 'profile_more_button';
 
   static String listCard(int index) => 'list_card_$index';
 

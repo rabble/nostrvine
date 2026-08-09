@@ -1,43 +1,40 @@
 appId: co.openvine.app
+tags:
+  - auth
 ---
-#TC to check that the user can login with a fresh app
+#TC to create an account on a freshly installed app
 #Steps:
-# 1. Open the app in clear state: Login screen is displayed
-# 2. Tap on I am 16 and I agree, tap on Get Started: User is directed to the empty Home screen
-# Fresh install shows "Get Started", returning user shows "Start with a new identity"
+# 1. Open the app in clear state: the welcome screen is displayed
+# 2. Create a new account, declining the backup and multi-device prompts:
+#    the user lands on Explore / New
 
-# 1. Open the app in clear state: Login screen is displayed
+# 1. Open the app in clear state
 - launchApp:
     clearState: true
 - runFlow: "../asserts/assertSplash.yaml"
-
 - runFlow: "../asserts/assertLogin.yaml"
 
-#2. Tap on Create new Divine account
-
-- runFlow:
-    when:
-      visible: Create a new Divine account
-    commands:
-      - tapOn: Create a new Divine account
-      - tapOn: Use Divine with no backup
-      - tapOn: Use this device only
-
-# Commenting this until we have a better test implementation of signing in with keys
-# - runFlow:
-#    when:
-#      visible: Continue with Saved Keys
-#    commands:
-#      - assertVisible: Start with a new identity
-#      - tapOn: Start with a new identity
-#      # Assert the new identity modal and test Cancel
-#      - runFlow: ../asserts/assertNewIdentity.yaml
-#      - tapOn: Cancel
-#      - waitForAnimationToEnd
-#      # Tap again and confirm with Start Fresh
-#      - tapOn: Start with a new identity
-#      - assertVisible: "Start with New Identity?"
-#      - tapOn: Start Fresh
+# 2. Create a new account.
+#
+# Targeted by id: this button's copy differs between the fresh-install and
+# returning-user variants of the welcome screen ("Create a new Divine
+# account" vs the short form), and both have changed since these flows were
+# written. The id is the same on both branches.
+- tapOn:
+    id: "create_account_button"
+- tapOn: Use Divine with no backup
+- tapOn: Use this device only
 
 - waitForAnimationToEnd
+
+# 3. Signing up now lands on the Home feed, not Explore. The old flow
+# asserted Explore directly and would have "passed" on the bottom-nav
+# Explore button, which is present on every screen -- so navigate
+# explicitly and then assert.
+- extendedWaitUntil:
+    visible:
+      id: "home_tab"
+    timeout: 30000
+- tapOn:
+    id: "explore_tab"
 - runFlow: ../asserts/assertExploreNew.yaml

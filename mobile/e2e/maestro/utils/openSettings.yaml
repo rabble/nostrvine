@@ -1,17 +1,25 @@
 appId: co.openvine.app
 ---
-#Utility TC, given the user is logged in, open the settings modal
-#Steps:
-# 1. Tap on Home and Menu: validate
-# 2. Tap on Settings: validate
+#Utility: given the user is signed in, open Settings.
+#
+# The old route -- double-tap Home, tap "Open menu", tap "Settings" -- is
+# gone. There is no hamburger menu in the app; "Open menu" exists only as a
+# divine_ui default that no screen passes. Settings is now reached from the
+# gear on the user's own profile header, which is its only entry point.
 
-# 1. Tap on Home and  Menu: validate menu is displayed
-- doubleTapOn:
-    id: home_tab
-    delay: 100
-- tapOn: Open menu
-- runFlow: "../asserts/assertMenu.yaml"
+- tapOn:
+    id: "profile_tab"
+- extendedWaitUntil:
+    visible:
+      id: "settings_button"
+    timeout: 30000
+- tapOn:
+    id: "settings_button"
 
-# 2. Tap on Settings: validate
-- tapOn: "Settings"
-- runFlow: "../asserts/assertSettings.yaml"
+# Settings itself is asserted by whatever is looking for a specific row:
+# the screen is a flat list whose contents vary with feature flags and
+# developer mode, so there is no stable full-screen assertion to make.
+- extendedWaitUntil:
+    visible:
+      id: "nostr_settings_tile"
+    timeout: 30000

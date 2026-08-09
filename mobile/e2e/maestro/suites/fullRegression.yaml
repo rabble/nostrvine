@@ -1,29 +1,39 @@
 appId: co.openvine.app
 name: Divine regression test
+# Account credentials and content fixtures are NOT committed. Supply them at
+# run time; CI reads them from the `maestro_e2e_credentials` Codemagic group:
+#
+#   maestro test \
+#     -e USER_KEYS=nsec1... \
+#     -e SEARCH_USER=... -e SEARCH_USER_ID=user_profile_tile_<hex> \
+#     -e VIDEO_USER=... -e VIDEO_DESCRIPTION=... -e VIDEO_DATA=... \
+#     -e EXISTING_USERNAME=... \
+#     e2e/maestro/suites/fullRegression.yaml
+#
+# The preflight block below fails the run when any of them is missing. An
+# absent variable resolves to `undefined` rather than erroring, so without
+# that guard the suite would run against garbage selectors and report a
+# misleading failure deep inside a flow.
 env:
   VIDEO_TITLE: "time to" # Setting the video title parameter
-  VIDEO_DATA: "Play video Loading... When you jammin to JB too hard and you grab a hot mic. #funny #fail #failvine #EpicFail Video by Kay 14.5k 46M"
-  VIDEO_USER: "FunnyVines"
-  VIDEO_DESCRIPTION: "When you jammin to JB too hard and you grab a hot mic. " # Setting the video description parameter
   SEARCH_TAG: "comedy"
-  SEARCH_USER: "liz"
-  SEARCH_USER_DESCRIPTION: "liz"
-  SEARCH_USER_ID: user_profile_tile_0edc2f474484769bc9bf6d471d180e4e280b0bcd719b6da791001beb730cff1b
-  SEARCH_USER_BIO: "liz"
   COMMENT: "Automated comment"
   DISPLAY_NAME: "AutomationUser"
   USER_BIO: "AutomationUser bio"
   USER_NAME: "Automation User"
-  USER_KEYS: "nsec16fvy70pyfw7cjegt4wry24z4nwaleqanrkwputmy5na0wrdyak4sdkn8l2" #A test user
-  USER_wKEYS_NAME: "AleB wKeys"
-  USER_wKEYS_BIO: "user profile from Uy for testing login with keys"
-  #VIDEO_DATA: "Play video IG: @SamuelGrubbs Yaga 😂💀 162.6k 84.8M"
-  #VIDEO_USER: "IG: @SamuelGrubbs"
-  #VIDEO_DESCRIPTION: "Yaga 😂💀"
-  VIDEO_USER_BIO: "IG: @SamuelGrubbs IG: @SamuelGrubbs ✞He>i✞ 📧Biz Email👉SamuelGrubbsBiz@gmail.com📧 👻Snapchat/IFunny👉@SamuelGrubbs👻 📷Instagram🐥Twitter👉@SamuelGrubbs1📷🐥 #TheNerd and #Money🏀"
+  USER_wKEYS_NAME: "AutomationUser wKeys"
+  USER_wKEYS_BIO: "Profile used for testing sign-in with existing keys"
   PRIV_KEY_TO_DELETE: ""
-  EXISTING_USERNAME: "jaysonpotter"
 ---
+#Preflight: every run-time credential must be supplied via -e
+- assertTrue: ${typeof USER_KEYS !== 'undefined' && USER_KEYS !== ''}
+- assertTrue: ${typeof SEARCH_USER !== 'undefined' && SEARCH_USER !== ''}
+- assertTrue: ${typeof SEARCH_USER_ID !== 'undefined' && SEARCH_USER_ID !== ''}
+- assertTrue: ${typeof VIDEO_USER !== 'undefined' && VIDEO_USER !== ''}
+- assertTrue: ${typeof VIDEO_DESCRIPTION !== 'undefined' && VIDEO_DESCRIPTION !== ''}
+- assertTrue: ${typeof VIDEO_DATA !== 'undefined' && VIDEO_DATA !== ''}
+- assertTrue: ${typeof EXISTING_USERNAME !== 'undefined' && EXISTING_USERNAME !== ''}
+
 #Social interaction tests
 - runFlow: ../flows/followFlow.yaml
 - runFlow: ../flows/likeFlow.yaml

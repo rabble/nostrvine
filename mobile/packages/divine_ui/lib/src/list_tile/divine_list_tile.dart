@@ -35,6 +35,7 @@ class DivineListTile extends StatelessWidget {
     this.trailingIcon = DivineIconName.caretRight,
     this.trailingIconSize = 24,
     this.trailingColor = VineTheme.primary,
+    this.semanticIdentifier,
     super.key,
   }) : assert(
          icon == null || leading == null,
@@ -46,6 +47,13 @@ class DivineListTile extends StatelessWidget {
 
   /// Primary label for the row.
   final String title;
+
+  /// Stable `Semantics(identifier:)` value used as a UI-test anchor.
+  ///
+  /// Settings rows are otherwise only addressable by their title and
+  /// subtitle copy, which is localized and changes often. The identifier is
+  /// never announced and does not replace the row's accessible name.
+  final String? semanticIdentifier;
 
   /// Optional supporting copy shown beneath [title].
   final String? subtitle;
@@ -80,7 +88,7 @@ class DivineListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.vineColors;
-    return ListTile(
+    final tile = ListTile(
       minTileHeight: minHeight,
       leading:
           leading ??
@@ -111,6 +119,14 @@ class DivineListTile extends StatelessWidget {
             ),
       onTap: onTap,
     );
+
+    final identifier = semanticIdentifier;
+    if (identifier == null) return tile;
+
+    // ListTile merges its title and subtitle into one node; wrap rather than
+    // exclude so the row keeps announcing that copy and only gains the
+    // anchor.
+    return Semantics(identifier: identifier, child: tile);
   }
 }
 

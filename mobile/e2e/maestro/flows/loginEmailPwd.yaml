@@ -1,8 +1,14 @@
 appId: co.openvine.app
-env:
-  USER_EMAIL: automatedmaestrouser@mailinator.com
-  USER_PWD: Password01
+# Credentials are NOT committed. Supply them at run time; CI reads them from
+# the `maestro_e2e_credentials` Codemagic group:
+#
+#   maestro test -e USER_EMAIL=... -e USER_PWD=... e2e/maestro/flows/loginEmailPwd.yaml
 ---
+#Preflight: an absent variable resolves to `undefined` rather than erroring,
+#so guard explicitly instead of letting the sign-in fail with a garbage value.
+- assertTrue: ${typeof USER_EMAIL !== 'undefined' && USER_EMAIL !== ''}
+- assertTrue: ${typeof USER_PWD !== 'undefined' && USER_PWD !== ''}
+
 #TC to check that the user can login with a fresh app with email and pwd
 #Steps:
 # 1. Open the app in clear state: Login screen is displayed
@@ -17,7 +23,8 @@ env:
 
 # 2. Tap on sign in
 
-- tapOn: Sign in with a different account
+- tapOn:
+    id: "sign_in_button"
 - runFlow: ../asserts/assertSignIn.yaml
 
 # 3. Input Email and Password, and tap on "Log In": User is redirected to the Explore screen, New tab
@@ -29,24 +36,6 @@ env:
 - tapOn:
           text: Sign in
           index: 1
-#Android keyboard close
-#- runFlow:
-#    when:
-#      visible: Back
-#    commands:
-#      - tapOn:
-#          id: input_method_nav_back
-#      - tapOn:
-#          text: Sign in
- #         index: 1
-#iOS keyboard close
-#- runFlow:
-#    when:
-#      visible: Sign in
-#    commands:
-#      - tapOn:
-#          text: Sign in
-#          index: 1
 
 - waitForAnimationToEnd
 - runFlow:

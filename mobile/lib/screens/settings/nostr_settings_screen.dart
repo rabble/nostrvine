@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:nostr_client/nostr_client.dart' show Nip89ClientTag;
 import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyStorageException;
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -162,6 +163,7 @@ class _RemoveKeysTile extends StatelessWidget {
       ),
       title: context.l10n.nostrSettingsRemoveKeys,
       subtitle: context.l10n.nostrSettingsRemoveKeysSubtitle,
+      semanticIdentifier: SemanticIds.settingsRemoveKeysRow,
       onTap: () => _handleRemoveLocalAccount(context, ref),
       trailingColor: VineTheme.warning,
       titleColor: VineTheme.warning,
