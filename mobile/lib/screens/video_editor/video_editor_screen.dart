@@ -135,9 +135,13 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
   DivineVideoClip? get _clip => ref.read(clipManagerProvider).firstClipOrNull;
 
   /// FittedBox scale factor between bodySize and renderSize.
+  ///
+  /// Must pass the same arguments as [VideoEditorScope.fittedBoxScale] —
+  /// layers sized here are painted by the canvas at that scale.
   double get _fittedBoxScale => VideoEditorScope.calculateFittedBoxScale(
     _bodySizeNotifier.value,
     _clip?.originalAspectRatio ?? 9 / 16,
+    targetAspectRatio: _clip?.targetAspectRatio.value,
   );
 
   @override
