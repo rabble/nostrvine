@@ -99,9 +99,9 @@ void main() {
   testWidgets('shows the no-speech message when status is empty', (
     tester,
   ) async {
-    when(() => cubit.state).thenReturn(
-      const SubtitleEditorState(status: SubtitleEditorStatus.empty),
-    );
+    when(
+      () => cubit.state,
+    ).thenReturn(const SubtitleEditorState(status: SubtitleEditorStatus.empty));
     await tester.pumpWidget(pump());
 
     final l10n = lookupAppLocalizations(const Locale('en'));
@@ -122,10 +122,36 @@ void main() {
     expect(find.text(l10n.subtitleEditorProcessing), findsNothing);
   });
 
-  testWidgets('retry from a no-cue state reloads', (tester) async {
+  testWidgets('a failed load keeps its reason on screen', (tester) async {
     when(() => cubit.state).thenReturn(
-      const SubtitleEditorState(status: SubtitleEditorStatus.empty),
+      const SubtitleEditorState(status: SubtitleEditorStatus.failure),
     );
+    await tester.pumpWidget(pump());
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(find.text(l10n.subtitleEditorLoadError), findsOneWidget);
+    expect(find.text(l10n.subtitleEditorWriteOwn), findsOneWidget);
+  });
+
+  testWidgets('a failed save keeps the cues the creator wrote', (tester) async {
+    when(() => cubit.state).thenReturn(
+      const SubtitleEditorState(
+        status: SubtitleEditorStatus.failure,
+        isDirty: true,
+        cues: [EditableCue(start: 0, end: 1000, text: 'written')],
+      ),
+    );
+    await tester.pumpWidget(pump());
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(find.text('written'), findsOneWidget);
+    expect(find.text(l10n.subtitleEditorLoadError), findsNothing);
+  });
+
+  testWidgets('retry from a no-cue state reloads', (tester) async {
+    when(
+      () => cubit.state,
+    ).thenReturn(const SubtitleEditorState(status: SubtitleEditorStatus.empty));
     when(cubit.load).thenAnswer((_) async {});
     await tester.pumpWidget(pump());
 
@@ -137,9 +163,9 @@ void main() {
   testWidgets('offers writing your own captions when the track is empty', (
     tester,
   ) async {
-    when(() => cubit.state).thenReturn(
-      const SubtitleEditorState(status: SubtitleEditorStatus.empty),
-    );
+    when(
+      () => cubit.state,
+    ).thenReturn(const SubtitleEditorState(status: SubtitleEditorStatus.empty));
     when(cubit.addCue).thenReturn(null);
     await tester.pumpWidget(pump());
 
@@ -189,9 +215,7 @@ void main() {
     await tester.pumpWidget(pump());
 
     final l10n = lookupAppLocalizations(const Locale('en'));
-    await tester.tap(
-      find.bySemanticsLabel(l10n.subtitleEditorRemoveCue).last,
-    );
+    await tester.tap(find.bySemanticsLabel(l10n.subtitleEditorRemoveCue).last);
     verify(() => cubit.removeCue(1)).called(1);
   });
 
@@ -218,6 +242,34 @@ void main() {
       '1.5',
     );
     verify(() => cubit.updateCueTiming(0, start: 1500)).called(1);
+  });
+
+  testWidgets("clearing a timing field restores the cue's value on blur", (
+    tester,
+  ) async {
+    when(() => cubit.state).thenReturn(
+      const SubtitleEditorState(
+        status: SubtitleEditorStatus.ready,
+        cues: [EditableCue(start: 1500, end: 2000, text: 'one')],
+      ),
+    );
+    await tester.pumpWidget(pump());
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    final startField = find.descendant(
+      of: find.bySemanticsLabel(l10n.subtitleEditorStartLabel),
+      matching: find.byType(TextField),
+    );
+
+    // Empty is unparseable, so the cubit never hears about it and the cue
+    // still holds 1.5s — the field must not keep claiming otherwise.
+    await tester.enterText(startField, '');
+    verifyNever(() => cubit.updateCueTiming(any(), start: any(named: 'start')));
+
+    await tester.tap(cueTextFields(l10n).first);
+    await tester.pump();
+
+    expect(tester.widget<TextField>(startField).controller?.text, '1.5');
   });
 
   testWidgets('rows follow the cue that moved into their position', (
@@ -293,8 +345,16 @@ void main() {
     await tester.pumpWidget(pump());
     await tester.pump();
 
+    // Scoped to the snackbar: the body now carries the same copy, since a
+    // snackbar fades and the reason has to outlive it.
     final l10n = lookupAppLocalizations(const Locale('en'));
-    expect(find.text(l10n.subtitleEditorLoadError), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(SnackBar),
+        matching: find.text(l10n.subtitleEditorLoadError),
+      ),
+      findsOneWidget,
+    );
     expect(find.text(l10n.subtitleEditorSaveError), findsNothing);
   });
 

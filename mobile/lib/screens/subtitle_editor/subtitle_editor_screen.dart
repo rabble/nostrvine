@@ -160,6 +160,14 @@ class SubtitleEditorView extends StatelessWidget {
             message: l10n.subtitleEditorLoadError,
             canWriteOwn: true,
           ),
+          // A failure with nothing loaded is a failed load: the snackbar
+          // fades, so the reason has to stay on screen. A failure with cues
+          // is a failed save, and those cues are the creator's work — keep
+          // the list.
+          SubtitleEditorStatus.failure when state.cues.isEmpty => _NoCues(
+            message: l10n.subtitleEditorLoadError,
+            canWriteOwn: true,
+          ),
           _ => _CueList(state: state),
         },
       ),
@@ -388,9 +396,7 @@ class _CueTextFieldState extends State<_CueTextField> {
       minLines: 1,
       maxLines: null,
       style: VineTheme.bodyMediumFont(color: context.vineColors.primaryText),
-      decoration: InputDecoration(
-        hintText: context.l10n.subtitleEditorCueHint,
-      ),
+      decoration: InputDecoration(hintText: context.l10n.subtitleEditorCueHint),
       onChanged: widget.onChanged,
     );
   }
@@ -416,6 +422,7 @@ class _TimeFieldState extends State<_TimeField> {
   late final TextEditingController _controller = TextEditingController(
     text: _format(widget.milliseconds),
   );
+  late final FocusNode _focusNode = FocusNode()..addListener(_onFocusChanged);
 
   static String _format(int milliseconds) =>
       (milliseconds / Duration.millisecondsPerSecond).toStringAsFixed(1);
@@ -424,6 +431,15 @@ class _TimeFieldState extends State<_TimeField> {
     final seconds = double.tryParse(value.replaceAll(',', '.'));
     if (seconds == null || seconds.isNegative || !seconds.isFinite) return null;
     return (seconds * Duration.millisecondsPerSecond).round();
+  }
+
+  // Unparseable input — a cleared field, a lone "-" — never reaches the cubit,
+  // so the field would sit showing a value the cue does not hold and publish
+  // the old one. Restore what the cue actually holds once editing ends.
+  void _onFocusChanged() {
+    if (_focusNode.hasFocus) return;
+    final committed = _format(widget.milliseconds);
+    if (_controller.text != committed) _controller.text = committed;
   }
 
   @override
@@ -438,6 +454,9 @@ class _TimeFieldState extends State<_TimeField> {
 
   @override
   void dispose() {
+    _focusNode
+      ..removeListener(_onFocusChanged)
+      ..dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -451,11 +470,10 @@ class _TimeFieldState extends State<_TimeField> {
         textField: true,
         child: TextField(
           controller: _controller,
+          focusNode: _focusNode,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           textAlign: TextAlign.end,
-          style: VineTheme.bodySmallFont(
-            color: context.vineColors.primaryText,
-          ),
+          style: VineTheme.bodySmallFont(color: context.vineColors.primaryText),
           decoration: InputDecoration(
             isDense: true,
             suffixText: 's',
