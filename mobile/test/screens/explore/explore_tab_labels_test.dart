@@ -2,6 +2,7 @@
 // ABOUTME: Covers shell titles plus the server-supplied featured tab label.
 
 import 'package:flutter/widgets.dart';
+import 'package:characters/characters.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:openvine/blocs/explore_tabs/explore_tabs_cubit.dart';
@@ -153,6 +154,56 @@ void main() {
         labelForExploreTabName(en, exploreListsTabName),
         equals(en.exploreTabLists),
       );
+    });
+
+    test('collapses newlines that a grapheme count would let through', () {
+      // Tab lays out at a fixed height, so extra lines overflow the bar even
+      // though four graphemes are well inside the clamp.
+      final label = labelForExploreTabName(
+        en,
+        exploreFeaturedTabName,
+        featuredTab: _featured(const {'default': 'a\nb\nc\nd'}),
+      );
+
+      expect(label, equals('a b c d'));
+    });
+
+    test('strips bidi overrides from a server label', () {
+      final label = labelForExploreTabName(
+        en,
+        exploreFeaturedTabName,
+        featuredTab: _featured(const {'default': 'Spot\u202elight'}),
+      );
+
+      expect(label, equals('Spot light'));
+      expect(label.contains('\u202e'), isFalse);
+    });
+
+    test('falls back to the generic noun for control-only copy', () {
+      final label = labelForExploreTabName(
+        en,
+        exploreFeaturedTabName,
+        featuredTab: _featured(const {'default': '\n\u202e\t'}),
+      );
+
+      expect(label, equals(en.navExplore));
+    });
+  });
+
+  group('sanitizeFeaturedTabText', () {
+    test('clamps an overlong disclosure marker', () {
+      final sanitized = sanitizeFeaturedTabText('x' * 80);
+
+      expect(sanitized.characters.length, equals(featuredTabLabelMaxLength));
+      expect(sanitized.endsWith('…'), isTrue);
+    });
+
+    test('keeps a short marker verbatim', () {
+      expect(sanitizeFeaturedTabText('  Ad  '), equals('Ad'));
+    });
+
+    test('returns empty when nothing renderable survives', () {
+      expect(sanitizeFeaturedTabText('\n\t '), isEmpty);
     });
   });
 }

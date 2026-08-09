@@ -119,11 +119,15 @@ class _ExploreTabLabel extends StatelessWidget {
     final l10n = context.l10n;
     final colors = context.vineColors;
     final label = labelForExploreTabName(l10n, name, featuredTab: featuredTab);
-    final disclosure = name == exploreFeaturedTabName
+    // Same untrusted-input path as the label beside it, so same treatment.
+    final rawDisclosure = name == exploreFeaturedTabName
         ? featuredTab?.disclosureLabelFor(l10n.localeName)
         : null;
+    final disclosure = rawDisclosure == null
+        ? null
+        : sanitizeFeaturedTabText(rawDisclosure);
 
-    if (disclosure == null) return Text(label);
+    if (disclosure == null || disclosure.isEmpty) return Text(label);
 
     return Row(
       mainAxisSize: MainAxisSize.min,

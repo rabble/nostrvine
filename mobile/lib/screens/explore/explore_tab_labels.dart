@@ -52,9 +52,35 @@ String labelForExploreTabName(
 /// Clamps a server-supplied label so an unexpected length cannot stretch the
 /// tab bar, falling back to the generic Explore noun when it is unusable.
 String _clampFeaturedLabel(String label, AppLocalizations l10n) {
-  final trimmed = label.trim();
-  if (trimmed.isEmpty) return l10n.navExplore;
-  final characters = trimmed.characters;
-  if (characters.length <= featuredTabLabelMaxLength) return trimmed;
+  final sanitized = sanitizeFeaturedTabText(label);
+  if (sanitized.isEmpty) return l10n.navExplore;
+  return sanitized;
+}
+
+/// Collapses and clamps a server-supplied string bound for the tab bar.
+///
+/// Length alone does not bound a tab: `Tab` lays out at a fixed height, so a
+/// label carrying newlines paints extra lines into a box that cannot grow, and
+/// bidi overrides reorder glyphs across the whole bar. Neither is caught by a
+/// grapheme count. Both fields on a featured tab are editorial copy authored
+/// outside this repo, so both go through here.
+///
+/// Returns an empty string when nothing renderable survives.
+String sanitizeFeaturedTabText(String raw) {
+  final collapsed = raw
+      .replaceAll(_featuredTabControlCharacters, ' ')
+      .replaceAll(_repeatedWhitespace, ' ')
+      .trim();
+  if (collapsed.isEmpty) return '';
+  final characters = collapsed.characters;
+  if (characters.length <= featuredTabLabelMaxLength) return collapsed;
   return '${characters.take(featuredTabLabelMaxLength - 1).toString().trimRight()}…';
 }
+
+/// C0/C1 controls, line/paragraph separators, and bidi formatting overrides.
+final _featuredTabControlCharacters = RegExp(
+  '[\u0000-\u001f\u007f-\u009f\u2028\u2029'
+  '\u200e\u200f\u202a-\u202e\u2066-\u2069]',
+);
+
+final _repeatedWhitespace = RegExp(r'\s+');
