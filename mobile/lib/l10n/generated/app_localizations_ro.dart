@@ -4235,8 +4235,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => 'Ștergi videoclipul?';
 
   @override
-  String get shareMenuVideoDeletionRequested =>
-      'Cerere de ștergere a videoclipului trimisă';
+  String get shareMenuVideoDeletionRequested => 'Videoclip șters';
 
   @override
   String get shareMenuContentLabels => 'Etichete de conținut';

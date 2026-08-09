@@ -1619,7 +1619,7 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "Ta bort video?",
-    "shareMenuVideoDeletionRequested": "Videoborttagning begärd",
+    "shareMenuVideoDeletionRequested": "Video borttagen",
     "shareMenuFailedToDeleteVideo": "Kunde inte ta bort videon: {error}",
     "@shareMenuFailedToDeleteVideo": {
         "placeholders": {

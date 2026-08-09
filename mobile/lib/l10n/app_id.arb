@@ -1616,7 +1616,7 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "Hapus Video?",
-    "shareMenuVideoDeletionRequested": "Penghapusan video diminta",
+    "shareMenuVideoDeletionRequested": "Video dihapus",
     "shareMenuFailedToDeleteVideo": "Gagal menghapus video: {error}",
     "@shareMenuFailedToDeleteVideo": {
         "placeholders": {

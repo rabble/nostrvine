@@ -4080,7 +4080,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => 'حذف الفيديو؟';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'تم طلب حذف الفيديو';
+  String get shareMenuVideoDeletionRequested => 'تم حذف الفيديو';
 
   @override
   String get shareMenuContentLabels => 'وسوم المحتوى';

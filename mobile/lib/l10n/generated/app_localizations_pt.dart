@@ -4146,7 +4146,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => 'Excluir vídeo?';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'Exclusão de vídeo solicitada';
+  String get shareMenuVideoDeletionRequested => 'Vídeo excluído';
 
   @override
   String get shareMenuContentLabels => 'Rótulos de conteúdo';

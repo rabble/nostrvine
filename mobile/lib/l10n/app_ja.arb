@@ -1609,7 +1609,7 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "動画を削除する?",
-    "shareMenuVideoDeletionRequested": "動画の削除をリクエストしたよ",
+    "shareMenuVideoDeletionRequested": "動画を削除しました",
     "shareMenuFailedToDeleteVideo": "動画の削除がうまくいかなかった: {error}",
     "@shareMenuFailedToDeleteVideo": {
         "placeholders": {

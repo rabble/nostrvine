@@ -1619,7 +1619,7 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "Supprimer la vidéo ?",
-    "shareMenuVideoDeletionRequested": "Suppression de la vidéo demandée",
+    "shareMenuVideoDeletionRequested": "Vidéo supprimée",
     "shareMenuFailedToDeleteVideo": "Échec de la suppression de la vidéo : {error}",
     "@shareMenuFailedToDeleteVideo": {
         "placeholders": {

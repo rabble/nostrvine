@@ -1619,7 +1619,7 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "Excluir vídeo?",
-    "shareMenuVideoDeletionRequested": "Exclusão de vídeo solicitada",
+    "shareMenuVideoDeletionRequested": "Vídeo excluído",
     "shareMenuFailedToDeleteVideo": "Falha ao excluir vídeo: {error}",
     "@shareMenuFailedToDeleteVideo": {
         "placeholders": {

@@ -4085,7 +4085,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => 'Video Silinsin mi?';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'Video silme isteği alındı';
+  String get shareMenuVideoDeletionRequested => 'Video silindi';
 
   @override
   String get shareMenuContentLabels => 'İçerik etiketleri';

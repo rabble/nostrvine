@@ -4159,8 +4159,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => '¿Eliminar video?';
 
   @override
-  String get shareMenuVideoDeletionRequested =>
-      'Eliminación del video solicitada';
+  String get shareMenuVideoDeletionRequested => 'Video eliminado';
 
   @override
   String get shareMenuContentLabels => 'Etiquetas de contenido';

@@ -1616,7 +1616,7 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "Video Silinsin mi?",
-    "shareMenuVideoDeletionRequested": "Video silme isteği alındı",
+    "shareMenuVideoDeletionRequested": "Video silindi",
     "shareMenuFailedToDeleteVideo": "Video silinemedi: {error}",
     "@shareMenuFailedToDeleteVideo": {
         "placeholders": {

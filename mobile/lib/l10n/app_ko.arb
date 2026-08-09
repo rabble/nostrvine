@@ -982,7 +982,7 @@
     "shareMenuVideoUpdatedWithInviteFailures": "동영상이 업데이트되었지만 {count, plural, =1{공동 작업자 초대 1개가 전송되지 않았습니다.} other{공동 작업자 초대 {count}개가 전송되지 않았습니다.}}",
     "shareMenuFailedToUpdateVideo": "영상 업데이트에 실패했어요: {error}",
     "shareMenuDeleteVideoQuestion": "영상을 삭제할까요?",
-    "shareMenuVideoDeletionRequested": "영상 삭제를 요청했어요",
+    "shareMenuVideoDeletionRequested": "영상을 삭제했어요",
     "shareMenuFailedToDeleteVideo": "영상 삭제에 실패했어요: {error}",
     "shareMenuContentLabels": "콘텐츠 라벨",
     "shareMenuAddContentLabels": "콘텐츠 라벨 추가",

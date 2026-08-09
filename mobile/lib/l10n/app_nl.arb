@@ -1619,7 +1619,7 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "Video verwijderen?",
-    "shareMenuVideoDeletionRequested": "Video-verwijdering aangevraagd",
+    "shareMenuVideoDeletionRequested": "Video verwijderd",
     "shareMenuFailedToDeleteVideo": "Video verwijderen mislukt: {error}",
     "@shareMenuFailedToDeleteVideo": {
         "placeholders": {

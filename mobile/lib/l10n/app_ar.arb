@@ -1609,7 +1609,7 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "حذف الفيديو؟",
-    "shareMenuVideoDeletionRequested": "تم طلب حذف الفيديو",
+    "shareMenuVideoDeletionRequested": "تم حذف الفيديو",
     "shareMenuFailedToDeleteVideo": "فشل حذف الفيديو: {error}",
     "@shareMenuFailedToDeleteVideo": {
         "placeholders": {

@@ -3921,7 +3921,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => '영상을 삭제할까요?';
 
   @override
-  String get shareMenuVideoDeletionRequested => '영상 삭제를 요청했어요';
+  String get shareMenuVideoDeletionRequested => '영상을 삭제했어요';
 
   @override
   String get shareMenuContentLabels => '콘텐츠 라벨';
