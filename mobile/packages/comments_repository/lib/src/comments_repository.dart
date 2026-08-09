@@ -1172,27 +1172,30 @@ class CommentsRepository {
       String? imetaUrlCandidate;
       String? imetaMimeType;
 
-      for (var i = 1; i < tag.length; i++) {
-        final field = tag[i].trim();
-        if (field.startsWith('url ')) {
-          imetaUrlCandidate = field.substring(4).trim();
-        } else if (field.startsWith('m ')) {
-          imetaMimeType = field.substring(2).trim().toLowerCase();
-        } else if (field.startsWith('image ')) {
-          thumbnailUrl = field.substring(6).trim();
-        } else if (field.startsWith('dim ')) {
-          videoDimensions = field.substring(4).trim();
-        } else if (field.startsWith('duration ')) {
-          videoDuration = int.tryParse(field.substring(9).trim());
-        } else if (field.startsWith('blurhash ')) {
-          videoBlurhash = field.substring(9).trim();
+      parseImetaTag(tag, (key, rawValue) {
+        final value = rawValue.trim();
+        switch (key) {
+          case 'url':
+            imetaUrlCandidate = value;
+          case 'm':
+            imetaMimeType = value.toLowerCase();
+          case 'image':
+          case 'thumb':
+            thumbnailUrl = value;
+          case 'dim':
+            videoDimensions = value;
+          case 'duration':
+            videoDuration = int.tryParse(value);
+          case 'blurhash':
+            videoBlurhash = value;
         }
-      }
+      });
 
-      if (imetaUrlCandidate != null &&
+      final candidate = imetaUrlCandidate;
+      if (candidate != null &&
           ((imetaMimeType?.startsWith('video/') ?? false) ||
-              _isVideoUrl(imetaUrlCandidate))) {
-        videoUrl = imetaUrlCandidate;
+              _isVideoUrl(candidate))) {
+        videoUrl = candidate;
       }
     }
 

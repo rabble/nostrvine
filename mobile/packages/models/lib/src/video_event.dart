@@ -6,7 +6,6 @@
 import 'dart:convert';
 
 import 'package:meta/meta.dart';
-import 'package:models/src/imeta_tag.dart';
 import 'package:models/src/nip71_video_kinds.dart';
 import 'package:models/src/video_attribution.dart';
 import 'package:models/src/video_url_resolver.dart';
