@@ -2212,6 +2212,133 @@ void main() {
         expect(container.read(clipManagerProvider).clips, isEmpty);
       });
 
+      test(
+        'drops clip-source credits when the reused clip is deleted',
+        () async {
+          const sourceCreator =
+              'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+          final draft = DivineVideoDraft.create(
+            id: 'draft-1',
+            clips: [
+              DivineVideoClip(
+                id: 'reused',
+                video: EditorVideo.file(clipVideoPath),
+                thumbnailPath: clipThumbnailPath,
+                duration: const Duration(seconds: 3),
+                recordedAt: DateTime.now(),
+                targetAspectRatio: .vertical,
+                originalAspectRatio: 9 / 16,
+                sourceAuthorPubkey: sourceCreator,
+                sourceAddressableId: '34236:$sourceCreator:reused-source',
+                sourceRelayHint: 'wss://source.relay',
+              ),
+            ],
+            title: 'Title',
+            description: '',
+            hashtags: const {},
+            selectedApproach: 'video',
+            clipSourceCredits: const [
+              ClipSourceCredit(
+                authorPubkey: sourceCreator,
+                addressableId: '34236:$sourceCreator:reused-source',
+                relayUrl: 'wss://source.relay',
+              ),
+            ],
+          );
+          when(
+            () => mockDraftStorage.getDraftById('draft-1'),
+          ).thenAnswer((_) async => draft);
+
+          await container
+              .read(videoEditorProvider.notifier)
+              .restoreDraft('draft-1');
+          container.read(clipManagerProvider.notifier).replaceClips([
+            DivineVideoClip(
+              id: 'local',
+              video: EditorVideo.file(clipVideoPath),
+              duration: const Duration(seconds: 3),
+              recordedAt: DateTime.now(),
+              targetAspectRatio: .vertical,
+              originalAspectRatio: 9 / 16,
+            ),
+          ], autosave: false);
+
+          expect(
+            container
+                .read(videoEditorProvider.notifier)
+                .getActiveDraft()
+                .clipSourceCredits,
+            isEmpty,
+            reason:
+                'a clip-source credit is a factual claim about footage in the '
+                'video; deleting the reused clip must not leave the credit '
+                'behind to be published and notify its creator',
+          );
+        },
+      );
+
+      test(
+        'drops clip-source credits of a clip whose media went missing',
+        () async {
+          const sourceCreator =
+              'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+          final draft = DivineVideoDraft.create(
+            id: 'draft-1',
+            clips: [
+              DivineVideoClip(
+                id: 'present',
+                video: EditorVideo.file(clipVideoPath),
+                thumbnailPath: clipThumbnailPath,
+                duration: const Duration(seconds: 3),
+                recordedAt: DateTime.now(),
+                targetAspectRatio: .vertical,
+                originalAspectRatio: 9 / 16,
+              ),
+              DivineVideoClip(
+                id: 'orphan',
+                video: EditorVideo.file('${tempDir.path}/deleted.mp4'),
+                duration: const Duration(seconds: 3),
+                recordedAt: DateTime.now(),
+                targetAspectRatio: .vertical,
+                originalAspectRatio: 9 / 16,
+                sourceAuthorPubkey: sourceCreator,
+                sourceAddressableId: '34236:$sourceCreator:reused-source',
+                sourceRelayHint: 'wss://source.relay',
+              ),
+            ],
+            title: 'Title',
+            description: '',
+            hashtags: const {},
+            selectedApproach: 'video',
+            clipSourceCredits: const [
+              ClipSourceCredit(
+                authorPubkey: sourceCreator,
+                addressableId: '34236:$sourceCreator:reused-source',
+                relayUrl: 'wss://source.relay',
+              ),
+            ],
+          );
+          when(
+            () => mockDraftStorage.getDraftById('draft-1'),
+          ).thenAnswer((_) async => draft);
+
+          await container
+              .read(videoEditorProvider.notifier)
+              .restoreDraft('draft-1');
+
+          expect(
+            container
+                .read(videoEditorProvider.notifier)
+                .getActiveDraft()
+                .clipSourceCredits,
+            isEmpty,
+            reason:
+                'restore drops the orphaned clip, so its footage is no longer '
+                'in the video and its credit must go with it',
+          );
+        },
+      );
+
       test('restores the saved cover position onto state', () async {
         final draft = DivineVideoDraft.create(
           id: 'draft-1',

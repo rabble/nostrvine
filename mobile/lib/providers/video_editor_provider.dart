@@ -593,9 +593,12 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       collaboratorPubkeys: state.collaboratorPubkeys,
       inspiredByVideo: inspiredByVideo,
       inspiredByNpub: state.inspiredByNpub,
-      clipSourceCredits: clipSourceCredits.isNotEmpty
-          ? clipSourceCredits
-          : state.clipSourceCredits,
+      // Always the timeline's own credits, never a remembered set: a credit is
+      // a factual claim about footage that is *in* this video, and drafts
+      // persist each clip's credits on the clip itself. Falling back to the
+      // restored draft's credits when the timeline has none would re-publish a
+      // credit — and notify its creator — for a reused clip the user deleted.
+      clipSourceCredits: clipSourceCredits,
       selectedSound: selectedSound,
       contentWarning: ContentLabel.toCsv(state.contentWarnings),
       finalRenderedClip: state.finalRenderedClip,
