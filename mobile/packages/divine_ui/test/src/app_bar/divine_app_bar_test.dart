@@ -274,6 +274,48 @@ void main() {
       });
 
       testWidgets(
+        'default leading variants are anchored to their own ids',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              title: 'Test',
+              showBackButton: true,
+              onBackPressed: () {},
+            ),
+          );
+
+          expect(find.bySemanticsIdentifier('back_button'), findsOneWidget);
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              title: 'Test',
+              showMenuButton: true,
+              onMenuPressed: () {},
+            ),
+          );
+
+          expect(find.bySemanticsIdentifier('menu_button'), findsOneWidget);
+          expect(find.bySemanticsIdentifier('back_button'), findsNothing);
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              title: 'Test',
+              leadingIcon: const SvgIconSource(
+                DiVineAppBarLeading.menuIconAsset,
+              ),
+              onLeadingPressed: () {},
+            ),
+          );
+
+          expect(
+            find.bySemanticsIdentifier('leading_action_button'),
+            findsOneWidget,
+          );
+          expect(find.bySemanticsIdentifier('back_button'), findsNothing);
+        },
+      );
+
+      testWidgets(
         'expandLeadingHitArea routes taps in the empty part of the '
         'leading slot to onBackPressed',
         (tester) async {

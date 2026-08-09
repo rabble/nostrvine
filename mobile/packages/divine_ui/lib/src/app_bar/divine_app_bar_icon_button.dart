@@ -23,6 +23,7 @@ class DivineAppBarIconButton extends StatelessWidget {
     this.onPressed,
     this.tooltip,
     this.semanticLabel,
+    this.semanticIdentifier,
     this.backgroundColor,
     this.borderSide,
     this.iconColor,
@@ -40,6 +41,12 @@ class DivineAppBarIconButton extends StatelessWidget {
 
   /// Semantic label for accessibility.
   final String? semanticLabel;
+
+  /// Stable `Semantics(identifier:)` value used as a UI-test anchor.
+  ///
+  /// Surfaces as an iOS `accessibilityIdentifier` / Android resource id, so
+  /// E2E tests can target the button by id instead of by its localized label.
+  final String? semanticIdentifier;
 
   /// Background color of the button container.
   ///
@@ -73,6 +80,7 @@ class DivineAppBarIconButton extends StatelessWidget {
       showShadow: false,
       tooltip: tooltip,
       semanticLabel: semanticLabel,
+      semanticIdentifier: semanticIdentifier,
     );
   }
 }

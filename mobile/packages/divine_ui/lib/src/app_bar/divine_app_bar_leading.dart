@@ -92,9 +92,6 @@ class DiVineAppBarLeading extends StatelessWidget {
   static const String menuIconAsset = 'assets/icon/menu.svg';
 
   /// `Semantics(identifier:)` anchor for the back button.
-  ///
-  /// Only applied when [expandHitArea] is set, since that is the case where
-  /// the announced node is the outer one this widget owns.
   static const String backButtonSemanticId = 'back_button';
 
   /// `Semantics(identifier:)` anchor for the menu button.
@@ -178,6 +175,7 @@ class _LeadingIconButton extends StatelessWidget {
           icon: icon,
           onPressed: onPressed,
           semanticLabel: semanticLabel,
+          semanticIdentifier: semanticIdentifier,
           tooltip: tooltip,
           backgroundColor: style.iconButtonBackgroundColor,
           borderSide: style.iconButtonBorderSide,
