@@ -1162,10 +1162,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Ini akan memadam video ini secara kekal daripada Divine. Ia mungkin masih muncul pada klien Nostr pihak ketiga yang menggunakan relay lain.';
 
   @override
-  String get videoGridDeleteConfirmNote =>
-      'Ini akan menghantar permintaan pemadaman kepada relay. Nota: Sesetengah relay mungkin masih mempunyai salinan cache.';
-
-  @override
   String get videoGridDeleteCancel => 'Batal';
 
   @override
@@ -1173,9 +1169,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get videoGridDeletingContent => 'Memadam kandungan...';
-
-  @override
-  String get videoGridDeleteSuccess => 'Permintaan pemadaman berjaya dihantar';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -4024,10 +4017,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Alih keluar video ini daripada Divine. Ia mungkin masih muncul pada klien Nostr lain.';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'Ini menghantar permintaan pemadaman (NIP-09) kepada semua relay. Sesetengah relay mungkin masih menyimpan kandungan itu.';
-
-  @override
   String get shareMenuVideoInTheseLists => 'Video berada dalam senarai ini:';
 
   @override
@@ -4055,9 +4044,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return 'Gagal memadam kandungan: $error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent => 'Video dipadam';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4173,10 +4159,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get shareMenuDeleteVideoQuestion => 'Padam Video?';
-
-  @override
-  String get shareMenuDeleteRelayWarning =>
-      'Ini akan menghantar permintaan pemadaman kepada relay. Nota: Sesetengah relay mungkin masih mempunyai salinan cache.';
 
   @override
   String get shareMenuVideoDeletionRequested => 'Video dipadam';

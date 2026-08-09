@@ -1138,10 +1138,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'هل أنت متأكد من رغبتك في حذف هذا الفيديو؟';
 
   @override
-  String get videoGridDeleteConfirmNote =>
-      'سيرسل هذا طلب حذف (NIP-09) إلى جميع المحولات. قد تحتفظ بعض المحولات بالمحتوى.';
-
-  @override
   String get videoGridDeleteCancel => 'إلغاء';
 
   @override
@@ -1149,9 +1145,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get videoGridDeletingContent => 'جاري حذف المحتوى...';
-
-  @override
-  String get videoGridDeleteSuccess => 'تم إرسال طلب الحذف بنجاح';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -3957,10 +3950,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareMenuDeleteVideoSubtitle => 'إزالة هذا المحتوى نهائيًا';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'سيرسل هذا طلب حذف (NIP-09) إلى جميع المحولات. قد تحتفظ بعض المحولات بالمحتوى.';
-
-  @override
   String get shareMenuVideoInTheseLists => 'الفيديو في هذه القوائم:';
 
   @override
@@ -3988,9 +3977,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return 'فشل حذف المحتوى: $error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent => 'تم إرسال طلب الحذف بنجاح';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4105,10 +4091,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get shareMenuDeleteVideoQuestion => 'حذف الفيديو؟';
-
-  @override
-  String get shareMenuDeleteRelayWarning =>
-      'سيرسل هذا طلب حذف إلى المحولات. ملاحظة: قد تحتفظ بعض المحولات بنسخ مخزّنة.';
 
   @override
   String get shareMenuVideoDeletionRequested => 'تم طلب حذف الفيديو';

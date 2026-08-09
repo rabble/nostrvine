@@ -1128,10 +1128,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoGridDeleteConfirmMessage => 'Yakin mau menghapus video ini?';
 
   @override
-  String get videoGridDeleteConfirmNote =>
-      'Ini akan mengirim permintaan hapus (NIP-09) ke semua relay. Beberapa relay mungkin masih menyimpan kontennya.';
-
-  @override
   String get videoGridDeleteCancel => 'Batal';
 
   @override
@@ -1139,9 +1135,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get videoGridDeletingContent => 'Menghapus konten...';
-
-  @override
-  String get videoGridDeleteSuccess => 'Permintaan hapus berhasil dikirim';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -3953,10 +3946,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get shareMenuDeleteVideoSubtitle => 'Hapus konten ini secara permanen';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'Ini akan mengirim permintaan hapus (NIP-09) ke semua relay. Beberapa relay mungkin masih menyimpan kontennya.';
-
-  @override
   String get shareMenuVideoInTheseLists => 'Video ada di daftar ini:';
 
   @override
@@ -3983,9 +3972,6 @@ class AppLocalizationsId extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return 'Gagal menghapus konten: $error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent => 'Permintaan hapus berhasil dikirim';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4101,10 +4087,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get shareMenuDeleteVideoQuestion => 'Hapus Video?';
-
-  @override
-  String get shareMenuDeleteRelayWarning =>
-      'Ini akan mengirim permintaan hapus ke relay. Catatan: Beberapa relay mungkin masih punya salinan cache.';
 
   @override
   String get shareMenuVideoDeletionRequested => 'Penghapusan video diminta';

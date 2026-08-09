@@ -1128,10 +1128,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bu videoyu silmek istediğinden emin misin?';
 
   @override
-  String get videoGridDeleteConfirmNote =>
-      'Bu işlem tüm rölelere bir silme isteği (NIP-09) gönderir. Bazı röleler içeriği saklamaya devam edebilir.';
-
-  @override
   String get videoGridDeleteCancel => 'İptal';
 
   @override
@@ -1139,9 +1135,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoGridDeletingContent => 'İçerik siliniyor...';
-
-  @override
-  String get videoGridDeleteSuccess => 'Silme isteği başarıyla gönderildi';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -3961,10 +3954,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get shareMenuDeleteVideoSubtitle => 'Bu içeriği kalıcı olarak kaldır';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'Bu işlem tüm rölelere bir silme isteği (NIP-09) gönderir. Bazı röleler içeriği saklamaya devam edebilir.';
-
-  @override
   String get shareMenuVideoInTheseLists => 'Video şu listelerde:';
 
   @override
@@ -3992,9 +3981,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return 'İçerik silinemedi: $error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent => 'Silme isteği başarıyla gönderildi';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4110,10 +4096,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get shareMenuDeleteVideoQuestion => 'Video Silinsin mi?';
-
-  @override
-  String get shareMenuDeleteRelayWarning =>
-      'Bu işlem rölelere bir silme isteği gönderir. Not: Bazı rölelerin hala önbelleğe alınmış kopyaları olabilir.';
 
   @override
   String get shareMenuVideoDeletionRequested => 'Video silme isteği alındı';

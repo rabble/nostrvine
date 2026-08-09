@@ -1074,10 +1074,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoGridDeleteConfirmMessage => 'この動画を本当に削除する?';
 
   @override
-  String get videoGridDeleteConfirmNote =>
-      'すべてのリレーに削除リクエスト (NIP-09) を送るよ。一部のリレーではコンテンツが残ることもあるよ。';
-
-  @override
   String get videoGridDeleteCancel => 'キャンセル';
 
   @override
@@ -1085,9 +1081,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get videoGridDeletingContent => 'コンテンツを削除中...';
-
-  @override
-  String get videoGridDeleteSuccess => '削除リクエストを送ったよ';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -3783,10 +3776,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareMenuDeleteVideoSubtitle => 'このコンテンツを完全に削除';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'すべてのリレーに削除リクエスト (NIP-09) を送るよ。一部のリレーではキャッシュが残ることもあるよ。';
-
-  @override
   String get shareMenuVideoInTheseLists => 'この動画が入ってるリスト:';
 
   @override
@@ -3813,9 +3802,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return 'コンテンツの削除がうまくいかなかった: $error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent => '削除リクエストを送ったよ';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -3924,10 +3910,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get shareMenuDeleteVideoQuestion => '動画を削除する?';
-
-  @override
-  String get shareMenuDeleteRelayWarning =>
-      'リレーに削除リクエストを送るよ。注意: 一部のリレーにはキャッシュが残ることもあるよ。';
 
   @override
   String get shareMenuVideoDeletionRequested => '動画の削除をリクエストしたよ';

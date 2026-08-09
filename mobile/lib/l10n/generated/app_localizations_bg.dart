@@ -1171,10 +1171,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Това ще изтрие за постоянно това видео от Divine. Може още да се вижда в Nostr клиенти на трети страни, които използват други релета.';
 
   @override
-  String get videoGridDeleteConfirmNote =>
-      'Това ще изпрати заявка за изтриване до релетата. Забележка: Някои релета все още може да имат кеширани копия.';
-
-  @override
   String get videoGridDeleteCancel => 'Отказ';
 
   @override
@@ -1182,9 +1178,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get videoGridDeletingContent => 'Трием съдържанието...';
-
-  @override
-  String get videoGridDeleteSuccess => 'Заявката за изтриване е изпратена';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -4041,10 +4034,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Премахни това видео от Divine. Може още да се вижда в други Nostr клиенти.';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'Това изпраща заявка за изтриване (NIP-09) до всички релета. Някои релета все още могат да запазят съдържанието.';
-
-  @override
   String get shareMenuVideoInTheseLists => 'Видеото е в тези списъци:';
 
   @override
@@ -4072,9 +4061,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return 'Неуспешно изтриване на съдържание: $error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent => 'Видеото е изтрито';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4190,10 +4176,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get shareMenuDeleteVideoQuestion => 'Да изтрием видеото?';
-
-  @override
-  String get shareMenuDeleteRelayWarning =>
-      'Това ще изпрати заявка за изтриване до релетата. Забележка: Някои релета все още може да имат кеширани копия.';
 
   @override
   String get shareMenuVideoDeletionRequested => 'Видеото е изтрито';

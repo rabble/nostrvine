@@ -454,11 +454,9 @@
     "videoGridDeleteVideoSubtitle": "Deze inhoud definitief verwijderen",
     "videoGridDeleteConfirmTitle": "Video verwijderen",
     "videoGridDeleteConfirmMessage": "Weet je zeker dat je deze video wilt verwijderen?",
-    "videoGridDeleteConfirmNote": "Dit stuurt een verwijderverzoek (NIP-09) naar alle relays. Sommige relays kunnen de inhoud alsnog bewaren.",
     "videoGridDeleteCancel": "Annuleren",
     "videoGridDeleteConfirm": "Verwijderen",
     "videoGridDeletingContent": "Inhoud verwijderen...",
-    "videoGridDeleteSuccess": "Verwijderverzoek succesvol verstuurd",
     "videoGridDeleteFailure": "Inhoud verwijderen mislukt: {error}",
     "@videoGridDeleteFailure": {
         "placeholders": {
@@ -1579,11 +1577,9 @@
     },
     "shareMenuClose": "Sluiten",
     "shareMenuDeleteConfirmation": "Weet je zeker dat je deze video wilt verwijderen?",
-    "shareMenuDeleteWarning": "Dit stuurt een verwijderverzoek (NIP-09) naar alle relays. Sommige relays kunnen de inhoud alsnog bewaren.",
     "shareMenuCancel": "Annuleren",
     "shareMenuDelete": "Verwijderen",
     "shareMenuDeletingContent": "Inhoud verwijderen...",
-    "shareMenuDeleteRequestSent": "Verwijderverzoek succesvol verstuurd",
     "shareMenuFailedToDeleteContent": "Inhoud verwijderen mislukt: {error}",
     "@shareMenuFailedToDeleteContent": {
         "placeholders": {
@@ -1627,7 +1623,6 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "Video verwijderen?",
-    "shareMenuDeleteRelayWarning": "Dit stuurt een verwijderverzoek naar relays. Let op: sommige relays hebben misschien nog gecachte kopieën.",
     "shareMenuVideoDeletionRequested": "Video-verwijdering aangevraagd",
     "shareMenuFailedToDeleteVideo": "Video verwijderen mislukt: {error}",
     "@shareMenuFailedToDeleteVideo": {

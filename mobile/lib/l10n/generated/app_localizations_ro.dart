@@ -1194,10 +1194,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Sigur vrei să ștergi acest videoclip?';
 
   @override
-  String get videoGridDeleteConfirmNote =>
-      'Asta va trimite o cerere de ștergere (NIP-09) către toate relay-urile. Unele relay-uri pot păstra totuși conținutul.';
-
-  @override
   String get videoGridDeleteCancel => 'Anulează';
 
   @override
@@ -1205,10 +1201,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get videoGridDeletingContent => 'Se șterge conținutul...';
-
-  @override
-  String get videoGridDeleteSuccess =>
-      'Cererea de ștergere a fost trimisă cu succes';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -4105,10 +4097,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get shareMenuDeleteVideoSubtitle => 'Elimină definitiv acest conținut';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'Asta va trimite o cerere de ștergere (NIP-09) către toate relay-urile. Unele relay-uri pot păstra totuși conținutul.';
-
-  @override
   String get shareMenuVideoInTheseLists => 'Videoclipul e în aceste liste:';
 
   @override
@@ -4143,10 +4131,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return 'N-am putut șterge conținutul: $error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent =>
-      'Cererea de ștergere a fost trimisă cu succes';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4262,10 +4246,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get shareMenuDeleteVideoQuestion => 'Ștergi videoclipul?';
-
-  @override
-  String get shareMenuDeleteRelayWarning =>
-      'Asta va trimite o cerere de ștergere către relay-uri. Notă: Unele relay-uri pot avea încă copii în cache.';
 
   @override
   String get shareMenuVideoDeletionRequested =>

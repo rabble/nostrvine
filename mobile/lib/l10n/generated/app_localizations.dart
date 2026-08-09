@@ -2064,12 +2064,6 @@ abstract class AppLocalizations {
   /// **'This will permanently delete this video from Divine. It may still appear on third-party Nostr clients that use other relays.'**
   String get videoGridDeleteConfirmMessage;
 
-  /// No description provided for @videoGridDeleteConfirmNote.
-  ///
-  /// In en, this message translates to:
-  /// **'This will send a deletion request to relays. Note: Some relays may still have cached copies.'**
-  String get videoGridDeleteConfirmNote;
-
   /// No description provided for @videoGridDeleteCancel.
   ///
   /// In en, this message translates to:
@@ -2087,12 +2081,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Deleting content...'**
   String get videoGridDeletingContent;
-
-  /// No description provided for @videoGridDeleteSuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete request sent successfully'**
-  String get videoGridDeleteSuccess;
 
   /// No description provided for @videoGridDeleteFailure.
   ///
@@ -6938,12 +6926,6 @@ abstract class AppLocalizations {
   /// **'Remove this video from Divine. It may still appear on other Nostr clients.'**
   String get shareMenuDeleteVideoSubtitle;
 
-  /// No description provided for @shareMenuDeleteWarning.
-  ///
-  /// In en, this message translates to:
-  /// **'This sends a delete request (NIP-09) to all relays. Some relays may still keep the content.'**
-  String get shareMenuDeleteWarning;
-
   /// No description provided for @shareMenuVideoInTheseLists.
   ///
   /// In en, this message translates to:
@@ -6991,12 +6973,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to delete content: {error}'**
   String shareMenuFailedToDeleteContent(String error);
-
-  /// No description provided for @shareMenuDeleteRequestSent.
-  ///
-  /// In en, this message translates to:
-  /// **'Video deleted'**
-  String get shareMenuDeleteRequestSent;
 
   /// No description provided for @shareMenuDeleteFailedNotInitialized.
   ///
@@ -7177,12 +7153,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete Video?'**
   String get shareMenuDeleteVideoQuestion;
-
-  /// No description provided for @shareMenuDeleteRelayWarning.
-  ///
-  /// In en, this message translates to:
-  /// **'This will send a deletion request to relays. Note: Some relays may still have cached copies.'**
-  String get shareMenuDeleteRelayWarning;
 
   /// No description provided for @shareMenuVideoDeletionRequested.
   ///

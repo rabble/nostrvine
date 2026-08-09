@@ -454,11 +454,9 @@
     "videoGridDeleteVideoSubtitle": "このコンテンツを完全に削除する",
     "videoGridDeleteConfirmTitle": "動画を削除",
     "videoGridDeleteConfirmMessage": "この動画を本当に削除する?",
-    "videoGridDeleteConfirmNote": "すべてのリレーに削除リクエスト (NIP-09) を送るよ。一部のリレーではコンテンツが残ることもあるよ。",
     "videoGridDeleteCancel": "キャンセル",
     "videoGridDeleteConfirm": "削除",
     "videoGridDeletingContent": "コンテンツを削除中...",
-    "videoGridDeleteSuccess": "削除リクエストを送ったよ",
     "videoGridDeleteFailure": "コンテンツの削除がうまくいかなかった: {error}",
     "@videoGridDeleteFailure": {
         "placeholders": {
@@ -1569,11 +1567,9 @@
     },
     "shareMenuClose": "閉じる",
     "shareMenuDeleteConfirmation": "この動画を本当に削除する?",
-    "shareMenuDeleteWarning": "すべてのリレーに削除リクエスト (NIP-09) を送るよ。一部のリレーではキャッシュが残ることもあるよ。",
     "shareMenuCancel": "キャンセル",
     "shareMenuDelete": "削除",
     "shareMenuDeletingContent": "コンテンツを削除中...",
-    "shareMenuDeleteRequestSent": "削除リクエストを送ったよ",
     "shareMenuFailedToDeleteContent": "コンテンツの削除がうまくいかなかった: {error}",
     "@shareMenuFailedToDeleteContent": {
         "placeholders": {
@@ -1617,7 +1613,6 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "動画を削除する?",
-    "shareMenuDeleteRelayWarning": "リレーに削除リクエストを送るよ。注意: 一部のリレーにはキャッシュが残ることもあるよ。",
     "shareMenuVideoDeletionRequested": "動画の削除をリクエストしたよ",
     "shareMenuFailedToDeleteVideo": "動画の削除がうまくいかなかった: {error}",
     "@shareMenuFailedToDeleteVideo": {

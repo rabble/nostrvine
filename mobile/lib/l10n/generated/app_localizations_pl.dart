@@ -1179,10 +1179,6 @@ class AppLocalizationsPl extends AppLocalizations {
       'Na pewno chcesz usunąć ten film?';
 
   @override
-  String get videoGridDeleteConfirmNote =>
-      'To wyśle żądanie usunięcia (NIP-09) do wszystkich przekaźników. Niektóre przekaźniki mogą nadal zachować treść.';
-
-  @override
   String get videoGridDeleteCancel => 'Anuluj';
 
   @override
@@ -1190,9 +1186,6 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get videoGridDeletingContent => 'Usuwanie treści...';
-
-  @override
-  String get videoGridDeleteSuccess => 'Żądanie usunięcia wysłane pomyślnie';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -4095,10 +4088,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get shareMenuDeleteVideoSubtitle => 'Trwale usuń tę treść';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'To wyśle żądanie usunięcia (NIP-09) do wszystkich przekaźników. Niektóre przekaźniki mogą nadal zachować treść.';
-
-  @override
   String get shareMenuVideoInTheseLists => 'Film jest na tych listach:';
 
   @override
@@ -4133,10 +4122,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return 'Nie udało się usunąć treści: $error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent =>
-      'Żądanie usunięcia wysłane pomyślnie';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4251,10 +4236,6 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get shareMenuDeleteVideoQuestion => 'Usunąć film?';
-
-  @override
-  String get shareMenuDeleteRelayWarning =>
-      'To wyśle żądanie usunięcia do przekaźników. Uwaga: Niektóre przekaźniki mogą nadal mieć zbuforowane kopie.';
 
   @override
   String get shareMenuVideoDeletionRequested => 'Zażądano usunięcia filmu';

@@ -1171,10 +1171,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Tem certeza que quer excluir este vídeo?';
 
   @override
-  String get videoGridDeleteConfirmNote =>
-      'Isso vai enviar uma solicitação de exclusão (NIP-09) para todos os relays. Alguns relays podem manter o conteúdo mesmo assim.';
-
-  @override
   String get videoGridDeleteCancel => 'Cancelar';
 
   @override
@@ -1182,10 +1178,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get videoGridDeletingContent => 'Excluindo conteúdo...';
-
-  @override
-  String get videoGridDeleteSuccess =>
-      'Solicitação de exclusão enviada com sucesso';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -4023,10 +4015,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Remover este conteúdo permanentemente';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'Isso vai enviar uma solicitação de exclusão (NIP-09) para todos os relays. Alguns relays podem manter o conteúdo mesmo assim.';
-
-  @override
   String get shareMenuVideoInTheseLists => 'O vídeo está nestas listas:';
 
   @override
@@ -4054,10 +4042,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return 'Falha ao excluir conteúdo: $error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent =>
-      'Solicitação de exclusão enviada com sucesso';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4173,10 +4157,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get shareMenuDeleteVideoQuestion => 'Excluir vídeo?';
-
-  @override
-  String get shareMenuDeleteRelayWarning =>
-      'Isso vai enviar uma solicitação de exclusão para os relays. Nota: alguns relays ainda podem ter cópias em cache.';
 
   @override
   String get shareMenuVideoDeletionRequested => 'Exclusão de vídeo solicitada';

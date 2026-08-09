@@ -454,11 +454,9 @@
     "videoGridDeleteVideoSubtitle": "Elimină definitiv acest conținut",
     "videoGridDeleteConfirmTitle": "Șterge videoclipul",
     "videoGridDeleteConfirmMessage": "Sigur vrei să ștergi acest videoclip?",
-    "videoGridDeleteConfirmNote": "Asta va trimite o cerere de ștergere (NIP-09) către toate relay-urile. Unele relay-uri pot păstra totuși conținutul.",
     "videoGridDeleteCancel": "Anulează",
     "videoGridDeleteConfirm": "Șterge",
     "videoGridDeletingContent": "Se șterge conținutul...",
-    "videoGridDeleteSuccess": "Cererea de ștergere a fost trimisă cu succes",
     "videoGridDeleteFailure": "N-am putut șterge conținutul: {error}",
     "@videoGridDeleteFailure": {
         "placeholders": {
@@ -1579,11 +1577,9 @@
     },
     "shareMenuClose": "Închide",
     "shareMenuDeleteConfirmation": "Sigur vrei să ștergi acest videoclip?",
-    "shareMenuDeleteWarning": "Asta va trimite o cerere de ștergere (NIP-09) către toate relay-urile. Unele relay-uri pot păstra totuși conținutul.",
     "shareMenuCancel": "Anulează",
     "shareMenuDelete": "Șterge",
     "shareMenuDeletingContent": "Se șterge conținutul...",
-    "shareMenuDeleteRequestSent": "Cererea de ștergere a fost trimisă cu succes",
     "shareMenuFailedToDeleteContent": "N-am putut șterge conținutul: {error}",
     "@shareMenuFailedToDeleteContent": {
         "placeholders": {
@@ -1627,7 +1623,6 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "Ștergi videoclipul?",
-    "shareMenuDeleteRelayWarning": "Asta va trimite o cerere de ștergere către relay-uri. Notă: Unele relay-uri pot avea încă copii în cache.",
     "shareMenuVideoDeletionRequested": "Cerere de ștergere a videoclipului trimisă",
     "shareMenuFailedToDeleteVideo": "N-am putut șterge videoclipul: {error}",
     "@shareMenuFailedToDeleteVideo": {

@@ -454,11 +454,9 @@
     "videoGridDeleteVideoSubtitle": "Ta bort det här innehållet permanent",
     "videoGridDeleteConfirmTitle": "Ta bort video",
     "videoGridDeleteConfirmMessage": "Är du säker på att du vill ta bort den här videon?",
-    "videoGridDeleteConfirmNote": "Detta skickar en borttagningsbegäran (NIP-09) till alla reler. Vissa reler kan fortfarande behålla innehållet.",
     "videoGridDeleteCancel": "Avbryt",
     "videoGridDeleteConfirm": "Ta bort",
     "videoGridDeletingContent": "Tar bort innehåll...",
-    "videoGridDeleteSuccess": "Borttagningsbegäran skickad",
     "videoGridDeleteFailure": "Kunde inte ta bort innehåll: {error}",
     "@videoGridDeleteFailure": {
         "placeholders": {
@@ -1579,11 +1577,9 @@
     },
     "shareMenuClose": "Stäng",
     "shareMenuDeleteConfirmation": "Är du säker på att du vill ta bort den här videon?",
-    "shareMenuDeleteWarning": "Detta skickar en borttagningsbegäran (NIP-09) till alla reler. Vissa reler kan fortfarande behålla innehållet.",
     "shareMenuCancel": "Avbryt",
     "shareMenuDelete": "Ta bort",
     "shareMenuDeletingContent": "Tar bort innehåll...",
-    "shareMenuDeleteRequestSent": "Borttagningsbegäran skickad",
     "shareMenuFailedToDeleteContent": "Kunde inte ta bort innehåll: {error}",
     "@shareMenuFailedToDeleteContent": {
         "placeholders": {
@@ -1627,7 +1623,6 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "Ta bort video?",
-    "shareMenuDeleteRelayWarning": "Detta skickar en borttagningsbegäran till reler. Obs: Vissa reler kan fortfarande ha cachade kopior.",
     "shareMenuVideoDeletionRequested": "Videoborttagning begärd",
     "shareMenuFailedToDeleteVideo": "Kunde inte ta bort videon: {error}",
     "@shareMenuFailedToDeleteVideo": {

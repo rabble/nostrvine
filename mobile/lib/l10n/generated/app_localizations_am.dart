@@ -1133,10 +1133,6 @@ class AppLocalizationsAm extends AppLocalizations {
       'ይሄ ይህን ቪዲዮ ከDivine እስከመጨረሻው ይሰርዘዋል። አሁንም ሌሎች ማስተላለፊያዎችን በሚጠቀሙ የሶስተኛ ወገን Nostr ደንበኞች ላይ ሊታይ ይችላል።';
 
   @override
-  String get videoGridDeleteConfirmNote =>
-      'ይህ የስረዛ ጥያቄን ወደ ማስተላለፊያዎች ይልካል። ማስታወሻ፡ አንዳንድ ማሰራጫዎች አሁንም የተሸጎጡ ቅጂዎች ሊኖራቸው ይችላል።';
-
-  @override
   String get videoGridDeleteCancel => 'ሰርዝ';
 
   @override
@@ -1144,9 +1140,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoGridDeletingContent => 'ይዘትን በመሰረዝ ላይ...';
-
-  @override
-  String get videoGridDeleteSuccess => 'ጥያቄውን ሰርዝ በተሳካ ሁኔታ ተልኳል።';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -3914,10 +3907,6 @@ class AppLocalizationsAm extends AppLocalizations {
       'ይህን ቪዲዮ ከDivine አስወግድ። በሌሎች Nostr ደንበኞች ላይ አሁንም ሊታይ ይችላል።';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'ይህ የመሰረዝ ጥያቄን (NIP-09) ለሁሉም ማሰራጫዎች ይልካል። አንዳንድ ማሰራጫዎች አሁንም ይዘቱን ሊይዙት ይችላሉ።';
-
-  @override
   String get shareMenuVideoInTheseLists => 'ቪዲዮው በእነዚህ ዝርዝሮች ውስጥ ነው፡-';
 
   @override
@@ -3945,9 +3934,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return 'ይዘትን መሰረዝ አልተሳካም፦ $error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent => 'ቪዲዮ ተሰርዟል።';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4059,10 +4045,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get shareMenuDeleteVideoQuestion => 'ቪዲዮ ይሰረዝ?';
-
-  @override
-  String get shareMenuDeleteRelayWarning =>
-      'ይህ የስረዛ ጥያቄን ወደ ማስተላለፊያዎች ይልካል። ማስታወሻ፡ አንዳንድ ማሰራጫዎች አሁንም የተሸጎጡ ቅጂዎች ሊኖራቸው ይችላል።';
 
   @override
   String get shareMenuVideoDeletionRequested => 'ቪዲዮ ተሰርዟል።';

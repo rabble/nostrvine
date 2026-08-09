@@ -454,11 +454,9 @@
     "videoGridDeleteVideoSubtitle": "Sacá este contenido para siempre",
     "videoGridDeleteConfirmTitle": "Eliminar video",
     "videoGridDeleteConfirmMessage": "¿Seguro que querés eliminar este video?",
-    "videoGridDeleteConfirmNote": "Esto envía un pedido de eliminación (NIP-09) a todos los relays. Algunos relays todavía pueden mantener el contenido.",
     "videoGridDeleteCancel": "Cancelar",
     "videoGridDeleteConfirm": "Eliminar",
     "videoGridDeletingContent": "Eliminando contenido...",
-    "videoGridDeleteSuccess": "Pedido de eliminación enviado con éxito",
     "videoGridDeleteFailure": "No se pudo eliminar el contenido: {error}",
     "@videoGridDeleteFailure": {
         "placeholders": {
@@ -1583,11 +1581,9 @@
     },
     "shareMenuClose": "Cerrar",
     "shareMenuDeleteConfirmation": "¿Seguro que querés eliminar este video?",
-    "shareMenuDeleteWarning": "Esto envía un pedido de eliminación (NIP-09) a todos los relays. Algunos relays todavía pueden mantener el contenido.",
     "shareMenuCancel": "Cancelar",
     "shareMenuDelete": "Eliminar",
     "shareMenuDeletingContent": "Eliminando contenido...",
-    "shareMenuDeleteRequestSent": "Pedido de eliminación enviado con éxito",
     "shareMenuFailedToDeleteContent": "No se pudo eliminar el contenido: {error}",
     "@shareMenuFailedToDeleteContent": {
         "placeholders": {
@@ -1631,7 +1627,6 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "¿Eliminar video?",
-    "shareMenuDeleteRelayWarning": "Esto envía un pedido de eliminación a los relays. Nota: algunos relays todavía pueden tener copias en caché.",
     "shareMenuVideoDeletionRequested": "Eliminación del video solicitada",
     "shareMenuFailedToDeleteVideo": "No se pudo eliminar el video: {error}",
     "@shareMenuFailedToDeleteVideo": {

@@ -454,11 +454,9 @@
     "videoGridDeleteVideoSubtitle": "Trwale usuń tę treść",
     "videoGridDeleteConfirmTitle": "Usuń film",
     "videoGridDeleteConfirmMessage": "Na pewno chcesz usunąć ten film?",
-    "videoGridDeleteConfirmNote": "To wyśle żądanie usunięcia (NIP-09) do wszystkich przekaźników. Niektóre przekaźniki mogą nadal zachować treść.",
     "videoGridDeleteCancel": "Anuluj",
     "videoGridDeleteConfirm": "Usuń",
     "videoGridDeletingContent": "Usuwanie treści...",
-    "videoGridDeleteSuccess": "Żądanie usunięcia wysłane pomyślnie",
     "videoGridDeleteFailure": "Nie udało się usunąć treści: {error}",
     "@videoGridDeleteFailure": {
         "placeholders": {
@@ -1579,11 +1577,9 @@
     },
     "shareMenuClose": "Zamknij",
     "shareMenuDeleteConfirmation": "Na pewno chcesz usunąć ten film?",
-    "shareMenuDeleteWarning": "To wyśle żądanie usunięcia (NIP-09) do wszystkich przekaźników. Niektóre przekaźniki mogą nadal zachować treść.",
     "shareMenuCancel": "Anuluj",
     "shareMenuDelete": "Usuń",
     "shareMenuDeletingContent": "Usuwanie treści...",
-    "shareMenuDeleteRequestSent": "Żądanie usunięcia wysłane pomyślnie",
     "shareMenuFailedToDeleteContent": "Nie udało się usunąć treści: {error}",
     "@shareMenuFailedToDeleteContent": {
         "placeholders": {
@@ -1627,7 +1623,6 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "Usunąć film?",
-    "shareMenuDeleteRelayWarning": "To wyśle żądanie usunięcia do przekaźników. Uwaga: Niektóre przekaźniki mogą nadal mieć zbuforowane kopie.",
     "shareMenuVideoDeletionRequested": "Zażądano usunięcia filmu",
     "shareMenuFailedToDeleteVideo": "Nie udało się usunąć filmu: {error}",
     "@shareMenuFailedToDeleteVideo": {

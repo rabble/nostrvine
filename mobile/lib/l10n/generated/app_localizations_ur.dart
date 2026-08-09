@@ -1161,10 +1161,6 @@ class AppLocalizationsUr extends AppLocalizations {
       'یہ ویڈیو Divine سے مستقل طور پر حذف ہو جائے گی۔ دیگر ریلے استعمال کرنے والے تھرڈ پارٹی Nostr کلائنٹس پر یہ پھر بھی نظر آ سکتی ہے۔';
 
   @override
-  String get videoGridDeleteConfirmNote =>
-      'اس سے ریلے کو حذف کرنے کی درخواست بھیجی جائے گی۔ نوٹ: کچھ ریلے کے پاس پھر بھی کیش شدہ کاپیاں ہو سکتی ہیں۔';
-
-  @override
   String get videoGridDeleteCancel => 'منسوخ کریں';
 
   @override
@@ -1172,9 +1168,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get videoGridDeletingContent => 'مواد حذف ہو رہا ہے...';
-
-  @override
-  String get videoGridDeleteSuccess => 'حذف کی درخواست کامیابی سے بھیج دی گئی';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -3996,10 +3989,6 @@ class AppLocalizationsUr extends AppLocalizations {
       'یہ ویڈیو Divine سے ہٹائیں۔ یہ دیگر Nostr کلائنٹس پر پھر بھی نظر آ سکتی ہے۔';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'یہ تمام ریلے کو حذف کی درخواست (NIP-09) بھیجتا ہے۔ کچھ ریلے پھر بھی مواد رکھ سکتے ہیں۔';
-
-  @override
   String get shareMenuVideoInTheseLists => 'ویڈیو ان فہرستوں میں ہے:';
 
   @override
@@ -4027,9 +4016,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return 'مواد حذف نہیں ہو سکا: $error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent => 'ویڈیو حذف ہو گئی';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4145,10 +4131,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get shareMenuDeleteVideoQuestion => 'ویڈیو حذف کریں؟';
-
-  @override
-  String get shareMenuDeleteRelayWarning =>
-      'اس سے ریلے کو حذف کی درخواست بھیجی جائے گی۔ نوٹ: کچھ ریلے کے پاس پھر بھی کیش شدہ کاپیاں ہو سکتی ہیں۔';
 
   @override
   String get shareMenuVideoDeletionRequested => 'ویڈیو حذف ہو گئی';

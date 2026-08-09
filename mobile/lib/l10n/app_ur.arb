@@ -560,11 +560,9 @@
   "videoGridDeleteVideoSubtitle": "یہ ویڈیو Divine سے ہٹائیں۔ یہ دیگر Nostr کلائنٹس پر پھر بھی نظر آ سکتی ہے۔",
   "videoGridDeleteConfirmTitle": "ویڈیو حذف کریں",
   "videoGridDeleteConfirmMessage": "یہ ویڈیو Divine سے مستقل طور پر حذف ہو جائے گی۔ دیگر ریلے استعمال کرنے والے تھرڈ پارٹی Nostr کلائنٹس پر یہ پھر بھی نظر آ سکتی ہے۔",
-  "videoGridDeleteConfirmNote": "اس سے ریلے کو حذف کرنے کی درخواست بھیجی جائے گی۔ نوٹ: کچھ ریلے کے پاس پھر بھی کیش شدہ کاپیاں ہو سکتی ہیں۔",
   "videoGridDeleteCancel": "منسوخ کریں",
   "videoGridDeleteConfirm": "حذف کریں",
   "videoGridDeletingContent": "مواد حذف ہو رہا ہے...",
-  "videoGridDeleteSuccess": "حذف کی درخواست کامیابی سے بھیج دی گئی",
   "videoGridDeleteFailure": "مواد حذف نہیں ہو سکا: {error}",
   "@videoGridDeleteFailure": {
     "placeholders": {
@@ -2204,7 +2202,6 @@
   "shareMenuEditVideoSubtitle": "عنوان، تفصیل اور ہیش ٹیگز اپڈیٹ کریں",
   "shareMenuDeleteVideo": "ویڈیو حذف کریں",
   "shareMenuDeleteVideoSubtitle": "یہ ویڈیو Divine سے ہٹائیں۔ یہ دیگر Nostr کلائنٹس پر پھر بھی نظر آ سکتی ہے۔",
-  "shareMenuDeleteWarning": "یہ تمام ریلے کو حذف کی درخواست (NIP-09) بھیجتا ہے۔ کچھ ریلے پھر بھی مواد رکھ سکتے ہیں۔",
   "shareMenuVideoInTheseLists": "ویڈیو ان فہرستوں میں ہے:",
   "shareMenuVideoCount": "{count} ویڈیوز",
   "@shareMenuVideoCount": {
@@ -2227,7 +2224,6 @@
       }
     }
   },
-  "shareMenuDeleteRequestSent": "ویڈیو حذف ہو گئی",
   "shareMenuDeleteFailedNotInitialized": "حذف کرنے کی سہولت ابھی تیار نہیں۔ تھوڑی دیر میں دوبارہ کوشش کریں۔",
   "shareMenuDeleteFailedNotOwner": "آپ صرف اپنی ویڈیوز حذف کر سکتے ہیں۔",
   "shareMenuDeleteFailedNotAuthenticated": "دوبارہ سائن ان کریں، پھر حذف کر کے دیکھیں۔",
@@ -2293,7 +2289,6 @@
     }
   },
   "shareMenuDeleteVideoQuestion": "ویڈیو حذف کریں؟",
-  "shareMenuDeleteRelayWarning": "اس سے ریلے کو حذف کی درخواست بھیجی جائے گی۔ نوٹ: کچھ ریلے کے پاس پھر بھی کیش شدہ کاپیاں ہو سکتی ہیں۔",
   "shareMenuVideoDeletionRequested": "ویڈیو حذف ہو گئی",
   "shareMenuContentLabels": "مواد لیبلز",
   "shareMenuAddContentLabels": "مواد لیبلز شامل کریں",
