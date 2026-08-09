@@ -43,6 +43,49 @@ void main() {
       await db.close();
     });
 
+    test('migrates v2 profile statistic follower timestamps to v3', () async {
+      final schema = await verifier.schemaAt(2);
+      final db = AppDatabase(schema.newConnection());
+      final cachedAt = DateTime(2026).millisecondsSinceEpoch ~/ 1000;
+
+      await db.customStatement(
+        'INSERT INTO profile_statistics '
+        '(pubkey, video_count, follower_count, following_count, total_views, '
+        'total_likes, cached_at) '
+        'VALUES (?, NULL, ?, ?, NULL, NULL, ?)',
+        ['withcounts', 12, 7, cachedAt],
+      );
+      await db.customStatement(
+        'INSERT INTO profile_statistics '
+        '(pubkey, video_count, follower_count, following_count, total_views, '
+        'total_likes, cached_at) '
+        'VALUES (?, NULL, NULL, NULL, NULL, NULL, ?)',
+        ['withoutcounts', cachedAt],
+      );
+
+      await verifier.migrateAndValidate(db, 3);
+
+      final rows = await db
+          .customSelect(
+            'SELECT pubkey, follower_counts_updated_at '
+            'FROM profile_statistics ORDER BY pubkey',
+          )
+          .get();
+      final byPubkey = {
+        for (final row in rows) row.read<String>('pubkey'): row,
+      };
+
+      expect(
+        byPubkey['withcounts']!.read<int?>('follower_counts_updated_at'),
+        cachedAt,
+      );
+      expect(
+        byPubkey['withoutcounts']!.read<int?>('follower_counts_updated_at'),
+        isNull,
+      );
+      await db.close();
+    });
+
     test('v2 identity_events rows survive the v3 upgrade unstamped', () async {
       await verifier.testWithDataIntegrity(
         oldVersion: 2,

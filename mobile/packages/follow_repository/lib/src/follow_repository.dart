@@ -658,6 +658,11 @@ class FollowRepository {
   /// Drops within this threshold are assumed to be relay query variance.
   static const _hysteresisThreshold = 0.8;
 
+  /// Small accounts should reflect one-person changes immediately; percentage
+  /// hysteresis is only useful once counts are large enough for relay variance
+  /// to dominate individual follow/unfollow events.
+  static const _hysteresisMinimumCount = 20;
+
   /// In-memory cache for follower/following counts.
   final Map<String, FollowerStats> _followerStatsCache = {};
 
@@ -675,7 +680,7 @@ class FollowRepository {
     return (
       followers: row.followerCount ?? 0,
       following: row.followingCount ?? 0,
-      timestamp: row.cachedAt,
+      timestamp: row.followerCountsUpdatedAt ?? row.cachedAt,
     );
   }
 
@@ -700,6 +705,9 @@ class FollowRepository {
   }) {
     // Fresh count is higher → always accept
     if (freshCount >= persistedCount) return freshCount;
+
+    // One-person changes are meaningful for small accounts.
+    if (persistedCount < _hysteresisMinimumCount) return freshCount;
 
     // Persisted count is stale → accept the fresh count
     if (DateTime.now().difference(persistedTimestamp) > _staleDuration) {

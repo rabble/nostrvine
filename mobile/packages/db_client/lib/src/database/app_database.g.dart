@@ -2146,6 +2146,17 @@ class $ProfileStatsTable extends ProfileStats
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _followerCountsUpdatedAtMeta =
+      const VerificationMeta('followerCountsUpdatedAt');
+  @override
+  late final GeneratedColumn<DateTime> followerCountsUpdatedAt =
+      GeneratedColumn<DateTime>(
+        'follower_counts_updated_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     pubkey,
@@ -2155,6 +2166,7 @@ class $ProfileStatsTable extends ProfileStats
     totalViews,
     totalLikes,
     cachedAt,
+    followerCountsUpdatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2220,6 +2232,15 @@ class $ProfileStatsTable extends ProfileStats
     } else if (isInserting) {
       context.missing(_cachedAtMeta);
     }
+    if (data.containsKey('follower_counts_updated_at')) {
+      context.handle(
+        _followerCountsUpdatedAtMeta,
+        followerCountsUpdatedAt.isAcceptableOrUnknown(
+          data['follower_counts_updated_at']!,
+          _followerCountsUpdatedAtMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2257,6 +2278,10 @@ class $ProfileStatsTable extends ProfileStats
         DriftSqlType.dateTime,
         data['${effectivePrefix}cached_at'],
       )!,
+      followerCountsUpdatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}follower_counts_updated_at'],
+      ),
     );
   }
 
@@ -2274,6 +2299,7 @@ class ProfileStatRow extends DataClass implements Insertable<ProfileStatRow> {
   final int? totalViews;
   final int? totalLikes;
   final DateTime cachedAt;
+  final DateTime? followerCountsUpdatedAt;
   const ProfileStatRow({
     required this.pubkey,
     this.videoCount,
@@ -2282,6 +2308,7 @@ class ProfileStatRow extends DataClass implements Insertable<ProfileStatRow> {
     this.totalViews,
     this.totalLikes,
     required this.cachedAt,
+    this.followerCountsUpdatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2303,6 +2330,11 @@ class ProfileStatRow extends DataClass implements Insertable<ProfileStatRow> {
       map['total_likes'] = Variable<int>(totalLikes);
     }
     map['cached_at'] = Variable<DateTime>(cachedAt);
+    if (!nullToAbsent || followerCountsUpdatedAt != null) {
+      map['follower_counts_updated_at'] = Variable<DateTime>(
+        followerCountsUpdatedAt,
+      );
+    }
     return map;
   }
 
@@ -2325,6 +2357,9 @@ class ProfileStatRow extends DataClass implements Insertable<ProfileStatRow> {
           ? const Value.absent()
           : Value(totalLikes),
       cachedAt: Value(cachedAt),
+      followerCountsUpdatedAt: followerCountsUpdatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(followerCountsUpdatedAt),
     );
   }
 
@@ -2341,6 +2376,9 @@ class ProfileStatRow extends DataClass implements Insertable<ProfileStatRow> {
       totalViews: serializer.fromJson<int?>(json['totalViews']),
       totalLikes: serializer.fromJson<int?>(json['totalLikes']),
       cachedAt: serializer.fromJson<DateTime>(json['cachedAt']),
+      followerCountsUpdatedAt: serializer.fromJson<DateTime?>(
+        json['followerCountsUpdatedAt'],
+      ),
     );
   }
   @override
@@ -2354,6 +2392,9 @@ class ProfileStatRow extends DataClass implements Insertable<ProfileStatRow> {
       'totalViews': serializer.toJson<int?>(totalViews),
       'totalLikes': serializer.toJson<int?>(totalLikes),
       'cachedAt': serializer.toJson<DateTime>(cachedAt),
+      'followerCountsUpdatedAt': serializer.toJson<DateTime?>(
+        followerCountsUpdatedAt,
+      ),
     };
   }
 
@@ -2365,6 +2406,7 @@ class ProfileStatRow extends DataClass implements Insertable<ProfileStatRow> {
     Value<int?> totalViews = const Value.absent(),
     Value<int?> totalLikes = const Value.absent(),
     DateTime? cachedAt,
+    Value<DateTime?> followerCountsUpdatedAt = const Value.absent(),
   }) => ProfileStatRow(
     pubkey: pubkey ?? this.pubkey,
     videoCount: videoCount.present ? videoCount.value : this.videoCount,
@@ -2377,6 +2419,9 @@ class ProfileStatRow extends DataClass implements Insertable<ProfileStatRow> {
     totalViews: totalViews.present ? totalViews.value : this.totalViews,
     totalLikes: totalLikes.present ? totalLikes.value : this.totalLikes,
     cachedAt: cachedAt ?? this.cachedAt,
+    followerCountsUpdatedAt: followerCountsUpdatedAt.present
+        ? followerCountsUpdatedAt.value
+        : this.followerCountsUpdatedAt,
   );
   ProfileStatRow copyWithCompanion(ProfileStatsCompanion data) {
     return ProfileStatRow(
@@ -2397,6 +2442,9 @@ class ProfileStatRow extends DataClass implements Insertable<ProfileStatRow> {
           ? data.totalLikes.value
           : this.totalLikes,
       cachedAt: data.cachedAt.present ? data.cachedAt.value : this.cachedAt,
+      followerCountsUpdatedAt: data.followerCountsUpdatedAt.present
+          ? data.followerCountsUpdatedAt.value
+          : this.followerCountsUpdatedAt,
     );
   }
 
@@ -2409,7 +2457,8 @@ class ProfileStatRow extends DataClass implements Insertable<ProfileStatRow> {
           ..write('followingCount: $followingCount, ')
           ..write('totalViews: $totalViews, ')
           ..write('totalLikes: $totalLikes, ')
-          ..write('cachedAt: $cachedAt')
+          ..write('cachedAt: $cachedAt, ')
+          ..write('followerCountsUpdatedAt: $followerCountsUpdatedAt')
           ..write(')'))
         .toString();
   }
@@ -2423,6 +2472,7 @@ class ProfileStatRow extends DataClass implements Insertable<ProfileStatRow> {
     totalViews,
     totalLikes,
     cachedAt,
+    followerCountsUpdatedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -2434,7 +2484,8 @@ class ProfileStatRow extends DataClass implements Insertable<ProfileStatRow> {
           other.followingCount == this.followingCount &&
           other.totalViews == this.totalViews &&
           other.totalLikes == this.totalLikes &&
-          other.cachedAt == this.cachedAt);
+          other.cachedAt == this.cachedAt &&
+          other.followerCountsUpdatedAt == this.followerCountsUpdatedAt);
 }
 
 class ProfileStatsCompanion extends UpdateCompanion<ProfileStatRow> {
@@ -2445,6 +2496,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStatRow> {
   final Value<int?> totalViews;
   final Value<int?> totalLikes;
   final Value<DateTime> cachedAt;
+  final Value<DateTime?> followerCountsUpdatedAt;
   final Value<int> rowid;
   const ProfileStatsCompanion({
     this.pubkey = const Value.absent(),
@@ -2454,6 +2506,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStatRow> {
     this.totalViews = const Value.absent(),
     this.totalLikes = const Value.absent(),
     this.cachedAt = const Value.absent(),
+    this.followerCountsUpdatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ProfileStatsCompanion.insert({
@@ -2464,6 +2517,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStatRow> {
     this.totalViews = const Value.absent(),
     this.totalLikes = const Value.absent(),
     required DateTime cachedAt,
+    this.followerCountsUpdatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : pubkey = Value(pubkey),
        cachedAt = Value(cachedAt);
@@ -2475,6 +2529,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStatRow> {
     Expression<int>? totalViews,
     Expression<int>? totalLikes,
     Expression<DateTime>? cachedAt,
+    Expression<DateTime>? followerCountsUpdatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2485,6 +2540,8 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStatRow> {
       if (totalViews != null) 'total_views': totalViews,
       if (totalLikes != null) 'total_likes': totalLikes,
       if (cachedAt != null) 'cached_at': cachedAt,
+      if (followerCountsUpdatedAt != null)
+        'follower_counts_updated_at': followerCountsUpdatedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2497,6 +2554,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStatRow> {
     Value<int?>? totalViews,
     Value<int?>? totalLikes,
     Value<DateTime>? cachedAt,
+    Value<DateTime?>? followerCountsUpdatedAt,
     Value<int>? rowid,
   }) {
     return ProfileStatsCompanion(
@@ -2507,6 +2565,8 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStatRow> {
       totalViews: totalViews ?? this.totalViews,
       totalLikes: totalLikes ?? this.totalLikes,
       cachedAt: cachedAt ?? this.cachedAt,
+      followerCountsUpdatedAt:
+          followerCountsUpdatedAt ?? this.followerCountsUpdatedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2535,6 +2595,11 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStatRow> {
     if (cachedAt.present) {
       map['cached_at'] = Variable<DateTime>(cachedAt.value);
     }
+    if (followerCountsUpdatedAt.present) {
+      map['follower_counts_updated_at'] = Variable<DateTime>(
+        followerCountsUpdatedAt.value,
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2551,6 +2616,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStatRow> {
           ..write('totalViews: $totalViews, ')
           ..write('totalLikes: $totalLikes, ')
           ..write('cachedAt: $cachedAt, ')
+          ..write('followerCountsUpdatedAt: $followerCountsUpdatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -17937,6 +18003,7 @@ typedef $$ProfileStatsTableCreateCompanionBuilder =
       Value<int?> totalViews,
       Value<int?> totalLikes,
       required DateTime cachedAt,
+      Value<DateTime?> followerCountsUpdatedAt,
       Value<int> rowid,
     });
 typedef $$ProfileStatsTableUpdateCompanionBuilder =
@@ -17948,6 +18015,7 @@ typedef $$ProfileStatsTableUpdateCompanionBuilder =
       Value<int?> totalViews,
       Value<int?> totalLikes,
       Value<DateTime> cachedAt,
+      Value<DateTime?> followerCountsUpdatedAt,
       Value<int> rowid,
     });
 
@@ -17992,6 +18060,11 @@ class $$ProfileStatsTableFilterComposer
 
   ColumnFilters<DateTime> get cachedAt => $composableBuilder(
     column: $table.cachedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get followerCountsUpdatedAt => $composableBuilder(
+    column: $table.followerCountsUpdatedAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -18039,6 +18112,11 @@ class $$ProfileStatsTableOrderingComposer
     column: $table.cachedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get followerCountsUpdatedAt => $composableBuilder(
+    column: $table.followerCountsUpdatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ProfileStatsTableAnnotationComposer
@@ -18080,6 +18158,11 @@ class $$ProfileStatsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get cachedAt =>
       $composableBuilder(column: $table.cachedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get followerCountsUpdatedAt => $composableBuilder(
+    column: $table.followerCountsUpdatedAt,
+    builder: (column) => column,
+  );
 }
 
 class $$ProfileStatsTableTableManager
@@ -18120,6 +18203,7 @@ class $$ProfileStatsTableTableManager
                 Value<int?> totalViews = const Value.absent(),
                 Value<int?> totalLikes = const Value.absent(),
                 Value<DateTime> cachedAt = const Value.absent(),
+                Value<DateTime?> followerCountsUpdatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ProfileStatsCompanion(
                 pubkey: pubkey,
@@ -18129,6 +18213,7 @@ class $$ProfileStatsTableTableManager
                 totalViews: totalViews,
                 totalLikes: totalLikes,
                 cachedAt: cachedAt,
+                followerCountsUpdatedAt: followerCountsUpdatedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -18140,6 +18225,7 @@ class $$ProfileStatsTableTableManager
                 Value<int?> totalViews = const Value.absent(),
                 Value<int?> totalLikes = const Value.absent(),
                 required DateTime cachedAt,
+                Value<DateTime?> followerCountsUpdatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ProfileStatsCompanion.insert(
                 pubkey: pubkey,
@@ -18149,6 +18235,7 @@ class $$ProfileStatsTableTableManager
                 totalViews: totalViews,
                 totalLikes: totalLikes,
                 cachedAt: cachedAt,
+                followerCountsUpdatedAt: followerCountsUpdatedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

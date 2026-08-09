@@ -139,7 +139,7 @@ void main() {
             bloc.add(OthersFollowersListLoadRequested(validPubkey('target'))),
         verify: (bloc) {
           expect(bloc.state.followersPubkeys, [validPubkey('follower1')]);
-          expect(bloc.state.followerCount, 2);
+          expect(bloc.state.followerCount, 1);
         },
       );
 

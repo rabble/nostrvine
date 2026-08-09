@@ -125,6 +125,26 @@ void main() {
         expect(result.cachedAt.isBefore(after), isTrue);
       });
 
+      test('does not refresh follower timestamp for unrelated stats', () async {
+        await dao.upsertStats(
+          pubkey: testPubkey,
+          followerCount: 100,
+          followingCount: 50,
+        );
+        final original = await appDbClient.getProfileStatRow(testPubkey);
+        expect(original!.followerCountsUpdatedAt, isNotNull);
+
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+        await dao.upsertStats(pubkey: testPubkey, videoCount: 10);
+
+        final result = await appDbClient.getProfileStatRow(testPubkey);
+        expect(result!.videoCount, equals(10));
+        expect(
+          result.followerCountsUpdatedAt,
+          equals(original.followerCountsUpdatedAt),
+        );
+      });
+
       test('no-ops for a pubkey that requested deletion', () async {
         // The classic-viner seed import re-runs on every manifest bump and
         // writes counters straight to this DAO.

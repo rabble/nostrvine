@@ -1253,8 +1253,6 @@ void main() {
           verify(
             () => mockProfileStatsDao.upsertStats(
               pubkey: testPubkey,
-              followerCount: 12,
-              followingCount: 7,
               videoCount: 3,
               totalLikes: 42,
               totalViews: 99,

@@ -57,6 +57,18 @@ class OthersFollowersBloc
       )
       .toList();
 
+  int _visibleFollowerCount({
+    required List<String> rawPubkeys,
+    required List<String> visiblePubkeys,
+    required int authoritativeCount,
+  }) {
+    final hiddenKnownFollowers = rawPubkeys.length - visiblePubkeys.length;
+    return max(
+      visiblePubkeys.length,
+      authoritativeCount - hiddenKnownFollowers,
+    );
+  }
+
   /// Handle request to load another user's followers list.
   ///
   /// Delegates to [FollowRepository.watchOthersFollowersCached] for
@@ -91,15 +103,20 @@ class OthersFollowersBloc
           final isFollowingTarget = _followRepository.isFollowing(
             event.targetPubkey,
           );
+          final visiblePubkeys = _filterPubkeys(
+            result.data.pubkeys,
+            isFollowingTarget: isFollowingTarget,
+          );
           return state.copyWith(
             status: .success,
             targetPubkey: event.targetPubkey,
             rawFollowersPubkeys: result.data.pubkeys,
-            followersPubkeys: _filterPubkeys(
-              result.data.pubkeys,
-              isFollowingTarget: isFollowingTarget,
+            followersPubkeys: visiblePubkeys,
+            followerCount: _visibleFollowerCount(
+              rawPubkeys: result.data.pubkeys,
+              visiblePubkeys: visiblePubkeys,
+              authoritativeCount: result.data.count,
             ),
-            followerCount: max(result.data.pubkeys.length, result.data.count),
             isRefreshing: result.isStale,
             isFollowingTarget: isFollowingTarget,
           );
@@ -142,14 +159,22 @@ class OthersFollowersBloc
     // Only increment if not already in the list
     if (!rawPubkeys.contains(event.followerPubkey)) {
       final newRaw = [...rawPubkeys, event.followerPubkey];
+      final visiblePubkeys = _filterPubkeys(
+        newRaw,
+        isFollowingTarget: state.isFollowingTarget,
+      );
+      final hiddenKnownFollowers =
+          state.rawFollowersPubkeys.length - state.followersPubkeys.length;
+      final authoritativeCount = state.followerCount + hiddenKnownFollowers + 1;
       emit(
         state.copyWith(
           rawFollowersPubkeys: newRaw,
-          followersPubkeys: _filterPubkeys(
-            newRaw,
-            isFollowingTarget: state.isFollowingTarget,
+          followersPubkeys: visiblePubkeys,
+          followerCount: _visibleFollowerCount(
+            rawPubkeys: newRaw,
+            visiblePubkeys: visiblePubkeys,
+            authoritativeCount: authoritativeCount,
           ),
-          followerCount: state.followerCount + 1,
         ),
       );
       Log.debug(
@@ -172,14 +197,25 @@ class OthersFollowersBloc
       final newRaw = rawPubkeys
           .where((pubkey) => pubkey != event.followerPubkey)
           .toList();
+      final visiblePubkeys = _filterPubkeys(
+        newRaw,
+        isFollowingTarget: state.isFollowingTarget,
+      );
+      final hiddenKnownFollowers =
+          state.rawFollowersPubkeys.length - state.followersPubkeys.length;
+      final authoritativeCount = max(
+        0,
+        state.followerCount + hiddenKnownFollowers - 1,
+      );
       emit(
         state.copyWith(
           rawFollowersPubkeys: newRaw,
-          followersPubkeys: _filterPubkeys(
-            newRaw,
-            isFollowingTarget: state.isFollowingTarget,
+          followersPubkeys: visiblePubkeys,
+          followerCount: _visibleFollowerCount(
+            rawPubkeys: newRaw,
+            visiblePubkeys: visiblePubkeys,
+            authoritativeCount: authoritativeCount,
           ),
-          followerCount: max(0, state.followerCount - 1),
         ),
       );
       Log.debug(
@@ -196,12 +232,22 @@ class OthersFollowersBloc
     Emitter<OthersFollowersState> emit,
   ) {
     if (state.status != OthersFollowersStatus.success) return;
+    final visiblePubkeys = _filterPubkeys(
+      state.rawFollowersPubkeys,
+      isFollowingTarget: state.isFollowingTarget,
+    );
+    final previousHiddenKnownFollowers =
+        state.rawFollowersPubkeys.length - state.followersPubkeys.length;
+    final authoritativeCount =
+        state.followerCount + previousHiddenKnownFollowers;
 
     emit(
       state.copyWith(
-        followersPubkeys: _filterPubkeys(
-          state.rawFollowersPubkeys,
-          isFollowingTarget: state.isFollowingTarget,
+        followersPubkeys: visiblePubkeys,
+        followerCount: _visibleFollowerCount(
+          rawPubkeys: state.rawFollowersPubkeys,
+          visiblePubkeys: visiblePubkeys,
+          authoritativeCount: authoritativeCount,
         ),
       ),
     );

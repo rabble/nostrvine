@@ -243,7 +243,7 @@ void main() {
             status: MyFollowersStatus.success,
             followersPubkeys: [validPubkey('ok')],
             rawFollowersPubkeys: [validPubkey('blocked'), validPubkey('ok')],
-            followerCount: 2,
+            followerCount: 1,
           ),
         ],
       );
@@ -280,7 +280,7 @@ void main() {
             status: MyFollowersStatus.success,
             followersPubkeys: [validPubkey('b')],
             rawFollowersPubkeys: [validPubkey('a'), validPubkey('b')],
-            followerCount: 2,
+            followerCount: 1,
           ),
         ],
       );

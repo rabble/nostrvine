@@ -243,6 +243,7 @@ class _BannerImage extends StatelessWidget {
 class _ProfileStatsRow extends StatefulWidget {
   const _ProfileStatsRow({
     required this.userIdHex,
+    required this.displayName,
     required this.isOwnProfile,
     this.profileStats,
   });
@@ -256,6 +257,7 @@ class _ProfileStatsRow extends StatefulWidget {
   /// [profileLoopsVisibilityFloor].
   final bool isOwnProfile;
 
+  final String? displayName;
   final ProfileStats? profileStats;
 
   @override
@@ -322,27 +324,38 @@ class _ProfileStatsRowState extends State<_ProfileStatsRow> {
           isLoading: isLoading && _timeoutExpired,
         ),
       if (hasFollowing || isLoading)
-        ProfileStatColumn(
-          count: isLoading
-              ? _skeletonPlaceholderCount
-              : widget.profileStats!.following,
-          label: l10n.profileFollowingLabel,
-          isLoading: isLoading && _timeoutExpired,
-          onTap: () => context.push(
-            FollowingScreenRouter.pathForPubkey(widget.userIdHex),
+        if (isLoading)
+          ProfileStatColumn(
+            count: _skeletonPlaceholderCount,
+            label: l10n.profileFollowingLabel,
+            isLoading: _timeoutExpired,
+            onTap: () => context.push(
+              FollowingScreenRouter.pathForPubkey(widget.userIdHex),
+            ),
+          )
+        else
+          ProfileFollowingStat(
+            pubkey: widget.userIdHex,
+            displayName: widget.displayName,
+            initialCount: widget.profileStats!.following,
           ),
-        ),
       if (hasFollowers || isLoading)
-        ProfileStatColumn(
-          count: isLoading
-              ? _skeletonPlaceholderCount
-              : widget.profileStats!.followers,
-          label: l10n.profileFollowersLabel,
-          isLoading: isLoading && _timeoutExpired,
-          onTap: () => context.push(
-            FollowersScreenRouter.pathForPubkey(widget.userIdHex),
+        if (isLoading)
+          ProfileStatColumn(
+            count: _skeletonPlaceholderCount,
+            label: l10n.profileFollowersLabel,
+            isLoading: _timeoutExpired,
+            onTap: () => context.push(
+              FollowersScreenRouter.pathForPubkey(widget.userIdHex),
+            ),
+          )
+        else
+          ProfileFollowersStat(
+            pubkey: widget.userIdHex,
+            displayName: widget.displayName,
+            isOwnProfile: widget.isOwnProfile,
+            initialCount: widget.profileStats!.followers,
           ),
-        ),
     ];
 
     return Skeletonizer(

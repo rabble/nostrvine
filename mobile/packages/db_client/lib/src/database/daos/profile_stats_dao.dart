@@ -41,6 +41,9 @@ class ProfileStatsDao extends DatabaseAccessor<AppDatabase>
     final existing = await (select(
       profileStats,
     )..where((t) => t.pubkey.equals(pubkey))).getSingleOrNull();
+    final countsUpdatedAt = followerCount != null || followingCount != null
+        ? DateTime.now()
+        : existing?.followerCountsUpdatedAt;
 
     final companion = ProfileStatsCompanion.insert(
       pubkey: pubkey,
@@ -50,6 +53,7 @@ class ProfileStatsDao extends DatabaseAccessor<AppDatabase>
       totalViews: Value(totalViews ?? existing?.totalViews),
       totalLikes: Value(totalLikes ?? existing?.totalLikes),
       cachedAt: DateTime.now(),
+      followerCountsUpdatedAt: Value(countsUpdatedAt),
     );
 
     await into(profileStats).insertOnConflictUpdate(companion);

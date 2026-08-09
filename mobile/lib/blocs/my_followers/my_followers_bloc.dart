@@ -1,6 +1,8 @@
 // ABOUTME: BLoC for displaying current user's followers list
 // ABOUTME: Fetches Kind 3 events that mention current user in 'p' tags
 
+import 'dart:math';
+
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -57,6 +59,18 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
     ),
   );
 
+  int _visibleFollowerCount({
+    required List<String> rawPubkeys,
+    required List<String> visiblePubkeys,
+    required int authoritativeCount,
+  }) {
+    final hiddenKnownFollowers = rawPubkeys.length - visiblePubkeys.length;
+    return max(
+      visiblePubkeys.length,
+      authoritativeCount - hiddenKnownFollowers,
+    );
+  }
+
   /// Handle request to load current user's followers list.
   ///
   /// Delegates to [FollowRepository.watchMyFollowersCached] for
@@ -77,16 +91,21 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
       await emit.forEach<CacheResult<FollowersSnapshot>>(
         _followRepository.watchMyFollowersCached(),
         onData: (result) {
+          final visiblePubkeys = _visiblePubkeys(
+            rawPubkeys: result.data.pubkeys,
+            datedCount: result.data.datedCount,
+            sortOrder: state.sortOrder,
+          );
           return state.copyWith(
             status: MyFollowersStatus.success,
             rawFollowersPubkeys: result.data.pubkeys,
             rawDatedCount: result.data.datedCount,
-            followersPubkeys: _visiblePubkeys(
+            followersPubkeys: visiblePubkeys,
+            followerCount: _visibleFollowerCount(
               rawPubkeys: result.data.pubkeys,
-              datedCount: result.data.datedCount,
-              sortOrder: state.sortOrder,
+              visiblePubkeys: visiblePubkeys,
+              authoritativeCount: result.data.count,
             ),
-            followerCount: result.data.count,
             isRefreshing: result.isStale,
           );
         },
@@ -109,13 +128,23 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
     Emitter<MyFollowersState> emit,
   ) {
     if (state.status != MyFollowersStatus.success) return;
+    final visiblePubkeys = _visiblePubkeys(
+      rawPubkeys: state.rawFollowersPubkeys,
+      datedCount: state.rawDatedCount,
+      sortOrder: state.sortOrder,
+    );
+    final previousHiddenKnownFollowers =
+        state.rawFollowersPubkeys.length - state.followersPubkeys.length;
+    final authoritativeCount =
+        state.followerCount + previousHiddenKnownFollowers;
 
     emit(
       state.copyWith(
-        followersPubkeys: _visiblePubkeys(
+        followersPubkeys: visiblePubkeys,
+        followerCount: _visibleFollowerCount(
           rawPubkeys: state.rawFollowersPubkeys,
-          datedCount: state.rawDatedCount,
-          sortOrder: state.sortOrder,
+          visiblePubkeys: visiblePubkeys,
+          authoritativeCount: authoritativeCount,
         ),
       ),
     );
@@ -128,15 +157,26 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
   ) {
     if (event.sortOrder == state.sortOrder) return;
 
+    final visiblePubkeys = _visiblePubkeys(
+      rawPubkeys: state.rawFollowersPubkeys,
+      datedCount: state.rawDatedCount,
+      sortOrder: event.sortOrder,
+    );
+    final previousHiddenKnownFollowers =
+        state.rawFollowersPubkeys.length - state.followersPubkeys.length;
+    final authoritativeCount =
+        state.followerCount + previousHiddenKnownFollowers;
+
     // The sort is remembered even before the first load resolves, so the
     // pending list arrives in the order the user already asked for.
     emit(
       state.copyWith(
         sortOrder: event.sortOrder,
-        followersPubkeys: _visiblePubkeys(
+        followersPubkeys: visiblePubkeys,
+        followerCount: _visibleFollowerCount(
           rawPubkeys: state.rawFollowersPubkeys,
-          datedCount: state.rawDatedCount,
-          sortOrder: event.sortOrder,
+          visiblePubkeys: visiblePubkeys,
+          authoritativeCount: authoritativeCount,
         ),
       ),
     );

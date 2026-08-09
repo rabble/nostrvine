@@ -52,11 +52,11 @@ final class MyFollowersState extends Equatable {
   /// The order [followersPubkeys] is presented in.
   final FollowSortOrder sortOrder;
 
-  /// Authoritative follower count (max of list length and COUNT query).
+  /// Visible follower count after applying local blocklist filters.
   ///
-  /// Downloading all kind 3 events is limited by relay result caps,
-  /// so [followersPubkeys.length] may undercount. This field uses
-  /// the higher of the list length and a COUNT query result.
+  /// Downloading all kind 3 events is limited by relay result caps, so this may
+  /// still exceed [followersPubkeys.length]. Known blocked and follow-severed
+  /// users are subtracted from the repository's authoritative count.
   final int followerCount;
 
   /// True while cached data is shown but a fresh network fetch is in progress.

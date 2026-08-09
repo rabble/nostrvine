@@ -87,11 +87,12 @@ class _MyFollowersStatView extends ConsumerWidget {
         final isLoading =
             state.status == MyFollowersStatus.initial ||
             state.status == MyFollowersStatus.loading;
+        final hasLoadedCount = state.status == MyFollowersStatus.success;
 
         return ProfileStatColumn(
-          count: isLoading ? initialCount : state.followerCount,
+          count: hasLoadedCount ? state.followerCount : initialCount,
           label: context.l10n.profileFollowersLabel,
-          isLoading: isLoading && initialCount == null,
+          isLoading: (isLoading || !hasLoadedCount) && initialCount == null,
           onTap: () => context.push(
             FollowersScreenRouter.pathForPubkey(pubkey),
             extra: displayName,
@@ -127,11 +128,12 @@ class _OthersFollowersStatView extends ConsumerWidget {
         final isLoading =
             state.status == OthersFollowersStatus.initial ||
             state.status == OthersFollowersStatus.loading;
+        final hasLoadedCount = state.status == OthersFollowersStatus.success;
 
         return ProfileStatColumn(
-          count: isLoading ? initialCount : state.followerCount,
+          count: hasLoadedCount ? state.followerCount : initialCount,
           label: context.l10n.profileFollowersLabel,
-          isLoading: isLoading && initialCount == null,
+          isLoading: (isLoading || !hasLoadedCount) && initialCount == null,
           onTap: () => context.push(
             FollowersScreenRouter.pathForPubkey(pubkey),
             extra: displayName,
