@@ -47,10 +47,19 @@ class BugReportConfig {
     // redact public event IDs and pubkeys. Hex-form private keys are an
     // accepted residual risk for diagnostic triage value.
     // NIP-46 bunker secrets are covered by the generic secret pattern below.
-    RegExp(r'password[:\s=]+\S+', caseSensitive: false),
-    RegExp(r'token[:\s=]+\S+', caseSensitive: false),
-    RegExp(r'secret[:\s=]+\S+', caseSensitive: false),
-    RegExp(r'Authorization:\s*Bearer\s+\S+', caseSensitive: false),
+    // Credential keys. The separator must be `:` or `=`, with optional quotes
+    // on either side, so serialized forms like {"token":"..."} are caught while
+    // ordinary prose ("password reset failed") keeps its next word. Matching
+    // starts mid-word, so `access_token` and `secret_key` are covered too.
+    RegExp(
+      r'''(password|token|secret)[\w-]*["']?\s*[:=]\s*["']?[^\s"',;}]+''',
+      caseSensitive: false,
+    ),
+    RegExp(
+      r'''authorization["']?\s*[:=]\s*["']?'''
+      r'''(?:bearer|basic|token)\s+[^\s"',;}]+''',
+      caseSensitive: false,
+    ),
     RegExp(r'\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b', caseSensitive: false),
   ];
 
