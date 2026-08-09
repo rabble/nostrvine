@@ -59,34 +59,6 @@ class DivineVideoClip {
          sourceAddressableId: sourceAddressableId,
          sourceRelayHint: sourceRelayHint,
        ),
-       sourceAuthorPubkey = _firstSourceCredit(
-         sourceCredits: sourceCredits,
-         sourceAuthorPubkey: sourceAuthorPubkey,
-         sourceEventId: sourceEventId,
-         sourceAddressableId: sourceAddressableId,
-         sourceRelayHint: sourceRelayHint,
-       )?.authorPubkey,
-       sourceEventId = _firstSourceCredit(
-         sourceCredits: sourceCredits,
-         sourceAuthorPubkey: sourceAuthorPubkey,
-         sourceEventId: sourceEventId,
-         sourceAddressableId: sourceAddressableId,
-         sourceRelayHint: sourceRelayHint,
-       )?.eventId,
-       sourceAddressableId = _firstSourceCredit(
-         sourceCredits: sourceCredits,
-         sourceAuthorPubkey: sourceAuthorPubkey,
-         sourceEventId: sourceEventId,
-         sourceAddressableId: sourceAddressableId,
-         sourceRelayHint: sourceRelayHint,
-       )?.addressableId,
-       sourceRelayHint = _firstSourceCredit(
-         sourceCredits: sourceCredits,
-         sourceAuthorPubkey: sourceAuthorPubkey,
-         sourceEventId: sourceEventId,
-         sourceAddressableId: sourceAddressableId,
-         sourceRelayHint: sourceRelayHint,
-       )?.relayUrl,
        _thumbnailTimestamp = thumbnailTimestamp,
        _originalAspectRatio = originalAspectRatio;
 
@@ -197,23 +169,28 @@ class DivineVideoClip {
   /// matches what the clip is now.
   final String? chromaKeySourcePath;
 
-  /// Original video author's pubkey when this local clip was imported from an
-  /// existing published video.
-  final String? sourceAuthorPubkey;
-
-  /// Original source event id for imported clips.
-  final String? sourceEventId;
-
-  /// Addressable kind 34236 coordinate for the source video when available.
-  final String? sourceAddressableId;
-
-  /// Relay hint for fetching the source video or author attribution.
-  final String? sourceRelayHint;
-
   /// All factual source credits carried by this clip.
   ///
-  /// Legacy scalar source fields above expose the first credit for back-compat.
+  /// A clip imported from a published video has one; a clip merged from
+  /// several imported clips has one per distinct source. The legacy scalar
+  /// getters below are a back-compat view of the first credit.
   final List<model.ClipSourceCredit> sourceCredits;
+
+  model.ClipSourceCredit? get _firstSourceCredit =>
+      sourceCredits.isEmpty ? null : sourceCredits.first;
+
+  /// Original video author's pubkey when this local clip was imported from an
+  /// existing published video.
+  String? get sourceAuthorPubkey => _firstSourceCredit?.authorPubkey;
+
+  /// Original source event id for imported clips.
+  String? get sourceEventId => _firstSourceCredit?.eventId;
+
+  /// Addressable kind 34236 coordinate for the source video when available.
+  String? get sourceAddressableId => _firstSourceCredit?.addressableId;
+
+  /// Relay hint for fetching the source video or author attribution.
+  String? get sourceRelayHint => _firstSourceCredit?.relayUrl;
 
   double get durationInSeconds => duration.inMilliseconds / 1000.0;
 
@@ -699,23 +676,6 @@ class DivineVideoClip {
           ),
         )
         .toList(growable: false);
-  }
-
-  static model.ClipSourceCredit? _firstSourceCredit({
-    required List<model.ClipSourceCredit> sourceCredits,
-    String? sourceAuthorPubkey,
-    String? sourceEventId,
-    String? sourceAddressableId,
-    String? sourceRelayHint,
-  }) {
-    final credits = _normalizedSourceCredits(
-      sourceCredits: sourceCredits,
-      sourceAuthorPubkey: sourceAuthorPubkey,
-      sourceEventId: sourceEventId,
-      sourceAddressableId: sourceAddressableId,
-      sourceRelayHint: sourceRelayHint,
-    );
-    return credits.isEmpty ? null : credits.first;
   }
 
   static List<model.ClipSourceCredit> _normalizedSourceCredits({
