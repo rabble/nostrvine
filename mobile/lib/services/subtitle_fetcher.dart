@@ -50,12 +50,21 @@ class SubtitleFetchResult {
   /// Creates a result with an explicit [status].
   const SubtitleFetchResult(this.status, {this.cues = const []});
 
-  /// Classifies already-parsed [cues] as [SubtitleFetchStatus.available] when
-  /// non-empty, or [SubtitleFetchStatus.empty] when the track parsed clean but
-  /// held no cues.
-  factory SubtitleFetchResult.fromCues(List<SubtitleCue> cues) => cues.isEmpty
-      ? const SubtitleFetchResult(SubtitleFetchStatus.empty)
-      : SubtitleFetchResult(SubtitleFetchStatus.available, cues: cues);
+  /// Classifies a [body] a source served as a subtitle track:
+  /// [SubtitleFetchStatus.available] when it holds cues, or
+  /// [SubtitleFetchStatus.empty] when it is a track with none.
+  ///
+  /// Returns `null` when [body] is not WebVTT at all. An HTML error page or a
+  /// JSON envelope served with HTTP 200 parses to zero cues just like a
+  /// silent video's track does, and calling that `empty` would tell the
+  /// creator no speech was detected when the fetch actually failed.
+  static SubtitleFetchResult? fromBody(String body) {
+    if (!SubtitleService.isWebVtt(body)) return null;
+    final cues = SubtitleService.parseVtt(body);
+    return cues.isEmpty
+        ? const SubtitleFetchResult(SubtitleFetchStatus.empty)
+        : SubtitleFetchResult(SubtitleFetchStatus.available, cues: cues);
+  }
 
   /// Why the fetch ended the way it did.
   final SubtitleFetchStatus status;
@@ -88,9 +97,13 @@ Future<SubtitleFetchResult?> _fetchHttp(http.Client client, Uri url) async {
   try {
     final response = await client.get(url);
     if (response.statusCode == 200 && response.body.trim().isNotEmpty) {
-      return SubtitleFetchResult.fromCues(
-        SubtitleService.parseVtt(response.body),
-      );
+      return SubtitleFetchResult.fromBody(response.body);
+    }
+    // Saved refs can point at the same generator Blossom fronts, so a direct
+    // ref answers 202 while transcription runs. Report it rather than poll:
+    // the retry-after contract belongs to the Blossom path.
+    if (response.statusCode == 202) {
+      return const SubtitleFetchResult(SubtitleFetchStatus.processing);
     }
   } catch (e) {
     Log.warning(
@@ -124,9 +137,7 @@ Future<SubtitleFetchResult?> _fetchRelay(
   );
 
   if (events.isEmpty) return null;
-  return SubtitleFetchResult.fromCues(
-    SubtitleService.parseVtt(events.first.content),
-  );
+  return SubtitleFetchResult.fromBody(events.first.content);
 }
 
 Future<SubtitleFetchResult?> _fetchBlossom({
@@ -140,9 +151,7 @@ Future<SubtitleFetchResult?> _fetchBlossom({
     final response = await client.get(vttUrl);
 
     if (response.statusCode == 200 && response.body.trim().isNotEmpty) {
-      return SubtitleFetchResult.fromCues(
-        SubtitleService.parseVtt(response.body),
-      );
+      return SubtitleFetchResult.fromBody(response.body);
     }
 
     if (response.statusCode == 202) {
@@ -180,6 +189,9 @@ Future<SubtitleFetchResult?> _fetchBlossom({
 /// says why: [SubtitleFetchStatus.processing] if any source reported the track
 /// is still being generated, [SubtitleFetchStatus.empty] if a track was served
 /// but held no cues, otherwise [SubtitleFetchStatus.unavailable].
+///
+/// Only a body carrying the WebVTT signature counts as a served track — see
+/// [SubtitleFetchResult.fromBody].
 Future<SubtitleFetchResult> fetchSubtitleCues({
   required http.Client httpClient,
   required NostrClient? nostrClient,
@@ -212,9 +224,7 @@ Future<SubtitleFetchResult> fetchSubtitleCues({
 
   SubtitleFetchResult? embedded() {
     if (textTrackContent == null || textTrackContent.isEmpty) return null;
-    return SubtitleFetchResult.fromCues(
-      SubtitleService.parseVtt(textTrackContent),
-    );
+    return SubtitleFetchResult.fromBody(textTrackContent);
   }
 
   if (sourcePreference == SubtitleSourcePreference.embeddedFirst) {

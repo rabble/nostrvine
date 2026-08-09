@@ -113,6 +113,51 @@ void main() {
       expect(result.cues, isEmpty);
     });
 
+    test('a non-VTT 200 body is not a served track', () async {
+      // A gateway error page parses to zero cues exactly like a silent
+      // video's track does. Calling it empty would tell the creator no
+      // speech was detected when the fetch actually failed.
+      final result = await fetchSubtitleCues(
+        httpClient: _FakeClient(
+          (_) async => http.Response('<!DOCTYPE html><html>502</html>', 200),
+        ),
+        nostrClient: null,
+        delay: (_) async {},
+        sha256: 'abc123',
+      );
+
+      expect(result.status, SubtitleFetchStatus.unavailable);
+    });
+
+    test('a non-VTT ref does not hide a later real track', () async {
+      final result = await fetchSubtitleCues(
+        httpClient: _FakeClient((req) async {
+          if (req.url.toString() == 'https://media.divine.video/broken.vtt') {
+            return http.Response('{"error":"not found"}', 200);
+          }
+          return http.Response(_vtt, 200);
+        }),
+        nostrClient: null,
+        delay: (_) async {},
+        textTrackRefs: const ['https://media.divine.video/broken.vtt'],
+        sha256: 'abc123',
+      );
+
+      expect(result.status, SubtitleFetchStatus.available);
+      expect(result.cues.first.text, equals('hello'));
+    });
+
+    test('a direct ref answering 202 reports processing', () async {
+      final result = await fetchSubtitleCues(
+        httpClient: _FakeClient((_) async => http.Response('', 202)),
+        nostrClient: null,
+        delay: (_) async {},
+        textTrackRefs: const ['https://media.divine.video/pending.vtt'],
+      );
+
+      expect(result.status, SubtitleFetchStatus.processing);
+    });
+
     test('reports processing while Blossom keeps answering 202', () async {
       var calls = 0;
       final result = await fetchSubtitleCues(
