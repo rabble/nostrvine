@@ -1,7 +1,8 @@
 // ABOUTME: Derives per-video collaborator confirmation status on mobile.
-// ABOUTME: Subscribes to kind-34238 acceptance events for own-authored videos.
+// ABOUTME: Subscribes to kind-34238 acceptance events for every viewer.
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:collaborator_repository/src/local_state_reader.dart';
 import 'package:models/models.dart';
@@ -29,10 +30,10 @@ const int _kindCollaboratorResponse = 34238;
 /// "did not accept" from "have not heard back yet" — both leave a pubkey
 /// [CollaboratorStatus.pending], but only the former is a real answer.
 ///
-/// One subscription per `videoAddress`, ref-counted across watchers. The
-/// underlying [NostrClient.subscribe] also dedupes by filter hash, so even
-/// if the subscription opens twice it collapses to a single WebSocket
-/// subscription at the transport layer.
+/// One subscription per `(videoAddress, taggedPubkeys)` filter, ref-counted
+/// across watchers for the same video address. The repository owns the explicit
+/// Nostr subscription id so release/close can send `CLOSE` to relays instead
+/// of only cancelling the local Dart listener.
 class CollaboratorConfirmationRepository {
   CollaboratorConfirmationRepository({
     required NostrClient nostrClient,
@@ -64,9 +65,10 @@ class CollaboratorConfirmationRepository {
   /// Per-video ref counts. Subscriptions close when count drops to zero.
   final Map<String, int> _refCount = <String, int>{};
 
-  /// Per-video relay subscriptions. Only present for own-authored videos.
-  final Map<String, StreamSubscription<Event>> _relaySubs =
-      <String, StreamSubscription<Event>>{};
+  /// Per-video relay subscriptions. The active subscription's author filter is
+  /// captured here because it changes when the creator edits collaborators.
+  final Map<String, _RelaySubscription> _relaySubs =
+      <String, _RelaySubscription>{};
 
   /// Video addresses whose acceptance query has reached relay EOSE. Until an
   /// address is in here, a `pending` entry means "not heard back yet" rather
@@ -95,10 +97,11 @@ class CollaboratorConfirmationRepository {
     required String creatorPubkey,
     required List<String> taggedPubkeys,
   }) {
+    final normalizedTaggedPubkeys = _normalizePubkeys(taggedPubkeys);
     _refCount[videoAddress] = (_refCount[videoAddress] ?? 0) + 1;
     _watchContext[videoAddress] = _WatchContext(
       creatorPubkey: creatorPubkey,
-      taggedPubkeys: List.unmodifiable(taggedPubkeys),
+      taggedPubkeys: List.unmodifiable(normalizedTaggedPubkeys),
     );
 
     final subject =
@@ -108,7 +111,7 @@ class CollaboratorConfirmationRepository {
               _snapshot(
                 videoAddress: videoAddress,
                 creatorPubkey: creatorPubkey,
-                taggedPubkeys: taggedPubkeys,
+                taggedPubkeys: normalizedTaggedPubkeys,
               ),
             ),
           )
@@ -118,7 +121,7 @@ class CollaboratorConfirmationRepository {
             _snapshot(
               videoAddress: videoAddress,
               creatorPubkey: creatorPubkey,
-              taggedPubkeys: taggedPubkeys,
+              taggedPubkeys: normalizedTaggedPubkeys,
             ),
           );
 
@@ -132,37 +135,12 @@ class CollaboratorConfirmationRepository {
     // confirm; only tagged pubkeys are meaningful, and the handler
     // re-checks membership anyway. Omitted when nothing is tagged, since an
     // empty authors array is not a meaningful filter.
-    if (!_relaySubs.containsKey(videoAddress)) {
-      _relaySubs[videoAddress] = _nostrClient
-          .subscribe(
-            [
-              Filter(
-                kinds: const [_kindCollaboratorResponse],
-                a: [videoAddress],
-                authors: taggedPubkeys.isEmpty
-                    ? null
-                    : List<String>.of(taggedPubkeys),
-              ),
-            ],
-            onEose: () => _markResolved(videoAddress),
-          )
-          .listen(
-            (event) => _handleAcceptanceEvent(
-              event,
-              videoAddress: videoAddress,
-              creatorPubkey: creatorPubkey,
-              taggedPubkeys: taggedPubkeys,
-            ),
-            onError: (Object error, StackTrace stackTrace) {
-              Log.warning(
-                'kind-$_kindCollaboratorResponse subscription error for '
-                '$videoAddress: $error',
-                name: 'CollaboratorConfirmationRepository',
-                category: LogCategory.system,
-              );
-            },
-          );
-    }
+    _ensureRelaySubscription(
+      videoAddress: videoAddress,
+      creatorPubkey: creatorPubkey,
+      taggedPubkeys: normalizedTaggedPubkeys,
+      subject: subject,
+    );
 
     return subject.stream;
   }
@@ -173,7 +151,10 @@ class CollaboratorConfirmationRepository {
     final current = _refCount[videoAddress] ?? 0;
     if (current <= 1) {
       _refCount.remove(videoAddress);
-      unawaited(_relaySubs.remove(videoAddress)?.cancel());
+      final relaySub = _relaySubs.remove(videoAddress);
+      if (relaySub != null) {
+        unawaited(_cancelRelaySubscription(relaySub));
+      }
       unawaited(_subjects.remove(videoAddress)?.close());
       _relayAccepted.remove(videoAddress);
       _currentUserOverride.remove(videoAddress);
@@ -232,7 +213,7 @@ class CollaboratorConfirmationRepository {
   /// Disposes all subjects and subscriptions. Used on sign-out / shutdown.
   Future<void> close() async {
     for (final sub in _relaySubs.values) {
-      await sub.cancel();
+      await _cancelRelaySubscription(sub);
     }
     _relaySubs.clear();
     for (final subject in _subjects.values) {
@@ -248,11 +229,13 @@ class CollaboratorConfirmationRepository {
 
   /// Marks [videoAddress] resolved on relay EOSE and re-emits so surfaces
   /// gated on [VideoCollaboratorStatus.isResolved] can render.
-  void _markResolved(String videoAddress) {
-    if (!_resolved.add(videoAddress)) return;
+  void _markResolved(String videoAddress, {required String subscriptionId}) {
     final subject = _subjects[videoAddress];
     final context = _watchContext[videoAddress];
+    final relaySub = _relaySubs[videoAddress];
     if (subject == null || context == null) return;
+    if (relaySub?.subscriptionId != subscriptionId) return;
+    if (!_resolved.add(videoAddress)) return;
     subject.add(
       _snapshot(
         videoAddress: videoAddress,
@@ -265,10 +248,12 @@ class CollaboratorConfirmationRepository {
   void _handleAcceptanceEvent(
     Event event, {
     required String videoAddress,
+    required String subscriptionId,
     required String creatorPubkey,
     required List<String> taggedPubkeys,
   }) {
     if (event.kind != _kindCollaboratorResponse) return;
+    if (_relaySubs[videoAddress]?.subscriptionId != subscriptionId) return;
 
     // NIP-33 'a' tag references another addressable event (the video). The
     // kind-34238 event's own 'd' tag identifies itself, not the video, so
@@ -289,7 +274,8 @@ class CollaboratorConfirmationRepository {
     );
     if (statusTag.length >= 2 && statusTag[1] != 'accepted') return;
 
-    if (!taggedPubkeys.contains(event.pubkey)) {
+    final normalizedEventPubkey = event.pubkey.toLowerCase();
+    if (!taggedPubkeys.contains(normalizedEventPubkey)) {
       Log.info(
         'Ignoring kind-$_kindCollaboratorResponse from non-tagged pubkey '
         '${event.pubkey} for $videoAddress',
@@ -300,7 +286,7 @@ class CollaboratorConfirmationRepository {
     }
 
     final accepted = _relayAccepted.putIfAbsent(videoAddress, () => <String>{});
-    if (accepted.add(event.pubkey)) {
+    if (accepted.add(normalizedEventPubkey)) {
       final subject = _subjects[videoAddress];
       subject?.add(
         _snapshot(
@@ -310,6 +296,78 @@ class CollaboratorConfirmationRepository {
         ),
       );
     }
+  }
+
+  void _ensureRelaySubscription({
+    required String videoAddress,
+    required String creatorPubkey,
+    required List<String> taggedPubkeys,
+    required BehaviorSubject<VideoCollaboratorStatus> subject,
+  }) {
+    final subscriptionId = _subscriptionIdFor(
+      videoAddress: videoAddress,
+      taggedPubkeys: taggedPubkeys,
+    );
+    final existing = _relaySubs[videoAddress];
+    if (existing != null) {
+      if (existing.subscriptionId == subscriptionId) return;
+
+      _relaySubs.remove(videoAddress);
+      unawaited(_cancelRelaySubscription(existing));
+      _relayAccepted.remove(videoAddress);
+      _resolved.remove(videoAddress);
+      subject.add(
+        _snapshot(
+          videoAddress: videoAddress,
+          creatorPubkey: creatorPubkey,
+          taggedPubkeys: taggedPubkeys,
+        ),
+      );
+    }
+
+    // Owned by _RelaySubscription and cancelled from release/close.
+    // ignore: cancel_subscriptions
+    final relayStreamSub = _nostrClient
+        .subscribe(
+          [
+            Filter(
+              kinds: const [_kindCollaboratorResponse],
+              a: [videoAddress],
+              authors: taggedPubkeys.isEmpty
+                  ? null
+                  : List<String>.of(taggedPubkeys),
+            ),
+          ],
+          subscriptionId: subscriptionId,
+          onEose: () =>
+              _markResolved(videoAddress, subscriptionId: subscriptionId),
+        )
+        .listen(
+          (event) => _handleAcceptanceEvent(
+            event,
+            videoAddress: videoAddress,
+            subscriptionId: subscriptionId,
+            creatorPubkey: creatorPubkey,
+            taggedPubkeys: taggedPubkeys,
+          ),
+          onError: (Object error, StackTrace stackTrace) {
+            Log.warning(
+              'kind-$_kindCollaboratorResponse subscription error for '
+              '$videoAddress: $error',
+              name: 'CollaboratorConfirmationRepository',
+              category: LogCategory.system,
+            );
+          },
+        );
+    _relaySubs[videoAddress] = _RelaySubscription(
+      subscriptionId: subscriptionId,
+      streamSubscription: relayStreamSub,
+    );
+  }
+
+  Future<void> _cancelRelaySubscription(_RelaySubscription relaySub) async {
+    await relaySub.streamSubscription.cancel();
+    await _nostrClient.unsubscribe(relaySub.subscriptionId);
   }
 
   VideoCollaboratorStatus _snapshot({
@@ -361,6 +419,49 @@ class CollaboratorConfirmationRepository {
       isResolved: _resolved.contains(videoAddress),
     );
   }
+}
+
+List<String> _normalizePubkeys(List<String> pubkeys) {
+  final normalized = <String>[];
+  for (final pubkey in pubkeys) {
+    final lower = pubkey.toLowerCase();
+    if (lower.isNotEmpty && !normalized.contains(lower)) {
+      normalized.add(lower);
+    }
+  }
+  return normalized;
+}
+
+String _subscriptionIdFor({
+  required String videoAddress,
+  required List<String> taggedPubkeys,
+}) {
+  final filterKey = jsonEncode([
+    videoAddress,
+    [...taggedPubkeys]..sort(),
+  ]);
+  return 'collab-confirmation-${_fnv1a64(filterKey).toRadixString(16)}';
+}
+
+BigInt _fnv1a64(String value) {
+  var hash = BigInt.parse('cbf29ce484222325', radix: 16);
+  final prime = BigInt.parse('100000001b3', radix: 16);
+  final mask = BigInt.parse('ffffffffffffffff', radix: 16);
+  for (final codeUnit in value.codeUnits) {
+    hash ^= BigInt.from(codeUnit);
+    hash = (hash * prime) & mask;
+  }
+  return hash;
+}
+
+class _RelaySubscription {
+  const _RelaySubscription({
+    required this.subscriptionId,
+    required this.streamSubscription,
+  });
+
+  final String subscriptionId;
+  final StreamSubscription<Event> streamSubscription;
 }
 
 class _WatchContext {

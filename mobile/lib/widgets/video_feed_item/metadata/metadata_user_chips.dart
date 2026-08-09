@@ -62,7 +62,8 @@ class MetadataCreatorSection extends StatelessWidget {
 ///
 /// Hides the current user's chip when their local invite store says
 /// `ignored` for this video. Pending collaborator chips are dimmed when
-/// the current user is the video's creator.
+/// the current user is the video's creator. Third-party viewers only see
+/// confirmed collaborators after the acceptance query resolves.
 ///
 /// Shows placeholder chips while the names of the resulting list resolve,
 /// and renders nothing while that list is empty.

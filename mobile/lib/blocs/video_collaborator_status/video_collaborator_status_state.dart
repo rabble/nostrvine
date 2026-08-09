@@ -19,10 +19,9 @@ class VideoCollaboratorStatusState extends Equatable {
   ///
   /// Distinct from [load]: `ready` means a snapshot arrived, which happens
   /// immediately and before any relay answer. Surfaces that hide unconfirmed
-  /// collaborators must gate on this instead, and it stays `false` on
-  /// [VideoCollaboratorStatusLoad.failure] so an unreachable relay keeps them
-  /// hidden rather than falling back to crediting untagged-but-unconfirmed
-  /// pubkeys.
+  /// collaborators must gate on this instead. A failure before EOSE leaves it
+  /// false, so an unreachable relay keeps third-party surfaces hidden rather
+  /// than falling back to crediting unconfirmed pubkeys.
   final bool isResolved;
 
   CollaboratorStatus statusFor(String pubkey) =>

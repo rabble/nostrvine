@@ -28,9 +28,7 @@ void main() {
       });
 
       test('isInviterView is always false', () {
-        const vis = CollaboratorVisibility.fallback(
-          taggedPubkeys: [_collab1],
-        );
+        const vis = CollaboratorVisibility.fallback(taggedPubkeys: [_collab1]);
         expect(vis.isInviterView, isFalse);
       });
 
@@ -42,16 +40,12 @@ void main() {
       });
 
       test('isPendingForInviter is always false', () {
-        const vis = CollaboratorVisibility.fallback(
-          taggedPubkeys: [_collab1],
-        );
+        const vis = CollaboratorVisibility.fallback(taggedPubkeys: [_collab1]);
         expect(vis.isPendingForInviter(_collab1), isFalse);
       });
 
       test('statusFor returns pending for any pubkey', () {
-        const vis = CollaboratorVisibility.fallback(
-          taggedPubkeys: [_collab1],
-        );
+        const vis = CollaboratorVisibility.fallback(taggedPubkeys: [_collab1]);
         expect(vis.statusFor(_collab1), equals(CollaboratorStatus.pending));
         expect(vis.statusFor(_collab2), equals(CollaboratorStatus.pending));
       });
@@ -319,9 +313,8 @@ void main() {
       });
 
       test('drops the author own entry when they self-tagged then ignored', () {
-        // buildCollaboratorPTag does not exclude the author, so a creator can
-        // end up tagged on their own video; their local ignore still hides
-        // their own chip on their own view.
+        // Defensive coverage for malformed or hand-built visibility inputs:
+        // a local ignore still hides the current user's own chip.
         const vis = CollaboratorVisibility(
           taggedPubkeys: [_creator, _collab1],
           statusByPubkey: {

@@ -96,6 +96,7 @@ void main() {
         capturedOnEose = invocation.namedArguments[#onEose] as void Function()?;
         return relayController.stream;
       });
+      when(() => nostrClient.unsubscribe(any())).thenAnswer((_) async {});
     });
 
     tearDown(() async {
@@ -421,6 +422,126 @@ void main() {
         ..release(_videoAddress);
     });
 
+    test('release unsubscribes so a later re-watch resolves again', () async {
+      final repo = CollaboratorConfirmationRepository(
+        nostrClient: nostrClient,
+        localStateReader: _StaticLocalStateReader(const {}),
+        currentUserPubkey: _strangerPubkey,
+      );
+
+      final firstEmissions = <VideoCollaboratorStatus>[];
+      final firstSub = repo
+          .watch(
+            _videoAddress,
+            creatorPubkey: _creatorPubkey,
+            taggedPubkeys: const [_collaboratorPubkey],
+          )
+          .listen(firstEmissions.add);
+      await Future<void>.delayed(Duration.zero);
+
+      relayController.add(_acceptanceEvent(pubkey: _collaboratorPubkey));
+      capturedOnEose!();
+      await Future<void>.delayed(Duration.zero);
+      expect(firstEmissions.last.isResolved, isTrue);
+      expect(
+        firstEmissions.last.statusFor(_collaboratorPubkey),
+        equals(CollaboratorStatus.confirmed),
+      );
+
+      await firstSub.cancel();
+      repo.release(_videoAddress);
+      await Future<void>.delayed(Duration.zero);
+      verify(() => nostrClient.unsubscribe(any())).called(1);
+
+      final secondEmissions = <VideoCollaboratorStatus>[];
+      final secondSub = repo
+          .watch(
+            _videoAddress,
+            creatorPubkey: _creatorPubkey,
+            taggedPubkeys: const [_collaboratorPubkey],
+          )
+          .listen(secondEmissions.add);
+      await Future<void>.delayed(Duration.zero);
+      expect(secondEmissions.last.isResolved, isFalse);
+
+      relayController.add(_acceptanceEvent(pubkey: _collaboratorPubkey));
+      capturedOnEose!();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(secondEmissions.last.isResolved, isTrue);
+      expect(
+        secondEmissions.last.statusFor(_collaboratorPubkey),
+        equals(CollaboratorStatus.confirmed),
+        reason:
+            'A re-watch must open a fresh NostrClient subscription so EOSE and '
+            'stored acceptance events can be observed again.',
+      );
+      verify(
+        () => nostrClient.subscribe(
+          any(),
+          subscriptionId: any(named: 'subscriptionId'),
+          tempRelays: any(named: 'tempRelays'),
+          targetRelays: any(named: 'targetRelays'),
+          relayTypes: any(named: 'relayTypes'),
+          sendAfterAuth: any(named: 'sendAfterAuth'),
+          onEose: any(named: 'onEose'),
+        ),
+      ).called(2);
+
+      await secondSub.cancel();
+      repo.release(_videoAddress);
+    });
+
+    test('late EOSE after release does not poison the next watch', () async {
+      final repo = CollaboratorConfirmationRepository(
+        nostrClient: nostrClient,
+        localStateReader: _StaticLocalStateReader(const {}),
+        currentUserPubkey: _strangerPubkey,
+      );
+
+      final firstSub = repo
+          .watch(
+            _videoAddress,
+            creatorPubkey: _creatorPubkey,
+            taggedPubkeys: const [_collaboratorPubkey],
+          )
+          .listen((_) {});
+      await Future<void>.delayed(Duration.zero);
+      final staleOnEose = capturedOnEose;
+
+      await firstSub.cancel();
+      repo.release(_videoAddress);
+      await Future<void>.delayed(Duration.zero);
+
+      staleOnEose!();
+      await Future<void>.delayed(Duration.zero);
+
+      final emissions = <VideoCollaboratorStatus>[];
+      final sub = repo
+          .watch(
+            _videoAddress,
+            creatorPubkey: _creatorPubkey,
+            taggedPubkeys: const [_collaboratorPubkey],
+          )
+          .listen(emissions.add);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        emissions.last.isResolved,
+        isFalse,
+        reason:
+            'An EOSE from a torn-down subscription must not mark the next '
+            'watch resolved before its own relay query finishes.',
+      );
+
+      capturedOnEose!();
+      await Future<void>.delayed(Duration.zero);
+      expect(emissions.last.isResolved, isTrue);
+
+      await sub.cancel();
+      repo.release(_videoAddress);
+    });
+
     test('ignores events with an explicit non-accepted status', () async {
       final repo = CollaboratorConfirmationRepository(
         nostrClient: nostrClient,
@@ -678,6 +799,74 @@ void main() {
 
       await sub.cancel();
       repo.release(_videoAddress);
+    });
+
+    test('reopens the relay subscription when tagged pubkeys change', () async {
+      final repo = CollaboratorConfirmationRepository(
+        nostrClient: nostrClient,
+        localStateReader: _StaticLocalStateReader(const {}),
+        currentUserPubkey: _strangerPubkey,
+      );
+
+      final firstSub = repo
+          .watch(
+            _videoAddress,
+            creatorPubkey: _creatorPubkey,
+            taggedPubkeys: const [_collaboratorPubkey],
+          )
+          .listen((_) {});
+      await Future<void>.delayed(Duration.zero);
+
+      final secondEmissions = <VideoCollaboratorStatus>[];
+      final secondSub = repo
+          .watch(
+            _videoAddress,
+            creatorPubkey: _creatorPubkey,
+            taggedPubkeys: const [
+              _collaboratorPubkey,
+              _secondCollaboratorPubkey,
+            ],
+          )
+          .listen(secondEmissions.add);
+      await Future<void>.delayed(Duration.zero);
+
+      final capturedFilters = verify(
+        () => nostrClient.subscribe(
+          captureAny(),
+          subscriptionId: any(named: 'subscriptionId'),
+          tempRelays: any(named: 'tempRelays'),
+          targetRelays: any(named: 'targetRelays'),
+          relayTypes: any(named: 'relayTypes'),
+          sendAfterAuth: any(named: 'sendAfterAuth'),
+          onEose: any(named: 'onEose'),
+        ),
+      ).captured.cast<List<Filter>>();
+      expect(capturedFilters, hasLength(2));
+      expect(capturedFilters.last.single.authors, [
+        _collaboratorPubkey,
+        _secondCollaboratorPubkey,
+      ]);
+      await Future<void>.delayed(Duration.zero);
+      verify(() => nostrClient.unsubscribe(any())).called(1);
+
+      relayController.add(_acceptanceEvent(pubkey: _secondCollaboratorPubkey));
+      capturedOnEose!();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(secondEmissions.last.isResolved, isTrue);
+      expect(
+        secondEmissions.last.statusFor(_secondCollaboratorPubkey),
+        equals(CollaboratorStatus.confirmed),
+        reason:
+            'The fresh authors filter must include collaborators added by a '
+            'newer creator-authored video event.',
+      );
+
+      await firstSub.cancel();
+      await secondSub.cancel();
+      repo
+        ..release(_videoAddress)
+        ..release(_videoAddress);
     });
 
     test('omits authors when nothing is tagged', () async {
