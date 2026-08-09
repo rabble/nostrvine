@@ -452,13 +452,7 @@
     "videoGridEditVideoSubtitle": "Mettre à jour titre, description et hashtags",
     "videoGridDeleteVideo": "Supprimer la vidéo",
     "videoGridDeleteVideoSubtitle": "Retirer ce contenu définitivement",
-    "videoGridDeleteConfirmTitle": "Supprimer la vidéo",
-    "videoGridDeleteConfirmMessage": "Tu es sûr de vouloir supprimer cette vidéo ?",
-    "videoGridDeleteConfirmNote": "Cette action envoie une requête de suppression (NIP-09) à tous les relays. Certains relays peuvent garder le contenu.",
-    "videoGridDeleteCancel": "Annuler",
-    "videoGridDeleteConfirm": "Supprimer",
     "videoGridDeletingContent": "Suppression du contenu...",
-    "videoGridDeleteSuccess": "Demande de suppression envoyée avec succès",
     "videoGridDeleteFailure": "Échec de la suppression : {error}",
     "@videoGridDeleteFailure": {
         "placeholders": {
@@ -1578,12 +1572,10 @@
         }
     },
     "shareMenuClose": "Fermer",
-    "shareMenuDeleteConfirmation": "Tu es sûr de vouloir supprimer cette vidéo ?",
-    "shareMenuDeleteWarning": "Cette action envoie une requête de suppression (NIP-09) à tous les relays. Certains relays peuvent garder le contenu.",
+    "shareMenuDeleteConfirmation": "Cela supprimera définitivement cette vidéo de Divine. Elle peut encore apparaître dans des clients Nostr tiers qui utilisent d'autres relays.",
     "shareMenuCancel": "Annuler",
     "shareMenuDelete": "Supprimer",
     "shareMenuDeletingContent": "Suppression du contenu...",
-    "shareMenuDeleteRequestSent": "Demande de suppression envoyée avec succès",
     "shareMenuFailedToDeleteContent": "Échec de la suppression du contenu : {error}",
     "@shareMenuFailedToDeleteContent": {
         "placeholders": {
@@ -1627,8 +1619,7 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "Supprimer la vidéo ?",
-    "shareMenuDeleteRelayWarning": "Cette action envoie une requête de suppression aux relays. Note : certains relays peuvent encore avoir des copies en cache.",
-    "shareMenuVideoDeletionRequested": "Suppression de la vidéo demandée",
+    "shareMenuVideoDeletionRequested": "Vidéo supprimée",
     "shareMenuFailedToDeleteVideo": "Échec de la suppression de la vidéo : {error}",
     "@shareMenuFailedToDeleteVideo": {
         "placeholders": {
@@ -3236,7 +3227,6 @@
     },
     "videoEditorHueSemanticLabel": "Teinte",
     "videoEditorAddElementSemanticLabel": "Ajouter un élément",
-    "videoEditorCloseSemanticLabel": "Fermer",
     "videoEditorDoneSemanticLabel": "Terminé",
     "videoEditorLevelSemanticLabel": "Niveau",
     "videoMetadataClosePostDetailsSemanticLabel": "Fermer les détails de la publication",
@@ -4955,5 +4945,12 @@
   "userPickerConfirmSemanticLabel": "Confirmer les utilisateurs sélectionnés",
   "userPickerClearSelectionSemanticLabel": "Effacer la sélection des utilisateurs",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "Annuler la sélection des avertissements de contenu",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Appliquer les avertissements de contenu sélectionnés"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Appliquer les avertissements de contenu sélectionnés",
+  "videoEditorCloseEditorSemanticLabel": "Fermer l’éditeur vidéo",
+  "videoEditorContinueToPostDetailsSemanticLabel": "Continuer vers les détails de la publication",
+  "videoEditorDiscardToolChangesSemanticLabel": "Ignorer les modifications dans {tool}",
+  "videoEditorApplyToolChangesSemanticLabel": "Appliquer les modifications dans {tool}",
+  "videoEditorRemoveAudioSemanticLabel": "Supprimer l’audio",
+  "rgbColorSemanticLabel": "RVB {red}, {green}, {blue}",
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
 }

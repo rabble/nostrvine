@@ -452,13 +452,7 @@
     "videoGridEditVideoSubtitle": "تحديث العنوان والوصف والوسوم",
     "videoGridDeleteVideo": "حذف الفيديو",
     "videoGridDeleteVideoSubtitle": "إزالة هذا المحتوى نهائيًا",
-    "videoGridDeleteConfirmTitle": "حذف الفيديو",
-    "videoGridDeleteConfirmMessage": "هل أنت متأكد من رغبتك في حذف هذا الفيديو؟",
-    "videoGridDeleteConfirmNote": "سيرسل هذا طلب حذف (NIP-09) إلى جميع المحولات. قد تحتفظ بعض المحولات بالمحتوى.",
-    "videoGridDeleteCancel": "إلغاء",
-    "videoGridDeleteConfirm": "حذف",
     "videoGridDeletingContent": "جاري حذف المحتوى...",
-    "videoGridDeleteSuccess": "تم إرسال طلب الحذف بنجاح",
     "videoGridDeleteFailure": "فشل حذف المحتوى: {error}",
     "@videoGridDeleteFailure": {
         "placeholders": {
@@ -1568,12 +1562,10 @@
         }
     },
     "shareMenuClose": "إغلاق",
-    "shareMenuDeleteConfirmation": "هل أنت متأكد من رغبتك في حذف هذا الفيديو؟",
-    "shareMenuDeleteWarning": "سيرسل هذا طلب حذف (NIP-09) إلى جميع المحولات. قد تحتفظ بعض المحولات بالمحتوى.",
+    "shareMenuDeleteConfirmation": "سيؤدي هذا إلى حذف هذا الفيديو نهائيًا من Divine. قد يظل يظهر في عملاء Nostr تابعين لجهات خارجية يستخدمون مرحّلات أخرى.",
     "shareMenuCancel": "إلغاء",
     "shareMenuDelete": "حذف",
     "shareMenuDeletingContent": "جاري حذف المحتوى...",
-    "shareMenuDeleteRequestSent": "تم إرسال طلب الحذف بنجاح",
     "shareMenuFailedToDeleteContent": "فشل حذف المحتوى: {error}",
     "@shareMenuFailedToDeleteContent": {
         "placeholders": {
@@ -1617,8 +1609,7 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "حذف الفيديو؟",
-    "shareMenuDeleteRelayWarning": "سيرسل هذا طلب حذف إلى المحولات. ملاحظة: قد تحتفظ بعض المحولات بنسخ مخزّنة.",
-    "shareMenuVideoDeletionRequested": "تم طلب حذف الفيديو",
+    "shareMenuVideoDeletionRequested": "تم حذف الفيديو",
     "shareMenuFailedToDeleteVideo": "فشل حذف الفيديو: {error}",
     "@shareMenuFailedToDeleteVideo": {
         "placeholders": {
@@ -2883,7 +2874,6 @@
     "videoEditorCameraLabel": "الكاميرا",
     "videoEditorLibraryLabel": "المكتبة",
     "videoEditorCloseColorPickerSemanticLabel": "إغلاق منتقي الألوان",
-    "videoEditorCloseSemanticLabel": "إغلاق",
     "videoEditorColorPickerSemanticLabel": "منتقي الألوان",
     "videoEditorColorSelectedSemanticLabel": "{colorName}، محدد",
     "@videoEditorColorSelectedSemanticLabel": {
@@ -4955,5 +4945,12 @@
   "userPickerConfirmSemanticLabel": "تأكيد المستخدمين المحددين",
   "userPickerClearSelectionSemanticLabel": "مسح اختيار المستخدمين",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "إلغاء اختيار تحذيرات المحتوى",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "تطبيق تحذيرات المحتوى المحددة"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "تطبيق تحذيرات المحتوى المحددة",
+  "videoEditorCloseEditorSemanticLabel": "إغلاق محرر الفيديو",
+  "videoEditorContinueToPostDetailsSemanticLabel": "المتابعة إلى تفاصيل المنشور",
+  "videoEditorDiscardToolChangesSemanticLabel": "تجاهل التغييرات في {tool}",
+  "videoEditorApplyToolChangesSemanticLabel": "تطبيق التغييرات في {tool}",
+  "videoEditorRemoveAudioSemanticLabel": "إزالة الصوت",
+  "rgbColorSemanticLabel": "RGB {red}، {green}، {blue}",
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}، {color}"
 }

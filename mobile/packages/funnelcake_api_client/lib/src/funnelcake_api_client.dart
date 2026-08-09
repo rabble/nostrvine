@@ -479,6 +479,22 @@ class FunnelcakeApiClient {
     int limit = 50,
     int? before,
   }) async {
+    final response = await getRecentVideosPage(limit: limit, before: before);
+    return response.videos;
+  }
+
+  /// Fetches recent videos sorted by creation time, preserving how many rows
+  /// the server actually returned.
+  ///
+  /// Prefer this over [getRecentVideos] when paginating: [getRecentVideos]
+  /// drops malformed rows, so its length cannot distinguish "the source ran
+  /// out" from "one row was unusable".
+  ///
+  /// Throws the same exceptions as [getRecentVideos].
+  Future<RecentVideosResponse> getRecentVideosPage({
+    int limit = 50,
+    int? before,
+  }) async {
     if (!isAvailable) {
       throw const FunnelcakeNotConfiguredException();
     }
@@ -499,14 +515,18 @@ class FunnelcakeApiClient {
       final response = await _get(uri);
 
       if (response.statusCode == 200) {
-        final (:items, hasMore: _, nextCursor: _) = _unwrapListResponse(
+        final (:items, :hasMore, nextCursor: _) = _unwrapListResponse(
           jsonDecode(response.body),
         );
 
-        return items
-            .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
-            .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
-            .toList();
+        return RecentVideosResponse(
+          videos: items
+              .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
+              .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
+              .toList(),
+          serverItemCount: items.length,
+          hasMore: hasMore,
+        );
       } else {
         throw FunnelcakeApiException(
           message: 'Failed to fetch recent videos',

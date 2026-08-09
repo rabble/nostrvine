@@ -102,7 +102,6 @@ void main() {
     test('buildLayer marks the layer as a caption cue with its id', () {
       final layer = classic.buildLayer(
         cue,
-        fittedBoxScale: 2,
         bodySize: const Size(400, 800),
       );
 
@@ -116,7 +115,6 @@ void main() {
     test('buildLayer carries the cue timing and text', () {
       final layer = classic.buildLayer(
         cue,
-        fittedBoxScale: 1,
         bodySize: const Size(400, 800),
       );
 
@@ -127,24 +125,34 @@ void main() {
     });
 
     test(
-      'buildLayer positions the cue below canvas center, scale-adjusted',
+      'buildLayer positions square captions against render height',
       () {
         final layer = classic.buildLayer(
           cue,
-          fittedBoxScale: 2,
+          bodySize: const Size(411, 800),
+        );
+
+        expect(layer.offset.dx, equals(0));
+        expect(layer.offset.dy, closeTo(411 * 0.32, 0.001));
+      },
+    );
+
+    test(
+      'buildLayer positions vertical captions against render height',
+      () {
+        final layer = classic.buildLayer(
+          cue,
           bodySize: const Size(400, 800),
         );
 
         expect(layer.offset.dx, equals(0));
-        // 800 * 0.32 / 2 — below center in render coordinates.
-        expect(layer.offset.dy, closeTo(128, 0.001));
+        expect(layer.offset.dy, closeTo(400 * 0.32, 0.001));
       },
     );
 
     test('buildLayer applies the preset font, colors, and animations', () {
       final layer = classic.buildLayer(
         cue,
-        fittedBoxScale: 1,
         bodySize: const Size(400, 800),
       );
 

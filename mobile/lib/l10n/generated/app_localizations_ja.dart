@@ -1068,26 +1068,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoGridDeleteVideoSubtitle => 'このコンテンツを完全に削除する';
 
   @override
-  String get videoGridDeleteConfirmTitle => '動画を削除';
-
-  @override
-  String get videoGridDeleteConfirmMessage => 'この動画を本当に削除する?';
-
-  @override
-  String get videoGridDeleteConfirmNote =>
-      'すべてのリレーに削除リクエスト (NIP-09) を送るよ。一部のリレーではコンテンツが残ることもあるよ。';
-
-  @override
-  String get videoGridDeleteCancel => 'キャンセル';
-
-  @override
-  String get videoGridDeleteConfirm => '削除';
-
-  @override
   String get videoGridDeletingContent => 'コンテンツを削除中...';
-
-  @override
-  String get videoGridDeleteSuccess => '削除リクエストを送ったよ';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -3783,10 +3764,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareMenuDeleteVideoSubtitle => 'このコンテンツを完全に削除';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'すべてのリレーに削除リクエスト (NIP-09) を送るよ。一部のリレーではキャッシュが残ることもあるよ。';
-
-  @override
   String get shareMenuVideoInTheseLists => 'この動画が入ってるリスト:';
 
   @override
@@ -3798,7 +3775,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareMenuClose => '閉じる';
 
   @override
-  String get shareMenuDeleteConfirmation => 'この動画を本当に削除する?';
+  String get shareMenuDeleteConfirmation =>
+      'この動画はDivineから完全に削除されます。他のリレーを使うサードパーティのNostrクライアントには、まだ表示される場合があります。';
 
   @override
   String get shareMenuCancel => 'キャンセル';
@@ -3813,9 +3791,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return 'コンテンツの削除がうまくいかなかった: $error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent => '削除リクエストを送ったよ';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -3926,11 +3901,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => '動画を削除する?';
 
   @override
-  String get shareMenuDeleteRelayWarning =>
-      'リレーに削除リクエストを送るよ。注意: 一部のリレーにはキャッシュが残ることもあるよ。';
-
-  @override
-  String get shareMenuVideoDeletionRequested => '動画の削除をリクエストしたよ';
+  String get shareMenuVideoDeletionRequested => '動画を削除しました';
 
   @override
   String get shareMenuContentLabels => 'コンテンツラベル';
@@ -9223,9 +9194,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorAddElementSemanticLabel => '要素を追加';
 
   @override
-  String get videoEditorCloseSemanticLabel => '閉じる';
-
-  @override
   String get videoEditorDoneSemanticLabel => '完了';
 
   @override
@@ -10711,4 +10679,36 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
       '選択したコンテンツ警告を適用';
+
+  @override
+  String get videoEditorCloseEditorSemanticLabel => '動画エディターを閉じる';
+
+  @override
+  String get videoEditorContinueToPostDetailsSemanticLabel => '投稿の詳細に進む';
+
+  @override
+  String videoEditorDiscardToolChangesSemanticLabel(String tool) {
+    return '$toolでの変更を破棄';
+  }
+
+  @override
+  String videoEditorApplyToolChangesSemanticLabel(String tool) {
+    return '$toolでの変更を適用';
+  }
+
+  @override
+  String get videoEditorRemoveAudioSemanticLabel => '音声を削除';
+
+  @override
+  String rgbColorSemanticLabel(int red, int green, int blue) {
+    return 'RGB $red、$green、$blue';
+  }
+
+  @override
+  String videoEditorColorPickerSwatchSemanticLabel(
+    String picker,
+    String color,
+  ) {
+    return '$picker、$color';
+  }
 }

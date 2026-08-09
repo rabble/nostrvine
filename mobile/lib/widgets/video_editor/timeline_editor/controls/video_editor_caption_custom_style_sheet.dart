@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/video_editor/caption_style.dart';
+import 'package:openvine/widgets/color_swatch_button.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_editor_text_extensions.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/caption_style_preview.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_caption_font_sheet.dart';
@@ -103,7 +104,13 @@ class _CaptionCustomStyleViewState extends State<_CaptionCustomStyleView>
             controller: widget.scrollController,
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
             children: [
-              _Preview(style: _style, controller: _controller, loopMs: _loopMs),
+              ExcludeSemantics(
+                child: _Preview(
+                  style: _style,
+                  controller: _controller,
+                  loopMs: _loopMs,
+                ),
+              ),
               const SizedBox(height: 20),
               _SectionLabel(l10n.videoEditorCaptionsCustomFont),
               _FontField(index: _style.fontIndex, onChanged: _pickFont),
@@ -361,10 +368,20 @@ class _ColorSwatch extends StatelessWidget {
     // Same swatch treatment as the text editor's color control: a rounded
     // surfaceContainer tile framing the color circle, primary when selected.
     // The custom swatch shows a paint-brush over the current color.
+    final rgbLabel = ColorSwatchButton.rgbSemanticLabel(context, color);
+    final semanticLabel = isCustom
+        ? context.l10n.videoEditorColorPickerSwatchSemanticLabel(
+            context.l10n.videoEditorColorPickerSemanticLabel,
+            rgbLabel,
+          )
+        : rgbLabel;
     return Semantics(
+      label: semanticLabel,
       button: true,
       selected: selected,
+      onTap: onTap,
       child: GestureDetector(
+        excludeFromSemantics: true,
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: Container(

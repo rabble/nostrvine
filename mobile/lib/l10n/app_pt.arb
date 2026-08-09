@@ -452,13 +452,7 @@
     "videoGridEditVideoSubtitle": "Atualize título, descrição e hashtags",
     "videoGridDeleteVideo": "Excluir vídeo",
     "videoGridDeleteVideoSubtitle": "Remover este conteúdo permanentemente",
-    "videoGridDeleteConfirmTitle": "Excluir vídeo",
-    "videoGridDeleteConfirmMessage": "Tem certeza que quer excluir este vídeo?",
-    "videoGridDeleteConfirmNote": "Isso vai enviar uma solicitação de exclusão (NIP-09) para todos os relays. Alguns relays podem manter o conteúdo mesmo assim.",
-    "videoGridDeleteCancel": "Cancelar",
-    "videoGridDeleteConfirm": "Excluir",
     "videoGridDeletingContent": "Excluindo conteúdo...",
-    "videoGridDeleteSuccess": "Solicitação de exclusão enviada com sucesso",
     "videoGridDeleteFailure": "Falha ao excluir conteúdo: {error}",
     "@videoGridDeleteFailure": {
         "placeholders": {
@@ -1578,12 +1572,10 @@
         }
     },
     "shareMenuClose": "Fechar",
-    "shareMenuDeleteConfirmation": "Tem certeza que quer excluir este vídeo?",
-    "shareMenuDeleteWarning": "Isso vai enviar uma solicitação de exclusão (NIP-09) para todos os relays. Alguns relays podem manter o conteúdo mesmo assim.",
+    "shareMenuDeleteConfirmation": "Isso excluirá permanentemente este vídeo do Divine. Ele ainda pode aparecer em clientes Nostr de terceiros que usam outros relays.",
     "shareMenuCancel": "Cancelar",
     "shareMenuDelete": "Excluir",
     "shareMenuDeletingContent": "Excluindo conteúdo...",
-    "shareMenuDeleteRequestSent": "Solicitação de exclusão enviada com sucesso",
     "shareMenuFailedToDeleteContent": "Falha ao excluir conteúdo: {error}",
     "@shareMenuFailedToDeleteContent": {
         "placeholders": {
@@ -1627,8 +1619,7 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "Excluir vídeo?",
-    "shareMenuDeleteRelayWarning": "Isso vai enviar uma solicitação de exclusão para os relays. Nota: alguns relays ainda podem ter cópias em cache.",
-    "shareMenuVideoDeletionRequested": "Exclusão de vídeo solicitada",
+    "shareMenuVideoDeletionRequested": "Vídeo excluído",
     "shareMenuFailedToDeleteVideo": "Falha ao excluir vídeo: {error}",
     "@shareMenuFailedToDeleteVideo": {
         "placeholders": {
@@ -3236,7 +3227,6 @@
     },
     "videoEditorHueSemanticLabel": "Matiz",
     "videoEditorAddElementSemanticLabel": "Adicionar elemento",
-    "videoEditorCloseSemanticLabel": "Fechar",
     "videoEditorDoneSemanticLabel": "Concluído",
     "videoEditorLevelSemanticLabel": "Nível",
     "videoMetadataClosePostDetailsSemanticLabel": "Fechar detalhes da publicação",
@@ -4955,5 +4945,12 @@
   "userPickerConfirmSemanticLabel": "Confirmar utilizadores selecionados",
   "userPickerClearSelectionSemanticLabel": "Limpar seleção de utilizadores",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "Cancelar seleção de avisos de conteúdo",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Aplicar avisos de conteúdo selecionados"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Aplicar avisos de conteúdo selecionados",
+  "videoEditorCloseEditorSemanticLabel": "Fechar o editor de vídeo",
+  "videoEditorContinueToPostDetailsSemanticLabel": "Continuar para os detalhes da publicação",
+  "videoEditorDiscardToolChangesSemanticLabel": "Descartar alterações em {tool}",
+  "videoEditorApplyToolChangesSemanticLabel": "Aplicar alterações em {tool}",
+  "videoEditorRemoveAudioSemanticLabel": "Remover áudio",
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
 }

@@ -16,7 +16,16 @@ Use this checklist for P1 release prep and store submission. This replaces older
   - [ ] [mobile/docs/APPLE_REVIEW_RESPONSE.md](../mobile/docs/APPLE_REVIEW_RESPONSE.md)
   - [ ] [mobile/docs/ENCRYPTION_EXPORT_COMPLIANCE.md](../mobile/docs/ENCRYPTION_EXPORT_COMPLIANCE.md)
 
-## 2. Run The Required Checks
+## 2. Naming And Identifiers
+
+- Use `Divine` for the product name in prose, UI, store metadata, release notes, docs, and commit messages.
+- Keep `openvine` only where it is a legacy technical identifier:
+  - Dart package name: `mobile/pubspec.yaml`
+  - Store bundle IDs: `co.openvine.app` and shipped child bundle IDs such as `co.openvine.app.NotificationServiceExtension`
+- Do not rename the Dart package or bundle IDs during release cleanup. They are compatibility identifiers, not brand copy drift.
+- macOS direct-download builds are not App Store submissions today, so their Xcode marketing/build settings remain intentionally separate from the iOS store version path.
+
+## 3. Run The Required Checks
 
 From `mobile/`:
 
@@ -24,6 +33,7 @@ From `mobile/`:
 flutter pub get
 flutter analyze
 flutter test
+bash scripts/check_ios_shipping_versions.sh
 ```
 
 Run these when relevant:
@@ -32,7 +42,7 @@ Run these when relevant:
 - `./scripts/golden.sh verify`
 - `cd packages/videos_repository && flutter test --coverage`
 
-## 3. Verify Reviewer-Facing Behavior
+## 4. Verify Reviewer-Facing Behavior
 
 - [ ] Welcome flow links open Terms, Privacy, and Safety pages.
 - [ ] Settings hub routes to Support Center, Content Preferences, Moderation Controls, and Nostr Settings.
@@ -40,7 +50,7 @@ Run these when relevant:
 - [ ] Moderation Controls expose reporting, block/mute, age gate, and moderation-provider management.
 - [ ] Deep links and auth callbacks still work for `https://divine.video/...`, `https://login.divine.video/...`, and `divine://`.
 
-## 4. Build The Release Artifacts
+## 5. Build The Release Artifacts
 
 From `mobile/`:
 
@@ -53,19 +63,20 @@ From `mobile/`:
 - [ ] Android release AAB exists at `build/app/outputs/bundle/release/app-release.aab`.
 - [ ] If using the Play upload helper, verify `android/play-store-service-account.json` is present before running `./deploy_android.sh`.
 
-## 5. iOS Submission Checklist
+## 6. iOS Submission Checklist
 
 - [ ] Confirm app metadata matches the release candidate:
   - App name: `Divine`
   - Bundle identifier: `co.openvine.app`
-  - Version/build from `mobile/pubspec.yaml`
+  - Version name from `mobile/pubspec.yaml`; Codemagic build number from App Store Connect latest + 1.
+- [ ] Confirm the built IPA's app bundle and embedded extension bundle versions agree.
 - [ ] Verify `ITSAppUsesNonExemptEncryption` remains `false` in `mobile/ios/Runner/Info.plist`.
 - [ ] Re-check camera, microphone, photo-library, Bluetooth, Bonjour, and location usage strings in `Info.plist`.
 - [ ] Ensure App Store Connect screenshots, subtitle, description, keywords, privacy answers, and support URL are current.
 - [ ] Attach reviewer notes using [docs/APP_STORE_REVIEW_DOSSIER.md](APP_STORE_REVIEW_DOSSIER.md).
 - [ ] Upload the archive to TestFlight or App Store Connect and verify processing succeeds.
 
-## 6. Android Submission Checklist
+## 7. Android Submission Checklist
 
 - [ ] Confirm app ID is still `co.openvine.app`.
 - [ ] Confirm the manifest still removes Advertising ID and unused location/Bluetooth permissions.
@@ -75,7 +86,7 @@ From `mobile/`:
   - `./deploy_android.sh internal|closed|production`
 - [ ] Verify release track assignment and staged rollout settings.
 
-## 7. Final Sign-Off
+## 8. Final Sign-Off
 
 - [ ] All launch-critical docs point to current scripts and screens.
 - [ ] No active doc still uses outdated project naming unless clearly historical.

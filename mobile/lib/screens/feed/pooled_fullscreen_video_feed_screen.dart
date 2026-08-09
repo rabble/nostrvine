@@ -1058,10 +1058,13 @@ class LoadingMorePill extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 spacing: 10,
                 children: [
+                  // The label beside it already announces the wait.
                   const SizedBox(
                     width: 16,
                     height: 16,
-                    child: BrandedLoadingIndicator(size: 16),
+                    child: ExcludeSemantics(
+                      child: BrandedLoadingIndicator(size: 16),
+                    ),
                   ),
                   Text(
                     context.l10n.feedLoadingMore,

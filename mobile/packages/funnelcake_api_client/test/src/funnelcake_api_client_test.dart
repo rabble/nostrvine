@@ -372,6 +372,66 @@ void main() {
         expect(videos, isEmpty);
       });
 
+      // Callers page this feed by comparing the row count against the limit
+      // they asked for. Dropping the malformed row without reporting it made
+      // a full server page look like the end of the feed.
+      test(
+        'reports the server row count alongside the filtered videos',
+        () async {
+          const responseWithOneBadRow =
+              '''
+[
+  {
+    "id": "good123",
+    "pubkey": "$testPubkey",
+    "created_at": 1700000000,
+    "kind": 34236,
+    "d_tag": "good",
+    "title": "Valid",
+    "thumbnail": "https://example.com/thumb.jpg",
+    "video_url": "https://example.com/good.mp4",
+    "reactions": 0,
+    "comments": 0,
+    "reposts": 0,
+    "engagement_score": 0
+  },
+  {
+    "id": "bad456",
+    "pubkey": "$testPubkey",
+    "created_at": 1699999999,
+    "kind": 34236,
+    "d_tag": "bad",
+    "title": "Invalid",
+    "thumbnail": "https://example.com/thumb.jpg",
+    "video_url": "",
+    "reactions": 0,
+    "comments": 0,
+    "reposts": 0,
+    "engagement_score": 0
+  }
+]
+''';
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer((_) async => http.Response(responseWithOneBadRow, 200));
+
+          final page = await client.getRecentVideosPage(limit: 2);
+
+          expect(page.videos, hasLength(1));
+          expect(page.serverItemCount, equals(2));
+        },
+      );
+
+      test('leaves hasMore null for the bare-list response shape', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response(validResponseBody, 200));
+
+        final page = await client.getRecentVideosPage();
+
+        expect(page.hasMore, isNull);
+      });
+
       test('throws FunnelcakeNotConfiguredException when not available', () {
         final emptyClient = FunnelcakeApiClient(
           baseUrl: '',

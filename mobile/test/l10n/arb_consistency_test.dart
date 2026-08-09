@@ -38,6 +38,36 @@ void main() {
       }
     });
 
+    test('owner delete confirmation keeps Divine and Nostr disclosure', () {
+      final l10nDir = Directory('lib/l10n');
+      final arbFiles =
+          l10nDir
+              .listSync()
+              .whereType<File>()
+              .where((file) => file.path.endsWith('.arb'))
+              .toList()
+            ..sort((a, b) => a.path.compareTo(b.path));
+
+      for (final file in arbFiles) {
+        final arb = _readArb(file);
+        final value = arb['shareMenuDeleteConfirmation'];
+
+        expect(
+          value,
+          isA<String>().having((s) => s.isNotEmpty, 'isNotEmpty', isTrue),
+          reason:
+              '${file.path} must define owner delete confirmation disclosure',
+        );
+        expect(
+          value,
+          allOf(contains('Divine'), contains('Nostr')),
+          reason:
+              '${file.path} owner delete confirmation must preserve both the '
+              'Divine deletion and third-party Nostr visibility disclosure',
+        );
+      }
+    });
+
     test('Keycast key export copy is localized for every locale', () {
       final l10nDir = Directory('lib/l10n');
       final arbFiles =

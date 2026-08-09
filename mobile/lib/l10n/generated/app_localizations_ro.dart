@@ -1187,28 +1187,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoGridDeleteVideoSubtitle => 'Elimină definitiv acest conținut';
 
   @override
-  String get videoGridDeleteConfirmTitle => 'Șterge videoclipul';
-
-  @override
-  String get videoGridDeleteConfirmMessage =>
-      'Sigur vrei să ștergi acest videoclip?';
-
-  @override
-  String get videoGridDeleteConfirmNote =>
-      'Asta va trimite o cerere de ștergere (NIP-09) către toate relay-urile. Unele relay-uri pot păstra totuși conținutul.';
-
-  @override
-  String get videoGridDeleteCancel => 'Anulează';
-
-  @override
-  String get videoGridDeleteConfirm => 'Șterge';
-
-  @override
   String get videoGridDeletingContent => 'Se șterge conținutul...';
-
-  @override
-  String get videoGridDeleteSuccess =>
-      'Cererea de ștergere a fost trimisă cu succes';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -4105,10 +4084,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get shareMenuDeleteVideoSubtitle => 'Elimină definitiv acest conținut';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'Asta va trimite o cerere de ștergere (NIP-09) către toate relay-urile. Unele relay-uri pot păstra totuși conținutul.';
-
-  @override
   String get shareMenuVideoInTheseLists => 'Videoclipul e în aceste liste:';
 
   @override
@@ -4128,7 +4103,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get shareMenuDeleteConfirmation =>
-      'Sigur vrei să ștergi acest videoclip?';
+      'Asta va șterge definitiv acest videoclip din Divine. Poate apărea în continuare în clienți Nostr terți care folosesc alte relay-uri.';
 
   @override
   String get shareMenuCancel => 'Anulează';
@@ -4143,10 +4118,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return 'N-am putut șterge conținutul: $error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent =>
-      'Cererea de ștergere a fost trimisă cu succes';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4264,12 +4235,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => 'Ștergi videoclipul?';
 
   @override
-  String get shareMenuDeleteRelayWarning =>
-      'Asta va trimite o cerere de ștergere către relay-uri. Notă: Unele relay-uri pot avea încă copii în cache.';
-
-  @override
-  String get shareMenuVideoDeletionRequested =>
-      'Cerere de ștergere a videoclipului trimisă';
+  String get shareMenuVideoDeletionRequested => 'Videoclip șters';
 
   @override
   String get shareMenuContentLabels => 'Etichete de conținut';
@@ -9845,9 +9811,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorAddElementSemanticLabel => 'Adaugă element';
 
   @override
-  String get videoEditorCloseSemanticLabel => 'Închide';
-
-  @override
   String get videoEditorDoneSemanticLabel => 'Gata';
 
   @override
@@ -11394,4 +11357,37 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
       'Aplică avertismentele de conținut selectate';
+
+  @override
+  String get videoEditorCloseEditorSemanticLabel => 'Închide editorul video';
+
+  @override
+  String get videoEditorContinueToPostDetailsSemanticLabel =>
+      'Continuă la detaliile postării';
+
+  @override
+  String videoEditorDiscardToolChangesSemanticLabel(String tool) {
+    return 'Renunță la modificările din $tool';
+  }
+
+  @override
+  String videoEditorApplyToolChangesSemanticLabel(String tool) {
+    return 'Aplică modificările din $tool';
+  }
+
+  @override
+  String get videoEditorRemoveAudioSemanticLabel => 'Elimină sunetul';
+
+  @override
+  String rgbColorSemanticLabel(int red, int green, int blue) {
+    return 'RGB $red, $green, $blue';
+  }
+
+  @override
+  String videoEditorColorPickerSwatchSemanticLabel(
+    String picker,
+    String color,
+  ) {
+    return '$picker, $color';
+  }
 }

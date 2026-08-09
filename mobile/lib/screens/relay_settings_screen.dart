@@ -488,10 +488,13 @@ class _RelayInfoSection extends StatelessWidget {
           Divider(color: context.vineColors.mutedText, height: 24),
           Row(
             children: [
+              // The label beside it already announces the wait.
               const SizedBox(
                 width: 16,
                 height: 16,
-                child: BrandedLoadingIndicator(size: 16),
+                child: ExcludeSemantics(
+                  child: BrandedLoadingIndicator(size: 16),
+                ),
               ),
               const SizedBox(width: 8),
               Text(

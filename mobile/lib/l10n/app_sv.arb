@@ -452,13 +452,7 @@
     "videoGridEditVideoSubtitle": "Uppdatera titel, beskrivning och hashtags",
     "videoGridDeleteVideo": "Ta bort video",
     "videoGridDeleteVideoSubtitle": "Ta bort det här innehållet permanent",
-    "videoGridDeleteConfirmTitle": "Ta bort video",
-    "videoGridDeleteConfirmMessage": "Är du säker på att du vill ta bort den här videon?",
-    "videoGridDeleteConfirmNote": "Detta skickar en borttagningsbegäran (NIP-09) till alla reler. Vissa reler kan fortfarande behålla innehållet.",
-    "videoGridDeleteCancel": "Avbryt",
-    "videoGridDeleteConfirm": "Ta bort",
     "videoGridDeletingContent": "Tar bort innehåll...",
-    "videoGridDeleteSuccess": "Borttagningsbegäran skickad",
     "videoGridDeleteFailure": "Kunde inte ta bort innehåll: {error}",
     "@videoGridDeleteFailure": {
         "placeholders": {
@@ -1578,12 +1572,10 @@
         }
     },
     "shareMenuClose": "Stäng",
-    "shareMenuDeleteConfirmation": "Är du säker på att du vill ta bort den här videon?",
-    "shareMenuDeleteWarning": "Detta skickar en borttagningsbegäran (NIP-09) till alla reler. Vissa reler kan fortfarande behålla innehållet.",
+    "shareMenuDeleteConfirmation": "Det här tar bort videon permanent från Divine. Den kan fortfarande visas i Nostr-klienter från tredje part som använder andra reler.",
     "shareMenuCancel": "Avbryt",
     "shareMenuDelete": "Ta bort",
     "shareMenuDeletingContent": "Tar bort innehåll...",
-    "shareMenuDeleteRequestSent": "Borttagningsbegäran skickad",
     "shareMenuFailedToDeleteContent": "Kunde inte ta bort innehåll: {error}",
     "@shareMenuFailedToDeleteContent": {
         "placeholders": {
@@ -1627,8 +1619,7 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "Ta bort video?",
-    "shareMenuDeleteRelayWarning": "Detta skickar en borttagningsbegäran till reler. Obs: Vissa reler kan fortfarande ha cachade kopior.",
-    "shareMenuVideoDeletionRequested": "Videoborttagning begärd",
+    "shareMenuVideoDeletionRequested": "Video borttagen",
     "shareMenuFailedToDeleteVideo": "Kunde inte ta bort videon: {error}",
     "@shareMenuFailedToDeleteVideo": {
         "placeholders": {
@@ -3236,7 +3227,6 @@
     },
     "videoEditorHueSemanticLabel": "Nyans",
     "videoEditorAddElementSemanticLabel": "Lägg till element",
-    "videoEditorCloseSemanticLabel": "Stäng",
     "videoEditorDoneSemanticLabel": "Klar",
     "videoEditorLevelSemanticLabel": "Nivå",
     "videoMetadataClosePostDetailsSemanticLabel": "Stäng inläggsdetaljer",
@@ -4955,5 +4945,12 @@
   "userPickerConfirmSemanticLabel": "Bekräfta valda användare",
   "userPickerClearSelectionSemanticLabel": "Rensa användarval",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "Avbryt val av innehållsvarningar",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Använd valda innehållsvarningar"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Använd valda innehållsvarningar",
+  "videoEditorCloseEditorSemanticLabel": "Stäng videoredigeraren",
+  "videoEditorContinueToPostDetailsSemanticLabel": "Fortsätt till inläggsinformation",
+  "videoEditorDiscardToolChangesSemanticLabel": "Ignorera ändringar i {tool}",
+  "videoEditorApplyToolChangesSemanticLabel": "Tillämpa ändringar i {tool}",
+  "videoEditorRemoveAudioSemanticLabel": "Ta bort ljud",
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
 }

@@ -452,13 +452,7 @@
     "videoGridEditVideoSubtitle": "Perbarui judul, deskripsi, dan hashtag",
     "videoGridDeleteVideo": "Hapus Video",
     "videoGridDeleteVideoSubtitle": "Hapus konten ini secara permanen",
-    "videoGridDeleteConfirmTitle": "Hapus Video",
-    "videoGridDeleteConfirmMessage": "Yakin mau menghapus video ini?",
-    "videoGridDeleteConfirmNote": "Ini akan mengirim permintaan hapus (NIP-09) ke semua relay. Beberapa relay mungkin masih menyimpan kontennya.",
-    "videoGridDeleteCancel": "Batal",
-    "videoGridDeleteConfirm": "Hapus",
     "videoGridDeletingContent": "Menghapus konten...",
-    "videoGridDeleteSuccess": "Permintaan hapus berhasil dikirim",
     "videoGridDeleteFailure": "Gagal menghapus konten: {error}",
     "@videoGridDeleteFailure": {
         "placeholders": {
@@ -1575,12 +1569,10 @@
         }
     },
     "shareMenuClose": "Tutup",
-    "shareMenuDeleteConfirmation": "Yakin mau menghapus video ini?",
-    "shareMenuDeleteWarning": "Ini akan mengirim permintaan hapus (NIP-09) ke semua relay. Beberapa relay mungkin masih menyimpan kontennya.",
+    "shareMenuDeleteConfirmation": "Ini akan menghapus video ini secara permanen dari Divine. Video ini mungkin masih muncul di klien Nostr pihak ketiga yang menggunakan relay lain.",
     "shareMenuCancel": "Batal",
     "shareMenuDelete": "Hapus",
     "shareMenuDeletingContent": "Menghapus konten...",
-    "shareMenuDeleteRequestSent": "Permintaan hapus berhasil dikirim",
     "shareMenuFailedToDeleteContent": "Gagal menghapus konten: {error}",
     "@shareMenuFailedToDeleteContent": {
         "placeholders": {
@@ -1624,8 +1616,7 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "Hapus Video?",
-    "shareMenuDeleteRelayWarning": "Ini akan mengirim permintaan hapus ke relay. Catatan: Beberapa relay mungkin masih punya salinan cache.",
-    "shareMenuVideoDeletionRequested": "Penghapusan video diminta",
+    "shareMenuVideoDeletionRequested": "Video dihapus",
     "shareMenuFailedToDeleteVideo": "Gagal menghapus video: {error}",
     "@shareMenuFailedToDeleteVideo": {
         "placeholders": {
@@ -2890,7 +2881,6 @@
     "videoEditorCameraLabel": "Kamera",
     "videoEditorLibraryLabel": "Perpustakaan",
     "videoEditorCloseColorPickerSemanticLabel": "Tutup pemilih warna",
-    "videoEditorCloseSemanticLabel": "Tutup",
     "videoEditorColorPickerSemanticLabel": "Pemilih warna",
     "videoEditorColorSelectedSemanticLabel": "{colorName}, dipilih",
     "@videoEditorColorSelectedSemanticLabel": {
@@ -4955,5 +4945,12 @@
   "userPickerConfirmSemanticLabel": "Konfirmasi pengguna yang dipilih",
   "userPickerClearSelectionSemanticLabel": "Hapus pilihan pengguna",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "Batalkan pemilihan peringatan konten",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Terapkan peringatan konten yang dipilih"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Terapkan peringatan konten yang dipilih",
+  "videoEditorCloseEditorSemanticLabel": "Tutup editor video",
+  "videoEditorContinueToPostDetailsSemanticLabel": "Lanjutkan ke detail postingan",
+  "videoEditorDiscardToolChangesSemanticLabel": "Buang perubahan di {tool}",
+  "videoEditorApplyToolChangesSemanticLabel": "Terapkan perubahan di {tool}",
+  "videoEditorRemoveAudioSemanticLabel": "Hapus audio",
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
 }

@@ -143,13 +143,8 @@ class CaptionStyle {
   static const double _bottomOffsetFactor = 0.32;
 
   /// Builds the burned-in editor layer for [cue].
-  ///
-  /// [fittedBoxScale] and [bodySize] are the canvas metrics the editor screen
-  /// exposes, used to place the cue bottom-center in render coordinates (the
-  /// same conversion the sticker flow applies).
   TextLayer buildLayer(
     CaptionCue cue, {
-    required double fittedBoxScale,
     required Size bodySize,
   }) {
     return TextLayer(
@@ -160,7 +155,7 @@ class CaptionStyle {
       background: background,
       align: TextAlign.center,
       fontScale: fontScale,
-      offset: Offset(0, bodySize.height * _bottomOffsetFactor / fittedBoxScale),
+      offset: Offset(0, bodySize.shortestSide * _bottomOffsetFactor),
       startTime: cue.start,
       endTime: cue.end,
       animations: [...enter, ...leave].toLayerAnimations(),

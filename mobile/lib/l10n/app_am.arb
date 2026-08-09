@@ -521,13 +521,7 @@
     "videoGridEditVideoSubtitle": "ርዕስ፣ መግለጫ እና ሃሽታጎችን ያዘምኑ",
     "videoGridDeleteVideo": "ቪዲዮ ሰርዝ",
     "videoGridDeleteVideoSubtitle": "ይህን ቪዲዮ ከDivine አስወግድ። በሌሎች Nostr ደንበኞች ላይ አሁንም ሊታይ ይችላል።",
-    "videoGridDeleteConfirmTitle": "ቪዲዮ ሰርዝ",
-    "videoGridDeleteConfirmMessage": "ይሄ ይህን ቪዲዮ ከDivine እስከመጨረሻው ይሰርዘዋል። አሁንም ሌሎች ማስተላለፊያዎችን በሚጠቀሙ የሶስተኛ ወገን Nostr ደንበኞች ላይ ሊታይ ይችላል።",
-    "videoGridDeleteConfirmNote": "ይህ የስረዛ ጥያቄን ወደ ማስተላለፊያዎች ይልካል። ማስታወሻ፡ አንዳንድ ማሰራጫዎች አሁንም የተሸጎጡ ቅጂዎች ሊኖራቸው ይችላል።",
-    "videoGridDeleteCancel": "ሰርዝ",
-    "videoGridDeleteConfirm": "ሰርዝ",
     "videoGridDeletingContent": "ይዘትን በመሰረዝ ላይ...",
-    "videoGridDeleteSuccess": "ጥያቄውን ሰርዝ በተሳካ ሁኔታ ተልኳል።",
     "videoGridDeleteFailure": "ይዘትን መሰረዝ አልተሳካም፦ {error}",
     "@videoGridDeleteFailure": {
         "placeholders": {
@@ -1930,7 +1924,6 @@
     "shareMenuEditVideoSubtitle": "ርዕስ፣ መግለጫ እና ሃሽታጎችን ያዘምኑ",
     "shareMenuDeleteVideo": "ቪዲዮ ሰርዝ",
     "shareMenuDeleteVideoSubtitle": "ይህን ቪዲዮ ከDivine አስወግድ። በሌሎች Nostr ደንበኞች ላይ አሁንም ሊታይ ይችላል።",
-    "shareMenuDeleteWarning": "ይህ የመሰረዝ ጥያቄን (NIP-09) ለሁሉም ማሰራጫዎች ይልካል። አንዳንድ ማሰራጫዎች አሁንም ይዘቱን ሊይዙት ይችላሉ።",
     "shareMenuVideoInTheseLists": "ቪዲዮው በእነዚህ ዝርዝሮች ውስጥ ነው፡-",
     "shareMenuVideoCount": "{count} ቪዲዮዎች",
     "@shareMenuVideoCount": {
@@ -1953,7 +1946,6 @@
             }
         }
     },
-    "shareMenuDeleteRequestSent": "ቪዲዮ ተሰርዟል።",
     "shareMenuDeleteFailedNotInitialized": "መሰረዝ ገና ዝግጁ አይደለም። ከአፍታ በኋላ እንደገና ይሞክሩ።",
     "shareMenuDeleteFailedNotOwner": "የእራስዎን ቪዲዮዎች ብቻ መሰረዝ ይችላሉ.",
     "shareMenuDeleteFailedNotAuthenticated": "እንደገና ይግቡ፣ ከዚያ ለመሰረዝ ይሞክሩ።",
@@ -2005,7 +1997,6 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "ቪዲዮ ይሰረዝ?",
-    "shareMenuDeleteRelayWarning": "ይህ የስረዛ ጥያቄን ወደ ማስተላለፊያዎች ይልካል። ማስታወሻ፡ አንዳንድ ማሰራጫዎች አሁንም የተሸጎጡ ቅጂዎች ሊኖራቸው ይችላል።",
     "shareMenuVideoDeletionRequested": "ቪዲዮ ተሰርዟል።",
     "shareMenuContentLabels": "የይዘት መለያዎች",
     "shareMenuAddContentLabels": "የይዘት መለያዎችን ያክሉ",
@@ -3906,7 +3897,6 @@
     },
     "videoEditorHueSemanticLabel": "ሁ",
     "videoEditorAddElementSemanticLabel": "ኤለመንት አክል",
-    "videoEditorCloseSemanticLabel": "ገጠመ",
     "videoEditorDoneSemanticLabel": "ተከናውኗል",
     "videoEditorLevelSemanticLabel": "ደረጃ",
     "videoMetadataClosePostDetailsSemanticLabel": "የልጥፍ ዝርዝሮችን ዝጋ",
@@ -5080,5 +5070,12 @@
   "userPickerConfirmSemanticLabel": "የተመረጡ ተጠቃሚዎችን አረጋግጥ",
   "userPickerClearSelectionSemanticLabel": "የተጠቃሚ ምርጫን አጽዳ",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "የይዘት ማስጠንቀቂያ ምርጫን ሰርዝ",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "የተመረጡ የይዘት ማስጠንቀቂያዎችን ተግብር"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "የተመረጡ የይዘት ማስጠንቀቂያዎችን ተግብር",
+  "videoEditorCloseEditorSemanticLabel": "የቪዲዮ አርታዒውን ዝጋ",
+  "videoEditorContinueToPostDetailsSemanticLabel": "ወደ ልጥፍ ዝርዝሮች ቀጥል",
+  "videoEditorDiscardToolChangesSemanticLabel": "በ{tool} ውስጥ የተደረጉ ለውጦችን አስወግድ",
+  "videoEditorApplyToolChangesSemanticLabel": "በ{tool} ውስጥ የተደረጉ ለውጦችን ተግብር",
+  "videoEditorRemoveAudioSemanticLabel": "ኦዲዮን አስወግድ",
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
 }

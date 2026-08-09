@@ -1,5 +1,5 @@
 name: openvine
-description: "divine - A decentralized vine-like video sharing app powered by Nostr."
+description: "Divine - A decentralized vine-like video sharing app powered by Nostr."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
@@ -330,7 +330,7 @@ dependencies:
   firebase_performance: ^0.11.1+4
   firebase_messaging: ^16.1.1
   audio_session: ^0.2.2
-  pro_video_editor: ^2.11.1
+  pro_video_editor: ^2.11.2
   pro_image_editor: ^13.3.0
   flutter_colorpicker: ^1.1.0
   file_picker: ^10.3.7
@@ -345,10 +345,11 @@ dependencies:
   meta: ^1.18.0
 
 dependency_overrides:
+  # TODO(#3638): Keep device_info_plus on 10.x until the app is ready for the
+  # transitive 11.x platform interface changes.
   device_info_plus: ^10.1.2
-  rxdart: ^0.28.0
-  cryptography_flutter:
-    path: overrides/cryptography_flutter-2.3.2
+  # TODO(#6918): Local fork documents its divergence and removal condition in
+  # overrides/app_device_integrity-1.1.0/OVERRIDE.md.
   app_device_integrity:
     path: overrides/app_device_integrity-1.1.0
 

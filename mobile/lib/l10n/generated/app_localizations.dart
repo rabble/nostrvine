@@ -2052,47 +2052,11 @@ abstract class AppLocalizations {
   /// **'Remove this video from Divine. It may still appear on other Nostr clients.'**
   String get videoGridDeleteVideoSubtitle;
 
-  /// No description provided for @videoGridDeleteConfirmTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete Video'**
-  String get videoGridDeleteConfirmTitle;
-
-  /// No description provided for @videoGridDeleteConfirmMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'This will permanently delete this video from Divine. It may still appear on third-party Nostr clients that use other relays.'**
-  String get videoGridDeleteConfirmMessage;
-
-  /// No description provided for @videoGridDeleteConfirmNote.
-  ///
-  /// In en, this message translates to:
-  /// **'This will send a deletion request to relays. Note: Some relays may still have cached copies.'**
-  String get videoGridDeleteConfirmNote;
-
-  /// No description provided for @videoGridDeleteCancel.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel'**
-  String get videoGridDeleteCancel;
-
-  /// No description provided for @videoGridDeleteConfirm.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete'**
-  String get videoGridDeleteConfirm;
-
   /// No description provided for @videoGridDeletingContent.
   ///
   /// In en, this message translates to:
   /// **'Deleting content...'**
   String get videoGridDeletingContent;
-
-  /// No description provided for @videoGridDeleteSuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete request sent successfully'**
-  String get videoGridDeleteSuccess;
 
   /// No description provided for @videoGridDeleteFailure.
   ///
@@ -6938,12 +6902,6 @@ abstract class AppLocalizations {
   /// **'Remove this video from Divine. It may still appear on other Nostr clients.'**
   String get shareMenuDeleteVideoSubtitle;
 
-  /// No description provided for @shareMenuDeleteWarning.
-  ///
-  /// In en, this message translates to:
-  /// **'This sends a delete request (NIP-09) to all relays. Some relays may still keep the content.'**
-  String get shareMenuDeleteWarning;
-
   /// No description provided for @shareMenuVideoInTheseLists.
   ///
   /// In en, this message translates to:
@@ -6991,12 +6949,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to delete content: {error}'**
   String shareMenuFailedToDeleteContent(String error);
-
-  /// No description provided for @shareMenuDeleteRequestSent.
-  ///
-  /// In en, this message translates to:
-  /// **'Video deleted'**
-  String get shareMenuDeleteRequestSent;
 
   /// No description provided for @shareMenuDeleteFailedNotInitialized.
   ///
@@ -7177,12 +7129,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete Video?'**
   String get shareMenuDeleteVideoQuestion;
-
-  /// No description provided for @shareMenuDeleteRelayWarning.
-  ///
-  /// In en, this message translates to:
-  /// **'This will send a deletion request to relays. Note: Some relays may still have cached copies.'**
-  String get shareMenuDeleteRelayWarning;
 
   /// No description provided for @shareMenuVideoDeletionRequested.
   ///
@@ -11024,7 +10970,7 @@ abstract class AppLocalizations {
   /// **'Not now'**
   String get commonNotNow;
 
-  /// Screen-reader label for a blocking progress spinner that covers the screen while an action is being prepared. Announced instead of the content behind it, which is not reachable while the spinner is up.
+  /// Screen-reader label for a progress indicator, announced while content or an action is loading. Covers both a full-screen spinner that blocks the content behind it and a small inline one next to content that stays reachable.
   ///
   /// In en, this message translates to:
   /// **'Loading'**
@@ -16594,12 +16540,6 @@ abstract class AppLocalizations {
   /// **'Add element'**
   String get videoEditorAddElementSemanticLabel;
 
-  /// No description provided for @videoEditorCloseSemanticLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Close'**
-  String get videoEditorCloseSemanticLabel;
-
   /// No description provided for @videoEditorDoneSemanticLabel.
   ///
   /// In en, this message translates to:
@@ -19215,6 +19155,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Apply selected content warnings'**
   String get videoMetadataContentWarningsPickerConfirmSemanticLabel;
+
+  /// No description provided for @videoEditorCloseEditorSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Close video editor'**
+  String get videoEditorCloseEditorSemanticLabel;
+
+  /// No description provided for @videoEditorContinueToPostDetailsSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue to post details'**
+  String get videoEditorContinueToPostDetailsSemanticLabel;
+
+  /// Accessibility label for closing a named video-editor tool without applying its changes.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes in {tool}'**
+  String videoEditorDiscardToolChangesSemanticLabel(String tool);
+
+  /// Accessibility label for applying changes made in a named video-editor tool.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply changes in {tool}'**
+  String videoEditorApplyToolChangesSemanticLabel(String tool);
+
+  /// No description provided for @videoEditorRemoveAudioSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove audio'**
+  String get videoEditorRemoveAudioSemanticLabel;
+
+  /// Accessibility label announcing a color swatch as its RGB triplet, used when the color has no human-readable name.
+  ///
+  /// In en, this message translates to:
+  /// **'RGB {red}, {green}, {blue}'**
+  String rgbColorSemanticLabel(int red, int green, int blue);
+
+  /// Joins the custom color swatch's picker role and its color description into one accessibility label. Translate the separator, not the placeholders: locales that do not list with a Latin comma should use their own (for example '、' or '، '), matching rgbColorSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{picker}, {color}'**
+  String videoEditorColorPickerSwatchSemanticLabel(String picker, String color);
 }
 
 class _AppLocalizationsDelegate

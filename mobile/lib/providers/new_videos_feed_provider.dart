@@ -59,10 +59,11 @@ class NewVideosFeed extends _$NewVideosFeed {
   }) async {
     try {
       final videosRepository = ref.read(videosRepositoryProvider);
-      final videos = await videosRepository.getNewVideos(
+      final page = await videosRepository.getNewVideos(
         limit: AppConstants.paginationBatchSize,
         skipCache: bypassRepositoryCache,
       );
+      final videos = page.videos;
 
       if (!ref.mounted) {
         return const VideoFeedState(videos: [], hasMoreContent: true);
@@ -89,7 +90,10 @@ class NewVideosFeed extends _$NewVideosFeed {
 
       return VideoFeedState(
         videos: filteredVideos,
-        hasMoreContent: videos.length >= AppConstants.paginationBatchSize,
+        // The repository reports this: the cached first page can be shorter
+        // than this feed's page size when the home feed warmed it with a
+        // smaller one, and it still has more behind it.
+        hasMoreContent: page.hasMore ?? false,
         lastUpdated: DateTime.now(),
       );
     } catch (e) {
@@ -117,10 +121,11 @@ class NewVideosFeed extends _$NewVideosFeed {
 
     try {
       final videosRepository = ref.read(videosRepositoryProvider);
-      final newVideos = await videosRepository.getNewVideos(
-        limit: 50,
+      final page = await videosRepository.getNewVideos(
+        limit: AppConstants.paginationBatchSize,
         until: _nextCursor,
       );
+      final newVideos = page.videos;
 
       if (!ref.mounted) return;
 
@@ -142,8 +147,7 @@ class NewVideosFeed extends _$NewVideosFeed {
       if (filteredNew.isEmpty) {
         state = AsyncData(
           currentState.copyWith(
-            hasMoreContent:
-                newVideos.length >= AppConstants.paginationBatchSize,
+            hasMoreContent: page.hasMore ?? false,
             isLoadingMore: false,
           ),
         );
@@ -162,7 +166,7 @@ class NewVideosFeed extends _$NewVideosFeed {
       state = AsyncData(
         VideoFeedState(
           videos: allVideos,
-          hasMoreContent: newVideos.length >= AppConstants.paginationBatchSize,
+          hasMoreContent: page.hasMore ?? false,
           lastUpdated: DateTime.now(),
         ),
       );

@@ -3,11 +3,14 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart'
+    show LocalizedText, StickerData, StickerPackData;
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_overlay_item.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_positioned_item.dart';
+import 'package:pro_image_editor/pro_image_editor.dart' show WidgetLayer;
 
 void main() {
   group(TimelineOverlayPositionedItem, () {
@@ -163,6 +166,72 @@ void main() {
       await tester.pump();
 
       expect(tapCount, equals(1));
+    });
+    testWidgets('announces a sticker by its description, not just "Sticker"', (
+      tester,
+    ) async {
+      // The main editor canvas is wrapped in ExcludeSemantics, so this strip is
+      // the only place a screen reader can learn which stickers are on a clip.
+      // The bloc labels every WidgetLayer generically; the description comes
+      // from the tile. If either half regresses, the sticker becomes anonymous.
+      const sticker = StickerData.asset(
+        'assets/stickers/test.png',
+        description: LocalizedText({'en': 'Test sticker'}),
+        tags: [],
+        packData: StickerPackData.fallback,
+      );
+      final item = TimelineOverlayItem(
+        id: 'sticker-1',
+        type: TimelineOverlayType.layer,
+        startTime: Duration.zero,
+        endTime: const Duration(seconds: 3),
+        label: 'Sticker',
+        layer: WidgetLayer(
+          widget: const SizedBox.shrink(),
+          meta: sticker.toJson(),
+        ),
+      );
+
+      final handle = tester.ensureSemantics();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Stack(
+              children: [
+                TimelineOverlayPositionedItem(
+                  item: item,
+                  isDragging: false,
+                  isSelected: false,
+                  snappedStartMs: 0,
+                  dragDeltaY: 0,
+                  rowHeight: 40,
+                  pixelsPerSecond: 100,
+                  totalDuration: const Duration(seconds: 10),
+                  clipEdgesMs: const [0, 10000],
+                  color: Colors.blue,
+                  isCollapsed: false,
+                  trimExpansion: 0,
+                  onTap: () {},
+                  onLongPressStart: () {},
+                  onLongPressMoveUpdate: (_) {},
+                  onLongPressEnd: () {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final semantics = tester.getSemantics(
+        find.byType(TimelineOverlayPositionedItem),
+      );
+      expect(semantics.label, contains('Test sticker'));
+
+      handle.dispose();
     });
   });
 }

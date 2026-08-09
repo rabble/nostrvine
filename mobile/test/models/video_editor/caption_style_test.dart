@@ -142,7 +142,6 @@ void main() {
     test('buildLayer marks the caption cue layer with its id and timing', () {
       final layer = style.buildLayer(
         cue,
-        fittedBoxScale: 1,
         bodySize: const Size(200, 400),
       );
 

@@ -1151,27 +1151,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Remove this video from Divine. It may still appear on other Nostr clients.';
 
   @override
-  String get videoGridDeleteConfirmTitle => 'Delete Video';
-
-  @override
-  String get videoGridDeleteConfirmMessage =>
-      'This will permanently delete this video from Divine. It may still appear on third-party Nostr clients that use other relays.';
-
-  @override
-  String get videoGridDeleteConfirmNote =>
-      'This will send a deletion request to relays. Note: Some relays may still have cached copies.';
-
-  @override
-  String get videoGridDeleteCancel => 'Cancel';
-
-  @override
-  String get videoGridDeleteConfirm => 'Delete';
-
-  @override
   String get videoGridDeletingContent => 'Deleting content...';
-
-  @override
-  String get videoGridDeleteSuccess => 'Delete request sent successfully';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -3991,10 +3971,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Remove this video from Divine. It may still appear on other Nostr clients.';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'This sends a delete request (NIP-09) to all relays. Some relays may still keep the content.';
-
-  @override
   String get shareMenuVideoInTheseLists => 'Video is in these lists:';
 
   @override
@@ -4022,9 +3998,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return 'Failed to delete content: $error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent => 'Video deleted';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4140,10 +4113,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shareMenuDeleteVideoQuestion => 'Delete Video?';
-
-  @override
-  String get shareMenuDeleteRelayWarning =>
-      'This will send a deletion request to relays. Note: Some relays may still have cached copies.';
 
   @override
   String get shareMenuVideoDeletionRequested => 'Video deleted';
@@ -9620,9 +9589,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditorAddElementSemanticLabel => 'Add element';
 
   @override
-  String get videoEditorCloseSemanticLabel => 'Close';
-
-  @override
   String get videoEditorDoneSemanticLabel => 'Done';
 
   @override
@@ -11143,4 +11109,37 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
       'Apply selected content warnings';
+
+  @override
+  String get videoEditorCloseEditorSemanticLabel => 'Close video editor';
+
+  @override
+  String get videoEditorContinueToPostDetailsSemanticLabel =>
+      'Continue to post details';
+
+  @override
+  String videoEditorDiscardToolChangesSemanticLabel(String tool) {
+    return 'Discard changes in $tool';
+  }
+
+  @override
+  String videoEditorApplyToolChangesSemanticLabel(String tool) {
+    return 'Apply changes in $tool';
+  }
+
+  @override
+  String get videoEditorRemoveAudioSemanticLabel => 'Remove audio';
+
+  @override
+  String rgbColorSemanticLabel(int red, int green, int blue) {
+    return 'RGB $red, $green, $blue';
+  }
+
+  @override
+  String videoEditorColorPickerSwatchSemanticLabel(
+    String picker,
+    String color,
+  ) {
+    return '$picker, $color';
+  }
 }

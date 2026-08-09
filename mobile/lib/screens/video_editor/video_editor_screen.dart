@@ -135,9 +135,13 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
   DivineVideoClip? get _clip => ref.read(clipManagerProvider).firstClipOrNull;
 
   /// FittedBox scale factor between bodySize and renderSize.
+  ///
+  /// Must pass the same arguments as [VideoEditorScope.fittedBoxScale] —
+  /// layers sized here are painted by the canvas at that scale.
   double get _fittedBoxScale => VideoEditorScope.calculateFittedBoxScale(
     _bodySizeNotifier.value,
     _clip?.originalAspectRatio ?? 9 / 16,
+    targetAspectRatio: _clip?.targetAspectRatio.value,
   );
 
   @override
@@ -646,7 +650,6 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
             track.customStyle?.resolve() ??
             CaptionStylePreset.byId(track.presetId).style;
         final bodySize = _bodySizeNotifier.value;
-        final scale = _fittedBoxScale;
         // Preserve any on-canvas position/rotation/scale the user already
         // applied to a cue's layer, keyed by cue id, so re-editing captions
         // doesn't reset their manual adjustments.
@@ -661,7 +664,6 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
               preserveCaptionLayerTransform(
                 style.buildLayer(
                   cue,
-                  fittedBoxScale: scale,
                   bodySize: bodySize,
                 ),
                 existingByCueId[cue.id],
@@ -986,6 +988,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
               editorKey: _editorKey,
               removeAreaKey: _removeAreaKey,
               originalClipAspectRatio: clip?.originalAspectRatio ?? 9 / 16,
+              targetClipAspectRatio: clip?.targetAspectRatio.value,
               bodySizeNotifier: _bodySizeNotifier,
               zoomMatrixNotifier: _zoomMatrixNotifier,
               playTimeNotifier: _playTimeNotifier,

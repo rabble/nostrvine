@@ -1082,26 +1082,7 @@ class AppLocalizationsZh extends AppLocalizations {
       '从 Divine 删除此视频。它可能仍会出现在其他 Nostr 客户端上。';
 
   @override
-  String get videoGridDeleteConfirmTitle => '删除视频';
-
-  @override
-  String get videoGridDeleteConfirmMessage =>
-      '这会从 Divine 永久删除该视频。使用其他中继的第三方 Nostr 客户端上可能仍会显示。';
-
-  @override
-  String get videoGridDeleteConfirmNote => '这会向中继发送删除请求。注意：部分中继可能仍保留缓存副本。';
-
-  @override
-  String get videoGridDeleteCancel => '取消';
-
-  @override
-  String get videoGridDeleteConfirm => '删除';
-
-  @override
   String get videoGridDeletingContent => '正在删除内容...';
-
-  @override
-  String get videoGridDeleteSuccess => '删除请求已成功发送';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -3779,9 +3760,6 @@ class AppLocalizationsZh extends AppLocalizations {
       '从 Divine 删除此视频。它可能仍会出现在其他 Nostr 客户端上。';
 
   @override
-  String get shareMenuDeleteWarning => '这会向所有中继发送删除请求（NIP-09）。部分中继可能仍会保留该内容。';
-
-  @override
   String get shareMenuVideoInTheseLists => '视频已在这些列表中：';
 
   @override
@@ -3809,9 +3787,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return '删除内容失败：$error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent => '视频已删除';
 
   @override
   String get shareMenuDeleteFailedNotInitialized => '删除功能还没准备好，请稍后再试。';
@@ -3917,9 +3892,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get shareMenuDeleteVideoQuestion => '删除视频？';
-
-  @override
-  String get shareMenuDeleteRelayWarning => '这会向中继发送删除请求。注意：部分中继可能仍保留缓存副本。';
 
   @override
   String get shareMenuVideoDeletionRequested => '视频已删除';
@@ -9152,9 +9124,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoEditorAddElementSemanticLabel => '添加元素';
 
   @override
-  String get videoEditorCloseSemanticLabel => '关闭';
-
-  @override
   String get videoEditorDoneSemanticLabel => '完成';
 
   @override
@@ -10579,4 +10548,36 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
       '应用所选内容警告';
+
+  @override
+  String get videoEditorCloseEditorSemanticLabel => '关闭视频编辑器';
+
+  @override
+  String get videoEditorContinueToPostDetailsSemanticLabel => '继续前往帖子详情';
+
+  @override
+  String videoEditorDiscardToolChangesSemanticLabel(String tool) {
+    return '放弃在$tool中的更改';
+  }
+
+  @override
+  String videoEditorApplyToolChangesSemanticLabel(String tool) {
+    return '应用在$tool中的更改';
+  }
+
+  @override
+  String get videoEditorRemoveAudioSemanticLabel => '移除音频';
+
+  @override
+  String rgbColorSemanticLabel(int red, int green, int blue) {
+    return 'RGB $red、$green、$blue';
+  }
+
+  @override
+  String videoEditorColorPickerSwatchSemanticLabel(
+    String picker,
+    String color,
+  ) {
+    return '$picker、$color';
+  }
 }

@@ -401,7 +401,9 @@ void main() {
       );
     });
 
-    testWidgets('confirm button keeps disabled semantics while confirming', (
+    // Disabled alone reads as "unavailable"; the indicator's own label merges
+    // in so the button announces that it is busy, not broken.
+    testWidgets('confirm button announces disabled and busy while confirming', (
       tester,
     ) async {
       setUpPlayerChannel();
@@ -419,15 +421,16 @@ void main() {
       await triggerConfirm(tester);
       await tester.pump();
 
-      final confirmFinder = find.bySemanticsLabel(
-        l10n.videoMetadataEditCoverConfirmSemanticLabel,
-      );
+      final busyLabel =
+          '${l10n.videoMetadataEditCoverConfirmSemanticLabel}\n'
+          '${l10n.commonLoading}';
+      final confirmFinder = find.bySemanticsLabel(busyLabel);
       expect(confirmFinder, findsOneWidget);
       expect(find.byType(BrandedLoadingIndicator), findsWidgets);
       expect(
         tester.getSemantics(confirmFinder),
         isSemantics(
-          label: l10n.videoMetadataEditCoverConfirmSemanticLabel,
+          label: busyLabel,
           isButton: true,
           hasEnabledState: true,
           isEnabled: false,

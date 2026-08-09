@@ -33,6 +33,14 @@ class MockTextEditorKey extends Mock implements GlobalKey<TextEditorState> {}
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  final l10n = lookupAppLocalizations(const Locale('en'));
+  final closeLabel = l10n.videoEditorDiscardToolChangesSemanticLabel(
+    l10n.videoEditorTextLabel,
+  );
+  final doneLabel = l10n.videoEditorApplyToolChangesSemanticLabel(
+    l10n.videoEditorTextLabel,
+  );
+
   setUpAll(() {
     registerFallbackValue(const VideoEditorTextFontSizeChanged(0.5));
   });
@@ -99,7 +107,7 @@ void main() {
         expect(
           find.byWidgetPredicate(
             (widget) =>
-                widget is Semantics && widget.properties.label == 'Close',
+                widget is Semantics && widget.properties.label == closeLabel,
           ),
           findsOneWidget,
         );
@@ -112,7 +120,7 @@ void main() {
         final semantics = tester.widget<Semantics>(
           find.byWidgetPredicate(
             (widget) =>
-                widget is Semantics && widget.properties.label == 'Close',
+                widget is Semantics && widget.properties.label == closeLabel,
           ),
         );
         expect(semantics.properties.button, isTrue);
@@ -123,7 +131,8 @@ void main() {
         await tester.pump();
 
         final closeButton = find.byWidgetPredicate(
-          (widget) => widget is Semantics && widget.properties.label == 'Close',
+          (widget) =>
+              widget is Semantics && widget.properties.label == closeLabel,
         );
 
         await tester.tap(closeButton);
@@ -141,7 +150,7 @@ void main() {
         expect(
           find.byWidgetPredicate(
             (widget) =>
-                widget is Semantics && widget.properties.label == 'Done',
+                widget is Semantics && widget.properties.label == doneLabel,
           ),
           findsOneWidget,
         );
@@ -154,7 +163,7 @@ void main() {
         final semantics = tester.widget<Semantics>(
           find.byWidgetPredicate(
             (widget) =>
-                widget is Semantics && widget.properties.label == 'Done',
+                widget is Semantics && widget.properties.label == doneLabel,
           ),
         );
         expect(semantics.properties.button, isTrue);
@@ -165,7 +174,8 @@ void main() {
         await tester.pump();
 
         final doneButton = find.byWidgetPredicate(
-          (widget) => widget is Semantics && widget.properties.label == 'Done',
+          (widget) =>
+              widget is Semantics && widget.properties.label == doneLabel,
         );
 
         await tester.tap(doneButton);

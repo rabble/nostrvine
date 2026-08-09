@@ -318,16 +318,10 @@ class VideoClipImportService {
       final metadata = await _readVideoMetadata(
         EditorVideo.file(copiedVideo.path),
       );
-      var width = metadata.resolution.width;
-      var height = metadata.resolution.height;
+      final width = metadata.resolution.width;
+      final height = metadata.resolution.height;
       if (width <= 0 || height <= 0) return null;
-      // Swap dimensions for portrait-rotated captures so the ratio reflects
-      // the displayed orientation rather than the raw frame.
-      if (metadata.rotation == 90 || metadata.rotation == 270) {
-        final swap = width;
-        width = height;
-        height = swap;
-      }
+      // ProVideoEditor reports display dimensions with rotation applied.
       return width / height;
     } catch (e) {
       Log.warning(
