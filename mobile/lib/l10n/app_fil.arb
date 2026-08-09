@@ -3535,5 +3535,6 @@
   "videoEditorDiscardToolChangesSemanticLabel": "I-discard ang mga pagbabago sa {tool}",
   "videoEditorApplyToolChangesSemanticLabel": "Ilapat ang mga pagbabago sa {tool}",
   "videoEditorRemoveAudioSemanticLabel": "Alisin ang audio",
-  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}"
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
 }

@@ -6788,5 +6788,6 @@
   "videoEditorDiscardToolChangesSemanticLabel": "放弃在{tool}中的更改",
   "videoEditorApplyToolChangesSemanticLabel": "应用在{tool}中的更改",
   "videoEditorRemoveAudioSemanticLabel": "移除音频",
-  "rgbColorSemanticLabel": "RGB {red}、{green}、{blue}"
+  "rgbColorSemanticLabel": "RGB {red}、{green}、{blue}",
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}、{color}"
 }

@@ -5074,5 +5074,6 @@
   "videoEditorDiscardToolChangesSemanticLabel": "በ{tool} ውስጥ የተደረጉ ለውጦችን አስወግድ",
   "videoEditorApplyToolChangesSemanticLabel": "በ{tool} ውስጥ የተደረጉ ለውጦችን ተግብር",
   "videoEditorRemoveAudioSemanticLabel": "ኦዲዮን አስወግድ",
-  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}"
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
 }

@@ -6690,5 +6690,13 @@
       "green": {"type": "int", "example": "0"},
       "blue": {"type": "int", "example": "0"}
     }
+  },
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}",
+  "@videoEditorColorPickerSwatchSemanticLabel": {
+    "description": "Joins the custom color swatch's picker role and its color description into one accessibility label. Translate the separator, not the placeholders: locales that do not list with a Latin comma should use their own (for example '、' or '، '), matching rgbColorSemanticLabel.",
+    "placeholders": {
+      "picker": {"type": "String", "example": "Color picker"},
+      "color": {"type": "String", "example": "RGB 100, 20, 20"}
+    }
   }
 }

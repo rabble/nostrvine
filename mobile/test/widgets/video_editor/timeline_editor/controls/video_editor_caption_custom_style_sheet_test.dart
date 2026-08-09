@@ -18,15 +18,14 @@ void main() {
 
   setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
 
-  final l10n = lookupAppLocalizations(const Locale('en'));
+  const customColor = Color.fromARGB(255, 100, 20, 20);
 
-  testWidgets('custom color swatch exposes RGB semantics', (tester) async {
+  Future<void> pumpSheet(WidgetTester tester, {Locale? locale}) async {
     tester.view
       ..physicalSize = const Size(1080, 2400)
       ..devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
-    const customColor = Color.fromARGB(255, 100, 20, 20);
     final initial = CaptionCustomStyle.initial().copyWith(
       color: customColor,
       colorMode: LayerBackgroundMode.onlyColor,
@@ -34,6 +33,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        locale: locale,
         theme: VineTheme.theme,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -51,15 +51,44 @@ void main() {
 
     await tester.tap(find.text('Open style sheet'));
     await tester.pump(const Duration(milliseconds: 300));
+  }
 
-    final expectedLabel =
-        '${l10n.videoEditorColorPickerSemanticLabel}, '
-        '${l10n.rgbColorSemanticLabel(100, 20, 20)}';
-    final semantics = tester.getSemantics(find.bySemanticsLabel(expectedLabel));
+  String expectedLabel(AppLocalizations l10n) =>
+      l10n.videoEditorColorPickerSwatchSemanticLabel(
+        l10n.videoEditorColorPickerSemanticLabel,
+        l10n.rgbColorSemanticLabel(100, 20, 20),
+      );
+
+  testWidgets('custom color swatch exposes RGB semantics', (tester) async {
+    await pumpSheet(tester);
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    final semantics = tester.getSemantics(
+      find.bySemanticsLabel(expectedLabel(l10n)),
+    );
     final data = semantics.getSemanticsData();
 
     expect(data.flagsCollection.isButton, isTrue);
     expect(data.flagsCollection.isSelected, Tristate.isTrue);
     expect(data.hasAction(SemanticsAction.tap), isTrue);
+  });
+
+  testWidgets('custom color swatch joins its label the way the locale lists', (
+    tester,
+  ) async {
+    // Japanese lists with '、', so a swatch label rebuilt by hand with a Latin
+    // ', ' would still read correctly in English and wrong here. Pinning ja is
+    // what stops the join from drifting back into Dart.
+    await pumpSheet(tester, locale: const Locale('ja'));
+
+    final ja = lookupAppLocalizations(const Locale('ja'));
+    expect(expectedLabel(ja), contains('、'));
+    expect(find.bySemanticsLabel(expectedLabel(ja)), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(
+        expectedLabel(lookupAppLocalizations(const Locale('en'))),
+      ),
+      findsNothing,
+    );
   });
 }

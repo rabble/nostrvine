@@ -370,7 +370,10 @@ class _ColorSwatch extends StatelessWidget {
     // The custom swatch shows a paint-brush over the current color.
     final rgbLabel = ColorSwatchButton.rgbSemanticLabel(context, color);
     final semanticLabel = isCustom
-        ? '${context.l10n.videoEditorColorPickerSemanticLabel}, $rgbLabel'
+        ? context.l10n.videoEditorColorPickerSwatchSemanticLabel(
+            context.l10n.videoEditorColorPickerSemanticLabel,
+            rgbLabel,
+          )
         : rgbLabel;
     return Semantics(
       label: semanticLabel,

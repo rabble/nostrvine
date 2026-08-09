@@ -11115,4 +11115,12 @@ class AppLocalizationsId extends AppLocalizations {
   String rgbColorSemanticLabel(int red, int green, int blue) {
     return 'RGB $red, $green, $blue';
   }
+
+  @override
+  String videoEditorColorPickerSwatchSemanticLabel(
+    String picker,
+    String color,
+  ) {
+    return '$picker, $color';
+  }
 }

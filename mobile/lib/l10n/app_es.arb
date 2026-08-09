@@ -4949,5 +4949,6 @@
   "videoEditorDiscardToolChangesSemanticLabel": "Descartar cambios en {tool}",
   "videoEditorApplyToolChangesSemanticLabel": "Aplicar cambios en {tool}",
   "videoEditorRemoveAudioSemanticLabel": "Eliminar audio",
-  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}"
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
 }

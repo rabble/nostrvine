@@ -6788,5 +6788,6 @@
   "videoEditorDiscardToolChangesSemanticLabel": "{tool} میں تبدیلیاں مسترد کریں",
   "videoEditorApplyToolChangesSemanticLabel": "{tool} میں تبدیلیاں لاگو کریں",
   "videoEditorRemoveAudioSemanticLabel": "آڈیو ہٹائیں",
-  "rgbColorSemanticLabel": "RGB {red}، {green}، {blue}"
+  "rgbColorSemanticLabel": "RGB {red}، {green}، {blue}",
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}، {color}"
 }

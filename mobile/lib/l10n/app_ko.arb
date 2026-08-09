@@ -4280,5 +4280,6 @@
   "videoEditorDiscardToolChangesSemanticLabel": "{tool}의 변경 사항 취소",
   "videoEditorApplyToolChangesSemanticLabel": "{tool}의 변경 사항 적용",
   "videoEditorRemoveAudioSemanticLabel": "오디오 제거",
-  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}"
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
 }

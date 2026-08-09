@@ -4949,5 +4949,6 @@
   "videoEditorDiscardToolChangesSemanticLabel": "{tool}での変更を破棄",
   "videoEditorApplyToolChangesSemanticLabel": "{tool}での変更を適用",
   "videoEditorRemoveAudioSemanticLabel": "音声を削除",
-  "rgbColorSemanticLabel": "RGB {red}、{green}、{blue}"
+  "rgbColorSemanticLabel": "RGB {red}、{green}、{blue}",
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}、{color}"
 }

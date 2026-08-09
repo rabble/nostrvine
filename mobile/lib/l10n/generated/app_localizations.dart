@@ -19179,6 +19179,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'RGB {red}, {green}, {blue}'**
   String rgbColorSemanticLabel(int red, int green, int blue);
+
+  /// Joins the custom color swatch's picker role and its color description into one accessibility label. Translate the separator, not the placeholders: locales that do not list with a Latin comma should use their own (for example '、' or '، '), matching rgbColorSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{picker}, {color}'**
+  String videoEditorColorPickerSwatchSemanticLabel(String picker, String color);
 }
 
 class _AppLocalizationsDelegate

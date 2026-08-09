@@ -5080,5 +5080,6 @@
   "videoEditorDiscardToolChangesSemanticLabel": "Отхвърляне на промените в {tool}",
   "videoEditorApplyToolChangesSemanticLabel": "Прилагане на промените в {tool}",
   "videoEditorRemoveAudioSemanticLabel": "Премахване на аудиото",
-  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}"
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
 }

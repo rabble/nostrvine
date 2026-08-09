@@ -6788,5 +6788,6 @@
   "videoEditorDiscardToolChangesSemanticLabel": "Hủy thay đổi trong {tool}",
   "videoEditorApplyToolChangesSemanticLabel": "Áp dụng thay đổi trong {tool}",
   "videoEditorRemoveAudioSemanticLabel": "Xóa âm thanh",
-  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}"
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
 }
