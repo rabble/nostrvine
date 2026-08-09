@@ -336,6 +336,7 @@ void main() {
               ProfileStatsCompanion.insert(
                 pubkey: testPubkey,
                 videoCount: const Value(10),
+                followerCount: const Value(98),
                 cachedAt: oldTime,
                 followerCountsUpdatedAt: Value(
                   DateTime.now().subtract(const Duration(minutes: 1)),
@@ -350,14 +351,64 @@ void main() {
         expect(row, isNotNull);
       });
 
+      test(
+        'keeps pre-upgrade rows whose follower timestamp is still NULL',
+        () async {
+          // Rows written before follower_counts_updated_at existed carry
+          // counts with a NULL timestamp. On the first launch after the
+          // v1 -> v2 upgrade those are exactly the baselines #6902 needs, so
+          // NULL must fall back to cached_at rather than reading as "expired".
+          final writtenAt = DateTime.now().subtract(const Duration(hours: 10));
+          await database
+              .into(database.profileStats)
+              .insert(
+                ProfileStatsCompanion.insert(
+                  pubkey: testPubkey,
+                  followerCount: const Value(98),
+                  cachedAt: writtenAt,
+                ),
+              );
+
+          final deleted = await dao.deleteExpired();
+
+          expect(deleted, equals(0));
+          final row = await appDbClient.getProfileStatRow(testPubkey);
+          expect(row!.followerCount, equals(98));
+        },
+      );
+
+      test(
+        'deletes stats-only rows that never carried follower counts',
+        () async {
+          // The follower fallback must not turn the 5-minute stats cache into a
+          // 48-hour one for rows that hold no counts at all.
+          final oldTime = DateTime.now().subtract(const Duration(minutes: 10));
+          await database
+              .into(database.profileStats)
+              .insert(
+                ProfileStatsCompanion.insert(
+                  pubkey: testPubkey,
+                  videoCount: const Value(10),
+                  cachedAt: oldTime,
+                ),
+              );
+
+          final deleted = await dao.deleteExpired();
+
+          expect(deleted, equals(1));
+          expect(await appDbClient.countProfileStats(), equals(0));
+        },
+      );
+
       test('deletes rows whose follower counts are also expired', () async {
-        final oldTime = DateTime.now().subtract(const Duration(hours: 3));
+        final oldTime = DateTime.now().subtract(const Duration(hours: 72));
         await database
             .into(database.profileStats)
             .insert(
               ProfileStatsCompanion.insert(
                 pubkey: testPubkey,
                 videoCount: const Value(10),
+                followerCount: const Value(98),
                 cachedAt: oldTime,
                 followerCountsUpdatedAt: Value(oldTime),
               ),

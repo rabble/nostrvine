@@ -14,10 +14,13 @@ const profileStatsCacheDuration = Duration(minutes: 5);
 /// Follower counts live in this row but are owned by `FollowRepository`, which
 /// stabilizes them with hysteresis against the persisted value. That
 /// stabilization only works if the baseline survives a restart, so the counts
-/// outlive the 5-minute stats cache. One hour matches `FollowRepository`'s own
-/// staleness window: past that point a lower fresh count is accepted outright,
-/// so the persisted baseline no longer affects the result.
-const profileFollowerCountsCacheDuration = Duration(hours: 1);
+/// outlive the 5-minute stats cache.
+///
+/// This must stay comfortably longer than `FollowRepository`'s own staleness
+/// window, so the baseline is still on disk for as long as the repository would
+/// still trust it. Sizing them equally would race: the row could be swept in
+/// the same launch the repository still wanted to compare against it.
+const profileFollowerCountsCacheDuration = Duration(hours: 48);
 
 @DriftAccessor(tables: [ProfileStats, VanishedProfiles])
 class ProfileStatsDao extends DatabaseAccessor<AppDatabase>
@@ -69,10 +72,16 @@ class ProfileStatsDao extends DatabaseAccessor<AppDatabase>
     await into(profileStats).insertOnConflictUpdate(companion);
   }
 
-  /// Get stats for a pubkey (returns null if not found or expired)
+  /// Get stats for a pubkey (returns null if not found or expired).
+  ///
+  /// An expired row is only deleted when it carries nothing worth keeping.
+  /// Follower counts outlive this cache ([followerCountsExpiry]) and are the
+  /// baseline `FollowRepository` stabilizes against, so evicting them here
+  /// would reintroduce the loss that [deleteExpired] is careful to avoid.
   Future<ProfileStatRow?> getStats(
     String pubkey, {
     Duration expiry = profileStatsCacheDuration,
+    Duration followerCountsExpiry = profileFollowerCountsCacheDuration,
   }) async {
     final query = select(profileStats)..where((t) => t.pubkey.equals(pubkey));
     final result = await query.getSingleOrNull();
@@ -80,10 +89,17 @@ class ProfileStatsDao extends DatabaseAccessor<AppDatabase>
     if (result == null) return null;
 
     // Check expiry
-    final expiryTime = DateTime.now().subtract(expiry);
-    if (result.cachedAt.isBefore(expiryTime)) {
-      // Expired - delete and return null
-      await deleteStats(pubkey);
+    final now = DateTime.now();
+    if (result.cachedAt.isBefore(now.subtract(expiry))) {
+      final hasCounts =
+          result.followerCount != null || result.followingCount != null;
+      final countsWrittenAt = result.followerCountsUpdatedAt ?? result.cachedAt;
+      final countsWorthKeeping =
+          hasCounts &&
+          !countsWrittenAt.isBefore(now.subtract(followerCountsExpiry));
+      if (!countsWorthKeeping) {
+        await deleteStats(pubkey);
+      }
       return null;
     }
 
@@ -97,13 +113,19 @@ class ProfileStatsDao extends DatabaseAccessor<AppDatabase>
 
   /// Delete all expired stats.
   ///
-  /// A row is only dropped once *both* lifecycles have expired: the general
-  /// stats cache ([expiry], measured from `cached_at`) and the follower counts
-  /// ([followerCountsExpiry], measured from `follower_counts_updated_at`).
+  /// A row survives only while it still carries useful follower counts:
+  /// it must hold at least one count, and that count must be newer than
+  /// [followerCountsExpiry]. Everything else is governed by [expiry] alone.
   /// Dropping a row that still holds fresh follower counts would destroy the
   /// baseline `FollowRepository` stabilizes against, which is exactly the
-  /// cross-restart case its hysteresis exists for. Rows that never held
-  /// follower counts are governed by [expiry] alone.
+  /// cross-restart case its hysteresis exists for.
+  ///
+  /// `follower_counts_updated_at` falls back to `cached_at` when NULL, matching
+  /// `FollowRepository`'s own read. Rows written before that column existed
+  /// carry counts with a NULL timestamp, and on the first launch after the
+  /// v1 → v2 upgrade those are exactly the baselines worth keeping — treating
+  /// NULL as "already expired" would delete them before the new column was ever
+  /// populated.
   Future<int> deleteExpired({
     Duration expiry = profileStatsCacheDuration,
     Duration followerCountsExpiry = profileFollowerCountsCacheDuration,
@@ -111,14 +133,19 @@ class ProfileStatsDao extends DatabaseAccessor<AppDatabase>
     final now = DateTime.now();
     final expiryTime = now.subtract(expiry);
     final followerExpiryTime = now.subtract(followerCountsExpiry);
-    return (delete(profileStats)..where(
-          (t) =>
-              t.cachedAt.isSmallerThan(Variable(expiryTime)) &
-              (t.followerCountsUpdatedAt.isNull() |
-                  t.followerCountsUpdatedAt.isSmallerThan(
-                    Variable(followerExpiryTime),
-                  )),
-        ))
+    return (delete(profileStats)..where((t) {
+          final hasCounts =
+              t.followerCount.isNotNull() | t.followingCount.isNotNull();
+          final countsWrittenAt = coalesce([
+            t.followerCountsUpdatedAt,
+            t.cachedAt,
+          ]);
+          final countsWorthKeeping =
+              hasCounts &
+              countsWrittenAt.isBiggerOrEqualValue(followerExpiryTime);
+          return t.cachedAt.isSmallerThan(Variable(expiryTime)) &
+              countsWorthKeeping.not();
+        }))
         .go();
   }
 

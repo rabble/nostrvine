@@ -82,29 +82,56 @@ void main() {
         expect(result.expiredEventsDeleted, equals(1));
       });
 
-      test('deletes expired profile stats', () async {
-        // Insert stats with old cachedAt using proper Drift insert
-        final oldTime = DateTime.now().subtract(const Duration(minutes: 10));
-        await database
-            .into(database.profileStats)
-            .insert(
-              ProfileStatsCompanion.insert(
-                pubkey: testPubkey,
-                videoCount: const Value(10),
-                followerCount: const Value(100),
-                cachedAt: oldTime,
-              ),
-            );
+      test(
+        'deletes expired profile stats that hold no follower counts',
+        () async {
+          // Insert stats with old cachedAt using proper Drift insert
+          final oldTime = DateTime.now().subtract(const Duration(minutes: 10));
+          await database
+              .into(database.profileStats)
+              .insert(
+                ProfileStatsCompanion.insert(
+                  pubkey: testPubkey,
+                  videoCount: const Value(10),
+                  cachedAt: oldTime,
+                ),
+              );
 
-        // Run cleanup (default expiry is 5 minutes, entry is 10 minutes old)
-        final result = await database.runStartupCleanup();
+          // Run cleanup (default expiry is 5 minutes, entry is 10 minutes old)
+          final result = await database.runStartupCleanup();
 
-        // Expired stats should be deleted
-        final stats = await database.profileStatsDao.getStats(testPubkey);
-        expect(stats, isNull);
+          // Expired stats should be deleted
+          final stats = await database.profileStatsDao.getStats(testPubkey);
+          expect(stats, isNull);
 
-        expect(result.expiredProfileStatsDeleted, equals(1));
-      });
+          expect(result.expiredProfileStatsDeleted, equals(1));
+        },
+      );
+
+      test(
+        'keeps expired profile stats that still hold follower counts',
+        () async {
+          // Startup cleanup runs on every cold start, so deleting this row
+          // is how the follower baseline used to vanish overnight (#6902).
+          final oldTime = DateTime.now().subtract(const Duration(minutes: 10));
+          await database
+              .into(database.profileStats)
+              .insert(
+                ProfileStatsCompanion.insert(
+                  pubkey: testPubkey,
+                  videoCount: const Value(10),
+                  followerCount: const Value(100),
+                  cachedAt: oldTime,
+                ),
+              );
+
+          final result = await database.runStartupCleanup();
+
+          expect(result.expiredProfileStatsDeleted, equals(0));
+          final row = await database.profileStatsDao.getStatsRaw(testPubkey);
+          expect(row!.followerCount, equals(100));
+        },
+      );
 
       test('deletes expired hashtag stats', () async {
         // Insert stats with old cachedAt using proper Drift insert
