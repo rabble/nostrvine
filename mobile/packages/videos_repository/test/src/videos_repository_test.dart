@@ -1064,10 +1064,10 @@ void main() {
           ).called(2);
         });
 
-        // The home feed's New mode warms this cache with a smaller page than
-        // the Explore New tab asks for. Explore must still get that page
-        // instantly — re-fetching it made opening Explore reload from scratch.
-        test('serves a smaller cached page to a larger limit', () async {
+        // Warms the cache with a page of 2, then reads it back asking for 5 —
+        // the home feed's New mode warming what the Explore New tab then
+        // opens.
+        Future<HomeFeedResult> warmSmallPageThenReadLarger() async {
           when(
             () => mockFunnelcakeClient.getRecentVideos(
               limit: any(named: 'limit'),
@@ -1087,7 +1087,13 @@ void main() {
           });
 
           await repoWithCache.getNewVideos(limit: 2);
-          final cached = await repoWithCache.getNewVideos(limit: 5);
+          return repoWithCache.getNewVideos(limit: 5);
+        }
+
+        // Explore must get that smaller page instantly — re-fetching it made
+        // opening Explore reload from scratch.
+        test('serves a smaller cached page to a larger limit', () async {
+          final cached = await warmSmallPageThenReadLarger();
 
           expect(cached.videos, hasLength(2));
           verify(
@@ -1102,26 +1108,7 @@ void main() {
         // Deriving it from the video count is what stopped the Explore grid
         // from paginating on scroll.
         test('reports more content behind a smaller cached page', () async {
-          when(
-            () => mockFunnelcakeClient.getRecentVideos(
-              limit: any(named: 'limit'),
-              before: any(named: 'before'),
-            ),
-          ).thenAnswer((invocation) async {
-            final limit = invocation.namedArguments[#limit] as int;
-            return [
-              for (var i = 0; i < limit; i++)
-                _createVideoStats(
-                  id: 'v$i',
-                  pubkey: 'p$i',
-                  dTag: 'd$i',
-                  videoUrl: 'https://example.com/v$i.mp4',
-                ),
-            ];
-          });
-
-          await repoWithCache.getNewVideos(limit: 2);
-          final cached = await repoWithCache.getNewVideos(limit: 5);
+          final cached = await warmSmallPageThenReadLarger();
 
           expect(cached.hasMore, isTrue);
         });

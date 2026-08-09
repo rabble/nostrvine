@@ -1885,6 +1885,38 @@ void main() {
         ],
       );
 
+      // getNewVideos reports hasMore itself, so the newVideos source paginates
+      // on that flag instead of the "did anything new arrive" fallback. A page
+      // that adds videos but says the source is dry must stop pagination.
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
+        'stops newVideos pagination on the repository hasMore flag',
+        setUp: () {
+          when(
+            () => mockVideosRepository.getNewVideos(
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResult(videos: moreVideos, hasMore: false),
+          );
+        },
+        build: createBloc,
+        seed: () => VideoFeedBlocState(
+          status: VideoFeedStatus.success,
+          source: const VideoFeedSource.newVideos(),
+          videos: createTestVideos(3),
+        ),
+        act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
+        skip: 1,
+        expect: () => [
+          isA<VideoFeedBlocState>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', isFalse)
+              .having((s) => s.videos, 'videos', hasLength(5))
+              .having((s) => s.hasMore, 'hasMore', isFalse),
+        ],
+      );
+
       blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'uses recommendations pagination path for forYou mode',
         setUp: () {
