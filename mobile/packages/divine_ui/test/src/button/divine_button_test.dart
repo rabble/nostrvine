@@ -20,6 +20,7 @@ void main() {
       bool expanded = false,
       bool isLoading = false,
       String? semanticLabel,
+      String? semanticIdentifier,
       ThemeData? theme,
     }) {
       return MaterialApp(
@@ -36,6 +37,7 @@ void main() {
               expanded: expanded,
               isLoading: isLoading,
               semanticLabel: semanticLabel,
+              semanticIdentifier: semanticIdentifier,
             ),
           ),
         ),
@@ -110,6 +112,70 @@ void main() {
         } finally {
           semanticsHandle.dispose();
         }
+      });
+
+      testWidgets('semanticIdentifier alone keeps the visible label', (
+        tester,
+      ) async {
+        final semanticsHandle = tester.ensureSemantics();
+        try {
+          await tester.pumpWidget(
+            buildTestWidget(
+              label: 'Sign in',
+              semanticIdentifier: 'sign_in_button',
+              onPressed: _noop,
+            ),
+          );
+
+          // The wrapper only takes over the child's semantics when a label is
+          // replacing the visible text. An identifier on its own must not
+          // leave the button with a test anchor and no accessible name.
+          expect(find.bySemanticsLabel('Sign in'), findsOneWidget);
+          expect(
+            tester.getSemantics(find.byType(DivineButton)).identifier,
+            equals('sign_in_button'),
+          );
+        } finally {
+          semanticsHandle.dispose();
+        }
+      });
+
+      testWidgets('semanticIdentifier and semanticLabel coexist', (
+        tester,
+      ) async {
+        final semanticsHandle = tester.ensureSemantics();
+        try {
+          await tester.pumpWidget(
+            buildTestWidget(
+              label: 'Select',
+              semanticLabel: 'Select clips',
+              semanticIdentifier: 'select_clips_button',
+              onPressed: _noop,
+            ),
+          );
+
+          final node = tester.getSemantics(
+            find.bySemanticsLabel('Select clips'),
+          );
+          expect(node.label, 'Select clips');
+          expect(node.identifier, equals('select_clips_button'));
+          expect(find.bySemanticsLabel('Select'), findsNothing);
+        } finally {
+          semanticsHandle.dispose();
+        }
+      });
+
+      testWidgets('no identifier when neither semantic param is set', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(label: 'Plain', onPressed: _noop),
+        );
+
+        expect(
+          tester.getSemantics(find.byType(DivineButton)).identifier,
+          isEmpty,
+        );
       });
     });
 

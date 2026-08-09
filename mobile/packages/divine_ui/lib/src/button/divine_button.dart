@@ -108,6 +108,7 @@ class DivineButton extends StatelessWidget {
     this.expanded = false,
     this.isLoading = false,
     this.semanticLabel,
+    this.semanticIdentifier,
     super.key,
   });
 
@@ -122,6 +123,15 @@ class DivineButton extends StatelessWidget {
   /// visible text is too terse to describe the action on its own — e.g. a
   /// "Select" chip that enters clip-selection mode.
   final String? semanticLabel;
+
+  /// Stable `Semantics(identifier:)` value used as a UI-test anchor.
+  ///
+  /// Surfaces as an iOS `accessibilityIdentifier` / Android resource id so
+  /// E2E tests can target the button by id rather than by its localized
+  /// label. It is never announced, and unlike [semanticLabel] it does not
+  /// replace the visible text in the semantics tree — a button carrying only
+  /// an identifier keeps announcing its [label].
+  final String? semanticIdentifier;
 
   /// Called when the button is tapped.
   /// If null, the button is displayed in its disabled state.
@@ -172,6 +182,7 @@ class DivineButton extends StatelessWidget {
       expanded: expanded,
       isLoading: isLoading,
       semanticLabel: semanticLabel,
+      semanticIdentifier: semanticIdentifier,
     );
   }
 }
@@ -187,6 +198,7 @@ class _DivineButtonContent extends StatelessWidget {
     this.leadingIcon,
     this.trailingIcon,
     this.semanticLabel,
+    this.semanticIdentifier,
   });
 
   final String label;
@@ -198,6 +210,7 @@ class _DivineButtonContent extends StatelessWidget {
   final bool expanded;
   final bool isLoading;
   final String? semanticLabel;
+  final String? semanticIdentifier;
 
   /// Thickness of the visible border on bordered [type]s (e.g. secondary).
   static const double _kBorderWidth = 2;
@@ -443,13 +456,18 @@ class _DivineButtonContent extends StatelessWidget {
     // exposes one via its Text child, so this is only wired when provided.
     // Expose the enabled state too, so assistive tech doesn't announce a
     // disabled labelled button as actionable (matches DivineIconButton).
-    if (semanticLabel != null) {
+    if (semanticLabel != null || semanticIdentifier != null) {
       button = Semantics(
         button: true,
         enabled: _isEnabled,
         label: semanticLabel,
+        identifier: semanticIdentifier,
         onTap: _isEnabled ? onPressed : null,
-        excludeSemantics: true,
+        // Only take over the child's semantics when a label is actually
+        // replacing the visible text. A button carrying an identifier alone
+        // must keep announcing its label -- excluding here would leave it
+        // with a test anchor and no accessible name at all.
+        excludeSemantics: semanticLabel != null,
         child: button,
       );
     }
