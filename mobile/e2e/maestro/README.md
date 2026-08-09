@@ -7,6 +7,25 @@ They exist for fast, high-signal regression detection on critical user flows.
 They are not a replacement for unit or widget tests, and they do not cover
 camera or recording.
 
+## What the smoke suite covers today
+
+`suites/smoke.yaml` currently runs **one** flow — `loginEmailPwd`. The other
+three are held back because they cannot pass yet:
+
+| Flow | Why it is out | Tracking |
+|---|---|---|
+| `likeFlow` | `videoUnlike` never completes; the liked video does not finish loading against live STAGING content | [#6949](https://github.com/divinevideo/divine-mobile/issues/6949) |
+| `commentFlow` | `env`-vs-`output` bug and a disabled cleanup step | [#6952](https://github.com/divinevideo/divine-mobile/issues/6952) |
+| `searchUserFlow` | needs a rewrite for the current search layout | [#6952](https://github.com/divinevideo/divine-mobile/issues/6952) |
+
+So a green smoke run proves the harness, the build, and the sign-in path — not
+the social flows. Restore each flow in the PR that fixes it, and put back the
+credentials it needs (`SEARCH_USER` for `searchUserFlow`) in the same change.
+
+The `e2e-smoke-ios` and `e2e-smoke-android` Codemagic workflows are
+`triggering: events: []`, so nothing runs them automatically. They are manual
+dispatches, and GitHub CI does not cover this lane at all.
+
 ---
 
 ## Running them
@@ -44,8 +63,8 @@ Codemagic group.
 
 | Variable | Used by |
 |---|---|
-| `USER_EMAIL`, `USER_PWD` | `flows/loginEmailPwd.yaml` |
-| `SEARCH_USER` | `flows/searchUserFlow.yaml` |
+| `USER_EMAIL`, `USER_PWD` | `flows/loginEmailPwd.yaml` — the only smoke flow |
+| `SEARCH_USER` | `flows/searchUserFlow.yaml` — `fullRegression` only |
 | `USER_KEYS`, `SEARCH_USER_ID`, `VIDEO_USER`, `VIDEO_DESCRIPTION`, `VIDEO_DATA`, `EXISTING_USERNAME` | `suites/fullRegression.yaml` |
 
 Every entry point guards its own variables with `assertTrue`. A missing `-e`
@@ -57,11 +76,11 @@ that guard the suite would run against garbage and fail somewhere unrelated.
 ```bash
 # The smoke suite, as CI runs it
 maestro test \
-  -e USER_EMAIL=... -e USER_PWD=... -e SEARCH_USER=... \
+  -e USER_EMAIL=... -e USER_PWD=... \
   e2e/maestro/suites/smoke.yaml
 
 # Or via the iOS helper, which boots a simulator and installs for you
-MAESTRO_USER_EMAIL=... MAESTRO_USER_PWD=... MAESTRO_SEARCH_USER=... \
+MAESTRO_USER_EMAIL=... MAESTRO_USER_PWD=... \
   bash e2e/maestro/scripts/ui_smoke_ios.sh
 ```
 
