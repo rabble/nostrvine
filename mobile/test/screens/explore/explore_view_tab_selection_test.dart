@@ -1,0 +1,235 @@
+// ABOUTME: Tab selection under late availability changes on Explore.
+// ABOUTME: Launch intent must land once, then stop overriding the user.
+
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
+import 'package:openvine/blocs/explore_tabs/explore_tabs_cubit.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/app_foreground_provider.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/classic_vines_provider.dart';
+import 'package:openvine/providers/curation_providers.dart';
+import 'package:openvine/providers/featured_tabs_providers.dart';
+import 'package:openvine/providers/for_you_provider.dart';
+import 'package:openvine/providers/list_providers.dart';
+import 'package:openvine/providers/route_feed_providers.dart';
+import 'package:openvine/repositories/featured_tabs_repository.dart';
+import 'package:openvine/router/router.dart';
+import 'package:openvine/screens/explore/explore_screen.dart';
+import 'package:openvine/services/curated_list_service.dart';
+import 'package:openvine/services/video_event_service.dart';
+
+import '../../helpers/test_provider_overrides.dart';
+
+class _MockVideoEventService extends Mock implements VideoEventService {}
+
+class _FakeAppForeground extends AppForeground {
+  @override
+  bool build() => true;
+}
+
+class _FakeFunnelcakeAvailable extends FunnelcakeAvailable {
+  @override
+  Future<bool> build() async => false;
+}
+
+class _FakeCuratedListsState extends CuratedListsState {
+  @override
+  CuratedListService? get service => null;
+
+  @override
+  Future<List<CuratedList>> build() async => const [];
+}
+
+const _pollInterval = Duration(seconds: 30);
+
+const _featuredConfig = FeaturedTabConfig(
+  id: 'ft_a1b2c3d4',
+  slug: 'featured-slug',
+  label: {'default': 'Spotlight'},
+  startsAt: null,
+  endsAt: null,
+  enabled: true,
+  hasContent: true,
+);
+
+/// Serves no tab on the first refresh and the configured tab on every later
+/// one, standing in for a configuration seeded mid-session.
+class _StagedFeaturedTabsRepository implements FeaturedTabsRepository {
+  int refreshCount = 0;
+
+  @override
+  Future<FeaturedTabsSnapshot> refresh({required bool viewerIsMinor}) async {
+    refreshCount++;
+    return refreshCount == 1
+        ? const FeaturedTabsSnapshot(pollInterval: _pollInterval)
+        : const FeaturedTabsSnapshot(
+            tab: _featuredConfig,
+            pollInterval: _pollInterval,
+          );
+  }
+
+  @override
+  Duration get cacheTtl => FeaturedTabsRepository.defaultCacheTtl;
+
+  @override
+  void clearCache() {}
+
+  @override
+  Future<FeaturedTabVideosPage> loadVideos({
+    required String tabId,
+    String? cursor,
+  }) async => const FeaturedTabVideosPage(videos: []);
+}
+
+void main() {
+  setUpAll(() {
+    registerFallbackValue(SubscriptionType.discovery);
+    registerFallbackValue(() {});
+  });
+
+  late _MockVideoEventService videoEventService;
+
+  setUp(() {
+    videoEventService = _MockVideoEventService();
+    when(
+      () => videoEventService.addVideoUpdateListener(any()),
+    ).thenReturn(() {});
+    when(() => videoEventService.filterVideoList(any())).thenAnswer(
+      (invocation) => invocation.positionalArguments.first as List<VideoEvent>,
+    );
+    when(() => videoEventService.discoveryVideos).thenReturn([]);
+    when(() => videoEventService.popularNowVideos).thenReturn([]);
+    when(() => videoEventService.isSubscribed(any())).thenReturn(false);
+    // ignore: invalid_use_of_protected_member
+    when(() => videoEventService.hasListeners).thenReturn(false);
+  });
+
+  Future<void> pumpExplore(
+    WidgetTester tester, {
+    required FeaturedTabsRepository repository,
+    String? initialTabName,
+    String? initialTabSlug,
+    bool classicsAvailable = false,
+  }) async {
+    await tester.pumpWidget(
+      testProviderScope(
+        additionalOverrides: [
+          appForegroundProvider.overrideWith(_FakeAppForeground.new),
+          videoEventServiceProvider.overrideWithValue(videoEventService),
+          routerLocationStreamProvider.overrideWith(
+            (ref) => Stream.value(ExploreScreen.path),
+          ),
+          exploreTabVideosProvider.overrideWith((ref) => null),
+          classicVinesAvailableProvider.overrideWith(
+            (ref) async => classicsAvailable,
+          ),
+          forYouAvailableProvider.overrideWithValue(false),
+          allListsProvider.overrideWith(
+            (ref) async =>
+                (userLists: <UserList>[], curatedLists: <CuratedList>[]),
+          ),
+          curatedListsStateProvider.overrideWith(_FakeCuratedListsState.new),
+          funnelcakeAvailableProvider.overrideWith(
+            _FakeFunnelcakeAvailable.new,
+          ),
+          isFeatureEnabledProvider(
+            FeatureFlag.integratedApps,
+          ).overrideWithValue(false),
+          featuredTabsRepositoryProvider.overrideWithValue(repository),
+          featuredTabViewerIsMinorProvider.overrideWithValue(false),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: ExploreScreen(
+              initialTabName: initialTabName,
+              initialTabSlug: initialTabSlug,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  TabController controllerOf(WidgetTester tester) =>
+      tester.widget<TabBar>(find.byType(TabBar)).controller!;
+
+  String selectedTabName(WidgetTester tester) {
+    final cubit = tester.element(find.byType(TabBar)).read<ExploreTabsCubit>();
+    return cubit.state.nameForIndex(controllerOf(tester).index);
+  }
+
+  group('ExploreView tab selection', () {
+    testWidgets('a later availability change keeps the user on their tab', (
+      tester,
+    ) async {
+      // Explore stays mounted for the session and the featured configuration
+      // keeps polling, so a launch tab that still wins on the tenth
+      // availability change drags the user off whatever they since chose.
+      final repository = _StagedFeaturedTabsRepository();
+      await pumpExplore(
+        tester,
+        repository: repository,
+        // Matches the in-app redirects that land on /explore/tab/popular.
+        initialTabName: explorePopularTabName,
+        initialTabSlug: explorePopularTabName,
+      );
+
+      controllerOf(tester).index = 3;
+      await tester.pumpAndSettle();
+      final chosen = selectedTabName(tester);
+      expect(chosen, isNot(explorePopularTabName));
+
+      await tester.pump(_pollInterval + const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+
+      expect(repository.refreshCount, greaterThan(1));
+      expect(find.text('Spotlight'), findsOneWidget);
+      expect(selectedTabName(tester), equals(chosen));
+    });
+
+    testWidgets('a deep link still lands on a tab that arrives late', (
+      tester,
+    ) async {
+      // Launch intent must outlive the first frame: an optional tab may not
+      // exist yet when the controller is first built.
+      final repository = _StagedFeaturedTabsRepository();
+      await pumpExplore(
+        tester,
+        repository: repository,
+        initialTabName: exploreClassicsTabName,
+        initialTabSlug: exploreClassicsTabName,
+        classicsAvailable: true,
+      );
+
+      expect(selectedTabName(tester), equals(exploreClassicsTabName));
+    });
+
+    testWidgets('a deep link to the featured slug lands once it resolves', (
+      tester,
+    ) async {
+      final repository = _StagedFeaturedTabsRepository();
+      await pumpExplore(
+        tester,
+        repository: repository,
+        initialTabSlug: _featuredConfig.slug,
+      );
+
+      expect(selectedTabName(tester), isNot(exploreFeaturedTabName));
+
+      await tester.pump(_pollInterval + const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+
+      expect(selectedTabName(tester), equals(exploreFeaturedTabName));
+    });
+  });
+}

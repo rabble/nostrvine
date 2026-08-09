@@ -54,6 +54,17 @@ class _ExploreViewState extends ConsumerState<ExploreView>
   /// configuration arrives so a deep link can still land on it.
   String? _pendingFeaturedSlug;
 
+  /// Launch tab name, kept only until it has actually been selected.
+  ///
+  /// Launch intent must outlive the first frame, because a deep-linked
+  /// optional tab (Classics, For You, Apps, featured) may not exist yet when
+  /// the controller is first built. It must not outlive *landing* on that tab:
+  /// availability now keeps changing for the whole session — the featured
+  /// configuration polls and refetches on every foreground — and a launch name
+  /// that still wins on the tenth availability change drags the user back off
+  /// whatever tab they since chose.
+  String? _pendingInitialTabName;
+
   /// Refetches the featured configuration on foreground so a backend kill
   /// switch lands without waiting out the poll interval.
   late final AppLifecycleListener _lifecycleListener;
@@ -72,13 +83,13 @@ class _ExploreViewState extends ConsumerState<ExploreView>
   ///
   /// [previousTabName] is the tab the user was on before a rebuild (resolved
   /// while the old availability flags were still in effect). Resolution order:
-  /// [ExploreView.initialTabName] > previous tab > persisted tab > default.
-  /// Falls back by name — never by raw index, because indices shift when
-  /// optional tabs appear or disappear.
+  /// unspent launch tab > previous tab > persisted tab. Falls back by name —
+  /// never by raw index, because indices shift when optional tabs appear or
+  /// disappear.
   int _indexForTabName({String? previousTabName}) {
     final persistedTabName = ref.read(exploreTabNameProvider);
     final targetTabName =
-        widget.initialTabName ?? previousTabName ?? persistedTabName;
+        _pendingInitialTabName ?? previousTabName ?? persistedTabName;
     final index = _tabsState.indexForName(targetTabName);
 
     Log.info(
@@ -100,11 +111,19 @@ class _ExploreViewState extends ConsumerState<ExploreView>
   void initState() {
     super.initState();
 
+    _pendingInitialTabName = widget.initialTabName;
+
     // Only a slug the compiled tab names did not claim can be the featured
     // one; anything else was already resolved into initialTabName.
     if (widget.initialTabName == null) {
       _pendingFeaturedSlug = widget.initialTabSlug;
     }
+
+    // The first controller is built in didChangeDependencies; release the
+    // launch tab as soon as that build could have landed on it.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _consumePendingInitialTabName();
+    });
 
     _lifecycleListener = AppLifecycleListener(
       onResume: () => context.read<FeaturedTabsCubit>().refresh(),
@@ -151,6 +170,17 @@ class _ExploreViewState extends ConsumerState<ExploreView>
 
   void _consumePendingFeaturedSlug() {
     _pendingFeaturedSlug = null;
+  }
+
+  /// Releases the launch tab once it exists to be selected.
+  ///
+  /// A launch name for a tab that has not appeared yet is kept, so a deep link
+  /// to an optional tab still lands when its availability resolves.
+  void _consumePendingInitialTabName() {
+    final pending = _pendingInitialTabName;
+    if (pending == null) return;
+    if (!_tabsState.tabNames.contains(pending)) return;
+    _pendingInitialTabName = null;
   }
 
   Future<void> _loadHashtags() async {
@@ -245,11 +275,11 @@ class _ExploreViewState extends ConsumerState<ExploreView>
           previousTabName: resolvedFeaturedSlug ?? previousTabName,
         ),
       );
-      if (shouldConsumePendingFeaturedSlug) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _consumePendingFeaturedSlug();
-        });
-      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (shouldConsumePendingFeaturedSlug) _consumePendingFeaturedSlug();
+        _consumePendingInitialTabName();
+      });
     }
 
     // Derive feed mode from URL
@@ -311,6 +341,10 @@ class _ExploreViewState extends ConsumerState<ExploreView>
   }
 
   void _onTabTap(int index) {
+    // An explicit choice spends the launch tab even if it never became
+    // available, so a later availability change cannot pull the user back.
+    _pendingInitialTabName = null;
+
     // Tapping the active tab exits feed/hashtag mode; otherwise switching tabs
     // resets to grid mode if needed.
     if (index == tabController.index) {
