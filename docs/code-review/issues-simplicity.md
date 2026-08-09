@@ -2,10 +2,10 @@
 
 Issues related to duplication, oversized files, unused code, and unnecessary complexity.
 
-> **Current status — August 2026.** This document started as the April
-> #3530 audit baseline and now tracks the live #4339 maintainability
-> inventory. Historical notes remain where they explain the original issue
-> shape, but the oversized-file counts below reflect current `origin/main`.
+> **Oversized-file status — August 2026.** This document started as the April
+> #3530 audit baseline. The oversized-file section below now reflects current
+> `origin/main` and the live #4339 maintainability inventory. Other historical
+> sections retain their April audit context unless explicitly annotated.
 
 Note: Newer features like `features/feature_flags/` demonstrate clean
 co-location, and the BLoC migration has produced focused classes. These issues
@@ -16,9 +16,9 @@ under `mobile/lib` are currently over 800 lines, led by
 ---
 
 ### Oversized files (58 files over 800 lines)
-**Problem**: The broad file-size ratchet for #4339 is intentionally advisory,
-so oversized files are tracked as a visible backlog rather than as a blocking CI
-failure. The refreshed advisory baseline in
+**Problem**: Oversized files remain a visible maintainability backlog. The
+broad file-size ratchet for #4339 is intentionally advisory rather than a
+blocking CI failure. The refreshed advisory baseline in
 `mobile/scripts/baseline/file_sizes.txt` now records the current 58-file
 inventory so future warnings mean a PR added or grew an oversized file after
 this snapshot.
@@ -33,12 +33,14 @@ this snapshot.
 `video_editor_render_service.dart` (1,405), `sound_detail_screen.dart`
 (1,386), and `profile_editor_bloc.dart` (1,383).
 
-The current inventory also includes focused, already-shrunk wins:
+Focused, already-shrunk wins are no longer in the inventory:
 `app_providers.dart` and `app_router.dart` are no longer oversized, and
-`video_feed_page.dart` is below the 800-line threshold. The largest current
-growth cluster is video editor/recorder code: canvas, recorder bloc, clip editor
-bloc, editor provider, render service, timeline strip, timeline widget, and
-editor scaffold.
+`video_feed_page.dart` is below the 800-line threshold. To refresh these
+figures, run `UPDATE_BASELINE=1 bash mobile/scripts/check_file_size_ceiling.sh`
+from the repo root, then re-derive this evidence list from
+`mobile/scripts/baseline/file_sizes.txt`. The largest current growth cluster is
+video editor/recorder code: canvas, recorder bloc, clip editor bloc, editor
+provider, render service, timeline strip, timeline widget, and editor scaffold.
 
 **Impact**: High. These files are hard to test, review, and modify; they create
 merge-conflict pressure when multiple engineers touch the same surface; and
@@ -66,10 +68,11 @@ existing production timing ratchet staying hard-gated.
 
 ---
 
-### `main.dart` is a 1,784-line entry point with 7+ responsibilities
+### `main.dart` is an oversized entry point with 7+ responsibilities
 **Problem**: `main.dart` bundles startup orchestration, service initialization, deep link handling, provider wiring, logging configuration, and UI widgets into a single file. Each concern is tightly coupled to the rest, making the startup sequence hard to understand, test, or modify independently.
 
-**Evidence**: `mobile/lib/main.dart` (1,784 lines, 84 imports) contains:
+**Evidence**: `mobile/lib/main.dart` is currently 3,075 lines with 138 imports
+and contains:
 1. **Firebase background message handler** (~50 lines): top-level isolate function for push notifications
 2. **Startup coordinator setup** (~250 lines): phased initialization with timing instrumentation
 3. **`_startOpenVineApp()`** (~600 lines): bindings, crash reporting, video cache config, window manager, DNS overrides, logging config, error zone setup, `debugPrint` override
@@ -80,7 +83,7 @@ existing production timing ratchet staying hard-gated.
 
 The `DivineApp.build()` method alone is ~400 lines deep with nested `MultiRepositoryProvider`, `MultiBlocProvider`, and `BlocListener` wrappers.
 
-**Impact**: Medium. Any change to startup, deep linking, provider wiring, or logging requires editing the same file. The 84 imports create a dependency fan-in that makes `main.dart` a merge conflict hotspot. The startup sequence is hard to test because initialization functions depend on global singletons and side effects.
+**Impact**: Medium. Any change to startup, deep linking, provider wiring, or logging requires editing the same file. The 138 imports create a dependency fan-in that makes `main.dart` a merge conflict hotspot. The startup sequence is hard to test because initialization functions depend on global singletons and side effects.
 
 **Effort**: Medium. Extract incrementally: (1) move `_UploadFailureListener` and `_CrashProbeHotspot` to their own files, (2) extract the startup/initialization functions into a dedicated `startup/` module, (3) extract the `MultiRepositoryProvider`/`MultiBlocProvider` wiring into a dedicated provider setup widget, (4) extract deep link handling into its own service (partially exists in `deep_link_service.dart` already).
 
@@ -113,6 +116,7 @@ The `DivineApp.build()` method alone is ~400 lines deep with nested `MultiReposi
 **Effort**: Low. Rename the BLoC-internal one to `VideoFeedBlocState` (it's a `part of` the bloc, only one file needs changing). ~5 minutes.
 
 **GitHub ticket**: [#3597](https://github.com/divinevideo/divine-mobile/issues/3597)
+— closed 2026-05-18; work landed.
 
 ---
 
@@ -152,3 +156,4 @@ The `DivineApp.build()` method alone is ~400 lines deep with nested `MultiReposi
 **Effort**: Low. Add a notification accent color to `VineTheme`, update `notification_list_item.dart` to use it, delete `lib/theme/app_theme.dart`. ~30 lines removed.
 
 **GitHub ticket**: [#3600](https://github.com/divinevideo/divine-mobile/issues/3600)
+— closed 2026-08-06; work landed.
