@@ -38,9 +38,7 @@ class SavedVideosScreen extends ConsumerWidget {
         backgroundColor: context.vineColors.surfaceContainerHigh,
         title: Text(
           context.l10n.shareMenuBookmarks,
-          style: VineTheme.titleMediumFont(
-            color: context.vineColors.onNav,
-          ),
+          style: VineTheme.titleMediumFont(color: context.vineColors.onNav),
         ),
       ),
       body: BlocProvider<ProfileSavedVideosBloc>(
@@ -52,6 +50,8 @@ class SavedVideosScreen extends ConsumerWidget {
           bookmarkService: ref.read(bookmarkServiceProvider.future),
           videosRepository: videosRepository,
           currentUserPubkey: currentUserPubkey,
+          removedVideoIds: videosRepository.removedVideoIds,
+          deletedVideoFilter: videosRepository.isVideoKnownDeleted,
         )..add(const ProfileSavedVideosSyncRequested()),
         child: SavedVideosView(userIdHex: currentUserPubkey),
       ),

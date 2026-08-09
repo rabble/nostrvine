@@ -91,3 +91,51 @@ class ProfileVideoListSnapshot {
     'hasMoreContent': hasMoreContent,
   });
 }
+
+/// Result of removing hidden/deleted IDs from an ID-list-backed tab.
+class ProfileVideoListPruneResult {
+  const ProfileVideoListPruneResult({
+    required this.itemIds,
+    required this.nextPageOffset,
+  });
+
+  final List<String> itemIds;
+  final int nextPageOffset;
+}
+
+/// Removes [removedIds] and shifts [nextPageOffset] left by removals that were
+/// already consumed.
+///
+/// `nextPageOffset` is a positional cursor into [itemIds]. If an item before
+/// the cursor is deleted, clamping to the new list length is not enough: the
+/// next page must start one slot earlier or it skips the item that shifted into
+/// the deleted entry's position.
+ProfileVideoListPruneResult pruneProfileVideoListIds({
+  required List<String> itemIds,
+  required Set<String> removedIds,
+  required int nextPageOffset,
+}) {
+  if (removedIds.isEmpty) {
+    return ProfileVideoListPruneResult(
+      itemIds: itemIds,
+      nextPageOffset: nextPageOffset.clamp(0, itemIds.length),
+    );
+  }
+
+  var removedBeforeOffset = 0;
+  final keptIds = <String>[];
+  for (var index = 0; index < itemIds.length; index++) {
+    final id = itemIds[index];
+    if (removedIds.contains(id)) {
+      if (index < nextPageOffset) removedBeforeOffset++;
+      continue;
+    }
+    keptIds.add(id);
+  }
+
+  final shiftedOffset = nextPageOffset - removedBeforeOffset;
+  return ProfileVideoListPruneResult(
+    itemIds: keptIds,
+    nextPageOffset: shiftedOffset.clamp(0, keptIds.length),
+  );
+}

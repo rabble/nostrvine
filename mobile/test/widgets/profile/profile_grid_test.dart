@@ -95,6 +95,20 @@ class _FakeCuratedListsState extends CuratedListsState {
   Future<List<CuratedList>> build() async => _service.lists;
 }
 
+VideoEvent _fallbackVideoEvent() {
+  final now = DateTime(2024);
+  return VideoEvent(
+    id: 'fallback-video',
+    pubkey: '0' * 64,
+    createdAt: now.millisecondsSinceEpoch ~/ 1000,
+    content: '',
+    timestamp: now,
+    title: 'Fallback Video',
+    videoUrl: 'https://example.com/video.mp4',
+    thumbnailUrl: 'https://example.com/thumb.jpg',
+  );
+}
+
 void main() {
   const userIdHex =
       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -113,6 +127,7 @@ void main() {
     setUpAll(() {
       registerFallbackValue(const MyProfileLoadRequested());
       registerFallbackValue(const ProfileFeedStarted());
+      registerFallbackValue(_fallbackVideoEvent());
     });
 
     setUp(() async {
@@ -140,6 +155,12 @@ void main() {
       when(
         () => blocklistRepository.currentState,
       ).thenReturn(ContentPolicyState.empty());
+      when(
+        () => videosRepository.removedVideoIds,
+      ).thenAnswer((_) => const Stream<String>.empty());
+      when(
+        () => videosRepository.isVideoKnownDeleted(any()),
+      ).thenReturn(false);
       when(() => blocklistRepository.isBlocked(any())).thenReturn(false);
       when(() => blocklistRepository.hasMutedUs(any())).thenReturn(false);
       when(() => blocklistRepository.hasBlockedUs(any())).thenReturn(false);

@@ -79,6 +79,7 @@ void main() {
     late _InMemoryCacheDao cacheDao;
     late StreamController<List<String>> likedIdsController;
     late StreamController<ContentPolicyState> blocklistStateController;
+    late StreamController<String> removedVideoIdsController;
 
     // Test pubkeys
     const currentUserPubkey =
@@ -95,6 +96,7 @@ void main() {
       likedIdsController = StreamController<List<String>>.broadcast();
       blocklistStateController =
           StreamController<ContentPolicyState>.broadcast();
+      removedVideoIdsController = StreamController<String>.broadcast();
 
       // Default stub for watchLikedEventIds
       when(
@@ -121,16 +123,22 @@ void main() {
     tearDown(() {
       likedIdsController.close();
       blocklistStateController.close();
+      removedVideoIdsController.close();
     });
 
-    ProfileLikedVideosBloc createBloc({String? targetUserPubkey}) =>
-        ProfileLikedVideosBloc(
-          likesRepository: mockLikesRepository,
-          videosRepository: mockVideosRepository,
-          contentBlocklistRepository: mockBlocklistRepository,
-          currentUserPubkey: currentUserPubkey,
-          targetUserPubkey: targetUserPubkey,
-        );
+    ProfileLikedVideosBloc createBloc({
+      String? targetUserPubkey,
+      Stream<String>? removedVideoIds,
+      bool Function(VideoEvent video)? deletedVideoFilter,
+    }) => ProfileLikedVideosBloc(
+      likesRepository: mockLikesRepository,
+      videosRepository: mockVideosRepository,
+      contentBlocklistRepository: mockBlocklistRepository,
+      currentUserPubkey: currentUserPubkey,
+      targetUserPubkey: targetUserPubkey,
+      removedVideoIds: removedVideoIds ?? const Stream<String>.empty(),
+      deletedVideoFilter: deletedVideoFilter ?? (_) => false,
+    );
 
     VideoEvent createTestVideo(String id) {
       // Create a minimal VideoEvent for testing
@@ -435,6 +443,159 @@ void main() {
             ),
           );
         },
+      );
+
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'filters tombstoned videos from cached snapshot restore',
+        setUp: () async {
+          await cacheDao.write(
+            key: '$currentUserPubkey:$currentUserPubkey:profile_liked_videos',
+            payload: ProfileVideoListSnapshot(
+              videos: [createTestVideo('a'), createTestVideo('deleted')],
+              itemIds: const ['a', 'deleted'],
+              nextPageOffset: 2,
+              hasMoreContent: false,
+            ).toJson(),
+          );
+          when(() => mockLikesRepository.syncUserReactions()).thenAnswer(
+            (_) async => const LikesSyncResult(
+              orderedEventIds: ['a'],
+              eventIdToReactionId: {},
+            ),
+          );
+        },
+        build: () =>
+            createBloc(deletedVideoFilter: (video) => video.id == 'deleted'),
+        act: (bloc) => bloc.add(const ProfileLikedVideosSyncRequested()),
+        wait: const Duration(milliseconds: 50),
+        expect: () => [
+          isA<ProfileLikedVideosState>()
+              .having((s) => s.isRefreshing, 'isRefreshing', true)
+              .having(
+                (s) => s.videos.map((v) => v.id).toList(),
+                'cached videos',
+                ['a'],
+              )
+              .having((s) => s.likedEventIds, 'likedEventIds', ['a']),
+          isA<ProfileLikedVideosState>()
+              .having((s) => s.isRefreshing, 'isRefreshing', false)
+              .having(
+                (s) => s.videos.map((v) => v.id).toList(),
+                'unchanged videos',
+                ['a'],
+              ),
+        ],
+      );
+
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'removal stream drops video and persists snapshot without it',
+        build: () => createBloc(
+          removedVideoIds: removedVideoIdsController.stream,
+          deletedVideoFilter: (video) => video.id == 'deleted',
+        ),
+        seed: () => ProfileLikedVideosState(
+          status: ProfileLikedVideosStatus.success,
+          videos: [createTestVideo('a'), createTestVideo('deleted')],
+          likedEventIds: const ['a', 'deleted'],
+          nextPageOffset: 2,
+          hasMoreContent: false,
+        ),
+        act: (_) => removedVideoIdsController.add('deleted'),
+        wait: const Duration(milliseconds: 50),
+        expect: () => [
+          isA<ProfileLikedVideosState>()
+              .having((s) => s.videos.map((v) => v.id).toList(), 'videos', [
+                'a',
+              ])
+              .having((s) => s.likedEventIds, 'likedEventIds', ['a'])
+              .having((s) => s.nextPageOffset, 'nextPageOffset', 1),
+        ],
+        verify: (_) async {
+          final cached = await CacheSync.read<ProfileVideoListSnapshot>(
+            key: '$currentUserPubkey:$currentUserPubkey:profile_liked_videos',
+            fromJson: ProfileVideoListSnapshot.fromJson,
+          );
+          expect(cached, isNotNull);
+          expect(cached!.videos.map((v) => v.id), ['a']);
+          expect(cached.itemIds, ['a']);
+        },
+      );
+
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'removal shifts nextPageOffset left when deleting before the cursor',
+        build: () => createBloc(
+          removedVideoIds: removedVideoIdsController.stream,
+          deletedVideoFilter: (video) => video.id == 'deleted',
+        ),
+        seed: () => ProfileLikedVideosState(
+          status: ProfileLikedVideosStatus.success,
+          videos: [createTestVideo('a'), createTestVideo('deleted')],
+          likedEventIds: const ['a', 'deleted', 'b', 'c', 'd'],
+          nextPageOffset: 2,
+        ),
+        act: (_) => removedVideoIdsController.add('deleted'),
+        wait: const Duration(milliseconds: 50),
+        expect: () => [
+          isA<ProfileLikedVideosState>()
+              .having((s) => s.videos.map((v) => v.id).toList(), 'videos', [
+                'a',
+              ])
+              .having((s) => s.likedEventIds, 'likedEventIds', [
+                'a',
+                'b',
+                'c',
+                'd',
+              ])
+              .having((s) => s.nextPageOffset, 'nextPageOffset', 1),
+        ],
+      );
+
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'removal drops IDs for videos removed only by the deletion filter',
+        build: () => createBloc(
+          removedVideoIds: removedVideoIdsController.stream,
+          deletedVideoFilter: (video) => video.id == 'edited-version',
+        ),
+        seed: () => ProfileLikedVideosState(
+          status: ProfileLikedVideosStatus.success,
+          videos: [createTestVideo('a'), createTestVideo('edited-version')],
+          likedEventIds: const ['a', 'edited-version', 'b'],
+          nextPageOffset: 2,
+        ),
+        act: (_) => removedVideoIdsController.add('original-version'),
+        wait: const Duration(milliseconds: 50),
+        expect: () => [
+          isA<ProfileLikedVideosState>()
+              .having((s) => s.videos.map((v) => v.id).toList(), 'videos', [
+                'a',
+              ])
+              .having((s) => s.likedEventIds, 'likedEventIds', ['a', 'b'])
+              .having((s) => s.nextPageOffset, 'nextPageOffset', 1),
+        ],
+      );
+
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'removal prunes unloaded IDs from the backing list',
+        build: () => createBloc(
+          removedVideoIds: removedVideoIdsController.stream,
+          deletedVideoFilter: (_) => false,
+        ),
+        seed: () => ProfileLikedVideosState(
+          status: ProfileLikedVideosStatus.success,
+          videos: [createTestVideo('a')],
+          likedEventIds: const ['a', 'deleted-but-unloaded', 'b'],
+          nextPageOffset: 2,
+        ),
+        act: (_) => removedVideoIdsController.add('deleted-but-unloaded'),
+        wait: const Duration(milliseconds: 50),
+        expect: () => [
+          isA<ProfileLikedVideosState>()
+              .having((s) => s.videos.map((v) => v.id).toList(), 'videos', [
+                'a',
+              ])
+              .having((s) => s.likedEventIds, 'likedEventIds', ['a', 'b'])
+              .having((s) => s.nextPageOffset, 'nextPageOffset', 1),
+        ],
       );
 
       blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(

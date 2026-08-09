@@ -51,6 +51,13 @@ final class ProfileLikedVideosBlocklistChanged extends ProfileLikedVideosEvent {
   const ProfileLikedVideosBlocklistChanged();
 }
 
+/// Internal: drop a video after the deletion bus reports it removed.
+final class ProfileLikedVideosVideoRemoved extends ProfileLikedVideosEvent {
+  const ProfileLikedVideosVideoRemoved(this.videoId);
+
+  final String videoId;
+}
+
 /// Internal: reconcile the displayed videos against a fresh liked-ID list.
 ///
 /// Dispatched from the [LikesRepository.watchLikedEventIds] subscription when

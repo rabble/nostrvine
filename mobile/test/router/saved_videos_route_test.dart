@@ -40,6 +40,9 @@ void main() {
         currentMinorAccountReviewStatusProvider.overrideWith(
           (ref) async => MinorAccountReviewStatus.active(),
         ),
+        videoEventServiceProvider.overrideWithValue(
+          createMockVideoEventService(),
+        ),
       ],
     );
     addTearDown(container.dispose);

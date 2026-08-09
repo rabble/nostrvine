@@ -38,9 +38,12 @@ class ProfileSavedVideosBloc
     required Future<BookmarkService> bookmarkService,
     required VideosRepository videosRepository,
     required String currentUserPubkey,
+    required Stream<String> removedVideoIds,
+    required bool Function(VideoEvent video) deletedVideoFilter,
   }) : _bookmarkServiceFuture = bookmarkService,
        _videosRepository = videosRepository,
        _currentUserPubkey = currentUserPubkey,
+       _deletedVideoFilter = deletedVideoFilter,
        super(const ProfileSavedVideosState()) {
     on<ProfileSavedVideosSyncRequested>(
       _onSyncRequested,
@@ -50,6 +53,14 @@ class ProfileSavedVideosBloc
       transformer: sequential(),
     );
     on<ProfileSavedVideosLoadMoreRequested>(_onLoadMoreRequested);
+    on<ProfileSavedVideosVideoRemoved>(
+      _onVideoRemoved,
+      transformer: sequential(),
+    );
+    _removedVideoIdsSubscription = removedVideoIds.listen((videoId) {
+      if (isClosed) return;
+      add(ProfileSavedVideosVideoRemoved(videoId));
+    });
   }
 
   /// Resolved lazily on the first sync — [bookmarkServiceProvider] is an
@@ -58,6 +69,8 @@ class ProfileSavedVideosBloc
   final Future<BookmarkService> _bookmarkServiceFuture;
   final VideosRepository _videosRepository;
   final String _currentUserPubkey;
+  late final StreamSubscription<String> _removedVideoIdsSubscription;
+  final bool Function(VideoEvent video) _deletedVideoFilter;
 
   /// Cache key for the saved-videos snapshot (bookmarks are private, so the
   /// key is scoped to the signed-in user for sign-out invalidation).
@@ -206,7 +219,8 @@ class ProfileSavedVideosBloc
     Emitter<ProfileSavedVideosState> emit,
   ) async {
     if (listEquals(freshIds, state.savedEventIds) &&
-        !_isWindowUnderfilled(freshIds)) {
+        !_isWindowUnderfilled(freshIds) &&
+        !state.videos.any(_deletedVideoFilter)) {
       emit(state.copyWith(isRefreshing: false));
       return;
     }
@@ -239,7 +253,10 @@ class ProfileSavedVideosBloc
   /// IDs in the loaded window. Bounded so it never bulk-fetches.
   Future<({List<VideoEvent> videos, int nextPageOffset, bool hasMoreContent})>
   _reconcile(List<String> freshIds) async {
-    final byId = {for (final video in state.videos) video.id: video};
+    final byId = {
+      for (final video in state.videos)
+        if (!_deletedVideoFilter(video)) video.id: video,
+    };
     // Anchor on the previous top ID rather than a length delta, so a capped
     // persisted ID list can't balloon the reconcile window into a full
     // re-fetch on reopen (see ProfileLikedVideosBloc for the rationale).
@@ -300,10 +317,11 @@ class ProfileSavedVideosBloc
 
   Future<ProfileVideoListSnapshot?> _readCachedSnapshot() async {
     try {
-      return await CacheSync.read<ProfileVideoListSnapshot>(
+      final snapshot = await CacheSync.read<ProfileVideoListSnapshot>(
         key: _cacheKey,
         fromJson: ProfileVideoListSnapshot.fromJson,
       );
+      return snapshot == null ? null : _filterDeletedSnapshot(snapshot);
     } on Object catch (e) {
       Log.warning(
         'ProfileSavedVideosBloc: Failed to read cached snapshot - $e',
@@ -312,6 +330,31 @@ class ProfileSavedVideosBloc
       );
       return null;
     }
+  }
+
+  ProfileVideoListSnapshot _filterDeletedSnapshot(
+    ProfileVideoListSnapshot snapshot,
+  ) {
+    final deletedVideoIds = snapshot.videos
+        .where(_deletedVideoFilter)
+        .map((video) => video.id)
+        .toSet();
+    if (deletedVideoIds.isEmpty) return snapshot;
+
+    final videos = snapshot.videos
+        .where((video) => !deletedVideoIds.contains(video.id))
+        .toList();
+    final pruned = pruneProfileVideoListIds(
+      itemIds: snapshot.itemIds,
+      removedIds: deletedVideoIds,
+      nextPageOffset: snapshot.nextPageOffset,
+    );
+    return ProfileVideoListSnapshot(
+      videos: videos,
+      itemIds: pruned.itemIds,
+      nextPageOffset: pruned.nextPageOffset,
+      hasMoreContent: snapshot.hasMoreContent,
+    );
   }
 
   Future<void> _persistSnapshot(ProfileVideoListSnapshot snapshot) async {
@@ -418,6 +461,49 @@ class ProfileSavedVideosBloc
     }
   }
 
+  Future<void> _onVideoRemoved(
+    ProfileSavedVideosVideoRemoved event,
+    Emitter<ProfileSavedVideosState> emit,
+  ) async {
+    final removedVideoIds = <String>{event.videoId};
+    final videos = <VideoEvent>[];
+    for (final video in state.videos) {
+      final isRemoved = video.id == event.videoId || _deletedVideoFilter(video);
+      if (isRemoved) {
+        removedVideoIds.add(video.id);
+      } else {
+        videos.add(video);
+      }
+    }
+
+    final pruned = pruneProfileVideoListIds(
+      itemIds: state.savedEventIds,
+      removedIds: removedVideoIds,
+      nextPageOffset: state.nextPageOffset,
+    );
+    if (videos.length == state.videos.length &&
+        pruned.itemIds.length == state.savedEventIds.length &&
+        pruned.nextPageOffset == state.nextPageOffset) {
+      return;
+    }
+
+    emit(
+      state.copyWith(
+        videos: videos,
+        savedEventIds: pruned.itemIds,
+        nextPageOffset: pruned.nextPageOffset,
+      ),
+    );
+    await _persistSnapshot(
+      ProfileVideoListSnapshot(
+        videos: videos,
+        itemIds: pruned.itemIds,
+        nextPageOffset: pruned.nextPageOffset,
+        hasMoreContent: state.hasMoreContent,
+      ),
+    );
+  }
+
   /// Fetch videos for the given event IDs via [VideosRepository], which
   /// handles cache-first lookups (SQLite local storage → relay fallback).
   ///
@@ -447,5 +533,11 @@ class ProfileSavedVideosBloc
     );
 
     return videos.where((v) => v.isSupportedOnCurrentPlatform).toList();
+  }
+
+  @override
+  Future<void> close() {
+    _removedVideoIdsSubscription.cancel();
+    return super.close();
   }
 }

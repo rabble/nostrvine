@@ -9,9 +9,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/profile_collab_videos/profile_collab_videos_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
-import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/profile/profile_collabs_grid.dart';
 
@@ -21,11 +19,6 @@ import '../../helpers/test_provider_overrides.dart';
 class _MockProfileCollabVideosBloc
     extends MockBloc<ProfileCollabVideosEvent, ProfileCollabVideosState>
     implements ProfileCollabVideosBloc {}
-
-class _FakeVideoEventService extends Mock implements VideoEventService {
-  @override
-  Stream<String> get removedVideoIds => const Stream<String>.empty();
-}
 
 List<VideoEvent> _createTestVideos({int count = 2}) {
   final now = DateTime.now();
@@ -79,9 +72,6 @@ void main() {
       final scoped = ProviderScope(
         overrides: [
           ...getStandardTestOverrides(),
-          videoEventServiceProvider.overrideWithValue(
-            _FakeVideoEventService(),
-          ),
         ],
         child: app,
       );
@@ -294,9 +284,6 @@ void main() {
             ProviderScope(
               overrides: [
                 ...getStandardTestOverrides(),
-                videoEventServiceProvider.overrideWithValue(
-                  _FakeVideoEventService(),
-                ),
               ],
               child: MaterialApp(
                 localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -347,9 +334,6 @@ void main() {
             ProviderScope(
               overrides: [
                 ...getStandardTestOverrides(),
-                videoEventServiceProvider.overrideWithValue(
-                  _FakeVideoEventService(),
-                ),
               ],
               child: MaterialApp(
                 localizationsDelegates: AppLocalizations.localizationsDelegates,
