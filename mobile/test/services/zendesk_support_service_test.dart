@@ -911,6 +911,60 @@ void main() {
       expect(capturedArgs!['description'], contains('[REDACTED]'));
       expect(values, contains('[REDACTED]'));
     });
+
+    test('sanitizes bug report fields before native submission', () async {
+      Map<String, dynamic>? capturedArgs;
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (MethodCall call) async {
+            if (call.method == 'initialize') return true;
+            if (call.method == 'createTicket') {
+              capturedArgs = Map<String, dynamic>.from(call.arguments as Map);
+              return true;
+            }
+            return null;
+          });
+
+      await ZendeskSupportService.initialize(
+        appId: 'test',
+        clientId: 'test',
+        zendeskUrl: 'https://test.zendesk.com',
+      );
+
+      final result = await ZendeskSupportService.createStructuredBugReport(
+        subject: 'Crash $_rawNsec',
+        description: 'Broke after importing $_rawNcryptsec',
+        reportId: 'test-sanitize-001',
+        appVersion: '1.0.0+42',
+        deviceInfo: {'platform': 'ios', 'version': '17.0'},
+        stepsToReproduce: 'Paste $_rawNsec',
+        expectedBehavior: 'Mail liz@example.com',
+        logsSummary: 'ERROR key=$_rawNsec',
+      );
+
+      expect(result, isTrue);
+      expect(capturedArgs, isNotNull);
+      final customFields = capturedArgs!['customFields'] as List<dynamic>;
+      final stepsField = customFields.firstWhere(
+        (f) => (f as Map)['id'] == 14677364166031,
+      );
+      final expectedField = customFields.firstWhere(
+        (f) => (f as Map)['id'] == 14677341431695,
+      );
+
+      // The body concatenates subject, description, steps, expected and the
+      // log summary, so one assertion covers every user-entered field on the
+      // way into the publicly mirrored ticket.
+      final description = capturedArgs!['description'] as String;
+      expect(description, isNot(contains(_rawNsec)));
+      expect(description, isNot(contains(_rawNcryptsec)));
+      expect(description, isNot(contains('liz@example.com')));
+      expect(description, contains('[REDACTED]'));
+      expect(capturedArgs!['subject'], isNot(contains(_rawNsec)));
+      expect(capturedArgs!['subject'], contains('[REDACTED]'));
+      expect((stepsField as Map)['value'], isNot(contains(_rawNsec)));
+      expect((expectedField as Map)['value'], isNot(contains('liz@example')));
+    });
   });
 
   group('ZendeskSupportService REST API', () {
