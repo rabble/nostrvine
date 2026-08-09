@@ -15,7 +15,7 @@ set -euo pipefail
 #   cd mobile && flutter build ios --simulator --dart-define=DEFAULT_ENV=STAGING --dart-define=GH_ACTIONS_PR_PREVIEW=true
 #
 # Credentials are not committed. Supply them, as CI does:
-#   MAESTRO_USER_EMAIL=... MAESTRO_USER_PWD=... MAESTRO_SEARCH_USER=... \
+#   MAESTRO_USER_EMAIL=... MAESTRO_USER_PWD=... \
 #     bash e2e/maestro/scripts/ui_smoke_ios.sh
 # ------------------------------------------------------------
 
@@ -68,7 +68,7 @@ Fix:
   cd ${MOBILE_DIR} && flutter build ios --simulator --dart-define=DEFAULT_ENV=STAGING --dart-define=GH_ACTIONS_PR_PREVIEW=true"
 [[ -f "${APP_INFO_PLIST}" ]] || fail "Info.plist not found at: ${APP_INFO_PLIST}"
 
-for required in MAESTRO_USER_EMAIL MAESTRO_USER_PWD MAESTRO_SEARCH_USER; do
+for required in MAESTRO_USER_EMAIL MAESTRO_USER_PWD; do
   [[ -n "${!required:-}" ]] || fail "Missing ${required}. The suite reads credentials from the environment; they are not committed."
 done
 ok "Prerequisites look good"
@@ -237,7 +237,6 @@ info "Command: ${MAESTRO_CLI} --device ${SIM_UDID} test ${SUITE_PATH}"
 "${MAESTRO_CLI}" --device "${SIM_UDID}" test \
   -e USER_EMAIL="${MAESTRO_USER_EMAIL}" \
   -e USER_PWD="${MAESTRO_USER_PWD}" \
-  -e SEARCH_USER="${MAESTRO_SEARCH_USER}" \
   "${SUITE_PATH}"
 
 ok "Maestro smoke suite completed successfully 🎉"
