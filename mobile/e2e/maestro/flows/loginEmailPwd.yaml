@@ -23,7 +23,8 @@ appId: co.openvine.app
 
 # 2. Tap on sign in
 
-- tapOn: Sign in with a different account
+- tapOn:
+    id: "sign_in_button"
 - runFlow: ../asserts/assertSignIn.yaml
 
 # 3. Input Email and Password, and tap on "Log In": User is redirected to the Explore screen, New tab

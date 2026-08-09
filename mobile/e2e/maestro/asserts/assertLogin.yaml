@@ -1,13 +1,25 @@
 appId: co.openvine.app
 ---
-- waitForAnimationToEnd # Divine logo may take some time to load
+# The welcome screen is reached after a cold start, so wait for it to arrive
+# rather than assuming the splash animation ending means it is on screen.
+- extendedWaitUntil:
+    visible:
+      id: "create_account_button"
+    timeout: 30000
+
+# Primary actions, by id. Both labels have changed since these flows were
+# written -- "Sign in with a different account" is now "Sign in with an
+# existing account" -- which is exactly what an id anchor is for.
+- assertVisible:
+    id: "sign_in_button"
+
+# Brand copy: asserted because it is the screen's identity, not chrome.
 - assertVisible: Authentic moments.
 - assertVisible: Human creativity.
-- assertVisible: Create a new Divine account
-- assertVisible: Sign in with a different account
-- assertVisible: "By selecting an option above, you confirm you are at least 16 years old and agree to the "
+
+# Legal links must be present and reachable. The surrounding prose is
+# deliberately not asserted: it has been reworded twice and the fragments
+# (", ", ", and ") carried no signal, only churn.
 - assertVisible: Terms of Service
-- assertVisible: ", "
 - assertVisible: Privacy Policy
-- assertVisible: ", and "
 - assertVisible: Safety Standards
