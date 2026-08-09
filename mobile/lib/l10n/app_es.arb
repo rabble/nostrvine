@@ -452,10 +452,6 @@
     "videoGridEditVideoSubtitle": "Actualizá título, descripción y hashtags",
     "videoGridDeleteVideo": "Eliminar video",
     "videoGridDeleteVideoSubtitle": "Sacá este contenido para siempre",
-    "videoGridDeleteConfirmTitle": "Eliminar video",
-    "videoGridDeleteConfirmMessage": "¿Seguro que querés eliminar este video?",
-    "videoGridDeleteCancel": "Cancelar",
-    "videoGridDeleteConfirm": "Eliminar",
     "videoGridDeletingContent": "Eliminando contenido...",
     "videoGridDeleteFailure": "No se pudo eliminar el contenido: {error}",
     "@videoGridDeleteFailure": {
@@ -1580,7 +1576,7 @@
         }
     },
     "shareMenuClose": "Cerrar",
-    "shareMenuDeleteConfirmation": "¿Seguro que querés eliminar este video?",
+    "shareMenuDeleteConfirmation": "Esto eliminará permanentemente este video de Divine. Es posible que siga apareciendo en clientes Nostr de terceros que usan otros relays.",
     "shareMenuCancel": "Cancelar",
     "shareMenuDelete": "Eliminar",
     "shareMenuDeletingContent": "Eliminando contenido...",

@@ -452,10 +452,6 @@
     "videoGridEditVideoSubtitle": "Zaktualizuj tytuł, opis i hashtagi",
     "videoGridDeleteVideo": "Usuń film",
     "videoGridDeleteVideoSubtitle": "Trwale usuń tę treść",
-    "videoGridDeleteConfirmTitle": "Usuń film",
-    "videoGridDeleteConfirmMessage": "Na pewno chcesz usunąć ten film?",
-    "videoGridDeleteCancel": "Anuluj",
-    "videoGridDeleteConfirm": "Usuń",
     "videoGridDeletingContent": "Usuwanie treści...",
     "videoGridDeleteFailure": "Nie udało się usunąć treści: {error}",
     "@videoGridDeleteFailure": {
@@ -1576,7 +1572,7 @@
         }
     },
     "shareMenuClose": "Zamknij",
-    "shareMenuDeleteConfirmation": "Na pewno chcesz usunąć ten film?",
+    "shareMenuDeleteConfirmation": "To trwale usunie ten film z Divine. Może nadal pojawiać się w zewnętrznych klientach Nostr, które używają innych przekaźników.",
     "shareMenuCancel": "Anuluj",
     "shareMenuDelete": "Usuń",
     "shareMenuDeletingContent": "Usuwanie treści...",

@@ -409,6 +409,15 @@ void main() {
           await tester.tap(find.text(l10n.videoGridDeleteVideo));
           await tester.pumpAndSettle();
 
+          final dialog = tester.widget<AlertDialog>(find.byType(AlertDialog));
+          expect(dialog.title, isA<Text>());
+          expect((dialog.title! as Text).data, l10n.shareMenuDeleteVideo);
+          expect(dialog.content, isA<Text>());
+          expect(
+            (dialog.content! as Text).data,
+            l10n.shareMenuDeleteConfirmation,
+          );
+          expect(dialog.actions, hasLength(2));
           expect(find.text(l10n.shareMenuDeleteConfirmation), findsOneWidget);
         },
       );

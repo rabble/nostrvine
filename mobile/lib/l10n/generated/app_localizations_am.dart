@@ -1126,19 +1126,6 @@ class AppLocalizationsAm extends AppLocalizations {
       'ይህን ቪዲዮ ከDivine አስወግድ። በሌሎች Nostr ደንበኞች ላይ አሁንም ሊታይ ይችላል።';
 
   @override
-  String get videoGridDeleteConfirmTitle => 'ቪዲዮ ሰርዝ';
-
-  @override
-  String get videoGridDeleteConfirmMessage =>
-      'ይሄ ይህን ቪዲዮ ከDivine እስከመጨረሻው ይሰርዘዋል። አሁንም ሌሎች ማስተላለፊያዎችን በሚጠቀሙ የሶስተኛ ወገን Nostr ደንበኞች ላይ ሊታይ ይችላል።';
-
-  @override
-  String get videoGridDeleteCancel => 'ሰርዝ';
-
-  @override
-  String get videoGridDeleteConfirm => 'ሰርዝ';
-
-  @override
   String get videoGridDeletingContent => 'ይዘትን በመሰረዝ ላይ...';
 
   @override

@@ -1154,19 +1154,6 @@ class AppLocalizationsUr extends AppLocalizations {
       'یہ ویڈیو Divine سے ہٹائیں۔ یہ دیگر Nostr کلائنٹس پر پھر بھی نظر آ سکتی ہے۔';
 
   @override
-  String get videoGridDeleteConfirmTitle => 'ویڈیو حذف کریں';
-
-  @override
-  String get videoGridDeleteConfirmMessage =>
-      'یہ ویڈیو Divine سے مستقل طور پر حذف ہو جائے گی۔ دیگر ریلے استعمال کرنے والے تھرڈ پارٹی Nostr کلائنٹس پر یہ پھر بھی نظر آ سکتی ہے۔';
-
-  @override
-  String get videoGridDeleteCancel => 'منسوخ کریں';
-
-  @override
-  String get videoGridDeleteConfirm => 'حذف کریں';
-
-  @override
   String get videoGridDeletingContent => 'مواد حذف ہو رہا ہے...';
 
   @override

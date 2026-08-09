@@ -521,10 +521,6 @@
     "videoGridEditVideoSubtitle": "ርዕስ፣ መግለጫ እና ሃሽታጎችን ያዘምኑ",
     "videoGridDeleteVideo": "ቪዲዮ ሰርዝ",
     "videoGridDeleteVideoSubtitle": "ይህን ቪዲዮ ከDivine አስወግድ። በሌሎች Nostr ደንበኞች ላይ አሁንም ሊታይ ይችላል።",
-    "videoGridDeleteConfirmTitle": "ቪዲዮ ሰርዝ",
-    "videoGridDeleteConfirmMessage": "ይሄ ይህን ቪዲዮ ከDivine እስከመጨረሻው ይሰርዘዋል። አሁንም ሌሎች ማስተላለፊያዎችን በሚጠቀሙ የሶስተኛ ወገን Nostr ደንበኞች ላይ ሊታይ ይችላል።",
-    "videoGridDeleteCancel": "ሰርዝ",
-    "videoGridDeleteConfirm": "ሰርዝ",
     "videoGridDeletingContent": "ይዘትን በመሰረዝ ላይ...",
     "videoGridDeleteFailure": "ይዘትን መሰረዝ አልተሳካም፦ {error}",
     "@videoGridDeleteFailure": {

@@ -452,10 +452,6 @@
     "videoGridEditVideoSubtitle": "Uppdatera titel, beskrivning och hashtags",
     "videoGridDeleteVideo": "Ta bort video",
     "videoGridDeleteVideoSubtitle": "Ta bort det här innehållet permanent",
-    "videoGridDeleteConfirmTitle": "Ta bort video",
-    "videoGridDeleteConfirmMessage": "Är du säker på att du vill ta bort den här videon?",
-    "videoGridDeleteCancel": "Avbryt",
-    "videoGridDeleteConfirm": "Ta bort",
     "videoGridDeletingContent": "Tar bort innehåll...",
     "videoGridDeleteFailure": "Kunde inte ta bort innehåll: {error}",
     "@videoGridDeleteFailure": {
@@ -1576,7 +1572,7 @@
         }
     },
     "shareMenuClose": "Stäng",
-    "shareMenuDeleteConfirmation": "Är du säker på att du vill ta bort den här videon?",
+    "shareMenuDeleteConfirmation": "Det här tar bort videon permanent från Divine. Den kan fortfarande visas i Nostr-klienter från tredje part som använder andra reler.",
     "shareMenuCancel": "Avbryt",
     "shareMenuDelete": "Ta bort",
     "shareMenuDeletingContent": "Tar bort innehåll...",

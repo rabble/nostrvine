@@ -620,10 +620,6 @@
   "videoGridEditVideoSubtitle": "Update title, description, and hashtags",
   "videoGridDeleteVideo": "Delete Video",
   "videoGridDeleteVideoSubtitle": "Remove this video from Divine. It may still appear on other Nostr clients.",
-  "videoGridDeleteConfirmTitle": "Delete Video",
-  "videoGridDeleteConfirmMessage": "This will permanently delete this video from Divine. It may still appear on third-party Nostr clients that use other relays.",
-  "videoGridDeleteCancel": "Cancel",
-  "videoGridDeleteConfirm": "Delete",
   "videoGridDeletingContent": "Deleting content...",
   "videoGridDeleteFailure": "Failed to delete content: {error}",
   "@videoGridDeleteFailure": {

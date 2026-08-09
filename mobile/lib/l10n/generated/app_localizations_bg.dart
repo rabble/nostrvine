@@ -1164,19 +1164,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Премахни това видео от Divine. Може още да се вижда в други Nostr клиенти.';
 
   @override
-  String get videoGridDeleteConfirmTitle => 'Изтрий видеото';
-
-  @override
-  String get videoGridDeleteConfirmMessage =>
-      'Това ще изтрие за постоянно това видео от Divine. Може още да се вижда в Nostr клиенти на трети страни, които използват други релета.';
-
-  @override
-  String get videoGridDeleteCancel => 'Отказ';
-
-  @override
-  String get videoGridDeleteConfirm => 'Изтрий';
-
-  @override
   String get videoGridDeletingContent => 'Трием съдържанието...';
 
   @override

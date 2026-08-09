@@ -1163,19 +1163,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoGridDeleteVideoSubtitle => 'Sacá este contenido para siempre';
 
   @override
-  String get videoGridDeleteConfirmTitle => 'Eliminar video';
-
-  @override
-  String get videoGridDeleteConfirmMessage =>
-      '¿Seguro que querés eliminar este video?';
-
-  @override
-  String get videoGridDeleteCancel => 'Cancelar';
-
-  @override
-  String get videoGridDeleteConfirm => 'Eliminar';
-
-  @override
   String get videoGridDeletingContent => 'Eliminando contenido...';
 
   @override
@@ -4040,7 +4027,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get shareMenuDeleteConfirmation =>
-      '¿Seguro que querés eliminar este video?';
+      'Esto eliminará permanentemente este video de Divine. Es posible que siga apareciendo en clientes Nostr de terceros que usan otros relays.';
 
   @override
   String get shareMenuCancel => 'Cancelar';

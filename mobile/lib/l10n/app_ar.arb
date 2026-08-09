@@ -452,10 +452,6 @@
     "videoGridEditVideoSubtitle": "تحديث العنوان والوصف والوسوم",
     "videoGridDeleteVideo": "حذف الفيديو",
     "videoGridDeleteVideoSubtitle": "إزالة هذا المحتوى نهائيًا",
-    "videoGridDeleteConfirmTitle": "حذف الفيديو",
-    "videoGridDeleteConfirmMessage": "هل أنت متأكد من رغبتك في حذف هذا الفيديو؟",
-    "videoGridDeleteCancel": "إلغاء",
-    "videoGridDeleteConfirm": "حذف",
     "videoGridDeletingContent": "جاري حذف المحتوى...",
     "videoGridDeleteFailure": "فشل حذف المحتوى: {error}",
     "@videoGridDeleteFailure": {
@@ -1566,7 +1562,7 @@
         }
     },
     "shareMenuClose": "إغلاق",
-    "shareMenuDeleteConfirmation": "هل أنت متأكد من رغبتك في حذف هذا الفيديو؟",
+    "shareMenuDeleteConfirmation": "سيؤدي هذا إلى حذف هذا الفيديو نهائيًا من Divine. قد يظل يظهر في عملاء Nostr تابعين لجهات خارجية يستخدمون مرحّلات أخرى.",
     "shareMenuCancel": "إلغاء",
     "shareMenuDelete": "حذف",
     "shareMenuDeletingContent": "جاري حذف المحتوى...",

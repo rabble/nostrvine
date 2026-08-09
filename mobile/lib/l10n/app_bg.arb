@@ -483,10 +483,6 @@
     "videoGridEditVideoSubtitle": "Актуализирай заглавие, описание и хаштагове",
     "videoGridDeleteVideo": "Изтрий видеото",
     "videoGridDeleteVideoSubtitle": "Премахни това видео от Divine. Може още да се вижда в други Nostr клиенти.",
-    "videoGridDeleteConfirmTitle": "Изтрий видеото",
-    "videoGridDeleteConfirmMessage": "Това ще изтрие за постоянно това видео от Divine. Може още да се вижда в Nostr клиенти на трети страни, които използват други релета.",
-    "videoGridDeleteCancel": "Отказ",
-    "videoGridDeleteConfirm": "Изтрий",
     "videoGridDeletingContent": "Трием съдържанието...",
     "videoGridDeleteFailure": "Неуспешно изтриване на съдържание: {error}",
     "@videoGridDeleteFailure": {

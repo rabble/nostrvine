@@ -558,10 +558,6 @@
   "videoGridEditVideoSubtitle": "Kemas kini tajuk, keterangan dan hashtag",
   "videoGridDeleteVideo": "Padam Video",
   "videoGridDeleteVideoSubtitle": "Alih keluar video ini daripada Divine. Ia mungkin masih muncul pada klien Nostr lain.",
-  "videoGridDeleteConfirmTitle": "Padam Video",
-  "videoGridDeleteConfirmMessage": "Ini akan memadam video ini secara kekal daripada Divine. Ia mungkin masih muncul pada klien Nostr pihak ketiga yang menggunakan relay lain.",
-  "videoGridDeleteCancel": "Batal",
-  "videoGridDeleteConfirm": "Padam",
   "videoGridDeletingContent": "Memadam kandungan...",
   "videoGridDeleteFailure": "Gagal memadam kandungan: {error}",
   "@videoGridDeleteFailure": {

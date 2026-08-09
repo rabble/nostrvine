@@ -1155,19 +1155,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Gỡ video này khỏi Divine. Nó vẫn có thể xuất hiện trên các ứng dụng Nostr khác.';
 
   @override
-  String get videoGridDeleteConfirmTitle => 'Xóa video';
-
-  @override
-  String get videoGridDeleteConfirmMessage =>
-      'Video này sẽ bị xóa vĩnh viễn khỏi Divine. Nó vẫn có thể xuất hiện trên các ứng dụng Nostr bên thứ ba dùng relay khác.';
-
-  @override
-  String get videoGridDeleteCancel => 'Hủy';
-
-  @override
-  String get videoGridDeleteConfirm => 'Xóa';
-
-  @override
   String get videoGridDeletingContent => 'Đang xóa nội dung...';
 
   @override

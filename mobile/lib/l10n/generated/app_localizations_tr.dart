@@ -1121,19 +1121,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoGridDeleteVideoSubtitle => 'Bu içeriği kalıcı olarak kaldır';
 
   @override
-  String get videoGridDeleteConfirmTitle => 'Videoyu Sil';
-
-  @override
-  String get videoGridDeleteConfirmMessage =>
-      'Bu videoyu silmek istediğinden emin misin?';
-
-  @override
-  String get videoGridDeleteCancel => 'İptal';
-
-  @override
-  String get videoGridDeleteConfirm => 'Sil';
-
-  @override
   String get videoGridDeletingContent => 'İçerik siliniyor...';
 
   @override
@@ -3966,7 +3953,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get shareMenuDeleteConfirmation =>
-      'Bu videoyu silmek istediğinden emin misin?';
+      'Bu video Divine\'dan kalıcı olarak silinir. Diğer röleleri kullanan üçüncü taraf Nostr istemcilerinde hâlâ görünebilir.';
 
   @override
   String get shareMenuCancel => 'İptal';

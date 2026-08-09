@@ -558,10 +558,6 @@
   "videoGridEditVideoSubtitle": "Cập nhật tiêu đề, mô tả và hashtag",
   "videoGridDeleteVideo": "Xóa video",
   "videoGridDeleteVideoSubtitle": "Gỡ video này khỏi Divine. Nó vẫn có thể xuất hiện trên các ứng dụng Nostr khác.",
-  "videoGridDeleteConfirmTitle": "Xóa video",
-  "videoGridDeleteConfirmMessage": "Video này sẽ bị xóa vĩnh viễn khỏi Divine. Nó vẫn có thể xuất hiện trên các ứng dụng Nostr bên thứ ba dùng relay khác.",
-  "videoGridDeleteCancel": "Hủy",
-  "videoGridDeleteConfirm": "Xóa",
   "videoGridDeletingContent": "Đang xóa nội dung...",
   "videoGridDeleteFailure": "Không thể xóa nội dung: {error}",
   "@videoGridDeleteFailure": {

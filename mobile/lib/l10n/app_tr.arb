@@ -452,10 +452,6 @@
     "videoGridEditVideoSubtitle": "Başlık, açıklama ve etiketleri güncelle",
     "videoGridDeleteVideo": "Videoyu Sil",
     "videoGridDeleteVideoSubtitle": "Bu içeriği kalıcı olarak kaldır",
-    "videoGridDeleteConfirmTitle": "Videoyu Sil",
-    "videoGridDeleteConfirmMessage": "Bu videoyu silmek istediğinden emin misin?",
-    "videoGridDeleteCancel": "İptal",
-    "videoGridDeleteConfirm": "Sil",
     "videoGridDeletingContent": "İçerik siliniyor...",
     "videoGridDeleteFailure": "İçerik silinemedi: {error}",
     "@videoGridDeleteFailure": {
@@ -1573,7 +1569,7 @@
         }
     },
     "shareMenuClose": "Kapat",
-    "shareMenuDeleteConfirmation": "Bu videoyu silmek istediğinden emin misin?",
+    "shareMenuDeleteConfirmation": "Bu video Divine'dan kalıcı olarak silinir. Diğer röleleri kullanan üçüncü taraf Nostr istemcilerinde hâlâ görünebilir.",
     "shareMenuCancel": "İptal",
     "shareMenuDelete": "Sil",
     "shareMenuDeletingContent": "İçerik siliniyor...",

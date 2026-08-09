@@ -1122,18 +1122,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoGridDeleteVideoSubtitle => 'Hapus konten ini secara permanen';
 
   @override
-  String get videoGridDeleteConfirmTitle => 'Hapus Video';
-
-  @override
-  String get videoGridDeleteConfirmMessage => 'Yakin mau menghapus video ini?';
-
-  @override
-  String get videoGridDeleteCancel => 'Batal';
-
-  @override
-  String get videoGridDeleteConfirm => 'Hapus';
-
-  @override
   String get videoGridDeletingContent => 'Menghapus konten...';
 
   @override
@@ -3957,7 +3945,8 @@ class AppLocalizationsId extends AppLocalizations {
   String get shareMenuClose => 'Tutup';
 
   @override
-  String get shareMenuDeleteConfirmation => 'Yakin mau menghapus video ini?';
+  String get shareMenuDeleteConfirmation =>
+      'Ini akan menghapus video ini secara permanen dari Divine. Video ini mungkin masih muncul di klien Nostr pihak ketiga yang menggunakan relay lain.';
 
   @override
   String get shareMenuCancel => 'Batal';

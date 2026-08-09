@@ -452,10 +452,6 @@
     "videoGridEditVideoSubtitle": "タイトル、説明、ハッシュタグを更新",
     "videoGridDeleteVideo": "動画を削除",
     "videoGridDeleteVideoSubtitle": "このコンテンツを完全に削除する",
-    "videoGridDeleteConfirmTitle": "動画を削除",
-    "videoGridDeleteConfirmMessage": "この動画を本当に削除する?",
-    "videoGridDeleteCancel": "キャンセル",
-    "videoGridDeleteConfirm": "削除",
     "videoGridDeletingContent": "コンテンツを削除中...",
     "videoGridDeleteFailure": "コンテンツの削除がうまくいかなかった: {error}",
     "@videoGridDeleteFailure": {
@@ -1566,7 +1562,7 @@
         }
     },
     "shareMenuClose": "閉じる",
-    "shareMenuDeleteConfirmation": "この動画を本当に削除する?",
+    "shareMenuDeleteConfirmation": "この動画はDivineから完全に削除されます。他のリレーを使うサードパーティのNostrクライアントには、まだ表示される場合があります。",
     "shareMenuCancel": "キャンセル",
     "shareMenuDelete": "削除",
     "shareMenuDeletingContent": "コンテンツを削除中...",

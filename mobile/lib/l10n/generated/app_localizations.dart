@@ -2052,30 +2052,6 @@ abstract class AppLocalizations {
   /// **'Remove this video from Divine. It may still appear on other Nostr clients.'**
   String get videoGridDeleteVideoSubtitle;
 
-  /// No description provided for @videoGridDeleteConfirmTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete Video'**
-  String get videoGridDeleteConfirmTitle;
-
-  /// No description provided for @videoGridDeleteConfirmMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'This will permanently delete this video from Divine. It may still appear on third-party Nostr clients that use other relays.'**
-  String get videoGridDeleteConfirmMessage;
-
-  /// No description provided for @videoGridDeleteCancel.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel'**
-  String get videoGridDeleteCancel;
-
-  /// No description provided for @videoGridDeleteConfirm.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete'**
-  String get videoGridDeleteConfirm;
-
   /// No description provided for @videoGridDeletingContent.
   ///
   /// In en, this message translates to:

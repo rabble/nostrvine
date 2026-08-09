@@ -1168,19 +1168,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Tanggalin ang video na ito sa Divine. Maaari pa rin itong lumabas sa ibang Nostr client.';
 
   @override
-  String get videoGridDeleteConfirmTitle => 'Burahin ang Video';
-
-  @override
-  String get videoGridDeleteConfirmMessage =>
-      'Permanente nitong bubura ang video na ito sa Divine. Maaari pa rin itong lumabas sa third-party Nostr client na gumagamit ng ibang relay.';
-
-  @override
-  String get videoGridDeleteCancel => 'Cancel';
-
-  @override
-  String get videoGridDeleteConfirm => 'Burahin';
-
-  @override
   String get videoGridDeletingContent => 'Binubura ang content...';
 
   @override

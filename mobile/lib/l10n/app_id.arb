@@ -452,10 +452,6 @@
     "videoGridEditVideoSubtitle": "Perbarui judul, deskripsi, dan hashtag",
     "videoGridDeleteVideo": "Hapus Video",
     "videoGridDeleteVideoSubtitle": "Hapus konten ini secara permanen",
-    "videoGridDeleteConfirmTitle": "Hapus Video",
-    "videoGridDeleteConfirmMessage": "Yakin mau menghapus video ini?",
-    "videoGridDeleteCancel": "Batal",
-    "videoGridDeleteConfirm": "Hapus",
     "videoGridDeletingContent": "Menghapus konten...",
     "videoGridDeleteFailure": "Gagal menghapus konten: {error}",
     "@videoGridDeleteFailure": {
@@ -1573,7 +1569,7 @@
         }
     },
     "shareMenuClose": "Tutup",
-    "shareMenuDeleteConfirmation": "Yakin mau menghapus video ini?",
+    "shareMenuDeleteConfirmation": "Ini akan menghapus video ini secara permanen dari Divine. Video ini mungkin masih muncul di klien Nostr pihak ketiga yang menggunakan relay lain.",
     "shareMenuCancel": "Batal",
     "shareMenuDelete": "Hapus",
     "shareMenuDeletingContent": "Menghapus konten...",

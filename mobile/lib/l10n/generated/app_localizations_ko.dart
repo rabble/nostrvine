@@ -1072,18 +1072,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoGridDeleteVideoSubtitle => '이 콘텐츠를 완전히 지워요';
 
   @override
-  String get videoGridDeleteConfirmTitle => '영상 삭제';
-
-  @override
-  String get videoGridDeleteConfirmMessage => '이 영상을 정말 삭제할까요?';
-
-  @override
-  String get videoGridDeleteCancel => '취소';
-
-  @override
-  String get videoGridDeleteConfirm => '삭제';
-
-  @override
   String get videoGridDeletingContent => '콘텐츠 삭제 중...';
 
   @override
@@ -3806,7 +3794,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuClose => '닫기';
 
   @override
-  String get shareMenuDeleteConfirmation => '이 영상을 정말 삭제할까요?';
+  String get shareMenuDeleteConfirmation =>
+      '이 영상은 Divine에서 영구적으로 삭제됩니다. 다른 릴레이를 사용하는 타사 Nostr 클라이언트에는 계속 표시될 수 있어요.';
 
   @override
   String get shareMenuCancel => '취소';

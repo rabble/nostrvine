@@ -452,10 +452,6 @@
     "videoGridEditVideoSubtitle": "Titel, beschrijving en hashtags bijwerken",
     "videoGridDeleteVideo": "Video verwijderen",
     "videoGridDeleteVideoSubtitle": "Deze inhoud definitief verwijderen",
-    "videoGridDeleteConfirmTitle": "Video verwijderen",
-    "videoGridDeleteConfirmMessage": "Weet je zeker dat je deze video wilt verwijderen?",
-    "videoGridDeleteCancel": "Annuleren",
-    "videoGridDeleteConfirm": "Verwijderen",
     "videoGridDeletingContent": "Inhoud verwijderen...",
     "videoGridDeleteFailure": "Inhoud verwijderen mislukt: {error}",
     "@videoGridDeleteFailure": {
@@ -1576,7 +1572,7 @@
         }
     },
     "shareMenuClose": "Sluiten",
-    "shareMenuDeleteConfirmation": "Weet je zeker dat je deze video wilt verwijderen?",
+    "shareMenuDeleteConfirmation": "Hiermee wordt deze video permanent uit Divine verwijderd. Hij kan nog steeds verschijnen in Nostr-clients van derden die andere relays gebruiken.",
     "shareMenuCancel": "Annuleren",
     "shareMenuDelete": "Verwijderen",
     "shareMenuDeletingContent": "Inhoud verwijderen...",

@@ -1141,19 +1141,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ta bort det här innehållet permanent';
 
   @override
-  String get videoGridDeleteConfirmTitle => 'Ta bort video';
-
-  @override
-  String get videoGridDeleteConfirmMessage =>
-      'Är du säker på att du vill ta bort den här videon?';
-
-  @override
-  String get videoGridDeleteCancel => 'Avbryt';
-
-  @override
-  String get videoGridDeleteConfirm => 'Ta bort';
-
-  @override
   String get videoGridDeletingContent => 'Tar bort innehåll...';
 
   @override
@@ -3996,7 +3983,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get shareMenuDeleteConfirmation =>
-      'Är du säker på att du vill ta bort den här videon?';
+      'Det här tar bort videon permanent från Divine. Den kan fortfarande visas i Nostr-klienter från tredje part som använder andra reler.';
 
   @override
   String get shareMenuCancel => 'Avbryt';

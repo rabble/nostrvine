@@ -1151,19 +1151,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Remove this video from Divine. It may still appear on other Nostr clients.';
 
   @override
-  String get videoGridDeleteConfirmTitle => 'Delete Video';
-
-  @override
-  String get videoGridDeleteConfirmMessage =>
-      'This will permanently delete this video from Divine. It may still appear on third-party Nostr clients that use other relays.';
-
-  @override
-  String get videoGridDeleteCancel => 'Cancel';
-
-  @override
-  String get videoGridDeleteConfirm => 'Delete';
-
-  @override
   String get videoGridDeletingContent => 'Deleting content...';
 
   @override

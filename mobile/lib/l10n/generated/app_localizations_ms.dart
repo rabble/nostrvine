@@ -1155,19 +1155,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Alih keluar video ini daripada Divine. Ia mungkin masih muncul pada klien Nostr lain.';
 
   @override
-  String get videoGridDeleteConfirmTitle => 'Padam Video';
-
-  @override
-  String get videoGridDeleteConfirmMessage =>
-      'Ini akan memadam video ini secara kekal daripada Divine. Ia mungkin masih muncul pada klien Nostr pihak ketiga yang menggunakan relay lain.';
-
-  @override
-  String get videoGridDeleteCancel => 'Batal';
-
-  @override
-  String get videoGridDeleteConfirm => 'Padam';
-
-  @override
   String get videoGridDeletingContent => 'Memadam kandungan...';
 
   @override

@@ -452,10 +452,6 @@
     "videoGridEditVideoSubtitle": "Actualizează titlul, descrierea și hashtagurile",
     "videoGridDeleteVideo": "Șterge videoclipul",
     "videoGridDeleteVideoSubtitle": "Elimină definitiv acest conținut",
-    "videoGridDeleteConfirmTitle": "Șterge videoclipul",
-    "videoGridDeleteConfirmMessage": "Sigur vrei să ștergi acest videoclip?",
-    "videoGridDeleteCancel": "Anulează",
-    "videoGridDeleteConfirm": "Șterge",
     "videoGridDeletingContent": "Se șterge conținutul...",
     "videoGridDeleteFailure": "N-am putut șterge conținutul: {error}",
     "@videoGridDeleteFailure": {
@@ -1576,7 +1572,7 @@
         }
     },
     "shareMenuClose": "Închide",
-    "shareMenuDeleteConfirmation": "Sigur vrei să ștergi acest videoclip?",
+    "shareMenuDeleteConfirmation": "Asta va șterge definitiv acest videoclip din Divine. Poate apărea în continuare în clienți Nostr terți care folosesc alte relay-uri.",
     "shareMenuCancel": "Anulează",
     "shareMenuDelete": "Șterge",
     "shareMenuDeletingContent": "Se șterge conținutul...",

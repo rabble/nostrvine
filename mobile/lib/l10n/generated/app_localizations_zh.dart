@@ -1082,19 +1082,6 @@ class AppLocalizationsZh extends AppLocalizations {
       '从 Divine 删除此视频。它可能仍会出现在其他 Nostr 客户端上。';
 
   @override
-  String get videoGridDeleteConfirmTitle => '删除视频';
-
-  @override
-  String get videoGridDeleteConfirmMessage =>
-      '这会从 Divine 永久删除该视频。使用其他中继的第三方 Nostr 客户端上可能仍会显示。';
-
-  @override
-  String get videoGridDeleteCancel => '取消';
-
-  @override
-  String get videoGridDeleteConfirm => '删除';
-
-  @override
   String get videoGridDeletingContent => '正在删除内容...';
 
   @override

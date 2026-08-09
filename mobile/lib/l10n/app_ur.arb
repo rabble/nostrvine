@@ -558,10 +558,6 @@
   "videoGridEditVideoSubtitle": "عنوان، تفصیل اور ہیش ٹیگز اپڈیٹ کریں",
   "videoGridDeleteVideo": "ویڈیو حذف کریں",
   "videoGridDeleteVideoSubtitle": "یہ ویڈیو Divine سے ہٹائیں۔ یہ دیگر Nostr کلائنٹس پر پھر بھی نظر آ سکتی ہے۔",
-  "videoGridDeleteConfirmTitle": "ویڈیو حذف کریں",
-  "videoGridDeleteConfirmMessage": "یہ ویڈیو Divine سے مستقل طور پر حذف ہو جائے گی۔ دیگر ریلے استعمال کرنے والے تھرڈ پارٹی Nostr کلائنٹس پر یہ پھر بھی نظر آ سکتی ہے۔",
-  "videoGridDeleteCancel": "منسوخ کریں",
-  "videoGridDeleteConfirm": "حذف کریں",
   "videoGridDeletingContent": "مواد حذف ہو رہا ہے...",
   "videoGridDeleteFailure": "مواد حذف نہیں ہو سکا: {error}",
   "@videoGridDeleteFailure": {
