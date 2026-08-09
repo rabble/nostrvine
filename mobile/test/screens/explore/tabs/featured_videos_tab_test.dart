@@ -73,7 +73,7 @@ void main() {
       ).thenAnswer((_) async => null);
     });
 
-    Widget buildSubject() {
+    Widget buildSubject({FeaturedTabConfig? config}) {
       return testMaterialApp(
         additionalOverrides: [
           featuredTabsRepositoryProvider.overrideWithValue(featuredRepository),
@@ -82,7 +82,7 @@ void main() {
         ],
         home: MockGoRouterProvider(
           goRouter: router,
-          child: FeaturedVideosTab(config: _config()),
+          child: FeaturedVideosTab(config: config ?? _config()),
         ),
       );
     }
@@ -113,6 +113,39 @@ void main() {
 
       final source = args.source as VideoListViewSource;
       expect(source.videos.map((video) => video.id), ['first', 'second']);
+    });
+
+    testWidgets('reloads when the configuration is retargeted in place', (
+      tester,
+    ) async {
+      // The admin endpoint upserts by id, so a tab can be retargeted without
+      // its id changing, and the backing hashtag never reaches the client. The
+      // visible fields are the only retarget signal there is, so any change to
+      // them has to refetch rather than leave the previous collection up.
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+      verify(
+        () => featuredRepository.loadVideos(tabId: 'ft_a1b2c3d4'),
+      ).called(1);
+
+      await tester.pumpWidget(
+        buildSubject(
+          config: const FeaturedTabConfig(
+            id: 'ft_a1b2c3d4',
+            slug: 'featured-slug',
+            label: {'default': 'Retargeted'},
+            startsAt: null,
+            endsAt: null,
+            enabled: true,
+            hasContent: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      verify(
+        () => featuredRepository.loadVideos(tabId: 'ft_a1b2c3d4'),
+      ).called(1);
     });
   });
 }
