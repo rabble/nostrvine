@@ -1,6 +1,8 @@
 // ABOUTME: Tests for FeaturedTabVideosCubit paging and failure handling.
 // ABOUTME: Server order must survive appending; the client never re-sorts.
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
@@ -278,6 +280,80 @@ void main() {
           );
         },
       );
+
+      test(
+        'discards a page whose list was replaced by a refresh mid-flight',
+        () async {
+          // The grid wires onLoadMore and onRefresh to the same cubit, so a
+          // pull-to-refresh can land while a page request is still open.
+          // Appending then would splice a page computed against the old cursor
+          // onto the refreshed list and destroy the server's ordering.
+          stubPage(
+            FeaturedTabVideosPage(
+              videos: [_video('old-1')],
+              nextCursor: 'cursor-old',
+              hasMore: true,
+            ),
+          );
+          final cubit = buildCubit();
+          addTearDown(cubit.close);
+          await cubit.load();
+
+          final pendingPage = Completer<FeaturedTabVideosPage>();
+          when(
+            () => repository.loadVideos(tabId: _tabId, cursor: 'cursor-old'),
+          ).thenAnswer((_) => pendingPage.future);
+          final paging = cubit.loadMore();
+
+          stubPage(
+            FeaturedTabVideosPage(
+              videos: [_video('fresh-1')],
+              nextCursor: 'cursor-fresh',
+              hasMore: true,
+            ),
+          );
+          await cubit.load();
+          pendingPage.complete(
+            FeaturedTabVideosPage(videos: [_video('old-2')]),
+          );
+          await paging;
+
+          expect(cubit.state.videos.map((v) => v.id), equals(['fresh-1']));
+          expect(cubit.state.nextCursor, equals('cursor-fresh'));
+          expect(cubit.state.hasMore, isTrue);
+        },
+      );
+
+      test('refuses to start while a refresh is in flight', () async {
+        stubPage(
+          FeaturedTabVideosPage(
+            videos: [_video('page-1')],
+            nextCursor: 'cursor-1',
+            hasMore: true,
+          ),
+        );
+        final cubit = buildCubit();
+        addTearDown(cubit.close);
+        await cubit.load();
+
+        final pendingRefresh = Completer<FeaturedTabVideosPage>();
+        when(
+          () => repository.loadVideos(tabId: _tabId, cursor: null),
+        ).thenAnswer((_) => pendingRefresh.future);
+        final refreshing = cubit.load();
+
+        await cubit.loadMore();
+
+        verifyNever(
+          () => repository.loadVideos(tabId: _tabId, cursor: 'cursor-1'),
+        );
+        expect(cubit.state.isLoadingMore, isFalse);
+
+        pendingRefresh.complete(
+          FeaturedTabVideosPage(videos: [_video('page-1')]),
+        );
+        await refreshing;
+      });
     });
   });
 }

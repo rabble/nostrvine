@@ -60,9 +60,21 @@ class FeaturedTabVideosCubit extends Cubit<FeaturedTabVideosState> {
   }
 
   /// Appends the next page, if one exists and none is already in flight.
+  ///
+  /// Refuses to start while a first-page load is in flight, and discards its
+  /// own result if one lands while it is waiting: the grid wires `onLoadMore`
+  /// and `onRefresh` to the same cubit, so a pull-to-refresh can complete
+  /// mid-page and replace the list this page was computed against. Appending
+  /// then would splice a page from the old cursor onto the refreshed list and
+  /// leave the cursor pointing into the previous ordering — the one thing the
+  /// server's authoritative order cannot survive.
   Future<void> loadMore() async {
     final cursor = state.nextCursor;
-    if (isClosed || state.isLoadingMore || !state.hasMore || cursor == null) {
+    if (isClosed ||
+        state.isLoadingMore ||
+        state.status == FeaturedTabVideosStatus.loading ||
+        !state.hasMore ||
+        cursor == null) {
       return;
     }
     emit(state.copyWith(isLoadingMore: true));
@@ -70,6 +82,7 @@ class FeaturedTabVideosCubit extends Cubit<FeaturedTabVideosState> {
     try {
       final page = await _repository.loadVideos(tabId: _tabId, cursor: cursor);
       if (isClosed) return;
+      if (state.nextCursor != cursor) return;
       emit(
         FeaturedTabVideosState(
           status: FeaturedTabVideosStatus.ready,
@@ -81,6 +94,7 @@ class FeaturedTabVideosCubit extends Cubit<FeaturedTabVideosState> {
     } on FunnelcakeException catch (e, stackTrace) {
       if (isClosed) return;
       addError(e, stackTrace);
+      if (state.nextCursor != cursor) return;
       emit(state.copyWith(isLoadingMore: false));
     }
   }
