@@ -3839,12 +3839,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'I-save para mapanood mamaya';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Idagdag sa Bookmark Set';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'Ayusin sa mga koleksyon';
-
-  @override
   String get shareMenuFollowSets => 'Mga Listahan ng Tao';
 
   @override
@@ -4225,9 +4219,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get shareMenuUnknown => 'Hindi alam';
-
-  @override
-  String get shareMenuCreateBookmarkSet => 'Gumawa ng Bookmark Set';
 
   @override
   String get shareMenuSetName => 'Pangalan ng Set';

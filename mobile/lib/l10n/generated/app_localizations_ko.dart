@@ -3603,12 +3603,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => '나중에 보려고 저장';
 
   @override
-  String get shareMenuAddToBookmarkSet => '북마크 세트에 추가';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => '컴렉션으로 정리';
-
-  @override
   String get shareMenuFollowSets => '팔로우 세트';
 
   @override
@@ -3968,9 +3962,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get shareMenuUnknown => '알 수 없음';
-
-  @override
-  String get shareMenuCreateBookmarkSet => '북마크 세트 만들기';
 
   @override
   String get shareMenuSetName => '세트 이름';

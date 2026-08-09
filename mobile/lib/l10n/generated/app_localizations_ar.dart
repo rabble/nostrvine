@@ -3748,12 +3748,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'حفظ للمشاهدة لاحقًا';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'إضافة إلى مجموعة إشارات';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'نظّم في مجموعات';
-
-  @override
   String get shareMenuFollowSets => 'مجموعات المتابعة';
 
   @override
@@ -4129,9 +4123,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get shareMenuUnknown => 'غير معروف';
-
-  @override
-  String get shareMenuCreateBookmarkSet => 'إنشاء مجموعة إشارات';
 
   @override
   String get shareMenuSetName => 'اسم المجموعة';

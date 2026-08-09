@@ -3831,12 +3831,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'Запази за по-късен преглед';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Добави към набора с отметки';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'Организирай в колекции';
-
-  @override
   String get shareMenuFollowSets => 'Списъци с хора';
 
   @override
@@ -4213,9 +4207,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get shareMenuUnknown => 'Неизвестен';
-
-  @override
-  String get shareMenuCreateBookmarkSet => 'Създай набор с отметки';
 
   @override
   String get shareMenuSetName => 'Задай име';

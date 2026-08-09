@@ -3780,12 +3780,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'Save for later viewing';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Add to Bookmark Set';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'Organize in collections';
-
-  @override
   String get shareMenuFollowSets => 'People Lists';
 
   @override
@@ -4163,9 +4157,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shareMenuUnknown => 'Unknown';
-
-  @override
-  String get shareMenuCreateBookmarkSet => 'Create Bookmark Set';
 
   @override
   String get shareMenuSetName => 'Set Name';

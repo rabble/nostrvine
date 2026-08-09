@@ -3711,12 +3711,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'በኋላ ለማየት ያስቀምጡ';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'ወደ ዕልባት ስብስብ ያክሉ';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'በክምችቶች ውስጥ ያደራጁ';
-
-  @override
   String get shareMenuFollowSets => 'የሰዎች ዝርዝሮች';
 
   @override
@@ -4081,9 +4075,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get shareMenuUnknown => 'ያልታወቀ';
-
-  @override
-  String get shareMenuCreateBookmarkSet => 'የዕልባት ስብስብ ይፍጠሩ';
 
   @override
   String get shareMenuSetName => 'ስም አዘጋጅ';

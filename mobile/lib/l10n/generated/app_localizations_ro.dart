@@ -3882,12 +3882,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Salvează pentru vizualizare ulterioară';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Adaugă la set de semne de carte';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'Organizează în colecții';
-
-  @override
   String get shareMenuFollowSets => 'Seturi de urmărire';
 
   @override
@@ -4283,9 +4277,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get shareMenuUnknown => 'Necunoscut';
-
-  @override
-  String get shareMenuCreateBookmarkSet => 'Creează un set de semne de carte';
 
   @override
   String get shareMenuSetName => 'Numele setului';

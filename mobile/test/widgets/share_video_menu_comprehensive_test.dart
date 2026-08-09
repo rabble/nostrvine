@@ -125,9 +125,6 @@ void main() {
       ),
     );
     when(
-      () => mockBookmarkService.getVideoBookmarkSummary(any()),
-    ).thenReturn('Not bookmarked');
-    when(
       () => mockVideoSharingService.generateShareText(any()),
     ).thenReturn('https://divine.video/video/test');
     when(
