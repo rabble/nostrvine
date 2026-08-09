@@ -47,12 +47,10 @@ const _bulkVideoRevisionsBatchSize = 100;
 /// How long the background revision lookup is waited on before its enrichment
 /// pass is abandoned.
 ///
-/// This is not a latency budget. No fetch waits for the resolver: a likers or
-/// count fetch answers from the current ids as soon as the relays do, and the
-/// wider list is published on
-/// [LikesRepository.watchRevisionEnrichedLikers] if and when the lookup lands
-/// (#6021). So the only thing a shorter value buys is dropping enrichment
-/// sooner, and the only thing a longer one costs is a pending continuation.
+/// This is not a latency budget. No fetch waits for the resolver: liker and
+/// count fetches answer from the current ids as soon as the relays do, and the
+/// wider list is published on [LikesRepository.watchRevisionEnrichedLikers] if
+/// and when the lookup lands (#6021).
 ///
 /// It exists solely so a resolver that never completes at all cannot leak one
 /// of those continuations for the process's lifetime. The shipped resolver
@@ -61,14 +59,6 @@ const _bulkVideoRevisionsBatchSize = 100;
 /// harmless either way: the lookup keeps running into
 /// [LikesRepository._revisionLookups], so the next fetch is enriched from the
 /// session cache with no round-trip at all.
-///
-/// The two earlier values here — 750ms, then 3s — were sized when the fetch
-/// awaited the resolver, which made this a ceiling on the whole fetch and made
-/// both directions wrong: too tight silently reinstated #6021 (4 of 17 lookups
-/// expired at 750ms against an endpoint that was merely 404ing in 0.4–0.7s),
-/// too wide stalled the likers list and the like count for the full budget.
-/// Publishing enrichment separately removes that trade rather than re-splitting
-/// it.
 const _defaultVideoRevisionsResolverTimeout = Duration(seconds: 15);
 
 /// Callback to check if the device is currently online

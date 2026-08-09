@@ -168,8 +168,8 @@ class VideoEngagementBloc
   };
 
   @override
-  Future<void> close() {
-    unawaited(_enrichedLikers?.cancel());
+  Future<void> close() async {
+    await _enrichedLikers?.cancel();
     return super.close();
   }
 }
