@@ -87,6 +87,28 @@ void main() {
       });
     });
 
+    testWidgets(
+      'denied category passed through extra resolves to route error',
+      (
+        tester,
+      ) async {
+        final route = _categoryGalleryRoute();
+
+        await _buildWithContext(tester, (context) {
+          final screen = route.builder!(
+            context,
+            _FakeGoRouterState(
+              location: '/categories/adult',
+              pathParameters: const {'categoryName': 'adult'},
+              extra: const VideoCategory(name: 'adult', videoCount: 319),
+            ),
+          );
+
+          expect(screen, isA<RouteErrorScreen>());
+        });
+      },
+    );
+
     testWidgets('allowed category names resolve to gallery', (tester) async {
       final route = _categoryGalleryRoute();
       late CategoryGalleryScreen screen;
