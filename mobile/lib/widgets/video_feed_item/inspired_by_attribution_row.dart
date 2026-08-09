@@ -45,23 +45,38 @@ class InspiredByAttributionRow extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    // Determine the creator pubkey from the attribution source
-    final creatorPubkey = _resolveCreatorPubkey();
-    if (creatorPubkey == null || creatorPubkey.isEmpty) {
+    final creatorPubkeys = _resolveCreatorPubkeys();
+    if (creatorPubkeys.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    return _InspiredByContent(creatorPubkey: creatorPubkey, isActive: isActive);
+    return _InspiredByContent(
+      creatorPubkeys: creatorPubkeys,
+      isActive: isActive,
+    );
   }
 
-  /// Resolve the creator pubkey from either inspiredByVideo or inspiredByNpub.
-  String? _resolveCreatorPubkey() {
+  /// Resolve creator pubkeys from factual clip credits or inspired-by metadata.
+  List<String> _resolveCreatorPubkeys() {
+    final pubkeys = <String>[];
+    final seen = <String>{};
+
+    for (final credit in video.clipSourceCredits) {
+      final pubkey = credit.authorPubkey.trim();
+      if (pubkey.isNotEmpty && seen.add(pubkey.toLowerCase())) {
+        pubkeys.add(pubkey);
+      }
+    }
+    if (pubkeys.isNotEmpty) return pubkeys;
+
     if (video.inspiredByVideo != null) {
-      return video.inspiredByVideo!.creatorPubkey;
+      final pubkey = video.inspiredByVideo!.creatorPubkey;
+      return pubkey.isEmpty ? const [] : [pubkey];
     }
     if (video.inspiredByNpub != null) {
       try {
-        return NostrKeyUtils.decode(video.inspiredByNpub!);
+        final pubkey = NostrKeyUtils.decode(video.inspiredByNpub!);
+        return pubkey.isEmpty ? const [] : [pubkey];
       } catch (e) {
         Log.warning(
           'Failed to decode inspiredByNpub '
@@ -69,25 +84,26 @@ class InspiredByAttributionRow extends ConsumerWidget {
           name: 'InspiredByAttributionRow',
           category: LogCategory.ui,
         );
-        return null;
+        return const [];
       }
     }
-    return null;
+    return const [];
   }
 }
 
 /// The actual content showing inspired-by attribution.
 class _InspiredByContent extends ConsumerWidget {
   const _InspiredByContent({
-    required this.creatorPubkey,
+    required this.creatorPubkeys,
     required this.isActive,
   });
 
-  final String creatorPubkey;
+  final List<String> creatorPubkeys;
   final bool isActive;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final creatorPubkey = creatorPubkeys.first;
     final creatorProfile = ref
         .watch(userProfileReactiveProvider(creatorPubkey))
         .value;
@@ -95,13 +111,16 @@ class _InspiredByContent extends ConsumerWidget {
     final creatorName =
         creatorProfile?.bestDisplayName ??
         UserProfile.defaultDisplayNameFor(creatorPubkey);
+    final displayName = creatorPubkeys.length == 1
+        ? creatorName
+        : '$creatorName +${creatorPubkeys.length - 1}';
 
     return GestureDetector(
       onTap: () => _navigateToCreatorProfile(context),
       child: Semantics(
         identifier: 'inspired_by_attribution_row',
         button: true,
-        label: context.l10n.inspiredByAttributionSemanticLabel(creatorName),
+        label: context.l10n.inspiredByAttributionSemanticLabel(displayName),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -119,7 +138,7 @@ class _InspiredByContent extends ConsumerWidget {
               const SizedBox(width: 4),
               Flexible(
                 child: Text(
-                  context.l10n.videoInspiredByAttribution(creatorName),
+                  context.l10n.videoInspiredByAttribution(displayName),
                   style: const TextStyle(
                     color: VineTheme.whiteText,
                     fontSize: 12,
@@ -144,6 +163,7 @@ class _InspiredByContent extends ConsumerWidget {
   }
 
   void _navigateToCreatorProfile(BuildContext context) {
+    final creatorPubkey = creatorPubkeys.first;
     Log.info(
       'Navigating to inspired-by creator profile: $creatorPubkey',
       name: 'InspiredByAttributionRow',

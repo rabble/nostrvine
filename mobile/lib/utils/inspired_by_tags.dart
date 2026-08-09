@@ -26,6 +26,14 @@ List<String> buildInspiredByPTag(String pubkeyHex, {String? relayHint}) {
   return ['p', pubkeyHex, relay, inspiredByPTagMarker];
 }
 
+/// Builds a factual reused-clip credit `p` tag for [pubkeyHex].
+List<String> buildClipSourceCreditPTag(String pubkeyHex, {String? relayHint}) {
+  final relay = (relayHint == null || relayHint.isEmpty)
+      ? inspiredByPTagRelayHint
+      : relayHint;
+  return ['p', pubkeyHex, relay, clipSourceCreditTagMarker];
+}
+
 /// Resolves the inspired-by creator hex pubkeys carried by a publish.
 ///
 /// [addressableId] is the `34236:<pubkey>:<dTag>` coordinate of the
@@ -41,6 +49,7 @@ List<String> buildInspiredByPTag(String pubkeyHex, {String? relayHint}) {
 Set<String> resolveInspiredByCreatorHexes({
   String? addressableId,
   String? npub,
+  Iterable<ClipSourceCredit> clipSourceCredits = const [],
 }) {
   final hexes = <String>{};
 
@@ -58,6 +67,11 @@ Set<String> resolveInspiredByCreatorHexes({
     hexes.add(decoded);
   }
 
+  for (final credit in clipSourceCredits) {
+    final pubkey = credit.authorPubkey.trim().toLowerCase();
+    if (NostrHexUtils.isValidPubkey(pubkey)) hexes.add(pubkey);
+  }
+
   return hexes;
 }
 
@@ -73,12 +87,14 @@ List<List<String>> buildInspiredByPTags({
   required List<List<String>> existingTags,
   String? addressableId,
   String? npub,
+  Iterable<ClipSourceCredit> clipSourceCredits = const [],
   String? relayHint,
   String? selfPubkey,
 }) {
   final hexes = resolveInspiredByCreatorHexes(
     addressableId: addressableId,
     npub: npub,
+    clipSourceCredits: clipSourceCredits,
   );
   if (hexes.isEmpty) return const [];
 
@@ -92,5 +108,33 @@ List<List<String>> buildInspiredByPTags({
     for (final hex in hexes)
       if (hex != self && !existing.contains(hex))
         buildInspiredByPTag(hex, relayHint: relayHint),
+  ];
+}
+
+/// Builds clip-source-marked p-tags for factual reused-clip credits.
+List<List<String>> buildClipSourceCreditPTags({
+  required List<List<String>> existingTags,
+  required Iterable<ClipSourceCredit> clipSourceCredits,
+  String? selfPubkey,
+}) {
+  final self = selfPubkey?.trim().toLowerCase();
+  final existing = {
+    for (final tag in existingTags)
+      if (tag.length >= 2 && tag[0] == 'p') tag[1].trim().toLowerCase(),
+  };
+  final seen = <String>{};
+
+  return [
+    for (final credit in clipSourceCredits)
+      if (seen.add(credit.authorPubkey.trim().toLowerCase()))
+        if (credit.authorPubkey.trim().toLowerCase() != self &&
+            !existing.contains(credit.authorPubkey.trim().toLowerCase()) &&
+            NostrHexUtils.isValidPubkey(
+              credit.authorPubkey.trim().toLowerCase(),
+            ))
+          buildClipSourceCreditPTag(
+            credit.authorPubkey.trim().toLowerCase(),
+            relayHint: credit.relayUrl,
+          ),
   ];
 }

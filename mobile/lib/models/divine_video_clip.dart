@@ -6,7 +6,7 @@ import 'dart:io';
 
 import 'package:divine_camera/divine_camera.dart'
     show CameraLensMetadata, DivineCameraLens;
-import 'package:models/models.dart' as model show AspectRatio;
+import 'package:models/models.dart' as model show AspectRatio, ClipSourceCredit;
 import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/models/video_editor/clip_chroma_key.dart';
 import 'package:openvine/utils/path_resolver.dart';
@@ -43,14 +43,50 @@ class DivineVideoClip {
     this.transition,
     this.chromaKey,
     this.chromaKeySourcePath,
-    this.sourceAuthorPubkey,
-    this.sourceEventId,
-    this.sourceAddressableId,
-    this.sourceRelayHint,
+    String? sourceAuthorPubkey,
+    String? sourceEventId,
+    String? sourceAddressableId,
+    String? sourceRelayHint,
+    List<model.ClipSourceCredit> sourceCredits = const [],
   }) : assert(
          video != null || stopMotionFrames != null,
          'A clip must have either a video file or stop-motion frames',
        ),
+       sourceCredits = _normalizedSourceCredits(
+         sourceCredits: sourceCredits,
+         sourceAuthorPubkey: sourceAuthorPubkey,
+         sourceEventId: sourceEventId,
+         sourceAddressableId: sourceAddressableId,
+         sourceRelayHint: sourceRelayHint,
+       ),
+       sourceAuthorPubkey = _firstSourceCredit(
+         sourceCredits: sourceCredits,
+         sourceAuthorPubkey: sourceAuthorPubkey,
+         sourceEventId: sourceEventId,
+         sourceAddressableId: sourceAddressableId,
+         sourceRelayHint: sourceRelayHint,
+       )?.authorPubkey,
+       sourceEventId = _firstSourceCredit(
+         sourceCredits: sourceCredits,
+         sourceAuthorPubkey: sourceAuthorPubkey,
+         sourceEventId: sourceEventId,
+         sourceAddressableId: sourceAddressableId,
+         sourceRelayHint: sourceRelayHint,
+       )?.eventId,
+       sourceAddressableId = _firstSourceCredit(
+         sourceCredits: sourceCredits,
+         sourceAuthorPubkey: sourceAuthorPubkey,
+         sourceEventId: sourceEventId,
+         sourceAddressableId: sourceAddressableId,
+         sourceRelayHint: sourceRelayHint,
+       )?.addressableId,
+       sourceRelayHint = _firstSourceCredit(
+         sourceCredits: sourceCredits,
+         sourceAuthorPubkey: sourceAuthorPubkey,
+         sourceEventId: sourceEventId,
+         sourceAddressableId: sourceAddressableId,
+         sourceRelayHint: sourceRelayHint,
+       )?.relayUrl,
        _thumbnailTimestamp = thumbnailTimestamp,
        _originalAspectRatio = originalAspectRatio;
 
@@ -173,6 +209,11 @@ class DivineVideoClip {
 
   /// Relay hint for fetching the source video or author attribution.
   final String? sourceRelayHint;
+
+  /// All factual source credits carried by this clip.
+  ///
+  /// Legacy scalar source fields above expose the first credit for back-compat.
+  final List<model.ClipSourceCredit> sourceCredits;
 
   double get durationInSeconds => duration.inMilliseconds / 1000.0;
 
@@ -379,8 +420,39 @@ class DivineVideoClip {
     bool clearSourceAddressableId = false,
     String? sourceRelayHint,
     bool clearSourceRelayHint = false,
+    List<model.ClipSourceCredit>? sourceCredits,
+    bool clearSourceCredits = false,
   }) {
     final isNewLogicalClip = id != null && id != this.id;
+    final sourceFieldsTouched =
+        sourceAuthorPubkey != null ||
+        sourceEventId != null ||
+        sourceAddressableId != null ||
+        sourceRelayHint != null ||
+        clearSourceAuthorPubkey ||
+        clearSourceEventId ||
+        clearSourceAddressableId ||
+        clearSourceRelayHint;
+    final nextSourceCredits = clearSourceCredits
+        ? const <model.ClipSourceCredit>[]
+        : sourceCredits ??
+              _normalizedSourceCredits(
+                sourceCredits: sourceFieldsTouched
+                    ? const []
+                    : this.sourceCredits,
+                sourceAuthorPubkey: clearSourceAuthorPubkey
+                    ? null
+                    : (sourceAuthorPubkey ?? this.sourceAuthorPubkey),
+                sourceEventId: clearSourceEventId
+                    ? null
+                    : (sourceEventId ?? this.sourceEventId),
+                sourceAddressableId: clearSourceAddressableId
+                    ? null
+                    : (sourceAddressableId ?? this.sourceAddressableId),
+                sourceRelayHint: clearSourceRelayHint
+                    ? null
+                    : (sourceRelayHint ?? this.sourceRelayHint),
+              );
 
     return DivineVideoClip(
       id: id ?? this.id,
@@ -430,18 +502,7 @@ class DivineVideoClip {
       chromaKeySourcePath: isNewLogicalClip || clearChromaKey
           ? null
           : (chromaKeySourcePath ?? this.chromaKeySourcePath),
-      sourceAuthorPubkey: clearSourceAuthorPubkey
-          ? null
-          : (sourceAuthorPubkey ?? this.sourceAuthorPubkey),
-      sourceEventId: clearSourceEventId
-          ? null
-          : (sourceEventId ?? this.sourceEventId),
-      sourceAddressableId: clearSourceAddressableId
-          ? null
-          : (sourceAddressableId ?? this.sourceAddressableId),
-      sourceRelayHint: clearSourceRelayHint
-          ? null
-          : (sourceRelayHint ?? this.sourceRelayHint),
+      sourceCredits: nextSourceCredits,
     );
   }
 
@@ -492,6 +553,10 @@ class DivineVideoClip {
       if (sourceAddressableId != null)
         'sourceAddressableId': sourceAddressableId,
       if (sourceRelayHint != null) 'sourceRelayHint': sourceRelayHint,
+      if (sourceCredits.isNotEmpty)
+        'sourceCredits': sourceCredits
+            .map((credit) => credit.toJson())
+            .toList(),
     };
   }
 
@@ -620,7 +685,69 @@ class DivineVideoClip {
       sourceEventId: json['sourceEventId'] as String?,
       sourceAddressableId: json['sourceAddressableId'] as String?,
       sourceRelayHint: json['sourceRelayHint'] as String?,
+      sourceCredits: _sourceCreditsFromJson(json['sourceCredits']),
     );
+  }
+
+  static List<model.ClipSourceCredit> _sourceCreditsFromJson(Object? raw) {
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map(
+          (credit) => model.ClipSourceCredit.fromJson(
+            Map<String, dynamic>.from(credit),
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  static model.ClipSourceCredit? _firstSourceCredit({
+    required List<model.ClipSourceCredit> sourceCredits,
+    String? sourceAuthorPubkey,
+    String? sourceEventId,
+    String? sourceAddressableId,
+    String? sourceRelayHint,
+  }) {
+    final credits = _normalizedSourceCredits(
+      sourceCredits: sourceCredits,
+      sourceAuthorPubkey: sourceAuthorPubkey,
+      sourceEventId: sourceEventId,
+      sourceAddressableId: sourceAddressableId,
+      sourceRelayHint: sourceRelayHint,
+    );
+    return credits.isEmpty ? null : credits.first;
+  }
+
+  static List<model.ClipSourceCredit> _normalizedSourceCredits({
+    required List<model.ClipSourceCredit> sourceCredits,
+    String? sourceAuthorPubkey,
+    String? sourceEventId,
+    String? sourceAddressableId,
+    String? sourceRelayHint,
+  }) {
+    final credits = <model.ClipSourceCredit>[
+      ...sourceCredits,
+      if (sourceAuthorPubkey != null && sourceAuthorPubkey.isNotEmpty)
+        model.ClipSourceCredit(
+          authorPubkey: sourceAuthorPubkey,
+          eventId: sourceEventId,
+          addressableId: sourceAddressableId,
+          relayUrl: sourceRelayHint,
+        )
+      else if (sourceAddressableId != null && sourceAddressableId.isNotEmpty)
+        model.ClipSourceCredit.fromAddressableId(
+          addressableId: sourceAddressableId,
+          eventId: sourceEventId,
+          relayUrl: sourceRelayHint,
+        ),
+    ];
+
+    final seen = <String>{};
+    return List.unmodifiable([
+      for (final credit in credits)
+        if (credit.authorPubkey.isNotEmpty && seen.add(credit.identityKey))
+          credit,
+    ]);
   }
 
   /// Parses a persisted [ClipTransition], degrading to `null` (a hard cut) when

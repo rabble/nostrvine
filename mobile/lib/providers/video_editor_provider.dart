@@ -10,7 +10,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart'
-    show AudioEvent, InspiredByInfo, NativeProofData, VideoEvent;
+    show
+        AudioEvent,
+        ClipSourceCredit,
+        InspiredByInfo,
+        NativeProofData,
+        VideoEvent;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/complete_parameters_extensions.dart';
 import 'package:openvine/models/audio_share_attribution.dart';
@@ -569,6 +574,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       );
     }
     inspiredByVideo ??= _attributionSourceFromClips();
+    final clipSourceCredits = _clipSourceCreditsFromClips();
 
     return DivineVideoDraft.create(
       id:
@@ -587,6 +593,9 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       collaboratorPubkeys: state.collaboratorPubkeys,
       inspiredByVideo: inspiredByVideo,
       inspiredByNpub: state.inspiredByNpub,
+      clipSourceCredits: clipSourceCredits.isNotEmpty
+          ? clipSourceCredits
+          : state.clipSourceCredits,
       selectedSound: selectedSound,
       contentWarning: ContentLabel.toCsv(state.contentWarnings),
       finalRenderedClip: state.finalRenderedClip,
@@ -724,6 +733,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       collaboratorPubkeys: video.collaboratorPubkeys.toSet(),
       inspiredByVideo: video.inspiredByVideo,
       inspiredByNpub: video.inspiredByNpub,
+      clipSourceCredits: video.clipSourceCredits,
     );
   }
 
@@ -1067,6 +1077,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       collaboratorPubkeys: draft.collaboratorPubkeys,
       inspiredByVideo: draft.inspiredByVideo,
       inspiredByNpub: draft.inspiredByNpub,
+      clipSourceCredits: draft.clipSourceCredits,
       selectedSound: draft.selectedSound,
       seedSelectedSoundAsAudioTrack: false,
       contentWarnings: draft.contentWarnings,
@@ -1523,25 +1534,24 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// attributable source. Clips without provenance are local/original material
   /// and do not conflict with the reused source; multiple reused sources do.
   InspiredByInfo? _attributionSourceFromClips() {
-    InspiredByInfo? source;
-    for (final clip in _clips) {
-      final addressableId = clip.sourceAddressableId;
-      if (addressableId == null || addressableId.isEmpty) continue;
+    final credits = _clipSourceCreditsFromClips()
+        .where((credit) => credit.hasAddressableSource)
+        .toList();
+    if (credits.length != 1) return null;
+    return credits.single.inspiredByInfo;
+  }
 
-      final candidate = InspiredByInfo(
-        addressableId: addressableId,
-        relayUrl: clip.sourceRelayHint,
-      );
-      if (source == null) {
-        source = candidate;
-        continue;
-      }
-      if (source.addressableId != candidate.addressableId ||
-          source.relayUrl != candidate.relayUrl) {
-        return null;
+  List<ClipSourceCredit> _clipSourceCreditsFromClips() {
+    final credits = <ClipSourceCredit>[];
+    final seen = <String>{};
+
+    for (final clip in _clips) {
+      for (final credit in clip.sourceCredits) {
+        if (seen.add(credit.identityKey)) credits.add(credit);
       }
     }
-    return source;
+
+    return credits;
   }
 
   /// Build render parameters for video export.

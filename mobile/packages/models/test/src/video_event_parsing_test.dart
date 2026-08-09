@@ -690,6 +690,87 @@ void main() {
       expect(videoEvent.hasInspiredBy, isTrue);
     });
 
+    test('parses clip-source a-tags as factual clip credits', () {
+      const secondCreatorPubkey =
+          'eeee567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
+      final nostrEvent = Event(
+        authorPubkey,
+        34236,
+        [
+          ['url', 'https://example.com/video.mp4'],
+          [
+            'a',
+            '34236:$creatorPubkey:test-d-tag',
+            'wss://relay.divine.video',
+            clipSourceCreditTagMarker,
+          ],
+          [
+            'a',
+            '34236:$secondCreatorPubkey:second-d-tag',
+            'wss://relay-two.divine.video',
+            clipSourceCreditTagMarker,
+          ],
+        ],
+        'Test video',
+        createdAt: 1757385263,
+      );
+
+      final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+      expect(videoEvent.inspiredByVideo, isNull);
+      expect(videoEvent.clipSourceCredits, hasLength(2));
+      expect(videoEvent.clipSourceCredits[0].authorPubkey, creatorPubkey);
+      expect(
+        videoEvent.clipSourceCredits[0].addressableId,
+        '34236:$creatorPubkey:test-d-tag',
+      );
+      expect(
+        videoEvent.clipSourceCredits[1].authorPubkey,
+        secondCreatorPubkey,
+      );
+      expect(
+        videoEvent.clipSourceCredits[1].relayUrl,
+        'wss://relay-two.divine.video',
+      );
+      expect(videoEvent.hasInspiredBy, isTrue);
+    });
+
+    test(
+      'parses author-only clip-source p-tags without duplicating a-tags',
+      () {
+        final nostrEvent = Event(
+          authorPubkey,
+          34236,
+          [
+            ['url', 'https://example.com/video.mp4'],
+            [
+              'a',
+              '34236:$creatorPubkey:test-d-tag',
+              'wss://relay.divine.video',
+              clipSourceCreditTagMarker,
+            ],
+            [
+              'p',
+              creatorPubkey,
+              'wss://relay.divine.video',
+              clipSourceCreditTagMarker,
+            ],
+          ],
+          'Test video',
+          createdAt: 1757385263,
+        );
+
+        final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+        expect(videoEvent.clipSourceCredits, hasLength(1));
+        expect(videoEvent.clipSourceCredits.single.authorPubkey, creatorPubkey);
+        expect(
+          videoEvent.clipSourceCredits.single.addressableId,
+          '34236:$creatorPubkey:test-d-tag',
+        );
+      },
+    );
+
     test('should ignore a-tag that does not start with 34236:', () {
       final nostrEvent = Event(
         authorPubkey,

@@ -14,6 +14,7 @@ final String _reposterPubkey = 'c' * 64;
 final String _otherCollab = 'd' * 64;
 final String _audioEventId = 'e' * 64;
 final String _sha256 = 'f' * 64;
+final String _clipSourcePubkey = 'b' * 64;
 const String _subtitleEventRef =
     '39307:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
     'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:subtitles:abc123def';
@@ -71,6 +72,15 @@ VideoEvent _fullVideo() => VideoEvent(
     relayUrl: 'wss://relay.divine.video',
   ),
   inspiredByNpub: 'npub1examplenpubvalue',
+  clipSourceCredits: [
+    ClipSourceCredit(
+      authorPubkey: _clipSourcePubkey,
+      eventId:
+          'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+      addressableId: '34236:$_clipSourcePubkey:source-d-tag',
+      relayUrl: 'wss://source.relay',
+    ),
+  ],
   textTrackRef: 'https://cdn.divine.video/captions.vtt',
   textTrackRefs: const [
     'https://cdn.divine.video/captions.vtt',
@@ -137,6 +147,7 @@ void main() {
       expect(restored.authorName, equals(original.authorName));
       expect(restored.authorAvatar, equals(original.authorAvatar));
       expect(restored.inspiredByNpub, equals(original.inspiredByNpub));
+      expect(restored.clipSourceCredits, equals(original.clipSourceCredits));
       expect(restored.textTrackRef, equals(original.textTrackRef));
       expect(restored.textTrackRefs, equals(original.textTrackRefs));
       expect(restored.textTrackContent, equals(original.textTrackContent));

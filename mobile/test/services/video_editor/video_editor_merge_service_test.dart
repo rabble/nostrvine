@@ -220,35 +220,45 @@ void main() {
       },
     );
 
-    test('drops provenance when clips come from different sources', () async {
-      VideoEditorRenderService.renderVideoOverride =
-          ({
-            required clips,
-            required usePersistentStorage,
-            aspectRatio,
-            parameters,
-            taskId,
-            maxOutputDuration,
-          }) async => '/documents/merged.mp4';
+    test(
+      'preserves provenance union when clips come from different sources',
+      () async {
+        VideoEditorRenderService.renderVideoOverride =
+            ({
+              required clips,
+              required usePersistentStorage,
+              aspectRatio,
+              parameters,
+              taskId,
+              maxOutputDuration,
+            }) async => '/documents/merged.mp4';
 
-      final result = await VideoEditorMergeService.mergeClips(
-        clips: [
-          _createClip(id: 'a').copyWith(
-            sourceAuthorPubkey: 'author-a',
-            sourceEventId: 'event-a',
-          ),
-          _createClip(id: 'b').copyWith(
-            sourceAuthorPubkey: 'author-b',
-            sourceEventId: 'event-b',
-          ),
-        ],
-        renderId: 'merge-1',
-      );
+        final result = await VideoEditorMergeService.mergeClips(
+          clips: [
+            _createClip(id: 'a').copyWith(
+              sourceAuthorPubkey: 'author-a',
+              sourceEventId: 'event-a',
+              sourceRelayHint: 'wss://relay-a',
+            ),
+            _createClip(id: 'b').copyWith(
+              sourceAuthorPubkey: 'author-b',
+              sourceEventId: 'event-b',
+              sourceRelayHint: 'wss://relay-b',
+            ),
+          ],
+          renderId: 'merge-1',
+        );
 
-      expect(result!.sourceAuthorPubkey, isNull);
-      expect(result.sourceEventId, isNull);
-      expect(result.sourceAddressableId, isNull);
-      expect(result.sourceRelayHint, isNull);
-    });
+        expect(result!.sourceCredits, hasLength(2));
+        expect(result.sourceCredits[0].authorPubkey, 'author-a');
+        expect(result.sourceCredits[0].eventId, 'event-a');
+        expect(result.sourceCredits[0].relayUrl, 'wss://relay-a');
+        expect(result.sourceCredits[1].authorPubkey, 'author-b');
+        expect(result.sourceCredits[1].eventId, 'event-b');
+        expect(result.sourceCredits[1].relayUrl, 'wss://relay-b');
+        expect(result.sourceAuthorPubkey, 'author-a');
+        expect(result.sourceEventId, 'event-a');
+      },
+    );
   });
 }

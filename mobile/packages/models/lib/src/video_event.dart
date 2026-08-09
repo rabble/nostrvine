@@ -194,6 +194,7 @@ class VideoEvent {
     this.collaboratorPubkeys = const [],
     this.inspiredByVideo,
     this.inspiredByNpub,
+    this.clipSourceCredits = const [],
     this.nostrEventTags = const [],
     this.textTrackRef,
     this.textTrackRefs = const [],
@@ -296,6 +297,7 @@ class VideoEvent {
               json['inspiredByVideo'] as Map<String, dynamic>,
             ),
       inspiredByNpub: json['inspiredByNpub'] as String?,
+      clipSourceCredits: _clipSourceCreditsFromJson(json['clipSourceCredits']),
       textTrackRef: textTrackRef,
       textTrackRefs: textTrackRefs.isNotEmpty
           ? textTrackRefs
@@ -359,6 +361,7 @@ class VideoEvent {
     String? addressableDTag;
     final collaboratorPubkeys = <String>[];
     InspiredByInfo? inspiredByVideo;
+    final clipSourceCredits = <ClipSourceCredit>[];
     final textTrackRefsLocal = <String>[];
     final contentWarningLabels = <String>[];
 
@@ -588,6 +591,16 @@ class VideoEvent {
             if (role == 'collaborator' &&
                 !collaboratorPubkeys.contains(normalizedPubkey)) {
               collaboratorPubkeys.add(normalizedPubkey);
+            } else if (role == clipSourceCreditTagMarker) {
+              _addClipSourceCredit(
+                clipSourceCredits,
+                ClipSourceCredit(
+                  authorPubkey: normalizedPubkey,
+                  relayUrl: tag.length >= 3 && tag[2].isNotEmpty
+                      ? tag[2]
+                      : null,
+                ),
+              );
             }
           }
         case 'a':
@@ -595,12 +608,24 @@ class VideoEvent {
           // Format: ['a', '34236:<pubkey>:<d-tag>', '<relay>', 'mention']
           if (tagValue.isNotEmpty && tagValue.startsWith('34236:')) {
             final relayHint = tag.length > 2 ? tag[2] : null;
-            inspiredByVideo ??= InspiredByInfo(
-              addressableId: tagValue,
-              relayUrl: relayHint != null && relayHint.isNotEmpty
-                  ? relayHint
-                  : null,
-            );
+            final relayUrl = relayHint != null && relayHint.isNotEmpty
+                ? relayHint
+                : null;
+            final marker = tag.length >= 4 ? tag[3].toLowerCase() : null;
+            if (marker == clipSourceCreditTagMarker) {
+              _addClipSourceCredit(
+                clipSourceCredits,
+                ClipSourceCredit.fromAddressableId(
+                  addressableId: tagValue,
+                  relayUrl: relayUrl,
+                ),
+              );
+            } else {
+              inspiredByVideo ??= InspiredByInfo(
+                addressableId: tagValue,
+                relayUrl: relayUrl,
+              );
+            }
           }
         case 'content-warning':
           // NIP-36 content-warning tag
@@ -735,6 +760,7 @@ class VideoEvent {
       collaboratorPubkeys: collaboratorPubkeys,
       inspiredByVideo: inspiredByVideo,
       inspiredByNpub: inspiredByNpub,
+      clipSourceCredits: clipSourceCredits,
       nostrEventTags: event.tags
           .map((t) => (t as List).map((e) => e.toString()).toList())
           .toList(),
@@ -747,6 +773,45 @@ class VideoEvent {
       sourceRelay: sourceRelay,
     );
   }
+
+  static List<ClipSourceCredit> _clipSourceCreditsFromJson(Object? raw) {
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map<dynamic, dynamic>>()
+        .map(
+          (credit) =>
+              ClipSourceCredit.fromJson(Map<String, dynamic>.from(credit)),
+        )
+        .toList(growable: false);
+  }
+
+  static void _addClipSourceCredit(
+    List<ClipSourceCredit> credits,
+    ClipSourceCredit credit,
+  ) {
+    if (credit.authorPubkey.isEmpty) return;
+    final authorPubkey = credit.authorPubkey.toLowerCase();
+    if (!credit.hasAddressableSource &&
+        credits.any(
+          (existing) =>
+              existing.hasAddressableSource &&
+              existing.authorPubkey.toLowerCase() == authorPubkey,
+        )) {
+      return;
+    }
+    if (credit.hasAddressableSource) {
+      credits.removeWhere(
+        (existing) =>
+            !existing.hasAddressableSource &&
+            existing.authorPubkey.toLowerCase() == authorPubkey,
+      );
+    }
+    if (credits.any((existing) => existing.identityKey == credit.identityKey)) {
+      return;
+    }
+    credits.add(credit);
+  }
+
   final String id;
   final String pubkey;
   final int createdAt;
@@ -860,6 +925,9 @@ class VideoEvent {
   /// (Inspired By a person, not a specific video).
   final String? inspiredByNpub;
 
+  /// Factual credits for clips reused from published videos.
+  final List<ClipSourceCredit> clipSourceCredits;
+
   /// Original event tags as `List<List<String>>` for republishing.
   /// Preserved from the Nostr event so we can rebuild the event with new tags.
   final List<List<String>> nostrEventTags;
@@ -954,7 +1022,10 @@ class VideoEvent {
   /// metadata, not creator attribution, so reply videos should render their
   /// parent context instead of the Inspired By treatment.
   bool get hasInspiredBy =>
-      !isVideoReply && (inspiredByVideo != null || inspiredByNpub != null);
+      !isVideoReply &&
+      (inspiredByVideo != null ||
+          inspiredByNpub != null ||
+          clipSourceCredits.isNotEmpty);
 
   /// Hex pubkey of the inspiring creator, resolved from either the
   /// [inspiredByVideo] a-tag or the [inspiredByNpub] NIP-27 mention.
@@ -963,6 +1034,9 @@ class VideoEvent {
   /// cannot be decoded.
   String? get inspiredByCreatorPubkey {
     if (isVideoReply) return null;
+    if (clipSourceCredits.isNotEmpty) {
+      return clipSourceCredits.first.authorPubkey;
+    }
     if (inspiredByVideo != null) return inspiredByVideo!.creatorPubkey;
     if (inspiredByNpub != null) {
       final hex = Nip19.decode(inspiredByNpub!);
@@ -1610,6 +1684,7 @@ class VideoEvent {
     List<String>? collaboratorPubkeys,
     InspiredByInfo? inspiredByVideo,
     String? inspiredByNpub,
+    List<ClipSourceCredit>? clipSourceCredits,
     List<List<String>>? nostrEventTags,
     String? textTrackRef,
     List<String>? textTrackRefs,
@@ -1676,6 +1751,7 @@ class VideoEvent {
     collaboratorPubkeys: collaboratorPubkeys ?? this.collaboratorPubkeys,
     inspiredByVideo: inspiredByVideo ?? this.inspiredByVideo,
     inspiredByNpub: inspiredByNpub ?? this.inspiredByNpub,
+    clipSourceCredits: clipSourceCredits ?? this.clipSourceCredits,
     nostrEventTags: nostrEventTags ?? this.nostrEventTags,
     textTrackRef: textTrackRef ?? this.textTrackRef,
     textTrackRefs: textTrackRefs ?? this.textTrackRefs,
@@ -1760,6 +1836,9 @@ class VideoEvent {
     'collaboratorPubkeys': collaboratorPubkeys,
     'inspiredByVideo': inspiredByVideo?.toJson(),
     'inspiredByNpub': inspiredByNpub,
+    'clipSourceCredits': clipSourceCredits
+        .map((credit) => credit.toJson())
+        .toList(),
     'textTrackRef': textTrackRef,
     'textTrackRefs': textTrackRefs,
     'textTrackContent': textTrackContent,
