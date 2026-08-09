@@ -376,7 +376,20 @@ definitions:
       script: |
         set -e
         export PATH="$PATH:$HOME/.maestro/bin"
-        maestro test e2e/maestro/suites/smoke.yaml
+        # Credentials come from the `maestro_e2e_credentials` group, never the
+        # repo. Fail here rather than letting Maestro resolve a missing
+        # variable to `undefined` and report it as a selector failure.
+        for var in MAESTRO_USER_EMAIL MAESTRO_USER_PWD MAESTRO_SEARCH_USER; do
+          if [ -z "$(eval echo \"\$$var\")" ]; then
+            echo "Missing $var — add it to the maestro_e2e_credentials group." >&2
+            exit 1
+          fi
+        done
+        maestro test \
+          -e USER_EMAIL="$MAESTRO_USER_EMAIL" \
+          -e USER_PWD="$MAESTRO_USER_PWD" \
+          -e SEARCH_USER="$MAESTRO_SEARCH_USER" \
+          e2e/maestro/suites/smoke.yaml
     - &boot_ios_simulator
       name: Boot iOS Simulator
       script: |
@@ -678,6 +691,7 @@ workflows:
       groups:
         - zendesk_credentials
         - proofmode_credentials
+        - maestro_e2e_credentials
       vars:
         DEFAULT_ENV: STAGING
         BUNDLE_ID: co.openvine.app
@@ -714,6 +728,7 @@ workflows:
       groups:
         - zendesk_credentials
         - proofmode_credentials
+        - maestro_e2e_credentials
       vars:
         DEFAULT_ENV: STAGING
         BUNDLE_ID: co.openvine.app
