@@ -7,7 +7,11 @@ abstract final class DiscoveryCategoryPolicy {
   ///
   /// This mirrors Funnelcake's emitted discovery-category vocabulary. Update it
   /// when Funnelcake adds or renames moderation-adjacent category slugs.
-  static const _denied = <String>{'adult', 'violence'};
+  ///
+  /// `porn` is a sibling slug of `adult`: Funnelcake tags the same videos
+  /// `topic:adult` and `topic:porn`, so blocking one without the other leaves
+  /// the same feed reachable at `/categories/porn`.
+  static const _denied = <String>{'adult', 'porn', 'violence'};
 
   /// Returns `true` when [name] is blocked from discovery surfaces.
   static bool isDenied(String name) {

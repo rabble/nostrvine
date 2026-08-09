@@ -73,9 +73,17 @@ void main() {
             pathParameters: const {'categoryName': ' Violence '},
           ),
         );
+        final pornScreen = route.builder!(
+          context,
+          _FakeGoRouterState(
+            location: '/categories/porn',
+            pathParameters: const {'categoryName': 'porn'},
+          ),
+        );
 
         expect(adultScreen, isA<RouteErrorScreen>());
         expect(violenceScreen, isA<RouteErrorScreen>());
+        expect(pornScreen, isA<RouteErrorScreen>());
       });
     });
 

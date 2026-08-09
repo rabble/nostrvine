@@ -104,6 +104,7 @@ void main() {
             VideoCategory(name: 'comedy', videoCount: 500),
             VideoCategory(name: ' adult ', videoCount: 319),
             VideoCategory(name: 'Violence', videoCount: 212),
+            VideoCategory(name: 'Porn', videoCount: 39),
             VideoCategory(name: 'animals', videoCount: 300),
           ],
         );
@@ -256,22 +257,27 @@ void main() {
         },
       );
 
-      test('returns empty page for denied category without fetching', () async {
-        final page = await repository.getVideosForCategory(
-          category: ' Violence ',
-        );
+      for (final denied in [' Violence ', 'porn']) {
+        test(
+          'returns empty page for denied category "$denied" without fetching',
+          () async {
+            final page = await repository.getVideosForCategory(
+              category: denied,
+            );
 
-        expect(page.videos, isEmpty);
-        expect(page.hasMore, isFalse);
-        verifyNever(
-          () => apiClient.getVideosByCategory(
-            category: any(named: 'category'),
-            before: any(named: 'before'),
-            sort: any(named: 'sort'),
-            platform: any(named: 'platform'),
-          ),
+            expect(page.videos, isEmpty);
+            expect(page.hasMore, isFalse);
+            verifyNever(
+              () => apiClient.getVideosByCategory(
+                category: any(named: 'category'),
+                before: any(named: 'before'),
+                sort: any(named: 'sort'),
+                platform: any(named: 'platform'),
+              ),
+            );
+          },
         );
-      });
+      }
     });
 
     group('getRecommendedVideos', () {
