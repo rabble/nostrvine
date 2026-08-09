@@ -470,7 +470,7 @@ void main() {
               until: any(named: 'until'),
               skipCache: any(named: 'skipCache'),
             ),
-          ).thenAnswer((_) async => newVideos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: newVideos));
 
           final bloc = VideoFeedBloc(
             videosRepository: mockVideosRepository,
@@ -588,7 +588,7 @@ void main() {
               until: any(named: 'until'),
               skipCache: any(named: 'skipCache'),
             ),
-          ).thenAnswer((_) async => videos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.latest)),
@@ -906,7 +906,7 @@ void main() {
               until: any(named: 'until'),
               skipCache: any(named: 'skipCache'),
             ),
-          ).thenAnswer((_) async => videos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
 
           savedModeBloc = VideoFeedBloc(
             videosRepository: mockVideosRepository,
@@ -1439,7 +1439,7 @@ void main() {
           final followingVideos = createTestVideos(2, idPrefix: 'following');
           final newVideos = createTestVideos(2, idPrefix: 'new');
           final followingResult = Completer<HomeFeedResult>();
-          final newVideosResult = Completer<List<VideoEvent>>();
+          final newVideosResult = Completer<HomeFeedResult>();
 
           when(
             () => mockFollowRepository.followingPubkeys,
@@ -1471,7 +1471,7 @@ void main() {
           bloc.add(const VideoFeedSourceChanged(VideoFeedSource.newVideos()));
           await pumpEventQueue();
 
-          newVideosResult.complete(newVideos);
+          newVideosResult.complete(HomeFeedResult(videos: newVideos));
           await pumpEventQueue();
 
           followingResult.complete(HomeFeedResult(videos: followingVideos));
@@ -1694,7 +1694,7 @@ void main() {
               until: any(named: 'until'),
               skipCache: any(named: 'skipCache'),
             ),
-          ).thenAnswer((_) async => videos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBloc,
         seed: () => VideoFeedBlocState(
@@ -1739,7 +1739,7 @@ void main() {
           final followingVideos = createTestVideos(2, idPrefix: 'following');
           final newVideos = createTestVideos(2, idPrefix: 'new');
           final followingResult = Completer<HomeFeedResult>();
-          final newVideosResult = Completer<List<VideoEvent>>();
+          final newVideosResult = Completer<HomeFeedResult>();
 
           when(
             () => mockFollowRepository.followingPubkeys,
@@ -1771,7 +1771,7 @@ void main() {
           bloc.add(const VideoFeedSourceChanged(VideoFeedSource.newVideos()));
           await pumpEventQueue();
 
-          newVideosResult.complete(newVideos);
+          newVideosResult.complete(HomeFeedResult(videos: newVideos));
           await pumpEventQueue();
           expect(bloc.state.source, const VideoFeedSource.newVideos());
           expect(bloc.state.videos.map((video) => video.id), [
@@ -1793,13 +1793,13 @@ void main() {
 
     group('VideoFeedLoadMoreRequested', () {
       late Completer<HomeFeedResult> loadMoreResult;
-      late Completer<List<VideoEvent>> sourceChangeResult;
+      late Completer<HomeFeedResult> sourceChangeResult;
       late List<VideoEvent> moreVideos;
       late List<VideoEvent> newVideos;
 
       setUp(() {
         loadMoreResult = Completer<HomeFeedResult>();
-        sourceChangeResult = Completer<List<VideoEvent>>();
+        sourceChangeResult = Completer<HomeFeedResult>();
         moreVideos = createTestVideos(2, idPrefix: 'more');
         newVideos = createTestVideos(2, idPrefix: 'new');
 
@@ -1808,7 +1808,7 @@ void main() {
             loadMoreResult.complete(HomeFeedResult(videos: moreVideos));
           }
           if (!sourceChangeResult.isCompleted) {
-            sourceChangeResult.complete(newVideos);
+            sourceChangeResult.complete(HomeFeedResult(videos: newVideos));
           }
         });
       });
@@ -1848,7 +1848,7 @@ void main() {
           bloc.add(const VideoFeedSourceChanged(VideoFeedSource.newVideos()));
           await pumpEventQueue();
 
-          sourceChangeResult.complete(newVideos);
+          sourceChangeResult.complete(HomeFeedResult(videos: newVideos));
           await pumpEventQueue();
 
           loadMoreResult.complete(HomeFeedResult(videos: moreVideos));
@@ -3690,7 +3690,7 @@ void main() {
               until: any(named: 'until'),
               skipCache: any(named: 'skipCache'),
             ),
-          ).thenAnswer((_) async => videos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBlocWithTracker,
         act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.latest)),

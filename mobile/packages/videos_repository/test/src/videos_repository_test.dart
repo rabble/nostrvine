@@ -187,7 +187,7 @@ void main() {
             funnelcakeApiClient: mockFunnelcakeClient,
           );
 
-          final result = await repositoryWithApi.getNewVideos();
+          final result = (await repositoryWithApi.getNewVideos()).videos;
 
           expect(result, hasLength(1));
           expect(
@@ -233,9 +233,9 @@ void main() {
               funnelcakeApiClient: mockFunnelcakeClient,
             );
 
-            final result = await repositoryWithApi.getNewVideos(
+            final result = (await repositoryWithApi.getNewVideos(
               skipCache: true,
-            );
+            )).videos;
 
             expect(result.map((video) => video.id), [
               'relay-video',
@@ -302,7 +302,7 @@ void main() {
             funnelcakeApiClient: mockFunnelcakeClient,
           );
 
-          final result = await repositoryWithApi.getNewVideos();
+          final result = (await repositoryWithApi.getNewVideos()).videos;
 
           expect(result, hasLength(1));
           expect(result.first.id, equals('nostr-video'));
@@ -335,7 +335,7 @@ void main() {
               funnelcakeApiClient: mockFunnelcakeClient,
             );
 
-            final result = await repositoryWithApi.getNewVideos();
+            final result = (await repositoryWithApi.getNewVideos()).videos;
 
             expect(result, isEmpty);
             verifyNever(() => mockNostrClient.queryEvents(any()));
@@ -381,7 +381,7 @@ void main() {
               blockFilter: blockFilter.call,
             );
 
-            final result = await repositoryWithApi.getNewVideos();
+            final result = (await repositoryWithApi.getNewVideos()).videos;
 
             expect(result, isEmpty);
             verifyNever(() => mockNostrClient.queryEvents(any()));
@@ -454,7 +454,7 @@ void main() {
             blockFilter: blockFilter.call,
           );
 
-          final result = await repositoryWithApi.getNewVideos();
+          final result = (await repositoryWithApi.getNewVideos()).videos;
 
           expect(result, hasLength(1));
           expect(
@@ -511,7 +511,7 @@ void main() {
             funnelcakeApiClient: mockFunnelcakeClient,
           );
 
-          final result = await repositoryWithApi.getNewVideos();
+          final result = (await repositoryWithApi.getNewVideos()).videos;
 
           expect(result.map((video) => video.id), equals(['feed-video']));
           verify(
@@ -622,7 +622,9 @@ void main() {
               funnelcakeApiClient: mockFunnelcakeClient,
             );
 
-            final result = await repositoryWithApi.getNewVideos(limit: 2);
+            final result = (await repositoryWithApi.getNewVideos(
+              limit: 2,
+            )).videos;
 
             expect(
               result.map((video) => video.id),
@@ -643,7 +645,7 @@ void main() {
           () => mockNostrClient.queryEvents(any()),
         ).thenAnswer((_) async => <Event>[]);
 
-        final result = await repository.getNewVideos();
+        final result = (await repository.getNewVideos()).videos;
 
         expect(result, isEmpty);
         verify(() => mockNostrClient.queryEvents(any())).called(1);
@@ -694,7 +696,7 @@ void main() {
           () => mockNostrClient.queryEvents(any()),
         ).thenAnswer((_) async => [event]);
 
-        final result = await repository.getNewVideos();
+        final result = (await repository.getNewVideos()).videos;
 
         expect(result, hasLength(1));
         expect(result.first.id, equals('test-id-123'));
@@ -727,7 +729,7 @@ void main() {
           () => mockNostrClient.queryEvents(any()),
         ).thenAnswer((_) async => [feedVideo, videoReply]);
 
-        final result = await repository.getNewVideos();
+        final result = (await repository.getNewVideos()).videos;
 
         expect(result.map((video) => video.id), equals(['feed-video']));
       });
@@ -770,7 +772,7 @@ void main() {
           );
         });
 
-        final result = await repository.getNewVideos();
+        final result = (await repository.getNewVideos()).videos;
 
         expect(result.map((video) => video.id), equals(['feed-video']));
         verify(() => mockNostrClient.queryEvents(any())).called(2);
@@ -863,7 +865,7 @@ void main() {
             ];
           });
 
-          final result = await repository.getNewVideos(limit: 2);
+          final result = (await repository.getNewVideos(limit: 2)).videos;
 
           expect(
             result.map((video) => video.id),
@@ -894,7 +896,7 @@ void main() {
           () => mockNostrClient.queryEvents(any()),
         ).thenAnswer((_) async => [videoReply]);
 
-        final result = await repository.getNewVideos();
+        final result = (await repository.getNewVideos()).videos;
 
         expect(result.map((video) => video.id), equals(['video-reply']));
       });
@@ -917,7 +919,7 @@ void main() {
           () => mockNostrClient.queryEvents(any()),
         ).thenAnswer((_) async => [validEvent, invalidEvent]);
 
-        final result = await repository.getNewVideos();
+        final result = (await repository.getNewVideos()).videos;
 
         expect(result, hasLength(1));
         expect(result.first.id, equals('valid-id'));
@@ -941,7 +943,7 @@ void main() {
           () => mockNostrClient.queryEvents(any()),
         ).thenAnswer((_) async => [olderEvent, newerEvent]);
 
-        final result = await repository.getNewVideos();
+        final result = (await repository.getNewVideos()).videos;
 
         expect(result, hasLength(2));
         expect(result.first.id, equals('newer'));
@@ -991,7 +993,7 @@ void main() {
           ).called(1);
 
           // Second call → served from cache, no new network call
-          final cached = await repoWithCache.getNewVideos();
+          final cached = (await repoWithCache.getNewVideos()).videos;
           verifyNever(
             () => mockFunnelcakeClient.getRecentVideos(
               limit: any(named: 'limit'),
@@ -1061,6 +1063,91 @@ void main() {
             ),
           ).called(2);
         });
+
+        // The home feed's New mode warms this cache with a smaller page than
+        // the Explore New tab asks for. Explore must still get that page
+        // instantly — re-fetching it made opening Explore reload from scratch.
+        test('serves a smaller cached page to a larger limit', () async {
+          when(
+            () => mockFunnelcakeClient.getRecentVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((invocation) async {
+            final limit = invocation.namedArguments[#limit] as int;
+            return [
+              for (var i = 0; i < limit; i++)
+                _createVideoStats(
+                  id: 'v$i',
+                  pubkey: 'p$i',
+                  dTag: 'd$i',
+                  videoUrl: 'https://example.com/v$i.mp4',
+                ),
+            ];
+          });
+
+          await repoWithCache.getNewVideos(limit: 2);
+          final cached = await repoWithCache.getNewVideos(limit: 5);
+
+          expect(cached.videos, hasLength(2));
+          verify(
+            () => mockFunnelcakeClient.getRecentVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).called(1);
+        });
+
+        // …and that shorter page must not read as "nothing more to load".
+        // Deriving it from the video count is what stopped the Explore grid
+        // from paginating on scroll.
+        test('reports more content behind a smaller cached page', () async {
+          when(
+            () => mockFunnelcakeClient.getRecentVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((invocation) async {
+            final limit = invocation.namedArguments[#limit] as int;
+            return [
+              for (var i = 0; i < limit; i++)
+                _createVideoStats(
+                  id: 'v$i',
+                  pubkey: 'p$i',
+                  dTag: 'd$i',
+                  videoUrl: 'https://example.com/v$i.mp4',
+                ),
+            ];
+          });
+
+          await repoWithCache.getNewVideos(limit: 2);
+          final cached = await repoWithCache.getNewVideos(limit: 5);
+
+          expect(cached.hasMore, isTrue);
+        });
+
+        test('reports no more content when the source ran dry', () async {
+          when(
+            () => mockFunnelcakeClient.getRecentVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _createVideoStats(
+                id: 'v1',
+                pubkey: 'p1',
+                dTag: 'd1',
+                videoUrl: 'https://example.com/v1.mp4',
+              ),
+            ],
+          );
+
+          final page = await repoWithCache.getNewVideos(limit: 5);
+
+          expect(page.videos, hasLength(1));
+          expect(page.hasMore, isFalse);
+        });
       });
 
       group('bulk stats hydration', () {
@@ -1111,7 +1198,7 @@ void main() {
               ),
             );
 
-            final result = await repositoryWithApi.getNewVideos();
+            final result = (await repositoryWithApi.getNewVideos()).videos;
 
             expect(result, hasLength(1));
             expect(result.first.rawTags['views'], equals('14'));
@@ -1159,7 +1246,7 @@ void main() {
               ),
             );
 
-            final result = await repositoryWithApi.getNewVideos();
+            final result = (await repositoryWithApi.getNewVideos()).videos;
 
             expect(result, hasLength(1));
             expect(result.first.rawTags['views'], equals('11'));
@@ -1210,7 +1297,7 @@ void main() {
               ),
             );
 
-            final result = await repositoryWithApi.getNewVideos();
+            final result = (await repositoryWithApi.getNewVideos()).videos;
 
             expect(result, hasLength(1));
             expect(result.first.originalLikes, equals(273622));
@@ -1260,7 +1347,7 @@ void main() {
               ),
             );
 
-            final result = await repositoryWithApi.getNewVideos();
+            final result = (await repositoryWithApi.getNewVideos()).videos;
 
             expect(result, hasLength(1));
             expect(result.first.originalLikes, isNull);
@@ -1325,7 +1412,7 @@ void main() {
           );
 
           await repoWithCache.getNewVideos();
-          final cached = await repoWithCache.getNewVideos();
+          final cached = (await repoWithCache.getNewVideos()).videos;
 
           expect(cached.first.rawTags['views'], equals('14'));
           expect(cached.first.totalLoops, equals(14));
@@ -5835,7 +5922,7 @@ void main() {
           () => mockNostrClient.queryEvents(any()),
         ).thenAnswer((_) async => [blockedEvent, allowedEvent]);
 
-        final result = await repositoryWithFilter.getNewVideos();
+        final result = (await repositoryWithFilter.getNewVideos()).videos;
 
         expect(result, hasLength(1));
         expect(result.first.id, equals('allowed-video'));
@@ -5932,7 +6019,7 @@ void main() {
           () => mockNostrClient.queryEvents(any()),
         ).thenAnswer((_) async => [event]);
 
-        final result = await repository.getNewVideos();
+        final result = (await repository.getNewVideos()).videos;
 
         expect(result, hasLength(1));
         expect(result.first.id, equals('video-1'));
@@ -5964,7 +6051,7 @@ void main() {
           () => mockNostrClient.queryEvents(any()),
         ).thenAnswer((_) async => events);
 
-        final result = await repositoryWithFilter.getNewVideos();
+        final result = (await repositoryWithFilter.getNewVideos()).videos;
 
         expect(result, isEmpty);
       });
@@ -5991,7 +6078,7 @@ void main() {
           () => mockNostrClient.queryEvents(any()),
         ).thenAnswer((_) async => [blockedEvent]);
 
-        final result = await repositoryWithFilter.getNewVideos();
+        final result = (await repositoryWithFilter.getNewVideos()).videos;
 
         expect(result, isEmpty);
         // Filter was called with the raw event pubkey
@@ -7042,7 +7129,7 @@ void main() {
           () => mockNostrClient.queryEvents(any()),
         ).thenAnswer((_) async => [nsfwEvent, safeEvent]);
 
-        final result = await repositoryWithFilter.getNewVideos();
+        final result = (await repositoryWithFilter.getNewVideos()).videos;
 
         expect(result, hasLength(1));
         expect(result.first.id, equals('safe-video'));
@@ -7068,7 +7155,7 @@ void main() {
           () => mockNostrClient.queryEvents(any()),
         ).thenAnswer((_) async => [adultEvent]);
 
-        final result = await repositoryWithFilter.getNewVideos();
+        final result = (await repositoryWithFilter.getNewVideos()).videos;
 
         expect(result, isEmpty);
       });
@@ -7092,7 +7179,7 @@ void main() {
           () => mockNostrClient.queryEvents(any()),
         ).thenAnswer((_) async => [cwEvent]);
 
-        final result = await repositoryWithFilter.getNewVideos();
+        final result = (await repositoryWithFilter.getNewVideos()).videos;
 
         expect(result, isEmpty);
       });
@@ -7111,7 +7198,7 @@ void main() {
           () => mockNostrClient.queryEvents(any()),
         ).thenAnswer((_) async => [nsfwEvent]);
 
-        final result = await repository.getNewVideos();
+        final result = (await repository.getNewVideos()).videos;
 
         expect(result, hasLength(1));
         expect(result.first.id, equals('nsfw-video'));
@@ -7136,7 +7223,7 @@ void main() {
           () => mockNostrClient.queryEvents(any()),
         ).thenAnswer((_) async => [nsfwEvent]);
 
-        final result = await repositoryWithFilter.getNewVideos();
+        final result = (await repositoryWithFilter.getNewVideos()).videos;
 
         expect(result, hasLength(1));
         expect(nsfwFilter.calls, hasLength(1));
@@ -7179,7 +7266,7 @@ void main() {
           () => mockNostrClient.queryEvents(any()),
         ).thenAnswer((_) async => [blockedEvent, nsfwEvent, safeEvent]);
 
-        final result = await repositoryWithBothFilters.getNewVideos();
+        final result = (await repositoryWithBothFilters.getNewVideos()).videos;
 
         expect(result, hasLength(1));
         expect(result.first.id, equals('safe-video'));
@@ -7236,7 +7323,7 @@ void main() {
           warningLabelsResolver: (video) => video.contentWarningLabels,
         );
 
-        final result = await repositoryWithResolver.getNewVideos();
+        final result = (await repositoryWithResolver.getNewVideos()).videos;
 
         expect(result, hasLength(1));
         expect(result.first.warnLabels, equals(['adult content']));
@@ -12600,7 +12687,7 @@ void main() {
             () => mockNostrClient.queryEvents(any()),
           ).thenAnswer((_) async => [cleartextEvent, httpsEvent]);
 
-          final result = await repository.getNewVideos();
+          final result = (await repository.getNewVideos()).videos;
 
           expect(result, hasLength(1));
           expect(result.first.id, equals('https-id'));
@@ -12617,7 +12704,7 @@ void main() {
             () => mockNostrClient.queryEvents(any()),
           ).thenAnswer((_) async => [loopbackEvent]);
 
-          final result = await repository.getNewVideos();
+          final result = (await repository.getNewVideos()).videos;
 
           expect(result, hasLength(1));
           expect(result.first.id, equals('android-emulator-host'));
@@ -12634,7 +12721,7 @@ void main() {
             () => mockNostrClient.queryEvents(any()),
           ).thenAnswer((_) async => [loopbackEvent]);
 
-          final result = await repository.getNewVideos();
+          final result = (await repository.getNewVideos()).videos;
 
           expect(result, hasLength(1));
           expect(result.first.id, equals('localhost-host'));
@@ -12651,7 +12738,7 @@ void main() {
             () => mockNostrClient.queryEvents(any()),
           ).thenAnswer((_) async => [loopbackEvent]);
 
-          final result = await repository.getNewVideos();
+          final result = (await repository.getNewVideos()).videos;
 
           expect(result, hasLength(1));
           expect(result.first.id, equals('ipv4-loopback'));
@@ -12676,7 +12763,7 @@ void main() {
               () => mockNostrClient.queryEvents(any()),
             ).thenAnswer((_) async => [spoofA, spoofB]);
 
-            final result = await repository.getNewVideos();
+            final result = (await repository.getNewVideos()).videos;
 
             expect(result, isEmpty);
           },
@@ -12719,7 +12806,7 @@ void main() {
             funnelcakeApiClient: mockFunnelcakeClient,
           );
 
-          final result = await repositoryWithApi.getNewVideos();
+          final result = (await repositoryWithApi.getNewVideos()).videos;
 
           expect(result, hasLength(1));
           expect(result.first.id, equals('https-id'));

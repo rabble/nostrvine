@@ -695,9 +695,18 @@ class VideosRepository {
   /// - [until]: Only return videos created before this Unix timestamp
   ///   (for pagination - pass `previousVideo.createdAt`)
   ///
-  /// Returns a list of [VideoEvent] sorted by creation time (newest first).
-  /// Returns an empty list if no videos are found or on error.
-  Future<List<VideoEvent>> getNewVideos({
+  /// Returns a [HomeFeedResult] whose videos are sorted by creation time
+  /// (newest first), with [HomeFeedResult.hasMore] reporting whether the
+  /// source had more to give.
+  ///
+  /// Callers must page on [HomeFeedResult.hasMore] rather than comparing the
+  /// video count to [limit]: the home feed and the Explore tab request
+  /// different page sizes but share the cached first page, so a page can
+  /// legitimately be shorter than the limit that asked for it and still have
+  /// more behind it.
+  ///
+  /// Returns an empty result if no videos are found or on error.
+  Future<HomeFeedResult> getNewVideos({
     int limit = _defaultLimit,
     int? until,
     bool skipCache = false,
@@ -705,7 +714,7 @@ class VideosRepository {
     // Return in-memory cached result when available (initial page only).
     if (!skipCache && until == null) {
       final cached = _inMemoryFeedCache?.get('latest');
-      if (cached != null) return cached.videos;
+      if (cached != null) return cached;
     }
 
     // 1. Try Funnelcake API first
@@ -720,10 +729,7 @@ class VideosRepository {
             : videos;
         // Hydrate views/loops — list endpoint omits them for some rows.
         final hydrated = await _hydrateVideosWithBulkStats(mergedVideos);
-        if (until == null) {
-          _inMemoryFeedCache?.set('latest', HomeFeedResult(videos: hydrated));
-        }
-        return hydrated;
+        return _recentVideosResult(hydrated, limit: limit, until: until);
       } on FunnelcakeException {
         // Fall through to Nostr
       }
@@ -735,10 +741,25 @@ class VideosRepository {
       until: until,
     );
     final hydrated = await _hydrateVideosWithBulkStats(videos);
+    return _recentVideosResult(hydrated, limit: limit, until: until);
+  }
+
+  /// Wraps a latest-feed page, recording whether [limit] was filled so callers
+  /// paginate on the flag instead of re-deriving it from a count they may not
+  /// have requested.
+  HomeFeedResult _recentVideosResult(
+    List<VideoEvent> videos, {
+    required int limit,
+    required int? until,
+  }) {
+    final result = HomeFeedResult(
+      videos: videos,
+      hasMore: videos.length >= limit,
+    );
     if (until == null) {
-      _inMemoryFeedCache?.set('latest', HomeFeedResult(videos: hydrated));
+      _inMemoryFeedCache?.set('latest', result);
     }
-    return hydrated;
+    return result;
   }
 
   Future<List<VideoEvent>> _fetchVisibleRecentVideosFromStatsApi({

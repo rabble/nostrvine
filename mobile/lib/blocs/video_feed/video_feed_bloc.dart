@@ -921,10 +921,10 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
             _curatedListRepository.getOrderedVideoIds(source.listId!),
           )
           .then((videos) => HomeFeedResult(videos: videos)),
-    VideoFeedSourceType.newVideos =>
-      _videosRepository
-          .getNewVideos(until: until, skipCache: skipCache)
-          .then((videos) => HomeFeedResult(videos: videos)),
+    VideoFeedSourceType.newVideos => _videosRepository.getNewVideos(
+      until: until,
+      skipCache: skipCache,
+    ),
     // Classics is offset-paginated behind an opaque cursor and has no
     // time-window pagination, so `until` does not apply.
     VideoFeedSourceType.classic => _videosRepository.getClassicVideos(
