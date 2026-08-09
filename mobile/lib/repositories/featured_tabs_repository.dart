@@ -80,6 +80,12 @@ class FeaturedTabsRepository {
   FeaturedTabsResponse? _cached;
   DateTime? _cachedAt;
 
+  /// Sequence number of the newest started [refresh].
+  ///
+  /// Request bookkeeping, not cached data: it decides which response is
+  /// allowed to become the cache, and nothing reads it back out.
+  int _refreshSequence = 0;
+
   /// Fetches and resolves the featured tab for the current viewer.
   ///
   /// Never throws: a failed fetch degrades to the cached config while it is
@@ -90,10 +96,18 @@ class FeaturedTabsRepository {
   /// audience. The public config endpoint is shared-cacheable and therefore
   /// not personalized, so this gate is the client's responsibility.
   Future<FeaturedTabsSnapshot> refresh({required bool viewerIsMinor}) async {
+    final sequence = ++_refreshSequence;
     try {
       final response = await _apiClient.getFeaturedTabs();
-      _cached = response;
-      _cachedAt = _now();
+      // Callers can have several refreshes in flight — a poll, a foreground
+      // resume, an age-gate change. Only the newest may become the cache:
+      // otherwise a request issued before a server kill can land after the one
+      // that removed the tab, and the stale config it leaves behind is served
+      // to the next failed refresh, putting the killed tab back on screen.
+      if (sequence == _refreshSequence) {
+        _cached = response;
+        _cachedAt = _now();
+      }
       return _resolve(response, viewerIsMinor: viewerIsMinor);
     } on FunnelcakeException {
       return _fromCache(viewerIsMinor: viewerIsMinor);

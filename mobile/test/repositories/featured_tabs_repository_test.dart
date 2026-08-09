@@ -1,6 +1,8 @@
 // ABOUTME: Tests for FeaturedTabsRepository cache TTL and eligibility gating.
 // ABOUTME: Covers the visibility matrix and stale-serve-then-drop behavior.
 
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
@@ -220,6 +222,50 @@ void main() {
         final snapshot = await repository.refresh(viewerIsMinor: false);
 
         expect(snapshot.hasTab, isFalse);
+      });
+
+      test('a superseded refresh does not become the cache', () async {
+        // The poll, a foreground resume, and an age-gate change can all be in
+        // flight at once. If a request issued before a server kill lands after
+        // the one that removed the tab, the stale config it leaves behind gets
+        // served to the next failed refresh and the killed tab comes back.
+        final beforeKill = Completer<FeaturedTabsResponse>();
+        final afterKill = Completer<FeaturedTabsResponse>();
+        var call = 0;
+        when(apiClient.getFeaturedTabs).thenAnswer((_) {
+          call++;
+          return call == 1 ? beforeKill.future : afterKill.future;
+        });
+
+        final repository = buildRepository();
+        final stale = repository.refresh(viewerIsMinor: false);
+        final fresh = repository.refresh(viewerIsMinor: false);
+
+        afterKill.complete(
+          const FeaturedTabsResponse(
+            tabs: [],
+            pollInterval: Duration(minutes: 5),
+          ),
+        );
+        expect((await fresh).hasTab, isFalse);
+
+        beforeKill.complete(
+          FeaturedTabsResponse(
+            tabs: [_tab()],
+            pollInterval: const Duration(minutes: 5),
+          ),
+        );
+        await stale;
+
+        stubFailure();
+        clock = clock.add(const Duration(minutes: 1));
+        final snapshot = await repository.refresh(viewerIsMinor: false);
+
+        expect(
+          snapshot.hasTab,
+          isFalse,
+          reason: 'the killed config must not be resurrected from cache',
+        );
       });
 
       test('scales the grace window with a slower server cadence', () async {
