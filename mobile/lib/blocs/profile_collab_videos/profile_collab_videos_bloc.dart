@@ -31,8 +31,11 @@ class ProfileCollabVideosBloc
   ProfileCollabVideosBloc({
     required VideosRepository videosRepository,
     required String targetUserPubkey,
+    required Stream<String> removedVideoIds,
+    required bool Function(VideoEvent video) deletedVideoFilter,
   }) : _videosRepository = videosRepository,
        _targetUserPubkey = targetUserPubkey,
+       _deletedVideoFilter = deletedVideoFilter,
        super(const ProfileCollabVideosState()) {
     on<ProfileCollabVideosFetchRequested>(
       _onFetchRequested,
@@ -42,10 +45,20 @@ class ProfileCollabVideosBloc
       transformer: sequential(),
     );
     on<ProfileCollabVideosLoadMoreRequested>(_onLoadMoreRequested);
+    on<ProfileCollabVideosVideoRemoved>(
+      _onVideoRemoved,
+      transformer: sequential(),
+    );
+    _removedVideoIdsSubscription = removedVideoIds.listen((videoId) {
+      if (isClosed) return;
+      add(ProfileCollabVideosVideoRemoved(videoId));
+    });
   }
 
   final VideosRepository _videosRepository;
   final String _targetUserPubkey;
+  late final StreamSubscription<String> _removedVideoIdsSubscription;
+  final bool Function(VideoEvent video) _deletedVideoFilter;
 
   /// Cache key for this profile's collab-videos snapshot.
   String get _cacheKey => '$_targetUserPubkey:profile_collab_videos';
@@ -145,6 +158,7 @@ class ProfileCollabVideosBloc
 
     final collabVideos = videos
         .where((v) => v.isSupportedOnCurrentPlatform)
+        .where((v) => !_deletedVideoFilter(v))
         .toList();
     final cursor = collabVideos.isNotEmpty ? collabVideos.last.createdAt : null;
     final hasMore = videos.length >= ProfileTabPagination.pageSize;
@@ -183,12 +197,14 @@ class ProfileCollabVideosBloc
     // (not re-fetched) are kept, deduped against the fresh page.
     final fresh = firstPage
         .where((v) => v.isSupportedOnCurrentPlatform)
+        .where((v) => !_deletedVideoFilter(v))
         .toList();
     final freshIds = fresh.map((v) => v.id).toSet();
     final tail = firstPage.length >= ProfileTabPagination.pageSize
         ? state.videos
               .skip(_tailStartAfterFreshOverlap(fresh))
               .where((v) => !freshIds.contains(v.id))
+              .where((v) => !_deletedVideoFilter(v))
               .toList()
         : <VideoEvent>[];
     final allVideos = [...fresh, ...tail];
@@ -239,10 +255,11 @@ class ProfileCollabVideosBloc
 
   Future<ProfileVideoCursorSnapshot?> _readCachedSnapshot() async {
     try {
-      return await CacheSync.read<ProfileVideoCursorSnapshot>(
+      final snapshot = await CacheSync.read<ProfileVideoCursorSnapshot>(
         key: _cacheKey,
         fromJson: ProfileVideoCursorSnapshot.fromJson,
       );
+      return snapshot == null ? null : _filterDeletedSnapshot(snapshot);
     } on Object catch (e) {
       Log.warning(
         'ProfileCollabVideosBloc: Failed to read cached snapshot - $e',
@@ -251,6 +268,23 @@ class ProfileCollabVideosBloc
       );
       return null;
     }
+  }
+
+  ProfileVideoCursorSnapshot _filterDeletedSnapshot(
+    ProfileVideoCursorSnapshot snapshot,
+  ) {
+    final videos = snapshot.videos
+        .where((video) => !_deletedVideoFilter(video))
+        .toList();
+    if (videos.length == snapshot.videos.length) return snapshot;
+
+    return ProfileVideoCursorSnapshot(
+      videos: videos,
+      paginationCursor: videos.isNotEmpty
+          ? videos.last.createdAt
+          : snapshot.paginationCursor,
+      hasMoreContent: snapshot.hasMoreContent,
+    );
   }
 
   Future<void> _persistSnapshot(ProfileVideoCursorSnapshot snapshot) async {
@@ -303,6 +337,7 @@ class ProfileCollabVideosBloc
 
       final newCollabVideos = videos
           .where((v) => v.isSupportedOnCurrentPlatform)
+          .where((v) => !_deletedVideoFilter(v))
           .toList();
 
       // Deduplicate against existing videos
@@ -316,7 +351,10 @@ class ProfileCollabVideosBloc
           ? uniqueNewVideos.last.createdAt
           : state.paginationCursor;
 
-      final allVideos = [...state.videos, ...uniqueNewVideos];
+      final allVideos = [
+        ...state.videos.where((v) => !_deletedVideoFilter(v)),
+        ...uniqueNewVideos,
+      ];
 
       Log.info(
         'ProfileCollabVideosBloc: Loaded ${uniqueNewVideos.length} more '
@@ -349,5 +387,39 @@ class ProfileCollabVideosBloc
       );
       emit(state.copyWith(isLoadingMore: false));
     }
+  }
+
+  Future<void> _onVideoRemoved(
+    ProfileCollabVideosVideoRemoved event,
+    Emitter<ProfileCollabVideosState> emit,
+  ) async {
+    final videos = state.videos
+        .where(
+          (video) => video.id != event.videoId && !_deletedVideoFilter(video),
+        )
+        .toList();
+    if (videos.length == state.videos.length) return;
+
+    final cursor = videos.isNotEmpty ? videos.last.createdAt : null;
+    emit(
+      state.copyWith(
+        videos: videos,
+        paginationCursor: cursor,
+        clearCursor: cursor == null,
+      ),
+    );
+    await _persistSnapshot(
+      ProfileVideoCursorSnapshot(
+        videos: videos,
+        paginationCursor: cursor,
+        hasMoreContent: state.hasMoreContent,
+      ),
+    );
+  }
+
+  @override
+  Future<void> close() {
+    _removedVideoIdsSubscription.cancel();
+    return super.close();
   }
 }

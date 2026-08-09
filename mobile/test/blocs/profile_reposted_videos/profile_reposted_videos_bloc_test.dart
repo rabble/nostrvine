@@ -95,13 +95,18 @@ void main() {
       repostedIdsController.close();
     });
 
-    ProfileRepostedVideosBloc createBloc({String? targetUserPubkey}) =>
-        ProfileRepostedVideosBloc(
-          repostsRepository: mockRepostsRepository,
-          videosRepository: mockVideosRepository,
-          currentUserPubkey: currentUserPubkey,
-          targetUserPubkey: targetUserPubkey,
-        );
+    ProfileRepostedVideosBloc createBloc({
+      String? targetUserPubkey,
+      Stream<String>? removedVideoIds,
+      bool Function(VideoEvent video)? deletedVideoFilter,
+    }) => ProfileRepostedVideosBloc(
+      repostsRepository: mockRepostsRepository,
+      videosRepository: mockVideosRepository,
+      currentUserPubkey: currentUserPubkey,
+      targetUserPubkey: targetUserPubkey,
+      removedVideoIds: removedVideoIds ?? const Stream<String>.empty(),
+      deletedVideoFilter: deletedVideoFilter ?? (_) => false,
+    );
 
     VideoEvent createTestVideo({
       required String id,
@@ -445,6 +450,163 @@ void main() {
             ),
           );
         },
+      );
+
+      blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
+        'filters tombstoned videos from cached snapshot restore',
+        setUp: () async {
+          final id1 = createAddressableId(currentUserPubkey, 'd1');
+          final deletedId = createAddressableId(currentUserPubkey, 'deleted-d');
+          await cacheDao.write(
+            key: '$currentUserPubkey:profile_reposted_videos',
+            payload: ProfileVideoListSnapshot(
+              videos: [
+                createTestVideo(
+                  id: 'e1',
+                  pubkey: currentUserPubkey,
+                  vineId: 'd1',
+                ),
+                createTestVideo(
+                  id: 'deleted-event',
+                  pubkey: currentUserPubkey,
+                  vineId: 'deleted-d',
+                ),
+              ],
+              itemIds: [id1, deletedId],
+              nextPageOffset: 2,
+              hasMoreContent: false,
+            ).toJson(),
+          );
+          when(() => mockRepostsRepository.syncUserReposts()).thenAnswer(
+            (_) async => RepostsSyncResult(
+              orderedAddressableIds: [id1],
+              addressableIdToRepostId: const {},
+            ),
+          );
+        },
+        build: () => createBloc(
+          deletedVideoFilter: (video) => video.id == 'deleted-event',
+        ),
+        act: (bloc) => bloc.add(const ProfileRepostedVideosSyncRequested()),
+        wait: const Duration(milliseconds: 50),
+        expect: () => [
+          isA<ProfileRepostedVideosState>()
+              .having((s) => s.isRefreshing, 'isRefreshing', true)
+              .having(
+                (s) => s.videos.map((v) => v.id).toList(),
+                'cached videos',
+                ['e1'],
+              ),
+          isA<ProfileRepostedVideosState>()
+              .having((s) => s.isRefreshing, 'isRefreshing', false)
+              .having(
+                (s) => s.videos.map((v) => v.id).toList(),
+                'unchanged videos',
+                ['e1'],
+              ),
+        ],
+      );
+
+      blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
+        'removal event drops video and persists snapshot without it',
+        build: () => createBloc(
+          deletedVideoFilter: (video) => video.id == 'deleted-event',
+        ),
+        seed: () {
+          final id1 = createAddressableId(currentUserPubkey, 'd1');
+          final deletedId = createAddressableId(currentUserPubkey, 'deleted-d');
+          return ProfileRepostedVideosState(
+            status: ProfileRepostedVideosStatus.success,
+            videos: [
+              createTestVideo(
+                id: 'e1',
+                pubkey: currentUserPubkey,
+                vineId: 'd1',
+              ),
+              createTestVideo(
+                id: 'deleted-event',
+                pubkey: currentUserPubkey,
+                vineId: 'deleted-d',
+              ),
+            ],
+            repostedAddressableIds: [id1, deletedId],
+            nextPageOffset: 2,
+            hasMoreContent: false,
+          );
+        },
+        act: (bloc) =>
+            bloc.add(const ProfileRepostedVideosVideoRemoved('deleted-event')),
+        wait: const Duration(milliseconds: 50),
+        expect: () => [
+          isA<ProfileRepostedVideosState>()
+              .having((s) => s.videos.map((v) => v.id).toList(), 'videos', [
+                'e1',
+              ])
+              .having(
+                (s) => s.repostedAddressableIds,
+                'repostedAddressableIds',
+                [createAddressableId(currentUserPubkey, 'd1')],
+              )
+              .having((s) => s.nextPageOffset, 'nextPageOffset', 1),
+        ],
+        verify: (_) async {
+          final cached = await CacheSync.read<ProfileVideoListSnapshot>(
+            key: '$currentUserPubkey:profile_reposted_videos',
+            fromJson: ProfileVideoListSnapshot.fromJson,
+          );
+          expect(cached, isNotNull);
+          expect(cached!.videos.map((v) => v.id), ['e1']);
+          expect(cached.itemIds, [
+            createAddressableId(currentUserPubkey, 'd1'),
+          ]);
+        },
+      );
+
+      blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
+        'removal shifts nextPageOffset left when deleting before the cursor',
+        build: () => createBloc(
+          deletedVideoFilter: (video) => video.id == 'deleted-event',
+        ),
+        seed: () {
+          final id1 = createAddressableId(currentUserPubkey, 'd1');
+          final deletedId = createAddressableId(currentUserPubkey, 'deleted-d');
+          final id2 = createAddressableId(currentUserPubkey, 'd2');
+          return ProfileRepostedVideosState(
+            status: ProfileRepostedVideosStatus.success,
+            videos: [
+              createTestVideo(
+                id: 'e1',
+                pubkey: currentUserPubkey,
+                vineId: 'd1',
+              ),
+              createTestVideo(
+                id: 'deleted-event',
+                pubkey: currentUserPubkey,
+                vineId: 'deleted-d',
+              ),
+            ],
+            repostedAddressableIds: [id1, deletedId, id2],
+            nextPageOffset: 2,
+          );
+        },
+        act: (bloc) =>
+            bloc.add(const ProfileRepostedVideosVideoRemoved('deleted-event')),
+        wait: const Duration(milliseconds: 50),
+        expect: () => [
+          isA<ProfileRepostedVideosState>()
+              .having((s) => s.videos.map((v) => v.id).toList(), 'videos', [
+                'e1',
+              ])
+              .having(
+                (s) => s.repostedAddressableIds,
+                'repostedAddressableIds',
+                [
+                  createAddressableId(currentUserPubkey, 'd1'),
+                  createAddressableId(currentUserPubkey, 'd2'),
+                ],
+              )
+              .having((s) => s.nextPageOffset, 'nextPageOffset', 1),
+        ],
       );
 
       blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
