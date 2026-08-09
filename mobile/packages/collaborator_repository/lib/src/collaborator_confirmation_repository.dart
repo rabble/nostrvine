@@ -20,12 +20,14 @@ const int _kindCollaboratorResponse = 34238;
 /// creator-side `'collaborator'`-role p-tags, and the current user's local
 /// invite-store fast-path into a single per-video status snapshot stream.
 ///
-/// Scope guard: the kind-34238 subscription is only opened when the current
-/// user authored the video. For other viewing contexts the repository emits
-/// from the local-store fast-path (so the current user's own ignore/accept
-/// flips their own avatar) without adding relay traffic. Third-party
-/// rendering of pending collaborators is unchanged by this repository —
-/// that broader fix lives in the lifecycle plan and depends on Funnelcake.
+/// The kind-34238 subscription opens for every viewer, not just the video's
+/// author. Third-party viewers need confirmation data to distinguish an
+/// accepted collaborator from someone the creator merely tagged; without it
+/// the render surfaces credit both identically (#6907).
+///
+/// Snapshots carry [VideoCollaboratorStatus.isResolved] so callers can tell
+/// "did not accept" from "have not heard back yet" — both leave a pubkey
+/// [CollaboratorStatus.pending], but only the former is a real answer.
 ///
 /// One subscription per `videoAddress`, ref-counted across watchers. The
 /// underlying [NostrClient.subscribe] also dedupes by filter hash, so even
@@ -120,15 +122,26 @@ class CollaboratorConfirmationRepository {
             ),
           );
 
-    // Open the relay subscription on demand, only for own-authored videos.
-    final isOwnVideo = creatorPubkey == _currentUserPubkey;
-    if (isOwnVideo && !_relaySubs.containsKey(videoAddress)) {
+    // Open the relay subscription on demand, for every viewer. Third-party
+    // viewers need it too: without confirmation data they cannot tell an
+    // accepted collaborator from someone the creator merely tagged, and the
+    // render surfaces would credit both. The relay serves kind-34238 to
+    // unauthenticated readers, so no signer or backend route is required.
+    //
+    // `authors` bounds the result set to pubkeys that could legitimately
+    // confirm; only tagged pubkeys are meaningful, and the handler
+    // re-checks membership anyway. Omitted when nothing is tagged, since an
+    // empty authors array is not a meaningful filter.
+    if (!_relaySubs.containsKey(videoAddress)) {
       _relaySubs[videoAddress] = _nostrClient
           .subscribe(
             [
               Filter(
                 kinds: const [_kindCollaboratorResponse],
                 a: [videoAddress],
+                authors: taggedPubkeys.isEmpty
+                    ? null
+                    : List<String>.of(taggedPubkeys),
               ),
             ],
             onEose: () => _markResolved(videoAddress),
@@ -309,29 +322,34 @@ class CollaboratorConfirmationRepository {
     final override = _currentUserOverride[videoAddress];
 
     for (final pubkey in taggedPubkeys) {
+      // The current user's own local decision is authoritative on this
+      // device and outranks the relay echo. Ignore is local-only with no
+      // protocol un-accept, so a kind-34238 from an earlier accept must not
+      // resurrect an avatar the user has since hidden. Other pubkeys' local
+      // states are unknown to this device.
+      //
+      // Order matters: before #6907 the subscription never opened for a
+      // recipient viewing someone else's video, so `accepted` was always
+      // empty here and checking the relay first was harmless. It opens for
+      // every viewer now, which would let the echo overwrite the ignore.
+      if (pubkey == _currentUserPubkey) {
+        final local =
+            override ??
+            _localStateReader.readLocalState(
+              videoAddress: videoAddress,
+              creatorPubkey: creatorPubkey,
+              collaboratorPubkey: pubkey,
+            );
+        if (local != null) {
+          statusByPubkey[pubkey] = local;
+          continue;
+        }
+      }
+
       // Relay-derived: kind-34238 acceptance event observed.
       if (accepted.contains(pubkey)) {
         statusByPubkey[pubkey] = CollaboratorStatus.confirmed;
         continue;
-      }
-
-      // Local-store fast-path for the current user only. Other pubkeys'
-      // states are unknown to this device.
-      if (pubkey == _currentUserPubkey) {
-        final inMemory = override;
-        if (inMemory != null) {
-          statusByPubkey[pubkey] = inMemory;
-          continue;
-        }
-        final fromStore = _localStateReader.readLocalState(
-          videoAddress: videoAddress,
-          creatorPubkey: creatorPubkey,
-          collaboratorPubkey: pubkey,
-        );
-        if (fromStore != null) {
-          statusByPubkey[pubkey] = fromStore;
-          continue;
-        }
       }
 
       statusByPubkey[pubkey] = CollaboratorStatus.pending;

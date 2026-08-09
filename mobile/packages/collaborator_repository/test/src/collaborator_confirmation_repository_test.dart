@@ -455,10 +455,8 @@ void main() {
       repo.release(_videoAddress);
     });
 
-    test('recipient view: current user local store override flips current user '
-        'status without a relay subscription', () async {
-      // No NostrClient.subscribe call expected because current user is
-      // NOT the creator.
+    test('recipient view: current user local store override wins over the '
+        'relay-derived status', () async {
       final repo = CollaboratorConfirmationRepository(
         nostrClient: nostrClient,
         localStateReader: _StaticLocalStateReader(const {
@@ -483,16 +481,16 @@ void main() {
         emissions.last.statusFor(_collaboratorPubkey),
         equals(CollaboratorStatus.ignored),
       );
-      verifyNever(
-        () => nostrClient.subscribe(
-          any(),
-          subscriptionId: any(named: 'subscriptionId'),
-          tempRelays: any(named: 'tempRelays'),
-          targetRelays: any(named: 'targetRelays'),
-          relayTypes: any(named: 'relayTypes'),
-          sendAfterAuth: any(named: 'sendAfterAuth'),
-          onEose: any(named: 'onEose'),
-        ),
+
+      // The local ignore must survive an acceptance echo for the same pubkey:
+      // a stale kind-34238 from an earlier accept must not resurrect the
+      // avatar the user just hid.
+      relayController.add(_acceptanceEvent(pubkey: _collaboratorPubkey));
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        emissions.last.statusFor(_collaboratorPubkey),
+        equals(CollaboratorStatus.ignored),
       );
 
       await sub.cancel();
@@ -632,8 +630,11 @@ void main() {
       },
     );
 
-    test('does not open a relay subscription when current user is not the '
-        'creator', () async {
+    test('opens a relay subscription for a third-party viewer, bounded by '
+        'authors', () async {
+      // Inverts the pre-#6907 behaviour: the subscription used to open only
+      // for the video's author, so third-party viewers had no confirmation
+      // data at all and every tagged pubkey rendered as a collaborator.
       final repo = CollaboratorConfirmationRepository(
         nostrClient: nostrClient,
         localStateReader: _StaticLocalStateReader(const {}),
@@ -650,16 +651,70 @@ void main() {
 
       await Future<void>.delayed(Duration.zero);
 
-      verifyNever(
-        () => nostrClient.subscribe(
-          any(),
-          subscriptionId: any(named: 'subscriptionId'),
-          tempRelays: any(named: 'tempRelays'),
-          targetRelays: any(named: 'targetRelays'),
-          relayTypes: any(named: 'relayTypes'),
-          sendAfterAuth: any(named: 'sendAfterAuth'),
-          onEose: any(named: 'onEose'),
-        ),
+      final captured =
+          verify(
+                () => nostrClient.subscribe(
+                  captureAny(),
+                  subscriptionId: any(named: 'subscriptionId'),
+                  tempRelays: any(named: 'tempRelays'),
+                  targetRelays: any(named: 'targetRelays'),
+                  relayTypes: any(named: 'relayTypes'),
+                  sendAfterAuth: any(named: 'sendAfterAuth'),
+                  onEose: any(named: 'onEose'),
+                ),
+              ).captured.single
+              as List<Filter>;
+
+      expect(captured, hasLength(1));
+      expect(captured.single.kinds, equals([34238]));
+      expect(captured.single.a, equals([_videoAddress]));
+      expect(
+        captured.single.authors,
+        equals([_collaboratorPubkey]),
+        reason:
+            'Only tagged pubkeys can legitimately confirm; bounding the '
+            'filter keeps the result set small.',
+      );
+
+      await sub.cancel();
+      repo.release(_videoAddress);
+    });
+
+    test('omits authors when nothing is tagged', () async {
+      final repo = CollaboratorConfirmationRepository(
+        nostrClient: nostrClient,
+        localStateReader: _StaticLocalStateReader(const {}),
+        currentUserPubkey: _strangerPubkey,
+      );
+
+      final sub = repo
+          .watch(
+            _videoAddress,
+            creatorPubkey: _creatorPubkey,
+            taggedPubkeys: const [],
+          )
+          .listen((_) {});
+
+      await Future<void>.delayed(Duration.zero);
+
+      final captured =
+          verify(
+                () => nostrClient.subscribe(
+                  captureAny(),
+                  subscriptionId: any(named: 'subscriptionId'),
+                  tempRelays: any(named: 'tempRelays'),
+                  targetRelays: any(named: 'targetRelays'),
+                  relayTypes: any(named: 'relayTypes'),
+                  sendAfterAuth: any(named: 'sendAfterAuth'),
+                  onEose: any(named: 'onEose'),
+                ),
+              ).captured.single
+              as List<Filter>;
+
+      expect(
+        captured.single.authors,
+        isNull,
+        reason: 'An empty authors array is not a meaningful relay filter.',
       );
 
       await sub.cancel();
