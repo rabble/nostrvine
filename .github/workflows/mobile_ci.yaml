@@ -88,7 +88,7 @@ jobs:
             # directory level (a superset of the guard's inputs) so the gate
             # can't silently drift when the guard gains a fourth plist.
             case "$path" in
-              mobile/android/*|mobile/ios/*|mobile/macos/*|mobile/scripts/check_native_transport_security.sh)
+              mobile/android/*|mobile/ios/*|mobile/macos/*|mobile/scripts/check_native_transport_security.sh|mobile/scripts/check_ios_shipping_versions.sh)
                 native=true
                 ;;
             esac
@@ -148,6 +148,9 @@ jobs:
             sudo apt-get install -y --no-install-recommends libxml2-utils
           fi
           bash scripts/check_native_transport_security.sh
+      - name: 🍏 Verify iOS shipping target versions
+        if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.native == 'true' }}
+        run: bash scripts/check_ios_shipping_versions.sh
       - name: 🌐 Verify backend-host defaults stay on *.divine.video
         run: bash scripts/check_backend_host_defaults.sh
       - name: 🪵 Verify no raw logging in production code
