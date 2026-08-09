@@ -54,8 +54,12 @@ submission boundary. Two gaps are known and accepted:
   `password` or `key` has its value redacted even when that value is not a
   secret (`token_count: 5`, `cancellationToken: active`, `passwordReset:
   failed`), because no key-only rule separates those from `token_value` or
-  `passwordHash`. The one exception is `pubkey`, which is public by
-  construction and which support needs, so it is preserved. Conversely, a
+  `passwordHash`. Two exceptions: every spelling of the public key (`pubkey`,
+  `pub_key`, `public_key`, `publicKey`) is preserved, because it is public by
+  construction and support needs it for triage; and bare `key` is preserved,
+  because it is an ordinary English word (`Failed to import key: <error>`,
+  `Cache key: video_123`, `KeyEvent: KeyDownEvent`) - only compound forms such
+  as `api_key` and `sessionKey` count as credential keys. Conversely, a
   credential written without a `:` or `=` separator (`password hunter2`) is not
   redacted, because that shape is indistinguishable from ordinary prose
   ("password reset failed").

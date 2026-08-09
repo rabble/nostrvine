@@ -79,15 +79,24 @@ class BugReportConfig {
     // `clientSecret` and `signing_key`, and it is why `cancellationToken:
     // active` and `token_count: 5` are redacted too. That over-redaction is
     // deliberate: no key-only rule separates `token_value` from `token_count`,
-    // and losing a counter costs less than leaking a credential. `key` is
-    // guarded against `pubkey`, which support needs and which is public.
+    // and losing a counter costs less than leaking a credential.
+    //
+    // `key` is the exception to that: it is a common English word, so it only
+    // counts as a credential key in compound form (`api_key`, `sessionKey`).
+    // Bare `key` is left alone, which keeps `Failed to import key: <error>`,
+    // `Cache key: video_123` and `KeyEvent: KeyDownEvent` readable. The
+    // compound forms are further guarded against every spelling of the public
+    // key (`pub_key`, `public_key`, `publicKey`), which support needs for
+    // triage and which is public by construction.
     //
     // The `[_-]` segment class deliberately excludes `_`: writing it as `\w`
     // would let the same key be parsed 2^n ways, and a 60-character key would
     // then take tens of seconds to fail to match, on the UI thread, over text
     // that can come from a remote profile or an attacker-typed report field.
     RegExp(
-      '(?:authorization|password|passwd|token|secret|(?<!pub)key)'
+      '(?:authorization|passphrase|passcode|password|passwd|pwd'
+      '|token|secret|api[_-]?key'
+      '|(?<=[_-])(?<!pub[_-])(?<!public[_-])key)'
       '(?:[_-][A-Za-z0-9]+)*'
       '$_credentialSeparator$_credentialValue',
       caseSensitive: false,
@@ -97,8 +106,16 @@ class BugReportConfig {
     // separates these from `tokenization`. The continuation class excludes
     // uppercase for the same non-ambiguity reason as above.
     RegExp(
-      '(?:[Pp]assword|[Pp]asswd|[Tt]oken|[Ss]ecret|[Kk]ey)'
+      '(?:[Pp]assphrase|[Pp]asscode|[Pp]assword|[Pp]asswd'
+      '|[Tt]oken|[Ss]ecret)'
       '(?:[A-Z][a-z0-9]*)+'
+      '$_credentialSeparator$_credentialValue',
+    ),
+    // camelCase `key` (`sessionKey`, `signingKey`). Kept separate because it
+    // needs no continuation, and case-sensitive so `KeyEvent` and `keyLabel`
+    // are untouched - only a capital `Key` following a lowercase letter counts.
+    RegExp(
+      '(?<=[a-z])(?<![Pp]ub)(?<![Pp]ublic)Key'
       '$_credentialSeparator$_credentialValue',
     ),
     RegExp(r'\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b', caseSensitive: false),
