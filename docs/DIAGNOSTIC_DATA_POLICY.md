@@ -30,14 +30,32 @@ Public Zendesk/GitHub payloads must not include:
   tokens, email addresses, or other secrets. Attachments cannot be made safe by
   regex redaction, so users must avoid including sensitive images.
 
-The mobile client enforces this by sanitizing diagnostics before they leave
-`BugReportService` and by sanitizing user-entered Zendesk fields at the
-`ZendeskSupportService` submission boundary.
+The mobile client enforces this for tickets it submits itself, by sanitizing
+diagnostics before they leave `BugReportService` and by sanitizing user-entered
+Zendesk fields at the `ZendeskSupportService` submission boundary. Text composed
+inside the native Zendesk SDK screens does not cross that boundary; see
+[Residual Risks](#residual-risks).
 
 The email redaction rule also redacts NIP-05 identifiers such as
 `name@divine.video`. That is intentional for public support payloads: NIP-05s
 are public handles, but incidentally collected handles still identify people
 and can be preserved privately in Zendesk metadata when support needs them.
+
+## Residual Risks
+
+Redaction is applied in Dart, so it only covers text that crosses a Dart
+submission boundary. Two gaps are known and accepted:
+
+- Hex-form private keys are not redacted, because 64-char hex is
+  indistinguishable from public event IDs and pubkeys, and blanket redaction
+  would remove the triage value the summary exists for.
+- Text typed inside the native Zendesk SDK screens is never sanitized. The
+  ticket list (`ZendeskSupportService.showTicketListScreen`, reachable from the
+  support center) opens the SDK's own UI, where a reply to an existing ticket is
+  composed and submitted by the SDK without passing through
+  `ZendeskSupportService`. The SDK also ignores prefilled subject/description on
+  Android, so the user types those natively too. Treat replies sent from that
+  screen as unredacted public text.
 
 ## Private Support Channels
 
