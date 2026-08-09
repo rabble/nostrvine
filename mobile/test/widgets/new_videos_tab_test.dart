@@ -35,7 +35,9 @@ void main() {
           until: any(named: 'until'),
           skipCache: any(named: 'skipCache'),
         ),
-      ).thenAnswer((_) async => [_video('new-video')]);
+      ).thenAnswer(
+        (_) async => HomeFeedResult(videos: [_video('new-video')]),
+      );
       when(
         () => videosRepository.getPopularVideos(
           limit: any(named: 'limit'),

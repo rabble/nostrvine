@@ -695,9 +695,19 @@ class VideosRepository {
   /// - [until]: Only return videos created before this Unix timestamp
   ///   (for pagination - pass `previousVideo.createdAt`)
   ///
-  /// Returns a list of [VideoEvent] sorted by creation time (newest first).
-  /// Returns an empty list if no videos are found or on error.
-  Future<List<VideoEvent>> getNewVideos({
+  /// Returns a [HomeFeedResult] whose videos are sorted by creation time
+  /// (newest first), with [HomeFeedResult.hasMore] reporting whether more
+  /// sits behind this page — the source's own flag where it states one,
+  /// otherwise whether the page filled.
+  ///
+  /// Callers must page on [HomeFeedResult.hasMore] rather than comparing the
+  /// video count to [limit]: the home feed and the Explore tab request
+  /// different page sizes but share the cached first page, so a page can
+  /// legitimately be shorter than the limit that asked for it and still have
+  /// more behind it.
+  ///
+  /// Returns an empty result if no videos are found or on error.
+  Future<HomeFeedResult> getNewVideos({
     int limit = _defaultLimit,
     int? until,
     bool skipCache = false,
@@ -705,25 +715,30 @@ class VideosRepository {
     // Return in-memory cached result when available (initial page only).
     if (!skipCache && until == null) {
       final cached = _inMemoryFeedCache?.get('latest');
-      if (cached != null) return cached.videos;
+      if (cached != null) return cached;
     }
 
     // 1. Try Funnelcake API first
     if (_funnelcakeApiClient != null && _funnelcakeApiClient.isAvailable) {
       try {
-        final videos = await _fetchVisibleRecentVideosFromStatsApi(
+        final page = await _fetchVisibleRecentVideosFromStatsApi(
           limit: limit,
           until: until,
         );
         final mergedVideos = skipCache && until == null
-            ? await _mergeRecentApiVideosWithRelayRefresh(videos, limit: limit)
-            : videos;
+            ? await _mergeRecentApiVideosWithRelayRefresh(
+                page.videos,
+                limit: limit,
+              )
+            : page.videos;
         // Hydrate views/loops — list endpoint omits them for some rows.
         final hydrated = await _hydrateVideosWithBulkStats(mergedVideos);
-        if (until == null) {
-          _inMemoryFeedCache?.set('latest', HomeFeedResult(videos: hydrated));
-        }
-        return hydrated;
+        return _recentVideosResult(
+          hydrated,
+          limit: limit,
+          until: until,
+          serverHasMore: page.serverHasMore,
+        );
       } on FunnelcakeException {
         // Fall through to Nostr
       }
@@ -735,37 +750,68 @@ class VideosRepository {
       until: until,
     );
     final hydrated = await _hydrateVideosWithBulkStats(videos);
-    if (until == null) {
-      _inMemoryFeedCache?.set('latest', HomeFeedResult(videos: hydrated));
-    }
-    return hydrated;
+    return _recentVideosResult(hydrated, limit: limit, until: until);
   }
 
-  Future<List<VideoEvent>> _fetchVisibleRecentVideosFromStatsApi({
+  /// Wraps a latest-feed page, recording whether more sits behind it so
+  /// callers paginate on the flag instead of re-deriving it from a count they
+  /// may not have requested.
+  ///
+  /// [serverHasMore] wins when the source stated it. Otherwise a filled page
+  /// is the only available signal — both fetch paths top up until [limit] is
+  /// reached, so falling short means the source stopped supplying rows.
+  HomeFeedResult _recentVideosResult(
+    List<VideoEvent> videos, {
+    required int limit,
+    required int? until,
+    bool? serverHasMore,
+  }) {
+    final result = HomeFeedResult(
+      videos: videos,
+      hasMore: serverHasMore ?? videos.length >= limit,
+    );
+    if (until == null) {
+      _inMemoryFeedCache?.set('latest', result);
+    }
+    return result;
+  }
+
+  Future<({List<VideoEvent> videos, bool? serverHasMore})>
+  _fetchVisibleRecentVideosFromStatsApi({
     required int limit,
     int? until,
   }) async {
     var cursor = until;
     final visible = <VideoEvent>[];
     final seenVideoKeys = <String>{};
+    bool? serverHasMore;
 
     while (visible.length < limit) {
-      final videoStats = await _funnelcakeApiClient!.getRecentVideos(
+      final page = await _funnelcakeApiClient!.getRecentVideosPage(
         limit: limit,
         before: cursor,
       );
+      serverHasMore = page.hasMore;
 
-      final videos = _transformVideoStats(videoStats);
+      final videos = _transformVideoStats(page.videos);
       _appendUniqueVideos(visible, videos, seenVideoKeys: seenVideoKeys);
 
-      if (videoStats.length < limit) break;
+      // Compare the server's row count, not the surviving videos: dropping one
+      // malformed row would otherwise read as the source running out and pin a
+      // premature `hasMore: false` into the feed cache.
+      if (page.serverItemCount < limit) break;
 
-      final nextCursor = _cursorBeforeOldestStats(videoStats);
+      final nextCursor = _cursorBeforeOldestStats(page.videos);
       if (nextCursor == null || nextCursor == cursor) break;
       cursor = nextCursor;
     }
 
-    return visible.take(limit).toList();
+    return (
+      // Overshooting the limit means the trimmed remainder is more content,
+      // whatever the last page claimed.
+      videos: visible.take(limit).toList(),
+      serverHasMore: visible.length > limit ? true : serverHasMore,
+    );
   }
 
   Future<List<VideoEvent>> _mergeRecentApiVideosWithRelayRefresh(
