@@ -608,8 +608,9 @@ class DivineVideoDraft {
         .whereType<Map>()
         .map(
           (credit) =>
-              ClipSourceCredit.fromJson(Map<String, dynamic>.from(credit)),
+              ClipSourceCredit.tryFromJson(Map<String, dynamic>.from(credit)),
         )
+        .nonNulls
         .toList(growable: false);
   }
 }

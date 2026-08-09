@@ -148,9 +148,38 @@ void main() {
       expect(restored.authorAvatar, equals(original.authorAvatar));
       expect(restored.inspiredByNpub, equals(original.inspiredByNpub));
       expect(restored.clipSourceCredits, equals(original.clipSourceCredits));
+      expect(
+        restored.clipSourceCredits.single.eventId,
+        equals(original.clipSourceCredits.single.eventId),
+      );
+      expect(
+        restored.clipSourceCredits.single.relayUrl,
+        equals(original.clipSourceCredits.single.relayUrl),
+      );
       expect(restored.textTrackRef, equals(original.textTrackRef));
       expect(restored.textTrackRefs, equals(original.textTrackRefs));
       expect(restored.textTrackContent, equals(original.textTrackContent));
+    });
+
+    test('drops malformed clip source credits instead of failing restore', () {
+      final json = _fullVideo().toJson()
+        ..['clipSourceCredits'] = [
+          {
+            'eventId': 'missing-author',
+            'addressableId': '34236:$_clipSourcePubkey:source-d-tag',
+          },
+          {
+            'authorPubkey': _clipSourcePubkey,
+            'eventId': 'source-event-id',
+            'addressableId': '34236:$_clipSourcePubkey:source-d-tag',
+            'relayUrl': 'wss://source.relay',
+          },
+        ];
+
+      final restored = VideoEvent.fromJson(json);
+
+      expect(restored.clipSourceCredits, hasLength(1));
+      expect(restored.clipSourceCredits.single.authorPubkey, _clipSourcePubkey);
     });
 
     test('restores list and map fields', () {

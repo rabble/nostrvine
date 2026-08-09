@@ -780,8 +780,9 @@ class VideoEvent {
         .whereType<Map<dynamic, dynamic>>()
         .map(
           (credit) =>
-              ClipSourceCredit.fromJson(Map<String, dynamic>.from(credit)),
+              ClipSourceCredit.tryFromJson(Map<String, dynamic>.from(credit)),
         )
+        .nonNulls
         .toList(growable: false);
   }
 

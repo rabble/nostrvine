@@ -204,6 +204,51 @@ void main() {
     },
   );
 
+  test(
+    'emits clip-source a-tag even when the source is also inspired-by',
+    () async {
+      stubSignAndPublish();
+
+      final result = await publisher.publishDirectUpload(
+        createUpload(),
+        inspiredByAddressableId: inspiredByAddressableId,
+        inspiredByRelayUrl: 'wss://source.relay',
+        clipSourceCredits: const [
+          ClipSourceCredit(
+            authorPubkey: inspiredCreatorPubkey,
+            eventId: 'source-event-a',
+            addressableId: inspiredByAddressableId,
+            relayUrl: 'wss://source.relay',
+          ),
+        ],
+      );
+
+      expect(result, isTrue);
+      expect(
+        _containsTag(capturedTags, const [
+          'a',
+          inspiredByAddressableId,
+          'wss://source.relay',
+          'mention',
+        ]),
+        isTrue,
+      );
+      expect(
+        _containsTag(capturedTags, const [
+          'a',
+          inspiredByAddressableId,
+          'wss://source.relay',
+          clipSourceCreditTagMarker,
+        ]),
+        isTrue,
+        reason:
+            'clip-source is factual provenance, so it must survive later '
+            'metadata edits that clear manual inspired-by attribution',
+      );
+      expect(_countPTagsFor(capturedTags, inspiredCreatorPubkey), equals(1));
+    },
+  );
+
   test('emits an inspired-by p-tag for a person (npub) reference', () async {
     stubSignAndPublish();
     final npub = NostrKeyUtils.encodePubKey(inspiredPersonPubkey);

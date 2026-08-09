@@ -330,6 +330,30 @@ void main() {
       },
     );
 
+    test(
+      'drops malformed source credit entries instead of failing restore',
+      () {
+        final json = clip('/videos/clip.mp4').toJson()
+          ..['sourceCredits'] = [
+            {
+              'eventId': 'missing-author',
+              'addressableId': '34236:source-author-a:source-a',
+            },
+            {
+              'authorPubkey': 'source-author-b',
+              'eventId': 'source-event-b',
+              'addressableId': '34236:source-author-b:source-b',
+              'relayUrl': 'wss://relay-b.divine.video',
+            },
+          ];
+
+        final restored = DivineVideoClip.fromJson(json, '/videos');
+
+        expect(restored.sourceCredits, hasLength(1));
+        expect(restored.sourceCredits.single.authorPubkey, 'source-author-b');
+      },
+    );
+
     test('defaults to null for legacy JSON and omits empty keys', () {
       final json = clip('/videos/clip.mp4').toJson();
       expect(json.containsKey('sourceAuthorPubkey'), isFalse);

@@ -93,8 +93,9 @@ Attribution reuses the same marker convention on `p` tags, and extends it to
 
 `clip-source` is a factual claim about footage in the video; `mention` /
 `inspired-by` is the creator's own attribution choice. They are emitted
-independently, and a source that is already covered by the Inspired By
-reference is not repeated as a `clip-source` tag. Publishing lives in
+independently even when they point at the same source video, so clearing manual
+Inspired By attribution during metadata edit does not erase factual clip
+provenance. Publishing lives in
 `mobile/lib/utils/inspired_by_tags.dart` and
 `mobile/lib/services/video_event_publisher.dart`; parsing in
 `mobile/packages/models/lib/src/video_event.dart`.

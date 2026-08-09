@@ -81,13 +81,13 @@ class ClipSourceCredit {
     this.relayUrl,
   });
 
-  factory ClipSourceCredit.fromJson(Map<String, dynamic> json) =>
-      ClipSourceCredit(
-        authorPubkey: json['authorPubkey'] as String,
-        eventId: json['eventId'] as String?,
-        addressableId: json['addressableId'] as String?,
-        relayUrl: json['relayUrl'] as String?,
-      );
+  factory ClipSourceCredit.fromJson(Map<String, dynamic> json) {
+    final credit = tryFromJson(json);
+    if (credit == null) {
+      throw const FormatException('ClipSourceCredit JSON missing authorPubkey');
+    }
+    return credit;
+  }
 
   factory ClipSourceCredit.fromAddressableId({
     required String addressableId,
@@ -99,6 +99,20 @@ class ClipSourceCredit {
     addressableId: addressableId,
     relayUrl: relayUrl,
   );
+
+  static ClipSourceCredit? tryFromJson(Map<String, dynamic> json) {
+    final authorPubkey = json['authorPubkey'];
+    if (authorPubkey is! String || authorPubkey.isEmpty) return null;
+
+    return ClipSourceCredit(
+      authorPubkey: authorPubkey,
+      eventId: _stringOrNull(json['eventId']),
+      addressableId: _stringOrNull(json['addressableId']),
+      relayUrl: _stringOrNull(json['relayUrl']),
+    );
+  }
+
+  static String? _stringOrNull(Object? value) => value is String ? value : null;
 
   final String authorPubkey;
   final String? eventId;
@@ -133,6 +147,8 @@ class ClipSourceCredit {
     if (relayUrl != null) 'relayUrl': relayUrl,
   };
 
+  /// Equality follows [identityKey] so provenance lists can dedupe the same
+  /// source even when later relay/event hints are richer.
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
