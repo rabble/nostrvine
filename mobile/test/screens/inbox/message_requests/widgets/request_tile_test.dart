@@ -242,6 +242,8 @@ void main() {
         await pumpTileFor(tester, retired);
 
         expect(find.text(l10n.inboxSupportRowTitle), findsOneWidget);
+        expect(find.text(l10n.dmRetiredThreadClosedTitle), findsOneWidget);
+        expect(find.text(l10n.inboxRequestTileSubtitle), findsNothing);
         expect(
           find.text(UserProfile.defaultDisplayNameFor(retired)),
           findsNothing,

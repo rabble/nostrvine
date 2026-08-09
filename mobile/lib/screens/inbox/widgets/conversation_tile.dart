@@ -95,6 +95,11 @@ class ConversationTile extends ConsumerWidget {
             locale: Localizations.localeOf(context).toLanguageTag(),
           )
         : '';
+    final effectiveSubtitleOverride =
+        subtitleOverride ??
+        (isRetiredModerationAccount(otherPubkey)
+            ? context.l10n.dmRetiredThreadClosedTitle
+            : null);
 
     return Semantics(
       button: true,
@@ -183,7 +188,7 @@ class ConversationTile extends ConsumerWidget {
                           ],
                         ],
                       ),
-                      if (subtitleOverride case final subtitle?) ...[
+                      if (effectiveSubtitleOverride case final subtitle?) ...[
                         const SizedBox(height: 4),
                         Text(
                           subtitle,

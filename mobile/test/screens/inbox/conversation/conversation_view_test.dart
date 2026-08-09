@@ -344,6 +344,69 @@ void main() {
 
         verifyNever(() => mockReactionsCubit.add(any()));
       });
+
+      testWidgets('retired moderation thread disables double-tap reactions', (
+        tester,
+      ) async {
+        final retired = kLegacyModerationPubkeys.first;
+        final message = DmMessage(
+          id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          conversationId:
+              'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+          senderPubkey: retired,
+          content: 'React to me',
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          giftWrapId:
+              'aaaaaaaabbbbbbbbccccccccddddddddaaaaaaaabbbbbbbbccccccccdddddddd',
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            counterparty: retired,
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              messages: [message],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await doubleTapBubble(tester);
+
+        verifyNever(() => mockReactionsCubit.add(any()));
+      });
+
+      testWidgets('retired moderation long-press keeps actions but hides '
+          'reaction choices', (tester) async {
+        final retired = kLegacyModerationPubkeys.first;
+        final message = DmMessage(
+          id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          conversationId:
+              'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+          senderPubkey: retired,
+          content: 'React to me',
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          giftWrapId:
+              'aaaaaaaabbbbbbbbccccccccddddddddaaaaaaaabbbbbbbbccccccccdddddddd',
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            counterparty: retired,
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              messages: [message],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.longPress(find.text('React to me'));
+        await tester.pumpAndSettle();
+
+        expect(find.text(kDefaultDmReactionEmojis.first), findsNothing);
+        expect(find.text(l10n.dmMessageActionCopyText), findsOneWidget);
+      });
     });
 
     // #6416. The header resolved the peer from kind-0 only, and neither

@@ -144,6 +144,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
 
     // Resolve other participant's profile for the app bar + empty state
     final otherPubkey = _otherPubkey;
+    final isRetiredModerationThread = isRetiredModerationAccount(otherPubkey);
     final profileAsync = ref.watch(fetchUserProfileProvider(otherPubkey));
     final profile = profileAsync.asData?.value;
     // The conversation and its history remain readable — they are the viewer's
@@ -254,6 +255,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                                   participantPubkeys: widget.participantPubkeys,
                                   blockedPubkeys: blockedReactors,
                                   displayName: displayName,
+                                  reactionsEnabled: !isRetiredModerationThread,
                                   imageUrl: isDeleted ? null : profile?.picture,
                                   nip05: isDeleted
                                       ? null
@@ -275,7 +277,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                     ),
                   ),
                 ),
-                if (isRetiredModerationAccount(otherPubkey))
+                if (isRetiredModerationThread)
                   _ClosedThreadNotice(currentPubkey: currentPubkey)
                 else
                   _SendBar(participantPubkeys: widget.participantPubkeys),
@@ -513,6 +515,7 @@ class _ConversationContent extends StatelessWidget {
     required this.participantPubkeys,
     required this.blockedPubkeys,
     required this.displayName,
+    required this.reactionsEnabled,
     this.imageUrl,
     this.nip05,
     this.onViewProfile,
@@ -525,6 +528,7 @@ class _ConversationContent extends StatelessWidget {
   /// Effective block/mute set; reactions from these pubkeys are hidden.
   final Set<String> blockedPubkeys;
   final String displayName;
+  final bool reactionsEnabled;
   final String? imageUrl;
   final String? nip05;
   final VoidCallback? onViewProfile;
@@ -570,6 +574,7 @@ class _ConversationContent extends StatelessWidget {
                     participantPubkeys: participantPubkeys,
                     blockedPubkeys: blockedPubkeys,
                     senderDisplayName: displayName,
+                    reactionsEnabled: reactionsEnabled,
                   ),
         };
       },
@@ -614,6 +619,7 @@ class _MessageList extends StatelessWidget {
     required this.participantPubkeys,
     required this.blockedPubkeys,
     required this.senderDisplayName,
+    required this.reactionsEnabled,
   });
 
   final List<DmMessage> messages;
@@ -623,6 +629,7 @@ class _MessageList extends StatelessWidget {
   /// Effective block/mute set; reactions from these pubkeys are hidden.
   final Set<String> blockedPubkeys;
   final String senderDisplayName;
+  final bool reactionsEnabled;
 
   Future<void> _onMessageLongPress(
     BuildContext context,
@@ -638,7 +645,9 @@ class _MessageList extends StatelessWidget {
     // message the recipient never received is meaningless (#4633 round 25).
     // A failed bubble's resend/delete affordance lives on a single TAP
     // (see [_onFailedMessageTap]), not this long-press menu.
-    final showPicker = !(isSent && deliveryStatus == DmDeliveryStatus.failed);
+    final showPicker =
+        reactionsEnabled &&
+        !(isSent && deliveryStatus == DmDeliveryStatus.failed);
     final result = await ReactionPickerOverlay.show(
       context: context,
       isSent: isSent,
@@ -866,7 +875,9 @@ class _MessageList extends StatelessWidget {
             // Double-tap-to-like, hidden on failed own sends to mirror the
             // long-press picker guard (reacting to a message the recipient
             // never received is meaningless).
-            onDoubleTap: isSent && status == DmDeliveryStatus.failed
+            onDoubleTap:
+                !reactionsEnabled ||
+                    (isSent && status == DmDeliveryStatus.failed)
                 ? null
                 : () => _likeOnDoubleTap(context, message),
             deliveryStatus: status,

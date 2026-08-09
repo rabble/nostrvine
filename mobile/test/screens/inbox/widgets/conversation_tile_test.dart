@@ -988,6 +988,7 @@ void main() {
           await pumpUnprofiledTileFor(tester, retired);
 
           expect(find.text(l10n.inboxSupportRowTitle), findsOneWidget);
+          expect(find.text(l10n.dmRetiredThreadClosedTitle), findsOneWidget);
           // Without the override this row rendered Divine's own wordmark
           // beside a generated "Adjective Animal N" stranger.
           expect(

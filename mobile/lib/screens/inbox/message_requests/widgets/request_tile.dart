@@ -59,6 +59,9 @@ class RequestTile extends ConsumerWidget {
             locale: Localizations.localeOf(context).toLanguageTag(),
           )
         : '';
+    final subtitle = isRetiredModerationAccount(otherPubkey)
+        ? context.l10n.dmRetiredThreadClosedTitle
+        : context.l10n.inboxRequestTileSubtitle;
 
     return Semantics(
       button: true,
@@ -129,7 +132,7 @@ class RequestTile extends ConsumerWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        context.l10n.inboxRequestTileSubtitle,
+                        subtitle,
                         style: VineTheme.bodyMediumFont(
                           color: context.vineColors.onSurfaceVariant,
                         ),
