@@ -44,7 +44,6 @@
 | `blossom_upload_spec_test.dart` | 63 | 1 | `skip: true` |
 | `blossom_upload_spec_test.dart` | 99 | 1 | `skip: !const bool.fromEnvironment('LIVE_TEST')` |
 | `bug_report_blossom_upload_test.dart` | 273, 309 | 2 | `skip: true` |
-| `bug_report_worker_api_test.dart` | 129 | 1 | `skip: true` |
 | `cache_first_query_test.dart` | 405, 637 | 2 | `skip: true` |
 | `explore_screen_real_relay_test.dart` | 259 | 1 | `skip: true` |
 | `hashtag_grid_view_simple_test.dart` | 123 | 1 | `skip: true` |

@@ -11,15 +11,12 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:analytics/analytics.dart';
-import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:dm_repository/dm_repository.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:models/models.dart'
     show BugReportData, BugReportResult, LogEntry;
-import 'package:nostr_client/nostr_client.dart' show Nip89ClientTag;
 import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/services/storage_management_service.dart';
 import 'package:openvine/utils/app_uptime.dart';
@@ -31,32 +28,17 @@ import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 
-typedef BugReportTargetRelayResolver =
-    Future<List<String>?> Function(String recipientPubkey);
-
 /// Service for creating and managing bug reports
 class BugReportService {
   BugReportService({
-    NIP17MessageService? nip17MessageService,
-    BlossomUploadService? blossomUploadService,
     ErrorAnalyticsTracker? errorTracker,
     StorageManagementService? storageManagementService,
-    BugReportTargetRelayResolver? targetRelayResolver,
-    List<String> fallbackTargetRelays = BugReportConfig.supportDmTargetRelays,
-  }) : _nip17MessageService = nip17MessageService,
-       _blossomUploadService = blossomUploadService,
-       _errorTracker = errorTracker ?? ErrorAnalyticsTracker(),
-       _storageManagementService = storageManagementService,
-       _targetRelayResolver = targetRelayResolver,
-       _fallbackTargetRelays = List.unmodifiable(fallbackTargetRelays);
+  }) : _errorTracker = errorTracker ?? ErrorAnalyticsTracker(),
+       _storageManagementService = storageManagementService;
 
   static const _uuid = Uuid();
-  final NIP17MessageService? _nip17MessageService;
-  final BlossomUploadService? _blossomUploadService;
   final ErrorAnalyticsTracker _errorTracker;
   final StorageManagementService? _storageManagementService;
-  final BugReportTargetRelayResolver? _targetRelayResolver;
-  final List<String> _fallbackTargetRelays;
 
   /// Collect comprehensive diagnostics for bug report
   Future<BugReportData> collectDiagnostics({
@@ -182,51 +164,6 @@ class BugReportService {
     }
   }
 
-  /// Upload full diagnostic logs to Blossom server.
-  /// Returns the Blossom URL on success, null on any failure.
-  /// Best-effort: failures are logged and return null, never throws.
-  // TODO(#6941): Wire only through a private diagnostic-log channel with
-  // documented storage, retention, access controls, and deletion ownership.
-  Future<String?> uploadFullLogs(BugReportData data) async {
-    if (_blossomUploadService == null) {
-      Log.debug(
-        'BlossomUploadService not available, skipping full log upload',
-        category: LogCategory.system,
-      );
-      return null;
-    }
-
-    try {
-      final sanitizedData = sanitizeSensitiveData(data);
-      final file = await _createBugReportFile(sanitizedData);
-      final url = await _blossomUploadService.uploadBugReport(
-        bugReportFile: file,
-      );
-
-      if (url != null) {
-        Log.info(
-          'Full logs uploaded to Blossom: $url',
-          category: LogCategory.system,
-        );
-      } else {
-        Log.warning(
-          'Blossom upload returned null, continuing without full logs URL',
-          category: LogCategory.system,
-        );
-      }
-
-      return url;
-    } catch (e, stackTrace) {
-      Log.error(
-        'Failed to upload full logs to Blossom: $e',
-        category: LogCategory.system,
-        error: e,
-        stackTrace: stackTrace,
-      );
-      return null;
-    }
-  }
-
   /// Sanitize sensitive data from bug report
   BugReportData sanitizeSensitiveData(BugReportData data) {
     Log.debug(
@@ -270,265 +207,6 @@ class BugReportService {
   int estimateReportSize(BugReportData data) {
     final jsonString = jsonEncode(data.toJson());
     return jsonString.length;
-  }
-
-  /// Send bug report to a specific recipient (for testing)
-  ///
-  /// This method uploads the full bug report file to Blossom server,
-  /// then sends a lightweight NIP-17 message with the URL
-  // TODO(#6941): Keep this out of public Zendesk/GitHub support paths until
-  // private full-log handling is defined.
-  Future<BugReportResult> sendBugReportToRecipient(
-    BugReportData data,
-    String recipientPubkey,
-  ) async {
-    if (_nip17MessageService == null) {
-      Log.error(
-        'NIP17MessageService not available, falling back to email',
-        category: LogCategory.system,
-      );
-      return sendBugReportViaEmail(data);
-    }
-
-    try {
-      Log.info(
-        'Sending bug report ${data.reportId} to $recipientPubkey',
-        category: LogCategory.system,
-      );
-
-      // Sanitize sensitive data before uploading
-      final sanitizedData = sanitizeSensitiveData(data);
-
-      // Create bug report file
-      final bugReportFile = await _createBugReportFile(sanitizedData);
-
-      String? bugReportUrl;
-
-      // Try Blossom upload first (if available)
-      if (_blossomUploadService != null) {
-        Log.info(
-          'Uploading bug report to Blossom server',
-          category: LogCategory.system,
-        );
-
-        bugReportUrl = await _blossomUploadService.uploadBugReport(
-          bugReportFile: bugReportFile,
-        );
-
-        Log.info(
-          '✅ Bug report uploaded to Blossom: $bugReportUrl',
-          category: LogCategory.system,
-        );
-      } else {
-        Log.warning(
-          'BlossomUploadService not available, will send summary only',
-          category: LogCategory.system,
-        );
-      }
-
-      // Prepare NIP-17 message content
-      final messageContent = _formatBugReportMessage(
-        sanitizedData,
-        bugReportUrl,
-      );
-      final targetRelays = await _resolveTargetRelays(recipientPubkey);
-
-      // Send via NIP-17 encrypted message
-      final result = await _nip17MessageService.sendPrivateMessage(
-        recipientPubkey: recipientPubkey,
-        content: messageContent,
-        targetRelays: targetRelays,
-        awaitRecipientOk: true,
-        selfWrapOnSoftUnconfirmed: false,
-        additionalTags: [
-          Nip89ClientTag.tag,
-          ['report_id', data.reportId],
-          ['app_version', data.appVersion],
-          if (bugReportUrl != null) ['bug_report_url', bugReportUrl],
-        ],
-      );
-
-      if (result.success && result.messageEventId != null) {
-        Log.info(
-          'Bug report sent successfully: ${result.messageEventId}',
-          category: LogCategory.system,
-        );
-        return BugReportResult.success(
-          reportId: data.reportId,
-          messageEventId: result.messageEventId!,
-        );
-      } else {
-        Log.error(
-          'Failed to send bug report DM: ${result.error}',
-          category: LogCategory.system,
-        );
-
-        // If DM failed but we have a Blossom URL, that's still useful
-        if (bugReportUrl != null) {
-          return BugReportResult(
-            success: true,
-            reportId: data.reportId,
-            timestamp: DateTime.now(),
-            error:
-                'Uploaded to Blossom but DM failed: ${result.error}. URL: $bugReportUrl',
-          );
-        }
-
-        // Fall back to email if both Blossom and DM failed
-        Log.info(
-          'Falling back to email attachment method',
-          category: LogCategory.system,
-        );
-        return sendBugReportViaEmail(data);
-      }
-    } catch (e, stackTrace) {
-      Log.error(
-        'Exception while sending bug report: $e',
-        category: LogCategory.system,
-        error: e,
-        stackTrace: stackTrace,
-      );
-
-      // Fall back to email on any exception
-      Log.info(
-        'Falling back to email attachment method',
-        category: LogCategory.system,
-      );
-      return sendBugReportViaEmail(data);
-    }
-  }
-
-  Future<List<String>?> _resolveTargetRelays(String recipientPubkey) async {
-    final resolver = _targetRelayResolver;
-    if (resolver == null) return _fallbackTargetRelays;
-    try {
-      final relays = await resolver(recipientPubkey);
-      if (relays == null || relays.isEmpty) {
-        return _fallbackTargetRelays;
-      }
-      return relays;
-    } catch (e) {
-      Log.warning(
-        'Failed to resolve bug-report DM target relays; using fallback relays: $e',
-        category: LogCategory.system,
-      );
-      return _fallbackTargetRelays;
-    }
-  }
-
-  /// Format bug report message for NIP-17 (with or without Blossom URL)
-  String _formatBugReportMessage(BugReportData data, String? bugReportUrl) {
-    final buffer = StringBuffer();
-
-    buffer.writeln('🐛 OpenVine Bug Report');
-    buffer.writeln('═' * 50);
-    buffer.writeln('Report ID: ${data.reportId}');
-    buffer.writeln('Timestamp: ${data.timestamp.toIso8601String()}');
-    buffer.writeln('App Version: ${data.appVersion}');
-    buffer.writeln();
-
-    buffer.writeln('📝 User Description:');
-    buffer.writeln(data.userDescription);
-    buffer.writeln();
-
-    if (bugReportUrl != null) {
-      buffer.writeln('📄 Full Diagnostic Logs:');
-      buffer.writeln(bugReportUrl);
-      buffer.writeln();
-    }
-
-    buffer.writeln('📱 Device Info:');
-    buffer.writeln('  Platform: ${data.deviceInfo['platform']}');
-    buffer.writeln('  Version: ${data.deviceInfo['version']}');
-    if (data.deviceInfo['model'] != null) {
-      buffer.writeln('  Model: ${data.deviceInfo['model']}');
-    }
-    buffer.writeln();
-
-    if (data.currentScreen != null) {
-      buffer.writeln('📍 Current Screen: ${data.currentScreen}');
-      buffer.writeln();
-    }
-
-    if (data.errorCounts.isNotEmpty) {
-      buffer.writeln('❌ Recent Error Summary:');
-      final sortedErrors = data.errorCounts.entries.toList()
-        ..sort((a, b) => b.value.compareTo(a.value));
-      for (final entry in sortedErrors.take(5)) {
-        buffer.writeln('  ${entry.key}: ${entry.value} occurrences');
-      }
-      buffer.writeln();
-    }
-
-    if (bugReportUrl == null) {
-      buffer.writeln('⚠️ Note: Full logs not uploaded (Blossom unavailable)');
-      buffer.writeln('Recent log entries: ${data.recentLogs.length}');
-    }
-
-    return buffer.toString();
-  }
-
-  /// Create a bug report file from sanitized data
-  Future<File> _createBugReportFile(BugReportData data) async {
-    final tempDir = await getTemporaryDirectory();
-    final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
-    final fileName = 'openvine_bug_report_${data.reportId}_$timestamp.txt';
-    final filePath = '${tempDir.path}/$fileName';
-
-    // Build comprehensive bug report file content
-    final buffer = StringBuffer();
-    buffer.writeln('OpenVine Bug Report');
-    buffer.writeln('═' * 80);
-    buffer.writeln('Report ID: ${data.reportId}');
-    buffer.writeln('Timestamp: ${data.timestamp.toIso8601String()}');
-    buffer.writeln('App Version: ${data.appVersion}');
-    if (data.currentScreen != null) {
-      buffer.writeln('Current Screen: ${data.currentScreen}');
-    }
-    if (data.userPubkey != null) {
-      buffer.writeln('User Pubkey: ${data.userPubkey}');
-    }
-    buffer.writeln('═' * 80);
-    buffer.writeln();
-    buffer.writeln('User Description:');
-    buffer.writeln(data.userDescription);
-    buffer.writeln();
-    buffer.writeln('═' * 80);
-    buffer.writeln('Device Information:');
-    buffer.writeln(const JsonEncoder.withIndent('  ').convert(data.deviceInfo));
-    buffer.writeln();
-    buffer.writeln('═' * 80);
-    buffer.writeln('Recent Logs (${data.recentLogs.length} entries):');
-    for (final log in data.recentLogs) {
-      buffer.writeln(
-        '[${log.timestamp.toIso8601String()}] ${log.level.name.toUpperCase()} - ${log.message}',
-      );
-      if (log.error != null) {
-        buffer.writeln('  Error: ${log.error}');
-      }
-      if (log.stackTrace != null) {
-        buffer.writeln('  Stack: ${log.stackTrace}');
-      }
-    }
-    if (data.errorCounts.isNotEmpty) {
-      buffer.writeln();
-      buffer.writeln('═' * 80);
-      buffer.writeln('Error Counts:');
-      data.errorCounts.forEach((key, value) {
-        buffer.writeln('  $key: $value');
-      });
-    }
-
-    final file = File(filePath);
-    await file.writeAsString(buffer.toString());
-
-    final fileSizeMB = (await file.length() / (1024 * 1024)).toStringAsFixed(2);
-    Log.info(
-      'Bug report file created: $filePath ($fileSizeMB MB)',
-      category: LogCategory.system,
-    );
-
-    return file;
   }
 
   /// Send bug report via email by creating a file attachment

@@ -8,6 +8,8 @@
 > Zendesk/GitHub support flows. Public support paths may include only bounded
 > sanitized summaries. Full-log collection requires the private storage,
 > retention, access-control, and deletion-owner policy tracked in #6941.
+> The historical design below is preserved only as background; it does not
+> describe current code.
 
 ## Problem
 

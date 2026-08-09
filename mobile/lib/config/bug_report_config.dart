@@ -21,26 +21,15 @@ const _credentialSeparator = r'''["']?\s*(?::=?|=>?)\s*''';
 /// field printed after it. The optional `bearer`/`basic`/`token` scheme word
 /// keeps `Authorization: Bearer <jwt>` from redacting only the word "Bearer".
 const _credentialValue =
-    r'''(?:"(?:\\.|[^"\\\n])*"'''
+    r'''(?:\[[^\]\n]*\]'''
+    r'''|"(?:\\.|[^"\\\n])*"'''
     r"""|'(?:''|\\.|[^'\\\n])*'"""
     r'''|["']?(?:(?:bearer|basic|token)\s+)?[^\s"',;}]+)''';
 
 /// Configuration for bug report system
 class BugReportConfig {
-  /// API endpoint for submitting bug reports
-  /// Worker deployed at: https://bug-reports.protestnet.workers.dev
-  /// Will move to reports.divine.video once custom domain is configured
-  static const String bugReportApiUrl =
-      'https://bug-reports.protestnet.workers.dev/api/bug-reports';
-
   /// Email address for receiving bug reports (fallback only)
   static const String supportEmail = 'contact@divine.video';
-
-  /// Static fallback DM target for support bug reports when the support
-  /// account's advertised NIP-17 inbox relays cannot be resolved.
-  static const List<String> supportDmTargetRelays = [
-    'wss://relay.divine.video',
-  ];
 
   /// Maximum log entries to include in bug report
   static const int maxLogEntries = 5000;
@@ -89,13 +78,14 @@ class BugReportConfig {
     // key (`pub_key`, `public_key`, `publicKey`), which support needs for
     // triage and which is public by construction.
     //
-    // The `[_-]` segment class deliberately excludes `_`: writing it as `\w`
-    // would let the same key be parsed 2^n ways, and a 60-character key would
-    // then take tens of seconds to fail to match, on the UI thread, over text
-    // that can come from a remote profile or an attacker-typed report field.
+    // The continuation class after `[_-]` deliberately excludes `_`: writing
+    // it as `\w` would let the same key be parsed 2^n ways, and a
+    // 60-character key would then take tens of seconds to fail to match, on
+    // the UI thread, over text that can come from a remote profile or an
+    // attacker-typed report field.
     RegExp(
-      '(?:authorization|passphrase|passcode|password|passwd|pwd'
-      '|token|secret|api[_-]?key'
+      '(?:(?:authorization|passphrase|passcode|password|passwd|pwd'
+      '|token|secret|api[_-]?key)s?'
       '|(?<=[_-])(?<!pub[_-])(?<!public[_-])key)'
       '(?:[_-][A-Za-z0-9]+)*'
       '$_credentialSeparator$_credentialValue',
@@ -107,7 +97,7 @@ class BugReportConfig {
     // uppercase for the same non-ambiguity reason as above.
     RegExp(
       '(?:[Pp]assphrase|[Pp]asscode|[Pp]assword|[Pp]asswd|[Pp]wd'
-      '|[Tt]oken|[Ss]ecret)'
+      '|[Tt]oken|[Ss]ecret)s?'
       '(?:[A-Z][a-z0-9]*)+'
       '$_credentialSeparator$_credentialValue',
     ),

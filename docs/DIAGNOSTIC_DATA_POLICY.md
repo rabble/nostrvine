@@ -20,6 +20,11 @@ Public Zendesk/GitHub payloads may include:
 - User-selected attachments only when the user intentionally includes them and
   the UI makes clear that attachments can be mirrored publicly.
 
+Zendesk requester identity fields are intentionally not redacted: name, email,
+and `external_id` must stay intact so Zendesk can connect the ticket to the
+right requester. Do not mirror those fields into public GitHub issues unless
+the mirror owner has explicitly accepted that exposure.
+
 Public Zendesk/GitHub payloads must not include:
 
 - Nostr private keys, bearer tokens, passwords, or secret values.
@@ -44,7 +49,7 @@ and can be preserved privately in Zendesk metadata when support needs them.
 ## Residual Risks
 
 Redaction is applied in Dart, so it only covers text that crosses a Dart
-submission boundary. Two gaps are known and accepted:
+submission boundary. These limits are known and accepted:
 
 - Hex-form private keys are not redacted, because 64-char hex is
   indistinguishable from public event IDs and pubkeys, and blanket redaction
