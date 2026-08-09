@@ -986,6 +986,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
               editorKey: _editorKey,
               removeAreaKey: _removeAreaKey,
               originalClipAspectRatio: clip?.originalAspectRatio ?? 9 / 16,
+              targetClipAspectRatio: clip?.targetAspectRatio.value,
               bodySizeNotifier: _bodySizeNotifier,
               zoomMatrixNotifier: _zoomMatrixNotifier,
               playTimeNotifier: _playTimeNotifier,

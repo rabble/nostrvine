@@ -303,8 +303,7 @@ class VideoEditorProviderState {
           ? null
           : (finalRenderedClip ?? this.finalRenderedClip),
       editorStateHistory: editorStateHistory ?? this.editorStateHistory,
-      editorEditingParameters:
-          clearEditorEditingParameters || clearFinalRenderedClip
+      editorEditingParameters: clearEditorEditingParameters
           ? null
           : editorEditingParameters ?? this.editorEditingParameters,
       collaboratorPubkeys: collaboratorPubkeys ?? this.collaboratorPubkeys,

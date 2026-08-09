@@ -32,6 +32,7 @@ class VideoEditorScope extends InheritedWidget {
     required this.zoomMatrixNotifier,
     required this.playTimeNotifier,
     required this.fromLibrary,
+    this.targetClipAspectRatio,
     this.editorOverride,
     this.awaitPushCoverTransition,
     super.child = const SizedBox.shrink(),
@@ -71,6 +72,9 @@ class VideoEditorScope extends InheritedWidget {
   /// Original aspect ratio of the clip being edited.
   final double originalClipAspectRatio;
 
+  /// Target crop aspect ratio of the clip being edited.
+  final double? targetClipAspectRatio;
+
   /// Whether the clip was selected from the device library.
   final bool fromLibrary;
 
@@ -100,17 +104,33 @@ class VideoEditorScope extends InheritedWidget {
   final Future<void> Function()? awaitPushCoverTransition;
 
   /// FittedBox scale factor between bodySize and renderSize.
-  double get fittedBoxScale =>
-      calculateFittedBoxScale(bodySizeNotifier.value, originalClipAspectRatio);
+  double get fittedBoxScale => calculateFittedBoxScale(
+    bodySizeNotifier.value,
+    originalClipAspectRatio,
+    targetAspectRatio: targetClipAspectRatio,
+  );
 
   /// Calculates the FittedBox scale factor for a given body size and aspect ratio.
-  static double calculateFittedBoxScale(Size bodySize, double aspectRatio) {
+  static double calculateFittedBoxScale(
+    Size bodySize,
+    double aspectRatio, {
+    double? targetAspectRatio,
+  }) {
     if (bodySize == Size.zero) return 1.0;
+    final targetRatio = targetAspectRatio ?? aspectRatio;
     final height = bodySize.shortestSide;
     final renderSize = Size(height * aspectRatio, height);
+
+    final Size targetSize;
+    if (bodySize.aspectRatio > targetRatio) {
+      targetSize = Size(bodySize.height * targetRatio, bodySize.height);
+    } else {
+      targetSize = Size(bodySize.width, bodySize.width / targetRatio);
+    }
+
     return max(
-      bodySize.width / renderSize.width,
-      bodySize.height / renderSize.height,
+      targetSize.width / renderSize.width,
+      targetSize.height / renderSize.height,
     );
   }
 
