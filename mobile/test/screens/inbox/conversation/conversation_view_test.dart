@@ -19,6 +19,7 @@ import 'package:openvine/blocs/dm/conversation/collaborator_invite_actions_cubit
 import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
 import 'package:openvine/blocs/dm/reactions/conversation_reactions_cubit.dart';
 import 'package:openvine/blocs/dm/restore_status/dm_restore_status_cubit.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/collaborator_invite.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -176,6 +177,7 @@ void main() {
       bool otherProfileVanished = false,
       MockGoRouter? goRouter,
       DmRestoreStatusState? restoreStatus,
+      String counterparty = otherPubkey,
     }) {
       final effectiveState = state ?? const ConversationState();
       if (restoreStatus != null) {
@@ -202,10 +204,10 @@ void main() {
           profileRepositoryProvider.overrideWithValue(null),
           profileReadRepositoryProvider.overrideWithValue(null),
           fetchUserProfileProvider(
-            otherPubkey,
+            counterparty,
           ).overrideWith((ref) async => otherProfile),
           profileVanishedProvider(
-            otherPubkey,
+            counterparty,
           ).overrideWith((ref) => Stream.value(otherProfileVanished)),
           // The view now reads the blocklist eagerly in build() to filter
           // reaction reactors, so every pump needs a stubbed repository.
@@ -219,8 +221,8 @@ void main() {
               value: mockReactionsCubit,
               child: BlocProvider<DmRestoreStatusCubit>.value(
                 value: mockRestoreStatusCubit,
-                child: const ConversationView(
-                  participantPubkeys: [otherPubkey],
+                child: ConversationView(
+                  participantPubkeys: [counterparty],
                 ),
               ),
             ),
@@ -334,6 +336,40 @@ void main() {
         await doubleTapBubble(tester);
 
         verifyNever(() => mockReactionsCubit.add(any()));
+      });
+    });
+
+    // #6416. The header resolved the peer from kind-0 only, and neither
+    // moderation key has one the app can read — the current account's is not on
+    // the single relay production queries, and a retired key has no events at
+    // all — so an enforcement thread was titled "Adjective Animal N".
+    group('moderation identity', () {
+      testWidgets('titles a retired moderation thread as Divine', (
+        tester,
+      ) async {
+        final retired = kLegacyModerationPubkeys.first;
+
+        await tester.pumpWidget(buildSubject(counterparty: retired));
+        await tester.pump();
+
+        expect(find.text(l10n.inboxSupportRowTitle), findsOneWidget);
+        expect(
+          find.text(UserProfile.defaultDisplayNameFor(retired)),
+          findsNothing,
+        );
+      });
+
+      testWidgets('leaves an ordinary thread on its generated name', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        expect(
+          find.text(UserProfile.defaultDisplayNameFor(otherPubkey)),
+          findsOneWidget,
+        );
+        expect(find.text(l10n.inboxSupportRowTitle), findsNothing);
       });
     });
 

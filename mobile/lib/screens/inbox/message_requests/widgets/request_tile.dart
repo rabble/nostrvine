@@ -5,9 +5,11 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/inbox/widgets/moderation_identity.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -36,12 +38,14 @@ class RequestTile extends ConsumerWidget {
 
     final profileAsync = ref.watch(userProfileReactiveProvider(otherPubkey));
 
-    final displayName = profileAsync.maybeWhen(
-      data: (profile) =>
-          profile?.bestDisplayName ??
-          UserProfile.defaultDisplayNameFor(otherPubkey),
-      orElse: () => UserProfile.defaultDisplayNameFor(otherPubkey),
-    );
+    final displayName =
+        moderationDisplayName(context, otherPubkey) ??
+        profileAsync.maybeWhen<String>(
+          data: (profile) =>
+              profile?.bestDisplayName ??
+              UserProfile.defaultDisplayNameFor(otherPubkey),
+          orElse: () => UserProfile.defaultDisplayNameFor(otherPubkey),
+        );
 
     final imageUrl = profileAsync.maybeWhen(
       data: (profile) => profile?.picture,
@@ -87,6 +91,9 @@ class RequestTile extends ConsumerWidget {
                     name: displayName,
                     placeholderSeed: otherPubkey,
                     size: 40,
+                    contentOverride: isModerationAccount(otherPubkey)
+                        ? const ModerationAvatar()
+                        : null,
                   ),
                 ),
                 Expanded(

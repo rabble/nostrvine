@@ -942,6 +942,83 @@ void main() {
 
         expect(wordmarkFinder(), findsOneWidget);
       });
+
+      // The cases above stub a kind-0 that already carries the right name, so
+      // they cannot catch the naming half. In production there is no kind-0 to
+      // read: the account's is not on the single relay the app queries, and a
+      // retired key has no events at all (#6416).
+      group('with no kind-0 on the relay', () {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        Future<void> pumpUnprofiledTileFor(
+          WidgetTester tester,
+          String counterparty,
+        ) async {
+          await tester.pumpWidget(
+            testMaterialApp(
+              additionalOverrides: [
+                fetchUserProfileProvider(
+                  counterparty,
+                ).overrideWith((ref) async => null),
+              ],
+              home: Scaffold(
+                body: ConversationTile(
+                  conversation: DmConversation(
+                    id:
+                        'dddddddddddddddddddddddddddddddddddddddddddddddddd'
+                        'dddddddddddddd',
+                    participantPubkeys: [currentPubkey, counterparty],
+                    isGroup: false,
+                    createdAt: nowUnix,
+                  ),
+                  currentUserPubkey: currentPubkey,
+                  onTap: () {},
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+        }
+
+        testWidgets('a retired thread is still named as moderation', (
+          tester,
+        ) async {
+          final retired = kLegacyModerationPubkeys.first;
+
+          await pumpUnprofiledTileFor(tester, retired);
+
+          expect(find.text(l10n.inboxSupportRowTitle), findsOneWidget);
+          // Without the override this row rendered Divine's own wordmark
+          // beside a generated "Adjective Animal N" stranger.
+          expect(
+            find.text(UserProfile.defaultDisplayNameFor(retired)),
+            findsNothing,
+          );
+        });
+
+        testWidgets('the current key is named without a kind-0 too', (
+          tester,
+        ) async {
+          await pumpUnprofiledTileFor(tester, moderationPubkey);
+
+          expect(find.text(l10n.inboxSupportRowTitle), findsOneWidget);
+        });
+
+        testWidgets(
+          'an ordinary account still falls back to a generated name',
+          (
+            tester,
+          ) async {
+            await pumpUnprofiledTileFor(tester, otherPubkey);
+
+            expect(
+              find.text(UserProfile.defaultDisplayNameFor(otherPubkey)),
+              findsOneWidget,
+            );
+            expect(find.text(l10n.inboxSupportRowTitle), findsNothing);
+          },
+        );
+      });
     });
 
     group('deleted accounts', () {

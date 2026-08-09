@@ -20,6 +20,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/feed/dm_reply_context.dart';
 import 'package:openvine/screens/inbox/conversation/dm_video_target.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
+import 'package:openvine/screens/inbox/widgets/moderation_identity.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/collaborator_invite_parser.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
@@ -146,7 +147,8 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
         .maybeWhen(data: (vanished) => vanished, orElse: () => false);
     final displayName = isDeleted
         ? context.l10n.profileDeletedAccountName
-        : profile?.bestDisplayName ??
+        : moderationDisplayName(context, otherPubkey) ??
+              profile?.bestDisplayName ??
               UserProfile.defaultDisplayNameFor(otherPubkey);
     // Prefer the profile's NIP-05 / divine handle when set, otherwise
     // fall back to a truncated npub so the header always carries a
