@@ -24,9 +24,17 @@ and the sign-in path — not the social flows. Restore each flow in the PR that
 fixes it, and put back the credentials it needs (`SEARCH_USER` for
 `searchUserFlow`) in the same change.
 
-The `e2e-smoke-ios` and `e2e-smoke-android` Codemagic workflows are
-`triggering: events: []`, so nothing runs them automatically. They are manual
-dispatches, and GitHub CI does not cover this lane at all.
+`e2e-smoke-ios` runs automatically on pull requests targeting `main`, scoped
+to changes under `mobile/` and non-blocking until a flake baseline exists.
+`e2e-smoke-android` remains a manual dispatch. GitHub CI does not cover this
+lane at all.
+
+**Fork pull requests fail the e2e check by design.** Codemagic withholds
+secure variables from outside-contributor builds, so a fork PR stops at the
+credential guard in the Maestro step with an explanation. That red check is
+not a code failure and the contributor cannot make it green. The maintainer
+path: pull the branch into this repo, where it builds with full secrets, or
+re-run the workflow on the contributor's behalf.
 
 ---
 
