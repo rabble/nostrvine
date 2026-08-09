@@ -2,17 +2,20 @@ appId: co.openvine.app
 ---
 # Assert we have landed on Explore with the New tab available.
 
-# Bottom navigation is the reliable "which section am I in" signal.
+# Wait on the search field, not on the bottom-nav explore_tab: that button
+# is present on every screen, so waiting for it proves nothing and lets the
+# assertions below race the Explore render.
+#
+# Explore supplies its own header, so there is no app bar here -- the
+# previous "Menu" assertion targeted chrome that app_shell suppresses for
+# this route (appBar: null) and could never pass.
 - extendedWaitUntil:
     visible:
-      id: "explore_tab"
+      text: "Search.*"
     timeout: 30000
 
-# Explore renders its own header, so there is no app bar here: the previous
-# "Menu" assertion targeted a chrome element that app_shell suppresses for
-# this route (appBar: null for the explore grid) and could never pass.
 - assertVisible:
-    text: "Search.*"
+    id: "explore_tab"
 
 # The New tab, by label only.
 #
