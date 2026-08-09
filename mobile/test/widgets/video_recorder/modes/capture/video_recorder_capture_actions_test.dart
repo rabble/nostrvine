@@ -1,3 +1,5 @@
+import 'dart:ui' show Tristate;
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_camera/divine_camera.dart'
     show DivineVideoStabilizationMode;
@@ -7,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/clip_manager_state.dart';
@@ -14,6 +17,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_state.dart';
+import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/widgets/video_recorder/modes/capture/video_recorder_capture_actions.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -39,8 +43,13 @@ void main() {
       VideoRecorderState recordingState = VideoRecorderState.idle,
       VideoRecorderMode recorderMode = VideoRecorderMode.capture,
       DivineFlashMode flashMode = DivineFlashMode.auto,
+      TimerDuration timerDuration = TimerDuration.off,
+      model.AspectRatio aspectRatio = model.AspectRatio.vertical,
       bool canSwitchCamera = true,
+      bool isFrontCamera = false,
       bool hasFlash = true,
+      bool showGridLines = false,
+      bool showLastClipOverlay = false,
       bool isVideoStabilizationSupported = false,
       DivineVideoStabilizationMode videoStabilizationMode =
           DivineVideoStabilizationMode.off,
@@ -53,8 +62,13 @@ void main() {
           recordingState: recordingState,
           recorderMode: recorderMode,
           flashMode: flashMode,
+          timerDuration: timerDuration,
+          aspectRatio: aspectRatio,
           canSwitchCamera: canSwitchCamera,
+          isFrontCamera: isFrontCamera,
           hasFlash: hasFlash,
+          showGridLines: showGridLines,
+          showLastClipOverlay: showLastClipOverlay,
           isVideoStabilizationSupported: isVideoStabilizationSupported,
           videoStabilizationMode: videoStabilizationMode,
           availableVideoStabilizationModes: availableVideoStabilizationModes,
@@ -371,6 +385,159 @@ void main() {
         verify(
           () => recorderBloc.add(const VideoRecorderGridLinesToggled()),
         ).called(1);
+      });
+    });
+
+    group('semantics', () {
+      testWidgets('announces the active flash mode', (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildWidget(flashMode: DivineFlashMode.torch),
+        );
+        await tester.pumpAndSettle();
+
+        final node = tester.getSemantics(
+          find.byTooltip(l10n.videoRecorderToggleFlashLabel),
+        );
+        // The tooltip is excluded from semantics, so the label is announced
+        // once and the flash state follows it.
+        expect(node.label, equals(l10n.videoRecorderToggleFlashLabel));
+        expect(node.value, equals(l10n.videoRecorderFlashValueOn));
+
+        handle.dispose();
+      });
+
+      testWidgets('announces the active timer duration', (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(buildWidget(timerDuration: TimerDuration.ten));
+        await tester.pumpAndSettle();
+
+        final node = tester.getSemantics(
+          find.byTooltip(l10n.videoRecorderCycleTimerLabel),
+        );
+        expect(node.value, equals(l10n.videoRecorderTimerValueTenSeconds));
+
+        handle.dispose();
+      });
+
+      testWidgets('announces the active aspect ratio', (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildWidget(aspectRatio: model.AspectRatio.square),
+        );
+        await tester.pumpAndSettle();
+
+        final node = tester.getSemantics(
+          find.byTooltip(l10n.videoRecorderToggleAspectRatioLabel),
+        );
+        expect(node.value, equals(l10n.videoRecorderAspectRatioValueSquare));
+
+        handle.dispose();
+      });
+
+      testWidgets('announces which camera is active', (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(buildWidget(isFrontCamera: true));
+        await tester.pumpAndSettle();
+
+        final node = tester.getSemantics(
+          find.byTooltip(l10n.videoRecorderSwitchCameraLabel),
+        );
+        expect(node.value, equals(l10n.videoRecorderCameraValueFront));
+
+        handle.dispose();
+      });
+
+      testWidgets('announces the active stabilization mode', (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildWidget(
+            isVideoStabilizationSupported: true,
+            videoStabilizationMode: DivineVideoStabilizationMode.cinematic,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final node = tester.getSemantics(
+          find.byTooltip(l10n.videoRecorderStabilizationLabel),
+        );
+        expect(
+          node.value,
+          equals(l10n.videoRecorderStabilizationModeCinematic),
+        );
+
+        handle.dispose();
+      });
+
+      testWidgets('announces the grid overlay as toggled when on', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildWidget(
+            recorderMode: VideoRecorderMode.stopMotion,
+            showGridLines: true,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final node = tester.getSemantics(
+          find.byTooltip(l10n.videoRecorderToggleGridLabel),
+        );
+        expect(node.flagsCollection.isToggled, Tristate.isTrue);
+
+        handle.dispose();
+      });
+
+      testWidgets('announces the grid overlay as untoggled when off', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildWidget(recorderMode: VideoRecorderMode.stopMotion),
+        );
+        await tester.pumpAndSettle();
+
+        final node = tester.getSemantics(
+          find.byTooltip(l10n.videoRecorderToggleGridLabel),
+        );
+        expect(node.flagsCollection.isToggled, Tristate.isFalse);
+
+        handle.dispose();
+      });
+
+      testWidgets('announces the ghost frame as toggled when on', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildWidget(
+            recorderMode: VideoRecorderMode.stopMotion,
+            showLastClipOverlay: true,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final node = tester.getSemantics(
+          find.byTooltip(l10n.videoRecorderToggleGhostFrameLabel),
+        );
+        expect(node.flagsCollection.isToggled, Tristate.isTrue);
+
+        handle.dispose();
+      });
+
+      testWidgets('marks an unavailable control as disabled', (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(buildWidget(hasFlash: false));
+        await tester.pumpAndSettle();
+
+        final node = tester.getSemantics(
+          find.byTooltip(l10n.videoRecorderToggleFlashLabel),
+        );
+        expect(node.flagsCollection.isButton, isTrue);
+        expect(node.flagsCollection.isEnabled, Tristate.isFalse);
+
+        handle.dispose();
       });
     });
 

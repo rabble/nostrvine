@@ -5108,8 +5108,9 @@
   },
   "videoRecorderCloseLabel": "Đóng máy quay",
   "videoRecorderContinueToEditorLabel": "Tiếp tục tới trình chỉnh sửa video",
-  "videoRecorderCaptureCloseLabel": "Đóng",
-  "videoRecorderCaptureNextLabel": "Tiếp",
+  "videoRecorderCameraPreviewLabel": "Bản xem trước camera",
+  "videoRecorderCameraPreviewFocusHint": "Lấy nét camera",
+  "videoRecorderSwitchToModeLabel": "Chuyển sang chế độ {mode}",
   "videoRecorderLipSyncAddAudioFirst": "Thêm âm thanh trước khi quay",
   "@videoRecorderLipSyncAddAudioFirst": {
     "description": "Snackbar shown when the user taps the record button in lip-sync mode without first selecting a sound."
@@ -5137,6 +5138,16 @@
   "videoRecorderStabilizationModePreviewOptimized": "Tối ưu xem trước",
   "videoRecorderStabilizationModeLowLatency": "Độ trễ thấp",
   "videoRecorderStabilizationModeAuto": "Tự động",
+  "videoRecorderFlashValueOff": "Tắt",
+  "videoRecorderFlashValueOn": "Bật",
+  "videoRecorderFlashValueAuto": "Tự động",
+  "videoRecorderTimerValueOff": "Tắt",
+  "videoRecorderTimerValueThreeSeconds": "3 giây",
+  "videoRecorderTimerValueTenSeconds": "10 giây",
+  "videoRecorderAspectRatioValueSquare": "Vuông",
+  "videoRecorderAspectRatioValueVertical": "Dọc",
+  "videoRecorderCameraValueFront": "Camera trước",
+  "videoRecorderCameraValueBack": "Camera sau",
   "videoRecorderLibraryEmptyLabel": "Thư viện clip, không có clip",
   "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{Mở thư viện clip, 1 clip} other{Mở thư viện clip, {clipCount} clip}}",
   "@videoRecorderLibraryOpenLabel": {

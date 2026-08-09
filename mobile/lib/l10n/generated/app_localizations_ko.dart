@@ -8119,10 +8119,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoRecorderContinueToEditorLabel => '동영상 편집기로 계속';
 
   @override
-  String get videoRecorderCaptureCloseLabel => '닫기';
+  String get videoRecorderCameraPreviewLabel => '카메라 미리보기';
 
   @override
-  String get videoRecorderCaptureNextLabel => '다음';
+  String get videoRecorderCameraPreviewFocusHint => '카메라 초점 맞추기';
+
+  @override
+  String videoRecorderSwitchToModeLabel(String mode) {
+    return '$mode 모드로 전환';
+  }
 
   @override
   String get videoRecorderLipSyncAddAudioFirst => '녹화하기 전에 오디오를 추가하세요';
@@ -8174,6 +8179,36 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoRecorderStabilizationModeAuto => '자동';
+
+  @override
+  String get videoRecorderFlashValueOff => '끔';
+
+  @override
+  String get videoRecorderFlashValueOn => '켬';
+
+  @override
+  String get videoRecorderFlashValueAuto => '자동';
+
+  @override
+  String get videoRecorderTimerValueOff => '끔';
+
+  @override
+  String get videoRecorderTimerValueThreeSeconds => '3초';
+
+  @override
+  String get videoRecorderTimerValueTenSeconds => '10초';
+
+  @override
+  String get videoRecorderAspectRatioValueSquare => '정사각형';
+
+  @override
+  String get videoRecorderAspectRatioValueVertical => '세로';
+
+  @override
+  String get videoRecorderCameraValueFront => '전면 카메라';
+
+  @override
+  String get videoRecorderCameraValueBack => '후면 카메라';
 
   @override
   String get videoRecorderLibraryEmptyLabel => '클립 보관함, 클립 없음';

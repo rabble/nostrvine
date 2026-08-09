@@ -8638,10 +8638,15 @@ class AppLocalizationsRo extends AppLocalizations {
       'Continuă către editorul video';
 
   @override
-  String get videoRecorderCaptureCloseLabel => 'Închide';
+  String get videoRecorderCameraPreviewLabel => 'Previzualizare cameră';
 
   @override
-  String get videoRecorderCaptureNextLabel => 'Următorul';
+  String get videoRecorderCameraPreviewFocusHint => 'Focalizează camera';
+
+  @override
+  String videoRecorderSwitchToModeLabel(String mode) {
+    return 'Comută la modul $mode';
+  }
 
   @override
   String get videoRecorderLipSyncAddAudioFirst =>
@@ -8699,6 +8704,36 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get videoRecorderStabilizationModeAuto => 'Automată';
+
+  @override
+  String get videoRecorderFlashValueOff => 'Dezactivat';
+
+  @override
+  String get videoRecorderFlashValueOn => 'Activat';
+
+  @override
+  String get videoRecorderFlashValueAuto => 'Automat';
+
+  @override
+  String get videoRecorderTimerValueOff => 'Dezactivat';
+
+  @override
+  String get videoRecorderTimerValueThreeSeconds => '3 secunde';
+
+  @override
+  String get videoRecorderTimerValueTenSeconds => '10 secunde';
+
+  @override
+  String get videoRecorderAspectRatioValueSquare => 'Pătrat';
+
+  @override
+  String get videoRecorderAspectRatioValueVertical => 'Vertical';
+
+  @override
+  String get videoRecorderCameraValueFront => 'Cameră frontală';
+
+  @override
+  String get videoRecorderCameraValueBack => 'Cameră posterioară';
 
   @override
   String get videoRecorderLibraryEmptyLabel =>

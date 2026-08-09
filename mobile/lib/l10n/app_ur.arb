@@ -5108,8 +5108,9 @@
   },
   "videoRecorderCloseLabel": "ویڈیو ریکارڈر بند کریں",
   "videoRecorderContinueToEditorLabel": "ویڈیو ایڈیٹر پر جائیں",
-  "videoRecorderCaptureCloseLabel": "بند کریں",
-  "videoRecorderCaptureNextLabel": "آگے",
+  "videoRecorderCameraPreviewLabel": "کیمرہ پیش منظر",
+  "videoRecorderCameraPreviewFocusHint": "کیمرے کو فوکس کریں",
+  "videoRecorderSwitchToModeLabel": "{mode} موڈ پر سوئچ کریں",
   "videoRecorderLipSyncAddAudioFirst": "ریکارڈنگ سے پہلے آڈیو شامل کریں",
   "@videoRecorderLipSyncAddAudioFirst": {
     "description": "Snackbar shown when the user taps the record button in lip-sync mode without first selecting a sound."
@@ -5137,6 +5138,16 @@
   "videoRecorderStabilizationModePreviewOptimized": "پیش منظر بہتر",
   "videoRecorderStabilizationModeLowLatency": "کم تاخیر",
   "videoRecorderStabilizationModeAuto": "خودکار",
+  "videoRecorderFlashValueOff": "بند",
+  "videoRecorderFlashValueOn": "چالو",
+  "videoRecorderFlashValueAuto": "خودکار",
+  "videoRecorderTimerValueOff": "بند",
+  "videoRecorderTimerValueThreeSeconds": "3 سیکنڈ",
+  "videoRecorderTimerValueTenSeconds": "10 سیکنڈ",
+  "videoRecorderAspectRatioValueSquare": "مربع",
+  "videoRecorderAspectRatioValueVertical": "عمودی",
+  "videoRecorderCameraValueFront": "سامنے والا کیمرہ",
+  "videoRecorderCameraValueBack": "پچھلا کیمرہ",
   "videoRecorderLibraryEmptyLabel": "کلپ لائبریری، کوئی کلپ نہیں",
   "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{کلپ لائبریری کھولیں، 1 کلپ} other{کلپ لائبریری کھولیں، {clipCount} کلپس}}",
   "@videoRecorderLibraryOpenLabel": {

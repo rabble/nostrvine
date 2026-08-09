@@ -67,8 +67,7 @@ class VideoRecorderCaptureTopBar extends ConsumerWidget {
                   children: [
                     DivineIconButton(
                       icon: .x,
-                      semanticLabel:
-                          context.l10n.videoRecorderCaptureCloseLabel,
+                      semanticLabel: context.l10n.videoRecorderCloseLabel,
                       size: .small,
                       type: .ghostOverMedia,
                       onPressed: () => fromEditor
@@ -82,7 +81,7 @@ class VideoRecorderCaptureTopBar extends ConsumerWidget {
                       child: DivineIconButton(
                         icon: .caretRight,
                         semanticLabel:
-                            context.l10n.videoRecorderCaptureNextLabel,
+                            context.l10n.videoRecorderContinueToEditorLabel,
                         size: .small,
                         type: .ghostOverMedia,
                         onPressed: capturesStills

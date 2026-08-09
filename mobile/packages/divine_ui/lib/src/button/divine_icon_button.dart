@@ -102,6 +102,7 @@ class DivineIconButton extends StatelessWidget {
     this.tooltip,
     this.semanticLabel,
     this.semanticValue,
+    this.semanticToggled,
     this.semanticLongPressHint,
     super.key,
   }) : iconSource = null;
@@ -125,6 +126,7 @@ class DivineIconButton extends StatelessWidget {
     this.tooltip,
     this.semanticLabel,
     this.semanticValue,
+    this.semanticToggled,
     this.semanticLongPressHint,
     super.key,
   }) : icon = null,
@@ -180,6 +182,10 @@ class DivineIconButton extends StatelessWidget {
   /// Semantic value for accessibility (e.g. a count or status).
   final String? semanticValue;
 
+  /// On/off state announced by screen readers for a button that toggles
+  /// something (e.g. a grid overlay). Leave null for buttons that don't.
+  final bool? semanticToggled;
+
   /// Hint announced by screen readers to describe the long-press action.
   ///
   /// Only meaningful when [onLongPress] is set.
@@ -200,6 +206,7 @@ class DivineIconButton extends StatelessWidget {
       tooltip: tooltip,
       semanticLabel: semanticLabel,
       semanticValue: semanticValue,
+      semanticToggled: semanticToggled,
       semanticLongPressHint: semanticLongPressHint,
     );
   }
@@ -219,6 +226,7 @@ class _DivineIconButtonContent extends StatelessWidget {
     this.tooltip,
     this.semanticLabel,
     this.semanticValue,
+    this.semanticToggled,
     this.semanticLongPressHint,
   });
 
@@ -234,6 +242,7 @@ class _DivineIconButtonContent extends StatelessWidget {
   final String? tooltip;
   final String? semanticLabel;
   final String? semanticValue;
+  final bool? semanticToggled;
   final String? semanticLongPressHint;
 
   static const _borderWidth = 2.0;
@@ -345,7 +354,13 @@ class _DivineIconButtonContent extends StatelessWidget {
     final borderColor = _borderColor(colors);
     var iconWidget = _iconWidget(context, iconColor);
     if (tooltip != null) {
-      iconWidget = Tooltip(message: tooltip, child: iconWidget);
+      iconWidget = Tooltip(
+        message: tooltip,
+        // A tooltip is announced after the label. When both carry the same
+        // text the reader says it twice, so let the label speak alone.
+        excludeFromSemantics: tooltip == semanticLabel,
+        child: iconWidget,
+      );
     }
 
     final decoration = BoxDecoration(
@@ -379,6 +394,7 @@ class _DivineIconButtonContent extends StatelessWidget {
     return Semantics(
       label: semanticLabel,
       value: semanticValue,
+      toggled: semanticToggled,
       onLongPress: onLongPress,
       onLongPressHint: semanticLongPressHint,
       button: true,

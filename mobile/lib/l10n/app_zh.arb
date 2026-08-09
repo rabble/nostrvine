@@ -5108,8 +5108,9 @@
   },
   "videoRecorderCloseLabel": "关闭录像机",
   "videoRecorderContinueToEditorLabel": "进入视频编辑器",
-  "videoRecorderCaptureCloseLabel": "关闭",
-  "videoRecorderCaptureNextLabel": "下一步",
+  "videoRecorderCameraPreviewLabel": "相机预览",
+  "videoRecorderCameraPreviewFocusHint": "相机对焦",
+  "videoRecorderSwitchToModeLabel": "切换到{mode}模式",
   "videoRecorderLipSyncAddAudioFirst": "录制前请先添加音频",
   "@videoRecorderLipSyncAddAudioFirst": {
     "description": "Snackbar shown when the user taps the record button in lip-sync mode without first selecting a sound."
@@ -5137,6 +5138,16 @@
   "videoRecorderStabilizationModePreviewOptimized": "预览优化",
   "videoRecorderStabilizationModeLowLatency": "低延迟",
   "videoRecorderStabilizationModeAuto": "自动",
+  "videoRecorderFlashValueOff": "关闭",
+  "videoRecorderFlashValueOn": "开启",
+  "videoRecorderFlashValueAuto": "自动",
+  "videoRecorderTimerValueOff": "关闭",
+  "videoRecorderTimerValueThreeSeconds": "3秒",
+  "videoRecorderTimerValueTenSeconds": "10秒",
+  "videoRecorderAspectRatioValueSquare": "正方形",
+  "videoRecorderAspectRatioValueVertical": "竖屏",
+  "videoRecorderCameraValueFront": "前置摄像头",
+  "videoRecorderCameraValueBack": "后置摄像头",
   "videoRecorderLibraryEmptyLabel": "片段库，没有片段",
   "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{打开片段库，1 个片段} other{打开片段库，{clipCount} 个片段}}",
   "@videoRecorderLibraryOpenLabel": {

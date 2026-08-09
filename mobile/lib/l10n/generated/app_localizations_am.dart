@@ -8282,10 +8282,15 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoRecorderContinueToEditorLabel => 'ወደ ቪዲዮ አርታዒ ይቀጥሉ';
 
   @override
-  String get videoRecorderCaptureCloseLabel => 'ገጠመ';
+  String get videoRecorderCameraPreviewLabel => 'የካሜራ ቅድመ እይታ';
 
   @override
-  String get videoRecorderCaptureNextLabel => 'ቀጥሎ';
+  String get videoRecorderCameraPreviewFocusHint => 'ካሜራውን አተኩር';
+
+  @override
+  String videoRecorderSwitchToModeLabel(String mode) {
+    return 'ወደ $mode ሁነታ ቀይር';
+  }
 
   @override
   String get videoRecorderLipSyncAddAudioFirst => 'ከመቅረጽ በፊት ኦዲዮ ያክሉ';
@@ -8338,6 +8343,36 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoRecorderStabilizationModeAuto => 'ራስ-ሰር';
+
+  @override
+  String get videoRecorderFlashValueOff => 'ጠፍቷል';
+
+  @override
+  String get videoRecorderFlashValueOn => 'በርቷል';
+
+  @override
+  String get videoRecorderFlashValueAuto => 'ራስ-ሰር';
+
+  @override
+  String get videoRecorderTimerValueOff => 'ጠፍቷል';
+
+  @override
+  String get videoRecorderTimerValueThreeSeconds => '3 ሰከንድ';
+
+  @override
+  String get videoRecorderTimerValueTenSeconds => '10 ሰከንድ';
+
+  @override
+  String get videoRecorderAspectRatioValueSquare => 'ካሬ';
+
+  @override
+  String get videoRecorderAspectRatioValueVertical => 'አቀባዊ';
+
+  @override
+  String get videoRecorderCameraValueFront => 'የፊት ካሜራ';
+
+  @override
+  String get videoRecorderCameraValueBack => 'የኋላ ካሜራ';
 
   @override
   String get videoRecorderLibraryEmptyLabel => 'ክሊፕ ቤተ-መጽሐፍት፣ ምንም ቅንጥቦች የሉም';

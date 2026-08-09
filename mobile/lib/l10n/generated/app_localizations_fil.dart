@@ -8556,10 +8556,15 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoRecorderContinueToEditorLabel => 'Magpatuloy sa video editor';
 
   @override
-  String get videoRecorderCaptureCloseLabel => 'Isara';
+  String get videoRecorderCameraPreviewLabel => 'Preview ng camera';
 
   @override
-  String get videoRecorderCaptureNextLabel => 'Susunod';
+  String get videoRecorderCameraPreviewFocusHint => 'I-focus ang camera';
+
+  @override
+  String videoRecorderSwitchToModeLabel(String mode) {
+    return 'Lumipat sa $mode mode';
+  }
 
   @override
   String get videoRecorderLipSyncAddAudioFirst =>
@@ -8615,6 +8620,36 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get videoRecorderStabilizationModeAuto => 'Auto';
+
+  @override
+  String get videoRecorderFlashValueOff => 'Naka-off';
+
+  @override
+  String get videoRecorderFlashValueOn => 'Naka-on';
+
+  @override
+  String get videoRecorderFlashValueAuto => 'Auto';
+
+  @override
+  String get videoRecorderTimerValueOff => 'Naka-off';
+
+  @override
+  String get videoRecorderTimerValueThreeSeconds => '3 segundo';
+
+  @override
+  String get videoRecorderTimerValueTenSeconds => '10 segundo';
+
+  @override
+  String get videoRecorderAspectRatioValueSquare => 'Parisukat';
+
+  @override
+  String get videoRecorderAspectRatioValueVertical => 'Patayo';
+
+  @override
+  String get videoRecorderCameraValueFront => 'Camera sa harap';
+
+  @override
+  String get videoRecorderCameraValueBack => 'Camera sa likod';
 
   @override
   String get videoRecorderLibraryEmptyLabel => 'Clip library, walang clip';

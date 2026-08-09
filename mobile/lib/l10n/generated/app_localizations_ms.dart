@@ -8511,10 +8511,15 @@ class AppLocalizationsMs extends AppLocalizations {
       'Teruskan ke penyunting video';
 
   @override
-  String get videoRecorderCaptureCloseLabel => 'Tutup';
+  String get videoRecorderCameraPreviewLabel => 'Pratonton kamera';
 
   @override
-  String get videoRecorderCaptureNextLabel => 'Seterusnya';
+  String get videoRecorderCameraPreviewFocusHint => 'Fokuskan kamera';
+
+  @override
+  String videoRecorderSwitchToModeLabel(String mode) {
+    return 'Tukar kepada mod $mode';
+  }
 
   @override
   String get videoRecorderLipSyncAddAudioFirst =>
@@ -8569,6 +8574,36 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get videoRecorderStabilizationModeAuto => 'Auto';
+
+  @override
+  String get videoRecorderFlashValueOff => 'Mati';
+
+  @override
+  String get videoRecorderFlashValueOn => 'Hidup';
+
+  @override
+  String get videoRecorderFlashValueAuto => 'Auto';
+
+  @override
+  String get videoRecorderTimerValueOff => 'Mati';
+
+  @override
+  String get videoRecorderTimerValueThreeSeconds => '3 saat';
+
+  @override
+  String get videoRecorderTimerValueTenSeconds => '10 saat';
+
+  @override
+  String get videoRecorderAspectRatioValueSquare => 'Segi empat sama';
+
+  @override
+  String get videoRecorderAspectRatioValueVertical => 'Menegak';
+
+  @override
+  String get videoRecorderCameraValueFront => 'Kamera hadapan';
+
+  @override
+  String get videoRecorderCameraValueBack => 'Kamera belakang';
 
   @override
   String get videoRecorderLibraryEmptyLabel => 'Pustaka klip, tiada klip';

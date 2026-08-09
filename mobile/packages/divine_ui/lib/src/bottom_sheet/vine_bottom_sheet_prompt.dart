@@ -164,7 +164,7 @@ class VineBottomSheetPrompt extends StatelessWidget {
         mainAxisSize: .min,
         children: [
           // Illustration
-          DivineSticker(sticker: sticker),
+          ExcludeSemantics(child: DivineSticker(sticker: sticker)),
 
           const SizedBox(height: 32),
 

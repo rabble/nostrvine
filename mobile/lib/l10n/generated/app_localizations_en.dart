@@ -8443,10 +8443,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoRecorderContinueToEditorLabel => 'Continue to video editor';
 
   @override
-  String get videoRecorderCaptureCloseLabel => 'Close';
+  String get videoRecorderCameraPreviewLabel => 'Camera preview';
 
   @override
-  String get videoRecorderCaptureNextLabel => 'Next';
+  String get videoRecorderCameraPreviewFocusHint => 'Focus camera';
+
+  @override
+  String videoRecorderSwitchToModeLabel(String mode) {
+    return 'Switch to $mode mode';
+  }
 
   @override
   String get videoRecorderLipSyncAddAudioFirst => 'Add audio before recording';
@@ -8501,6 +8506,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoRecorderStabilizationModeAuto => 'Auto';
+
+  @override
+  String get videoRecorderFlashValueOff => 'Off';
+
+  @override
+  String get videoRecorderFlashValueOn => 'On';
+
+  @override
+  String get videoRecorderFlashValueAuto => 'Auto';
+
+  @override
+  String get videoRecorderTimerValueOff => 'Off';
+
+  @override
+  String get videoRecorderTimerValueThreeSeconds => '3 seconds';
+
+  @override
+  String get videoRecorderTimerValueTenSeconds => '10 seconds';
+
+  @override
+  String get videoRecorderAspectRatioValueSquare => 'Square';
+
+  @override
+  String get videoRecorderAspectRatioValueVertical => 'Vertical';
+
+  @override
+  String get videoRecorderCameraValueFront => 'Front camera';
+
+  @override
+  String get videoRecorderCameraValueBack => 'Back camera';
 
   @override
   String get videoRecorderLibraryEmptyLabel => 'Clip library, no clips';

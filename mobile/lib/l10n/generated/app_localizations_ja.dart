@@ -8095,10 +8095,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoRecorderContinueToEditorLabel => '動画エディタへ進む';
 
   @override
-  String get videoRecorderCaptureCloseLabel => '閉じる';
+  String get videoRecorderCameraPreviewLabel => 'カメラプレビュー';
 
   @override
-  String get videoRecorderCaptureNextLabel => '次へ';
+  String get videoRecorderCameraPreviewFocusHint => 'カメラの焦点を合わせる';
+
+  @override
+  String videoRecorderSwitchToModeLabel(String mode) {
+    return '$modeモードに切り替える';
+  }
 
   @override
   String get videoRecorderLipSyncAddAudioFirst => '録画する前にオーディオを追加してください';
@@ -8150,6 +8155,36 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get videoRecorderStabilizationModeAuto => '自動';
+
+  @override
+  String get videoRecorderFlashValueOff => 'オフ';
+
+  @override
+  String get videoRecorderFlashValueOn => 'オン';
+
+  @override
+  String get videoRecorderFlashValueAuto => '自動';
+
+  @override
+  String get videoRecorderTimerValueOff => 'オフ';
+
+  @override
+  String get videoRecorderTimerValueThreeSeconds => '3秒';
+
+  @override
+  String get videoRecorderTimerValueTenSeconds => '10秒';
+
+  @override
+  String get videoRecorderAspectRatioValueSquare => '正方形';
+
+  @override
+  String get videoRecorderAspectRatioValueVertical => '縦型';
+
+  @override
+  String get videoRecorderCameraValueFront => '前面カメラ';
+
+  @override
+  String get videoRecorderCameraValueBack => '背面カメラ';
 
   @override
   String get videoRecorderLibraryEmptyLabel => 'クリップライブラリ、クリップなし';

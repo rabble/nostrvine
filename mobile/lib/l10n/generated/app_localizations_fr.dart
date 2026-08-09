@@ -8569,10 +8569,15 @@ class AppLocalizationsFr extends AppLocalizations {
       'Continuer vers l\'éditeur vidéo';
 
   @override
-  String get videoRecorderCaptureCloseLabel => 'Fermer';
+  String get videoRecorderCameraPreviewLabel => 'Aperçu de la caméra';
 
   @override
-  String get videoRecorderCaptureNextLabel => 'Suivant';
+  String get videoRecorderCameraPreviewFocusHint => 'Faire la mise au point';
+
+  @override
+  String videoRecorderSwitchToModeLabel(String mode) {
+    return 'Passer au mode $mode';
+  }
 
   @override
   String get videoRecorderLipSyncAddAudioFirst =>
@@ -8629,6 +8634,36 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get videoRecorderStabilizationModeAuto => 'Auto';
+
+  @override
+  String get videoRecorderFlashValueOff => 'Désactivé';
+
+  @override
+  String get videoRecorderFlashValueOn => 'Activé';
+
+  @override
+  String get videoRecorderFlashValueAuto => 'Auto';
+
+  @override
+  String get videoRecorderTimerValueOff => 'Désactivé';
+
+  @override
+  String get videoRecorderTimerValueThreeSeconds => '3 secondes';
+
+  @override
+  String get videoRecorderTimerValueTenSeconds => '10 secondes';
+
+  @override
+  String get videoRecorderAspectRatioValueSquare => 'Carré';
+
+  @override
+  String get videoRecorderAspectRatioValueVertical => 'Vertical';
+
+  @override
+  String get videoRecorderCameraValueFront => 'Caméra avant';
+
+  @override
+  String get videoRecorderCameraValueBack => 'Caméra arrière';
 
   @override
   String get videoRecorderLibraryEmptyLabel =>

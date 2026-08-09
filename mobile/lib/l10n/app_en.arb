@@ -5115,8 +5115,23 @@
   },
   "videoRecorderCloseLabel": "Close video recorder",
   "videoRecorderContinueToEditorLabel": "Continue to video editor",
-  "videoRecorderCaptureCloseLabel": "Close",
-  "videoRecorderCaptureNextLabel": "Next",
+  "videoRecorderCameraPreviewLabel": "Camera preview",
+  "@videoRecorderCameraPreviewLabel": {
+    "description": "Accessibility label for the live camera viewfinder when tap-to-focus is enabled."
+  },
+  "videoRecorderCameraPreviewFocusHint": "Focus camera",
+  "@videoRecorderCameraPreviewFocusHint": {
+    "description": "Accessibility tap-action hint for the live camera viewfinder. Screen readers add their own activation instruction."
+  },
+  "videoRecorderSwitchToModeLabel": "Switch to {mode} mode",
+  "@videoRecorderSwitchToModeLabel": {
+    "description": "Accessibility label for an unselected video recorder mode. Announces the result of activating the mode selector.",
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      }
+    }
+  },
   "videoRecorderLipSyncAddAudioFirst": "Add audio before recording",
   "@videoRecorderLipSyncAddAudioFirst": {
     "description": "Snackbar shown when the user taps the record button in lip-sync mode without first selecting a sound."
@@ -5145,6 +5160,46 @@
   "videoRecorderStabilizationModePreviewOptimized": "Preview Optimized",
   "videoRecorderStabilizationModeLowLatency": "Low Latency",
   "videoRecorderStabilizationModeAuto": "Auto",
+  "videoRecorderFlashValueOff": "Off",
+  "@videoRecorderFlashValueOff": {
+    "description": "Screen-reader state of the recorder's flash button when flash is off. Announced after the button label, e.g. 'Toggle flash, Off'."
+  },
+  "videoRecorderFlashValueOn": "On",
+  "@videoRecorderFlashValueOn": {
+    "description": "Screen-reader state of the recorder's flash button when the light stays on (torch). Announced after the button label."
+  },
+  "videoRecorderFlashValueAuto": "Auto",
+  "@videoRecorderFlashValueAuto": {
+    "description": "Screen-reader state of the recorder's flash button when the camera decides whether to fire the flash. Announced after the button label."
+  },
+  "videoRecorderTimerValueOff": "Off",
+  "@videoRecorderTimerValueOff": {
+    "description": "Screen-reader state of the recorder's countdown-timer button when no delay is set. Announced after the button label, e.g. 'Cycle timer, Off'."
+  },
+  "videoRecorderTimerValueThreeSeconds": "3 seconds",
+  "@videoRecorderTimerValueThreeSeconds": {
+    "description": "Screen-reader state of the recorder's countdown-timer button when recording starts after a 3 second delay."
+  },
+  "videoRecorderTimerValueTenSeconds": "10 seconds",
+  "@videoRecorderTimerValueTenSeconds": {
+    "description": "Screen-reader state of the recorder's countdown-timer button when recording starts after a 10 second delay."
+  },
+  "videoRecorderAspectRatioValueSquare": "Square",
+  "@videoRecorderAspectRatioValueSquare": {
+    "description": "Screen-reader state of the recorder's aspect-ratio button when recording in 1:1. Announced after the button label."
+  },
+  "videoRecorderAspectRatioValueVertical": "Vertical",
+  "@videoRecorderAspectRatioValueVertical": {
+    "description": "Screen-reader state of the recorder's aspect-ratio button when recording in 9:16. Announced after the button label."
+  },
+  "videoRecorderCameraValueFront": "Front camera",
+  "@videoRecorderCameraValueFront": {
+    "description": "Screen-reader state of the recorder's switch-camera button while the selfie camera is active. Announced after the button label."
+  },
+  "videoRecorderCameraValueBack": "Back camera",
+  "@videoRecorderCameraValueBack": {
+    "description": "Screen-reader state of the recorder's switch-camera button while the rear camera is active. Announced after the button label."
+  },
   "videoRecorderLibraryEmptyLabel": "Clip library, no clips",
   "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{Open clip library, 1 clip} other{Open clip library, {clipCount} clips}}",
   "@videoRecorderLibraryOpenLabel": {

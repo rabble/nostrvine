@@ -1,3 +1,5 @@
+import 'dart:ui' show Tristate;
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -35,6 +37,8 @@ void main() {
     Widget buildWidget({
       VideoRecorderState recordingState = VideoRecorderState.idle,
       bool showLastClipOverlay = false,
+      bool showGridLines = false,
+      bool isFrontCamera = false,
     }) {
       when(() => recorderBloc.state).thenReturn(
         VideoRecorderBlocState(
@@ -42,6 +46,8 @@ void main() {
           isCameraInitialized: true,
           canRecord: true,
           showLastClipOverlay: showLastClipOverlay,
+          showGridLines: showGridLines,
+          isFrontCamera: isFrontCamera,
         ),
       );
       return ProviderScope(
@@ -106,6 +112,53 @@ void main() {
               .first,
         );
         expect(opacity.opacity, equals(0));
+      });
+    });
+
+    group('semantics', () {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      testWidgets('announces which camera is active', (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(buildWidget(isFrontCamera: true));
+        await tester.pumpAndSettle();
+
+        final node = tester.getSemantics(
+          find.bySemanticsLabel(l10n.videoRecorderSwitchCameraLabel),
+        );
+        expect(node.value, equals(l10n.videoRecorderCameraValueFront));
+
+        handle.dispose();
+      });
+
+      testWidgets('announces the grid overlay as toggled when on', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(buildWidget(showGridLines: true));
+        await tester.pumpAndSettle();
+
+        final node = tester.getSemantics(
+          find.bySemanticsLabel(l10n.videoRecorderToggleGridLabel),
+        );
+        expect(node.flagsCollection.isToggled, Tristate.isTrue);
+
+        handle.dispose();
+      });
+
+      testWidgets('announces the ghost frame as untoggled when off', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
+
+        final node = tester.getSemantics(
+          find.bySemanticsLabel(l10n.videoRecorderToggleGhostFrameLabel),
+        );
+        expect(node.flagsCollection.isToggled, Tristate.isFalse);
+
+        handle.dispose();
       });
     });
 

@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/config/screenshot_mode.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Camera preview widget for mobile platforms with touch gestures.
 class VideoRecorderMobilePreview extends StatelessWidget {
@@ -21,7 +22,7 @@ class VideoRecorderMobilePreview extends StatelessWidget {
 
     final bloc = context.read<VideoRecorderBloc>();
 
-    return CameraPreviewWidget(
+    final preview = CameraPreviewWidget(
       onScaleStart: (details) => bloc.add(VideoRecorderScaleStarted(details)),
       onScaleUpdate: (details) => bloc.add(VideoRecorderScaleUpdated(details)),
       onScaleEnd: (details) => bloc.add(const VideoRecorderScaleEnded()),
@@ -33,6 +34,21 @@ class VideoRecorderMobilePreview extends StatelessWidget {
             }
           : null,
       loadingWidget: Container(color: const Color(0xFF141414)),
+    );
+
+    if (!enableTapToFocus) {
+      return ExcludeSemantics(child: preview);
+    }
+
+    return Semantics(
+      label: context.l10n.videoRecorderCameraPreviewLabel,
+      button: true,
+      onTapHint: context.l10n.videoRecorderCameraPreviewFocusHint,
+      onTap: () => bloc.add(
+        const VideoRecorderFocusPointSet(Offset(0.5, 0.5)),
+      ),
+      excludeSemantics: true,
+      child: preview,
     );
   }
 }

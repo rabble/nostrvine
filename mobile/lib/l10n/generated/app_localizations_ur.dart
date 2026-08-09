@@ -8460,10 +8460,15 @@ class AppLocalizationsUr extends AppLocalizations {
   String get videoRecorderContinueToEditorLabel => 'ویڈیو ایڈیٹر پر جائیں';
 
   @override
-  String get videoRecorderCaptureCloseLabel => 'بند کریں';
+  String get videoRecorderCameraPreviewLabel => 'کیمرہ پیش منظر';
 
   @override
-  String get videoRecorderCaptureNextLabel => 'آگے';
+  String get videoRecorderCameraPreviewFocusHint => 'کیمرے کو فوکس کریں';
+
+  @override
+  String videoRecorderSwitchToModeLabel(String mode) {
+    return '$mode موڈ پر سوئچ کریں';
+  }
 
   @override
   String get videoRecorderLipSyncAddAudioFirst =>
@@ -8518,6 +8523,36 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get videoRecorderStabilizationModeAuto => 'خودکار';
+
+  @override
+  String get videoRecorderFlashValueOff => 'بند';
+
+  @override
+  String get videoRecorderFlashValueOn => 'چالو';
+
+  @override
+  String get videoRecorderFlashValueAuto => 'خودکار';
+
+  @override
+  String get videoRecorderTimerValueOff => 'بند';
+
+  @override
+  String get videoRecorderTimerValueThreeSeconds => '3 سیکنڈ';
+
+  @override
+  String get videoRecorderTimerValueTenSeconds => '10 سیکنڈ';
+
+  @override
+  String get videoRecorderAspectRatioValueSquare => 'مربع';
+
+  @override
+  String get videoRecorderAspectRatioValueVertical => 'عمودی';
+
+  @override
+  String get videoRecorderCameraValueFront => 'سامنے والا کیمرہ';
+
+  @override
+  String get videoRecorderCameraValueBack => 'پچھلا کیمرہ';
 
   @override
   String get videoRecorderLibraryEmptyLabel => 'کلپ لائبریری، کوئی کلپ نہیں';

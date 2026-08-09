@@ -32,7 +32,7 @@ class VideoRecorderClassicTopBar extends ConsumerWidget {
               children: [
                 DivineIconButton(
                   icon: .x,
-                  semanticLabel: context.l10n.videoRecorderCaptureCloseLabel,
+                  semanticLabel: context.l10n.videoRecorderCloseLabel,
                   size: .small,
                   type: .ghostSecondary,
                   onPressed: isRecording
@@ -41,7 +41,8 @@ class VideoRecorderClassicTopBar extends ConsumerWidget {
                 ),
                 DivineIconButton(
                   icon: .caretRight,
-                  semanticLabel: context.l10n.videoRecorderCaptureNextLabel,
+                  semanticLabel:
+                      context.l10n.videoRecorderContinueToEditorLabel,
                   size: .small,
                   type: .ghostSecondary,
                   onPressed: isRecording || !hasClips

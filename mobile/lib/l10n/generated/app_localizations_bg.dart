@@ -8536,10 +8536,15 @@ class AppLocalizationsBg extends AppLocalizations {
       'Продължете към видеоредактора';
 
   @override
-  String get videoRecorderCaptureCloseLabel => 'Затвори';
+  String get videoRecorderCameraPreviewLabel => 'Преглед от камерата';
 
   @override
-  String get videoRecorderCaptureNextLabel => 'Следваща';
+  String get videoRecorderCameraPreviewFocusHint => 'Фокусиране на камерата';
+
+  @override
+  String videoRecorderSwitchToModeLabel(String mode) {
+    return 'Превключване към режим $mode';
+  }
 
   @override
   String get videoRecorderLipSyncAddAudioFirst => 'Добавете аудио преди запис';
@@ -8595,6 +8600,36 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get videoRecorderStabilizationModeAuto => 'Авто';
+
+  @override
+  String get videoRecorderFlashValueOff => 'Изкл.';
+
+  @override
+  String get videoRecorderFlashValueOn => 'Вкл.';
+
+  @override
+  String get videoRecorderFlashValueAuto => 'Авто';
+
+  @override
+  String get videoRecorderTimerValueOff => 'Изкл.';
+
+  @override
+  String get videoRecorderTimerValueThreeSeconds => '3 секунди';
+
+  @override
+  String get videoRecorderTimerValueTenSeconds => '10 секунди';
+
+  @override
+  String get videoRecorderAspectRatioValueSquare => 'Квадратно';
+
+  @override
+  String get videoRecorderAspectRatioValueVertical => 'Вертикално';
+
+  @override
+  String get videoRecorderCameraValueFront => 'Предна камера';
+
+  @override
+  String get videoRecorderCameraValueBack => 'Задна камера';
 
   @override
   String get videoRecorderLibraryEmptyLabel =>
