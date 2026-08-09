@@ -134,6 +134,12 @@ jobs:
           bash scripts/check_future_delayed_production_ceiling.sh
       - name: 🧱 Verify untested-services count does not increase (floor ratchet)
         run: bash scripts/check_untested_services_floor.sh
+      - name: 🧱 Verify service god-files do not grow (architecture ratchet)
+        run: |
+          # Hard architecture guard for #4338: the broad 800-line file-size
+          # check remains advisory, but oversized service-layer god-files are
+          # frozen so extraction gains cannot be silently clawed back.
+          bash scripts/check_service_god_file_ceiling.sh
       - name: 🧱 Verify test/unit does not re-accrete (test-structure ratchet)
         run: |
           # Freezes the legacy non-mirroring test/unit bucket per-file so it can
