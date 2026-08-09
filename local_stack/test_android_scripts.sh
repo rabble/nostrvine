@@ -244,6 +244,10 @@ assert_contains 'local_stack_has_running_container "$COMPOSE_FILE"' "${SCRIPT_DI
   "profile runner should reuse the shared local stack status check"
 assert_contains 'android_emulator_invite_server_url' "${SCRIPT_DIR}/profile.sh" \
   "profile runner should reuse the shared Android emulator invite-server URL"
+assert_contains 'PATROL_CLI_VERSION=4.6.1' "${SCRIPT_DIR}/profile.sh" \
+  "profile runner should pin patrol_cli to the version paired with the patrol package"
+assert_contains 'PATH="$PUB_CACHE_BIN:$PATH" patrol test' "${SCRIPT_DIR}/profile.sh" \
+  "profile runner should invoke patrol from the configured PUB_CACHE"
 
 cat > "${tmp_dir}/bin/uname" <<'STUB'
 #!/usr/bin/env bash
