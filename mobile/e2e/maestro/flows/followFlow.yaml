@@ -5,7 +5,7 @@ env:
 ---
 - runFlow: ../tests/loginFreshInstall.yaml
 - runFlow: ../tests/follow.yaml
-- runFlow: ../tests/unFollow.yaml
+- runFlow: ../tests/unfollow.yaml
 
 #Tear down
 - killApp
