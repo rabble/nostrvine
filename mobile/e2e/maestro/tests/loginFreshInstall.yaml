@@ -26,4 +26,15 @@ tags:
 - tapOn: Use this device only
 
 - waitForAnimationToEnd
+
+# 3. Signing up now lands on the Home feed, not Explore. The old flow
+# asserted Explore directly and would have "passed" on the bottom-nav
+# Explore button, which is present on every screen -- so navigate
+# explicitly and then assert.
+- extendedWaitUntil:
+    visible:
+      id: "home_tab"
+    timeout: 30000
+- tapOn:
+    id: "explore_tab"
 - runFlow: ../asserts/assertExploreNew.yaml

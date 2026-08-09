@@ -1,25 +1,28 @@
 appId: co.openvine.app
 ---
-# The welcome screen is reached after a cold start, so wait for it to arrive
-# rather than assuming the splash animation ending means it is on screen.
+# Asserts the welcome screen, whichever variant it renders.
+#
+# There are two: a fresh install shows the hero taglines with
+# "Create a new Divine account" / "Sign in with an existing account", while a
+# device that already holds a key shows "Continue as <name>" / "Use another
+# account" / "Create new account".
+#
+# The second variant is not an edge case -- the Nostr key lives in the iOS
+# keychain and survives both `launchApp: clearState` and a full app
+# uninstall, so every run after the first sees it until removeKeys (the
+# teardown of each flow) signs the device out. Asserting fresh-install-only
+# copy here is what made this file pass exactly once per simulator.
+#
+# So: only the invariants. create_account_button is present in both variants
+# by design -- both branches carry the same identifier.
+
 - extendedWaitUntil:
     visible:
       id: "create_account_button"
     timeout: 30000
 
-# Primary actions, by id. Both labels have changed since these flows were
-# written -- "Sign in with a different account" is now "Sign in with an
-# existing account" -- which is exactly what an id anchor is for.
-- assertVisible:
-    id: "sign_in_button"
-
-# Brand copy: asserted because it is the screen's identity, not chrome.
-- assertVisible: Authentic moments.
-- assertVisible: Human creativity.
-
-# Legal links must be present and reachable. The surrounding prose is
-# deliberately not asserted: it has been reworded twice and the fragments
-# (", ", ", and ") carried no signal, only churn.
+# The legal notice renders on both variants and is worth pinning: these
+# links are a compliance surface, not decoration.
 - assertVisible: Terms of Service
 - assertVisible: Privacy Policy
 - assertVisible: Safety Standards

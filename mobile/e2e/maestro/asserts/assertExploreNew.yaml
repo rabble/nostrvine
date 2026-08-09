@@ -1,19 +1,35 @@
 appId: co.openvine.app
 ---
-# Assert Explore screen with New tab selected
+# Assert we have landed on Explore with the New tab available.
 
-# Top bar - confirms we're on Explore
-- assertVisible:
-    text: "Explore.*"
-- assertVisible: Menu
+# Bottom navigation is the reliable "which section am I in" signal.
+- extendedWaitUntil:
+    visible:
+      id: "explore_tab"
+    timeout: 30000
+
+# Explore renders its own header, so there is no app bar here: the previous
+# "Menu" assertion targeted a chrome element that app_shell suppresses for
+# this route (appBar: null for the explore grid) and could never pass.
 - assertVisible:
     text: "Search.*"
 
-# New tab is selected (Tab 2 of 5)
-- assertVisible: |-
-    New
-    Tab 2 of 5
-
-# Bottom navigation - explore tab should be active
+# The New tab, by label only.
+#
+# This deliberately does NOT assert "Tab 2 of 5". The explore tab set is
+# built at runtime from ExploreTabsState and renders 4, 6 or 7 tabs
+# depending on funnelcakeAvailableProvider, so any "Tab N of M" selector
+# encodes a configuration rather than a behaviour and breaks on the ones it
+# does not describe.
+#
+# The trailing .* is load-bearing: TabBar exposes each tab as the compound
+# accessibility label "New\nTab 2 of 6", and Maestro matches the whole
+# label, so a bare "New" does not match. The original file encoded the
+# count ("Tab 2 of 5") for this reason -- the prefix keeps the match without
+# pinning a configuration.
+#
+# Known limitation: this proves the tab is present, not that it is
+# selected. Maestro cannot read the semantics `selected` flag, and the tab
+# bar exposes no per-tab identifier to key on.
 - assertVisible:
-    id: explore_tab
+    text: "New.*"
