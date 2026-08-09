@@ -82,7 +82,7 @@ class BookmarkToggleResult {
   final bool wasBookmarked;
 
   /// Whether the video is bookmarked now. Equals [wasBookmarked] when the
-  /// toggle failed, since nothing was published.
+  /// toggle failed, since no relay accepted a new list.
   final bool isBookmarked;
 }
 
@@ -132,7 +132,16 @@ class BookmarkService {
   /// [NostrClient.queryEvents] — the latter cannot tell "you have no
   /// bookmarks" apart from "nobody replied", and treating the second as the
   /// first is precisely how the list gets destroyed.
-  Future<bool> syncGlobalBookmarks() async {
+  ///
+  /// Pass [requireAuthoritative] when the result is about to become the base of
+  /// a replacing publish. Without it, `true` only means *some* relay answered:
+  /// the pool releases a query one second after the first terminal frame, so a
+  /// relay that stays connected and never answers is skipped and its copy of
+  /// the list is invisible here — indistinguishable from the user having no
+  /// bookmarks, and from a newer revision not existing. Republishing on that
+  /// answer is what deletes the list. With it, the query holds out for every
+  /// relay and an incomplete answer reports `false` instead.
+  Future<bool> syncGlobalBookmarks({bool requireAuthoritative = false}) async {
     final pubkey = _authService.currentPublicKeyHex;
     if (!_authService.isAuthenticated || pubkey == null) {
       Log.warning(
@@ -144,14 +153,19 @@ class BookmarkService {
     }
 
     try {
-      final result = await _nostrService.queryEventsDetailed([
-        Filter(kinds: [globalBookmarksKind], authors: [pubkey], limit: 1),
-      ]);
+      final result = await _nostrService.queryEventsDetailed(
+        [
+          Filter(kinds: [globalBookmarksKind], authors: [pubkey], limit: 1),
+        ],
+        requireAllRelaysSettled: requireAuthoritative,
+      );
 
       if (result.timedOut || result.noRelays) {
         Log.warning(
           'Bookmark sync inconclusive (timedOut=${result.timedOut}, '
-          'noRelays=${result.noRelays}) - remote list left unchanged',
+          'noRelays=${result.noRelays}, '
+          'requireAuthoritative=$requireAuthoritative) - '
+          'remote list left unchanged',
           name: 'BookmarkService',
           category: LogCategory.system,
         );
@@ -162,7 +176,11 @@ class BookmarkService {
           .where((event) => event.kind == globalBookmarksKind)
           .toList();
       if (events.isEmpty) {
-        // The relay answered and has nothing: a genuinely empty list.
+        // Nobody who answered holds a list. Under [requireAuthoritative]
+        // everybody answered, so that is a genuinely empty list and the first
+        // save may create one. Without it a relay that stayed silent could
+        // still hold one, which is why the write path never reconciles
+        // without it.
         _globalBookmarks.clear();
         _lastKnownRemoteContent = '';
       } else {
@@ -200,7 +218,7 @@ class BookmarkService {
     String? relay,
     String? petname,
   }) async {
-    final reconciled = await syncGlobalBookmarks();
+    final reconciled = await syncGlobalBookmarks(requireAuthoritative: true);
     final wasBookmarked = isVideoBookmarkedGlobally(videoEventId);
 
     if (!reconciled) {
@@ -240,13 +258,15 @@ class BookmarkService {
   /// replace the user's list with a one-item one.
   ///
   /// Pass [alreadyReconciled] when the caller has just run
-  /// [syncGlobalBookmarks] and the extra round trip would be redundant.
+  /// [syncGlobalBookmarks] with `requireAuthoritative: true` and the extra
+  /// round trip would be redundant.
   Future<bool> addToGlobalBookmarks(
     BookmarkItem item, {
     bool alreadyReconciled = false,
   }) async {
     try {
-      if (!alreadyReconciled && !await syncGlobalBookmarks()) {
+      if (!alreadyReconciled &&
+          !await syncGlobalBookmarks(requireAuthoritative: true)) {
         Log.warning(
           'Not adding to global bookmarks: could not reconcile with relay',
           name: 'BookmarkService',
@@ -265,10 +285,10 @@ class BookmarkService {
         return true;
       }
 
-      _globalBookmarks.add(item);
-      await _saveBookmarksToSharedPreferences();
-
-      final published = await _publishGlobalBookmarksToNostr();
+      final published = await _publishGlobalBookmarks([
+        ..._globalBookmarks,
+        item,
+      ]);
       if (!published) return false;
 
       Log.info(
@@ -298,7 +318,8 @@ class BookmarkService {
     bool alreadyReconciled = false,
   }) async {
     try {
-      if (!alreadyReconciled && !await syncGlobalBookmarks()) {
+      if (!alreadyReconciled &&
+          !await syncGlobalBookmarks(requireAuthoritative: true)) {
         Log.warning(
           'Not removing from global bookmarks: could not reconcile with relay',
           name: 'BookmarkService',
@@ -307,8 +328,8 @@ class BookmarkService {
         return false;
       }
 
-      final removed = _globalBookmarks.remove(item);
-      if (!removed) {
+      final candidate = [..._globalBookmarks];
+      if (!candidate.remove(item)) {
         Log.warning(
           'Item not found in global bookmarks: ${item.id}',
           name: 'BookmarkService',
@@ -317,9 +338,7 @@ class BookmarkService {
         return false;
       }
 
-      await _saveBookmarksToSharedPreferences();
-
-      final published = await _publishGlobalBookmarksToNostr();
+      final published = await _publishGlobalBookmarks(candidate);
       if (!published) return false;
 
       Log.info(
@@ -353,12 +372,20 @@ class BookmarkService {
 
   // === NOSTR PUBLISHING ===
 
-  /// Publish global bookmarks to Nostr as NIP-51 kind 10003 event.
+  /// Publishes [candidate] as the user's kind 10003 and adopts it locally only
+  /// once a relay has confirmed acceptance.
   ///
-  /// Returns whether a relay accepted the event. Callers treat `false` as a
-  /// failed mutation so the UI can say the save did not stick, rather than
-  /// showing a bookmark that exists only on this device.
-  Future<bool> _publishGlobalBookmarksToNostr() async {
+  /// Returns whether a relay accepted the event. On `false` nothing local has
+  /// moved: memory and the [SharedPreferences] cache still hold the list this
+  /// device last reconciled, so a failed save cannot leave a bookmark that
+  /// exists only on this device until the next sync happens to wipe it.
+  ///
+  /// Acceptance means at least one `OK true`. [NostrClient.publishEvent] would
+  /// only prove the frame was handed to a socket, and this result is what the
+  /// share sheet turns into "Saved" — a relay-policy rejection has to be able
+  /// to say the save did not stick. It is still breadth, not durability: the
+  /// relay acknowledges from an in-memory queue and commits afterwards.
+  Future<bool> _publishGlobalBookmarks(List<BookmarkItem> candidate) async {
     try {
       if (!_authService.isAuthenticated) {
         Log.warning(
@@ -369,36 +396,35 @@ class BookmarkService {
         return false;
       }
 
-      // Create NIP-51 kind 10003 tags
-      final tags = <List<String>>[];
-
-      // Add bookmark items as tags
-      for (final item in _globalBookmarks) {
-        tags.add(item.toTag());
-      }
-
       final event = await _authService.createAndSignEvent(
         kind: globalBookmarksKind,
         // NIP-51 reserves `content` for the encrypted private item array, so
         // it is either the ciphertext we read back or empty — never prose.
         content: _lastKnownRemoteContent,
-        tags: tags,
+        tags: [for (final item in candidate) item.toTag()],
       );
 
       if (event == null) return false;
 
-      final sentEvent = await _nostrService.publishEvent(event);
-      if (sentEvent is! PublishSuccess) {
+      final outcome = await _nostrService.publishEventAwaitOk(event);
+      if (!outcome.acceptedByAny) {
         Log.warning(
-          'Relay did not accept global bookmarks: ${event.id}',
+          'Relay did not accept global bookmarks: ${event.id} '
+          '(${outcome.summary})',
           name: 'BookmarkService',
           category: LogCategory.system,
         );
         return false;
       }
 
+      _globalBookmarks
+        ..clear()
+        ..addAll(candidate);
+      await _saveBookmarksToSharedPreferences();
+
       Log.debug(
-        'Published global bookmarks to Nostr: ${event.id}',
+        'Published global bookmarks to Nostr: ${event.id} '
+        '(${outcome.summary})',
         name: 'BookmarkService',
         category: LogCategory.system,
       );

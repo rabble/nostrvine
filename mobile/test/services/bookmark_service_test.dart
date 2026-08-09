@@ -9,6 +9,7 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/bookmark_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -46,16 +47,51 @@ void main() {
       );
     }
 
-    /// Makes the relay answer a kind-10003 query with [events].
+    /// Makes the relay answer a kind-10003 query with [events], in both
+    /// reconcile modes.
     void stubRelay({
       required List<Event> events,
       bool timedOut = false,
       bool noRelays = false,
     }) {
       when(
-        () => nostrClient.queryEventsDetailed(any()),
+        () => nostrClient.queryEventsDetailed(
+          any(),
+          requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+        ),
       ).thenAnswer(
         (_) async => (events: events, timedOut: timedOut, noRelays: noRelays),
+      );
+    }
+
+    /// Answers only the reconcile that did (or did not) demand full
+    /// settlement, so a test can make the two modes disagree — which is the
+    /// only way the write path's choice is observable.
+    void stubRelayForSettlementMode({
+      required bool fullSettlement,
+      required List<Event> events,
+      bool timedOut = false,
+      bool noRelays = false,
+    }) {
+      when(
+        () => nostrClient.queryEventsDetailed(
+          any(),
+          requireAllRelaysSettled: fullSettlement,
+        ),
+      ).thenAnswer(
+        (_) async => (events: events, timedOut: timedOut, noRelays: noRelays),
+      );
+    }
+
+    /// Makes every relay refuse the kind-10003 publish.
+    void stubPublishRejected() {
+      when(() => nostrClient.publishEventAwaitOk(any())).thenAnswer(
+        (invocation) async => PublishOutcome(
+          eventId: (invocation.positionalArguments.first as Event).id,
+          acceptedBy: const [],
+          rejectedBy: const {'wss://relay.example': 'blocked: policy'},
+          noResponseFrom: const [],
+        ),
       );
     }
 
@@ -97,9 +133,12 @@ void main() {
         );
       });
 
-      when(() => nostrClient.publishEvent(any())).thenAnswer(
-        (invocation) async => PublishSuccess(
-          event: invocation.positionalArguments.first as Event,
+      when(() => nostrClient.publishEventAwaitOk(any())).thenAnswer(
+        (invocation) async => PublishOutcome(
+          eventId: (invocation.positionalArguments.first as Event).id,
+          acceptedBy: const ['wss://relay.example'],
+          rejectedBy: const {},
+          noResponseFrom: const [],
         ),
       );
     });
@@ -195,6 +234,27 @@ void main() {
         expect(service.globalBookmarks, isEmpty);
       });
 
+      test('does not hold the display read out for every relay', () async {
+        // Opening Saved only renders what it finds, so it keeps the settle
+        // window's latency trade. Nothing destructive can follow from it: the
+        // write path runs its own full-settlement reconcile and never
+        // republishes from what this left in memory.
+        stubRelay(events: []);
+        final service = createService();
+
+        await service.syncGlobalBookmarks();
+
+        final demandedSettlement = verify(
+          () => nostrClient.queryEventsDetailed(
+            any(),
+            requireAllRelaysSettled: captureAny(
+              named: 'requireAllRelaysSettled',
+            ),
+          ),
+        ).captured.single;
+        expect(demandedSettlement, isFalse);
+      });
+
       test('reports failure when signed out, without throwing', () async {
         when(() => authService.isAuthenticated).thenReturn(false);
         when(() => authService.currentPublicKeyHex).thenReturn(null);
@@ -262,14 +322,12 @@ void main() {
         );
 
         expect(added, isFalse);
-        verifyNever(() => nostrClient.publishEvent(any()));
+        verifyNever(() => nostrClient.publishEventAwaitOk(any()));
       });
 
       test('reports failure when the relay rejects the publish', () async {
         stubRelay(events: []);
-        when(
-          () => nostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => const PublishFailed());
+        stubPublishRejected();
         final service = createService();
 
         expect(
@@ -277,6 +335,138 @@ void main() {
             const BookmarkItem(type: 'e', id: 'new-one'),
           ),
           isFalse,
+        );
+      });
+
+      test('reports failure when no relay answered the publish', () async {
+        // `OK` never arrived. The frame left the socket, which is all
+        // publishEvent would have proved, so gating on that would have told
+        // the user their bookmark was saved.
+        stubRelay(events: []);
+        when(() => nostrClient.publishEventAwaitOk(any())).thenAnswer(
+          (invocation) async => PublishOutcome(
+            eventId: (invocation.positionalArguments.first as Event).id,
+            acceptedBy: const [],
+            rejectedBy: const {},
+            noResponseFrom: const ['wss://relay.example'],
+          ),
+        );
+        final service = createService();
+
+        expect(
+          await service.addToGlobalBookmarks(
+            const BookmarkItem(type: 'e', id: 'new-one'),
+          ),
+          isFalse,
+        );
+      });
+
+      test('waits for a relay OK rather than a socket handoff', () async {
+        stubRelay(events: []);
+        final service = createService();
+
+        await service.addToGlobalBookmarks(
+          const BookmarkItem(type: 'e', id: 'new-one'),
+        );
+
+        verify(() => nostrClient.publishEventAwaitOk(any())).called(1);
+        verifyNever(() => nostrClient.publishEvent(any()));
+      });
+
+      test('reconciles with full settlement before publishing', () async {
+        stubRelay(
+          events: [
+            bookmarkListEvent(['relay-a']),
+          ],
+        );
+        final service = createService();
+
+        await service.addToGlobalBookmarks(
+          const BookmarkItem(type: 'e', id: 'new-one'),
+        );
+
+        verify(
+          () => nostrClient.queryEventsDetailed(
+            any(),
+            requireAllRelaysSettled: true,
+          ),
+        ).called(1);
+      });
+
+      test(
+        'refuses when a relay never settled, even though another answered '
+        'empty',
+        () async {
+          // The destructive shape this whole change exists to close: the
+          // settle window releases the query one second after a fast relay
+          // EOSEs with nothing, while the relay actually holding the list is
+          // still silent. That answer arrives as timedOut: false, and
+          // republishing on it replaces the real list with a one-item one.
+          stubRelayForSettlementMode(fullSettlement: false, events: []);
+          stubRelayForSettlementMode(
+            fullSettlement: true,
+            events: [],
+            timedOut: true,
+          );
+          final service = createService();
+
+          final added = await service.addToGlobalBookmarks(
+            const BookmarkItem(type: 'e', id: 'new-one'),
+          );
+
+          expect(added, isFalse);
+          verifyNever(() => nostrClient.publishEventAwaitOk(any()));
+        },
+      );
+
+      test('leaves no phantom bookmark when the publish is refused', () async {
+        stubRelay(
+          events: [
+            bookmarkListEvent(['relay-a']),
+          ],
+        );
+        stubPublishRejected();
+        final service = createService();
+
+        final added = await service.addToGlobalBookmarks(
+          const BookmarkItem(type: 'e', id: 'new-one'),
+        );
+
+        expect(added, isFalse);
+        expect(
+          service.globalBookmarks.map((item) => item.id),
+          equals(['relay-a']),
+          reason:
+              'the item reached no relay, so the device must not show it as '
+              'saved until some later sync happens to wipe it',
+        );
+        expect(
+          prefs.getString(BookmarkService.globalBookmarksStorageKey) ?? '',
+          isNot(contains('new-one')),
+          reason: 'an unconfirmed item must not survive a restart either',
+        );
+      });
+
+      test('persists the new list once a relay accepts it', () async {
+        stubRelay(
+          events: [
+            bookmarkListEvent(['relay-a']),
+          ],
+        );
+        final service = createService();
+
+        final added = await service.addToGlobalBookmarks(
+          const BookmarkItem(type: 'e', id: 'new-one'),
+        );
+
+        expect(added, isTrue);
+        expect(
+          service.globalBookmarks.map((item) => item.id),
+          equals(['relay-a', 'new-one']),
+        );
+        expect(
+          prefs.getString(BookmarkService.globalBookmarksStorageKey) ?? '',
+          contains('new-one'),
         );
       });
 
@@ -345,7 +535,30 @@ void main() {
           ),
           isFalse,
         );
-        verifyNever(() => nostrClient.publishEvent(any()));
+        verifyNever(() => nostrClient.publishEventAwaitOk(any()));
+      });
+
+      test('keeps the item when the removal is refused', () async {
+        stubRelay(
+          events: [
+            bookmarkListEvent(['keep', 'drop']),
+          ],
+        );
+        stubPublishRejected();
+        final service = createService();
+
+        final removed = await service.removeFromGlobalBookmarks(
+          const BookmarkItem(type: 'e', id: 'drop'),
+        );
+
+        expect(removed, isFalse);
+        expect(
+          service.globalBookmarks.map((item) => item.id),
+          equals(['keep', 'drop']),
+          reason:
+              'the relay still holds drop, so hiding it locally would make '
+              'the device disagree with the list it just failed to change',
+        );
       });
     });
 
@@ -394,7 +607,7 @@ void main() {
 
         expect(result.succeeded, isFalse);
         expect(result.isBookmarked, equals(result.wasBookmarked));
-        verifyNever(() => nostrClient.publishEvent(any()));
+        verifyNever(() => nostrClient.publishEventAwaitOk(any()));
       });
     });
   });
