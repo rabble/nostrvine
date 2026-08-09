@@ -2,22 +2,67 @@
 
 Issues related to duplication, oversized files, unused code, and unnecessary complexity.
 
-> **Snapshot — April 2026.** This document captures the audit baseline extracted verbatim from #3530. File line counts, ticket statuses, and effort estimates reflect the state of the codebase when the audit was authored. For live status and active sequencing of this work, see the maintainability epic #4339 — the audit is its canonical inventory, and the Waves there supersede the per-ticket links below where applicable.
+> **Current status — August 2026.** This document started as the April
+> #3530 audit baseline and now tracks the live #4339 maintainability
+> inventory. Historical notes remain where they explain the original issue
+> shape, but the oversized-file counts below reflect current `origin/main`.
 
-Note: Newer features like `features/feature_flags/` demonstrate clean co-location, and the BLoC migration has produced focused classes. These issues cover legacy complexity — 30+ files over 800 lines (led by `video_event_service` at 5,652), a 1,784-line `main.dart` with 7+ responsibilities, dual notification implementations, and non-app code shipping in production `lib/`.
+Note: Newer features like `features/feature_flags/` demonstrate clean
+co-location, and the BLoC migration has produced focused classes. These issues
+cover legacy complexity and newer growth pressure: 58 non-generated Dart files
+under `mobile/lib` are currently over 800 lines, led by
+`video_event_service.dart` at 6,619 lines.
 
 ---
 
-### Oversized files (30+ files over 800 lines)
-**Problem**: Largest files: `video_event_service.dart` (5,652), `auth_service.dart` (4,223), `share_video_menu.dart` (2,864), `upload_manager.dart` (2,720), `app_providers.dart` (2,500).
+### Oversized files (58 files over 800 lines)
+**Problem**: The broad file-size ratchet for #4339 is intentionally advisory,
+so oversized files are tracked as a visible backlog rather than as a blocking CI
+failure. The refreshed advisory baseline in
+`mobile/scripts/baseline/file_sizes.txt` now records the current 58-file
+inventory so future warnings mean a PR added or grew an oversized file after
+this snapshot.
 
-**Evidence**: Full list of files over 800 lines (excluding generated/l10n): `video_event_service.dart` (5,652 lines, 9 responsibilities, 71 methods, 48 mutable fields), `auth_service.dart` (4,223 lines: auth, identity, session, key management, bunker, Amber, Keycast, splash), `share_video_menu.dart` (2,864 lines: UI + business logic for bookmarks, lists, deletion, moderation, sharing), `upload_manager.dart` (2,720 lines: orchestration, retry, progress, cleanup), `app_providers.dart` (2,500 lines, 271 provider declarations), `video_feed_item.dart` (2,249), `profile_setup_screen.dart` (2,140), `main.dart` (1,784), `curated_list_service.dart` (1,609), `zendesk_support_service.dart` (1,152), `app_router.dart` (1,117), `bookmark_service.dart` (951), `bug_report_service.dart` (947).
+**Evidence**: Current largest files over 800 lines, excluding generated/l10n:
+`video_event_service.dart` (6,619), `auth_service.dart` (4,769),
+`video_editor_canvas.dart` (3,343), `main.dart` (3,075),
+`video_event_publisher.dart` (2,316), `upload_manager.dart` (2,310),
+`video_recorder_bloc.dart` (2,295), `clip_editor_bloc.dart` (1,854),
+`curated_list_service.dart` (1,834), `video_editor_provider.dart` (1,566),
+`creator_analytics_screen.dart` (1,498), `feed_videos.dart` (1,412),
+`video_editor_render_service.dart` (1,405), `sound_detail_screen.dart`
+(1,386), and `profile_editor_bloc.dart` (1,383).
 
-**Impact**: High. Hard to test, review, and modify; merge conflicts when multiple engineers touch the same file; cognitive overload for contributors. `video_event_service` is the single largest source of structural debt.
+The current inventory also includes focused, already-shrunk wins:
+`app_providers.dart` and `app_router.dart` are no longer oversized, and
+`video_feed_page.dart` is below the 800-line threshold. The largest current
+growth cluster is video editor/recorder code: canvas, recorder bloc, clip editor
+bloc, editor provider, render service, timeline strip, timeline widget, and
+editor scaffold.
 
-**Effort**: High. Each oversized file requires a domain-specific decomposition strategy. Priority targets: `video_event_service` (self-documented 9-concern split), `share_video_menu` (move business logic into `ShareSheetBloc`), `auth_service` (extract key management, session lifecycle, profile ops).
+**Impact**: High. These files are hard to test, review, and modify; they create
+merge-conflict pressure when multiple engineers touch the same surface; and
+large UI/BLoC/service files make architectural boundaries harder to see. The
+advisory baseline keeps that pressure visible without blocking unrelated PRs.
 
-**GitHub ticket**: [#3594](https://github.com/divinevideo/divine-mobile/issues/3594) — closed 2026-05-13; superseded by epic [#4339](https://github.com/divinevideo/divine-mobile/issues/4339) Wave 2/4 ([#3337](https://github.com/divinevideo/divine-mobile/issues/3337), [#3334](https://github.com/divinevideo/divine-mobile/issues/3334), [#4506](https://github.com/divinevideo/divine-mobile/issues/4506), [#4507](https://github.com/divinevideo/divine-mobile/issues/4507), [#4508](https://github.com/divinevideo/divine-mobile/issues/4508), [#4511](https://github.com/divinevideo/divine-mobile/issues/4511)–[#4516](https://github.com/divinevideo/divine-mobile/issues/4516)).
+**Effort**: High. Each oversized file requires a domain-specific decomposition
+strategy. Priority targets are the video-editor cluster
+([#6933](https://github.com/divinevideo/divine-mobile/issues/6933)),
+`video_event_service`, `auth_service`, `main.dart`, and `upload_manager`
+([#6935](https://github.com/divinevideo/divine-mobile/issues/6935)).
+Remaining production `Future.delayed` paydown is tracked separately in
+[#6934](https://github.com/divinevideo/divine-mobile/issues/6934), with the
+existing production timing ratchet staying hard-gated.
+
+**GitHub ticket**: [#3594](https://github.com/divinevideo/divine-mobile/issues/3594)
+— closed 2026-05-13; superseded by epic
+[#4339](https://github.com/divinevideo/divine-mobile/issues/4339) Wave 2/4
+([#3337](https://github.com/divinevideo/divine-mobile/issues/3337),
+[#3334](https://github.com/divinevideo/divine-mobile/issues/3334),
+[#4506](https://github.com/divinevideo/divine-mobile/issues/4506),
+[#4507](https://github.com/divinevideo/divine-mobile/issues/4507),
+[#4508](https://github.com/divinevideo/divine-mobile/issues/4508),
+[#4511](https://github.com/divinevideo/divine-mobile/issues/4511)–[#4516](https://github.com/divinevideo/divine-mobile/issues/4516)).
 
 ---
 
