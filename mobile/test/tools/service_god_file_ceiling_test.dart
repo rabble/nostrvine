@@ -137,7 +137,8 @@ void main() {
       final res = run(
         allowNoBase: false,
         baseRef: 'HEAD',
-        baseRepoPath: 'mobile/scripts/baseline/file_sizes.txt',
+        baseRepoPath:
+            'mobile/test/tools/fixtures/service_god_file_base_sizes.txt',
       );
       expect(res.exitCode, 1);
       expect(res.stdout, contains('ADDED a key or RAISED a ceiling'));

@@ -1,0 +1,2 @@
+# Fixture baseline for service_god_file_ceiling_test.dart anti-bypass coverage.
+lib/services/auth_service.dart	6
