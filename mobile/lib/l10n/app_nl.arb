@@ -452,13 +452,7 @@
     "videoGridEditVideoSubtitle": "Titel, beschrijving en hashtags bijwerken",
     "videoGridDeleteVideo": "Video verwijderen",
     "videoGridDeleteVideoSubtitle": "Deze inhoud definitief verwijderen",
-    "videoGridDeleteConfirmTitle": "Video verwijderen",
-    "videoGridDeleteConfirmMessage": "Weet je zeker dat je deze video wilt verwijderen?",
-    "videoGridDeleteConfirmNote": "Dit stuurt een verwijderverzoek (NIP-09) naar alle relays. Sommige relays kunnen de inhoud alsnog bewaren.",
-    "videoGridDeleteCancel": "Annuleren",
-    "videoGridDeleteConfirm": "Verwijderen",
     "videoGridDeletingContent": "Inhoud verwijderen...",
-    "videoGridDeleteSuccess": "Verwijderverzoek succesvol verstuurd",
     "videoGridDeleteFailure": "Inhoud verwijderen mislukt: {error}",
     "@videoGridDeleteFailure": {
         "placeholders": {
@@ -1578,12 +1572,10 @@
         }
     },
     "shareMenuClose": "Sluiten",
-    "shareMenuDeleteConfirmation": "Weet je zeker dat je deze video wilt verwijderen?",
-    "shareMenuDeleteWarning": "Dit stuurt een verwijderverzoek (NIP-09) naar alle relays. Sommige relays kunnen de inhoud alsnog bewaren.",
+    "shareMenuDeleteConfirmation": "Hiermee wordt deze video permanent uit Divine verwijderd. Hij kan nog steeds verschijnen in Nostr-clients van derden die andere relays gebruiken.",
     "shareMenuCancel": "Annuleren",
     "shareMenuDelete": "Verwijderen",
     "shareMenuDeletingContent": "Inhoud verwijderen...",
-    "shareMenuDeleteRequestSent": "Verwijderverzoek succesvol verstuurd",
     "shareMenuFailedToDeleteContent": "Inhoud verwijderen mislukt: {error}",
     "@shareMenuFailedToDeleteContent": {
         "placeholders": {
@@ -1627,8 +1619,7 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "Video verwijderen?",
-    "shareMenuDeleteRelayWarning": "Dit stuurt een verwijderverzoek naar relays. Let op: sommige relays hebben misschien nog gecachte kopieën.",
-    "shareMenuVideoDeletionRequested": "Video-verwijdering aangevraagd",
+    "shareMenuVideoDeletionRequested": "Video verwijderd",
     "shareMenuFailedToDeleteVideo": "Video verwijderen mislukt: {error}",
     "@shareMenuFailedToDeleteVideo": {
         "placeholders": {
@@ -2550,6 +2541,11 @@
     },
     "libraryDeleteDraftTitle": "Concept verwijderen",
     "libraryDeleteSelectedClipsTooltip": "Geselecteerde clips verwijderen",
+    "libraryCloseSemanticLabel": "Bibliotheek sluiten",
+    "libraryStopSelectingClipsSemanticLabel": "Stoppen met clips selecteren",
+    "libraryOpenTrashSemanticLabel": "Onlangs verwijderde clips openen",
+    "librarySortClipsSemanticLabel": "Clips sorteren",
+    "librarySelectClipsSemanticLabel": "Clips selecteren",
     "librarySelect": "Selecteren",
     "librarySortNewestCreation": "Nieuwst aangemaakt",
     "librarySortOldestCreation": "Oudst aangemaakt",
@@ -2593,6 +2589,8 @@
     "libraryPreparingVideo": "Video voorbereiden...",
     "libraryRecordVideo": "Video opnemen",
     "videoClipSemanticLabel": "Videoclip, {duration} seconden",
+    "videoClipStopMotionSemanticLabel": "Stop-motionclip, {frames}",
+    "videoClipSemanticValueSelectedAtPosition": "Geselecteerd, nummer {position}",
     "videoClipSemanticValueSelected": "Geselecteerd",
     "videoClipSemanticValueNotSelected": "Niet geselecteerd",
     "videoClipSemanticHintDisabled": "Uitgeschakeld",
@@ -2891,7 +2889,6 @@
     "libraryTrashDeleteConfirmMessage": "Hiermee wordt de clip meteen uit de prullenbak verwijderd.",
     "libraryTrashEmptyConfirmTitle": "Prullenbak legen?",
     "libraryTrashEmptyConfirmMessage": "Hiermee worden {count, plural, =1{1 clip} other{{count} clips}} meteen definitief uit de prullenbak verwijderd.",
-    "libraryTrashEntryLabel": "Recent verwijderd",
     "videoRecorderCloseLabel": "Videorecorder sluiten",
     "videoRecorderContinueToEditorLabel": "Doorgaan naar video-editor",
     "videoRecorderCaptureCloseLabel": "Sluiten",
@@ -3219,7 +3216,6 @@
     },
     "videoEditorHueSemanticLabel": "Tint",
     "videoEditorAddElementSemanticLabel": "Element toevoegen",
-    "videoEditorCloseSemanticLabel": "Sluiten",
     "videoEditorDoneSemanticLabel": "Gereed",
     "videoEditorLevelSemanticLabel": "Niveau",
     "videoMetadataClosePostDetailsSemanticLabel": "Berichtdetails sluiten",
@@ -4919,7 +4915,6 @@
     "videoEditorStopMotionFrameSemanticLabel": "Stop-motion-beeld {position} van {total}",
     "videoEditorStopMotionFramesCount": "{count, plural, =1{1 frame} other{{count} frames}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "Frames",
-    "libraryStopMotionClipLabel": "Stop-motion-clip",
   "profileNotifyBellOff": "Melden bij nieuwe vines",
   "profileNotifyBellOn": "Niet meer melden bij nieuwe vines",
   "profileNotifyUpdateFailed": "Kon niet opslaan. Opnieuw proberen?",
@@ -4939,5 +4934,12 @@
   "userPickerConfirmSemanticLabel": "Geselecteerde gebruikers bevestigen",
   "userPickerClearSelectionSemanticLabel": "Gebruikersselectie wissen",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "Selectie van inhoudswaarschuwingen annuleren",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Geselecteerde inhoudswaarschuwingen toepassen"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Geselecteerde inhoudswaarschuwingen toepassen",
+  "videoEditorCloseEditorSemanticLabel": "Video-editor sluiten",
+  "videoEditorContinueToPostDetailsSemanticLabel": "Doorgaan naar berichtdetails",
+  "videoEditorDiscardToolChangesSemanticLabel": "Wijzigingen in {tool} negeren",
+  "videoEditorApplyToolChangesSemanticLabel": "Wijzigingen in {tool} toepassen",
+  "videoEditorRemoveAudioSemanticLabel": "Audio verwijderen",
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
 }

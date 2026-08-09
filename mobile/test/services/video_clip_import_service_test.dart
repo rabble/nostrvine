@@ -7,6 +7,7 @@ import 'dart:ui';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' as models;
+import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/video_clip_import_service.dart';
@@ -364,14 +365,14 @@ First useful caption
   });
 
   test(
-    'swaps width and height when metadata reports a 90 degree rotation',
+    'uses display dimensions when metadata reports a rotated portrait video',
     () async {
       final service = buildService(
         readVideoMetadata: (video) async => VideoMetadata(
           duration: const Duration(seconds: 6),
           extension: 'mp4',
           fileSize: 1024,
-          resolution: const Size(1920, 1080),
+          resolution: const Size(1080, 1920),
           rotation: 90,
           bitrate: 1000,
         ),
@@ -391,6 +392,67 @@ First useful caption
       expect(success.clip.originalAspectRatio, closeTo(1080 / 1920, 0.001));
     },
   );
+
+  test('keeps a rotated landscape display as square', () async {
+    final service = buildService(
+      readVideoMetadata: (video) async => VideoMetadata(
+        duration: const Duration(seconds: 6),
+        extension: 'mp4',
+        fileSize: 1024,
+        resolution: const Size(1920, 1080),
+        rotation: 90,
+        bitrate: 1000,
+      ),
+    );
+
+    final result = await service.importToLibrary(
+      _video(
+        id: 'own-rotated-landscape',
+        rawTags: const {'platform': 'divine'},
+        vineId: null,
+        dimensions: null,
+      ),
+    );
+
+    final success = result as VideoClipImportSuccess;
+    expect(success.clip.targetAspectRatio, models.AspectRatio.square);
+    expect(success.clip.originalAspectRatio, closeTo(1920 / 1080, 0.001));
+  });
+
+  test('uses imeta dimensions before probing file metadata', () async {
+    var metadataRead = false;
+    final service = buildService(
+      readVideoMetadata: (video) async {
+        metadataRead = true;
+        throw StateError('metadata should not be read');
+      },
+    );
+
+    final event = Event(
+      '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+      34236,
+      [
+        ['url', 'https://cdn.example.com/own-imeta-dim.mp4'],
+        ['platform', 'divine'],
+        [
+          'imeta',
+          'url https://cdn.example.com/own-imeta-dim.mp4',
+          'dim 1080x1920',
+        ],
+      ],
+      'Divine portrait post',
+      createdAt: 1786231401,
+    );
+
+    final result = await service.importToLibrary(
+      models.VideoEvent.fromNostrEvent(event),
+    );
+
+    final success = result as VideoClipImportSuccess;
+    expect(metadataRead, isFalse);
+    expect(success.clip.targetAspectRatio, models.AspectRatio.vertical);
+    expect(success.clip.originalAspectRatio, closeTo(1080 / 1920, 0.001));
+  });
 
   test(
     'falls back to vertical target ratio when metadata probe throws',

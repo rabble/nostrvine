@@ -558,13 +558,7 @@
   "videoGridEditVideoSubtitle": "Kemas kini tajuk, keterangan dan hashtag",
   "videoGridDeleteVideo": "Padam Video",
   "videoGridDeleteVideoSubtitle": "Alih keluar video ini daripada Divine. Ia mungkin masih muncul pada klien Nostr lain.",
-  "videoGridDeleteConfirmTitle": "Padam Video",
-  "videoGridDeleteConfirmMessage": "Ini akan memadam video ini secara kekal daripada Divine. Ia mungkin masih muncul pada klien Nostr pihak ketiga yang menggunakan relay lain.",
-  "videoGridDeleteConfirmNote": "Ini akan menghantar permintaan pemadaman kepada relay. Nota: Sesetengah relay mungkin masih mempunyai salinan cache.",
-  "videoGridDeleteCancel": "Batal",
-  "videoGridDeleteConfirm": "Padam",
   "videoGridDeletingContent": "Memadam kandungan...",
-  "videoGridDeleteSuccess": "Permintaan pemadaman berjaya dihantar",
   "videoGridDeleteFailure": "Gagal memadam kandungan: {error}",
   "@videoGridDeleteFailure": {
     "placeholders": {
@@ -2204,7 +2198,6 @@
   "shareMenuEditVideoSubtitle": "Kemas kini tajuk, keterangan dan hashtag",
   "shareMenuDeleteVideo": "Padam Video",
   "shareMenuDeleteVideoSubtitle": "Alih keluar video ini daripada Divine. Ia mungkin masih muncul pada klien Nostr lain.",
-  "shareMenuDeleteWarning": "Ini menghantar permintaan pemadaman (NIP-09) kepada semua relay. Sesetengah relay mungkin masih menyimpan kandungan itu.",
   "shareMenuVideoInTheseLists": "Video berada dalam senarai ini:",
   "shareMenuVideoCount": "{count} video",
   "@shareMenuVideoCount": {
@@ -2227,7 +2220,6 @@
       }
     }
   },
-  "shareMenuDeleteRequestSent": "Video dipadam",
   "shareMenuDeleteFailedNotInitialized": "Pemadaman belum sedia. Cuba lagi sebentar nanti.",
   "shareMenuDeleteFailedNotOwner": "Anda hanya boleh memadam video anda sendiri.",
   "shareMenuDeleteFailedNotAuthenticated": "Log masuk semula, kemudian cuba memadam.",
@@ -2293,7 +2285,6 @@
     }
   },
   "shareMenuDeleteVideoQuestion": "Padam Video?",
-  "shareMenuDeleteRelayWarning": "Ini akan menghantar permintaan pemadaman kepada relay. Nota: Sesetengah relay mungkin masih mempunyai salinan cache.",
   "shareMenuVideoDeletionRequested": "Video dipadam",
   "shareMenuContentLabels": "Label kandungan",
   "shareMenuAddContentLabels": "Tambah label kandungan",
@@ -3673,7 +3664,7 @@
   "commonNotNow": "Bukan Sekarang",
   "commonLoading": "Memuatkan",
   "@commonLoading": {
-    "description": "Screen-reader label for a blocking progress spinner that covers the screen while an action is being prepared. Announced instead of the content behind it, which is not reachable while the spinner is up."
+    "description": "Screen-reader label for a progress indicator, announced while content or an action is loading. Covers both a full-screen spinner that blocks the content behind it and a small inline one next to content that stays reachable."
   },
   "videoMetadataEditCoverFailedSnackbar": "Tidak dapat mengemas kini muka depan. Cuba lagi.",
   "@videoMetadataEditCoverFailedSnackbar": {
@@ -3725,6 +3716,11 @@
   "libraryTabClips": "Klip",
   "librarySaveToCameraRollTooltip": "Simpan ke rol kamera",
   "libraryDeleteSelectedClipsTooltip": "Padam klip dipilih",
+  "libraryCloseSemanticLabel": "Tutup pustaka",
+  "libraryStopSelectingClipsSemanticLabel": "Berhenti memilih klip",
+  "libraryOpenTrashSemanticLabel": "Buka klip yang baru dipadam",
+  "librarySortClipsSemanticLabel": "Isih klip",
+  "librarySelectClipsSemanticLabel": "Pilih klip",
   "librarySelect": "Pilih",
   "librarySortNewestCreation": "Ciptaan Terbaharu",
   "librarySortOldestCreation": "Ciptaan Terlama",
@@ -3846,6 +3842,7 @@
   "libraryAddClips": "Tambah",
   "libraryRecordVideo": "Rakam Video",
   "videoClipSemanticLabel": "Klip video, {duration} saat",
+  "videoClipStopMotionSemanticLabel": "Klip stop-motion, {frames}",
   "@videoClipSemanticLabel": {
     "description": "Accessibility label for a video clip thumbnail. Duration is formatted as seconds with 2 decimal places, e.g. '5.73'.",
     "placeholders": {
@@ -3854,6 +3851,7 @@
       }
     }
   },
+  "videoClipSemanticValueSelectedAtPosition": "Dipilih, nombor {position}",
   "videoClipSemanticValueSelected": "Dipilih",
   "videoClipSemanticValueNotSelected": "Tidak dipilih",
   "videoClipSemanticHintDisabled": "Dilumpuhkan",
@@ -5108,10 +5106,6 @@
       }
     }
   },
-  "libraryTrashEntryLabel": "Baru dipadam",
-  "@libraryTrashEntryLabel": {
-    "description": "Menu/button label on the library screen that opens the trash view."
-  },
   "videoRecorderCloseLabel": "Tutup perakam video",
   "videoRecorderContinueToEditorLabel": "Teruskan ke penyunting video",
   "videoRecorderCaptureCloseLabel": "Tutup",
@@ -5383,10 +5377,6 @@
   "videoEditorStopMotionFramesPerImageButtonLabel": "Bingkai",
   "@videoEditorStopMotionFramesPerImageButtonLabel": {
     "description": "Short label under the stop-motion frames-per-image action button in the timeline edit bar."
-  },
-  "libraryStopMotionClipLabel": "Klip stop-motion",
-  "@libraryStopMotionClipLabel": {
-    "description": "Accessibility label for the badge that marks a clip in the library as a stop-motion recording."
   },
   "videoEditorStopMotionFramesPerImageValueSemanticLabel": "{count} bingkai setiap imej",
   "@videoEditorStopMotionFramesPerImageValueSemanticLabel": {
@@ -5826,7 +5816,6 @@
   },
   "videoEditorHueSemanticLabel": "Rona",
   "videoEditorAddElementSemanticLabel": "Tambah elemen",
-  "videoEditorCloseSemanticLabel": "Tutup",
   "videoEditorDoneSemanticLabel": "Siap",
   "videoEditorLevelSemanticLabel": "Tahap",
   "videoMetadataClosePostDetailsSemanticLabel": "Tutup butiran siaran",
@@ -6784,5 +6773,12 @@
   "userPickerConfirmSemanticLabel": "Sahkan pengguna yang dipilih",
   "userPickerClearSelectionSemanticLabel": "Kosongkan pemilihan pengguna",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "Batalkan pemilihan amaran kandungan",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Gunakan amaran kandungan yang dipilih"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Gunakan amaran kandungan yang dipilih",
+  "videoEditorCloseEditorSemanticLabel": "Tutup editor video",
+  "videoEditorContinueToPostDetailsSemanticLabel": "Teruskan ke butiran siaran",
+  "videoEditorDiscardToolChangesSemanticLabel": "Buang perubahan dalam {tool}",
+  "videoEditorApplyToolChangesSemanticLabel": "Gunakan perubahan dalam {tool}",
+  "videoEditorRemoveAudioSemanticLabel": "Alih keluar audio",
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
 }

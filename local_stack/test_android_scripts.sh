@@ -57,6 +57,26 @@ assert_not_file_exists() {
   fi
 }
 
+assert_line_before() {
+  local first="$1"
+  local second="$2"
+  local file="$3"
+  local message="$4"
+  local first_line
+  local second_line
+
+  first_line="$(grep -nF -- "$first" "$file" | head -1 | cut -d: -f1)"
+  second_line="$(grep -nF -- "$second" "$file" | head -1 | cut -d: -f1)"
+
+  if [[ -z "$first_line" || -z "$second_line" || "$first_line" -ge "$second_line" ]]; then
+    echo "FAIL: ${message}" >&2
+    echo "  first:  ${first} (${first_line:-missing})" >&2
+    echo "  second: ${second} (${second_line:-missing})" >&2
+    echo "  file:   ${file}" >&2
+    exit 1
+  fi
+}
+
 extract_mise_task() {
   local task_name="$1"
   local file="$2"
@@ -244,6 +264,20 @@ assert_contains 'local_stack_has_running_container "$COMPOSE_FILE"' "${SCRIPT_DI
   "profile runner should reuse the shared local stack status check"
 assert_contains 'android_emulator_invite_server_url' "${SCRIPT_DIR}/profile.sh" \
   "profile runner should reuse the shared Android emulator invite-server URL"
+assert_contains 'PATROL_CLI_VERSION=4.6.1' "${SCRIPT_DIR}/profile.sh" \
+  "profile runner should pin patrol_cli to the version paired with the patrol package"
+assert_contains ')" || true' "${SCRIPT_DIR}/profile.sh" \
+  "profile runner should tolerate offline patrol --version update-check failures"
+assert_line_before 'PATROL_CLI_VERSION=4.6.1' 'Starting docker log capture' "${SCRIPT_DIR}/profile.sh" \
+  "profile runner should activate patrol_cli before profiler log capture starts"
+assert_contains 'PATH="$PUB_CACHE_BIN:$PATH" patrol test' "${SCRIPT_DIR}/profile.sh" \
+  "profile runner should invoke patrol from the configured PUB_CACHE"
+assert_contains '--device "$DEVICE"' "${SCRIPT_DIR}/profile.sh" \
+  "profile runner should pass the detected device to patrol so it never prompts"
+assert_contains '"${PATROL_EXTRA_ARGS[@]+"${PATROL_EXTRA_ARGS[@]}"}"' "${SCRIPT_DIR}/profile.sh" \
+  "profile runner should guard the optional patrol args for bash 3.2 (macOS) under set -u"
+assert_not_contains '    "${PATROL_EXTRA_ARGS[@]}" \' "${SCRIPT_DIR}/profile.sh" \
+  "profile runner should not expand the optional patrol args unguarded"
 
 cat > "${tmp_dir}/bin/uname" <<'STUB'
 #!/usr/bin/env bash

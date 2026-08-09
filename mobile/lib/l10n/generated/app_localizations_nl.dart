@@ -1156,27 +1156,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Deze inhoud definitief verwijderen';
 
   @override
-  String get videoGridDeleteConfirmTitle => 'Video verwijderen';
-
-  @override
-  String get videoGridDeleteConfirmMessage =>
-      'Weet je zeker dat je deze video wilt verwijderen?';
-
-  @override
-  String get videoGridDeleteConfirmNote =>
-      'Dit stuurt een verwijderverzoek (NIP-09) naar alle relays. Sommige relays kunnen de inhoud alsnog bewaren.';
-
-  @override
-  String get videoGridDeleteCancel => 'Annuleren';
-
-  @override
-  String get videoGridDeleteConfirm => 'Verwijderen';
-
-  @override
   String get videoGridDeletingContent => 'Inhoud verwijderen...';
-
-  @override
-  String get videoGridDeleteSuccess => 'Verwijderverzoek succesvol verstuurd';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -4009,10 +3989,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Deze inhoud definitief verwijderen';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'Dit stuurt een verwijderverzoek (NIP-09) naar alle relays. Sommige relays kunnen de inhoud alsnog bewaren.';
-
-  @override
   String get shareMenuVideoInTheseLists => 'Video staat in deze lijsten:';
 
   @override
@@ -4025,7 +4001,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get shareMenuDeleteConfirmation =>
-      'Weet je zeker dat je deze video wilt verwijderen?';
+      'Hiermee wordt deze video permanent uit Divine verwijderd. Hij kan nog steeds verschijnen in Nostr-clients van derden die andere relays gebruiken.';
 
   @override
   String get shareMenuCancel => 'Annuleren';
@@ -4040,10 +4016,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return 'Inhoud verwijderen mislukt: $error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent =>
-      'Verwijderverzoek succesvol verstuurd';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4161,12 +4133,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => 'Video verwijderen?';
 
   @override
-  String get shareMenuDeleteRelayWarning =>
-      'Dit stuurt een verwijderverzoek naar relays. Let op: sommige relays hebben misschien nog gecachte kopieën.';
-
-  @override
-  String get shareMenuVideoDeletionRequested =>
-      'Video-verwijdering aangevraagd';
+  String get shareMenuVideoDeletionRequested => 'Video verwijderd';
 
   @override
   String get shareMenuContentLabels => 'Inhoudslabels';
@@ -6423,6 +6390,23 @@ class AppLocalizationsNl extends AppLocalizations {
       'Geselecteerde clips verwijderen';
 
   @override
+  String get libraryCloseSemanticLabel => 'Bibliotheek sluiten';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel =>
+      'Stoppen met clips selecteren';
+
+  @override
+  String get libraryOpenTrashSemanticLabel =>
+      'Onlangs verwijderde clips openen';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'Clips sorteren';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'Clips selecteren';
+
+  @override
   String get librarySelect => 'Selecteren';
 
   @override
@@ -6604,6 +6588,16 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String videoClipSemanticLabel(String duration) {
     return 'Videoclip, $duration seconden';
+  }
+
+  @override
+  String videoClipStopMotionSemanticLabel(String frames) {
+    return 'Stop-motionclip, $frames';
+  }
+
+  @override
+  String videoClipSemanticValueSelectedAtPosition(int position) {
+    return 'Geselecteerd, nummer $position';
   }
 
   @override
@@ -8493,9 +8487,6 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => 'Recent verwijderd';
-
-  @override
   String get videoRecorderCloseLabel => 'Videorecorder sluiten';
 
   @override
@@ -9141,9 +9132,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoEditorStopMotionFramesPerImageButtonLabel => 'Frames';
 
   @override
-  String get libraryStopMotionClipLabel => 'Stop-motion-clip';
-
-  @override
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
     return '$count frames per beeld';
   }
@@ -9629,9 +9617,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoEditorAddElementSemanticLabel => 'Element toevoegen';
 
   @override
-  String get videoEditorCloseSemanticLabel => 'Sluiten';
-
-  @override
   String get videoEditorDoneSemanticLabel => 'Gereed';
 
   @override
@@ -9696,6 +9681,10 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get videoMetadataAudioReuseSubtitle =>
       'Laat anderen de audio van deze video opslaan en hergebruiken.';
+
+  @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Samenwerkers';
@@ -11167,4 +11156,37 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
       'Geselecteerde inhoudswaarschuwingen toepassen';
+
+  @override
+  String get videoEditorCloseEditorSemanticLabel => 'Video-editor sluiten';
+
+  @override
+  String get videoEditorContinueToPostDetailsSemanticLabel =>
+      'Doorgaan naar berichtdetails';
+
+  @override
+  String videoEditorDiscardToolChangesSemanticLabel(String tool) {
+    return 'Wijzigingen in $tool negeren';
+  }
+
+  @override
+  String videoEditorApplyToolChangesSemanticLabel(String tool) {
+    return 'Wijzigingen in $tool toepassen';
+  }
+
+  @override
+  String get videoEditorRemoveAudioSemanticLabel => 'Audio verwijderen';
+
+  @override
+  String rgbColorSemanticLabel(int red, int green, int blue) {
+    return 'RGB $red, $green, $blue';
+  }
+
+  @override
+  String videoEditorColorPickerSwatchSemanticLabel(
+    String picker,
+    String color,
+  ) {
+    return '$picker, $color';
+  }
 }

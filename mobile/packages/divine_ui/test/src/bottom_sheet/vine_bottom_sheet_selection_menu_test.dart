@@ -91,6 +91,57 @@ void main() {
       );
     });
 
+    testWidgets('exposes each option as a button reporting selected state', (
+      tester,
+    ) async {
+      final semanticsHandle = tester.ensureSemantics();
+      try {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => VineBottomSheetSelectionMenu.show(
+                    context: context,
+                    options: testOptions,
+                    selectedValue: 'popular',
+                  ),
+                  child: const Text('Show Menu'),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Show Menu'));
+        await tester.pumpAndSettle();
+
+        // The label is exactly the option label — the wrapper must not
+        // concatenate the child Text on top of it.
+        expect(
+          tester.getSemantics(find.bySemanticsLabel('Popular')),
+          isSemantics(
+            label: 'Popular',
+            isButton: true,
+            isSelected: true,
+            hasTapAction: true,
+          ),
+        );
+
+        expect(
+          tester.getSemantics(find.bySemanticsLabel('New')),
+          isSemantics(
+            label: 'New',
+            isButton: true,
+            isSelected: false,
+            hasTapAction: true,
+          ),
+        );
+      } finally {
+        semanticsHandle.dispose();
+      }
+    });
+
     testWidgets('shows no checkmark when nothing selected', (tester) async {
       await tester.pumpWidget(
         MaterialApp(

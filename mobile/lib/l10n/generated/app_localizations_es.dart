@@ -1163,28 +1163,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoGridDeleteVideoSubtitle => 'Sacá este contenido para siempre';
 
   @override
-  String get videoGridDeleteConfirmTitle => 'Eliminar video';
-
-  @override
-  String get videoGridDeleteConfirmMessage =>
-      '¿Seguro que querés eliminar este video?';
-
-  @override
-  String get videoGridDeleteConfirmNote =>
-      'Esto envía un pedido de eliminación (NIP-09) a todos los relays. Algunos relays todavía pueden mantener el contenido.';
-
-  @override
-  String get videoGridDeleteCancel => 'Cancelar';
-
-  @override
-  String get videoGridDeleteConfirm => 'Eliminar';
-
-  @override
   String get videoGridDeletingContent => 'Eliminando contenido...';
-
-  @override
-  String get videoGridDeleteSuccess =>
-      'Pedido de eliminación enviado con éxito';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -4036,10 +4015,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get shareMenuDeleteVideoSubtitle => 'Sacá este contenido para siempre';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'Esto envía un pedido de eliminación (NIP-09) a todos los relays. Algunos relays todavía pueden mantener el contenido.';
-
-  @override
   String get shareMenuVideoInTheseLists => 'El video está en estas listas:';
 
   @override
@@ -4052,7 +4027,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get shareMenuDeleteConfirmation =>
-      '¿Seguro que querés eliminar este video?';
+      'Esto eliminará permanentemente este video de Divine. Es posible que siga apareciendo en clientes Nostr de terceros que usan otros relays.';
 
   @override
   String get shareMenuCancel => 'Cancelar';
@@ -4067,10 +4042,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return 'No se pudo eliminar el contenido: $error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent =>
-      'Pedido de eliminación enviado con éxito';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4188,12 +4159,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => '¿Eliminar video?';
 
   @override
-  String get shareMenuDeleteRelayWarning =>
-      'Esto envía un pedido de eliminación a los relays. Nota: algunos relays todavía pueden tener copias en caché.';
-
-  @override
-  String get shareMenuVideoDeletionRequested =>
-      'Eliminación del video solicitada';
+  String get shareMenuVideoDeletionRequested => 'Video eliminado';
 
   @override
   String get shareMenuContentLabels => 'Etiquetas de contenido';
@@ -6448,6 +6414,23 @@ class AppLocalizationsEs extends AppLocalizations {
       'Eliminar clips seleccionados';
 
   @override
+  String get libraryCloseSemanticLabel => 'Cerrar biblioteca';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel =>
+      'Dejar de seleccionar clips';
+
+  @override
+  String get libraryOpenTrashSemanticLabel =>
+      'Abrir clips eliminados recientemente';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'Ordenar clips';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'Seleccionar clips';
+
+  @override
   String get librarySelect => 'Seleccionar';
 
   @override
@@ -6630,6 +6613,16 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String videoClipSemanticLabel(String duration) {
     return 'Clip de vídeo, $duration segundos';
+  }
+
+  @override
+  String videoClipStopMotionSemanticLabel(String frames) {
+    return 'Clip de stop motion, $frames';
+  }
+
+  @override
+  String videoClipSemanticValueSelectedAtPosition(int position) {
+    return 'Seleccionado, número $position';
   }
 
   @override
@@ -8538,9 +8531,6 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => 'Eliminados recientemente';
-
-  @override
   String get videoRecorderCloseLabel => 'Cerrar grabador de video';
 
   @override
@@ -9192,9 +9182,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoEditorStopMotionFramesPerImageButtonLabel => 'Fotogramas';
 
   @override
-  String get libraryStopMotionClipLabel => 'Clip de stop motion';
-
-  @override
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
     return '$count fotogramas por imagen';
   }
@@ -9683,9 +9670,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoEditorAddElementSemanticLabel => 'Agregar elemento';
 
   @override
-  String get videoEditorCloseSemanticLabel => 'Cerrar';
-
-  @override
   String get videoEditorDoneSemanticLabel => 'Listo';
 
   @override
@@ -9750,6 +9734,10 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get videoMetadataAudioReuseSubtitle =>
       'Permite que otros guarden y reutilicen el audio de este video.';
+
+  @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Colaboradores';
@@ -11227,4 +11215,37 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
       'Aplicar advertencias de contenido seleccionadas';
+
+  @override
+  String get videoEditorCloseEditorSemanticLabel => 'Cerrar el editor de vídeo';
+
+  @override
+  String get videoEditorContinueToPostDetailsSemanticLabel =>
+      'Continuar a los detalles de la publicación';
+
+  @override
+  String videoEditorDiscardToolChangesSemanticLabel(String tool) {
+    return 'Descartar cambios en $tool';
+  }
+
+  @override
+  String videoEditorApplyToolChangesSemanticLabel(String tool) {
+    return 'Aplicar cambios en $tool';
+  }
+
+  @override
+  String get videoEditorRemoveAudioSemanticLabel => 'Eliminar audio';
+
+  @override
+  String rgbColorSemanticLabel(int red, int green, int blue) {
+    return 'RGB $red, $green, $blue';
+  }
+
+  @override
+  String videoEditorColorPickerSwatchSemanticLabel(
+    String picker,
+    String color,
+  ) {
+    return '$picker, $color';
+  }
 }

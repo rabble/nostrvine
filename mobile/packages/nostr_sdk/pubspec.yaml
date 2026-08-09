@@ -27,7 +27,6 @@ dependencies:
   bech32: ^0.2.2
   kepler: ^1.0.3
   cryptography: ^2.7.0
-  cryptography_flutter: ^2.3.2
   synchronized: ^3.3.0+3
   web_socket_channel: ^3.0.2
   flutter_socks_proxy: ^0.0.3

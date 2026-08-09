@@ -1172,27 +1172,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoGridDeleteVideoSubtitle => 'Trwale usuń tę treść';
 
   @override
-  String get videoGridDeleteConfirmTitle => 'Usuń film';
-
-  @override
-  String get videoGridDeleteConfirmMessage =>
-      'Na pewno chcesz usunąć ten film?';
-
-  @override
-  String get videoGridDeleteConfirmNote =>
-      'To wyśle żądanie usunięcia (NIP-09) do wszystkich przekaźników. Niektóre przekaźniki mogą nadal zachować treść.';
-
-  @override
-  String get videoGridDeleteCancel => 'Anuluj';
-
-  @override
-  String get videoGridDeleteConfirm => 'Usuń';
-
-  @override
   String get videoGridDeletingContent => 'Usuwanie treści...';
-
-  @override
-  String get videoGridDeleteSuccess => 'Żądanie usunięcia wysłane pomyślnie';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -4095,10 +4075,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get shareMenuDeleteVideoSubtitle => 'Trwale usuń tę treść';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'To wyśle żądanie usunięcia (NIP-09) do wszystkich przekaźników. Niektóre przekaźniki mogą nadal zachować treść.';
-
-  @override
   String get shareMenuVideoInTheseLists => 'Film jest na tych listach:';
 
   @override
@@ -4118,7 +4094,8 @@ class AppLocalizationsPl extends AppLocalizations {
   String get shareMenuClose => 'Zamknij';
 
   @override
-  String get shareMenuDeleteConfirmation => 'Na pewno chcesz usunąć ten film?';
+  String get shareMenuDeleteConfirmation =>
+      'To trwale usunie ten film z Divine. Może nadal pojawiać się w zewnętrznych klientach Nostr, które używają innych przekaźników.';
 
   @override
   String get shareMenuCancel => 'Anuluj';
@@ -4133,10 +4110,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return 'Nie udało się usunąć treści: $error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent =>
-      'Żądanie usunięcia wysłane pomyślnie';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4253,11 +4226,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => 'Usunąć film?';
 
   @override
-  String get shareMenuDeleteRelayWarning =>
-      'To wyśle żądanie usunięcia do przekaźników. Uwaga: Niektóre przekaźniki mogą nadal mieć zbuforowane kopie.';
-
-  @override
-  String get shareMenuVideoDeletionRequested => 'Zażądano usunięcia filmu';
+  String get shareMenuVideoDeletionRequested => 'Film usunięty';
 
   @override
   String get shareMenuContentLabels => 'Etykiety treści';
@@ -6545,6 +6514,22 @@ class AppLocalizationsPl extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'Usuń wybrane klipy';
 
   @override
+  String get libraryCloseSemanticLabel => 'Zamknij bibliotekę';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel =>
+      'Zakończ wybieranie klipów';
+
+  @override
+  String get libraryOpenTrashSemanticLabel => 'Otwórz ostatnio usunięte klipy';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'Sortuj klipy';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'Wybierz klipy';
+
+  @override
   String get librarySelect => 'Wybierz';
 
   @override
@@ -6732,6 +6717,16 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String videoClipSemanticLabel(String duration) {
     return 'Klip wideo, $duration sekund';
+  }
+
+  @override
+  String videoClipStopMotionSemanticLabel(String frames) {
+    return 'Klip poklatkowy, $frames';
+  }
+
+  @override
+  String videoClipSemanticValueSelectedAtPosition(int position) {
+    return 'Zaznaczono, numer $position';
   }
 
   @override
@@ -8634,9 +8629,6 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => 'Ostatnio usunięte';
-
-  @override
   String get videoRecorderCloseLabel => 'Zamknij rejestrator wideo';
 
   @override
@@ -9284,9 +9276,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoEditorStopMotionFramesPerImageButtonLabel => 'Klatki';
 
   @override
-  String get libraryStopMotionClipLabel => 'Klip poklatkowy';
-
-  @override
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
     return '$count klatek na obraz';
   }
@@ -9771,9 +9760,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoEditorAddElementSemanticLabel => 'Dodaj element';
 
   @override
-  String get videoEditorCloseSemanticLabel => 'Zamknij';
-
-  @override
   String get videoEditorDoneSemanticLabel => 'Gotowe';
 
   @override
@@ -9838,6 +9824,10 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get videoMetadataAudioReuseSubtitle =>
       'Pozwól innym zapisać i ponownie użyć dźwięku z tego wideo.';
+
+  @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Współtwórcy';
@@ -11312,4 +11302,37 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
       'Zastosuj wybrane ostrzeżenia o treści';
+
+  @override
+  String get videoEditorCloseEditorSemanticLabel => 'Zamknij edytor wideo';
+
+  @override
+  String get videoEditorContinueToPostDetailsSemanticLabel =>
+      'Przejdź do szczegółów posta';
+
+  @override
+  String videoEditorDiscardToolChangesSemanticLabel(String tool) {
+    return 'Odrzuć zmiany w $tool';
+  }
+
+  @override
+  String videoEditorApplyToolChangesSemanticLabel(String tool) {
+    return 'Zastosuj zmiany w $tool';
+  }
+
+  @override
+  String get videoEditorRemoveAudioSemanticLabel => 'Usuń dźwięk';
+
+  @override
+  String rgbColorSemanticLabel(int red, int green, int blue) {
+    return 'RGB $red, $green, $blue';
+  }
+
+  @override
+  String videoEditorColorPickerSwatchSemanticLabel(
+    String picker,
+    String color,
+  ) {
+    return '$picker, $color';
+  }
 }

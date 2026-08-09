@@ -6,6 +6,7 @@
 import 'dart:convert';
 
 import 'package:meta/meta.dart';
+import 'package:models/src/imeta_tag.dart';
 import 'package:models/src/nip71_video_kinds.dart';
 import 'package:models/src/video_attribution.dart';
 import 'package:models/src/video_url_resolver.dart';
@@ -393,7 +394,7 @@ class VideoEvent {
           // Parse imeta tag which contains comma-separated metadata
           // Ensure we have a List<String> for the parser
           final iMetaTag = List<String>.from(tag);
-          _parseImetaTag(iMetaTag, (key, value) {
+          parseImetaTag(iMetaTag, (key, value) {
             switch (key) {
               case 'url':
                 // Check if this is a valid video URL and add to candidates
@@ -1411,45 +1412,6 @@ class VideoEvent {
 
   static const int _vineShutdownAtUtcSeconds = 1484611200;
 
-  /// Parse imeta tag which contains space-separated key-value pairs
-  /// NIP-71 format: ["imeta", "key1 value1", "key2 value2", ...]
-  static void _parseImetaTag(
-    List<String> tag,
-    void Function(String key, String value) onKeyValue,
-  ) {
-    // Skip the first element which is "imeta"
-    // Support TWO formats:
-    // 1. OLD: ["imeta", "url https://...", "m video/mp4", ...]  (space-separated key-value)
-    // 2. NEW: ["imeta", "url", "https://...", "m", "video/mp4", ...] (positional key-value pairs)
-
-    // Detect format by checking if tag[1] contains a space
-    if (tag.length > 1) {
-      final firstElement = tag[1];
-      final hasSpace = firstElement.contains(' ');
-
-      if (hasSpace) {
-        // OLD FORMAT: space-separated key-value within each element
-        for (var i = 1; i < tag.length; i++) {
-          final element = tag[i];
-          final spaceIndex = element.indexOf(' ');
-          if (spaceIndex > 0) {
-            final key = element.substring(0, spaceIndex);
-            final value = element.substring(spaceIndex + 1);
-            onKeyValue(key, value);
-          }
-        }
-      } else {
-        // NEW FORMAT: positional key-value pairs (tag[i] is key, tag[i+1]
-        // is value)
-        for (var i = 1; i < tag.length - 1; i += 2) {
-          final key = tag[i];
-          final value = tag[i + 1];
-          onKeyValue(key, value);
-        }
-      }
-    }
-  }
-
   /// Whether [key] names a video URL inside an `imeta` tag.
   ///
   /// Mirrors the `url`-plus-POSTEL'S-LAW-alternates set that
@@ -1477,7 +1439,7 @@ class VideoEvent {
     final urls = <String>[];
     for (final tag in nostrEventTags) {
       if (tag.isEmpty || tag.first != 'imeta') continue;
-      _parseImetaTag(tag, (key, value) {
+      parseImetaTag(tag, (key, value) {
         final url = value.trim();
         if (_isImetaVideoUrlKey(key) && VideoUrlResolver.isValidVideoUrl(url)) {
           urls.add(url);

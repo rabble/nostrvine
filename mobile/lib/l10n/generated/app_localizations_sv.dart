@@ -1141,27 +1141,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ta bort det här innehållet permanent';
 
   @override
-  String get videoGridDeleteConfirmTitle => 'Ta bort video';
-
-  @override
-  String get videoGridDeleteConfirmMessage =>
-      'Är du säker på att du vill ta bort den här videon?';
-
-  @override
-  String get videoGridDeleteConfirmNote =>
-      'Detta skickar en borttagningsbegäran (NIP-09) till alla reler. Vissa reler kan fortfarande behålla innehållet.';
-
-  @override
-  String get videoGridDeleteCancel => 'Avbryt';
-
-  @override
-  String get videoGridDeleteConfirm => 'Ta bort';
-
-  @override
   String get videoGridDeletingContent => 'Tar bort innehåll...';
-
-  @override
-  String get videoGridDeleteSuccess => 'Borttagningsbegäran skickad';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -3991,10 +3971,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ta bort det här innehållet permanent';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'Detta skickar en borttagningsbegäran (NIP-09) till alla reler. Vissa reler kan fortfarande behålla innehållet.';
-
-  @override
   String get shareMenuVideoInTheseLists => 'Videon finns i de här listorna:';
 
   @override
@@ -4007,7 +3983,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get shareMenuDeleteConfirmation =>
-      'Är du säker på att du vill ta bort den här videon?';
+      'Det här tar bort videon permanent från Divine. Den kan fortfarande visas i Nostr-klienter från tredje part som använder andra reler.';
 
   @override
   String get shareMenuCancel => 'Avbryt';
@@ -4022,9 +3998,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return 'Kunde inte ta bort innehåll: $error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent => 'Borttagningsbegäran skickad';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4141,11 +4114,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => 'Ta bort video?';
 
   @override
-  String get shareMenuDeleteRelayWarning =>
-      'Detta skickar en borttagningsbegäran till reler. Obs: Vissa reler kan fortfarande ha cachade kopior.';
-
-  @override
-  String get shareMenuVideoDeletionRequested => 'Videoborttagning begärd';
+  String get shareMenuVideoDeletionRequested => 'Video borttagen';
 
   @override
   String get shareMenuContentLabels => 'Innehållsetiketter';
@@ -6389,6 +6358,21 @@ class AppLocalizationsSv extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'Ta bort valda klipp';
 
   @override
+  String get libraryCloseSemanticLabel => 'Stäng biblioteket';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel => 'Sluta välja klipp';
+
+  @override
+  String get libraryOpenTrashSemanticLabel => 'Öppna nyligen raderade klipp';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'Sortera klipp';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'Välj klipp';
+
+  @override
   String get librarySelect => 'Välj';
 
   @override
@@ -6568,6 +6552,16 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String videoClipSemanticLabel(String duration) {
     return 'Videoklipp, $duration sekunder';
+  }
+
+  @override
+  String videoClipStopMotionSemanticLabel(String frames) {
+    return 'Stop motion-klipp, $frames';
+  }
+
+  @override
+  String videoClipSemanticValueSelectedAtPosition(int position) {
+    return 'Valt, nummer $position';
   }
 
   @override
@@ -8454,9 +8448,6 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => 'Nyligen borttagna';
-
-  @override
   String get videoRecorderCloseLabel => 'Stäng videoinspelaren';
 
   @override
@@ -9103,9 +9094,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoEditorStopMotionFramesPerImageButtonLabel => 'Bildrutor';
 
   @override
-  String get libraryStopMotionClipLabel => 'Stop motion-klipp';
-
-  @override
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
     return '$count bildrutor per bild';
   }
@@ -9587,9 +9575,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoEditorAddElementSemanticLabel => 'Lägg till element';
 
   @override
-  String get videoEditorCloseSemanticLabel => 'Stäng';
-
-  @override
   String get videoEditorDoneSemanticLabel => 'Klar';
 
   @override
@@ -9652,6 +9637,10 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get videoMetadataAudioReuseSubtitle =>
       'Låt andra spara och återanvända videons ljud.';
+
+  @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Samarbetspartners';
@@ -11115,4 +11104,37 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
       'Använd valda innehållsvarningar';
+
+  @override
+  String get videoEditorCloseEditorSemanticLabel => 'Stäng videoredigeraren';
+
+  @override
+  String get videoEditorContinueToPostDetailsSemanticLabel =>
+      'Fortsätt till inläggsinformation';
+
+  @override
+  String videoEditorDiscardToolChangesSemanticLabel(String tool) {
+    return 'Ignorera ändringar i $tool';
+  }
+
+  @override
+  String videoEditorApplyToolChangesSemanticLabel(String tool) {
+    return 'Tillämpa ändringar i $tool';
+  }
+
+  @override
+  String get videoEditorRemoveAudioSemanticLabel => 'Ta bort ljud';
+
+  @override
+  String rgbColorSemanticLabel(int red, int green, int blue) {
+    return 'RGB $red, $green, $blue';
+  }
+
+  @override
+  String videoEditorColorPickerSwatchSemanticLabel(
+    String picker,
+    String color,
+  ) {
+    return '$picker, $color';
+  }
 }

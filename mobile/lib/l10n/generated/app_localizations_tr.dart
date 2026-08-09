@@ -1121,27 +1121,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoGridDeleteVideoSubtitle => 'Bu içeriği kalıcı olarak kaldır';
 
   @override
-  String get videoGridDeleteConfirmTitle => 'Videoyu Sil';
-
-  @override
-  String get videoGridDeleteConfirmMessage =>
-      'Bu videoyu silmek istediğinden emin misin?';
-
-  @override
-  String get videoGridDeleteConfirmNote =>
-      'Bu işlem tüm rölelere bir silme isteği (NIP-09) gönderir. Bazı röleler içeriği saklamaya devam edebilir.';
-
-  @override
-  String get videoGridDeleteCancel => 'İptal';
-
-  @override
-  String get videoGridDeleteConfirm => 'Sil';
-
-  @override
   String get videoGridDeletingContent => 'İçerik siliniyor...';
-
-  @override
-  String get videoGridDeleteSuccess => 'Silme isteği başarıyla gönderildi';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -3961,10 +3941,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get shareMenuDeleteVideoSubtitle => 'Bu içeriği kalıcı olarak kaldır';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'Bu işlem tüm rölelere bir silme isteği (NIP-09) gönderir. Bazı röleler içeriği saklamaya devam edebilir.';
-
-  @override
   String get shareMenuVideoInTheseLists => 'Video şu listelerde:';
 
   @override
@@ -3977,7 +3953,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get shareMenuDeleteConfirmation =>
-      'Bu videoyu silmek istediğinden emin misin?';
+      'Bu video Divine\'dan kalıcı olarak silinir. Diğer röleleri kullanan üçüncü taraf Nostr istemcilerinde hâlâ görünebilir.';
 
   @override
   String get shareMenuCancel => 'İptal';
@@ -3992,9 +3968,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return 'İçerik silinemedi: $error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent => 'Silme isteği başarıyla gönderildi';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4112,11 +4085,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => 'Video Silinsin mi?';
 
   @override
-  String get shareMenuDeleteRelayWarning =>
-      'Bu işlem rölelere bir silme isteği gönderir. Not: Bazı rölelerin hala önbelleğe alınmış kopyaları olabilir.';
-
-  @override
-  String get shareMenuVideoDeletionRequested => 'Video silme isteği alındı';
+  String get shareMenuVideoDeletionRequested => 'Video silindi';
 
   @override
   String get shareMenuContentLabels => 'İçerik etiketleri';
@@ -6359,6 +6328,22 @@ class AppLocalizationsTr extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'Seçili klipleri sil';
 
   @override
+  String get libraryCloseSemanticLabel => 'Kitaplığı kapat';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel => 'Klip seçimini bitir';
+
+  @override
+  String get libraryOpenTrashSemanticLabel =>
+      'Yakın zamanda silinen klipleri aç';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'Klipleri sırala';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'Klip seç';
+
+  @override
   String get librarySelect => 'Seç';
 
   @override
@@ -6536,6 +6521,16 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String videoClipSemanticLabel(String duration) {
     return 'Video klibi, $duration saniye';
+  }
+
+  @override
+  String videoClipStopMotionSemanticLabel(String frames) {
+    return 'Stop motion klibi, $frames';
+  }
+
+  @override
+  String videoClipSemanticValueSelectedAtPosition(int position) {
+    return 'Seçildi, numara $position';
   }
 
   @override
@@ -8415,9 +8410,6 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => 'Son silinenler';
-
-  @override
   String get videoRecorderCloseLabel => 'Video kaydediciyi kapat';
 
   @override
@@ -9057,9 +9049,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorStopMotionFramesPerImageButtonLabel => 'Kare';
 
   @override
-  String get libraryStopMotionClipLabel => 'Stop motion klibi';
-
-  @override
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
     return 'Görüntü başına $count kare';
   }
@@ -9539,9 +9528,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorAddElementSemanticLabel => 'Öğe ekle';
 
   @override
-  String get videoEditorCloseSemanticLabel => 'Kapat';
-
-  @override
   String get videoEditorDoneSemanticLabel => 'Bitti';
 
   @override
@@ -9606,6 +9592,10 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get videoMetadataAudioReuseSubtitle =>
       'Başkalarının bu videonun sesini kaydedip yeniden kullanmasına izin ver.';
+
+  @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Ortak çalışanlar';
@@ -11073,4 +11063,37 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
       'Seçili içerik uyarılarını uygula';
+
+  @override
+  String get videoEditorCloseEditorSemanticLabel => 'Video düzenleyiciyi kapat';
+
+  @override
+  String get videoEditorContinueToPostDetailsSemanticLabel =>
+      'Gönderi ayrıntılarına devam et';
+
+  @override
+  String videoEditorDiscardToolChangesSemanticLabel(String tool) {
+    return '$tool içindeki değişiklikleri iptal et';
+  }
+
+  @override
+  String videoEditorApplyToolChangesSemanticLabel(String tool) {
+    return '$tool içindeki değişiklikleri uygula';
+  }
+
+  @override
+  String get videoEditorRemoveAudioSemanticLabel => 'Sesi kaldır';
+
+  @override
+  String rgbColorSemanticLabel(int red, int green, int blue) {
+    return 'RGB $red, $green, $blue';
+  }
+
+  @override
+  String videoEditorColorPickerSwatchSemanticLabel(
+    String picker,
+    String color,
+  ) {
+    return '$picker, $color';
+  }
 }

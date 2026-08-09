@@ -620,13 +620,7 @@
   "videoGridEditVideoSubtitle": "Update title, description, and hashtags",
   "videoGridDeleteVideo": "Delete Video",
   "videoGridDeleteVideoSubtitle": "Remove this video from Divine. It may still appear on other Nostr clients.",
-  "videoGridDeleteConfirmTitle": "Delete Video",
-  "videoGridDeleteConfirmMessage": "This will permanently delete this video from Divine. It may still appear on third-party Nostr clients that use other relays.",
-  "videoGridDeleteConfirmNote": "This will send a deletion request to relays. Note: Some relays may still have cached copies.",
-  "videoGridDeleteCancel": "Cancel",
-  "videoGridDeleteConfirm": "Delete",
   "videoGridDeletingContent": "Deleting content...",
-  "videoGridDeleteSuccess": "Delete request sent successfully",
   "videoGridDeleteFailure": "Failed to delete content: {error}",
   "@videoGridDeleteFailure": {
     "placeholders": {
@@ -2351,7 +2345,6 @@
   "shareMenuEditVideoSubtitle": "Update title, description, and hashtags",
   "shareMenuDeleteVideo": "Delete Video",
   "shareMenuDeleteVideoSubtitle": "Remove this video from Divine. It may still appear on other Nostr clients.",
-  "shareMenuDeleteWarning": "This sends a delete request (NIP-09) to all relays. Some relays may still keep the content.",
   "shareMenuVideoInTheseLists": "Video is in these lists:",
   "shareMenuVideoCount": "{count} videos",
   "@shareMenuVideoCount": {
@@ -2374,7 +2367,6 @@
       }
     }
   },
-  "shareMenuDeleteRequestSent": "Video deleted",
   "shareMenuDeleteFailedNotInitialized": "Deletion isn't ready yet. Try again in a moment.",
   "shareMenuDeleteFailedNotOwner": "You can only delete your own videos.",
   "shareMenuDeleteFailedNotAuthenticated": "Sign in again, then try deleting.",
@@ -2440,7 +2432,6 @@
     }
   },
   "shareMenuDeleteVideoQuestion": "Delete Video?",
-  "shareMenuDeleteRelayWarning": "This will send a deletion request to relays. Note: Some relays may still have cached copies.",
   "shareMenuVideoDeletionRequested": "Video deleted",
   "shareMenuContentLabels": "Content labels",
   "shareMenuAddContentLabels": "Add content labels",
@@ -3867,7 +3858,7 @@
   "commonNotNow": "Not now",
   "commonLoading": "Loading",
   "@commonLoading": {
-    "description": "Screen-reader label for a blocking progress spinner that covers the screen while an action is being prepared. Announced instead of the content behind it, which is not reachable while the spinner is up."
+    "description": "Screen-reader label for a progress indicator, announced while content or an action is loading. Covers both a full-screen spinner that blocks the content behind it and a small inline one next to content that stays reachable."
   },
   "videoMetadataEditCoverFailedSnackbar": "Couldn't update the cover. Try again.",
   "@videoMetadataEditCoverFailedSnackbar": {
@@ -3923,6 +3914,26 @@
   "libraryTabClips": "Clips",
   "librarySaveToCameraRollTooltip": "Save to camera roll",
   "libraryDeleteSelectedClipsTooltip": "Delete selected clips",
+  "libraryCloseSemanticLabel": "Close library",
+  "@libraryCloseSemanticLabel": {
+    "description": "Accessibility label for the library toolbar button that leaves the library screen."
+  },
+  "libraryStopSelectingClipsSemanticLabel": "Stop selecting clips",
+  "@libraryStopSelectingClipsSemanticLabel": {
+    "description": "Accessibility label for the library toolbar button that exits clip-selection mode."
+  },
+  "libraryOpenTrashSemanticLabel": "Open recently deleted clips",
+  "@libraryOpenTrashSemanticLabel": {
+    "description": "Accessibility label for the library toolbar button that opens the recently deleted clips screen."
+  },
+  "librarySortClipsSemanticLabel": "Sort clips",
+  "@librarySortClipsSemanticLabel": {
+    "description": "Accessibility label for the library toolbar button that opens clip sorting options."
+  },
+  "librarySelectClipsSemanticLabel": "Select clips",
+  "@librarySelectClipsSemanticLabel": {
+    "description": "Accessibility label for the library toolbar button that enters clip-selection mode."
+  },
   "librarySelect": "Select",
   "librarySortNewestCreation": "Newest Creation",
   "librarySortOldestCreation": "Oldest Creation",
@@ -4049,6 +4060,24 @@
     "placeholders": {
       "duration": {
         "type": "String"
+      }
+    }
+  },
+  "videoClipStopMotionSemanticLabel": "Stop-motion clip, {frames}",
+  "@videoClipStopMotionSemanticLabel": {
+    "description": "Accessibility label for a stop-motion clip thumbnail. {frames} is the already-localized frame count from videoEditorStopMotionFramesCount. Replaces the duration label, which is a misleading value for stop-motion and is hidden visually for the same reason.",
+    "placeholders": {
+      "frames": {
+        "type": "String"
+      }
+    }
+  },
+  "videoClipSemanticValueSelectedAtPosition": "Selected, number {position}",
+  "@videoClipSemanticValueSelectedAtPosition": {
+    "description": "Accessibility value for a selected video clip thumbnail, announcing its position in the selection order. Mirrors the number shown in the on-screen selection badge.",
+    "placeholders": {
+      "position": {
+        "type": "int"
       }
     }
   },
@@ -5084,10 +5113,6 @@
       }
     }
   },
-  "libraryTrashEntryLabel": "Recently deleted",
-  "@libraryTrashEntryLabel": {
-    "description": "Menu/button label on the library screen that opens the trash view."
-  },
   "videoRecorderCloseLabel": "Close video recorder",
   "videoRecorderContinueToEditorLabel": "Continue to video editor",
   "videoRecorderCaptureCloseLabel": "Close",
@@ -5363,10 +5388,6 @@
   "videoEditorStopMotionFramesPerImageButtonLabel": "Frames",
   "@videoEditorStopMotionFramesPerImageButtonLabel": {
     "description": "Short label under the stop-motion frames-per-image action button in the timeline edit bar."
-  },
-  "libraryStopMotionClipLabel": "Stop-motion clip",
-  "@libraryStopMotionClipLabel": {
-    "description": "Accessibility label for the badge that marks a clip in the library as a stop-motion recording."
   },
   "videoEditorStopMotionFramesPerImageValueSemanticLabel": "{count} frames per image",
   "@videoEditorStopMotionFramesPerImageValueSemanticLabel": {
@@ -5798,7 +5819,6 @@
   },
   "videoEditorHueSemanticLabel": "Hue",
   "videoEditorAddElementSemanticLabel": "Add element",
-  "videoEditorCloseSemanticLabel": "Close",
   "videoEditorDoneSemanticLabel": "Done",
   "videoEditorLevelSemanticLabel": "Level",
   "videoMetadataClosePostDetailsSemanticLabel": "Close post details",
@@ -5825,6 +5845,10 @@
   "videoMetadataContentWarningDoneButton": "Done",
   "videoMetadataAudioReuseTitle": "Publish this sound",
   "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
+  "publishAudioReuseDegradedWarning": "Your video is up, but the sound didn't publish. Edit the video to share it.",
+  "@publishAudioReuseDegradedWarning": {
+    "description": "Snackbar shown after a successful publish when the creator opted into a reusable sound but extracting or publishing it failed, so the video posted without the sharing choice they made."
+  },
   "videoMetadataCollaboratorsLabel": "Add collaborators",
   "videoMetadataAddCollaboratorSemanticLabel": "Invite collaborator",
   "videoMetadataCollaboratorsHelpTooltip": "How collaborators work",
@@ -6635,5 +6659,35 @@
   "userPickerConfirmSemanticLabel": "Confirm selected users",
   "userPickerClearSelectionSemanticLabel": "Clear user selection",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "Cancel content warning selection",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Apply selected content warnings"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Apply selected content warnings",
+  "videoEditorCloseEditorSemanticLabel": "Close video editor",
+  "videoEditorContinueToPostDetailsSemanticLabel": "Continue to post details",
+  "videoEditorDiscardToolChangesSemanticLabel": "Discard changes in {tool}",
+  "@videoEditorDiscardToolChangesSemanticLabel": {
+    "description": "Accessibility label for closing a named video-editor tool without applying its changes.",
+    "placeholders": {"tool": {"type": "String", "example": "Draw"}}
+  },
+  "videoEditorApplyToolChangesSemanticLabel": "Apply changes in {tool}",
+  "@videoEditorApplyToolChangesSemanticLabel": {
+    "description": "Accessibility label for applying changes made in a named video-editor tool.",
+    "placeholders": {"tool": {"type": "String", "example": "Draw"}}
+  },
+  "videoEditorRemoveAudioSemanticLabel": "Remove audio",
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
+  "@rgbColorSemanticLabel": {
+    "description": "Accessibility label announcing a color swatch as its RGB triplet, used when the color has no human-readable name.",
+    "placeholders": {
+      "red": {"type": "int", "example": "255"},
+      "green": {"type": "int", "example": "0"},
+      "blue": {"type": "int", "example": "0"}
+    }
+  },
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}",
+  "@videoEditorColorPickerSwatchSemanticLabel": {
+    "description": "Joins the custom color swatch's picker role and its color description into one accessibility label. Translate the separator, not the placeholders: locales that do not list with a Latin comma should use their own (for example '、' or '، '), matching rgbColorSemanticLabel.",
+    "placeholders": {
+      "picker": {"type": "String", "example": "Color picker"},
+      "color": {"type": "String", "example": "RGB 100, 20, 20"}
+    }
+  }
 }

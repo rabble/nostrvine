@@ -452,13 +452,7 @@
     "videoGridEditVideoSubtitle": "Zaktualizuj tytuł, opis i hashtagi",
     "videoGridDeleteVideo": "Usuń film",
     "videoGridDeleteVideoSubtitle": "Trwale usuń tę treść",
-    "videoGridDeleteConfirmTitle": "Usuń film",
-    "videoGridDeleteConfirmMessage": "Na pewno chcesz usunąć ten film?",
-    "videoGridDeleteConfirmNote": "To wyśle żądanie usunięcia (NIP-09) do wszystkich przekaźników. Niektóre przekaźniki mogą nadal zachować treść.",
-    "videoGridDeleteCancel": "Anuluj",
-    "videoGridDeleteConfirm": "Usuń",
     "videoGridDeletingContent": "Usuwanie treści...",
-    "videoGridDeleteSuccess": "Żądanie usunięcia wysłane pomyślnie",
     "videoGridDeleteFailure": "Nie udało się usunąć treści: {error}",
     "@videoGridDeleteFailure": {
         "placeholders": {
@@ -1578,12 +1572,10 @@
         }
     },
     "shareMenuClose": "Zamknij",
-    "shareMenuDeleteConfirmation": "Na pewno chcesz usunąć ten film?",
-    "shareMenuDeleteWarning": "To wyśle żądanie usunięcia (NIP-09) do wszystkich przekaźników. Niektóre przekaźniki mogą nadal zachować treść.",
+    "shareMenuDeleteConfirmation": "To trwale usunie ten film z Divine. Może nadal pojawiać się w zewnętrznych klientach Nostr, które używają innych przekaźników.",
     "shareMenuCancel": "Anuluj",
     "shareMenuDelete": "Usuń",
     "shareMenuDeletingContent": "Usuwanie treści...",
-    "shareMenuDeleteRequestSent": "Żądanie usunięcia wysłane pomyślnie",
     "shareMenuFailedToDeleteContent": "Nie udało się usunąć treści: {error}",
     "@shareMenuFailedToDeleteContent": {
         "placeholders": {
@@ -1627,8 +1619,7 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "Usunąć film?",
-    "shareMenuDeleteRelayWarning": "To wyśle żądanie usunięcia do przekaźników. Uwaga: Niektóre przekaźniki mogą nadal mieć zbuforowane kopie.",
-    "shareMenuVideoDeletionRequested": "Zażądano usunięcia filmu",
+    "shareMenuVideoDeletionRequested": "Film usunięty",
     "shareMenuFailedToDeleteVideo": "Nie udało się usunąć filmu: {error}",
     "@shareMenuFailedToDeleteVideo": {
         "placeholders": {
@@ -2550,6 +2541,11 @@
     },
     "libraryDeleteDraftTitle": "Usuń wersję roboczą",
     "libraryDeleteSelectedClipsTooltip": "Usuń wybrane klipy",
+    "libraryCloseSemanticLabel": "Zamknij bibliotekę",
+    "libraryStopSelectingClipsSemanticLabel": "Zakończ wybieranie klipów",
+    "libraryOpenTrashSemanticLabel": "Otwórz ostatnio usunięte klipy",
+    "librarySortClipsSemanticLabel": "Sortuj klipy",
+    "librarySelectClipsSemanticLabel": "Wybierz klipy",
     "librarySelect": "Wybierz",
     "librarySortNewestCreation": "Najnowsze utworzone",
     "librarySortOldestCreation": "Najstarsze utworzone",
@@ -2593,6 +2589,8 @@
     "libraryPreparingVideo": "Przygotowywanie wideo...",
     "libraryRecordVideo": "Nagraj wideo",
     "videoClipSemanticLabel": "Klip wideo, {duration} sekund",
+    "videoClipStopMotionSemanticLabel": "Klip poklatkowy, {frames}",
+    "videoClipSemanticValueSelectedAtPosition": "Zaznaczono, numer {position}",
     "videoClipSemanticValueSelected": "Zaznaczono",
     "videoClipSemanticValueNotSelected": "Niezaznaczono",
     "videoClipSemanticHintDisabled": "Wyłączono",
@@ -2891,7 +2889,6 @@
     "libraryTrashDeleteConfirmMessage": "To od razu usunie klip z kosza.",
     "libraryTrashEmptyConfirmTitle": "Opróżnić kosz?",
     "libraryTrashEmptyConfirmMessage": "To od razu trwale usunie z kosza {count, plural, =1{1 klip} other{{count} klipów}}.",
-    "libraryTrashEntryLabel": "Ostatnio usunięte",
     "videoRecorderCloseLabel": "Zamknij rejestrator wideo",
     "videoRecorderContinueToEditorLabel": "Przejdź do edytora wideo",
     "videoRecorderCaptureCloseLabel": "Zamknij",
@@ -3219,7 +3216,6 @@
     },
     "videoEditorHueSemanticLabel": "Odcień",
     "videoEditorAddElementSemanticLabel": "Dodaj element",
-    "videoEditorCloseSemanticLabel": "Zamknij",
     "videoEditorDoneSemanticLabel": "Gotowe",
     "videoEditorLevelSemanticLabel": "Poziom",
     "videoMetadataClosePostDetailsSemanticLabel": "Zamknij szczegóły posta",
@@ -4919,7 +4915,6 @@
     "videoEditorStopMotionFrameSemanticLabel": "Klatka poklatkowa {position} z {total}",
     "videoEditorStopMotionFramesCount": "{count, plural, =1{1 klatka} few{{count} klatki} many{{count} klatek} other{{count} klatki}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "Klatki",
-    "libraryStopMotionClipLabel": "Klip poklatkowy",
   "profileNotifyBellOff": "Powiadamiaj o nowych vine'ach",
   "profileNotifyBellOn": "Nie powiadamiaj o nowych vine'ach",
   "profileNotifyUpdateFailed": "Nie udało się zapisać. Spróbować ponownie?",
@@ -4939,5 +4934,12 @@
   "userPickerConfirmSemanticLabel": "Potwierdź wybranych użytkowników",
   "userPickerClearSelectionSemanticLabel": "Wyczyść wybór użytkowników",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "Anuluj wybór ostrzeżeń o treści",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Zastosuj wybrane ostrzeżenia o treści"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Zastosuj wybrane ostrzeżenia o treści",
+  "videoEditorCloseEditorSemanticLabel": "Zamknij edytor wideo",
+  "videoEditorContinueToPostDetailsSemanticLabel": "Przejdź do szczegółów posta",
+  "videoEditorDiscardToolChangesSemanticLabel": "Odrzuć zmiany w {tool}",
+  "videoEditorApplyToolChangesSemanticLabel": "Zastosuj zmiany w {tool}",
+  "videoEditorRemoveAudioSemanticLabel": "Usuń dźwięk",
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
 }

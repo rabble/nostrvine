@@ -4,6 +4,7 @@
 
 import 'package:meta/meta.dart';
 import 'package:models/src/engagement_count_parser.dart';
+import 'package:models/src/imeta_tag.dart';
 import 'package:models/src/video_event.dart';
 
 /// Video with engagement metrics from Funnelcake API.
@@ -244,28 +245,19 @@ class VideoStats {
             blurhashFromTag = tagValue;
           }
           if (tagName == 'imeta') {
-            // Extract blurhash from imeta. Two formats are seen in the wild:
-            //   - space-separated: ['imeta', 'blurhash <hash>', ...]
-            //   - positional:      ['imeta', 'blurhash', '<hash>', ...]
-            for (var i = 1; i < tag.length; i++) {
-              final element = tag[i].toString();
-              final spaceIndex = element.indexOf(' ');
-              String? key;
-              String? value;
-              if (spaceIndex > 0) {
-                key = element.substring(0, spaceIndex);
-                value = element.substring(spaceIndex + 1);
-              } else if (element == 'blurhash' && i + 1 < tag.length) {
-                key = element;
-                value = tag[i + 1].toString();
-              }
+            parseImetaTag(List<String>.from(tag.map((e) => e.toString())), (
+              key,
+              value,
+            ) {
               if (key == 'blurhash' &&
                   blurhashFromTag == null &&
-                  value != null &&
                   value.isNotEmpty) {
                 blurhashFromTag = value;
               }
-            }
+              if (key == 'dim' && dimensions == null && value.isNotEmpty) {
+                dimensions = value;
+              }
+            });
           }
           if (tagName == 'dim' && dimensions == null) {
             dimensions = tagValue;

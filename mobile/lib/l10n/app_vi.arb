@@ -558,13 +558,7 @@
   "videoGridEditVideoSubtitle": "Cập nhật tiêu đề, mô tả và hashtag",
   "videoGridDeleteVideo": "Xóa video",
   "videoGridDeleteVideoSubtitle": "Gỡ video này khỏi Divine. Nó vẫn có thể xuất hiện trên các ứng dụng Nostr khác.",
-  "videoGridDeleteConfirmTitle": "Xóa video",
-  "videoGridDeleteConfirmMessage": "Video này sẽ bị xóa vĩnh viễn khỏi Divine. Nó vẫn có thể xuất hiện trên các ứng dụng Nostr bên thứ ba dùng relay khác.",
-  "videoGridDeleteConfirmNote": "Thao tác này sẽ gửi yêu cầu xóa tới các relay. Lưu ý: Một số relay có thể vẫn giữ bản sao đã lưu.",
-  "videoGridDeleteCancel": "Hủy",
-  "videoGridDeleteConfirm": "Xóa",
   "videoGridDeletingContent": "Đang xóa nội dung...",
-  "videoGridDeleteSuccess": "Đã gửi yêu cầu xóa thành công",
   "videoGridDeleteFailure": "Không thể xóa nội dung: {error}",
   "@videoGridDeleteFailure": {
     "placeholders": {
@@ -2204,7 +2198,6 @@
   "shareMenuEditVideoSubtitle": "Cập nhật tiêu đề, mô tả và hashtag",
   "shareMenuDeleteVideo": "Xóa video",
   "shareMenuDeleteVideoSubtitle": "Gỡ video này khỏi Divine. Nó vẫn có thể xuất hiện trên các ứng dụng Nostr khác.",
-  "shareMenuDeleteWarning": "Thao tác này gửi yêu cầu xóa (NIP-09) tới tất cả relay. Một số relay có thể vẫn giữ nội dung.",
   "shareMenuVideoInTheseLists": "Video nằm trong các danh sách này:",
   "shareMenuVideoCount": "{count} video",
   "@shareMenuVideoCount": {
@@ -2227,7 +2220,6 @@
       }
     }
   },
-  "shareMenuDeleteRequestSent": "Đã xóa video",
   "shareMenuDeleteFailedNotInitialized": "Chức năng xóa chưa sẵn sàng. Thử lại sau ít phút.",
   "shareMenuDeleteFailedNotOwner": "Bạn chỉ có thể xóa video của chính mình.",
   "shareMenuDeleteFailedNotAuthenticated": "Hãy đăng nhập lại rồi thử xóa.",
@@ -2293,7 +2285,6 @@
     }
   },
   "shareMenuDeleteVideoQuestion": "Xóa video?",
-  "shareMenuDeleteRelayWarning": "Thao tác này sẽ gửi yêu cầu xóa tới các relay. Lưu ý: Một số relay có thể vẫn giữ bản sao đã lưu.",
   "shareMenuVideoDeletionRequested": "Đã xóa video",
   "shareMenuContentLabels": "Nhãn nội dung",
   "shareMenuAddContentLabels": "Thêm nhãn nội dung",
@@ -3673,7 +3664,7 @@
   "commonNotNow": "Để sau",
   "commonLoading": "Đang tải",
   "@commonLoading": {
-    "description": "Screen-reader label for a blocking progress spinner that covers the screen while an action is being prepared. Announced instead of the content behind it, which is not reachable while the spinner is up."
+    "description": "Screen-reader label for a progress indicator, announced while content or an action is loading. Covers both a full-screen spinner that blocks the content behind it and a small inline one next to content that stays reachable."
   },
   "videoMetadataEditCoverFailedSnackbar": "Không cập nhật được ảnh bìa. Thử lại nhé.",
   "@videoMetadataEditCoverFailedSnackbar": {
@@ -3725,6 +3716,11 @@
   "libraryTabClips": "Clip",
   "librarySaveToCameraRollTooltip": "Lưu vào thư viện ảnh",
   "libraryDeleteSelectedClipsTooltip": "Xóa clip đã chọn",
+  "libraryCloseSemanticLabel": "Đóng thư viện",
+  "libraryStopSelectingClipsSemanticLabel": "Dừng chọn clip",
+  "libraryOpenTrashSemanticLabel": "Mở các clip đã xóa gần đây",
+  "librarySortClipsSemanticLabel": "Sắp xếp clip",
+  "librarySelectClipsSemanticLabel": "Chọn clip",
   "librarySelect": "Chọn",
   "librarySortNewestCreation": "Mới tạo nhất",
   "librarySortOldestCreation": "Cũ nhất",
@@ -3846,6 +3842,7 @@
   "libraryAddClips": "Thêm",
   "libraryRecordVideo": "Quay video",
   "videoClipSemanticLabel": "Clip video, {duration} giây",
+  "videoClipStopMotionSemanticLabel": "Đoạn stop-motion, {frames}",
   "@videoClipSemanticLabel": {
     "description": "Accessibility label for a video clip thumbnail. Duration is formatted as seconds with 2 decimal places, e.g. '5.73'.",
     "placeholders": {
@@ -3854,6 +3851,7 @@
       }
     }
   },
+  "videoClipSemanticValueSelectedAtPosition": "Đã chọn, số {position}",
   "videoClipSemanticValueSelected": "Đã chọn",
   "videoClipSemanticValueNotSelected": "Chưa chọn",
   "videoClipSemanticHintDisabled": "Đã tắt",
@@ -5108,10 +5106,6 @@
       }
     }
   },
-  "libraryTrashEntryLabel": "Đã xóa gần đây",
-  "@libraryTrashEntryLabel": {
-    "description": "Menu/button label on the library screen that opens the trash view."
-  },
   "videoRecorderCloseLabel": "Đóng máy quay",
   "videoRecorderContinueToEditorLabel": "Tiếp tục tới trình chỉnh sửa video",
   "videoRecorderCaptureCloseLabel": "Đóng",
@@ -5383,10 +5377,6 @@
   "videoEditorStopMotionFramesPerImageButtonLabel": "Khung hình",
   "@videoEditorStopMotionFramesPerImageButtonLabel": {
     "description": "Short label under the stop-motion frames-per-image action button in the timeline edit bar."
-  },
-  "libraryStopMotionClipLabel": "Clip stop-motion",
-  "@libraryStopMotionClipLabel": {
-    "description": "Accessibility label for the badge that marks a clip in the library as a stop-motion recording."
   },
   "videoEditorStopMotionFramesPerImageValueSemanticLabel": "{count} khung hình mỗi ảnh",
   "@videoEditorStopMotionFramesPerImageValueSemanticLabel": {
@@ -5826,7 +5816,6 @@
   },
   "videoEditorHueSemanticLabel": "Tông màu",
   "videoEditorAddElementSemanticLabel": "Thêm phần tử",
-  "videoEditorCloseSemanticLabel": "Đóng",
   "videoEditorDoneSemanticLabel": "Xong",
   "videoEditorLevelSemanticLabel": "Mức",
   "videoMetadataClosePostDetailsSemanticLabel": "Đóng chi tiết bài đăng",
@@ -6784,5 +6773,12 @@
   "userPickerConfirmSemanticLabel": "Xác nhận người dùng đã chọn",
   "userPickerClearSelectionSemanticLabel": "Xóa lựa chọn người dùng",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "Hủy chọn cảnh báo nội dung",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Áp dụng các cảnh báo nội dung đã chọn"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Áp dụng các cảnh báo nội dung đã chọn",
+  "videoEditorCloseEditorSemanticLabel": "Đóng trình chỉnh sửa video",
+  "videoEditorContinueToPostDetailsSemanticLabel": "Tiếp tục đến chi tiết bài đăng",
+  "videoEditorDiscardToolChangesSemanticLabel": "Hủy thay đổi trong {tool}",
+  "videoEditorApplyToolChangesSemanticLabel": "Áp dụng thay đổi trong {tool}",
+  "videoEditorRemoveAudioSemanticLabel": "Xóa âm thanh",
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
 }

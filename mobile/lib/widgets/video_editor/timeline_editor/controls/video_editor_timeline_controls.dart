@@ -277,9 +277,18 @@ class _ControlButton extends StatelessWidget {
             type: type,
             size: .small,
           ),
-        Text(
-          label,
-          style: VineTheme.bodySmallFont(color: context.vineColors.primaryText),
+        // The caption repeats the button's own label, so it is excluded only
+        // while that button is there to carry it. The spinner that replaces it
+        // announces the wait but not what is waiting, so the caption is what
+        // names the control for the length of the run.
+        ExcludeSemantics(
+          excluding: !isLoading,
+          child: Text(
+            label,
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.primaryText,
+            ),
+          ),
         ),
       ],
     );

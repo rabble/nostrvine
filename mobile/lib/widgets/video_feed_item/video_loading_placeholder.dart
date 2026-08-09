@@ -135,6 +135,11 @@ class _LoadingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(child: BrandedLoadingIndicator(size: 60));
+    // Excluded like the thumbnail above it: the enclosing "Play video" surface
+    // owns this region's semantics, and a buffering placeholder this transient
+    // would only leave a stale "Loading" on a button that is already playable.
+    return const ExcludeSemantics(
+      child: Center(child: BrandedLoadingIndicator(size: 60)),
+    );
   }
 }

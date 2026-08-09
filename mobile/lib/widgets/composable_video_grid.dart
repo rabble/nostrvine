@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
@@ -18,6 +17,7 @@ import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/utils/delete_result_localization.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/feed_refresh_control.dart';
+import 'package:openvine/widgets/owner_video_delete_confirmation_dialog.dart';
 import 'package:openvine/widgets/show_edit_dialog_for_video.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
@@ -224,9 +224,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
       CustomScrollView(
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
-        slivers: [
-          SliverFillRemaining(hasScrollBody: false, child: emptyState),
-        ],
+        slivers: [SliverFillRemaining(hasScrollBody: false, child: emptyState)],
       ),
     );
   }
@@ -258,7 +256,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: context.vineColors.background,
-      builder: (context) => SafeArea(
+      builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -269,24 +267,24 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                 children: [
                   DivineIcon(
                     icon: DivineIconName.dotsThreeVertical,
-                    color: context.vineColors.primaryText,
+                    color: sheetContext.vineColors.primaryText,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      context.l10n.videoGridOptionsTitle,
+                      sheetContext.l10n.videoGridOptionsTitle,
                       style: TextStyle(
-                        color: context.vineColors.primaryText,
+                        color: sheetContext.vineColors.primaryText,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                   IconButton(
-                    onPressed: context.pop,
+                    onPressed: () => Navigator.of(sheetContext).pop(),
                     icon: DivineIcon(
                       icon: DivineIconName.x,
-                      color: context.vineColors.secondaryText,
+                      color: sheetContext.vineColors.secondaryText,
                     ),
                   ),
                 ],
@@ -299,7 +297,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: context.vineColors.card,
+                  color: sheetContext.vineColors.card,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const DivineIcon(
@@ -309,21 +307,21 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                 ),
               ),
               title: Text(
-                context.l10n.videoGridEditVideo,
+                sheetContext.l10n.videoGridEditVideo,
                 style: TextStyle(
-                  color: context.vineColors.primaryText,
+                  color: sheetContext.vineColors.primaryText,
                   fontWeight: FontWeight.w500,
                 ),
               ),
               subtitle: Text(
-                context.l10n.videoGridEditVideoSubtitle,
+                sheetContext.l10n.videoGridEditVideoSubtitle,
                 style: TextStyle(
-                  color: context.vineColors.secondaryText,
+                  color: sheetContext.vineColors.secondaryText,
                   fontSize: 12,
                 ),
               ),
               onTap: () {
-                context.pop();
+                Navigator.of(sheetContext).pop();
                 showEditDialogForVideo(context, video);
               },
             ),
@@ -334,7 +332,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: context.vineColors.card,
+                  color: sheetContext.vineColors.card,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const DivineIcon(
@@ -344,21 +342,21 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                 ),
               ),
               title: Text(
-                context.l10n.videoGridDeleteVideo,
+                sheetContext.l10n.videoGridDeleteVideo,
                 style: TextStyle(
-                  color: context.vineColors.primaryText,
+                  color: sheetContext.vineColors.primaryText,
                   fontWeight: FontWeight.w500,
                 ),
               ),
               subtitle: Text(
-                context.l10n.videoGridDeleteVideoSubtitle,
+                sheetContext.l10n.videoGridDeleteVideoSubtitle,
                 style: TextStyle(
-                  color: context.vineColors.secondaryText,
+                  color: sheetContext.vineColors.secondaryText,
                   fontSize: 12,
                 ),
               ),
               onTap: () {
-                context.pop();
+                Navigator.of(sheetContext).pop();
                 _showDeleteConfirmation(context, video);
               },
             ),
@@ -375,47 +373,9 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
     BuildContext context,
     VideoEvent video,
   ) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: context.vineColors.card,
-        title: Text(
-          context.l10n.videoGridDeleteConfirmTitle,
-          style: TextStyle(color: context.vineColors.primaryText),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              context.l10n.videoGridDeleteConfirmMessage,
-              style: TextStyle(color: context.vineColors.primaryText),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              context.l10n.videoGridDeleteConfirmNote,
-              style: TextStyle(
-                color: context.vineColors.secondaryText,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => context.pop(false),
-            child: Text(context.l10n.videoGridDeleteCancel),
-          ),
-          TextButton(
-            onPressed: () => context.pop(true),
-            style: TextButton.styleFrom(foregroundColor: VineTheme.error),
-            child: Text(context.l10n.videoGridDeleteConfirm),
-          ),
-        ],
-      ),
-    );
+    final confirmed = await showOwnerVideoDeleteConfirmationDialog(context);
 
-    if (confirmed == true && context.mounted) {
+    if (confirmed && context.mounted) {
       await _deleteVideo(context, video);
     }
   }
@@ -476,7 +436,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                   child: Text(
                     result.success
                         ? localizedPartialDeleteMessage(context, result) ??
-                              context.l10n.videoGridDeleteSuccess
+                              context.l10n.shareMenuVideoDeletionRequested
                         : localizedDeleteFailureMessage(context, result),
                   ),
                 ),

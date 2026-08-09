@@ -664,12 +664,10 @@ class _TopBarContent extends StatelessWidget {
                       context.l10n.videoMetadataEditCoverConfirmSemanticLabel,
                   button: true,
                   enabled: false,
-                  // The indicator is an Image.asset that is not excluded
-                  // from semantics, so without this the confirm node
-                  // announces as an image as well as a disabled button.
-                  child: const ExcludeSemantics(
-                    child: BrandedLoadingIndicator(size: 44),
-                  ),
+                  // The indicator's own "Loading" label merges in, so the
+                  // disabled confirm button announces that it is busy rather
+                  // than just unavailable.
+                  child: const BrandedLoadingIndicator(size: 44),
                 )
               else
                 DivineIconButton(

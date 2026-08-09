@@ -1155,27 +1155,7 @@ class AppLocalizationsMs extends AppLocalizations {
       'Alih keluar video ini daripada Divine. Ia mungkin masih muncul pada klien Nostr lain.';
 
   @override
-  String get videoGridDeleteConfirmTitle => 'Padam Video';
-
-  @override
-  String get videoGridDeleteConfirmMessage =>
-      'Ini akan memadam video ini secara kekal daripada Divine. Ia mungkin masih muncul pada klien Nostr pihak ketiga yang menggunakan relay lain.';
-
-  @override
-  String get videoGridDeleteConfirmNote =>
-      'Ini akan menghantar permintaan pemadaman kepada relay. Nota: Sesetengah relay mungkin masih mempunyai salinan cache.';
-
-  @override
-  String get videoGridDeleteCancel => 'Batal';
-
-  @override
-  String get videoGridDeleteConfirm => 'Padam';
-
-  @override
   String get videoGridDeletingContent => 'Memadam kandungan...';
-
-  @override
-  String get videoGridDeleteSuccess => 'Permintaan pemadaman berjaya dihantar';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -4024,10 +4004,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Alih keluar video ini daripada Divine. Ia mungkin masih muncul pada klien Nostr lain.';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'Ini menghantar permintaan pemadaman (NIP-09) kepada semua relay. Sesetengah relay mungkin masih menyimpan kandungan itu.';
-
-  @override
   String get shareMenuVideoInTheseLists => 'Video berada dalam senarai ini:';
 
   @override
@@ -4055,9 +4031,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return 'Gagal memadam kandungan: $error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent => 'Video dipadam';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4173,10 +4146,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get shareMenuDeleteVideoQuestion => 'Padam Video?';
-
-  @override
-  String get shareMenuDeleteRelayWarning =>
-      'Ini akan menghantar permintaan pemadaman kepada relay. Nota: Sesetengah relay mungkin masih mempunyai salinan cache.';
 
   @override
   String get shareMenuVideoDeletionRequested => 'Video dipadam';
@@ -6441,6 +6410,21 @@ class AppLocalizationsMs extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'Padam klip dipilih';
 
   @override
+  String get libraryCloseSemanticLabel => 'Tutup pustaka';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel => 'Berhenti memilih klip';
+
+  @override
+  String get libraryOpenTrashSemanticLabel => 'Buka klip yang baru dipadam';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'Isih klip';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'Pilih klip';
+
+  @override
   String get librarySelect => 'Pilih';
 
   @override
@@ -6620,6 +6604,16 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String videoClipSemanticLabel(String duration) {
     return 'Klip video, $duration saat';
+  }
+
+  @override
+  String videoClipStopMotionSemanticLabel(String frames) {
+    return 'Klip stop-motion, $frames';
+  }
+
+  @override
+  String videoClipSemanticValueSelectedAtPosition(int position) {
+    return 'Dipilih, nombor $position';
   }
 
   @override
@@ -8510,9 +8504,6 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => 'Baru dipadam';
-
-  @override
   String get videoRecorderCloseLabel => 'Tutup perakam video';
 
   @override
@@ -9155,9 +9146,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get videoEditorStopMotionFramesPerImageButtonLabel => 'Bingkai';
 
   @override
-  String get libraryStopMotionClipLabel => 'Klip stop-motion';
-
-  @override
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
     return '$count bingkai setiap imej';
   }
@@ -9639,9 +9627,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get videoEditorAddElementSemanticLabel => 'Tambah elemen';
 
   @override
-  String get videoEditorCloseSemanticLabel => 'Tutup';
-
-  @override
   String get videoEditorDoneSemanticLabel => 'Siap';
 
   @override
@@ -9706,6 +9691,10 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get videoMetadataAudioReuseSubtitle =>
       'Benarkan orang lain menyimpan dan menggunakan semula audio video ini.';
+
+  @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Tambah kolaborator';
@@ -11180,4 +11169,37 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
       'Gunakan amaran kandungan yang dipilih';
+
+  @override
+  String get videoEditorCloseEditorSemanticLabel => 'Tutup editor video';
+
+  @override
+  String get videoEditorContinueToPostDetailsSemanticLabel =>
+      'Teruskan ke butiran siaran';
+
+  @override
+  String videoEditorDiscardToolChangesSemanticLabel(String tool) {
+    return 'Buang perubahan dalam $tool';
+  }
+
+  @override
+  String videoEditorApplyToolChangesSemanticLabel(String tool) {
+    return 'Gunakan perubahan dalam $tool';
+  }
+
+  @override
+  String get videoEditorRemoveAudioSemanticLabel => 'Alih keluar audio';
+
+  @override
+  String rgbColorSemanticLabel(int red, int green, int blue) {
+    return 'RGB $red, $green, $blue';
+  }
+
+  @override
+  String videoEditorColorPickerSwatchSemanticLabel(
+    String picker,
+    String color,
+  ) {
+    return '$picker, $color';
+  }
 }

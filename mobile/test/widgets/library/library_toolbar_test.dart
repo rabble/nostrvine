@@ -71,6 +71,10 @@ void main() {
 
         expect(iconButton(DivineIconName.caretLeft), findsOneWidget);
         expect(iconButton(DivineIconName.x), findsNothing);
+        expect(
+          find.bySemanticsLabel(en.libraryCloseSemanticLabel),
+          findsOneWidget,
+        );
       });
 
       testWidgets('shows close leading icon in selection mode', (tester) async {
@@ -78,7 +82,26 @@ void main() {
 
         expect(iconButton(DivineIconName.x), findsOneWidget);
         expect(iconButton(DivineIconName.caretLeft), findsNothing);
-        expect(find.bySemanticsLabel(en.commonCancel), findsOneWidget);
+        expect(
+          find.bySemanticsLabel(en.libraryStopSelectingClipsSemanticLabel),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('locked selection mode labels leading action as close', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(
+            isLibrarySelectionMode: true,
+            canExitSelectionMode: false,
+          ),
+        );
+
+        expect(
+          find.bySemanticsLabel(en.libraryCloseSemanticLabel),
+          findsOneWidget,
+        );
       });
 
       testWidgets('hides clip actions when clips tab is inactive', (
@@ -99,7 +122,15 @@ void main() {
         expect(find.text(en.librarySelect), findsOneWidget);
         expect(iconButton(DivineIconName.funnelSimple), findsOneWidget);
         expect(
-          find.bySemanticsLabel(en.libraryTrashEntryLabel),
+          find.bySemanticsLabel(en.libraryOpenTrashSemanticLabel),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsLabel(en.librarySortClipsSemanticLabel),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsLabel(en.librarySelectClipsSemanticLabel),
           findsOneWidget,
         );
       });
@@ -108,7 +139,10 @@ void main() {
         await tester.pumpWidget(buildWidget(isLibrarySelectionMode: true));
 
         expect(find.text(en.librarySelect), findsNothing);
-        expect(find.bySemanticsLabel(en.commonDelete), findsOneWidget);
+        expect(
+          find.bySemanticsLabel(en.libraryDeleteSelectedClipsTooltip),
+          findsOneWidget,
+        );
       });
     });
 

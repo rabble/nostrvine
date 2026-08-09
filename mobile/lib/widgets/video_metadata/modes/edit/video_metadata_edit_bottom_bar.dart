@@ -117,7 +117,7 @@ class _VideoMetadataEditBottomBarState
       context: context,
       sticker: DivineStickerName.alert,
       title: context.l10n.shareMenuDeleteVideoQuestion,
-      subtitle: context.l10n.shareMenuDeleteRelayWarning,
+      subtitle: context.l10n.shareMenuDeleteConfirmation,
       primaryButtonText: context.l10n.shareMenuDelete,
       primaryButtonType: DivineButtonType.error,
       onPrimaryPressed: () => Navigator.of(context).pop(true),

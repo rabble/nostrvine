@@ -1164,27 +1164,7 @@ class AppLocalizationsBg extends AppLocalizations {
       'Премахни това видео от Divine. Може още да се вижда в други Nostr клиенти.';
 
   @override
-  String get videoGridDeleteConfirmTitle => 'Изтрий видеото';
-
-  @override
-  String get videoGridDeleteConfirmMessage =>
-      'Това ще изтрие за постоянно това видео от Divine. Може още да се вижда в Nostr клиенти на трети страни, които използват други релета.';
-
-  @override
-  String get videoGridDeleteConfirmNote =>
-      'Това ще изпрати заявка за изтриване до релетата. Забележка: Някои релета все още може да имат кеширани копия.';
-
-  @override
-  String get videoGridDeleteCancel => 'Отказ';
-
-  @override
-  String get videoGridDeleteConfirm => 'Изтрий';
-
-  @override
   String get videoGridDeletingContent => 'Трием съдържанието...';
-
-  @override
-  String get videoGridDeleteSuccess => 'Заявката за изтриване е изпратена';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -4041,10 +4021,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Премахни това видео от Divine. Може още да се вижда в други Nostr клиенти.';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'Това изпраща заявка за изтриване (NIP-09) до всички релета. Някои релета все още могат да запазят съдържанието.';
-
-  @override
   String get shareMenuVideoInTheseLists => 'Видеото е в тези списъци:';
 
   @override
@@ -4072,9 +4048,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return 'Неуспешно изтриване на съдържание: $error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent => 'Видеото е изтрито';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4190,10 +4163,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get shareMenuDeleteVideoQuestion => 'Да изтрием видеото?';
-
-  @override
-  String get shareMenuDeleteRelayWarning =>
-      'Това ще изпрати заявка за изтриване до релетата. Забележка: Някои релета все още може да имат кеширани копия.';
 
   @override
   String get shareMenuVideoDeletionRequested => 'Видеото е изтрито';
@@ -6450,6 +6419,22 @@ class AppLocalizationsBg extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'Изтрийте избраните клипове';
 
   @override
+  String get libraryCloseSemanticLabel => 'Затвори библиотеката';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel => 'Спри избора на клипове';
+
+  @override
+  String get libraryOpenTrashSemanticLabel =>
+      'Отвори наскоро изтритите клипове';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'Сортирай клиповете';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'Избери клипове';
+
+  @override
   String get librarySelect => 'Избери';
 
   @override
@@ -6637,6 +6622,16 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String videoClipSemanticLabel(String duration) {
     return 'Видео клип, $duration секунди';
+  }
+
+  @override
+  String videoClipStopMotionSemanticLabel(String frames) {
+    return 'Стоп-моушън клип, $frames';
+  }
+
+  @override
+  String videoClipSemanticValueSelectedAtPosition(int position) {
+    return 'Избран, номер $position';
   }
 
   @override
@@ -8534,9 +8529,6 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => 'Наскоро изтрити';
-
-  @override
   String get videoRecorderCloseLabel => 'Затворете видеорекордер';
 
   @override
@@ -9186,9 +9178,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorStopMotionFramesPerImageButtonLabel => 'Кадри';
 
   @override
-  String get libraryStopMotionClipLabel => 'Стоп-моушън клип';
-
-  @override
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
     return '$count кадъра на изображение';
   }
@@ -9680,9 +9669,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorAddElementSemanticLabel => 'Добави елемент';
 
   @override
-  String get videoEditorCloseSemanticLabel => 'Затвори';
-
-  @override
   String get videoEditorDoneSemanticLabel => 'Готово';
 
   @override
@@ -9747,6 +9733,10 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get videoMetadataAudioReuseSubtitle =>
       'Позволи на другите да запазват и използват повторно звука на това видео.';
+
+  @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Сътрудници';
@@ -11224,4 +11214,38 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
       'Прилагане на избраните предупреждения за съдържание';
+
+  @override
+  String get videoEditorCloseEditorSemanticLabel =>
+      'Затваряне на видео редактора';
+
+  @override
+  String get videoEditorContinueToPostDetailsSemanticLabel =>
+      'Продължаване към подробностите за публикацията';
+
+  @override
+  String videoEditorDiscardToolChangesSemanticLabel(String tool) {
+    return 'Отхвърляне на промените в $tool';
+  }
+
+  @override
+  String videoEditorApplyToolChangesSemanticLabel(String tool) {
+    return 'Прилагане на промените в $tool';
+  }
+
+  @override
+  String get videoEditorRemoveAudioSemanticLabel => 'Премахване на аудиото';
+
+  @override
+  String rgbColorSemanticLabel(int red, int green, int blue) {
+    return 'RGB $red, $green, $blue';
+  }
+
+  @override
+  String videoEditorColorPickerSwatchSemanticLabel(
+    String picker,
+    String color,
+  ) {
+    return '$picker, $color';
+  }
 }

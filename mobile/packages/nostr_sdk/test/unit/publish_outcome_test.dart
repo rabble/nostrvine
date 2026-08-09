@@ -347,6 +347,25 @@ void main() {
 
         tracker.cancel();
       });
+
+      test('ignores a relay the caller adds after construction', () {
+        final targets = {'wss://target.example'};
+        final tracker = trackerFor(targets);
+
+        targets.add('wss://intruder.example');
+
+        expect(
+          tracker.isTarget('wss://intruder.example'),
+          isFalse,
+          reason:
+              'the target set is fixed when the publish starts, and '
+              'RelayPool admits an OK frame on isTarget alone — so a relay '
+              'the caller adds afterwards could otherwise accept or reject '
+              'an event it was never sent',
+        );
+
+        tracker.cancel();
+      });
     });
 
     group('onRejected', () {

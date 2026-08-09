@@ -1154,8 +1154,10 @@ git commit -m "feat(sounds): encode public credit and remix consent"
     source, license, and trusted catalog `t` tags;
   - provider bridge uses `allow_audio_reuse=false` when the toggle is off or
     derivatives are forbidden;
-  - requested reusable-audio failure blocks video publication and remains
-    retryable;
+  - requested reusable-audio failure publishes the video anyway, reports the
+    loss to the creator, and keeps the degraded event out of the retry cache
+    so a later attempt rebuilds the audio tags (#6659 reversed the earlier
+    blocking rule);
   - provider-credit failure blocks instead of publishing uncredited audio;
   - private field names/values never occur in signed event content or tags.
 

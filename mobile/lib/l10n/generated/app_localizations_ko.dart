@@ -1072,26 +1072,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoGridDeleteVideoSubtitle => '이 콘텐츠를 완전히 지워요';
 
   @override
-  String get videoGridDeleteConfirmTitle => '영상 삭제';
-
-  @override
-  String get videoGridDeleteConfirmMessage => '이 영상을 정말 삭제할까요?';
-
-  @override
-  String get videoGridDeleteConfirmNote =>
-      '모든 릴레이에 삭제 요청(NIP-09)을 보내요. 일부 릴레이에는 콘텐츠가 남아 있을 수 있어요.';
-
-  @override
-  String get videoGridDeleteCancel => '취소';
-
-  @override
-  String get videoGridDeleteConfirm => '삭제';
-
-  @override
   String get videoGridDeletingContent => '콘텐츠 삭제 중...';
-
-  @override
-  String get videoGridDeleteSuccess => '삭제 요청을 보냈어요';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -3802,10 +3783,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuDeleteVideoSubtitle => '이 콘텐츠를 완전히 지워요';
 
   @override
-  String get shareMenuDeleteWarning =>
-      '모든 릴레이에 삭제 요청(NIP-09)을 보내요. 일부 릴레이에는 콘텐츠가 남아 있을 수 있어요.';
-
-  @override
   String get shareMenuVideoInTheseLists => '영상이 다음 리스트에 있어요:';
 
   @override
@@ -3817,7 +3794,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuClose => '닫기';
 
   @override
-  String get shareMenuDeleteConfirmation => '이 영상을 정말 삭제할까요?';
+  String get shareMenuDeleteConfirmation =>
+      '이 영상은 Divine에서 영구적으로 삭제됩니다. 다른 릴레이를 사용하는 타사 Nostr 클라이언트에는 계속 표시될 수 있어요.';
 
   @override
   String get shareMenuCancel => '취소';
@@ -3832,9 +3810,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return '콘텐츠 삭제에 실패했어요: $error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent => '삭제 요청을 보냈어요';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -3946,11 +3921,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => '영상을 삭제할까요?';
 
   @override
-  String get shareMenuDeleteRelayWarning =>
-      '릴레이에 삭제 요청을 보내요. 참고: 일부 릴레이에는 캐시된 사본이 남아 있을 수 있어요.';
-
-  @override
-  String get shareMenuVideoDeletionRequested => '영상 삭제를 요청했어요';
+  String get shareMenuVideoDeletionRequested => '영상을 삭제했어요';
 
   @override
   String get shareMenuContentLabels => '콘텐츠 라벨';
@@ -6138,6 +6109,21 @@ class AppLocalizationsKo extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => '선택한 클립 삭제';
 
   @override
+  String get libraryCloseSemanticLabel => '라이브러리 닫기';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel => '클립 선택 종료';
+
+  @override
+  String get libraryOpenTrashSemanticLabel => '최근 삭제한 클립 열기';
+
+  @override
+  String get librarySortClipsSemanticLabel => '클립 정렬';
+
+  @override
+  String get librarySelectClipsSemanticLabel => '클립 선택';
+
+  @override
   String get librarySelect => '선택';
 
   @override
@@ -6312,6 +6298,16 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String videoClipSemanticLabel(String duration) {
     return '동영상 클립, $duration초';
+  }
+
+  @override
+  String videoClipStopMotionSemanticLabel(String frames) {
+    return '스톱모션 클립, $frames';
+  }
+
+  @override
+  String videoClipSemanticValueSelectedAtPosition(int position) {
+    return '선택됨, $position번';
   }
 
   @override
@@ -8117,9 +8113,6 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => '최근 삭제된 항목';
-
-  @override
   String get videoRecorderCloseLabel => '동영상 녹화기 닫기';
 
   @override
@@ -8740,9 +8733,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorStopMotionFramesPerImageButtonLabel => '프레임';
 
   @override
-  String get libraryStopMotionClipLabel => '스톱모션 클립';
-
-  @override
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
     return '이미지당 $count프레임';
   }
@@ -9196,9 +9186,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorAddElementSemanticLabel => '요소 추가';
 
   @override
-  String get videoEditorCloseSemanticLabel => '닫기';
-
-  @override
   String get videoEditorDoneSemanticLabel => '완료';
 
   @override
@@ -9259,6 +9246,10 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get videoMetadataAudioReuseSubtitle =>
       '다른 사람들이 이 동영상의 오디오를 저장하고 재사용할 수 있도록 합니다.';
+
+  @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
 
   @override
   String get videoMetadataCollaboratorsLabel => '협업자';
@@ -10680,4 +10671,36 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
       '선택한 콘텐츠 경고 적용';
+
+  @override
+  String get videoEditorCloseEditorSemanticLabel => '동영상 편집기 닫기';
+
+  @override
+  String get videoEditorContinueToPostDetailsSemanticLabel => '게시물 세부 정보로 계속';
+
+  @override
+  String videoEditorDiscardToolChangesSemanticLabel(String tool) {
+    return '$tool의 변경 사항 취소';
+  }
+
+  @override
+  String videoEditorApplyToolChangesSemanticLabel(String tool) {
+    return '$tool의 변경 사항 적용';
+  }
+
+  @override
+  String get videoEditorRemoveAudioSemanticLabel => '오디오 제거';
+
+  @override
+  String rgbColorSemanticLabel(int red, int green, int blue) {
+    return 'RGB $red, $green, $blue';
+  }
+
+  @override
+  String videoEditorColorPickerSwatchSemanticLabel(
+    String picker,
+    String color,
+  ) {
+    return '$picker, $color';
+  }
 }

@@ -1,10 +1,45 @@
 // ABOUTME: Tests for environment configuration model
 // ABOUTME: Verifies relay URL and API URL generation for each environment
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/environment_config.dart';
 
 void main() {
+  group('localHost', () {
+    tearDown(() => debugDefaultTargetPlatformOverride = null);
+
+    test('is the emulator alias on Android', () {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      expect(localHost, androidEmulatorHost);
+    });
+
+    test('is loopback on iOS', () {
+      // 10.0.2.2 is an Android-emulator-only alias. The iOS Simulator shares
+      // the host's network stack, where it routes out to the LAN instead.
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      expect(localHost, loopbackHost);
+    });
+
+    test('is loopback on macOS', () {
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+      expect(localHost, loopbackHost);
+    });
+
+    test('drives every local endpoint off the resolved host', () {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      const config = EnvironmentConfig(environment: AppEnvironment.local);
+      expect(config.relayUrl, 'ws://$loopbackHost:$localRelayPort');
+      expect(config.apiBaseUrl, 'http://$loopbackHost:$localApiPort');
+      expect(config.blossomUrl, 'http://$loopbackHost:$localBlossomPort');
+      expect(
+        config.relayManagerApiUrl,
+        'http://$loopbackHost:$localRelayManagerPort',
+      );
+      expect(config.indexerRelays, ['ws://$loopbackHost:$localRelayPort']);
+    });
+  });
+
   group('AppEnvironment', () {
     test('has five values', () {
       expect(AppEnvironment.values.length, 5);
@@ -17,6 +52,12 @@ void main() {
   });
 
   group('EnvironmentConfig', () {
+    // The LOCAL assertions below spell out 10.0.2.2. Without an explicit
+    // override they would inherit TargetPlatform.android from the test
+    // harness — flutter_test forces it inside an assert block whenever
+    // FLUTTER_TEST is set — rather than stating the platform they mean.
+    tearDown(() => debugDefaultTargetPlatformOverride = null);
+
     group('relayUrl', () {
       test('poc returns poc relay', () {
         const config = EnvironmentConfig(environment: AppEnvironment.poc);
@@ -34,6 +75,7 @@ void main() {
       });
 
       test('local returns emulator relay', () {
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
         const config = EnvironmentConfig(environment: AppEnvironment.local);
         expect(config.relayUrl, 'ws://10.0.2.2:47777');
       });
@@ -63,6 +105,7 @@ void main() {
       });
 
       test('local returns local API URL (unified funnelcake-proxy port)', () {
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
         const config = EnvironmentConfig(environment: AppEnvironment.local);
         expect(config.apiBaseUrl, 'http://10.0.2.2:47777');
       });
@@ -231,6 +274,35 @@ void main() {
             config.verifierBaseUrl,
             equals('https://verifier.divine.video'),
           );
+        }
+      });
+    });
+
+    group('inviteBaseUrl', () {
+      // These exercise the no-define path. The
+      // `bool.hasEnvironment('INVITE_SERVER_URL')` override branch cannot be
+      // reached without a --dart-define on the test run itself.
+      test('local tracks the resolved host on Android', () {
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
+        const config = EnvironmentConfig(environment: AppEnvironment.local);
+        expect(
+          config.inviteBaseUrl,
+          'http://$androidEmulatorHost:$localInvitePort',
+        );
+      });
+
+      test('local tracks the resolved host on iOS', () {
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+        const config = EnvironmentConfig(environment: AppEnvironment.local);
+        expect(config.inviteBaseUrl, 'http://$loopbackHost:$localInvitePort');
+      });
+
+      test('every non-local environment uses the invite service host', () {
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+        for (final env in AppEnvironment.values) {
+          if (env == AppEnvironment.local) continue;
+          final config = EnvironmentConfig(environment: env);
+          expect(config.inviteBaseUrl, 'https://invite.divine.video');
         }
       });
     });

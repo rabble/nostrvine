@@ -1126,27 +1126,7 @@ class AppLocalizationsAm extends AppLocalizations {
       'ይህን ቪዲዮ ከDivine አስወግድ። በሌሎች Nostr ደንበኞች ላይ አሁንም ሊታይ ይችላል።';
 
   @override
-  String get videoGridDeleteConfirmTitle => 'ቪዲዮ ሰርዝ';
-
-  @override
-  String get videoGridDeleteConfirmMessage =>
-      'ይሄ ይህን ቪዲዮ ከDivine እስከመጨረሻው ይሰርዘዋል። አሁንም ሌሎች ማስተላለፊያዎችን በሚጠቀሙ የሶስተኛ ወገን Nostr ደንበኞች ላይ ሊታይ ይችላል።';
-
-  @override
-  String get videoGridDeleteConfirmNote =>
-      'ይህ የስረዛ ጥያቄን ወደ ማስተላለፊያዎች ይልካል። ማስታወሻ፡ አንዳንድ ማሰራጫዎች አሁንም የተሸጎጡ ቅጂዎች ሊኖራቸው ይችላል።';
-
-  @override
-  String get videoGridDeleteCancel => 'ሰርዝ';
-
-  @override
-  String get videoGridDeleteConfirm => 'ሰርዝ';
-
-  @override
   String get videoGridDeletingContent => 'ይዘትን በመሰረዝ ላይ...';
-
-  @override
-  String get videoGridDeleteSuccess => 'ጥያቄውን ሰርዝ በተሳካ ሁኔታ ተልኳል።';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -3914,10 +3894,6 @@ class AppLocalizationsAm extends AppLocalizations {
       'ይህን ቪዲዮ ከDivine አስወግድ። በሌሎች Nostr ደንበኞች ላይ አሁንም ሊታይ ይችላል።';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'ይህ የመሰረዝ ጥያቄን (NIP-09) ለሁሉም ማሰራጫዎች ይልካል። አንዳንድ ማሰራጫዎች አሁንም ይዘቱን ሊይዙት ይችላሉ።';
-
-  @override
   String get shareMenuVideoInTheseLists => 'ቪዲዮው በእነዚህ ዝርዝሮች ውስጥ ነው፡-';
 
   @override
@@ -3945,9 +3921,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return 'ይዘትን መሰረዝ አልተሳካም፦ $error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent => 'ቪዲዮ ተሰርዟል።';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4059,10 +4032,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get shareMenuDeleteVideoQuestion => 'ቪዲዮ ይሰረዝ?';
-
-  @override
-  String get shareMenuDeleteRelayWarning =>
-      'ይህ የስረዛ ጥያቄን ወደ ማስተላለፊያዎች ይልካል። ማስታወሻ፡ አንዳንድ ማሰራጫዎች አሁንም የተሸጎጡ ቅጂዎች ሊኖራቸው ይችላል።';
 
   @override
   String get shareMenuVideoDeletionRequested => 'ቪዲዮ ተሰርዟል።';
@@ -6265,6 +6234,21 @@ class AppLocalizationsAm extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'የተመረጡ ቅንጥቦችን ሰርዝ';
 
   @override
+  String get libraryCloseSemanticLabel => 'ቤተ-መጻሕፍቱን ዝጋ';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel => 'ቅንጥቦችን መምረጥ አቁም';
+
+  @override
+  String get libraryOpenTrashSemanticLabel => 'በቅርቡ የተሰረዙ ቅንጥቦችን ክፈት';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'ቅንጥቦችን ደርድር';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'ቅንጥቦችን ምረጥ';
+
+  @override
   String get librarySelect => 'ምረጥ';
 
   @override
@@ -6441,6 +6425,16 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String videoClipSemanticLabel(String duration) {
     return 'የቪዲዮ ክሊፕ፣ $duration ሰከንድ';
+  }
+
+  @override
+  String videoClipStopMotionSemanticLabel(String frames) {
+    return 'የእንቅስቃሴ-አልባ ቅንጥብ፣ $frames';
+  }
+
+  @override
+  String videoClipSemanticValueSelectedAtPosition(int position) {
+    return 'ተመርጧል፣ ቁጥር $position';
   }
 
   @override
@@ -8282,9 +8276,6 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => 'በቅርቡ የተሰረዘ';
-
-  @override
   String get videoRecorderCloseLabel => 'የቪዲዮ መቅረጫ ዝጋ';
 
   @override
@@ -8912,9 +8903,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorStopMotionFramesPerImageButtonLabel => 'ፍሬሞች';
 
   @override
-  String get libraryStopMotionClipLabel => 'የስቶፕ-ሞሽን ክሊፕ';
-
-  @override
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
     return 'በአንድ ምስል $count ፍሬሞች';
   }
@@ -9374,9 +9362,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorAddElementSemanticLabel => 'ኤለመንት አክል';
 
   @override
-  String get videoEditorCloseSemanticLabel => 'ገጠመ';
-
-  @override
   String get videoEditorDoneSemanticLabel => 'ተከናውኗል';
 
   @override
@@ -9438,6 +9423,10 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get videoMetadataAudioReuseSubtitle =>
       'ሌሎች የዚህን ቪዲዮ ድምፅ እንዲያስቀምጡ እና እንደገና እንዲጠቀሙ ፍቀድ።';
+
+  @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'ተባባሪዎች';
@@ -10868,4 +10857,37 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
       'የተመረጡ የይዘት ማስጠንቀቂያዎችን ተግብር';
+
+  @override
+  String get videoEditorCloseEditorSemanticLabel => 'የቪዲዮ አርታዒውን ዝጋ';
+
+  @override
+  String get videoEditorContinueToPostDetailsSemanticLabel =>
+      'ወደ ልጥፍ ዝርዝሮች ቀጥል';
+
+  @override
+  String videoEditorDiscardToolChangesSemanticLabel(String tool) {
+    return 'በ$tool ውስጥ የተደረጉ ለውጦችን አስወግድ';
+  }
+
+  @override
+  String videoEditorApplyToolChangesSemanticLabel(String tool) {
+    return 'በ$tool ውስጥ የተደረጉ ለውጦችን ተግብር';
+  }
+
+  @override
+  String get videoEditorRemoveAudioSemanticLabel => 'ኦዲዮን አስወግድ';
+
+  @override
+  String rgbColorSemanticLabel(int red, int green, int blue) {
+    return 'RGB $red, $green, $blue';
+  }
+
+  @override
+  String videoEditorColorPickerSwatchSemanticLabel(
+    String picker,
+    String color,
+  ) {
+    return '$picker, $color';
+  }
 }

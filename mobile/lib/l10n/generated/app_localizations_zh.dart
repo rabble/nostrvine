@@ -1082,26 +1082,7 @@ class AppLocalizationsZh extends AppLocalizations {
       '从 Divine 删除此视频。它可能仍会出现在其他 Nostr 客户端上。';
 
   @override
-  String get videoGridDeleteConfirmTitle => '删除视频';
-
-  @override
-  String get videoGridDeleteConfirmMessage =>
-      '这会从 Divine 永久删除该视频。使用其他中继的第三方 Nostr 客户端上可能仍会显示。';
-
-  @override
-  String get videoGridDeleteConfirmNote => '这会向中继发送删除请求。注意：部分中继可能仍保留缓存副本。';
-
-  @override
-  String get videoGridDeleteCancel => '取消';
-
-  @override
-  String get videoGridDeleteConfirm => '删除';
-
-  @override
   String get videoGridDeletingContent => '正在删除内容...';
-
-  @override
-  String get videoGridDeleteSuccess => '删除请求已成功发送';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -3779,9 +3760,6 @@ class AppLocalizationsZh extends AppLocalizations {
       '从 Divine 删除此视频。它可能仍会出现在其他 Nostr 客户端上。';
 
   @override
-  String get shareMenuDeleteWarning => '这会向所有中继发送删除请求（NIP-09）。部分中继可能仍会保留该内容。';
-
-  @override
   String get shareMenuVideoInTheseLists => '视频已在这些列表中：';
 
   @override
@@ -3809,9 +3787,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return '删除内容失败：$error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent => '视频已删除';
 
   @override
   String get shareMenuDeleteFailedNotInitialized => '删除功能还没准备好，请稍后再试。';
@@ -3917,9 +3892,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get shareMenuDeleteVideoQuestion => '删除视频？';
-
-  @override
-  String get shareMenuDeleteRelayWarning => '这会向中继发送删除请求。注意：部分中继可能仍保留缓存副本。';
 
   @override
   String get shareMenuVideoDeletionRequested => '视频已删除';
@@ -6088,6 +6060,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => '删除选中片段';
 
   @override
+  String get libraryCloseSemanticLabel => '关闭素材库';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel => '停止选择片段';
+
+  @override
+  String get libraryOpenTrashSemanticLabel => '打开最近删除的片段';
+
+  @override
+  String get librarySortClipsSemanticLabel => '对片段排序';
+
+  @override
+  String get librarySelectClipsSemanticLabel => '选择片段';
+
+  @override
   String get librarySelect => '选择';
 
   @override
@@ -6262,6 +6249,16 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String videoClipSemanticLabel(String duration) {
     return '视频片段，$duration 秒';
+  }
+
+  @override
+  String videoClipStopMotionSemanticLabel(String frames) {
+    return '定格动画片段，$frames';
+  }
+
+  @override
+  String videoClipSemanticValueSelectedAtPosition(int position) {
+    return '已选中，第 $position 个';
   }
 
   @override
@@ -8037,9 +8034,6 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => '最近删除';
-
-  @override
   String get videoRecorderCloseLabel => '关闭录像机';
 
   @override
@@ -8653,9 +8647,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoEditorStopMotionFramesPerImageButtonLabel => '帧数';
 
   @override
-  String get libraryStopMotionClipLabel => '定格动画片段';
-
-  @override
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
     return '每图 $count 帧';
   }
@@ -9098,9 +9089,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoEditorAddElementSemanticLabel => '添加元素';
 
   @override
-  String get videoEditorCloseSemanticLabel => '关闭';
-
-  @override
   String get videoEditorDoneSemanticLabel => '完成';
 
   @override
@@ -9158,6 +9146,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get videoMetadataAudioReuseSubtitle => '让其他人保存并二次使用这个视频的音频。';
+
+  @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
 
   @override
   String get videoMetadataCollaboratorsLabel => '添加协作者';
@@ -10521,4 +10513,36 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
       '应用所选内容警告';
+
+  @override
+  String get videoEditorCloseEditorSemanticLabel => '关闭视频编辑器';
+
+  @override
+  String get videoEditorContinueToPostDetailsSemanticLabel => '继续前往帖子详情';
+
+  @override
+  String videoEditorDiscardToolChangesSemanticLabel(String tool) {
+    return '放弃在$tool中的更改';
+  }
+
+  @override
+  String videoEditorApplyToolChangesSemanticLabel(String tool) {
+    return '应用在$tool中的更改';
+  }
+
+  @override
+  String get videoEditorRemoveAudioSemanticLabel => '移除音频';
+
+  @override
+  String rgbColorSemanticLabel(int red, int green, int blue) {
+    return 'RGB $red、$green、$blue';
+  }
+
+  @override
+  String videoEditorColorPickerSwatchSemanticLabel(
+    String picker,
+    String color,
+  ) {
+    return '$picker、$color';
+  }
 }

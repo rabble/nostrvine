@@ -1155,27 +1155,7 @@ class AppLocalizationsVi extends AppLocalizations {
       'Gỡ video này khỏi Divine. Nó vẫn có thể xuất hiện trên các ứng dụng Nostr khác.';
 
   @override
-  String get videoGridDeleteConfirmTitle => 'Xóa video';
-
-  @override
-  String get videoGridDeleteConfirmMessage =>
-      'Video này sẽ bị xóa vĩnh viễn khỏi Divine. Nó vẫn có thể xuất hiện trên các ứng dụng Nostr bên thứ ba dùng relay khác.';
-
-  @override
-  String get videoGridDeleteConfirmNote =>
-      'Thao tác này sẽ gửi yêu cầu xóa tới các relay. Lưu ý: Một số relay có thể vẫn giữ bản sao đã lưu.';
-
-  @override
-  String get videoGridDeleteCancel => 'Hủy';
-
-  @override
-  String get videoGridDeleteConfirm => 'Xóa';
-
-  @override
   String get videoGridDeletingContent => 'Đang xóa nội dung...';
-
-  @override
-  String get videoGridDeleteSuccess => 'Đã gửi yêu cầu xóa thành công';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -3998,10 +3978,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Gỡ video này khỏi Divine. Nó vẫn có thể xuất hiện trên các ứng dụng Nostr khác.';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'Thao tác này gửi yêu cầu xóa (NIP-09) tới tất cả relay. Một số relay có thể vẫn giữ nội dung.';
-
-  @override
   String get shareMenuVideoInTheseLists => 'Video nằm trong các danh sách này:';
 
   @override
@@ -4029,9 +4005,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return 'Không xóa được nội dung: $error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent => 'Đã xóa video';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4147,10 +4120,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get shareMenuDeleteVideoQuestion => 'Xóa video?';
-
-  @override
-  String get shareMenuDeleteRelayWarning =>
-      'Thao tác này sẽ gửi yêu cầu xóa tới các relay. Lưu ý: Một số relay có thể vẫn giữ bản sao đã lưu.';
 
   @override
   String get shareMenuVideoDeletionRequested => 'Đã xóa video';
@@ -6401,6 +6370,21 @@ class AppLocalizationsVi extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'Xóa clip đã chọn';
 
   @override
+  String get libraryCloseSemanticLabel => 'Đóng thư viện';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel => 'Dừng chọn clip';
+
+  @override
+  String get libraryOpenTrashSemanticLabel => 'Mở các clip đã xóa gần đây';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'Sắp xếp clip';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'Chọn clip';
+
+  @override
   String get librarySelect => 'Chọn';
 
   @override
@@ -6580,6 +6564,16 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String videoClipSemanticLabel(String duration) {
     return 'Clip video, $duration giây';
+  }
+
+  @override
+  String videoClipStopMotionSemanticLabel(String frames) {
+    return 'Đoạn stop-motion, $frames';
+  }
+
+  @override
+  String videoClipSemanticValueSelectedAtPosition(int position) {
+    return 'Đã chọn, số $position';
   }
 
   @override
@@ -8463,9 +8457,6 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => 'Đã xóa gần đây';
-
-  @override
   String get videoRecorderCloseLabel => 'Đóng máy quay';
 
   @override
@@ -9107,9 +9098,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get videoEditorStopMotionFramesPerImageButtonLabel => 'Khung hình';
 
   @override
-  String get libraryStopMotionClipLabel => 'Clip stop-motion';
-
-  @override
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
     return '$count khung hình mỗi ảnh';
   }
@@ -9586,9 +9574,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get videoEditorAddElementSemanticLabel => 'Thêm phần tử';
 
   @override
-  String get videoEditorCloseSemanticLabel => 'Đóng';
-
-  @override
   String get videoEditorDoneSemanticLabel => 'Xong';
 
   @override
@@ -9653,6 +9638,10 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get videoMetadataAudioReuseSubtitle =>
       'Cho phép người khác lưu và dùng lại âm thanh của video này.';
+
+  @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Thêm cộng tác viên';
@@ -11123,4 +11112,38 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
       'Áp dụng các cảnh báo nội dung đã chọn';
+
+  @override
+  String get videoEditorCloseEditorSemanticLabel =>
+      'Đóng trình chỉnh sửa video';
+
+  @override
+  String get videoEditorContinueToPostDetailsSemanticLabel =>
+      'Tiếp tục đến chi tiết bài đăng';
+
+  @override
+  String videoEditorDiscardToolChangesSemanticLabel(String tool) {
+    return 'Hủy thay đổi trong $tool';
+  }
+
+  @override
+  String videoEditorApplyToolChangesSemanticLabel(String tool) {
+    return 'Áp dụng thay đổi trong $tool';
+  }
+
+  @override
+  String get videoEditorRemoveAudioSemanticLabel => 'Xóa âm thanh';
+
+  @override
+  String rgbColorSemanticLabel(int red, int green, int blue) {
+    return 'RGB $red, $green, $blue';
+  }
+
+  @override
+  String videoEditorColorPickerSwatchSemanticLabel(
+    String picker,
+    String color,
+  ) {
+    return '$picker, $color';
+  }
 }

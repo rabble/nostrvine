@@ -3,10 +3,13 @@
 // ABOUTME: Comments after migration) rely on for tap-outside dismissal
 // ABOUTME: and overlay-visibility integration.
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 
@@ -204,6 +207,102 @@ void main() {
         expect(
           container.read(overlayVisibilityProvider).isBottomSheetOpen,
           isFalse,
+        );
+      },
+    );
+  });
+
+  group('pushWithVideoPause', () {
+    GoRouter buildRouter() => GoRouter(
+      initialLocation: '/',
+      routes: [
+        GoRoute(
+          path: '/',
+          pageBuilder: (_, state) => NoTransitionPage<void>(
+            key: state.pageKey,
+            child: Scaffold(
+              body: Builder(
+                builder: (context) => TextButton(
+                  onPressed: () =>
+                      unawaited(context.pushWithVideoPause<void>('/hashtag')),
+                  child: const Text('Open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+        GoRoute(
+          path: '/explore',
+          pageBuilder: (_, state) => NoTransitionPage<void>(
+            key: state.pageKey,
+            child: const Scaffold(body: Text('Explore')),
+          ),
+        ),
+        GoRoute(
+          path: '/hashtag',
+          pageBuilder: (_, state) => MaterialPage<void>(
+            key: state.pageKey,
+            child: const Scaffold(body: Text('Hashtag')),
+          ),
+        ),
+      ],
+    );
+
+    Future<(GoRouter, ProviderContainer)> pumpApp(WidgetTester tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final router = buildRouter();
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return (router, container);
+    }
+
+    testWidgets('clears isPageOpen when the pushed route is popped', (
+      tester,
+    ) async {
+      final (router, container) = await pumpApp(tester);
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      expect(find.text('Hashtag'), findsOneWidget);
+      expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
+
+      router.pop();
+      await tester.pumpAndSettle();
+      expect(container.read(overlayVisibilityProvider).isPageOpen, isFalse);
+    });
+
+    testWidgets(
+      'leaves isPageOpen set when a go() removes the pushed route — the '
+      'go_router behaviour AppShell has to compensate for (#6239)',
+      (tester) async {
+        final (router, container) = await pumpApp(tester);
+
+        await tester.tap(find.text('Open'));
+        await tester.pumpAndSettle();
+        expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
+
+        // What the Android back handler does for several route types, and what
+        // a deep link or a refresh redirect does: navigate rather than pop. The
+        // route is removed from the match list, so go_router's
+        // `_completeRouteMatch` never runs and the `push` future stays pending
+        // forever — the `whenComplete` clear below never fires.
+        router.go('/explore');
+        await tester.pumpAndSettle();
+        expect(find.text('Explore'), findsOneWidget);
+
+        expect(
+          container.read(overlayVisibilityProvider).isPageOpen,
+          isTrue,
+          reason:
+              'if go_router ever completes the future on removal, drop this '
+              'test and the AppShell safety net it justifies',
         );
       },
     );

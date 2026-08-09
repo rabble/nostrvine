@@ -147,7 +147,7 @@ Test cases:
 
 ## Risks and Considerations
 
-- **scrypt performance**: log_n=18 requires ~256 MiB and can take seconds. The `cryptography_flutter` package offloads to a platform thread. The existing `_isImporting` spinner already covers the loading state.
+- **scrypt performance**: log_n=18 requires ~256 MiB and can take seconds. The current SDK uses hosted Dart cryptography packages, so any isolate offload needs to be verified in implementation. The existing `_isImporting` spinner already covers the loading state.
 - **Bech32 length**: `ncryptsec1` strings are ~163 characters. Verify that `bech32` ^0.2.2 doesn't enforce the 90-char RFC limit — the existing NIP-19 `nprofile`/`nevent` usage (which exceed 90 chars) suggests it does not.
 - **NFKC unicode normalization**: The spec requires passwords to be NFKC-normalized. Dart has no built-in support. For pure ASCII passwords this is a no-op; document the limitation.
 - **Key security byte**: NIP-49 encodes whether the key was handled insecurely. We read it but don't surface it in the UI — future improvement.

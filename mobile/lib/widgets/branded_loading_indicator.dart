@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// A branded loading indicator that displays the animated Divine logo.
@@ -19,7 +20,11 @@ import 'package:unified_logger/unified_logger.dart';
 /// - Consistent animation across widget rebuilds
 /// - Better performance on repeated displays
 class BrandedLoadingIndicator extends StatefulWidget {
-  const BrandedLoadingIndicator({super.key, this.size = 80.0});
+  const BrandedLoadingIndicator({
+    super.key,
+    this.size = 80.0,
+    this.semanticsLabel,
+  });
 
   /// Sprite sheet backing the animation: the Divine brand mark
   /// (`assets/icon/divine_mark.svg`) in white, drawn as a wing-flap cycle.
@@ -35,6 +40,13 @@ class BrandedLoadingIndicator extends StatefulWidget {
 
   /// The size (width and height) of the loading indicator.
   final double size;
+
+  /// What a screen reader announces while the indicator is on screen.
+  ///
+  /// Defaults to the localized "Loading". Pass a more specific label when the
+  /// indicator stands in for a named control; wrap the indicator in
+  /// [ExcludeSemantics] instead when a sibling already announces the wait.
+  final String? semanticsLabel;
 
   @override
   State<BrandedLoadingIndicator> createState() =>
@@ -90,72 +102,81 @@ class _BrandedLoadingIndicatorState extends State<BrandedLoadingIndicator>
           )
         : null;
 
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        // Calculate current frame based on animation value
-        final frameIndex =
-            (_controller.value * BrandedLoadingIndicator.frameCount).floor();
-        final clampedFrame = frameIndex.clamp(
-          0,
-          BrandedLoadingIndicator.frameCount - 1,
-        );
+    // The sprite is an unlabelled [Image], which reaches a screen reader as a
+    // bare "image" node. Excluding it and labelling the wrapper is what turns
+    // the indicator into an announcement that something is still running.
+    return Semantics(
+      label: widget.semanticsLabel ?? context.l10n.commonLoading,
+      child: ExcludeSemantics(
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            // Calculate current frame based on animation value
+            final frameIndex =
+                (_controller.value * BrandedLoadingIndicator.frameCount)
+                    .floor();
+            final clampedFrame = frameIndex.clamp(
+              0,
+              BrandedLoadingIndicator.frameCount - 1,
+            );
 
-        final mark = _SpriteFrame(
-          size: widget.size,
-          frameIndex: clampedFrame,
-          child: child!,
-        );
+            final mark = _SpriteFrame(
+              size: widget.size,
+              frameIndex: clampedFrame,
+              child: child!,
+            );
 
-        if (shadowSprite == null) return mark;
+            if (shadowSprite == null) return mark;
 
-        return Stack(
-          alignment: Alignment.center,
-          children: [
-            Transform.translate(
-              offset: Offset(0, widget.size * _shadowOffsetRatio),
-              // Blurring the sliced frame rather than the full sheet keeps the
-              // filter layer at the indicator's size.
-              child: ImageFiltered(
-                imageFilter: ui.ImageFilter.blur(
-                  sigmaX: widget.size * _shadowBlurRatio,
-                  sigmaY: widget.size * _shadowBlurRatio,
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                Transform.translate(
+                  offset: Offset(0, widget.size * _shadowOffsetRatio),
+                  // Blurring the sliced frame rather than the full sheet keeps
+                  // the filter layer at the indicator's size.
+                  child: ImageFiltered(
+                    imageFilter: ui.ImageFilter.blur(
+                      sigmaX: widget.size * _shadowBlurRatio,
+                      sigmaY: widget.size * _shadowBlurRatio,
+                    ),
+                    child: _SpriteFrame(
+                      size: widget.size,
+                      frameIndex: clampedFrame,
+                      child: shadowSprite,
+                    ),
+                  ),
                 ),
-                child: _SpriteFrame(
-                  size: widget.size,
-                  frameIndex: clampedFrame,
-                  child: shadowSprite,
-                ),
-              ),
-            ),
-            mark,
-          ],
-        );
-      },
-      child: Image.asset(
-        BrandedLoadingIndicator.spriteAsset,
-        width: widget.size,
-        height: widget.size * BrandedLoadingIndicator.frameCount,
-        fit: BoxFit.fitWidth,
-        errorBuilder: (context, error, stackTrace) {
-          Log.warning(
-            'Failed to load sprite sheet: $error',
-            name: 'BrandedLoadingIndicator',
-            category: LogCategory.ui,
-          );
-          return SizedBox(
+                mark,
+              ],
+            );
+          },
+          child: Image.asset(
+            BrandedLoadingIndicator.spriteAsset,
             width: widget.size,
-            height: widget.size,
-            child: Center(
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  context.vineColors.onSurfaceMuted,
+            height: widget.size * BrandedLoadingIndicator.frameCount,
+            fit: BoxFit.fitWidth,
+            errorBuilder: (context, error, stackTrace) {
+              Log.warning(
+                'Failed to load sprite sheet: $error',
+                name: 'BrandedLoadingIndicator',
+                category: LogCategory.ui,
+              );
+              return SizedBox(
+                width: widget.size,
+                height: widget.size,
+                child: Center(
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      context.vineColors.onSurfaceMuted,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          );
-        },
+              );
+            },
+          ),
+        ),
       ),
     );
   }

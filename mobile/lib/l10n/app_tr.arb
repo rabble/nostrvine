@@ -452,13 +452,7 @@
     "videoGridEditVideoSubtitle": "Başlık, açıklama ve etiketleri güncelle",
     "videoGridDeleteVideo": "Videoyu Sil",
     "videoGridDeleteVideoSubtitle": "Bu içeriği kalıcı olarak kaldır",
-    "videoGridDeleteConfirmTitle": "Videoyu Sil",
-    "videoGridDeleteConfirmMessage": "Bu videoyu silmek istediğinden emin misin?",
-    "videoGridDeleteConfirmNote": "Bu işlem tüm rölelere bir silme isteği (NIP-09) gönderir. Bazı röleler içeriği saklamaya devam edebilir.",
-    "videoGridDeleteCancel": "İptal",
-    "videoGridDeleteConfirm": "Sil",
     "videoGridDeletingContent": "İçerik siliniyor...",
-    "videoGridDeleteSuccess": "Silme isteği başarıyla gönderildi",
     "videoGridDeleteFailure": "İçerik silinemedi: {error}",
     "@videoGridDeleteFailure": {
         "placeholders": {
@@ -1575,12 +1569,10 @@
         }
     },
     "shareMenuClose": "Kapat",
-    "shareMenuDeleteConfirmation": "Bu videoyu silmek istediğinden emin misin?",
-    "shareMenuDeleteWarning": "Bu işlem tüm rölelere bir silme isteği (NIP-09) gönderir. Bazı röleler içeriği saklamaya devam edebilir.",
+    "shareMenuDeleteConfirmation": "Bu video Divine'dan kalıcı olarak silinir. Diğer röleleri kullanan üçüncü taraf Nostr istemcilerinde hâlâ görünebilir.",
     "shareMenuCancel": "İptal",
     "shareMenuDelete": "Sil",
     "shareMenuDeletingContent": "İçerik siliniyor...",
-    "shareMenuDeleteRequestSent": "Silme isteği başarıyla gönderildi",
     "shareMenuFailedToDeleteContent": "İçerik silinemedi: {error}",
     "@shareMenuFailedToDeleteContent": {
         "placeholders": {
@@ -1624,8 +1616,7 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "Video Silinsin mi?",
-    "shareMenuDeleteRelayWarning": "Bu işlem rölelere bir silme isteği gönderir. Not: Bazı rölelerin hala önbelleğe alınmış kopyaları olabilir.",
-    "shareMenuVideoDeletionRequested": "Video silme isteği alındı",
+    "shareMenuVideoDeletionRequested": "Video silindi",
     "shareMenuFailedToDeleteVideo": "Video silinemedi: {error}",
     "@shareMenuFailedToDeleteVideo": {
         "placeholders": {
@@ -2549,6 +2540,11 @@
     },
     "libraryDeleteDraftTitle": "Taslağı sil",
     "libraryDeleteSelectedClipsTooltip": "Seçili klipleri sil",
+    "libraryCloseSemanticLabel": "Kitaplığı kapat",
+    "libraryStopSelectingClipsSemanticLabel": "Klip seçimini bitir",
+    "libraryOpenTrashSemanticLabel": "Yakın zamanda silinen klipleri aç",
+    "librarySortClipsSemanticLabel": "Klipleri sırala",
+    "librarySelectClipsSemanticLabel": "Klip seç",
     "librarySelect": "Seç",
     "librarySortNewestCreation": "En yeni oluşturulan",
     "librarySortOldestCreation": "En eski oluşturulan",
@@ -2592,6 +2588,8 @@
     "libraryPreparingVideo": "Video hazırlanıyor...",
     "libraryRecordVideo": "Video kaydet",
     "videoClipSemanticLabel": "Video klibi, {duration} saniye",
+    "videoClipStopMotionSemanticLabel": "Stop motion klibi, {frames}",
+    "videoClipSemanticValueSelectedAtPosition": "Seçildi, numara {position}",
     "videoClipSemanticValueSelected": "Seçildi",
     "videoClipSemanticValueNotSelected": "Seçilmedi",
     "videoClipSemanticHintDisabled": "Devre dışı",
@@ -2883,7 +2881,6 @@
     "videoEditorCameraLabel": "Kamera",
     "videoEditorLibraryLabel": "Kütüphane",
     "videoEditorCloseColorPickerSemanticLabel": "Renk seçiciyi kapat",
-    "videoEditorCloseSemanticLabel": "Kapat",
     "videoEditorColorPickerSemanticLabel": "Renk seçici",
     "videoEditorColorSelectedSemanticLabel": "{colorName}, seçildi",
     "@videoEditorColorSelectedSemanticLabel": {
@@ -3253,7 +3250,6 @@
     "libraryTrashDeleteConfirmMessage": "Bu işlem klibi hemen çöp kutusundan kaldırır.",
     "libraryTrashEmptyConfirmTitle": "Çöp kutusu boşaltılsın mı?",
     "libraryTrashEmptyConfirmMessage": "Bu işlem {count, plural, =1{1 klibi} other{{count} klibi}} hemen çöp kutusundan kalıcı olarak siler.",
-    "libraryTrashEntryLabel": "Son silinenler",
     "videoRecorderCloseLabel": "Video kaydediciyi kapat",
     "videoRecorderContinueToEditorLabel": "Video düzenleyiciye devam et",
     "videoRecorderCycleTimerLabel": "Zamanlayıcıyı değiştir",
@@ -4919,7 +4915,6 @@
     "videoEditorStopMotionFrameSemanticLabel": "Stop motion karesi {position}/{total}",
     "videoEditorStopMotionFramesCount": "{count, plural, other{{count} kare}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "Kare",
-    "libraryStopMotionClipLabel": "Stop motion klibi",
   "profileNotifyBellOff": "Yeni vine'lardan haberdar et",
   "profileNotifyBellOn": "Yeni vine bildirimlerini kapat",
   "profileNotifyUpdateFailed": "Kaydedilemedi. Tekrar denensin mi?",
@@ -4939,5 +4934,12 @@
   "userPickerConfirmSemanticLabel": "Seçili kullanıcıları onayla",
   "userPickerClearSelectionSemanticLabel": "Kullanıcı seçimini temizle",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "İçerik uyarısı seçimini iptal et",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Seçili içerik uyarılarını uygula"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Seçili içerik uyarılarını uygula",
+  "videoEditorCloseEditorSemanticLabel": "Video düzenleyiciyi kapat",
+  "videoEditorContinueToPostDetailsSemanticLabel": "Gönderi ayrıntılarına devam et",
+  "videoEditorDiscardToolChangesSemanticLabel": "{tool} içindeki değişiklikleri iptal et",
+  "videoEditorApplyToolChangesSemanticLabel": "{tool} içindeki değişiklikleri uygula",
+  "videoEditorRemoveAudioSemanticLabel": "Sesi kaldır",
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
 }

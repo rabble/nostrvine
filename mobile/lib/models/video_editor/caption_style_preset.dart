@@ -68,13 +68,8 @@ class CaptionStylePreset {
   /// Builds the burned-in editor layer for [cue].
   TextLayer buildLayer(
     CaptionCue cue, {
-    required double fittedBoxScale,
     required Size bodySize,
-  }) => style.buildLayer(
-    cue,
-    fittedBoxScale: fittedBoxScale,
-    bodySize: bodySize,
-  );
+  }) => style.buildLayer(cue, bodySize: bodySize);
 
   /// Resolves [id] to its preset, falling back to the first preset so an
   /// unknown id from an old draft still renders.

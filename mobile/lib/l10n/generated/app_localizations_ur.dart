@@ -1154,27 +1154,7 @@ class AppLocalizationsUr extends AppLocalizations {
       'یہ ویڈیو Divine سے ہٹائیں۔ یہ دیگر Nostr کلائنٹس پر پھر بھی نظر آ سکتی ہے۔';
 
   @override
-  String get videoGridDeleteConfirmTitle => 'ویڈیو حذف کریں';
-
-  @override
-  String get videoGridDeleteConfirmMessage =>
-      'یہ ویڈیو Divine سے مستقل طور پر حذف ہو جائے گی۔ دیگر ریلے استعمال کرنے والے تھرڈ پارٹی Nostr کلائنٹس پر یہ پھر بھی نظر آ سکتی ہے۔';
-
-  @override
-  String get videoGridDeleteConfirmNote =>
-      'اس سے ریلے کو حذف کرنے کی درخواست بھیجی جائے گی۔ نوٹ: کچھ ریلے کے پاس پھر بھی کیش شدہ کاپیاں ہو سکتی ہیں۔';
-
-  @override
-  String get videoGridDeleteCancel => 'منسوخ کریں';
-
-  @override
-  String get videoGridDeleteConfirm => 'حذف کریں';
-
-  @override
   String get videoGridDeletingContent => 'مواد حذف ہو رہا ہے...';
-
-  @override
-  String get videoGridDeleteSuccess => 'حذف کی درخواست کامیابی سے بھیج دی گئی';
 
   @override
   String videoGridDeleteFailure(Object error) {
@@ -3996,10 +3976,6 @@ class AppLocalizationsUr extends AppLocalizations {
       'یہ ویڈیو Divine سے ہٹائیں۔ یہ دیگر Nostr کلائنٹس پر پھر بھی نظر آ سکتی ہے۔';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'یہ تمام ریلے کو حذف کی درخواست (NIP-09) بھیجتا ہے۔ کچھ ریلے پھر بھی مواد رکھ سکتے ہیں۔';
-
-  @override
   String get shareMenuVideoInTheseLists => 'ویڈیو ان فہرستوں میں ہے:';
 
   @override
@@ -4027,9 +4003,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String shareMenuFailedToDeleteContent(String error) {
     return 'مواد حذف نہیں ہو سکا: $error';
   }
-
-  @override
-  String get shareMenuDeleteRequestSent => 'ویڈیو حذف ہو گئی';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4145,10 +4118,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get shareMenuDeleteVideoQuestion => 'ویڈیو حذف کریں؟';
-
-  @override
-  String get shareMenuDeleteRelayWarning =>
-      'اس سے ریلے کو حذف کی درخواست بھیجی جائے گی۔ نوٹ: کچھ ریلے کے پاس پھر بھی کیش شدہ کاپیاں ہو سکتی ہیں۔';
 
   @override
   String get shareMenuVideoDeletionRequested => 'ویڈیو حذف ہو گئی';
@@ -6399,6 +6368,22 @@ class AppLocalizationsUr extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'منتخب کلپس حذف کریں';
 
   @override
+  String get libraryCloseSemanticLabel => 'لائبریری بند کریں';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel =>
+      'کلپس منتخب کرنا بند کریں';
+
+  @override
+  String get libraryOpenTrashSemanticLabel => 'حال ہی میں حذف شدہ کلپس کھولیں';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'کلپس ترتیب دیں';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'کلپس منتخب کریں';
+
+  @override
   String get librarySelect => 'منتخب کریں';
 
   @override
@@ -6578,6 +6563,16 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String videoClipSemanticLabel(String duration) {
     return 'ویڈیو کلپ، $duration سیکنڈ';
+  }
+
+  @override
+  String videoClipStopMotionSemanticLabel(String frames) {
+    return 'اسٹاپ موشن کلپ، $frames';
+  }
+
+  @override
+  String videoClipSemanticValueSelectedAtPosition(int position) {
+    return 'منتخب، نمبر $position';
   }
 
   @override
@@ -8459,9 +8454,6 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => 'حال میں حذف شدہ';
-
-  @override
   String get videoRecorderCloseLabel => 'ویڈیو ریکارڈر بند کریں';
 
   @override
@@ -9100,9 +9092,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get videoEditorStopMotionFramesPerImageButtonLabel => 'فریم';
 
   @override
-  String get libraryStopMotionClipLabel => 'اسٹاپ موشن کلپ';
-
-  @override
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
     return 'فی تصویر $count فریم';
   }
@@ -9585,9 +9574,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get videoEditorAddElementSemanticLabel => 'عنصر شامل کریں';
 
   @override
-  String get videoEditorCloseSemanticLabel => 'بند کریں';
-
-  @override
   String get videoEditorDoneSemanticLabel => 'ہو گیا';
 
   @override
@@ -9652,6 +9638,10 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get videoMetadataAudioReuseSubtitle =>
       'دوسروں کو اس ویڈیو کی آڈیو محفوظ اور دوبارہ استعمال کرنے دیں۔';
+
+  @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'شریک کار شامل کریں';
@@ -11117,4 +11107,37 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
       'منتخب مواد کی وارننگز لاگو کریں';
+
+  @override
+  String get videoEditorCloseEditorSemanticLabel => 'ویڈیو ایڈیٹر بند کریں';
+
+  @override
+  String get videoEditorContinueToPostDetailsSemanticLabel =>
+      'پوسٹ کی تفصیلات پر جائیں';
+
+  @override
+  String videoEditorDiscardToolChangesSemanticLabel(String tool) {
+    return '$tool میں تبدیلیاں مسترد کریں';
+  }
+
+  @override
+  String videoEditorApplyToolChangesSemanticLabel(String tool) {
+    return '$tool میں تبدیلیاں لاگو کریں';
+  }
+
+  @override
+  String get videoEditorRemoveAudioSemanticLabel => 'آڈیو ہٹائیں';
+
+  @override
+  String rgbColorSemanticLabel(int red, int green, int blue) {
+    return 'RGB $red، $green، $blue';
+  }
+
+  @override
+  String videoEditorColorPickerSwatchSemanticLabel(
+    String picker,
+    String color,
+  ) {
+    return '$picker، $color';
+  }
 }

@@ -44,6 +44,7 @@ import 'package:openvine/widgets/video_feed_item/double_tap_like_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/feed_immersive_chrome.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/paused_video_overlay.dart';
+import 'package:openvine/widgets/video_feed_item/player_tap_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/verifying_aware_video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
@@ -738,12 +739,13 @@ class __OverlayState extends ConsumerState<_Overlay> {
   void _handlePlayerTap() {
     widget.onSuppressAutoAdvance?.call();
 
-    if (widget.controller != null) {
-      if (widget.controller!.state.isPaused) {
-        widget.controller!.play();
-      } else {
-        widget.controller!.pause();
-      }
+    final controller = widget.controller;
+    if (controller == null) return;
+    switch (resolvePlayerTapAction(controller.state.status)) {
+      case PlayerTapAction.play:
+        controller.play();
+      case PlayerTapAction.pause:
+        controller.pause();
     }
   }
 

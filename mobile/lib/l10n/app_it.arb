@@ -452,13 +452,7 @@
     "videoGridEditVideoSubtitle": "Aggiorna titolo, descrizione e hashtag",
     "videoGridDeleteVideo": "Elimina video",
     "videoGridDeleteVideoSubtitle": "Rimuovi definitivamente questo contenuto",
-    "videoGridDeleteConfirmTitle": "Elimina video",
-    "videoGridDeleteConfirmMessage": "Sei sicuro di voler eliminare questo video?",
-    "videoGridDeleteConfirmNote": "Verrà inviata una richiesta di eliminazione (NIP-09) a tutti i relay. Alcuni relay potrebbero comunque conservare il contenuto.",
-    "videoGridDeleteCancel": "Annulla",
-    "videoGridDeleteConfirm": "Elimina",
     "videoGridDeletingContent": "Eliminazione contenuto...",
-    "videoGridDeleteSuccess": "Richiesta di eliminazione inviata con successo",
     "videoGridDeleteFailure": "Impossibile eliminare il contenuto: {error}",
     "@videoGridDeleteFailure": {
         "placeholders": {
@@ -1578,12 +1572,10 @@
         }
     },
     "shareMenuClose": "Chiudi",
-    "shareMenuDeleteConfirmation": "Sei sicuro di voler eliminare questo video?",
-    "shareMenuDeleteWarning": "Verrà inviata una richiesta di eliminazione (NIP-09) a tutti i relay. Alcuni relay potrebbero comunque conservare il contenuto.",
+    "shareMenuDeleteConfirmation": "Questo eliminerà definitivamente questo video da Divine. Potrebbe ancora comparire su client Nostr di terze parti che usano altri relay.",
     "shareMenuCancel": "Annulla",
     "shareMenuDelete": "Elimina",
     "shareMenuDeletingContent": "Eliminazione contenuto...",
-    "shareMenuDeleteRequestSent": "Richiesta di eliminazione inviata con successo",
     "shareMenuFailedToDeleteContent": "Impossibile eliminare il contenuto: {error}",
     "@shareMenuFailedToDeleteContent": {
         "placeholders": {
@@ -1627,8 +1619,7 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "Eliminare il video?",
-    "shareMenuDeleteRelayWarning": "Verrà inviata una richiesta di eliminazione ai relay. Nota: alcuni relay potrebbero avere ancora copie in cache.",
-    "shareMenuVideoDeletionRequested": "Eliminazione del video richiesta",
+    "shareMenuVideoDeletionRequested": "Video eliminato",
     "shareMenuFailedToDeleteVideo": "Impossibile eliminare il video: {error}",
     "@shareMenuFailedToDeleteVideo": {
         "placeholders": {
@@ -2550,6 +2541,11 @@
     },
     "libraryDeleteDraftTitle": "Elimina bozza",
     "libraryDeleteSelectedClipsTooltip": "Elimina clip selezionate",
+    "libraryCloseSemanticLabel": "Chiudi libreria",
+    "libraryStopSelectingClipsSemanticLabel": "Termina selezione clip",
+    "libraryOpenTrashSemanticLabel": "Apri clip eliminati di recente",
+    "librarySortClipsSemanticLabel": "Ordina clip",
+    "librarySelectClipsSemanticLabel": "Seleziona clip",
     "librarySelect": "Seleziona",
     "librarySortNewestCreation": "Creazione più recente",
     "librarySortOldestCreation": "Creazione più vecchia",
@@ -2593,6 +2589,8 @@
     "libraryPreparingVideo": "Preparazione video...",
     "libraryRecordVideo": "Registra un video",
     "videoClipSemanticLabel": "Clip video, {duration} secondi",
+    "videoClipStopMotionSemanticLabel": "Clip in stop-motion, {frames}",
+    "videoClipSemanticValueSelectedAtPosition": "Selezionato, numero {position}",
     "videoClipSemanticValueSelected": "Selezionato",
     "videoClipSemanticValueNotSelected": "Non selezionato",
     "videoClipSemanticHintDisabled": "Disabilitato",
@@ -2891,7 +2889,6 @@
     "libraryTrashDeleteConfirmMessage": "Questo rimuove subito la clip dal cestino.",
     "libraryTrashEmptyConfirmTitle": "Svuotare il cestino?",
     "libraryTrashEmptyConfirmMessage": "Questo elimina definitivamente dal cestino {count, plural, =1{1 clip} other{{count} clip}} subito.",
-    "libraryTrashEntryLabel": "Eliminati di recente",
     "videoRecorderCloseLabel": "Chiudi registratore video",
     "videoRecorderContinueToEditorLabel": "Continua all'editor video",
     "videoRecorderCaptureCloseLabel": "Chiudi",
@@ -3219,7 +3216,6 @@
     },
     "videoEditorHueSemanticLabel": "Tonalità",
     "videoEditorAddElementSemanticLabel": "Aggiungi elemento",
-    "videoEditorCloseSemanticLabel": "Chiudi",
     "videoEditorDoneSemanticLabel": "Fatto",
     "videoEditorLevelSemanticLabel": "Livello",
     "videoMetadataClosePostDetailsSemanticLabel": "Chiudi dettagli del post",
@@ -4919,7 +4915,6 @@
     "videoEditorStopMotionFrameSemanticLabel": "Fotogramma stop-motion {position} di {total}",
     "videoEditorStopMotionFramesCount": "{count, plural, =1{1 fotogramma} other{{count} fotogrammi}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "Fotogrammi",
-    "libraryStopMotionClipLabel": "Clip stop-motion",
   "profileNotifyBellOff": "Avvisami dei nuovi vine",
   "profileNotifyBellOn": "Non avvisarmi più dei nuovi vine",
   "profileNotifyUpdateFailed": "Salvataggio non riuscito. Riprovare?",
@@ -4939,5 +4934,12 @@
   "userPickerConfirmSemanticLabel": "Conferma utenti selezionati",
   "userPickerClearSelectionSemanticLabel": "Cancella selezione utenti",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "Annulla selezione avvisi sui contenuti",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Applica gli avvisi sui contenuti selezionati"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Applica gli avvisi sui contenuti selezionati",
+  "videoEditorCloseEditorSemanticLabel": "Chiudi l’editor video",
+  "videoEditorContinueToPostDetailsSemanticLabel": "Continua ai dettagli del post",
+  "videoEditorDiscardToolChangesSemanticLabel": "Annulla le modifiche in {tool}",
+  "videoEditorApplyToolChangesSemanticLabel": "Applica le modifiche in {tool}",
+  "videoEditorRemoveAudioSemanticLabel": "Rimuovi audio",
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
 }
