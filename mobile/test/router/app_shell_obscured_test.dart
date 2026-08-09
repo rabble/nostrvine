@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/app_update/app_update.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
@@ -16,11 +17,13 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/shell_obscured_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/feed/home_feed_retap_cubit.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -193,6 +196,107 @@ void main() {
       // didPush fires once as the fresh shell subscribes, clearing the flag so
       // the home feed can resume.
       expect(container.read(shellObscuredProvider), isFalse);
+    },
+  );
+
+  testWidgets(
+    'router.go() uncovering the shell clears a page overlay stranded by '
+    'pushWithVideoPause (#6239)',
+    (tester) async {
+      final rootNavigatorKey = GlobalKey<NavigatorState>();
+      final container = ProviderContainer(
+        overrides: _overrides(
+          mockAuthService: mockAuthService,
+          sharedPreferences: sharedPreferences,
+        ),
+      );
+      addTearDown(container.dispose);
+
+      late final GoRouter router;
+      router = GoRouter(
+        navigatorKey: rootNavigatorKey,
+        initialLocation: '/',
+        observers: [routeObserver],
+        routes: [
+          ShellRoute(
+            pageBuilder: (context, state, child) => NoTransitionPage<void>(
+              key: state.pageKey,
+              child: AppShell(
+                currentIndex: state.uri.path == '/explore' ? 1 : 0,
+                child: child,
+              ),
+            ),
+            routes: [
+              GoRoute(
+                path: '/',
+                pageBuilder: (_, state) => NoTransitionPage<void>(
+                  key: state.pageKey,
+                  child: Center(
+                    child: Builder(
+                      builder: (context) => TextButton(
+                        onPressed: () => unawaited(
+                          context.pushWithVideoPause<void>('/hashtag'),
+                        ),
+                        child: const Text('Open hashtag'),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              GoRoute(
+                path: '/explore',
+                pageBuilder: (_, state) => NoTransitionPage<void>(
+                  key: state.pageKey,
+                  child: const Center(child: Text('Explore')),
+                ),
+              ),
+            ],
+          ),
+          GoRoute(
+            path: '/hashtag',
+            parentNavigatorKey: rootNavigatorKey,
+            pageBuilder: (_, state) => MaterialPage<void>(
+              key: state.pageKey,
+              child: const Scaffold(body: Center(child: Text('Hashtag'))),
+            ),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(
+        _wrapWithBlocs(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: router,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Open hashtag'));
+      await tester.pumpAndSettle();
+      expect(find.text('Hashtag'), findsOneWidget);
+      expect(container.read(shellObscuredProvider), isTrue);
+      expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
+
+      // A go()-style back removes the pushed route declaratively, so
+      // pushWithVideoPause's future never completes. AppShell must still notice
+      // that the shell is uncovered and clear the stranded page flag.
+      router.go('/explore');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Explore'), findsOneWidget);
+      expect(container.read(shellObscuredProvider), isFalse);
+      expect(
+        container.read(overlayVisibilityProvider).isPageOpen,
+        isFalse,
+        reason: 'a stranded page flag keeps the home feed from autoplaying',
+      );
     },
   );
 
