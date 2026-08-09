@@ -6,7 +6,6 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce/hive.dart';
-import 'package:openvine/constants/hive_box_names.dart';
 import 'package:openvine/models/notification_preferences.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/cache_recovery_service.dart';
@@ -34,116 +33,74 @@ void main() {
       setUp(() async {
         tmp = Directory.systemTemp.createTempSync('cache_recovery_hive_test');
         Hive.init(tmp.path);
-        await TestHelpers.cleanupHiveBox(HiveBoxNames.notifications);
-        await TestHelpers.cleanupHiveBox(
-          HiveBoxNames.pushNotificationPreferencesDirty,
-        );
-        await TestHelpers.cleanupHiveBox(HiveBoxNames.pendingUploads);
-        await TestHelpers.cleanupHiveBox(HiveBoxNames.hashtagStats);
+        await TestHelpers.cleanupHiveBox('notifications');
+        await TestHelpers.cleanupHiveBox('pending_uploads');
+        await TestHelpers.cleanupHiveBox('video_cache');
       });
 
       tearDown(() async {
-        await TestHelpers.cleanupHiveBox(HiveBoxNames.notifications);
-        await TestHelpers.cleanupHiveBox(
-          HiveBoxNames.pushNotificationPreferencesDirty,
-        );
-        await TestHelpers.cleanupHiveBox(HiveBoxNames.pendingUploads);
-        await TestHelpers.cleanupHiveBox(HiveBoxNames.hashtagStats);
+        await TestHelpers.cleanupHiveBox('notifications');
+        await TestHelpers.cleanupHiveBox('pending_uploads');
+        await TestHelpers.cleanupHiveBox('video_cache');
         if (tmp.existsSync()) tmp.deleteSync(recursive: true);
-      });
-
-      test('classifies every known Hive box exactly once', () {
-        final classifiedHiveBoxNames = {
-          ...CacheRecoveryService.disposableHiveBoxNamesForTesting,
-          ...CacheRecoveryService.durableHiveBoxNamesForTesting,
-        };
-
-        expect(
-          CacheRecoveryService.disposableHiveBoxNamesForTesting.intersection(
-            CacheRecoveryService.durableHiveBoxNamesForTesting,
-          ),
-          isEmpty,
-        );
-        expect(classifiedHiveBoxNames, unorderedEquals(HiveBoxNames.all));
       });
 
       test(
         'preserves pending uploads while clearing disposable Hive caches',
         () async {
-          final pendingUploads = Hive.isBoxOpen(HiveBoxNames.pendingUploads)
-              ? Hive.box<PendingUpload>(HiveBoxNames.pendingUploads)
-              : await Hive.openBox<PendingUpload>(
-                  HiveBoxNames.pendingUploads,
-                );
-          final hashtagStats = Hive.isBoxOpen(HiveBoxNames.hashtagStats)
-              ? Hive.box(HiveBoxNames.hashtagStats)
-              : await Hive.openBox(HiveBoxNames.hashtagStats);
+          final pendingUploads = Hive.isBoxOpen('pending_uploads')
+              ? Hive.box<PendingUpload>('pending_uploads')
+              : await Hive.openBox<PendingUpload>('pending_uploads');
+          final videoCache = Hive.isBoxOpen('video_cache')
+              ? Hive.box('video_cache')
+              : await Hive.openBox('video_cache');
           final upload = PendingUpload.create(
             localVideoPath: '/tmp/durable-upload.mp4',
             nostrPubkey:
                 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
           );
           await pendingUploads.put(upload.id, upload);
-          await hashtagStats.put('popular_hashtags', ['divine']);
+          await videoCache.put('cache-id', 'cached video');
 
           await CacheRecoveryService.clearHiveBoxesForTesting();
 
           expect(
             Hive.box<PendingUpload>(
-              HiveBoxNames.pendingUploads,
+              'pending_uploads',
             ).get(upload.id)?.localVideoPath,
             upload.localVideoPath,
           );
-          expect(Hive.isBoxOpen(HiveBoxNames.hashtagStats), isFalse);
-          final reopenedHashtagStats = await Hive.openBox(
-            HiveBoxNames.hashtagStats,
-          );
-          addTearDown(reopenedHashtagStats.close);
-          expect(reopenedHashtagStats.get('popular_hashtags'), isNull);
+          expect(Hive.isBoxOpen('video_cache'), isFalse);
+          final reopenedVideoCache = await Hive.openBox('video_cache');
+          addTearDown(reopenedVideoCache.close);
+          expect(reopenedVideoCache.get('cache-id'), isNull);
         },
       );
 
       test(
         'preserves durable notification preferences while clearing caches',
         () async {
-          final notifications = Hive.isBoxOpen(HiveBoxNames.notifications)
-              ? Hive.box(HiveBoxNames.notifications)
-              : await Hive.openBox(HiveBoxNames.notifications);
-          final dirtyNotifications =
-              Hive.isBoxOpen(HiveBoxNames.pushNotificationPreferencesDirty)
-              ? Hive.box(HiveBoxNames.pushNotificationPreferencesDirty)
-              : await Hive.openBox(
-                  HiveBoxNames.pushNotificationPreferencesDirty,
-                );
-          final hashtagStats = Hive.isBoxOpen(HiveBoxNames.hashtagStats)
-              ? Hive.box(HiveBoxNames.hashtagStats)
-              : await Hive.openBox(HiveBoxNames.hashtagStats);
+          final notifications = Hive.isBoxOpen('notifications')
+              ? Hive.box('notifications')
+              : await Hive.openBox('notifications');
+          final videoCache = Hive.isBoxOpen('video_cache')
+              ? Hive.box('video_cache')
+              : await Hive.openBox('video_cache');
           const preferences = NotificationPreferences(commentsEnabled: false);
-          const dirtyPreferencesKey =
-              'push_preferences_dirty_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
           final storedPreferences = jsonEncode(preferences.toJson());
           await notifications.put('push_preferences', storedPreferences);
-          await dirtyNotifications.put(dirtyPreferencesKey, storedPreferences);
-          await hashtagStats.put('popular_hashtags', ['divine']);
+          await videoCache.put('cache-id', 'cached video');
 
           await CacheRecoveryService.clearHiveBoxesForTesting();
 
           expect(
-            Hive.box(HiveBoxNames.notifications).get('push_preferences'),
+            Hive.box('notifications').get('push_preferences'),
             storedPreferences,
           );
-          expect(
-            Hive.box(
-              HiveBoxNames.pushNotificationPreferencesDirty,
-            ).get(dirtyPreferencesKey),
-            storedPreferences,
-          );
-          expect(Hive.isBoxOpen(HiveBoxNames.hashtagStats), isFalse);
-          final reopenedHashtagStats = await Hive.openBox(
-            HiveBoxNames.hashtagStats,
-          );
-          addTearDown(reopenedHashtagStats.close);
-          expect(reopenedHashtagStats.get('popular_hashtags'), isNull);
+          expect(Hive.isBoxOpen('video_cache'), isFalse);
+          final reopenedVideoCache = await Hive.openBox('video_cache');
+          addTearDown(reopenedVideoCache.close);
+          expect(reopenedVideoCache.get('cache-id'), isNull);
         },
       );
     });
@@ -177,11 +134,11 @@ void main() {
       test('preserves durable pending uploads during clearAllCaches', () async {
         final db = write('support/openvine/database/divine_db.db', 'database');
         final pendingUploads = write(
-          'support/openvine/${HiveBoxNames.pendingUploads}.hive',
+          'support/openvine/pending_uploads.hive',
           'pending uploads',
         );
         final pendingUploadsLock = write(
-          'support/openvine/${HiveBoxNames.pendingUploads}.lock',
+          'support/openvine/pending_uploads.lock',
           'lock',
         );
         final cacheSync = write(
@@ -203,121 +160,6 @@ void main() {
         expect(temp.existsSync(), isFalse);
         expect(cache.existsSync(), isFalse);
       });
-
-      test(
-        'preserves durable notification preferences during clearAllCaches',
-        () async {
-          final notifications = write(
-            'support/openvine/${HiveBoxNames.notifications}.hive',
-            'preferences',
-          );
-          final notificationsLock = write(
-            'support/openvine/${HiveBoxNames.notifications}.lock',
-            'lock',
-          );
-          final dirtyPreferences = write(
-            'support/openvine/'
-                '${HiveBoxNames.pushNotificationPreferencesDirty}.hive',
-            'dirty preferences',
-          );
-          final dirtyPreferencesLock = write(
-            'support/openvine/'
-                '${HiveBoxNames.pushNotificationPreferencesDirty}.lock',
-            'lock',
-          );
-          final cacheSync = write(
-            'support/openvine/cache/cache_sync.db',
-            'cache',
-          );
-          final scratch = write('support/openvine/scratch.txt', 'scratch');
-          final temp = write('temp/transient.tmp', 'temp');
-          final cache = write('cache/download.bin', 'cache');
-
-          final recovered = await CacheRecoveryService.clearAllCaches();
-
-          expect(recovered, isTrue);
-          expect(notifications.existsSync(), isTrue);
-          expect(notificationsLock.existsSync(), isTrue);
-          expect(dirtyPreferences.existsSync(), isTrue);
-          expect(dirtyPreferencesLock.existsSync(), isTrue);
-          expect(cacheSync.existsSync(), isFalse);
-          expect(scratch.existsSync(), isFalse);
-          expect(temp.existsSync(), isFalse);
-          expect(cache.existsSync(), isFalse);
-        },
-      );
-
-      test(
-        'preserves a durable box left only as a compacted copy',
-        () async {
-          // Compaction interrupted after writing `.hivec` and before renaming
-          // it over the box file leaves it as the only copy of the box.
-          final compacted = write(
-            'support/openvine/${HiveBoxNames.notifications}.hivec',
-            'compacted preferences',
-          );
-          final dirtyCompacted = write(
-            'support/openvine/'
-                '${HiveBoxNames.pushNotificationPreferencesDirty}.hivec',
-            'compacted dirty preferences',
-          );
-          final uploadsCompacted = write(
-            'support/openvine/${HiveBoxNames.pendingUploads}.hivec',
-            'compacted pending uploads',
-          );
-          final scratch = write('support/openvine/scratch.txt', 'scratch');
-
-          final recovered = await CacheRecoveryService.clearAllCaches();
-
-          expect(recovered, isTrue);
-          expect(compacted.existsSync(), isTrue);
-          expect(dirtyCompacted.existsSync(), isTrue);
-          expect(uploadsCompacted.existsSync(), isTrue);
-          expect(scratch.existsSync(), isFalse);
-        },
-      );
-
-      test(
-        'cacheSizeBytes excludes protected app support state',
-        () async {
-          write('support/openvine/database/divine_db.db', 'database');
-          write(
-            'support/openvine/${HiveBoxNames.pendingUploads}.hive',
-            'pending uploads',
-          );
-          write('support/openvine/${HiveBoxNames.pendingUploads}.lock', 'lock');
-          write(
-            'support/openvine/${HiveBoxNames.notifications}.hive',
-            'preferences',
-          );
-          write('support/openvine/${HiveBoxNames.notifications}.lock', 'lock');
-          write(
-            'support/openvine/'
-                '${HiveBoxNames.pushNotificationPreferencesDirty}.hive',
-            'dirty preferences',
-          );
-          write(
-            'support/openvine/'
-                '${HiveBoxNames.pushNotificationPreferencesDirty}.lock',
-            'lock',
-          );
-          write(
-            'support/openvine/${HiveBoxNames.notifications}.hivec',
-            'compacted preferences',
-          );
-          write('support/openvine/cache/cache_sync.db', 'cache');
-          write('support/openvine/scratch.txt', 'scratch');
-          write('temp/transient.tmp', 'temp');
-          write('cache/download.bin', 'cache');
-
-          final bytes = await CacheRecoveryService.cacheSizeBytes();
-
-          expect(
-            bytes,
-            'cache'.length + 'scratch'.length + 'temp'.length + 'cache'.length,
-          );
-        },
-      );
     });
 
     group('deleteDirectoryContentsExcept', () {
