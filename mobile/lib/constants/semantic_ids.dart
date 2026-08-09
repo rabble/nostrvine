@@ -22,6 +22,15 @@ abstract class SemanticIds {
   static String cameraMode(String mode) => 'camera_mode_$mode';
   static const String cameraRecordButton = 'camera_record_button';
 
+  /// Welcome screen. The fresh-install and returning-user branches show
+  /// different buttons, so each action gets its own id rather than being
+  /// disambiguated by position.
+  static const String authCreateAccountButton = 'create_account_button';
+  static const String authSignInButton = 'sign_in_button';
+  static const String authContinueAsButton = 'continue_as_button';
+  static const String authUseAnotherAccountButton =
+      'use_another_account_button';
+
   static const String profileStatsRow = 'profile_stats_row';
 
   /// Opens Settings from the own-profile header. This is the only entry
