@@ -16528,12 +16528,6 @@ abstract class AppLocalizations {
   /// **'Add element'**
   String get videoEditorAddElementSemanticLabel;
 
-  /// No description provided for @videoEditorCloseSemanticLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Close'**
-  String get videoEditorCloseSemanticLabel;
-
   /// No description provided for @videoEditorDoneSemanticLabel.
   ///
   /// In en, this message translates to:
@@ -19149,6 +19143,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Apply selected content warnings'**
   String get videoMetadataContentWarningsPickerConfirmSemanticLabel;
+
+  /// No description provided for @videoEditorCloseEditorSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Close video editor'**
+  String get videoEditorCloseEditorSemanticLabel;
+
+  /// No description provided for @videoEditorContinueToPostDetailsSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue to post details'**
+  String get videoEditorContinueToPostDetailsSemanticLabel;
+
+  /// Accessibility label for closing a named video-editor tool without applying its changes.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes in {tool}'**
+  String videoEditorDiscardToolChangesSemanticLabel(String tool);
+
+  /// Accessibility label for applying changes made in a named video-editor tool.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply changes in {tool}'**
+  String videoEditorApplyToolChangesSemanticLabel(String tool);
+
+  /// No description provided for @videoEditorRemoveAudioSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove audio'**
+  String get videoEditorRemoveAudioSemanticLabel;
+
+  /// Accessibility label announcing a color swatch as its RGB triplet, used when the color has no human-readable name.
+  ///
+  /// In en, this message translates to:
+  /// **'RGB {red}, {green}, {blue}'**
+  String rgbColorSemanticLabel(int red, int green, int blue);
+
+  /// Joins the custom color swatch's picker role and its color description into one accessibility label. Translate the separator, not the placeholders: locales that do not list with a Latin comma should use their own (for example '、' or '، '), matching rgbColorSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{picker}, {color}'**
+  String videoEditorColorPickerSwatchSemanticLabel(String picker, String color);
 }
 
 class _AppLocalizationsDelegate

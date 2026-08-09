@@ -9117,9 +9117,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoEditorAddElementSemanticLabel => '添加元素';
 
   @override
-  String get videoEditorCloseSemanticLabel => '关闭';
-
-  @override
   String get videoEditorDoneSemanticLabel => '完成';
 
   @override
@@ -10544,4 +10541,36 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
       '应用所选内容警告';
+
+  @override
+  String get videoEditorCloseEditorSemanticLabel => '关闭视频编辑器';
+
+  @override
+  String get videoEditorContinueToPostDetailsSemanticLabel => '继续前往帖子详情';
+
+  @override
+  String videoEditorDiscardToolChangesSemanticLabel(String tool) {
+    return '放弃在$tool中的更改';
+  }
+
+  @override
+  String videoEditorApplyToolChangesSemanticLabel(String tool) {
+    return '应用在$tool中的更改';
+  }
+
+  @override
+  String get videoEditorRemoveAudioSemanticLabel => '移除音频';
+
+  @override
+  String rgbColorSemanticLabel(int red, int green, int blue) {
+    return 'RGB $red、$green、$blue';
+  }
+
+  @override
+  String videoEditorColorPickerSwatchSemanticLabel(
+    String picker,
+    String color,
+  ) {
+    return '$picker、$color';
+  }
 }

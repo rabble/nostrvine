@@ -5825,7 +5825,6 @@
   },
   "videoEditorHueSemanticLabel": "Tông màu",
   "videoEditorAddElementSemanticLabel": "Thêm phần tử",
-  "videoEditorCloseSemanticLabel": "Đóng",
   "videoEditorDoneSemanticLabel": "Xong",
   "videoEditorLevelSemanticLabel": "Mức",
   "videoMetadataClosePostDetailsSemanticLabel": "Đóng chi tiết bài đăng",
@@ -6783,5 +6782,12 @@
   "userPickerConfirmSemanticLabel": "Xác nhận người dùng đã chọn",
   "userPickerClearSelectionSemanticLabel": "Xóa lựa chọn người dùng",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "Hủy chọn cảnh báo nội dung",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Áp dụng các cảnh báo nội dung đã chọn"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Áp dụng các cảnh báo nội dung đã chọn",
+  "videoEditorCloseEditorSemanticLabel": "Đóng trình chỉnh sửa video",
+  "videoEditorContinueToPostDetailsSemanticLabel": "Tiếp tục đến chi tiết bài đăng",
+  "videoEditorDiscardToolChangesSemanticLabel": "Hủy thay đổi trong {tool}",
+  "videoEditorApplyToolChangesSemanticLabel": "Áp dụng thay đổi trong {tool}",
+  "videoEditorRemoveAudioSemanticLabel": "Xóa âm thanh",
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
 }

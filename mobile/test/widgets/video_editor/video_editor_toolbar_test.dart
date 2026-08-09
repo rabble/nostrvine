@@ -20,6 +20,8 @@ void main() {
           body: VideoEditorToolbar(
             onClose: onClose,
             onDone: onDone,
+            closeSemanticLabel: 'Close test editor',
+            doneSemanticLabel: 'Apply test changes',
             center: center,
           ),
         ),
@@ -29,8 +31,8 @@ void main() {
     testWidgets('renders close and done semantics', (tester) async {
       await tester.pumpWidget(buildWidget(onClose: () {}, onDone: () {}));
 
-      expect(find.bySemanticsLabel('Close'), findsOneWidget);
-      expect(find.bySemanticsLabel('Done'), findsOneWidget);
+      expect(find.bySemanticsLabel('Close test editor'), findsOneWidget);
+      expect(find.bySemanticsLabel('Apply test changes'), findsOneWidget);
     });
 
     testWidgets('calls onClose when close button is tapped', (tester) async {
@@ -40,7 +42,7 @@ void main() {
         buildWidget(onClose: () => closeTapped = true, onDone: () {}),
       );
 
-      await tester.tap(find.bySemanticsLabel('Close'));
+      await tester.tap(find.bySemanticsLabel('Close test editor'));
       await tester.pump();
 
       expect(closeTapped, isTrue);
@@ -53,7 +55,7 @@ void main() {
         buildWidget(onClose: () {}, onDone: () => doneTapped = true),
       );
 
-      await tester.tap(find.bySemanticsLabel('Done'));
+      await tester.tap(find.bySemanticsLabel('Apply test changes'));
       await tester.pump();
 
       expect(doneTapped, isTrue);

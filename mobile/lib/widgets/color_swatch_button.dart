@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// A tappable colour swatch.
 ///
@@ -61,6 +62,16 @@ class ColorSwatchButton extends StatelessWidget {
 
   /// Side of the tick badge on the selected swatch.
   static const double _badgeSize = 20;
+
+  /// Announces [color] as its RGB triplet, for callers whose swatches carry an
+  /// arbitrary color with no human-readable name.
+  static String rgbSemanticLabel(BuildContext context, Color color) {
+    return context.l10n.rgbColorSemanticLabel(
+      (color.r * 255.0).round().clamp(0, 255),
+      (color.g * 255.0).round().clamp(0, 255),
+      (color.b * 255.0).round().clamp(0, 255),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

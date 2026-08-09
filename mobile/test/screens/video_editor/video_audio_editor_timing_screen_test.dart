@@ -172,7 +172,11 @@ void main() {
       ProVideoEditor.instance = originalProVideoEditor;
     });
 
-    Widget buildWidget({AudioEvent? sound, Locale? locale}) {
+    Widget buildWidget({
+      AudioEvent? sound,
+      Locale? locale,
+      bool enableDeleteButton = true,
+    }) {
       final testSound =
           sound ?? _createTestAudioEvent(title: 'Test Audio', duration: 10.0);
 
@@ -184,6 +188,7 @@ void main() {
           home: VideoAudioEditorTimingScreen(
             sound: testSound,
             clipPlayer: mockClipPlayer,
+            enableDeleteButton: enableDeleteButton,
           ),
         ),
       );
@@ -228,6 +233,52 @@ void main() {
             const Locale('en'),
           ).videoEditorAudioSegmentInstruction,
         ),
+        findsNothing,
+      );
+    });
+
+    testWidgets('close button announces removing the audio when it deletes', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildWidget());
+      await tester.pump();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(
+        find.bySemanticsLabel(l10n.videoEditorRemoveAudioSemanticLabel),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel(
+          l10n.videoEditorDiscardToolChangesSemanticLabel(
+            l10n.videoEditorAudioLabel,
+          ),
+        ),
+        findsNothing,
+      );
+    });
+
+    testWidgets('close button announces discarding when it only dismisses', (
+      tester,
+    ) async {
+      // The label and the action are chosen off the same flag, so this is the
+      // one branch where they can silently drift apart: announcing "Remove
+      // audio" on a button that merely pops would tell a screen-reader user
+      // their audio was deleted when it was not.
+      await tester.pumpWidget(buildWidget(enableDeleteButton: false));
+      await tester.pump();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(
+        find.bySemanticsLabel(
+          l10n.videoEditorDiscardToolChangesSemanticLabel(
+            l10n.videoEditorAudioLabel,
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel(l10n.videoEditorRemoveAudioSemanticLabel),
         findsNothing,
       );
     });

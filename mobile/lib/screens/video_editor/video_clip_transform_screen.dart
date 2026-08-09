@@ -370,9 +370,13 @@ class _BottomAction extends StatelessWidget {
           type: .secondary,
           size: .small,
         ),
-        Text(
-          label,
-          style: VineTheme.bodySmallFont(color: context.vineColors.primaryText),
+        ExcludeSemantics(
+          child: Text(
+            label,
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.primaryText,
+            ),
+          ),
         ),
       ],
     );

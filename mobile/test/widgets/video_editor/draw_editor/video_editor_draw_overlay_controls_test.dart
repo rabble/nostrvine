@@ -20,6 +20,14 @@ class MockVideoEditorDrawBloc
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  final l10n = lookupAppLocalizations(const Locale('en'));
+  final closeLabel = l10n.videoEditorDiscardToolChangesSemanticLabel(
+    l10n.videoEditorDrawLabel,
+  );
+  final doneLabel = l10n.videoEditorApplyToolChangesSemanticLabel(
+    l10n.videoEditorDrawLabel,
+  );
+
   group('VideoEditorDrawOverlayControls', () {
     late MockVideoEditorDrawBloc mockBloc;
 
@@ -71,7 +79,7 @@ void main() {
         expect(
           find.byWidgetPredicate(
             (widget) =>
-                widget is Semantics && widget.properties.label == 'Close',
+                widget is Semantics && widget.properties.label == closeLabel,
           ),
           findsOneWidget,
         );
@@ -180,7 +188,7 @@ void main() {
         expect(
           find.byWidgetPredicate(
             (widget) =>
-                widget is Semantics && widget.properties.label == 'Done',
+                widget is Semantics && widget.properties.label == doneLabel,
           ),
           findsOneWidget,
         );
@@ -193,7 +201,7 @@ void main() {
         final semantics = tester.widget<Semantics>(
           find.byWidgetPredicate(
             (widget) =>
-                widget is Semantics && widget.properties.label == 'Done',
+                widget is Semantics && widget.properties.label == doneLabel,
           ),
         );
         expect(semantics.properties.button, isTrue);

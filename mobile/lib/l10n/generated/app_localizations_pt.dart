@@ -9675,9 +9675,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditorAddElementSemanticLabel => 'Adicionar elemento';
 
   @override
-  String get videoEditorCloseSemanticLabel => 'Fechar';
-
-  @override
   String get videoEditorDoneSemanticLabel => 'Concluído';
 
   @override
@@ -11221,4 +11218,37 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
       'Aplicar avisos de conteúdo selecionados';
+
+  @override
+  String get videoEditorCloseEditorSemanticLabel => 'Fechar o editor de vídeo';
+
+  @override
+  String get videoEditorContinueToPostDetailsSemanticLabel =>
+      'Continuar para os detalhes da publicação';
+
+  @override
+  String videoEditorDiscardToolChangesSemanticLabel(String tool) {
+    return 'Descartar alterações em $tool';
+  }
+
+  @override
+  String videoEditorApplyToolChangesSemanticLabel(String tool) {
+    return 'Aplicar alterações em $tool';
+  }
+
+  @override
+  String get videoEditorRemoveAudioSemanticLabel => 'Remover áudio';
+
+  @override
+  String rgbColorSemanticLabel(int red, int green, int blue) {
+    return 'RGB $red, $green, $blue';
+  }
+
+  @override
+  String videoEditorColorPickerSwatchSemanticLabel(
+    String picker,
+    String color,
+  ) {
+    return '$picker, $color';
+  }
 }

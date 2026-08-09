@@ -3225,7 +3225,6 @@
     },
     "videoEditorHueSemanticLabel": "Tonalità",
     "videoEditorAddElementSemanticLabel": "Aggiungi elemento",
-    "videoEditorCloseSemanticLabel": "Chiudi",
     "videoEditorDoneSemanticLabel": "Fatto",
     "videoEditorLevelSemanticLabel": "Livello",
     "videoMetadataClosePostDetailsSemanticLabel": "Chiudi dettagli del post",
@@ -4944,5 +4943,12 @@
   "userPickerConfirmSemanticLabel": "Conferma utenti selezionati",
   "userPickerClearSelectionSemanticLabel": "Cancella selezione utenti",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "Annulla selezione avvisi sui contenuti",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Applica gli avvisi sui contenuti selezionati"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Applica gli avvisi sui contenuti selezionati",
+  "videoEditorCloseEditorSemanticLabel": "Chiudi l’editor video",
+  "videoEditorContinueToPostDetailsSemanticLabel": "Continua ai dettagli del post",
+  "videoEditorDiscardToolChangesSemanticLabel": "Annulla le modifiche in {tool}",
+  "videoEditorApplyToolChangesSemanticLabel": "Applica le modifiche in {tool}",
+  "videoEditorRemoveAudioSemanticLabel": "Rimuovi audio",
+  "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
 }

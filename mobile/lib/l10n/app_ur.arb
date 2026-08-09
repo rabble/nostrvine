@@ -5825,7 +5825,6 @@
   },
   "videoEditorHueSemanticLabel": "رنگت",
   "videoEditorAddElementSemanticLabel": "عنصر شامل کریں",
-  "videoEditorCloseSemanticLabel": "بند کریں",
   "videoEditorDoneSemanticLabel": "ہو گیا",
   "videoEditorLevelSemanticLabel": "سطح",
   "videoMetadataClosePostDetailsSemanticLabel": "پوسٹ کی تفصیلات بند کریں",
@@ -6783,5 +6782,12 @@
   "userPickerConfirmSemanticLabel": "منتخب صارفین کی تصدیق کریں",
   "userPickerClearSelectionSemanticLabel": "صارف کا انتخاب صاف کریں",
   "videoMetadataContentWarningsPickerCancelSemanticLabel": "مواد کی وارننگز کا انتخاب منسوخ کریں",
-  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "منتخب مواد کی وارننگز لاگو کریں"
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "منتخب مواد کی وارننگز لاگو کریں",
+  "videoEditorCloseEditorSemanticLabel": "ویڈیو ایڈیٹر بند کریں",
+  "videoEditorContinueToPostDetailsSemanticLabel": "پوسٹ کی تفصیلات پر جائیں",
+  "videoEditorDiscardToolChangesSemanticLabel": "{tool} میں تبدیلیاں مسترد کریں",
+  "videoEditorApplyToolChangesSemanticLabel": "{tool} میں تبدیلیاں لاگو کریں",
+  "videoEditorRemoveAudioSemanticLabel": "آڈیو ہٹائیں",
+  "rgbColorSemanticLabel": "RGB {red}، {green}، {blue}",
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}، {color}"
 }
