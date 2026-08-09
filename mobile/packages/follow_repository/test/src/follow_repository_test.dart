@@ -1275,6 +1275,155 @@ void main() {
       });
     });
 
+    group('follower ordering', () {
+      const followerA =
+          'aa11111111111111111111111111111111111111111111111111111111111111';
+      const followerB =
+          'bb22222222222222222222222222222222222222222222222222222222222222';
+      const followerC =
+          'cc33333333333333333333333333333333333333333333333333333333333333';
+
+      Event contactListAt(String author, int createdAt) => Event(
+        author,
+        EventKind.contactList,
+        [
+          ['p', testTargetPubkey],
+        ],
+        '',
+        createdAt: createdAt,
+      );
+
+      /// Rebuilds [repository] with a REST source that answers [apiFollowers].
+      void withApiFollowers(List<String> apiFollowers) {
+        final mockFunnelcakeClient = _MockFunnelcakeApiClient();
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getFollowers(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => PaginatedPubkeys(pubkeys: apiFollowers));
+
+        repository = FollowRepository(
+          nostrClient: mockNostrClient,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
+          funnelcakeApiClient: mockFunnelcakeClient,
+          indexerRelayUrls: const [],
+        );
+      }
+
+      test('lists the most recent contact-list update first', () async {
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            contactListAt(followerA, 1000),
+            contactListAt(followerB, 3000),
+            contactListAt(followerC, 2000),
+          ],
+        );
+
+        final followers = await repository.getFollowers(testTargetPubkey);
+
+        expect(followers, equals([followerB, followerC, followerA]));
+      });
+
+      test('ranks a follower by their freshest contact-list event', () async {
+        // A relay that has not yet dropped the superseded kind 3 can answer
+        // with both revisions; the follower belongs at their newest.
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            contactListAt(followerA, 1000),
+            contactListAt(followerB, 2000),
+            contactListAt(followerA, 3000),
+          ],
+        );
+
+        final followers = await repository.getFollowers(testTargetPubkey);
+
+        expect(followers, equals([followerA, followerB]));
+      });
+
+      test(
+        'keeps the freshest event when the older one arrives last',
+        () async {
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+            (_) async => [
+              contactListAt(followerA, 3000),
+              contactListAt(followerB, 2000),
+              contactListAt(followerA, 1000),
+            ],
+          );
+
+          final followers = await repository.getFollowers(testTargetPubkey);
+
+          expect(followers, equals([followerA, followerB]));
+        },
+      );
+
+      test('sorts timestamped followers above untimestamped ones', () async {
+        // The REST source answers with bare pubkeys, so followerA and
+        // followerC have no timestamp to rank by.
+        withApiFollowers(const [followerA, followerC]);
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [contactListAt(followerB, 1000)]);
+
+        final followers = await repository.getFollowers(testTargetPubkey);
+
+        expect(followers, equals([followerB, followerA, followerC]));
+      });
+
+      test(
+        'times an untimestamped follower by the relay that has one',
+        () async {
+          withApiFollowers(const [followerA, followerB]);
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [contactListAt(followerB, 1000)]);
+
+          final followers = await repository.getFollowers(testTargetPubkey);
+
+          // followerB arrived second and untimestamped from the REST source;
+          // the relay's timestamp promotes it above followerA.
+          expect(followers, equals([followerB, followerA]));
+        },
+      );
+
+      test('reports the dated boundary for another user', () async {
+        withApiFollowers(const [followerC]);
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            contactListAt(followerA, 1000),
+            contactListAt(followerB, 2000),
+          ],
+        );
+
+        final result = await repository
+            .watchOthersFollowersCached(testTargetPubkey)
+            .last;
+
+        // followerC came from the REST source undated, so only the two relay
+        // followers are datable and the boundary sits at 2.
+        expect(
+          result.data.pubkeys,
+          equals([followerB, followerA, followerC]),
+        );
+        expect(result.data.datedCount, equals(2));
+      });
+
+      test('preserves arrival order among untimestamped followers', () async {
+        withApiFollowers(const [followerC, followerA, followerB]);
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => <Event>[]);
+
+        final followers = await repository.getFollowers(testTargetPubkey);
+
+        expect(followers, equals([followerC, followerA, followerB]));
+      });
+    });
+
     group('getMyFollowers', () {
       test('returns empty list when not authenticated', () async {
         when(() => mockNostrClient.publicKey).thenReturn('');
@@ -1404,9 +1553,54 @@ void main() {
         slowRelay.complete([contactListOf(follower2)]);
         await done;
 
-        // Later sources only add — the first emission stays a prefix.
-        expect(emissions.last, containsAll([follower1, follower2]));
+        // Later sources only add to the membership, but they do reorder it:
+        // follower2 arrives with a contact-list timestamp and outranks the
+        // REST source's untimestamped follower1.
+        expect(emissions.last, equals([follower2, follower1]));
         expect(emissions.first, equals([follower1]));
+      });
+
+      test('does not re-emit when a later source adds nothing', () async {
+        final slowRelay = Completer<List<Event>>();
+        repository = buildRepository(
+          relayResult: () => slowRelay.future,
+          apiFollowers: const [follower1],
+        );
+
+        final emissions = <List<String>>[];
+        final done = repository.streamMyFollowers().forEach(emissions.add);
+
+        await pumpEventQueue();
+        slowRelay.complete([contactListOf(follower1)]);
+        await done;
+
+        // The relay only timestamped a follower already on screen, and a
+        // one-element list cannot reorder — nothing to re-render.
+        expect(emissions, [
+          [follower1],
+        ]);
+      });
+
+      test('re-emits when a later source reorders the list', () async {
+        final slowRelay = Completer<List<Event>>();
+        repository = buildRepository(
+          relayResult: () => slowRelay.future,
+          apiFollowers: const [follower1, follower2],
+        );
+
+        final emissions = <List<String>>[];
+        final done = repository.streamMyFollowers().forEach(emissions.add);
+
+        await pumpEventQueue();
+        slowRelay.complete([contactListOf(follower2)]);
+        await done;
+
+        // Same membership, new order: the relay's timestamp for follower2
+        // pulls it above the still-untimestamped follower1.
+        expect(emissions, [
+          [follower1, follower2],
+          [follower2, follower1],
+        ]);
       });
 
       test('keeps emitting when a single source fails', () async {
@@ -1472,6 +1666,61 @@ void main() {
 
         expect(emissions, hasLength(1));
         expect(emissions.first.pubkeys, contains(follower1));
+      });
+
+      test('reports how many followers carry a timestamp', () async {
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            Event(
+              follower1,
+              3,
+              [
+                ['p', testCurrentUserPubkey],
+              ],
+              '',
+              createdAt: 1000,
+            ),
+            Event(
+              follower2,
+              3,
+              [
+                ['p', testCurrentUserPubkey],
+              ],
+              '',
+              createdAt: 2000,
+            ),
+          ],
+        );
+
+        final snapshot = await repository.watchMyFollowers().last;
+
+        // Both came from the relay, so the whole list is datable and a flip
+        // to oldest-first may reverse all of it.
+        expect(snapshot.pubkeys, equals([follower2, follower1]));
+        expect(snapshot.datedCount, equals(2));
+      });
+
+      test('carries the dated boundary into the cached emission', () async {
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            Event(
+              follower1,
+              3,
+              [
+                ['p', testCurrentUserPubkey],
+              ],
+              '',
+              createdAt: 1000,
+            ),
+          ],
+        );
+
+        // First pass populates the in-memory cache the second pass replays.
+        await repository.watchMyFollowers().toList();
+        final emissions = await repository.watchMyFollowers().toList();
+
+        expect(emissions, hasLength(2));
+        expect(emissions.first.datedCount, equals(1));
       });
 
       test('yields cached data then fresh data on second call', () async {
@@ -4761,7 +5010,86 @@ void main() {
         );
       });
 
-      group('_fetchFollowerPubkeysFromIndexers', () {
+      group('_fetchFollowerRefsFromIndexers', () {
+        test(
+          'orders indexer followers by their contact-list timestamp',
+          () async {
+            repository = FollowRepository(
+              nostrClient: mockNostrClient,
+              isCacheInitialized: () => cacheIsInitialized,
+              getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+              cacheUserEvent: cachedUserEvents.add,
+              indexerRelayUrls: const [indexerUrl],
+              relayFactory: fakeRelayFactory(
+                responses: [
+                  [
+                    'EVENT',
+                    'sub1',
+                    {'pubkey': followerPubkey1, 'created_at': 1000},
+                  ],
+                  [
+                    'EVENT',
+                    'sub1',
+                    {'pubkey': followerPubkey2, 'created_at': 2000},
+                  ],
+                  ['EOSE', 'sub1'],
+                ],
+              ),
+            );
+
+            when(
+              () => mockNostrClient.queryEvents(any()),
+            ).thenAnswer((_) async => []);
+
+            final followers = await repository.getFollowers(testTargetPubkey);
+
+            expect(followers, equals([followerPubkey2, followerPubkey1]));
+          },
+        );
+
+        test(
+          'ranks an indexer follower with no timestamp below a timed one',
+          () async {
+            repository = FollowRepository(
+              nostrClient: mockNostrClient,
+              isCacheInitialized: () => cacheIsInitialized,
+              getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+              cacheUserEvent: cachedUserEvents.add,
+              indexerRelayUrls: const [indexerUrl],
+              relayFactory: fakeRelayFactory(
+                responses: [
+                  [
+                    'EVENT',
+                    'sub1',
+                    {'pubkey': followerPubkey2},
+                  ],
+                  ['EOSE', 'sub1'],
+                ],
+              ),
+            );
+
+            // The connected relay answers first and with a timestamp, so the
+            // indexer's undated follower has to sort behind it.
+            when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+              (_) async => [
+                Event(
+                  followerPubkey1,
+                  EventKind.contactList,
+                  [
+                    ['p', testTargetPubkey],
+                  ],
+                  '',
+                  createdAt: 1000,
+                ),
+              ],
+            );
+
+            final followers = await repository.getFollowers(testTargetPubkey);
+
+            expect(followers, equals([followerPubkey1, followerPubkey2]));
+          },
+        );
+
         test(
           'returns follower pubkeys from indexer relay',
           () async {

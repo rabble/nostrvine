@@ -9,12 +9,20 @@ import 'package:follow_repository/src/follower_stats.dart';
 import 'package:follow_repository/src/followers_snapshot.dart';
 import 'package:follow_repository/src/following_snapshot.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
+import 'package:meta/meta.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
+
+/// One follower, as reported by a single source.
+///
+/// `followedAt` is the `created_at` of the follower's kind 3 contact-list
+/// event, or `null` when the source answered with a bare pubkey — the REST
+/// API does not expose event timestamps.
+typedef _FollowerRef = ({String pubkey, int? followedAt});
 
 /// Repository for managing follow relationships.
 /// Single source of truth for follow data.
@@ -115,6 +123,7 @@ class FollowRepository {
 
   // In-memory cache — my followers (populated after first fetch)
   List<String> _cachedMyFollowersPubkeys = [];
+  int _cachedMyFollowersDatedCount = 0;
   int _cachedMyFollowerCount = 0;
   bool _hasMyFollowersCache = false;
   static const _profileListCacheTtl = Duration(seconds: 30);
@@ -201,10 +210,17 @@ class FollowRepository {
   /// Queries Nostr relays for Kind 3 (contact list) events that mention
   /// the current user's pubkey in their 'p' tags.
   ///
-  /// Returns a list of unique pubkeys of users who follow the current user.
-  Future<List<String>> getMyFollowers() async {
-    final result = await _fetchFollowers(_nostrClient.publicKey);
-    _cachedMyFollowersPubkeys = result;
+  /// Returns a list of unique pubkeys of users who follow the current user,
+  /// newest follower first — see [_newestFirst] for what "newest" means and
+  /// where it is approximate.
+  Future<List<String>> getMyFollowers() async =>
+      (await _fetchMyFollowers()).pubkeys;
+
+  /// [getMyFollowers] plus the size of the datable prefix.
+  Future<({List<String> pubkeys, int datedCount})> _fetchMyFollowers() async {
+    final result = await _fetchOrderedFollowers(_nostrClient.publicKey);
+    _cachedMyFollowersPubkeys = result.pubkeys;
+    _cachedMyFollowersDatedCount = result.datedCount;
     _hasMyFollowersCache = true;
     return result;
   }
@@ -214,9 +230,28 @@ class FollowRepository {
   /// Queries Nostr relays for Kind 3 (contact list) events that mention
   /// the target pubkey in their 'p' tags.
   ///
-  /// Returns a list of unique pubkeys of users who follow the target.
+  /// Returns a list of unique pubkeys of users who follow the target, newest
+  /// follower first — see [_newestFirst].
   Future<List<String>> getFollowers(String pubkey) async {
     return _fetchFollowers(pubkey);
+  }
+
+  /// Fetches another user's followers and their authoritative count.
+  ///
+  /// The seam behind [watchOthersFollowersCached], for the same reason
+  /// [fetchMyFollowersSnapshot] is one.
+  @visibleForOverriding
+  Future<FollowersSnapshot> fetchFollowersSnapshot(String pubkey) async {
+    final followersFuture = _fetchOrderedFollowers(pubkey);
+    final countFuture = getFollowerCount(pubkey);
+    final followers = await followersFuture;
+    final countFromService = await countFuture;
+
+    return FollowersSnapshot(
+      pubkeys: followers.pubkeys,
+      count: max(followers.pubkeys.length, countFromService),
+      datedCount: followers.datedCount,
+    );
   }
 
   /// Get an accurate follower count for the current user.
@@ -242,20 +277,38 @@ class FollowRepository {
       yield FollowersSnapshot(
         pubkeys: List<String>.unmodifiable(_cachedMyFollowersPubkeys),
         count: _cachedMyFollowerCount,
+        datedCount: _cachedMyFollowersDatedCount,
       );
     }
 
     // Phase 2: Fetch fresh data from all sources in parallel
-    final results = await Future.wait([getMyFollowers(), getMyFollowerCount()]);
-    final pubkeys = results[0] as List<String>;
-    final countFromService = results[1] as int;
-    final count = max(pubkeys.length, countFromService);
+    yield await fetchMyFollowersSnapshot();
+  }
 
-    // Cache is updated by getMyFollowers/getMyFollowerCount; store the
-    // merged count so the next watchMyFollowers call yields it.
+  /// Fetches the current user's followers and their authoritative count.
+  ///
+  /// Shared by [watchMyFollowers] and [watchMyFollowersCached] so both build
+  /// the snapshot — including its dated-prefix boundary — the same way.
+  ///
+  /// This, rather than [getMyFollowers], is the seam to override in a test
+  /// double: a plain pubkey list cannot carry [FollowersSnapshot.datedCount].
+  @visibleForOverriding
+  Future<FollowersSnapshot> fetchMyFollowersSnapshot() async {
+    final followersFuture = _fetchMyFollowers();
+    final countFuture = getMyFollowerCount();
+    final followers = await followersFuture;
+    final countFromService = await countFuture;
+    final count = max(followers.pubkeys.length, countFromService);
+
+    // The list caches are updated by _fetchMyFollowers/getMyFollowerCount;
+    // store the merged count so the next watchMyFollowers call yields it.
     _cachedMyFollowerCount = count;
 
-    yield FollowersSnapshot(pubkeys: pubkeys, count: count);
+    return FollowersSnapshot(
+      pubkeys: followers.pubkeys,
+      count: count,
+      datedCount: followers.datedCount,
+    );
   }
 
   /// Maps the current user's following stream to [FollowingSnapshot] objects.
@@ -358,17 +411,7 @@ class FollowRepository {
   Stream<CacheResult<FollowersSnapshot>> watchMyFollowersCached() {
     return CacheSync.watchOne<FollowersSnapshot>(
       key: _myFollowersCacheKey(_nostrClient.publicKey),
-      fetch: () async {
-        final results = await Future.wait([
-          getMyFollowers(),
-          getMyFollowerCount(),
-        ]);
-        final pubkeys = results[0] as List<String>;
-        final countFromService = results[1] as int;
-        final count = max(pubkeys.length, countFromService);
-        _cachedMyFollowerCount = count;
-        return FollowersSnapshot(pubkeys: pubkeys, count: count);
-      },
+      fetch: fetchMyFollowersSnapshot,
       fromJson: FollowersSnapshot.fromJson,
       toJson: (s) => s.toJson(),
     );
@@ -412,16 +455,7 @@ class FollowRepository {
   }) {
     return CacheSync.watchOne<FollowersSnapshot>(
       key: _othersFollowersCacheKey(pubkey),
-      fetch: () async {
-        final results = await Future.wait([
-          getFollowers(pubkey),
-          getFollowerCount(pubkey),
-        ]);
-        final followers = results[0] as List<String>;
-        final countFromService = results[1] as int;
-        final count = max(followers.length, countFromService);
-        return FollowersSnapshot(pubkeys: followers, count: count);
-      },
+      fetch: () => fetchFollowersSnapshot(pubkey),
       fromJson: FollowersSnapshot.fromJson,
       toJson: (s) => s.toJson(),
       ttl: _profileListCacheTtl,
@@ -1017,7 +1051,7 @@ class FollowRepository {
   /// Timeout for fetching followers from relays
   static const _fetchFollowersTimeout = Duration(seconds: 8);
 
-  /// Fetch followers for a given pubkey.
+  /// Fetch followers for a given pubkey, newest follower first.
   ///
   /// Runs REST API, connected relay, and indexer relay queries in parallel
   /// and merges results (union of pubkeys). The REST API (Funnelcake) only
@@ -1026,60 +1060,133 @@ class FollowRepository {
   /// (relay.damus.io, purplepag.es) maintain broad kind 3 indexes and
   /// provide the most complete follower lists.
   ///
+  /// Ordering comes from [_newestFirst].
+  ///
   /// Returns empty list on timeout or failure.
-  Future<List<String>> _fetchFollowers(String pubkey) async {
+  Future<List<String>> _fetchFollowers(String pubkey) async =>
+      (await _fetchOrderedFollowers(pubkey)).pubkeys;
+
+  /// [_fetchFollowers] plus the size of the datable prefix.
+  ///
+  /// Snapshot builders need the boundary so `FollowersSnapshot.orderedBy` can
+  /// flip the list without dragging the undated followers to the top.
+  Future<({List<String> pubkeys, int datedCount})> _fetchOrderedFollowers(
+    String pubkey,
+  ) async {
     if (pubkey.isEmpty) {
-      return [];
+      return (pubkeys: <String>[], datedCount: 0);
     }
 
     // The API and indexer sources are best-effort here; a connected-relay
     // failure still fails the whole call, as it always has.
     final sources = _followerSources(pubkey);
-    final results = await Future.wait<List<String>>([
-      sources[0].catchError((_) => <String>[]),
+    final results = await Future.wait<List<_FollowerRef>>([
+      sources[0].catchError((_) => <_FollowerRef>[]),
       sources[1],
-      sources[2].catchError((_) => <String>[]),
+      sources[2].catchError((_) => <_FollowerRef>[]),
     ]);
     final apiFollowers = results[0];
     final relayFollowers = results[1];
     final indexerFollowers = results[2];
 
     // Merge all sources (union of pubkeys)
-    final merged = <String>{
+    final merged = _newestFirst([
       ...apiFollowers,
       ...relayFollowers,
       ...indexerFollowers,
-    };
+    ]);
 
     Log.info(
       'Followers for $pubkey: '
       'API=${apiFollowers.length}, '
       'relays=${relayFollowers.length}, '
       'indexers=${indexerFollowers.length}, '
-      'merged=${merged.length}',
+      'merged=${merged.pubkeys.length}',
       name: 'FollowRepository',
       category: LogCategory.system,
     );
 
-    return merged.toList();
+    return merged;
+  }
+
+  /// Orders follower references newest first and drops duplicates.
+  ///
+  /// `followedAt` is the `created_at` of the follower's kind 3 event. Kind 3
+  /// is replaceable, so that is when they last edited their contact list, not
+  /// the moment they followed — but for someone who *just* followed, the two
+  /// are the same, which is what makes a new follower reachable at the top of
+  /// the list. The REST source answers with bare pubkeys and no timestamp;
+  /// those keep their arrival order behind every timestamped follower rather
+  /// than being guessed at.
+  ///
+  /// When several sources report the same follower, the freshest timestamp
+  /// wins.
+  ///
+  /// `datedCount` counts the timestamped followers. Because every one of them
+  /// sorts ahead of every undated one, it doubles as the index where the
+  /// undated tail begins.
+  static ({List<String> pubkeys, int datedCount}) _newestFirst(
+    Iterable<_FollowerRef> refs,
+  ) {
+    final followedAt = <String, int?>{};
+    final arrival = <String, int>{};
+
+    for (final ref in refs) {
+      if (!arrival.containsKey(ref.pubkey)) {
+        arrival[ref.pubkey] = arrival.length;
+        followedAt[ref.pubkey] = ref.followedAt;
+        continue;
+      }
+      final known = followedAt[ref.pubkey];
+      final incoming = ref.followedAt;
+      if (incoming != null && (known == null || incoming > known)) {
+        followedAt[ref.pubkey] = incoming;
+      }
+    }
+
+    // List.sort is not stable, and arrival order is the only ordering the
+    // untimestamped REST followers have — tie-break on it explicitly.
+    final ordered = arrival.keys.toList()
+      ..sort((a, b) {
+        final left = followedAt[a];
+        final right = followedAt[b];
+        if (left != right) {
+          if (left == null) return 1;
+          if (right == null) return -1;
+          return right.compareTo(left);
+        }
+        return arrival[a]!.compareTo(arrival[b]!);
+      });
+
+    return (
+      pubkeys: ordered,
+      datedCount: followedAt.values.where((at) => at != null).length,
+    );
   }
 
   /// The three follower sources, started in parallel.
   ///
   /// Order is fixed — `[REST API, connected relays, indexer relays]` — because
-  /// [_fetchFollowers] indexes into the results to log per-source counts.
+  /// [_fetchFollowers] indexes into the results to log per-source counts, and
+  /// because [_newestFirst] falls back to arrival order for the REST source,
+  /// which carries no timestamp.
   /// Failures are *not* swallowed here; each caller applies its own policy.
-  List<Future<List<String>>> _followerSources(String pubkey) {
+  List<Future<List<_FollowerRef>>> _followerSources(String pubkey) {
     final apiFuture = (_funnelcakeApiClient?.isAvailable ?? false)
         ? _funnelcakeApiClient!
               .getFollowers(pubkey: pubkey, limit: 5000)
-              .then((r) => r.pubkeys)
-        : Future<List<String>>.value(const []);
+              .then(
+                (r) => [
+                  for (final follower in r.pubkeys)
+                    (pubkey: follower, followedAt: null),
+                ],
+              )
+        : Future<List<_FollowerRef>>.value(const []);
 
     return [
       apiFuture,
       _fetchFollowersFromRelays(pubkey),
-      _fetchFollowerPubkeysFromIndexers(pubkey),
+      _fetchFollowerRefsFromIndexers(pubkey),
     ];
   }
 
@@ -1093,6 +1200,9 @@ class FollowRepository {
   ///
   /// The REST API typically answers in ~150ms while indexer relays take up to
   /// ~2s, so the first emission carries the large majority of the final list.
+  /// Each emission is ordered newest follower first, so a late relay can move
+  /// an already-emitted follower up once it supplies a timestamp the REST
+  /// source lacked.
   ///
   /// A failing source is skipped — a working one still yields a usable list,
   /// and a strict consumer keeps filtering rather than falling back. The
@@ -1108,20 +1218,23 @@ class FollowRepository {
       return;
     }
 
-    final merged = <String>{};
+    final merged = <_FollowerRef>[];
+    var lastEmitted = const <String>[];
     Object? lastError;
     StackTrace? lastStackTrace;
 
     final guarded = _followerSources(pubkey).map(
-      (source) => source.then<(List<String>, Object?, StackTrace?)>(
-        (pubkeys) => (pubkeys, null, null),
+      (source) => source.then<(List<_FollowerRef>, Object?, StackTrace?)>(
+        (refs) => (refs, null, null),
         onError: (Object error, StackTrace stackTrace) =>
-            (const <String>[], error, stackTrace),
+            (const <_FollowerRef>[], error, stackTrace),
       ),
     );
 
-    await for (final (pubkeys, error, stackTrace)
-        in Stream<(List<String>, Object?, StackTrace?)>.fromFutures(guarded)) {
+    await for (final (refs, error, stackTrace)
+        in Stream<(List<_FollowerRef>, Object?, StackTrace?)>.fromFutures(
+          guarded,
+        )) {
       if (error != null) {
         lastError = error;
         lastStackTrace = stackTrace;
@@ -1132,12 +1245,15 @@ class FollowRepository {
         );
         continue;
       }
-      final before = merged.length;
-      merged.addAll(pubkeys);
-      // The union only grows, so an unchanged size means this source added
-      // nobody — emitting again would just churn the consumer's UI.
-      if (merged.length != before) {
-        yield List<String>.unmodifiable(merged);
+      merged.addAll(refs);
+      final ordered = _newestFirst(merged).pubkeys;
+      // The union only grows, but a later source can still reorder it by
+      // supplying a timestamp for a follower the REST source reported bare.
+      // Comparing the ordered list keeps the "nobody new, nothing moved"
+      // emission from churning the consumer's UI.
+      if (!_sameOrder(ordered, lastEmitted)) {
+        lastEmitted = ordered;
+        yield List<String>.unmodifiable(ordered);
       }
     }
 
@@ -1146,13 +1262,25 @@ class FollowRepository {
     }
 
     if (pubkey == _nostrClient.publicKey) {
-      _cachedMyFollowersPubkeys = merged.toList();
+      _cachedMyFollowersPubkeys = List<String>.of(lastEmitted);
       _hasMyFollowersCache = true;
     }
   }
 
+  /// Whether both lists hold the same pubkeys in the same positions.
+  static bool _sameOrder(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
   /// Query connected relays for kind 3 events mentioning a pubkey.
-  Future<List<String>> _fetchFollowersFromRelays(String pubkey) async {
+  ///
+  /// Carries each event's `created_at` through so [_newestFirst] can order
+  /// the merged list; duplicates are collapsed there.
+  Future<List<_FollowerRef>> _fetchFollowersFromRelays(String pubkey) async {
     try {
       final events = await _nostrClient
           .queryEvents([
@@ -1171,13 +1299,10 @@ class FollowRepository {
             },
           );
 
-      final followers = <String>[];
-      for (final event in events) {
-        if (!followers.contains(event.pubkey)) {
-          followers.add(event.pubkey);
-        }
-      }
-      return followers;
+      return [
+        for (final event in events)
+          (pubkey: event.pubkey, followedAt: event.createdAt),
+      ];
     } on TimeoutException {
       Log.warning(
         'Followers relay query timed out for $pubkey',
@@ -1192,40 +1317,42 @@ class FollowRepository {
   ///
   /// Returns actual pubkeys (not just a count) so results can be merged
   /// with API and connected relay results.
-  Future<List<String>> _fetchFollowerPubkeysFromIndexers(String pubkey) async {
-    final allFollowers = <String>{};
-
+  Future<List<_FollowerRef>> _fetchFollowerRefsFromIndexers(
+    String pubkey,
+  ) async {
     final results = await Future.wait(
       _indexerRelayUrls.map(
-        (url) => _queryIndexerForFollowerPubkeys(
+        (url) => _queryIndexerForFollowerRefs(
           url,
           pubkey,
-        ).catchError((_) => <String>[]),
+        ).catchError((_) => <_FollowerRef>[]),
       ),
     );
 
-    results.forEach(allFollowers.addAll);
+    final refs = results.expand((indexerRefs) => indexerRefs).toList();
 
     Log.debug(
       'Indexer follower pubkeys: '
-      '${allFollowers.length} for $pubkey',
+      '${refs.map((ref) => ref.pubkey).toSet().length} for $pubkey',
       name: 'FollowRepository',
       category: LogCategory.system,
     );
 
-    return allFollowers.toList();
+    return refs;
   }
 
   /// Query a single indexer relay for kind 3 events mentioning pubkey.
-  /// Returns the list of follower pubkeys.
-  Future<List<String>> _queryIndexerForFollowerPubkeys(
+  ///
+  /// Returns each follower with the event's `created_at`, so [_newestFirst]
+  /// can order them.
+  Future<List<_FollowerRef>> _queryIndexerForFollowerRefs(
     String indexerUrl,
     String pubkey,
   ) async {
     final relayStatus = RelayStatus(indexerUrl);
     final relay = _relayFactory(indexerUrl, relayStatus);
-    final completer = Completer<List<String>>();
-    final followerPubkeys = <String>{};
+    final completer = Completer<List<_FollowerRef>>();
+    final followers = <_FollowerRef>[];
     final subscriptionId = 'fr_${DateTime.now().millisecondsSinceEpoch}';
 
     relay.onMessage = (relay, jsonMsg) async {
@@ -1237,11 +1364,14 @@ class FollowRepository {
         final eventJson = jsonMsg[2] as Map<String, dynamic>;
         final eventPubkey = eventJson['pubkey'] as String?;
         if (eventPubkey != null) {
-          followerPubkeys.add(eventPubkey);
+          followers.add((
+            pubkey: eventPubkey,
+            followedAt: (eventJson['created_at'] as num?)?.toInt(),
+          ));
         }
       } else if (messageType == 'EOSE') {
         if (!completer.isCompleted) {
-          completer.complete(followerPubkeys.toList());
+          completer.complete(List<_FollowerRef>.of(followers));
         }
       }
     };
@@ -1260,7 +1390,7 @@ class FollowRepository {
 
       final result = await completer.future.timeout(
         _fetchFollowersTimeout,
-        onTimeout: followerPubkeys.toList,
+        onTimeout: () => List<_FollowerRef>.of(followers),
       );
 
       await relay.send(<dynamic>['CLOSE', subscriptionId]);
@@ -1271,7 +1401,7 @@ class FollowRepository {
         name: 'FollowRepository',
         category: LogCategory.system,
       );
-      return followerPubkeys.toList();
+      return List<_FollowerRef>.of(followers);
     } finally {
       try {
         await relay.disconnect();
