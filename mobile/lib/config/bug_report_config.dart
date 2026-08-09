@@ -3,6 +3,28 @@
 
 import 'package:unified_logger/unified_logger.dart';
 
+/// Separator between a credential key and its value: `:`, `:=`, `=` or `=>`,
+/// with an optional quote before it. Requiring one is what keeps the prose
+/// "password reset failed" intact - a bare space is not evidence of a secret.
+const _credentialSeparator = r'''["']?\s*(?::=?|=>?)\s*''';
+
+/// A credential value.
+///
+/// A quoted value is consumed to its closing quote, escaped quotes included,
+/// so a multi-word secret is redacted whole. Partial redaction is worse than
+/// none: the `[REDACTED]` marker reads as proof the value was handled while
+/// the rest of the secret sits next to it.
+///
+/// Both quoted branches require the closing quote and stop at a newline, so an
+/// unbalanced quote (`password: "oops` typed into a bug report) falls through
+/// to the unquoted branch and costs one word, rather than swallowing every
+/// field printed after it. The optional `bearer`/`basic`/`token` scheme word
+/// keeps `Authorization: Bearer <jwt>` from redacting only the word "Bearer".
+const _credentialValue =
+    r'''(?:"(?:\\.|[^"\\\n])*"'''
+    r"""|'(?:\\.|[^'\\\n])*'"""
+    r'''|["']?(?:(?:bearer|basic|token)\s+)?[^\s"',;}]+)''';
+
 /// Configuration for bug report system
 class BugReportConfig {
   /// API endpoint for submitting bug reports
@@ -47,22 +69,30 @@ class BugReportConfig {
     // redact public event IDs and pubkeys. Hex-form private keys are an
     // accepted residual risk for diagnostic triage value.
     // NIP-46 bunker secrets are covered by the generic secret pattern below.
-    // Credential key/value pairs. Three rules keep this honest:
-    //  - Keys are enumerated, never `key + any suffix`, so `token_count`,
-    //    `tokenization`, `passwordless` and `secretary` keep their values.
-    //  - A `:` or `=` separator is required (quotes optional either side), so
-    //    serialized `{"token":"..."}` is caught while the prose "password reset
-    //    failed" keeps its next word.
-    //  - A quoted value is consumed to its closing quote, so a multi-word
-    //    secret is redacted whole. Partial redaction would be worse than none:
-    //    it leaves the secret in cleartext next to a [REDACTED] marker.
+    //
+    // Credential key/value pairs. Keys are enumerated words, optionally
+    // extended by `_`/`-` segments (`AWS_SECRET_ACCESS_KEY`,
+    // `password_confirmation`), while a bare lowercase continuation is left
+    // alone as an ordinary English word (`tokenization`, `passwordless`,
+    // `secretary`). Because there is no leading boundary, an enumerated word
+    // is also matched at the end of a longer key - that is what covers
+    // `clientSecret`, and it is why `cancellationToken: active` and
+    // `token_count: 5` are redacted too. That over-redaction is deliberate:
+    // no key-only rule separates `token_value` from `token_count`, and losing
+    // a counter costs less than leaking a credential.
     RegExp(
       '(?:api[_-]?key|private[_-]?key|secret[_-]?key|access[_-]?token'
       '|refresh[_-]?token|auth[_-]?token|authorization|password|passwd'
-      '|token|secret)'
-      r'''["']?\s*(?::=?|=>?)\s*'''
-      r'''(?:"[^"]*"?|'[^']*'?|(?:(?:bearer|basic|token)\s+)?[^\s"',;}]+)''',
+      r'|token|secret)(?:[_-]\w+)*'
+      '$_credentialSeparator$_credentialValue',
       caseSensitive: false,
+    ),
+    // camelCase compounds (`tokenValue`, `passwordHash`). Case-sensitive, so
+    // an uppercase continuation is required - that is what separates these
+    // from `tokenization`.
+    RegExp(
+      r'(?:password|passwd|token|secret)(?:[A-Z]\w*)+'
+      '$_credentialSeparator$_credentialValue',
     ),
     RegExp(r'\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b', caseSensitive: false),
   ];
