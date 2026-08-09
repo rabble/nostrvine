@@ -246,6 +246,11 @@ void main() {
             for (var i = 0; i < 3; i++)
               service.render(clip('a$i', playbackSpeed: 2)),
           ];
+          // Both slots have to be occupied before the cap means anything, and
+          // the fake says so itself. pumpEventQueue only drains the microtask
+          // queue a fixed number of times, which is a race against the awaits
+          // the service makes on the way to the encoder.
+          await native.renderStartedAt(1).future;
           await pumpEventQueue();
 
           expect(
@@ -255,9 +260,11 @@ void main() {
                 'the third clip must queue instead of opening a 3rd session',
           );
 
-          // Freeing one slot lets exactly one queued clip through.
+          // Freeing one slot lets exactly one queued clip through — but the
+          // slot is only released after the fake's real writeAsString lands,
+          // and pumpEventQueue does not wait for disk I/O.
           native.allowRenderToFinishAt(0).complete();
-          await pumpEventQueue();
+          await native.renderStartedAt(2).future;
           expect(native.renderCount, 3);
 
           native
@@ -276,6 +283,7 @@ void main() {
           for (var i = 0; i < 3; i++)
             service.render(clip('a$i', playbackSpeed: 2)),
         ];
+        await native.renderStartedAt(1).future;
         await pumpEventQueue();
         expect(native.renderCount, 2);
 
