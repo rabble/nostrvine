@@ -6040,6 +6040,20 @@ class AppLocalizationsBg extends AppLocalizations {
       'You can only message official Divine accounts';
 
   @override
+  String get dmSendBlockedRetiredMessage =>
+      'Никой не чете този разговор. Вместо това пишете на Divine Moderation.';
+
+  @override
+  String get dmRetiredThreadClosedTitle => 'Този разговор е затворен.';
+
+  @override
+  String get dmRetiredThreadClosedBody =>
+      'Преместихме Divine Moderation в нов профил. Този вече не се чете от никого.';
+
+  @override
+  String get dmRetiredThreadOpenSupport => 'Пишете на Divine Moderation';
+
+  @override
   String get dmSendFailedMessage => 'Съобщението не мина';
 
   @override

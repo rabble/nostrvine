@@ -5692,6 +5692,20 @@ class AppLocalizationsZh extends AppLocalizations {
   String get dmSendBlockedMessage => '你只能给 Divine 官方账号发私信';
 
   @override
+  String get dmSendBlockedRetiredMessage =>
+      '没有人会看到这个对话。请改为给 Divine Moderation 发私信。';
+
+  @override
+  String get dmRetiredThreadClosedTitle => '此对话已关闭。';
+
+  @override
+  String get dmRetiredThreadClosedBody =>
+      '我们已把 Divine Moderation 迁移到新账号。这个账号已经没人看了。';
+
+  @override
+  String get dmRetiredThreadOpenSupport => '给 Divine Moderation 发私信';
+
+  @override
   String get dmSendFailedMessage => '消息发送失败';
 
   @override

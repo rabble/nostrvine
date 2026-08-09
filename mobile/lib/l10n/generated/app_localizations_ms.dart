@@ -6029,6 +6029,21 @@ class AppLocalizationsMs extends AppLocalizations {
       'Anda hanya boleh menghantar mesej kepada akaun rasmi Divine';
 
   @override
+  String get dmSendBlockedRetiredMessage =>
+      'Tiada sesiapa membaca perbualan ini. Hantar mesej kepada Divine Moderation sebaliknya.';
+
+  @override
+  String get dmRetiredThreadClosedTitle => 'Perbualan ini telah ditutup.';
+
+  @override
+  String get dmRetiredThreadClosedBody =>
+      'Kami telah memindahkan Divine Moderation ke akaun baharu. Akaun ini tidak dibaca lagi.';
+
+  @override
+  String get dmRetiredThreadOpenSupport =>
+      'Hantar mesej kepada Divine Moderation';
+
+  @override
   String get dmSendFailedMessage => 'Mesej tidak dapat dihantar';
 
   @override

@@ -6134,6 +6134,20 @@ class AppLocalizationsPl extends AppLocalizations {
       'You can only message official Divine accounts';
 
   @override
+  String get dmSendBlockedRetiredMessage =>
+      'Nikt nie czyta tej rozmowy. Napisz do Divine Moderation.';
+
+  @override
+  String get dmRetiredThreadClosedTitle => 'Ta rozmowa jest zamknięta.';
+
+  @override
+  String get dmRetiredThreadClosedBody =>
+      'Przenieśliśmy Divine Moderation na nowe konto. Tego nikt już nie czyta.';
+
+  @override
+  String get dmRetiredThreadOpenSupport => 'Napisz do Divine Moderation';
+
+  @override
   String get dmSendFailedMessage => 'Nie udało się wysłać wiadomości';
 
   @override

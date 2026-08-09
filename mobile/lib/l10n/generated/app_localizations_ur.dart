@@ -5990,6 +5990,20 @@ class AppLocalizationsUr extends AppLocalizations {
       'آپ صرف سرکاری Divine اکاؤنٹس کو پیغام بھیج سکتے ہیں';
 
   @override
+  String get dmSendBlockedRetiredMessage =>
+      'یہ گفتگو کوئی نہیں پڑھ رہا۔ اس کے بجائے Divine Moderation کو پیغام بھیجیں۔';
+
+  @override
+  String get dmRetiredThreadClosedTitle => 'یہ گفتگو بند ہو چکی ہے۔';
+
+  @override
+  String get dmRetiredThreadClosedBody =>
+      'ہم نے Divine Moderation کو نئے اکاؤنٹ پر منتقل کر دیا ہے۔ اسے اب کوئی نہیں پڑھتا۔';
+
+  @override
+  String get dmRetiredThreadOpenSupport => 'Divine Moderation کو پیغام بھیجیں';
+
+  @override
   String get dmSendFailedMessage => 'پیغام نہیں بھیجا جا سکا';
 
   @override

@@ -6057,6 +6057,20 @@ class AppLocalizationsFil extends AppLocalizations {
       'You can only message official Divine accounts';
 
   @override
+  String get dmSendBlockedRetiredMessage =>
+      'Walang nagbabasa ng usapang ito. Mag-message na lang sa Divine Moderation.';
+
+  @override
+  String get dmRetiredThreadClosedTitle => 'Sarado na ang usapang ito.';
+
+  @override
+  String get dmRetiredThreadClosedBody =>
+      'Inilipat namin ang Divine Moderation sa bagong account. Wala nang nagbabasa nito.';
+
+  @override
+  String get dmRetiredThreadOpenSupport => 'I-message ang Divine Moderation';
+
+  @override
   String get dmSendFailedMessage => 'Hindi naipadala ang message';
 
   @override

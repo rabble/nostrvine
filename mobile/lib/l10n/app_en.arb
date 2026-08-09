@@ -3554,6 +3554,22 @@
     "description": "SnackBar text shown when a protected minor (13-15) tries to DM a non-approved account (#176). Neutral, no retry action."
 
   },
+  "dmSendBlockedRetiredMessage": "Nobody is reading this conversation. Message Divine Moderation instead.",
+  "@dmSendBlockedRetiredMessage": {
+    "description": "SnackBar text shown when a send is refused because the recipient is a moderation account Divine has rotated away from (#6416). Used instead of `dmSendBlockedMessage`, whose copy is wrong here: a retired moderation key IS an official Divine account, it is just one nobody reads any more. Reached only by deep link, queue drain, or share-to-DM — the conversation itself shows `dmRetiredThreadClosedTitle` in place of the composer."
+  },
+  "dmRetiredThreadClosedTitle": "This conversation is closed.",
+  "@dmRetiredThreadClosedTitle": {
+    "description": "Heading of the notice that replaces the message composer in a DM thread keyed on a retired Divine Moderation account (#6416)."
+  },
+  "dmRetiredThreadClosedBody": "We moved Divine Moderation to a new account. Nobody reads this one anymore.",
+  "@dmRetiredThreadClosedBody": {
+    "description": "Body of the closed-thread notice in a retired Divine Moderation DM thread (#6416), below `dmRetiredThreadClosedTitle`. Deliberately promises no reply: the current support inbox is ingested but only lightly staffed, so copy implying someone is waiting would overstate it. 'Divine Moderation' is the account name — keep it as shown in `inboxSupportRowTitle` for this locale."
+  },
+  "dmRetiredThreadOpenSupport": "Message Divine Moderation",
+  "@dmRetiredThreadOpenSupport": {
+    "description": "Action on the closed-thread notice (#6416) that opens the current pinned Divine Moderation conversation. A redirect, not a promise of a response. 'Divine Moderation' is the account name — keep it as shown in `inboxSupportRowTitle` for this locale."
+  },
   "dmSendFailedMessage": "Message couldn't be sent",
   "@dmSendFailedMessage": {
     "description": "Accessibility announcement text, and the recovery bottom sheet's title, shown in a DM conversation when a send fails (relay error, signer error, network error). The bottom sheet pairs it with `dmSendFailedSubtitle` and the `dmMessageActionRetrySend` / `dmMessageActionCancelSend` actions."

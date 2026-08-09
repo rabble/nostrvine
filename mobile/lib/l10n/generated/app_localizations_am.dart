@@ -5861,6 +5861,20 @@ class AppLocalizationsAm extends AppLocalizations {
       'You can only message official Divine accounts';
 
   @override
+  String get dmSendBlockedRetiredMessage =>
+      'ይህን ውይይት የሚያነበው የለም። በምትኩ Divine Moderation ላይ መልእክት ይላኩ።';
+
+  @override
+  String get dmRetiredThreadClosedTitle => 'ይህ ውይይት ተዘግቷል።';
+
+  @override
+  String get dmRetiredThreadClosedBody =>
+      'Divine Moderation ወደ አዲስ መለያ አዛውረናል። ይህን መለያ የሚያነበው የለም።';
+
+  @override
+  String get dmRetiredThreadOpenSupport => 'Divine Moderation ላይ መልእክት ይላኩ';
+
+  @override
   String get dmSendFailedMessage => 'መልዕክቱ መላክ አልተሳካም';
 
   @override
