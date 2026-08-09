@@ -246,5 +246,88 @@ void main() {
             'listed as a follow (#6903)',
       );
     });
+
+    // The issue's "starting points" section assumes the profile path is fine
+    // because `other_profile_bloc.dart:384` already unfollows. It is only fine
+    // once the follow list has loaded: `isFollowing` is
+    // `_followingPubkeys.contains(pubkey)` (follow_repository.dart:197) over a
+    // list that starts empty, and `initialize()` is fired unawaited. So the
+    // guard reads false during a cold start and the unfollow never runs.
+    testWidgets(
+      'blocking during cold start skips the unfollow on the profile path too',
+      (tester) async {
+        final relay = await FakeRelay.start();
+        addTearDown(relay.stop);
+
+        // Session one: the user follows the target. This publishes the kind-3
+        // that an external viewer resolves.
+        final warm = await buildStack(relay);
+        await warm.follows.follow(targetPubkey);
+        await relay.awaitPublished(3);
+        expect(relay.publicFollows, contains(targetPubkey));
+
+        // Session two is a cold start: a fresh repository whose in-memory list
+        // has not been seeded, exactly as on a new install or new sign-in.
+        final cold = await buildStack(relay);
+        expect(
+          cold.follows.isFollowing(targetPubkey),
+          isFalse,
+          reason:
+              'precondition: the cold repository answers false for a pubkey '
+              'that is genuinely followed',
+        );
+
+        // Verbatim the guard other_profile_bloc.dart:384-386 applies.
+        await cold.blocks.blockUser(targetPubkey, ourPubkey: authorPubkey);
+        if (cold.follows.isFollowing(targetPubkey)) {
+          await cold.follows.toggleFollow(targetPubkey);
+        }
+
+        await relay.awaitPublished(10000);
+        expect(cold.blocks.isBlocked(targetPubkey), isTrue);
+
+        // Only the follow ever published a kind-3; the block produced none.
+        expect(
+          relay.publishedKinds.where((k) => k == 3).length,
+          1,
+          reason: 'the block published no kind-3 at all',
+        );
+        expect(
+          relay.publicFollows,
+          isNot(contains(targetPubkey)),
+          reason:
+              'blocking while the follow list is still cold silently skips '
+              'the unfollow, so the profile path is affected too (#6903)',
+        );
+      },
+    );
+
+    // Guards the fix against the trap in follow_repository.dart:1352-1358:
+    // `toggleFollow` branches on the same cold `isFollowing`, so a
+    // repository-level fix that reaches for `toggleFollow` instead of
+    // `unfollow` would FOLLOW the account the user just blocked.
+    testWidgets('toggleFollow on a cold list follows instead of unfollowing', (
+      tester,
+    ) async {
+      final relay = await FakeRelay.start();
+      addTearDown(relay.stop);
+
+      final warm = await buildStack(relay);
+      await warm.follows.follow(targetPubkey);
+      await relay.awaitPublished(3);
+
+      final cold = await buildStack(relay);
+      await cold.follows.toggleFollow(targetPubkey);
+      await relay.awaitPublished(3, count: 2);
+
+      expect(
+        cold.follows.followingPubkeys,
+        contains(targetPubkey),
+        reason:
+            'toggleFollow read isFollowing() as false and took the follow '
+            'branch — a repository-level fix must call unfollow(), never '
+            'toggleFollow()',
+      );
+    });
   });
 }
