@@ -9546,7 +9546,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorLevelSemanticLabel => 'المستوى';
 
   @override
-  String get videoMetadataBackSemanticLabel => 'رجوع';
+  String get videoMetadataClosePostDetailsSemanticLabel =>
+      'إغلاق تفاصيل المنشور';
 
   @override
   String get videoMetadataDismissHelpDialogSemanticLabel =>
@@ -9603,6 +9604,10 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get videoMetadataAudioReuseSubtitle =>
       'اسمح للآخرين بحفظ صوت هذا الفيديو وإعادة استخدامه.';
+
+  @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'المتعاونون';
@@ -10370,11 +10375,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoMetadataEditCoverTitle => 'تعديل الغلاف';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => 'إغلاق محرر الغلاف';
+  String get videoMetadataEditCoverCloseSemanticLabel => 'تجاهل تغييرات الغلاف';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'تأكيد اختيار الغلاف';
+      'استخدام الإطار المحدد كغلاف للفيديو';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
@@ -11025,4 +11030,29 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+
+  @override
+  String get videoMetadataTagsPickerCancelSemanticLabel =>
+      'إلغاء اختيار الوسوم';
+
+  @override
+  String get videoMetadataTagsPickerConfirmSemanticLabel =>
+      'تطبيق الوسوم المحددة';
+
+  @override
+  String get userPickerCancelSemanticLabel => 'إلغاء اختيار المستخدمين';
+
+  @override
+  String get userPickerConfirmSemanticLabel => 'تأكيد المستخدمين المحددين';
+
+  @override
+  String get userPickerClearSelectionSemanticLabel => 'مسح اختيار المستخدمين';
+
+  @override
+  String get videoMetadataContentWarningsPickerCancelSemanticLabel =>
+      'إلغاء اختيار تحذيرات المحتوى';
+
+  @override
+  String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
+      'تطبيق تحذيرات المحتوى المحددة';
 }

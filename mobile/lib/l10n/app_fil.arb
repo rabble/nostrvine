@@ -2121,7 +2121,7 @@
     "videoEditorCloseSemanticLabel": "Isara",
     "videoEditorDoneSemanticLabel": "Tapos na",
     "videoEditorLevelSemanticLabel": "Level",
-    "videoMetadataBackSemanticLabel": "Bumalik",
+    "videoMetadataClosePostDetailsSemanticLabel": "Isara ang mga detalye ng post",
     "videoMetadataDismissHelpDialogSemanticLabel": "I-dismiss ang help dialog",
     "videoMetadataGotItButton": "Sige na!",
     "videoMetadataLimitReachedWarning": "Naabot na ang 64KB limit. Mag-alis ng content para magpatuloy.",
@@ -2218,8 +2218,8 @@
     "videoMetadataC2paMissingSkip": "Laktawan",
     "videoMetadataGenerationFailed": "Nabigo ang paggawa",
     "videoMetadataEditCoverTitle": "Edit cover",
-    "videoMetadataEditCoverCloseSemanticLabel": "Close cover editor",
-    "videoMetadataEditCoverConfirmSemanticLabel": "Confirm cover selection",
+    "videoMetadataEditCoverCloseSemanticLabel": "I-discard ang mga pagbabago sa cover",
+    "videoMetadataEditCoverConfirmSemanticLabel": "Gamitin ang napiling frame bilang cover ng video",
     "videoMetadataEditCoverStripSemanticLabel": "Seek through video to select cover frame",
     "bugReportSendFailed": "Hindi naipadala ang bug report. Subukan ulit mamaya.",
     "bugReportSendReport": "Ipadala ang Report",
@@ -3523,5 +3523,12 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "Alisin ang relay"
+  "relaySettingsRemoveRelayTooltip": "Alisin ang relay",
+  "videoMetadataTagsPickerCancelSemanticLabel": "Kanselahin ang pagpili ng mga tag",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "Ilapat ang mga napiling tag",
+  "userPickerCancelSemanticLabel": "Kanselahin ang pagpili ng user",
+  "userPickerConfirmSemanticLabel": "Kumpirmahin ang mga napiling user",
+  "userPickerClearSelectionSemanticLabel": "I-clear ang pagpili ng user",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "Kanselahin ang pagpili ng mga babala sa content",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Ilapat ang mga napiling babala sa content"
 }

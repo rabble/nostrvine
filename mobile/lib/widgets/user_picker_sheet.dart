@@ -373,6 +373,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
             icon: .x,
             type: .secondary,
             size: .small,
+            semanticLabel: context.l10n.userPickerCancelSemanticLabel,
             onPressed: context.pop,
           ),
           title: _UserPickerTitle(
@@ -385,6 +386,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
               ? DivineIconButton(
                   icon: .check,
                   size: .small,
+                  semanticLabel: context.l10n.userPickerConfirmSemanticLabel,
                   onPressed: _handleDone,
                 )
               : widget.initialSelectedProfiles.isNotEmpty
@@ -392,6 +394,8 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
                   icon: .trash,
                   size: .small,
                   type: .error,
+                  semanticLabel:
+                      context.l10n.userPickerClearSelectionSemanticLabel,
                   onPressed: _handleClear,
                 )
               : null,
@@ -541,69 +545,74 @@ class _UserSearchTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textColor = context.vineColors.onSurface;
+    final action = isDisabled
+        ? context.l10n.userPickerAlreadyAddedSemantics(profile.bestDisplayName)
+        : context.l10n.userPickerSelectSemantics(profile.bestDisplayName);
+    final nip05 = profile.nip05;
 
     return Semantics(
       button: true,
-      label: isDisabled
-          ? context.l10n.userPickerAlreadyAddedSemantics(
-              profile.bestDisplayName,
-            )
-          : context.l10n.userPickerSelectSemantics(profile.bestDisplayName),
+      // The rendered nip05 is what tells two same-named users apart, so it
+      // rides along with the action instead of being dropped by the
+      // ExcludeSemantics below.
+      label: nip05 != null && nip05.isNotEmpty ? '$action. $nip05' : action,
       child: GestureDetector(
         behavior: HitTestBehavior.translucent,
         onTap: isDisabled ? null : onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            spacing: 16,
-            children: [
-              Opacity(
-                opacity: isDisabled ? 0.5 : 1.0,
-                child: UserAvatar(
-                  imageUrl: profile.picture,
-                  name: profile.bestDisplayName,
-                  placeholderSeed: profile.pubkey,
-                  size: 40,
+        child: ExcludeSemantics(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              spacing: 16,
+              children: [
+                Opacity(
+                  opacity: isDisabled ? 0.5 : 1.0,
+                  child: UserAvatar(
+                    imageUrl: profile.picture,
+                    name: profile.bestDisplayName,
+                    placeholderSeed: profile.pubkey,
+                    size: 40,
+                  ),
                 ),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: .start,
-                  children: [
-                    Text(
-                      profile.bestDisplayName,
-                      maxLines: 1,
-                      overflow: .ellipsis,
-                      style: VineTheme.titleMediumFont(color: textColor),
-                    ),
-                    if (profile.nip05 != null && profile.nip05!.isNotEmpty)
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: .start,
+                    children: [
                       Text(
-                        profile.nip05!,
+                        profile.bestDisplayName,
                         maxLines: 1,
                         overflow: .ellipsis,
-                        style: VineTheme.bodyMediumFont(color: textColor),
+                        style: VineTheme.titleMediumFont(color: textColor),
                       ),
-                  ],
+                      if (profile.nip05 != null && profile.nip05!.isNotEmpty)
+                        Text(
+                          profile.nip05!,
+                          maxLines: 1,
+                          overflow: .ellipsis,
+                          style: VineTheme.bodyMediumFont(color: textColor),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              Container(
-                padding: const .all(8),
-                decoration: ShapeDecoration(
-                  color: isDisabled
-                      ? context.vineColors.surfaceContainer
-                      : isSelected
-                      ? context.vineColors.surfaceContainer
-                      : VineTheme.primary,
-                  shape: RoundedRectangleBorder(borderRadius: .circular(16)),
+                Container(
+                  padding: const .all(8),
+                  decoration: ShapeDecoration(
+                    color: isDisabled
+                        ? context.vineColors.surfaceContainer
+                        : isSelected
+                        ? context.vineColors.surfaceContainer
+                        : VineTheme.primary,
+                    shape: RoundedRectangleBorder(borderRadius: .circular(16)),
+                  ),
+                  child: DivineIcon(
+                    icon: (isDisabled || isSelected) ? .check : .plus,
+                    color: (isDisabled || isSelected)
+                        ? context.vineColors.onSurfaceMuted
+                        : VineTheme.onPrimary,
+                  ),
                 ),
-                child: DivineIcon(
-                  icon: (isDisabled || isSelected) ? .check : .plus,
-                  color: (isDisabled || isSelected)
-                      ? context.vineColors.onSurfaceMuted
-                      : VineTheme.onPrimary,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

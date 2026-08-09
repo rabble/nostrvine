@@ -9819,7 +9819,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorLevelSemanticLabel => 'Nivel';
 
   @override
-  String get videoMetadataBackSemanticLabel => 'Înapoi';
+  String get videoMetadataClosePostDetailsSemanticLabel =>
+      'Închide detaliile postării';
 
   @override
   String get videoMetadataDismissHelpDialogSemanticLabel =>
@@ -9876,6 +9877,10 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get videoMetadataAudioReuseSubtitle =>
       'Permite altora să salveze și să reutilizeze audio-ul acestui videoclip.';
+
+  @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Colaboratori';
@@ -10659,11 +10664,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get videoMetadataEditCoverCloseSemanticLabel =>
-      'Închide editorul de copertă';
+      'Renunță la modificările copertei';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Confirmă selecția copertei';
+      'Folosește cadrul selectat drept copertă video';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
@@ -11326,4 +11331,32 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+
+  @override
+  String get videoMetadataTagsPickerCancelSemanticLabel =>
+      'Anulează selectarea etichetelor';
+
+  @override
+  String get videoMetadataTagsPickerConfirmSemanticLabel =>
+      'Aplică etichetele selectate';
+
+  @override
+  String get userPickerCancelSemanticLabel =>
+      'Anulează selectarea utilizatorilor';
+
+  @override
+  String get userPickerConfirmSemanticLabel =>
+      'Confirmă utilizatorii selectați';
+
+  @override
+  String get userPickerClearSelectionSemanticLabel =>
+      'Șterge selecția utilizatorilor';
+
+  @override
+  String get videoMetadataContentWarningsPickerCancelSemanticLabel =>
+      'Anulează selectarea avertismentelor de conținut';
+
+  @override
+  String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
+      'Aplică avertismentele de conținut selectate';
 }

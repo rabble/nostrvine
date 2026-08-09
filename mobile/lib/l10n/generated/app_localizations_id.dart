@@ -9570,7 +9570,8 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoEditorLevelSemanticLabel => 'Level';
 
   @override
-  String get videoMetadataBackSemanticLabel => 'Kembali';
+  String get videoMetadataClosePostDetailsSemanticLabel =>
+      'Tutup detail postingan';
 
   @override
   String get videoMetadataDismissHelpDialogSemanticLabel =>
@@ -9627,6 +9628,10 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get videoMetadataAudioReuseSubtitle =>
       'Izinkan orang lain menyimpan dan menggunakan kembali audio video ini.';
+
+  @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Kolaborator';
@@ -10401,11 +10406,12 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoMetadataEditCoverTitle => 'Edit sampul';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => 'Tutup editor sampul';
+  String get videoMetadataEditCoverCloseSemanticLabel =>
+      'Buang perubahan sampul';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Konfirmasi pilihan sampul';
+      'Gunakan bingkai yang dipilih sebagai sampul video';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
@@ -11061,4 +11067,30 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+
+  @override
+  String get videoMetadataTagsPickerCancelSemanticLabel =>
+      'Batalkan pemilihan tag';
+
+  @override
+  String get videoMetadataTagsPickerConfirmSemanticLabel =>
+      'Terapkan tag yang dipilih';
+
+  @override
+  String get userPickerCancelSemanticLabel => 'Batalkan pemilihan pengguna';
+
+  @override
+  String get userPickerConfirmSemanticLabel =>
+      'Konfirmasi pengguna yang dipilih';
+
+  @override
+  String get userPickerClearSelectionSemanticLabel => 'Hapus pilihan pengguna';
+
+  @override
+  String get videoMetadataContentWarningsPickerCancelSemanticLabel =>
+      'Batalkan pemilihan peringatan konten';
+
+  @override
+  String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
+      'Terapkan peringatan konten yang dipilih';
 }

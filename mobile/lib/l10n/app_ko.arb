@@ -2481,7 +2481,7 @@
     "videoEditorUnmuteAudioSemanticLabel": "오디오 음소거 해제",
     "videoEditorVideoTimelineSemanticLabel": "동영상 타임라인",
     "videoMetadataAddCollaboratorSemanticLabel": "협업자 추가",
-    "videoMetadataBackSemanticLabel": "뒤로",
+    "videoMetadataClosePostDetailsSemanticLabel": "게시물 세부 정보 닫기",
     "videoMetadataClassicDoneButton": "완료",
     "videoMetadataClosePreviewSemanticLabel": "동영상 미리보기 닫기",
     "videoMetadataCollaboratorsCount": "{count}/{max}명의 협업자",
@@ -3380,8 +3380,8 @@
     "bugReportRemoveImage": "Remove image",
     "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
     "videoMetadataEditCoverTitle": "커버 편집",
-    "videoMetadataEditCoverCloseSemanticLabel": "커버 편집기 닫기",
-    "videoMetadataEditCoverConfirmSemanticLabel": "커버 선택 확인",
+    "videoMetadataEditCoverCloseSemanticLabel": "커버 변경 사항 취소",
+    "videoMetadataEditCoverConfirmSemanticLabel": "선택한 프레임을 동영상 커버로 사용",
     "videoMetadataEditCoverStripSemanticLabel": "커버 프레임 선택을 위해 동영상 탐색",
     "userPickerRemoveSelectionSemantics": "{name} 제거",
     "@userPickerRemoveSelectionSemantics": {
@@ -4268,5 +4268,12 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "릴레이 제거"
+  "relaySettingsRemoveRelayTooltip": "릴레이 제거",
+  "videoMetadataTagsPickerCancelSemanticLabel": "태그 선택 취소",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "선택한 태그 적용",
+  "userPickerCancelSemanticLabel": "사용자 선택 취소",
+  "userPickerConfirmSemanticLabel": "선택한 사용자 확인",
+  "userPickerClearSelectionSemanticLabel": "사용자 선택 지우기",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "콘텐츠 경고 선택 취소",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "선택한 콘텐츠 경고 적용"
 }

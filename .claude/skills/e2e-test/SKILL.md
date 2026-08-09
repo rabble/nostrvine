@@ -5,7 +5,7 @@ description: |
   app against a local Docker backend (no mocks). Use when running
   E2E tests, debugging failures, or working on the local harness.
 author: Claude Code
-version: 1.2.0
+version: 1.3.0
 ---
 
 # E2E Integration Testing
@@ -33,6 +33,25 @@ merged docker+logcat+app timeline at `test_reports/*.jsonl`, and
 prints the native test XML path + failure excerpts when the APK
 fails to install. **Never call `patrol test` directly** — you'll
 lose the timeline and the diagnostics.
+
+## Version pair
+
+`patrol` (the package) and `patrol_cli` (the binary) ship as a matched
+pair, and `patrol_cli` enforces it at run time — a mismatch aborts the
+run before any test executes.
+
+| Half | Version | Declared in |
+|---|---|---|
+| `patrol` package | 4.8.0 | `mobile/pubspec.yaml` (`patrol: ^4.8.0`) |
+| `patrol_cli` binary | 4.6.1 | `local_stack/profile.sh` (`PATROL_CLI_VERSION`) |
+
+`profile.sh` checks the installed CLI and runs
+`dart pub global activate patrol_cli <version>` when it differs, so
+`mise run e2e_test` self-heals. That activation is **machine-global**:
+it switches the CLI for every checkout, including worktrees still on an
+older `patrol`, which will then fail the same compatibility check until
+they rebase. Change the two versions together — the compatibility table
+is at https://patrol.leancode.co/documentation/compatibility-table.
 
 ## Stack
 
@@ -238,6 +257,28 @@ for (var i = 0; i < 20; i++) {
 Patrol bundles every file in a target dir into one APK. When file B
 runs, file A shows up as "not requested" `[E]` markers in logcat.
 Trust only the final `✅`/`❌` lines.
+
+### Never put `/` in a patrol test name
+
+Patrol names each JUnit case `MainActivityTest#runDartTest[<dart test
+name>]`, and the AndroidX orchestrator writes a per-test output file
+named after it. Android's `ContextImpl.makeFilename` rejects any
+filename containing a path separator, so a test called e.g. `'strips
+metadata via separate input/output paths'` crashes the orchestrator:
+
+```
+FATAL EXCEPTION: AndroidTestOrchestrator
+java.lang.IllegalArgumentException: File …input/output paths].txt
+contains a path separator
+```
+
+The tell is a **green summary with a non-zero exit**: Gradle reports
+`Instrumentation run failed due to Process crashed` and exits 1, while
+patrol prints `Failed: 0` — because the offending test never started
+and so was never counted. Compare `Total:` against the number of tests
+in the file when the exit code disagrees with the summary.
+
+Write `input and output`, not `input/output`.
 
 ### NIP-98 URL binding
 

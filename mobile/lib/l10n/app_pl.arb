@@ -3228,7 +3228,7 @@
     "videoEditorCloseSemanticLabel": "Zamknij",
     "videoEditorDoneSemanticLabel": "Gotowe",
     "videoEditorLevelSemanticLabel": "Poziom",
-    "videoMetadataBackSemanticLabel": "Wstecz",
+    "videoMetadataClosePostDetailsSemanticLabel": "Zamknij szczegóły posta",
     "videoMetadataDismissHelpDialogSemanticLabel": "Zamknij okno pomocy",
     "videoMetadataGotItButton": "Rozumiem!",
     "videoMetadataLimitReachedWarning": "Osiągnięto limit 64 KB. Usuń część treści, aby kontynuować.",
@@ -4042,8 +4042,8 @@
     "bugReportRemoveImage": "Remove image",
     "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
     "videoMetadataEditCoverTitle": "Edytuj okładkę",
-    "videoMetadataEditCoverCloseSemanticLabel": "Zamknij edytor okładki",
-    "videoMetadataEditCoverConfirmSemanticLabel": "Potwierdź wybór okładki",
+    "videoMetadataEditCoverCloseSemanticLabel": "Odrzuć zmiany okładki",
+    "videoMetadataEditCoverConfirmSemanticLabel": "Użyj wybranej klatki jako okładki filmu",
     "videoMetadataEditCoverStripSemanticLabel": "Przewijaj wideo, aby wybrać klatkę okładki",
     "userPickerRemoveSelectionSemantics": "Usuń {name}",
     "@userPickerRemoveSelectionSemantics": {
@@ -4937,5 +4937,12 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "Usuń przekaźnik"
+  "relaySettingsRemoveRelayTooltip": "Usuń przekaźnik",
+  "videoMetadataTagsPickerCancelSemanticLabel": "Anuluj wybór tagów",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "Zastosuj wybrane tagi",
+  "userPickerCancelSemanticLabel": "Anuluj wybór użytkowników",
+  "userPickerConfirmSemanticLabel": "Potwierdź wybranych użytkowników",
+  "userPickerClearSelectionSemanticLabel": "Wyczyść wybór użytkowników",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "Anuluj wybór ostrzeżeń o treści",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Zastosuj wybrane ostrzeżenia o treści"
 }

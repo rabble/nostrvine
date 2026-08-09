@@ -9715,7 +9715,8 @@ class AppLocalizationsIt extends AppLocalizations {
   String get videoEditorLevelSemanticLabel => 'Livello';
 
   @override
-  String get videoMetadataBackSemanticLabel => 'Indietro';
+  String get videoMetadataClosePostDetailsSemanticLabel =>
+      'Chiudi dettagli del post';
 
   @override
   String get videoMetadataDismissHelpDialogSemanticLabel =>
@@ -9772,6 +9773,10 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get videoMetadataAudioReuseSubtitle =>
       'Lascia che altri salvino e riutilizzino l\'audio di questo video.';
+
+  @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Collaboratori';
@@ -10553,11 +10558,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get videoMetadataEditCoverCloseSemanticLabel =>
-      'Chiudi editor copertina';
+      'Annulla le modifiche alla copertina';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Conferma selezione copertina';
+      'Usa il fotogramma selezionato come copertina del video';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
@@ -11220,4 +11225,30 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+
+  @override
+  String get videoMetadataTagsPickerCancelSemanticLabel =>
+      'Annulla selezione tag';
+
+  @override
+  String get videoMetadataTagsPickerConfirmSemanticLabel =>
+      'Applica i tag selezionati';
+
+  @override
+  String get userPickerCancelSemanticLabel => 'Annulla selezione utenti';
+
+  @override
+  String get userPickerConfirmSemanticLabel => 'Conferma utenti selezionati';
+
+  @override
+  String get userPickerClearSelectionSemanticLabel =>
+      'Cancella selezione utenti';
+
+  @override
+  String get videoMetadataContentWarningsPickerCancelSemanticLabel =>
+      'Annulla selezione avvisi sui contenuti';
+
+  @override
+  String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
+      'Applica gli avvisi sui contenuti selezionati';
 }

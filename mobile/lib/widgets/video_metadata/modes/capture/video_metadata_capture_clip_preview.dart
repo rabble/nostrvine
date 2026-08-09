@@ -68,9 +68,7 @@ class VideoMetadataCaptureClipPreview extends ConsumerWidget {
         // child rides into the flight shuttle and fights the shape the
         // preview's flightShuttleBuilder is morphing towards.
         child: ClipRRect(
-          borderRadius: .circular(
-            VideoEditorConstants.clipPreviewCornerRadius,
-          ),
+          borderRadius: .circular(VideoEditorConstants.clipPreviewCornerRadius),
           // Hero animation to preview screen
           child: Hero(
             tag: VideoEditorConstants.heroMetaPreviewId,
@@ -90,27 +88,29 @@ class VideoMetadataCaptureClipPreview extends ConsumerWidget {
                   child: Stack(
                     children: [
                       // Video thumbnail or placeholder
-                      AnimatedSwitcher(
-                        layoutBuilder: (currentChild, previousChildren) =>
-                            Stack(
-                              fit: .expand,
-                              alignment: .center,
-                              children: [...previousChildren, ?currentChild],
-                            ),
-
-                        duration: const Duration(milliseconds: 150),
-                        child: clip.thumbnailPath != null
-                            ? // Video thumbnail image
-                              VideoMetadataCapturePreviewThumbnail(clip: clip)
-                            : // Fallback placeholder
-                              ColoredBox(
-                                color: context.vineColors.onSurfaceMuted,
-                                child: const DivineIcon(
-                                  icon: .playCircle,
-                                  size: 64,
-                                  color: VineTheme.whiteText,
-                                ),
+                      ExcludeSemantics(
+                        child: AnimatedSwitcher(
+                          layoutBuilder: (currentChild, previousChildren) =>
+                              Stack(
+                                fit: .expand,
+                                alignment: .center,
+                                children: [...previousChildren, ?currentChild],
                               ),
+
+                          duration: const Duration(milliseconds: 150),
+                          child: clip.thumbnailPath != null
+                              ? // Video thumbnail image
+                                VideoMetadataCapturePreviewThumbnail(clip: clip)
+                              : // Fallback placeholder
+                                ColoredBox(
+                                  color: context.vineColors.onSurfaceMuted,
+                                  child: const DivineIcon(
+                                    icon: .playCircle,
+                                    size: 64,
+                                    color: VineTheme.whiteText,
+                                  ),
+                                ),
+                        ),
                       ),
                       // Processing overlay with edit-cover icon
                       VideoEditorProcessingOverlay(
@@ -123,18 +123,15 @@ class VideoMetadataCaptureClipPreview extends ConsumerWidget {
                             .read(videoEditorProvider.notifier)
                             .startRenderVideo(),
                         inactivePlaceholder: Center(
-                          child: Semantics(
-                            button: true,
-                            label: context.l10n.videoMetadataEditCoverTitle,
-                            excludeSemantics: true,
-                            child: DivineIconButton(
-                              icon: .pencilSimpleLine,
-                              type: .ghostOverMedia,
-                              size: .small,
-                              onPressed: () => _openCoverEditor(
-                                context,
-                                state.finalRenderedClip!,
-                              ),
+                          child: DivineIconButton(
+                            icon: .pencilSimpleLine,
+                            type: .ghostOverMedia,
+                            size: .small,
+                            semanticLabel:
+                                context.l10n.videoMetadataEditCoverTitle,
+                            onPressed: () => _openCoverEditor(
+                              context,
+                              state.finalRenderedClip!,
                             ),
                           ),
                         ),

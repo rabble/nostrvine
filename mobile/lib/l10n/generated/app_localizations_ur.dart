@@ -9614,7 +9614,8 @@ class AppLocalizationsUr extends AppLocalizations {
   String get videoEditorLevelSemanticLabel => 'سطح';
 
   @override
-  String get videoMetadataBackSemanticLabel => 'واپس';
+  String get videoMetadataClosePostDetailsSemanticLabel =>
+      'پوسٹ کی تفصیلات بند کریں';
 
   @override
   String get videoMetadataDismissHelpDialogSemanticLabel =>
@@ -9671,6 +9672,10 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get videoMetadataAudioReuseSubtitle =>
       'دوسروں کو اس ویڈیو کی آڈیو محفوظ اور دوبارہ استعمال کرنے دیں۔';
+
+  @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'شریک کار شامل کریں';
@@ -10445,11 +10450,12 @@ class AppLocalizationsUr extends AppLocalizations {
   String get videoMetadataEditCoverTitle => 'کور میں ترمیم کریں';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => 'کور ایڈیٹر بند کریں';
+  String get videoMetadataEditCoverCloseSemanticLabel =>
+      'کور کی تبدیلیاں مسترد کریں';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'کور انتخاب کی تصدیق کریں';
+      'منتخب فریم کو ویڈیو کور کے طور پر استعمال کریں';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
@@ -11110,4 +11116,29 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+
+  @override
+  String get videoMetadataTagsPickerCancelSemanticLabel =>
+      'ٹیگ کا انتخاب منسوخ کریں';
+
+  @override
+  String get videoMetadataTagsPickerConfirmSemanticLabel =>
+      'منتخب ٹیگز لاگو کریں';
+
+  @override
+  String get userPickerCancelSemanticLabel => 'صارف کا انتخاب منسوخ کریں';
+
+  @override
+  String get userPickerConfirmSemanticLabel => 'منتخب صارفین کی تصدیق کریں';
+
+  @override
+  String get userPickerClearSelectionSemanticLabel => 'صارف کا انتخاب صاف کریں';
+
+  @override
+  String get videoMetadataContentWarningsPickerCancelSemanticLabel =>
+      'مواد کی وارننگز کا انتخاب منسوخ کریں';
+
+  @override
+  String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
+      'منتخب مواد کی وارننگز لاگو کریں';
 }

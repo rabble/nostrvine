@@ -9709,7 +9709,8 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorLevelSemanticLabel => 'Ниво';
 
   @override
-  String get videoMetadataBackSemanticLabel => 'Назад';
+  String get videoMetadataClosePostDetailsSemanticLabel =>
+      'Затваряне на подробностите за публикацията';
 
   @override
   String get videoMetadataDismissHelpDialogSemanticLabel =>
@@ -9766,6 +9767,10 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get videoMetadataAudioReuseSubtitle =>
       'Позволи на другите да запазват и използват повторно звука на това видео.';
+
+  @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Сътрудници';
@@ -10546,11 +10551,12 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoMetadataEditCoverTitle => 'Edit cover';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => 'Close cover editor';
+  String get videoMetadataEditCoverCloseSemanticLabel =>
+      'Отхвърляне на промените по корицата';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Confirm cover selection';
+      'Използване на избрания кадър като корица на видеото';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
@@ -11215,4 +11221,31 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+
+  @override
+  String get videoMetadataTagsPickerCancelSemanticLabel =>
+      'Отказ от избора на тагове';
+
+  @override
+  String get videoMetadataTagsPickerConfirmSemanticLabel =>
+      'Прилагане на избраните тагове';
+
+  @override
+  String get userPickerCancelSemanticLabel => 'Отказ от избора на потребители';
+
+  @override
+  String get userPickerConfirmSemanticLabel =>
+      'Потвърждаване на избраните потребители';
+
+  @override
+  String get userPickerClearSelectionSemanticLabel =>
+      'Изчистване на избора на потребители';
+
+  @override
+  String get videoMetadataContentWarningsPickerCancelSemanticLabel =>
+      'Отказ от избора на предупреждения за съдържание';
+
+  @override
+  String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
+      'Прилагане на избраните предупреждения за съдържание';
 }

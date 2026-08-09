@@ -120,8 +120,8 @@ void main() {
       () async {
         // Gate the audio extraction so the first publish is stuck in the
         // audio-reuse step - the window where production duplicates were
-        // minted. The extraction then fails, matching the observed
-        // signature (allow_audio_reuse=true, no audio e-tag).
+        // minted. The extraction then fails, which degrades to a video-only
+        // publish rather than discarding the already-uploaded video.
         final audioGate = Completer<void>();
         var extractionCount = 0;
         when(
@@ -185,7 +185,9 @@ void main() {
         audioGate.complete();
         final results = await Future.wait([firstPublish, secondPublish]);
 
-        expect(results, everyElement(isFalse));
+        // The video still publishes; a failed extraction must not discard an
+        // already-uploaded video.
+        expect(results, everyElement(isTrue));
         expect(
           extractionCount,
           equals(1),
@@ -193,13 +195,20 @@ void main() {
         );
         expect(
           videoSignCount,
-          equals(0),
-          reason: 'a failed audio-reuse publish must not sign a video event',
+          equals(1),
+          reason: 'two concurrent calls must yield exactly one signed event',
         );
         expect(
           broadcastVideoEvents,
+          hasLength(1),
+          reason: 'the de-duplicated publish reaches the relays once',
+        );
+        expect(
+          broadcastVideoEvents.single.tags.where(
+            (tag) => tag.first == 'allow_audio_reuse',
+          ),
           isEmpty,
-          reason: 'a failed audio-reuse publish must not reach the relays',
+          reason: 'the event must not claim audio reuse that never published',
         );
       },
     );

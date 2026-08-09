@@ -407,29 +407,31 @@ class _PreviewOverlay extends ConsumerWidget {
     // Lives in the outer full-screen Stack so it always renders at
     // phone-screen proportions, independent of the video's aspect ratio.
     return IgnorePointer(
-      child: Opacity(
-        opacity: 0.5,
-        child: Material(
-          type: .transparency,
-          child: ValueListenableBuilder(
-            valueListenable: isPreviewReady,
-            builder: (_, isActive, _) {
-              return Stack(
-                fit: StackFit.expand,
-                children: [
-                  const FeedModeSwitch(isPreviewMode: true),
-                  VideoOverlayActions.preview(
-                    previewData: VideoOverlayPreviewData(
-                      pubkey: publicKey,
-                      title: metadata.title,
-                      description: metadata.description,
+      child: ExcludeSemantics(
+        child: Opacity(
+          opacity: 0.5,
+          child: Material(
+            type: .transparency,
+            child: ValueListenableBuilder(
+              valueListenable: isPreviewReady,
+              builder: (_, isActive, _) {
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    const FeedModeSwitch(isPreviewMode: true),
+                    VideoOverlayActions.preview(
+                      previewData: VideoOverlayPreviewData(
+                        pubkey: publicKey,
+                        title: metadata.title,
+                        description: metadata.description,
+                      ),
+                      isVisible: true,
+                      isActive: isActive,
                     ),
-                    isVisible: true,
-                    isActive: isActive,
-                  ),
-                ],
-              );
-            },
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),

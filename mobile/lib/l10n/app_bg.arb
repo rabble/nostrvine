@@ -3498,7 +3498,7 @@
     "videoEditorCloseSemanticLabel": "Затвори",
     "videoEditorDoneSemanticLabel": "Готово",
     "videoEditorLevelSemanticLabel": "Ниво",
-    "videoMetadataBackSemanticLabel": "Назад",
+    "videoMetadataClosePostDetailsSemanticLabel": "Затваряне на подробностите за публикацията",
     "videoMetadataDismissHelpDialogSemanticLabel": "Отхвърляне на диалоговия прозорец за помощ",
     "videoMetadataGotItButton": "Разбрах!",
     "videoMetadataLimitReachedWarning": "Лимитът от 64 KB е достигнат. Премахни малко съдържание, за да продължиш.",
@@ -4196,8 +4196,8 @@
         "description": "Screen-reader announcement spoken after the user confirms a new cover thumbnail and the screen is about to close. Visual users get the screen pop as feedback; this is the audio equivalent."
     },
     "videoMetadataEditCoverTitle": "Edit cover",
-    "videoMetadataEditCoverCloseSemanticLabel": "Close cover editor",
-    "videoMetadataEditCoverConfirmSemanticLabel": "Confirm cover selection",
+    "videoMetadataEditCoverCloseSemanticLabel": "Отхвърляне на промените по корицата",
+    "videoMetadataEditCoverConfirmSemanticLabel": "Използване на избрания кадър като корица на видеото",
     "videoMetadataEditCoverStripSemanticLabel": "Seek through video to select cover frame",
     "videoMetadataTagsPickerSearchHint": "Търсене или добавяне на тагове",
     "videoMetadataTagsPickerEmptyHint": "Добавете тагове, за да открият хората вашето видео",
@@ -5068,5 +5068,12 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "Премахване на релето"
+  "relaySettingsRemoveRelayTooltip": "Премахване на релето",
+  "videoMetadataTagsPickerCancelSemanticLabel": "Отказ от избора на тагове",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "Прилагане на избраните тагове",
+  "userPickerCancelSemanticLabel": "Отказ от избора на потребители",
+  "userPickerConfirmSemanticLabel": "Потвърждаване на избраните потребители",
+  "userPickerClearSelectionSemanticLabel": "Изчистване на избора на потребители",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "Отказ от избора на предупреждения за съдържание",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Прилагане на избраните предупреждения за съдържание"
 }

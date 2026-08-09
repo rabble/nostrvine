@@ -3150,7 +3150,7 @@
     "videoEditorUnmuteAudioSemanticLabel": "Sesi aç",
     "videoEditorVideoTimelineSemanticLabel": "Video zaman çizelgesi",
     "videoMetadataAddCollaboratorSemanticLabel": "Ortak çalışan ekle",
-    "videoMetadataBackSemanticLabel": "Geri",
+    "videoMetadataClosePostDetailsSemanticLabel": "Gönderi ayrıntılarını kapat",
     "videoMetadataClassicDoneButton": "Bitti",
     "videoMetadataClosePreviewSemanticLabel": "Video önizlemesini kapat",
     "videoMetadataCollaboratorsCount": "{count}/{max} Ortak çalışan",
@@ -4042,8 +4042,8 @@
     "bugReportRemoveImage": "Remove image",
     "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
     "videoMetadataEditCoverTitle": "Kapağı düzenle",
-    "videoMetadataEditCoverCloseSemanticLabel": "Kapak düzenleyicisini kapat",
-    "videoMetadataEditCoverConfirmSemanticLabel": "Kapak seçimini onayla",
+    "videoMetadataEditCoverCloseSemanticLabel": "Kapak değişikliklerini iptal et",
+    "videoMetadataEditCoverConfirmSemanticLabel": "Seçili kareyi video kapağı olarak kullan",
     "videoMetadataEditCoverStripSemanticLabel": "Kapak karesi seçmek için videoda gezin",
     "userPickerRemoveSelectionSemantics": "{name} kaldır",
     "@userPickerRemoveSelectionSemantics": {
@@ -4937,5 +4937,12 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "Röleyi kaldır"
+  "relaySettingsRemoveRelayTooltip": "Röleyi kaldır",
+  "videoMetadataTagsPickerCancelSemanticLabel": "Etiket seçimini iptal et",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "Seçili etiketleri uygula",
+  "userPickerCancelSemanticLabel": "Kullanıcı seçimini iptal et",
+  "userPickerConfirmSemanticLabel": "Seçili kullanıcıları onayla",
+  "userPickerClearSelectionSemanticLabel": "Kullanıcı seçimini temizle",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "İçerik uyarısı seçimini iptal et",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Seçili içerik uyarılarını uygula"
 }

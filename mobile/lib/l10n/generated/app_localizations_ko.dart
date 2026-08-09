@@ -9224,7 +9224,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorLevelSemanticLabel => '레벨';
 
   @override
-  String get videoMetadataBackSemanticLabel => '뒤로';
+  String get videoMetadataClosePostDetailsSemanticLabel => '게시물 세부 정보 닫기';
 
   @override
   String get videoMetadataDismissHelpDialogSemanticLabel => '도움말 대화상자 닫기';
@@ -9278,6 +9278,10 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get videoMetadataAudioReuseSubtitle =>
       '다른 사람들이 이 동영상의 오디오를 저장하고 재사용할 수 있도록 합니다.';
+
+  @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
 
   @override
   String get videoMetadataCollaboratorsLabel => '협업자';
@@ -10040,10 +10044,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoMetadataEditCoverTitle => '커버 편집';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => '커버 편집기 닫기';
+  String get videoMetadataEditCoverCloseSemanticLabel => '커버 변경 사항 취소';
 
   @override
-  String get videoMetadataEditCoverConfirmSemanticLabel => '커버 선택 확인';
+  String get videoMetadataEditCoverConfirmSemanticLabel =>
+      '선택한 프레임을 동영상 커버로 사용';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel => '커버 프레임 선택을 위해 동영상 탐색';
@@ -10675,4 +10680,27 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+
+  @override
+  String get videoMetadataTagsPickerCancelSemanticLabel => '태그 선택 취소';
+
+  @override
+  String get videoMetadataTagsPickerConfirmSemanticLabel => '선택한 태그 적용';
+
+  @override
+  String get userPickerCancelSemanticLabel => '사용자 선택 취소';
+
+  @override
+  String get userPickerConfirmSemanticLabel => '선택한 사용자 확인';
+
+  @override
+  String get userPickerClearSelectionSemanticLabel => '사용자 선택 지우기';
+
+  @override
+  String get videoMetadataContentWarningsPickerCancelSemanticLabel =>
+      '콘텐츠 경고 선택 취소';
+
+  @override
+  String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
+      '선택한 콘텐츠 경고 적용';
 }

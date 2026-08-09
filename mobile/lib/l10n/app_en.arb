@@ -5831,7 +5831,7 @@
   "videoEditorCloseSemanticLabel": "Close",
   "videoEditorDoneSemanticLabel": "Done",
   "videoEditorLevelSemanticLabel": "Level",
-  "videoMetadataBackSemanticLabel": "Back",
+  "videoMetadataClosePostDetailsSemanticLabel": "Close post details",
   "videoMetadataDismissHelpDialogSemanticLabel": "Dismiss help dialog",
   "videoMetadataGotItButton": "Got it!",
   "videoMetadataLimitReachedWarning": "64KB limit reached. Remove some content to continue.",
@@ -5855,6 +5855,10 @@
   "videoMetadataContentWarningDoneButton": "Done",
   "videoMetadataAudioReuseTitle": "Publish this sound",
   "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
+  "publishAudioReuseDegradedWarning": "Your video is up, but the sound didn't publish. Edit the video to share it.",
+  "@publishAudioReuseDegradedWarning": {
+    "description": "Snackbar shown after a successful publish when the creator opted into a reusable sound but extracting or publishing it failed, so the video posted without the sharing choice they made."
+  },
   "videoMetadataCollaboratorsLabel": "Add collaborators",
   "videoMetadataAddCollaboratorSemanticLabel": "Invite collaborator",
   "videoMetadataCollaboratorsHelpTooltip": "How collaborators work",
@@ -6236,8 +6240,8 @@
     "description": "Snackbar message shown when url_launcher fails to open the profile website link."
   },
   "videoMetadataEditCoverTitle": "Edit cover",
-  "videoMetadataEditCoverCloseSemanticLabel": "Close cover editor",
-  "videoMetadataEditCoverConfirmSemanticLabel": "Confirm cover selection",
+  "videoMetadataEditCoverCloseSemanticLabel": "Discard cover changes",
+  "videoMetadataEditCoverConfirmSemanticLabel": "Use selected frame as video cover",
   "videoMetadataEditCoverStripSemanticLabel": "Seek through video to select cover frame",
   "videoMetadataTagsPickerSearchHint": "Search or add tags",
   "videoMetadataTagsPickerEmptyHint": "Add tags to help people discover your video",
@@ -6658,5 +6662,12 @@
   "soundCreditTitleLabel": "Sound title",
   "soundCreditCreatorLabel": "Creator",
   "soundCreditSourceUrlLabel": "Source URL",
-  "soundCreditPublicHashtagsLabel": "Public hashtags"
+  "soundCreditPublicHashtagsLabel": "Public hashtags",
+  "videoMetadataTagsPickerCancelSemanticLabel": "Cancel tag selection",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "Apply selected tags",
+  "userPickerCancelSemanticLabel": "Cancel user selection",
+  "userPickerConfirmSemanticLabel": "Confirm selected users",
+  "userPickerClearSelectionSemanticLabel": "Clear user selection",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "Cancel content warning selection",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Apply selected content warnings"
 }

@@ -9614,7 +9614,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get videoEditorLevelSemanticLabel => 'Mức';
 
   @override
-  String get videoMetadataBackSemanticLabel => 'Quay lại';
+  String get videoMetadataClosePostDetailsSemanticLabel =>
+      'Đóng chi tiết bài đăng';
 
   @override
   String get videoMetadataDismissHelpDialogSemanticLabel =>
@@ -9671,6 +9672,10 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get videoMetadataAudioReuseSubtitle =>
       'Cho phép người khác lưu và dùng lại âm thanh của video này.';
+
+  @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Thêm cộng tác viên';
@@ -10450,12 +10455,11 @@ class AppLocalizationsVi extends AppLocalizations {
   String get videoMetadataEditCoverTitle => 'Chỉnh sửa ảnh bìa';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel =>
-      'Đóng trình chỉnh sửa ảnh bìa';
+  String get videoMetadataEditCoverCloseSemanticLabel => 'Hủy thay đổi ảnh bìa';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Xác nhận lựa chọn ảnh bìa';
+      'Dùng khung hình đã chọn làm ảnh bìa video';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
@@ -11118,4 +11122,28 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+
+  @override
+  String get videoMetadataTagsPickerCancelSemanticLabel => 'Hủy chọn thẻ';
+
+  @override
+  String get videoMetadataTagsPickerConfirmSemanticLabel =>
+      'Áp dụng các thẻ đã chọn';
+
+  @override
+  String get userPickerCancelSemanticLabel => 'Hủy chọn người dùng';
+
+  @override
+  String get userPickerConfirmSemanticLabel => 'Xác nhận người dùng đã chọn';
+
+  @override
+  String get userPickerClearSelectionSemanticLabel => 'Xóa lựa chọn người dùng';
+
+  @override
+  String get videoMetadataContentWarningsPickerCancelSemanticLabel =>
+      'Hủy chọn cảnh báo nội dung';
+
+  @override
+  String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
+      'Áp dụng các cảnh báo nội dung đã chọn';
 }

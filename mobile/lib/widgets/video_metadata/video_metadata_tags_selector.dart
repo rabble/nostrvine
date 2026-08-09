@@ -194,6 +194,8 @@ class _TagsPickerViewState extends State<_TagsPickerView> {
             icon: .x,
             type: .secondary,
             size: .small,
+            semanticLabel:
+                context.l10n.videoMetadataTagsPickerCancelSemanticLabel,
             onPressed: context.pop,
           ),
           title: Text(
@@ -203,6 +205,8 @@ class _TagsPickerViewState extends State<_TagsPickerView> {
           trailingAction: DivineIconButton(
             icon: .check,
             size: .small,
+            semanticLabel:
+                context.l10n.videoMetadataTagsPickerConfirmSemanticLabel,
             onPressed: () => context.pop(
               Set<String>.unmodifiable(
                 context.read<TagsPickerBloc>().state.selectedTags,

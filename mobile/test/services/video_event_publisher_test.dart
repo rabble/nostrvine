@@ -1008,8 +1008,13 @@ void main() {
         );
       });
 
+      // This group's publisher is built with no blossomUploadService and no
+      // audioExtractionService, so the audio step returns at its first guard —
+      // nothing is extracted or uploaded here. The real extraction-failure
+      // path is covered in video_event_publisher_audio_degrade_test.dart.
       test(
-        'requested reusable original audio blocks on publish failure',
+        'an unavailable audio pipeline still publishes the video, without '
+        'claiming reuse',
         () async {
           stubSignAndPublish();
 
@@ -1018,13 +1023,28 @@ void main() {
             allowAudioReuse: true,
           );
 
-          expect(result, isFalse);
-          verifyNever(
-            () => authService.createAndSignEvent(
-              kind: NIP71VideoKinds.getPreferredAddressableKind(),
-              content: any(named: 'content'),
-              tags: any(named: 'tags'),
-            ),
+          // A video-only publish beats discarding an already-uploaded video.
+          expect(result, isTrue);
+
+          final tags =
+              verify(
+                    () => authService.createAndSignEvent(
+                      kind: NIP71VideoKinds.getPreferredAddressableKind(),
+                      content: any(named: 'content'),
+                      tags: captureAny(named: 'tags'),
+                    ),
+                  ).captured.single
+                  as List<List<String>>;
+
+          // The event must never advertise reusable audio that was never
+          // published — no allow_audio_reuse, and no audio `e` reference.
+          expect(
+            tags.where((tag) => tag.first == 'allow_audio_reuse'),
+            isEmpty,
+          );
+          expect(
+            tags.where((tag) => tag.first == 'e' && tag.last == 'audio'),
+            isEmpty,
           );
         },
       );

@@ -153,7 +153,9 @@ class _SaveForLaterButton extends ConsumerWidget {
                 GallerySaveService.destinationName,
               ),
         button: true,
+        excludeSemantics: true,
         enabled: !isSaving && !isProcessing,
+        onTap: isSaving || isProcessing ? null : onTap,
         child: DivineButton(
           onPressed: isSaving || isProcessing ? null : onTap,
           type: .secondary,
@@ -190,6 +192,8 @@ class _PostButton extends ConsumerWidget {
             : context.l10n.videoMetadataFormNotReadyHint,
         button: true,
         enabled: isValidToPost,
+        excludeSemantics: true,
+        onTap: isValidToPost ? onTap : null,
         child: DivineButton(
           onPressed: isValidToPost ? onTap : null,
           expanded: true,

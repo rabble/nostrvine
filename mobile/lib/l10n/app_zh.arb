@@ -5828,7 +5828,7 @@
   "videoEditorCloseSemanticLabel": "关闭",
   "videoEditorDoneSemanticLabel": "完成",
   "videoEditorLevelSemanticLabel": "层级",
-  "videoMetadataBackSemanticLabel": "返回",
+  "videoMetadataClosePostDetailsSemanticLabel": "关闭帖子详情",
   "videoMetadataDismissHelpDialogSemanticLabel": "关闭帮助对话框",
   "videoMetadataGotItButton": "懂了！",
   "videoMetadataLimitReachedWarning": "已达 64KB 上限。请删减一些内容再继续。",
@@ -6225,8 +6225,8 @@
     "description": "Snackbar message shown when url_launcher fails to open the profile website link."
   },
   "videoMetadataEditCoverTitle": "编辑封面",
-  "videoMetadataEditCoverCloseSemanticLabel": "关闭封面编辑器",
-  "videoMetadataEditCoverConfirmSemanticLabel": "确认封面选择",
+  "videoMetadataEditCoverCloseSemanticLabel": "放弃封面更改",
+  "videoMetadataEditCoverConfirmSemanticLabel": "将所选帧用作视频封面",
   "videoMetadataEditCoverStripSemanticLabel": "拖动进度选择封面帧",
   "videoMetadataTagsPickerSearchHint": "搜索或添加标签",
   "videoMetadataTagsPickerEmptyHint": "添加标签，让更多人发现你的视频",
@@ -6776,5 +6776,12 @@
   },
   "relaySettingsRemoveRelayTooltip": "移除中继",
   "profileBadgeFooterBody": "徽章是任何人都可以在 Nostr 上制作的小奖励。送一个给朋友、创作者,或那个让你今天很开心的人。",
-  "profileBadgeFooterLink": "在 badges.divine.video 制作你自己的徽章"
+  "profileBadgeFooterLink": "在 badges.divine.video 制作你自己的徽章",
+  "videoMetadataTagsPickerCancelSemanticLabel": "取消标签选择",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "应用所选标签",
+  "userPickerCancelSemanticLabel": "取消用户选择",
+  "userPickerConfirmSemanticLabel": "确认所选用户",
+  "userPickerClearSelectionSemanticLabel": "清除用户选择",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "取消内容警告选择",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "应用所选内容警告"
 }

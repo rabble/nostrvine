@@ -9725,7 +9725,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoEditorLevelSemanticLabel => 'Stufe';
 
   @override
-  String get videoMetadataBackSemanticLabel => 'Zurück';
+  String get videoMetadataClosePostDetailsSemanticLabel =>
+      'Beitragsdetails schließen';
 
   @override
   String get videoMetadataDismissHelpDialogSemanticLabel =>
@@ -9782,6 +9783,10 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get videoMetadataAudioReuseSubtitle =>
       'Lass andere den Audio dieses Videos speichern und wiederverwenden.';
+
+  @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Mitwirkende';
@@ -10565,11 +10570,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get videoMetadataEditCoverCloseSemanticLabel =>
-      'Cover-Editor schließen';
+      'Cover-Änderungen verwerfen';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Coverauswahl bestätigen';
+      'Ausgewählten Frame als Video-Cover verwenden';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
@@ -11233,4 +11238,29 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+
+  @override
+  String get videoMetadataTagsPickerCancelSemanticLabel =>
+      'Tag-Auswahl abbrechen';
+
+  @override
+  String get videoMetadataTagsPickerConfirmSemanticLabel =>
+      'Ausgewählte Tags anwenden';
+
+  @override
+  String get userPickerCancelSemanticLabel => 'Nutzerauswahl abbrechen';
+
+  @override
+  String get userPickerConfirmSemanticLabel => 'Ausgewählte Nutzer bestätigen';
+
+  @override
+  String get userPickerClearSelectionSemanticLabel => 'Nutzerauswahl leeren';
+
+  @override
+  String get videoMetadataContentWarningsPickerCancelSemanticLabel =>
+      'Auswahl der Inhaltswarnungen abbrechen';
+
+  @override
+  String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
+      'Ausgewählte Inhaltswarnungen anwenden';
 }

@@ -9126,7 +9126,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoEditorLevelSemanticLabel => '层级';
 
   @override
-  String get videoMetadataBackSemanticLabel => '返回';
+  String get videoMetadataClosePostDetailsSemanticLabel => '关闭帖子详情';
 
   @override
   String get videoMetadataDismissHelpDialogSemanticLabel => '关闭帮助对话框';
@@ -9177,6 +9177,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get videoMetadataAudioReuseSubtitle => '让其他人保存并二次使用这个视频的音频。';
+
+  @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
 
   @override
   String get videoMetadataCollaboratorsLabel => '添加协作者';
@@ -9889,10 +9893,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoMetadataEditCoverTitle => '编辑封面';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => '关闭封面编辑器';
+  String get videoMetadataEditCoverCloseSemanticLabel => '放弃封面更改';
 
   @override
-  String get videoMetadataEditCoverConfirmSemanticLabel => '确认封面选择';
+  String get videoMetadataEditCoverConfirmSemanticLabel => '将所选帧用作视频封面';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel => '拖动进度选择封面帧';
@@ -10517,4 +10521,27 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+
+  @override
+  String get videoMetadataTagsPickerCancelSemanticLabel => '取消标签选择';
+
+  @override
+  String get videoMetadataTagsPickerConfirmSemanticLabel => '应用所选标签';
+
+  @override
+  String get userPickerCancelSemanticLabel => '取消用户选择';
+
+  @override
+  String get userPickerConfirmSemanticLabel => '确认所选用户';
+
+  @override
+  String get userPickerClearSelectionSemanticLabel => '清除用户选择';
+
+  @override
+  String get videoMetadataContentWarningsPickerCancelSemanticLabel =>
+      '取消内容警告选择';
+
+  @override
+  String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
+      '应用所选内容警告';
 }

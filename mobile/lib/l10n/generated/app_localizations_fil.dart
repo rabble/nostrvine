@@ -9728,7 +9728,8 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoEditorLevelSemanticLabel => 'Level';
 
   @override
-  String get videoMetadataBackSemanticLabel => 'Bumalik';
+  String get videoMetadataClosePostDetailsSemanticLabel =>
+      'Isara ang mga detalye ng post';
 
   @override
   String get videoMetadataDismissHelpDialogSemanticLabel =>
@@ -9785,6 +9786,10 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get videoMetadataAudioReuseSubtitle =>
       'Hayaan ang iba na i-save at gamitin ulit ang audio ng video na ito.';
+
+  @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Mga Collaborator';
@@ -10564,11 +10569,12 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoMetadataEditCoverTitle => 'Edit cover';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => 'Close cover editor';
+  String get videoMetadataEditCoverCloseSemanticLabel =>
+      'I-discard ang mga pagbabago sa cover';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Confirm cover selection';
+      'Gamitin ang napiling frame bilang cover ng video';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
@@ -11231,4 +11237,31 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+
+  @override
+  String get videoMetadataTagsPickerCancelSemanticLabel =>
+      'Kanselahin ang pagpili ng mga tag';
+
+  @override
+  String get videoMetadataTagsPickerConfirmSemanticLabel =>
+      'Ilapat ang mga napiling tag';
+
+  @override
+  String get userPickerCancelSemanticLabel => 'Kanselahin ang pagpili ng user';
+
+  @override
+  String get userPickerConfirmSemanticLabel =>
+      'Kumpirmahin ang mga napiling user';
+
+  @override
+  String get userPickerClearSelectionSemanticLabel =>
+      'I-clear ang pagpili ng user';
+
+  @override
+  String get videoMetadataContentWarningsPickerCancelSemanticLabel =>
+      'Kanselahin ang pagpili ng mga babala sa content';
+
+  @override
+  String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
+      'Ilapat ang mga napiling babala sa content';
 }

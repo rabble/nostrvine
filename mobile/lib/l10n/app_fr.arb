@@ -3228,7 +3228,7 @@
     "videoEditorCloseSemanticLabel": "Fermer",
     "videoEditorDoneSemanticLabel": "Terminé",
     "videoEditorLevelSemanticLabel": "Niveau",
-    "videoMetadataBackSemanticLabel": "Retour",
+    "videoMetadataClosePostDetailsSemanticLabel": "Fermer les détails de la publication",
     "videoMetadataDismissHelpDialogSemanticLabel": "Fermer la fenêtre d'aide",
     "videoMetadataGotItButton": "Compris !",
     "videoMetadataLimitReachedWarning": "Limite de 64 Ko atteinte. Supprimez du contenu pour continuer.",
@@ -4042,8 +4042,8 @@
     "bugReportRemoveImage": "Remove image",
     "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
     "videoMetadataEditCoverTitle": "Modifier la couverture",
-    "videoMetadataEditCoverCloseSemanticLabel": "Fermer l'éditeur de couverture",
-    "videoMetadataEditCoverConfirmSemanticLabel": "Confirmer la sélection de couverture",
+    "videoMetadataEditCoverCloseSemanticLabel": "Ignorer les modifications de la couverture",
+    "videoMetadataEditCoverConfirmSemanticLabel": "Utiliser l’image sélectionnée comme couverture vidéo",
     "videoMetadataEditCoverStripSemanticLabel": "Faire défiler la vidéo pour sélectionner l'image de couverture",
     "userPickerRemoveSelectionSemantics": "Retirer {name}",
     "@userPickerRemoveSelectionSemantics": {
@@ -4937,5 +4937,12 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "Retirer le relay"
+  "relaySettingsRemoveRelayTooltip": "Retirer le relay",
+  "videoMetadataTagsPickerCancelSemanticLabel": "Annuler la sélection des tags",
+  "videoMetadataTagsPickerConfirmSemanticLabel": "Appliquer les tags sélectionnés",
+  "userPickerCancelSemanticLabel": "Annuler la sélection des utilisateurs",
+  "userPickerConfirmSemanticLabel": "Confirmer les utilisateurs sélectionnés",
+  "userPickerClearSelectionSemanticLabel": "Effacer la sélection des utilisateurs",
+  "videoMetadataContentWarningsPickerCancelSemanticLabel": "Annuler la sélection des avertissements de contenu",
+  "videoMetadataContentWarningsPickerConfirmSemanticLabel": "Appliquer les avertissements de contenu sélectionnés"
 }

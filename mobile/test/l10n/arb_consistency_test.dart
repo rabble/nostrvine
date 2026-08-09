@@ -372,6 +372,9 @@ void main() {
 
 // Add keys here only when a translation pass is intentionally deferred.
 const _knownUntranslatedDebt = <String>{
+  // Warning shown when a requested reusable sound fails to publish; translation
+  // is deferred to the next sound-library localization pass.
+  'publishAudioReuseDegradedWarning',
   // Saved-sound organization and public-credit copy; translation is deferred
   // to the next sound-library localization pass.
   'savedSoundYourLabel',

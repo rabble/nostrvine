@@ -2663,7 +2663,7 @@ class _DivineAppState extends ConsumerState<DivineApp>
       providers: [
         RepositoryProvider(
           create: (_) => InviteApiClient(
-            baseUrl: AppConfig.inviteServerBaseUrl,
+            baseUrl: ref.read(currentEnvironmentProvider).inviteBaseUrl,
             // ignore: avoid_redundant_argument_values
             forceOpenOnboarding: forceOpenOnboarding,
             authHeaderProvider:

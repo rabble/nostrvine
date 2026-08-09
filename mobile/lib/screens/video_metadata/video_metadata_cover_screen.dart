@@ -641,15 +641,13 @@ class _TopBarContent extends StatelessWidget {
           child: Row(
             spacing: 16,
             children: [
-              Semantics(
-                label: context.l10n.videoMetadataEditCoverCloseSemanticLabel,
-                button: true,
-                child: DivineIconButton(
-                  icon: .x,
-                  type: .ghostOverMedia,
-                  size: .small,
-                  onPressed: onClose,
-                ),
+              DivineIconButton(
+                icon: .x,
+                type: .ghostOverMedia,
+                size: .small,
+                semanticLabel:
+                    context.l10n.videoMetadataEditCoverCloseSemanticLabel,
+                onPressed: onClose,
               ),
               Expanded(
                 child: Text(
@@ -660,22 +658,27 @@ class _TopBarContent extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Semantics(
-                label: context.l10n.videoMetadataEditCoverConfirmSemanticLabel,
-                button: true,
-                child: isConfirming
-                    // The indicator is an Image.asset that is not excluded
-                    // from semantics, so without this the confirm node
-                    // announces as an image as well as a button.
-                    ? const ExcludeSemantics(
-                        child: BrandedLoadingIndicator(size: 44),
-                      )
-                    : DivineIconButton(
-                        icon: .check,
-                        size: .small,
-                        onPressed: onConfirm,
-                      ),
-              ),
+              if (isConfirming)
+                Semantics(
+                  label:
+                      context.l10n.videoMetadataEditCoverConfirmSemanticLabel,
+                  button: true,
+                  enabled: false,
+                  // The indicator is an Image.asset that is not excluded
+                  // from semantics, so without this the confirm node
+                  // announces as an image as well as a disabled button.
+                  child: const ExcludeSemantics(
+                    child: BrandedLoadingIndicator(size: 44),
+                  ),
+                )
+              else
+                DivineIconButton(
+                  icon: .check,
+                  size: .small,
+                  semanticLabel:
+                      context.l10n.videoMetadataEditCoverConfirmSemanticLabel,
+                  onPressed: onConfirm,
+                ),
             ],
           ),
         ),

@@ -9568,7 +9568,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorLevelSemanticLabel => 'Seviye';
 
   @override
-  String get videoMetadataBackSemanticLabel => 'Geri';
+  String get videoMetadataClosePostDetailsSemanticLabel =>
+      'Gönderi ayrıntılarını kapat';
 
   @override
   String get videoMetadataDismissHelpDialogSemanticLabel =>
@@ -9625,6 +9626,10 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get videoMetadataAudioReuseSubtitle =>
       'Başkalarının bu videonun sesini kaydedip yeniden kullanmasına izin ver.';
+
+  @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Ortak çalışanlar';
@@ -10402,11 +10407,11 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoMetadataEditCoverCloseSemanticLabel =>
-      'Kapak düzenleyicisini kapat';
+      'Kapak değişikliklerini iptal et';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Kapak seçimini onayla';
+      'Seçili kareyi video kapağı olarak kullan';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
@@ -11066,4 +11071,30 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+
+  @override
+  String get videoMetadataTagsPickerCancelSemanticLabel =>
+      'Etiket seçimini iptal et';
+
+  @override
+  String get videoMetadataTagsPickerConfirmSemanticLabel =>
+      'Seçili etiketleri uygula';
+
+  @override
+  String get userPickerCancelSemanticLabel => 'Kullanıcı seçimini iptal et';
+
+  @override
+  String get userPickerConfirmSemanticLabel => 'Seçili kullanıcıları onayla';
+
+  @override
+  String get userPickerClearSelectionSemanticLabel =>
+      'Kullanıcı seçimini temizle';
+
+  @override
+  String get videoMetadataContentWarningsPickerCancelSemanticLabel =>
+      'İçerik uyarısı seçimini iptal et';
+
+  @override
+  String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
+      'Seçili içerik uyarılarını uygula';
 }

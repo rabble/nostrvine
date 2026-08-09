@@ -25,7 +25,7 @@ class ExploreTabView extends StatelessWidget {
   });
 
   /// Controller driving tab selection; must match [tabsState.tabCount].
-  final TabController? controller;
+  final TabController controller;
 
   /// Current tab availability/order.
   final ExploreTabsState tabsState;
@@ -50,18 +50,17 @@ class ExploreTabView extends StatelessWidget {
           ],
         ),
         // New videos banner only shows on the New Videos and Trending tabs.
-        if (controller != null)
-          AnimatedBuilder(
-            animation: controller!,
-            builder: (context, _) {
-              final currentIndex = controller!.index;
-              if (currentIndex == tabsState.newVideosIndex ||
-                  currentIndex == tabsState.trendingIndex) {
-                return const ExploreBufferedVideosBanner();
-              }
-              return const SizedBox.shrink();
-            },
-          ),
+        AnimatedBuilder(
+          animation: controller,
+          builder: (context, _) {
+            final currentIndex = controller.index;
+            if (currentIndex == tabsState.newVideosIndex ||
+                currentIndex == tabsState.trendingIndex) {
+              return const ExploreBufferedVideosBanner();
+            }
+            return const SizedBox.shrink();
+          },
+        ),
       ],
     );
   }

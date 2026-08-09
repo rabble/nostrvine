@@ -24,9 +24,11 @@ import 'dart:async';
 /// [rejectedBy], [noResponseFrom] or [unreachableTargets], and no other relay
 /// appears at all. "Targeted" means every relay the fan-out reached, plus the
 /// relays it meant to count if a write failed. Configured relays that were
-/// plainly disconnected and never attempted do not appear, while relays whose
-/// in-flight connection was actually attempted can still be reported as
-/// unreachable (see [PublishTracker.countedTargets]).
+/// plainly disconnected and never attempted normally do not appear — except
+/// when the caller named them in `targetRelays`/`tempRelays`, or when the
+/// publish reached nothing at all. Relays whose in-flight connection was
+/// actually attempted can still be reported as unreachable (see
+/// [PublishTracker.countedTargets]).
 class PublishOutcome {
   const PublishOutcome({
     required this.eventId,
@@ -54,10 +56,17 @@ class PublishOutcome {
 
   /// Relays the publish targeted but could not write to at all.
   ///
-  /// These never received the `EVENT` frame — the socket was down, the send
-  /// timed out, or the relay dropped out mid-publish. They are reported
-  /// separately from [noResponseFrom] because "we never asked" and "we asked
-  /// and got silence" call for different recovery.
+  /// These never received the `EVENT` frame — the send timed out, or the relay
+  /// dropped out mid-publish. They are reported separately from
+  /// [noResponseFrom] because "we never asked" and "we asked and got silence"
+  /// call for different recovery.
+  ///
+  /// A relay that was already offline when the publish started is normally
+  /// *not* listed here: it never counted as a target, so it cannot drag
+  /// [acceptedByAll] down. Two exceptions: a relay the caller named in
+  /// `targetRelays` or `tempRelays` is never narrowed away, and a publish
+  /// that reached nothing at all lists every targeted relay so the outcome
+  /// can still say how many there were.
   final List<String> unreachableTargets;
 
   /// Every relay this publish targeted.
@@ -146,11 +155,12 @@ class PublishTracker {
     required this.eventId,
     this.message,
     this.deadline,
-    required this.expectedRelays,
+    required Set<String> expectedRelays,
     required Duration timeout,
     Set<String>? countedTargets,
     this.settleWindow = defaultSettleWindow,
-  }) : _countedTargets = countedTargets?.toSet() ?? expectedRelays.toSet() {
+  }) : expectedRelays = expectedRelays.toSet(),
+       _countedTargets = countedTargets?.toSet() ?? expectedRelays.toSet() {
     _timer = Timer(timeout, _onTimeout);
   }
 
@@ -376,9 +386,29 @@ class PublishTracker {
         .toList(growable: false);
     // A relay that answered is never unreachable, even if the fan-out reported
     // its write as failed — the answer proves it got the frame.
-    final unreachable = _countedTargets
+    var unreachable = _countedTargets
         .where((r) => !awaitable.contains(r) && !answered(r))
         .toList(growable: false);
+    // A publish that reached nothing must still say how many relays it had.
+    // `_countedTargets` excludes relays that were offline before the fan-out,
+    // so when *every* relay drops it is empty and the outcome collapses to
+    // `targetCount: 0` / "no relay reached" — indistinguishable from having no
+    // relays configured at all. This floor only fires when nothing answered and
+    // nothing was counted, so it can never widen the denominator of a publish
+    // that partly succeeded.
+    //
+    // It applies to unfiltered publishes only. A caller-named publish puts
+    // every `targetRelays`/`tempRelays` entry into `_countedTargets`
+    // unconditionally, so `unreachable` is already non-empty and the floor is
+    // unreachable. In practice this fires when a connect momentarily succeeds
+    // and the socket drops before the live status is read.
+    if (unreachable.isEmpty &&
+        noResponse.isEmpty &&
+        _accepted.isEmpty &&
+        effectiveRejected.isEmpty &&
+        expectedRelays.isNotEmpty) {
+      unreachable = expectedRelays.toList(growable: false);
+    }
     _completer.complete(
       PublishOutcome(
         eventId: eventId,

@@ -30,7 +30,10 @@ import websockets.sync.client
 # ---------------------------------------------------------------------------
 RELAY_URL = os.environ.get("RELAY_URL", "ws://funnelcake-relay:7777")
 BLOSSOM_URL = os.environ.get("BLOSSOM_URL", "http://blossom:3000")
-# Public URL used in Nostr events — the emulator reaches the host via 10.0.2.2
+# Public URL baked into the Nostr events this seeder mints, so it cannot be
+# resolved per client. Defaults to the Android emulator host alias; export
+# BLOSSOM_PUBLIC_URL=http://localhost:43003 before `up.sh` when running
+# against the iOS Simulator or macOS.
 BLOSSOM_PUBLIC_URL = os.environ.get("BLOSSOM_PUBLIC_URL", "http://10.0.2.2:43003")
 NUM_VIDEOS = int(os.environ.get("NUM_VIDEOS", "100"))
 NUM_UNIQUE_VIDEOS = int(os.environ.get("NUM_UNIQUE_VIDEOS", "10"))
@@ -559,7 +562,8 @@ def generate_and_upload_video(vid_idx: int) -> dict:
 
         video_sha256 = blossom_resp["sha256"]
         thumb_sha256 = thumb_resp["sha256"]
-        # Rewrite URLs to the emulator-accessible address (10.0.2.2)
+        # Rewrite the internal upload host to BLOSSOM_PUBLIC_URL, the address
+        # the client that reads these events will see.
         video_url = f"{BLOSSOM_PUBLIC_URL}/{video_sha256}"
         thumb_url = f"{BLOSSOM_PUBLIC_URL}/{thumb_sha256}"
 

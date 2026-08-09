@@ -9594,7 +9594,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditorLevelSemanticLabel => 'Level';
 
   @override
-  String get videoMetadataBackSemanticLabel => 'Back';
+  String get videoMetadataClosePostDetailsSemanticLabel => 'Close post details';
 
   @override
   String get videoMetadataDismissHelpDialogSemanticLabel =>
@@ -9651,6 +9651,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get videoMetadataAudioReuseSubtitle =>
       'Let others save and reuse this video\'s audio.';
+
+  @override
+  String get publishAudioReuseDegradedWarning =>
+      'Your video is up, but the sound didn\'t publish. Edit the video to share it.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Add collaborators';
@@ -10422,11 +10426,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoMetadataEditCoverTitle => 'Edit cover';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => 'Close cover editor';
+  String get videoMetadataEditCoverCloseSemanticLabel =>
+      'Discard cover changes';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Confirm cover selection';
+      'Use selected frame as video cover';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
@@ -11078,4 +11083,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get soundCreditPublicHashtagsLabel => 'Public hashtags';
+
+  @override
+  String get videoMetadataTagsPickerCancelSemanticLabel =>
+      'Cancel tag selection';
+
+  @override
+  String get videoMetadataTagsPickerConfirmSemanticLabel =>
+      'Apply selected tags';
+
+  @override
+  String get userPickerCancelSemanticLabel => 'Cancel user selection';
+
+  @override
+  String get userPickerConfirmSemanticLabel => 'Confirm selected users';
+
+  @override
+  String get userPickerClearSelectionSemanticLabel => 'Clear user selection';
+
+  @override
+  String get videoMetadataContentWarningsPickerCancelSemanticLabel =>
+      'Cancel content warning selection';
+
+  @override
+  String get videoMetadataContentWarningsPickerConfirmSemanticLabel =>
+      'Apply selected content warnings';
 }
