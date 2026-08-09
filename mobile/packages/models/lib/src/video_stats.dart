@@ -4,8 +4,8 @@
 
 import 'package:meta/meta.dart';
 import 'package:models/src/engagement_count_parser.dart';
-import 'package:models/src/imeta_tag.dart';
 import 'package:models/src/video_event.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 
 /// Video with engagement metrics from Funnelcake API.
 ///
