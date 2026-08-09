@@ -14,6 +14,7 @@ import 'package:openvine/providers/subtitle_repository_provider.dart';
 import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/repositories/subtitle_repository.dart';
 import 'package:openvine/screens/subtitle_editor/subtitle_editor_screen.dart';
+import 'package:openvine/services/subtitle_fetcher.dart';
 import 'package:openvine/services/subtitle_service.dart';
 import 'package:openvine/services/video_event_resolver.dart';
 
@@ -42,6 +43,13 @@ class _FakeVideoEventResolver implements VideoEventResolver {
     return video;
   }
 }
+
+/// The caption-text field of a cue row, as opposed to its timing fields.
+Finder cueTextFields(AppLocalizations l10n) => find.byWidgetPredicate(
+  (widget) =>
+      widget is TextField &&
+      widget.decoration?.hintText == l10n.subtitleEditorCueHint,
+);
 
 void main() {
   late _MockCubit cubit;
@@ -72,7 +80,8 @@ void main() {
       ),
     );
     await tester.pumpWidget(pump());
-    expect(find.byType(TextField), findsNWidgets(2));
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(cueTextFields(l10n), findsNWidgets(2));
     expect(find.text('one'), findsOneWidget);
   });
 
@@ -87,6 +96,178 @@ void main() {
     expect(find.text(l10n.subtitleEditorProcessing), findsOneWidget);
   });
 
+  testWidgets('shows the no-speech message when status is empty', (
+    tester,
+  ) async {
+    when(() => cubit.state).thenReturn(
+      const SubtitleEditorState(status: SubtitleEditorStatus.empty),
+    );
+    await tester.pumpWidget(pump());
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(find.text(l10n.subtitleEditorNoSpeech), findsOneWidget);
+    expect(find.text(l10n.subtitleEditorProcessing), findsNothing);
+  });
+
+  testWidgets('shows the load error when status is unavailable', (
+    tester,
+  ) async {
+    when(() => cubit.state).thenReturn(
+      const SubtitleEditorState(status: SubtitleEditorStatus.unavailable),
+    );
+    await tester.pumpWidget(pump());
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(find.text(l10n.subtitleEditorLoadError), findsOneWidget);
+    expect(find.text(l10n.subtitleEditorProcessing), findsNothing);
+  });
+
+  testWidgets('retry from a no-cue state reloads', (tester) async {
+    when(() => cubit.state).thenReturn(
+      const SubtitleEditorState(status: SubtitleEditorStatus.empty),
+    );
+    when(cubit.load).thenAnswer((_) async {});
+    await tester.pumpWidget(pump());
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    await tester.tap(find.text(l10n.subtitleEditorRetry));
+    verify(cubit.load).called(1);
+  });
+
+  testWidgets('offers writing your own captions when the track is empty', (
+    tester,
+  ) async {
+    when(() => cubit.state).thenReturn(
+      const SubtitleEditorState(status: SubtitleEditorStatus.empty),
+    );
+    when(cubit.addCue).thenReturn(null);
+    await tester.pumpWidget(pump());
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    await tester.tap(find.text(l10n.subtitleEditorWriteOwn));
+    verify(cubit.addCue).called(1);
+  });
+
+  testWidgets('does not offer authoring while transcription runs', (
+    tester,
+  ) async {
+    when(() => cubit.state).thenReturn(
+      const SubtitleEditorState(status: SubtitleEditorStatus.processing),
+    );
+    await tester.pumpWidget(pump());
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(find.text(l10n.subtitleEditorWriteOwn), findsNothing);
+  });
+
+  testWidgets('add-a-line is reachable from the cue list', (tester) async {
+    when(() => cubit.state).thenReturn(
+      const SubtitleEditorState(
+        status: SubtitleEditorStatus.ready,
+        cues: [EditableCue(start: 0, end: 1000, text: 'one')],
+      ),
+    );
+    when(cubit.addCue).thenReturn(null);
+    await tester.pumpWidget(pump());
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    await tester.tap(find.text(l10n.subtitleEditorAddCue));
+    verify(cubit.addCue).called(1);
+  });
+
+  testWidgets('the trash action removes that row', (tester) async {
+    when(() => cubit.state).thenReturn(
+      const SubtitleEditorState(
+        status: SubtitleEditorStatus.ready,
+        cues: [
+          EditableCue(start: 0, end: 1000, text: 'one'),
+          EditableCue(start: 1000, end: 2000, text: 'two'),
+        ],
+      ),
+    );
+    when(() => cubit.removeCue(any())).thenReturn(null);
+    await tester.pumpWidget(pump());
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    await tester.tap(
+      find.bySemanticsLabel(l10n.subtitleEditorRemoveCue).last,
+    );
+    verify(() => cubit.removeCue(1)).called(1);
+  });
+
+  testWidgets('editing a start time dispatches updateCueTiming', (
+    tester,
+  ) async {
+    when(() => cubit.state).thenReturn(
+      const SubtitleEditorState(
+        status: SubtitleEditorStatus.ready,
+        cues: [EditableCue(start: 0, end: 2000, text: 'one')],
+      ),
+    );
+    when(
+      () => cubit.updateCueTiming(any(), start: any(named: 'start')),
+    ).thenReturn(null);
+    await tester.pumpWidget(pump());
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    await tester.enterText(
+      find.descendant(
+        of: find.bySemanticsLabel(l10n.subtitleEditorStartLabel),
+        matching: find.byType(TextField),
+      ),
+      '1.5',
+    );
+    verify(() => cubit.updateCueTiming(0, start: 1500)).called(1);
+  });
+
+  testWidgets('rows follow the cue that moved into their position', (
+    tester,
+  ) async {
+    whenListen(
+      cubit,
+      Stream<SubtitleEditorState>.fromIterable(const [
+        SubtitleEditorState(
+          status: SubtitleEditorStatus.ready,
+          cues: [EditableCue(start: 1000, end: 2000, text: 'two')],
+        ),
+      ]),
+      initialState: const SubtitleEditorState(
+        status: SubtitleEditorStatus.ready,
+        cues: [
+          EditableCue(start: 0, end: 1000, text: 'one'),
+          EditableCue(start: 1000, end: 2000, text: 'two'),
+        ],
+      ),
+    );
+
+    await tester.pumpWidget(pump());
+    expect(find.text('one'), findsOneWidget);
+
+    // 'one' was deleted; the surviving cue slides into row 0 and its text
+    // field has to follow rather than keep showing the removed line.
+    await tester.pump();
+
+    expect(find.text('one'), findsNothing);
+    expect(find.text('two'), findsOneWidget);
+  });
+
+  testWidgets('save stays disabled while a cue is incomplete', (tester) async {
+    when(() => cubit.state).thenReturn(
+      const SubtitleEditorState(
+        status: SubtitleEditorStatus.ready,
+        isDirty: true,
+        cues: [EditableCue(start: 0, end: 2000, text: '  ')],
+      ),
+    );
+    await tester.pumpWidget(pump());
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(find.text(l10n.subtitleEditorInvalidHint), findsOneWidget);
+
+    await tester.tap(find.text(l10n.subtitleEditorSave));
+    verifyNever(cubit.save);
+  });
+
   testWidgets('editing a field dispatches updateCueText', (tester) async {
     when(() => cubit.state).thenReturn(
       const SubtitleEditorState(
@@ -95,7 +276,8 @@ void main() {
       ),
     );
     await tester.pumpWidget(pump());
-    await tester.enterText(find.byType(TextField).first, 'edited');
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    await tester.enterText(cueTextFields(l10n).first, 'edited');
     verify(() => cubit.updateCueText(0, 'edited')).called(1);
   });
 
@@ -126,7 +308,10 @@ void main() {
       final resolver = _FakeVideoEventResolver(video);
       final repository = _MockSubtitleRepository();
       when(() => repository.loadCues(any())).thenAnswer(
-        (_) async => const [SubtitleCue(start: 0, end: 1000, text: 'hello')],
+        (_) async => const SubtitleFetchResult(
+          SubtitleFetchStatus.available,
+          cues: [SubtitleCue(start: 0, end: 1000, text: 'hello')],
+        ),
       );
 
       await tester.pumpWidget(

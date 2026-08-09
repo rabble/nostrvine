@@ -5,8 +5,14 @@ enum SubtitleEditorStatus {
   /// Initial cue-load is in progress.
   loading,
 
-  /// Auto-transcription is not yet available; polling is expected.
+  /// Auto-transcription is still running; polling is expected.
   processing,
+
+  /// Auto-transcription finished but found nothing to transcribe.
+  empty,
+
+  /// No subtitle track could be reached for this video.
+  unavailable,
 
   /// Cues are loaded and ready to edit.
   ready,
@@ -21,9 +27,7 @@ enum SubtitleEditorStatus {
   failure,
 }
 
-/// A single subtitle cue whose text may be edited.
-///
-/// Timing is read-only; only [text] can be changed by the editor.
+/// A single subtitle cue the creator can edit — text and timing alike.
 class EditableCue extends Equatable {
   /// Creates an editable cue.
   const EditableCue({
@@ -36,10 +40,10 @@ class EditableCue extends Equatable {
   factory EditableCue.fromCue(SubtitleCue cue) =>
       EditableCue(start: cue.start, end: cue.end, text: cue.text);
 
-  /// Start time in milliseconds (read-only).
+  /// Start time in milliseconds.
   final int start;
 
-  /// End time in milliseconds (read-only).
+  /// End time in milliseconds.
   final int end;
 
   /// The subtitle text content.
@@ -48,9 +52,16 @@ class EditableCue extends Equatable {
   /// Converts back to a [SubtitleCue] for publishing.
   SubtitleCue toCue() => SubtitleCue(start: start, end: end, text: text);
 
-  /// Returns a copy with [text] replaced.
-  EditableCue copyWith({String? text}) =>
-      EditableCue(start: start, end: end, text: text ?? this.text);
+  /// Returns a copy with the given fields replaced.
+  EditableCue copyWith({int? start, int? end, String? text}) => EditableCue(
+    start: start ?? this.start,
+    end: end ?? this.end,
+    text: text ?? this.text,
+  );
+
+  /// Whether this cue can be published: it says something, and it ends after
+  /// it starts.
+  bool get isValid => text.trim().isNotEmpty && end > start;
 
   /// `M:SS` label derived from [start] for display purposes.
   String get timestampLabel {
@@ -85,6 +96,13 @@ class SubtitleEditorState extends Equatable {
 
   /// Updated video event returned after a successful subtitle republish.
   final VideoEvent? updatedVideo;
+
+  /// Whether [cues] can be published as they stand.
+  bool get isValid => cues.isNotEmpty && cues.every((cue) => cue.isValid);
+
+  /// Whether the creator is authoring cues rather than correcting
+  /// auto-generated ones — used to decide which empty-state copy applies.
+  bool get isEmptyDraft => status == SubtitleEditorStatus.ready && cues.isEmpty;
 
   /// Returns a copy with selected fields replaced.
   SubtitleEditorState copyWith({

@@ -10784,6 +10784,29 @@ class AppLocalizationsFr extends AppLocalizations {
       'Les sous-titres sont encore en cours de génération. Reviens dans un instant.';
 
   @override
+  String get subtitleEditorNoSpeech =>
+      'Aucune parole n\'a été détectée dans cette vidéo, il n\'y a donc rien à sous-titrer.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'Écris-les toi-même';
+
+  @override
+  String get subtitleEditorAddCue => 'Ajouter une ligne';
+
+  @override
+  String get subtitleEditorRemoveCue => 'Supprimer cette ligne';
+
+  @override
+  String get subtitleEditorStartLabel => 'Début';
+
+  @override
+  String get subtitleEditorEndLabel => 'Fin';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'Chaque ligne a besoin de texte et d\'une fin après son début.';
+
+  @override
   String get subtitleEditorLoadError =>
       'Impossible de charger les sous-titres. Réessaie.';
 

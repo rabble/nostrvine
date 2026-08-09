@@ -10827,6 +10827,29 @@ class AppLocalizationsPl extends AppLocalizations {
       'Napisy są jeszcze generowane. Zajrzyj za chwilę.';
 
   @override
+  String get subtitleEditorNoSpeech =>
+      'Nie wykryto mowy w tym filmie, więc nie ma nic do opisania napisami.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'Napisz je sam';
+
+  @override
+  String get subtitleEditorAddCue => 'Dodaj linijkę';
+
+  @override
+  String get subtitleEditorRemoveCue => 'Usuń tę linijkę';
+
+  @override
+  String get subtitleEditorStartLabel => 'Początek';
+
+  @override
+  String get subtitleEditorEndLabel => 'Koniec';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'Każda linijka potrzebuje tekstu i końca po swoim początku.';
+
+  @override
   String get subtitleEditorLoadError =>
       'Nie udało się wczytać napisów. Spróbuj ponownie.';
 

@@ -18274,6 +18274,48 @@ abstract class AppLocalizations {
   /// **'Subtitles are still being generated. Check back in a moment.'**
   String get subtitleEditorProcessing;
 
+  /// No description provided for @subtitleEditorNoSpeech.
+  ///
+  /// In en, this message translates to:
+  /// **'No speech was detected in this video, so there\'s nothing to caption.'**
+  String get subtitleEditorNoSpeech;
+
+  /// No description provided for @subtitleEditorWriteOwn.
+  ///
+  /// In en, this message translates to:
+  /// **'Write them yourself'**
+  String get subtitleEditorWriteOwn;
+
+  /// No description provided for @subtitleEditorAddCue.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a line'**
+  String get subtitleEditorAddCue;
+
+  /// No description provided for @subtitleEditorRemoveCue.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this line'**
+  String get subtitleEditorRemoveCue;
+
+  /// No description provided for @subtitleEditorStartLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get subtitleEditorStartLabel;
+
+  /// No description provided for @subtitleEditorEndLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get subtitleEditorEndLabel;
+
+  /// No description provided for @subtitleEditorInvalidHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Every line needs text and an end after its start.'**
+  String get subtitleEditorInvalidHint;
+
   /// No description provided for @subtitleEditorLoadError.
   ///
   /// In en, this message translates to:

@@ -56,8 +56,10 @@ class SubtitleRepository {
 
   /// Loads the current cues for [video] using the shared fallback chain.
   ///
-  /// Returns `[]` when no subtitle data is available yet.
-  Future<List<SubtitleCue>> loadCues(VideoEvent video) {
+  /// The returned [SubtitleFetchResult.status] distinguishes a track that is
+  /// still being generated from one that finished with nothing to transcribe,
+  /// so the editor can say which.
+  Future<SubtitleFetchResult> loadCues(VideoEvent video) {
     return fetchSubtitleCues(
       httpClient: _httpClient,
       nostrClient: _nostrClient,

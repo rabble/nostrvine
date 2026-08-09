@@ -10757,6 +10757,29 @@ class AppLocalizationsDe extends AppLocalizations {
       'Untertitel werden noch erstellt. Schau gleich noch mal vorbei.';
 
   @override
+  String get subtitleEditorNoSpeech =>
+      'In diesem Video wurde keine Sprache erkannt – es gibt nichts zu untertiteln.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'Selbst schreiben';
+
+  @override
+  String get subtitleEditorAddCue => 'Zeile hinzufügen';
+
+  @override
+  String get subtitleEditorRemoveCue => 'Diese Zeile entfernen';
+
+  @override
+  String get subtitleEditorStartLabel => 'Start';
+
+  @override
+  String get subtitleEditorEndLabel => 'Ende';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'Jede Zeile braucht Text und ein Ende nach dem Start.';
+
+  @override
   String get subtitleEditorLoadError =>
       'Untertitel konnten nicht geladen werden. Versuch es erneut.';
 

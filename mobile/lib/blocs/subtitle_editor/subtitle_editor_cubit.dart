@@ -5,6 +5,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
 import 'package:openvine/repositories/subtitle_repository.dart';
+import 'package:openvine/services/subtitle_fetcher.dart';
 import 'package:openvine/services/subtitle_service.dart';
 
 part 'subtitle_editor_state.dart';
@@ -19,6 +20,9 @@ class SubtitleEditorCubit extends Cubit<SubtitleEditorState> {
        _video = video,
        super(const SubtitleEditorState());
 
+  /// How long a hand-authored cue runs before the creator adjusts it.
+  static const _newCueDurationMs = 2000;
+
   final SubtitleRepository _repository;
   final VideoEvent _video;
 
@@ -26,25 +30,33 @@ class SubtitleEditorCubit extends Cubit<SubtitleEditorState> {
   ///
   /// Emits [SubtitleEditorStatus.loading] then either:
   /// - [SubtitleEditorStatus.ready] with cues when they are available.
-  /// - [SubtitleEditorStatus.processing] when no cues are available yet.
+  /// - [SubtitleEditorStatus.processing] when transcription is still running.
+  /// - [SubtitleEditorStatus.empty] when transcription finished but found
+  ///   nothing to transcribe.
+  /// - [SubtitleEditorStatus.unavailable] when no source held a track.
   /// - [SubtitleEditorStatus.failure] and calls [addError] on any exception.
   Future<void> load() async {
     if (isClosed) return;
     emit(state.copyWith(status: SubtitleEditorStatus.loading));
     try {
-      final cues = await _repository.loadCues(_video);
+      final result = await _repository.loadCues(_video);
       if (isClosed) return;
-      if (cues.isEmpty) {
-        emit(state.copyWith(status: SubtitleEditorStatus.processing));
-        return;
+      switch (result.status) {
+        case SubtitleFetchStatus.available:
+          emit(
+            state.copyWith(
+              status: SubtitleEditorStatus.ready,
+              cues: result.cues.map(EditableCue.fromCue).toList(),
+              isDirty: false,
+            ),
+          );
+        case SubtitleFetchStatus.processing:
+          emit(state.copyWith(status: SubtitleEditorStatus.processing));
+        case SubtitleFetchStatus.empty:
+          emit(state.copyWith(status: SubtitleEditorStatus.empty));
+        case SubtitleFetchStatus.unavailable:
+          emit(state.copyWith(status: SubtitleEditorStatus.unavailable));
       }
-      emit(
-        state.copyWith(
-          status: SubtitleEditorStatus.ready,
-          cues: cues.map(EditableCue.fromCue).toList(),
-          isDirty: false,
-        ),
-      );
     } catch (e, st) {
       if (isClosed) return;
       addError(e, st);
@@ -56,15 +68,65 @@ class SubtitleEditorCubit extends Cubit<SubtitleEditorState> {
   /// state as dirty.
   ///
   /// Out-of-range indices are silently ignored.
-  void updateCueText(int index, String text) {
+  void updateCueText(int index, String text) =>
+      _replaceCue(index, (cue) => cue.copyWith(text: text));
+
+  /// Replaces the timing of the cue at [index], in milliseconds.
+  ///
+  /// Leaves a bound untouched when it is `null`. Out-of-range indices are
+  /// silently ignored. Timings are not validated here so the creator can type
+  /// through an intermediate state; [SubtitleEditorState.isValid] gates the
+  /// save instead.
+  void updateCueTiming(int index, {int? start, int? end}) =>
+      _replaceCue(index, (cue) => cue.copyWith(start: start, end: end));
+
+  /// Appends a blank cue after the last one and switches to editing.
+  ///
+  /// The new cue starts where the previous one ends and runs for
+  /// [_newCueDurationMs], trimmed to the video's end when its duration is
+  /// known. This is the entry point for authoring captions on a video that
+  /// has none.
+  void addCue() {
+    if (isClosed) return;
+    final start = state.cues.isEmpty ? 0 : state.cues.last.end;
+    final videoEndMs = (_video.duration ?? 0) * Duration.millisecondsPerSecond;
+    var end = start + _newCueDurationMs;
+    if (videoEndMs > start && end > videoEndMs) end = videoEndMs;
+
+    emit(
+      state.copyWith(
+        status: SubtitleEditorStatus.ready,
+        cues: [
+          ...state.cues,
+          EditableCue(start: start, end: end, text: ''),
+        ],
+        isDirty: true,
+      ),
+    );
+  }
+
+  /// Removes the cue at [index].
+  ///
+  /// Out-of-range indices are silently ignored.
+  void removeCue(int index) {
+    if (isClosed) return;
+    if (index < 0 || index >= state.cues.length) return;
+    final updated = List<EditableCue>.from(state.cues)..removeAt(index);
+    emit(state.copyWith(cues: updated, isDirty: true));
+  }
+
+  void _replaceCue(int index, EditableCue Function(EditableCue cue) update) {
     if (isClosed) return;
     if (index < 0 || index >= state.cues.length) return;
     final updated = List<EditableCue>.from(state.cues);
-    updated[index] = updated[index].copyWith(text: text);
+    updated[index] = update(updated[index]);
     emit(state.copyWith(cues: updated, isDirty: true));
   }
 
   /// Publishes the current cues via the repository.
+  ///
+  /// Cues are published in timeline order — hand-edited timings can leave the
+  /// list out of order, and VTT readers expect ascending cues.
   ///
   /// Emits [SubtitleEditorStatus.saving] then either:
   /// - [SubtitleEditorStatus.success] with `isDirty` reset to `false`.
@@ -73,9 +135,11 @@ class SubtitleEditorCubit extends Cubit<SubtitleEditorState> {
     if (isClosed) return;
     emit(state.copyWith(status: SubtitleEditorStatus.saving));
     try {
+      final ordered = List<EditableCue>.from(state.cues)
+        ..sort((a, b) => a.start.compareTo(b.start));
       final updatedVideo = await _repository.publishEditedSubtitles(
         video: _video,
-        cues: state.cues.map((c) => c.toCue()).toList(),
+        cues: ordered.map((c) => c.toCue()).toList(),
       );
       if (isClosed) return;
       emit(

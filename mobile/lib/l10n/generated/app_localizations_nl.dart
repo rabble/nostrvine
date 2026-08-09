@@ -10685,6 +10685,29 @@ class AppLocalizationsNl extends AppLocalizations {
       'Ondertitels worden nog gegenereerd. Kom zo terug.';
 
   @override
+  String get subtitleEditorNoSpeech =>
+      'Er is geen spraak gevonden in deze video, dus er valt niets te ondertitelen.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'Schrijf ze zelf';
+
+  @override
+  String get subtitleEditorAddCue => 'Regel toevoegen';
+
+  @override
+  String get subtitleEditorRemoveCue => 'Deze regel verwijderen';
+
+  @override
+  String get subtitleEditorStartLabel => 'Start';
+
+  @override
+  String get subtitleEditorEndLabel => 'Einde';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'Elke regel heeft tekst nodig en een einde na de start.';
+
+  @override
   String get subtitleEditorLoadError =>
       'Ondertitels laden mislukt. Probeer het opnieuw.';
 

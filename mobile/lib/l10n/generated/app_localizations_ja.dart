@@ -10195,6 +10195,27 @@ class AppLocalizationsJa extends AppLocalizations {
   String get subtitleEditorProcessing => '字幕はまだ生成中だよ。少し待ってからもう一回見てね。';
 
   @override
+  String get subtitleEditorNoSpeech => 'この動画からは話し声が見つからなかったよ。字幕にするものがないみたい。';
+
+  @override
+  String get subtitleEditorWriteOwn => '自分で書く';
+
+  @override
+  String get subtitleEditorAddCue => '行を追加';
+
+  @override
+  String get subtitleEditorRemoveCue => 'この行を削除';
+
+  @override
+  String get subtitleEditorStartLabel => '開始';
+
+  @override
+  String get subtitleEditorEndLabel => '終了';
+
+  @override
+  String get subtitleEditorInvalidHint => 'どの行にもテキストと、開始より後の終了時間が必要だよ。';
+
+  @override
   String get subtitleEditorLoadError => '字幕を読み込めなかったよ。もう一回試してね。';
 
   @override
