@@ -106,16 +106,24 @@ class BugReportConfig {
     // separates these from `tokenization`. The continuation class excludes
     // uppercase for the same non-ambiguity reason as above.
     RegExp(
-      '(?:[Pp]assphrase|[Pp]asscode|[Pp]assword|[Pp]asswd'
+      '(?:[Pp]assphrase|[Pp]asscode|[Pp]assword|[Pp]asswd|[Pp]wd'
       '|[Tt]oken|[Ss]ecret)'
       '(?:[A-Z][a-z0-9]*)+'
       '$_credentialSeparator$_credentialValue',
     ),
-    // camelCase `key` (`sessionKey`, `signingKey`). Kept separate because it
-    // needs no continuation, and case-sensitive so `KeyEvent` and `keyLabel`
-    // are untouched - only a capital `Key` following a lowercase letter counts.
+    // camelCase `key` (`sessionKey`, `privateKeyHex`, `AESKey`). Kept separate
+    // because it needs no continuation, and case-sensitive so `KeyEvent` and
+    // `keyLabel` are untouched - only a capital `Key` preceded by another
+    // letter counts. The continuation is what covers `privateKeyHex` and
+    // `rawKeyHex`; those matter because a 64-char hex value is deliberately
+    // not redacted, so the key *name* is the only thing keeping a hex-form
+    // private key out of a public ticket. `physical`/`logical` are excluded
+    // because Flutter's KeyEvent.toString() prints them and they are never
+    // credentials.
     RegExp(
-      '(?<=[a-z])(?<![Pp]ub)(?<![Pp]ublic)Key'
+      '(?<=[A-Za-z])(?<![Pp]ub)(?<![Pp]ublic)'
+      '(?<![Pp]hysical)(?<![Ll]ogical)Key'
+      '(?:[A-Z][a-z0-9]*)*'
       '$_credentialSeparator$_credentialValue',
     ),
     RegExp(r'\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b', caseSensitive: false),

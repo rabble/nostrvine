@@ -48,7 +48,9 @@ submission boundary. Two gaps are known and accepted:
 
 - Hex-form private keys are not redacted, because 64-char hex is
   indistinguishable from public event IDs and pubkeys, and blanket redaction
-  would remove the triage value the summary exists for.
+  would remove the triage value the summary exists for. A hex key written under
+  a credential-shaped name (`privateKeyHex: <hex>`) is still caught by the
+  key-name rule below; a bare hex string on its own is not.
 - Redaction is keyword-based, so it cuts both ways and is deliberately tuned to
   lose triage value rather than leak. A key containing `token`, `secret`,
   `password` or `key` has its value redacted even when that value is not a

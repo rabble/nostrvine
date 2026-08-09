@@ -60,6 +60,17 @@ void main() {
         'camel case session key': 'sessionKey: abc123',
         'camel case json key name': '{"signingKey":"abc123"}',
         'run-together api key': 'apikey: abc123',
+        // A 64-char hex value is deliberately not redacted, so for hex-form
+        // private keys the key *name* is the only thing standing between the
+        // secret and a public ticket. `privateKeyHex` and `rawKeyHex` are the
+        // spellings this repo actually uses, 122 and 112 times respectively.
+        'camel case key with suffix': 'privateKeyHex: aabbccdd',
+        'nested camel case key with suffix': 'senderPrivateKeyHex: aabbccdd',
+        'raw camel case key with suffix': 'rawKeyHex: aabbccdd',
+        'acronym-prefixed key': 'AESKey: abc123',
+        'hmac key': 'HMACKey=deadbeef',
+        'pwd compound key': 'pwdHash: deadbeef',
+        'pascal pwd compound key': 'PwdValue=hunter2',
         'yaml doubled single quote': "password: 'alpha''beta gamma'",
         'json access token': '{"access_token":"eyJhbGciOi"}',
         'json refresh token': '{"refresh_token":"eyJhbGciOi"}',
@@ -140,6 +151,7 @@ void main() {
         'publicKey: npub1abc',
         'PublicKey: npub1abc',
         'recipientPublicKey: npub1abc',
+        'theirPubKey: npub1abc',
         'pubkeyHex: abc123def',
         'user_pubkeyHex: abc123def',
         // Bare `key` is an ordinary English word. These are real in-repo
@@ -148,6 +160,8 @@ void main() {
         'Failed to import key: SomeError at 0',
         'ClipChromaKey(key: green, backgroundVideoPath: x)',
         'KeyEvent: KeyDownEvent',
+        // Flutter's KeyEvent.toString() prints these; never credentials.
+        'KeyDownEvent(physicalKey: keyA, logicalKey: keyA, character: x)',
         'keyLabel: a',
         'KeyValue: 42',
         'Cache key: video_123',
