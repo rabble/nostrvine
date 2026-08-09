@@ -81,29 +81,41 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test(super.e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       await m.createAll();
+      await _normalizeLegacyV1Schema();
+    },
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await _normalizeLegacyV1Schema();
+      }
     },
     beforeOpen: (details) async {
-      // Create any missing tables that should have been part of v1
-      await _createMissingTables();
+      // v1 databases are normalized by onUpgrade. This guarded path remains
+      // only as recovery for damaged or manually-mutated v2 databases.
+      if (!details.wasCreated &&
+          !details.hadUpgrade &&
+          await _needsSchemaRepair()) {
+        await _normalizeLegacyV1Schema();
+      }
 
       // Run cleanup of expired data on every app startup
       await runStartupCleanup();
     },
   );
 
-  /// Creates tables that were added to the schema but missing from some
-  /// installs.
+  /// Normalizes all historical schema drift from version 1 to version 2.
   ///
-  /// This handles cases where tables were added to the Drift schema but
-  /// existing databases don't have them yet. Rather than incrementing the
-  /// schema version, we check and create missing tables on startup.
-  Future<void> _createMissingTables() async {
+  /// Before v2, new tables, columns, indexes, and data backfills were added
+  /// through startup repair SQL while the Drift user-version stayed at 1. All
+  /// shipped legacy databases therefore report version 1 regardless of which
+  /// subset of this schema they already have. This idempotent migration brings
+  /// those databases to the current schema before Drift records version 2.
+  Future<void> _normalizeLegacyV1Schema() async {
     // Check if personal_reposts table exists, create if missing
     final repostsResult = await customSelect(
       "SELECT name FROM sqlite_master WHERE type='table' "
@@ -477,8 +489,6 @@ class AppDatabase extends _$AppDatabase {
 
     // Check if outgoing_dms table exists, create if missing.
     // Added for #3909 (durable outgoing-DM queue + self-wrap retry).
-    // Schema version stays at 1 — same runtime CREATE-IF-NOT-EXISTS
-    // pattern as personal_reposts and nip05_verifications above.
     final outgoingDmsResult = await customSelect(
       "SELECT name FROM sqlite_master WHERE type='table' "
       "AND name='outgoing_dms'",
@@ -539,8 +549,7 @@ class AppDatabase extends _$AppDatabase {
 
     // Check if pending_profile_saves table exists, create if missing.
     // Added for #3161 (durable profile/username save + background re-drive).
-    // Schema version stays at 1 — same runtime CREATE-IF-NOT-EXISTS pattern as
-    // outgoing_dms above. Column order/types/defaults must match Drift's
+    // Column order/types/defaults must match Drift's
     // `m.createAll()` output (pinned by the pending_profile_saves schema-parity
     // test in app_database_test.dart): bool → INTEGER DEFAULT 0 with a
     // CHECK (x IN (0,1)); DateTime columns → INTEGER (seconds codec).
@@ -566,8 +575,7 @@ class AppDatabase extends _$AppDatabase {
     }
 
     // Check if dm_message_reactions table exists, create if missing.
-    // Added for #4633 (DM emoji reactions). Schema version stays at 1 —
-    // same runtime CREATE-IF-NOT-EXISTS pattern as outgoing_dms above.
+    // Added for #4633 (DM emoji reactions).
     final dmReactionsResult = await customSelect(
       "SELECT name FROM sqlite_master WHERE type='table' "
       "AND name='dm_message_reactions'",
@@ -715,8 +723,6 @@ class AppDatabase extends _$AppDatabase {
 
     // Check if pending_gift_wraps table exists, create if missing.
     // Added for #5202 (durable failed-decrypt gift-wrap retry queue).
-    // Schema version stays at 1 — same runtime CREATE-IF-NOT-EXISTS pattern
-    // as outgoing_dms / pending_view_events above.
     final pendingGiftWrapsResult = await customSelect(
       "SELECT name FROM sqlite_master WHERE type='table' "
       "AND name='pending_gift_wraps'",
@@ -744,9 +750,8 @@ class AppDatabase extends _$AppDatabase {
 
     // Check if processed_gift_wraps table exists, create if missing.
     // Added for #5452 (dedup ledger so DM reaction/deletion gift wraps are not
-    // re-decrypted on every launch). Schema version stays at 1 — same runtime
-    // CREATE-IF-NOT-EXISTS pattern as pending_gift_wraps above. No index: the
-    // only access is a primary-key lookup on gift_wrap_id.
+    // re-decrypted on every launch). No index: the only access is a primary-key
+    // lookup on gift_wrap_id.
     final processedGiftWrapsResult = await customSelect(
       "SELECT name FROM sqlite_master WHERE type='table' "
       "AND name='processed_gift_wraps'",
@@ -765,8 +770,7 @@ class AppDatabase extends _$AppDatabase {
 
     // Check if identity_events table exists, create if missing.
     // Added for #3936 (NIP-39 kind-10011 source + verification cache).
-    // Schema version stays at 1 — same runtime CREATE-IF-NOT-EXISTS pattern
-    // as processed_gift_wraps above. Column order/types must match Drift's
+    // Column order/types must match Drift's
     // m.createAll() output (pinned by the schema-parity tests in
     // app_database_test.dart).
     final identityEventsResult = await customSelect(
@@ -803,8 +807,7 @@ class AppDatabase extends _$AppDatabase {
     }
 
     // Check if vanished_profiles table exists, create if missing.
-    // Schema version stays at 1 — same runtime CREATE-IF-NOT-EXISTS pattern as
-    // identity_events above. Column order/types must match Drift's
+    // Column order/types must match Drift's
     // m.createAll() output (pinned by the schema-parity tests in
     // app_database_test.dart). No index: the only access is a primary-key
     // lookup on pubkey.
@@ -852,16 +855,14 @@ class AppDatabase extends _$AppDatabase {
     await _addColumnIfMissing('event', 'd_tag', 'TEXT');
 
     // Durable group-send batch identity (PR #6046). Nullable TEXT on both DM
-    // tables so an existing install gets the column without a schema-version
-    // bump — same runtime ADD-COLUMN-IF-MISSING pattern as d_tag above. Fresh
-    // installs get it from Drift's createAll(); this ALTER only fires for DBs
-    // created before the column existed. See tables.dart for the semantics.
+    // tables. Fresh installs get it from Drift's createAll(); this ALTER only
+    // fires for DBs created before the column existed. See tables.dart for the
+    // semantics.
     await _addColumnIfMissing('outgoing_dms', 'send_batch_id', 'TEXT');
     await _addColumnIfMissing('direct_messages', 'send_batch_id', 'TEXT');
 
     // Addressable coordinate for own-like state, so it survives a target
-    // edit that mints a new event id for the same coordinate (#6020). Same
-    // runtime ADD-COLUMN-IF-MISSING pattern as d_tag/send_batch_id above.
+    // edit that mints a new event id for the same coordinate (#6020).
     await _addColumnIfMissing('personal_reactions', 'addressable_id', 'TEXT');
     await customStatement('''
       CREATE INDEX IF NOT EXISTS idx_personal_reactions_addressable_id
@@ -913,6 +914,127 @@ class AppDatabase extends _$AppDatabase {
     // Populate new columns from existing JSON data blobs
     await _backfillFilePathColumns();
     await _backfillEventDTagColumn();
+  }
+
+  /// Returns true when a v2 database is missing schema that v1 normalization
+  /// would have supplied. This is deliberately a recovery probe, not the
+  /// primary migration mechanism for future schema changes.
+  Future<bool> _needsSchemaRepair() async {
+    const requiredTables = <String>[
+      'personal_reposts',
+      'nip05_verifications',
+      'pending_actions',
+      'drafts',
+      'clips',
+      'direct_messages',
+      'conversations',
+      'outgoing_dms',
+      'pending_profile_saves',
+      'dm_message_reactions',
+      'pending_view_events',
+      'pending_product_events',
+      'pending_gift_wraps',
+      'processed_gift_wraps',
+      'identity_events',
+      'identity_verifications',
+      'vanished_profiles',
+    ];
+
+    for (final table in requiredTables) {
+      if (!await _tableExists(table)) {
+        return true;
+      }
+    }
+
+    const requiredColumns = <String, List<String>>{
+      'event': ['d_tag'],
+      'clips': ['file_path', 'thumbnail_path', 'owner_pubkey', 'deleted_at'],
+      'drafts': [
+        'rendered_file_path',
+        'rendered_thumbnail_path',
+        'custom_thumbnail_path',
+        'owner_pubkey',
+      ],
+      'notifications': [
+        'owner_pubkey',
+        'video_addressable_id',
+        'has_comment_target',
+      ],
+      'direct_messages': [
+        'message_kind',
+        'file_type',
+        'encryption_algorithm',
+        'decryption_key',
+        'decryption_nonce',
+        'file_hash',
+        'original_file_hash',
+        'file_size',
+        'dimensions',
+        'blurhash',
+        'thumbnail_url',
+        'tags_json',
+        'owner_pubkey',
+        'is_deleted',
+        'send_batch_id',
+      ],
+      'conversations': [
+        'current_user_has_sent',
+        'owner_pubkey',
+        'dm_protocol',
+        'last_read_timestamp',
+      ],
+      'pending_product_events': ['owner_pubkey'],
+      'outgoing_dms': ['send_batch_id'],
+      'personal_reactions': ['addressable_id'],
+    };
+
+    for (final entry in requiredColumns.entries) {
+      final columns = await _columnNames(entry.key);
+      if (entry.value.any((column) => !columns.contains(column))) {
+        return true;
+      }
+    }
+
+    const requiredIndexes = <String>[
+      'idx_event_kind_created_at',
+      'idx_event_pubkey_created_at',
+      'idx_event_pubkey_kind_d_tag_created_at',
+      'idx_event_created_at',
+      'idx_event_expire_at',
+      'idx_dm_reactions_unique_live',
+      'idx_pending_product_events_owner',
+      'idx_personal_reactions_addressable_id',
+      'idx_notification_owner_timestamp',
+    ];
+
+    for (final index in requiredIndexes) {
+      if (!await _indexExists(index)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  Future<bool> _tableExists(String table) async {
+    final rows = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name = ?",
+      variables: [Variable.withString(table)],
+    ).get();
+    return rows.isNotEmpty;
+  }
+
+  Future<bool> _indexExists(String index) async {
+    final rows = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type='index' AND name = ?",
+      variables: [Variable.withString(index)],
+    ).get();
+    return rows.isNotEmpty;
+  }
+
+  Future<Set<String>> _columnNames(String table) async {
+    final columns = await customSelect('PRAGMA table_info($table)').get();
+    return columns.map((row) => row.read<String>('name')).toSet();
   }
 
   /// Adds a column to a table if it does not already exist.

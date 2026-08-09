@@ -4,7 +4,16 @@ This document describes how to manage database migrations for the `db_client` pa
 
 ## Current Schema Version
 
-**Version: 2** (see `app_database.dart:48`)
+**Version: 2** (see `app_database.dart`).
+
+Version 2 is the legacy-normalization baseline. Earlier releases kept Drift's
+user-version at 1 while startup repair SQL added tables, columns, indexes, and
+backfills in `beforeOpen`. The v1 -> v2 migration is intentionally idempotent so
+any shipped v1 database shape can be brought to the current schema.
+
+Going forward, schema changes must be versioned Drift migrations. Do not add new
+tables, columns, indexes, or schema backfills to `beforeOpen`; that hook is only
+for startup cleanup and guarded recovery of damaged local databases.
 
 ## Project Structure
 
@@ -83,15 +92,6 @@ Edit `lib/src/database/app_database.dart` to add the migration step:
 ```dart
 extension Migrations on GeneratedDatabase {
   OnUpgrade get _schemaUpgrade => stepByStep(
-    from1To2: (m, schema) async {
-      await m.alterTable(
-        TableMigration(
-          schema.event,
-          newColumns: [schema.event.expireAt],
-        ),
-      );
-    },
-    // ADD NEW MIGRATION:
     from2To3: (m, schema) async {
       await m.alterTable(
         TableMigration(
@@ -103,6 +103,10 @@ extension Migrations on GeneratedDatabase {
   );
 }
 ```
+
+For schema changes that need custom SQL or idempotent repair, add that logic to
+the versioned `onUpgrade` path for the new version. Keep it covered by migration
+tests and avoid making `beforeOpen` the primary schema evolution mechanism.
 
 ### Step 6: Run Migration Tests
 

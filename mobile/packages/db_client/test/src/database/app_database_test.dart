@@ -198,12 +198,9 @@ void main() {
       });
 
       test('upgrade path — recreates outgoing_dms when missing', () async {
-        // Simulate an existing install that pre-dates the
-        // outgoing_dms table (added for #3909 / #3911 without a
-        // schema-version bump): drop the table from a fresh database,
-        // close, then reopen and assert the runtime
-        // CREATE-IF-NOT-EXISTS path in `_createMissingTables`
-        // recreated the table, indexes, and that the DAO works.
+        // Simulate a damaged database after v2 migration: drop the table from
+        // a fresh database, close, then reopen and assert the guarded recovery
+        // path recreated the table, indexes, and that the DAO works.
         await database.customStatement('DROP TABLE outgoing_dms');
 
         // Confirm the precondition — table really is gone before reopen.
@@ -221,10 +218,8 @@ void main() {
 
         await database.close();
 
-        // Reopen the same on-disk file. `beforeOpen` runs
-        // `_createMissingTables`, which should detect the missing
-        // outgoing_dms table and recreate it without bumping
-        // schemaVersion.
+        // Reopen the same on-disk file. `beforeOpen` should detect the
+        // missing outgoing_dms table and recreate it as recovery.
         database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
 
         // Trigger `beforeOpen` by issuing a query (Drift opens the
@@ -293,15 +288,11 @@ void main() {
         'schema parity — fresh-install matches runtime CREATE-IF-NOT-EXISTS '
         'path column-for-column and index-for-index',
         () async {
-          // The `outgoing_dms` table is defined in two places:
-          //   1. Drift `OutgoingDms` table in `tables.dart`, applied by
-          //      `m.createAll()` on first open of a brand-new database.
-          //   2. Handwritten SQL in `_createMissingTables`, applied to
-          //      existing installs that pre-date the table.
-          // Both paths must agree exactly. This test inspects the same
-          // database from both code paths and diffs the resulting
-          // `outgoing_dms` shape — a future Drift edit that misses the
-          // runtime SQL (or vice-versa) fails this test loudly.
+          // The `outgoing_dms` table is defined by Drift for fresh installs
+          // and by the v1 normalization/recovery SQL for legacy or repaired
+          // databases. Both paths must agree exactly. This test inspects the
+          // same database from both code paths and diffs the resulting
+          // `outgoing_dms` shape.
 
           // Path 1: capture the fresh-install shape from the database
           // already opened by the outer `setUp` (Drift's `m.createAll()`
@@ -321,12 +312,12 @@ void main() {
             reason: 'precondition: fresh install should have outgoing_dms',
           );
 
-          // Path 2: drop the table and reopen the same on-disk file so
-          // `_createMissingTables` recreates it via the runtime SQL path.
+          // Path 2: drop the table and reopen the same on-disk file so the
+          // recovery path recreates it via the v1 normalization SQL.
           await database.customStatement('DROP TABLE outgoing_dms');
-          // Drop the indexes too so `_createMissingTables` is responsible
-          // for recreating them — otherwise stale indexes could mask a
-          // missing CREATE INDEX statement.
+          // Drop the indexes too so recovery is responsible for recreating
+          // them — otherwise stale indexes could mask a missing CREATE INDEX
+          // statement.
           for (final indexName in freshIndexes) {
             await database.customStatement('DROP INDEX IF EXISTS $indexName');
           }

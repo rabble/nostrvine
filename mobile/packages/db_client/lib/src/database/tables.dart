@@ -39,10 +39,9 @@ class NostrEvents extends Table {
   /// Documents the index set for the event table.
   ///
   /// This getter is not wired through `@DriftDatabase(...)`, so Drift's
-  /// `m.createAll()` never creates these indexes. The runtime
-  /// CREATE-IF-NOT-EXISTS statements in `AppDatabase._createMissingTables`
-  /// are the source of truth (same pattern as outgoing_dms); keep both in
-  /// sync.
+  /// `m.createAll()` never creates these indexes. AppDatabase's v1
+  /// normalization SQL creates them for fresh, migrated, and repaired
+  /// databases; keep both in sync.
   List<Index> get indexes => [
     // Feed queries (WHERE kind = ? ORDER BY created_at DESC); the kind
     // prefix also serves kind-only filters.
@@ -932,11 +931,10 @@ class DmMessageReactions extends Table {
           'ON dm_message_reactions (owner_pubkey, created_at)',
     ),
     // Cap-at-one storage invariant (#5419): at most one LIVE reaction per
-    // (target_message_id, reactor_pubkey, owner_pubkey). Applied at runtime in
-    // app_database._createMissingTables (after a dedup pass); mirrored here for
-    // documentation parity — the getter is not wired through
-    // @DriftDatabase(indexes:), so the runtime customStatement is the source
-    // of truth.
+    // (target_message_id, reactor_pubkey, owner_pubkey). Applied by
+    // AppDatabase's v1 normalization SQL after a dedup pass; mirrored here for
+    // documentation parity. The getter is not wired through
+    // @DriftDatabase(indexes:), so the customStatement is the source of truth.
     Index(
       'idx_dm_reactions_unique_live',
       'CREATE UNIQUE INDEX IF NOT EXISTS idx_dm_reactions_unique_live '

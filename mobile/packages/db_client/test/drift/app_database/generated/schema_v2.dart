@@ -13219,8 +13219,8 @@ class VanishedProfilesCompanion extends UpdateCompanion<VanishedProfilesData> {
   }
 }
 
-class DatabaseAtV1 extends GeneratedDatabase {
-  DatabaseAtV1(QueryExecutor e) : super(e);
+class DatabaseAtV2 extends GeneratedDatabase {
+  DatabaseAtV2(QueryExecutor e) : super(e);
   late final Event event = Event(this);
   late final UserProfiles userProfiles = UserProfiles(this);
   late final VideoMetrics videoMetrics = VideoMetrics(this);
@@ -13300,5 +13300,5 @@ class DatabaseAtV1 extends GeneratedDatabase {
     ),
   ]);
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 }
