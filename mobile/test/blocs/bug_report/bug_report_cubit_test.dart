@@ -6,7 +6,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:models/models.dart' show BugReportData;
+import 'package:models/models.dart' show BugReportData, LogEntry, LogLevel;
 import 'package:openvine/blocs/bug_report/bug_report_cubit.dart';
 import 'package:openvine/blocs/bug_report/bug_report_state.dart';
 import 'package:openvine/services/bug_report_service.dart';
@@ -14,13 +14,24 @@ import 'package:openvine/services/zendesk_support_service.dart';
 
 class _MockBugReportService extends Mock implements BugReportService {}
 
-BugReportData _makeReportData() => BugReportData(
+const _rawNsec =
+    'nsec1qqqsyrhq4p4d8hf40q7tlujzw87hqhz9axhfnm35s2a3u3rrnwsq9sp5p6';
+const _rawEmail = 'liz@example.com';
+
+String _sanitizeLikeBugReportService(String input) => input
+    .replaceAll(_rawNsec, '[REDACTED]')
+    .replaceAll(_rawEmail, '[REDACTED]');
+
+BugReportData _makeReportData({
+  String userDescription = '',
+  List<LogEntry> recentLogs = const [],
+}) => BugReportData(
   reportId: 'report-1',
   timestamp: DateTime.fromMillisecondsSinceEpoch(0),
-  userDescription: '',
+  userDescription: userDescription,
   deviceInfo: const {'platform': 'test'},
   appVersion: '1.0.0+1',
-  recentLogs: const [],
+  recentLogs: recentLogs,
   errorCounts: const {},
 );
 
@@ -38,6 +49,10 @@ void main() {
           additionalContext: any(named: 'additionalContext'),
         ),
       ).thenAnswer((_) async => _makeReportData());
+      when(() => service.sanitizeText(any())).thenAnswer((invocation) {
+        final input = invocation.positionalArguments.single as String;
+        return _sanitizeLikeBugReportService(input);
+      });
     });
 
     SubmitBugReportAction buildSubmit({
@@ -66,14 +81,15 @@ void main() {
     BugReportCubit buildCubit({
       bool returnValue = true,
       Object? throwError,
+      BuildLogsSummary? buildLogsSummary,
+      SubmitBugReportAction? submitBugReport,
     }) {
       return BugReportCubit(
         bugReportService: service,
-        buildLogsSummary: (_) => null,
-        submitBugReport: buildSubmit(
-          returnValue: returnValue,
-          throwError: throwError,
-        ),
+        buildLogsSummary: buildLogsSummary ?? (_) => null,
+        submitBugReport:
+            submitBugReport ??
+            buildSubmit(returnValue: returnValue, throwError: throwError),
       );
     }
 
@@ -127,9 +143,8 @@ void main() {
 
     blocTest<BugReportCubit, BugReportState>(
       'submit emits attachmentUpload key on ZendeskAttachmentUploadException',
-      build: () => buildCubit(
-        throwError: const ZendeskAttachmentUploadException(),
-      ),
+      build: () =>
+          buildCubit(throwError: const ZendeskAttachmentUploadException()),
       act: (cubit) => cubit.submit(
         subject: 'X',
         description: 'Y',
@@ -165,6 +180,78 @@ void main() {
         ),
       ],
       errors: () => [isA<StateError>()],
+    );
+
+    blocTest<BugReportCubit, BugReportState>(
+      'submit sends sanitized fields and logs to Zendesk',
+      setUp: () {
+        when(
+          () => service.collectDiagnostics(
+            userDescription: any(named: 'userDescription'),
+            currentScreen: any(named: 'currentScreen'),
+            userPubkey: any(named: 'userPubkey'),
+            additionalContext: any(named: 'additionalContext'),
+          ),
+        ).thenAnswer(
+          (_) async => _makeReportData(
+            userDescription: 'Description [REDACTED] [REDACTED]',
+            recentLogs: [
+              LogEntry(
+                timestamp: DateTime.fromMillisecondsSinceEpoch(0),
+                level: LogLevel.error,
+                message: 'Log [REDACTED] [REDACTED]',
+                error: 'Error [REDACTED]',
+                stackTrace: 'Stack [REDACTED]',
+              ),
+            ],
+          ),
+        );
+      },
+      build: () {
+        return buildCubit(
+          buildLogsSummary: (logs) => logs
+              .map((log) => '${log.message}\n${log.error}\n${log.stackTrace}')
+              .join('\n'),
+          submitBugReport:
+              ({
+                required String subject,
+                required String description,
+                required String reportId,
+                required String appVersion,
+                required Map<String, dynamic> deviceInfo,
+                String? stepsToReproduce,
+                String? expectedBehavior,
+                String? currentScreen,
+                String? userPubkey,
+                Map<String, int>? errorCounts,
+                String? logsSummary,
+                List<String>? attachmentPaths,
+              }) async {
+                final submitted = [
+                  subject,
+                  description,
+                  stepsToReproduce,
+                  expectedBehavior,
+                  logsSummary,
+                ].join('\n');
+                expect(submitted, isNot(contains(_rawNsec)));
+                expect(submitted, isNot(contains(_rawEmail)));
+                expect(submitted, contains('[REDACTED]'));
+                return true;
+              },
+        );
+      },
+      act: (cubit) => cubit.submit(
+        subject: 'Crash $_rawNsec',
+        description: 'Description $_rawNsec $_rawEmail',
+        stepsToReproduce: 'Step $_rawNsec',
+        expectedBehavior: 'Expected $_rawEmail',
+        attachments: const [],
+      ),
+      expect: () => [
+        const BugReportState(status: BugReportStatus.submitting),
+        const BugReportState(status: BugReportStatus.success),
+      ],
     );
   });
 }

@@ -76,11 +76,16 @@ class BugReportCubit extends Cubit<BugReportState> {
         currentScreen: currentScreen,
         userPubkey: userPubkey,
       );
+      final sanitizedSubject = _bugReportService.sanitizeText(trimmedSubject);
       final success = await _submit(
-        subject: trimmedSubject,
-        description: trimmedDescription,
-        stepsToReproduce: stepsToReproduce.trim(),
-        expectedBehavior: expectedBehavior.trim(),
+        subject: sanitizedSubject,
+        description: reportData.userDescription,
+        stepsToReproduce: _bugReportService.sanitizeText(
+          stepsToReproduce.trim(),
+        ),
+        expectedBehavior: _bugReportService.sanitizeText(
+          expectedBehavior.trim(),
+        ),
         reportId: reportData.reportId,
         appVersion: reportData.appVersion,
         deviceInfo: reportData.deviceInfo,

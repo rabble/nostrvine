@@ -1,0 +1,49 @@
+// ABOUTME: Formats sanitized bug report logs for public support submissions
+// ABOUTME: Keeps diagnostic transformation out of the bug report UI layer
+
+import 'package:models/models.dart' show LogEntry, LogLevel;
+import 'package:openvine/config/bug_report_config.dart';
+
+/// Build a log summary prioritizing errors/warnings with recent context.
+///
+/// Returns null if logs are empty. Takes up to 200 most recent error/warning
+/// entries plus the last 50 entries of any level, deduplicates, and sorts
+/// chronologically. Individual entries are truncated to
+/// [BugReportConfig.maxLogEntryLength] characters and the total summary is
+/// capped at [BugReportConfig.maxLogSummaryLength] characters.
+String? buildLogsSummary(List<LogEntry> logs) {
+  if (logs.isEmpty) return null;
+
+  final errorWarnings = logs
+      .where((l) => l.level == LogLevel.error || l.level == LogLevel.warning)
+      .toList();
+  final recentErrors = errorWarnings.length > 200
+      ? errorWarnings.sublist(errorWarnings.length - 200)
+      : errorWarnings;
+
+  final recentContext = logs.length > 50
+      ? logs.sublist(logs.length - 50)
+      : logs;
+
+  final merged = <LogEntry>{...recentErrors, ...recentContext}.toList()
+    ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+  final buffer = StringBuffer();
+  for (var i = 0; i < merged.length; i++) {
+    var line = merged[i].toFormattedString();
+    if (line.length > BugReportConfig.maxLogEntryLength) {
+      line =
+          '${line.substring(0, BugReportConfig.maxLogEntryLength)}... [truncated]';
+    }
+    if (buffer.length + line.length + 1 > BugReportConfig.maxLogSummaryLength) {
+      final remaining = merged.length - i;
+      final noun = remaining == 1 ? 'entry' : 'entries';
+      buffer.writeln('... [$remaining $noun truncated]');
+      break;
+    }
+    buffer.writeln(line);
+  }
+
+  final result = buffer.toString().trimRight();
+  return result.isEmpty ? null : result;
+}

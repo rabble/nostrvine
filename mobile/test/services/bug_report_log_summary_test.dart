@@ -3,7 +3,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show LogEntry, LogLevel;
-import 'package:openvine/widgets/bug_report_dialog.dart';
+import 'package:openvine/services/bug_report_log_summary.dart';
 
 LogEntry _log(int minute, LogLevel level, String msg) => LogEntry(
   timestamp: DateTime(2026, 3, 30, 10, minute),

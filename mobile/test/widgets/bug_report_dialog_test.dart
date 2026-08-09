@@ -64,6 +64,11 @@ void main() {
 
     setUp(() {
       mockBugReportService = _MockBugReportService();
+      when(
+        () => mockBugReportService.sanitizeText(any()),
+      ).thenAnswer((invocation) {
+        return invocation.positionalArguments.single as String;
+      });
     });
 
     Future<void> openFlow(

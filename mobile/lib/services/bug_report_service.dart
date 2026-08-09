@@ -172,7 +172,7 @@ class BugReportService {
         category: LogCategory.system,
       );
 
-      return reportData;
+      return sanitizeSensitiveData(reportData);
     } catch (e) {
       Log.error(
         'Failed to collect diagnostics: $e',
@@ -244,7 +244,9 @@ class BugReportService {
         category: log.category,
         name: log.name,
         error: log.error != null ? _sanitizeString(log.error!) : null,
-        stackTrace: log.stackTrace, // Stack traces are safe
+        stackTrace: log.stackTrace != null
+            ? sanitizeText(log.stackTrace.toString())
+            : null,
       );
     }).toList();
 
@@ -256,10 +258,14 @@ class BugReportService {
 
     return data.copyWith(
       userDescription: sanitizedDescription,
+      deviceInfo: _sanitizeDeviceInfo(data.deviceInfo),
       recentLogs: sanitizedLogs,
       additionalContext: sanitizedContext,
     );
   }
+
+  /// Sanitize one user-provided or diagnostic text field.
+  String sanitizeText(String input) => _sanitizeString(input);
 
   /// Estimate report size in bytes
   int estimateReportSize(BugReportData data) {
@@ -1228,6 +1234,16 @@ class BugReportService {
       }
     });
 
+    return sanitized;
+  }
+
+  Map<String, dynamic> _sanitizeDeviceInfo(Map<String, dynamic> input) {
+    final sanitized = _sanitizeMap(input);
+    for (final key in const ['name', 'hostName', 'computerName']) {
+      if (sanitized.containsKey(key)) {
+        sanitized[key] = '[REDACTED]';
+      }
+    }
     return sanitized;
   }
 

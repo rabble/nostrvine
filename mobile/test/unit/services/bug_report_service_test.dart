@@ -6,7 +6,7 @@ import 'dart:io' show Platform;
 import 'package:analytics/analytics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:models/models.dart' show BugReportData;
+import 'package:models/models.dart' show BugReportData, LogEntry, LogLevel;
 import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/services/bug_report_service.dart';
 
@@ -84,13 +84,12 @@ void main() {
 
     test('should collect error counts from injected tracker', () async {
       final errorTracker =
-          ErrorAnalyticsTracker(
-            sink: const NoOpAnalyticsEventSink(),
-          )..trackError(
-            errorType: 'feed_load_failed',
-            errorMessage: 'Feed failed to load',
-            location: 'NewVideosTab',
-          );
+          ErrorAnalyticsTracker(sink: const NoOpAnalyticsEventSink())
+            ..trackError(
+              errorType: 'feed_load_failed',
+              errorMessage: 'Feed failed to load',
+              location: 'NewVideosTab',
+            );
       final service = BugReportService(errorTracker: errorTracker);
 
       final data = await service.collectDiagnostics(
@@ -215,6 +214,62 @@ void main() {
 
       expect(sanitized.userDescription, isNot(contains('secret_token_here')));
       expect(sanitized.userDescription, contains('[REDACTED]'));
+    });
+
+    test('should sanitize email addresses from descriptions and logs', () {
+      final input = BugReportData(
+        reportId: 'test-123',
+        timestamp: DateTime.now(),
+        userDescription: 'Follow up at liz@example.com',
+        deviceInfo: {},
+        appVersion: '1.0.0',
+        recentLogs: [
+          LogEntry(
+            timestamp: DateTime.now(),
+            level: LogLevel.warning,
+            message: 'User email liz@example.com',
+            error: 'Contact liz@example.com failed',
+            stackTrace: 'Frame included liz@example.com',
+          ),
+        ],
+        errorCounts: {},
+      );
+
+      final sanitized = service.sanitizeSensitiveData(input);
+      final log = sanitized.recentLogs.single;
+
+      expect(sanitized.userDescription, isNot(contains('liz@example.com')));
+      expect(log.message, isNot(contains('liz@example.com')));
+      expect(log.error, isNot(contains('liz@example.com')));
+      expect(log.stackTrace, isNot(contains('liz@example.com')));
+      expect(sanitized.userDescription, contains('[REDACTED]'));
+      expect(log.message, contains('[REDACTED]'));
+    });
+
+    test('should redact device names from diagnostic device info', () {
+      final input = BugReportData(
+        reportId: 'test-123',
+        timestamp: DateTime.now(),
+        userDescription: 'Normal description',
+        deviceInfo: const {
+          'platform': 'ios',
+          'model': 'iPhone',
+          'name': "Liz's iPhone",
+          'hostName': 'liz-macbook',
+          'computerName': 'LIZ-PC',
+        },
+        appVersion: '1.0.0',
+        recentLogs: [],
+        errorCounts: {},
+      );
+
+      final sanitized = service.sanitizeSensitiveData(input);
+
+      expect(sanitized.deviceInfo['platform'], 'ios');
+      expect(sanitized.deviceInfo['model'], 'iPhone');
+      expect(sanitized.deviceInfo['name'], '[REDACTED]');
+      expect(sanitized.deviceInfo['hostName'], '[REDACTED]');
+      expect(sanitized.deviceInfo['computerName'], '[REDACTED]');
     });
 
     test('should preserve pubkeys in sanitized data', () {

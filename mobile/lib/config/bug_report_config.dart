@@ -48,6 +48,7 @@ class BugReportConfig {
     RegExp(r'token[:\s=]+\S+', caseSensitive: false),
     RegExp(r'secret[:\s=]+\S+', caseSensitive: false),
     RegExp(r'Authorization:\s*Bearer\s+\S+', caseSensitive: false),
+    RegExp(r'\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b', caseSensitive: false),
   ];
 
   /// Log levels to include in bug reports (all by default)
