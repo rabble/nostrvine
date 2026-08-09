@@ -140,6 +140,17 @@ class _ProfileTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tab(
       icon: Semantics(
+        // `label` here is a snake_case test anchor ('liked_tab', ...), so it
+        // is also passed as the identifier -- that is what E2E should match
+        // on, and it removes the need for "Tab N of M" selectors that
+        // encode a tab count which now varies by profile.
+        //
+        // It stays as the label too, which means VoiceOver announces
+        // "liked_tab". That is a pre-existing defect and it is not fixed
+        // here: only Videos has a localized name (profileVideosLabel), so
+        // doing it properly means new ARB keys across 22 locales. Tracked
+        // separately.
+        identifier: label,
         label: label,
         child: SvgPicture.asset(
           icon.assetPath,

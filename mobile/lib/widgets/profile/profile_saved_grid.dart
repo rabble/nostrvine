@@ -156,6 +156,7 @@ class _SavedGridTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => Semantics(
+    identifier: 'saved_video_thumbnail_$index',
     label: 'saved_video_thumbnail_$index',
     child: GestureDetector(
       onTap: () {

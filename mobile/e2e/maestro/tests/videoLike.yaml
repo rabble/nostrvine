@@ -48,9 +48,8 @@ tags:
 - runFlow: ../asserts/assertProfile.yaml
 
 # 4. Tap on the likes tab: Validate likes tab is loaded and video is listed
-- tapOn: |-
-    Tab 2 of 4
-    liked_tab
+- tapOn:
+    id: "liked_tab"
 - tapOn: liked_video_thumbnail_0
 - runFlow: "../asserts/assertVideoLiked.yaml"
 - tapOn: Close video player

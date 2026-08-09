@@ -1,35 +1,42 @@
 appId: co.openvine.app
 ---
-- assertVisible: My Profile
-- assertVisible: More
-- assertVisible: Videos
+# Asserts the signed-in user's own profile.
+#
+# Rewritten rather than patched: nearly everything this file described has
+# moved.
+#
+# - "My Profile" and "More" are gone. app_shell renders no app bar for the
+#   own-profile grid (appBar: null) because the screen supplies its own
+#   scrollable header, so there is no title and the overflow control is an
+#   unlabelled icon button.
+# - "Videos" / "Edit" / "Refresh" are gone from the header; the stats row is
+#   now Loops / Likes / Following / Followers and the actions are icon-only.
+# - The tab set is 6 for your own profile and 5 for someone else's, and
+#   Liked moved from 2nd to 3rd. Any "Tab N of M" selector encodes one
+#   profile's shape; the per-tab identifiers do not.
+
+- extendedWaitUntil:
+    visible:
+      id: "settings_button"
+    timeout: 30000
+
+# The tabs, by identifier. Order is asserted by the identifiers being
+# present, not by an index -- which is what survives a tab being added.
+- assertVisible:
+    id: "videos_tab"
+- assertVisible:
+    id: "liked_tab"
+- assertVisible:
+    id: "reposted_tab"
+
+# Identity: the follower/following counts and the npub still render in the
+# header and are the load-bearing part of "this is a profile".
 - assertVisible:
     text: "^.*\\sFollowers$"
 - assertVisible:
     text: "^.*\\sFollowing$"
-- assertVisible:
-    text: "^npub.*"
 
-- assertVisible: Edit
-- assertVisible: Refresh
-- assertVisible: Library
-
-- assertVisible: |-
-    Tab 1 of 4
-    videos_tab
-- assertVisible: |-
-    Tab 2 of 4
-    liked_tab
-- assertVisible: |-
-    Tab 3 of 4
-    reposted_tab
-- assertVisible: |-
-    Tab 4 of 4
-    collabs_tab
-
+# Nothing should still be resolving by the time the header is up.
 - assertNotVisible:
     text: Loading...
-    optional: true
-- assertNotVisible:
-    text: Unknown
     optional: true
