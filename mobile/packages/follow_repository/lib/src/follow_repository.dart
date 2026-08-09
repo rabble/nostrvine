@@ -651,7 +651,18 @@ class FollowRepository {
 
   /// Counts older than this are considered stale and will be replaced
   /// even if the new value is lower.
-  static const _staleDuration = Duration(hours: 1);
+  ///
+  /// This has to outlast the gap between closing the app at night and opening
+  /// it the next day, because that gap is the failure in #6902: a count that
+  /// dropped overnight and stayed wrong. A one-hour window expired during every
+  /// such gap, so the persisted baseline was always considered stale by morning
+  /// and the low fresh count was accepted outright — the stabilization never
+  /// ran in the one case it exists for.
+  ///
+  /// A genuine drop larger than [_hysteresisThreshold] still shows up
+  /// immediately; only drops small enough to look like relay variance wait for
+  /// this window.
+  static const _staleDuration = Duration(hours: 24);
 
   /// A new count must drop below this fraction of the persisted count
   /// before being treated as a genuine decrease (when not stale).

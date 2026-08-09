@@ -204,9 +204,9 @@ void main() {
       test('accepts lower count when persisted data is stale', () async {
         final apiClient = _MockFunnelcakeApiClient();
         final dao = _MockProfileStatsDao();
-        // Persisted 2 hours ago — stale.
+        // Persisted well beyond the staleness window.
         final staleTimestamp = DateTime.now().subtract(
-          const Duration(hours: 2),
+          const Duration(hours: 30),
         );
         final repository = _createRepository(
           apiClient: apiClient,
@@ -231,7 +231,7 @@ void main() {
         final apiClient = _MockFunnelcakeApiClient();
         final dao = _MockProfileStatsDao();
         final staleCountsTimestamp = DateTime.now().subtract(
-          const Duration(hours: 2),
+          const Duration(hours: 30),
         );
         final repository = _createRepository(
           apiClient: apiClient,
@@ -250,6 +250,31 @@ void main() {
 
         expect(stats.followers, equals(85));
         expect(stats.following, equals(18));
+      });
+
+      test('holds the count across an overnight gap (#6902)', () async {
+        final apiClient = _MockFunnelcakeApiClient();
+        final dao = _MockProfileStatsDao();
+        // The reported failure: last seen at 98 the night before, relays
+        // answer 86 in the morning. A window shorter than the gap would treat
+        // the baseline as stale and accept 86 outright.
+        final lastNight = DateTime.now().subtract(const Duration(hours: 10));
+        final repository = _createRepository(
+          apiClient: apiClient,
+          dao: dao,
+          restFollowers: 86,
+          restFollowing: 20,
+          persistedRow: _persistedRow(
+            followers: 98,
+            following: 20,
+            cachedAt: lastNight,
+            followerCountsUpdatedAt: lastNight,
+          ),
+        );
+
+        final stats = await repository.getFollowerStats(_testPubkey);
+
+        expect(stats.followers, equals(98));
       });
 
       test('accepts one-person drops for small accounts', () async {
