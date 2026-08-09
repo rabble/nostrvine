@@ -66,6 +66,11 @@ class CollaboratorConfirmationRepository {
   final Map<String, StreamSubscription<Event>> _relaySubs =
       <String, StreamSubscription<Event>>{};
 
+  /// Video addresses whose acceptance query has reached relay EOSE. Until an
+  /// address is in here, a `pending` entry means "not heard back yet" rather
+  /// than "did not accept".
+  final Set<String> _resolved = <String>{};
+
   /// Per-video cache of the most recent watch parameters. Lets
   /// [markLocal] re-emit a snapshot without callers having to thread the
   /// creator pubkey and tagged-pubkey list through every accept/ignore site.
@@ -119,9 +124,15 @@ class CollaboratorConfirmationRepository {
     final isOwnVideo = creatorPubkey == _currentUserPubkey;
     if (isOwnVideo && !_relaySubs.containsKey(videoAddress)) {
       _relaySubs[videoAddress] = _nostrClient
-          .subscribe([
-            Filter(kinds: const [_kindCollaboratorResponse], a: [videoAddress]),
-          ])
+          .subscribe(
+            [
+              Filter(
+                kinds: const [_kindCollaboratorResponse],
+                a: [videoAddress],
+              ),
+            ],
+            onEose: () => _markResolved(videoAddress),
+          )
           .listen(
             (event) => _handleAcceptanceEvent(
               event,
@@ -154,6 +165,7 @@ class CollaboratorConfirmationRepository {
       _relayAccepted.remove(videoAddress);
       _currentUserOverride.remove(videoAddress);
       _watchContext.remove(videoAddress);
+      _resolved.remove(videoAddress);
       return;
     }
     _refCount[videoAddress] = current - 1;
@@ -218,6 +230,23 @@ class CollaboratorConfirmationRepository {
     _relayAccepted.clear();
     _currentUserOverride.clear();
     _watchContext.clear();
+    _resolved.clear();
+  }
+
+  /// Marks [videoAddress] resolved on relay EOSE and re-emits so surfaces
+  /// gated on [VideoCollaboratorStatus.isResolved] can render.
+  void _markResolved(String videoAddress) {
+    if (!_resolved.add(videoAddress)) return;
+    final subject = _subjects[videoAddress];
+    final context = _watchContext[videoAddress];
+    if (subject == null || context == null) return;
+    subject.add(
+      _snapshot(
+        videoAddress: videoAddress,
+        creatorPubkey: context.creatorPubkey,
+        taggedPubkeys: context.taggedPubkeys,
+      ),
+    );
   }
 
   void _handleAcceptanceEvent(
@@ -311,6 +340,7 @@ class CollaboratorConfirmationRepository {
     return VideoCollaboratorStatus(
       videoAddress: videoAddress,
       statusByPubkey: statusByPubkey,
+      isResolved: _resolved.contains(videoAddress),
     );
   }
 }

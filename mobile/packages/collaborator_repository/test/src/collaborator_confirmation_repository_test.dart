@@ -74,9 +74,14 @@ void main() {
     late _MockNostrClient nostrClient;
     late StreamController<Event> relayController;
 
+    /// The `onEose` callback the repository handed to [NostrClient.subscribe],
+    /// so tests can fire relay end-of-stored-events on demand.
+    void Function()? capturedOnEose;
+
     setUp(() {
       nostrClient = _MockNostrClient();
       relayController = StreamController<Event>.broadcast();
+      capturedOnEose = null;
       when(
         () => nostrClient.subscribe(
           any(),
@@ -87,7 +92,10 @@ void main() {
           sendAfterAuth: any(named: 'sendAfterAuth'),
           onEose: any(named: 'onEose'),
         ),
-      ).thenAnswer((_) => relayController.stream);
+      ).thenAnswer((invocation) {
+        capturedOnEose = invocation.namedArguments[#onEose] as void Function()?;
+        return relayController.stream;
+      });
     });
 
     tearDown(() async {
@@ -327,6 +335,91 @@ void main() {
         repo.release(_videoAddress);
       },
     );
+
+    test('snapshot is unresolved until relay EOSE, resolved after', () async {
+      final repo = CollaboratorConfirmationRepository(
+        nostrClient: nostrClient,
+        localStateReader: _StaticLocalStateReader(const {}),
+        currentUserPubkey: _creatorPubkey,
+      );
+
+      final emissions = <VideoCollaboratorStatus>[];
+      final sub = repo
+          .watch(
+            _videoAddress,
+            creatorPubkey: _creatorPubkey,
+            taggedPubkeys: const [_collaboratorPubkey],
+          )
+          .listen(emissions.add);
+
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        emissions.last.isResolved,
+        isFalse,
+        reason:
+            'Before EOSE a pending entry means "not heard back yet", which '
+            'must not be rendered as "did not accept".',
+      );
+
+      capturedOnEose!();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(emissions.last.isResolved, isTrue);
+      expect(
+        emissions.last.statusFor(_collaboratorPubkey),
+        equals(CollaboratorStatus.pending),
+        reason: 'EOSE with no acceptance is a real answer: still pending.',
+      );
+
+      await sub.cancel();
+      repo.release(_videoAddress);
+    });
+
+    test('a second watcher inherits the already-resolved snapshot', () async {
+      // Guards the NostrClient.subscribe dedup early-return: an identical
+      // filter returns the existing stream without invoking the new
+      // watcher's onEose, so resolution must come from the shared subject.
+      final repo = CollaboratorConfirmationRepository(
+        nostrClient: nostrClient,
+        localStateReader: _StaticLocalStateReader(const {}),
+        currentUserPubkey: _creatorPubkey,
+      );
+
+      final firstSub = repo
+          .watch(
+            _videoAddress,
+            creatorPubkey: _creatorPubkey,
+            taggedPubkeys: const [_collaboratorPubkey],
+          )
+          .listen((_) {});
+      await Future<void>.delayed(Duration.zero);
+      capturedOnEose!();
+      await Future<void>.delayed(Duration.zero);
+
+      final secondEmissions = <VideoCollaboratorStatus>[];
+      final secondSub = repo
+          .watch(
+            _videoAddress,
+            creatorPubkey: _creatorPubkey,
+            taggedPubkeys: const [_collaboratorPubkey],
+          )
+          .listen(secondEmissions.add);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        secondEmissions.last.isResolved,
+        isTrue,
+        reason:
+            'Otherwise the second watcher strands the video as unresolved '
+            'forever and its collaborator row never renders.',
+      );
+
+      await firstSub.cancel();
+      await secondSub.cancel();
+      repo
+        ..release(_videoAddress)
+        ..release(_videoAddress);
+    });
 
     test('ignores events with an explicit non-accepted status', () async {
       final repo = CollaboratorConfirmationRepository(
