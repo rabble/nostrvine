@@ -3,13 +3,20 @@ set -euo pipefail
 
 # ------------------------------------------------------------
 # Maestro iOS Simulator smoke runner (portable, verbose)
-# Location: maestro/scripts/ui_smoke_ios.sh
+# Location: mobile/e2e/maestro/scripts/ui_smoke_ios.sh
 #
 # Behavior:
-#  - Ensures an iOS simulator is booted (defaults to iPhone 16 Pro)
-#  - Installs ./maestro/Runner.app onto that simulator
+#  - Boots the requested iOS simulator (override with IOS_SIM_DEVICE)
+#  - Installs mobile/build/ios/iphonesimulator/Runner.app onto it
 #  - Verifies installation using BUNDLE_ID (co.openvine.app)
-#  - Runs Maestro suite: ./maestro/suites/smoke.yml
+#  - Runs Maestro suite: e2e/maestro/suites/smoke.yaml
+#
+# Build the app first, against STAGING (the suite asserts the STG badge):
+#   cd mobile && flutter build ios --simulator --dart-define=DEFAULT_ENV=STAGING
+#
+# Credentials are not committed. Supply them, as CI does:
+#   MAESTRO_USER_EMAIL=... MAESTRO_USER_PWD=... MAESTRO_SEARCH_USER=... \
+#     bash e2e/maestro/scripts/ui_smoke_ios.sh
 # ------------------------------------------------------------
 
 # -----------------------------
@@ -28,17 +35,24 @@ require_cmd() {
 # -----------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MAESTRO_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+MOBILE_DIR="$(cd "${MAESTRO_DIR}/../.." && pwd)"
 
-SUITE_PATH="${MAESTRO_DIR}/suites/smoke.yml"
-APP_PATH="${MAESTRO_DIR}/Runner.app"
+SUITE_PATH="${MAESTRO_DIR}/suites/smoke.yaml"
+# Same artifact CI installs, so a local run and a Codemagic run exercise the
+# same bundle. Nothing copies a Runner.app into e2e/maestro/.
+APP_PATH="${MOBILE_DIR}/build/ios/iphonesimulator/Runner.app"
 APP_INFO_PLIST="${APP_PATH}/Info.plist"
 
 # -----------------------------
 # Config
 # -----------------------------
-IOS_SIM_DEVICE="iPhone 16 Pro"
+IOS_SIM_DEVICE="${IOS_SIM_DEVICE:-iPhone 16 Pro}"
 MAESTRO_CLI="maestro"
 BUNDLE_ID="co.openvine.app"
+
+# The official installer drops the binary here and it is not on a
+# non-interactive PATH.
+export PATH="${PATH}:${HOME}/.maestro/bin"
 
 # -----------------------------
 # Preconditions
@@ -48,8 +62,15 @@ require_cmd xcrun "Install Xcode + Command Line Tools."
 require_cmd plutil "plutil should exist on macOS."
 require_cmd "${MAESTRO_CLI}" "Install Maestro: brew install maestro"
 [[ -f "${SUITE_PATH}" ]] || fail "Suite not found: ${SUITE_PATH}"
-[[ -d "${APP_PATH}" ]] || fail "Runner.app not found at: ${APP_PATH}"
+[[ -d "${APP_PATH}" ]] || fail "Runner.app not found at: ${APP_PATH}
+
+Fix:
+  cd ${MOBILE_DIR} && flutter build ios --simulator --dart-define=DEFAULT_ENV=STAGING"
 [[ -f "${APP_INFO_PLIST}" ]] || fail "Info.plist not found at: ${APP_INFO_PLIST}"
+
+for required in MAESTRO_USER_EMAIL MAESTRO_USER_PWD MAESTRO_SEARCH_USER; do
+  [[ -n "${!required:-}" ]] || fail "Missing ${required}. The suite reads credentials from the environment; they are not committed."
+done
 ok "Prerequisites look good"
 
 info "Suite path: ${SUITE_PATH}"
@@ -75,13 +96,7 @@ else
   fail "Runner.app does NOT look like a Simulator build.
 
 Fix:
-  Build a simulator app:
-    flutter build ios --simulator --debug
-
-  Then copy:
-    build/ios/iphonesimulator/Runner.app
-  into:
-    maestro/Runner.app
+  cd ${MOBILE_DIR} && flutter build ios --simulator --dart-define=DEFAULT_ENV=STAGING
 "
 fi
 
@@ -149,35 +164,26 @@ print_simulator_info() {
 }
 
 boot_simulator_if_needed() {
+  # Always resolve IOS_SIM_DEVICE by name. Adopting whichever simulator
+  # happened to be booted meant the run silently targeted someone else's
+  # device, and with two booted simulators Maestro could then pick a
+  # different one from the one we installed onto.
   local udid
-  udid="$(get_booted_udid)"
-
-  if [[ -n "${udid}" ]]; then
-    ok "Found an already booted simulator"
-    print_simulator_info "${udid}"
-    echo "${udid}"
-    return 0
-  fi
-
-  info "No booted simulator found."
-  info "Attempting to boot simulator: ${IOS_SIM_DEVICE}"
-
   udid="$(find_device_udid_by_name "${IOS_SIM_DEVICE}")"
-  [[ -n "${udid}" ]] || fail "Could not find an available simulator named '${IOS_SIM_DEVICE}'. Run: xcrun simctl list devices"
+  [[ -n "${udid}" ]] || fail "Could not find an available simulator named '${IOS_SIM_DEVICE}'.
+Run 'xcrun simctl list devices available' and set IOS_SIM_DEVICE to one of them."
 
   info "Booting simulator UDID: ${udid}"
-  xcrun simctl boot "${udid}" || true
+  xcrun simctl boot "${udid}" 2>/dev/null || true
   open -a Simulator >/dev/null 2>&1 || true
 
-  sleep 2
-
-  local booted
-  booted="$(get_booted_udid)"
-  [[ -n "${booted}" ]] || fail "Simulator failed to boot."
+  # Wait for the boot to actually complete rather than guessing at a sleep.
+  xcrun simctl bootstatus "${udid}" -b >/dev/null 2>&1 \
+    || fail "Simulator ${IOS_SIM_DEVICE} (${udid}) failed to boot."
 
   ok "Simulator booted successfully"
-  print_simulator_info "${booted}"
-  echo "${booted}"
+  print_simulator_info "${udid}"
+  echo "${udid}"
 }
 
 install_app_on_simulator() {
@@ -205,7 +211,7 @@ verify_app_installed() {
 
   info "App not found under bundle id '${BUNDLE_ID}'. Dumping installed apps (filtered):"
   xcrun simctl listapps "${udid}" 2>/dev/null \
-    | egrep -i "CFBundle(DisplayName|Identifier|Name)" \
+    | grep -Ei "CFBundle(DisplayName|Identifier|Name)" \
     | head -n 200 >&2 || true
 
   fail "Installation verification failed.
@@ -225,7 +231,13 @@ install_app_on_simulator "${SIM_UDID}"
 verify_app_installed "${SIM_UDID}"
 
 info "Running Maestro suite..."
-info "Command: ${MAESTRO_CLI} test ${SUITE_PATH}"
-"${MAESTRO_CLI}" test "${SUITE_PATH}"
+info "Command: ${MAESTRO_CLI} --device ${SIM_UDID} test ${SUITE_PATH}"
+# --device is required: without it Maestro picks its own target and can run
+# against a different simulator from the one we just installed onto.
+"${MAESTRO_CLI}" --device "${SIM_UDID}" test \
+  -e USER_EMAIL="${MAESTRO_USER_EMAIL}" \
+  -e USER_PWD="${MAESTRO_USER_PWD}" \
+  -e SEARCH_USER="${MAESTRO_SEARCH_USER}" \
+  "${SUITE_PATH}"
 
 ok "Maestro smoke suite completed successfully 🎉"
