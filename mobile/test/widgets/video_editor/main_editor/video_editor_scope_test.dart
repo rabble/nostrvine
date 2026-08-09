@@ -50,6 +50,16 @@ void main() {
       expect(scale, closeTo(16 / 9, 0.001));
     });
 
+    test('calculateFittedBoxScale covers target area on wide body', () {
+      final scale = VideoEditorScope.calculateFittedBoxScale(
+        const Size(800, 400),
+        1,
+        targetAspectRatio: 9 / 16,
+      );
+
+      expect(scale, closeTo(1, 0.001));
+    });
+
     test('calculateFittedBoxScale uses target aspect ratio separately', () {
       final scale = VideoEditorScope.calculateFittedBoxScale(
         const Size(400, 800),
@@ -57,7 +67,19 @@ void main() {
         targetAspectRatio: 9 / 16,
       );
 
-      expect(scale, closeTo(400 / (400 * 9 / 16), 0.001));
+      // A square render covers a vertical target, so the height ratio wins.
+      expect(scale, closeTo(16 / 9, 0.001));
+    });
+
+    test('calculateTargetSize contains target ratio inside the body', () {
+      expect(
+        VideoEditorScope.calculateTargetSize(const Size(400, 800), 9 / 16),
+        equals(const Size(400, 400 / (9 / 16))),
+      );
+      expect(
+        VideoEditorScope.calculateTargetSize(const Size(800, 400), 9 / 16),
+        equals(const Size(400 * 9 / 16, 400)),
+      );
     });
 
     testWidgets('of returns nearest scope from context', (tester) async {

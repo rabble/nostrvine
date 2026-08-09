@@ -110,6 +110,15 @@ class VideoEditorScope extends InheritedWidget {
     targetAspectRatio: targetClipAspectRatio,
   );
 
+  /// Calculates the visible target area fitted inside [bodySize].
+  static Size calculateTargetSize(Size bodySize, double targetAspectRatio) {
+    if (bodySize == Size.zero) return Size.zero;
+    if (bodySize.aspectRatio > targetAspectRatio) {
+      return Size(bodySize.height * targetAspectRatio, bodySize.height);
+    }
+    return Size(bodySize.width, bodySize.width / targetAspectRatio);
+  }
+
   /// Calculates the FittedBox scale factor for a given body size and aspect ratio.
   static double calculateFittedBoxScale(
     Size bodySize,
@@ -120,13 +129,7 @@ class VideoEditorScope extends InheritedWidget {
     final targetRatio = targetAspectRatio ?? aspectRatio;
     final height = bodySize.shortestSide;
     final renderSize = Size(height * aspectRatio, height);
-
-    final Size targetSize;
-    if (bodySize.aspectRatio > targetRatio) {
-      targetSize = Size(bodySize.height * targetRatio, bodySize.height);
-    } else {
-      targetSize = Size(bodySize.width, bodySize.width / targetRatio);
-    }
+    final targetSize = calculateTargetSize(bodySize, targetRatio);
 
     return max(
       targetSize.width / renderSize.width,
@@ -193,5 +196,7 @@ class VideoEditorScope extends InheritedWidget {
   bool updateShouldNotify(VideoEditorScope oldWidget) =>
       editorKey != oldWidget.editorKey ||
       removeAreaKey != oldWidget.removeAreaKey ||
+      originalClipAspectRatio != oldWidget.originalClipAspectRatio ||
+      targetClipAspectRatio != oldWidget.targetClipAspectRatio ||
       zoomMatrixNotifier != oldWidget.zoomMatrixNotifier;
 }
