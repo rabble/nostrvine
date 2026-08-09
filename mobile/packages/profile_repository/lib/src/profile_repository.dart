@@ -635,8 +635,8 @@ class ProfileRepository implements ProfileReader {
         pubkey: row.pubkey,
         videoCount: row.videoCount ?? 0,
         totalLikes: row.totalLikes ?? 0,
-        followers: row.followerCount ?? 0,
-        following: row.followingCount ?? 0,
+        followers: row.followerCount,
+        following: row.followingCount,
         totalViews: row.totalViews ?? 0,
         lastUpdated: row.cachedAt,
       );

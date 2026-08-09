@@ -11,8 +11,8 @@ class ProfileStats {
     required this.pubkey,
     this.videoCount = 0,
     this.totalLikes = 0,
-    this.followers = 0,
-    this.following = 0,
+    this.followers,
+    this.following,
     this.totalViews = 0,
     this.lastUpdated,
   });
@@ -26,11 +26,18 @@ class ProfileStats {
   /// Total likes across all videos.
   final int totalLikes;
 
-  /// Number of followers.
-  final int followers;
+  /// Number of followers, or `null` when no follower count has been cached
+  /// yet.
+  ///
+  /// Follower and following counts are owned by `FollowRepository`, which
+  /// writes them independently of the rest of this row. `null` means "not
+  /// known yet" and must not be rendered as zero — callers should show a
+  /// loading affordance instead.
+  final int? followers;
 
-  /// Number of accounts this user follows.
-  final int following;
+  /// Number of accounts this user follows, or `null` when no following count
+  /// has been cached yet. See [followers].
+  final int? following;
 
   /// Total views across all videos.
   final int totalViews;
