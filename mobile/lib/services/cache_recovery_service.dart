@@ -133,6 +133,21 @@ class CacheRecoveryService {
     'database',
   ];
 
+  /// Hive boxes holding local-only state that cache clearing must preserve.
+  ///
+  /// `notifications` is named for the feature, not its contents: its only key
+  /// is `push_preferences`, the notification settings the user chose. The
+  /// notification inbox is a Drift table inside the protected database dir.
+  /// Wiping this box drops the user back to all-on defaults, which the next
+  /// toggle republishes over the choices they made (#6919).
+  /// `push_notification_preferences_dirty` holds edits that have not reached
+  /// the push service yet plus the published-kinds schema marker, so losing it
+  /// strands an unsynced edit.
+  ///
+  /// Their files sit under `{appSupport}/openvine/` — the uploads-box
+  /// initializer re-points Hive's home path there during startup — which is
+  /// why [_clearAppSupportDirectory] has to protect them by path as well as
+  /// skipping them above.
   static const List<String> _durableHiveBoxNames = [
     'pending_uploads',
     'notifications',
