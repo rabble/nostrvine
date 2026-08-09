@@ -244,24 +244,17 @@ definitions:
         # *after* the upload succeeds — so a stale number costs a full build and
         # an emailed rejection rather than a fast failure.
         #
-        # PROJECT_BUILD_NUMBER + 142 stays as a floor for when the lookup fails.
-        # It cannot be the primary source: it tracks Codemagic's own counter, so
-        # any build uploaded from elsewhere leaves it behind permanently. That is
-        # how it ended up at 531 against a shipped 819 (#6587).
         APP_STORE_APP_ID=6747959501 # co.openvine.app
         LATEST_IOS_BUILD_NUMBER=$(app-store-connect get-latest-build-number "$APP_STORE_APP_ID" 2>/dev/null || true)
-        BUILD_NUMBER=$((PROJECT_BUILD_NUMBER + 142))
         case "$LATEST_IOS_BUILD_NUMBER" in
           ''|*[!0-9]*)
-            echo "WARNING: could not read the latest App Store Connect build number."
-            echo "         Falling back to PROJECT_BUILD_NUMBER + 142 = $BUILD_NUMBER,"
-            echo "         which Apple will reject if it is not above the last upload."
+            echo "ERROR: could not read the latest App Store Connect build number."
+            echo "       Refusing to guess a build number Apple may reject after upload."
+            exit 1
             ;;
           *)
             NEXT_IOS_BUILD_NUMBER=$((LATEST_IOS_BUILD_NUMBER + 1))
-            if [ "$NEXT_IOS_BUILD_NUMBER" -gt "$BUILD_NUMBER" ]; then
-              BUILD_NUMBER=$NEXT_IOS_BUILD_NUMBER
-            fi
+            BUILD_NUMBER=$NEXT_IOS_BUILD_NUMBER
             ;;
         esac
         echo "iOS build number: $BUILD_NUMBER (App Store Connect latest: ${LATEST_IOS_BUILD_NUMBER:-unknown})"
