@@ -947,6 +947,18 @@ void main() {
         expect(stats.blurhash, equals('LEHV6nWB2yk8pyo0adR*.7kCMdnj'));
       });
 
+      test('extracts dimensions from space-separated imeta format', () {
+        final stats = VideoStats.fromJson(
+          jsonWithImetaTag([
+            'imeta',
+            'url https://example.com/video.mp4',
+            'dim 1080x1920',
+          ]),
+        );
+
+        expect(stats.dimensions, equals('1080x1920'));
+      });
+
       test('extracts blurhash from positional imeta format', () {
         final stats = VideoStats.fromJson(
           jsonWithImetaTag([
@@ -959,6 +971,20 @@ void main() {
         );
 
         expect(stats.blurhash, equals('LEHV6nWB2yk8pyo0adR*.7kCMdnj'));
+      });
+
+      test('extracts dimensions from positional imeta format', () {
+        final stats = VideoStats.fromJson(
+          jsonWithImetaTag([
+            'imeta',
+            'url',
+            'https://example.com/video.mp4',
+            'dim',
+            '720x1280',
+          ]),
+        );
+
+        expect(stats.dimensions, equals('720x1280'));
       });
 
       test('ignores empty blurhash value in imeta', () {
