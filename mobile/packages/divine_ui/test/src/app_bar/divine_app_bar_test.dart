@@ -4,6 +4,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -300,6 +301,37 @@ void main() {
             iconButtonRect.center.dy,
           );
           await tester.tapAt(tapPoint);
+          expect(pressed, isTrue);
+        },
+      );
+
+      testWidgets(
+        'expandLeadingHitArea keeps the label on the node that is actually '
+        'tappable',
+        (tester) async {
+          var pressed = false;
+          await tester.pumpWidget(
+            buildTestWidget(
+              title: 'Test',
+              showBackButton: true,
+              onBackPressed: () => pressed = true,
+              expandLeadingHitArea: true,
+            ),
+          );
+
+          // AbsorbPointer stops the inner button receiving pointers, so the
+          // announced node has to be the outer one -- otherwise assistive
+          // tech and UI tests both target something inert.
+          final node = tester.getSemantics(
+            find.bySemanticsIdentifier('back_button'),
+          );
+          expect(node.label, 'Go back');
+          expect(
+            node.getSemanticsData().hasAction(SemanticsAction.tap),
+            isTrue,
+          );
+
+          await tester.tap(find.bySemanticsIdentifier('back_button'));
           expect(pressed, isTrue);
         },
       );

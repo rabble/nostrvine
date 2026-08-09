@@ -171,15 +171,25 @@ class _LeadingIconButton extends StatelessWidget {
 
     if (!expandHitArea) return visibleButton;
 
-    // Stretch the tap target to the whole leading slot. The inner
-    // [DivineAppBarIconButton] keeps its semantics for screen readers
-    // but [AbsorbPointer] stops it from receiving pointer events, so
-    // taps don't double-fire and the outer [GestureDetector] is the
-    // single source of truth for hit testing.
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
+    // Stretch the tap target to the whole leading slot. [AbsorbPointer]
+    // stops the inner [DivineAppBarIconButton] from receiving pointer
+    // events so taps don't double-fire, leaving the outer
+    // [GestureDetector] as the single source of truth for hit testing.
+    //
+    // The semantics move out with the gestures. Leaving the label on the
+    // absorbed inner button meant the node that announced "Go back" was
+    // not the node that could be activated -- assistive tech and UI tests
+    // both target the labelled node, and here that node did nothing.
+    return Semantics(
+      identifier: 'back_button',
+      label: semanticLabel,
+      button: true,
       onTap: onPressed,
-      child: AbsorbPointer(child: visibleButton),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onPressed,
+        child: ExcludeSemantics(child: AbsorbPointer(child: visibleButton)),
+      ),
     );
   }
 }
