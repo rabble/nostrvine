@@ -80,6 +80,8 @@ if [[ -z "$DEVICE" ]]; then
 fi
 echo "Device:     ${DEVICE}" >&2
 
+# Expanded below with the "${a[@]+"${a[@]}"}" guard: macOS ships bash 3.2,
+# where a plain "${a[@]}" on an empty array trips `set -u`.
 PATROL_EXTRA_ARGS=()
 if [[ "${PATROL_NO_UNINSTALL:-}" == "true" ]]; then
     PATROL_EXTRA_ARGS+=(--no-uninstall)
@@ -125,7 +127,7 @@ PATH="$PUB_CACHE_BIN:$PATH" patrol test \
     --target "$TEST_PATH" \
     --dart-define=DEFAULT_ENV=LOCAL \
     --dart-define=INVITE_SERVER_URL="$INVITE_SERVER_URL" \
-    "${PATROL_EXTRA_ARGS[@]}" \
+    "${PATROL_EXTRA_ARGS[@]+"${PATROL_EXTRA_ARGS[@]}"}" \
     2>&1 | tee "$APP_LOG"
 TEST_EXIT="${PIPESTATUS[0]}"
 set -e
