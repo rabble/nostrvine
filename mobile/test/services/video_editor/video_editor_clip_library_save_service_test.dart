@@ -6,7 +6,7 @@ import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:models/models.dart' as model show AspectRatio;
+import 'package:models/models.dart' as model show AspectRatio, ClipSourceCredit;
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/editor_overlay_snapshot.dart';
 import 'package:openvine/services/video_editor/video_editor_clip_library_save_service.dart';
@@ -392,6 +392,52 @@ void main() {
         expect(result.sourceRelayHint, equals('wss://relay.divine.video'));
       },
     );
+
+    test('carries every credit of a merged clip onto the saved clip', () async {
+      VideoEditorRenderService.renderVideoOverride =
+          ({
+            required clips,
+            required usePersistentStorage,
+            aspectRatio,
+            parameters,
+            taskId,
+            maxOutputDuration,
+          }) async => '/documents/divine_1.mp4';
+
+      final result =
+          await VideoEditorClipLibrarySaveService.flattenClipForLibrary(
+            clip: _createClip().copyWith(
+              sourceCredits: const [
+                model.ClipSourceCredit(
+                  authorPubkey: 'source-author-a',
+                  eventId: 'source-event-a',
+                  addressableId: '34236:source-author-a:source-a',
+                  relayUrl: 'wss://relay-a.divine.video',
+                ),
+                model.ClipSourceCredit(
+                  authorPubkey: 'source-author-b',
+                  eventId: 'source-event-b',
+                  addressableId: '34236:source-author-b:source-b',
+                  relayUrl: 'wss://relay-b.divine.video',
+                ),
+              ],
+            ),
+            renderId: 'save-1',
+          );
+
+      // A library clip is reusable in later videos, so a credit dropped here is
+      // dropped from every future publish that reuses it.
+      expect(result!.sourceCredits, hasLength(2));
+      expect(result.sourceCredits[1].authorPubkey, equals('source-author-b'));
+      expect(
+        result.sourceCredits[1].addressableId,
+        equals('34236:source-author-b:source-b'),
+      );
+      expect(
+        result.sourceCredits[1].relayUrl,
+        equals('wss://relay-b.divine.video'),
+      );
+    });
 
     group('cleanupFlattenedClip', () {
       late Directory tempDir;
