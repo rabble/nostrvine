@@ -2431,6 +2431,26 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
           },
         ),
       ],
+      // The interactive affordances live in our own overlays, which are
+      // scaffold siblings of this canvas, so excluding this subtree costs a
+      // screen reader nothing it cannot reach elsewhere. Two things inside it
+      // are labelled, and both have an equivalent outside:
+      //
+      //  - Sticker layers. addLayer puts our own VideoEditorSticker in here
+      //    (video_editor_screen.dart), and it carries a Semantics label; the
+      //    stickerWidgetLoader rebuilds it on draft reopen. The timeline strip
+      //    announces the same description, pinned by
+      //    video_editor_timeline_positioned_item_test.dart.
+      //  - The package's own Tooltip-labelled layer buttons, on desktop web
+      //    only: layerInteraction.selectable defaults to `auto`, which resolves
+      //    to `isDesktop`, so they never build on iOS or Android. Where they do,
+      //    the timeline controls carry the same delete action.
+      //
+      // Re-check that before enabling videoEditor.showControls, returning a real
+      // widget from any appBar / bottomBar slot, pinning selectable to enabled,
+      // or putting a labelled widget in bodyItems or a layer — each can add a
+      // control here with no equivalent outside. No test can catch it for you:
+      // mounting the editor needs a live video pipeline.
       child: ExcludeSemantics(
         child: ProImageEditor.video(
           _proVideoController,
