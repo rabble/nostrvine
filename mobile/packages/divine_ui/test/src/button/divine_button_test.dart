@@ -1,3 +1,5 @@
+import 'dart:ui' show SemanticsAction;
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +19,7 @@ void main() {
       DivineIconName? trailingIcon,
       bool expanded = false,
       bool isLoading = false,
+      String? semanticLabel,
       ThemeData? theme,
     }) {
       return MaterialApp(
@@ -32,6 +35,7 @@ void main() {
               trailingIcon: trailingIcon,
               expanded: expanded,
               isLoading: isLoading,
+              semanticLabel: semanticLabel,
             ),
           ),
         ),
@@ -79,6 +83,33 @@ void main() {
         );
 
         expect(find.byType(DivineIcon), findsNWidgets(2));
+      });
+    });
+
+    group('semantics', () {
+      testWidgets('semanticLabel replaces the visible label', (tester) async {
+        final semanticsHandle = tester.ensureSemantics();
+        try {
+          await tester.pumpWidget(
+            buildTestWidget(
+              label: 'Select',
+              semanticLabel: 'Select clips',
+              onPressed: _noop,
+            ),
+          );
+
+          final node = tester.getSemantics(
+            find.bySemanticsLabel('Select clips'),
+          );
+          expect(node.label, 'Select clips');
+          expect(
+            node.getSemanticsData().hasAction(SemanticsAction.tap),
+            isTrue,
+          );
+          expect(find.bySemanticsLabel('Select'), findsNothing);
+        } finally {
+          semanticsHandle.dispose();
+        }
       });
     });
 

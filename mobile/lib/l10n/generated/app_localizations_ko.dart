@@ -6138,6 +6138,21 @@ class AppLocalizationsKo extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => '선택한 클립 삭제';
 
   @override
+  String get libraryCloseSemanticLabel => '라이브러리 닫기';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel => '클립 선택 종료';
+
+  @override
+  String get libraryOpenTrashSemanticLabel => '최근 삭제한 클립 열기';
+
+  @override
+  String get librarySortClipsSemanticLabel => '클립 정렬';
+
+  @override
+  String get librarySelectClipsSemanticLabel => '클립 선택';
+
+  @override
   String get librarySelect => '선택';
 
   @override
@@ -6312,6 +6327,16 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String videoClipSemanticLabel(String duration) {
     return '동영상 클립, $duration초';
+  }
+
+  @override
+  String videoClipStopMotionSemanticLabel(String frames) {
+    return '스톱모션 클립, $frames';
+  }
+
+  @override
+  String videoClipSemanticValueSelectedAtPosition(int position) {
+    return '선택됨, $position번';
   }
 
   @override
@@ -8117,9 +8142,6 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => '최근 삭제된 항목';
-
-  @override
   String get videoRecorderCloseLabel => '동영상 녹화기 닫기';
 
   @override
@@ -8738,9 +8760,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoEditorStopMotionFramesPerImageButtonLabel => '프레임';
-
-  @override
-  String get libraryStopMotionClipLabel => '스톱모션 클립';
 
   @override
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {

@@ -6088,6 +6088,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => '删除选中片段';
 
   @override
+  String get libraryCloseSemanticLabel => '关闭素材库';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel => '停止选择片段';
+
+  @override
+  String get libraryOpenTrashSemanticLabel => '打开最近删除的片段';
+
+  @override
+  String get librarySortClipsSemanticLabel => '对片段排序';
+
+  @override
+  String get librarySelectClipsSemanticLabel => '选择片段';
+
+  @override
   String get librarySelect => '选择';
 
   @override
@@ -6262,6 +6277,16 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String videoClipSemanticLabel(String duration) {
     return '视频片段，$duration 秒';
+  }
+
+  @override
+  String videoClipStopMotionSemanticLabel(String frames) {
+    return '定格动画片段，$frames';
+  }
+
+  @override
+  String videoClipSemanticValueSelectedAtPosition(int position) {
+    return '已选中，第 $position 个';
   }
 
   @override
@@ -8037,9 +8062,6 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => '最近删除';
-
-  @override
   String get videoRecorderCloseLabel => '关闭录像机';
 
   @override
@@ -8651,9 +8673,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get videoEditorStopMotionFramesPerImageButtonLabel => '帧数';
-
-  @override
-  String get libraryStopMotionClipLabel => '定格动画片段';
 
   @override
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {

@@ -39,8 +39,8 @@ class LibraryToolbar extends StatelessWidget {
             type: .secondary,
             icon: isLibrarySelectionMode ? .x : .caretLeft,
             semanticLabel: isLibrarySelectionMode && canExitSelectionMode
-                ? context.l10n.commonCancel
-                : null,
+                ? context.l10n.libraryStopSelectingClipsSemanticLabel
+                : context.l10n.libraryCloseSemanticLabel,
             onPressed: onLeadingPressed,
           ),
           Expanded(
@@ -62,13 +62,14 @@ class LibraryToolbar extends StatelessWidget {
                 size: .small,
                 type: .secondary,
                 icon: .trash,
-                semanticLabel: context.l10n.libraryTrashEntryLabel,
+                semanticLabel: context.l10n.libraryOpenTrashSemanticLabel,
                 onPressed: onOpenTrash,
               ),
             DivineIconButton(
               size: .small,
               type: .secondary,
               icon: .funnelSimple,
+              semanticLabel: context.l10n.librarySortClipsSemanticLabel,
               onPressed: onOpenSortMenu,
             ),
             if (!isLibrarySelectionMode)
@@ -76,6 +77,7 @@ class LibraryToolbar extends StatelessWidget {
                 size: .small,
                 type: .secondary,
                 label: context.l10n.librarySelect,
+                semanticLabel: context.l10n.librarySelectClipsSemanticLabel,
                 onPressed: onEnterSelectionMode,
               ),
             if (isLibrarySelectionMode)
@@ -83,7 +85,7 @@ class LibraryToolbar extends StatelessWidget {
                 size: .small,
                 type: .error,
                 icon: .trash,
-                semanticLabel: context.l10n.commonDelete,
+                semanticLabel: context.l10n.libraryDeleteSelectedClipsTooltip,
                 onPressed: onDeleteSelectedClips,
               ),
           ],

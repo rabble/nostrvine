@@ -2,6 +2,7 @@
 // ABOUTME: Verifies rendering, DivineVideoPlayer integration, and button layout
 
 import 'dart:io';
+import 'dart:ui' show SemanticsAction;
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart';
@@ -126,6 +127,40 @@ void main() {
       expect(
         VideoClipPreview(clip: testClip, onDelete: () {}),
         isA<VideoClipPreview>(),
+      );
+    });
+
+    testWidgets('exposes an action to close the video preview', (tester) async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            const MethodChannel('divine_video_player/player_0'),
+            (call) async => null,
+          );
+      addTearDown(() {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('divine_video_player/player_0'),
+              null,
+            );
+      });
+
+      await tester.pumpWidget(buildTestWidget());
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final semantics = tester.getSemantics(find.byType(VideoClipPreview));
+
+      expect(
+        semantics.label,
+        l10n.videoMetadataClosePreviewSemanticLabel,
+      );
+      expect(
+        semantics.getSemanticsData().hasAction(SemanticsAction.tap),
+        isTrue,
+      );
+      expect(
+        find.bySemanticsLabel(
+          l10n.videoClipSaveTo(GallerySaveService.destinationName),
+        ),
+        findsOneWidget,
       );
     });
 

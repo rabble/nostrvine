@@ -6389,6 +6389,21 @@ class AppLocalizationsSv extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'Ta bort valda klipp';
 
   @override
+  String get libraryCloseSemanticLabel => 'Stäng biblioteket';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel => 'Sluta välja klipp';
+
+  @override
+  String get libraryOpenTrashSemanticLabel => 'Öppna nyligen raderade klipp';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'Sortera klipp';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'Välj klipp';
+
+  @override
   String get librarySelect => 'Välj';
 
   @override
@@ -6568,6 +6583,16 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String videoClipSemanticLabel(String duration) {
     return 'Videoklipp, $duration sekunder';
+  }
+
+  @override
+  String videoClipStopMotionSemanticLabel(String frames) {
+    return 'Stop motion-klipp, $frames';
+  }
+
+  @override
+  String videoClipSemanticValueSelectedAtPosition(int position) {
+    return 'Valt, nummer $position';
   }
 
   @override
@@ -8454,9 +8479,6 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => 'Nyligen borttagna';
-
-  @override
   String get videoRecorderCloseLabel => 'Stäng videoinspelaren';
 
   @override
@@ -9101,9 +9123,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoEditorStopMotionFramesPerImageButtonLabel => 'Bildrutor';
-
-  @override
-  String get libraryStopMotionClipLabel => 'Stop motion-klipp';
 
   @override
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {

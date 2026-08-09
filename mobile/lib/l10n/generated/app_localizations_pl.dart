@@ -6545,6 +6545,22 @@ class AppLocalizationsPl extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'Usuń wybrane klipy';
 
   @override
+  String get libraryCloseSemanticLabel => 'Zamknij bibliotekę';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel =>
+      'Zakończ wybieranie klipów';
+
+  @override
+  String get libraryOpenTrashSemanticLabel => 'Otwórz ostatnio usunięte klipy';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'Sortuj klipy';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'Wybierz klipy';
+
+  @override
   String get librarySelect => 'Wybierz';
 
   @override
@@ -6732,6 +6748,16 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String videoClipSemanticLabel(String duration) {
     return 'Klip wideo, $duration sekund';
+  }
+
+  @override
+  String videoClipStopMotionSemanticLabel(String frames) {
+    return 'Klip poklatkowy, $frames';
+  }
+
+  @override
+  String videoClipSemanticValueSelectedAtPosition(int position) {
+    return 'Zaznaczono, numer $position';
   }
 
   @override
@@ -8634,9 +8660,6 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => 'Ostatnio usunięte';
-
-  @override
   String get videoRecorderCloseLabel => 'Zamknij rejestrator wideo';
 
   @override
@@ -9282,9 +9305,6 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get videoEditorStopMotionFramesPerImageButtonLabel => 'Klatki';
-
-  @override
-  String get libraryStopMotionClipLabel => 'Klip poklatkowy';
 
   @override
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {

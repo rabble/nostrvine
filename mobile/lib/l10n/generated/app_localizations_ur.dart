@@ -6399,6 +6399,22 @@ class AppLocalizationsUr extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'منتخب کلپس حذف کریں';
 
   @override
+  String get libraryCloseSemanticLabel => 'لائبریری بند کریں';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel =>
+      'کلپس منتخب کرنا بند کریں';
+
+  @override
+  String get libraryOpenTrashSemanticLabel => 'حال ہی میں حذف شدہ کلپس کھولیں';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'کلپس ترتیب دیں';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'کلپس منتخب کریں';
+
+  @override
   String get librarySelect => 'منتخب کریں';
 
   @override
@@ -6578,6 +6594,16 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String videoClipSemanticLabel(String duration) {
     return 'ویڈیو کلپ، $duration سیکنڈ';
+  }
+
+  @override
+  String videoClipStopMotionSemanticLabel(String frames) {
+    return 'اسٹاپ موشن کلپ، $frames';
+  }
+
+  @override
+  String videoClipSemanticValueSelectedAtPosition(int position) {
+    return 'منتخب، نمبر $position';
   }
 
   @override
@@ -8459,9 +8485,6 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => 'حال میں حذف شدہ';
-
-  @override
   String get videoRecorderCloseLabel => 'ویڈیو ریکارڈر بند کریں';
 
   @override
@@ -9098,9 +9121,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get videoEditorStopMotionFramesPerImageButtonLabel => 'فریم';
-
-  @override
-  String get libraryStopMotionClipLabel => 'اسٹاپ موشن کلپ';
 
   @override
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {

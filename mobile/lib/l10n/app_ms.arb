@@ -3725,6 +3725,11 @@
   "libraryTabClips": "Klip",
   "librarySaveToCameraRollTooltip": "Simpan ke rol kamera",
   "libraryDeleteSelectedClipsTooltip": "Padam klip dipilih",
+  "libraryCloseSemanticLabel": "Tutup pustaka",
+  "libraryStopSelectingClipsSemanticLabel": "Berhenti memilih klip",
+  "libraryOpenTrashSemanticLabel": "Buka klip yang baru dipadam",
+  "librarySortClipsSemanticLabel": "Isih klip",
+  "librarySelectClipsSemanticLabel": "Pilih klip",
   "librarySelect": "Pilih",
   "librarySortNewestCreation": "Ciptaan Terbaharu",
   "librarySortOldestCreation": "Ciptaan Terlama",
@@ -3846,6 +3851,7 @@
   "libraryAddClips": "Tambah",
   "libraryRecordVideo": "Rakam Video",
   "videoClipSemanticLabel": "Klip video, {duration} saat",
+  "videoClipStopMotionSemanticLabel": "Klip stop-motion, {frames}",
   "@videoClipSemanticLabel": {
     "description": "Accessibility label for a video clip thumbnail. Duration is formatted as seconds with 2 decimal places, e.g. '5.73'.",
     "placeholders": {
@@ -3854,6 +3860,7 @@
       }
     }
   },
+  "videoClipSemanticValueSelectedAtPosition": "Dipilih, nombor {position}",
   "videoClipSemanticValueSelected": "Dipilih",
   "videoClipSemanticValueNotSelected": "Tidak dipilih",
   "videoClipSemanticHintDisabled": "Dilumpuhkan",
@@ -5108,10 +5115,6 @@
       }
     }
   },
-  "libraryTrashEntryLabel": "Baru dipadam",
-  "@libraryTrashEntryLabel": {
-    "description": "Menu/button label on the library screen that opens the trash view."
-  },
   "videoRecorderCloseLabel": "Tutup perakam video",
   "videoRecorderContinueToEditorLabel": "Teruskan ke penyunting video",
   "videoRecorderCaptureCloseLabel": "Tutup",
@@ -5383,10 +5386,6 @@
   "videoEditorStopMotionFramesPerImageButtonLabel": "Bingkai",
   "@videoEditorStopMotionFramesPerImageButtonLabel": {
     "description": "Short label under the stop-motion frames-per-image action button in the timeline edit bar."
-  },
-  "libraryStopMotionClipLabel": "Klip stop-motion",
-  "@libraryStopMotionClipLabel": {
-    "description": "Accessibility label for the badge that marks a clip in the library as a stop-motion recording."
   },
   "videoEditorStopMotionFramesPerImageValueSemanticLabel": "{count} bingkai setiap imej",
   "@videoEditorStopMotionFramesPerImageValueSemanticLabel": {

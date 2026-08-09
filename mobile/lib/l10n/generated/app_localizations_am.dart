@@ -6265,6 +6265,21 @@ class AppLocalizationsAm extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'የተመረጡ ቅንጥቦችን ሰርዝ';
 
   @override
+  String get libraryCloseSemanticLabel => 'ቤተ-መጻሕፍቱን ዝጋ';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel => 'ቅንጥቦችን መምረጥ አቁም';
+
+  @override
+  String get libraryOpenTrashSemanticLabel => 'በቅርቡ የተሰረዙ ቅንጥቦችን ክፈት';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'ቅንጥቦችን ደርድር';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'ቅንጥቦችን ምረጥ';
+
+  @override
   String get librarySelect => 'ምረጥ';
 
   @override
@@ -6441,6 +6456,16 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String videoClipSemanticLabel(String duration) {
     return 'የቪዲዮ ክሊፕ፣ $duration ሰከንድ';
+  }
+
+  @override
+  String videoClipStopMotionSemanticLabel(String frames) {
+    return 'የእንቅስቃሴ-አልባ ቅንጥብ፣ $frames';
+  }
+
+  @override
+  String videoClipSemanticValueSelectedAtPosition(int position) {
+    return 'ተመርጧል፣ ቁጥር $position';
   }
 
   @override
@@ -8282,9 +8307,6 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => 'በቅርቡ የተሰረዘ';
-
-  @override
   String get videoRecorderCloseLabel => 'የቪዲዮ መቅረጫ ዝጋ';
 
   @override
@@ -8910,9 +8932,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoEditorStopMotionFramesPerImageButtonLabel => 'ፍሬሞች';
-
-  @override
-  String get libraryStopMotionClipLabel => 'የስቶፕ-ሞሽን ክሊፕ';
 
   @override
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {

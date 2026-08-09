@@ -6441,6 +6441,21 @@ class AppLocalizationsMs extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'Padam klip dipilih';
 
   @override
+  String get libraryCloseSemanticLabel => 'Tutup pustaka';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel => 'Berhenti memilih klip';
+
+  @override
+  String get libraryOpenTrashSemanticLabel => 'Buka klip yang baru dipadam';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'Isih klip';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'Pilih klip';
+
+  @override
   String get librarySelect => 'Pilih';
 
   @override
@@ -6620,6 +6635,16 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String videoClipSemanticLabel(String duration) {
     return 'Klip video, $duration saat';
+  }
+
+  @override
+  String videoClipStopMotionSemanticLabel(String frames) {
+    return 'Klip stop-motion, $frames';
+  }
+
+  @override
+  String videoClipSemanticValueSelectedAtPosition(int position) {
+    return 'Dipilih, nombor $position';
   }
 
   @override
@@ -8510,9 +8535,6 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => 'Baru dipadam';
-
-  @override
   String get videoRecorderCloseLabel => 'Tutup perakam video';
 
   @override
@@ -9153,9 +9175,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get videoEditorStopMotionFramesPerImageButtonLabel => 'Bingkai';
-
-  @override
-  String get libraryStopMotionClipLabel => 'Klip stop-motion';
 
   @override
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {

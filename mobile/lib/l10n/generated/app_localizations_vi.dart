@@ -6401,6 +6401,21 @@ class AppLocalizationsVi extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'Xóa clip đã chọn';
 
   @override
+  String get libraryCloseSemanticLabel => 'Đóng thư viện';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel => 'Dừng chọn clip';
+
+  @override
+  String get libraryOpenTrashSemanticLabel => 'Mở các clip đã xóa gần đây';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'Sắp xếp clip';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'Chọn clip';
+
+  @override
   String get librarySelect => 'Chọn';
 
   @override
@@ -6580,6 +6595,16 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String videoClipSemanticLabel(String duration) {
     return 'Clip video, $duration giây';
+  }
+
+  @override
+  String videoClipStopMotionSemanticLabel(String frames) {
+    return 'Đoạn stop-motion, $frames';
+  }
+
+  @override
+  String videoClipSemanticValueSelectedAtPosition(int position) {
+    return 'Đã chọn, số $position';
   }
 
   @override
@@ -8463,9 +8488,6 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => 'Đã xóa gần đây';
-
-  @override
   String get videoRecorderCloseLabel => 'Đóng máy quay';
 
   @override
@@ -9105,9 +9127,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get videoEditorStopMotionFramesPerImageButtonLabel => 'Khung hình';
-
-  @override
-  String get libraryStopMotionClipLabel => 'Clip stop-motion';
 
   @override
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {

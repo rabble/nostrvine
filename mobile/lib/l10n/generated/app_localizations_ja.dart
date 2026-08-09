@@ -6116,6 +6116,21 @@ class AppLocalizationsJa extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => '選択したクリップを削除';
 
   @override
+  String get libraryCloseSemanticLabel => 'ライブラリを閉じる';
+
+  @override
+  String get libraryStopSelectingClipsSemanticLabel => 'クリップの選択を終了';
+
+  @override
+  String get libraryOpenTrashSemanticLabel => '最近削除したクリップを開く';
+
+  @override
+  String get librarySortClipsSemanticLabel => 'クリップを並べ替える';
+
+  @override
+  String get librarySelectClipsSemanticLabel => 'クリップを選択';
+
+  @override
   String get librarySelect => '選択';
 
   @override
@@ -6283,6 +6298,16 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String videoClipSemanticLabel(String duration) {
     return '動画クリップ、$duration秒';
+  }
+
+  @override
+  String videoClipStopMotionSemanticLabel(String frames) {
+    return 'ストップモーションクリップ、$frames';
+  }
+
+  @override
+  String videoClipSemanticValueSelectedAtPosition(int position) {
+    return '選択済み、$position 番目';
   }
 
   @override
@@ -8093,9 +8118,6 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get libraryTrashEntryLabel => '最近削除した項目';
-
-  @override
   String get videoRecorderCloseLabel => '動画レコーダーを閉じる';
 
   @override
@@ -8715,9 +8737,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get videoEditorStopMotionFramesPerImageButtonLabel => 'フレーム';
-
-  @override
-  String get libraryStopMotionClipLabel => 'ストップモーションクリップ';
 
   @override
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
