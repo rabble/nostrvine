@@ -736,7 +736,6 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       collaboratorPubkeys: video.collaboratorPubkeys.toSet(),
       inspiredByVideo: video.inspiredByVideo,
       inspiredByNpub: video.inspiredByNpub,
-      clipSourceCredits: video.clipSourceCredits,
     );
   }
 
@@ -1080,7 +1079,6 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       collaboratorPubkeys: draft.collaboratorPubkeys,
       inspiredByVideo: draft.inspiredByVideo,
       inspiredByNpub: draft.inspiredByNpub,
-      clipSourceCredits: draft.clipSourceCredits,
       selectedSound: draft.selectedSound,
       seedSelectedSoundAsAudioTrack: false,
       contentWarnings: draft.contentWarnings,

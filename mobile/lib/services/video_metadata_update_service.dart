@@ -110,6 +110,9 @@ bool _isEditRebuiltTag(List<String> tag, {required bool isVideoReply}) {
       tag[1].startsWith('${NIP71VideoKinds.addressableShortVideo}:')) {
     return true;
   }
+  // clip-source tags are factual provenance for reused footage. The metadata
+  // edit flow does not own or rebuild them, so they intentionally fall through
+  // to preservedTags unchanged.
   return false;
 }
 

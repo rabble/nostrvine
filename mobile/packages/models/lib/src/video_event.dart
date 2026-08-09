@@ -1027,20 +1027,20 @@ class VideoEvent {
           inspiredByNpub != null ||
           clipSourceCredits.isNotEmpty);
 
-  /// Hex pubkey of the inspiring creator, resolved from either the
-  /// [inspiredByVideo] a-tag or the [inspiredByNpub] NIP-27 mention.
+  /// Hex pubkey of the primary inspiring creator, resolved from explicit
+  /// inspired-by metadata first and factual clip-source credits second.
   ///
   /// Returns `null` when there is no inspired-by attribution or the npub
   /// cannot be decoded.
   String? get inspiredByCreatorPubkey {
     if (isVideoReply) return null;
-    if (clipSourceCredits.isNotEmpty) {
-      return clipSourceCredits.first.authorPubkey;
-    }
     if (inspiredByVideo != null) return inspiredByVideo!.creatorPubkey;
     if (inspiredByNpub != null) {
       final hex = Nip19.decode(inspiredByNpub!);
       return hex.isNotEmpty ? hex : null;
+    }
+    if (clipSourceCredits.isNotEmpty) {
+      return clipSourceCredits.first.authorPubkey;
     }
     return null;
   }

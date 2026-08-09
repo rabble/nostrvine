@@ -10,6 +10,8 @@ void main() {
       'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
   const secondCreator =
       'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+  const explicitCreator =
+      'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
 
   testWidgets('renders compact count for multiple clip source credits', (
     tester,
@@ -105,4 +107,54 @@ void main() {
     );
     expect(find.textContaining('+'), findsNothing);
   });
+
+  testWidgets(
+    'includes explicit inspired-by creator with clip source credits',
+    (
+      tester,
+    ) async {
+      final video = VideoEvent(
+        id: 'video-id',
+        pubkey:
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        createdAt: 1757385263,
+        content: 'Test video',
+        timestamp: DateTime.fromMillisecondsSinceEpoch(1757385263000),
+        videoUrl: 'https://cdn.example.com/video.mp4',
+        inspiredByVideo: const InspiredByInfo(
+          addressableId: '34236:$explicitCreator:chosen-source',
+        ),
+        clipSourceCredits: const [
+          ClipSourceCredit(
+            authorPubkey: firstCreator,
+            addressableId: '34236:$firstCreator:first',
+          ),
+          ClipSourceCredit(
+            authorPubkey: explicitCreator,
+            addressableId: '34236:$explicitCreator:chosen-source',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: InspiredByAttributionRow(video: video, isActive: true),
+            ),
+          ),
+        ),
+      );
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final creatorName = UserProfile.defaultDisplayNameFor(explicitCreator);
+
+      expect(
+        find.text(l10n.videoInspiredByAttributionMultiple(creatorName, 1)),
+        findsOneWidget,
+      );
+    },
+  );
 }

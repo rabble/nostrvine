@@ -2,8 +2,7 @@
 // ABOUTME: Tracks editing state with export stages and computed properties for UI state
 
 import 'package:flutter/widgets.dart';
-import 'package:models/models.dart'
-    show AudioEvent, ClipSourceCredit, InspiredByInfo;
+import 'package:models/models.dart' show AudioEvent, InspiredByInfo;
 import 'package:openvine/extensions/complete_parameters_extensions.dart';
 import 'package:openvine/models/audio_share_attribution.dart';
 import 'package:openvine/models/content_label.dart';
@@ -40,7 +39,6 @@ class VideoEditorProviderState {
     this.collaboratorPubkeys = const {},
     this.inspiredByVideo,
     this.inspiredByNpub,
-    this.clipSourceCredits = const [],
     this.selectedSound,
     this.seedSelectedSoundAsAudioTrack = false,
     this.contentWarnings = const {},
@@ -136,9 +134,6 @@ class VideoEditorProviderState {
 
   /// NIP-27 npub reference for general "Inspired By" a creator.
   final String? inspiredByNpub;
-
-  /// Factual credits for clips reused from published videos.
-  final List<ClipSourceCredit> clipSourceCredits;
 
   /// Currently selected sound for the video.
   /// Contains the full AudioEvent data including URL, title, and start offset.
@@ -264,7 +259,6 @@ class VideoEditorProviderState {
     bool clearInspiredByVideo = false,
     String? inspiredByNpub,
     bool clearInspiredByNpub = false,
-    List<ClipSourceCredit>? clipSourceCredits,
     AudioEvent? selectedSound,
     bool clearSelectedSound = false,
     bool? seedSelectedSoundAsAudioTrack,
@@ -319,7 +313,6 @@ class VideoEditorProviderState {
       inspiredByNpub: clearInspiredByNpub
           ? null
           : (inspiredByNpub ?? this.inspiredByNpub),
-      clipSourceCredits: clipSourceCredits ?? this.clipSourceCredits,
       selectedSound: clearSelectedSound
           ? null
           : (selectedSound ?? this.selectedSound),

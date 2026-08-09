@@ -56,27 +56,25 @@ class InspiredByAttributionRow extends ConsumerWidget {
     );
   }
 
-  /// Resolve creator pubkeys from factual clip credits or inspired-by metadata.
+  /// Resolve creator pubkeys from explicit inspired-by metadata and factual
+  /// clip credits without hiding either source of attribution.
   List<String> _resolveCreatorPubkeys() {
     final pubkeys = <String>[];
     final seen = <String>{};
 
-    for (final credit in video.clipSourceCredits) {
-      final pubkey = credit.authorPubkey.trim();
-      if (pubkey.isNotEmpty && seen.add(pubkey.toLowerCase())) {
-        pubkeys.add(pubkey);
+    void addPubkey(String pubkey) {
+      final trimmed = pubkey.trim();
+      if (trimmed.isNotEmpty && seen.add(trimmed.toLowerCase())) {
+        pubkeys.add(trimmed);
       }
     }
-    if (pubkeys.isNotEmpty) return pubkeys;
 
     if (video.inspiredByVideo != null) {
-      final pubkey = video.inspiredByVideo!.creatorPubkey;
-      return pubkey.isEmpty ? const [] : [pubkey];
+      addPubkey(video.inspiredByVideo!.creatorPubkey);
     }
     if (video.inspiredByNpub != null) {
       try {
-        final pubkey = NostrKeyUtils.decode(video.inspiredByNpub!);
-        return pubkey.isEmpty ? const [] : [pubkey];
+        addPubkey(NostrKeyUtils.decode(video.inspiredByNpub!));
       } catch (e) {
         Log.warning(
           'Failed to decode inspiredByNpub '
@@ -84,10 +82,12 @@ class InspiredByAttributionRow extends ConsumerWidget {
           name: 'InspiredByAttributionRow',
           category: LogCategory.ui,
         );
-        return const [];
       }
     }
-    return const [];
+    for (final credit in video.clipSourceCredits) {
+      addPubkey(credit.authorPubkey);
+    }
+    return pubkeys;
   }
 }
 

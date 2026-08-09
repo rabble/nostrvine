@@ -936,6 +936,34 @@ void main() {
       expect(videoEvent.hasInspiredBy, isTrue);
     });
 
+    test(
+      'should prefer explicit inspired-by creator over factual clip credits',
+      () {
+        const clipCreator =
+            'eeee567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
+        final videoEvent = VideoEvent(
+          id: 'video-id',
+          pubkey: authorPubkey,
+          createdAt: 1757385263,
+          content: 'Test video',
+          timestamp: DateTime.fromMillisecondsSinceEpoch(1757385263000),
+          videoUrl: 'https://example.com/video.mp4',
+          inspiredByVideo: const InspiredByInfo(
+            addressableId: '34236:$creatorPubkey:test-d-tag',
+          ),
+          clipSourceCredits: const [
+            ClipSourceCredit(
+              authorPubkey: clipCreator,
+              addressableId: '34236:$clipCreator:clip-source',
+            ),
+          ],
+        );
+
+        expect(videoEvent.hasInspiredBy, isTrue);
+        expect(videoEvent.inspiredByCreatorPubkey, creatorPubkey);
+      },
+    );
+
     test('should not have inspiredBy when no a-tag or npub', () {
       final nostrEvent = Event(
         authorPubkey,
