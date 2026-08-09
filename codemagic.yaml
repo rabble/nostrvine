@@ -462,8 +462,15 @@ definitions:
       name: Launch Android emulator
       script: |
         set -e
-        cd $ANDROID_HOME/tools
-        emulator -avd emulator &
+        # $ANDROID_HOME/tools was removed from modern SDKs, so cd-ing there
+        # killed this step under `set -e` before the emulator ever started.
+        # The binary now ships in its own directory; invoke it by path.
+        EMULATOR="$ANDROID_HOME/emulator/emulator"
+        if [ ! -x "$EMULATOR" ]; then
+          echo "ERROR: emulator not found at $EMULATOR" >&2
+          exit 1
+        fi
+        "$EMULATOR" -avd emulator &
         adb wait-for-device
         TIMEOUT=120
         ELAPSED=0
