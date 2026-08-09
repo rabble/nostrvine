@@ -64,19 +64,26 @@ class SubtitleEditorCubit extends Cubit<SubtitleEditorState> {
     }
   }
 
+  /// Whether an edit must be dropped: the cubit is gone, or a publish is in
+  /// flight. Editing mid-publish would clear the busy state and let a second
+  /// save start on top of the first.
+  bool get _rejectsEdits =>
+      isClosed || state.status == SubtitleEditorStatus.saving;
+
   /// Replaces the text of the cue at [index] with [text] and marks the
   /// state as dirty.
   ///
-  /// Out-of-range indices are silently ignored.
+  /// Out-of-range indices are silently ignored, as are edits made while a
+  /// save is in flight.
   void updateCueText(int index, String text) =>
       _replaceCue(index, (cue) => cue.copyWith(text: text));
 
   /// Replaces the timing of the cue at [index], in milliseconds.
   ///
   /// Leaves a bound untouched when it is `null`. Out-of-range indices are
-  /// silently ignored. Timings are not validated here so the creator can type
-  /// through an intermediate state; [SubtitleEditorState.isValid] gates the
-  /// save instead.
+  /// silently ignored, as are edits made while a save is in flight. Timings
+  /// are not validated here so the creator can type through an intermediate
+  /// state; [SubtitleEditorState.isValid] gates the save instead.
   void updateCueTiming(int index, {int? start, int? end}) =>
       _replaceCue(index, (cue) => cue.copyWith(start: start, end: end));
 
@@ -85,9 +92,9 @@ class SubtitleEditorCubit extends Cubit<SubtitleEditorState> {
   /// The new cue starts where the previous one ends and runs for
   /// [_newCueDurationMs], trimmed to the video's end when its duration is
   /// known. This is the entry point for authoring captions on a video that
-  /// has none.
+  /// has none. Ignored while a save is in flight.
   void addCue() {
-    if (isClosed) return;
+    if (_rejectsEdits) return;
     final start = state.cues.isEmpty ? 0 : state.cues.last.end;
     final videoEndMs = (_video.duration ?? 0) * Duration.millisecondsPerSecond;
     var end = start + _newCueDurationMs;
@@ -107,16 +114,17 @@ class SubtitleEditorCubit extends Cubit<SubtitleEditorState> {
 
   /// Removes the cue at [index].
   ///
-  /// Out-of-range indices are silently ignored.
+  /// Out-of-range indices are silently ignored, as are removals made while a
+  /// save is in flight.
   void removeCue(int index) {
-    if (isClosed) return;
+    if (_rejectsEdits) return;
     if (index < 0 || index >= state.cues.length) return;
     final updated = List<EditableCue>.from(state.cues)..removeAt(index);
     emit(state.copyWith(cues: updated, isDirty: true));
   }
 
   void _replaceCue(int index, EditableCue Function(EditableCue cue) update) {
-    if (isClosed) return;
+    if (_rejectsEdits) return;
     if (index < 0 || index >= state.cues.length) return;
     final updated = List<EditableCue>.from(state.cues);
     updated[index] = update(updated[index]);

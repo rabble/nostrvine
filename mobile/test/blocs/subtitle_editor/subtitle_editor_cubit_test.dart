@@ -41,9 +41,9 @@ void main() {
 
     blocTest<SubtitleEditorCubit, SubtitleEditorState>(
       'load -> ready with cues',
-      setUp: () => when(() => repo.loadCues(any())).thenAnswer(
-        (_) async => _availableResult,
-      ),
+      setUp: () => when(
+        () => repo.loadCues(any()),
+      ).thenAnswer((_) async => _availableResult),
       build: () => SubtitleEditorCubit(repository: repo, video: _video),
       act: (c) => c.load(),
       expect: () => [
@@ -144,9 +144,9 @@ void main() {
 
     blocTest<SubtitleEditorCubit, SubtitleEditorState>(
       'updateCueText marks dirty',
-      setUp: () => when(() => repo.loadCues(any())).thenAnswer(
-        (_) async => _availableResult,
-      ),
+      setUp: () => when(
+        () => repo.loadCues(any()),
+      ).thenAnswer((_) async => _availableResult),
       build: () => SubtitleEditorCubit(repository: repo, video: _video),
       act: (c) async {
         await c.load();
@@ -335,6 +335,38 @@ void main() {
                 as List<SubtitleCue>;
 
         expect(published.map((c) => c.text), ['first', 'second']);
+      });
+
+      test('edits made while a save is in flight are dropped', () async {
+        final publish = Completer<VideoEvent>();
+        when(
+          () => repo.publishEditedSubtitles(
+            video: any(named: 'video'),
+            cues: any(named: 'cues'),
+          ),
+        ).thenAnswer((_) => publish.future);
+
+        final cubit = SubtitleEditorCubit(repository: repo, video: _video)
+          ..addCue()
+          ..updateCueText(0, 'written');
+        addTearDown(cubit.close);
+
+        final saving = cubit.save();
+        expect(cubit.state.status, SubtitleEditorStatus.saving);
+
+        cubit
+          ..addCue()
+          ..updateCueText(0, 'clobbered')
+          ..removeCue(0);
+
+        // The busy state survives, so the spinner stays up and the save
+        // button cannot re-enable for a second publish on top of the first.
+        expect(cubit.state.status, SubtitleEditorStatus.saving);
+        expect(cubit.state.cues.single.text, 'written');
+
+        publish.complete(_updatedVideo);
+        await saving;
+        expect(cubit.state.status, SubtitleEditorStatus.success);
       });
     });
 
