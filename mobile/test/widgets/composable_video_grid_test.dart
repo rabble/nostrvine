@@ -404,7 +404,9 @@ void main() {
           );
 
           await tester.pump();
-          await tester.longPress(find.bySemanticsLabel('Video thumbnail 1'));
+          await tester.longPress(
+            find.bySemanticsLabel(l10n.profileVideoThumbnailLabel(1)),
+          );
           await tester.pumpAndSettle();
           await tester.tap(find.text(l10n.videoGridDeleteVideo));
           await tester.pumpAndSettle();
