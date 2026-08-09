@@ -1,6 +1,8 @@
 // ABOUTME: Tests for CategoriesRepository
 // ABOUTME: Verifies caching, filtering, and featured-first ordering
 
+import 'dart:convert';
+
 import 'package:cache_sync/cache_sync.dart';
 import 'package:categories_repository/categories_repository.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
@@ -128,6 +130,7 @@ void main() {
     });
 
     group('watchCategoriesCached', () {
+      const categoriesCacheKey = 'global:categories:v1';
       late FakeCacheDao cacheDao;
 
       setUp(() async {
@@ -167,6 +170,34 @@ void main() {
         expect(results[1].isLive, isTrue);
         expect(results[1].data, refreshedCategories);
         verify(() => apiClient.getCategories(limit: 100)).called(2);
+      });
+
+      test('filters denied categories from disk-cached payloads', () async {
+        await cacheDao.write(
+          key: categoriesCacheKey,
+          payload: jsonEncode([
+            {'name': 'animals', 'video_count': 300},
+            {'name': ' adult ', 'video_count': 319},
+            {'name': 'Violence', 'video_count': 212},
+          ]),
+        );
+        const refreshedCategories = [
+          VideoCategory(name: 'music', videoCount: 250),
+        ];
+        when(
+          () => apiClient.getCategories(limit: 100),
+        ).thenAnswer((_) async => refreshedCategories);
+
+        final results = await repository.watchCategoriesCached().toList();
+
+        expect(results, hasLength(2));
+        expect(results[0].isStale, isTrue);
+        expect(results[0].data, [
+          const VideoCategory(name: 'animals', videoCount: 300),
+        ]);
+        expect(results[1].isLive, isTrue);
+        expect(results[1].data, refreshedCategories);
+        verify(() => apiClient.getCategories(limit: 100)).called(1);
       });
 
       test('force refresh bypasses the disk cache', () async {

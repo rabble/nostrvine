@@ -4,10 +4,13 @@
 /// Policy for category names that must not be exposed as discovery surfaces.
 abstract final class DiscoveryCategoryPolicy {
   /// Category names that must never become discovery entry points.
-  static const denied = <String>{'adult', 'violence'};
+  ///
+  /// This mirrors Funnelcake's emitted discovery-category vocabulary. Update it
+  /// when Funnelcake adds or renames moderation-adjacent category slugs.
+  static const _denied = <String>{'adult', 'violence'};
 
   /// Returns `true` when [name] is blocked from discovery surfaces.
   static bool isDenied(String name) {
-    return denied.contains(name.trim().toLowerCase());
+    return _denied.contains(name.trim().toLowerCase());
   }
 }

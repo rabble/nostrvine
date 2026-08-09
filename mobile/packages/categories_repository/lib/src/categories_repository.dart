@@ -194,6 +194,7 @@ class CategoriesRepository {
     final decoded = jsonDecode(payload) as List<dynamic>;
     return decoded
         .map((item) => VideoCategory.fromJson(item as Map<String, dynamic>))
+        .where((category) => !DiscoveryCategoryPolicy.isDenied(category.name))
         .toList(growable: false);
   }
 
