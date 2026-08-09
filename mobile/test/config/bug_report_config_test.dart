@@ -46,7 +46,14 @@ void main() {
         'underscored compound key': 'password_confirmation: hunter2',
         'camel case compound key': 'passwordHash: hunter2',
         'camel case json key': '{"tokenValue":"eyJhbGciOi"}',
+        'pascal case compound key': 'PasswordHash: hunter2',
+        'pascal case json key': '{"TokenValue":"eyJhbGciOi"}',
         'enumerated word at end of key': 'clientSecret: deadbeef',
+        'generic signing key': 'signing_key: abc123',
+        'generic encryption key': 'encryption_key=abc123',
+        'generic hyphenated key': 'master-key=hunter2',
+        'generic camel case key': 'recoveryKey=abc123',
+        'yaml doubled single quote': "password: 'alpha''beta gamma'",
         'json access token': '{"access_token":"eyJhbGciOi"}',
         'json refresh token': '{"refresh_token":"eyJhbGciOi"}',
         'json bearer header': '{"Authorization":"Bearer eyJhbGciOi"}',
@@ -92,11 +99,37 @@ void main() {
       expect(sanitized, contains('upload failed: connection reset'));
     });
 
+    test('a long compound key cannot be made to backtrack exponentially', () {
+      // An ambiguous segment class (`(?:[_-]\w+)*`, where `\w` also matches
+      // `_`) parses the same key 2^n ways and explores all of them before
+      // failing for want of a separator. That runs on the UI thread, per log
+      // entry, over text that can come from a remote profile name or an
+      // attacker-typed report field.
+      //
+      // 28 segments is chosen so a reintroduced ambiguity fails this in ~17s
+      // (measured) rather than hanging the suite, which is what a larger
+      // exponent would do. Unambiguous classes run it in ~0ms.
+      final stopwatch = Stopwatch()..start();
+      for (final key in ['token${'_a' * 28}', 'token${'Aa' * 28}']) {
+        sanitizeDiagnosticText(key);
+      }
+      stopwatch.stop();
+
+      expect(stopwatch.elapsedMilliseconds, lessThan(1000));
+    });
+
     group('preserves diagnostic signal', () {
       // Keys that merely start with a credential word, and prose that merely
       // uses one. Redacting these costs the reported symptom for no privacy
       // gain - the failure mode that makes a support ticket useless.
       const cases = <String>[
+        // The signed-in public key is deliberately kept: support needs it to
+        // connect a report to an account, and it is public by construction.
+        'pubkey: npubxyz123',
+        '**User Pubkey:** npub1abcdef',
+        '{"user_pubkey":"abc123def"}',
+        'keyboard: qwerty',
+        '{"secretaryName":"Alice"}',
         '{"tokenization":"failed"}',
         '{"passwordless":true}',
         '{"secretary":"Alice"}',

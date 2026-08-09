@@ -22,7 +22,7 @@ const _credentialSeparator = r'''["']?\s*(?::=?|=>?)\s*''';
 /// keeps `Authorization: Bearer <jwt>` from redacting only the word "Bearer".
 const _credentialValue =
     r'''(?:"(?:\\.|[^"\\\n])*"'''
-    r"""|'(?:\\.|[^'\\\n])*'"""
+    r"""|'(?:''|\\.|[^'\\\n])*'"""
     r'''|["']?(?:(?:bearer|basic|token)\s+)?[^\s"',;}]+)''';
 
 /// Configuration for bug report system
@@ -76,22 +76,29 @@ class BugReportConfig {
     // alone as an ordinary English word (`tokenization`, `passwordless`,
     // `secretary`). Because there is no leading boundary, an enumerated word
     // is also matched at the end of a longer key - that is what covers
-    // `clientSecret`, and it is why `cancellationToken: active` and
-    // `token_count: 5` are redacted too. That over-redaction is deliberate:
-    // no key-only rule separates `token_value` from `token_count`, and losing
-    // a counter costs less than leaking a credential.
+    // `clientSecret` and `signing_key`, and it is why `cancellationToken:
+    // active` and `token_count: 5` are redacted too. That over-redaction is
+    // deliberate: no key-only rule separates `token_value` from `token_count`,
+    // and losing a counter costs less than leaking a credential. `key` is
+    // guarded against `pubkey`, which support needs and which is public.
+    //
+    // The `[_-]` segment class deliberately excludes `_`: writing it as `\w`
+    // would let the same key be parsed 2^n ways, and a 60-character key would
+    // then take tens of seconds to fail to match, on the UI thread, over text
+    // that can come from a remote profile or an attacker-typed report field.
     RegExp(
-      '(?:api[_-]?key|private[_-]?key|secret[_-]?key|access[_-]?token'
-      '|refresh[_-]?token|auth[_-]?token|authorization|password|passwd'
-      r'|token|secret)(?:[_-]\w+)*'
+      '(?:authorization|password|passwd|token|secret|(?<!pub)key)'
+      '(?:[_-][A-Za-z0-9]+)*'
       '$_credentialSeparator$_credentialValue',
       caseSensitive: false,
     ),
-    // camelCase compounds (`tokenValue`, `passwordHash`). Case-sensitive, so
-    // an uppercase continuation is required - that is what separates these
-    // from `tokenization`.
+    // camelCase and PascalCase compounds (`tokenValue`, `PasswordHash`).
+    // Case-sensitive, so an uppercase continuation is required - that is what
+    // separates these from `tokenization`. The continuation class excludes
+    // uppercase for the same non-ambiguity reason as above.
     RegExp(
-      r'(?:password|passwd|token|secret)(?:[A-Z]\w*)+'
+      '(?:[Pp]assword|[Pp]asswd|[Tt]oken|[Ss]ecret|[Kk]ey)'
+      '(?:[A-Z][a-z0-9]*)+'
       '$_credentialSeparator$_credentialValue',
     ),
     RegExp(r'\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b', caseSensitive: false),

@@ -50,12 +50,20 @@ submission boundary. Two gaps are known and accepted:
   indistinguishable from public event IDs and pubkeys, and blanket redaction
   would remove the triage value the summary exists for.
 - Redaction is keyword-based, so it cuts both ways and is deliberately tuned to
-  lose triage value rather than leak. A key ending in `token`, `secret`,
-  `password` or `key` has its value redacted even when the value is not a
-  secret (`token_count: 5`, `cancellationToken: active`), because no key-only
-  rule separates those from `token_value`. Conversely, a credential written
-  without a `:` or `=` separator (`password hunter2`) is not redacted, because
-  that shape is indistinguishable from ordinary prose ("password reset failed").
+  lose triage value rather than leak. A key containing `token`, `secret`,
+  `password` or `key` has its value redacted even when that value is not a
+  secret (`token_count: 5`, `cancellationToken: active`, `passwordReset:
+  failed`), because no key-only rule separates those from `token_value` or
+  `passwordHash`. The one exception is `pubkey`, which is public by
+  construction and which support needs, so it is preserved. Conversely, a
+  credential written without a `:` or `=` separator (`password hunter2`) is not
+  redacted, because that shape is indistinguishable from ordinary prose
+  ("password reset failed").
+- An unquoted multi-word value is redacted only up to the first space
+  (`password: correct horse battery staple` keeps everything after the first
+  word). Without a closing delimiter there is nothing to mark the end of the
+  value. Quoted values, which is how serialized payloads are written, are
+  redacted whole.
 - Text typed inside the native Zendesk SDK screens is never sanitized. The
   ticket list (`ZendeskSupportService.showTicketListScreen`, reachable from the
   support center) opens the SDK's own UI, where a reply to an existing ticket is
