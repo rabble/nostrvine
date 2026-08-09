@@ -258,6 +258,28 @@ Patrol bundles every file in a target dir into one APK. When file B
 runs, file A shows up as "not requested" `[E]` markers in logcat.
 Trust only the final `✅`/`❌` lines.
 
+### Never put `/` in a patrol test name
+
+Patrol names each JUnit case `MainActivityTest#runDartTest[<dart test
+name>]`, and the AndroidX orchestrator writes a per-test output file
+named after it. Android's `ContextImpl.makeFilename` rejects any
+filename containing a path separator, so a test called e.g. `'strips
+metadata via separate input/output paths'` crashes the orchestrator:
+
+```
+FATAL EXCEPTION: AndroidTestOrchestrator
+java.lang.IllegalArgumentException: File …input/output paths].txt
+contains a path separator
+```
+
+The tell is a **green summary with a non-zero exit**: Gradle reports
+`Instrumentation run failed due to Process crashed` and exits 1, while
+patrol prints `Failed: 0` — because the offending test never started
+and so was never counted. Compare `Total:` against the number of tests
+in the file when the exit code disagrees with the summary.
+
+Write `input and output`, not `input/output`.
+
 ### NIP-98 URL binding
 
 The invite service rejects a signed request whose `u` tag does not

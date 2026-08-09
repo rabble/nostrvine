@@ -181,8 +181,10 @@ void main() {
       },
     );
 
+    // No "/" in the name: the AndroidX orchestrator writes a per-test output
+    // file named after the JUnit test, and a path separator makes it throw.
     patrolTest(
-      'strips metadata via separate input/output paths',
+      'strips metadata via separate input and output paths',
       ($) async {
         // Arrange
         final inputFile = File('${tempDir.path}/input.jpg');
