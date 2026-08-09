@@ -8,6 +8,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:db_client/db_client.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:dm_repository/dm_repository.dart' show DmRepository;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -25,6 +26,7 @@ import 'package:openvine/models/collaborator_invite.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/watermark_download_provider.dart';
+import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_view.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
 import 'package:openvine/services/watermark_download_service.dart';
@@ -178,6 +180,7 @@ void main() {
       MockGoRouter? goRouter,
       DmRestoreStatusState? restoreStatus,
       String counterparty = otherPubkey,
+      ConversationState? previousState,
     }) {
       final effectiveState = state ?? const ConversationState();
       if (restoreStatus != null) {
@@ -187,10 +190,14 @@ void main() {
           initialState: restoreStatus,
         );
       }
+      // `previousState` seeds a different initial state so the emission below
+      // is a real transition. The view's send-outcome listener is gated on
+      // `previous.sendStatus != current.sendStatus`, so a state emitted as both
+      // initial and stream value never reaches it.
       whenListen(
         mockBloc,
         Stream<ConversationState>.value(effectiveState),
-        initialState: effectiveState,
+        initialState: previousState ?? effectiveState,
       );
 
       final app = testMaterialApp(
@@ -370,6 +377,102 @@ void main() {
           findsOneWidget,
         );
         expect(find.text(l10n.inboxSupportRowTitle), findsNothing);
+      });
+    });
+
+    // #6416. Nothing has read a retired moderation key since the rotation, so
+    // an appeal typed here published, turned the bubble green, and reached
+    // nobody. Replace the composer rather than disable it: `MessageInputBar`
+    // has no disabled state, and a greyed-out field still reads as usable.
+    group('retired moderation thread', () {
+      final retired = kLegacyModerationPubkeys.first;
+
+      testWidgets('replaces the composer with the closed-thread notice', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject(counterparty: retired));
+        await tester.pump();
+
+        expect(find.byType(MessageInputBar), findsNothing);
+        expect(find.text(l10n.dmRetiredThreadClosedTitle), findsOneWidget);
+        expect(find.text(l10n.dmRetiredThreadClosedBody), findsOneWidget);
+        expect(find.text(l10n.dmRetiredThreadOpenSupport), findsOneWidget);
+      });
+
+      testWidgets('keeps the thread history readable', (tester) async {
+        await tester.pumpWidget(buildSubject(counterparty: retired));
+        await tester.pump();
+
+        // Closing the composer must not hide the enforcement notice itself —
+        // for an affected user this is their only record of the action.
+        expect(find.byType(ConversationAppBar), findsOneWidget);
+      });
+
+      testWidgets('routes to the current moderation thread, replacing this '
+          'route so back does not return to the dead one', (tester) async {
+        final goRouter = MockGoRouter();
+        when(
+          () => goRouter.pushReplacement<Object?>(
+            any(),
+            extra: any(named: 'extra'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        await tester.pumpWidget(
+          buildSubject(counterparty: retired, goRouter: goRouter),
+        );
+        await tester.pump();
+        await tester.tap(find.text(l10n.dmRetiredThreadOpenSupport));
+        await tester.pump();
+
+        verify(
+          () => goRouter.pushReplacement<Object?>(
+            ConversationPage.pathForId(
+              DmRepository.computeConversationId([
+                currentPubkey,
+                kModerationPubkeyHex,
+              ]),
+            ),
+            extra: const [kModerationPubkeyHex],
+          ),
+        ).called(1);
+      });
+
+      testWidgets('a live thread keeps its composer', (tester) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        expect(find.byType(MessageInputBar), findsOneWidget);
+        expect(find.text(l10n.dmRetiredThreadClosedTitle), findsNothing);
+      });
+
+      testWidgets('the current moderation key keeps its composer', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(counterparty: kModerationPubkeyHex),
+        );
+        await tester.pump();
+
+        expect(find.byType(MessageInputBar), findsOneWidget);
+      });
+
+      testWidgets('a blocked send explains the retired recipient', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            counterparty: retired,
+            previousState: const ConversationState(),
+            state: const ConversationState(sendStatus: SendStatus.blocked),
+          ),
+        );
+        await tester.pump();
+
+        // The protected-minor copy would be wrong here: a retired moderation
+        // key IS an official Divine account, just one nobody reads.
+        expect(find.text(l10n.dmSendBlockedRetiredMessage), findsOneWidget);
+        expect(find.text(l10n.dmSendBlockedMessage), findsNothing);
       });
     });
 
