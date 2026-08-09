@@ -1621,6 +1621,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get audioAttributionUnavailableSound => 'Ton nicht verfügbar';
 
   @override
+  String videoInspiredByAttributionMultiple(
+    String creatorName,
+    int additionalCreatorCount,
+  ) {
+    return 'Inspiriert von @$creatorName +$additionalCreatorCount';
+  }
+
+  @override
   String videoInspiredByAttribution(String creatorName) {
     return 'Inspiriert von @$creatorName';
   }
@@ -7721,6 +7729,14 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get videoClipDelete => 'Clip löschen';
+
+  @override
+  String inspiredByAttributionMultipleSemanticLabel(
+    String creatorName,
+    int additionalCreatorCount,
+  ) {
+    return 'Inspiriert von $creatorName +$additionalCreatorCount. Tippen, um das Profil anzusehen.';
+  }
 
   @override
   String inspiredByAttributionSemanticLabel(String creatorName) {

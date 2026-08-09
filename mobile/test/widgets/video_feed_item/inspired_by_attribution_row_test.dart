@@ -46,7 +46,63 @@ void main() {
       ),
     );
 
-    expect(find.bySemanticsLabel(RegExp(r'Inspired by .*\+1')), findsOneWidget);
-    expect(find.textContaining('+1'), findsOneWidget);
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    final creatorName = UserProfile.defaultDisplayNameFor(firstCreator);
+
+    expect(
+      find.text(l10n.videoInspiredByAttributionMultiple(creatorName, 1)),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(
+        RegExp(
+          RegExp.escape(
+            l10n.inspiredByAttributionMultipleSemanticLabel(creatorName, 1),
+          ),
+        ),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('renders no count for a single clip source credit', (
+    tester,
+  ) async {
+    final video = VideoEvent(
+      id: 'video-id',
+      pubkey:
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      createdAt: 1757385263,
+      content: 'Test video',
+      timestamp: DateTime.fromMillisecondsSinceEpoch(1757385263000),
+      videoUrl: 'https://cdn.example.com/video.mp4',
+      clipSourceCredits: const [
+        ClipSourceCredit(
+          authorPubkey: firstCreator,
+          addressableId: '34236:$firstCreator:first',
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: InspiredByAttributionRow(video: video, isActive: true),
+          ),
+        ),
+      ),
+    );
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    final creatorName = UserProfile.defaultDisplayNameFor(firstCreator);
+
+    expect(
+      find.text(l10n.videoInspiredByAttribution(creatorName)),
+      findsOneWidget,
+    );
+    expect(find.textContaining('+'), findsNothing);
   });
 }

@@ -1630,6 +1630,14 @@ class AppLocalizationsFil extends AppLocalizations {
   String get audioAttributionUnavailableSound => 'Hindi available ang sound';
 
   @override
+  String videoInspiredByAttributionMultiple(
+    String creatorName,
+    int additionalCreatorCount,
+  ) {
+    return 'Inspirasyon mula kay @$creatorName +$additionalCreatorCount';
+  }
+
+  @override
   String videoInspiredByAttribution(String creatorName) {
     return 'Inspirasyon mula kay @$creatorName';
   }
@@ -7717,6 +7725,14 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get videoClipDelete => 'Burahin ang clip';
+
+  @override
+  String inspiredByAttributionMultipleSemanticLabel(
+    String creatorName,
+    int additionalCreatorCount,
+  ) {
+    return 'Inspirado ni $creatorName +$additionalCreatorCount. I-tap para tingnan ang kanilang profile.';
+  }
 
   @override
   String inspiredByAttributionSemanticLabel(String creatorName) {

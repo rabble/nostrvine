@@ -592,6 +592,8 @@
     "videoFollowButtonFollow": "متابعة",
     "audioAttributionOriginalSound": "صوت أصلي",
     "audioAttributionUnavailableSound": "الصوت غير متاح",
+    "videoInspiredByAttributionMultiple": "مستوحى من @{creatorName} +{additionalCreatorCount}",
+    "@videoInspiredByAttributionMultiple": {"placeholders": {"creatorName": {"type": "String"}, "additionalCreatorCount": {"type": "int"}}},
     "videoInspiredByAttribution": "مستوحى من @{creatorName}",
     "@videoInspiredByAttribution": {
         "placeholders": {
@@ -4877,6 +4879,8 @@
     "videoClipSaveTo": "حفظ في {destination}",
     "@videoClipSaveTo": {"placeholders": {"destination": {"type": "String"}}},
     "videoClipDelete": "حذف المقطع",
+    "inspiredByAttributionMultipleSemanticLabel": "مستوحى من {creatorName} +{additionalCreatorCount}. اضغط لعرض ملفه الشخصي.",
+    "@inspiredByAttributionMultipleSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}, "additionalCreatorCount": {"type": "int"}}},
     "inspiredByAttributionSemanticLabel": "مستوحى من {creatorName}. اضغط لعرض ملفه الشخصي.",
     "@inspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
     "searchVideosSortOptionsLabel": "ترتيب نتائج الفيديو",

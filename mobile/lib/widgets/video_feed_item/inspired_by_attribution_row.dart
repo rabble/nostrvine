@@ -111,16 +111,29 @@ class _InspiredByContent extends ConsumerWidget {
     final creatorName =
         creatorProfile?.bestDisplayName ??
         UserProfile.defaultDisplayNameFor(creatorPubkey);
-    final displayName = creatorPubkeys.length == 1
-        ? creatorName
-        : '$creatorName +${creatorPubkeys.length - 1}';
+    // The extra-creator count is part of the localized sentence rather than
+    // concatenated onto the name, so a translator can place it — appending it
+    // in Dart puts it on the wrong side in RTL locales.
+    final extraCreatorCount = creatorPubkeys.length - 1;
+    final attribution = extraCreatorCount == 0
+        ? context.l10n.videoInspiredByAttribution(creatorName)
+        : context.l10n.videoInspiredByAttributionMultiple(
+            creatorName,
+            extraCreatorCount,
+          );
+    final semanticLabel = extraCreatorCount == 0
+        ? context.l10n.inspiredByAttributionSemanticLabel(creatorName)
+        : context.l10n.inspiredByAttributionMultipleSemanticLabel(
+            creatorName,
+            extraCreatorCount,
+          );
 
     return GestureDetector(
       onTap: () => _navigateToCreatorProfile(context),
       child: Semantics(
         identifier: 'inspired_by_attribution_row',
         button: true,
-        label: context.l10n.inspiredByAttributionSemanticLabel(displayName),
+        label: semanticLabel,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -138,7 +151,7 @@ class _InspiredByContent extends ConsumerWidget {
               const SizedBox(width: 4),
               Flexible(
                 child: Text(
-                  context.l10n.videoInspiredByAttribution(displayName),
+                  attribution,
                   style: const TextStyle(
                     color: VineTheme.whiteText,
                     fontSize: 12,

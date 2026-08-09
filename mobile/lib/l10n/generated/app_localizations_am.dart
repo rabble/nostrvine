@@ -1567,6 +1567,14 @@ class AppLocalizationsAm extends AppLocalizations {
   String get audioAttributionUnavailableSound => 'ድምጽ አይገኝም';
 
   @override
+  String videoInspiredByAttributionMultiple(
+    String creatorName,
+    int additionalCreatorCount,
+  ) {
+    return 'በ@$creatorName +$additionalCreatorCount የተነሳሳ';
+  }
+
+  @override
   String videoInspiredByAttribution(String creatorName) {
     return 'በ@$creatorName የተነሳሳ';
   }
@@ -7473,6 +7481,14 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoClipDelete => 'ክሊፕ ሰርዝ';
+
+  @override
+  String inspiredByAttributionMultipleSemanticLabel(
+    String creatorName,
+    int additionalCreatorCount,
+  ) {
+    return 'በ$creatorName +$additionalCreatorCount የተነሳሳ። መገለጫቸውን ለማየት መታ ያድርጉ።';
+  }
 
   @override
   String inspiredByAttributionSemanticLabel(String creatorName) {

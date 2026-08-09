@@ -623,6 +623,8 @@
     "videoFollowButtonFollow": "Следвай",
     "audioAttributionOriginalSound": "Оригинален звук",
     "audioAttributionUnavailableSound": "Звукът е недостъпен",
+    "videoInspiredByAttributionMultiple": "Вдъхновен от @{creatorName} +{additionalCreatorCount}",
+    "@videoInspiredByAttributionMultiple": {"placeholders": {"creatorName": {"type": "String"}, "additionalCreatorCount": {"type": "int"}}},
     "videoInspiredByAttribution": "Вдъхновен от @{creatorName}",
     "@videoInspiredByAttribution": {
         "placeholders": {
@@ -5008,6 +5010,8 @@
     "videoClipSaveTo": "Запази в {destination}",
     "@videoClipSaveTo": {"placeholders": {"destination": {"type": "String"}}},
     "videoClipDelete": "Изтрий клипа",
+    "inspiredByAttributionMultipleSemanticLabel": "Вдъхновено от {creatorName} +{additionalCreatorCount}. Докосни, за да видиш профила им.",
+    "@inspiredByAttributionMultipleSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}, "additionalCreatorCount": {"type": "int"}}},
     "inspiredByAttributionSemanticLabel": "Вдъхновено от {creatorName}. Докосни, за да видиш профила им.",
     "@inspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
     "searchVideosSortOptionsLabel": "Подреди резултатите с видеа",

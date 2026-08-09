@@ -1504,6 +1504,14 @@ class AppLocalizationsKo extends AppLocalizations {
   String get audioAttributionUnavailableSound => '사운드를 사용할 수 없어요';
 
   @override
+  String videoInspiredByAttributionMultiple(
+    String creatorName,
+    int additionalCreatorCount,
+  ) {
+    return '@$creatorName +$additionalCreatorCount님에게 영감받아';
+  }
+
+  @override
   String videoInspiredByAttribution(String creatorName) {
     return '@$creatorName님에게 영감받아';
   }
@@ -7321,6 +7329,14 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoClipDelete => '클립 삭제';
+
+  @override
+  String inspiredByAttributionMultipleSemanticLabel(
+    String creatorName,
+    int additionalCreatorCount,
+  ) {
+    return '$creatorName +$additionalCreatorCount님에게서 영감을 받았어요. 탭하면 프로필을 볼 수 있어요.';
+  }
 
   @override
   String inspiredByAttributionSemanticLabel(String creatorName) {

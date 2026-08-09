@@ -2862,6 +2862,15 @@ abstract class AppLocalizations {
   /// **'Sound unavailable'**
   String get audioAttributionUnavailableSound;
 
+  /// No description provided for @videoInspiredByAttributionMultiple.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspired by @{creatorName} +{additionalCreatorCount}'**
+  String videoInspiredByAttributionMultiple(
+    String creatorName,
+    int additionalCreatorCount,
+  );
+
   /// No description provided for @videoInspiredByAttribution.
   ///
   /// In en, this message translates to:
@@ -13183,6 +13192,15 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete clip'**
   String get videoClipDelete;
+
+  /// No description provided for @inspiredByAttributionMultipleSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspired by {creatorName} +{additionalCreatorCount}. Tap to view their profile.'**
+  String inspiredByAttributionMultipleSemanticLabel(
+    String creatorName,
+    int additionalCreatorCount,
+  );
 
   /// No description provided for @inspiredByAttributionSemanticLabel.
   ///

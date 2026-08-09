@@ -1569,6 +1569,14 @@ class AppLocalizationsTr extends AppLocalizations {
   String get audioAttributionUnavailableSound => 'Ses kullanılamıyor';
 
   @override
+  String videoInspiredByAttributionMultiple(
+    String creatorName,
+    int additionalCreatorCount,
+  ) {
+    return '@$creatorName +$additionalCreatorCount tarafından ilham alındı';
+  }
+
+  @override
   String videoInspiredByAttribution(String creatorName) {
     return '@$creatorName tarafından ilham alındı';
   }
@@ -7590,6 +7598,14 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoClipDelete => 'Klibi sil';
+
+  @override
+  String inspiredByAttributionMultipleSemanticLabel(
+    String creatorName,
+    int additionalCreatorCount,
+  ) {
+    return '$creatorName +$additionalCreatorCount tarafından ilham alındı. Profilini görüntülemek için dokun.';
+  }
 
   @override
   String inspiredByAttributionSemanticLabel(String creatorName) {
