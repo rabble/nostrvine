@@ -586,8 +586,9 @@ LikesRepository likesRepository(Ref ref) {
   // the relay collapses an addressable coordinate to its latest event, and the
   // local cache deletes older revisions on upsert. Without it, reactions
   // stranded on a pre-edit revision stay invisible to the "Liked by" list
-  // (#6021). The client returns an empty map when unconfigured or on any
-  // failure, so the resolver degrades to querying the current id alone.
+  // (#6021). The client returns an empty map when the endpoint is absent or
+  // has no revisions, and null for retryable failures; both degrade to querying
+  // the current id alone.
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
 
   final repository = LikesRepository(
