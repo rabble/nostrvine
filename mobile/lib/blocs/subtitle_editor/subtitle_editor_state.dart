@@ -100,10 +100,6 @@ class SubtitleEditorState extends Equatable {
   /// Whether [cues] can be published as they stand.
   bool get isValid => cues.isNotEmpty && cues.every((cue) => cue.isValid);
 
-  /// Whether the creator is authoring cues rather than correcting
-  /// auto-generated ones — used to decide which empty-state copy applies.
-  bool get isEmptyDraft => status == SubtitleEditorStatus.ready && cues.isEmpty;
-
   /// Returns a copy with selected fields replaced.
   SubtitleEditorState copyWith({
     SubtitleEditorStatus? status,
