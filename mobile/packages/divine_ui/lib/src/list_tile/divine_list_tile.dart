@@ -88,19 +88,7 @@ class DivineListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.vineColors;
-    final tile = _buildTile(context, colors);
-    final identifier = semanticIdentifier;
-    if (identifier == null) {
-      return tile;
-    }
-    // ListTile merges its title and subtitle into one node; wrap rather than
-    // exclude so the row keeps announcing that copy and only gains the
-    // anchor.
-    return Semantics(identifier: identifier, child: tile);
-  }
-
-  Widget _buildTile(BuildContext context, VineThemeColors colors) {
-    return ListTile(
+    final tile = ListTile(
       minTileHeight: minHeight,
       leading:
           leading ??
@@ -131,6 +119,14 @@ class DivineListTile extends StatelessWidget {
             ),
       onTap: onTap,
     );
+
+    final identifier = semanticIdentifier;
+    if (identifier == null) return tile;
+
+    // ListTile merges its title and subtitle into one node; wrap rather than
+    // exclude so the row keeps announcing that copy and only gains the
+    // anchor.
+    return Semantics(identifier: identifier, child: tile);
   }
 }
 
