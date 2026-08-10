@@ -710,11 +710,10 @@ class _MessageList extends StatelessWidget {
   /// evidence is intact and nothing is force-deleted. Unblocking restores the
   /// sheet along with the composer.
   ///
-  /// This closes the user-initiated path only. The reconnect sweep still
-  /// re-drives a failed row that is under `maxRetries`
-  /// (`OutgoingDmsDao.getRetryableForOwner`), because blocking has never
-  /// cancelled the viewer's own queued sends — a repository-layer question,
-  /// not a property of this screen.
+  /// This closes the user-initiated path only. TODO(#7047): Decide whether a
+  /// block cancels queued outgoing sends; the reconnect sweep still re-drives
+  /// a failed row that is under `maxRetries`
+  /// (`OutgoingDmsDao.getRetryableForOwner`).
   final bool sendRecoveryEnabled;
 
   Future<void> _onMessageLongPress(

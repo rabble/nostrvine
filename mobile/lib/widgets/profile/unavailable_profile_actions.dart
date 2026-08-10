@@ -75,17 +75,59 @@ class UnavailableProfileActions extends ConsumerWidget {
       case MoreSheetResult.unfollow:
         // `unfollow`, never `toggleFollow`: on a follow list that has not
         // loaded, toggle would *follow* the account instead (#6903).
-        await followRepository.unfollow(userIdHex);
+        await _runWithReceipt(
+          context,
+          successMessage: context.l10n.profileUnfollowedUser(
+            context.l10n.profileUserFallback,
+          ),
+          action: () => followRepository.unfollow(userIdHex),
+        );
       case MoreSheetResult.report:
         if (!context.mounted) return;
         await ReportContentDialog.showForUser(context, userPubkey: userIdHex);
       case MoreSheetResult.blockConfirmed:
-        await blocklistRepository.blockUser(userIdHex);
+        await _runWithReceipt(
+          context,
+          successMessage: context.l10n.profileBlockedUser(
+            context.l10n.profileUserFallback,
+          ),
+          action: () => blocklistRepository.blockUser(userIdHex),
+        );
       case MoreSheetResult.unblockConfirmed:
-        await blocklistRepository.unblockUser(userIdHex);
+        await _runWithReceipt(
+          context,
+          successMessage: context.l10n.profileUnblockedUser(
+            context.l10n.profileUserFallback,
+          ),
+          action: () => blocklistRepository.unblockUser(userIdHex),
+        );
       case MoreSheetResult.addToList:
         // Not surfaced here: `showAddToList` defaults to false above.
         break;
     }
+  }
+
+  Future<void> _runWithReceipt(
+    BuildContext context, {
+    required String successMessage,
+    required Future<void> Function() action,
+  }) async {
+    try {
+      await action();
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        DivineSnackbarContainer.snackBar(
+          context.l10n.shareActionFailed,
+          error: true,
+        ),
+      );
+      return;
+    }
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(DivineSnackbarContainer.snackBar(successMessage));
   }
 }
