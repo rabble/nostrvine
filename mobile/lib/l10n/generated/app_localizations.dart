@@ -12998,12 +12998,6 @@ abstract class AppLocalizations {
   /// **'OG Viner'**
   String get ogVinerBadgeLabel;
 
-  /// Title for the dialog explaining the OG Viner profile badge.
-  ///
-  /// In en, this message translates to:
-  /// **'OG Viner'**
-  String get profileBadgeOgVinerTitle;
-
   /// Body copy explaining that the OG Viner profile badge identifies original Vine archive participation, not account verification.
   ///
   /// In en, this message translates to:

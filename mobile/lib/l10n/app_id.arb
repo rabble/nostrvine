@@ -4783,7 +4783,6 @@
     "globalUploadPendingCount": "Unggahan Tertunda ({count})",
     "@globalUploadPendingCount": {"placeholders": {"count": {"type": "int"}}},
     "ogVinerBadgeLabel": "OG Viner",
-    "profileBadgeOgVinerTitle": "OG Viner",
     "profileBadgeOgVinerBody": "Orang ini pernah memposting Vine asli yang ditemukan Divine di arsip. Ini bukan lencana verifikasi akun.",
     "profileBadgeOgVinerSemanticHint": "Menjelaskan lencana OG Viner",
     "profileBadgeCheckmarkTitle": "Centang profil",

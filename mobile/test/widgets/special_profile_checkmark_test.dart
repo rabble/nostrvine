@@ -1,5 +1,7 @@
 // ABOUTME: Widget tests for the special profile checkmark badge.
-// ABOUTME: Covers the badge's accessible label and explanation dialog.
+// ABOUTME: Covers the badge's accessible label and non-interactive behavior.
+
+import 'dart:ui' as ui;
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -21,29 +23,28 @@ Widget _buildSubject() {
 }
 
 void main() {
-  testWidgets('renders an accessible tappable checkmark', (tester) async {
+  testWidgets('renders an accessible non-tappable checkmark', (tester) async {
+    final handle = tester.ensureSemantics();
     await tester.pumpWidget(_buildSubject());
     final l10n = lookupAppLocalizations(const Locale('en'));
+    final data = tester
+        .getSemantics(find.byType(SpecialProfileCheckmark))
+        .getSemanticsData();
 
-    expect(
-      find.byWidgetPredicate(
-        (widget) =>
-            widget is Semantics &&
-            widget.properties.button == true &&
-            widget.properties.label == l10n.profileBadgeCheckmarkTitle &&
-            widget.properties.hint == l10n.profileBadgeCheckmarkSemanticHint,
-      ),
-      findsOneWidget,
-    );
+    expect(data.label, l10n.profileBadgeCheckmarkTitle);
+    expect(data.hasAction(ui.SemanticsAction.tap), isFalse);
     expect(
       find.byWidgetPredicate(
         (w) => w is DivineIcon && w.icon == DivineIconName.check,
       ),
       findsOneWidget,
     );
+    handle.dispose();
   });
 
-  testWidgets('explains checkmark meaning when tapped', (tester) async {
+  testWidgets('does not open explanation sheet when tapped inline', (
+    tester,
+  ) async {
     await tester.pumpWidget(_buildSubject());
     final l10n = lookupAppLocalizations(const Locale('en'));
 
@@ -54,8 +55,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text(l10n.profileBadgeCheckmarkTitle), findsWidgets);
-    expect(find.text(l10n.profileBadgeCheckmarkBody), findsOneWidget);
-    expect(find.text(l10n.commonClose), findsOneWidget);
+    expect(find.text(l10n.profileBadgeCheckmarkBody), findsNothing);
+    expect(find.text(l10n.commonClose), findsNothing);
   });
 }

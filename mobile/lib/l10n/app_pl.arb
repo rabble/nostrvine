@@ -4783,7 +4783,6 @@
     "globalUploadPendingCount": "Oczekujące przesyłania ({count})",
     "@globalUploadPendingCount": {"placeholders": {"count": {"type": "int"}}},
     "ogVinerBadgeLabel": "OG Viner",
-    "profileBadgeOgVinerTitle": "OG Viner",
     "profileBadgeOgVinerBody": "Ta osoba opublikowała oryginalnego Vine'a, którego Divine znalazło w archiwum. To nie jest odznaka weryfikacji konta.",
     "profileBadgeOgVinerSemanticHint": "Wyjaśnia odznakę OG Viner",
     "profileBadgeCheckmarkTitle": "Znacznik profilu",

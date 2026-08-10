@@ -4783,7 +4783,6 @@
     "globalUploadPendingCount": "عمليات الرفع المعلّقة ({count})",
     "@globalUploadPendingCount": {"placeholders": {"count": {"type": "int"}}},
     "ogVinerBadgeLabel": "OG Viner",
-    "profileBadgeOgVinerTitle": "OG Viner",
     "profileBadgeOgVinerBody": "نشر هذا الشخص مقطع Vine أصليًا عثرت عليه Divine في الأرشيف. هذه ليست شارة توثيق حساب.",
     "profileBadgeOgVinerSemanticHint": "يشرح شارة OG Viner",
     "profileBadgeCheckmarkTitle": "علامة الملف الشخصي",

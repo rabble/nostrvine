@@ -4783,7 +4783,6 @@
     "globalUploadPendingCount": "Väntande uppladdningar ({count})",
     "@globalUploadPendingCount": {"placeholders": {"count": {"type": "int"}}},
     "ogVinerBadgeLabel": "OG Viner",
-    "profileBadgeOgVinerTitle": "OG Viner",
     "profileBadgeOgVinerBody": "Den här personen postade en originalvine som Divine hittade i arkivet. Det är inte en verifieringsbadge för kontot.",
     "profileBadgeOgVinerSemanticHint": "Förklarar OG Viner-badgen",
     "profileBadgeCheckmarkTitle": "Profilbock",

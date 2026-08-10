@@ -5,7 +5,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/widgets/profile_badge_explanation_dialog.dart';
 
 const _specialProfileHosts = {
   'kirstenswasey.divine.video',
@@ -56,30 +55,21 @@ class SpecialProfileCheckmark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      button: true,
       label: context.l10n.profileBadgeCheckmarkTitle,
-      hint: context.l10n.profileBadgeCheckmarkSemanticHint,
       container: true,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => showProfileBadgeExplanationDialog(
-          context,
-          ProfileBadgeExplanationType.profileCheckmark,
-        ),
-        child: ExcludeSemantics(
-          child: Padding(
-            padding: const EdgeInsetsDirectional.only(start: 4),
-            child: Container(
-              padding: EdgeInsets.all(padding),
-              decoration: const BoxDecoration(
-                color: VineTheme.info,
-                shape: BoxShape.circle,
-              ),
-              child: DivineIcon(
-                icon: DivineIconName.check,
-                color: context.vineColors.primaryText,
-                size: iconSize,
-              ),
+      child: ExcludeSemantics(
+        child: Padding(
+          padding: const EdgeInsetsDirectional.only(start: 4),
+          child: Container(
+            padding: EdgeInsets.all(padding),
+            decoration: const BoxDecoration(
+              color: VineTheme.info,
+              shape: BoxShape.circle,
+            ),
+            child: DivineIcon(
+              icon: DivineIconName.check,
+              color: context.vineColors.primaryText,
+              size: iconSize,
             ),
           ),
         ),

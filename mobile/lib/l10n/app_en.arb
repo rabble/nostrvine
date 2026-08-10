@@ -4427,10 +4427,6 @@
   "globalUploadPendingCount": "Pending Uploads ({count})",
   "@globalUploadPendingCount": {"placeholders": {"count": {"type": "int"}}},
   "ogVinerBadgeLabel": "OG Viner",
-  "profileBadgeOgVinerTitle": "OG Viner",
-  "@profileBadgeOgVinerTitle": {
-    "description": "Title for the dialog explaining the OG Viner profile badge."
-  },
   "profileBadgeOgVinerBody": "This person posted an original Vine that Divine found in the archive. It is not an account verification badge.",
   "@profileBadgeOgVinerBody": {
     "description": "Body copy explaining that the OG Viner profile badge identifies original Vine archive participation, not account verification."

@@ -4783,7 +4783,6 @@
     "globalUploadPendingCount": "Uploads in behandeling ({count})",
     "@globalUploadPendingCount": {"placeholders": {"count": {"type": "int"}}},
     "ogVinerBadgeLabel": "OG Viner",
-    "profileBadgeOgVinerTitle": "OG Viner",
     "profileBadgeOgVinerBody": "Deze persoon plaatste een originele Vine die Divine in het archief vond. Dit is geen verificatiebadge voor het account.",
     "profileBadgeOgVinerSemanticHint": "Legt de OG Viner-badge uit",
     "profileBadgeCheckmarkTitle": "Profielvinkje",

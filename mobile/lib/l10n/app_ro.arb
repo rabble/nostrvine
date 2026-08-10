@@ -4783,7 +4783,6 @@
     "globalUploadPendingCount": "Încărcări în așteptare ({count})",
     "@globalUploadPendingCount": {"placeholders": {"count": {"type": "int"}}},
     "ogVinerBadgeLabel": "OG Viner",
-    "profileBadgeOgVinerTitle": "OG Viner",
     "profileBadgeOgVinerBody": "Persoana asta a postat un Vine original pe care Divine l-a găsit în arhivă. Nu e o insignă de verificare a contului.",
     "profileBadgeOgVinerSemanticHint": "Explică insigna OG Viner",
     "profileBadgeCheckmarkTitle": "Bifa de profil",

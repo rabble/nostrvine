@@ -7136,9 +7136,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get ogVinerBadgeLabel => 'OG Viner';
 
   @override
-  String get profileBadgeOgVinerTitle => 'OG Viner';
-
-  @override
   String get profileBadgeOgVinerBody =>
       '这个人发过一条原版 Vine，被 Divine 在存档里找到了。这不是账号认证徽章。';
 

@@ -4783,7 +4783,6 @@
     "globalUploadPendingCount": "Subidas pendientes ({count})",
     "@globalUploadPendingCount": {"placeholders": {"count": {"type": "int"}}},
     "ogVinerBadgeLabel": "OG Viner",
-    "profileBadgeOgVinerTitle": "OG Viner",
     "profileBadgeOgVinerBody": "Esta persona publicó un Vine original que Divine encontró en el archivo. No es una insignia de verificación de cuenta.",
     "profileBadgeOgVinerSemanticHint": "Explica la insignia OG Viner",
     "profileBadgeCheckmarkTitle": "Tilde de perfil",

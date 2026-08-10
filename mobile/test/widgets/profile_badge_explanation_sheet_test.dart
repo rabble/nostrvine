@@ -6,10 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
-import 'package:openvine/widgets/profile_badge_explanation_dialog.dart';
+import 'package:openvine/widgets/profile_badge_explanation_sheet.dart';
 
 void main() {
-  group('showProfileBadgeExplanationDialog', () {
+  group('showProfileBadgeExplanationSheet', () {
     late ProviderContainer container;
 
     setUp(() {
@@ -28,7 +28,7 @@ void main() {
               builder: (context) => Center(
                 child: TextButton(
                   onPressed: () =>
-                      showProfileBadgeExplanationDialog(context, type),
+                      showProfileBadgeExplanationSheet(context, type),
                   child: const Text('open'),
                 ),
               ),
@@ -60,11 +60,7 @@ void main() {
         );
 
         await tester.tap(
-          find.text(
-            lookupAppLocalizations(
-              const Locale('en'),
-            ).commonClose,
-          ),
+          find.text(lookupAppLocalizations(const Locale('en')).commonClose),
         );
         await tester.pumpAndSettle();
 

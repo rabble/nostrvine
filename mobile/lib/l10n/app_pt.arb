@@ -4783,7 +4783,6 @@
     "globalUploadPendingCount": "Envios pendentes ({count})",
     "@globalUploadPendingCount": {"placeholders": {"count": {"type": "int"}}},
     "ogVinerBadgeLabel": "Viner OG",
-    "profileBadgeOgVinerTitle": "Viner OG",
     "profileBadgeOgVinerBody": "Essa pessoa postou um Vine original que a Divine encontrou no arquivo. Não é um selo de verificação de conta.",
     "profileBadgeOgVinerSemanticHint": "Explica o selo Viner OG",
     "profileBadgeCheckmarkTitle": "Marca de verificação do perfil",

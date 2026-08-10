@@ -4783,7 +4783,6 @@
     "globalUploadPendingCount": "Ausstehende Uploads ({count})",
     "@globalUploadPendingCount": {"placeholders": {"count": {"type": "int"}}},
     "ogVinerBadgeLabel": "OG Viner",
-    "profileBadgeOgVinerTitle": "OG Viner",
     "profileBadgeOgVinerBody": "Diese Person hat ein Original-Vine gepostet, das Divine im Archiv gefunden hat. Das ist kein Verifizierungs-Badge fürs Konto.",
     "profileBadgeOgVinerSemanticHint": "Erklärt das OG-Viner-Badge",
     "profileBadgeCheckmarkTitle": "Profil-Häkchen",

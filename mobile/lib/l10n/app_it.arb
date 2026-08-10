@@ -4783,7 +4783,6 @@
     "globalUploadPendingCount": "Caricamenti in sospeso ({count})",
     "@globalUploadPendingCount": {"placeholders": {"count": {"type": "int"}}},
     "ogVinerBadgeLabel": "OG Viner",
-    "profileBadgeOgVinerTitle": "OG Viner",
     "profileBadgeOgVinerBody": "Questa persona ha pubblicato un Vine originale che Divine ha trovato nell'archivio. Non è un badge di verifica dell'account.",
     "profileBadgeOgVinerSemanticHint": "Spiega il badge OG Viner",
     "profileBadgeCheckmarkTitle": "Spunta del profilo",

@@ -7611,9 +7611,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ogVinerBadgeLabel => 'OG Viner';
 
   @override
-  String get profileBadgeOgVinerTitle => 'OG Viner';
-
-  @override
   String get profileBadgeOgVinerBody =>
       'Cette personne a publié un Vine original que Divine a retrouvé dans les archives. Ce n\'est pas un badge de vérification de compte.';
 

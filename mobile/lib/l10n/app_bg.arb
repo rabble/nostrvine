@@ -4914,7 +4914,6 @@
     "globalUploadPendingCount": "Качвания в очакване ({count})",
     "@globalUploadPendingCount": {"placeholders": {"count": {"type": "int"}}},
     "ogVinerBadgeLabel": "OG Viner",
-    "profileBadgeOgVinerTitle": "OG Viner",
     "profileBadgeOgVinerBody": "Този човек е публикувал оригинален Vine, който Divine намери в архива. Това не е значка за потвърден профил.",
     "profileBadgeOgVinerSemanticHint": "Обяснява значката OG Viner",
     "profileBadgeCheckmarkTitle": "Отметка на профила",

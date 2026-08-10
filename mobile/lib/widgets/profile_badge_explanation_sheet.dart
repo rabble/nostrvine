@@ -10,13 +10,11 @@ enum ProfileBadgeExplanationType { ogViner, profileCheckmark }
 
 /// Opens the explainer for a compact profile badge.
 ///
-/// Uses [showVideoPausingVineBottomSheet] because both badges also render
-/// inside the video feed, over a playing video: the pause-aware wrapper is
-/// what flips `OverlayVisibility.setBottomSheetOpen`, and without it the
-/// video keeps playing behind the sheet. It also defaults `useRootNavigator`
-/// to true, so the sheet covers the shell's tab bar instead of opening
-/// underneath it.
-Future<void> showProfileBadgeExplanationDialog(
+/// This is only for profile-header actions, where the caller is on a full route
+/// rather than inside an existing bottom sheet. Inline name-row badges stay
+/// non-interactive because their visual box is intentionally smaller than a
+/// 48 dp touch target and many of those rows already navigate to the profile.
+Future<void> showProfileBadgeExplanationSheet(
   BuildContext context,
   ProfileBadgeExplanationType type,
 ) {
@@ -24,12 +22,12 @@ Future<void> showProfileBadgeExplanationDialog(
     scrollable: false,
     expanded: false,
     contentTitle: type.title(context.l10n),
-    children: [ProfileBadgeExplanationContent(type: type)],
+    children: [_ProfileBadgeExplanationContent(type: type)],
   );
 }
 
-class ProfileBadgeExplanationContent extends StatelessWidget {
-  const ProfileBadgeExplanationContent({required this.type, super.key});
+class _ProfileBadgeExplanationContent extends StatelessWidget {
+  const _ProfileBadgeExplanationContent({required this.type});
 
   final ProfileBadgeExplanationType type;
 
@@ -76,7 +74,7 @@ class ProfileBadgeExplanationContent extends StatelessWidget {
 extension on ProfileBadgeExplanationType {
   String title(AppLocalizations l10n) {
     return switch (this) {
-      ProfileBadgeExplanationType.ogViner => l10n.profileBadgeOgVinerTitle,
+      ProfileBadgeExplanationType.ogViner => l10n.ogVinerBadgeLabel,
       ProfileBadgeExplanationType.profileCheckmark =>
         l10n.profileBadgeCheckmarkTitle,
     };

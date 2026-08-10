@@ -4783,7 +4783,6 @@
     "globalUploadPendingCount": "保留中のアップロード ({count})",
     "@globalUploadPendingCount": {"placeholders": {"count": {"type": "int"}}},
     "ogVinerBadgeLabel": "OG Viner",
-    "profileBadgeOgVinerTitle": "OG Viner",
     "profileBadgeOgVinerBody": "この人はオリジナルの Vine を投稿していて、Divine がアーカイブで見つけたよ。アカウントの認証バッジではないので注意。",
     "profileBadgeOgVinerSemanticHint": "OG Viner バッジについて説明する",
     "profileBadgeCheckmarkTitle": "プロフィールのチェックマーク",
