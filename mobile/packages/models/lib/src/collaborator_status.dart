@@ -32,6 +32,7 @@ class VideoCollaboratorStatus extends Equatable {
   const VideoCollaboratorStatus({
     required this.videoAddress,
     this.statusByPubkey = const {},
+    this.isResolved = false,
   });
 
   /// NIP-33 addressable id of the video, e.g. `34236:<creator>:<dTag>`.
@@ -41,18 +42,29 @@ class VideoCollaboratorStatus extends Equatable {
   /// [CollaboratorStatus.pending] by callers.
   final Map<String, CollaboratorStatus> statusByPubkey;
 
+  /// Whether the acceptance query has finished (relay EOSE reached).
+  ///
+  /// Distinguishes "nobody has accepted" from "we have not heard back yet" —
+  /// both leave a pubkey at [CollaboratorStatus.pending], but only the former
+  /// is a real answer. Render surfaces that hide unconfirmed collaborators
+  /// from third-party viewers must wait for this before drawing anything, or
+  /// they would flash an empty row and then fill it in.
+  final bool isResolved;
+
   CollaboratorStatus statusFor(String pubkey) =>
       statusByPubkey[pubkey] ?? CollaboratorStatus.pending;
 
   VideoCollaboratorStatus copyWith({
     Map<String, CollaboratorStatus>? statusByPubkey,
+    bool? isResolved,
   }) {
     return VideoCollaboratorStatus(
       videoAddress: videoAddress,
       statusByPubkey: statusByPubkey ?? this.statusByPubkey,
+      isResolved: isResolved ?? this.isResolved,
     );
   }
 
   @override
-  List<Object?> get props => [videoAddress, statusByPubkey];
+  List<Object?> get props => [videoAddress, statusByPubkey, isResolved];
 }

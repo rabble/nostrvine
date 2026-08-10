@@ -61,5 +61,35 @@ void main() {
       expect(a, equals(b));
       expect(a, isNot(equals(c)));
     });
+
+    test('isResolved defaults to false', () {
+      const status = VideoCollaboratorStatus(videoAddress: address);
+      expect(status.isResolved, isFalse);
+    });
+
+    test('copyWith updates isResolved and preserves the status map', () {
+      const original = VideoCollaboratorStatus(
+        videoAddress: address,
+        statusByPubkey: {'a': CollaboratorStatus.confirmed},
+      );
+      final updated = original.copyWith(isResolved: true);
+      expect(updated.isResolved, isTrue);
+      expect(updated.statusFor('a'), equals(CollaboratorStatus.confirmed));
+    });
+
+    test('isResolved participates in equality', () {
+      const unresolved = VideoCollaboratorStatus(videoAddress: address);
+      const resolved = VideoCollaboratorStatus(
+        videoAddress: address,
+        isResolved: true,
+      );
+      expect(
+        unresolved,
+        isNot(equals(resolved)),
+        reason:
+            'Surfaces rebuild on the unresolved -> resolved transition; if '
+            'that is not an inequality the row never re-renders.',
+      );
+    });
   });
 }
