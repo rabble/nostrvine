@@ -121,18 +121,37 @@ adb -s "$DEVICE" logcat -v UTC -v year flutter:I BandwidthTracker:I IndividualVi
 LOGCAT_PID=$!
 
 # --- Run E2E test ---
+# Not every suite under integration_test/ is a patrol suite. `patrol test`
+# can only drive a patrolTest body, so dispatch on what the target actually
+# contains; either way the run keeps the docker+logcat+app timeline.
 # Disable errexit so we can capture the exit code through the pipe.
-echo "Running: patrol test ${TEST_PATH} ..." >&2
 cd "$MOBILE_DIR"
 set +e
-PATH="$PUB_CACHE_BIN:$PATH" patrol test \
-    --device "$DEVICE" \
-    --target "$TEST_PATH" \
-    --dart-define=DEFAULT_ENV=LOCAL \
-    --dart-define=INVITE_SERVER_URL="$INVITE_SERVER_URL" \
-    "${PATROL_EXTRA_ARGS[@]+"${PATROL_EXTRA_ARGS[@]}"}" \
-    2>&1 | tee "$APP_LOG"
-TEST_EXIT="${PIPESTATUS[0]}"
+if grep -q 'patrolTest' "$TEST_PATH"; then
+    echo "Running: patrol test ${TEST_PATH} ..." >&2
+    PATH="$PUB_CACHE_BIN:$PATH" patrol test \
+        --device "$DEVICE" \
+        --target "$TEST_PATH" \
+        --dart-define=DEFAULT_ENV=LOCAL \
+        --dart-define=INVITE_SERVER_URL="$INVITE_SERVER_URL" \
+        "${PATROL_EXTRA_ARGS[@]+"${PATROL_EXTRA_ARGS[@]}"}" \
+        2>&1 | tee "$APP_LOG"
+    TEST_EXIT="${PIPESTATUS[0]}"
+else
+    # Plain integration_test suite. There is no native automator on this
+    # path, so a permission dialog would block Flutter interaction with no
+    # way to dismiss it — pre-grant the one the app requests after auth.
+    # The grant fails harmlessly on the first run, before the app exists.
+    echo "Running: flutter test ${TEST_PATH} ..." >&2
+    adb -s "$DEVICE" shell pm grant co.openvine.app \
+        android.permission.POST_NOTIFICATIONS >/dev/null 2>&1 || true
+    flutter test "$TEST_PATH" \
+        --device-id "$DEVICE" \
+        --dart-define=DEFAULT_ENV=LOCAL \
+        --dart-define=INVITE_SERVER_URL="$INVITE_SERVER_URL" \
+        2>&1 | tee "$APP_LOG"
+    TEST_EXIT="${PIPESTATUS[0]}"
+fi
 set -e
 
 # --- Stop docker log and logcat capture ---
