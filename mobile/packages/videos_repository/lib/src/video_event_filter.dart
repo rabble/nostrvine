@@ -16,6 +16,11 @@ import 'package:videos_repository/videos_repository.dart';
 /// which runs before parsing for efficiency.
 typedef VideoContentFilter = bool Function(VideoEvent video);
 
+/// Filter callback for videos hidden by known NIP-09 deletion tombstones.
+///
+/// Returns `true` if the [video] should be hidden from results.
+typedef DeletedVideoFilter = bool Function(VideoEvent video);
+
 /// Resolver for content-warning labels that should remain visible behind
 /// a warning overlay rather than being hidden outright.
 typedef VideoWarningLabelsResolver = List<String> Function(VideoEvent video);

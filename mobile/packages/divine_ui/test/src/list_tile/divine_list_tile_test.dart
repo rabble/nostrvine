@@ -13,6 +13,7 @@ void main() {
       DivineIconName trailingIcon = DivineIconName.caretRight,
       double trailingIconSize = 24,
       VoidCallback? onTap,
+      String? semanticIdentifier,
     }) {
       return MaterialApp(
         theme: VineTheme.theme,
@@ -26,11 +27,39 @@ void main() {
             titleColor: titleColor,
             trailingIcon: trailingIcon,
             trailingIconSize: trailingIconSize,
+            semanticIdentifier: semanticIdentifier,
             onTap: onTap ?? () {},
           ),
         ),
       );
     }
+
+    testWidgets('exposes semanticIdentifier without hiding the row copy', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          subtitle: 'Pings and mentions',
+          semanticIdentifier: 'notifications_tile',
+        ),
+      );
+
+      expect(
+        find.bySemanticsIdentifier('notifications_tile'),
+        findsOneWidget,
+      );
+      // The wrapper must not swallow the ListTile's own semantics.
+      expect(find.text('Notifications'), findsOneWidget);
+      expect(find.text('Pings and mentions'), findsOneWidget);
+    });
+
+    testWidgets('adds no semantics wrapper when no identifier is given', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject());
+
+      expect(find.bySemanticsIdentifier('notifications_tile'), findsNothing);
+    });
 
     testWidgets('renders the title', (tester) async {
       await tester.pumpWidget(buildSubject());

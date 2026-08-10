@@ -1,3 +1,11 @@
 appId: co.openvine.app
 ---
-- assertVisible: Like video
+# The like button's label is the only signal of like state -- the identifier
+# is constant across both states by design, so there is no id to key on.
+#
+# Waited on rather than asserted outright: toggling a like publishes a Nostr
+# event, and although the UI updates optimistically the button can settle a
+# moment later.
+- extendedWaitUntil:
+    visible: Like video
+    timeout: 15000

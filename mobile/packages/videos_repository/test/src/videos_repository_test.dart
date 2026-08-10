@@ -156,6 +156,34 @@ void main() {
       expect(repository, isNotNull);
     });
 
+    test('isVideoKnownDeleted delegates to the injected deletion filter', () {
+      final visibleVideo = VideoEvent(
+        id: 'visible-video',
+        pubkey: 'pubkey',
+        createdAt: 1704067200,
+        content: '',
+        timestamp: DateTime.fromMillisecondsSinceEpoch(1704067200 * 1000),
+        videoUrl: 'https://example.com/visible.mp4',
+      );
+      final deletedVideo = visibleVideo.copyWith(id: 'deleted-video');
+
+      expect(repository.isVideoKnownDeleted(visibleVideo), isFalse);
+
+      final repositoryWithDeletionFilter = VideosRepository(
+        nostrClient: mockNostrClient,
+        deletedFilter: (video) => video.id == deletedVideo.id,
+      );
+
+      expect(
+        repositoryWithDeletionFilter.isVideoKnownDeleted(visibleVideo),
+        isFalse,
+      );
+      expect(
+        repositoryWithDeletionFilter.isVideoKnownDeleted(deletedVideo),
+        isTrue,
+      );
+    });
+
     group('getNewVideos', () {
       group('Funnelcake API first', () {
         late MockFunnelcakeApiClient mockFunnelcakeClient;
@@ -5986,6 +6014,71 @@ void main() {
         // Verify filter was called for both pubkeys
         expect(filter.calls, contains(blockedPubkey));
         expect(filter.calls, contains(allowedPubkey));
+      });
+
+      test('filters deleted videos from event-id lookups', () async {
+        final repositoryWithFilter = VideosRepository(
+          nostrClient: mockNostrClient,
+          deletedFilter: (video) => video.id == 'deleted-video',
+        );
+
+        final deletedEvent = _createVideoEvent(
+          id: 'deleted-video',
+          pubkey: 'author-1',
+          videoUrl: 'https://example.com/deleted.mp4',
+          createdAt: 1704067200,
+        );
+        final visibleEvent = _createVideoEvent(
+          id: 'visible-video',
+          pubkey: 'author-1',
+          videoUrl: 'https://example.com/visible.mp4',
+          createdAt: 1704067201,
+        );
+
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [deletedEvent, visibleEvent]);
+
+        final result = await repositoryWithFilter.getVideosByIds([
+          'deleted-video',
+          'visible-video',
+        ]);
+
+        expect(result.map((video) => video.id), ['visible-video']);
+      });
+
+      test('filters deleted videos from addressable lookups', () async {
+        const authorPubkey = 'addressable-author';
+        final repositoryWithFilter = VideosRepository(
+          nostrClient: mockNostrClient,
+          deletedFilter: (video) => video.addressableDTag == 'deleted-d',
+        );
+
+        final deletedEvent = _createVideoEventWithDTag(
+          id: 'deleted-event-id',
+          pubkey: authorPubkey,
+          dTag: 'deleted-d',
+          videoUrl: 'https://example.com/deleted.mp4',
+          createdAt: 1704067200,
+        );
+        final visibleEvent = _createVideoEventWithDTag(
+          id: 'visible-event-id',
+          pubkey: authorPubkey,
+          dTag: 'visible-d',
+          videoUrl: 'https://example.com/visible.mp4',
+          createdAt: 1704067201,
+        );
+
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [deletedEvent, visibleEvent]);
+
+        final result = await repositoryWithFilter.getVideosByAddressableIds([
+          '${EventKind.videoVertical}:$authorPubkey:deleted-d',
+          '${EventKind.videoVertical}:$authorPubkey:visible-d',
+        ]);
+
+        expect(result.map((video) => video.addressableDTag), ['visible-d']);
       });
 
       test('filters blocked pubkeys in home feed', () async {

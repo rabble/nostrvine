@@ -42,11 +42,14 @@ class ProfileRepostedVideosBloc
     required RepostsRepository repostsRepository,
     required VideosRepository videosRepository,
     required String currentUserPubkey,
+    required Stream<String> removedVideoIds,
+    required bool Function(VideoEvent video) deletedVideoFilter,
     String? targetUserPubkey,
   }) : _repostsRepository = repostsRepository,
        _videosRepository = videosRepository,
        _currentUserPubkey = currentUserPubkey,
        _targetUserPubkey = targetUserPubkey,
+       _deletedVideoFilter = deletedVideoFilter,
        super(const ProfileRepostedVideosState()) {
     on<ProfileRepostedVideosSyncRequested>(
       _onSyncRequested,
@@ -61,11 +64,21 @@ class ProfileRepostedVideosBloc
       transformer: sequential(),
     );
     on<ProfileRepostedVideosLoadMoreRequested>(_onLoadMoreRequested);
+    on<ProfileRepostedVideosVideoRemoved>(
+      _onVideoRemoved,
+      transformer: sequential(),
+    );
+    _removedVideoIdsSubscription = removedVideoIds.listen((videoId) {
+      if (isClosed) return;
+      add(ProfileRepostedVideosVideoRemoved(videoId));
+    });
   }
 
   final RepostsRepository _repostsRepository;
   final VideosRepository _videosRepository;
   final String _currentUserPubkey;
+  late final StreamSubscription<String> _removedVideoIdsSubscription;
+  final bool Function(VideoEvent video) _deletedVideoFilter;
 
   /// The pubkey of the user whose reposts to display.
   /// If null or same as current user, uses RepostsRepository sync.
@@ -240,7 +253,8 @@ class ProfileRepostedVideosBloc
     if (isClosed) return;
 
     if (listEquals(freshIds, state.repostedAddressableIds) &&
-        !_isWindowUnderfilled(freshIds)) {
+        !_isWindowUnderfilled(freshIds) &&
+        !state.videos.any(_deletedVideoFilter)) {
       emit(state.copyWith(isRefreshing: false));
       return;
     }
@@ -275,6 +289,7 @@ class ProfileRepostedVideosBloc
   _reconcile(List<String> freshIds) async {
     final byId = <String, VideoEvent>{};
     for (final video in state.videos) {
+      if (_deletedVideoFilter(video)) continue;
       final id = _computeAddressableId(video);
       if (id != null) byId[id] = video;
     }
@@ -341,10 +356,11 @@ class ProfileRepostedVideosBloc
   /// failure (cache problems must never break the load).
   Future<ProfileVideoListSnapshot?> _readCachedSnapshot() async {
     try {
-      return await CacheSync.read<ProfileVideoListSnapshot>(
+      final snapshot = await CacheSync.read<ProfileVideoListSnapshot>(
         key: _cacheKey,
         fromJson: ProfileVideoListSnapshot.fromJson,
       );
+      return snapshot == null ? null : _filterDeletedSnapshot(snapshot);
     } on Object catch (e) {
       Log.warning(
         'ProfileRepostedVideosBloc: Failed to read cached snapshot - $e',
@@ -353,6 +369,32 @@ class ProfileRepostedVideosBloc
       );
       return null;
     }
+  }
+
+  ProfileVideoListSnapshot _filterDeletedSnapshot(
+    ProfileVideoListSnapshot snapshot,
+  ) {
+    final deletedAddressableIds = snapshot.videos
+        .where(_deletedVideoFilter)
+        .map(_computeAddressableId)
+        .whereType<String>()
+        .toSet();
+    if (deletedAddressableIds.isEmpty) return snapshot;
+
+    final videos = snapshot.videos
+        .where((video) => !_deletedVideoFilter(video))
+        .toList();
+    final pruned = pruneProfileVideoListIds(
+      itemIds: snapshot.itemIds,
+      removedIds: deletedAddressableIds,
+      nextPageOffset: snapshot.nextPageOffset,
+    );
+    return ProfileVideoListSnapshot(
+      videos: videos,
+      itemIds: pruned.itemIds,
+      nextPageOffset: pruned.nextPageOffset,
+      hasMoreContent: snapshot.hasMoreContent,
+    );
   }
 
   /// Persists [snapshot] under [_cacheKey] so reopening restores it.
@@ -544,6 +586,49 @@ class ProfileRepostedVideosBloc
     }
   }
 
+  Future<void> _onVideoRemoved(
+    ProfileRepostedVideosVideoRemoved event,
+    Emitter<ProfileRepostedVideosState> emit,
+  ) async {
+    final removedAddressableIds = <String>{};
+    final videos = <VideoEvent>[];
+    for (final video in state.videos) {
+      final isRemoved = video.id == event.videoId || _deletedVideoFilter(video);
+      if (isRemoved) {
+        final addressableId = _computeAddressableId(video);
+        if (addressableId != null) removedAddressableIds.add(addressableId);
+      } else {
+        videos.add(video);
+      }
+    }
+    final pruned = pruneProfileVideoListIds(
+      itemIds: state.repostedAddressableIds,
+      removedIds: removedAddressableIds,
+      nextPageOffset: state.nextPageOffset,
+    );
+    if (videos.length == state.videos.length &&
+        pruned.itemIds.length == state.repostedAddressableIds.length &&
+        pruned.nextPageOffset == state.nextPageOffset) {
+      return;
+    }
+
+    emit(
+      state.copyWith(
+        videos: videos,
+        repostedAddressableIds: pruned.itemIds,
+        nextPageOffset: pruned.nextPageOffset,
+      ),
+    );
+    await _persistSnapshot(
+      ProfileVideoListSnapshot(
+        videos: videos,
+        itemIds: pruned.itemIds,
+        nextPageOffset: pruned.nextPageOffset,
+        hasMoreContent: state.hasMoreContent,
+      ),
+    );
+  }
+
   /// Fetch videos for the given addressable IDs.
   ///
   /// Uses [VideosRepository.getVideosByAddressableIds] which:
@@ -587,5 +672,11 @@ class ProfileRepostedVideosBloc
   /// Returns null if the video doesn't have a real d-tag.
   String? _computeAddressableId(VideoEvent video) {
     return video.addressableId;
+  }
+
+  @override
+  Future<void> close() {
+    _removedVideoIdsSubscription.cancel();
+    return super.close();
   }
 }

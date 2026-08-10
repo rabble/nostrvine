@@ -25,6 +25,7 @@ void main() {
       String? tooltip,
       String? semanticLabel,
       bool? semanticToggled,
+      String? semanticIdentifier,
       String? semanticLongPressHint,
       ThemeData? theme,
     }) {
@@ -44,6 +45,7 @@ void main() {
               tooltip: tooltip,
               semanticLabel: semanticLabel,
               semanticToggled: semanticToggled,
+              semanticIdentifier: semanticIdentifier,
               semanticLongPressHint: semanticLongPressHint,
             ),
           ),
@@ -92,6 +94,42 @@ void main() {
 
         final semantics = tester.getSemantics(find.byType(DivineIconButton));
         expect(semantics.flagsCollection.isToggled, Tristate.none);
+      });
+
+      testWidgets('applies semantic identifier', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            semanticIdentifier: 'settings_button',
+            onPressed: () {},
+          ),
+        );
+
+        final semantics = tester.getSemantics(find.byType(DivineIconButton));
+
+        expect(semantics.identifier, equals('settings_button'));
+      });
+
+      testWidgets('leaves the identifier empty when not set', (tester) async {
+        await tester.pumpWidget(buildTestWidget(onPressed: () {}));
+
+        final semantics = tester.getSemantics(find.byType(DivineIconButton));
+
+        expect(semantics.identifier, isEmpty);
+      });
+
+      testWidgets('identifier is independent of the label', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            semanticLabel: 'Settings',
+            semanticIdentifier: 'settings_button',
+            onPressed: () {},
+          ),
+        );
+
+        final semantics = tester.getSemantics(find.byType(DivineIconButton));
+
+        expect(semantics.identifier, equals('settings_button'));
+        expect(semantics.label, equals('Settings'));
       });
 
       testWidgets('applies semantic long-press hint when set', (tester) async {

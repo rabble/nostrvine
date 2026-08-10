@@ -167,9 +167,13 @@ void main() {
           const CollaboratorAvatarRowBody(
             visibility: CollaboratorVisibility(
               taggedPubkeys: [_collab1, _collab2],
-              statusByPubkey: {_collab1: CollaboratorStatus.ignored},
+              statusByPubkey: {
+                _collab1: CollaboratorStatus.ignored,
+                _collab2: CollaboratorStatus.confirmed,
+              },
               currentUserPubkey: _collab1,
               creatorPubkey: _creatorPubkey,
+              isResolved: true,
             ),
           ),
           overrides: [
@@ -204,6 +208,7 @@ void main() {
               statusByPubkey: {_collab1: CollaboratorStatus.ignored},
               currentUserPubkey: _collab1,
               creatorPubkey: _creatorPubkey,
+              isResolved: true,
             ),
           ),
         ),
@@ -223,6 +228,7 @@ void main() {
                 statusByPubkey: {_collab1: CollaboratorStatus.confirmed},
                 currentUserPubkey: _collab1,
                 creatorPubkey: _creatorPubkey,
+                isResolved: true,
               ),
             ),
           ),
@@ -243,8 +249,11 @@ void main() {
     );
 
     testWidgets(
-      'third-party view: all avatars rendered without pending decoration',
+      'third-party view: unconfirmed collaborators are not rendered at all',
       (tester) async {
+        // Pre-#6907 this row rendered every creator-tagged pubkey to third
+        // parties, so tagging someone publicly credited them whether or not
+        // they ever accepted.
         await tester.pumpWidget(
           _wrap(
             const CollaboratorAvatarRowBody(
@@ -256,12 +265,74 @@ void main() {
                 },
                 currentUserPubkey: _thirdPartyPubkey,
                 creatorPubkey: _creatorPubkey,
+                isResolved: true,
               ),
             ),
           ),
         );
 
+        expect(_divineIcon(DivineIconName.users), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'third-party view: renders nothing until the query resolves',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            const CollaboratorAvatarRowBody(
+              visibility: CollaboratorVisibility(
+                taggedPubkeys: [_collab1],
+                statusByPubkey: {_collab1: CollaboratorStatus.confirmed},
+                currentUserPubkey: _thirdPartyPubkey,
+                creatorPubkey: _creatorPubkey,
+              ),
+            ),
+          ),
+        );
+
+        expect(_divineIcon(DivineIconName.users), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'third-party view: confirmed collaborators render without decoration',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            const CollaboratorAvatarRowBody(
+              visibility: CollaboratorVisibility(
+                taggedPubkeys: [_collab1, _collab2],
+                statusByPubkey: {
+                  _collab1: CollaboratorStatus.pending,
+                  _collab2: CollaboratorStatus.confirmed,
+                },
+                currentUserPubkey: _thirdPartyPubkey,
+                creatorPubkey: _creatorPubkey,
+                isResolved: true,
+              ),
+            ),
+            overrides: [
+              fetchUserProfileProvider(
+                _collab1,
+              ).overrideWith((ref) async => _makeProfile(_collab1, 'Alice')),
+              fetchUserProfileProvider(
+                _collab2,
+              ).overrideWith((ref) async => _makeProfile(_collab2, 'Bob')),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
         expect(_divineIcon(DivineIconName.users), findsOneWidget);
+        expect(
+          find.text(_l10n.videoCollaboratorWithOne('Bob')),
+          findsOneWidget,
+        );
+        expect(
+          find.text(_l10n.videoCollaboratorWithOne('Alice')),
+          findsNothing,
+        );
         // Third-party viewers never see the pending decoration.
         expect(find.byType(Opacity), findsNothing);
         expect(
@@ -339,9 +410,14 @@ void main() {
           const CollaboratorAvatarRowBody(
             visibility: CollaboratorVisibility(
               taggedPubkeys: [_collab1, _collab2, _collab3],
-              statusByPubkey: {_collab1: CollaboratorStatus.ignored},
+              statusByPubkey: {
+                _collab1: CollaboratorStatus.ignored,
+                _collab2: CollaboratorStatus.confirmed,
+                _collab3: CollaboratorStatus.confirmed,
+              },
               currentUserPubkey: _collab1,
               creatorPubkey: _creatorPubkey,
+              isResolved: true,
             ),
           ),
           overrides: [

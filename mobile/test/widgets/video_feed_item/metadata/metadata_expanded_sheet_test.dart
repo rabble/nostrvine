@@ -1026,9 +1026,13 @@ void main() {
             child: const MetadataCollaboratorsSectionBody(
               visibility: CollaboratorVisibility(
                 taggedPubkeys: [_collaborator1, _collaborator2],
-                statusByPubkey: {_collaborator1: CollaboratorStatus.ignored},
+                statusByPubkey: {
+                  _collaborator1: CollaboratorStatus.ignored,
+                  _collaborator2: CollaboratorStatus.confirmed,
+                },
                 currentUserPubkey: _collaborator1,
                 creatorPubkey: _creatorPubkey,
+                isResolved: true,
               ),
             ),
           ),
@@ -1063,7 +1067,7 @@ void main() {
     );
 
     testWidgetsWithSurfaceSize(
-      'third-party view: no Pending decoration even for pending status',
+      'third-party view: confirmed chip renders with no Pending decoration',
       (tester) async {
         await tester.pumpWidget(
           buildSubject(
@@ -1075,9 +1079,10 @@ void main() {
             child: const MetadataCollaboratorsSectionBody(
               visibility: CollaboratorVisibility(
                 taggedPubkeys: [_collaborator1],
-                statusByPubkey: {_collaborator1: CollaboratorStatus.pending},
+                statusByPubkey: {_collaborator1: CollaboratorStatus.confirmed},
                 currentUserPubkey: _reposterPubkey,
                 creatorPubkey: _creatorPubkey,
+                isResolved: true,
               ),
             ),
           ),
@@ -1091,6 +1096,35 @@ void main() {
           findsNothing,
         );
         expect(_dimmed(), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'third-party view: unconfirmed collaborator is not rendered',
+      (tester) async {
+        // Pre-#6907 a creator-tagged pubkey rendered here regardless of
+        // whether they ever accepted, publicly crediting them.
+        await tester.pumpWidget(
+          buildSubject(
+            providerOverrides: [
+              fetchUserProfileProvider(_collaborator1).overrideWith(
+                (ref) async => _makeProfile(_collaborator1, 'Alice'),
+              ),
+            ],
+            child: const MetadataCollaboratorsSectionBody(
+              visibility: CollaboratorVisibility(
+                taggedPubkeys: [_collaborator1],
+                statusByPubkey: {_collaborator1: CollaboratorStatus.pending},
+                currentUserPubkey: _reposterPubkey,
+                creatorPubkey: _creatorPubkey,
+                isResolved: true,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Alice'), findsNothing);
       },
     );
 

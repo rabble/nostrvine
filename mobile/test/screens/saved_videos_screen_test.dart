@@ -9,20 +9,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/profile_saved_videos/profile_saved_videos_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/saved_videos_screen.dart';
-import 'package:openvine/services/video_event_service.dart';
 
 import '../helpers/test_provider_overrides.dart';
 
 class _MockProfileSavedVideosBloc
     extends MockBloc<ProfileSavedVideosEvent, ProfileSavedVideosState>
     implements ProfileSavedVideosBloc {}
-
-class _FakeVideoEventService extends Mock implements VideoEventService {
-  @override
-  Stream<String> get removedVideoIds => const Stream<String>.empty();
-}
 
 void main() {
   group(SavedVideosView, () {
@@ -38,9 +31,7 @@ void main() {
 
     Widget buildSubject() {
       return testProviderScope(
-        additionalOverrides: [
-          videoEventServiceProvider.overrideWithValue(_FakeVideoEventService()),
-        ],
+        additionalOverrides: [],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,

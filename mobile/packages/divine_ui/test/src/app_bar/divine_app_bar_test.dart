@@ -4,6 +4,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -273,6 +274,48 @@ void main() {
       });
 
       testWidgets(
+        'default leading variants are anchored to their own ids',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              title: 'Test',
+              showBackButton: true,
+              onBackPressed: () {},
+            ),
+          );
+
+          expect(find.bySemanticsIdentifier('back_button'), findsOneWidget);
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              title: 'Test',
+              showMenuButton: true,
+              onMenuPressed: () {},
+            ),
+          );
+
+          expect(find.bySemanticsIdentifier('menu_button'), findsOneWidget);
+          expect(find.bySemanticsIdentifier('back_button'), findsNothing);
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              title: 'Test',
+              leadingIcon: const SvgIconSource(
+                DiVineAppBarLeading.menuIconAsset,
+              ),
+              onLeadingPressed: () {},
+            ),
+          );
+
+          expect(
+            find.bySemanticsIdentifier('leading_action_button'),
+            findsOneWidget,
+          );
+          expect(find.bySemanticsIdentifier('back_button'), findsNothing);
+        },
+      );
+
+      testWidgets(
         'expandLeadingHitArea routes taps in the empty part of the '
         'leading slot to onBackPressed',
         (tester) async {
@@ -301,6 +344,73 @@ void main() {
           );
           await tester.tapAt(tapPoint);
           expect(pressed, isTrue);
+        },
+      );
+
+      testWidgets(
+        'expandLeadingHitArea keeps the label on the node that is actually '
+        'tappable',
+        (tester) async {
+          var pressed = false;
+          await tester.pumpWidget(
+            buildTestWidget(
+              title: 'Test',
+              showBackButton: true,
+              onBackPressed: () => pressed = true,
+              expandLeadingHitArea: true,
+            ),
+          );
+
+          // AbsorbPointer stops the inner button receiving pointers, so the
+          // announced node has to be the outer one -- otherwise assistive
+          // tech and UI tests both target something inert.
+          final node = tester.getSemantics(
+            find.bySemanticsIdentifier('back_button'),
+          );
+          expect(node.label, 'Go back');
+          expect(
+            node.getSemanticsData().hasAction(SemanticsAction.tap),
+            isTrue,
+          );
+
+          await tester.tap(find.bySemanticsIdentifier('back_button'));
+          expect(pressed, isTrue);
+        },
+      );
+
+      testWidgets(
+        'expandLeadingHitArea anchors each leading variant to its own id',
+        (tester) async {
+          // One widget renders all three variants, so a single hardcoded id
+          // would label a menu or a custom leading action 'back_button'.
+          await tester.pumpWidget(
+            buildTestWidget(
+              title: 'Test',
+              showMenuButton: true,
+              onMenuPressed: () {},
+              expandLeadingHitArea: true,
+            ),
+          );
+
+          expect(find.bySemanticsIdentifier('menu_button'), findsOneWidget);
+          expect(find.bySemanticsIdentifier('back_button'), findsNothing);
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              title: 'Test',
+              leadingIcon: const SvgIconSource(
+                DiVineAppBarLeading.menuIconAsset,
+              ),
+              onLeadingPressed: () {},
+              expandLeadingHitArea: true,
+            ),
+          );
+
+          expect(
+            find.bySemanticsIdentifier('leading_action_button'),
+            findsOneWidget,
+          );
+          expect(find.bySemanticsIdentifier('back_button'), findsNothing);
         },
       );
 

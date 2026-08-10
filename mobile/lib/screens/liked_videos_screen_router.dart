@@ -105,6 +105,8 @@ class _LikedVideosScreenRouterState
             videosRepository: videosRepository,
             contentBlocklistRepository: contentBlocklistRepository,
             currentUserPubkey: currentUserPubkey,
+            removedVideoIds: videosRepository.removedVideoIds,
+            deletedVideoFilter: videosRepository.isVideoKnownDeleted,
           )..add(const ProfileLikedVideosSyncRequested()),
           child: ProfileLikedGrid(
             isOwnProfile: true,
@@ -127,6 +129,8 @@ class _LikedVideosScreenRouterState
         videosRepository: videosRepository,
         contentBlocklistRepository: contentBlocklistRepository,
         currentUserPubkey: currentUserPubkey,
+        removedVideoIds: videosRepository.removedVideoIds,
+        deletedVideoFilter: videosRepository.isVideoKnownDeleted,
       )..add(const ProfileLikedVideosSyncRequested()),
       child: _LikedVideosFeedView(
         videoIndex: videoIndex,

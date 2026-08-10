@@ -1,4 +1,4 @@
-// ABOUTME: Shared parser for NIP-71 imeta tag key-value encodings.
+// ABOUTME: Shared parser for NIP-92 imeta tag key-value encodings.
 
 /// Parses an `imeta` tag and calls [onKeyValue] for each metadata key-value
 /// pair.

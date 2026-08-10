@@ -165,6 +165,9 @@ class _LikedGridTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => Semantics(
+    // Same snake_case anchor as the label; see ProfileTabBar for why the
+    // label is left alone rather than localized here.
+    identifier: 'liked_video_thumbnail_$index',
     label: 'liked_video_thumbnail_$index',
     child: GestureDetector(
       onTap: () {

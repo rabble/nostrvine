@@ -1,7 +1,12 @@
 appId: co.openvine.app
-env:
-  SEARCH_USER: "rabble"
+# The account searched for is NOT committed. Supply it at run time; CI reads it
+# from the `maestro_e2e_credentials` Codemagic group:
+#
+#   maestro test -e SEARCH_USER=... e2e/maestro/flows/searchUserFlow.yaml
 ---
+#Preflight: an absent variable resolves to `undefined` rather than erroring.
+- assertTrue: ${typeof SEARCH_USER !== 'undefined' && SEARCH_USER !== ''}
+
 - runFlow: ../tests/loginFreshInstall.yaml
 - runFlow: ../tests/searchUsers.yaml
 

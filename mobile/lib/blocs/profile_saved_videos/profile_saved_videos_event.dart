@@ -27,3 +27,10 @@ final class ProfileSavedVideosLoadMoreRequested
     extends ProfileSavedVideosEvent {
   const ProfileSavedVideosLoadMoreRequested();
 }
+
+/// Internal: drop a video after the deletion bus reports it removed.
+final class ProfileSavedVideosVideoRemoved extends ProfileSavedVideosEvent {
+  const ProfileSavedVideosVideoRemoved(this.videoId);
+
+  final String videoId;
+}

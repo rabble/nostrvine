@@ -1,3 +1,4 @@
+import 'package:nostr_sdk/nip92/imeta_tag.dart';
 import 'package:nostr_sdk/utils/path_type_util.dart';
 
 import '../utils/string_util.dart';
@@ -71,47 +72,40 @@ class FileMetadata {
       String? alt;
       List<String> fallback = [];
 
-      for (var text in tag) {
-        if (text == "imeta") {
-          continue;
-        }
-
-        var strs = text.split(" ");
-        if (strs.length < 2) {
-          continue;
-        }
-
-        var key = strs[0];
+      parseImetaTag(List<String>.from(tag.map((e) => e.toString())), (
+        key,
+        value,
+      ) {
         if (key == "url") {
-          url = strs[1];
+          url = value;
         } else if (key == "m") {
-          m = strs[1];
+          m = value;
         } else if (key == "x") {
-          x = strs[1];
+          x = value;
         } else if (key == "ox") {
-          ox = strs[1];
+          ox = value;
         } else if (key == "size") {
-          size = strs[1];
+          size = value;
         } else if (key == "dim") {
-          dim = strs[1];
+          dim = value;
         } else if (key == "magnet") {
-          magnet = strs[1];
+          magnet = value;
         } else if (key == "i") {
-          i = strs[1];
+          i = value;
         } else if (key == "blurhash") {
-          blurhash = strs[1];
+          blurhash = value;
         } else if (key == "thumb") {
-          thumb = strs[1];
+          thumb = value;
         } else if (key == "image") {
-          image = strs[1];
+          image = value;
         } else if (key == "summary") {
-          summary = strs[1];
+          summary = value;
         } else if (key == "alt") {
-          alt = strs[1];
+          alt = value;
         } else if (key == "fallback") {
-          fallback.add(strs[1]);
+          fallback.add(value);
         }
-      }
+      });
 
       if (StringUtil.isBlank(m) && StringUtil.isNotBlank(url)) {
         var pathType = PathTypeUtil.getPathType(url!);

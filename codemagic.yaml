@@ -344,6 +344,14 @@ definitions:
           --dart-define=DEFAULT_ENV=${{ inputs.DEFAULT_ENV }} \
           --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
           --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN
+    # GH_ACTIONS_PR_PREVIEW sets forceOpenOnboarding on the invite client
+    # (main.dart), so getClientConfig() reports OnboardingMode.open and the
+    # invite gate self-redirects to account creation. Without it every flow
+    # that signs up stops at "Add your invite code" and the suite would need
+    # a live invite code as a managed, expirable secret. The gate itself is
+    # covered directly by invite_gate_screen_test.dart.
+    # The flag is named for its original PR-preview use; it is not
+    # GitHub-Actions specific.
     - &build_ios_e2e
       name: Build iOS Simulator app
       script: |
@@ -352,6 +360,7 @@ definitions:
           --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
           --dart-define=ZENDESK_URL=$ZENDESK_URL \
           --dart-define=DEFAULT_ENV=$DEFAULT_ENV \
+          --dart-define=GH_ACTIONS_PR_PREVIEW=true \
           --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
           --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN
     - &build_android_e2e
@@ -362,6 +371,7 @@ definitions:
           --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
           --dart-define=ZENDESK_URL=$ZENDESK_URL \
           --dart-define=DEFAULT_ENV=$DEFAULT_ENV \
+          --dart-define=GH_ACTIONS_PR_PREVIEW=true \
           --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
           --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN
     - &install_maestro
@@ -376,22 +386,59 @@ definitions:
       script: |
         set -e
         export PATH="$PATH:$HOME/.maestro/bin"
-        maestro test e2e/maestro/suites/smoke.yaml
+        # Credentials come from the `maestro_e2e_credentials` group, never the
+        # repo. Fail here rather than letting Maestro resolve a missing
+        # variable to `undefined` and report it as a selector failure.
+        for var in MAESTRO_USER_EMAIL MAESTRO_USER_PWD; do
+          if [ -z "$(eval echo \"\$$var\")" ]; then
+            echo "Missing $var — add it to the maestro_e2e_credentials group." >&2
+            exit 1
+          fi
+        done
+        maestro test \
+          -e USER_EMAIL="$MAESTRO_USER_EMAIL" \
+          -e USER_PWD="$MAESTRO_USER_PWD" \
+          e2e/maestro/suites/smoke.yaml
     - &boot_ios_simulator
       name: Boot iOS Simulator
       script: |
+        set -e
+        # Pick the first device from an explicit preference list rather than
+        # pinning one model. A hardcoded 'iPhone 16 Pro' silently produced an
+        # empty UDID on any image whose Xcode ships a different device set,
+        # and without `set -e` the step still reported success.
+        #
+        # The list is ordered, not "newest wins": screen size changes what is
+        # visible and tappable, so an E2E run must land on a predictable
+        # device or its failures stop being reproducible.
         DEVICE_UDID=$(xcrun simctl list devices available -j | \
           python3 -c "
         import json, sys
+        PREFERRED = [
+            'iPhone 16 Pro',
+            'iPhone 17 Pro',
+            'iPhone 16',
+            'iPhone 17',
+            'iPhone 15 Pro',
+        ]
         data = json.load(sys.stdin)
+        available = {}
         for runtime, devices in data['devices'].items():
             for d in devices:
-                if d['name'] == 'iPhone 16 Pro' and d['isAvailable']:
-                    print(d['udid'])
-                    sys.exit(0)
+                if d.get('isAvailable'):
+                    available.setdefault(d['name'], d['udid'])
+        for name in PREFERRED:
+            if name in available:
+                sys.stderr.write('Selected simulator: %s\n' % name)
+                print(available[name])
+                sys.exit(0)
+        sys.stderr.write(
+            'None of the preferred simulators are available. Present: %s\n'
+            % ', '.join(sorted(available)))
         sys.exit(1)
         ")
         xcrun simctl boot "$DEVICE_UDID" || true
+        xcrun simctl bootstatus "$DEVICE_UDID" -b
         echo "Booted simulator: $DEVICE_UDID"
     - &install_app_ios_simulator
       name: Install app on iOS Simulator
@@ -415,8 +462,15 @@ definitions:
       name: Launch Android emulator
       script: |
         set -e
-        cd $ANDROID_HOME/tools
-        emulator -avd emulator &
+        # $ANDROID_HOME/tools was removed from modern SDKs, so cd-ing there
+        # killed this step under `set -e` before the emulator ever started.
+        # The binary now ships in its own directory; invoke it by path.
+        EMULATOR="$ANDROID_HOME/emulator/emulator"
+        if [ ! -x "$EMULATOR" ]; then
+          echo "ERROR: emulator not found at $EMULATOR" >&2
+          exit 1
+        fi
+        "$EMULATOR" -avd emulator &
         adb wait-for-device
         TIMEOUT=120
         ELAPSED=0
@@ -678,6 +732,7 @@ workflows:
       groups:
         - zendesk_credentials
         - proofmode_credentials
+        - maestro_e2e_credentials
       vars:
         DEFAULT_ENV: STAGING
         BUNDLE_ID: co.openvine.app
@@ -692,6 +747,7 @@ workflows:
       - *clean_ios_workspace_state
       - *enable_spm
       - *flutter_pub_get
+      - *prepare_ios_spm_packages
       - *pod_install
       - *build_ios_e2e
       - *install_maestro
@@ -714,6 +770,7 @@ workflows:
       groups:
         - zendesk_credentials
         - proofmode_credentials
+        - maestro_e2e_credentials
       vars:
         DEFAULT_ENV: STAGING
         BUNDLE_ID: co.openvine.app

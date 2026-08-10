@@ -1,3 +1,7 @@
 appId: co.openvine.app
 ---
-- assertVisible: Unlike video
+# See assertVideoUnliked: like state is only observable through the label,
+# and the toggle round-trips through a relay publish.
+- extendedWaitUntil:
+    visible: Unlike video
+    timeout: 15000
