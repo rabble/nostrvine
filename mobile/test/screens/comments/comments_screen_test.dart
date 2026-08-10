@@ -460,22 +460,6 @@ void main() {
     });
 
     group('widget structure', () {
-      testWidgets('renders CommentsDragHandle', (tester) async {
-        await tester.pumpWidget(buildTestWidget());
-        await tester.pump();
-
-        expect(find.byType(CommentsDragHandle), findsOneWidget);
-      });
-
-      testWidgets('renders CommentsHeader', (tester) async {
-        await tester.pumpWidget(buildTestWidget());
-        await tester.pump();
-
-        final l10n = lookupAppLocalizations(const Locale('en'));
-        expect(find.byType(CommentsHeader), findsOneWidget);
-        expect(find.text(l10n.commentsHeaderTitle), findsOneWidget);
-      });
-
       testWidgets('renders CommentsList', (tester) async {
         await tester.pumpWidget(buildTestWidget());
         await tester.pump();
@@ -951,7 +935,7 @@ void main() {
         await tester.pumpWidget(buildTestWidget());
         await tester.pump();
 
-        expect(find.byType(CommentsDragHandle), findsOneWidget);
+        expect(find.byType(CommentsList), findsOneWidget);
         expect(find.byType(SnackBar), findsNothing);
       });
     });
@@ -1117,9 +1101,7 @@ class _CommentsScreenTestContent extends StatelessWidget {
       onCommentCountChanged: null,
       child: Column(
         children: [
-          const CommentsDragHandle(),
           _TestCommentsTitle(initialCount: initialCommentCount),
-          CommentsHeader(onClose: () => Navigator.pop(context)),
           const Divider(color: Colors.white24, height: 1),
           Expanded(
             child: CommentsList(
