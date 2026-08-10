@@ -25,13 +25,8 @@ void main() {
     String content = 'test content',
     int? createdAt,
   }) {
-    final event = Event(
-      pubkey,
-      kind,
-      tags ?? [],
-      content,
-      createdAt: createdAt,
-    )..sig = 'testsig$testPubkey';
+    final event = Event(pubkey, kind, tags ?? [], content, createdAt: createdAt)
+      ..sig = 'testsig$testPubkey';
     return event;
   }
 
@@ -284,89 +279,210 @@ void main() {
         expect(fetched.selfWrapStatus, OutgoingWrapStatus.pending);
       });
 
-      test(
-        'schema parity — fresh-install matches runtime CREATE-IF-NOT-EXISTS '
-        'path column-for-column and index-for-index',
-        () async {
-          // The `outgoing_dms` table is defined by Drift for fresh installs
-          // and by the v1 normalization/recovery SQL for legacy or repaired
-          // databases. Both paths must agree exactly. This test inspects the
-          // same database from both code paths and diffs the resulting
-          // `outgoing_dms` shape.
+      test('upgrade path — legacy v1 database migrates to v2', () async {
+        // The generated `migration_test.dart` cannot cover this: both
+        // `drift_schema_v1.json` and `drift_schema_v2.json` are dumps of the
+        // same declared table set, so `schemaAt(1)` already hands back a
+        // complete v2-shaped database. A real shipped v1 install is missing
+        // the tables, columns, and `notifications` primary key that startup
+        // repair used to add on every launch. Degrade a fresh database to
+        // that shape, then reopen and assert `onUpgrade` normalizes it.
+        await database.customStatement(
+          'INSERT INTO event (id, pubkey, created_at, kind, tags, content, '
+          "sig, expire_at) VALUES ('legacy-e1', 'p1', 100, 30023, "
+          "'[[\"d\",\"legacy-slug\"]]', 'c', 's', 99999999999)",
+        );
+        await database.customStatement(
+          'INSERT INTO notifications (id, type, from_pubkey, timestamp, '
+          "is_read, cached_at) VALUES ('legacy-n1', 'like', 'p1', 100, 0, "
+          "strftime('%s','now'))",
+        );
 
-          // Path 1: capture the fresh-install shape from the database
-          // already opened by the outer `setUp` (Drift's `m.createAll()`
-          // path). This represents a brand-new install.
-          final freshColumns = await _collectTableInfo(
-            database,
-            'outgoing_dms',
-          );
-          final freshIndexes = await _collectIndexNames(
-            database,
-            'outgoing_dms',
-          );
+        for (final table in _v1NormalizationTables) {
+          await database.customStatement('DROP TABLE IF EXISTS $table');
+        }
+        for (final index in _v1NormalizationEventIndexes) {
+          await database.customStatement('DROP INDEX IF EXISTS $index');
+        }
+        await database.customStatement('ALTER TABLE event DROP COLUMN d_tag');
+        await database.customStatement(
+          'DROP INDEX IF EXISTS idx_personal_reactions_addressable_id',
+        );
+        await database.customStatement(
+          'ALTER TABLE personal_reactions DROP COLUMN addressable_id',
+        );
 
-          expect(
-            freshColumns,
-            isNotEmpty,
-            reason: 'precondition: fresh install should have outgoing_dms',
-          );
+        // Rebuild `notifications` with the pre-owner_pubkey single-column
+        // primary key that shipped before the composite key landed.
+        await database.customStatement(
+          'DROP INDEX IF EXISTS idx_notification_owner_timestamp',
+        );
+        await database.customStatement(
+          'ALTER TABLE notifications RENAME TO notifications_legacy_src',
+        );
+        await database.customStatement('''
+          CREATE TABLE notifications (
+            id TEXT NOT NULL PRIMARY KEY,
+            type TEXT NOT NULL,
+            from_pubkey TEXT NOT NULL,
+            target_event_id TEXT NULL,
+            target_pubkey TEXT NULL,
+            content TEXT NULL,
+            timestamp INTEGER NOT NULL,
+            is_read INTEGER NOT NULL DEFAULT 0 CHECK (is_read IN (0, 1)),
+            cached_at INTEGER NOT NULL
+          )
+        ''');
+        await database.customStatement('''
+          INSERT INTO notifications (id, type, from_pubkey, target_event_id,
+            target_pubkey, content, timestamp, is_read, cached_at)
+          SELECT id, type, from_pubkey, target_event_id, target_pubkey,
+            content, timestamp, is_read, cached_at
+          FROM notifications_legacy_src
+        ''');
+        await database.customStatement('DROP TABLE notifications_legacy_src');
 
-          // Path 2: drop the table and reopen the same on-disk file so the
-          // recovery path recreates it via the v1 normalization SQL.
-          await database.customStatement('DROP TABLE outgoing_dms');
-          // Drop the indexes too so recovery is responsible for recreating
-          // them — otherwise stale indexes could mask a missing CREATE INDEX
-          // statement.
-          for (final indexName in freshIndexes) {
-            await database.customStatement('DROP INDEX IF EXISTS $indexName');
-          }
-          await database.close();
+        await database.customStatement('PRAGMA user_version = 1');
+        await database.close();
 
-          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
-          // Trigger `beforeOpen` lazily.
-          await database
+        // Reopen the degraded file. Drift sees user_version 1 and runs
+        // `onUpgrade`, which normalizes the legacy schema before any query.
+        database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+
+        final version = await database
+            .customSelect('SELECT * FROM pragma_user_version()')
+            .getSingle();
+        expect(
+          version.read<int>('user_version'),
+          2,
+          reason: 'onUpgrade must record schema version 2',
+        );
+
+        for (final table in _v1NormalizationTables) {
+          final rows = await database
               .customSelect(
                 "SELECT name FROM sqlite_master WHERE type='table' "
-                "AND name='outgoing_dms'",
+                'AND name = ?',
+                variables: [Variable.withString(table)],
               )
               .get();
+          expect(rows, hasLength(1), reason: '$table must be re-created');
+        }
 
-          final recreatedColumns = await _collectTableInfo(
-            database,
-            'outgoing_dms',
-          );
-          final recreatedIndexes = await _collectIndexNames(
-            database,
-            'outgoing_dms',
-          );
+        expect(
+          await _columnNames(database, 'event'),
+          contains('d_tag'),
+          reason: 'event.d_tag must be re-added',
+        );
 
-          // Column-by-column equality: `pragma table_info` returns
-          // (name, type, notnull, dflt_value, pk) tuples. List equality
-          // also catches column ordering drift, which sqlite preserves
-          // across `CREATE TABLE` statements and would surface a
-          // mis-ordered hand-written runtime SQL.
-          expect(
-            recreatedColumns,
-            equals(freshColumns),
-            reason:
-                'runtime CREATE-IF-NOT-EXISTS path must produce the same '
-                'columns as Drift `m.createAll()` — drift between the two '
-                'is exactly the bug Liz flagged',
-          );
+        final backfilled = await database
+            .customSelect("SELECT d_tag FROM event WHERE id = 'legacy-e1'")
+            .getSingle();
+        expect(
+          backfilled.read<String?>('d_tag'),
+          'legacy-slug',
+          reason: 'd_tag must be backfilled from the stored tags JSON',
+        );
 
-          // Index name set equality. Drift and the runtime SQL may emit
-          // CREATE INDEX statements in different orders, so set
-          // semantics is the right comparison here.
-          expect(
-            recreatedIndexes,
-            equals(freshIndexes),
-            reason:
-                'runtime CREATE-IF-NOT-EXISTS path must declare the same '
-                'index set as Drift fresh-install',
-          );
-        },
-      );
+        // `_collectTableInfo` rows are [name, type, notnull, dflt, pk].
+        final notificationColumns = await _collectTableInfo(
+          database,
+          'notifications',
+        );
+        final ownerColumn = notificationColumns.firstWhere(
+          (column) => column.first == 'owner_pubkey',
+          orElse: () => <Object?>[],
+        );
+        expect(
+          ownerColumn.isEmpty ? null : ownerColumn.last,
+          isNot(anyOf(isNull, 0)),
+          reason: 'notifications must be rebuilt with the composite key',
+        );
+
+        final preserved = await database
+            .customSelect("SELECT id FROM notifications WHERE id = 'legacy-n1'")
+            .get();
+        expect(
+          preserved,
+          hasLength(1),
+          reason: 'the rebuild must not drop existing notification rows',
+        );
+      });
+
+      test('schema parity — fresh-install matches runtime CREATE-IF-NOT-EXISTS '
+          'path column-for-column and index-for-index', () async {
+        // The `outgoing_dms` table is defined by Drift for fresh installs
+        // and by the v1 normalization/recovery SQL for legacy or repaired
+        // databases. Both paths must agree exactly. This test inspects the
+        // same database from both code paths and diffs the resulting
+        // `outgoing_dms` shape.
+
+        // Path 1: capture the fresh-install shape from the database
+        // already opened by the outer `setUp` (Drift's `m.createAll()`
+        // path). This represents a brand-new install.
+        final freshColumns = await _collectTableInfo(database, 'outgoing_dms');
+        final freshIndexes = await _collectIndexNames(database, 'outgoing_dms');
+
+        expect(
+          freshColumns,
+          isNotEmpty,
+          reason: 'precondition: fresh install should have outgoing_dms',
+        );
+
+        // Path 2: drop the table and reopen the same on-disk file so the
+        // recovery path recreates it via the v1 normalization SQL.
+        await database.customStatement('DROP TABLE outgoing_dms');
+        // Drop the indexes too so recovery is responsible for recreating
+        // them — otherwise stale indexes could mask a missing CREATE INDEX
+        // statement.
+        for (final indexName in freshIndexes) {
+          await database.customStatement('DROP INDEX IF EXISTS $indexName');
+        }
+        await database.close();
+
+        database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+        // Trigger `beforeOpen` lazily.
+        await database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' "
+              "AND name='outgoing_dms'",
+            )
+            .get();
+
+        final recreatedColumns = await _collectTableInfo(
+          database,
+          'outgoing_dms',
+        );
+        final recreatedIndexes = await _collectIndexNames(
+          database,
+          'outgoing_dms',
+        );
+
+        // Column-by-column equality: `pragma table_info` returns
+        // (name, type, notnull, dflt_value, pk) tuples. List equality
+        // also catches column ordering drift, which sqlite preserves
+        // across `CREATE TABLE` statements and would surface a
+        // mis-ordered hand-written runtime SQL.
+        expect(
+          recreatedColumns,
+          equals(freshColumns),
+          reason:
+              'runtime CREATE-IF-NOT-EXISTS path must produce the same '
+              'columns as Drift `m.createAll()` — drift between the two '
+              'is exactly the bug Liz flagged',
+        );
+
+        // Index name set equality. Drift and the runtime SQL may emit
+        // CREATE INDEX statements in different orders, so set
+        // semantics is the right comparison here.
+        expect(
+          recreatedIndexes,
+          equals(freshIndexes),
+          reason:
+              'runtime CREATE-IF-NOT-EXISTS path must declare the same '
+              'index set as Drift fresh-install',
+        );
+      });
 
       test(
         'upgrade path recreates pending_profile_saves when missing',
@@ -539,53 +655,49 @@ void main() {
         expect(fetched.watchDurationMs, 2500);
       });
 
-      test(
-        'schema parity — pending_view_events fresh-install matches runtime '
-        'CREATE-IF-NOT-EXISTS path',
-        () async {
-          final freshColumns = await _collectTableInfo(
-            database,
-            'pending_view_events',
-          );
-          final freshIndexes = await _collectIndexNames(
-            database,
-            'pending_view_events',
-          );
+      test('schema parity — pending_view_events fresh-install matches runtime '
+          'CREATE-IF-NOT-EXISTS path', () async {
+        final freshColumns = await _collectTableInfo(
+          database,
+          'pending_view_events',
+        );
+        final freshIndexes = await _collectIndexNames(
+          database,
+          'pending_view_events',
+        );
 
-          expect(
-            freshColumns,
-            isNotEmpty,
-            reason:
-                'precondition: fresh install should have pending_view_events',
-          );
+        expect(
+          freshColumns,
+          isNotEmpty,
+          reason: 'precondition: fresh install should have pending_view_events',
+        );
 
-          await database.customStatement('DROP TABLE pending_view_events');
-          for (final indexName in freshIndexes) {
-            await database.customStatement('DROP INDEX IF EXISTS $indexName');
-          }
-          await database.close();
+        await database.customStatement('DROP TABLE pending_view_events');
+        for (final indexName in freshIndexes) {
+          await database.customStatement('DROP INDEX IF EXISTS $indexName');
+        }
+        await database.close();
 
-          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
-          await database
-              .customSelect(
-                "SELECT name FROM sqlite_master WHERE type='table' "
-                "AND name='pending_view_events'",
-              )
-              .get();
+        database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+        await database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' "
+              "AND name='pending_view_events'",
+            )
+            .get();
 
-          final recreatedColumns = await _collectTableInfo(
-            database,
-            'pending_view_events',
-          );
-          final recreatedIndexes = await _collectIndexNames(
-            database,
-            'pending_view_events',
-          );
+        final recreatedColumns = await _collectTableInfo(
+          database,
+          'pending_view_events',
+        );
+        final recreatedIndexes = await _collectIndexNames(
+          database,
+          'pending_view_events',
+        );
 
-          expect(recreatedColumns, equals(freshColumns));
-          expect(recreatedIndexes, equals(freshIndexes));
-        },
-      );
+        expect(recreatedColumns, equals(freshColumns));
+        expect(recreatedIndexes, equals(freshIndexes));
+      });
 
       test(
         'upgrade path recreates pending_product_events when missing',
@@ -752,53 +864,49 @@ void main() {
         expect(rows.single.attempts, 1);
       });
 
-      test(
-        'schema parity — pending_gift_wraps fresh-install matches runtime '
-        'CREATE-IF-NOT-EXISTS path',
-        () async {
-          final freshColumns = await _collectTableInfo(
-            database,
-            'pending_gift_wraps',
-          );
-          final freshIndexes = await _collectIndexNames(
-            database,
-            'pending_gift_wraps',
-          );
+      test('schema parity — pending_gift_wraps fresh-install matches runtime '
+          'CREATE-IF-NOT-EXISTS path', () async {
+        final freshColumns = await _collectTableInfo(
+          database,
+          'pending_gift_wraps',
+        );
+        final freshIndexes = await _collectIndexNames(
+          database,
+          'pending_gift_wraps',
+        );
 
-          expect(
-            freshColumns,
-            isNotEmpty,
-            reason:
-                'precondition: fresh install should have pending_gift_wraps',
-          );
+        expect(
+          freshColumns,
+          isNotEmpty,
+          reason: 'precondition: fresh install should have pending_gift_wraps',
+        );
 
-          await database.customStatement('DROP TABLE pending_gift_wraps');
-          for (final indexName in freshIndexes) {
-            await database.customStatement('DROP INDEX IF EXISTS $indexName');
-          }
-          await database.close();
+        await database.customStatement('DROP TABLE pending_gift_wraps');
+        for (final indexName in freshIndexes) {
+          await database.customStatement('DROP INDEX IF EXISTS $indexName');
+        }
+        await database.close();
 
-          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
-          await database
-              .customSelect(
-                "SELECT name FROM sqlite_master WHERE type='table' "
-                "AND name='pending_gift_wraps'",
-              )
-              .get();
+        database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+        await database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' "
+              "AND name='pending_gift_wraps'",
+            )
+            .get();
 
-          final recreatedColumns = await _collectTableInfo(
-            database,
-            'pending_gift_wraps',
-          );
-          final recreatedIndexes = await _collectIndexNames(
-            database,
-            'pending_gift_wraps',
-          );
+        final recreatedColumns = await _collectTableInfo(
+          database,
+          'pending_gift_wraps',
+        );
+        final recreatedIndexes = await _collectIndexNames(
+          database,
+          'pending_gift_wraps',
+        );
 
-          expect(recreatedColumns, equals(freshColumns));
-          expect(recreatedIndexes, equals(freshIndexes));
-        },
-      );
+        expect(recreatedColumns, equals(freshColumns));
+        expect(recreatedIndexes, equals(freshIndexes));
+      });
 
       test(
         'upgrade path recreates processed_gift_wraps when missing',
@@ -841,65 +949,60 @@ void main() {
         },
       );
 
-      test(
-        'schema parity — processed_gift_wraps fresh-install matches runtime '
-        'CREATE-IF-NOT-EXISTS path',
-        () async {
-          final freshColumns = await _collectTableInfo(
-            database,
-            'processed_gift_wraps',
-          );
-          final freshIndexes = await _collectIndexNames(
-            database,
-            'processed_gift_wraps',
-          );
+      test('schema parity — processed_gift_wraps fresh-install matches runtime '
+          'CREATE-IF-NOT-EXISTS path', () async {
+        final freshColumns = await _collectTableInfo(
+          database,
+          'processed_gift_wraps',
+        );
+        final freshIndexes = await _collectIndexNames(
+          database,
+          'processed_gift_wraps',
+        );
 
-          expect(
-            freshColumns,
-            isNotEmpty,
-            reason:
-                'precondition: fresh install should have processed_gift_wraps',
-          );
+        expect(
+          freshColumns,
+          isNotEmpty,
+          reason:
+              'precondition: fresh install should have processed_gift_wraps',
+        );
 
-          await database.customStatement('DROP TABLE processed_gift_wraps');
-          for (final indexName in freshIndexes) {
-            await database.customStatement('DROP INDEX IF EXISTS $indexName');
-          }
-          await database.close();
+        await database.customStatement('DROP TABLE processed_gift_wraps');
+        for (final indexName in freshIndexes) {
+          await database.customStatement('DROP INDEX IF EXISTS $indexName');
+        }
+        await database.close();
 
-          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
-          await database
-              .customSelect(
-                "SELECT name FROM sqlite_master WHERE type='table' "
-                "AND name='processed_gift_wraps'",
-              )
-              .get();
+        database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+        await database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' "
+              "AND name='processed_gift_wraps'",
+            )
+            .get();
 
-          final recreatedColumns = await _collectTableInfo(
-            database,
-            'processed_gift_wraps',
-          );
-          final recreatedIndexes = await _collectIndexNames(
-            database,
-            'processed_gift_wraps',
-          );
+        final recreatedColumns = await _collectTableInfo(
+          database,
+          'processed_gift_wraps',
+        );
+        final recreatedIndexes = await _collectIndexNames(
+          database,
+          'processed_gift_wraps',
+        );
 
-          expect(recreatedColumns, equals(freshColumns));
-          expect(recreatedIndexes, equals(freshIndexes));
-        },
-      );
+        expect(recreatedColumns, equals(freshColumns));
+        expect(recreatedIndexes, equals(freshIndexes));
+      });
 
-      test(
-        'upgrade path — dedups duplicate live reactions before recreating '
-        'the unique index',
-        () async {
-          final target = '1' * 64;
-          // Drop the unique index so pre-index duplicate live rows can be
-          // seeded (simulating a device that pre-dates #5419).
-          await database.customStatement(
-            'DROP INDEX IF EXISTS idx_dm_reactions_unique_live',
-          );
-          await database.customStatement('''
+      test('upgrade path — dedups duplicate live reactions before recreating '
+          'the unique index', () async {
+        final target = '1' * 64;
+        // Drop the unique index so pre-index duplicate live rows can be
+        // seeded (simulating a device that pre-dates #5419).
+        await database.customStatement(
+          'DROP INDEX IF EXISTS idx_dm_reactions_unique_live',
+        );
+        await database.customStatement('''
             INSERT INTO dm_message_reactions
               (id, conversation_id, target_message_id, target_message_author,
                reactor_pubkey, emoji, created_at, owner_pubkey, is_deleted)
@@ -910,43 +1013,40 @@ void main() {
                200, '$testPubkey', 0)
           ''');
 
-          await database.close();
-          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+        await database.close();
+        database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
 
-          // Trigger beforeOpen (dedup then CREATE UNIQUE INDEX). If the dedup
-          // pass did not run first, CREATE UNIQUE INDEX would throw here on the
-          // duplicate live rows.
-          final rows = await database
-              .customSelect(
-                'SELECT id, is_deleted FROM dm_message_reactions '
-                'ORDER BY created_at',
-              )
-              .get();
-          expect(rows, hasLength(2));
-          final live = rows
-              .where((r) => r.read<int>('is_deleted') == 0)
-              .toList();
-          expect(live, hasLength(1));
-          expect(live.single.read<String>('id'), equals('react_new'));
+        // Trigger beforeOpen (dedup then CREATE UNIQUE INDEX). If the dedup
+        // pass did not run first, CREATE UNIQUE INDEX would throw here on the
+        // duplicate live rows.
+        final rows = await database
+            .customSelect(
+              'SELECT id, is_deleted FROM dm_message_reactions '
+              'ORDER BY created_at',
+            )
+            .get();
+        expect(rows, hasLength(2));
+        final live = rows.where((r) => r.read<int>('is_deleted') == 0).toList();
+        expect(live, hasLength(1));
+        expect(live.single.read<String>('id'), equals('react_new'));
 
-          final indexes = await _collectIndexNames(
-            database,
-            'dm_message_reactions',
-          );
-          expect(indexes, contains('idx_dm_reactions_unique_live'));
+        final indexes = await _collectIndexNames(
+          database,
+          'dm_message_reactions',
+        );
+        expect(indexes, contains('idx_dm_reactions_unique_live'));
 
-          // Idempotency: reopening again keeps exactly one live row, no error.
-          await database.close();
-          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
-          final live2 = await database
-              .customSelect(
-                'SELECT id FROM dm_message_reactions WHERE is_deleted = 0',
-              )
-              .get();
-          expect(live2, hasLength(1));
-          expect(live2.single.read<String>('id'), equals('react_new'));
-        },
-      );
+        // Idempotency: reopening again keeps exactly one live row, no error.
+        await database.close();
+        database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+        final live2 = await database
+            .customSelect(
+              'SELECT id FROM dm_message_reactions WHERE is_deleted = 0',
+            )
+            .get();
+        expect(live2, hasLength(1));
+        expect(live2.single.read<String>('id'), equals('react_new'));
+      });
 
       test(
         'adds last_read_timestamp and backfills already-read rows on upgrade '
@@ -1009,53 +1109,50 @@ void main() {
         },
       );
 
-      test(
-        'schema parity — dm_message_reactions fresh-install matches runtime '
-        'CREATE-IF-NOT-EXISTS path',
-        () async {
-          final freshColumns = await _collectTableInfo(
-            database,
-            'dm_message_reactions',
-          );
-          final freshIndexes = await _collectIndexNames(
-            database,
-            'dm_message_reactions',
-          );
+      test('schema parity — dm_message_reactions fresh-install matches runtime '
+          'CREATE-IF-NOT-EXISTS path', () async {
+        final freshColumns = await _collectTableInfo(
+          database,
+          'dm_message_reactions',
+        );
+        final freshIndexes = await _collectIndexNames(
+          database,
+          'dm_message_reactions',
+        );
 
-          expect(
-            freshColumns,
-            isNotEmpty,
-            reason:
-                'precondition: fresh install should have dm_message_reactions',
-          );
+        expect(
+          freshColumns,
+          isNotEmpty,
+          reason:
+              'precondition: fresh install should have dm_message_reactions',
+        );
 
-          await database.customStatement('DROP TABLE dm_message_reactions');
-          for (final indexName in freshIndexes) {
-            await database.customStatement('DROP INDEX IF EXISTS $indexName');
-          }
-          await database.close();
+        await database.customStatement('DROP TABLE dm_message_reactions');
+        for (final indexName in freshIndexes) {
+          await database.customStatement('DROP INDEX IF EXISTS $indexName');
+        }
+        await database.close();
 
-          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
-          await database
-              .customSelect(
-                "SELECT name FROM sqlite_master WHERE type='table' "
-                "AND name='dm_message_reactions'",
-              )
-              .get();
+        database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+        await database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' "
+              "AND name='dm_message_reactions'",
+            )
+            .get();
 
-          final recreatedColumns = await _collectTableInfo(
-            database,
-            'dm_message_reactions',
-          );
-          final recreatedIndexes = await _collectIndexNames(
-            database,
-            'dm_message_reactions',
-          );
+        final recreatedColumns = await _collectTableInfo(
+          database,
+          'dm_message_reactions',
+        );
+        final recreatedIndexes = await _collectIndexNames(
+          database,
+          'dm_message_reactions',
+        );
 
-          expect(recreatedColumns, equals(freshColumns));
-          expect(recreatedIndexes, equals(freshIndexes));
-        },
-      );
+        expect(recreatedColumns, equals(freshColumns));
+        expect(recreatedIndexes, equals(freshIndexes));
+      });
 
       test('does not delete non-expired data', () async {
         final eventsDao = database.nostrEventsDao;
@@ -1065,20 +1162,11 @@ void main() {
 
         // Insert valid (non-expired) data
         final validEvent = createEvent(content: 'valid');
-        await eventsDao.upsertEvent(
-          validEvent,
-          expireAt: nowUnix() + 3600,
-        );
+        await eventsDao.upsertEvent(validEvent, expireAt: nowUnix() + 3600);
 
-        await profileStatsDao.upsertStats(
-          pubkey: testPubkey,
-          videoCount: 10,
-        );
+        await profileStatsDao.upsertStats(pubkey: testPubkey, videoCount: 10);
 
-        await hashtagStatsDao.upsertHashtag(
-          hashtag: 'dart',
-          videoCount: 20,
-        );
+        await hashtagStatsDao.upsertHashtag(hashtag: 'dart', videoCount: 20);
 
         await notificationsDao.upsertNotification(
           id: 'recent',
@@ -1106,138 +1194,127 @@ void main() {
     });
 
     group('identity caches (#3936)', () {
-      test(
-        'upgrade path — pre-#3936 database gets both identity tables on '
-        'reopen',
-        () async {
-          await database.customStatement('DROP TABLE identity_events');
-          await database.customStatement('DROP TABLE identity_verifications');
-          await database.close();
+      test('upgrade path — pre-#3936 database gets both identity tables on '
+          'reopen', () async {
+        await database.customStatement('DROP TABLE identity_events');
+        await database.customStatement('DROP TABLE identity_verifications');
+        await database.close();
 
-          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+        database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
 
-          final tables = await database
-              .customSelect(
-                "SELECT name FROM sqlite_master WHERE type='table' "
-                "AND name IN ('identity_events', 'identity_verifications')",
-              )
-              .get();
-          expect(
-            tables,
-            hasLength(2),
-            reason: 'both identity tables must be re-created on reopen',
-          );
+        final tables = await database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' "
+              "AND name IN ('identity_events', 'identity_verifications')",
+            )
+            .get();
+        expect(
+          tables,
+          hasLength(2),
+          reason: 'both identity tables must be re-created on reopen',
+        );
 
-          await database.identityEventsDao.upsertEvent(
-            pubkey: testPubkey,
-            tagsJson: '[["i","github:alice","proof-a"]]',
-            sourceKind: 10011,
-          );
-          final eventRow = await database.identityEventsDao.getEvent(
-            testPubkey,
-          );
-          expect(eventRow, isNotNull);
+        await database.identityEventsDao.upsertEvent(
+          pubkey: testPubkey,
+          tagsJson: '[["i","github:alice","proof-a"]]',
+          sourceKind: 10011,
+        );
+        final eventRow = await database.identityEventsDao.getEvent(testPubkey);
+        expect(eventRow, isNotNull);
 
-          await database.identityVerificationsDao.upsertVerification(
-            pubkey: testPubkey,
-            verifiedClaimsJson: '[]',
-            checkedAtFloor: 100,
-          );
-          final verificationRow = await database.identityVerificationsDao
-              .getVerification(testPubkey);
-          expect(verificationRow, isNotNull);
-        },
-      );
+        await database.identityVerificationsDao.upsertVerification(
+          pubkey: testPubkey,
+          verifiedClaimsJson: '[]',
+          checkedAtFloor: 100,
+        );
+        final verificationRow = await database.identityVerificationsDao
+            .getVerification(testPubkey);
+        expect(verificationRow, isNotNull);
+      });
 
-      test(
-        'schema parity — identity_events fresh-install matches runtime '
-        'CREATE-IF-NOT-EXISTS path',
-        () async {
-          final freshColumns = await _collectTableInfo(
-            database,
-            'identity_events',
-          );
-          final freshIndexes = await _collectIndexNames(
-            database,
-            'identity_events',
-          );
+      test('schema parity — identity_events fresh-install matches runtime '
+          'CREATE-IF-NOT-EXISTS path', () async {
+        final freshColumns = await _collectTableInfo(
+          database,
+          'identity_events',
+        );
+        final freshIndexes = await _collectIndexNames(
+          database,
+          'identity_events',
+        );
 
-          expect(
-            freshColumns,
-            isNotEmpty,
-            reason: 'precondition: fresh install should have identity_events',
-          );
+        expect(
+          freshColumns,
+          isNotEmpty,
+          reason: 'precondition: fresh install should have identity_events',
+        );
 
-          await database.customStatement('DROP TABLE identity_events');
-          await database.close();
+        await database.customStatement('DROP TABLE identity_events');
+        await database.close();
 
-          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
-          await database
-              .customSelect(
-                "SELECT name FROM sqlite_master WHERE type='table' "
-                "AND name='identity_events'",
-              )
-              .get();
+        database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+        await database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' "
+              "AND name='identity_events'",
+            )
+            .get();
 
-          final recreatedColumns = await _collectTableInfo(
-            database,
-            'identity_events',
-          );
-          final recreatedIndexes = await _collectIndexNames(
-            database,
-            'identity_events',
-          );
+        final recreatedColumns = await _collectTableInfo(
+          database,
+          'identity_events',
+        );
+        final recreatedIndexes = await _collectIndexNames(
+          database,
+          'identity_events',
+        );
 
-          expect(recreatedColumns, equals(freshColumns));
-          expect(recreatedIndexes, equals(freshIndexes));
-        },
-      );
+        expect(recreatedColumns, equals(freshColumns));
+        expect(recreatedIndexes, equals(freshIndexes));
+      });
 
-      test(
-        'schema parity — identity_verifications fresh-install matches '
-        'runtime CREATE-IF-NOT-EXISTS path',
-        () async {
-          final freshColumns = await _collectTableInfo(
-            database,
-            'identity_verifications',
-          );
-          final freshIndexes = await _collectIndexNames(
-            database,
-            'identity_verifications',
-          );
+      test('schema parity — identity_verifications fresh-install matches '
+          'runtime CREATE-IF-NOT-EXISTS path', () async {
+        final freshColumns = await _collectTableInfo(
+          database,
+          'identity_verifications',
+        );
+        final freshIndexes = await _collectIndexNames(
+          database,
+          'identity_verifications',
+        );
 
-          expect(
-            freshColumns,
-            isNotEmpty,
-            reason:
-                'precondition: fresh install should have '
-                'identity_verifications',
-          );
+        expect(
+          freshColumns,
+          isNotEmpty,
+          reason:
+              'precondition: fresh install should have '
+              'identity_verifications',
+        );
 
-          await database.customStatement('DROP TABLE identity_verifications');
-          await database.close();
+        await database.customStatement('DROP TABLE identity_verifications');
+        await database.close();
 
-          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
-          await database
-              .customSelect(
-                "SELECT name FROM sqlite_master WHERE type='table' "
-                "AND name='identity_verifications'",
-              )
-              .get();
+        database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+        await database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' "
+              "AND name='identity_verifications'",
+            )
+            .get();
 
-          final recreatedColumns = await _collectTableInfo(
-            database,
-            'identity_verifications',
-          );
-          final recreatedIndexes = await _collectIndexNames(
-            database,
-            'identity_verifications',
-          );
+        final recreatedColumns = await _collectTableInfo(
+          database,
+          'identity_verifications',
+        );
+        final recreatedIndexes = await _collectIndexNames(
+          database,
+          'identity_verifications',
+        );
 
-          expect(recreatedColumns, equals(freshColumns));
-          expect(recreatedIndexes, equals(freshIndexes));
-        },
-      );
+        expect(recreatedColumns, equals(freshColumns));
+        expect(recreatedIndexes, equals(freshIndexes));
+      });
     });
 
     group('vanished profiles', () {
@@ -1270,49 +1347,46 @@ void main() {
         },
       );
 
-      test(
-        'schema parity — fresh install matches the runtime '
-        'CREATE-IF-NOT-EXISTS path',
-        () async {
-          final freshColumns = await _collectTableInfo(
-            database,
-            'vanished_profiles',
-          );
-          final freshIndexes = await _collectIndexNames(
-            database,
-            'vanished_profiles',
-          );
+      test('schema parity — fresh install matches the runtime '
+          'CREATE-IF-NOT-EXISTS path', () async {
+        final freshColumns = await _collectTableInfo(
+          database,
+          'vanished_profiles',
+        );
+        final freshIndexes = await _collectIndexNames(
+          database,
+          'vanished_profiles',
+        );
 
-          expect(
-            freshColumns,
-            isNotEmpty,
-            reason: 'precondition: fresh install should have vanished_profiles',
-          );
+        expect(
+          freshColumns,
+          isNotEmpty,
+          reason: 'precondition: fresh install should have vanished_profiles',
+        );
 
-          await database.customStatement('DROP TABLE vanished_profiles');
-          await database.close();
+        await database.customStatement('DROP TABLE vanished_profiles');
+        await database.close();
 
-          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
-          await database
-              .customSelect(
-                "SELECT name FROM sqlite_master WHERE type='table' "
-                "AND name='vanished_profiles'",
-              )
-              .get();
+        database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+        await database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' "
+              "AND name='vanished_profiles'",
+            )
+            .get();
 
-          final recreatedColumns = await _collectTableInfo(
-            database,
-            'vanished_profiles',
-          );
-          final recreatedIndexes = await _collectIndexNames(
-            database,
-            'vanished_profiles',
-          );
+        final recreatedColumns = await _collectTableInfo(
+          database,
+          'vanished_profiles',
+        );
+        final recreatedIndexes = await _collectIndexNames(
+          database,
+          'vanished_profiles',
+        );
 
-          expect(recreatedColumns, equals(freshColumns));
-          expect(recreatedIndexes, equals(freshIndexes));
-        },
-      );
+        expect(recreatedColumns, equals(freshColumns));
+        expect(recreatedIndexes, equals(freshIndexes));
+      });
 
       test('survives startup cleanup', () async {
         // A vanish does not expire. If this table ever gets swept, a deleted
@@ -1363,9 +1437,7 @@ void main() {
           await database.customStatement(
             'DROP INDEX idx_event_pubkey_kind_d_tag_created_at',
           );
-          await database.customStatement(
-            'ALTER TABLE event DROP COLUMN d_tag',
-          );
+          await database.customStatement('ALTER TABLE event DROP COLUMN d_tag');
           await database.close();
 
           // Reopen the same on-disk file. `beforeOpen` re-adds the column,
@@ -1524,82 +1596,79 @@ void main() {
     });
 
     group('personal_reactions addressable_id column (#6020)', () {
-      test(
-        'upgrade path — re-adds addressable_id on personal_reactions on '
-        'reopen, and the re-added column is usable',
-        () async {
-          // Seed a row under the pre-drop schema, so the DROP exercises a
-          // populated table (mirrors the send_batch_id upgrade test).
-          await database.personalReactionsDao.upsertReaction(
-            targetEventId: 'target_pre',
-            reactionEventId: 'reaction_pre',
-            userPubkey: testPubkey,
-            createdAt: 1700000000,
-            addressableId: '34236:$testPubkey:pre-d-tag',
-          );
+      test('upgrade path — re-adds addressable_id on personal_reactions on '
+          'reopen, and the re-added column is usable', () async {
+        // Seed a row under the pre-drop schema, so the DROP exercises a
+        // populated table (mirrors the send_batch_id upgrade test).
+        await database.personalReactionsDao.upsertReaction(
+          targetEventId: 'target_pre',
+          reactionEventId: 'reaction_pre',
+          userPubkey: testPubkey,
+          createdAt: 1700000000,
+          addressableId: '34236:$testPubkey:pre-d-tag',
+        );
 
-          // Simulate a legacy install that pre-dates the column: drop the
-          // index that references it, then the column itself.
-          await database.customStatement(
-            'DROP INDEX idx_personal_reactions_addressable_id',
-          );
-          await database.customStatement(
-            'ALTER TABLE personal_reactions DROP COLUMN addressable_id',
-          );
-          expect(
-            await _columnNames(database, 'personal_reactions'),
-            isNot(contains('addressable_id')),
-          );
-          await database.close();
+        // Simulate a legacy install that pre-dates the column: drop the
+        // index that references it, then the column itself.
+        await database.customStatement(
+          'DROP INDEX idx_personal_reactions_addressable_id',
+        );
+        await database.customStatement(
+          'ALTER TABLE personal_reactions DROP COLUMN addressable_id',
+        );
+        expect(
+          await _columnNames(database, 'personal_reactions'),
+          isNot(contains('addressable_id')),
+        );
+        await database.close();
 
-          // Reopen the same on-disk file. `beforeOpen` re-adds the column
-          // and its index. There is no backfill at the DB layer: the
-          // pre-drop coordinate is gone, the column comes back null for
-          // that row (same contract as the DM send_batch_id upgrade).
-          // Backfill is owned by LikesRepository: initialize() detects
-          // null-coordinate rows and runs syncUserReactions(), whose
-          // same-reaction-id exemption re-persists the coordinate from the
-          // relay reaction's `a` tag even when the relay copy is not newer
-          // (#6123). End-to-end pin: likes_repository/test/src/
-          // likes_repository_pre_column_db_test.dart.
-          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+        // Reopen the same on-disk file. `beforeOpen` re-adds the column
+        // and its index. There is no backfill at the DB layer: the
+        // pre-drop coordinate is gone, the column comes back null for
+        // that row (same contract as the DM send_batch_id upgrade).
+        // Backfill is owned by LikesRepository: initialize() detects
+        // null-coordinate rows and runs syncUserReactions(), whose
+        // same-reaction-id exemption re-persists the coordinate from the
+        // relay reaction's `a` tag even when the relay copy is not newer
+        // (#6123). End-to-end pin: likes_repository/test/src/
+        // likes_repository_pre_column_db_test.dart.
+        database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
 
-          expect(
-            await _columnNames(database, 'personal_reactions'),
-            contains('addressable_id'),
-          );
-          expect(
-            await _collectIndexNames(database, 'personal_reactions'),
-            contains('idx_personal_reactions_addressable_id'),
-          );
+        expect(
+          await _columnNames(database, 'personal_reactions'),
+          contains('addressable_id'),
+        );
+        expect(
+          await _collectIndexNames(database, 'personal_reactions'),
+          contains('idx_personal_reactions_addressable_id'),
+        );
 
-          // The re-added column is writable and readable end-to-end.
-          await database.personalReactionsDao.upsertReaction(
-            targetEventId: 'target_post',
-            reactionEventId: 'reaction_post',
-            userPubkey: testPubkey,
-            createdAt: 1700000100,
-            addressableId: '34236:$testPubkey:post-d-tag',
-          );
-          final byCoordinate = await database.personalReactionsDao
-              .getReactionByAddressableId(
-                addressableId: '34236:$testPubkey:post-d-tag',
-                userPubkey: testPubkey,
-              );
-          expect(byCoordinate, isNotNull);
-          expect(byCoordinate!.targetEventId, equals('target_post'));
+        // The re-added column is writable and readable end-to-end.
+        await database.personalReactionsDao.upsertReaction(
+          targetEventId: 'target_post',
+          reactionEventId: 'reaction_post',
+          userPubkey: testPubkey,
+          createdAt: 1700000100,
+          addressableId: '34236:$testPubkey:post-d-tag',
+        );
+        final byCoordinate = await database.personalReactionsDao
+            .getReactionByAddressableId(
+              addressableId: '34236:$testPubkey:post-d-tag',
+              userPubkey: testPubkey,
+            );
+        expect(byCoordinate, isNotNull);
+        expect(byCoordinate!.targetEventId, equals('target_post'));
 
-          // The pre-drop row survived the ALTER TABLE DROP/ADD round trip
-          // (SQLite's DROP COLUMN only removes that column; other columns
-          // and rows are untouched), now with a null coordinate.
-          final preDropRow = await database.personalReactionsDao.getReaction(
-            targetEventId: 'target_pre',
-            userPubkey: testPubkey,
-          );
-          expect(preDropRow, isNotNull);
-          expect(preDropRow!.addressableId, isNull);
-        },
-      );
+        // The pre-drop row survived the ALTER TABLE DROP/ADD round trip
+        // (SQLite's DROP COLUMN only removes that column; other columns
+        // and rows are untouched), now with a null coordinate.
+        final preDropRow = await database.personalReactionsDao.getReaction(
+          targetEventId: 'target_pre',
+          userPubkey: testPubkey,
+        );
+        expect(preDropRow, isNotNull);
+        expect(preDropRow!.addressableId, isNull);
+      });
     });
   });
 }
@@ -1635,10 +1704,7 @@ Future<List<List<Object?>>> _collectTableInfo(
 /// auto-generated `sqlite_autoindex_*` entries that sqlite adds for
 /// primary keys. Returns a [Set] because Drift and the runtime SQL may
 /// declare indexes in different orders.
-Future<Set<String>> _collectIndexNames(
-  AppDatabase db,
-  String table,
-) async {
+Future<Set<String>> _collectIndexNames(AppDatabase db, String table) async {
   final rows = await db
       .customSelect(
         "SELECT name FROM sqlite_master WHERE type='index' "
@@ -1647,6 +1713,40 @@ Future<Set<String>> _collectIndexNames(
       .get();
   return rows.map((row) => row.read<String>('name')).toSet();
 }
+
+/// Tables that `AppDatabase`'s v1 normalization creates when missing. A
+/// shipped v1 install predates some subset of these; the legacy-upgrade test
+/// drops all of them to reproduce the oldest shape.
+const _v1NormalizationTables = <String>[
+  'personal_reposts',
+  'nip05_verifications',
+  'pending_actions',
+  'clips',
+  'drafts',
+  'direct_messages',
+  'conversations',
+  'outgoing_dms',
+  'pending_profile_saves',
+  'dm_message_reactions',
+  'pending_view_events',
+  'pending_product_events',
+  'pending_gift_wraps',
+  'processed_gift_wraps',
+  'identity_events',
+  'identity_verifications',
+  'vanished_profiles',
+];
+
+/// `event` indexes owned by the normalization SQL rather than by Drift's
+/// `m.createAll()`. Dropped alongside `event.d_tag` so the legacy-upgrade
+/// test starts from a database that never had them.
+const _v1NormalizationEventIndexes = <String>[
+  'idx_event_kind_created_at',
+  'idx_event_pubkey_created_at',
+  'idx_event_pubkey_kind_d_tag_created_at',
+  'idx_event_created_at',
+  'idx_event_expire_at',
+];
 
 /// The set of column names on [table] per `pragma table_info`.
 Future<Set<String>> _columnNames(AppDatabase db, String table) async {
