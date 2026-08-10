@@ -993,6 +993,129 @@ void main() {
           );
         },
       );
+      test(
+        'does not retract a later like for a stale pending placeholder',
+        () async {
+          when(
+            () => mockLocalStorage.getAllLikeRecords(),
+          ).thenAnswer(
+            (_) async => [
+              createLikeRecord(
+                reactionEventId: 'pending_like_$testEventId',
+              ),
+            ],
+          );
+          when(
+            () => mockLocalStorage.deleteLikeRecord(testEventId),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockLocalStorage.saveLikeRecord(any()),
+          ).thenAnswer((_) async {});
+
+          final reactionB = MockEvent();
+          when(() => reactionB.id).thenReturn('reaction_b');
+          when(
+            () => mockNostrClient.sendLike(
+              any(),
+              content: any(named: 'content'),
+              addressableId: any(named: 'addressableId'),
+              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenAnswer((_) async => reactionB);
+
+          repository = createRepository(
+            isOnline: () => true,
+            queueOfflineAction:
+                ({
+                  required isLike,
+                  required eventId,
+                  required authorPubkey,
+                  addressableId,
+                  targetKind,
+                }) async {},
+          );
+          await repository.isLiked(testEventId); // Initialize stale placeholder
+
+          await repository.unlikeEvent(testEventId);
+          expect(await repository.isLiked(testEventId), isFalse);
+
+          await repository.likeEvent(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+          );
+
+          verifyNever(() => mockNostrClient.deleteEvent(any()));
+          expect(await repository.isLiked(testEventId), isTrue);
+        },
+      );
+      test(
+        'queues retry and restores count when mid-publish retraction fails',
+        () async {
+          when(
+            () => mockNostrClient.countEvents(any()),
+          ).thenAnswer((_) async => const CountResult(count: 10));
+          when(
+            () => mockLocalStorage.saveLikeRecord(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockLocalStorage.deleteLikeRecord(testEventId),
+          ).thenAnswer((_) async => true);
+
+          final publishGate = Completer<Event>();
+          final reactionA = MockEvent();
+          when(() => reactionA.id).thenReturn('reaction_a');
+          when(
+            () => mockNostrClient.sendLike(
+              any(),
+              content: any(named: 'content'),
+              addressableId: any(named: 'addressableId'),
+              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenAnswer((_) => publishGate.future);
+          when(
+            () => mockNostrClient.deleteEvent('reaction_a'),
+          ).thenAnswer((_) async => null);
+
+          bool? queuedIsLike;
+          String? queuedEventId;
+          repository = createRepository(
+            isOnline: () => true,
+            queueOfflineAction:
+                ({
+                  required isLike,
+                  required eventId,
+                  required authorPubkey,
+                  addressableId,
+                  targetKind,
+                }) async {
+                  queuedIsLike = isLike;
+                  queuedEventId = eventId;
+                },
+          );
+          expect(await repository.getLikeCount(testEventId), equals(10));
+
+          final inFlightLike = repository.likeEvent(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+          );
+          await Future<void>.delayed(Duration.zero);
+          expect(await repository.getLikeCount(testEventId), equals(11));
+
+          await repository.unlikeEvent(testEventId);
+          expect(await repository.getLikeCount(testEventId), equals(10));
+
+          publishGate.complete(reactionA);
+          await inFlightLike;
+
+          verify(() => mockNostrClient.deleteEvent('reaction_a')).called(1);
+          expect(queuedIsLike, isFalse);
+          expect(queuedEventId, equals(testEventId));
+          expect(await repository.isLiked(testEventId), isTrue);
+          expect(await repository.getLikeCount(testEventId), equals(11));
+        },
+      );
       test('publishes deletion and removes record', () async {
         when(
           () => mockLocalStorage.getAllLikeRecords(),
