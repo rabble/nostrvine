@@ -49,6 +49,7 @@ class VideoCollaboratorStatusCubit extends Cubit<VideoCollaboratorStatusState> {
               state.copyWith(
                 load: VideoCollaboratorStatusLoad.ready,
                 statusByPubkey: snapshot.statusByPubkey,
+                isResolved: snapshot.isResolved,
               ),
             );
           },

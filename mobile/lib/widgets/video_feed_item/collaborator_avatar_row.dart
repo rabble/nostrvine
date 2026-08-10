@@ -1,7 +1,7 @@
 // ABOUTME: Collaborator avatar row for video feed overlay
 // ABOUTME: Status-aware: hides current user's avatar when ignored locally,
 // ABOUTME: greys pending avatars on the inviter's own video, otherwise
-// ABOUTME: renders raw collaborator p-tags as today.
+// ABOUTME: renders only confirmed collaborators to third-party viewers.
 
 import 'package:collaborator_repository/collaborator_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
@@ -32,8 +32,8 @@ const _pickerMaxChildSize = 0.8;
 /// Hides the current user's own avatar when their local invite store says
 /// `ignored` for this video. On the inviter's own video, pending
 /// collaborator avatars render greyed until a kind-34238 acceptance flips
-/// them to confirmed. Third-party viewers see the same raw p-tag list as
-/// before this wiring (status-unaware fallback).
+/// them to confirmed. Third-party viewers only see confirmed collaborators
+/// after the acceptance query resolves.
 ///
 /// Returns [SizedBox.shrink] if the video has no collaborators after the
 /// status-aware filter.
@@ -98,12 +98,16 @@ class _StatusAwareRow extends StatelessWidget {
     final statusByPubkey = context.select(
       (VideoCollaboratorStatusCubit c) => c.state.statusByPubkey,
     );
+    final isResolved = context.select(
+      (VideoCollaboratorStatusCubit c) => c.state.isResolved,
+    );
     return CollaboratorAvatarRowBody(
       visibility: CollaboratorVisibility(
         taggedPubkeys: pubkeys,
         statusByPubkey: statusByPubkey,
         currentUserPubkey: currentUserPubkey,
         creatorPubkey: video.pubkey,
+        isResolved: isResolved,
       ),
     );
   }
@@ -406,10 +410,7 @@ class _SmallAvatar extends ConsumerWidget {
 
 /// Text label showing collaborator name(s).
 class _CollaboratorLabel extends ConsumerWidget {
-  const _CollaboratorLabel({
-    required this.pubkeys,
-    required this.pendingCount,
-  });
+  const _CollaboratorLabel({required this.pubkeys, required this.pendingCount});
 
   final List<String> pubkeys;
   final int pendingCount;
@@ -432,9 +433,9 @@ class _CollaboratorLabel extends ConsumerWidget {
 
     return Text(
       label,
-      style: VineTheme.labelMediumFont(color: VineTheme.whiteText).copyWith(
-        shadows: const [Shadow(blurRadius: 4)],
-      ),
+      style: VineTheme.labelMediumFont(
+        color: VineTheme.whiteText,
+      ).copyWith(shadows: const [Shadow(blurRadius: 4)]),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );
