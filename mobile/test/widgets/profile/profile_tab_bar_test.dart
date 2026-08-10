@@ -29,11 +29,36 @@ void main() {
       ),
     ];
 
+    /// The own profile's full strip. This is the tightest layout the bar
+    /// ships in, so it is what the icon-scaling test measures.
+    List<ProfileTab> ownProfileTabsFor(AppLocalizations l) => [
+      ...tabsFor(l),
+      (
+        semanticId: SemanticIds.profileCollabsTab,
+        label: l.profileCollabsLabel,
+        icon: DivineIconName.users,
+      ),
+      (
+        semanticId: SemanticIds.profileRepostsTab,
+        label: l.profileRepostsLabel,
+        icon: DivineIconName.repeat,
+      ),
+      (
+        semanticId: SemanticIds.profileListsTab,
+        label: l.profileListsLabel,
+        icon: DivineIconName.playlist,
+      ),
+    ];
+
     Future<void> pumpBar(
       WidgetTester tester, {
       Locale locale = const Locale('en'),
+      bool ownProfile = false,
     }) async {
-      final controller = TabController(length: 3, vsync: tester);
+      final tabs = ownProfile
+          ? ownProfileTabsFor(lookupAppLocalizations(locale))
+          : tabsFor(lookupAppLocalizations(locale));
+      final controller = TabController(length: tabs.length, vsync: tester);
       addTearDown(controller.dispose);
       final scrollController = ScrollController();
       addTearDown(scrollController.dispose);
@@ -54,7 +79,7 @@ void main() {
                 ProfileTabBar(
                   controller: controller,
                   scrollController: scrollController,
-                  tabs: tabsFor(lookupAppLocalizations(locale)),
+                  tabs: tabs,
                   headerKey: headerKey,
                   isRefreshing: false,
                 ),
@@ -112,18 +137,28 @@ void main() {
     });
 
     testWidgets('scales its icons with the system text scale', (tester) async {
-      await pumpBar(tester);
+      // 360dp with all 6 own-profile tabs: the narrowest common phone at the
+      // highest tab count, which is where a per-tab slot is tightest. A wider
+      // surface or fewer tabs leaves so much slack that the assertion below
+      // passes even when the shipping layout clamps the icon flat.
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await pumpBar(tester, ownProfile: true);
       final base = tester.getSize(find.byType(DivineIcon).first);
 
       tester.platformDispatcher.textScaleFactorTestValue = 2;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-      await pumpBar(tester);
+      await pumpBar(tester, ownProfile: true);
       final scaled = tester.getSize(find.byType(DivineIcon).first);
 
       // DivineIcon caps growth at maxScaleFactor (1.3x) so tight rows do not
       // overflow. A raw SvgPicture at a hardcoded size would not move at all.
       expect(scaled.width, greaterThan(base.width));
       expect(scaled.width, base.width * DivineIcon.maxScaleFactor);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('keeps the snake_case identifier as the E2E anchor', (

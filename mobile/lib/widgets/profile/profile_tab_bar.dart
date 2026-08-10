@@ -123,6 +123,13 @@ class _ProfileTabBarState extends State<ProfileTabBar> {
           indicatorWeight: 4,
           indicatorSize: TabBarIndicatorSize.tab,
           dividerColor: VineTheme.transparent,
+          // Material's default 16 leaves each icon only `width / tabs - 32`
+          // to grow into. On the own profile (6 tabs) that is 28dp at 360dp
+          // wide — exactly the unscaled size, so the icons never actually
+          // scale. 8 fits the 1.3x cap down to a 320dp screen. Tabs are
+          // equal-width and the icon is centred, so at 1.0x this changes
+          // nothing on screen.
+          labelPadding: const EdgeInsets.symmetric(horizontal: 8),
           tabs: [
             for (var i = 0; i < widget.tabs.length; i++)
               _ProfileTab(
