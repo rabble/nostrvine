@@ -23,7 +23,10 @@ class BadgeRecipientRow extends StatelessWidget {
   final String pubkey;
 
   /// Whether they pinned the badge to their profile.
-  final bool isAccepted;
+  ///
+  /// Null when acceptance was not resolved for this recipient, in which case
+  /// no status is claimed rather than showing a wrong one.
+  final bool? isAccepted;
 
   @override
   Widget build(BuildContext context) {
@@ -36,15 +39,16 @@ class BadgeRecipientRow extends StatelessWidget {
           // The enclosing sliver already pads to the screen inset.
           padding: const EdgeInsets.fromLTRB(0, 12, 16, 12),
         ),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: BadgeStatusPill(
-            label: isAccepted
-                ? context.l10n.badgesRecipientAcceptedStatus
-                : context.l10n.badgesRecipientWaitingStatus,
-            accepted: isAccepted,
+        if (isAccepted case final accepted?)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: BadgeStatusPill(
+              label: accepted
+                  ? context.l10n.badgesRecipientAcceptedStatus
+                  : context.l10n.badgesRecipientWaitingStatus,
+              accepted: accepted,
+            ),
           ),
-        ),
       ],
     );
   }

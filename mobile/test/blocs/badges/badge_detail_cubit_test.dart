@@ -91,7 +91,7 @@ void main() {
     );
 
     blocTest<BadgeDetailCubit, BadgeDetailState>(
-      'award publishes for the given recipients then reloads',
+      'award publishes for the given recipients without reloading',
       setUp: () {
         when(
           () => repository.awardBadge(
@@ -124,6 +124,10 @@ void main() {
             recipientPubkeys: [_pubkey(2)],
           ),
         ).called(1);
+        // The award screen pops the moment this completes, and reloading
+        // first costs two relay round trips per recipient for a detail the
+        // route throws away.
+        verifyNever(() => repository.loadBadgeDetail(any()));
       },
     );
 

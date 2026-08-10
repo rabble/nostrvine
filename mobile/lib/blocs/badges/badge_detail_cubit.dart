@@ -33,6 +33,11 @@ class BadgeDetailCubit extends Cubit<BadgeDetailState> {
   Future<void> refresh() => _load();
 
   /// Awards this badge to [recipientPubkeys].
+  ///
+  /// Does not reload afterwards: the award screen owns this cubit purely to
+  /// publish, and pops the moment it completes. Reloading first would spend
+  /// two relay round trips per recipient building a detail the route throws
+  /// away — the screen underneath refreshes itself on return.
   Future<void> award(List<String> recipientPubkeys) {
     return _runAction(
       BadgeDetailActionStatus.awarding,
@@ -40,6 +45,7 @@ class BadgeDetailCubit extends Cubit<BadgeDetailState> {
         coordinate: state.coordinate,
         recipientPubkeys: recipientPubkeys,
       ),
+      reload: false,
     );
   }
 
@@ -90,7 +96,15 @@ class BadgeDetailCubit extends Cubit<BadgeDetailState> {
   Future<void> _load() async {
     try {
       final detail = await _repository.loadBadgeDetail(state.coordinate);
-      emit(state.copyWith(status: BadgeDetailStatus.loaded, detail: detail));
+      emit(
+        state.copyWith(
+          status: BadgeDetailStatus.loaded,
+          // Same as the catch below: a reload clears the previous action's
+          // outcome rather than leaving a stale failure note on screen.
+          actionStatus: BadgeDetailActionStatus.idle,
+          detail: detail,
+        ),
+      );
     } catch (error, stackTrace) {
       addError(error, stackTrace);
       emit(
@@ -104,11 +118,18 @@ class BadgeDetailCubit extends Cubit<BadgeDetailState> {
 
   Future<void> _runAction(
     BadgeDetailActionStatus actionStatus,
-    Future<void> Function() action,
-  ) async {
+    Future<void> Function() action, {
+    bool reload = true,
+  }) async {
     emit(state.copyWith(actionStatus: actionStatus));
     try {
       await action();
+      if (!reload) {
+        emit(
+          state.copyWith(actionStatus: BadgeDetailActionStatus.completed),
+        );
+        return;
+      }
       final detail = await _repository.loadBadgeDetail(state.coordinate);
       emit(
         state.copyWith(

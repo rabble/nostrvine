@@ -239,6 +239,34 @@ void main() {
       ],
       errors: () => [isA<Exception>()],
     );
+
+    blocTest<BadgesCubit, BadgesState>(
+      'refresh clears a previous action failure',
+      setUp: () {
+        when(
+          () => repository.loadDashboard(),
+        ).thenAnswer(
+          (_) async => const BadgeDashboardData(
+            awarded: [],
+            issued: [],
+            created: [],
+          ),
+        );
+      },
+      build: () => BadgesCubit(repository: repository),
+      seed: () => const BadgesState(
+        status: BadgesStatus.loaded,
+        actionStatus: BadgeActionStatus.error,
+      ),
+      act: (cubit) => cubit.refresh(),
+      // Without this the "Could not update badge" note outlived a pull to
+      // refresh, while the failure path already reset it.
+      expect: () => [
+        const BadgesState(
+          status: BadgesStatus.loaded,
+        ),
+      ],
+    );
   });
 }
 

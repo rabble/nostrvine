@@ -107,7 +107,11 @@ class BadgeRecipientViewData {
   final String awardEventId;
 
   /// Whether the recipient's profile badge list references [awardEventId].
-  final bool isAccepted;
+  ///
+  /// Null when acceptance was not resolved for this recipient, which happens
+  /// past the recipient-check limit. Everyone awarded the badge is still
+  /// listed; only the status is unknown.
+  final bool? isAccepted;
 }
 
 /// Everything the badge detail screen renders for one badge coordinate.
@@ -224,7 +228,10 @@ class IssuedBadgeRecipientViewData {
   });
 
   final String pubkey;
-  final bool isAccepted;
+
+  /// Null when acceptance was not resolved for this recipient — see
+  /// [BadgeRecipientViewData.isAccepted].
+  final bool? isAccepted;
 }
 
 /// Failure to publish profile badges to at least one relay.
@@ -329,9 +336,21 @@ class BadgeRepository {
       for (final award in awards) award.definitionCoordinate,
     ]);
 
+    // Newest award per badge, the same rule the issued list uses: being
+    // awarded a badge twice is normal, and listing both leaves one row that
+    // can never resolve.
+    final newestPerCoordinate = <String, Nip58BadgeAward>{};
+    for (final award in awards) {
+      final existing = newestPerCoordinate[award.definitionCoordinate];
+      if (existing == null ||
+          award.event.createdAt > existing.event.createdAt) {
+        newestPerCoordinate[award.definitionCoordinate] = award;
+      }
+    }
+
     final viewData =
         [
-          for (final award in awards)
+          for (final award in newestPerCoordinate.values)
             BadgeAwardViewData(
               award: award,
               definition: definitions[award.definitionCoordinate],
@@ -367,7 +386,13 @@ class BadgeRepository {
       }),
     );
 
-    return List<ProfileBadgeViewData>.unmodifiable(viewData);
+    // A profile badge list is its owner's event, so it can reference an award
+    // nobody but its own publisher stands behind. Render only the ones the
+    // badge's issuer actually signed.
+    return List<ProfileBadgeViewData>.unmodifiable([
+      for (final badge in viewData)
+        if (badge.award == null || _isIssuedByBadgeOwner(badge.award!)) badge,
+    ]);
   }
 
   Future<List<IssuedBadgeViewData>> loadIssuedBadges({
@@ -386,26 +411,10 @@ class BadgeRepository {
       pubkey,
       () => _queryAwardsByAuthor(pubkey),
     );
-    List<String> cappedRecipients(Nip58BadgeAward award) => award
-        .recipientPubkeys
-        .take(recipientCheckLimit)
-        .toList(growable: false);
-
-    final definitionsFuture = _definitionsByCoordinate(memo, [
-      for (final award in awards) award.definitionCoordinate,
-    ]);
-    final profileBadgesFuture = _profileBadgesByPubkey(memo, [
-      for (final award in awards) ...cappedRecipients(award),
-    ]);
-    final results = await Future.wait<Object?>([
-      definitionsFuture,
-      profileBadgesFuture,
-    ]);
-    final definitions = results[0]! as Map<String, Nip58BadgeDefinition?>;
-    final profileBadges = results[1]! as Map<String, Nip58ProfileBadges?>;
 
     // Newest award per (badge, recipient): a re-award supersedes the earlier
-    // one rather than adding a second, permanently pending row.
+    // one rather than adding a second, permanently pending row. Everyone
+    // named is kept — the limit below bounds relay lookups, not the list.
     final awardByBadgeAndRecipient = <String, Map<String, Nip58BadgeAward>>{};
     final latestAwardedAt = <String, int>{};
     for (final award in awards) {
@@ -419,7 +428,7 @@ class BadgeRepository {
             current > award.event.createdAt ? current : award.event.createdAt,
         ifAbsent: () => award.event.createdAt,
       );
-      for (final recipient in cappedRecipients(award)) {
+      for (final recipient in award.recipientPubkeys) {
         final existing = byRecipient[recipient];
         if (existing == null ||
             award.event.createdAt > existing.event.createdAt) {
@@ -427,6 +436,20 @@ class BadgeRepository {
         }
       }
     }
+
+    final checked = <String>{
+      for (final byRecipient in awardByBadgeAndRecipient.values)
+        ...byRecipient.keys.take(recipientCheckLimit),
+    };
+
+    final results = await Future.wait<Object?>([
+      _definitionsByCoordinate(memo, [
+        for (final award in awards) award.definitionCoordinate,
+      ]),
+      _profileBadgesByPubkey(memo, checked),
+    ]);
+    final definitions = results[0]! as Map<String, Nip58BadgeDefinition?>;
+    final profileBadges = results[1]! as Map<String, Nip58ProfileBadges?>;
 
     final issued =
         [
@@ -439,10 +462,12 @@ class BadgeRepository {
                 for (final recipient in entry.value.entries)
                   IssuedBadgeRecipientViewData(
                     pubkey: recipient.key,
-                    isAccepted: _containsAward(
-                      profileBadges[recipient.key],
-                      recipient.value,
-                    ),
+                    isAccepted: checked.contains(recipient.key)
+                        ? _containsAward(
+                            profileBadges[recipient.key],
+                            recipient.value,
+                          )
+                        : null,
                   ),
               ]),
             ),
@@ -508,9 +533,11 @@ class BadgeRepository {
   /// to it.
   ///
   /// Only awards published by the badge's own issuer count, so a third party
-  /// cannot inject awardees into someone else's badge. When more than
-  /// [recipientCheckLimit] people were awarded the badge, acceptance is only
-  /// resolved for that many — the viewer is always among them.
+  /// cannot inject awardees into someone else's badge. Every awardee is
+  /// listed; when more than [recipientCheckLimit] people hold the badge,
+  /// acceptance is resolved for that many and left null for the rest, so a
+  /// long list costs a bounded number of relay lookups. The viewer's own
+  /// status is always resolved.
   Future<BadgeDetailData> loadBadgeDetail(
     BadgeCoordinate coordinate, {
     int recipientCheckLimit = 50,
@@ -544,18 +571,17 @@ class BadgeRepository {
       ...awardByRecipient.keys.take(recipientCheckLimit),
       if (viewerPubkey != null && awardByRecipient.containsKey(viewerPubkey))
         viewerPubkey,
-    }.toList(growable: false);
+    };
     final profileBadges = await _profileBadgesByPubkey(memo, checked);
 
     final recipients = [
-      for (final recipientPubkey in checked)
+      for (final entry in awardByRecipient.entries)
         BadgeRecipientViewData(
-          pubkey: recipientPubkey,
-          awardEventId: awardByRecipient[recipientPubkey]!.event.id,
-          isAccepted: _containsAward(
-            profileBadges[recipientPubkey],
-            awardByRecipient[recipientPubkey]!,
-          ),
+          pubkey: entry.key,
+          awardEventId: entry.value.event.id,
+          isAccepted: checked.contains(entry.key)
+              ? _containsAward(profileBadges[entry.key], entry.value)
+              : null,
         ),
     ];
 
@@ -624,6 +650,7 @@ class BadgeRepository {
       );
     }
 
+    final description = draft.description.trim();
     final thumbnailUrl = draft.thumbnailUrl.trim();
     final event = await _signAndPublish(
       kind: EventKind.badgeDefinition,
@@ -631,7 +658,9 @@ class BadgeRepository {
       tags: [
         ['d', identifier],
         ['name', name],
-        ['description', draft.description.trim()],
+        // Omitted rather than written empty: an empty tag parses back as ''
+        // rather than null, which reads as "has a description" downstream.
+        if (description.isNotEmpty) ['description', description],
         ['image', imageUrl],
         if (thumbnailUrl.isNotEmpty) ['thumb', thumbnailUrl],
       ],
@@ -863,23 +892,32 @@ class BadgeRepository {
   Future<void> acceptAward(BadgeAwardViewData award) async {
     final pubkey = _requireCurrentPubkey();
     final currentProfileBadges = await _latestProfileBadges(pubkey);
-    final refs = List<Nip58ProfileBadgeRef>.from(
-      currentProfileBadges?.badges ?? const <Nip58ProfileBadgeRef>[],
+    final coordinate = award.award.definitionCoordinate;
+    final awardEventId = award.award.event.id;
+    final current =
+        currentProfileBadges?.badges ?? const <Nip58ProfileBadgeRef>[];
+
+    // Accepting the award that is already pinned changes nothing, and
+    // rebuilding the ref would throw away its relay hint.
+    final alreadyAccepted = current.any(
+      (ref) =>
+          ref.definitionCoordinate == coordinate &&
+          ref.awardEventId == awardEventId,
     );
 
-    final alreadyAccepted = refs.any(
-      (ref) =>
-          ref.definitionCoordinate == award.award.definitionCoordinate &&
-          ref.awardEventId == award.award.event.id,
-    );
-    if (!alreadyAccepted) {
-      refs.add(
-        Nip58ProfileBadgeRef(
-          definitionCoordinate: award.award.definitionCoordinate,
-          awardEventId: award.award.event.id,
-        ),
-      );
-    }
+    // Otherwise one entry per badge, not per award: being awarded the same
+    // badge twice is normal, and appending a second a/e pair for the same
+    // coordinate renders the badge twice on the profile.
+    final refs = alreadyAccepted
+        ? current.toList(growable: false)
+        : [
+            for (final ref in current)
+              if (ref.definitionCoordinate != coordinate) ref,
+            Nip58ProfileBadgeRef(
+              definitionCoordinate: coordinate,
+              awardEventId: awardEventId,
+            ),
+          ];
 
     await _publishProfileBadges(refs);
   }
@@ -939,7 +977,20 @@ class BadgeRepository {
         .map(Nip58BadgeParser.parseAward)
         .whereType<Nip58BadgeAward>()
         .where((award) => award.recipientPubkeys.contains(pubkey))
+        .where(_isIssuedByBadgeOwner)
         .toList(growable: false);
+  }
+
+  /// Whether [award] was signed by the issuer of the badge it points at.
+  ///
+  /// A kind 8 naming you is not proof the badge's owner awarded it: this
+  /// query filters on `p`, not on the author, so anyone could publish an
+  /// award for someone else's coordinate and have it land in the awarded
+  /// list carrying that badge's real name and artwork. The coordinate
+  /// already encodes the issuer, so this costs no extra relay round trip.
+  static bool _isIssuedByBadgeOwner(Nip58BadgeAward award) {
+    final coordinate = BadgeCoordinate.parse(award.definitionCoordinate);
+    return coordinate != null && coordinate.pubkey == award.event.pubkey;
   }
 
   Future<Nip58ProfileBadges?> _latestProfileBadges(String pubkey) async {

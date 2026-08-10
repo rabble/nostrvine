@@ -68,6 +68,9 @@ class BadgesCubit extends Cubit<BadgesState> {
       emit(
         state.copyWith(
           status: BadgesStatus.loaded,
+          // Clears a previous action's failure note, the way the catch below
+          // already does. Leaving it set outlived a pull to refresh.
+          actionStatus: BadgeActionStatus.idle,
           awarded: dashboard.awarded,
           issued: dashboard.issued,
           created: dashboard.created,

@@ -289,13 +289,45 @@ void main() {
 
       final awards = await repository.loadAwardedBadges();
 
-      expect(awards, hasLength(2));
+      // Both awards name the same badge, so they collapse to one card; the
+      // definition is still only fetched once for the pair.
+      expect(awards, hasLength(1));
       expect(
         awards.map((award) => award.definition?.name),
         everyElement('Diviner of the Day'),
       );
       expect(callCounts['definition:$coordinate'], 1);
     });
+
+    test(
+      'loadAwardedBadges keeps only the newest award per badge',
+      () async {
+        final coordinate = '30009:${_pubkey(2)}:daily-diviner';
+        final older = _awardEvent(
+          id: _eventId(20),
+          issuerPubkey: _pubkey(2),
+          definitionCoordinate: coordinate,
+          recipients: [_pubkey(1)],
+        );
+        final newer = _awardEvent(
+          id: _eventId(21),
+          issuerPubkey: _pubkey(2),
+          definitionCoordinate: coordinate,
+          recipients: [_pubkey(1)],
+          createdAt: 2000,
+        );
+        _stubQueries(nostrClient, {
+          'awarded': [older, newer],
+        });
+
+        final awards = await repository.loadAwardedBadges();
+
+        // Listing both would leave a row that can never resolve: the profile
+        // badge list references exactly one award per badge.
+        expect(awards, hasLength(1));
+        expect(awards.single.awardEventId, _eventId(21));
+      },
+    );
 
     test(
       'loadIssuedBadges checks each unique recipient once across awards',
@@ -644,11 +676,21 @@ void main() {
           recipientCheckLimit: 2,
         );
 
+        // Everyone awarded is listed; the limit bounds the acceptance
+        // lookups, so the recipient past it carries no status rather than
+        // being dropped from the list.
         expect(
           [
             for (final recipient in issued.single.recipients) recipient.pubkey,
           ],
-          [_pubkey(2), _pubkey(3)],
+          [_pubkey(2), _pubkey(3), _pubkey(4)],
+        );
+        expect(
+          [
+            for (final recipient in issued.single.recipients)
+              recipient.isAccepted,
+          ],
+          [false, false, null],
         );
         expect(callCounts['profileCurrent:${_pubkey(4)}'], isNull);
       },
@@ -717,6 +759,64 @@ void main() {
           ['a', coordinate],
           ['e', _eventId(42), 'wss://relay.divine.video'],
         ]);
+      },
+    );
+
+    test(
+      'acceptAward replaces an earlier award for the same badge',
+      () async {
+        final coordinate = '30009:${_pubkey(2)}:daily-diviner';
+        final newer = _awardEvent(
+          id: _eventId(45),
+          issuerPubkey: _pubkey(2),
+          definitionCoordinate: coordinate,
+          recipients: [_pubkey(1)],
+          createdAt: 2000,
+        );
+        _stubQueries(nostrClient, {
+          'profileCurrent:${_pubkey(1)}': [
+            _profileBadgesEvent(
+              id: _eventId(46),
+              pubkey: _pubkey(1),
+              tags: [
+                ['a', coordinate],
+                ['e', _eventId(44)],
+              ],
+            ),
+          ],
+        });
+
+        await repository.acceptAward(
+          BadgeAwardViewData(award: Nip58BadgeParser.parseAward(newer)!),
+        );
+
+        // One a/e pair per badge: a second pair for the same coordinate
+        // renders the badge twice on the profile.
+        expect(lastSignedEvent()!.tags, [
+          ['a', coordinate],
+          ['e', _eventId(45)],
+        ]);
+      },
+    );
+
+    test(
+      'loadAwardedBadges drops awards not signed by the badge issuer',
+      () async {
+        final coordinate = '30009:${_pubkey(2)}:daily-diviner';
+        _stubQueries(nostrClient, {
+          'awarded': [
+            _awardEvent(
+              id: _eventId(47),
+              // Anyone can publish a kind 8 pointing at someone else's
+              // coordinate; the p filter alone would let it through.
+              issuerPubkey: _pubkey(3),
+              definitionCoordinate: coordinate,
+              recipients: [_pubkey(1)],
+            ),
+          ],
+        });
+
+        expect(await repository.loadAwardedBadges(), isEmpty);
       },
     );
 
@@ -1510,9 +1610,18 @@ void main() {
           recipientCheckLimit: 1,
         );
 
+        // Everyone is listed. Acceptance is resolved for the first one and
+        // for the viewer; the one in between is left unknown rather than
+        // reported as waiting.
         expect(detail.recipients.map((r) => r.pubkey), [
           _pubkey(3),
+          _pubkey(4),
           _pubkey(1),
+        ]);
+        expect(detail.recipients.map((r) => r.isAccepted), [
+          false,
+          null,
+          true,
         ]);
         expect(detail.viewerAward?.isAccepted, isTrue);
       });
@@ -1569,7 +1678,7 @@ void main() {
         expect(definition.coordinate, '30009:${_pubkey(1)}:scene-stealer');
       });
 
-      test('omits the thumbnail tag when there is no custom thumb', () async {
+      test('omits the thumbnail and description tags when unset', () async {
         await repository.saveDefinition(
           const BadgeDefinitionDraft(
             identifier: 'scene-stealer',
@@ -1578,10 +1687,11 @@ void main() {
           ),
         );
 
+        // An empty description tag parses back as '' rather than null, which
+        // reads downstream as "has a description" and renders a blank line.
         expect(lastSignedEvent()!.tags, [
           ['d', 'scene-stealer'],
           ['name', 'Scene Stealer'],
-          ['description', ''],
           ['image', _artworkUrl],
         ]);
       });
