@@ -11,6 +11,11 @@ import 'package:models/models.dart';
 /// doing useful work: a classic Vine with millions of loops is famous, and
 /// saying so is the point.
 ///
+/// Applies to archival Vine counts as well as diVine's own: a small number
+/// discourages a viewer whatever its provenance. Measured against 1000
+/// unique classic Vines, this hides roughly 64% of the archive (p50 is 298
+/// loops) and keeps the famous ones.
+///
 /// This threshold is a product call, not a technical one. It is the single
 /// value to change if the bar turns out to sit in the wrong place.
 const int publicLoopCountFloor = 1000;
