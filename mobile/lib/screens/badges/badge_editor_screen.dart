@@ -339,6 +339,10 @@ class _IdentifierField extends StatelessWidget {
           helperText: isTaken || isMissing
               ? null
               : l10n.badgeEditorIdentifierHelp,
+          // The clause carrying the meaning is the second one, so a single
+          // line cuts exactly the half worth reading — and every locale here
+          // is longer than the English.
+          helperMaxLines: 2,
           controller: controller,
           filled: true,
           fillColor: context.vineColors.surfaceContainer,
