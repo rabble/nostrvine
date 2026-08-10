@@ -808,7 +808,7 @@ void main() {
     }
 
     /// The `additionalTags` the dialog attached to the single moderation DM.
-    Future<List<List<String>>> captureDmTags(WidgetTester tester) async {
+    List<List<String>> captureDmTags() {
       final captured = verify(
         () => mockDmRepository.sendMessage(
           recipientPubkey: any(named: 'recipientPubkey'),
@@ -893,12 +893,34 @@ void main() {
       );
 
       expect(
-        await captureDmTags(tester),
+        captureDmTags(),
         equals([
           ['L', kReportLabelNamespace],
           ['l', 'NS-aiGenerated', kReportLabelNamespace],
           ['report_type', 'other'],
           ['sha256', 'a' * 64],
+        ]),
+      );
+    });
+
+    testWidgets('DM recovers the video blob hash from the URL fallback', (
+      tester,
+    ) async {
+      testVideo = testVideo.copyWith(
+        videoUrl: 'https://blossom.example/${'b' * 64}.mp4',
+      );
+      expect(testVideo.sha256, isNull);
+
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+
+      expect(
+        captureDmTags(),
+        equals([
+          ['L', kReportLabelNamespace],
+          ['l', 'NS-spam', kReportLabelNamespace],
+          ['report_type', 'spam'],
+          ['sha256', 'b' * 64],
         ]),
       );
     });
@@ -913,7 +935,7 @@ void main() {
       await setLargeSurface(tester);
       await openAndSubmitReport(tester);
 
-      final tags = await captureDmTags(tester);
+      final tags = captureDmTags();
       expect(
         tags.where((t) => t.first == 'sha256'),
         isEmpty,
@@ -1331,6 +1353,58 @@ void main() {
       }
     });
 
+    testWidgets('both channels use the details text the submit started on', (
+      tester,
+    ) async {
+      serviceGate = Completer<ContentReportingService>();
+
+      await setLargeSurface(tester);
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Open Report'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.reportReasonOther));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'First details');
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
+      await tester.pump();
+
+      await tester.enterText(find.byType(TextField), 'Edited details');
+      await tester.pump();
+
+      serviceGate!.complete(mockReportingService);
+      await tester.pumpAndSettle();
+
+      final reportedDetails =
+          verify(
+                () => mockReportingService.reportContent(
+                  eventId: any(named: 'eventId'),
+                  authorPubkey: any(named: 'authorPubkey'),
+                  reason: any(named: 'reason'),
+                  details: captureAny(named: 'details'),
+                  sourceRelay: any(named: 'sourceRelay'),
+                  hashtags: any(named: 'hashtags'),
+                ),
+              ).captured.single
+              as String;
+      final dmContent =
+          verify(
+                () => mockDmRepository.sendMessage(
+                  recipientPubkey: any(named: 'recipientPubkey'),
+                  content: captureAny(named: 'content'),
+                  replyToId: any(named: 'replyToId'),
+                  skipNip04Fallback: any(named: 'skipNip04Fallback'),
+                  additionalTags: any(named: 'additionalTags'),
+                ),
+              ).captured.single
+              as String;
+
+      expect(reportedDetails, 'First details');
+      expect(dmContent, contains('Details: First details'));
+      expect(dmContent, isNot(contains('Edited details')));
+    });
+
     testWidgets('re-drives the parked DM when a later submit gets through', (
       tester,
     ) async {
@@ -1390,6 +1464,56 @@ void main() {
       expect(find.text(l10n.reportModerationDmDelayed), findsNothing);
     });
 
+    testWidgets('sends a changed resubmit after an earlier DM delivered', (
+      tester,
+    ) async {
+      stubReportDeliveries([ReportDelivery.localOnly, ReportDelivery.reached]);
+      stubDmResult(
+        NIP17SendResult.success(
+          rumorEventId: 'dm_rumor_id',
+          messageEventId: 'dm_event_id',
+          recipientPubkey: ModerationLabelService.fallbackModerationPubkeyHex,
+        ),
+      );
+
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+      expect(find.text(l10n.reportNotSent), findsOneWidget);
+
+      final csam = l10n.reportReasonTitle(ContentFilterReason.csam);
+      await tester.scrollUntilVisible(
+        find.text(csam),
+        100,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.tap(find.text(csam));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
+      await tester.pumpAndSettle();
+
+      final capturedTags =
+          verify(
+                () => mockDmRepository.sendMessage(
+                  recipientPubkey: any(named: 'recipientPubkey'),
+                  content: any(named: 'content'),
+                  replyToId: any(named: 'replyToId'),
+                  skipNip04Fallback: any(named: 'skipNip04Fallback'),
+                  additionalTags: captureAny(named: 'additionalTags'),
+                ),
+              ).captured
+              as List<Object?>;
+
+      expect(capturedTags, hasLength(2));
+      expect(
+        capturedTags.last,
+        equals([
+          ['L', kReportLabelNamespace],
+          ['l', 'NS-csam', kReportLabelNamespace],
+          ['report_type', 'illegal'],
+        ]),
+      );
+    });
+
     testWidgets('replaces the parked DM when the user changes the reason', (
       tester,
     ) async {
@@ -1407,9 +1531,8 @@ void main() {
         ),
       );
       when(
-        () => mockDmRepository.cancelOutgoingSend(
-          rumorId: any(named: 'rumorId'),
-        ),
+        () =>
+            mockDmRepository.cancelOutgoingSend(rumorId: any(named: 'rumorId')),
       ).thenAnswer((_) async => true);
 
       await setLargeSurface(tester);
@@ -1464,6 +1587,67 @@ void main() {
       );
     });
 
+    testWidgets(
+      'does not keep retrying a stale cancel after the row becomes ambiguous',
+      (tester) async {
+        stubReportDeliveries([ReportDelivery.localOnly]);
+        stubDmResult(
+          const NIP17SendResult.failure(
+            'No relays connected',
+            queuedRumorId: 'parked_rumor_id',
+          ),
+        );
+        when(
+          () => mockDmRepository.cancelOutgoingSend(
+            rumorId: any(named: 'rumorId'),
+          ),
+        ).thenThrow(
+          ArgumentError.value(
+            'parked_rumor_id',
+            'rumorId',
+            'no queued outgoing DM with this id',
+          ),
+        );
+
+        await setLargeSurface(tester);
+        await openAndSubmitReport(tester);
+
+        final csam = l10n.reportReasonTitle(ContentFilterReason.csam);
+        await tester.scrollUntilVisible(
+          find.text(csam),
+          100,
+          scrollable: find.byType(Scrollable).last,
+        );
+        await tester.tap(find.text(csam));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockDmRepository.cancelOutgoingSend(rumorId: 'parked_rumor_id'),
+        ).called(1);
+        verifyNever(
+          () => mockDmRepository.recoverFullSend(
+            rumorId: any(named: 'rumorId'),
+            resetRetryBudget: any(named: 'resetRetryBudget'),
+          ),
+        );
+        verify(
+          () => mockDmRepository.sendMessage(
+            recipientPubkey: any(named: 'recipientPubkey'),
+            content: any(named: 'content'),
+            replyToId: any(named: 'replyToId'),
+            skipNip04Fallback: any(named: 'skipNip04Fallback'),
+            additionalTags: any(named: 'additionalTags'),
+          ),
+        ).called(1);
+        expect(find.text(l10n.reportNotSent), findsOneWidget);
+      },
+    );
+
     testWidgets('replaces the parked DM when the reason changed mid-send', (
       tester,
     ) async {
@@ -1495,9 +1679,8 @@ void main() {
             : firstSend.future,
       );
       when(
-        () => mockDmRepository.cancelOutgoingSend(
-          rumorId: any(named: 'rumorId'),
-        ),
+        () =>
+            mockDmRepository.cancelOutgoingSend(rumorId: any(named: 'rumorId')),
       ).thenAnswer((_) async => true);
 
       await setLargeSurface(tester);
@@ -1588,9 +1771,8 @@ void main() {
             : firstSend.future,
       );
       when(
-        () => mockDmRepository.cancelOutgoingSend(
-          rumorId: any(named: 'rumorId'),
-        ),
+        () =>
+            mockDmRepository.cancelOutgoingSend(rumorId: any(named: 'rumorId')),
       ).thenAnswer((_) async => true);
 
       await setLargeSurface(tester);

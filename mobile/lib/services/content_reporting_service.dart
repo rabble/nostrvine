@@ -10,8 +10,8 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/content_moderation_types.dart';
+import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
-import 'package:openvine/utils/blossom_blob_hash.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -458,30 +458,32 @@ class ContentReportingService {
   /// NIP-56 type as the third element of its `e`/`p` tags and carries no blob
   /// hash.
   ///
-  /// [sha256] is the reported video's Blossom blob hash where one resolves.
-  /// [VideoEvent.sha256] is nullable, and user reports and DM-message reports
-  /// never have one. `user_reports.sha256` is `NOT NULL` server-side, so
-  /// omitting the tag degrades to no report row rather than a malformed one —
-  /// a blank tag must never ship.
+  /// [sha256] and [videoUrl] identify the reported video's Blossom blob hash
+  /// where one resolves. [VideoEvent.sha256] is nullable because publishers can
+  /// omit the `imeta` `x` value; [videoUrl] is the canonical fallback because
+  /// Blossom URLs carry the content-addressed hash in their path. User reports
+  /// and DM-message reports pass neither. `user_reports.sha256` is `NOT NULL`
+  /// server-side, so omitting the tag degrades to no report row rather than a
+  /// malformed one — a blank tag must never ship.
   ///
-  /// The hash is put through [normalizeSha256Hash] rather than forwarded
-  /// verbatim. `VideoEvent.sha256` is whatever the publishing client wrote in
-  /// the `imeta` `x` tag, unvalidated, so a padded hash reaches the backend
-  /// with its surrounding whitespace intact, fails the anchored hash check
-  /// there, and silently files no report at all; trimming files it correctly
-  /// instead. Case is not the reason — the backend lower-cases before
-  /// matching — but this is the identifier the report is keyed by, so it is
-  /// canonicalised here rather than left to the consumer. Anything that is
-  /// not 64 hex characters is dropped, which makes the documented degrade
-  /// explicit rather than something the backend has to catch.
+  /// Resolution goes through [VideoModerationStatusService.resolveSha256],
+  /// matching the rest of the moderation paths. That normalizes a valid
+  /// explicit hash and falls back to extracting the hash from [videoUrl];
+  /// anything that is not 64 hex characters is dropped, which makes the
+  /// documented degrade explicit rather than something the backend has to
+  /// catch.
   ///
   /// Tag order is pinned by divine-moderation-service's
   /// `dm-report-contract.test.mjs` fixture.
   static List<List<String>> moderationDmTags({
     required ContentFilterReason reason,
     String? sha256,
+    String? videoUrl,
   }) {
-    final blobHash = normalizeSha256Hash(sha256);
+    final blobHash = VideoModerationStatusService.resolveSha256(
+      explicitSha256: sha256,
+      videoUrl: videoUrl,
+    );
     return [
       ..._nip32ReportLabelTags(reason),
       ['report_type', contentFilterReasonToNip56Type(reason)],

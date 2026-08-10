@@ -91,6 +91,27 @@ void main() {
         equals(['sha256', 'ab' * 32]),
       );
     });
+
+    test('falls back to the Blossom URL when the explicit hash is absent', () {
+      expect(
+        ContentReportingService.moderationDmTags(
+          reason: ContentFilterReason.spam,
+          videoUrl: 'https://blossom.example/${'b' * 64}.mp4',
+        ).last,
+        equals(['sha256', 'b' * 64]),
+      );
+    });
+
+    test('prefers the explicit hash over the Blossom URL fallback', () {
+      expect(
+        ContentReportingService.moderationDmTags(
+          reason: ContentFilterReason.spam,
+          sha256: 'a' * 64,
+          videoUrl: 'https://blossom.example/${'b' * 64}.mp4',
+        ).last,
+        equals(['sha256', 'a' * 64]),
+      );
+    });
   });
 
   group('ContentReportingService', () {

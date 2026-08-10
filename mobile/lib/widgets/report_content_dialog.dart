@@ -224,6 +224,20 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   /// label the report with the superseded reason. Compared before re-driving.
   ContentFilterReason? _queuedModerationDmReason;
 
+  /// The details text [_queuedModerationDmId]'s rumor was built with.
+  ///
+  /// Details ride in the human-readable DM body, not the machine tags. They
+  /// still have to be part of the parked-row identity so a re-drive cannot
+  /// ship stale prose after the user edits and resubmits.
+  String? _queuedModerationDmDetails;
+
+  /// The snapshot a delivered moderation DM carried.
+  ///
+  /// A plain resubmit should not DM the team twice, but a changed resubmit must
+  /// not leave the team with prose or tags from the old report while the
+  /// kind-1984 channel republishes the new one.
+  ({ContentFilterReason reason, String details})? _deliveredModerationDm;
+
   /// What this dialog knows about the moderation DM so far.
   ///
   /// A resubmit deliberately re-publishes the kind-1984 and files a second
@@ -231,9 +245,9 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   /// has one — or mint a fresh one to replace a row it can no longer reach.
   _ModerationDmOutcome _moderationDmOutcome = _ModerationDmOutcome.pending;
 
-  /// The in-flight send, so a submit that lands while an earlier one is
-  /// still awaiting a relay joins it instead of starting a second send
-  /// before the first has parked its row.
+  /// The in-flight send queue, so a submit that lands while an earlier one is
+  /// still awaiting a relay waits for the first to park its row before deciding
+  /// whether to re-drive, replace, or skip it.
   Future<bool>? _moderationDmInFlight;
 
   String? _errorMessage;
@@ -395,14 +409,13 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
       _errorMessage = null;
     });
     final selectedReasonTitle = context.l10n.reportReasonTitle(reason);
+    final detailsText = _detailsController.text.trim();
+    final details = detailsText.isEmpty ? selectedReasonTitle : detailsText;
 
     try {
       final reportService = await ref.read(
         contentReportingServiceProvider.future,
       );
-      final details = _detailsController.text.trim().isEmpty
-          ? selectedReasonTitle
-          : _detailsController.text.trim();
       final result = _isUserReport
           ? await reportService.reportUser(
               userPubkey: widget.userPubkey!,
@@ -439,12 +452,12 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
           // `_sendModerationDm` coalesces onto whatever this dialog already
           // has outstanding, so a repeat tap re-drives the parked row
           // instead of stacking a second one for the sweep (#6610).
-          unawaited(_sendModerationDm(reason));
+          unawaited(_sendModerationDm(reason, details));
           setState(() {
             _errorMessage = context.l10n.reportNotSent;
           });
         } else if (result.success) {
-          final moderationDmFailed = await _sendModerationDm(reason);
+          final moderationDmFailed = await _sendModerationDm(reason, details);
 
           if (mounted) {
             setState(() {
@@ -501,20 +514,21 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   /// - an earlier submit parked a queue row: re-drive that row, in
   ///   [_dispatchModerationDm].
   ///
-  /// [reason] is the submit's own snapshot, not `_selectedReason`. Queuing
-  /// rather than joining is what makes that matter: an outstanding send
-  /// carries the label it was built with, so returning its result to a submit
-  /// the user has since re-aimed would report the superseded reason. Waiting
-  /// lets the re-aimed submit see the row the first one parked and replace it.
-  Future<bool> _sendModerationDm(ContentFilterReason reason) {
+  /// [reason] and [details] are the submit's own snapshot, not live widget
+  /// state. Queuing rather than joining is what makes that matter: an
+  /// outstanding send carries the label and prose it was built with, so
+  /// returning its result to a submit the user has since re-aimed would report
+  /// the superseded snapshot. Waiting lets the re-aimed submit see the row the
+  /// first one parked and replace it.
+  Future<bool> _sendModerationDm(ContentFilterReason reason, String details) {
     final outstanding = _moderationDmInFlight;
     final next = outstanding == null
-        ? _runModerationDm(reason)
+        ? _runModerationDm(reason, details)
         // _dispatchModerationDm absorbs its own errors, but handle the error
         // arm anyway so a hypothetical one cannot cancel the queued submit.
         : outstanding.then<bool>(
-            (_) => _runModerationDm(reason),
-            onError: (_) => _runModerationDm(reason),
+            (_) => _runModerationDm(reason, details),
+            onError: (_) => _runModerationDm(reason, details),
           );
     _moderationDmInFlight = next;
     unawaited(
@@ -529,12 +543,16 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
 
   /// One link in the [_sendModerationDm] queue: re-checks the terminal
   /// outcomes, which an earlier link may have reached while this one waited.
-  Future<bool> _runModerationDm(ContentFilterReason reason) =>
-      switch (_moderationDmOutcome) {
-        _ModerationDmOutcome.delivered => Future.value(false),
-        _ModerationDmOutcome.unverifiable => Future.value(true),
-        _ModerationDmOutcome.pending => _dispatchModerationDm(reason),
-      };
+  Future<bool> _runModerationDm(ContentFilterReason reason, String details) {
+    final delivered = _deliveredModerationDm;
+    return switch (_moderationDmOutcome) {
+      _ModerationDmOutcome.delivered
+          when delivered?.reason == reason && delivered?.details == details =>
+        Future.value(false),
+      _ModerationDmOutcome.unverifiable => Future.value(true),
+      _ => _dispatchModerationDm(reason, details),
+    };
+  }
 
   /// Drives one moderation-DM attempt: a fresh send, or a re-drive of the
   /// row a previous undelivered submit parked.
@@ -547,7 +565,10 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   /// reason cards live, so the selection can move while a send is in flight,
   /// and the row parked below must be recorded under the reason its rumor
   /// actually carries or the staleness check above it goes blind.
-  Future<bool> _dispatchModerationDm(ContentFilterReason dispatchReason) async {
+  Future<bool> _dispatchModerationDm(
+    ContentFilterReason dispatchReason,
+    String dispatchDetails,
+  ) async {
     try {
       final dmRepo = ref.read(dmRepositoryProvider);
       final labelService = ref.read(moderationLabelServiceProvider);
@@ -555,7 +576,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
       final content = _formatReportDm(
         reason: dispatchReason,
         eventId: _eventId,
-        details: _detailsController.text.trim(),
+        details: dispatchDetails,
       );
 
       // A parked row carries the reason it was built with, baked into its
@@ -573,12 +594,30 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
       final staleReason =
           _queuedModerationDmReason != null &&
           _queuedModerationDmReason != dispatchReason;
-      if (staleReason) {
+      final staleDetails =
+          _queuedModerationDmDetails != null &&
+          _queuedModerationDmDetails != dispatchDetails;
+      if (staleReason || staleDetails) {
         final stale = _queuedModerationDmId;
         if (stale != null) {
-          await dmRepo.cancelOutgoingSend(rumorId: stale);
+          try {
+            await dmRepo.cancelOutgoingSend(rumorId: stale);
+            // ignore: avoid_catching_errors
+          } on ArgumentError {
+            // Same ambiguity as recoverFullSend: the row may be gone because
+            // the sweep delivered it, the user deleted it, or the active
+            // account changed. Do not mint a fresh report DM when we cannot
+            // prove the stale one was cancelled.
+            _queuedModerationDmId = null;
+            _queuedModerationDmReason = null;
+            _queuedModerationDmDetails = null;
+            _moderationDmOutcome = _ModerationDmOutcome.unverifiable;
+            return true;
+          }
         }
         _queuedModerationDmId = null;
+        _queuedModerationDmReason = null;
+        _queuedModerationDmDetails = null;
       }
 
       final parked = _queuedModerationDmId;
@@ -599,6 +638,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
             // the routing decision rather than on `video` being present —
             // otherwise the backend files the report against that blob.
             sha256: _isUserReport ? null : widget.video?.sha256,
+            videoUrl: _isUserReport ? null : widget.video?.videoUrl,
           ),
         );
       } else {
@@ -623,6 +663,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
           // this dialog stops sending and keeps the caveat.
           _queuedModerationDmId = null;
           _queuedModerationDmReason = null;
+          _queuedModerationDmDetails = null;
           _moderationDmOutcome = _ModerationDmOutcome.unverifiable;
           return true;
         }
@@ -641,6 +682,9 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
       _moderationDmOutcome = failed
           ? _ModerationDmOutcome.pending
           : _ModerationDmOutcome.delivered;
+      _deliveredModerationDm = failed
+          ? _deliveredModerationDm
+          : (reason: dispatchReason, details: dispatchDetails);
       _queuedModerationDmId = switch (dmResult) {
         // The row was consumed by the delivery.
         NIP17SendSuccess() => null,
@@ -659,6 +703,9 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
       _queuedModerationDmReason = _queuedModerationDmId == null
           ? null
           : dispatchReason;
+      _queuedModerationDmDetails = _queuedModerationDmId == null
+          ? null
+          : dispatchDetails;
       if (dmResult case final NIP17SendFailure failure) {
         Log.warning(
           'Moderation DM not delivered '
