@@ -4,11 +4,52 @@
 
 import 'package:db_client/db_client.dart';
 import 'package:drift/drift.dart';
+import 'package:meta/meta.dart';
 
 part 'app_database.g.dart';
 
 /// Default retention period for notifications (7 days)
 const _notificationRetentionDays = 7;
+
+/// Tables that legacy-v1 normalization creates and the v2 recovery probe
+/// checks.
+@visibleForTesting
+const legacyV1NormalizationRepairTables = <String>[
+  'personal_reposts',
+  'nip05_verifications',
+  'pending_actions',
+  'drafts',
+  'clips',
+  'direct_messages',
+  'conversations',
+  'outgoing_dms',
+  'pending_profile_saves',
+  'dm_message_reactions',
+  'pending_view_events',
+  'pending_product_events',
+  'pending_gift_wraps',
+  'processed_gift_wraps',
+  'identity_events',
+  'identity_verifications',
+  'vanished_profiles',
+  'seen_videos',
+];
+
+/// Indexes created by legacy-v1 normalization that the v2 recovery probe
+/// checks.
+@visibleForTesting
+const legacyV1NormalizationRepairIndexes = <String>[
+  'idx_event_kind_created_at',
+  'idx_event_pubkey_created_at',
+  'idx_event_pubkey_kind_d_tag_created_at',
+  'idx_event_created_at',
+  'idx_event_expire_at',
+  'idx_dm_reactions_unique_live',
+  'idx_pending_product_events_owner',
+  'idx_personal_reactions_addressable_id',
+  'idx_notification_owner_timestamp',
+  'idx_seen_videos_last_seen_at',
+];
 
 /// Main application database using Drift
 ///
@@ -838,9 +879,10 @@ class AppDatabase extends _$AppDatabase {
     if (seenVideosResult.isEmpty) {
       await customStatement('''
         CREATE TABLE seen_videos (
-          video_id TEXT NOT NULL PRIMARY KEY,
+          video_id TEXT NOT NULL,
           first_seen_at INTEGER NOT NULL,
-          last_seen_at INTEGER NOT NULL
+          last_seen_at INTEGER NOT NULL,
+          PRIMARY KEY (video_id)
         )
       ''');
     }
@@ -920,27 +962,7 @@ class AppDatabase extends _$AppDatabase {
   /// would have supplied. This is deliberately a recovery probe, not the
   /// primary migration mechanism for future schema changes.
   Future<bool> _needsSchemaRepair() async {
-    const requiredTables = <String>[
-      'personal_reposts',
-      'nip05_verifications',
-      'pending_actions',
-      'drafts',
-      'clips',
-      'direct_messages',
-      'conversations',
-      'outgoing_dms',
-      'pending_profile_saves',
-      'dm_message_reactions',
-      'pending_view_events',
-      'pending_product_events',
-      'pending_gift_wraps',
-      'processed_gift_wraps',
-      'identity_events',
-      'identity_verifications',
-      'vanished_profiles',
-    ];
-
-    for (final table in requiredTables) {
+    for (final table in legacyV1NormalizationRepairTables) {
       if (!await _tableExists(table)) {
         return true;
       }
@@ -995,19 +1017,7 @@ class AppDatabase extends _$AppDatabase {
       }
     }
 
-    const requiredIndexes = <String>[
-      'idx_event_kind_created_at',
-      'idx_event_pubkey_created_at',
-      'idx_event_pubkey_kind_d_tag_created_at',
-      'idx_event_created_at',
-      'idx_event_expire_at',
-      'idx_dm_reactions_unique_live',
-      'idx_pending_product_events_owner',
-      'idx_personal_reactions_addressable_id',
-      'idx_notification_owner_timestamp',
-    ];
-
-    for (final index in requiredIndexes) {
+    for (final index in legacyV1NormalizationRepairIndexes) {
       if (!await _indexExists(index)) {
         return true;
       }

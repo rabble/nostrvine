@@ -2935,6 +2935,53 @@
       "references": [],
       "type": "table",
       "data": {
+        "name": "seen_videos",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "video_id",
+            "getter_name": "videoId",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "first_seen_at",
+            "getter_name": "firstSeenAt",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "last_seen_at",
+            "getter_name": "lastSeenAt",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [],
+        "explicit_pk": [
+          "video_id"
+        ]
+      }
+    },
+    {
+      "id": 25,
+      "references": [],
+      "type": "table",
+      "data": {
         "name": "vanished_profiles",
         "was_declared_in_moor": false,
         "columns": [
@@ -3182,6 +3229,15 @@
         {
           "dialect": "sqlite",
           "sql": "CREATE TABLE IF NOT EXISTS \"identity_verifications\" (\"pubkey\" TEXT NOT NULL, \"verified_claims_json\" TEXT NOT NULL, \"checked_at_floor\" INTEGER NOT NULL, PRIMARY KEY (\"pubkey\"));"
+        }
+      ]
+    },
+    {
+      "name": "seen_videos",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"seen_videos\" (\"video_id\" TEXT NOT NULL, \"first_seen_at\" INTEGER NOT NULL, \"last_seen_at\" INTEGER NOT NULL, PRIMARY KEY (\"video_id\"));"
         }
       ]
     },

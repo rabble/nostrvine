@@ -13025,6 +13025,240 @@ class IdentityVerificationsCompanion
   }
 }
 
+class SeenVideos extends Table with TableInfo<SeenVideos, SeenVideosData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  SeenVideos(this.attachedDatabase, [this._alias]);
+  late final GeneratedColumn<String> videoId = GeneratedColumn<String>(
+    'video_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  late final GeneratedColumn<int> firstSeenAt = GeneratedColumn<int>(
+    'first_seen_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  late final GeneratedColumn<int> lastSeenAt = GeneratedColumn<int>(
+    'last_seen_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  @override
+  List<GeneratedColumn> get $columns => [videoId, firstSeenAt, lastSeenAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'seen_videos';
+  @override
+  Set<GeneratedColumn> get $primaryKey => {videoId};
+  @override
+  SeenVideosData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SeenVideosData(
+      videoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}video_id'],
+      )!,
+      firstSeenAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}first_seen_at'],
+      )!,
+      lastSeenAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_seen_at'],
+      )!,
+    );
+  }
+
+  @override
+  SeenVideos createAlias(String alias) {
+    return SeenVideos(attachedDatabase, alias);
+  }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(video_id)'];
+  @override
+  bool get dontWriteConstraints => true;
+}
+
+class SeenVideosData extends DataClass implements Insertable<SeenVideosData> {
+  final String videoId;
+  final int firstSeenAt;
+  final int lastSeenAt;
+  const SeenVideosData({
+    required this.videoId,
+    required this.firstSeenAt,
+    required this.lastSeenAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['video_id'] = Variable<String>(videoId);
+    map['first_seen_at'] = Variable<int>(firstSeenAt);
+    map['last_seen_at'] = Variable<int>(lastSeenAt);
+    return map;
+  }
+
+  SeenVideosCompanion toCompanion(bool nullToAbsent) {
+    return SeenVideosCompanion(
+      videoId: Value(videoId),
+      firstSeenAt: Value(firstSeenAt),
+      lastSeenAt: Value(lastSeenAt),
+    );
+  }
+
+  factory SeenVideosData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SeenVideosData(
+      videoId: serializer.fromJson<String>(json['videoId']),
+      firstSeenAt: serializer.fromJson<int>(json['firstSeenAt']),
+      lastSeenAt: serializer.fromJson<int>(json['lastSeenAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'videoId': serializer.toJson<String>(videoId),
+      'firstSeenAt': serializer.toJson<int>(firstSeenAt),
+      'lastSeenAt': serializer.toJson<int>(lastSeenAt),
+    };
+  }
+
+  SeenVideosData copyWith({
+    String? videoId,
+    int? firstSeenAt,
+    int? lastSeenAt,
+  }) => SeenVideosData(
+    videoId: videoId ?? this.videoId,
+    firstSeenAt: firstSeenAt ?? this.firstSeenAt,
+    lastSeenAt: lastSeenAt ?? this.lastSeenAt,
+  );
+  SeenVideosData copyWithCompanion(SeenVideosCompanion data) {
+    return SeenVideosData(
+      videoId: data.videoId.present ? data.videoId.value : this.videoId,
+      firstSeenAt: data.firstSeenAt.present
+          ? data.firstSeenAt.value
+          : this.firstSeenAt,
+      lastSeenAt: data.lastSeenAt.present
+          ? data.lastSeenAt.value
+          : this.lastSeenAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SeenVideosData(')
+          ..write('videoId: $videoId, ')
+          ..write('firstSeenAt: $firstSeenAt, ')
+          ..write('lastSeenAt: $lastSeenAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(videoId, firstSeenAt, lastSeenAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SeenVideosData &&
+          other.videoId == this.videoId &&
+          other.firstSeenAt == this.firstSeenAt &&
+          other.lastSeenAt == this.lastSeenAt);
+}
+
+class SeenVideosCompanion extends UpdateCompanion<SeenVideosData> {
+  final Value<String> videoId;
+  final Value<int> firstSeenAt;
+  final Value<int> lastSeenAt;
+  final Value<int> rowid;
+  const SeenVideosCompanion({
+    this.videoId = const Value.absent(),
+    this.firstSeenAt = const Value.absent(),
+    this.lastSeenAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SeenVideosCompanion.insert({
+    required String videoId,
+    required int firstSeenAt,
+    required int lastSeenAt,
+    this.rowid = const Value.absent(),
+  }) : videoId = Value(videoId),
+       firstSeenAt = Value(firstSeenAt),
+       lastSeenAt = Value(lastSeenAt);
+  static Insertable<SeenVideosData> custom({
+    Expression<String>? videoId,
+    Expression<int>? firstSeenAt,
+    Expression<int>? lastSeenAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (videoId != null) 'video_id': videoId,
+      if (firstSeenAt != null) 'first_seen_at': firstSeenAt,
+      if (lastSeenAt != null) 'last_seen_at': lastSeenAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SeenVideosCompanion copyWith({
+    Value<String>? videoId,
+    Value<int>? firstSeenAt,
+    Value<int>? lastSeenAt,
+    Value<int>? rowid,
+  }) {
+    return SeenVideosCompanion(
+      videoId: videoId ?? this.videoId,
+      firstSeenAt: firstSeenAt ?? this.firstSeenAt,
+      lastSeenAt: lastSeenAt ?? this.lastSeenAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (videoId.present) {
+      map['video_id'] = Variable<String>(videoId.value);
+    }
+    if (firstSeenAt.present) {
+      map['first_seen_at'] = Variable<int>(firstSeenAt.value);
+    }
+    if (lastSeenAt.present) {
+      map['last_seen_at'] = Variable<int>(lastSeenAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SeenVideosCompanion(')
+          ..write('videoId: $videoId, ')
+          ..write('firstSeenAt: $firstSeenAt, ')
+          ..write('lastSeenAt: $lastSeenAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class VanishedProfiles extends Table
     with TableInfo<VanishedProfiles, VanishedProfilesData> {
   @override
@@ -13250,6 +13484,7 @@ class DatabaseAtV2 extends GeneratedDatabase {
   late final IdentityEvents identityEvents = IdentityEvents(this);
   late final IdentityVerifications identityVerifications =
       IdentityVerifications(this);
+  late final SeenVideos seenVideos = SeenVideos(this);
   late final VanishedProfiles vanishedProfiles = VanishedProfiles(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -13280,6 +13515,7 @@ class DatabaseAtV2 extends GeneratedDatabase {
     pendingProfileSaves,
     identityEvents,
     identityVerifications,
+    seenVideos,
     vanishedProfiles,
   ];
   @override

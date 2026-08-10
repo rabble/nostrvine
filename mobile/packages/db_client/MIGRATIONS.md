@@ -90,18 +90,25 @@ This command:
 Edit `lib/src/database/app_database.dart` to add the migration step:
 
 ```dart
-extension Migrations on GeneratedDatabase {
-  OnUpgrade get _schemaUpgrade => stepByStep(
-    from2To3: (m, schema) async {
+MigrationStrategy get migration => MigrationStrategy(
+  onCreate: (m) async {
+    await m.createAll();
+    await _normalizeLegacyV1Schema();
+  },
+  onUpgrade: (m, from, to) async {
+    if (from < 3) {
       await m.alterTable(
         TableMigration(
-          schema.nostrEvents,
-          newColumns: [schema.nostrEvents.newColumn],
+          nostrEvents,
+          newColumns: [nostrEvents.newColumn],
         ),
       );
-    },
-  );
-}
+    }
+  },
+  beforeOpen: (details) async {
+    // Keep startup cleanup and guarded recovery here.
+  },
+);
 ```
 
 For schema changes that need custom SQL or idempotent repair, add that logic to
@@ -237,7 +244,7 @@ targets:
 
 1. Ensure schema version matches the latest `drift_schema_vN.json`
 2. Run `dart run drift_dev make-migrations` to regenerate files
-3. Check that migration logic in `_schemaUpgrade` handles all versions
+3. Check that migration logic in `MigrationStrategy.onUpgrade` handles all versions
 
 ### Generated files out of date
 

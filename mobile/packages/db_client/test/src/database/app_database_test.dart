@@ -409,6 +409,23 @@ void main() {
         );
       });
 
+      test('legacy normalization fixtures match recovery probe lists', () {
+        expect(
+          legacyV1NormalizationRepairTables,
+          unorderedEquals(_v1NormalizationTables),
+          reason:
+              'the v2 recovery probe must check every table that legacy v1 '
+              'normalization can recreate',
+        );
+        expect(
+          legacyV1NormalizationRepairIndexes,
+          unorderedEquals(_v1NormalizationRepairIndexes),
+          reason:
+              'the v2 recovery probe must check every index that legacy v1 '
+              'normalization owns as recovery-critical',
+        );
+      });
+
       test('schema parity — fresh-install matches runtime CREATE-IF-NOT-EXISTS '
           'path column-for-column and index-for-index', () async {
         // The `outgoing_dms` table is defined by Drift for fresh installs
@@ -1735,6 +1752,7 @@ const _v1NormalizationTables = <String>[
   'identity_events',
   'identity_verifications',
   'vanished_profiles',
+  'seen_videos',
 ];
 
 /// `event` indexes owned by the normalization SQL rather than by Drift's
@@ -1746,6 +1764,16 @@ const _v1NormalizationEventIndexes = <String>[
   'idx_event_pubkey_kind_d_tag_created_at',
   'idx_event_created_at',
   'idx_event_expire_at',
+];
+
+/// Recovery-critical indexes owned by normalization SQL.
+const _v1NormalizationRepairIndexes = <String>[
+  ..._v1NormalizationEventIndexes,
+  'idx_dm_reactions_unique_live',
+  'idx_pending_product_events_owner',
+  'idx_personal_reactions_addressable_id',
+  'idx_notification_owner_timestamp',
+  'idx_seen_videos_last_seen_at',
 ];
 
 /// The set of column names on [table] per `pragma table_info`.

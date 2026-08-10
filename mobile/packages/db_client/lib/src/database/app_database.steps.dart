@@ -33,6 +33,7 @@ final class Schema2 extends i0.VersionedSchema {
     pendingProfileSaves,
     identityEvents,
     identityVerifications,
+    seenVideos,
     vanishedProfiles,
   ];
   late final Shape0 event = Shape0(
@@ -540,13 +541,24 @@ final class Schema2 extends i0.VersionedSchema {
     ),
     alias: null,
   );
-  late final Shape24 vanishedProfiles = Shape24(
+  late final Shape24 seenVideos = Shape24(
+    source: i0.VersionedTable(
+      entityName: 'seen_videos',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(video_id)'],
+      columns: [_column_146, _column_167, _column_168],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape25 vanishedProfiles = Shape25(
     source: i0.VersionedTable(
       entityName: 'vanished_profiles',
       withoutRowId: false,
       isStrict: false,
       tableConstraints: ['PRIMARY KEY(pubkey)'],
-      columns: [_column_1, _column_167],
+      columns: [_column_1, _column_169],
       attachedDatabase: database,
     ),
     alias: null,
@@ -2527,13 +2539,40 @@ i1.GeneratedColumn<int> _column_166(String aliasedName) =>
 
 class Shape24 extends i0.VersionedTable {
   Shape24({required super.source, required super.alias}) : super.aliased();
+  i1.GeneratedColumn<String> get videoId =>
+      columnsByName['video_id']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get firstSeenAt =>
+      columnsByName['first_seen_at']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<int> get lastSeenAt =>
+      columnsByName['last_seen_at']! as i1.GeneratedColumn<int>;
+}
+
+i1.GeneratedColumn<int> _column_167(String aliasedName) =>
+    i1.GeneratedColumn<int>(
+      'first_seen_at',
+      aliasedName,
+      false,
+      type: i1.DriftSqlType.int,
+      $customConstraints: 'NOT NULL',
+    );
+i1.GeneratedColumn<int> _column_168(String aliasedName) =>
+    i1.GeneratedColumn<int>(
+      'last_seen_at',
+      aliasedName,
+      false,
+      type: i1.DriftSqlType.int,
+      $customConstraints: 'NOT NULL',
+    );
+
+class Shape25 extends i0.VersionedTable {
+  Shape25({required super.source, required super.alias}) : super.aliased();
   i1.GeneratedColumn<String> get pubkey =>
       columnsByName['pubkey']! as i1.GeneratedColumn<String>;
   i1.GeneratedColumn<int> get detectedAt =>
       columnsByName['detected_at']! as i1.GeneratedColumn<int>;
 }
 
-i1.GeneratedColumn<int> _column_167(String aliasedName) =>
+i1.GeneratedColumn<int> _column_169(String aliasedName) =>
     i1.GeneratedColumn<int>(
       'detected_at',
       aliasedName,
