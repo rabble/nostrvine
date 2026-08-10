@@ -20,12 +20,11 @@ updates:
       prefix: "ci(deps)"
     labels:
       - "dependencies"
-    # `reviewers:` was removed from dependabot.yml in favour of CODEOWNERS, and
-    # this repo has no CODEOWNERS file GitHub actually reads (mobile/docs/CODEOWNERS
-    # is not a path GitHub honours; tracked in #6994), so assignment is the only
-    # working handle.
-    assignees:
-      - "realmeylisdev"
+    # No `assignees:` on purpose — these PRs are reviewed like any other, off the
+    # `dependencies` label, rather than landing on one person. `reviewers:` was
+    # removed from the dependabot schema in favour of CODEOWNERS, so re-adding it
+    # here does nothing; routing to an owner would need a real CODEOWNERS file at
+    # a path GitHub reads (mobile/docs/CODEOWNERS is not one).
     groups:
       # One PR per week for the routine churn; majors still arrive individually
       # because they are the ones that actually need reading.
