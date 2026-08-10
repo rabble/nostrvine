@@ -11617,6 +11617,19 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return 'Да премахнем ли връзката с $platform?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity вече няма да се показва в профила ти. Можеш да го свържеш пак по-късно, но ще трябва да влезеш отново или да публикуваш нов линк за потвърждение.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'Премахни връзката';
+
+  @override
   String verifyLinkSemanticLabel(String platform) {
     return 'Свържи профила си в $platform';
   }

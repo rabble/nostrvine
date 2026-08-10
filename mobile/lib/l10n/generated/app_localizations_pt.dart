@@ -11588,6 +11588,19 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return 'Desvincular $platform?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity deixa de aparecer no seu perfil. Você pode vincular de novo depois, mas vai precisar entrar na conta ou publicar uma prova nova.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'Desvincular';
+
+  @override
   String verifyLinkSemanticLabel(String platform) {
     return 'Vincular sua conta do $platform';
   }

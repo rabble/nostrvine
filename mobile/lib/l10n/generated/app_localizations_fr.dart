@@ -11661,6 +11661,19 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return 'Délier $platform ?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity n\'apparaîtra plus sur ton profil. Tu pourras le relier plus tard, mais il faudra te reconnecter ou publier une nouvelle preuve.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'Délier';
+
+  @override
   String verifyLinkSemanticLabel(String platform) {
     return 'Lier ton compte $platform';
   }

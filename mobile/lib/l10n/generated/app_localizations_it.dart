@@ -11624,6 +11624,19 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return 'Scollegare $platform?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity non comparirà più sul tuo profilo. Puoi ricollegarlo più avanti, ma dovrai accedere di nuovo o pubblicare una nuova prova.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'Scollega';
+
+  @override
   String verifyLinkSemanticLabel(String platform) {
     return 'Collega il tuo account $platform';
   }

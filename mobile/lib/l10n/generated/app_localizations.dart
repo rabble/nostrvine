@@ -19762,6 +19762,24 @@ abstract class AppLocalizations {
   /// **'Unlink {platform} account {identity}'**
   String verifyUnlinkSemanticLabel(String platform, String identity);
 
+  /// Title of the sheet confirming an account unlink. {platform} is the platform's display name.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlink {platform}?'**
+  String verifyUnlinkConfirmTitle(String platform);
+
+  /// Body of the sheet confirming an account unlink. {identity} is the handle being unlinked.
+  ///
+  /// In en, this message translates to:
+  /// **'{identity} stops showing on your profile. You can link it again later, but you will have to sign in or post a new proof.'**
+  String verifyUnlinkConfirmSubtitle(String identity);
+
+  /// Destructive confirm button on the sheet confirming an account unlink.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlink'**
+  String get verifyUnlinkConfirmCta;
+
   /// Screen reader label for a row that opens the flow for linking one platform.
   ///
   /// In en, this message translates to:

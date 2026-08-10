@@ -11029,6 +11029,19 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return '$platform の連携を解除する?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity はプロフィールに表示されなくなるよ。あとでまた連携できるけど、もう一度ログインするか、新しい証明を投稿する必要があるよ。';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => '連携を解除';
+
+  @override
   String verifyLinkSemanticLabel(String platform) {
     return '$platform のアカウントを連携';
   }

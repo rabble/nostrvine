@@ -202,20 +202,46 @@ void main() {
       );
     });
 
-    testWidgets('unlinks the tapped account', (tester) async {
-      await pump(tester, ready());
-
+    /// Taps the trash affordance on the row showing [identity].
+    Future<void> tapUnlink(WidgetTester tester, String identity) async {
       await tester.tap(
         find.descendant(
           of: find.ancestor(
-            of: find.text('jack'),
+            of: find.text(identity),
             matching: find.byType(VerifyClaimRow),
           ),
           matching: find.byType(DivineIconButton),
         ),
       );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('unlinks the tapped account once confirmed', (tester) async {
+      await pump(tester, ready());
+
+      await tapUnlink(tester, 'jack');
+      // Unlinking also revokes the verifier's OAuth login, so the tap asks
+      // first rather than acting.
+      verifyNever(() => cubit.removeClaim(any()));
+      expect(find.text(l10n.verifyUnlinkConfirmTitle('Twitter / X')), findsOne);
+
+      await tester.tap(find.text(l10n.verifyUnlinkConfirmCta));
+      await tester.pumpAndSettle();
 
       verify(() => cubit.removeClaim(_twitter)).called(1);
+    });
+
+    testWidgets('keeps the account when the unlink is declined', (
+      tester,
+    ) async {
+      await pump(tester, ready());
+
+      await tapUnlink(tester, 'jack');
+      await tester.tap(find.text(l10n.commonCancel));
+      await tester.pumpAndSettle();
+
+      verifyNever(() => cubit.removeClaim(any()));
+      expect(find.text('jack'), findsOne);
     });
 
     /// Drives the state change the error listener reacts to.

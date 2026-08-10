@@ -11465,6 +11465,19 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return 'Lepas tautan $platform?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity tidak akan muncul lagi di profilmu. Kamu bisa menautkannya lagi nanti, tapi kamu harus masuk lagi atau memposting bukti baru.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'Lepas tautan';
+
+  @override
   String verifyLinkSemanticLabel(String platform) {
     return 'Tautkan akun $platform kamu';
   }

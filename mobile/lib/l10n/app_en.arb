@@ -7004,6 +7004,24 @@
       "identity": {"type": "String", "example": "octocat"}
     }
   },
+  "verifyUnlinkConfirmTitle": "Unlink {platform}?",
+  "@verifyUnlinkConfirmTitle": {
+    "description": "Title of the sheet confirming an account unlink. {platform} is the platform's display name.",
+    "placeholders": {
+      "platform": {"type": "String", "example": "GitHub"}
+    }
+  },
+  "verifyUnlinkConfirmSubtitle": "{identity} stops showing on your profile. You can link it again later, but you will have to sign in or post a new proof.",
+  "@verifyUnlinkConfirmSubtitle": {
+    "description": "Body of the sheet confirming an account unlink. {identity} is the handle being unlinked.",
+    "placeholders": {
+      "identity": {"type": "String", "example": "octocat"}
+    }
+  },
+  "verifyUnlinkConfirmCta": "Unlink",
+  "@verifyUnlinkConfirmCta": {
+    "description": "Destructive confirm button on the sheet confirming an account unlink."
+  },
   "verifyLinkSemanticLabel": "Link your {platform} account",
   "@verifyLinkSemanticLabel": {
     "description": "Screen reader label for a row that opens the flow for linking one platform.",

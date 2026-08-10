@@ -11058,6 +11058,19 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return '$platform 연결을 해제할까?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity이(가) 프로필에 더 이상 표시되지 않아. 나중에 다시 연결할 수 있지만, 그때는 다시 로그인하거나 새 증명을 게시해야 해.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => '연결 해제';
+
+  @override
   String verifyLinkSemanticLabel(String platform) {
     return '$platform 계정 연결';
   }

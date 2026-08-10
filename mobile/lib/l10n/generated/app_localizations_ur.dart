@@ -11509,6 +11509,19 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return '$platform کا جوڑ ختم کریں؟';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity اب آپ کے پروفائل پر نظر نہیں آئے گا۔ آپ بعد میں اسے دوبارہ جوڑ سکتے ہیں، لیکن پھر آپ کو دوبارہ سائن ان کرنا ہوگا یا نیا ثبوت پوسٹ کرنا ہوگا۔';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'جوڑ ختم کریں';
+
+  @override
   String verifyLinkSemanticLabel(String platform) {
     return 'اپنا $platform اکاؤنٹ جوڑیں';
   }

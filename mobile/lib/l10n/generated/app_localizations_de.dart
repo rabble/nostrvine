@@ -11634,6 +11634,19 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return '$platform trennen?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity wird nicht mehr in deinem Profil angezeigt. Du kannst das Konto später wieder verknüpfen, musst dich dann aber neu anmelden oder einen neuen Nachweis posten.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'Trennen';
+
+  @override
   String verifyLinkSemanticLabel(String platform) {
     return 'Dein $platform-Konto verknüpfen';
   }

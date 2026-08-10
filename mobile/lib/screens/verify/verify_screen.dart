@@ -214,7 +214,7 @@ class _VerifyContent extends StatelessWidget {
               isRemoving: state.isRemoving(claim),
               onRemove: state.removingKey != null
                   ? null
-                  : () => context.read<VerifyCubit>().removeClaim(claim),
+                  : () => _confirmRemove(context, claim),
             ),
           const SizedBox(height: 24),
         ],
@@ -234,6 +234,30 @@ class _VerifyContent extends StatelessWidget {
             ),
       ],
     );
+  }
+
+  /// Confirms before unlinking.
+  ///
+  /// One tap on the row's trash icon would otherwise both drop the `i` tag and
+  /// revoke the verifier's cached OAuth login, so a mis-tap costs a full
+  /// sign-in — the only destructive step in this flow that the user cannot
+  /// undo by pressing the same button again.
+  Future<void> _confirmRemove(BuildContext context, IdentityClaim claim) async {
+    final cubit = context.read<VerifyCubit>();
+    final l10n = context.l10n;
+    final confirmed = await VineBottomSheetPrompt.show<bool>(
+      context: context,
+      sticker: .alert,
+      title: l10n.verifyUnlinkConfirmTitle(verifyPlatformLabel(claim.platform)),
+      subtitle: l10n.verifyUnlinkConfirmSubtitle(claim.identity),
+      primaryButtonText: l10n.verifyUnlinkConfirmCta,
+      primaryButtonType: DivineButtonType.error,
+      onPrimaryPressed: () => Navigator.of(context).pop(true),
+      secondaryButtonText: l10n.commonCancel,
+      onSecondaryPressed: () => Navigator.of(context).pop(false),
+    );
+    if (confirmed != true) return;
+    await cubit.removeClaim(claim);
   }
 
   Future<void> _openConnect(

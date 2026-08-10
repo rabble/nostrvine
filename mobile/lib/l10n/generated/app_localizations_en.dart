@@ -11475,6 +11475,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return 'Unlink $platform?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity stops showing on your profile. You can link it again later, but you will have to sign in or post a new proof.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'Unlink';
+
+  @override
   String verifyLinkSemanticLabel(String platform) {
     return 'Link your $platform account';
   }

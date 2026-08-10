@@ -11573,6 +11573,19 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return 'Nyahpaut $platform?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity tidak akan dipaparkan lagi pada profil anda. Anda boleh memautkannya semula kemudian, tetapi anda perlu log masuk atau menyiarkan bukti baharu.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'Nyahpaut';
+
+  @override
   String verifyLinkSemanticLabel(String platform) {
     return 'Pautkan akaun $platform anda';
   }

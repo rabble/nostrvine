@@ -11724,6 +11724,19 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return 'Dezlegi $platform?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity nu va mai apărea pe profilul tău. Îl poți lega din nou mai târziu, dar va trebui să te autentifici sau să postezi o dovadă nouă.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'Dezleagă';
+
+  @override
   String verifyLinkSemanticLabel(String platform) {
     return 'Leagă contul tău de $platform';
   }

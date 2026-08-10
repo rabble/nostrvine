@@ -11253,6 +11253,19 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return 'የ$platform ግንኙነት ይቋረጥ?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity ከመገለጫህ ላይ መታየቱ ይቆማል። በኋላ እንደገና ማገናኘት ትችላለህ፣ ግን እንደገና መግባት ወይም አዲስ ማረጋገጫ መለጠፍ ይኖርብሃል።';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'ግንኙነት አቋርጥ';
+
+  @override
   String verifyLinkSemanticLabel(String platform) {
     return 'የ$platform መለያህን አገናኝ';
   }

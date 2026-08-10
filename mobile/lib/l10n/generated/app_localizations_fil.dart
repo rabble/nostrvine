@@ -11633,6 +11633,19 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return 'I-unlink ang $platform?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return 'Hindi na lalabas ang $identity sa profile mo. Puwede mo \'tong i-link ulit mamaya, pero kailangan mong mag-sign in o mag-post ng bagong proof.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'I-unlink';
+
+  @override
   String verifyLinkSemanticLabel(String platform) {
     return 'I-link ang $platform account mo';
   }

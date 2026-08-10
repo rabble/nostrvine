@@ -11505,6 +11505,19 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return 'Ta bort länken till $platform?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity visas inte längre på din profil. Du kan länka kontot igen senare, men då behöver du logga in på nytt eller posta ett nytt bevis.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'Ta bort länken';
+
+  @override
   String verifyLinkSemanticLabel(String platform) {
     return 'Länka ditt $platform-konto';
   }

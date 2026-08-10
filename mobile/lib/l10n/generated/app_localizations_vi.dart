@@ -11516,6 +11516,19 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return 'Hủy liên kết $platform?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity sẽ không còn hiển thị trên hồ sơ của bạn. Bạn có thể liên kết lại sau, nhưng sẽ phải đăng nhập lại hoặc đăng một bằng chứng mới.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'Hủy liên kết';
+
+  @override
   String verifyLinkSemanticLabel(String platform) {
     return 'Liên kết tài khoản $platform của bạn';
   }

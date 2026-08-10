@@ -11559,6 +11559,19 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return '$platform ontkoppelen?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity wordt niet meer op je profiel getoond. Je kunt het later opnieuw koppelen, maar dan moet je opnieuw inloggen of een nieuw bewijs posten.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'Ontkoppelen';
+
+  @override
   String verifyLinkSemanticLabel(String platform) {
     return 'Je $platform-account koppelen';
   }

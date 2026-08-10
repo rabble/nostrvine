@@ -10896,6 +10896,19 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return '解除关联 $platform？';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity 将不再显示在你的资料页上。之后可以重新关联，但需要再登录一次，或者重新发一条证明帖。';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => '解除关联';
+
+  @override
   String verifyLinkSemanticLabel(String platform) {
     return '关联你的 $platform 账号';
   }

@@ -11417,6 +11417,19 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return 'فك ارتباط $platform؟';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return 'لن يظهر $identity في ملفك الشخصي بعد الآن. يمكنك ربطه مرة أخرى لاحقًا، لكن سيتعين عليك تسجيل الدخول أو نشر إثبات جديد.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'فك الارتباط';
+
+  @override
   String verifyLinkSemanticLabel(String platform) {
     return 'اربط حسابك على $platform';
   }

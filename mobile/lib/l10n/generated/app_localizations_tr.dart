@@ -11464,6 +11464,19 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return '$platform bağlantısı kaldırılsın mı?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity artık profilinde görünmeyecek. Daha sonra tekrar bağlayabilirsin ama yeniden giriş yapman ya da yeni bir kanıt paylaşman gerekecek.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'Bağlantıyı kaldır';
+
+  @override
   String verifyLinkSemanticLabel(String platform) {
     return '$platform hesabını bağla';
   }
