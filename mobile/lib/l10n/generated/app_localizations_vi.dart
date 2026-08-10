@@ -8357,12 +8357,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get commentsEmptySubtitle => 'Khai tiệc đi nào!';
 
   @override
-  String get commentsHeaderTitle => 'Bình luận';
-
-  @override
-  String get commentsHeaderCloseLabel => 'Đóng bình luận';
-
-  @override
   String get draftUntitled => 'Chưa đặt tên';
 
   @override

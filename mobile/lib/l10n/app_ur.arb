@@ -5005,14 +5005,6 @@
   "@commentsEmptySubtitle": {
     "description": "Empty state encouragement shown below the no-comments title, prompting the viewer to post the first comment."
   },
-  "commentsHeaderTitle": "تبصرے",
-  "@commentsHeaderTitle": {
-    "description": "Title at the top of the comments draggable sheet."
-  },
-  "commentsHeaderCloseLabel": "تبصرے بند کریں",
-  "@commentsHeaderCloseLabel": {
-    "description": "Accessibility label for the close button on the comments sheet header."
-  },
   "draftUntitled": "بلا عنوان",
   "contentWarningNone": "کوئی نہیں",
   "textBackgroundNone": "کوئی نہیں",

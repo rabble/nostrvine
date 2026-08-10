@@ -14388,18 +14388,6 @@ abstract class AppLocalizations {
   /// **'Get the party started!'**
   String get commentsEmptySubtitle;
 
-  /// Title at the top of the comments draggable sheet.
-  ///
-  /// In en, this message translates to:
-  /// **'Comments'**
-  String get commentsHeaderTitle;
-
-  /// Accessibility label for the close button on the comments sheet header.
-  ///
-  /// In en, this message translates to:
-  /// **'Close comments'**
-  String get commentsHeaderCloseLabel;
-
   /// No description provided for @draftUntitled.
   ///
   /// In en, this message translates to:

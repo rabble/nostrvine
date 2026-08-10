@@ -5005,14 +5005,6 @@
   "@commentsEmptySubtitle": {
     "description": "Empty state encouragement shown below the no-comments title, prompting the viewer to post the first comment."
   },
-  "commentsHeaderTitle": "评论",
-  "@commentsHeaderTitle": {
-    "description": "Title at the top of the comments draggable sheet."
-  },
-  "commentsHeaderCloseLabel": "关闭评论",
-  "@commentsHeaderCloseLabel": {
-    "description": "Accessibility label for the close button on the comments sheet header."
-  },
   "draftUntitled": "未命名",
   "contentWarningNone": "无",
   "textBackgroundNone": "无",

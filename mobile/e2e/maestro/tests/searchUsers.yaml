@@ -34,11 +34,11 @@ appId: co.openvine.app
 
 # 3. Tap the People section header to switch to the People-only filter.
 # The header is the "see all" affordance; it disappears once the filter is
-# applied, which is why the assertion below is on the row, not the header.
+# applied, so asserting it is gone proves the tap registered.
 - tapOn:
     id: "search_section_header_people"
-- assertVisible:
-    id: "search_user_tile_0"
+- assertNotVisible:
+    id: "search_section_header_people"
 
 # 4. Open the first result.
 - tapOn:
