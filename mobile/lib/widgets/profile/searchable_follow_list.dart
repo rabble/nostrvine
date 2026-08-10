@@ -98,7 +98,7 @@ class _SearchableFollowListState extends State<SearchableFollowList> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const .symmetric(horizontal: 16),
           child: DivineSearchBar(
             controller: _controller,
             hintText: context.l10n.exploreSearchHint,
