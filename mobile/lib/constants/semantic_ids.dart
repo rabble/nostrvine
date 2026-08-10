@@ -66,6 +66,22 @@ abstract class SemanticIds {
   static const String profileBackButton = 'profile_back_button';
   static const String profileMoreButton = 'profile_more_button';
 
+  /// Profile content tabs. The bar is icon-only and its tab count varies by
+  /// profile (6 on the own profile, 5 on another user's), so tests address a
+  /// tab by identifier rather than by position or by the compound
+  /// "Tab N of M" label Material generates.
+  static const String profileVideosTab = 'videos_tab';
+  static const String profileCollabsTab = 'collabs_tab';
+  static const String profileLikedTab = 'liked_tab';
+  static const String profileRepostsTab = 'reposted_tab';
+  static const String profileListsTab = 'lists_tab';
+  static const String profileCommentsTab = 'comments_tab';
+
+  static String likedVideoThumbnail(int index) =>
+      'liked_video_thumbnail_$index';
+  static String savedVideoThumbnail(int index) =>
+      'saved_video_thumbnail_$index';
+
   static String listCard(int index) => 'list_card_$index';
 
   static String categoryTile(int index) => 'category_tile_$index';
