@@ -2519,6 +2519,31 @@ void main() {
         },
       );
 
+      test('counts a reaction spanning two chunks once', () async {
+        // Each chunk is its own queryEvents call with its own dedup box, so a
+        // reaction that e-tags a target in chunk 0 and one in chunk 1 comes
+        // back from both. The count loop adds per e-tag occurrence, so
+        // without a dedup across chunks both targets score 2.
+        final eventIds = [for (var i = 0; i < 600; i++) 'event_id_$i'];
+        final reaction = createMockReaction(
+          id: 'reaction_spanning_chunks',
+          targetEventId: 'event_id_0',
+          tags: [
+            ['e', 'event_id_0'],
+            ['e', 'event_id_500'],
+          ],
+        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [reaction]);
+
+        repository = createRepository();
+        final counts = await repository.getLikeCounts(eventIds);
+
+        expect(counts['event_id_0'], 1);
+        expect(counts['event_id_500'], 1);
+      });
+
       test('handles events with non-list or empty tags', () async {
         const eventId = 'event_id_1234567890abcdef01234567890abcdef';
 

@@ -1957,19 +1957,30 @@ class LikesRepository {
 
   /// Events of [kind] targeting any of [eventIds] via `#e`, chunked so no
   /// single REQ frame can exceed the relay's message cap.
+  ///
+  /// Deduplicates by event id once there is more than one chunk. Each chunk
+  /// is its own `queryEvents` call with its own dedup box, so an event that
+  /// `#e`-tags targets in two different chunks comes back from both — and
+  /// [getLikeCounts] counts per e-tag occurrence, so a raw concatenation
+  /// would score that reaction twice. A single chunk is already deduped by
+  /// the client.
   Future<List<Event>> _queryEventsByEIds(
     List<String> eventIds, {
     required int kind,
   }) async {
     if (eventIds.isEmpty) return const <Event>[];
 
-    final chunks = await Future.wait([
+    final results = await Future.wait([
       for (final chunk in _chunkStrings(eventIds, _reqEidChunkSize))
         _nostrClient.queryEvents([
           Filter(kinds: [kind], e: chunk),
         ]),
     ]);
-    return [for (final chunk in chunks) ...chunk];
+    if (results.length == 1) return results.first;
+    return {
+      for (final chunk in results)
+        for (final event in chunk) event.id: event,
+    }.values.toList();
   }
 
   List<List<String>> _chunkStrings(List<String> values, int chunkSize) {
