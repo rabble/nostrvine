@@ -6,6 +6,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -155,6 +156,25 @@ void main() {
         find.widgetWithText(DivineButton, l10n.badgeEditorArtworkAdd),
       );
       expect(artwork.onPressed, isNull);
+    });
+
+    testWidgets('identifier helper fits without being cut off', (tester) async {
+      // At one line this rendered as "Part of the badge's address, so it stays
+      // put once the badge e…", cutting the clause that carries the meaning.
+      // A phone-width surface is the point: at the 800px test default the
+      // helper fits on one line and the assertion proves nothing.
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      final helper = tester.renderObject<RenderParagraph>(
+        find.text(l10n.badgeEditorIdentifierHelp),
+      );
+      expect(helper.didExceedMaxLines, isFalse);
     });
 
     testWidgets('warns instead of replacing a badge with the same name', (
