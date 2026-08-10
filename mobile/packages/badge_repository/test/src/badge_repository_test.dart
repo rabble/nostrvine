@@ -95,7 +95,6 @@ void main() {
           issuerPubkey: _pubkey(2),
           definitionCoordinate: coordinate,
           recipients: [_pubkey(1)],
-          createdAt: 1000,
         );
         final newerAward = _awardEvent(
           id: _eventId(2),
@@ -1629,7 +1628,6 @@ void main() {
               issuerPubkey: _pubkey(2),
               definitionCoordinate: coordinate.value,
               recipients: [_pubkey(1)],
-              createdAt: 1000,
             ),
             _awardEvent(
               id: _eventId(71),
