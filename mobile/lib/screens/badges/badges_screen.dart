@@ -151,6 +151,10 @@ class _BadgesTabBar extends StatelessWidget {
 }
 
 /// Shared scaffolding for a tab: pull to refresh, loading, and error states.
+///
+/// [builder] returns slivers rather than widgets so a tab can hand back a
+/// lazily built list. The issued tab needs that: a popular badge can carry
+/// thousands of recipients, and every recipient row resolves a profile.
 class _BadgesTabBody extends StatelessWidget {
   const _BadgesTabBody({required this.builder});
 
@@ -164,31 +168,56 @@ class _BadgesTabBody extends StatelessWidget {
           color: VineTheme.onPrimary,
           backgroundColor: VineTheme.vineGreen,
           onRefresh: () => context.read<BadgesCubit>().refresh(),
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-            children: [
-              Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 640),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (state.actionStatus == BadgeActionStatus.error)
-                        _ErrorNote(context.l10n.badgesUpdateError),
-                      if (state.status == BadgesStatus.loading)
-                        const _BadgesLoadingCard()
-                      else if (state.status == BadgesStatus.error)
-                        const _BadgesErrorCard()
-                      else
-                        ...builder(context, state),
-                    ],
+          // Constrains and centres the viewport itself; a sliver has no
+          // max-width equivalent, and wrapping each one would repeat the
+          // centring on every list.
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 640),
+              child: CustomScrollView(
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                    sliver: SliverMainAxisGroup(
+                      slivers: [
+                        if (state.actionStatus == BadgeActionStatus.error)
+                          SliverToBoxAdapter(
+                            child: _ErrorNote(context.l10n.badgesUpdateError),
+                          ),
+                        if (state.status == BadgesStatus.loading)
+                          const SliverToBoxAdapter(child: _BadgesLoadingCard())
+                        else if (state.status == BadgesStatus.error)
+                          const SliverToBoxAdapter(child: _BadgesErrorCard())
+                        else
+                          ...builder(context, state),
+                      ],
+                    ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         );
       },
+    );
+  }
+}
+
+/// A sliver rendering one spaced card per item.
+class _BadgeCardList extends StatelessWidget {
+  const _BadgeCardList({required this.itemCount, required this.itemBuilder});
+
+  final int itemCount;
+  final Widget Function(BuildContext context, int index) itemBuilder;
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverList.builder(
+      itemCount: itemCount,
+      itemBuilder: (context, index) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: itemBuilder(context, index),
+      ),
     );
   }
 }
@@ -201,16 +230,22 @@ class _AwardedTab extends StatelessWidget {
     return _BadgesTabBody(
       builder: (context, state) => [
         if (state.awarded.isEmpty)
-          _EmptyPanel(
-            title: context.l10n.badgesAwardedEmptyTitle,
-            subtitle: context.l10n.badgesAwardedEmptySubtitle,
+          SliverToBoxAdapter(
+            child: _EmptyPanel(
+              title: context.l10n.badgesAwardedEmptyTitle,
+              subtitle: context.l10n.badgesAwardedEmptySubtitle,
+            ),
           )
         else
-          for (final award in state.awarded) ...[
-            _AwardedBadgeCard(award: award, actionStatus: state.actionStatus),
-            const SizedBox(height: 12),
-          ],
-        if (state.hidden.isNotEmpty) _HiddenAwardsSection(hidden: state.hidden),
+          _BadgeCardList(
+            itemCount: state.awarded.length,
+            itemBuilder: (context, index) => _AwardedBadgeCard(
+              award: state.awarded[index],
+              actionStatus: state.actionStatus,
+            ),
+          ),
+        if (state.hidden.isNotEmpty)
+          SliverToBoxAdapter(child: _HiddenAwardsSection(hidden: state.hidden)),
       ],
     );
   }
@@ -224,37 +259,76 @@ class _CreatedTab extends StatelessWidget {
     return _BadgesTabBody(
       builder: (context, state) => [
         if (state.created.isEmpty)
-          _EmptyPanel(
-            title: context.l10n.badgesCreatedEmptyTitle,
-            subtitle: context.l10n.badgesCreatedEmptySubtitle,
+          SliverToBoxAdapter(
+            child: _EmptyPanel(
+              title: context.l10n.badgesCreatedEmptyTitle,
+              subtitle: context.l10n.badgesCreatedEmptySubtitle,
+            ),
           )
         else
-          for (final badge in state.created) ...[
-            _CreatedBadgeCard(badge: badge),
-            const SizedBox(height: 12),
-          ],
+          _BadgeCardList(
+            itemCount: state.created.length,
+            itemBuilder: (context, index) =>
+                _CreatedBadgeCard(badge: state.created[index]),
+          ),
       ],
     );
   }
 }
 
-class _IssuedTab extends StatelessWidget {
+class _IssuedTab extends StatefulWidget {
   const _IssuedTab();
+
+  @override
+  State<_IssuedTab> createState() => _IssuedTabState();
+}
+
+class _IssuedTabState extends State<_IssuedTab> {
+  /// Coordinates of the badges whose recipient list is open.
+  final _expanded = <String>{};
+
+  void _toggle(String coordinate) {
+    setState(() {
+      if (!_expanded.remove(coordinate)) _expanded.add(coordinate);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return _BadgesTabBody(
       builder: (context, state) => [
         if (state.issued.isEmpty)
-          _EmptyPanel(
-            title: context.l10n.badgesIssuedEmptyTitle,
-            subtitle: context.l10n.badgesIssuedEmptySubtitle,
+          SliverToBoxAdapter(
+            child: _EmptyPanel(
+              title: context.l10n.badgesIssuedEmptyTitle,
+              subtitle: context.l10n.badgesIssuedEmptySubtitle,
+            ),
           )
         else
-          for (final badge in state.issued) ...[
-            _IssuedBadgeCard(badge: badge),
-            const SizedBox(height: 12),
-          ],
+          for (final badge in state.issued)
+            // One sliver group per badge rather than one flattened list, so
+            // a badge's header and its recipients stay adjacent without the
+            // index arithmetic a single delegate would need.
+            SliverMainAxisGroup(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: _IssuedBadgeCard(
+                    badge: badge,
+                    isExpanded: _expanded.contains(badge.coordinate),
+                    onToggle: () => _toggle(badge.coordinate),
+                  ),
+                ),
+                if (_expanded.contains(badge.coordinate))
+                  SliverList.builder(
+                    itemCount: badge.recipients.length,
+                    itemBuilder: (context, index) => BadgeRecipientRow(
+                      pubkey: badge.recipients[index].pubkey,
+                      isAccepted: badge.recipients[index].isAccepted,
+                    ),
+                  ),
+                const SliverToBoxAdapter(child: SizedBox(height: 12)),
+              ],
+            ),
       ],
     );
   }
@@ -517,39 +591,57 @@ class _CreatedBadgeCard extends StatelessWidget {
   }
 }
 
+/// Header for one issued badge; the recipients themselves are a sibling
+/// sliver so they only build once opened, and only as far as they scroll.
 class _IssuedBadgeCard extends StatelessWidget {
-  const _IssuedBadgeCard({required this.badge});
+  const _IssuedBadgeCard({
+    required this.badge,
+    required this.isExpanded,
+    required this.onToggle,
+  });
 
   final IssuedBadgeViewData badge;
+  final bool isExpanded;
+  final VoidCallback onToggle;
 
   @override
   Widget build(BuildContext context) {
+    final hasRecipients = badge.recipients.isNotEmpty;
     return _Panel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      onTap: hasRecipients ? onToggle : null,
+      child: Row(
+        spacing: 12,
         children: [
-          Text(
-            badge.displayName,
-            style: VineTheme.titleMediumFont(
-              color: context.vineColors.onSurface,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 6,
+              children: [
+                Text(
+                  badge.displayName,
+                  style: VineTheme.titleMediumFont(
+                    color: context.vineColors.onSurface,
+                  ),
+                ),
+                Text(
+                  hasRecipients
+                      ? context.l10n.badgesCreatedAwardSummary(
+                          badge.recipients.length,
+                        )
+                      : context.l10n.badgesIssuedNoRecipients,
+                  style: VineTheme.bodySmallFont(
+                    color: context.vineColors.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
           ),
-          if (badge.recipients.isEmpty)
-            Padding(
-              padding: const .only(top: 8),
-              child: Text(
-                context.l10n.badgesIssuedNoRecipients,
-                style: VineTheme.bodySmallFont(
-                  color: context.vineColors.onSurfaceVariant,
-                ),
-              ),
-            )
-          else
-            for (final recipient in badge.recipients)
-              BadgeRecipientRow(
-                pubkey: recipient.pubkey,
-                isAccepted: recipient.isAccepted,
-              ),
+          if (hasRecipients)
+            DivineIcon(
+              icon: isExpanded ? .caretDown : .caretRight,
+              size: 20,
+              color: context.vineColors.onSurfaceMuted,
+            ),
         ],
       ),
     );

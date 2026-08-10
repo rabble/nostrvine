@@ -156,36 +156,87 @@ class _BadgeDetailBody extends StatelessWidget {
       color: VineTheme.onPrimary,
       backgroundColor: VineTheme.vineGreen,
       onRefresh: () => context.read<BadgeDetailCubit>().refresh(),
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-        children: [
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 640),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                spacing: 20,
-                children: [
-                  _BadgeHero(detail: detail, coordinate: state.coordinate),
-                  if (state.isMissing)
-                    Text(
-                      l10n.badgeDetailMissing,
-                      style: VineTheme.bodySmallFont(
-                        color: context.vineColors.onSurfaceVariant,
+      // Constrains and centres the viewport itself; a sliver has no
+      // max-width equivalent.
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  16,
+                  16,
+                  32 + MediaQuery.viewPaddingOf(context).bottom,
+                ),
+                sliver: SliverMainAxisGroup(
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        spacing: 20,
+                        children: [
+                          _BadgeHero(
+                            detail: detail,
+                            coordinate: state.coordinate,
+                          ),
+                          if (state.isMissing)
+                            Text(
+                              l10n.badgeDetailMissing,
+                              style: VineTheme.bodySmallFont(
+                                color: context.vineColors.onSurfaceVariant,
+                              ),
+                            ),
+                          if (state.actionStatus ==
+                              BadgeDetailActionStatus.failure)
+                            Text(
+                              l10n.badgeDetailActionError,
+                              style: VineTheme.bodySmallFont(
+                                color: VineTheme.error,
+                              ),
+                            ),
+                          _BadgeActions(state: state),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 20),
+                            child: Text(
+                              l10n.badgeDetailRecipientsTitle,
+                              style: VineTheme.titleSmallFont(
+                                color: context.vineColors.primaryText,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  if (state.actionStatus == BadgeDetailActionStatus.failure)
-                    Text(
-                      l10n.badgeDetailActionError,
-                      style: VineTheme.bodySmallFont(color: VineTheme.error),
-                    ),
-                  _BadgeActions(state: state),
-                  _RecipientsSection(detail: detail),
-                ],
+                    if (detail.recipients.isEmpty)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            l10n.badgeDetailNoRecipients,
+                            style: VineTheme.bodySmallFont(
+                              color: context.vineColors.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      // Lazily built: a popular badge can carry a long
+                      // awardee list, and every row resolves a profile.
+                      SliverList.builder(
+                        itemCount: detail.recipients.length,
+                        itemBuilder: (context, index) => BadgeRecipientRow(
+                          pubkey: detail.recipients[index].pubkey,
+                          isAccepted: detail.recipients[index].isAccepted,
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -327,44 +378,6 @@ class _BadgeActions extends StatelessWidget {
     final cubit = context.read<BadgeDetailCubit>();
     await context.push<bool>(BadgeAwardScreen.pathFor(coordinate));
     await cubit.refresh();
-  }
-}
-
-class _RecipientsSection extends StatelessWidget {
-  const _RecipientsSection({required this.detail});
-
-  final BadgeDetailData detail;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          l10n.badgeDetailRecipientsTitle,
-          style: VineTheme.titleSmallFont(
-            color: context.vineColors.primaryText,
-          ),
-        ),
-        if (detail.recipients.isEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              l10n.badgeDetailNoRecipients,
-              style: VineTheme.bodySmallFont(
-                color: context.vineColors.onSurfaceVariant,
-              ),
-            ),
-          )
-        else
-          for (final recipient in detail.recipients)
-            BadgeRecipientRow(
-              pubkey: recipient.pubkey,
-              isAccepted: recipient.isAccepted,
-            ),
-      ],
-    );
   }
 }
 

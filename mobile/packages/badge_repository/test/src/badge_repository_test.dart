@@ -1049,6 +1049,86 @@ void main() {
       ]);
     });
 
+    group('accepting reflects before the relay serves the write back', () {
+      final coordinate = '30009:${_pubkey(2)}:daily-diviner';
+      late Event award;
+
+      setUp(() {
+        award = _awardEvent(
+          id: _eventId(70),
+          issuerPubkey: _pubkey(2),
+          definitionCoordinate: coordinate,
+          recipients: [_pubkey(1)],
+        );
+      });
+
+      test('a reload right after accepting shows the badge accepted', () async {
+        // The relay OKs the kind:10008 but keeps serving the previous list,
+        // which is the window the dashboard used to render as "not accepted"
+        // until the user pulled to refresh.
+        _stubQueries(nostrClient, {
+          'awarded': [award],
+          'profileCurrent:${_pubkey(1)}': [
+            _profileBadgesEvent(
+              id: _eventId(71),
+              pubkey: _pubkey(1),
+              tags: const [],
+              createdAt: 500,
+            ),
+          ],
+        });
+
+        await repository.acceptAward(
+          BadgeAwardViewData(award: Nip58BadgeParser.parseAward(award)!),
+        );
+
+        expect(
+          (await repository.loadAwardedBadges()).single.isAccepted,
+          isTrue,
+        );
+      });
+
+      test('a genuinely newer list from another device still wins', () async {
+        _stubQueries(nostrClient, {
+          'awarded': [award],
+          'profileCurrent:${_pubkey(1)}': [
+            _profileBadgesEvent(
+              id: _eventId(72),
+              pubkey: _pubkey(1),
+              tags: const [],
+              // The signer stamps the published event with createdAt 1000.
+              createdAt: 4000,
+            ),
+          ],
+        });
+
+        await repository.acceptAward(
+          BadgeAwardViewData(award: Nip58BadgeParser.parseAward(award)!),
+        );
+
+        expect(
+          (await repository.loadAwardedBadges()).single.isAccepted,
+          isFalse,
+        );
+      });
+
+      test('another account does not inherit the published list', () async {
+        _stubQueries(nostrClient, {
+          'awarded': [award],
+          'profileCurrent:${_pubkey(1)}': const [],
+        });
+        await repository.acceptAward(
+          BadgeAwardViewData(award: Nip58BadgeParser.parseAward(award)!),
+        );
+
+        final badges = await repository.loadAcceptedBadgesForProfile(
+          _pubkey(2),
+        );
+
+        expect(badges, isEmpty);
+      });
+    });
+
     group('unhideAward', () {
       test('puts a dismissed award back on the awarded list', () async {
         _stubQueries(nostrClient, {

@@ -101,6 +101,14 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Diviner of the Week'), findsOneWidget);
+      // Collapsed by default: a badge can carry thousands of recipients, and
+      // each row resolves a profile, so none of them build until asked for.
+      expect(find.byType(UserProfileTile), findsNothing);
+      expect(find.text(l10n.badgesCreatedAwardSummary(1)), findsOneWidget);
+
+      await tester.tap(find.text('Diviner of the Week'));
+      await tester.pumpAndSettle();
+
       expect(find.text(l10n.badgesRecipientAcceptedStatus), findsOneWidget);
       // Recipients render as people, not as raw keys.
       expect(find.byType(UserProfileTile), findsOneWidget);

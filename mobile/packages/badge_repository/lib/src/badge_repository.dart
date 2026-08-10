@@ -256,6 +256,20 @@ class BadgeRepository {
   final BadgeCurrentPubkeyReader _currentPubkey;
   final BadgeEventSigner _signEvent;
 
+  /// The profile badge list this repository last published, and whose it is.
+  ///
+  /// `kind:10008` is replaceable, and [NostrClient] deliberately does not
+  /// optimistically cache replaceable events — a stale copy would shadow the
+  /// real newest one. That leaves a window right after publishing where the
+  /// relay has acknowledged the event but does not serve it yet, so a reload
+  /// reads back the *previous* list and an accepted badge still renders as
+  /// unaccepted until the user refreshes by hand.
+  ///
+  /// Holding the published list here closes that window. It is not a cache
+  /// with a lifetime: a relay event that is genuinely newer still wins, so it
+  /// stops mattering as soon as the relay catches up.
+  ({String pubkey, Nip58ProfileBadges badges})? _publishedProfileBadges;
+
   Future<BadgeDashboardData> loadDashboard() async {
     final memo = _DashboardLookupMemo();
     final awardedFuture = _loadAwardedBadges(memo);
@@ -927,7 +941,22 @@ class BadgeRepository {
     ]);
     // NIP-58 treats legacy 30008/d=profile_badges as equivalent to 10008,
     // so resolve both encodings as one newest-wins profile badge list.
-    return _newestParsedProfileBadges([...results[0], ...results[1]]);
+    final fromRelays = _newestParsedProfileBadges([
+      ...results[0],
+      ...results[1],
+    ]);
+
+    final published = _publishedProfileBadges;
+    if (published == null || published.pubkey != pubkey) return fromRelays;
+    // `>=` rather than `>`: `created_at` has one-second resolution, so an
+    // accept and an undo in the same second tie, and the newest-wins sort
+    // would fall through to comparing event ids — which would hand the
+    // decision to a coin flip instead of to the write that just happened.
+    if (fromRelays != null &&
+        fromRelays.event.createdAt > published.badges.event.createdAt) {
+      return fromRelays;
+    }
+    return published.badges;
   }
 
   Future<Nip58BadgeDefinition?> _loadDefinition(String coordinate) async {
@@ -977,11 +1006,16 @@ class BadgeRepository {
         ]);
     }
 
-    await _signAndPublish(
+    final event = await _signAndPublish(
       kind: EventKind.profileBadges,
       label: 'profile badges',
       tags: tags,
     );
+
+    final published = Nip58BadgeParser.parseProfileBadges(event);
+    if (published != null) {
+      _publishedProfileBadges = (pubkey: event.pubkey, badges: published);
+    }
   }
 
   /// Signs and publishes an empty-content event, returning the signed event.
