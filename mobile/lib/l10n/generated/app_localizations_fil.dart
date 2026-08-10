@@ -10755,6 +10755,29 @@ class AppLocalizationsFil extends AppLocalizations {
       'Ginagawa pa ang subtitles. Bumalik ka mamaya.';
 
   @override
+  String get subtitleEditorNoSpeech =>
+      'Walang na-detect na salita sa video na ito, kaya walang gagawing subtitle.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'Ikaw na ang magsulat';
+
+  @override
+  String get subtitleEditorAddCue => 'Magdagdag ng linya';
+
+  @override
+  String get subtitleEditorRemoveCue => 'Alisin ang linyang ito';
+
+  @override
+  String get subtitleEditorStartLabel => 'Simula';
+
+  @override
+  String get subtitleEditorEndLabel => 'Katapusan';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'Kailangan ng bawat linya ng teksto at katapusan pagkatapos ng simula.';
+
+  @override
   String get subtitleEditorLoadError =>
       'Hindi ma-load ang subtitles. Subukan ulit.';
 

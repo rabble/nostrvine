@@ -50,7 +50,7 @@ Future<List<SubtitleCue>> subtitleCues(
       : [
           if (textTrackRef != null && textTrackRef.isNotEmpty) textTrackRef,
         ];
-  return fetchSubtitleCues(
+  final result = await fetchSubtitleCues(
     httpClient: ref.read(subtitleHttpClientProvider),
     nostrClient: ref.read(nostrServiceProvider),
     delay: ref.read(subtitlePollDelayProvider),
@@ -58,6 +58,7 @@ Future<List<SubtitleCue>> subtitleCues(
     textTrackRefs: refs,
     sha256: sha256,
   );
+  return result.cues;
 }
 
 /// Tracks global subtitle visibility (CC on/off).

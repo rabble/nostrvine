@@ -10222,6 +10222,28 @@ class AppLocalizationsKo extends AppLocalizations {
   String get subtitleEditorProcessing => '자막을 아직 생성하고 있어요. 잠시 후 다시 확인해주세요.';
 
   @override
+  String get subtitleEditorNoSpeech =>
+      '이 영상에서는 말소리가 감지되지 않았어요. 자막으로 만들 내용이 없네요.';
+
+  @override
+  String get subtitleEditorWriteOwn => '직접 쓰기';
+
+  @override
+  String get subtitleEditorAddCue => '줄 추가';
+
+  @override
+  String get subtitleEditorRemoveCue => '이 줄 삭제';
+
+  @override
+  String get subtitleEditorStartLabel => '시작';
+
+  @override
+  String get subtitleEditorEndLabel => '끝';
+
+  @override
+  String get subtitleEditorInvalidHint => '모든 줄에는 텍스트와 시작보다 늦은 종료 시간이 필요해요.';
+
+  @override
   String get subtitleEditorLoadError => '자막을 불러오지 못했어요. 다시 시도해주세요.';
 
   @override

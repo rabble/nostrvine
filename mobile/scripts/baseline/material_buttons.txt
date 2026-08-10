@@ -31,7 +31,6 @@ lib/screens/minor_account_review_screen.dart	1
 lib/screens/profile_setup/widgets/profile_setup_listeners.dart	2
 lib/screens/search_results/widgets/search_user_tile.dart	1
 lib/screens/sound_detail_screen.dart	4
-lib/screens/subtitle_editor/subtitle_editor_screen.dart	2
 lib/screens/user_list_people_screen.dart	6
 lib/screens/video_editor/voice_over_recorder_screen.dart	1
 lib/screens/video_engagement/video_engagement_list_view.dart	1

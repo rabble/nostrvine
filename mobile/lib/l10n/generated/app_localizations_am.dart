@@ -10404,6 +10404,29 @@ class AppLocalizationsAm extends AppLocalizations {
       'የትርጉም ጽሑፎች አሁንም እየተፈጠሩ ነው። ከአፍታ በኋላ ተመልሰው ይመልከቱ።';
 
   @override
+  String get subtitleEditorNoSpeech =>
+      'በዚህ ቪዲዮ ውስጥ ንግግር አልተገኘም፤ ስለዚህ የሚጻፍ ትርጉም የለም።';
+
+  @override
+  String get subtitleEditorWriteOwn => 'እራስዎ ይጻፉ';
+
+  @override
+  String get subtitleEditorAddCue => 'መስመር ያክሉ';
+
+  @override
+  String get subtitleEditorRemoveCue => 'ይህን መስመር ያስወግዱ';
+
+  @override
+  String get subtitleEditorStartLabel => 'መጀመሪያ';
+
+  @override
+  String get subtitleEditorEndLabel => 'መጨረሻ';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'እያንዳንዱ መስመር ጽሑፍና ከመጀመሪያው በኋላ የሆነ መጨረሻ ያስፈልገዋል።';
+
+  @override
   String get subtitleEditorLoadError => 'የትርጉም ጽሑፎችን መጫን አልተቻለም። እንደገና ይሞክሩ።';
 
   @override

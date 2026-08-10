@@ -10558,6 +10558,29 @@ class AppLocalizationsAr extends AppLocalizations {
       'ما زالت الترجمات قيد الإنشاء. عُد بعد لحظة.';
 
   @override
+  String get subtitleEditorNoSpeech =>
+      'لم يتم رصد أي كلام في هذا الفيديو، لذا لا يوجد ما يمكن كتابته كترجمة.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'اكتبها بنفسك';
+
+  @override
+  String get subtitleEditorAddCue => 'أضف سطرًا';
+
+  @override
+  String get subtitleEditorRemoveCue => 'احذف هذا السطر';
+
+  @override
+  String get subtitleEditorStartLabel => 'البداية';
+
+  @override
+  String get subtitleEditorEndLabel => 'النهاية';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'كل سطر يحتاج نصًا ونهاية بعد بدايته.';
+
+  @override
   String get subtitleEditorLoadError => 'تعذّر تحميل الترجمات. حاول مرّة أخرى.';
 
   @override

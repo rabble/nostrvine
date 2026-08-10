@@ -10711,6 +10711,29 @@ class AppLocalizationsPt extends AppLocalizations {
       'As legendas ainda estão sendo geradas. Volte daqui a pouco.';
 
   @override
+  String get subtitleEditorNoSpeech =>
+      'Nenhuma fala foi detectada neste vídeo, então não há nada para legendar.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'Escreva você mesmo';
+
+  @override
+  String get subtitleEditorAddCue => 'Adicionar uma linha';
+
+  @override
+  String get subtitleEditorRemoveCue => 'Remover esta linha';
+
+  @override
+  String get subtitleEditorStartLabel => 'Início';
+
+  @override
+  String get subtitleEditorEndLabel => 'Fim';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'Cada linha precisa de texto e de um fim depois do início.';
+
+  @override
   String get subtitleEditorLoadError =>
       'Não foi possível carregar as legendas. Tente novamente.';
 

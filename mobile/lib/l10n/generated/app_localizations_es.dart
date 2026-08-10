@@ -10741,6 +10741,29 @@ class AppLocalizationsEs extends AppLocalizations {
       'Los subtítulos todavía se están generando. Volvé en un momento.';
 
   @override
+  String get subtitleEditorNoSpeech =>
+      'No se detectó habla en este video, así que no hay nada para subtitular.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'Escribilos vos';
+
+  @override
+  String get subtitleEditorAddCue => 'Agregar una línea';
+
+  @override
+  String get subtitleEditorRemoveCue => 'Quitar esta línea';
+
+  @override
+  String get subtitleEditorStartLabel => 'Inicio';
+
+  @override
+  String get subtitleEditorEndLabel => 'Fin';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'Cada línea necesita texto y un fin posterior a su inicio.';
+
+  @override
   String get subtitleEditorLoadError =>
       'No se pudieron cargar los subtítulos. Intentá de nuevo.';
 

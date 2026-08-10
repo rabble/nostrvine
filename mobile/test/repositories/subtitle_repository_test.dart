@@ -12,6 +12,7 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/repositories/subtitle_repository.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/subtitle_fetcher.dart';
 import 'package:openvine/services/subtitle_service.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 
@@ -84,7 +85,7 @@ void main() {
         ),
       );
 
-      final cues = await repo.loadCues(
+      final result = await repo.loadCues(
         VideoEvent(
           id: 'vid1',
           pubkey: 'pk1',
@@ -95,8 +96,9 @@ void main() {
         ),
       );
 
-      expect(cues, hasLength(1));
-      expect(cues.single.text, equals('corrected'));
+      expect(result.status, SubtitleFetchStatus.available);
+      expect(result.cues, hasLength(1));
+      expect(result.cues.single.text, equals('corrected'));
     });
 
     test(
@@ -109,7 +111,7 @@ void main() {
           ),
         );
 
-        final cues = await repo.loadCues(
+        final result = await repo.loadCues(
           VideoEvent(
             id: 'vid1',
             pubkey: 'pk1',
@@ -122,8 +124,34 @@ void main() {
           ),
         );
 
-        expect(cues, hasLength(1));
-        expect(cues.single.text, equals('edited'));
+        expect(result.cues, hasLength(1));
+        expect(result.cues.single.text, equals('edited'));
+      },
+    );
+
+    test(
+      'loadCues reports empty when Blossom serves a cue-less track',
+      () async {
+        // media.divine.video answers 200 with a header-only VTT once
+        // transcription has finished on a video with no speech. That is a
+        // finished track, not one that is still being generated.
+        when(
+          () => httpClient.get(any()),
+        ).thenAnswer((_) async => http.Response('WEBVTT\n\n', 200));
+
+        final result = await repo.loadCues(
+          VideoEvent(
+            id: 'vid1',
+            pubkey: 'pk1',
+            createdAt: 1,
+            content: '',
+            timestamp: DateTime.fromMillisecondsSinceEpoch(0),
+            sha256: 'abc123',
+          ),
+        );
+
+        expect(result.status, SubtitleFetchStatus.empty);
+        expect(result.cues, isEmpty);
       },
     );
 
