@@ -1,29 +1,34 @@
 // ABOUTME: Complete end-to-end integration test for video creation flow
 // ABOUTME: Tests app start -> welcome screen -> auth -> camera navigation
-// ABOUTME: Requires: local Docker stack running (mise run local_up)
+// ABOUTME: Requires: the local stack's invite service (mise run local_up).
+// ABOUTME: navigateToCreateAccount needs OnboardingMode.open for LOCAL.
 
+@Tags(['service'])
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
 import 'package:openvine/main.dart' as app;
-import 'package:patrol/patrol.dart';
 
 import '../helpers/navigation_helpers.dart';
 import '../helpers/test_setup.dart';
 
 void main() {
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
   group('Complete Video Creation Flow E2E Tests', () {
-    patrolTest(
+    testWidgets(
       'Full flow: App start -> Welcome -> Camera navigation',
-      ($) async {
-        final tester = $.tester;
+      (tester) async {
         final originalOnError = suppressSetStateErrors();
         addTearDown(() => restoreErrorHandler(originalOnError));
         final originalErrorBuilder = saveErrorWidgetBuilder();
         addTearDown(() => restoreErrorWidgetBuilder(originalErrorBuilder));
 
-        // Launch app in guarded zone to catch external relay errors
+        // Launch app in guarded zone to catch external relay errors.
+        // pumpAndSettle never returns here: the app runs persistent polling
+        // timers, so the tree never reaches a quiescent frame.
         launchAppGuarded(app.main);
-        await tester.pumpAndSettle(const Duration(seconds: 3));
+        await pumpUntilSettled(tester, maxSeconds: 3);
 
         // Verify app is running
         final materialAppFinder = find.byType(MaterialApp);
@@ -55,10 +60,10 @@ void main() {
           reason: 'Should navigate to create account screen',
         );
 
-        // TODO: Complete auth flow and navigate to camera when Docker
-        // stack is available. Camera access requires authentication
-        // (router redirects unauthenticated users to /welcome) and
-        // Patrol native automation for camera/mic permissions.
+        // Scope stops here by design. Reaching the camera needs a completed
+        // auth flow (the router redirects unauthenticated users to /welcome)
+        // and a native camera/mic permission grant, which a plain
+        // integration_test cannot drive — pre-grant it on the device instead.
 
         await pumpUntilSettled(tester, maxSeconds: 3);
         drainAsyncErrors(tester);
