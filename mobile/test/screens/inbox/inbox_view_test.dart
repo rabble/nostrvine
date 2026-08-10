@@ -34,9 +34,9 @@ import 'package:openvine/screens/inbox/widgets/following_bar.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_empty_state.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_error_state.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_fab.dart';
+import 'package:openvine/screens/inbox/widgets/inbox_filter_chips.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_segmented_toggle.dart';
 import 'package:openvine/screens/inbox/widgets/restore_paused_banner.dart';
-import 'package:openvine/screens/inbox/widgets/unread_filter_chips.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 
 import '../../helpers/go_router.dart';
@@ -387,7 +387,7 @@ void main() {
         expect(find.byType(ConversationTile), findsOneWidget);
       });
 
-      testWidgets('renders $UnreadFilterChips when loaded with conversations', (
+      testWidgets('renders $InboxFilterChips when loaded with conversations', (
         tester,
       ) async {
         final conversation = DmConversation(
@@ -415,12 +415,12 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        expect(find.byType(UnreadFilterChips), findsOneWidget);
+        expect(find.byType(InboxFilterChips), findsOneWidget);
       });
 
       testWidgets(
         'tapping the Unread chip dispatches '
-        '$ConversationListUnreadFilterToggled',
+        '$ConversationListFilterChanged',
         (tester) async {
           final conversation = DmConversation(
             id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
@@ -452,7 +452,9 @@ void main() {
           await tester.pump();
 
           verify(
-            () => mockBloc.add(const ConversationListUnreadFilterToggled()),
+            () => mockBloc.add(
+              const ConversationListFilterChanged(InboxFilter.unread),
+            ),
           ).called(1);
         },
       );
@@ -490,7 +492,9 @@ void main() {
           await tester.pump();
 
           verifyNever(
-            () => mockBloc.add(const ConversationListUnreadFilterToggled()),
+            () => mockBloc.add(
+              const ConversationListFilterChanged(InboxFilter.unread),
+            ),
           );
         },
       );
@@ -513,7 +517,7 @@ void main() {
               state: ConversationListState(
                 status: ConversationListStatus.loaded,
                 conversations: [conversation],
-                unreadOnly: true,
+                filter: InboxFilter.unread,
                 hasMore: false,
               ),
             ),
@@ -631,7 +635,7 @@ void main() {
                 status: ConversationListStatus.loaded,
                 conversations: [unread, read],
                 visibleConversations: [unread],
-                unreadOnly: true,
+                filter: InboxFilter.unread,
                 hasMore: false,
               ),
             ),
@@ -677,7 +681,7 @@ void main() {
                 status: ConversationListStatus.loaded,
                 conversations: conversations,
                 visibleConversations: unread,
-                unreadOnly: true,
+                filter: InboxFilter.unread,
                 // hasMore defaults to true.
               ),
             ),
@@ -1425,7 +1429,7 @@ void main() {
         await openMessages(tester);
 
         expect(find.byType(DivineSearchBar), findsOneWidget);
-        final chipsBefore = tester.getTopLeft(find.byType(UnreadFilterChips));
+        final chipsBefore = tester.getTopLeft(find.byType(InboxFilterChips));
 
         await tester.drag(
           find.byType(CustomScrollView),
@@ -1438,9 +1442,9 @@ void main() {
         expect(find.byType(DivineSearchBar), findsNothing);
         // The chips do not — losing the way back to All while filtered by
         // Unread would be a trap.
-        expect(find.byType(UnreadFilterChips), findsOneWidget);
+        expect(find.byType(InboxFilterChips), findsOneWidget);
         expect(
-          tester.getTopLeft(find.byType(UnreadFilterChips)).dy,
+          tester.getTopLeft(find.byType(InboxFilterChips)).dy,
           lessThanOrEqualTo(chipsBefore.dy),
         );
       });
@@ -1473,7 +1477,7 @@ void main() {
         await openMessages(tester);
 
         final box = tester.renderObject<RenderBox>(
-          find.byType(UnreadFilterChips),
+          find.byType(InboxFilterChips),
         );
         return (
           laidOut: box.size.height,
@@ -1879,7 +1883,7 @@ void main() {
             state: ConversationListState(
               status: ConversationListStatus.loaded,
               conversations: [realConversation],
-              unreadOnly: true,
+              filter: InboxFilter.unread,
               hasMore: false,
               pinnedSupport: supportPin(),
             ),
@@ -1899,7 +1903,7 @@ void main() {
             state: ConversationListState(
               status: ConversationListStatus.loaded,
               conversations: [realConversation],
-              unreadOnly: true,
+              filter: InboxFilter.unread,
               hasMore: false,
               pinnedSupport: supportPin(
                 isRead: false,

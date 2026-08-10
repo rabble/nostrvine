@@ -4,6 +4,25 @@ part of 'conversation_list_bloc.dart';
 
 enum ConversationListStatus { initial, loading, loaded, error }
 
+/// Which slice of the Messages tab the chip row is showing.
+///
+/// An enum rather than a pair of bools because the set is expected to grow:
+/// a Muted filter is the anticipated next case once muting exists as a user
+/// action (today `ContentBlocklistRepository.isMutedByUs` only reflects mutes
+/// authored from other Nostr clients). Adding a case means a new source list
+/// in `_computeVisible` and a new chip — no call-site churn.
+enum InboxFilter {
+  /// Every conversation except those with accounts the viewer blocked.
+  all,
+
+  /// [all], narrowed to conversations with unread messages.
+  unread,
+
+  /// Conversations with accounts the viewer blocked — the only surface that
+  /// shows them, so a block never costs the viewer their own message history.
+  blocked,
+}
+
 /// Navigation target emitted when the user requests to open a conversation.
 ///
 /// Consumed and cleared by the UI after navigating.
@@ -48,7 +67,8 @@ class ConversationListState extends Equatable {
     this.status = ConversationListStatus.initial,
     this.conversations = const [],
     this.visibleConversations = const [],
-    this.unreadOnly = false,
+    this.blockedConversations = const [],
+    this.filter = InboxFilter.all,
     this.searchQuery = '',
     this.profileNames = const {},
     this.requestConversations = const [],
@@ -83,8 +103,18 @@ class ConversationListState extends Equatable {
   /// list identity across unrelated state emits.
   final List<DmConversation> visibleConversations;
 
-  /// Whether the Messages list is filtered to unread conversations only.
-  final bool unreadOnly;
+  /// Conversations with accounts the viewer has blocked, newest first.
+  ///
+  /// Held rather than dropped so [InboxFilter.blocked] has something to render.
+  /// Blocking removes a thread from the inbox but must never remove the
+  /// viewer's own copy of it — a harasser would otherwise be able to make the
+  /// evidence unreachable simply by being blocked. Seeded from
+  /// `runtimeBlockedUsers`, so a blocked account the viewer never messaged is
+  /// present too, carrying no last message.
+  final List<DmConversation> blockedConversations;
+
+  /// Which slice of the Messages list the chip row is showing.
+  final InboxFilter filter;
 
   /// Trimmed inbox search query; empty when search is inactive.
   final String searchQuery;
@@ -144,20 +174,22 @@ class ConversationListState extends Equatable {
   int get requestUnreadCount =>
       requestConversations.where((c) => !c.isRead).length;
 
-  /// Whether a client-side filter (unread chip or search) is narrowing the
-  /// visible list.
+  /// Whether a client-side filter (a chip other than All, or search) is
+  /// narrowing the visible list.
   ///
   /// Load-more is suspended while this is true: a filtered result is computed
   /// over the full conversation set and is therefore already complete, so
   /// growing the render window could only append unfiltered rows — and a short
-  /// filtered list can never scroll far enough to trigger it anyway.
-  bool get isFiltering => unreadOnly || searchQuery.isNotEmpty;
+  /// filtered list can never scroll far enough to trigger it anyway. The
+  /// blocked slice is complete for the same reason, and is never windowed.
+  bool get isFiltering => filter != InboxFilter.all || searchQuery.isNotEmpty;
 
   ConversationListState copyWith({
     ConversationListStatus? status,
     List<DmConversation>? conversations,
     List<DmConversation>? visibleConversations,
-    bool? unreadOnly,
+    List<DmConversation>? blockedConversations,
+    InboxFilter? filter,
     String? searchQuery,
     Map<String, String>? profileNames,
     List<DmConversation>? requestConversations,
@@ -175,7 +207,8 @@ class ConversationListState extends Equatable {
       status: status ?? this.status,
       conversations: conversations ?? this.conversations,
       visibleConversations: visibleConversations ?? this.visibleConversations,
-      unreadOnly: unreadOnly ?? this.unreadOnly,
+      blockedConversations: blockedConversations ?? this.blockedConversations,
+      filter: filter ?? this.filter,
       searchQuery: searchQuery ?? this.searchQuery,
       profileNames: profileNames ?? this.profileNames,
       requestConversations: requestConversations ?? this.requestConversations,
@@ -198,7 +231,8 @@ class ConversationListState extends Equatable {
     status,
     conversations,
     visibleConversations,
-    unreadOnly,
+    blockedConversations,
+    filter,
     searchQuery,
     profileNames,
     requestConversations,

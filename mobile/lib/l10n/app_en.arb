@@ -3425,6 +3425,22 @@
   "@inboxFilterUnread": {
     "description": "Filter chip label showing only unread conversations in the Messages inbox."
   },
+  "inboxFilterBlocked": "Blocked",
+  "@inboxFilterBlocked": {
+    "description": "Filter chip label showing conversations with accounts the viewer has blocked. Only rendered once the viewer has blocked someone."
+  },
+  "inboxBlockedEmptyTitle": "No blocked chats",
+  "@inboxBlockedEmptyTitle": {
+    "description": "Shown in place of the conversation list when the Blocked filter is on and a search query matches none of the blocked chats."
+  },
+  "inboxBlockedEmptySubtitle": "Accounts you block show up here.",
+  "@inboxBlockedEmptySubtitle": {
+    "description": "Subtitle under inboxBlockedEmptyTitle explaining what the Blocked filter collects."
+  },
+  "inboxBlockedNoMessages": "No messages",
+  "@inboxBlockedNoMessages": {
+    "description": "Preview text on a Blocked row for an account the viewer blocked but never exchanged messages with. The row is not tappable."
+  },
   "inboxUnreadEmptyTitle": "You're all caught up",
   "@inboxUnreadEmptyTitle": {
     "description": "Shown in place of the conversation list when the Unread filter is on and every conversation has been read."

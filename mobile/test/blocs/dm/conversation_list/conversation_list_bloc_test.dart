@@ -201,6 +201,164 @@ void main() {
       recomputeDebounce: Duration.zero,
     );
 
+    group('blocked chats (#7025)', () {
+      /// Behaves like the real repository: drop any conversation whose
+      /// counterparty the viewer blocked, and report those pubkeys.
+      _MockContentBlocklistRepository blocklistBlocking(Set<String> blocked) {
+        final blocklist = _MockContentBlocklistRepository();
+        when(() => blocklist.runtimeBlockedUsers).thenReturn(blocked);
+        when(
+          () => blocklist.filterBlockedConversations(
+            any(),
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenAnswer((inv) {
+          final input = inv.positionalArguments.first as List<DmConversation>;
+          return input
+              .where((c) => !c.participantPubkeys.any(blocked.contains))
+              .toList();
+        });
+        return blocklist;
+      }
+
+      ConversationListBloc createBlocWith(
+        ContentBlocklistRepository blocklist,
+      ) => ConversationListBloc(
+        dmRepository: mockDmRepository,
+        followRepository: mockFollowRepository,
+        contentBlocklistRepository: blocklist,
+        recomputeDebounce: Duration.zero,
+      );
+
+      Future<ConversationListState> load(ConversationListBloc bloc) {
+        bloc.add(const ConversationListStarted());
+        return bloc.stream.firstWhere(
+          (s) => s.status == ConversationListStatus.loaded,
+        );
+      }
+
+      test('keeps a blocked conversation instead of dropping it', () async {
+        _stubStreams(
+          mockDmRepository,
+          accepted: [_createConversation(id: _testConversationId1)],
+        );
+        final bloc = createBlocWith(blocklistBlocking({_testPubkey2}));
+        addTearDown(bloc.close);
+
+        final state = await load(bloc);
+
+        expect(
+          state.conversations,
+          isEmpty,
+          reason: 'the inbox still hides it — that is the block working',
+        );
+        expect(
+          state.blockedConversations.map((c) => c.id),
+          equals([_testConversationId1]),
+          reason: 'but the viewer keeps their own copy to read as evidence',
+        );
+      });
+
+      test('surfaces them only under the Blocked filter', () async {
+        _stubStreams(
+          mockDmRepository,
+          accepted: [_createConversation(id: _testConversationId1)],
+        );
+        final bloc = createBlocWith(blocklistBlocking({_testPubkey2}));
+        addTearDown(bloc.close);
+
+        final loaded = await load(bloc);
+        expect(loaded.visibleConversations, isEmpty);
+
+        bloc.add(const ConversationListFilterChanged(InboxFilter.blocked));
+        final state = await bloc.stream.firstWhere(
+          (s) => s.filter == InboxFilter.blocked,
+        );
+
+        expect(
+          state.visibleConversations.map((c) => c.id),
+          equals([_testConversationId1]),
+        );
+      });
+
+      test('lists a blocked account the viewer never messaged', () async {
+        _stubStreams(mockDmRepository);
+        final bloc = createBlocWith(blocklistBlocking({_testPubkey3}));
+        addTearDown(bloc.close);
+
+        final state = await load(bloc);
+
+        final row = state.blockedConversations.single;
+        expect(row.participantPubkeys, contains(_testPubkey3));
+        expect(
+          row.lastMessageTimestamp,
+          isNull,
+          reason: 'the inbox renders this row inert, with no thread to open',
+        );
+      });
+
+      test('falls back to All when the last block is lifted', () async {
+        final acceptedController = StreamController<List<DmConversation>>();
+        addTearDown(acceptedController.close);
+        when(
+          () => mockDmRepository.watchAcceptedConversations(
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) => acceptedController.stream);
+        when(
+          () => mockDmRepository.watchPotentialRequests(),
+        ).thenAnswer((_) => Stream.value(const <DmConversation>[]));
+        when(
+          () => mockDmRepository.historyRecoveryStream,
+        ).thenAnswer((_) => const Stream<bool>.empty());
+        when(() => mockDmRepository.isRecoveringHistory).thenReturn(false);
+
+        final blocked = {_testPubkey2};
+        final blocklist = _MockContentBlocklistRepository();
+        when(() => blocklist.runtimeBlockedUsers).thenAnswer((_) => blocked);
+        when(
+          () => blocklist.filterBlockedConversations(
+            any(),
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenAnswer((inv) {
+          final input = inv.positionalArguments.first as List<DmConversation>;
+          return input
+              .where((c) => !c.participantPubkeys.any(blocked.contains))
+              .toList();
+        });
+
+        final bloc = createBlocWith(blocklist);
+        addTearDown(bloc.close);
+        bloc.add(const ConversationListStarted());
+        final conversation = _createConversation(id: _testConversationId1);
+        acceptedController.add([conversation]);
+        await bloc.stream.firstWhere(
+          (s) => s.blockedConversations.isNotEmpty,
+        );
+
+        bloc.add(const ConversationListFilterChanged(InboxFilter.blocked));
+        await bloc.stream.firstWhere((s) => s.filter == InboxFilter.blocked);
+
+        blocked.clear();
+        acceptedController.add([conversation]);
+        final state = await bloc.stream.firstWhere(
+          (s) => s.blockedConversations.isEmpty,
+        );
+
+        expect(
+          state.filter,
+          equals(InboxFilter.all),
+          reason: 'the Blocked chip is gone, so the filter cannot stay on it',
+        );
+        expect(
+          state.visibleConversations.map((c) => c.id),
+          equals([_testConversationId1]),
+          reason: 'the unblocked conversation returns to the inbox',
+        );
+      });
+    });
+
     group('protected-minor inbound filter (#176)', () {
       test(
         'hides inbox conversations whose counterparty is not approved',
@@ -387,6 +545,9 @@ void main() {
         // requests = 2 calls), so it doubles as a recompute counter.
         var filterCalls = 0;
         final blocklist = _MockContentBlocklistRepository();
+        when(
+          () => blocklist.runtimeBlockedUsers,
+        ).thenReturn(const <String>{});
         when(
           () => blocklist.filterBlockedConversations(
             any(),
@@ -1734,7 +1895,8 @@ void main() {
         ConversationListStatus.loaded,
         conversations,
         const <DmConversation>[], // visibleConversations
-        false, // unreadOnly
+        const <DmConversation>[], // blockedConversations
+        InboxFilter.all, // filter
         '', // searchQuery
         const <String, String>{}, // profileNames
         const <DmConversation>[],
@@ -1897,7 +2059,7 @@ void main() {
 
         final state = await loadMixedList(bloc);
 
-        expect(state.unreadOnly, isFalse);
+        expect(state.filter, equals(InboxFilter.all));
         expect(
           state.visibleConversations.map((c) => c.id).toList(),
           equals(['unread-1', 'read-1', 'unread-2']),
@@ -1973,8 +2135,10 @@ void main() {
           reason: 'it is outside the initial render window',
         );
 
-        bloc.add(const ConversationListUnreadFilterToggled());
-        final state = await bloc.stream.firstWhere((s) => s.unreadOnly);
+        bloc.add(const ConversationListFilterChanged(InboxFilter.unread));
+        final state = await bloc.stream.firstWhere(
+          (s) => s.filter == InboxFilter.unread,
+        );
 
         expect(
           state.visibleConversations.map((c) => c.id).toList(),
@@ -2010,8 +2174,10 @@ void main() {
       addTearDown(bloc.close);
       await loadMixedList(bloc);
 
-      bloc.add(const ConversationListUnreadFilterToggled());
-      final state = await bloc.stream.firstWhere((s) => s.unreadOnly);
+      bloc.add(const ConversationListFilterChanged(InboxFilter.unread));
+      final state = await bloc.stream.firstWhere(
+        (s) => s.filter == InboxFilter.unread,
+      );
 
       expect(
         state.visibleConversations.map((c) => c.id).toList(),
@@ -2030,10 +2196,12 @@ void main() {
       addTearDown(bloc.close);
       await loadMixedList(bloc);
 
-      bloc.add(const ConversationListUnreadFilterToggled());
-      await bloc.stream.firstWhere((s) => s.unreadOnly);
-      bloc.add(const ConversationListUnreadFilterToggled());
-      final state = await bloc.stream.firstWhere((s) => !s.unreadOnly);
+      bloc.add(const ConversationListFilterChanged(InboxFilter.unread));
+      await bloc.stream.firstWhere((s) => s.filter == InboxFilter.unread);
+      bloc.add(const ConversationListFilterChanged(InboxFilter.all));
+      final state = await bloc.stream.firstWhere(
+        (s) => s.filter == InboxFilter.all,
+      );
 
       expect(
         state.visibleConversations.map((c) => c.id).toList(),
@@ -2063,8 +2231,8 @@ void main() {
           (s) => s.status == ConversationListStatus.loaded,
         );
 
-        bloc.add(const ConversationListUnreadFilterToggled());
-        await bloc.stream.firstWhere((s) => s.unreadOnly);
+        bloc.add(const ConversationListFilterChanged(InboxFilter.unread));
+        await bloc.stream.firstWhere((s) => s.filter == InboxFilter.unread);
 
         acceptedController.add([
           ...mixedConversations(),
@@ -2393,8 +2561,8 @@ void main() {
       addTearDown(bloc.close);
       await load(bloc);
 
-      bloc.add(const ConversationListUnreadFilterToggled());
-      await bloc.stream.firstWhere((s) => s.unreadOnly);
+      bloc.add(const ConversationListFilterChanged(InboxFilter.unread));
+      await bloc.stream.firstWhere((s) => s.filter == InboxFilter.unread);
       bloc.add(const ConversationListSearchQueryChanged('pizza'));
       final state = await bloc.stream.firstWhere(
         (s) => s.searchQuery == 'pizza',
@@ -3040,6 +3208,9 @@ void main() {
       'is null when the user has blocked the moderation account',
       () async {
         final blocklist = _MockContentBlocklistRepository();
+        when(
+          () => blocklist.runtimeBlockedUsers,
+        ).thenReturn(const <String>{});
         when(
           () => blocklist.filterBlockedConversations(
             any(),

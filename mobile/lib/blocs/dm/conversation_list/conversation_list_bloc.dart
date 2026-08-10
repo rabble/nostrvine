@@ -41,7 +41,7 @@ class ConversationListBloc
     on<ConversationListStarted>(_onStarted, transformer: restartable());
     on<ConversationListLoadMore>(_onLoadMore, transformer: droppable());
     on<ConversationListMarkRead>(_onMarkRead, transformer: droppable());
-    on<ConversationListUnreadFilterToggled>(_onUnreadFilterToggled);
+    on<ConversationListFilterChanged>(_onFilterChanged);
     on<ConversationListSearchQueryChanged>(
       _onSearchQueryChanged,
       transformer: debounceRestartable(),
@@ -213,6 +213,16 @@ class ConversationListBloc
             ) ??
             split.requests;
 
+        // Blocking removes a thread from the inbox but must not remove the
+        // viewer's own copy of it (#7025) — that turned a block into evidence
+        // destruction, so retrieving a screenshot meant unblocking and
+        // re-exposing yourself. Keep what the filter above removed, plus every
+        // blocked account with no thread at all, for the Blocked chip.
+        final blockedConversations = _computeBlockedConversations(
+          userPubkey: userPubkey,
+          candidates: [...inboxConversations, ...split.requests],
+        );
+
         // Protected-minor inbound filter (#176): hide conversations whose
         // counterparty (all non-self participants) is not an approved official
         // recipient. Pass-through for a non-restricted user. Applied after the
@@ -229,6 +239,16 @@ class ConversationListBloc
               userPubkey: userPubkey,
             ) ??
             blocklistedRequests;
+        // The #176 gate applies to the blocked slice too. Skipping it would
+        // make the Blocked chip the one surface where a restricted minor can
+        // read a thread with a non-approved counterparty — threads the gate
+        // hides from them everywhere else, blocked or not.
+        final visibleBlocked =
+            _protectedMinorInboxGate?.filter(
+              blockedConversations,
+              userPubkey: userPubkey,
+            ) ??
+            blockedConversations;
 
         // Lift the moderation thread out of the list into the pinned row, so
         // the inbox never renders it twice (#6283). Runs after both filters so
@@ -257,6 +277,14 @@ class ConversationListBloc
         // into a bucket, so it cannot produce the flash the hold-back exists
         // to prevent — withholding it would only blank its unread dot for the
         // duration of the drain, and the badge counts it either way (#4976).
+        // Unblocking the last account takes the Blocked chip away with it, so
+        // a filter still pointing there would strand the list on an empty
+        // slice with no chip left to leave it by.
+        final filter =
+            state.filter == InboxFilter.blocked && visibleBlocked.isEmpty
+            ? InboxFilter.all
+            : state.filter;
+
         final recoveryComplete = _dmRepository.isHistoryRecoveryComplete;
         final requestConversations = recoveryComplete
             ? pin.requests
@@ -296,9 +324,12 @@ class ConversationListBloc
           // the gate is costing the user — least of all the moderation thread,
           // which is on screen as the pin the whole time.
           requestsWithheld: !recoveryComplete && pin.requests.isNotEmpty,
+          blockedConversations: visibleBlocked,
+          filter: filter,
           visibleConversations: _computeVisible(
             pin.inbox,
-            unreadOnly: state.unreadOnly,
+            blockedConversations: visibleBlocked,
+            filter: filter,
             query: state.searchQuery,
             profileNames: state.profileNames,
             userPubkey: userPubkey,
@@ -336,7 +367,8 @@ class ConversationListBloc
         currentLimit: limit,
         visibleConversations: _computeVisible(
           state.conversations,
-          unreadOnly: state.unreadOnly,
+          blockedConversations: state.blockedConversations,
+          filter: state.filter,
           query: state.searchQuery,
           profileNames: state.profileNames,
           userPubkey: _dmRepository.userPubkey,
@@ -347,17 +379,18 @@ class ConversationListBloc
     );
   }
 
-  void _onUnreadFilterToggled(
-    ConversationListUnreadFilterToggled event,
+  void _onFilterChanged(
+    ConversationListFilterChanged event,
     Emitter<ConversationListState> emit,
   ) {
-    final unreadOnly = !state.unreadOnly;
+    if (event.filter == state.filter) return;
     emit(
       state.copyWith(
-        unreadOnly: unreadOnly,
+        filter: event.filter,
         visibleConversations: _computeVisible(
           state.conversations,
-          unreadOnly: unreadOnly,
+          blockedConversations: state.blockedConversations,
+          filter: event.filter,
           query: state.searchQuery,
           profileNames: state.profileNames,
           userPubkey: _dmRepository.userPubkey,
@@ -383,7 +416,8 @@ class ConversationListBloc
         searchQuery: query,
         visibleConversations: _computeVisible(
           state.conversations,
-          unreadOnly: state.unreadOnly,
+          blockedConversations: state.blockedConversations,
+          filter: state.filter,
           query: query,
           profileNames: state.profileNames,
           userPubkey: userPubkey,
@@ -458,7 +492,8 @@ class ConversationListBloc
           profileNames: profileNames,
           visibleConversations: _computeVisible(
             state.conversations,
-            unreadOnly: state.unreadOnly,
+            blockedConversations: state.blockedConversations,
+            filter: state.filter,
             query: query,
             profileNames: profileNames,
             userPubkey: userPubkey,
@@ -467,6 +502,52 @@ class ConversationListBloc
         ),
       );
     }
+  }
+
+  /// A placeholder row carries no timestamp, so it needs a `createdAt` stable
+  /// across recomputes — a clock read would make every debounce tick produce an
+  /// unequal state and re-emit forever. Same reasoning as
+  /// [_pinnedSupportEpoch]; sorts these rows last, which is where an account
+  /// you never messaged belongs.
+  static const _blockedPlaceholderEpoch = 0;
+
+  /// Every blocked account, each carrying its conversation when one exists.
+  ///
+  /// Seeded from the blocklist rather than from [candidates] so an account the
+  /// viewer blocked but never messaged still appears — the list answers "who
+  /// have I blocked", and the thread is what you can read once you tap in.
+  /// Rows without history carry no `lastMessage*` and are rendered
+  /// non-tappable by the inbox.
+  List<DmConversation> _computeBlockedConversations({
+    required String userPubkey,
+    required List<DmConversation> candidates,
+  }) {
+    // `runtimeBlockedUsers` rather than `blockedPubkeys` so this matches the
+    // Content & Safety list exactly: both are the viewer's own runtime blocks,
+    // and the hardcoded internal blocklist is intentionally empty.
+    final blocked = _blocklistRepository?.runtimeBlockedUsers;
+    if (blocked == null || blocked.isEmpty) return const [];
+
+    final threadByPubkey = <String, DmConversation>{};
+    for (final conversation in candidates) {
+      final other = _otherParticipant(conversation, userPubkey);
+      if (!blocked.contains(other)) continue;
+      // Newest wins: `candidates` is recency-sorted per source, and a pubkey
+      // can only legitimately hold one 1:1 thread.
+      threadByPubkey.putIfAbsent(other, () => conversation);
+    }
+
+    final rows = [
+      for (final pubkey in blocked)
+        threadByPubkey[pubkey] ??
+            DmConversation(
+              id: DmRepository.computeConversationId([userPubkey, pubkey]),
+              participantPubkeys: [userPubkey, pubkey],
+              isGroup: false,
+              createdAt: _blockedPlaceholderEpoch,
+            ),
+    ]..sort((a, b) => b.effectiveTimestamp.compareTo(a.effectiveTimestamp));
+    return rows;
   }
 
   static String _otherParticipant(DmConversation conversation, String self) {
@@ -564,12 +645,27 @@ class ConversationListBloc
   /// longer be statements about just the loaded page.
   static List<DmConversation> _computeVisible(
     List<DmConversation> conversations, {
-    required bool unreadOnly,
+    required List<DmConversation> blockedConversations,
+    required InboxFilter filter,
     required String query,
     required Map<String, String> profileNames,
     required String userPubkey,
     required int limit,
   }) {
+    // The blocked slice is a separate, already-complete list seeded from the
+    // blocklist rather than paged out of [conversations], so it is never
+    // windowed. Unread is meaningless here: a blocked thread stops being
+    // surfaced for triage, and the badge deliberately excludes it.
+    if (filter == InboxFilter.blocked) {
+      return _applyFilters(
+        blockedConversations,
+        unreadOnly: false,
+        query: query,
+        profileNames: profileNames,
+        userPubkey: userPubkey,
+      );
+    }
+    final unreadOnly = filter == InboxFilter.unread;
     if (!unreadOnly && query.isEmpty) {
       return conversations.length > limit
           ? conversations.sublist(0, limit)

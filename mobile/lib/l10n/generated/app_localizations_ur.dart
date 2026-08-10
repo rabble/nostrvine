@@ -5880,6 +5880,18 @@ class AppLocalizationsUr extends AppLocalizations {
   String get inboxFilterUnread => 'غیر پڑھی ہوئی';
 
   @override
+  String get inboxFilterBlocked => 'Blocked';
+
+  @override
+  String get inboxBlockedEmptyTitle => 'No blocked chats';
+
+  @override
+  String get inboxBlockedEmptySubtitle => 'Accounts you block show up here.';
+
+  @override
+  String get inboxBlockedNoMessages => 'No messages';
+
+  @override
   String get inboxUnreadEmptyTitle => 'آپ سب پڑھ چکے ہیں';
 
   @override

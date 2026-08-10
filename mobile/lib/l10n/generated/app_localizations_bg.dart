@@ -5929,6 +5929,18 @@ class AppLocalizationsBg extends AppLocalizations {
   String get inboxFilterUnread => 'Непрочетени';
 
   @override
+  String get inboxFilterBlocked => 'Blocked';
+
+  @override
+  String get inboxBlockedEmptyTitle => 'No blocked chats';
+
+  @override
+  String get inboxBlockedEmptySubtitle => 'Accounts you block show up here.';
+
+  @override
+  String get inboxBlockedNoMessages => 'No messages';
+
+  @override
   String get inboxUnreadEmptyTitle => 'В крак си с всичко';
 
   @override

@@ -5838,6 +5838,18 @@ class AppLocalizationsId extends AppLocalizations {
   String get inboxFilterUnread => 'Belum dibaca';
 
   @override
+  String get inboxFilterBlocked => 'Blocked';
+
+  @override
+  String get inboxBlockedEmptyTitle => 'No blocked chats';
+
+  @override
+  String get inboxBlockedEmptySubtitle => 'Accounts you block show up here.';
+
+  @override
+  String get inboxBlockedNoMessages => 'No messages';
+
+  @override
   String get inboxUnreadEmptyTitle => 'Semua sudah kamu baca';
 
   @override

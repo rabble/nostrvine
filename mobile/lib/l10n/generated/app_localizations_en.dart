@@ -5874,6 +5874,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inboxFilterUnread => 'Unread';
 
   @override
+  String get inboxFilterBlocked => 'Blocked';
+
+  @override
+  String get inboxBlockedEmptyTitle => 'No blocked chats';
+
+  @override
+  String get inboxBlockedEmptySubtitle => 'Accounts you block show up here.';
+
+  @override
+  String get inboxBlockedNoMessages => 'No messages';
+
+  @override
   String get inboxUnreadEmptyTitle => 'You\'re all caught up';
 
   @override
