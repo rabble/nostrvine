@@ -52,6 +52,10 @@ Architecture and ownership:
   Any logic that filters, sorts, fetches conditionally, falls back, or
   composes data sources belongs **below** the UI. See
   [`architecture.md`](architecture.md).
+- [ ] New storage/cache choices follow the data-foundation decision tree:
+  `cache_sync` for remote-derived cacheable data, Drift for durable
+  structured data, narrow `SharedPreferences`, and no new Hive boxes without
+  explicit justification. See [`data_foundation.md`](data_foundation.md).
 - [ ] "Cache warming" and "pre-fetch" work belongs in the **repository**
   layer, not in a `BlocProvider` wrapper. BlocProviders are lazy — see
   [`state_management.md`](state_management.md#blocprovider-is-lazy-by-default).
