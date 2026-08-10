@@ -2496,16 +2496,20 @@ void main() {
             },
           );
 
-          final reactionEFilters =
+          final reactionFilters =
               verify(() => mockNostrClient.queryEvents(captureAny())).captured
                   .cast<List<Filter>>()
                   .map((filters) => filters.single)
                   .where(
-                    (f) =>
-                        (f.kinds?.contains(EventKind.reaction) ?? false) &&
-                        f.e != null,
+                    (f) => f.kinds?.contains(EventKind.reaction) ?? false,
                   )
                   .toList();
+          final reactionEFilters = reactionFilters
+              .where((filter) => filter.e != null)
+              .toList();
+          final reactionAFilters = reactionFilters
+              .where((filter) => filter.a != null)
+              .toList();
 
           expect(reactionEFilters, hasLength(2));
           for (final filter in reactionEFilters) {
@@ -2515,6 +2519,15 @@ void main() {
             {for (final f in reactionEFilters) ...f.e!},
             hasLength(600),
             reason: 'chunks partition every id without overlap',
+          );
+          expect(reactionAFilters, hasLength(2));
+          for (final filter in reactionAFilters) {
+            expect(filter.a!.length, lessThanOrEqualTo(500));
+          }
+          expect(
+            {for (final f in reactionAFilters) ...f.a!},
+            hasLength(600),
+            reason: 'chunks partition every coordinate without overlap',
           );
         },
       );

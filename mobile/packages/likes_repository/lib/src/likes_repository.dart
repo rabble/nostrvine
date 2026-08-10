@@ -1870,14 +1870,10 @@ class LikesRepository {
     };
 
     final eEventsFuture = _queryReactionsByEventIds(eventIds);
-    final aEventsFuture = aTagToEventId.isEmpty
-        ? Future<List<Event>>.value(const <Event>[])
-        : _nostrClient.queryEvents([
-            Filter(
-              kinds: const [EventKind.reaction],
-              a: aTagToEventId.keys.toList(),
-            ),
-          ]);
+    final aEventsFuture = _queryChunked(
+      aTagToEventId.keys.toList(),
+      (chunk) => Filter(kinds: const [EventKind.reaction], a: chunk),
+    );
     final queryResults = await Future.wait([eEventsFuture, aEventsFuture]);
 
     final reactionsByTarget = {
