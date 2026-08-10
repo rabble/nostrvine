@@ -342,7 +342,7 @@ class _ProfileContentView extends ConsumerWidget {
     final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
     if (blocklistRepository.hasMutedUs(userIdHex) ||
         blocklistRepository.hasBlockedUs(userIdHex)) {
-      return BlockedUserScreen(onBack: context.pop);
+      return BlockedUserScreen(onBack: context.pop, userIdHex: userIdHex);
     }
 
     // Fetch profile data if needed (post-frame to avoid build mutations)
