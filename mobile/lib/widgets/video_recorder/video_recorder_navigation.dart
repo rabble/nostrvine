@@ -13,6 +13,7 @@ import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -51,6 +52,7 @@ Future<void> openVideoEditorFromRecorder(
 
   final bloc = context.read<VideoRecorderBloc>();
   final recorderMode = bloc.state.recorderMode;
+  final clipManager = ref.read(clipManagerProvider.notifier);
 
   // Both next steps snapshot the clip list right here (classic renders it
   // below, the editor seeds its session from it on init), so a clip-delete
@@ -61,6 +63,15 @@ Future<void> openVideoEditorFromRecorder(
     await ref.read(clipManagerProvider.notifier).commitPendingDeletion();
     if (!context.mounted) return;
   }
+
+  await ref
+      .read(creationAnalyticsTrackerProvider)
+      .recordingCompleted(
+        mode: recorderMode,
+        clipCount: clipManager.clips.length,
+        duration: clipManager.totalDuration,
+      );
+  if (!context.mounted) return;
 
   // Lip-sync records against a selected sound, so silence the clips before the
   // editor: only the chosen audio should be heard, with the clips muted and

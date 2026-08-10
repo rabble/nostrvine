@@ -1,7 +1,8 @@
 # Analytics Observability
 
-Status: Current contract with semantic route screen views and comments sheet
-surface load instrumentation live.
+Status: Current contract with semantic route screen views, comments sheet
+surface load instrumentation, authenticated identity, and creator funnel
+instrumentation live.
 Baseline validated against: `mobile/lib/services/screen_analytics_service.dart`,
 `mobile/lib/services/page_load_observer.dart`,
 `mobile/lib/screens/comments/comments_screen.dart`.
@@ -38,6 +39,16 @@ Examples:
 
 Do not log Nostr event IDs, pubkeys, npubs, nsecs, user-entered search text,
 comment text, or raw URLs in analytics parameters.
+
+The reserved Firebase Analytics `user_id` field is the deliberate exception to
+the pubkey rule above. It is the authenticated account's exact 64-character hex
+pubkey, never an npub and never a hash. It is identity metadata, not a custom
+event parameter. Login and restored identity set the same value in Analytics
+and Crashlytics; logout clears both and clears account-scoped invite
+attribution. This is owned by `analyticsIdentitySync` in
+`mobile/lib/providers/auth_providers.dart`, kept deliberately independent of
+the Zendesk identity sync so the campaign's BigQuery/ClickHouse join cannot be
+broken by a change to the support-desk integration.
 
 ## Core Events
 
@@ -82,6 +93,96 @@ The comments sheet measures:
 - count loaded
 - whether video replies were enabled
 - whether the user dismissed before data loaded
+
+## Creator Funnel
+
+Every creator-funnel event includes `mode`, using the stable
+`VideoRecorderMode.name` values `capture`, `stopMotion`, `lipSync`, `classic`,
+or `upload`.
+
+| Event | Additional parameters | Boundary |
+| --- | --- | --- |
+| `camera_opened` | `entry_point` | Recorder session opens |
+| `recording_started` | — | Native recording succeeds, or the first stop-motion frame lands |
+| `recording_completed` | `clip_count`, `duration_ms` | Creator continues from the recorder |
+| `editor_opened` | — | Editor or metadata route opens |
+| `publish_started` | `time_since_camera_open_ms` | Creator taps publish, before render/upload |
+| `publish_succeeded` | `time_since_camera_open_ms` | Publish service confirms success |
+| `publish_failed` | `reason` | Render, preparation, or publish fails |
+| `creation_abandoned` | `last_stage` | The creation flow closes before publish starts |
+
+The tracker is app-scoped so recorder, editor, metadata, and publish routes
+contribute to one session. Creation metadata remains local analytics state and
+is not written into Nostr video events. `time_since_camera_open_ms` is
+**omitted entirely** — not sent as `0` — for an editor-only restored draft
+that did not open the camera in the active session, so those publishes cannot
+drag the timing distribution toward zero. Query it with `IS NOT NULL` rather
+than treating a missing value as instant.
+
+## Post-Publish Experiment
+
+The existing profile destination and published-video confirmation remain the
+payoff. A deterministic 50/50 assignment from the authenticated hex pubkey
+adds a create-again action to that confirmation for the `create_again`
+variant. The control variant is unchanged.
+
+- Remote Config key: `post_publish_create_again_enabled`
+- In-app default: `true`
+- Kill switch: publish the key as `false`; real-time Remote Config updates are
+  activated while the app is running
+- Baseline second-post rate: 44.1%
+
+Events:
+
+- `post_publish_screen_shown`: `destination`, `variant`
+- `post_publish_create_again_tapped`: `seconds_since_publish`
+
+## Invite Attribution
+
+After the invite service confirms redemption, the normalized code is set as
+the Firebase Analytics user property `invite_code`. Failed redemptions do not
+set it. Any change of authenticated identity clears it, so a second account on
+the device cannot inherit the first account's attribution. Logout is not the
+only such change: an in-place account switch never passes through an
+unauthenticated state.
+
+## Required Firebase Admin Setup
+
+Complete this before campaign traffic. GA4 stores unregistered parameters but
+does not make them queryable as dimensions retroactively.
+
+1. Create an event-scoped custom dimension named `mode` for event parameter
+   `mode`.
+2. Create a user-scoped custom dimension named `invite_code` for user property
+   `invite_code`.
+3. Create and publish the Remote Config boolean
+   `post_publish_create_again_enabled = true`. Set it to `false` for an
+   immediate kill switch.
+
+The GA4 reporting identity setting does not gate the BigQuery `user_id` field;
+use BigQuery as the campaign source of truth.
+
+## Pre-Freeze End-To-End Check
+
+Publish from a test account and query the streaming export within minutes:
+
+```sql
+SELECT
+  event_timestamp,
+  event_name,
+  user_id,
+  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'mode')
+    AS mode
+FROM `openvine-co.analytics_<property_id>.events_intraday_*`
+WHERE _TABLE_SUFFIX = FORMAT_DATE('%Y%m%d', CURRENT_DATE())
+  AND user_id = @pubkey_hex
+ORDER BY event_timestamp;
+```
+
+Verify that `user_id` is the exact 64-character hex pubkey, matches the same
+account in ClickHouse `nostr.events_local.pubkey`, and accompanies the complete
+creation funnel with non-null `mode`. A null or bech32 `user_id` is a release
+blocker for the campaign build.
 
 ## Firebase Console Checks
 

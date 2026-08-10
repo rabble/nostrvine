@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/camera_permission_check.dart';
 
 /// Empty state widget for library tabs (clips, drafts).
@@ -73,7 +74,9 @@ class EmptyLibraryState extends StatelessWidget {
                 label: context.l10n.libraryRecordVideo,
                 leadingIcon: .videoCamera,
                 type: .secondary,
-                onPressed: () => context.pushToCameraWithPermission(),
+                onPressed: () => context.pushToCameraWithPermission(
+                  entryPoint: CreationEntryPoint.library,
+                ),
               ),
             ],
           ],

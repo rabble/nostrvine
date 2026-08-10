@@ -22,6 +22,7 @@ import 'package:openvine/screens/feed/home_feed_retap_cubit.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/camera_permission_check.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/notification_badge.dart';
@@ -174,7 +175,9 @@ class VineBottomNav extends ConsumerWidget {
                         name: 'Navigation',
                         category: LogCategory.ui,
                       );
-                      context.pushToCameraWithPermission();
+                      context.pushToCameraWithPermission(
+                        entryPoint: CreationEntryPoint.bottomNav,
+                      );
                     },
                   ),
                   _IconTabButton(

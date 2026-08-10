@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:analytics/analytics.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -57,14 +58,17 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
     required KeycastOAuth oauthClient,
     required AuthService authService,
     InviteApiClient? inviteApiClient,
+    AnalyticsEventSink analytics = const NoOpAnalyticsEventSink(),
   }) : _oauthClient = oauthClient,
        _authService = authService,
        _inviteApiClient = inviteApiClient,
+       _analytics = analytics,
        super(const EmailVerificationState());
 
   final KeycastOAuth _oauthClient;
   final AuthService _authService;
   final InviteApiClient? _inviteApiClient;
+  final AnalyticsEventSink _analytics;
 
   /// Tracks the device code that was already successfully exchanged.
   ///
@@ -1217,6 +1221,7 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
           oauthConfig: _oauthClient.config,
           session: session,
         );
+        await _setInviteCodeProperty(inviteCode);
         return;
       } on InviteApiException catch (e) {
         final isLastAttempt = attempt == _maxConsumeRetries;
@@ -1232,6 +1237,21 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
         );
         await Future<void>.delayed(_consumeRetryDelay);
       }
+    }
+  }
+
+  Future<void> _setInviteCodeProperty(String inviteCode) async {
+    try {
+      await _analytics.setUserProperty(
+        name: AnalyticsUserProperty.inviteCode,
+        value: inviteCode,
+      );
+    } catch (error) {
+      Log.warning(
+        'Failed to set invite attribution: $error',
+        name: 'EmailVerificationCubit',
+        category: LogCategory.auth,
+      );
     }
   }
 

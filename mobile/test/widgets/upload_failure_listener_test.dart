@@ -5,17 +5,22 @@
 
 import 'dart:async';
 
+import 'package:analytics/analytics.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
+import 'package:openvine/features/post_publish/post_publish_experiment.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/main.dart' as app;
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/post_publish_providers.dart';
+import 'package:openvine/router/app_router.dart';
 import 'package:openvine/router/navigator_keys.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
@@ -39,6 +44,43 @@ class _FakeDraft extends Fake implements DivineVideoDraft {
   String get id => _id;
 }
 
+class _MockGoRouter extends Mock implements GoRouter {}
+
+class _EnabledFlags implements PostPublishFlagClient {
+  @override
+  bool get createAgainEnabled => true;
+
+  @override
+  void dispose() {}
+
+  @override
+  Future<void> initialize() async {}
+}
+
+class _NoOpAnalytics implements AnalyticsEventSink {
+  @override
+  Future<void> logEvent({
+    required String name,
+    required Map<String, Object> parameters,
+  }) async {}
+
+  @override
+  Future<void> logScreenView({
+    required String screenName,
+    String? screenClass,
+    Map<String, Object>? parameters,
+  }) async {}
+
+  @override
+  Future<void> setUserId(String? userId) async {}
+
+  @override
+  Future<void> setUserProperty({
+    required String name,
+    required String? value,
+  }) async {}
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -54,9 +96,16 @@ Widget _buildHarness({
   required _MockBackgroundPublishBloc publishBloc,
   required _MockAuthService authService,
   bool wireRootNavigatorKey = true,
+  PostPublishExperiment? experiment,
+  GoRouter? router,
 }) {
   return ProviderScope(
-    overrides: [authServiceProvider.overrideWithValue(authService)],
+    overrides: [
+      authServiceProvider.overrideWithValue(authService),
+      if (experiment != null)
+        postPublishExperimentProvider.overrideWithValue(experiment),
+      if (router != null) goRouterProvider.overrideWithValue(router),
+    ],
     child: BlocProvider<BackgroundPublishBloc>.value(
       value: publishBloc,
       child: app.UploadFailureListener(
@@ -81,9 +130,7 @@ BackgroundUpload _inProgress(String id) =>
 /// A [BackgroundPublishState] that carries success signals, with no remaining
 /// uploads — mirrors what the bloc emits on [PublishSuccess].
 BackgroundPublishState _succeededState(String id, [String? secondId]) =>
-    BackgroundPublishState(
-      recentlySucceededIds: {id, ?secondId},
-    );
+    BackgroundPublishState(recentlySucceededIds: {id, ?secondId});
 
 /// A [BackgroundPublishState] where upload [id] disappeared without a success
 /// signal — mirrors what the bloc emits on [BackgroundPublishVanished].
@@ -153,6 +200,82 @@ void main() {
       expect(tester.takeException(), isNull);
       final l10n = lookupAppLocalizations(const Locale('en'));
       expect(find.text(l10n.uploadPublishedCountMessage(2)), findsOneWidget);
+    });
+
+    testWidgets('shows create-again action for the treatment variant', (
+      tester,
+    ) async {
+      stubPublishBloc(const BackgroundPublishState());
+      when(() => authService.isAuthenticated).thenReturn(true);
+      final experiment = PostPublishExperiment(
+        flags: _EnabledFlags(),
+        analytics: _NoOpAnalytics(),
+      );
+      await experiment.screenShown(
+        publishId: 'draft-treatment',
+        destination: 'profile',
+        variant: PostPublishVariant.createAgain,
+      );
+
+      await tester.pumpWidget(
+        _buildHarness(
+          publishBloc: publishBloc,
+          authService: authService,
+          experiment: experiment,
+        ),
+      );
+
+      publishStream.add(_succeededState('draft-treatment'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.uploadPublishedCountMessage(1)), findsOneWidget);
+      expect(find.text(l10n.libraryRecordVideo), findsOneWidget);
+    });
+
+    testWidgets('create-again pushes the recorder over the payoff screen', (
+      tester,
+    ) async {
+      stubPublishBloc(const BackgroundPublishState());
+      when(() => authService.isAuthenticated).thenReturn(true);
+      final router = _MockGoRouter();
+      when(() => router.push<void>(any())).thenAnswer((_) async {});
+      final experiment = PostPublishExperiment(
+        flags: _EnabledFlags(),
+        analytics: _NoOpAnalytics(),
+      );
+      await experiment.screenShown(
+        publishId: 'draft-treatment',
+        destination: 'profile',
+        variant: PostPublishVariant.createAgain,
+      );
+
+      await tester.pumpWidget(
+        _buildHarness(
+          publishBloc: publishBloc,
+          authService: authService,
+          experiment: experiment,
+          router: router,
+        ),
+      );
+
+      publishStream.add(_succeededState('draft-treatment'));
+      await tester.pump();
+      // Let the snackbar finish sliding in so the action is hit-testable.
+      await tester.pump(const Duration(milliseconds: 750));
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.libraryRecordVideo), findsOneWidget);
+      await tester.tap(find.byType(SnackBarAction));
+      await tester.pump();
+
+      // `push`, not `go`: closing the recorder must pop back to the profile
+      // the experiment treats as the payoff, not reset to the feed.
+      verify(
+        () => router.push<void>('/video-recorder?entry_point=post_publish'),
+      ).called(1);
+      verifyNever(() => router.go(any()));
     });
 
     testWidgets(

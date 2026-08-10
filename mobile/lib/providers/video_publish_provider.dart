@@ -15,16 +15,20 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/features/post_publish/post_publish_experiment.dart';
 import 'package:openvine/l10n/current_app_l10n.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/publish_error_kind_l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/video_publish/video_publish_provider_state.dart';
+import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/models/video_reply_context.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/layer_rasterizer_provider.dart';
+import 'package:openvine/providers/post_publish_providers.dart';
 import 'package:openvine/providers/preferences_providers.dart';
 import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/service_providers.dart';
@@ -373,8 +377,20 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
 
     _inFlightSourceDraftIds.add(sourceDraftId);
     state = state.copyWith(publishState: .preparing);
+    final creationTracker = ref.read(creationAnalyticsTrackerProvider);
+    final recorderMode =
+        creationTracker.activeMode ?? VideoRecorderMode.capture;
 
     try {
+      await creationTracker.publishStarted(recorderMode);
+      if (!context.mounted) {
+        await creationTracker.publishFailed(
+          mode: recorderMode,
+          reason: 'context_unmounted',
+        );
+        return;
+      }
+
       Log.info(
         '📝 Starting video publish process',
         name: 'VideoPublishNotifier',
@@ -408,6 +424,10 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         );
         if (materialized == null) {
           setError(stopMotionFailedMessage!);
+          await creationTracker.publishFailed(
+            mode: recorderMode,
+            reason: 'stop_motion_render_failed',
+          );
           return;
         }
         finalRenderedClip = materialized;
@@ -452,6 +472,10 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
           ).publishErrorOverlaysUnavailable;
           setError(message);
           _showPublishError(message);
+          await creationTracker.publishFailed(
+            mode: recorderMode,
+            reason: 'overlays_unavailable',
+          );
           return;
         }
 
@@ -474,6 +498,12 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
               ).publishErrorMessage(PublishErrorKind.generic);
           setError(message);
           _showPublishError(message);
+          await creationTracker.publishFailed(
+            mode: recorderMode,
+            reason: needsStopMotionRender
+                ? 'stop_motion_render_failed'
+                : 'render_failed',
+          );
           return;
         }
 
@@ -520,7 +550,13 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         category: .video,
       );
 
-      if (!context.mounted) return;
+      if (!context.mounted) {
+        await creationTracker.publishFailed(
+          mode: recorderMode,
+          reason: 'context_unmounted',
+        );
+        return;
+      }
 
       final backgroundPublishBloc = context.read<BackgroundPublishBloc>();
       final publishService = await _createPublishService(
@@ -546,10 +582,18 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         ),
       );
       var didNavigate = false;
+      final postPublishExperiment = ref.read(postPublishExperimentProvider);
 
       if (context.mounted && videoReplyContext != null) {
         final destination = videoReplyPublishDestinationFor(videoReplyContext);
         context.go(destination.path, extra: destination.extra);
+        unawaited(
+          postPublishExperiment.screenShown(
+            publishId: publishDraft.id,
+            destination: 'video_reply',
+            variant: PostPublishVariant.control,
+          ),
+        );
         didNavigate = true;
       } else {
         // Navigate to current user's profile
@@ -557,6 +601,16 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         final currentNpub = authService.currentNpub;
         if (currentNpub != null && context.mounted) {
           context.go(ProfileScreenRouter.pathForNpub(currentNpub));
+          final variant = postPublishExperiment.variantForUser(
+            authService.currentPublicKeyHex,
+          );
+          unawaited(
+            postPublishExperiment.screenShown(
+              publishId: publishDraft.id,
+              destination: 'profile',
+              variant: variant,
+            ),
+          );
           didNavigate = true;
         }
       }
@@ -576,6 +630,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       // Handle result
       switch (result) {
         case PublishSuccess():
+          await creationTracker.publishSucceeded(recorderMode);
           Log.info(
             '🎉 Video published successfully',
             name: 'VideoPublishNotifier',
@@ -594,6 +649,10 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
               rawFallback ??
               l10n.publishErrorMessage(kind, serverName: serverName);
           setError(message);
+          await creationTracker.publishFailed(
+            mode: recorderMode,
+            reason: kind.name,
+          );
           Log.error(
             '❌ Publish failed: $message',
             name: 'VideoPublishNotifier',
@@ -616,6 +675,10 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       final message = l10n.publishErrorMessage(PublishErrorKind.generic);
       setError(message);
       _showPublishError(message);
+      await creationTracker.publishFailed(
+        mode: recorderMode,
+        reason: 'unexpected_error',
+      );
     } finally {
       _inFlightSourceDraftIds.remove(sourceDraftId);
       Log.info(
@@ -720,10 +783,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
     );
     final message = collaboratorInviteRetryResultMessage(l10n, summary);
     messenger.showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-      ),
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );
   }
 

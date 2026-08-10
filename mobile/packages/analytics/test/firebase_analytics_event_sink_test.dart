@@ -15,25 +15,54 @@ void main() {
       sink = FirebaseAnalyticsEventSink(analytics: analytics);
     });
 
+    test(
+      'forwards user IDs to Firebase Analytics without transforming them',
+      () async {
+        const pubkeyHex =
+            '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+        when(() => analytics.setUserId(id: pubkeyHex)).thenAnswer((_) async {});
+
+        await sink.setUserId(pubkeyHex);
+
+        verify(() => analytics.setUserId(id: pubkeyHex)).called(1);
+      },
+    );
+
+    test('clears the Firebase Analytics user ID', () async {
+      when(() => analytics.setUserId()).thenAnswer((_) async {});
+
+      await sink.setUserId(null);
+
+      verify(() => analytics.setUserId()).called(1);
+    });
+
+    test('forwards user properties to Firebase Analytics', () async {
+      when(
+        () =>
+            analytics.setUserProperty(name: 'invite_code', value: 'ABCD-EFGH'),
+      ).thenAnswer((_) async {});
+
+      await sink.setUserProperty(name: 'invite_code', value: 'ABCD-EFGH');
+
+      verify(
+        () =>
+            analytics.setUserProperty(name: 'invite_code', value: 'ABCD-EFGH'),
+      ).called(1);
+    });
+
     test('forwards custom events to Firebase Analytics', () async {
       const parameters = <String, Object>{
         'surface_name': 'comments_sheet',
         'total_ms': 3250,
       };
       when(
-        () => analytics.logEvent(
-          name: 'surface_load',
-          parameters: parameters,
-        ),
+        () => analytics.logEvent(name: 'surface_load', parameters: parameters),
       ).thenAnswer((_) async {});
 
       await sink.logEvent(name: 'surface_load', parameters: parameters);
 
       verify(
-        () => analytics.logEvent(
-          name: 'surface_load',
-          parameters: parameters,
-        ),
+        () => analytics.logEvent(name: 'surface_load', parameters: parameters),
       ).called(1);
     });
 

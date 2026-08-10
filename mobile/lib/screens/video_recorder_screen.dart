@@ -14,9 +14,11 @@ import 'package:openvine/blocs/sound_waveform/sound_waveform_bloc.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/config/screenshot_mode.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/features/creation_analytics/creation_analytics_tracker.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/codec_heavy_surface_guard.dart';
 import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
@@ -38,17 +40,47 @@ import 'package:unified_logger/unified_logger.dart';
 
 const _kWhySixSecondsShownKey = 'why_six_seconds_shown';
 
+abstract final class CreationEntryPoint {
+  static const direct = 'direct';
+  static const bottomNav = 'bottom_nav';
+  static const cameraFab = 'camera_fab';
+  static const library = 'library';
+  static const videoReply = 'video_reply';
+  static const quickAction = 'quick_action';
+  static const postPublish = 'post_publish';
+  static const editor = 'editor';
+
+  static String fromName(String? value) => switch (value) {
+    direct ||
+    bottomNav ||
+    cameraFab ||
+    library ||
+    videoReply ||
+    quickAction ||
+    postPublish ||
+    editor => value!,
+    _ => direct,
+  };
+}
+
 /// Route shell for the standalone recorder flow.
 ///
 /// The permission gate renders recorder chrome while permissions are pending,
 /// so the [VideoRecorderBloc] must sit above both the gate and recorder view.
 class VideoRecorderRoute extends ConsumerWidget {
-  const VideoRecorderRoute({super.key});
+  const VideoRecorderRoute({
+    super.key,
+    this.entryPoint = CreationEntryPoint.direct,
+  });
+
+  final String entryPoint;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return const _VideoRecorderBlocScope(
-      child: CameraPermissionGate(child: VideoRecorderView()),
+    return _VideoRecorderBlocScope(
+      child: CameraPermissionGate(
+        child: VideoRecorderView(entryPoint: entryPoint),
+      ),
     );
   }
 }
@@ -62,7 +94,11 @@ class VideoRecorderRoute extends ConsumerWidget {
 /// `state_management.md`).
 class VideoRecorderScreen extends ConsumerWidget {
   /// Creates a video recorder screen.
-  const VideoRecorderScreen({super.key, this.fromEditor = false});
+  const VideoRecorderScreen({
+    super.key,
+    this.fromEditor = false,
+    this.entryPoint = CreationEntryPoint.direct,
+  });
 
   /// Whether the screen is opened from the video editor.
   ///
@@ -70,16 +106,21 @@ class VideoRecorderScreen extends ConsumerWidget {
   /// instead of the standard recorder close flow.
   final bool fromEditor;
 
+  final String entryPoint;
+
   /// Route name for this screen.
   static const routeName = 'video-recorder';
 
   /// Path for this route.
   static const path = '/video-recorder';
 
+  static String pathForEntryPoint(String entryPoint) =>
+      Uri(path: path, queryParameters: {'entry_point': entryPoint}).toString();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return _VideoRecorderBlocScope(
-      child: VideoRecorderView(fromEditor: fromEditor),
+      child: VideoRecorderView(fromEditor: fromEditor, entryPoint: entryPoint),
     );
   }
 }
@@ -94,15 +135,26 @@ class _VideoRecorderBlocScope extends ConsumerWidget {
     final clipManager = ref.watch(clipManagerProvider.notifier);
     final videoEditor = ref.watch(videoEditorProvider.notifier);
     final sharedPreferences = ref.watch(sharedPreferencesProvider);
+    final creationAnalyticsTracker = ref.watch(
+      creationAnalyticsTrackerProvider,
+    );
 
     return BlocProvider<VideoRecorderBloc>(
-      key: ValueKey((clipManager, videoEditor, sharedPreferences)),
+      key: ValueKey((
+        clipManager,
+        videoEditor,
+        sharedPreferences,
+        creationAnalyticsTracker,
+      )),
       create: (_) => VideoRecorderBloc(
         readClipManager: () => ref.read(clipManagerProvider.notifier),
         readVideoEditor: () => ref.read(videoEditorProvider.notifier),
         readVideoEditorState: () => ref.read(videoEditorProvider),
         readSharedPreferences: () => ref.read(sharedPreferencesProvider),
         performanceMonitor: ref.read(performanceMonitoringServiceProvider),
+        onRecordingStarted: (mode) => unawaited(
+          creationAnalyticsTracker.recordingStarted(mode),
+        ),
       ),
       child: child,
     );
@@ -113,10 +165,16 @@ class _VideoRecorderBlocScope extends ConsumerWidget {
 /// pump it directly with a mock [VideoRecorderBloc].
 @visibleForTesting
 class VideoRecorderView extends ConsumerStatefulWidget {
-  const VideoRecorderView({super.key, this.fromEditor = false});
+  const VideoRecorderView({
+    super.key,
+    this.fromEditor = false,
+    this.entryPoint = CreationEntryPoint.direct,
+  });
 
   /// Whether the screen is opened from the video editor.
   final bool fromEditor;
+
+  final String entryPoint;
 
   @override
   ConsumerState<VideoRecorderView> createState() => _VideoRecorderViewState();
@@ -126,6 +184,7 @@ class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
     with WidgetsBindingObserver, CodecHeavySurfaceGuard {
   ProviderSubscription<AudioEvent?>? _soundSubscription;
   OverlayVisibility? _overlayVisibilityNotifier;
+  late final CreationAnalyticsTracker _creationAnalyticsTracker;
   VideoRecorderMode? _lastRecorderMode;
 
   bool get _isAutosavedDraft => ref.read(videoEditorProvider).isAutosavedDraft;
@@ -134,7 +193,28 @@ class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
   void initState() {
     super.initState();
 
-    _lastRecorderMode = context.read<VideoRecorderBloc>().state.recorderMode;
+    final initialBlocMode = context
+        .read<VideoRecorderBloc>()
+        .state
+        .recorderMode;
+    _lastRecorderMode = initialBlocMode;
+    final tracker = ref.read(creationAnalyticsTrackerProvider);
+    _creationAnalyticsTracker = tracker;
+    final openingMode =
+        tracker.activeMode ??
+        (widget.fromEditor
+            ? initialBlocMode
+            : VideoRecorderMode.fromName(
+                ref
+                    .read(sharedPreferencesProvider)
+                    .getString(VideoRecorderMode.persistenceKey),
+              ));
+    unawaited(
+      tracker.cameraOpened(
+        mode: openingMode,
+        entryPoint: widget.entryPoint,
+      ),
+    );
 
     WidgetsBinding.instance.addObserver(this);
     _pauseBackgroundPlayback();
@@ -349,6 +429,9 @@ class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
 
   @override
   void dispose() {
+    if (!widget.fromEditor) {
+      unawaited(_creationAnalyticsTracker.creationAbandoned());
+    }
     try {
       _overlayVisibilityNotifier?.setPageOpen(false);
     } catch (e) {
@@ -393,6 +476,9 @@ class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
         listener: (context, state) {
           final previous = _lastRecorderMode;
           _lastRecorderMode = state.recorderMode;
+          ref
+              .read(creationAnalyticsTrackerProvider)
+              .modeChanged(state.recorderMode);
           if (state.recorderMode == VideoRecorderMode.upload) {
             context.read<VideoRecorderBloc>().add(
               const VideoRecorderAppLifecycleChanged(AppLifecycleState.paused),

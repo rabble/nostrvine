@@ -22,6 +22,7 @@ import 'package:openvine/blocs/video_editor/voice_over/voice_over_cubit.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
+import 'package:openvine/features/creation_analytics/creation_analytics_tracker.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/codec_heavy_surface_guard.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -29,7 +30,10 @@ import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/models/video_editor/caption_layer_mapping.dart';
 import 'package:openvine/models/video_editor/caption_style_preset.dart';
 import 'package:openvine/models/video_editor/caption_track.dart';
+import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/upload_media_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -104,6 +108,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
   /// Manually managed so [_extractWaveform] can dispatch events without
   /// needing a child context below [MultiBlocProvider].
   late final TimelineOverlayBloc _timelineOverlayBloc;
+  late final CreationAnalyticsTracker _creationAnalyticsTracker;
 
   /// Body size notifier, updated by [_CanvasFitter].
   final _bodySizeNotifier = ValueNotifier<Size>(Size.zero);
@@ -147,6 +152,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
   @override
   void initState() {
     super.initState();
+    _creationAnalyticsTracker = ref.read(creationAnalyticsTrackerProvider);
     Log.info(
       '🎬 Initialized (draftId: ${widget.draftId}, fromLibrary: ${widget.fromLibrary})',
       name: 'VideoEditorScreen',
@@ -221,6 +227,20 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
           .read(videoEditorProvider.notifier)
           .initialize(draftId: widget.draftId);
 
+      if (!mounted) return;
+      final clips = ref.read(clipManagerProvider).clips;
+      final tracker = _creationAnalyticsTracker;
+      final recorderMode =
+          tracker.activeMode ??
+          (isStopMotionComposition(clips)
+              ? VideoRecorderMode.stopMotion
+              : VideoRecorderMode.fromName(
+                  ref
+                      .read(sharedPreferencesProvider)
+                      .getString(VideoRecorderMode.persistenceKey),
+                ));
+      await tracker.editorOpened(recorderMode);
+
       Log.info(
         '🎬 Video editor initialized successfully',
         name: 'VideoEditorScreen',
@@ -258,6 +278,9 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
 
   @override
   void dispose() {
+    if (widget.fromLibrary || widget.draftId != null) {
+      unawaited(_creationAnalyticsTracker.creationAbandoned());
+    }
     Log.info(
       '🎨 Disposed',
       name: 'VideoEditorScreen',
@@ -323,7 +346,10 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
         opaque: false,
         barrierDismissible: true,
         barrierColor: VineTheme.transparent,
-        pageBuilder: (_, _, _) => const VideoRecorderScreen(fromEditor: true),
+        pageBuilder: (_, _, _) => const VideoRecorderScreen(
+          fromEditor: true,
+          entryPoint: CreationEntryPoint.editor,
+        ),
         transitionsBuilder: (_, animation, _, child) {
           return FadeTransition(opacity: animation, child: child);
         },
@@ -686,9 +712,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
     final editor = _editorKey.currentState;
     if (editor == null) return;
 
-    final audioDuration = Duration(
-      milliseconds: (durationSecs * 1000).toInt(),
-    );
+    final audioDuration = Duration(milliseconds: (durationSecs * 1000).toInt());
     final clipDuration = _clipEditorBloc.state.totalDuration;
     const maxDuration = VideoEditorConstants.maxDuration;
     final endTime = [

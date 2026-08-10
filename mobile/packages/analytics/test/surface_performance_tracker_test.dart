@@ -8,6 +8,15 @@ class RecordingAnalyticsEventSink implements AnalyticsEventSink {
   final events = <({String name, Map<String, Object> parameters})>[];
 
   @override
+  Future<void> setUserId(String? userId) async {}
+
+  @override
+  Future<void> setUserProperty({
+    required String name,
+    required String? value,
+  }) async {}
+
+  @override
   Future<void> logEvent({
     required String name,
     required Map<String, Object> parameters,
@@ -37,10 +46,7 @@ void main() {
       PageLoadHistory().clear();
       sink = RecordingAnalyticsEventSink();
       now = DateTime(2026, 6, 12, 12);
-      tracker = SurfacePerformanceTracker(
-        sink: sink,
-        now: () => now,
-      );
+      tracker = SurfacePerformanceTracker(sink: sink, now: () => now);
     });
 
     tearDown(() {
@@ -164,24 +170,15 @@ void main() {
         expect(sink.events, hasLength(1));
         expect(
           sink.events.single.parameters,
-          containsPair(
-            AnalyticsParam.visibleMs,
-            40,
-          ),
+          containsPair(AnalyticsParam.visibleMs, 40),
         );
         expect(
           sink.events.single.parameters,
-          containsPair(
-            AnalyticsParam.dataMs,
-            -1,
-          ),
+          containsPair(AnalyticsParam.dataMs, -1),
         );
         expect(
           sink.events.single.parameters,
-          containsPair(
-            AnalyticsParam.totalMs,
-            130,
-          ),
+          containsPair(AnalyticsParam.totalMs, 130),
         );
       },
     );
