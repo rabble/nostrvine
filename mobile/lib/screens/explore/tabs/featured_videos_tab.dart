@@ -78,13 +78,13 @@ class _FeaturedVideosRetryOnPoll extends StatelessWidget {
   }
 }
 
-class _FeaturedVideosView extends ConsumerWidget {
+class _FeaturedVideosView extends StatelessWidget {
   const _FeaturedVideosView({required this.config});
 
   final FeaturedTabConfig config;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return BlocConsumer<FeaturedTabVideosCubit, FeaturedTabVideosState>(
       listenWhen: (previous, current) =>
           previous.status != FeaturedTabVideosStatus.failure &&

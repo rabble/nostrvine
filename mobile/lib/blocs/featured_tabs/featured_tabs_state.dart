@@ -33,12 +33,6 @@ class FeaturedTabsState extends Equatable {
   /// Server-supplied refresh cadence.
   final Duration pollInterval;
 
-  /// Whether a featured tab should appear in the tab bar.
-  bool get hasTab => tab != null;
-
-  /// Opaque configuration id for analytics, or `null` when no tab renders.
-  String? get analyticsId => tab?.id;
-
   /// Returns a copy with the given overrides.
   ///
   /// Use [clearTab] when the server resolves no eligible tab; omitting [tab]

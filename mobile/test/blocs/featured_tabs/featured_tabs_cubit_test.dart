@@ -109,16 +109,6 @@ void main() {
       expect(cubit.state.pollInterval, equals(const Duration(seconds: 120)));
     });
 
-    test('exposes the opaque config id for analytics', () async {
-      stubSnapshot(const FeaturedTabsSnapshot(tab: _tab));
-      final cubit = buildCubit();
-      addTearDown(cubit.close);
-
-      await cubit.refresh();
-
-      expect(cubit.state.analyticsId, equals('ft_a1b2c3d4'));
-    });
-
     test('preserves the current tab when only status changes', () {
       const state = FeaturedTabsState(
         status: FeaturedTabsStatus.resolved,
@@ -214,14 +204,14 @@ void main() {
 
       afterKill.complete(const FeaturedTabsSnapshot());
       await fresh;
-      expect(cubit.state.hasTab, isFalse);
+      expect(cubit.state.tab, isNull);
 
       beforeKill.complete(const FeaturedTabsSnapshot(tab: _tab));
       await stale;
 
       expect(
-        cubit.state.hasTab,
-        isFalse,
+        cubit.state.tab,
+        isNull,
         reason: 'a superseded refresh must not publish',
       );
     });
