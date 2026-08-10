@@ -17,3 +17,13 @@ final class MyFollowersListLoadRequested extends MyFollowersEvent {
 final class MyFollowersBlocklistChanged extends MyFollowersEvent {
   const MyFollowersBlocklistChanged();
 }
+
+/// Request to present the loaded followers in [sortOrder].
+///
+/// Re-orders what is already in state; it does not refetch.
+final class MyFollowersSortOrderChanged extends MyFollowersEvent {
+  const MyFollowersSortOrderChanged(this.sortOrder);
+
+  /// The order the user picked.
+  final FollowSortOrder sortOrder;
+}

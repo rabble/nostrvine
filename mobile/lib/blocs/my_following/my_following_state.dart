@@ -24,6 +24,7 @@ final class MyFollowingState extends Equatable {
     this.status = MyFollowingStatus.initial,
     this.followingPubkeys = const [],
     this.rawFollowingPubkeys = const [],
+    this.sortOrder = FollowSortOrder.newestFirst,
     this.isRefreshing = false,
     this.hasLocalFollowEdit = false,
   });
@@ -34,11 +35,15 @@ final class MyFollowingState extends Equatable {
   /// List of pubkeys the current user is following (blocklist-filtered).
   final List<String> followingPubkeys;
 
-  /// Unfiltered following pubkeys as received from the repository.
+  /// Unfiltered following pubkeys as received from the repository, in follow
+  /// order — the contact list's `p` tags verbatim, oldest follow first.
   ///
-  /// Stored in state so blocklist re-filtering can replay the full list
-  /// without waiting for a new network event.
+  /// Stored in state so blocklist re-filtering and sort changes can replay the
+  /// full list without waiting for a new network event.
   final List<String> rawFollowingPubkeys;
+
+  /// The order [followingPubkeys] is presented in.
+  final FollowSortOrder sortOrder;
 
   /// True while stale cache data is shown and a fresh fetch is in progress.
   final bool isRefreshing;
@@ -60,6 +65,7 @@ final class MyFollowingState extends Equatable {
     MyFollowingStatus? status,
     List<String>? followingPubkeys,
     List<String>? rawFollowingPubkeys,
+    FollowSortOrder? sortOrder,
     bool? isRefreshing,
     bool? hasLocalFollowEdit,
   }) {
@@ -67,6 +73,7 @@ final class MyFollowingState extends Equatable {
       status: status ?? this.status,
       followingPubkeys: followingPubkeys ?? this.followingPubkeys,
       rawFollowingPubkeys: rawFollowingPubkeys ?? this.rawFollowingPubkeys,
+      sortOrder: sortOrder ?? this.sortOrder,
       isRefreshing: isRefreshing ?? this.isRefreshing,
       hasLocalFollowEdit: hasLocalFollowEdit ?? this.hasLocalFollowEdit,
     );
@@ -77,6 +84,7 @@ final class MyFollowingState extends Equatable {
     status,
     followingPubkeys,
     rawFollowingPubkeys,
+    sortOrder,
     isRefreshing,
     hasLocalFollowEdit,
   ];

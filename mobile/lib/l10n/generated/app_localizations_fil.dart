@@ -7782,6 +7782,21 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi na-update ang follow status. Subukan ulit.';
 
   @override
+  String get followersSortSemanticLabel => 'Ayusin ang mga follower';
+
+  @override
+  String get followingSortSemanticLabel => 'Ayusin ang mga sinusundan';
+
+  @override
+  String get followSortTitle => 'Ayusin ayon sa';
+
+  @override
+  String get followSortNewest => 'Pinakabago muna';
+
+  @override
+  String get followSortOldest => 'Pinakaluma muna';
+
+  @override
   String get reportMessageTitle => 'I-report ang Message';
 
   @override

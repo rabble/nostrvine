@@ -7701,6 +7701,21 @@ class AppLocalizationsVi extends AppLocalizations {
       'Không cập nhật được trạng thái theo dõi. Vui lòng thử lại.';
 
   @override
+  String get followersSortSemanticLabel => 'Sắp xếp người theo dõi';
+
+  @override
+  String get followingSortSemanticLabel => 'Sắp xếp đang theo dõi';
+
+  @override
+  String get followSortTitle => 'Sắp xếp theo';
+
+  @override
+  String get followSortNewest => 'Mới nhất trước';
+
+  @override
+  String get followSortOldest => 'Cũ nhất trước';
+
+  @override
   String get reportMessageTitle => 'Báo cáo tin nhắn';
 
   @override

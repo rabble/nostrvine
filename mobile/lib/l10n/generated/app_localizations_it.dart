@@ -7766,6 +7766,21 @@ class AppLocalizationsIt extends AppLocalizations {
       'Impossibile aggiornare lo stato del follow. Riprova.';
 
   @override
+  String get followersSortSemanticLabel => 'Ordina follower';
+
+  @override
+  String get followingSortSemanticLabel => 'Ordina seguiti';
+
+  @override
+  String get followSortTitle => 'Ordina per';
+
+  @override
+  String get followSortNewest => 'Prima i più recenti';
+
+  @override
+  String get followSortOldest => 'Prima i meno recenti';
+
+  @override
   String get reportMessageTitle => 'Segnala messaggio';
 
   @override

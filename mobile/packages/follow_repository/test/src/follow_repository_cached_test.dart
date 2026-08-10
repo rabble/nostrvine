@@ -2,6 +2,7 @@
 // ABOUTME: Covers cache emission, live emission, count derivation, forceRefresh
 
 import 'dart:async';
+import 'dart:math';
 
 import 'package:cache_sync/cache_sync.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -51,6 +52,28 @@ class _TestableFollowRepository extends FollowRepository {
 
   @override
   Future<int> getMyFollowerCount() async => myFollowerCountResult;
+
+  // The cached watchers fetch a whole snapshot rather than a pubkey list, so
+  // the list overrides above are routed through here to keep feeding them.
+  @override
+  Future<FollowersSnapshot> fetchMyFollowersSnapshot() async {
+    final pubkeys = await getMyFollowers();
+    final countFromService = await getMyFollowerCount();
+    return FollowersSnapshot(
+      pubkeys: pubkeys,
+      count: max(pubkeys.length, countFromService),
+    );
+  }
+
+  @override
+  Future<FollowersSnapshot> fetchFollowersSnapshot(String pubkey) async {
+    final pubkeys = await getFollowers(pubkey);
+    final countFromService = await getFollowerCount(pubkey);
+    return FollowersSnapshot(
+      pubkeys: pubkeys,
+      count: max(pubkeys.length, countFromService),
+    );
+  }
 
   @override
   Stream<FollowersSnapshot> watchMyFollowers() {

@@ -7724,6 +7724,21 @@ class AppLocalizationsNl extends AppLocalizations {
       'Volgstatus bijwerken mislukt. Probeer het opnieuw.';
 
   @override
+  String get followersSortSemanticLabel => 'Volgers sorteren';
+
+  @override
+  String get followingSortSemanticLabel => 'Gevolgden sorteren';
+
+  @override
+  String get followSortTitle => 'Sorteren op';
+
+  @override
+  String get followSortNewest => 'Nieuwste eerst';
+
+  @override
+  String get followSortOldest => 'Oudste eerst';
+
+  @override
   String get reportMessageTitle => 'Bericht rapporteren';
 
   @override

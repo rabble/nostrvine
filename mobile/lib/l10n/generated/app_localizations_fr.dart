@@ -7793,6 +7793,21 @@ class AppLocalizationsFr extends AppLocalizations {
       'Échec de la mise à jour du suivi. Réessaie.';
 
   @override
+  String get followersSortSemanticLabel => 'Trier les abonnés';
+
+  @override
+  String get followingSortSemanticLabel => 'Trier les abonnements';
+
+  @override
+  String get followSortTitle => 'Trier par';
+
+  @override
+  String get followSortNewest => 'Plus récents d\'abord';
+
+  @override
+  String get followSortOldest => 'Plus anciens d\'abord';
+
+  @override
   String get reportMessageTitle => 'Signaler le message';
 
   @override

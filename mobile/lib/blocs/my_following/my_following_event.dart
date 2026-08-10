@@ -27,6 +27,16 @@ final class MyFollowingBlocklistChanged extends MyFollowingEvent {
   const MyFollowingBlocklistChanged();
 }
 
+/// Request to present the loaded following list in [sortOrder].
+///
+/// Re-orders what is already in state; it does not refetch.
+final class MyFollowingSortOrderChanged extends MyFollowingEvent {
+  const MyFollowingSortOrderChanged(this.sortOrder);
+
+  /// The order the user picked.
+  final FollowSortOrder sortOrder;
+}
+
 final class _MyFollowingRepositoryUpdated extends MyFollowingEvent {
   const _MyFollowingRepositoryUpdated(this.pubkeys);
 

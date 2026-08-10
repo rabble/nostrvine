@@ -7349,6 +7349,21 @@ class AppLocalizationsJa extends AppLocalizations {
   String get followersUpdateFollowFailed => 'フォロー状態の更新に失敗。もう一回試してみて。';
 
   @override
+  String get followersSortSemanticLabel => 'フォロワーを並べ替え';
+
+  @override
+  String get followingSortSemanticLabel => 'フォロー中を並べ替え';
+
+  @override
+  String get followSortTitle => '並べ替え';
+
+  @override
+  String get followSortNewest => '新しい順';
+
+  @override
+  String get followSortOldest => '古い順';
+
+  @override
   String get reportMessageTitle => 'メッセージを報告';
 
   @override

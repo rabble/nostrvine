@@ -7530,6 +7530,21 @@ class AppLocalizationsAm extends AppLocalizations {
       'የመከተል ሁኔታን ማዘመን አልተሳካም። እባክዎ እንደገና ይሞክሩ።';
 
   @override
+  String get followersSortSemanticLabel => 'ተከታዮችን ደርድር';
+
+  @override
+  String get followingSortSemanticLabel => 'የሚከተሉትን ደርድር';
+
+  @override
+  String get followSortTitle => 'ደርድር በ';
+
+  @override
+  String get followSortNewest => 'አዲሶቹ መጀመሪያ';
+
+  @override
+  String get followSortOldest => 'አሮጌዎቹ መጀመሪያ';
+
+  @override
   String get reportMessageTitle => 'መልዕክትን ሪፖርት አድርግ';
 
   @override

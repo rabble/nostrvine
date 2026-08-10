@@ -77,11 +77,51 @@ void main() {
             bloc.add(OthersFollowingListLoadRequested(validPubkey('target'))),
         verify: (bloc) {
           expect(bloc.state.status, OthersFollowingStatus.success);
+          // Newest follow first: the repository hands over the contact list's
+          // `p` tags in follow order, which NIP-02 says runs oldest to newest.
           expect(bloc.state.followingPubkeys, [
-            validPubkey('following1'),
             validPubkey('following2'),
+            validPubkey('following1'),
           ]);
           expect(bloc.state.targetPubkey, validPubkey('target'));
+        },
+      );
+
+      blocTest<OthersFollowingBloc, OthersFollowingState>(
+        'orders newest follow first, matching the own-following screen',
+        setUp: () {
+          when(
+            () => mockFollowRepository.watchOthersFollowingCached(
+              any(),
+              forceRefresh: any(named: 'forceRefresh'),
+            ),
+          ).thenAnswer(
+            (_) => Stream<CacheResult<FollowingSnapshot>>.value(
+              CacheResult.live(
+                FollowingSnapshot(
+                  pubkeys: [
+                    validPubkey('oldest'),
+                    validPubkey('middle'),
+                    validPubkey('newest'),
+                  ],
+                  count: 3,
+                ),
+              ),
+            ),
+          );
+        },
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(OthersFollowingListLoadRequested(validPubkey('target'))),
+        verify: (bloc) {
+          // This screen has no sort control, but it still has to agree with
+          // MyFollowingBloc's default — otherwise the same list reads
+          // oldest-first for someone else and newest-first for yourself.
+          expect(bloc.state.followingPubkeys, [
+            validPubkey('newest'),
+            validPubkey('middle'),
+            validPubkey('oldest'),
+          ]);
         },
       );
 

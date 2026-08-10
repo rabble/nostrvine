@@ -292,6 +292,159 @@ void main() {
         expect: () => <MyFollowersState>[],
       );
     });
+
+    group('MyFollowersSortOrderChanged', () {
+      /// Two dated followers ahead of one the REST source reported undated.
+      void stubLoadedFollowers() {
+        when(() => mockFollowRepository.watchMyFollowersCached()).thenAnswer(
+          (_) => Stream.value(
+            CacheResult.live(
+              FollowersSnapshot(
+                pubkeys: [
+                  validPubkey('newest'),
+                  validPubkey('oldest'),
+                  validPubkey('undated'),
+                ],
+                count: 3,
+                datedCount: 2,
+              ),
+            ),
+          ),
+        );
+      }
+
+      blocTest<MyFollowersBloc, MyFollowersState>(
+        'flips the dated followers and leaves the undated one last',
+        setUp: stubLoadedFollowers,
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const MyFollowersListLoadRequested());
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(
+            const MyFollowersSortOrderChanged(FollowSortOrder.oldestFirst),
+          );
+        },
+        skip: 2,
+        expect: () => [
+          MyFollowersState(
+            status: MyFollowersStatus.success,
+            sortOrder: FollowSortOrder.oldestFirst,
+            followersPubkeys: [
+              validPubkey('oldest'),
+              validPubkey('newest'),
+              validPubkey('undated'),
+            ],
+            rawFollowersPubkeys: [
+              validPubkey('newest'),
+              validPubkey('oldest'),
+              validPubkey('undated'),
+            ],
+            rawDatedCount: 2,
+            followerCount: 3,
+          ),
+        ],
+      );
+
+      blocTest<MyFollowersBloc, MyFollowersState>(
+        're-orders without asking the repository again',
+        setUp: stubLoadedFollowers,
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const MyFollowersListLoadRequested());
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(
+            const MyFollowersSortOrderChanged(FollowSortOrder.oldestFirst),
+          );
+          await Future<void>.delayed(Duration.zero);
+        },
+        verify: (_) {
+          verify(() => mockFollowRepository.watchMyFollowersCached()).called(1);
+        },
+      );
+
+      blocTest<MyFollowersBloc, MyFollowersState>(
+        'ignores a re-pick of the active order',
+        setUp: stubLoadedFollowers,
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const MyFollowersListLoadRequested());
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(
+            const MyFollowersSortOrderChanged(FollowSortOrder.newestFirst),
+          );
+        },
+        skip: 2,
+        expect: () => <MyFollowersState>[],
+      );
+
+      blocTest<MyFollowersBloc, MyFollowersState>(
+        'remembers a sort picked before the list has loaded',
+        setUp: stubLoadedFollowers,
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(
+            const MyFollowersSortOrderChanged(FollowSortOrder.oldestFirst),
+          );
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const MyFollowersListLoadRequested());
+        },
+        skip: 2,
+        expect: () => [
+          MyFollowersState(
+            status: MyFollowersStatus.success,
+            sortOrder: FollowSortOrder.oldestFirst,
+            followersPubkeys: [
+              validPubkey('oldest'),
+              validPubkey('newest'),
+              validPubkey('undated'),
+            ],
+            rawFollowersPubkeys: [
+              validPubkey('newest'),
+              validPubkey('oldest'),
+              validPubkey('undated'),
+            ],
+            rawDatedCount: 2,
+            followerCount: 3,
+          ),
+        ],
+      );
+
+      blocTest<MyFollowersBloc, MyFollowersState>(
+        'keeps blocked followers out of the flipped list',
+        setUp: () {
+          stubLoadedFollowers();
+          when(
+            () => mockBlocklistRepository.isBlocked(validPubkey('newest')),
+          ).thenReturn(true);
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const MyFollowersListLoadRequested());
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(
+            const MyFollowersSortOrderChanged(FollowSortOrder.oldestFirst),
+          );
+        },
+        skip: 2,
+        expect: () => [
+          MyFollowersState(
+            status: MyFollowersStatus.success,
+            sortOrder: FollowSortOrder.oldestFirst,
+            followersPubkeys: [
+              validPubkey('oldest'),
+              validPubkey('undated'),
+            ],
+            rawFollowersPubkeys: [
+              validPubkey('newest'),
+              validPubkey('oldest'),
+              validPubkey('undated'),
+            ],
+            rawDatedCount: 2,
+            followerCount: 3,
+          ),
+        ],
+      );
+    });
   });
 
   group(MyFollowersState, () {
@@ -343,6 +496,8 @@ void main() {
         MyFollowersStatus.success,
         ['pubkey1'],
         <String>[], // rawFollowersPubkeys
+        0, // rawDatedCount
+        FollowSortOrder.newestFirst,
         10,
         false, // isRefreshing
       ]);

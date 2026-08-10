@@ -7696,6 +7696,21 @@ class AppLocalizationsUr extends AppLocalizations {
       'فالو اسٹیٹس اپڈیٹ نہیں ہو سکا۔ براہ کرم دوبارہ کوشش کریں۔';
 
   @override
+  String get followersSortSemanticLabel => 'فالوورز ترتیب دیں';
+
+  @override
+  String get followingSortSemanticLabel => 'فالوئنگ ترتیب دیں';
+
+  @override
+  String get followSortTitle => 'ترتیب بلحاظ';
+
+  @override
+  String get followSortNewest => 'پہلے نئے';
+
+  @override
+  String get followSortOldest => 'پہلے پرانے';
+
+  @override
   String get reportMessageTitle => 'پیغام کی رپورٹ کریں';
 
   @override
