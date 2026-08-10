@@ -109,8 +109,8 @@ Future<void> openVideoEditorFromRecorder(
   bloc.add(const VideoRecorderInitializeRequested());
 }
 
-/// Navigates to the clips-only library, releasing the camera during the
-/// transition and re-initializing it on return.
+/// Navigates to the library's drafts and clips tabs, releasing the camera
+/// during the transition and re-initializing it on return.
 Future<void> openRecorderLibrary(BuildContext context, WidgetRef ref) async {
   if (!await _ensureAuthenticatedForRecorderExit(context, ref)) return;
   if (!context.mounted) return;

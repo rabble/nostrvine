@@ -144,12 +144,45 @@ void main() {
     });
 
     group('tab navigation', () {
-      testWidgets('shows only clips and hides tab bar in clipsOnly mode', (
+      testWidgets(
+        'shows drafts and clips but no sounds in withoutSounds mode',
+        (
+          tester,
+        ) async {
+          await tester.pumpWidget(
+            buildWidget(
+              initialTabIndex: 1,
+              tabsMode: LibraryTabsMode.withoutSounds,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text(en.libraryTabDrafts), findsOneWidget);
+          expect(find.text(en.libraryTabClips), findsOneWidget);
+          expect(find.text(en.soundsTitle), findsNothing);
+          expect(find.byType(ClipsTab), findsOneWidget);
+        },
+      );
+
+      testWidgets('opens the drafts tab in withoutSounds mode', (tester) async {
+        await tester.pumpWidget(
+          buildWidget(
+            initialTabIndex: 1,
+            tabsMode: LibraryTabsMode.withoutSounds,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text(en.libraryTabDrafts));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(DraftsTab), findsOneWidget);
+      });
+
+      testWidgets('shows only clips and hides tab bar in selection mode', (
         tester,
       ) async {
-        await tester.pumpWidget(
-          buildWidget(tabsMode: LibraryTabsMode.clipsOnly),
-        );
+        await tester.pumpWidget(buildWidget(selectionMode: true));
         await tester.pumpAndSettle();
 
         expect(find.byType(TabBar), findsNothing);
@@ -282,7 +315,7 @@ void main() {
                     selectionMode: true,
                     initialTabIndex: 1,
                     editorClips: [existingClip],
-                    tabsMode: LibraryTabsMode.clipsOnly,
+                    tabsMode: LibraryTabsMode.withoutSounds,
                   ),
                 ),
               ),
@@ -441,7 +474,7 @@ void main() {
                   builder: (context, show, _) => show
                       ? const LibraryScreen(
                           initialTabIndex: 1,
-                          tabsMode: LibraryTabsMode.clipsOnly,
+                          tabsMode: LibraryTabsMode.withoutSounds,
                         )
                       : const SizedBox.shrink(),
                 ),
@@ -502,7 +535,7 @@ void main() {
         await tester.pumpWidget(
           buildWidget(
             initialTabIndex: 1,
-            tabsMode: LibraryTabsMode.clipsOnly,
+            tabsMode: LibraryTabsMode.withoutSounds,
           ),
         );
         await tester.pumpAndSettle();

@@ -17,9 +17,11 @@ part 'drafts_library_state.dart';
 /// Loads drafts from [DraftStorageService] and handles deletion.
 /// Filters out empty autosaves and already published drafts.
 class DraftsLibraryBloc extends Bloc<DraftsLibraryEvent, DraftsLibraryState> {
-  DraftsLibraryBloc({required DraftStorageService draftStorageService})
-    : _draftStorageService = draftStorageService,
-      super(const DraftsLibraryInitial()) {
+  DraftsLibraryBloc({
+    required DraftStorageService draftStorageService,
+    this.includeAutosaveDraft = true,
+  }) : _draftStorageService = draftStorageService,
+       super(const DraftsLibraryInitial()) {
     on<DraftsLibraryLoadRequested>(_onLoadRequested, transformer: droppable());
     // Duplicate and delete share ONE sequential queue so their handlers never
     // interleave; separate buckets would let one finish mid-flight and emit a
@@ -28,6 +30,26 @@ class DraftsLibraryBloc extends Bloc<DraftsLibraryEvent, DraftsLibraryState> {
   }
 
   final DraftStorageService _draftStorageService;
+
+  /// Whether the in-progress autosave draft may appear in the list.
+  ///
+  /// The recorder opens its library on top of the session that owns the
+  /// autosave, so listing it there would offer the user their own live
+  /// session as something to reopen.
+  final bool includeAutosaveDraft;
+
+  /// Whether [draft] belongs in the library list.
+  ///
+  /// Drops published and publishing drafts, plus the autosave when it holds
+  /// nothing yet or [includeAutosaveDraft] is off.
+  bool _isListable(DivineVideoDraft draft) {
+    if (draft.id == VideoEditorConstants.autoSaveId &&
+        (!includeAutosaveDraft || draft.clips.isEmpty)) {
+      return false;
+    }
+    return draft.publishStatus != PublishStatus.published &&
+        draft.publishStatus != PublishStatus.publishing;
+  }
 
   Future<void> _onMutation(
     DraftsLibraryMutationEvent event,
@@ -48,19 +70,8 @@ class DraftsLibraryBloc extends Bloc<DraftsLibraryEvent, DraftsLibraryState> {
     try {
       final allDrafts = await _draftStorageService.getAllDrafts();
 
-      // Filter out empty autosaves and already published drafts, sort by
-      // newest first.
-      final filteredDrafts =
-          allDrafts
-              .where(
-                (d) =>
-                    (d.id != VideoEditorConstants.autoSaveId ||
-                        d.clips.isNotEmpty) &&
-                    d.publishStatus != PublishStatus.published &&
-                    d.publishStatus != PublishStatus.publishing,
-              )
-              .toList()
-            ..sort((a, b) => b.lastModified.compareTo(a.lastModified));
+      final filteredDrafts = allDrafts.where(_isListable).toList()
+        ..sort((a, b) => b.lastModified.compareTo(a.lastModified));
 
       Log.debug(
         '📚 Loaded ${filteredDrafts.length} drafts',
