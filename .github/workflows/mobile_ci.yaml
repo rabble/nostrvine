@@ -210,6 +210,12 @@ jobs:
           # Issues #3574 / #3575: optionless packages silently inherit the
           # app's relaxed analyzer config; workflow-less packages get no CI.
           bash scripts/check_package_ci_floor.sh
+      - name: 🔗 Verify dependency provenance (git refs + overrides ratchet)
+        run: |
+          # Issues #3655 / #3363 (AC3): freezes the set of dependencies resolved
+          # from outside pub.dev, and rejects a movable git ref unconditionally
+          # (a branch or tag can be repointed under the build).
+          bash scripts/check_dependency_provenance.sh
       - name: 🧱 Verify per-package coverage floors do not decrease (coverage floor ratchet)
         run: |
           # Follow-up to #3575: each package workflow's min_coverage is locked in

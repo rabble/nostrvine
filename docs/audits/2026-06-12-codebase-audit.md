@@ -126,7 +126,7 @@ Positive: the video player pool itself is solid — bounded 3-controller window,
 |----|-----|----------|-------------|--------|
 | DEP-01 | medium | `pubspec.yaml:294` | `sqlcipher_flutter_libs 0.6.8` — upstream's latest is literally `0.7.0+eol`; the at-rest-encryption native lib has no future; needs a successor plan | M |
 | DEP-02 | medium | `pubspec.yaml:355`; 11 importing files incl. `test/flutter_test_config.dart` | `golden_toolkit` is discontinued upstream; `alchemist` already added but migration barely started (1 file) | M |
-| DEP-03 | medium | `pubspec.yaml:122-125` | `c2pa_flutter` git dep pinned to `ref: 0.0.3` — a mutable tag, not a SHA; used in 5+ production files | S |
+| DEP-03 | ~~medium~~ **fixed by #6167** | `pubspec.yaml:147-150` | `c2pa_flutter` git dep now pinned to the immutable commit `847d0c0…` (tag 0.0.3 kept as a trailing comment). Regression-guarded by `check_dependency_provenance.sh` (#3655) | — |
 | DEP-04 | ~~low~~ **fixed by #6923** | `mobile/overrides/cryptography_flutter-2.3.2/` | Vendored crypto fork removed; `nostr_sdk` now uses hosted cryptography packages only | — |
 | DEP-05 | low | `packages/nostr_sdk/lib/utils/sqlite_util.dart` | Fifth storage backend (`sqflite`) carried for one util while drift/sqlite3 are first-class — drop it | M |
 | DEP-06 | low | `pubspec.yaml` (various) | ~55 direct deps behind latest (`flutter_secure_storage` 9→10, `go_router` 16→17, `device_info_plus` 10→13 *and* override-pinned) — routine drift, batch upgrade | M |
