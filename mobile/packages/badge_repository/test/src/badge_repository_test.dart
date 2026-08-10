@@ -254,8 +254,9 @@ void main() {
 
       await repository.hideAward(_eventId(11));
 
+      // Still returned, flagged rather than dropped, so it can be restored.
       final awards = await repository.loadAwardedBadges();
-      expect(awards, isEmpty);
+      expect(awards.single.isHidden, isTrue);
       expect(
         preferences.getStringList('dismissed_badge_awards_${_pubkey(1)}'),
         [_eventId(11)],
@@ -318,7 +319,10 @@ void main() {
 
         final issued = await repository.loadIssuedBadges();
 
-        expect(issued, hasLength(2));
+        // One badge, one recipient — the second award supersedes the first
+        // instead of adding a row that can never resolve.
+        expect(issued, hasLength(1));
+        expect(issued.single.recipients, hasLength(1));
         expect(callCounts['profileCurrent:${_pubkey(2)}'], 1);
         expect(callCounts['profileLegacy:${_pubkey(2)}'], 1);
         expect(callCounts['definition:$coordinate'], 1);
@@ -675,7 +679,7 @@ void main() {
         final issued = await repository.loadIssuedBadges();
 
         expect(issued, hasLength(1));
-        expect(issued.single.award.event.id, _eventId(12));
+        expect(issued.single.coordinate, '30009:${_pubkey(1)}:creator-badge');
         expect(issued.single.recipients.single.pubkey, _pubkey(2));
         expect(issued.single.recipients.single.isAccepted, isTrue);
       },
@@ -866,6 +870,927 @@ void main() {
         ]);
       },
     );
+
+    group('loadCreatedBadges', () {
+      test(
+        'keeps the newest definition per identifier, newest first',
+        () async {
+          _stubQueries(nostrClient, {
+            'created:${_pubkey(1)}': [
+              _definitionEvent(
+                id: _eventId(60),
+                pubkey: _pubkey(1),
+                dTag: 'scene-stealer',
+                name: 'Scene Stealer',
+              ),
+              _definitionEvent(
+                id: _eventId(61),
+                pubkey: _pubkey(1),
+                dTag: 'scene-stealer',
+                name: 'Scene Stealer v2',
+                createdAt: 3000,
+              ),
+              _definitionEvent(
+                id: _eventId(62),
+                pubkey: _pubkey(1),
+                dTag: 'loop-of-the-week',
+                name: 'Loop of the Week',
+                createdAt: 2000,
+              ),
+              // Missing the `d` tag, so it is not a definition at all.
+              _event(
+                id: _eventId(63),
+                pubkey: _pubkey(1),
+                kind: EventKind.badgeDefinition,
+                tags: const [
+                  ['name', 'Nameless'],
+                ],
+              ),
+            ],
+          });
+
+          final created = await repository.loadCreatedBadges();
+
+          expect(created.map((badge) => badge.displayName), [
+            'Scene Stealer v2',
+            'Loop of the Week',
+          ]);
+          expect(created.first.coordinate, '30009:${_pubkey(1)}:scene-stealer');
+        },
+      );
+
+      test('counts awards and distinct recipients per definition', () async {
+        const coordinate = 'scene-stealer';
+        _stubQueries(nostrClient, {
+          'created:${_pubkey(1)}': [
+            _definitionEvent(
+              id: _eventId(64),
+              pubkey: _pubkey(1),
+              dTag: coordinate,
+              name: 'Scene Stealer',
+            ),
+          ],
+          'issued': [
+            _awardEvent(
+              id: _eventId(65),
+              issuerPubkey: _pubkey(1),
+              definitionCoordinate: '30009:${_pubkey(1)}:$coordinate',
+              recipients: [_pubkey(2), _pubkey(3)],
+            ),
+            _awardEvent(
+              id: _eventId(66),
+              issuerPubkey: _pubkey(1),
+              definitionCoordinate: '30009:${_pubkey(1)}:$coordinate',
+              recipients: [_pubkey(3)],
+            ),
+            // Award for a badge the user never defined.
+            _awardEvent(
+              id: _eventId(67),
+              issuerPubkey: _pubkey(1),
+              definitionCoordinate: '30009:${_pubkey(1)}:other',
+              recipients: [_pubkey(4)],
+            ),
+          ],
+        });
+
+        final created = await repository.loadCreatedBadges();
+
+        expect(created.single.awardCount, 2);
+        expect(created.single.recipientCount, 2);
+      });
+
+      test('reports no awards for a definition nobody received', () async {
+        _stubQueries(nostrClient, {
+          'created:${_pubkey(1)}': [
+            _definitionEvent(
+              id: _eventId(68),
+              pubkey: _pubkey(1),
+              dTag: 'scene-stealer',
+              name: 'Scene Stealer',
+              imageUrl: 'https://media.divine.video/scene.png',
+            ),
+          ],
+        });
+
+        final created = await repository.loadCreatedBadges();
+
+        expect(created.single.awardCount, 0);
+        expect(created.single.recipientCount, 0);
+        expect(created.single.imageUrl, 'https://media.divine.video/scene.png');
+      });
+
+      test('falls back to the thumbnail when there is no image', () async {
+        _stubQueries(nostrClient, {
+          'created:${_pubkey(1)}': [
+            _definitionEvent(
+              id: _eventId(69),
+              pubkey: _pubkey(1),
+              dTag: 'scene-stealer',
+              name: 'Scene Stealer',
+              thumbnails: const ['https://media.divine.video/thumb.png'],
+            ),
+          ],
+        });
+
+        final created = await repository.loadCreatedBadges();
+
+        expect(created.single.imageUrl, 'https://media.divine.video/thumb.png');
+      });
+
+      test('throws a StateError without a current pubkey', () async {
+        final anonymous = BadgeRepository(
+          nostrClient: nostrClient,
+          sharedPreferences: preferences,
+          currentPubkey: () => null,
+          signEvent: ({required kind, required content, required tags}) async =>
+              null,
+        );
+
+        await expectLater(
+          anonymous.loadCreatedBadges(),
+          throwsA(isA<StateError>()),
+        );
+      });
+    });
+
+    test('loadIssuedBadges lists newest badge first and names it', () async {
+      _stubQueries(nostrClient, {
+        'issued': [
+          _awardEvent(
+            id: _eventId(80),
+            issuerPubkey: _pubkey(1),
+            definitionCoordinate: '30009:${_pubkey(1)}:older-badge',
+            recipients: [_pubkey(2)],
+          ),
+          _awardEvent(
+            id: _eventId(81),
+            issuerPubkey: _pubkey(1),
+            definitionCoordinate: '30009:${_pubkey(1)}:newer-badge',
+            recipients: [_pubkey(3)],
+            createdAt: 5000,
+          ),
+        ],
+        'definition:30009:${_pubkey(1)}:newer-badge': [
+          _definitionEvent(
+            id: _eventId(82),
+            pubkey: _pubkey(1),
+            dTag: 'newer-badge',
+            name: 'Newer Badge',
+          ),
+        ],
+      });
+
+      final issued = await repository.loadIssuedBadges();
+
+      expect(issued.map((badge) => badge.displayName), [
+        'Newer Badge',
+        // No definition on the relay, so the identifier stands in.
+        'older-badge',
+      ]);
+    });
+
+    group('unhideAward', () {
+      test('puts a dismissed award back on the awarded list', () async {
+        _stubQueries(nostrClient, {
+          'awarded': [
+            _awardEvent(
+              id: _eventId(84),
+              issuerPubkey: _pubkey(2),
+              definitionCoordinate: '30009:${_pubkey(2)}:daily-diviner',
+              recipients: [_pubkey(1)],
+            ),
+          ],
+        });
+        await repository.hideAward(_eventId(84));
+
+        await repository.unhideAward(_eventId(84));
+
+        expect((await repository.loadAwardedBadges()).single.isHidden, isFalse);
+        expect(
+          preferences.getStringList('dismissed_badge_awards_${_pubkey(1)}'),
+          isEmpty,
+        );
+      });
+
+      test('does nothing for an award that was never dismissed', () async {
+        await repository.unhideAward(_eventId(85));
+
+        expect(
+          preferences.getStringList('dismissed_badge_awards_${_pubkey(1)}'),
+          isNull,
+        );
+      });
+
+      test('throws a StateError without a current pubkey', () async {
+        final anonymous = BadgeRepository(
+          nostrClient: nostrClient,
+          sharedPreferences: preferences,
+          currentPubkey: () => null,
+          signEvent: ({required kind, required content, required tags}) async =>
+              null,
+        );
+
+        await expectLater(
+          anonymous.unhideAward(_eventId(86)),
+          throwsA(isA<StateError>()),
+        );
+      });
+    });
+
+    test('loadDashboard keeps dismissed awards out of awarded', () async {
+      _stubQueries(nostrClient, {
+        'awarded': [
+          _awardEvent(
+            id: _eventId(87),
+            issuerPubkey: _pubkey(2),
+            definitionCoordinate: '30009:${_pubkey(2)}:daily-diviner',
+            recipients: [_pubkey(1)],
+          ),
+          _awardEvent(
+            id: _eventId(88),
+            issuerPubkey: _pubkey(2),
+            definitionCoordinate: '30009:${_pubkey(2)}:weekly-diviner',
+            recipients: [_pubkey(1)],
+          ),
+        ],
+      });
+      await repository.hideAward(_eventId(88));
+
+      final dashboard = await repository.loadDashboard();
+
+      expect(dashboard.awarded.single.awardEventId, _eventId(87));
+      expect(dashboard.hidden.single.awardEventId, _eventId(88));
+    });
+
+    group('loadCreatedIdentifiers', () {
+      test('collapses replaced definitions to one identifier', () async {
+        _stubQueries(nostrClient, {
+          'created:${_pubkey(1)}': [
+            _definitionEvent(
+              id: _eventId(94),
+              pubkey: _pubkey(1),
+              dTag: 'scene-stealer',
+              name: 'Scene Stealer',
+            ),
+            _definitionEvent(
+              id: _eventId(95),
+              pubkey: _pubkey(1),
+              dTag: 'scene-stealer',
+              name: 'Scene Stealer v2',
+              createdAt: 3000,
+            ),
+            _definitionEvent(
+              id: _eventId(96),
+              pubkey: _pubkey(1),
+              dTag: 'loop-of-the-week',
+              name: 'Loop of the Week',
+            ),
+          ],
+        });
+
+        expect(await repository.loadCreatedIdentifiers(), {
+          'scene-stealer',
+          'loop-of-the-week',
+        });
+      });
+
+      test('is empty when the user has published no badges', () async {
+        expect(await repository.loadCreatedIdentifiers(), isEmpty);
+      });
+
+      test('throws a StateError without a current pubkey', () async {
+        final anonymous = BadgeRepository(
+          nostrClient: nostrClient,
+          sharedPreferences: preferences,
+          currentPubkey: () => null,
+          signEvent: ({required kind, required content, required tags}) async =>
+              null,
+        );
+
+        await expectLater(
+          anonymous.loadCreatedIdentifiers(),
+          throwsA(isA<StateError>()),
+        );
+      });
+    });
+
+    group('loadBadgeDetail', () {
+      final coordinate = BadgeCoordinate(
+        pubkey: _pubkey(2),
+        identifier: 'scene-stealer',
+      );
+
+      test('resolves definition, awardees, and viewer acceptance', () async {
+        _stubQueries(nostrClient, {
+          'definition:${coordinate.value}': [
+            _definitionEvent(
+              pubkey: _pubkey(2),
+              dTag: 'scene-stealer',
+              name: 'Scene Stealer',
+            ),
+          ],
+          'awardsFor:${coordinate.value}': [
+            _awardEvent(
+              id: _eventId(70),
+              issuerPubkey: _pubkey(2),
+              definitionCoordinate: coordinate.value,
+              recipients: [_pubkey(1), _pubkey(3)],
+            ),
+          ],
+          'profileCurrent:${_pubkey(1)}': [
+            _profileBadgesEvent(
+              id: _eventId(71),
+              pubkey: _pubkey(1),
+              tags: [
+                ['a', coordinate.value],
+                ['e', _eventId(70)],
+              ],
+            ),
+          ],
+        });
+
+        final detail = await repository.loadBadgeDetail(coordinate);
+
+        expect(detail.definition?.name, 'Scene Stealer');
+        expect(detail.isOwner, isFalse);
+        expect(detail.recipients.map((r) => r.pubkey), [
+          _pubkey(1),
+          _pubkey(3),
+        ]);
+        expect(detail.recipients.first.isAccepted, isTrue);
+        expect(detail.recipients.first.awardEventId, _eventId(70));
+        expect(detail.recipients.last.isAccepted, isFalse);
+        expect(detail.viewerAward?.awardEventId, _eventId(70));
+        expect(detail.viewerAward?.isAccepted, isTrue);
+      });
+
+      test('marks the viewer as owner for their own badge', () async {
+        final ownCoordinate = BadgeCoordinate(
+          pubkey: _pubkey(1),
+          identifier: 'scene-stealer',
+        );
+        _stubQueries(nostrClient, {
+          'awardsFor:${ownCoordinate.value}': [
+            _awardEvent(
+              id: _eventId(72),
+              issuerPubkey: _pubkey(1),
+              definitionCoordinate: ownCoordinate.value,
+              recipients: [_pubkey(3)],
+            ),
+          ],
+        });
+
+        final detail = await repository.loadBadgeDetail(ownCoordinate);
+
+        expect(detail.isOwner, isTrue);
+        expect(detail.definition, isNull);
+        expect(detail.viewerAward, isNull);
+      });
+
+      test(
+        'keeps the newest award when a recipient was awarded twice',
+        () async {
+          _stubQueries(nostrClient, {
+            'awardsFor:${coordinate.value}': [
+              _awardEvent(
+                id: _eventId(73),
+                issuerPubkey: _pubkey(2),
+                definitionCoordinate: coordinate.value,
+                recipients: [_pubkey(3)],
+              ),
+              _awardEvent(
+                id: _eventId(74),
+                issuerPubkey: _pubkey(2),
+                definitionCoordinate: coordinate.value,
+                recipients: [_pubkey(3)],
+                createdAt: 5000,
+              ),
+            ],
+          });
+
+          final detail = await repository.loadBadgeDetail(coordinate);
+
+          expect(detail.recipients.single.awardEventId, _eventId(74));
+        },
+      );
+
+      test('drops awards whose coordinate does not match', () async {
+        _stubQueries(nostrClient, {
+          'awardsFor:${coordinate.value}': [
+            _awardEvent(
+              id: _eventId(75),
+              issuerPubkey: _pubkey(2),
+              definitionCoordinate: '30009:${_pubkey(2)}:other-badge',
+              recipients: [_pubkey(3)],
+            ),
+          ],
+        });
+
+        final detail = await repository.loadBadgeDetail(coordinate);
+
+        expect(detail.recipients, isEmpty);
+      });
+
+      test('caps acceptance checks but always includes the viewer', () async {
+        _stubQueries(nostrClient, {
+          'awardsFor:${coordinate.value}': [
+            _awardEvent(
+              id: _eventId(76),
+              issuerPubkey: _pubkey(2),
+              definitionCoordinate: coordinate.value,
+              recipients: [_pubkey(3), _pubkey(4), _pubkey(1)],
+            ),
+          ],
+          'profileCurrent:${_pubkey(1)}': [
+            _profileBadgesEvent(
+              id: _eventId(77),
+              pubkey: _pubkey(1),
+              tags: [
+                ['a', coordinate.value],
+                ['e', _eventId(76)],
+              ],
+            ),
+          ],
+        });
+
+        final detail = await repository.loadBadgeDetail(
+          coordinate,
+          recipientCheckLimit: 1,
+        );
+
+        expect(detail.recipients.map((r) => r.pubkey), [
+          _pubkey(3),
+          _pubkey(1),
+        ]);
+        expect(detail.viewerAward?.isAccepted, isTrue);
+      });
+
+      test('reports no viewer award when signed out', () async {
+        final anonymous = BadgeRepository(
+          nostrClient: nostrClient,
+          sharedPreferences: preferences,
+          currentPubkey: () => null,
+          signEvent: ({required kind, required content, required tags}) async =>
+              null,
+        );
+        _stubQueries(nostrClient, {
+          'awardsFor:${coordinate.value}': [
+            _awardEvent(
+              id: _eventId(78),
+              issuerPubkey: _pubkey(2),
+              definitionCoordinate: coordinate.value,
+              recipients: [_pubkey(3)],
+            ),
+          ],
+        });
+
+        final detail = await anonymous.loadBadgeDetail(coordinate);
+
+        expect(detail.isOwner, isFalse);
+        expect(detail.viewerAward, isNull);
+        expect(detail.recipients, hasLength(1));
+      });
+    });
+
+    group('saveDefinition', () {
+      test('publishes a kind 30009 definition', () async {
+        final definition = await repository.saveDefinition(
+          const BadgeDefinitionDraft(
+            identifier: ' scene-stealer ',
+            name: ' Scene Stealer ',
+            description: ' Steals the scroll. ',
+            imageUrl: 'https://media.divine.video/scene.png',
+            thumbnailUrl: 'https://media.divine.video/scene-thumb.png',
+          ),
+        );
+
+        final event = lastSignedEvent()!;
+        expect(event.kind, EventKind.badgeDefinition);
+        expect(event.tags, [
+          ['d', 'scene-stealer'],
+          ['name', 'Scene Stealer'],
+          ['description', 'Steals the scroll.'],
+          ['image', 'https://media.divine.video/scene.png'],
+          ['thumb', 'https://media.divine.video/scene-thumb.png'],
+        ]);
+        expect(definition.dTag, 'scene-stealer');
+        expect(definition.coordinate, '30009:${_pubkey(1)}:scene-stealer');
+      });
+
+      test('omits the thumbnail tag when there is no custom thumb', () async {
+        await repository.saveDefinition(
+          const BadgeDefinitionDraft(
+            identifier: 'scene-stealer',
+            name: 'Scene Stealer',
+            imageUrl: _artworkUrl,
+          ),
+        );
+
+        expect(lastSignedEvent()!.tags, [
+          ['d', 'scene-stealer'],
+          ['name', 'Scene Stealer'],
+          ['description', ''],
+          ['image', _artworkUrl],
+        ]);
+      });
+
+      test('rejects a draft without artwork', () async {
+        await expectLater(
+          repository.saveDefinition(
+            const BadgeDefinitionDraft(
+              identifier: 'scene-stealer',
+              name: 'Scene Stealer',
+              imageUrl: '  ',
+            ),
+          ),
+          throwsA(isA<ArgumentError>()),
+        );
+      });
+
+      test('rejects a draft without an identifier', () async {
+        await expectLater(
+          repository.saveDefinition(
+            const BadgeDefinitionDraft(
+              identifier: '  ',
+              name: 'Scene Stealer',
+              imageUrl: _artworkUrl,
+            ),
+          ),
+          throwsA(isA<ArgumentError>()),
+        );
+      });
+
+      test('rejects a draft without a name', () async {
+        await expectLater(
+          repository.saveDefinition(
+            const BadgeDefinitionDraft(
+              identifier: 'scene-stealer',
+              name: '  ',
+              imageUrl: _artworkUrl,
+            ),
+          ),
+          throwsA(isA<ArgumentError>()),
+        );
+      });
+
+      test('throws a StateError without a current pubkey', () async {
+        final anonymous = BadgeRepository(
+          nostrClient: nostrClient,
+          sharedPreferences: preferences,
+          currentPubkey: () => null,
+          signEvent: ({required kind, required content, required tags}) async =>
+              null,
+        );
+
+        await expectLater(
+          anonymous.saveDefinition(
+            const BadgeDefinitionDraft(
+              identifier: 'scene-stealer',
+              name: 'Scene Stealer',
+              imageUrl: _artworkUrl,
+            ),
+          ),
+          throwsA(isA<StateError>()),
+        );
+      });
+
+      test('throws a StateError when signing fails', () async {
+        final unsigned = BadgeRepository(
+          nostrClient: nostrClient,
+          sharedPreferences: preferences,
+          currentPubkey: () => _pubkey(1),
+          signEvent: ({required kind, required content, required tags}) async =>
+              null,
+        );
+
+        await expectLater(
+          unsigned.saveDefinition(
+            const BadgeDefinitionDraft(
+              identifier: 'scene-stealer',
+              name: 'Scene Stealer',
+              imageUrl: _artworkUrl,
+            ),
+          ),
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              'Could not sign badge definition event',
+            ),
+          ),
+        );
+      });
+
+      test(
+        'throws a StateError when the signed event is not a definition',
+        () async {
+          final stripped = BadgeRepository(
+            nostrClient: nostrClient,
+            sharedPreferences: preferences,
+            currentPubkey: () => _pubkey(1),
+            signEvent:
+                ({required kind, required content, required tags}) async =>
+                    _event(id: _eventId(80), pubkey: _pubkey(1), kind: kind),
+          );
+
+          await expectLater(
+            stripped.saveDefinition(
+              const BadgeDefinitionDraft(
+                identifier: 'scene-stealer',
+                name: 'Scene Stealer',
+                imageUrl: _artworkUrl,
+              ),
+            ),
+            throwsA(
+              isA<StateError>().having(
+                (error) => error.message,
+                'message',
+                'Signed badge definition event is not parseable',
+              ),
+            ),
+          );
+        },
+      );
+
+      test('throws a BadgePublishException when no relay accepts', () async {
+        when(() => nostrClient.publishEventAwaitOk(any())).thenAnswer((
+          invocation,
+        ) async {
+          return _rejectedPublishOutcome(
+            invocation.positionalArguments.single as Event,
+          );
+        });
+
+        await expectLater(
+          repository.saveDefinition(
+            const BadgeDefinitionDraft(
+              identifier: 'scene-stealer',
+              name: 'Scene Stealer',
+              imageUrl: _artworkUrl,
+            ),
+          ),
+          throwsA(isA<BadgePublishException>()),
+        );
+      });
+    });
+
+    group('awardBadge', () {
+      final coordinate = BadgeCoordinate(
+        pubkey: _pubkey(1),
+        identifier: 'scene-stealer',
+      );
+
+      test('publishes a kind 8 award with deduplicated recipients', () async {
+        final award = await repository.awardBadge(
+          coordinate: coordinate,
+          recipientPubkeys: [
+            _pubkey(2),
+            _pubkey(2),
+            'not-a-key',
+            _pubkey(3),
+          ],
+        );
+
+        final event = lastSignedEvent()!;
+        expect(event.kind, EventKind.badgeAward);
+        expect(event.tags, [
+          ['a', coordinate.value],
+          ['p', _pubkey(2)],
+          ['p', _pubkey(3)],
+        ]);
+        expect(award.recipientPubkeys, [_pubkey(2), _pubkey(3)]);
+      });
+
+      test('rejects an award without a usable recipient', () async {
+        await expectLater(
+          repository.awardBadge(
+            coordinate: coordinate,
+            recipientPubkeys: const ['not-a-key'],
+          ),
+          throwsA(isA<ArgumentError>()),
+        );
+      });
+
+      test('throws a StateError without a current pubkey', () async {
+        final anonymous = BadgeRepository(
+          nostrClient: nostrClient,
+          sharedPreferences: preferences,
+          currentPubkey: () => null,
+          signEvent: ({required kind, required content, required tags}) async =>
+              null,
+        );
+
+        await expectLater(
+          anonymous.awardBadge(
+            coordinate: coordinate,
+            recipientPubkeys: [_pubkey(2)],
+          ),
+          throwsA(isA<StateError>()),
+        );
+      });
+
+      test('throws a StateError when signing fails', () async {
+        final unsigned = BadgeRepository(
+          nostrClient: nostrClient,
+          sharedPreferences: preferences,
+          currentPubkey: () => _pubkey(1),
+          signEvent: ({required kind, required content, required tags}) async =>
+              null,
+        );
+
+        await expectLater(
+          unsigned.awardBadge(
+            coordinate: coordinate,
+            recipientPubkeys: [_pubkey(2)],
+          ),
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              'Could not sign badge award event',
+            ),
+          ),
+        );
+      });
+
+      test(
+        'throws a StateError when the signed event is not an award',
+        () async {
+          final stripped = BadgeRepository(
+            nostrClient: nostrClient,
+            sharedPreferences: preferences,
+            currentPubkey: () => _pubkey(1),
+            signEvent:
+                ({required kind, required content, required tags}) async =>
+                    _event(id: _eventId(81), pubkey: _pubkey(1), kind: kind),
+          );
+
+          await expectLater(
+            stripped.awardBadge(
+              coordinate: coordinate,
+              recipientPubkeys: [_pubkey(2)],
+            ),
+            throwsA(
+              isA<StateError>().having(
+                (error) => error.message,
+                'message',
+                'Signed badge award event is not parseable',
+              ),
+            ),
+          );
+        },
+      );
+    });
+
+    group('deleteBadge', () {
+      final coordinate = BadgeCoordinate(
+        pubkey: _pubkey(1),
+        identifier: 'scene-stealer',
+      );
+
+      test('requests deletion of the definition and its awards', () async {
+        _stubQueries(nostrClient, {
+          'definition:${coordinate.value}': [
+            _definitionEvent(
+              id: _eventId(90),
+              pubkey: _pubkey(1),
+              dTag: 'scene-stealer',
+              name: 'Scene Stealer',
+            ),
+          ],
+          'awardsFor:${coordinate.value}': [
+            _awardEvent(
+              id: _eventId(91),
+              issuerPubkey: _pubkey(1),
+              definitionCoordinate: coordinate.value,
+              recipients: [_pubkey(2)],
+            ),
+            _awardEvent(
+              id: _eventId(92),
+              issuerPubkey: _pubkey(1),
+              definitionCoordinate: coordinate.value,
+              recipients: [_pubkey(3)],
+            ),
+          ],
+        });
+
+        await repository.deleteBadge(coordinate);
+
+        final event = lastSignedEvent()!;
+        expect(event.kind, EventKind.eventDeletion);
+        expect(event.tags, [
+          ['a', coordinate.value],
+          ['e', _eventId(90)],
+          ['e', _eventId(91)],
+          ['e', _eventId(92)],
+          ['k', '${EventKind.badgeDefinition}'],
+          ['k', '${EventKind.badgeAward}'],
+        ]);
+      });
+
+      test('leaves out the award kind when nothing was awarded', () async {
+        _stubQueries(nostrClient, {
+          'definition:${coordinate.value}': [
+            _definitionEvent(
+              id: _eventId(93),
+              pubkey: _pubkey(1),
+              dTag: 'scene-stealer',
+              name: 'Scene Stealer',
+            ),
+          ],
+        });
+
+        await repository.deleteBadge(coordinate);
+
+        expect(lastSignedEvent()!.tags, [
+          ['a', coordinate.value],
+          ['e', _eventId(93)],
+          ['k', '${EventKind.badgeDefinition}'],
+        ]);
+      });
+
+      test('still deletes when no definition event was found', () async {
+        await repository.deleteBadge(coordinate);
+
+        expect(lastSignedEvent()!.tags, [
+          ['a', coordinate.value],
+          ['k', '${EventKind.badgeDefinition}'],
+        ]);
+      });
+
+      test("refuses to delete someone else's badge", () async {
+        await expectLater(
+          repository.deleteBadge(
+            BadgeCoordinate(pubkey: _pubkey(2), identifier: 'scene-stealer'),
+          ),
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              'Cannot delete a badge issued by someone else',
+            ),
+          ),
+        );
+        expect(lastSignedEvent(), isNull);
+      });
+
+      test('throws a StateError without a current pubkey', () async {
+        final anonymous = BadgeRepository(
+          nostrClient: nostrClient,
+          sharedPreferences: preferences,
+          currentPubkey: () => null,
+          signEvent: ({required kind, required content, required tags}) async =>
+              null,
+        );
+
+        await expectLater(
+          anonymous.deleteBadge(coordinate),
+          throwsA(isA<StateError>()),
+        );
+      });
+
+      test('throws a BadgePublishException when no relay accepts', () async {
+        when(() => nostrClient.publishEventAwaitOk(any())).thenAnswer((
+          invocation,
+        ) async {
+          return _rejectedPublishOutcome(
+            invocation.positionalArguments.single as Event,
+          );
+        });
+
+        await expectLater(
+          repository.deleteBadge(coordinate),
+          throwsA(isA<BadgePublishException>()),
+        );
+      });
+    });
+
+    test('loadDashboard reads the issued awards query once', () async {
+      final callCounts = _stubQueries(nostrClient, {
+        'created:${_pubkey(1)}': [
+          _definitionEvent(
+            id: _eventId(82),
+            pubkey: _pubkey(1),
+            dTag: 'scene-stealer',
+            name: 'Scene Stealer',
+          ),
+        ],
+        'issued': [
+          _awardEvent(
+            id: _eventId(83),
+            issuerPubkey: _pubkey(1),
+            definitionCoordinate: '30009:${_pubkey(1)}:scene-stealer',
+            recipients: [_pubkey(2)],
+          ),
+        ],
+      });
+
+      final dashboard = await repository.loadDashboard();
+
+      expect(dashboard.created.single.awardCount, 1);
+      expect(dashboard.issued, hasLength(1));
+      expect(callCounts['issued'], 1);
+    });
   });
 
   group(ProfileBadgeViewData, () {
@@ -986,6 +1911,17 @@ String _queryKey(Filter filter) {
   if (filter.ids?.isNotEmpty == true) {
     return 'ids:${filter.ids!.join(',')}';
   }
+  // Checked before `issued`: an issuer's own coordinate query carries both
+  // `authors` and `a`, and only the `a` form is the detail-page lookup.
+  if (filter.kinds?.contains(EventKind.badgeAward) == true &&
+      filter.a?.isNotEmpty == true) {
+    return 'awardsFor:${filter.a!.single}';
+  }
+  if (filter.kinds?.contains(EventKind.badgeDefinition) == true &&
+      filter.authors?.isNotEmpty == true &&
+      filter.d == null) {
+    return 'created:${filter.authors!.single}';
+  }
   if (filter.kinds?.contains(EventKind.badgeAward) == true &&
       filter.p?.contains(_pubkey(1)) == true) {
     return 'awarded';
@@ -1016,11 +1952,13 @@ Event _awardEvent({
   required String issuerPubkey,
   required String definitionCoordinate,
   required List<String> recipients,
+  int createdAt = 1000,
 }) {
   return _event(
     id: id,
     pubkey: issuerPubkey,
     kind: EventKind.badgeAward,
+    createdAt: createdAt,
     tags: [
       ['a', definitionCoordinate],
       for (final recipient in recipients) ['p', recipient],
@@ -1070,11 +2008,14 @@ Event _definitionEvent({
   String? description,
   String? imageUrl,
   List<String> thumbnails = const [],
+  String? id,
+  int createdAt = 1000,
 }) {
   return _event(
-    id: _eventId(100),
+    id: id ?? _eventId(100),
     pubkey: pubkey,
     kind: EventKind.badgeDefinition,
+    createdAt: createdAt,
     tags: [
       ['d', dTag],
       ['name', name],
@@ -1103,6 +2044,8 @@ Event _event({
     'sig': '',
   });
 }
+
+const _artworkUrl = 'https://media.divine.video/scene.png';
 
 String _eventId(int seed) => seed.toRadixString(16).padLeft(64, '0');
 
