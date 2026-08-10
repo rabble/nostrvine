@@ -4,8 +4,7 @@ End-to-end UI tests written with **Maestro**, driving a real build against
 **STAGING**.
 
 They exist for fast, high-signal regression detection on critical user flows.
-They are not a replacement for unit or widget tests, and they do not cover
-camera or recording.
+They are not a replacement for unit or widget tests.
 
 ## What the smoke suite covers today
 
@@ -28,11 +27,107 @@ The `e2e-smoke-ios` and `e2e-smoke-android` Codemagic workflows are
 `triggering: events: []`, so nothing runs them automatically. They are manual
 dispatches, and GitHub CI does not cover this lane at all.
 
+## The recorder flow
+
+`flows/captureModeFlow.yaml` covers the recorder's **capture** mode: open it
+from the feed, drive the control rail, record a clip, delete it, close. The
+other four modes (classic, stop-motion, lip-sync, upload) are not covered yet.
+
+Every file in it has been run green on a Galaxy SM-S942B.
+
+It is **not in `smoke.yaml`**, and it is deliberately not on the iOS lane:
+
+- **It needs real camera hardware.** Without a camera the bloc never reports
+  `isCameraInitialized`, the record button stays disabled, and the recording
+  test hangs on its first wait. The iOS Simulator has no camera at all;
+  an Android emulator's virtual scene camera is enough, and a device is best.
+- **`captureModeOpen` alone** — the chrome assertion — does pass without a
+  camera, because the viewfinder falls back to a placeholder and every control
+  still renders.
+
+Run it against a booted Android emulator or a connected device:
+
+```bash
+maestro --device <serial> test e2e/maestro/flows/captureModeFlow.yaml
+```
+
+`captureModeControls` asserts the icon-only rail controls by their Semantics
+`value` (`.*Square.*`, `.*3 seconds.*`, `.*Front camera.*`). That works:
+Flutter folds `value` into the Android content description, and Maestro
+matches against it — confirmed on device. Two things follow, both worth
+knowing before writing more recorder selectors:
+
+- **A selector may combine `id` with `text`**, and here it must: "Off" is the
+  value of the flash control *and* the timer control — and, once its sheet is
+  open, of the stabilization menu's own first row.
+- **`selected: true` is readable too**, which is what `assertCaptureMode` uses
+  to prove Capture is armed. The mode wheel renders an entry for every mode in
+  every mode, so a bare `id: camera_mode_capture` would pass on the Upload tab
+  just as happily.
+
+Three things the flow depends on that are easy to break by accident:
+
+- **Tap-to-toggle recording.** `HoldToRecordPreferenceService` defaults to
+  false. On a device where a previous session turned hold-to-record on, the
+  first tap does nothing and `captureModeRecordClip` fails on its wait.
+- **An empty session when the rail is driven.** `captureModeControls` runs
+  before the recording tests because the aspect-ratio control is disabled once
+  a clip exists — clips of mixed ratios cannot share an editor timeline.
+- **Hardware for two of the five rail controls.** Flash and stabilization are
+  driven behind an `enabled: true` guard, because both are disabled outright
+  when the active lens has no flash unit or reports a single stabilization
+  mode. Where the feature is missing the block prints `SKIPPED` rather than
+  failing — check the run output before reading a green run as full rail
+  coverage. Both were exercised for real on the SM-S942B's back lens.
+- **Camera and mic pre-granted.** The flow relaunches with
+  `permissions: all: allow` rather than tapping through the native dialog,
+  whose buttons are OS-localized copy. Note the relaunch deliberately does
+  *not* clear state: on Android `pm clear` wipes the encrypted preferences the
+  Nostr key lives in and would sign the account back out mid-flow.
+
+Account creation is a precondition, not part of what is tested. The recorder
+route itself is public (`appRouterRedirect` exempts it), but the only way in is
+the feed's camera button and the feed is not public.
+
 ---
 
 ## Running them
 
 Everything below runs from `mobile/`.
+
+### 0. Install the CLI
+
+```bash
+curl -fsSL "https://get.maestro.mobile.dev" | bash
+export PATH="$PATH:$HOME/.maestro/bin"
+```
+
+Not `brew install maestro`. That name resolves to an unrelated cask — "Maestro,
+AI agent command center", ~680 MB — that installs a macOS app and no CLI, so
+the next command still fails with `maestro: command not found`.
+
+### 0b. Put the device's app UI in English
+
+**The suite only runs against an English UI.** Not every selector is an id yet:
+`loginFreshInstall` taps "Use Divine with no backup", `removeKeys` taps
+"Cancel" / "Remove from device", `assertLogin` pins the three legal links. On a
+German phone the app renders "Nutzungsbedingungen" and the run dies in the
+first assert — which reads like a regression and isn't one.
+
+CI runners are English, so this only bites locally — and locally it is
+awkward, because the per-app override does not survive the suite:
+
+```bash
+# Android 13+, per app, without touching the system language:
+adb shell cmd locale set-app-locales co.openvine.app --locales en-US
+```
+
+**`launchApp: clearState` wipes that again.** It runs `pm clear`, which drops
+the package's locale override along with its data, so any flow that starts
+from `loginFreshInstall` is back in the system language by its first assert.
+On a non-English phone the options are a scratch flow that skips `clearState`,
+or setting the system language. This is not a problem worth engineering around
+— it disappears once the remaining copy selectors become identifiers.
 
 ### 1. Build the app
 
@@ -133,8 +228,15 @@ from. Identifiers are snake_case and defined in
 If the element you need has no identifier, add one — that is a smaller change
 than the assertion you would otherwise write, and it survives translation.
 
-Two traps worth knowing:
+Three traps worth knowing:
 
+- **Opacity 0 is invisible to Maestro, `IgnorePointer` is not.**
+  `RenderOpacity`/`RenderAnimatedOpacity` drop their child from the semantics
+  tree at `alpha == 0` (unless `alwaysIncludeSemantics`), so a faded-out
+  control genuinely fails `assertVisible` — that is what the recorder's
+  next/delete assertions rely on. A control that is only wrapped in
+  `IgnorePointer` stays in the tree and will happily satisfy `assertVisible`
+  while being untappable.
 - **`TabBar` composes a compound label.** A tab reads as `"New\nTab 2 of 6"`,
   and Maestro matches the whole label, so a bare `New` does not match. Use a
   prefix (`New.*`) or the tab's identifier — never the `Tab N of M` count,

@@ -61,7 +61,9 @@ export PATH="${PATH}:${HOME}/.maestro/bin"
 info "Validating prerequisites..."
 require_cmd xcrun "Install Xcode + Command Line Tools."
 require_cmd plutil "plutil should exist on macOS."
-require_cmd "${MAESTRO_CLI}" "Install Maestro: brew install maestro"
+# Not 'brew install maestro' -- that name now resolves to an unrelated cask
+# ("Maestro, AI agent command center", ~680 MB) which ships no CLI at all.
+require_cmd "${MAESTRO_CLI}" 'Install Maestro: curl -fsSL "https://get.maestro.mobile.dev" | bash'
 [[ -f "${SUITE_PATH}" ]] || fail "Suite not found: ${SUITE_PATH}"
 [[ -d "${APP_PATH}" ]] || fail "Runner.app not found at: ${APP_PATH}
 
