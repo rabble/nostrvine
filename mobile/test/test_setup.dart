@@ -73,6 +73,15 @@ void restoreSharedChannelDefaults() {
   _setupImagePickerMock();
 }
 
+/// Whether the live path_provider platform singleton is the app harness mock.
+bool isPathProviderPlatformCanonical() =>
+    identical(PathProviderPlatform.instance, _mockPathProviderPlatform);
+
+/// Restore the app harness path_provider platform singleton.
+void restorePathProviderPlatformDefault() {
+  PathProviderPlatform.instance = _mockPathProviderPlatform;
+}
+
 /// Reinstall the canonical handler for a single shared [channel] (identity
 /// then matches the registry again). Used by the heal path and by
 /// [overrideSharedChannel]'s auto-restore.

@@ -642,7 +642,7 @@ void _setupPlatformMocks() {
     return null;
   });
 
-  // No path_provider mock: `setupTestEnvironment` already points both
+  // No path_provider mock: test_setup.dart already points both
   // `PathProviderPlatform.instance` and the channel at this process's own
   // directories.
 

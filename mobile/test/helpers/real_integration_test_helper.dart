@@ -39,10 +39,10 @@ class RealIntegrationTestHelper {
     _setupPlatformChannelMocks();
 
     // shared_preferences + connectivity are helper-local (the app harness does
-    // not own them): clear them on teardown. The shared secure_storage /
-    // path_provider channels are installed via overrideSharedChannel above,
-    // which auto-restores their canonical handlers — so the #5713→#5725 /
-    // #5738 strand-the-next-suite class cannot recur.
+    // not own them): clear them on teardown. The shared secure_storage channel
+    // is installed via overrideSharedChannel above, which auto-restores its
+    // canonical handler — so the #5713→#5725 / #5738 strand-the-next-suite
+    // class cannot recur.
     addTearDown(() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         ..setMockMethodCallHandler(_prefsChannel, null)
@@ -130,8 +130,8 @@ class RealIntegrationTestHelper {
       return null;
     });
 
-    // path_provider needs no override here: `setupTestEnvironment` already
-    // points both `PathProviderPlatform.instance` and the channel at this
-    // process's own directories.
+    // path_provider needs no override here: test_setup.dart already points both
+    // `PathProviderPlatform.instance` and the channel at this process's own
+    // directories.
   }
 }

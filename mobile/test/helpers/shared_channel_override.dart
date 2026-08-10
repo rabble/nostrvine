@@ -66,25 +66,35 @@ List<String> findSharedChannelViolations() {
 }
 
 /// After every test (wired as a root `tearDown` in `flutter_test_config.dart`):
-/// reinstall the canonical handler for every violated shared channel so the
-/// next suite in the merged isolate is not stranded, and — only when [strict]
-/// (the `DIVINE_STRICT_CHANNELS` build flag) — `fail()` the perpetrating test.
+/// reinstall the canonical handler/singleton for every violated shared channel
+/// or platform singleton so the next suite in the merged isolate is not
+/// stranded, and — only when [strict] (the `DIVINE_STRICT_CHANNELS` build flag)
+/// — `fail()` the perpetrating test.
 ///
 /// Compliant tests never trip this (heal only fires on a real violation), so
 /// it is a no-op for correct code.
 void healAndBlameSharedChannels({required bool strict}) {
   final violations = findSharedChannelViolations();
-  if (violations.isEmpty) return;
+  final pathProviderLeaked = !isPathProviderPlatformCanonical();
+  if (violations.isEmpty && !pathProviderLeaked) return;
+
   for (final name in violations) {
     restoreSharedChannel(MethodChannel(name));
   }
+  if (pathProviderLeaked) {
+    restorePathProviderPlatformDefault();
+    violations.add('PathProviderPlatform.instance');
+  }
+
   if (strict) {
     fail(
       'This test replaced shared MethodChannel(s) ${violations.join(', ')} '
-      'without restoring them. Under very_good --optimization every suite '
-      'shares one isolate, so the next suite inherits the broken handler '
-      '(#5738). Use overrideSharedChannel(channel, handler) (auto-restores) '
-      'or addTearDown(restoreSharedChannelDefaults). '
+      'or platform singleton(s) without restoring them. Under very_good '
+      '--optimization every suite shares one isolate, so the next suite '
+      'inherits the broken handler or singleton (#5738). Use '
+      'overrideSharedChannel(channel, handler) (auto-restores), restore '
+      '`PathProviderPlatform.instance` in tearDown, or '
+      'addTearDown(restoreSharedChannelDefaults). '
       'See .claude/rules/testing.md (VGV merged isolate).',
     );
   }

@@ -24,13 +24,13 @@ import '../mocks/mock_path_provider_platform.dart';
 
 void main() {
   group('DraftStorageService', () {
-    const documentsPath = '/tmp/documents';
     late AppDatabase database;
     late DraftStorageService service;
+    late Directory documentsDir;
     late PathProviderPlatform originalPathProviderInstance;
 
     void createDocumentFile(String basename) {
-      final file = File(p.join(documentsPath, basename));
+      final file = File(p.join(documentsDir.path, basename));
       file.parent.createSync(recursive: true);
       file.writeAsBytesSync([0]);
     }
@@ -39,8 +39,9 @@ void main() {
       TestWidgetsFlutterBinding.ensureInitialized();
 
       originalPathProviderInstance = PathProviderPlatform.instance;
+      documentsDir = Directory.systemTemp.createTempSync('draft_storage_docs_');
       final mockPlatform = MockPathProviderPlatform()
-        ..setApplicationDocumentsPath(documentsPath);
+        ..setApplicationDocumentsPath(documentsDir.path);
       PathProviderPlatform.instance = mockPlatform;
 
       // Start with clean in-memory database for each test
@@ -65,10 +66,11 @@ void main() {
     });
 
     tearDown(() async {
-      final docsDir = Directory(documentsPath);
-      if (docsDir.existsSync()) docsDir.deleteSync(recursive: true);
       PathProviderPlatform.instance = originalPathProviderInstance;
       await database.close();
+      if (documentsDir.existsSync()) {
+        documentsDir.deleteSync(recursive: true);
+      }
     });
 
     group('saveDraft', () {
@@ -648,15 +650,15 @@ void main() {
         ).updatePublishStatus(draftId: 'draft_a', status: PublishStatus.draft);
 
         expect(
-          await serviceFor(pubkeyA).getDraftsByPublishStatuses({
-            PublishStatus.draft,
-          }),
+          await serviceFor(
+            pubkeyA,
+          ).getDraftsByPublishStatuses({PublishStatus.draft}),
           hasLength(1),
         );
         expect(
-          await serviceFor(pubkeyB).getDraftsByPublishStatuses({
-            PublishStatus.draft,
-          }),
+          await serviceFor(
+            pubkeyB,
+          ).getDraftsByPublishStatuses({PublishStatus.draft}),
           isEmpty,
         );
       });
@@ -764,7 +766,7 @@ void main() {
       late Directory docsDir;
 
       setUp(() {
-        docsDir = Directory(documentsPath)..createSync(recursive: true);
+        docsDir = documentsDir..createSync(recursive: true);
       });
 
       tearDown(() {
@@ -772,7 +774,7 @@ void main() {
       });
 
       File writeFrame(String name) {
-        final file = File(p.join(documentsPath, name));
+        final file = File(p.join(documentsDir.path, name));
         file.writeAsBytesSync(const [0, 1, 2, 3]);
         return file;
       }
@@ -1662,7 +1664,7 @@ void main() {
       late Directory docsDir;
 
       setUp(() {
-        docsDir = Directory(documentsPath)..createSync(recursive: true);
+        docsDir = documentsDir..createSync(recursive: true);
       });
 
       tearDown(() {
@@ -1670,7 +1672,7 @@ void main() {
       });
 
       File writeCover(String name) {
-        final file = File(p.join(documentsPath, name));
+        final file = File(p.join(documentsDir.path, name));
         file.writeAsBytesSync(const [0, 1, 2, 3]);
         return file;
       }
@@ -1787,7 +1789,7 @@ void main() {
       late Directory docsDir;
 
       setUp(() {
-        docsDir = Directory(documentsPath)..createSync(recursive: true);
+        docsDir = documentsDir..createSync(recursive: true);
       });
 
       tearDown(() {
@@ -1795,7 +1797,7 @@ void main() {
       });
 
       File writeVideo(String name) {
-        final file = File(p.join(documentsPath, name));
+        final file = File(p.join(documentsDir.path, name));
         file.writeAsBytesSync(const [0, 1, 2, 3]);
         return file;
       }
@@ -1999,7 +2001,7 @@ void main() {
       late Directory docsDir;
 
       setUp(() {
-        docsDir = Directory(documentsPath)..createSync(recursive: true);
+        docsDir = documentsDir..createSync(recursive: true);
       });
 
       tearDown(() {
@@ -2007,7 +2009,7 @@ void main() {
       });
 
       File writeAudio(String relativePath) {
-        final file = File(p.join(documentsPath, relativePath));
+        final file = File(p.join(documentsDir.path, relativePath));
         file.parent.createSync(recursive: true);
         file.writeAsBytesSync(const [0, 1, 2, 3]);
         return file;
@@ -2186,7 +2188,7 @@ void main() {
       late Directory docsDir;
 
       setUp(() {
-        docsDir = Directory(documentsPath)..createSync(recursive: true);
+        docsDir = documentsDir..createSync(recursive: true);
       });
 
       tearDown(() {
@@ -2194,7 +2196,7 @@ void main() {
       });
 
       File writeGhost(String basename) {
-        final file = File(p.join(documentsPath, basename));
+        final file = File(p.join(documentsDir.path, basename));
         file.parent.createSync(recursive: true);
         file.writeAsBytesSync(const [0, 1, 2, 3]);
         return file;

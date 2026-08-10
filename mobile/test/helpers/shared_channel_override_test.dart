@@ -3,7 +3,9 @@
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 
+import '../mocks/mock_path_provider_platform.dart';
 import '../test_setup.dart';
 import 'shared_channel_override.dart';
 
@@ -91,6 +93,28 @@ void main() {
       );
       // Healing runs before the blame, so the channel is canonical again.
       expect(findSharedChannelViolations(), isEmpty);
+    });
+
+    test('non-strict heals a leaked PathProviderPlatform singleton', () {
+      final leakedPlatform = MockPathProviderPlatform()
+        ..setApplicationDocumentsPath('/tmp/leaked_documents');
+      PathProviderPlatform.instance = leakedPlatform;
+
+      healAndBlameSharedChannels(strict: false);
+
+      expect(isPathProviderPlatformCanonical(), isTrue);
+    });
+
+    test('strict heals and blames a leaked PathProviderPlatform singleton', () {
+      final leakedPlatform = MockPathProviderPlatform()
+        ..setApplicationDocumentsPath('/tmp/leaked_documents');
+      PathProviderPlatform.instance = leakedPlatform;
+
+      expect(
+        () => healAndBlameSharedChannels(strict: true),
+        throwsA(isA<TestFailure>()),
+      );
+      expect(isPathProviderPlatformCanonical(), isTrue);
     });
   });
 }
