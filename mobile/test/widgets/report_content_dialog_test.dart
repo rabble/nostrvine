@@ -1224,107 +1224,111 @@ void main() {
       // which is the divergence this whole change exists to prevent. Needs no
       // failure or parked row: it is the ordinary success path.
       final handle = tester.ensureSemantics();
-      serviceGate = Completer<ContentReportingService>();
-      final publish = Completer<ReportResult>();
-      when(
-        () => mockReportingService.reportContent(
-          eventId: any(named: 'eventId'),
-          authorPubkey: any(named: 'authorPubkey'),
-          reason: any(named: 'reason'),
-          details: any(named: 'details'),
-          sourceRelay: any(named: 'sourceRelay'),
-          hashtags: any(named: 'hashtags'),
-        ),
-      ).thenAnswer((_) => publish.future);
+      try {
+        serviceGate = Completer<ContentReportingService>();
+        final publish = Completer<ReportResult>();
+        when(
+          () => mockReportingService.reportContent(
+            eventId: any(named: 'eventId'),
+            authorPubkey: any(named: 'authorPubkey'),
+            reason: any(named: 'reason'),
+            details: any(named: 'details'),
+            sourceRelay: any(named: 'sourceRelay'),
+            hashtags: any(named: 'hashtags'),
+          ),
+        ).thenAnswer((_) => publish.future);
 
-      await setLargeSurface(tester);
-      await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Open Report'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(l10n.reportReasonSpam));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
-      // Not pumpAndSettle: the submit spinner animates for as long as the
-      // submit is outstanding, so nothing settles until it completes.
-      await tester.pump();
+        await setLargeSurface(tester);
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Open Report'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.reportReasonSpam));
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
+        // Not pumpAndSettle: the submit spinner animates for as long as the
+        // submit is outstanding, so nothing settles until it completes.
+        await tester.pump();
 
-      // Change of mind inside the FIRST await — `_submitReport` resolves the
-      // reporting service before it publishes, so this is the window where the
-      // kind-1984 side could pick up a reason the DM side never sees.
-      // harassment is the second card, so it needs no scroll while the sheet
-      // is mid-submit, and NIP-56 maps it to 'profanity' rather than 'spam'.
-      await tester.tap(
-        find.text(l10n.reportReasonTitle(ContentFilterReason.harassment)),
-      );
-      await tester.pump();
+        // Change of mind inside the FIRST await — `_submitReport` resolves the
+        // reporting service before it publishes, so this is the window where the
+        // kind-1984 side could pick up a reason the DM side never sees.
+        // harassment is the second card, so it needs no scroll while the sheet
+        // is mid-submit, and NIP-56 maps it to 'profanity' rather than 'spam'.
+        await tester.tap(
+          find.text(l10n.reportReasonTitle(ContentFilterReason.harassment)),
+        );
+        await tester.pump();
 
-      // State the premise the assertions below rely on. Everything this test
-      // discriminates comes from that tap having actually moved the selection;
-      // if a later change stops it landing — an `_isSubmitting` guard on
-      // `_onReasonSelected`, an AbsorbPointer over the form — both channels
-      // would report spam, the test would stay green, and it would be checking
-      // nothing.
-      expect(
-        tester
+        // State the premise the assertions below rely on. Everything this test
+        // discriminates comes from that tap having actually moved the selection;
+        // if a later change stops it landing — an `_isSubmitting` guard on
+        // `_onReasonSelected`, an AbsorbPointer over the form — both channels
+        // would report spam, the test would stay green, and it would be checking
+        // nothing.
+        final harassmentSelected = tester
             .getSemantics(
               find.text(l10n.reportReasonTitle(ContentFilterReason.harassment)),
             )
             .getSemanticsData()
             .flagsCollection
-            .isSelected,
-        Tristate.isTrue,
-        reason:
-            'the mid-submit reason tap must land for this test to mean '
-            'anything',
-      );
+            .isSelected;
+        expect(
+          harassmentSelected,
+          Tristate.isTrue,
+          reason:
+              'the mid-submit reason tap must land for this test to mean '
+              'anything',
+        );
 
-      serviceGate!.complete(mockReportingService);
-      await tester.pump();
+        serviceGate!.complete(mockReportingService);
+        await tester.pump();
 
-      publish.complete(
-        ReportResult.createSuccess(
-          'test_report_id',
-          delivery: ReportDelivery.reached,
-        ),
-      );
-      await tester.pumpAndSettle();
+        publish.complete(
+          ReportResult.createSuccess(
+            'test_report_id',
+            delivery: ReportDelivery.reached,
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      final reportedReason =
-          verify(
-                () => mockReportingService.reportContent(
-                  eventId: any(named: 'eventId'),
-                  authorPubkey: any(named: 'authorPubkey'),
-                  reason: captureAny(named: 'reason'),
-                  details: any(named: 'details'),
-                  sourceRelay: any(named: 'sourceRelay'),
-                  hashtags: any(named: 'hashtags'),
-                ),
-              ).captured.single
-              as ContentFilterReason;
-      final tags =
-          verify(
-                () => mockDmRepository.sendMessage(
-                  recipientPubkey: any(named: 'recipientPubkey'),
-                  content: any(named: 'content'),
-                  replyToId: any(named: 'replyToId'),
-                  skipNip04Fallback: any(named: 'skipNip04Fallback'),
-                  additionalTags: captureAny(named: 'additionalTags'),
-                ),
-              ).captured.single
-              as List<List<String>>;
+        final reportedReason =
+            verify(
+                  () => mockReportingService.reportContent(
+                    eventId: any(named: 'eventId'),
+                    authorPubkey: any(named: 'authorPubkey'),
+                    reason: captureAny(named: 'reason'),
+                    details: any(named: 'details'),
+                    sourceRelay: any(named: 'sourceRelay'),
+                    hashtags: any(named: 'hashtags'),
+                  ),
+                ).captured.single
+                as ContentFilterReason;
+        final tags =
+            verify(
+                  () => mockDmRepository.sendMessage(
+                    recipientPubkey: any(named: 'recipientPubkey'),
+                    content: any(named: 'content'),
+                    replyToId: any(named: 'replyToId'),
+                    skipNip04Fallback: any(named: 'skipNip04Fallback'),
+                    additionalTags: captureAny(named: 'additionalTags'),
+                  ),
+                ).captured.single
+                as List<List<String>>;
 
-      // Whichever reason the submit committed to, both channels carry it.
-      handle.dispose();
-      expect(reportedReason, ContentFilterReason.spam);
-      expect(
-        tags,
-        equals([
-          ['L', kReportLabelNamespace],
-          ['l', 'NS-spam', kReportLabelNamespace],
-          ['report_type', 'spam'],
-        ]),
-      );
+        // Whichever reason the submit committed to, both channels carry it.
+        expect(reportedReason, ContentFilterReason.spam);
+        expect(
+          tags,
+          equals([
+            ['L', kReportLabelNamespace],
+            ['l', 'NS-spam', kReportLabelNamespace],
+            ['report_type', 'spam'],
+          ]),
+        );
+      } finally {
+        handle.dispose();
+      }
     });
 
     testWidgets('re-drives the parked DM when a later submit gets through', (
