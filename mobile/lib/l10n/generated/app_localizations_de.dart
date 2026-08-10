@@ -9996,23 +9996,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get badgesTitle => 'Abzeichen';
 
   @override
-  String get badgesIntroTitle => 'Versteh deine Badge-Spur';
-
-  @override
-  String get badgesIntroBody =>
-      'Sieh dir Badge-Auszeichnungen an, die dir geschickt wurden, wähl, was du an dein Nostr-Profil pinnst, und prüf, ob Leute Badges angenommen haben, die du vergeben hast.';
-
-  @override
-  String get badgesOpenApp => 'Badge-App öffnen';
-
-  @override
   String get badgesLoadError => 'Badges konnten nicht geladen werden';
 
   @override
   String get badgesUpdateError => 'Badge konnte nicht aktualisiert werden';
-
-  @override
-  String get badgesAwardedSectionTitle => 'An dich vergeben';
 
   @override
   String get badgesAwardedEmptyTitle => 'Noch keine Badge-Auszeichnungen';
@@ -10037,9 +10024,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get badgesActionReject => 'Ablehnen';
 
   @override
-  String get badgesIssuedSectionTitle => 'Von dir vergeben';
-
-  @override
   String get badgesIssuedEmptyTitle => 'Noch keine vergebenen Badges';
 
   @override
@@ -10055,6 +10039,191 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get badgesRecipientWaitingStatus => 'Wartet auf Empfänger';
+
+  @override
+  String badgesHiddenSectionTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Ausgeblendet ($count)',
+      one: 'Ausgeblendet (1)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgesActionRestore => 'Wiederherstellen';
+
+  @override
+  String get badgesHiddenSnackbar => 'Badge ausgeblendet';
+
+  @override
+  String get badgesHiddenSnackbarUndo => 'Rückgängig';
+
+  @override
+  String get badgesTabAwarded => 'Erhalten';
+
+  @override
+  String get badgesTabCreated => 'Erstellt';
+
+  @override
+  String get badgesTabIssued => 'Vergeben';
+
+  @override
+  String get badgesCreateAction => 'Neues Badge';
+
+  @override
+  String get badgesCreatedEmptyTitle => 'Noch keine Badges gemacht';
+
+  @override
+  String get badgesCreatedEmptySubtitle =>
+      'Mach eins und gib es jemandem, der es verdient hat.';
+
+  @override
+  String badgesCreatedAwardSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'An $count Personen vergeben',
+      one: 'An 1 Person vergeben',
+      zero: 'Noch nicht vergeben',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeEditorCreateTitle => 'Neues Badge';
+
+  @override
+  String get badgeEditorEditTitle => 'Badge bearbeiten';
+
+  @override
+  String get badgeEditorNameLabel => 'Name';
+
+  @override
+  String get badgeEditorNameHint => 'Szenendieb';
+
+  @override
+  String get badgeEditorIdentifierLabel => 'Kennung';
+
+  @override
+  String get badgeEditorIdentifierHelp =>
+      'Teil der Badge-Adresse — sie bleibt fest, sobald das Badge existiert.';
+
+  @override
+  String get badgeEditorIdentifierTaken =>
+      'Du hast schon ein Badge mit dieser Kennung. Bearbeite lieber jenes — hier zu veröffentlichen würde es ersetzen.';
+
+  @override
+  String get badgeEditorDescriptionLabel => 'Beschreibung';
+
+  @override
+  String get badgeEditorDescriptionHint =>
+      'Für alle, die mit einem einzigen Loop die Show stehlen.';
+
+  @override
+  String get badgeEditorArtworkLabel => 'Artwork';
+
+  @override
+  String get badgeEditorArtworkAdd => 'Artwork hinzufügen';
+
+  @override
+  String get badgeEditorArtworkReplace => 'Ersetzen';
+
+  @override
+  String get badgeEditorArtworkError => 'Bild konnte nicht hochgeladen werden';
+
+  @override
+  String get badgeEditorArtworkRequired => 'Jedes Badge braucht ein Artwork.';
+
+  @override
+  String get badgeEditorArtworkRemove => 'Artwork entfernen';
+
+  @override
+  String get badgeEditorArtworkSheetTitle => 'Badge-Artwork';
+
+  @override
+  String get badgeDetailDeleteAction => 'Badge löschen';
+
+  @override
+  String get badgeDetailDeleteTitle => 'Dieses Badge löschen?';
+
+  @override
+  String get badgeDetailDeleteBody =>
+      'Damit bitten wir die Relays, das Badge und alle Auszeichnungen dafür zu entfernen. Relays können das ablehnen, und wer es angepinnt hat, behält es im Profil, bis er es selbst entfernt.';
+
+  @override
+  String get badgeDetailDeleteConfirm => 'Löschen';
+
+  @override
+  String get badgeEditorSaveAction => 'Badge veröffentlichen';
+
+  @override
+  String get badgeEditorSaveError => 'Badge konnte nicht veröffentlicht werden';
+
+  @override
+  String get badgeEditorLoadError => 'Dieses Badge konnte nicht geladen werden';
+
+  @override
+  String get badgeDetailTitle => 'Badge';
+
+  @override
+  String get badgeDetailMadeBy => 'Gemacht von';
+
+  @override
+  String get badgeDetailRecipientsTitle => 'Vergeben an';
+
+  @override
+  String get badgeDetailNoRecipients => 'Das hat noch niemand.';
+
+  @override
+  String get badgeDetailAwardAction => 'Badge vergeben';
+
+  @override
+  String get badgeDetailEditAction => 'Badge bearbeiten';
+
+  @override
+  String get badgeDetailShareAction => 'Teilen';
+
+  @override
+  String badgeDetailShareMessage(String link) {
+    return 'Schau dir dieses Badge auf Divine an: $link';
+  }
+
+  @override
+  String get badgeDetailLoadError => 'Dieses Badge konnte nicht geladen werden';
+
+  @override
+  String get badgeDetailMissing => 'Wir finden dieses Badge auf keinem Relay.';
+
+  @override
+  String get badgeDetailActionError => 'Das hat nicht geklappt';
+
+  @override
+  String get badgeAwardTitle => 'Badge vergeben';
+
+  @override
+  String get badgeAwardPickAction => 'Leute auswählen';
+
+  @override
+  String get badgeAwardManualLabel => 'Oder Schlüssel einfügen';
+
+  @override
+  String get badgeAwardManualHint => 'npub1…, npub1…';
+
+  @override
+  String get badgeAwardEmptyHint => 'Wähl mindestens eine Person aus.';
+
+  @override
+  String badgeAwardSubmitAction(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'An $count Personen vergeben',
+      one: 'An 1 Person vergeben',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get profileBadgeAwardedBy => 'Awarded by';

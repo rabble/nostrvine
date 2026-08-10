@@ -54,6 +54,14 @@ class BadgesCubit extends Cubit<BadgesState> {
     );
   }
 
+  /// Restores a locally hidden award.
+  Future<void> unhideAward(BadgeAwardViewData award) {
+    return _runAction(
+      BadgeActionStatus.hiding,
+      () => _repository.unhideAward(award.awardEventId),
+    );
+  }
+
   Future<void> _loadDashboard() async {
     try {
       final dashboard = await _repository.loadDashboard();
@@ -62,6 +70,8 @@ class BadgesCubit extends Cubit<BadgesState> {
           status: BadgesStatus.loaded,
           awarded: dashboard.awarded,
           issued: dashboard.issued,
+          created: dashboard.created,
+          hidden: dashboard.hidden,
         ),
       );
     } catch (error, stackTrace) {
@@ -94,6 +104,8 @@ class BadgesCubit extends Cubit<BadgesState> {
           actionStatus: BadgeActionStatus.completed,
           awarded: dashboard.awarded,
           issued: dashboard.issued,
+          created: dashboard.created,
+          hidden: dashboard.hidden,
         ),
       );
     } catch (error, stackTrace) {

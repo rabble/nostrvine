@@ -44,6 +44,8 @@ class BadgesState extends Equatable {
     this.actionStatus = BadgeActionStatus.idle,
     this.awarded = const [],
     this.issued = const [],
+    this.created = const [],
+    this.hidden = const [],
   });
 
   /// Current dashboard loading status.
@@ -58,18 +60,28 @@ class BadgesState extends Equatable {
   /// Badge awards issued by the current user.
   final List<IssuedBadgeViewData> issued;
 
+  /// Badge definitions authored by the current user.
+  final List<CreatedBadgeViewData> created;
+
+  /// Awards the user dismissed on this device, kept so they can be restored.
+  final List<BadgeAwardViewData> hidden;
+
   /// Returns a copy with selected fields replaced.
   BadgesState copyWith({
     BadgesStatus? status,
     BadgeActionStatus? actionStatus,
     List<BadgeAwardViewData>? awarded,
     List<IssuedBadgeViewData>? issued,
+    List<CreatedBadgeViewData>? created,
+    List<BadgeAwardViewData>? hidden,
   }) {
     return BadgesState(
       status: status ?? this.status,
       actionStatus: actionStatus ?? this.actionStatus,
       awarded: awarded ?? this.awarded,
       issued: issued ?? this.issued,
+      created: created ?? this.created,
+      hidden: hidden ?? this.hidden,
     );
   }
 
@@ -79,5 +91,7 @@ class BadgesState extends Equatable {
     actionStatus,
     awarded,
     issued,
+    created,
+    hidden,
   ];
 }

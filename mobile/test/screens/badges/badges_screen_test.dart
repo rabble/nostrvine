@@ -1,16 +1,15 @@
 import 'package:badge_repository/badge_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
 import 'package:openvine/screens/badges/badges_screen.dart';
+import 'package:openvine/widgets/user_profile_tile.dart';
+
+import '../../helpers/test_provider_overrides.dart';
 
 class _MockBadgeRepository extends Mock implements BadgeRepository {}
 
@@ -19,6 +18,7 @@ void main() {
     late _MockBadgeRepository repository;
     late BadgeAwardViewData awardedBadge;
     late IssuedBadgeViewData issuedBadge;
+    late CreatedBadgeViewData createdBadge;
     final l10n = lookupAppLocalizations(const Locale('en'));
 
     setUpAll(() {
@@ -29,25 +29,28 @@ void main() {
       repository = _MockBadgeRepository();
       awardedBadge = _awardViewData(isAccepted: false);
       issuedBadge = _issuedViewData(recipientAccepted: true);
+      createdBadge = _createdViewData();
     });
 
+    /// The issued tab renders recipients through [UserProfileTile], which
+    /// reaches for auth and profile providers — hence the standard test
+    /// overrides rather than a bare scope.
     Widget buildSubject() {
-      const app = MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: BadgesScreen(),
-      );
-
-      return ProviderScope(
-        overrides: [badgeRepositoryProvider.overrideWithValue(repository)],
-        child: app,
+      return testMaterialApp(
+        additionalOverrides: [
+          badgeRepositoryProvider.overrideWithValue(repository),
+        ],
+        home: const BadgesScreen(),
       );
     }
 
-    testWidgets('loads awarded and issued badge context', (tester) async {
+    testWidgets('opens on the awarded tab', (tester) async {
       when(repository.loadDashboard).thenAnswer(
-        (_) async =>
-            BadgeDashboardData(awarded: [awardedBadge], issued: [issuedBadge]),
+        (_) async => BadgeDashboardData(
+          awarded: [awardedBadge],
+          issued: [issuedBadge],
+          created: [createdBadge],
+        ),
       );
 
       await tester.pumpWidget(buildSubject());
@@ -55,19 +58,134 @@ void main() {
 
       expect(find.byType(DiVineAppBar), findsOneWidget);
       expect(find.text(l10n.badgesTitle), findsOneWidget);
-      expect(find.text(l10n.badgesAwardedSectionTitle), findsOneWidget);
       expect(find.text('Diviner of the Day'), findsOneWidget);
       expect(find.text(l10n.badgesStatusNotAccepted), findsOneWidget);
       expect(find.text(l10n.badgesActionAccept), findsOneWidget);
       expect(find.text(l10n.badgesActionReject), findsOneWidget);
-      expect(find.text(l10n.badgesIssuedSectionTitle), findsOneWidget);
+      // The other tabs' content is not built until they are selected.
+      expect(find.text('Diviner of the Month'), findsNothing);
+    });
+
+    testWidgets('created tab lists the badges the user made', (tester) async {
+      when(repository.loadDashboard).thenAnswer(
+        (_) async => BadgeDashboardData(
+          awarded: [awardedBadge],
+          issued: [issuedBadge],
+          created: [createdBadge],
+        ),
+      );
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.badgesTabCreated));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Diviner of the Month'), findsOneWidget);
+      expect(find.text(l10n.badgesCreatedAwardSummary(3)), findsOneWidget);
+    });
+
+    testWidgets('issued tab lists recipient acceptance', (tester) async {
+      when(repository.loadDashboard).thenAnswer(
+        (_) async => BadgeDashboardData(
+          awarded: [awardedBadge],
+          issued: [issuedBadge],
+          created: [createdBadge],
+        ),
+      );
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.badgesTabIssued));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Diviner of the Week'), findsOneWidget);
       expect(find.text(l10n.badgesRecipientAcceptedStatus), findsOneWidget);
+      // Recipients render as people, not as raw keys.
+      expect(find.byType(UserProfileTile), findsOneWidget);
+      expect(find.text(_pubkey(3)), findsNothing);
+    });
+
+    testWidgets('created tab shows its own empty state', (tester) async {
+      when(repository.loadDashboard).thenAnswer(
+        (_) async => BadgeDashboardData(
+          awarded: [awardedBadge],
+          issued: const [],
+          created: const [],
+        ),
+      );
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.badgesTabCreated));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.badgesCreatedEmptyTitle), findsOneWidget);
+      expect(find.text(l10n.badgesCreatedEmptySubtitle), findsOneWidget);
+    });
+
+    testWidgets('offers an undo right after rejecting an award', (
+      tester,
+    ) async {
+      when(repository.loadDashboard).thenAnswer(
+        (_) async => BadgeDashboardData(
+          awarded: [awardedBadge],
+          issued: const [],
+          created: const [],
+        ),
+      );
+      when(() => repository.hideAward(any())).thenAnswer((_) async {});
+      when(() => repository.unhideAward(any())).thenAnswer((_) async {});
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.badgesActionReject));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.badgesHiddenSnackbar), findsOneWidget);
+      await tester.tap(find.text(l10n.badgesHiddenSnackbarUndo));
+      await tester.pumpAndSettle();
+
+      verify(() => repository.unhideAward(awardedBadge.awardEventId)).called(1);
+    });
+
+    testWidgets('restores a dismissed award from the hidden section', (
+      tester,
+    ) async {
+      when(repository.loadDashboard).thenAnswer(
+        (_) async => BadgeDashboardData(
+          awarded: const [],
+          issued: const [],
+          created: const [],
+          hidden: [awardedBadge],
+        ),
+      );
+      when(() => repository.unhideAward(any())).thenAnswer((_) async {});
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      // Collapsed by default: the badge itself is not on screen yet.
+      expect(find.text(l10n.badgesActionRestore), findsNothing);
+
+      await tester.tap(find.text(l10n.badgesHiddenSectionTitle(1)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.badgesActionRestore));
+      await tester.pumpAndSettle();
+
+      verify(() => repository.unhideAward(awardedBadge.awardEventId)).called(1);
     });
 
     testWidgets('accept button delegates to the repository', (tester) async {
       when(repository.loadDashboard).thenAnswer(
-        (_) async =>
-            BadgeDashboardData(awarded: [awardedBadge], issued: const []),
+        (_) async => BadgeDashboardData(
+          awarded: [awardedBadge],
+          issued: const [],
+          created: const [],
+        ),
       );
       when(() => repository.acceptAward(any())).thenAnswer((_) async {});
 
@@ -80,75 +198,7 @@ void main() {
       verify(() => repository.acceptAward(awardedBadge)).called(1);
       verify(repository.loadDashboard).called(greaterThanOrEqualTo(2));
     });
-
-    testWidgets(
-      'resolves the remote badges entry by slug when its ID differs',
-      (tester) async {
-        final mergedDirectoryApps = [_remoteBadgesApp()];
-        final router = GoRouter(
-          routes: [
-            GoRoute(
-              path: '/',
-              builder: (_, _) => const BadgesScreen(),
-            ),
-            GoRoute(
-              path: NostrAppSandboxScreen.path,
-              builder: (_, state) {
-                final appId = state.pathParameters['appId'];
-                final app = mergedDirectoryApps.singleWhere(
-                  (entry) => entry.id == appId || entry.slug == appId,
-                );
-                return Material(child: Text('Sandbox app: ${app.id}'));
-              },
-            ),
-          ],
-        );
-        addTearDown(router.dispose);
-        when(repository.loadDashboard).thenAnswer(
-          (_) async => const BadgeDashboardData(awarded: [], issued: []),
-        );
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              badgeRepositoryProvider.overrideWithValue(repository),
-            ],
-            child: MaterialApp.router(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              routerConfig: router,
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.text(l10n.badgesOpenApp));
-        await tester.pumpAndSettle();
-
-        expect(find.text('Sandbox app: app-badges'), findsOneWidget);
-      },
-    );
   });
-}
-
-NostrAppDirectoryEntry _remoteBadgesApp() {
-  return const NostrAppDirectoryEntry(
-    id: 'app-badges',
-    slug: 'badges',
-    name: 'Remote Divine Badges',
-    tagline: 'Remote directory entry',
-    description: 'A remotely merged badges entry.',
-    iconUrl: 'https://badges.divine.video/icon.png',
-    launchUrl: 'https://badges.divine.video/remote',
-    allowedOrigins: ['https://badges.divine.video'],
-    allowedMethods: ['getPublicKey'],
-    allowedSignEventKinds: [],
-    promptRequiredFor: [],
-    status: 'approved',
-    sortOrder: 15,
-    createdAt: null,
-    updatedAt: null,
-  );
 }
 
 BadgeAwardViewData _awardViewData({required bool isAccepted}) {
@@ -183,24 +233,31 @@ BadgeAwardViewData _awardViewData({required bool isAccepted}) {
   );
 }
 
+CreatedBadgeViewData _createdViewData() {
+  final issuerPubkey = _pubkey(1);
+  return CreatedBadgeViewData(
+    definition: Nip58BadgeDefinition(
+      event: _event(
+        id: _eventId(5),
+        pubkey: issuerPubkey,
+        kind: EventKind.badgeDefinition,
+      ),
+      coordinate: '30009:$issuerPubkey:monthly-diviner',
+      dTag: 'monthly-diviner',
+      name: 'Diviner of the Month',
+    ),
+    awardCount: 2,
+    recipientCount: 3,
+  );
+}
+
 IssuedBadgeViewData _issuedViewData({required bool recipientAccepted}) {
   final issuerPubkey = _pubkey(1);
   final recipientPubkey = _pubkey(3);
   final definitionCoordinate = '30009:$issuerPubkey:weekly-diviner';
   return IssuedBadgeViewData(
-    award: Nip58BadgeAward(
-      event: _event(
-        id: _eventId(3),
-        pubkey: issuerPubkey,
-        kind: EventKind.badgeAward,
-        tags: [
-          ['a', definitionCoordinate],
-          ['p', recipientPubkey],
-        ],
-      ),
-      definitionCoordinate: definitionCoordinate,
-      recipientPubkeys: [recipientPubkey],
-    ),
+    coordinate: definitionCoordinate,
+    latestAwardedAt: 1000,
     definition: Nip58BadgeDefinition(
       event: _event(
         id: _eventId(4),

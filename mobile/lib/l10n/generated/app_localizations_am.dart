@@ -9656,23 +9656,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get badgesTitle => 'ባጆች';
 
   @override
-  String get badgesIntroTitle => 'የባጅ ጉዞህን ተረዳ';
-
-  @override
-  String get badgesIntroBody =>
-      'ለአንተ የተላኩ የባጅ ሽልማቶችን ተመልከት፣ በNostr መገለጫህ ላይ የሚሰካውን ምረጥ፣ እና ሰዎች የሰጠሃቸውን ባጆች ተቀብለው እንደሆነ አረጋግጥ።';
-
-  @override
-  String get badgesOpenApp => 'የባጆች መተግበሪያ ክፈት';
-
-  @override
   String get badgesLoadError => 'ባጆችን መጫን አልተቻለም';
 
   @override
   String get badgesUpdateError => 'ባጅን ማዘመን አልተቻለም';
-
-  @override
-  String get badgesAwardedSectionTitle => 'ለአንተ የተሰጡ';
 
   @override
   String get badgesAwardedEmptyTitle => 'እስካሁን ምንም የባጅ ሽልማት የለም';
@@ -9696,9 +9683,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get badgesActionReject => 'አትቀበል';
 
   @override
-  String get badgesIssuedSectionTitle => 'በአንተ የተሰጡ';
-
-  @override
   String get badgesIssuedEmptyTitle => 'እስካሁን ምንም የተሰጡ ባጆች የሉም';
 
   @override
@@ -9712,6 +9696,189 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get badgesRecipientWaitingStatus => 'ተቀባይን በመጠባበቅ ላይ';
+
+  @override
+  String badgesHiddenSectionTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'የተደበቁ ($count)',
+      one: 'የተደበቀ (1)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgesActionRestore => 'መልስ';
+
+  @override
+  String get badgesHiddenSnackbar => 'ባጁ ተደብቋል';
+
+  @override
+  String get badgesHiddenSnackbarUndo => 'ቀልብስ';
+
+  @override
+  String get badgesTabAwarded => 'የተቀበልካቸው';
+
+  @override
+  String get badgesTabCreated => 'የፈጠርካቸው';
+
+  @override
+  String get badgesTabIssued => 'የሰጠሃቸው';
+
+  @override
+  String get badgesCreateAction => 'አዲስ ባጅ';
+
+  @override
+  String get badgesCreatedEmptyTitle => 'እስካሁን ባጅ አልሠራህም';
+
+  @override
+  String get badgesCreatedEmptySubtitle => 'አንድ ሥራና ለሚገባው ሰው ስጠው።';
+
+  @override
+  String badgesCreatedAwardSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'ለ$count ሰዎች ተሰጥቷል',
+      one: 'ለ1 ሰው ተሰጥቷል',
+      zero: 'እስካሁን አልተሰጠም',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeEditorCreateTitle => 'አዲስ ባጅ';
+
+  @override
+  String get badgeEditorEditTitle => 'ባጅ አርትዕ';
+
+  @override
+  String get badgeEditorNameLabel => 'ስም';
+
+  @override
+  String get badgeEditorNameHint => 'ትዕይንት ሰርቆ';
+
+  @override
+  String get badgeEditorIdentifierLabel => 'መለያ';
+
+  @override
+  String get badgeEditorIdentifierHelp =>
+      'የባጁ አድራሻ አካል ነው፤ ስለዚህ ባጁ ከተፈጠረ በኋላ አይለወጥም።';
+
+  @override
+  String get badgeEditorIdentifierTaken =>
+      'በዚህ መለያ ያለህ ባጅ አስቀድሞ አለ። እዚህ ማተም እሱን ስለሚተካ ያንን አርትዕ አድርግ።';
+
+  @override
+  String get badgeEditorDescriptionLabel => 'መግለጫ';
+
+  @override
+  String get badgeEditorDescriptionHint => 'በአንድ ሉፕ ብቻ ትዕይንቱን ለሚሰርቀው።';
+
+  @override
+  String get badgeEditorArtworkLabel => 'ሥዕል';
+
+  @override
+  String get badgeEditorArtworkAdd => 'ሥዕል ጨምር';
+
+  @override
+  String get badgeEditorArtworkReplace => 'ተካ';
+
+  @override
+  String get badgeEditorArtworkError => 'ያንን ምስል መጫን አልተቻለም';
+
+  @override
+  String get badgeEditorArtworkRequired => 'እያንዳንዱ ባጅ ሥዕል ያስፈልገዋል።';
+
+  @override
+  String get badgeEditorArtworkRemove => 'ሥዕሉን አስወግድ';
+
+  @override
+  String get badgeEditorArtworkSheetTitle => 'የባጅ ሥዕል';
+
+  @override
+  String get badgeDetailDeleteAction => 'ባጅ ሰርዝ';
+
+  @override
+  String get badgeDetailDeleteTitle => 'ይህን ባጅ ልሰርዘው?';
+
+  @override
+  String get badgeDetailDeleteBody =>
+      'ይህ ሪሌዮች ባጁንና የሰጠሃቸውን ሁሉንም ሽልማቶች እንዲያስወግዱ ይጠይቃል። ሪሌዮች ሊከለክሉ ይችላሉ፣ በመገለጫቸው ላይ የሰኩትም እስኪያስወግዱት ድረስ ይይዙታል።';
+
+  @override
+  String get badgeDetailDeleteConfirm => 'ሰርዝ';
+
+  @override
+  String get badgeEditorSaveAction => 'ባጁን አትም';
+
+  @override
+  String get badgeEditorSaveError => 'ባጁን ማተም አልተቻለም';
+
+  @override
+  String get badgeEditorLoadError => 'ይህን ባጅ መጫን አልተቻለም';
+
+  @override
+  String get badgeDetailTitle => 'ባጅ';
+
+  @override
+  String get badgeDetailMadeBy => 'የሠራው';
+
+  @override
+  String get badgeDetailRecipientsTitle => 'የተሰጠው ለ';
+
+  @override
+  String get badgeDetailNoRecipients => 'እስካሁን ማንም የለውም።';
+
+  @override
+  String get badgeDetailAwardAction => 'ይህን ባጅ ስጥ';
+
+  @override
+  String get badgeDetailEditAction => 'ባጅ አርትዕ';
+
+  @override
+  String get badgeDetailShareAction => 'አጋራ';
+
+  @override
+  String badgeDetailShareMessage(String link) {
+    return 'ይህን ባጅ በDivine ተመልከት፦ $link';
+  }
+
+  @override
+  String get badgeDetailLoadError => 'ይህን ባጅ መጫን አልተቻለም';
+
+  @override
+  String get badgeDetailMissing => 'ይህን ባጅ በየትኛውም ሪሌይ ላይ አላገኘነውም።';
+
+  @override
+  String get badgeDetailActionError => 'አልተሳካም';
+
+  @override
+  String get badgeAwardTitle => 'ባጅ ስጥ';
+
+  @override
+  String get badgeAwardPickAction => 'ሰዎችን ምረጥ';
+
+  @override
+  String get badgeAwardManualLabel => 'ወይም ቁልፎችን ለጥፍ';
+
+  @override
+  String get badgeAwardManualHint => 'npub1…, npub1…';
+
+  @override
+  String get badgeAwardEmptyHint => 'ቢያንስ አንድ ሰው ምረጥ።';
+
+  @override
+  String badgeAwardSubmitAction(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'ለ$count ሰዎች ስጥ',
+      one: 'ለ1 ሰው ስጥ',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get profileBadgeAwardedBy => 'Awarded by';

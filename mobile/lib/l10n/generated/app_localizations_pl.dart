@@ -10067,23 +10067,10 @@ class AppLocalizationsPl extends AppLocalizations {
   String get badgesTitle => 'Odznaki';
 
   @override
-  String get badgesIntroTitle => 'Zrozum swój ślad odznak';
-
-  @override
-  String get badgesIntroBody =>
-      'Zobacz odznaki przyznane tobie, wybierz, które przypiąć do profilu Nostr, i sprawdź, czy ludzie zaakceptowali odznaki, które wydałeś.';
-
-  @override
-  String get badgesOpenApp => 'Otwórz aplikację odznak';
-
-  @override
   String get badgesLoadError => 'Nie udało się wczytać odznak';
 
   @override
   String get badgesUpdateError => 'Nie udało się zaktualizować odznaki';
-
-  @override
-  String get badgesAwardedSectionTitle => 'Przyznane tobie';
 
   @override
   String get badgesAwardedEmptyTitle => 'Jeszcze brak odznak';
@@ -10108,9 +10095,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get badgesActionReject => 'Odrzuć';
 
   @override
-  String get badgesIssuedSectionTitle => 'Wydane przez ciebie';
-
-  @override
   String get badgesIssuedEmptyTitle => 'Jeszcze brak wydanych odznak';
 
   @override
@@ -10126,6 +10110,192 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get badgesRecipientWaitingStatus => 'Oczekiwanie na odbiorcę';
+
+  @override
+  String badgesHiddenSectionTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Ukryte ($count)',
+      one: 'Ukryta (1)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgesActionRestore => 'Przywróć';
+
+  @override
+  String get badgesHiddenSnackbar => 'Odznaka ukryta';
+
+  @override
+  String get badgesHiddenSnackbarUndo => 'Cofnij';
+
+  @override
+  String get badgesTabAwarded => 'Otrzymane';
+
+  @override
+  String get badgesTabCreated => 'Utworzone';
+
+  @override
+  String get badgesTabIssued => 'Przyznane';
+
+  @override
+  String get badgesCreateAction => 'Nowa odznaka';
+
+  @override
+  String get badgesCreatedEmptyTitle => 'Nie masz jeszcze odznak';
+
+  @override
+  String get badgesCreatedEmptySubtitle =>
+      'Zrób jedną i daj komuś, kto na nią zasłużył.';
+
+  @override
+  String badgesCreatedAwardSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Przyznana $count osobom',
+      one: 'Przyznana 1 osobie',
+      zero: 'Jeszcze nieprzyznana',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeEditorCreateTitle => 'Nowa odznaka';
+
+  @override
+  String get badgeEditorEditTitle => 'Edytuj odznakę';
+
+  @override
+  String get badgeEditorNameLabel => 'Nazwa';
+
+  @override
+  String get badgeEditorNameHint => 'Kradnie scenę';
+
+  @override
+  String get badgeEditorIdentifierLabel => 'Identyfikator';
+
+  @override
+  String get badgeEditorIdentifierHelp =>
+      'To część adresu odznaki, więc po jej utworzeniu już się nie zmienia.';
+
+  @override
+  String get badgeEditorIdentifierTaken =>
+      'Masz już odznakę z tym identyfikatorem. Edytuj tamtą — opublikowanie tutaj by ją zastąpiło.';
+
+  @override
+  String get badgeEditorDescriptionLabel => 'Opis';
+
+  @override
+  String get badgeEditorDescriptionHint =>
+      'Dla kogoś, kto kradnie scenę jedną pętlą.';
+
+  @override
+  String get badgeEditorArtworkLabel => 'Grafika';
+
+  @override
+  String get badgeEditorArtworkAdd => 'Dodaj grafikę';
+
+  @override
+  String get badgeEditorArtworkReplace => 'Zamień';
+
+  @override
+  String get badgeEditorArtworkError => 'Nie udało się wysłać tego obrazu';
+
+  @override
+  String get badgeEditorArtworkRequired => 'Każda odznaka potrzebuje grafiki.';
+
+  @override
+  String get badgeEditorArtworkRemove => 'Usuń grafikę';
+
+  @override
+  String get badgeEditorArtworkSheetTitle => 'Grafika odznaki';
+
+  @override
+  String get badgeDetailDeleteAction => 'Usuń odznakę';
+
+  @override
+  String get badgeDetailDeleteTitle => 'Usunąć tę odznakę?';
+
+  @override
+  String get badgeDetailDeleteBody =>
+      'To prosi przekaźniki o usunięcie odznaki i wszystkich przyznań, których dokonałeś. Przekaźniki mogą odmówić, a kto przypiął ją do profilu, zachowa ją do czasu, aż sam ją usunie.';
+
+  @override
+  String get badgeDetailDeleteConfirm => 'Usuń';
+
+  @override
+  String get badgeEditorSaveAction => 'Opublikuj odznakę';
+
+  @override
+  String get badgeEditorSaveError => 'Nie udało się opublikować odznaki';
+
+  @override
+  String get badgeEditorLoadError => 'Nie udało się wczytać tej odznaki';
+
+  @override
+  String get badgeDetailTitle => 'Odznaka';
+
+  @override
+  String get badgeDetailMadeBy => 'Autor';
+
+  @override
+  String get badgeDetailRecipientsTitle => 'Przyznana';
+
+  @override
+  String get badgeDetailNoRecipients => 'Nikt jej jeszcze nie ma.';
+
+  @override
+  String get badgeDetailAwardAction => 'Przyznaj tę odznakę';
+
+  @override
+  String get badgeDetailEditAction => 'Edytuj odznakę';
+
+  @override
+  String get badgeDetailShareAction => 'Udostępnij';
+
+  @override
+  String badgeDetailShareMessage(String link) {
+    return 'Zobacz tę odznakę na Divine: $link';
+  }
+
+  @override
+  String get badgeDetailLoadError => 'Nie udało się wczytać tej odznaki';
+
+  @override
+  String get badgeDetailMissing =>
+      'Nie znaleźliśmy tej odznaki na żadnym przekaźniku.';
+
+  @override
+  String get badgeDetailActionError => 'To się nie udało';
+
+  @override
+  String get badgeAwardTitle => 'Przyznaj odznakę';
+
+  @override
+  String get badgeAwardPickAction => 'Wybierz osoby';
+
+  @override
+  String get badgeAwardManualLabel => 'Albo wklej klucze';
+
+  @override
+  String get badgeAwardManualHint => 'npub1…, npub1…';
+
+  @override
+  String get badgeAwardEmptyHint => 'Wybierz przynajmniej jedną osobę.';
+
+  @override
+  String badgeAwardSubmitAction(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Przyznaj $count osobom',
+      one: 'Przyznaj 1 osobie',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get profileBadgeAwardedBy => 'Awarded by';

@@ -9980,23 +9980,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get badgesTitle => 'Insignias';
 
   @override
-  String get badgesIntroTitle => 'Conocé tu historial de insignias';
-
-  @override
-  String get badgesIntroBody =>
-      'Mirá los premios de insignias que recibiste, elegí cuáles fijar en tu perfil de Nostr, y revisá si la gente aceptó las insignias que vos emitiste.';
-
-  @override
-  String get badgesOpenApp => 'Abrir app de insignias';
-
-  @override
   String get badgesLoadError => 'No se pudieron cargar las insignias';
 
   @override
   String get badgesUpdateError => 'No se pudo actualizar la insignia';
-
-  @override
-  String get badgesAwardedSectionTitle => 'Otorgadas a vos';
 
   @override
   String get badgesAwardedEmptyTitle => 'Todavía no hay insignias otorgadas';
@@ -10021,9 +10008,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get badgesActionReject => 'Rechazar';
 
   @override
-  String get badgesIssuedSectionTitle => 'Emitidas por vos';
-
-  @override
   String get badgesIssuedEmptyTitle => 'Todavía no emitiste ninguna insignia';
 
   @override
@@ -10039,6 +10023,192 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get badgesRecipientWaitingStatus => 'Esperando al destinatario';
+
+  @override
+  String badgesHiddenSectionTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Ocultas ($count)',
+      one: 'Oculta (1)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgesActionRestore => 'Restaurar';
+
+  @override
+  String get badgesHiddenSnackbar => 'Insignia oculta';
+
+  @override
+  String get badgesHiddenSnackbarUndo => 'Deshacer';
+
+  @override
+  String get badgesTabAwarded => 'Recibidas';
+
+  @override
+  String get badgesTabCreated => 'Creadas';
+
+  @override
+  String get badgesTabIssued => 'Entregadas';
+
+  @override
+  String get badgesCreateAction => 'Nueva insignia';
+
+  @override
+  String get badgesCreatedEmptyTitle => 'Todavía no creaste ninguna';
+
+  @override
+  String get badgesCreatedEmptySubtitle =>
+      'Creá una y dásela a alguien que se la ganó.';
+
+  @override
+  String badgesCreatedAwardSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Entregada a $count personas',
+      one: 'Entregada a 1 persona',
+      zero: 'Sin entregar todavía',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeEditorCreateTitle => 'Nueva insignia';
+
+  @override
+  String get badgeEditorEditTitle => 'Editar insignia';
+
+  @override
+  String get badgeEditorNameLabel => 'Nombre';
+
+  @override
+  String get badgeEditorNameHint => 'Roba escenas';
+
+  @override
+  String get badgeEditorIdentifierLabel => 'Identificador';
+
+  @override
+  String get badgeEditorIdentifierHelp =>
+      'Es parte de la dirección de la insignia, así que queda fijo una vez creada.';
+
+  @override
+  String get badgeEditorIdentifierTaken =>
+      'Ya tenés una insignia con este identificador. Editá esa: publicar acá la reemplazaría.';
+
+  @override
+  String get badgeEditorDescriptionLabel => 'Descripción';
+
+  @override
+  String get badgeEditorDescriptionHint =>
+      'Para quien se roba el scroll con un solo loop.';
+
+  @override
+  String get badgeEditorArtworkLabel => 'Arte';
+
+  @override
+  String get badgeEditorArtworkAdd => 'Agregar arte';
+
+  @override
+  String get badgeEditorArtworkReplace => 'Reemplazar';
+
+  @override
+  String get badgeEditorArtworkError => 'No se pudo subir esa imagen';
+
+  @override
+  String get badgeEditorArtworkRequired => 'Toda insignia necesita un arte.';
+
+  @override
+  String get badgeEditorArtworkRemove => 'Quitar el arte';
+
+  @override
+  String get badgeEditorArtworkSheetTitle => 'Arte de la insignia';
+
+  @override
+  String get badgeDetailDeleteAction => 'Borrar insignia';
+
+  @override
+  String get badgeDetailDeleteTitle => '¿Borrar esta insignia?';
+
+  @override
+  String get badgeDetailDeleteBody =>
+      'Esto les pide a los relés que saquen la insignia y todas las entregas que hiciste. Los relés pueden negarse, y quien la fijó la mantiene en su perfil hasta que la saque.';
+
+  @override
+  String get badgeDetailDeleteConfirm => 'Borrar';
+
+  @override
+  String get badgeEditorSaveAction => 'Publicar insignia';
+
+  @override
+  String get badgeEditorSaveError => 'No se pudo publicar la insignia';
+
+  @override
+  String get badgeEditorLoadError => 'No se pudo cargar esta insignia';
+
+  @override
+  String get badgeDetailTitle => 'Insignia';
+
+  @override
+  String get badgeDetailMadeBy => 'Creada por';
+
+  @override
+  String get badgeDetailRecipientsTitle => 'Entregada a';
+
+  @override
+  String get badgeDetailNoRecipients => 'Todavía no la tiene nadie.';
+
+  @override
+  String get badgeDetailAwardAction => 'Entregar esta insignia';
+
+  @override
+  String get badgeDetailEditAction => 'Editar insignia';
+
+  @override
+  String get badgeDetailShareAction => 'Compartir';
+
+  @override
+  String badgeDetailShareMessage(String link) {
+    return 'Mirá esta insignia en Divine: $link';
+  }
+
+  @override
+  String get badgeDetailLoadError => 'No se pudo cargar esta insignia';
+
+  @override
+  String get badgeDetailMissing =>
+      'No encontramos esta insignia en ningún relé.';
+
+  @override
+  String get badgeDetailActionError => 'Eso no salió';
+
+  @override
+  String get badgeAwardTitle => 'Entregar insignia';
+
+  @override
+  String get badgeAwardPickAction => 'Elegir personas';
+
+  @override
+  String get badgeAwardManualLabel => 'O pegá claves';
+
+  @override
+  String get badgeAwardManualHint => 'npub1…, npub1…';
+
+  @override
+  String get badgeAwardEmptyHint => 'Elegí al menos a una persona.';
+
+  @override
+  String badgeAwardSubmitAction(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Entregar a $count personas',
+      one: 'Entregar a 1 persona',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get profileBadgeAwardedBy => 'Awarded by';
