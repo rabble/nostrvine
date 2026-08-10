@@ -387,6 +387,41 @@ void main() {
         expect(find.byType(ConversationTile), findsOneWidget);
       });
 
+      // #7025. Only the Blocked slice synthesises message-less rows. A real
+      // conversation whose first message has not landed yet must stay
+      // tappable, or the inert treatment leaks into the ordinary inbox.
+      testWidgets('a message-less conversation stays tappable under All', (
+        tester,
+      ) async {
+        final conversation = DmConversation(
+          id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          participantPubkeys: const [currentPubkey, otherPubkey],
+          isGroup: false,
+          createdAt: nowUnix,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [conversation],
+              visibleConversations: [conversation],
+              hasMore: false,
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.tap(find.text('Messages'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+
+        final tile = tester.widget<ConversationTile>(
+          find.byType(ConversationTile),
+        );
+        expect(tile.onTap, isNotNull);
+        expect(tile.subtitleOverride, isNull);
+      });
+
       testWidgets('renders $InboxFilterChips when loaded with conversations', (
         tester,
       ) async {

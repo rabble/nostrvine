@@ -532,8 +532,9 @@ class ConversationListBloc
     for (final conversation in candidates) {
       final other = _otherParticipant(conversation, userPubkey);
       if (!blocked.contains(other)) continue;
-      // Newest wins: `candidates` is recency-sorted per source, and a pubkey
-      // can only legitimately hold one 1:1 thread.
+      // First match wins. Each source is recency-sorted, and a pubkey holds
+      // at most one 1:1 thread across the two, so there is nothing to choose
+      // between in practice.
       threadByPubkey.putIfAbsent(other, () => conversation);
     }
 

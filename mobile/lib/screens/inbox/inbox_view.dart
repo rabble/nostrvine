@@ -851,27 +851,29 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
           itemCount: visibleConversations.length,
           itemBuilder: (context, index) {
             final conversation = visibleConversations[index];
-            // A blocked account the viewer never messaged has no thread to
-            // open, so the row states that and stays inert rather than
-            // leading to an empty screen with nothing to do on it.
-            final hasHistory = conversation.lastMessageTimestamp != null;
+            // Only the Blocked slice synthesises rows for accounts with no
+            // thread; everywhere else a missing timestamp is a real
+            // conversation whose first message has yet to land, and must stay
+            // tappable. The synthesised row states it has nothing to open and
+            // goes inert — the sheet's actions (mute, remove conversation) act
+            // on a database row, and one that was never written would only
+            // produce a confirmation snackbar for work that did not happen.
+            final isBlockedPlaceholder =
+                showingBlocked && conversation.lastMessageTimestamp == null;
             return ConversationTile(
               conversation: conversation,
               currentUserPubkey: widget.currentUserPubkey,
               highlighted: conversation.id == _highlightedConversationId,
-              subtitleOverride: hasHistory
+              subtitleOverride: isBlockedPlaceholder
+                  ? context.l10n.inboxBlockedNoMessages
+                  : null,
+              onTap: isBlockedPlaceholder
                   ? null
-                  : context.l10n.inboxBlockedNoMessages,
-              onTap: hasHistory
-                  ? () => _onConversationTapped(context, conversation)
-                  : null,
-              // Same rule the pinned support row follows: the sheet's actions
-              // (mute, remove conversation) act on a database row, and one
-              // that was never written would only produce a confirmation
-              // snackbar for work that did not happen.
-              onLongPress: hasHistory
-                  ? () => _onConversationLongPressed(context, ref, conversation)
-                  : null,
+                  : () => _onConversationTapped(context, conversation),
+              onLongPress: isBlockedPlaceholder
+                  ? null
+                  : () =>
+                        _onConversationLongPressed(context, ref, conversation),
             );
           },
         ),
