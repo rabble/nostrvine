@@ -10298,23 +10298,23 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
-  String get profileBadgeAwardedBy => 'Awarded by';
+  String get profileBadgeAwardedBy => 'Przyznana przez';
 
   @override
-  String get profileBadgeRecipients => 'Recipients';
+  String get profileBadgeRecipients => 'Odbiorcy';
 
   @override
   String profileBadgeMoreRecipients(int count) {
-    return '+$count more';
+    return '+$count więcej';
   }
 
   @override
   String profileBadgeSemanticLabel(String name) {
-    return '$name badge';
+    return 'Odznaka $name';
   }
 
   @override
-  String get profileBadgeFallbackSemanticLabel => 'Badge';
+  String get profileBadgeFallbackSemanticLabel => 'Odznaka';
 
   @override
   String get profileBadgeFooterBody =>

@@ -10226,19 +10226,19 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get profileBadgeAwardedBy => 'Awarded by';
+  String get profileBadgeAwardedBy => 'Vergeben von';
 
   @override
-  String get profileBadgeRecipients => 'Recipients';
+  String get profileBadgeRecipients => 'Empfänger';
 
   @override
   String profileBadgeMoreRecipients(int count) {
-    return '+$count more';
+    return '+$count weitere';
   }
 
   @override
   String profileBadgeSemanticLabel(String name) {
-    return '$name badge';
+    return 'Badge $name';
   }
 
   @override

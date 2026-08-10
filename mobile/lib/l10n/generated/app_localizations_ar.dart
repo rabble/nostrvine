@@ -10031,23 +10031,23 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get profileBadgeAwardedBy => 'Awarded by';
+  String get profileBadgeAwardedBy => 'من منحها';
 
   @override
-  String get profileBadgeRecipients => 'Recipients';
+  String get profileBadgeRecipients => 'المستلمون';
 
   @override
   String profileBadgeMoreRecipients(int count) {
-    return '+$count more';
+    return '+$count آخرون';
   }
 
   @override
   String profileBadgeSemanticLabel(String name) {
-    return '$name badge';
+    return 'شارة $name';
   }
 
   @override
-  String get profileBadgeFallbackSemanticLabel => 'Badge';
+  String get profileBadgeFallbackSemanticLabel => 'شارة';
 
   @override
   String get profileBadgeFooterBody =>

@@ -9699,23 +9699,23 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get profileBadgeAwardedBy => 'Awarded by';
+  String get profileBadgeAwardedBy => '준 사람';
 
   @override
-  String get profileBadgeRecipients => 'Recipients';
+  String get profileBadgeRecipients => '받은 사람';
 
   @override
   String profileBadgeMoreRecipients(int count) {
-    return '+$count more';
+    return '외 $count명';
   }
 
   @override
   String profileBadgeSemanticLabel(String name) {
-    return '$name badge';
+    return '$name 배지';
   }
 
   @override
-  String get profileBadgeFallbackSemanticLabel => 'Badge';
+  String get profileBadgeFallbackSemanticLabel => '배지';
 
   @override
   String get profileBadgeFooterBody =>

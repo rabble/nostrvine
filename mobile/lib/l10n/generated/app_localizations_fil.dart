@@ -10100,7 +10100,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get badgeEditorNameLabel => 'Pangalan';
 
   @override
-  String get badgeEditorNameHint => 'Scene Stealer';
+  String get badgeEditorNameHint => 'Nangunguha ng Eksena';
 
   @override
   String get badgeEditorIdentifierLabel => 'Identifier';
@@ -10227,19 +10227,19 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String get profileBadgeAwardedBy => 'Awarded by';
+  String get profileBadgeAwardedBy => 'Ibinigay ni';
 
   @override
-  String get profileBadgeRecipients => 'Recipients';
+  String get profileBadgeRecipients => 'Mga tumanggap';
 
   @override
   String profileBadgeMoreRecipients(int count) {
-    return '+$count more';
+    return '+$count pa';
   }
 
   @override
   String profileBadgeSemanticLabel(String name) {
-    return '$name badge';
+    return 'Badge na $name';
   }
 
   @override

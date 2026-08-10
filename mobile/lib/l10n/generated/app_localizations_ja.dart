@@ -9672,23 +9672,23 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get profileBadgeAwardedBy => 'Awarded by';
+  String get profileBadgeAwardedBy => '贈った人';
 
   @override
-  String get profileBadgeRecipients => 'Recipients';
+  String get profileBadgeRecipients => '受け取った人';
 
   @override
   String profileBadgeMoreRecipients(int count) {
-    return '+$count more';
+    return '他 $count 人';
   }
 
   @override
   String profileBadgeSemanticLabel(String name) {
-    return '$name badge';
+    return '$name バッジ';
   }
 
   @override
-  String get profileBadgeFallbackSemanticLabel => 'Badge';
+  String get profileBadgeFallbackSemanticLabel => 'バッジ';
 
   @override
   String get profileBadgeFooterBody =>

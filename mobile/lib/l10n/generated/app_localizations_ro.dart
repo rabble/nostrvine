@@ -10317,23 +10317,23 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get profileBadgeAwardedBy => 'Awarded by';
+  String get profileBadgeAwardedBy => 'Acordată de';
 
   @override
-  String get profileBadgeRecipients => 'Recipients';
+  String get profileBadgeRecipients => 'Destinatari';
 
   @override
   String profileBadgeMoreRecipients(int count) {
-    return '+$count more';
+    return '+încă $count';
   }
 
   @override
   String profileBadgeSemanticLabel(String name) {
-    return '$name badge';
+    return 'Insigna $name';
   }
 
   @override
-  String get profileBadgeFallbackSemanticLabel => 'Badge';
+  String get profileBadgeFallbackSemanticLabel => 'Insignă';
 
   @override
   String get profileBadgeFooterBody =>

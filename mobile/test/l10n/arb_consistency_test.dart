@@ -353,7 +353,7 @@ void main() {
       }
     });
 
-    test('profile badge footer copy is localized for every locale', () {
+    test('profile badge sheet copy is localized for every locale', () {
       final l10nDir = Directory('lib/l10n');
       final arbFiles =
           l10nDir
@@ -369,7 +369,7 @@ void main() {
       for (final file in arbFiles) {
         final arb = _readArb(file);
 
-        for (final key in _profileBadgeFooterKeys) {
+        for (final key in _profileBadgeSheetKeys) {
           final value = arb[key];
 
           expect(
@@ -382,7 +382,7 @@ void main() {
             isNot(template[key]),
             reason:
                 '${file.path} must not fall back to English for the profile '
-                'badge footer copy',
+                'badge sheet copy',
           );
         }
 
@@ -439,7 +439,14 @@ const _knownUntranslatedDebt = <String>{
   'videoMetadataC2paMissingNoteServiceUnavailable',
 };
 
-const _profileBadgeFooterKeys = <String>{
+// profileBadgeFallbackSemanticLabel is deliberately absent: "Badge" is the
+// word several of these locales actually use, so matching English there is a
+// translation, not a gap.
+const _profileBadgeSheetKeys = <String>{
+  'profileBadgeAwardedBy',
+  'profileBadgeRecipients',
+  'profileBadgeMoreRecipients',
+  'profileBadgeSemanticLabel',
   'profileBadgeFooterBody',
   'profileBadgeFooterLink',
 };
