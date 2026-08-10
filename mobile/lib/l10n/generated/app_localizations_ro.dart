@@ -10848,6 +10848,29 @@ class AppLocalizationsRo extends AppLocalizations {
       'Subtitrările sunt încă în curs de generare. Revino într-o clipă.';
 
   @override
+  String get subtitleEditorNoSpeech =>
+      'Nu s-a detectat vorbire în acest videoclip, deci nu e nimic de subtitrat.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'Scrie-le tu';
+
+  @override
+  String get subtitleEditorAddCue => 'Adaugă o linie';
+
+  @override
+  String get subtitleEditorRemoveCue => 'Șterge această linie';
+
+  @override
+  String get subtitleEditorStartLabel => 'Început';
+
+  @override
+  String get subtitleEditorEndLabel => 'Sfârșit';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'Fiecare linie are nevoie de text și de un sfârșit după început.';
+
+  @override
   String get subtitleEditorLoadError =>
       'Nu am putut încărca subtitrările. Încearcă din nou.';
 

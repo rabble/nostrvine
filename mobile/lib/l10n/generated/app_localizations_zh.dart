@@ -10069,6 +10069,27 @@ class AppLocalizationsZh extends AppLocalizations {
   String get subtitleEditorProcessing => '字幕还在生成中，过会儿再来看看。';
 
   @override
+  String get subtitleEditorNoSpeech => '这个视频里没检测到人声，所以没有可以做字幕的内容。';
+
+  @override
+  String get subtitleEditorWriteOwn => '自己写字幕';
+
+  @override
+  String get subtitleEditorAddCue => '添加一行';
+
+  @override
+  String get subtitleEditorRemoveCue => '删除这一行';
+
+  @override
+  String get subtitleEditorStartLabel => '开始';
+
+  @override
+  String get subtitleEditorEndLabel => '结束';
+
+  @override
+  String get subtitleEditorInvalidHint => '每一行都需要文字，而且结束时间要晚于开始时间。';
+
+  @override
   String get subtitleEditorLoadError => '字幕加载失败，请重试。';
 
   @override

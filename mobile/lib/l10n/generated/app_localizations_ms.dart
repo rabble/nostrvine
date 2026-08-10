@@ -10696,6 +10696,29 @@ class AppLocalizationsMs extends AppLocalizations {
       'Sarikata masih sedang dijana. Semak semula sebentar nanti.';
 
   @override
+  String get subtitleEditorNoSpeech =>
+      'Tiada pertuturan dikesan dalam video ini, jadi tiada apa-apa untuk disarikatakan.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'Tulis sendiri';
+
+  @override
+  String get subtitleEditorAddCue => 'Tambah baris';
+
+  @override
+  String get subtitleEditorRemoveCue => 'Buang baris ini';
+
+  @override
+  String get subtitleEditorStartLabel => 'Mula';
+
+  @override
+  String get subtitleEditorEndLabel => 'Tamat';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'Setiap baris perlukan teks dan masa tamat selepas masa mula.';
+
+  @override
   String get subtitleEditorLoadError =>
       'Tidak dapat memuatkan sarikata. Cuba lagi.';
 

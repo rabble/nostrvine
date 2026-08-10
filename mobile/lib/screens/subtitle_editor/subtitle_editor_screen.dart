@@ -147,7 +147,27 @@ class SubtitleEditorView extends StatelessWidget {
         },
         builder: (context, state) => switch (state.status) {
           SubtitleEditorStatus.loading => const _Loading(),
-          SubtitleEditorStatus.processing => const _Processing(),
+          // Transcription is still running, so writing captions now would
+          // race the result. Wait or re-check, but don't offer authoring.
+          SubtitleEditorStatus.processing => _NoCues(
+            message: l10n.subtitleEditorProcessing,
+          ),
+          SubtitleEditorStatus.empty => _NoCues(
+            message: l10n.subtitleEditorNoSpeech,
+            canWriteOwn: true,
+          ),
+          SubtitleEditorStatus.unavailable => _NoCues(
+            message: l10n.subtitleEditorLoadError,
+            canWriteOwn: true,
+          ),
+          // A failure with nothing loaded is a failed load: the snackbar
+          // fades, so the reason has to stay on screen. A failure with cues
+          // is a failed save, and those cues are the creator's work — keep
+          // the list.
+          SubtitleEditorStatus.failure when state.cues.isEmpty => _NoCues(
+            message: l10n.subtitleEditorLoadError,
+            canWriteOwn: true,
+          ),
           _ => _CueList(state: state),
         },
       ),
@@ -163,8 +183,15 @@ class _Loading extends StatelessWidget {
       const Center(child: CircularProgressIndicator());
 }
 
-class _Processing extends StatelessWidget {
-  const _Processing();
+/// Explains why there is nothing to edit, and offers a way forward.
+///
+/// When [canWriteOwn] is set there will be no auto-generated track to wait
+/// for, so the creator is offered the chance to author captions by hand.
+class _NoCues extends StatelessWidget {
+  const _NoCues({required this.message, this.canWriteOwn = false});
+
+  final String message;
+  final bool canWriteOwn;
 
   @override
   Widget build(BuildContext context) {
@@ -176,15 +203,22 @@ class _Processing extends StatelessWidget {
         spacing: 16,
         children: [
           Text(
-            l10n.subtitleEditorProcessing,
+            message,
             textAlign: TextAlign.center,
             style: VineTheme.bodyMediumFont(
               color: context.vineColors.secondaryText,
             ),
           ),
-          TextButton(
+          if (canWriteOwn)
+            DivineButton(
+              label: l10n.subtitleEditorWriteOwn,
+              leadingIcon: DivineIconName.plus,
+              onPressed: () => context.read<SubtitleEditorCubit>().addCue(),
+            ),
+          DivineButton(
+            label: l10n.subtitleEditorRetry,
+            type: DivineButtonType.link,
             onPressed: () => context.read<SubtitleEditorCubit>().load(),
-            child: Text(l10n.subtitleEditorRetry),
           ),
         ],
       ),
@@ -199,28 +233,70 @@ class _CueList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final saving = state.status == SubtitleEditorStatus.saving;
     return Column(
       children: [
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: state.cues.length,
-            itemBuilder: (context, index) =>
-                _CueRow(index: index, cue: state.cues[index]),
+            // One trailing slot for the add action, so authoring a caption
+            // stays reachable from the bottom of a long list.
+            itemCount: state.cues.length + 1,
+            itemBuilder: (context, index) => index == state.cues.length
+                ? _AddCueButton(enabled: state.canAddCue && !saving)
+                : _CueRow(index: index, cue: state.cues[index]),
           ),
         ),
         SafeArea(
           top: false,
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: _SaveButton(
-              enabled:
-                  state.isDirty && state.status != SubtitleEditorStatus.saving,
-              busy: state.status == SubtitleEditorStatus.saving,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              spacing: 8,
+              children: [
+                if (state.isDirty && !state.isValid)
+                  Text(
+                    context.l10n.subtitleEditorInvalidHint,
+                    textAlign: TextAlign.center,
+                    style: VineTheme.bodySmallFont(
+                      color: context.vineColors.secondaryText,
+                    ),
+                  ),
+                _SaveButton(
+                  enabled: state.isDirty && state.isValid && !saving,
+                  busy: saving,
+                ),
+              ],
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Appends a cue to the end of the list.
+///
+/// Disabled once the cues already reach the end of the video: a line past
+/// the end would never play, so there is nothing left to caption.
+class _AddCueButton extends StatelessWidget {
+  const _AddCueButton({required this.enabled});
+
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: DivineButton(
+        label: context.l10n.subtitleEditorAddCue,
+        type: DivineButtonType.secondary,
+        leadingIcon: DivineIconName.plus,
+        onPressed: enabled
+            ? () => context.read<SubtitleEditorCubit>().addCue()
+            : null,
+      ),
     );
   }
 }
@@ -233,38 +309,185 @@ class _CueRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final cubit = context.read<SubtitleEditorCubit>();
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 12,
+        spacing: 4,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 14),
-            child: Text(
-              cue.timestampLabel,
-              style: VineTheme.bodySmallFont(
-                color: context.vineColors.secondaryText,
+          Row(
+            spacing: 8,
+            children: [
+              _TimeField(
+                label: l10n.subtitleEditorStartLabel,
+                milliseconds: cue.start,
+                onChanged: (value) =>
+                    cubit.updateCueTiming(index, start: value),
               ),
-            ),
+              Text(
+                '–',
+                style: VineTheme.bodySmallFont(
+                  color: context.vineColors.secondaryText,
+                ),
+              ),
+              _TimeField(
+                label: l10n.subtitleEditorEndLabel,
+                milliseconds: cue.end,
+                onChanged: (value) => cubit.updateCueTiming(index, end: value),
+              ),
+              const Spacer(),
+              DivineIconButton(
+                icon: DivineIconName.trash,
+                type: DivineIconButtonType.ghostSecondary,
+                size: DivineIconButtonSize.small,
+                semanticLabel: l10n.subtitleEditorRemoveCue,
+                onPressed: () => cubit.removeCue(index),
+              ),
+            ],
           ),
-          Expanded(
-            child: TextFormField(
-              initialValue: cue.text,
-              minLines: 1,
-              maxLines: null,
-              style: VineTheme.bodyMediumFont(
-                color: context.vineColors.primaryText,
-              ),
-              decoration: InputDecoration(
-                hintText: context.l10n.subtitleEditorCueHint,
-              ),
-              onChanged: (value) => context
-                  .read<SubtitleEditorCubit>()
-                  .updateCueText(index, value),
-            ),
+          _CueTextField(
+            text: cue.text,
+            onChanged: (value) => cubit.updateCueText(index, value),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Text field for a cue's caption line.
+///
+/// Owns its controller so the list can grow and shrink: rows are positional,
+/// so removing a cue slides its successor into the same element and the
+/// controller has to pick up the new text.
+class _CueTextField extends StatefulWidget {
+  const _CueTextField({required this.text, required this.onChanged});
+
+  final String text;
+  final ValueChanged<String> onChanged;
+
+  @override
+  State<_CueTextField> createState() => _CueTextFieldState();
+}
+
+class _CueTextFieldState extends State<_CueTextField> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.text,
+  );
+
+  @override
+  void didUpdateWidget(_CueTextField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Only when the value changed underneath us — comparing first keeps the
+    // caret still while the creator types.
+    if (widget.text != _controller.text) _controller.text = widget.text;
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: _controller,
+      minLines: 1,
+      maxLines: null,
+      style: VineTheme.bodyMediumFont(color: context.vineColors.primaryText),
+      decoration: InputDecoration(hintText: context.l10n.subtitleEditorCueHint),
+      onChanged: widget.onChanged,
+    );
+  }
+}
+
+/// Compact seconds field for one end of a cue's timing.
+class _TimeField extends StatefulWidget {
+  const _TimeField({
+    required this.label,
+    required this.milliseconds,
+    required this.onChanged,
+  });
+
+  final String label;
+  final int milliseconds;
+  final ValueChanged<int> onChanged;
+
+  @override
+  State<_TimeField> createState() => _TimeFieldState();
+}
+
+class _TimeFieldState extends State<_TimeField> {
+  late final TextEditingController _controller = TextEditingController(
+    text: _format(widget.milliseconds),
+  );
+  late final FocusNode _focusNode = FocusNode()..addListener(_onFocusChanged);
+
+  static String _format(int milliseconds) =>
+      (milliseconds / Duration.millisecondsPerSecond).toStringAsFixed(1);
+
+  static int? _parse(String value) {
+    final seconds = double.tryParse(value.replaceAll(',', '.'));
+    if (seconds == null || seconds.isNegative || !seconds.isFinite) return null;
+    return (seconds * Duration.millisecondsPerSecond).round();
+  }
+
+  // Unparseable input — a cleared field, a lone "-" — never reaches the cubit,
+  // so the field would sit showing a value the cue does not hold and publish
+  // the old one. Restore what the cue actually holds once editing ends.
+  void _onFocusChanged() {
+    if (_focusNode.hasFocus) return;
+    final committed = _format(widget.milliseconds);
+    if (_controller.text != committed) _controller.text = committed;
+  }
+
+  @override
+  void didUpdateWidget(_TimeField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Resync on the parsed value, not the raw text: a half-typed "1." already
+    // means 1.0, and rewriting it would jump the caret mid-entry.
+    if (_parse(_controller.text) != widget.milliseconds) {
+      _controller.text = _format(widget.milliseconds);
+    }
+  }
+
+  @override
+  void dispose() {
+    _focusNode
+      ..removeListener(_onFocusChanged)
+      ..dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 72,
+      child: Semantics(
+        label: widget.label,
+        textField: true,
+        child: TextField(
+          controller: _controller,
+          focusNode: _focusNode,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          textAlign: TextAlign.end,
+          style: VineTheme.bodySmallFont(color: context.vineColors.primaryText),
+          decoration: InputDecoration(
+            isDense: true,
+            suffixText: 's',
+            suffixStyle: VineTheme.bodySmallFont(
+              color: context.vineColors.secondaryText,
+            ),
+          ),
+          onChanged: (value) {
+            final parsed = _parse(value);
+            if (parsed != null) widget.onChanged(parsed);
+          },
+        ),
       ),
     );
   }
@@ -278,20 +501,13 @@ class _SaveButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: FilledButton(
-        onPressed: enabled
-            ? () => context.read<SubtitleEditorCubit>().save()
-            : null,
-        child: busy
-            ? const SizedBox(
-                height: 18,
-                width: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : Text(context.l10n.subtitleEditorSave),
-      ),
+    return DivineButton(
+      label: context.l10n.subtitleEditorSave,
+      expanded: true,
+      isLoading: busy,
+      onPressed: enabled
+          ? () => context.read<SubtitleEditorCubit>().save()
+          : null,
     );
   }
 }

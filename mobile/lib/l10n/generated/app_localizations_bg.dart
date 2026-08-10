@@ -10740,6 +10740,29 @@ class AppLocalizationsBg extends AppLocalizations {
       'Субтитрите все още се генерират. Върни се след малко.';
 
   @override
+  String get subtitleEditorNoSpeech =>
+      'В това видео не е открита реч, така че няма какво да се субтитрира.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'Напиши ги сам';
+
+  @override
+  String get subtitleEditorAddCue => 'Добави ред';
+
+  @override
+  String get subtitleEditorRemoveCue => 'Премахни този ред';
+
+  @override
+  String get subtitleEditorStartLabel => 'Начало';
+
+  @override
+  String get subtitleEditorEndLabel => 'Край';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'Всеки ред се нуждае от текст и край след началото си.';
+
+  @override
   String get subtitleEditorLoadError =>
       'Субтитрите не можаха да се заредят. Опитай пак.';
 

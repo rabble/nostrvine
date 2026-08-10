@@ -10594,6 +10594,29 @@ class AppLocalizationsId extends AppLocalizations {
       'Subtitle masih dibuat. Cek lagi sebentar.';
 
   @override
+  String get subtitleEditorNoSpeech =>
+      'Tidak ada percakapan yang terdeteksi di video ini, jadi tidak ada yang perlu disubtitle.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'Tulis sendiri';
+
+  @override
+  String get subtitleEditorAddCue => 'Tambah baris';
+
+  @override
+  String get subtitleEditorRemoveCue => 'Hapus baris ini';
+
+  @override
+  String get subtitleEditorStartLabel => 'Mulai';
+
+  @override
+  String get subtitleEditorEndLabel => 'Selesai';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'Setiap baris butuh teks dan waktu selesai setelah waktu mulai.';
+
+  @override
   String get subtitleEditorLoadError =>
       'Tidak bisa memuat subtitle. Coba lagi.';
 

@@ -10593,6 +10593,29 @@ class AppLocalizationsTr extends AppLocalizations {
       'Altyazılar hâlâ oluşturuluyor. Birazdan tekrar bak.';
 
   @override
+  String get subtitleEditorNoSpeech =>
+      'Bu videoda konuşma algılanmadı, yani altyazı yapılacak bir şey yok.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'Kendin yaz';
+
+  @override
+  String get subtitleEditorAddCue => 'Satır ekle';
+
+  @override
+  String get subtitleEditorRemoveCue => 'Bu satırı kaldır';
+
+  @override
+  String get subtitleEditorStartLabel => 'Başlangıç';
+
+  @override
+  String get subtitleEditorEndLabel => 'Bitiş';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'Her satırda metin ve başlangıçtan sonra gelen bir bitiş olmalı.';
+
+  @override
   String get subtitleEditorLoadError => 'Altyazılar yüklenemedi. Tekrar dene.';
 
   @override

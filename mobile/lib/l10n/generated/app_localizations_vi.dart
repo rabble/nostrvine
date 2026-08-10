@@ -10640,6 +10640,29 @@ class AppLocalizationsVi extends AppLocalizations {
       'Phụ đề vẫn đang được tạo. Quay lại sau ít phút.';
 
   @override
+  String get subtitleEditorNoSpeech =>
+      'Không phát hiện giọng nói nào trong video này, nên không có gì để làm phụ đề.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'Tự viết phụ đề';
+
+  @override
+  String get subtitleEditorAddCue => 'Thêm một dòng';
+
+  @override
+  String get subtitleEditorRemoveCue => 'Xoá dòng này';
+
+  @override
+  String get subtitleEditorStartLabel => 'Bắt đầu';
+
+  @override
+  String get subtitleEditorEndLabel => 'Kết thúc';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'Mỗi dòng cần có nội dung và thời điểm kết thúc sau lúc bắt đầu.';
+
+  @override
   String get subtitleEditorLoadError => 'Không tải được phụ đề. Thử lại nhé.';
 
   @override

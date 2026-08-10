@@ -10637,6 +10637,29 @@ class AppLocalizationsUr extends AppLocalizations {
       'سب ٹائٹلز ابھی بن رہے ہیں۔ تھوڑی دیر میں دیکھیں۔';
 
   @override
+  String get subtitleEditorNoSpeech =>
+      'اس ویڈیو میں کوئی گفتگو نہیں ملی، اس لیے سب ٹائٹل بنانے کے لیے کچھ نہیں ہے۔';
+
+  @override
+  String get subtitleEditorWriteOwn => 'خود لکھیں';
+
+  @override
+  String get subtitleEditorAddCue => 'ایک لائن شامل کریں';
+
+  @override
+  String get subtitleEditorRemoveCue => 'یہ لائن ہٹائیں';
+
+  @override
+  String get subtitleEditorStartLabel => 'شروع';
+
+  @override
+  String get subtitleEditorEndLabel => 'اختتام';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'ہر لائن میں متن اور شروع کے بعد اختتام ہونا چاہیے۔';
+
+  @override
   String get subtitleEditorLoadError =>
       'سب ٹائٹلز لوڈ نہیں ہو سکے۔ دوبارہ کوشش کریں۔';
 
