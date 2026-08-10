@@ -22,6 +22,20 @@ abstract class SemanticIds {
   static String cameraMode(String mode) => 'camera_mode_$mode';
   static const String cameraRecordButton = 'camera_record_button';
 
+  /// Recorder chrome shared by capture and stop-motion mode. Every label
+  /// behind these is localized, so the E2E capture flow drives them by id.
+  static const String cameraCloseButton = 'camera_close_button';
+  static const String cameraNextButton = 'camera_next_button';
+  static const String cameraDeleteClipButton = 'camera_delete_clip_button';
+  static const String cameraLibraryButton = 'camera_library_button';
+
+  /// Capture-mode control rail, top to bottom.
+  static const String cameraFlashButton = 'camera_flash_button';
+  static const String cameraTimerButton = 'camera_timer_button';
+  static const String cameraAspectRatioButton = 'camera_aspect_ratio_button';
+  static const String cameraSwitchCameraButton = 'camera_switch_camera_button';
+  static const String cameraStabilizationButton = 'camera_stabilization_button';
+
   /// Welcome screen. The fresh-install and returning-user branches show
   /// different buttons, so each action gets its own id rather than being
   /// disambiguated by position.

@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/widgets/video_recorder/clip_delete_snackbar.dart';
@@ -137,6 +138,7 @@ class VideoRecorderCaptureStack extends ConsumerWidget {
                         icon: .trash,
                         semanticLabel:
                             context.l10n.videoRecorderDeleteLastClipLabel,
+                        semanticIdentifier: SemanticIds.cameraDeleteClipButton,
                         type: .ghostOverMedia,
                         size: .small,
                         onPressed: recorderMode.capturesStills

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -227,6 +228,20 @@ void main() {
           find.bySemanticsLabel('Clip library, no clips'),
         );
         expect(semantics.flagsCollection.isButton, isTrue);
+      });
+
+      // Anchor for the Maestro capture-mode flow
+      // (e2e/maestro/asserts/assertCaptureMode.yaml). The label assertions
+      // above go through unchanged if the identifier is dropped, so it needs
+      // its own guard.
+      testWidgets('exposes an E2E identifier', (tester) async {
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
+
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.cameraLibraryButton),
+          findsOneWidget,
+        );
       });
     });
 
