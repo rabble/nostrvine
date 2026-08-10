@@ -161,9 +161,11 @@ tags:
             id: camera_stabilization_button
             text: ".*Off.*"
           timeout: 10000
-      # Restore. Safe even if the barrier ever stopped blocking semantics: the
-      # rail button no longer reads "Off" at this point, so ".*Off.*" can only
-      # be the sheet's own row.
+      # Restore. The bare ".*Off.*" leans on the barrier blocking the rail
+      # underneath (ModalBarrier wraps itself in BlockSemantics) — it is not
+      # independently safe. The stabilization button no longer reads "Off"
+      # here, but the flash and timer controls both do, and picking the timer
+      # would arm the countdown that step 2 exists to clear.
       - tapOn:
           id: camera_stabilization_button
       - tapOn: ".*Off.*"
