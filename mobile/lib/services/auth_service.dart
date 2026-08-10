@@ -400,7 +400,12 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// Current authentication state
   AuthState get authState => _authState;
 
-  /// Stream of authentication state changes
+  /// Stream of authentication state changes.
+  ///
+  /// Identity only. `authenticated` says the pubkey is known, not that anything
+  /// can be signed. Side effects that sign or publish must watch
+  /// `nostrSessionProvider` instead; gating them here strands them when the
+  /// signer arrives later (#6977).
   Stream<AuthState> get authStateStream => _authStateController.stream;
 
   /// Current user profile (null if not authenticated)
@@ -498,6 +503,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// True when the identity has a local private key (can sign locally)
   /// OR when RPC is fully ready. False for pubkey-only identities that
   /// are still waiting for RPC warmup.
+  ///
+  /// This answers "is this identity *capable* of signing", not "is the
+  /// signer-backed client ready". It has no stream, so it is safe to sample at
+  /// the moment of use and unsafe to gate a one-shot side effect on. For the
+  /// latter, watch `nostrSessionProvider`.
   bool get canPublishNostrWritesNow {
     return switch (_currentIdentity) {
       null => false,

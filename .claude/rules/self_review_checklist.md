@@ -137,6 +137,12 @@ State management:
   child via `BlocProvider`-keyed-on-identity (the existing rule
   then covers the parent). See
   [`state_management.md`](state_management.md#stateful-widgets-that-hold-the-captured-dep-bloc-directly).
+- [ ] Anything that signs, publishes, or sends a NIP-98 header waits on
+  `nostrSessionProvider` reaching `nostrReady`, not on
+  `authStateStream` / `currentAuthStateProvider` / `canPublishNostrWritesNow`.
+  Auth state only says the pubkey is known; a Keycast signer with no
+  local key arrives after it. See
+  [`state_management.md`](state_management.md#signing-readiness-identity-known-is-not-signer-ready).
 - [ ] No error strings / exception objects in BLoC `state`. Use status
   enums + `addError`. See [`state_management.md`](state_management.md).
 - [ ] No mutable instance variables on a BLoC class. All state lives in
