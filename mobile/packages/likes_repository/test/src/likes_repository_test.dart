@@ -88,6 +88,7 @@ void main() {
       IsOnlineCallback? isOnline,
       QueueOfflineActionCallback? queueOfflineAction,
       BlockedLikerFilter? blockFilter,
+      LikesRepositoryErrorReporter? errorReporter,
     }) {
       return LikesRepository(
         nostrClient: mockNostrClient,
@@ -95,6 +96,7 @@ void main() {
         isOnline: isOnline,
         queueOfflineAction: queueOfflineAction,
         blockFilter: blockFilter,
+        errorReporter: errorReporter,
       );
     }
 
@@ -232,6 +234,367 @@ void main() {
       test('works without local storage', () async {
         repository = createRepository(withLocalStorage: false);
         expect(await repository.getOrderedLikedEventIds(), isEmpty);
+      });
+    });
+
+    group('unavailable local storage', () {
+      // The local database is a cache, not a precondition. When it is
+      // unreadable (at-rest cipher bootstrap left it unopenable, runtime
+      // corruption, disk full) the Kind 7 must still reach relays: the signed
+      // reaction is the irreplaceable half, the cache row is not. Mirrors the
+      // same guarantee in RepostsRepository.
+      final storageFailure = Exception('database is unavailable');
+
+      void stubSendLike(MockEvent event) {
+        when(
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenAnswer((_) async => event);
+      }
+
+      test('publishes the like when local storage cannot be read', () async {
+        final mockEvent = MockEvent();
+        when(() => mockEvent.id).thenReturn(testReactionEventId);
+        stubSendLike(mockEvent);
+        when(
+          () => mockLocalStorage.getAllLikeRecords(),
+        ).thenThrow(storageFailure);
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenAnswer((_) async {});
+
+        repository = createRepository();
+        final result = await repository.likeEvent(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+        );
+
+        expect(result, equals(testReactionEventId));
+        verify(
+          () => mockNostrClient.sendLike(
+            testEventId,
+            content: '+',
+            targetAuthorPubkey: testAuthorPubkey,
+          ),
+        ).called(1);
+      });
+
+      test('publishes the like when the local write fails', () async {
+        final mockEvent = MockEvent();
+        when(() => mockEvent.id).thenReturn(testReactionEventId);
+        stubSendLike(mockEvent);
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenThrow(storageFailure);
+
+        repository = createRepository();
+        final result = await repository.likeEvent(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+        );
+
+        expect(result, equals(testReactionEventId));
+        verify(
+          () => mockNostrClient.sendLike(
+            testEventId,
+            content: '+',
+            targetAuthorPubkey: testAuthorPubkey,
+          ),
+        ).called(1);
+      });
+
+      test(
+        'a failed read does not strand the repository uninitialized',
+        () async {
+          // Without the latch every call re-runs the throwing read instead of
+          // degrading once.
+          when(
+            () => mockLocalStorage.getAllLikeRecords(),
+          ).thenThrow(storageFailure);
+
+          repository = createRepository();
+          await repository.getLikedEventIds();
+          await repository.getLikedEventIds();
+
+          verify(() => mockLocalStorage.getAllLikeRecords()).called(1);
+        },
+      );
+
+      test(
+        'reports an invariant violation raised by a storage write',
+        () async {
+          // An Error from the storage layer means the storage layer itself is
+          // broken. Still swallowed so the Kind 7 goes out, but routed to the
+          // reporter — a swallowed bug nobody can see is how a real defect
+          // ships behind a warning log.
+          final mockEvent = MockEvent();
+          when(() => mockEvent.id).thenReturn(testReactionEventId);
+          stubSendLike(mockEvent);
+          final reported = <({Object error, String site})>[];
+          when(
+            () => mockLocalStorage.saveLikeRecord(any()),
+          ).thenThrow(StateError('storage invariant violated'));
+
+          repository = createRepository(
+            errorReporter: (error, stackTrace, {required site}) {
+              reported.add((error: error, site: site));
+            },
+          );
+          await repository.likeEvent(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+          );
+
+          expect(reported.first.error, isA<StateError>());
+          expect(
+            reported.map((r) => r.site),
+            equals([
+              LikesRepositoryReportableSites.likeEventSavePlaceholder,
+              LikesRepositoryReportableSites.likeEventSaveConfirmed,
+            ]),
+          );
+        },
+      );
+
+      test(
+        'reports an invariant violation raised by the initial read',
+        () async {
+          final reported = <String>[];
+          when(
+            () => mockLocalStorage.getAllLikeRecords(),
+          ).thenThrow(TypeError());
+
+          repository = createRepository(
+            errorReporter: (error, stackTrace, {required site}) {
+              reported.add(site);
+            },
+          );
+          await repository.getLikedEventIds();
+
+          expect(
+            reported,
+            equals([
+              LikesRepositoryReportableSites.ensureInitializedLoadRecords,
+            ]),
+          );
+        },
+      );
+
+      test('does not report an expected storage failure', () async {
+        // SqliteException and friends are Exceptions, not Errors: expected on
+        // a broken device and explicitly not Crashlytics-reportable per the
+        // decision matrix in `.claude/rules/error_handling.md`.
+        final mockEvent = MockEvent();
+        when(() => mockEvent.id).thenReturn(testReactionEventId);
+        stubSendLike(mockEvent);
+        var reportCount = 0;
+        when(
+          () => mockLocalStorage.getAllLikeRecords(),
+        ).thenThrow(storageFailure);
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenThrow(storageFailure);
+
+        repository = createRepository(
+          errorReporter: (error, stackTrace, {required site}) {
+            reportCount++;
+          },
+        );
+        await repository.likeEvent(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+        );
+
+        expect(reportCount, isZero);
+      });
+
+      test('publishes the like when the toggle state read fails', () async {
+        // The like button only ever reaches the repository through
+        // toggleLike (video_interactions_bloc.dart), so a storage read that
+        // throws there costs the Kind 7 just as surely as one inside
+        // likeEvent. likeEvent's own guard never gets a chance to run.
+        final mockEvent = MockEvent();
+        when(() => mockEvent.id).thenReturn(testReactionEventId);
+        stubSendLike(mockEvent);
+        when(
+          () => mockLocalStorage.getAllLikeRecords(),
+        ).thenThrow(storageFailure);
+        when(() => mockLocalStorage.isLiked(any())).thenThrow(storageFailure);
+
+        repository = createRepository();
+        final isNowLiked = await repository.toggleLike(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+        );
+
+        expect(isNowLiked, isTrue);
+        verify(
+          () => mockNostrClient.sendLike(
+            testEventId,
+            content: '+',
+            targetAuthorPubkey: testAuthorPubkey,
+          ),
+        ).called(1);
+      });
+
+      test(
+        'unlikes from the in-memory cache when the state read fails',
+        () async {
+          // The swallowed read must fall back to the cache, not to "not
+          // liked" — otherwise the toggle publishes a duplicate reaction
+          // instead of deleting the live one.
+          final mockEvent = MockEvent();
+          when(() => mockEvent.id).thenReturn(testReactionEventId);
+          stubSendLike(mockEvent);
+          final deletionEvent = MockEvent();
+          when(() => deletionEvent.id).thenReturn('deletion_event_id');
+          when(
+            () => mockNostrClient.deleteEvent(any()),
+          ).thenAnswer((_) async => deletionEvent);
+
+          repository = createRepository();
+          await repository.likeEvent(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+          );
+          when(() => mockLocalStorage.isLiked(any())).thenThrow(storageFailure);
+
+          final isNowLiked = await repository.toggleLike(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+          );
+
+          expect(isNowLiked, isFalse);
+          verify(
+            () => mockNostrClient.deleteEvent(testReactionEventId),
+          ).called(1);
+        },
+      );
+
+      test('syncs from relays when the persisted read fails', () async {
+        // The relay half is the authoritative one. A cache read that throws
+        // used to escape syncUserReactions before the fetch below ever ran,
+        // so the profile Likes tab errored while relays were reachable.
+        const targetId = 'sync_target_1234567890abcdef';
+        const reactionId = 'sync_reaction_1234567890abcdef';
+        when(
+          () => mockLocalStorage.getAllLikeRecords(),
+        ).thenThrow(storageFailure);
+        mockQueryEventsSequence([
+          [createMockReaction(id: reactionId, targetEventId: targetId)],
+          [],
+        ]);
+
+        repository = createRepository();
+        final result = await repository.syncUserReactions();
+
+        expect(result.orderedEventIds, contains(targetId));
+      });
+
+      test('completes the sync when the batch save fails', () async {
+        const targetId = 'batch_target_1234567890abcdef';
+        const reactionId = 'batch_reaction_1234567890abcdef';
+        when(
+          () => mockLocalStorage.saveLikeRecordsBatch(any()),
+        ).thenThrow(storageFailure);
+        mockQueryEventsSequence([
+          [createMockReaction(id: reactionId, targetEventId: targetId)],
+          [],
+        ]);
+
+        repository = createRepository();
+        final result = await repository.syncUserReactions();
+
+        expect(result.orderedEventIds, contains(targetId));
+      });
+
+      test('completes the sync when the deleted-record purge fails', () async {
+        const targetId = 'purge_target_1234567890abcdef';
+        const reactionId = 'purge_reaction_1234567890abcdef';
+        when(() => mockLocalStorage.getAllLikeRecords()).thenAnswer(
+          (_) async => [
+            createLikeRecord(
+              targetEventId: targetId,
+              reactionEventId: reactionId,
+            ),
+          ],
+        );
+        when(
+          () => mockLocalStorage.deleteLikeRecord(any()),
+        ).thenThrow(storageFailure);
+        mockQueryEventsSequence([
+          [createMockReaction(id: reactionId, targetEventId: targetId)],
+          [
+            createMockDeletion([reactionId]),
+          ],
+        ]);
+
+        repository = createRepository();
+        final result = await repository.syncUserReactions();
+
+        expect(result.orderedEventIds, isNot(contains(targetId)));
+      });
+
+      test('still subscribes when the startup read fails', () async {
+        // initialize() reads storage before _subscribeToReactions, so a
+        // throw there costs the session its cross-device sync too.
+        when(
+          () => mockLocalStorage.getAllLikeRecords(),
+        ).thenThrow(storageFailure);
+        when(() => mockNostrClient.hasKeys).thenReturn(true);
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => const Stream.empty());
+
+        repository = createRepository();
+        await repository.initialize();
+
+        verify(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).called(1);
+      });
+
+      test('caches a subscription reaction when its write fails', () async {
+        // The write is fire-and-forget, so an unguarded rejection would be
+        // an uncaught async error rather than a swallowed cache miss.
+        const targetId = 'live_target_1234567890abcdef';
+        final controller = StreamController<Event>();
+        addTearDown(controller.close);
+        final reaction = createMockReaction(
+          id: 'live_reaction_1234567890abcdef',
+          targetEventId: targetId,
+          authorPubkey: testUserPubkey,
+        );
+        when(() => reaction.kind).thenReturn(EventKind.reaction);
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenThrow(storageFailure);
+        when(() => mockNostrClient.hasKeys).thenReturn(true);
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => controller.stream);
+
+        repository = createRepository();
+        await repository.initialize();
+
+        controller.add(reaction);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(await repository.isLiked(targetId), isTrue);
       });
     });
 

@@ -28,6 +28,7 @@ import 'package:openvine/services/auth_service.dart' show AuthState;
 import 'package:openvine/services/broken_video_tracker.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/dead_media_feed_guard.dart';
 import 'package:openvine/services/event_api_client.dart';
 import 'package:openvine/services/event_router.dart';
@@ -589,6 +590,15 @@ LikesRepository likesRepository(Ref ref) {
     nostrClient: nostrClient,
     localStorage: localStorage,
     blockFilter: createBlockedAuthorFilter(ref),
+    errorReporter: (error, stackTrace, {required site}) {
+      unawaited(
+        CrashReportingService.instance.recordError(
+          error,
+          stackTrace,
+          reason: 'LikesRepository.$site',
+        ),
+      );
+    },
     isOnline: () =>
         connectionStatus.isOnline && authService.canPublishNostrWritesNow,
     queueOfflineAction: pendingActionService != null
@@ -685,6 +695,15 @@ RepostsRepository repostsRepository(Ref ref) {
     nostrClient: nostrClient,
     localStorage: localStorage,
     blockFilter: createBlockedAuthorFilter(ref),
+    errorReporter: (error, stackTrace, {required site}) {
+      unawaited(
+        CrashReportingService.instance.recordError(
+          error,
+          stackTrace,
+          reason: 'RepostsRepository.$site',
+        ),
+      );
+    },
     isOnline: () =>
         connectionStatus.isOnline && authService.canPublishNostrWritesNow,
     queueOfflineAction: pendingActionService != null

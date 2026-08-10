@@ -10,6 +10,7 @@ import 'dart:math';
 import 'package:likes_repository/src/blocked_liker_filter.dart';
 import 'package:likes_repository/src/exceptions.dart';
 import 'package:likes_repository/src/likes_local_storage.dart';
+import 'package:likes_repository/src/likes_repository_reportable_sites.dart';
 import 'package:likes_repository/src/models/like_record.dart';
 import 'package:likes_repository/src/models/likes_sync_result.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -51,6 +52,26 @@ typedef QueueOfflineActionCallback =
       int? targetKind,
     });
 
+/// Reporter port for programming-invariant violations swallowed by the
+/// best-effort local-storage paths.
+///
+/// The repository swallows local-storage failures so an unusable cache can
+/// never block a relay publish. Expected IO and corruption failures stay in
+/// the unified log, but an `Error` — `StateError`, `TypeError`,
+/// `RangeError` — means the storage layer itself is broken, and a swallowed
+/// bug is a bug nobody ever sees. Wiring an implementation routes that
+/// signal to Crashlytics without crossing the `likes_repository` → app
+/// package boundary.
+///
+/// [site] is one of `LikesRepositoryReportableSites`'s constants and is used
+/// as the Crashlytics `reason:` suffix so the dashboard aggregates per
+/// swallow site.
+///
+/// Implementations MUST NOT throw — the repository invokes this from inside
+/// the swallow and any throw would defeat it.
+typedef LikesRepositoryErrorReporter =
+    void Function(Object error, StackTrace stackTrace, {required String site});
+
 /// Repository for managing user likes (Kind 7 reactions) on Nostr events.
 ///
 /// This repository provides a unified interface for:
@@ -81,20 +102,30 @@ class LikesRepository {
   /// - [queueOfflineAction]: Optional callback to queue actions when offline
   /// - [blockFilter]: Optional callback to hide blocked/muted users from
   ///   engagement lists ([fetchEventLikers])
+  /// - [errorReporter]: Optional reporter invoked from the best-effort
+  ///   local-storage swallow sites when the swallowed failure is a
+  ///   programming-invariant violation (see [LikesRepositoryErrorReporter]).
+  ///   Defaults to `null` so test fixtures need no rewiring; production
+  ///   wires it through `likesRepositoryProvider` to forward to Crashlytics.
   LikesRepository({
     required NostrClient nostrClient,
     LikesLocalStorage? localStorage,
     IsOnlineCallback? isOnline,
     QueueOfflineActionCallback? queueOfflineAction,
     BlockedLikerFilter? blockFilter,
+    LikesRepositoryErrorReporter? errorReporter,
   }) : _nostrClient = nostrClient,
        _localStorage = localStorage,
        _isOnline = isOnline,
        _queueOfflineAction = queueOfflineAction,
-       _blockFilter = blockFilter;
+       _blockFilter = blockFilter,
+       _errorReporter = errorReporter;
 
   final NostrClient _nostrClient;
   final LikesLocalStorage? _localStorage;
+
+  /// Reporter for invariant violations swallowed by the storage paths.
+  final LikesRepositoryErrorReporter? _errorReporter;
 
   /// Callback to hide blocked/muted users from engagement lists
   final BlockedLikerFilter? _blockFilter;
@@ -483,7 +514,11 @@ class LikesRepository {
       addressableId: addressableId,
     );
     _indexLikeRecord(placeholder);
-    await _localStorage?.saveLikeRecord(placeholder);
+    await _bestEffortLocalStorage(
+      () async => _localStorage?.saveLikeRecord(placeholder),
+      description: 'saving the like placeholder',
+      site: LikesRepositoryReportableSites.likeEventSavePlaceholder,
+    );
     if (previousCount != null) {
       _writeCachedLikeCount(
         eventId,
@@ -533,7 +568,11 @@ class LikesRepository {
         addressableId: addressableId,
       );
       _indexLikeRecord(confirmed);
-      await _localStorage?.saveLikeRecord(confirmed);
+      await _bestEffortLocalStorage(
+        () async => _localStorage?.saveLikeRecord(confirmed),
+        description: 'saving the confirmed like',
+        site: LikesRepositoryReportableSites.likeEventSaveConfirmed,
+      );
 
       return reactionEvent.id;
     } catch (e, stackTrace) {
@@ -555,7 +594,11 @@ class LikesRepository {
         return placeholderId;
       }
       _deindexLikeRecord(eventId);
-      await _localStorage?.deleteLikeRecord(eventId);
+      await _bestEffortLocalStorage(
+        () async => _localStorage?.deleteLikeRecord(eventId),
+        description: 'rolling back the like placeholder',
+        site: LikesRepositoryReportableSites.likeEventRollbackPlaceholder,
+      );
       if (previousCount != null) {
         _writeCachedLikeCount(
           eventId,
@@ -671,15 +714,26 @@ class LikesRepository {
     if (record == null && addressableId != null && addressableId.isNotEmpty) {
       record = _likeRecordsByAddressableId[addressableId];
     }
-    if (record == null && _localStorage != null) {
-      record = await _localStorage.getLikeRecord(eventId);
-      if (record == null && addressableId != null && addressableId.isNotEmpty) {
-        record = await _localStorage.getLikeRecordByAddressableId(
-          addressableId,
-        );
-      }
+    final localStorage = _localStorage;
+    if (record == null && localStorage != null) {
+      record = await _bestEffortLocalStorage<LikeRecord?>(
+        () async {
+          final stored = await localStorage.getLikeRecord(eventId);
+          if (stored != null) return stored;
+          if (addressableId == null || addressableId.isEmpty) return null;
+          return localStorage.getLikeRecordByAddressableId(addressableId);
+        },
+        description: 'reading the like record',
+        site: LikesRepositoryReportableSites.unlikeEventReadRecord,
+      );
     }
 
+    // A swallowed read failure is indistinguishable from "no such record"
+    // here, so a degraded store reports "not liked" when the truth is
+    // "cannot tell". Both answers end the same way — there is no reaction
+    // event id to reference in a Kind 5, so nothing can be published either
+    // way — and widening the contract with a second exception would push a
+    // distinction the UI has no recovery for onto every caller.
     if (record == null) {
       throw NotLikedException(eventId);
     }
@@ -699,7 +753,11 @@ class LikesRepository {
     // 1. Optimistic-first: remove from memory + local storage and tick the
     // watchLikedEventIds stream BEFORE any network I/O (mirror of likeEvent).
     _deindexLikeRecord(resolvedEventId);
-    await _localStorage?.deleteLikeRecord(resolvedEventId);
+    await _bestEffortLocalStorage(
+      () async => _localStorage?.deleteLikeRecord(resolvedEventId),
+      description: 'deleting the like record',
+      site: LikesRepositoryReportableSites.unlikeEventDeleteRecord,
+    );
     _decrementLikeCountCache(eventId, addressableId: addressableId);
     _emitLikedIds();
 
@@ -747,7 +805,11 @@ class LikesRepository {
         return;
       }
       _indexLikeRecord(snapshotRecord);
-      await _localStorage?.saveLikeRecord(snapshotRecord);
+      await _bestEffortLocalStorage(
+        () async => _localStorage?.saveLikeRecord(snapshotRecord),
+        description: 'restoring the like record',
+        site: LikesRepositoryReportableSites.unlikeEventRestoreRecord,
+      );
       if (previousCount != null) {
         _writeCachedLikeCount(
           eventId,
@@ -847,8 +909,16 @@ class LikesRepository {
     // than the one being toggled here (#6020) — without this check,
     // toggling the (correctly, post-fix) filled heart on the current
     // version would try to *like* again instead of unliking the original.
+    // Best-effort for the same reason [likeEvent]'s writes are: this is the
+    // only entry point the like button uses, so an unreadable cache throwing
+    // here costs the Kind 7 outright. A swallowed read falls back to the
+    // in-memory cache, which is what the null-storage branch already does.
     final likedByEventId =
-        await _localStorage?.isLiked(eventId) ??
+        await _bestEffortLocalStorage<bool?>(
+          () async => _localStorage?.isLiked(eventId),
+          description: 'checking the like state',
+          site: LikesRepositoryReportableSites.toggleLikeReadState,
+        ) ??
         _likeRecords.containsKey(eventId);
     final likedByCoordinate =
         addressableId != null &&
@@ -1432,11 +1502,20 @@ class LikesRepository {
   ///
   /// Throws `SyncFailedException` if syncing fails.
   Future<LikesSyncResult> syncUserReactions() async {
-    // First, load from local storage (fast)
-    if (_localStorage != null) {
-      final records = await _localStorage.getAllLikeRecords();
-      records.forEach(_indexLikeRecord);
-      _emitLikedIds();
+    // First, load from local storage (fast). Best-effort and deliberately
+    // outside the relay try/catch below: an unreadable cache must not skip
+    // the authoritative relay fetch, which is the whole point of a sync.
+    final localStorage = _localStorage;
+    if (localStorage != null) {
+      final records = await _bestEffortLocalStorage(
+        localStorage.getAllLikeRecords,
+        description: 'loading persisted reactions for sync',
+        site: LikesRepositoryReportableSites.syncUserReactionsLoadRecords,
+      );
+      if (records != null) {
+        records.forEach(_indexLikeRecord);
+        _emitLikedIds();
+      }
     }
 
     try {
@@ -1562,7 +1641,11 @@ class LikesRepository {
       // Remove deleted likes from cache and storage
       for (final targetId in deletedTargetIds) {
         _deindexLikeRecord(targetId);
-        await _localStorage?.deleteLikeRecord(targetId);
+        await _bestEffortLocalStorage(
+          () async => localStorage?.deleteLikeRecord(targetId),
+          description: 'dropping a deleted reaction',
+          site: LikesRepositoryReportableSites.syncUserReactionsDeleteRecord,
+        );
       }
 
       // Remove deleted downvotes from in-memory cache (no local storage in v1)
@@ -1572,8 +1655,12 @@ class LikesRepository {
       }
 
       // Batch save new records to storage
-      if (newRecords.isNotEmpty && _localStorage != null) {
-        await _localStorage.saveLikeRecordsBatch(newRecords);
+      if (newRecords.isNotEmpty && localStorage != null) {
+        await _bestEffortLocalStorage(
+          () => localStorage.saveLikeRecordsBatch(newRecords),
+          description: 'persisting the synced reactions',
+          site: LikesRepositoryReportableSites.syncUserReactionsSaveBatch,
+        );
       }
 
       _emitLikedIds();
@@ -1859,15 +1946,24 @@ class LikesRepository {
   Future<void> initialize() async {
     if (_isInitialized) return;
 
-    // Load from local storage first for immediate UI display
+    // Load from local storage first for immediate UI display. Best-effort:
+    // throwing here would skip _subscribeToReactions below, so an unreadable
+    // cache would also cost the session its cross-device sync.
     var hasCoordinatelessRecords = false;
-    if (_localStorage != null) {
-      final records = await _localStorage.getAllLikeRecords();
-      records.forEach(_indexLikeRecord);
-      hasCoordinatelessRecords = records.any(
-        (r) => r.addressableId == null || r.addressableId!.isEmpty,
+    final localStorage = _localStorage;
+    if (localStorage != null) {
+      final records = await _bestEffortLocalStorage(
+        localStorage.getAllLikeRecords,
+        description: 'loading persisted reactions at startup',
+        site: LikesRepositoryReportableSites.initializeLoadRecords,
       );
-      _emitLikedIds();
+      if (records != null) {
+        records.forEach(_indexLikeRecord);
+        hasCoordinatelessRecords = records.any(
+          (r) => r.addressableId == null || r.addressableId!.isEmpty,
+        );
+        _emitLikedIds();
+      }
     }
 
     final pubkey = await _currentUserPubkey();
@@ -1946,7 +2042,18 @@ class LikesRepository {
       );
 
       _indexLikeRecord(record);
-      unawaited(_localStorage?.saveLikeRecord(record));
+      // Best-effort: `unawaited` attaches no error handler, so a raw
+      // rejection here would surface as an uncaught async error in the app's
+      // zone guard and reach Crashlytics as exactly the expected-IO noise the
+      // decision matrix keeps out.
+      unawaited(
+        _bestEffortLocalStorage(
+          () async => _localStorage?.saveLikeRecord(record),
+          description: 'saving a reaction from the live subscription',
+          site:
+              LikesRepositoryReportableSites.processIncomingReactionSaveRecord,
+        ),
+      );
       _emitLikedIds();
     } else if (event.content == _downvoteContent) {
       // Deduplicate downvotes (in-memory only — no local persistence in v1)
@@ -2061,12 +2168,81 @@ class LikesRepository {
   Future<void> _ensureInitialized() async {
     if (_isInitialized) return;
 
-    if (_localStorage != null) {
-      final records = await _localStorage.getAllLikeRecords();
-      records.forEach(_indexLikeRecord);
-      _emitLikedIds();
+    final localStorage = _localStorage;
+    if (localStorage != null) {
+      try {
+        final records = await localStorage.getAllLikeRecords();
+        records.forEach(_indexLikeRecord);
+        _emitLikedIds();
+      } on Object catch (e, stackTrace) {
+        // Degrade to an in-memory-only cache rather than failing the caller.
+        // Callers are publish paths: an unreadable cache costs a stale
+        // already-liked check, while throwing here costs the Kind 7.
+        _reportIfInvariantViolation(
+          e,
+          stackTrace,
+          site: LikesRepositoryReportableSites.ensureInitializedLoadRecords,
+        );
+        Log.warning(
+          'Like cache unavailable; continuing without persisted records: $e',
+          name: 'LikesRepository',
+          category: LogCategory.system,
+        );
+      }
     }
+    // Latched on both paths: an unreadable database stays unreadable for the
+    // session, so retrying would re-throw on every call instead of degrading.
     _isInitialized = true;
+  }
+
+  /// Runs a local-storage side effect that must never block a relay publish.
+  ///
+  /// The local database is a cache. A reaction that reached relays survives
+  /// without its cache row; a reaction blocked by an unwritable cache is lost
+  /// outright. Storage failures are therefore logged and swallowed.
+  ///
+  /// Expected IO/corruption failures are not Crashlytics-reportable (see the
+  /// decision matrix in `.claude/rules/error_handling.md`); the unified log is
+  /// where a degraded cache surfaces. Programming-invariant violations are
+  /// routed to [_errorReporter] instead of vanishing — see
+  /// [_reportIfInvariantViolation].
+  ///
+  /// [site] is the stable `LikesRepositoryReportableSites` identifier for
+  /// this call site; [description] is the human phrasing used in the log.
+  Future<T?> _bestEffortLocalStorage<T>(
+    Future<T> Function() operation, {
+    required String description,
+    required String site,
+  }) async {
+    try {
+      return await operation();
+    } on Object catch (e, stackTrace) {
+      _reportIfInvariantViolation(e, stackTrace, site: site);
+      Log.warning(
+        'Local like storage unavailable ($description); '
+        'continuing without it: $e',
+        name: 'LikesRepository',
+        category: LogCategory.system,
+      );
+      return null;
+    }
+  }
+
+  /// Reports [error] when it is a programming-invariant violation.
+  ///
+  /// Storage IO and corruption failures arrive as `Exception`s
+  /// (`SqliteException`, `IOException`) and are expected on a broken device,
+  /// so per the decision matrix in `.claude/rules/error_handling.md` they
+  /// stay out of Crashlytics. `Error` subtypes — `StateError`, `TypeError`,
+  /// `RangeError` — mean the storage layer itself is buggy; swallowing those
+  /// silently is how a real defect ships unnoticed behind a warning log.
+  void _reportIfInvariantViolation(
+    Object error,
+    StackTrace stackTrace, {
+    required String site,
+  }) {
+    if (error is! Error) return;
+    _errorReporter?.call(error, stackTrace, site: site);
   }
 
   /// Extracts the target event ID from a reaction event's 'e' tag.
