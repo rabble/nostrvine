@@ -27,17 +27,15 @@ const _likeContent = '+';
 /// NIP-25 reaction content for a downvote.
 const _downvoteContent = '-';
 
-/// Max number of reaction ids per Kind 5 deletion REQ.
+/// Max number of event ids per `#e` REQ filter.
 ///
-/// The resolver scopes the deletion query to the reaction ids it fetched,
-/// which can approach the relay's per-REQ cap (~5000) on a very
-/// high-engagement video. A single `#e` filter with that many 64-char ids
-/// (~67 bytes each in JSON) would build a REQ frame near/over the relay's
-/// `max_message_length` (512KB); an oversized frame errors the socket and
-/// `queryEvents` fails open, silently counting deleted likes. Chunking keeps
-/// every frame small (500 ids ~= 34KB, well under 512KB and the advertised
-/// `max_event_tags` of 2000). See #5751.
-const _deletionReqEidChunkSize = 500;
+/// A 64-char id costs ~67 bytes in JSON, so a single `#e` filter with enough
+/// of them builds a REQ frame near/over the relay's `max_message_length`
+/// (512KB). An oversized frame errors the socket and `queryEvents` fails
+/// open — silently counting deleted likes, or returning no reactions at all.
+/// 500 ids is ~34KB, well under 512KB and the advertised `max_event_tags`
+/// of 2000. See #5751.
+const _reqEidChunkSize = 500;
 
 /// Callback to check if the device is currently online
 typedef IsOnlineCallback = bool Function();
@@ -1148,12 +1146,9 @@ class LikesRepository {
       return counts;
     }
 
-    // Query relays for count of Kind 7 reactions on uncached events
-    final filterByE = Filter(kinds: const [EventKind.reaction], e: uncachedIds);
-
     // NIP-45 COUNT with multiple event IDs returns total count, not per-event
     // So we need to fall back to querying events and counting client-side
-    final eventsByE = await _nostrClient.queryEvents([filterByE]);
+    final eventsByE = await _queryReactionsByEventIds(uncachedIds);
 
     // Count reactions per target event from e-tag query
     final uncachedIdSet = uncachedIds.toSet();
@@ -1875,8 +1870,7 @@ class LikesRepository {
         if (entry.value.isNotEmpty) entry.value: entry.key,
     };
 
-    final filterByE = Filter(kinds: const [EventKind.reaction], e: eventIds);
-    final eEventsFuture = _nostrClient.queryEvents([filterByE]);
+    final eEventsFuture = _queryReactionsByEventIds(eventIds);
     final aEventsFuture = aTagToEventId.isEmpty
         ? Future<List<Event>>.value(const <Event>[])
         : _nostrClient.queryEvents([
@@ -1936,34 +1930,53 @@ class LikesRepository {
     final reactionIds = reactionsById.keys.toList();
     if (reactionIds.isEmpty) return const {};
 
-    final chunkedDeletions = await Future.wait([
-      for (var i = 0; i < reactionIds.length; i += _deletionReqEidChunkSize)
-        _nostrClient.queryEvents([
-          Filter(
-            kinds: const [EventKind.eventDeletion],
-            e: reactionIds.sublist(
-              i,
-              min(i + _deletionReqEidChunkSize, reactionIds.length),
-            ),
-          ),
-        ]),
-    ]);
+    final deletions = await _queryEventsByEIds(
+      reactionIds,
+      kind: EventKind.eventDeletion,
+    );
 
     final deleted = <String>{};
-    for (final chunk in chunkedDeletions) {
-      for (final deletion in chunk) {
-        for (final tag in deletion.tags) {
-          if (tag.length > 1 && tag[0] == 'e') {
-            final targetId = tag[1];
-            final target = reactionsById[targetId];
-            if (target != null && target.pubkey == deletion.pubkey) {
-              deleted.add(targetId);
-            }
+    for (final deletion in deletions) {
+      for (final tag in deletion.tags) {
+        if (tag.length > 1 && tag[0] == 'e') {
+          final targetId = tag[1];
+          final target = reactionsById[targetId];
+          if (target != null && target.pubkey == deletion.pubkey) {
+            deleted.add(targetId);
           }
         }
       }
     }
     return deleted;
+  }
+
+  /// Kind 7 reactions targeting any of [eventIds] via `#e`.
+  Future<List<Event>> _queryReactionsByEventIds(List<String> eventIds) {
+    return _queryEventsByEIds(eventIds, kind: EventKind.reaction);
+  }
+
+  /// Events of [kind] targeting any of [eventIds] via `#e`, chunked so no
+  /// single REQ frame can exceed the relay's message cap.
+  Future<List<Event>> _queryEventsByEIds(
+    List<String> eventIds, {
+    required int kind,
+  }) async {
+    if (eventIds.isEmpty) return const <Event>[];
+
+    final chunks = await Future.wait([
+      for (final chunk in _chunkStrings(eventIds, _reqEidChunkSize))
+        _nostrClient.queryEvents([
+          Filter(kinds: [kind], e: chunk),
+        ]),
+    ]);
+    return [for (final chunk in chunks) ...chunk];
+  }
+
+  List<List<String>> _chunkStrings(List<String> values, int chunkSize) {
+    return [
+      for (var i = 0; i < values.length; i += chunkSize)
+        values.sublist(i, min(i + chunkSize, values.length)),
+    ];
   }
 
   Set<String> _reactionTargetEventIds(

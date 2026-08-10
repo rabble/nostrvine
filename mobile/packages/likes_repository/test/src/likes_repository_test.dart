@@ -2446,6 +2446,79 @@ void main() {
         expect(result, {eventId1: 2, eventId2: 1, eventId3: 0});
       });
 
+      test(
+        'chunks the reaction query so no REQ exceeds the frame limit',
+        () async {
+          // 600 target ids must split into 2 `#e` chunks (500 + 100). A single
+          // filter with all of them approaches the relay's
+          // max_message_length, and an oversized frame errors the socket —
+          // queryEvents then fails open and every count reads 0 (#5751).
+          final eventIds = [for (var i = 0; i < 600; i++) 'event_id_$i'];
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => <Event>[]);
+
+          repository = createRepository();
+          await repository.getLikeCounts(eventIds);
+
+          final filters =
+              verify(() => mockNostrClient.queryEvents(captureAny())).captured
+                  .cast<List<Filter>>()
+                  .map((filters) => filters.single)
+                  .toList();
+
+          expect(filters, hasLength(2));
+          expect(filters[0].e, hasLength(500));
+          expect(filters[1].e, hasLength(100));
+          expect(
+            {...filters[0].e!, ...filters[1].e!},
+            hasLength(600),
+            reason: 'chunks partition every id without overlap',
+          );
+        },
+      );
+
+      test(
+        'chunks the reaction query on the addressable path too',
+        () async {
+          // The addressable branch resolves through a different call site, so
+          // it needs its own guard against an oversized `#e` frame.
+          final eventIds = [for (var i = 0; i < 600; i++) 'event_id_$i'];
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => <Event>[]);
+
+          repository = createRepository();
+          await repository.getLikeCounts(
+            eventIds,
+            addressableIds: {
+              for (final id in eventIds) id: '34236:author_pubkey:$id',
+            },
+          );
+
+          final reactionEFilters =
+              verify(() => mockNostrClient.queryEvents(captureAny())).captured
+                  .cast<List<Filter>>()
+                  .map((filters) => filters.single)
+                  .where(
+                    (f) =>
+                        (f.kinds?.contains(EventKind.reaction) ?? false) &&
+                        f.e != null,
+                  )
+                  .toList();
+
+          expect(reactionEFilters, hasLength(2));
+          for (final filter in reactionEFilters) {
+            expect(filter.e!.length, lessThanOrEqualTo(500));
+          }
+          expect(
+            {for (final f in reactionEFilters) ...f.e!},
+            hasLength(600),
+            reason: 'chunks partition every id without overlap',
+          );
+        },
+      );
+
       test('handles events with non-list or empty tags', () async {
         const eventId = 'event_id_1234567890abcdef01234567890abcdef';
 
