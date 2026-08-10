@@ -363,11 +363,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
 
     final tabRefresh = _refreshSyncedTabs();
 
-    await Future.wait([
-      profileRefresh.future,
-      feedRefresh.future,
-      tabRefresh,
-    ]);
+    await Future.wait([profileRefresh.future, feedRefresh.future, tabRefresh]);
   }
 
   @override
@@ -497,6 +493,8 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
         contentBlocklistRepository: contentBlocklistRepository,
         currentUserPubkey: currentUserPubkey,
         targetUserPubkey: widget.userIdHex,
+        removedVideoIds: videosRepository.removedVideoIds,
+        deletedVideoFilter: videosRepository.isVideoKnownDeleted,
       )..add(const ProfileLikedVideosSubscriptionRequested());
       // Sync deferred until user views Liked tab
 
@@ -515,6 +513,8 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
         videosRepository: videosRepository,
         currentUserPubkey: currentUserPubkey,
         targetUserPubkey: widget.userIdHex,
+        removedVideoIds: videosRepository.removedVideoIds,
+        deletedVideoFilter: videosRepository.isVideoKnownDeleted,
       )..add(const ProfileRepostedVideosSubscriptionRequested());
       // Sync deferred until user views Reposts tab
 
@@ -530,6 +530,8 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       _collabVideosBloc = ProfileCollabVideosBloc(
         videosRepository: videosRepository,
         targetUserPubkey: widget.userIdHex,
+        removedVideoIds: videosRepository.removedVideoIds,
+        deletedVideoFilter: videosRepository.isVideoKnownDeleted,
       );
       _collabsRefreshSub?.cancel();
       _collabsRefreshing = false;

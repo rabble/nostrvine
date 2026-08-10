@@ -503,6 +503,7 @@ VideosRepository videosRepository(Ref ref) {
   final feedAspectRatioPreference = ref.watch(
     feedAspectRatioPreferenceServiceProvider,
   );
+  final videoEventService = ref.watch(videoEventServiceProvider);
 
   final nsfwFilter = createNsfwFilter(
     contentFilterService,
@@ -513,6 +514,8 @@ VideosRepository videosRepository(Ref ref) {
     nostrClient: nostrClient,
     localStorage: localStorage,
     blockFilter: createBlockedAuthorFilter(ref),
+    deletedFilter: videoEventService.isVideoEventKnownDeleted,
+    removedVideoIds: videoEventService.removedVideoIds,
     contentFilter: (video) =>
         nsfwFilter(video) ||
         (divineHostFilterService.showDivineHostedOnly &&

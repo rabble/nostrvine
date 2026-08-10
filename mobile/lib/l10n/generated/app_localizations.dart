@@ -14136,6 +14136,18 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{{count} Comment} other{{count} Comments}}'**
   String commentsHeaderCount(int count);
 
+  /// Short status shown on the placeholder tile while a recorded video reply is uploading and publishing.
+  ///
+  /// In en, this message translates to:
+  /// **'Posting…'**
+  String get commentsVideoReplyPending;
+
+  /// Screen-reader label for the pending video-reply row in the comments sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Your video reply is posting'**
+  String get commentsVideoReplyPendingSemanticLabel;
+
   /// Comments-sort toggle label for newest-first order.
   ///
   /// In en, this message translates to:

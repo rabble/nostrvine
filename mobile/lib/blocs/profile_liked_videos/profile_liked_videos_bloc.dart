@@ -44,12 +44,15 @@ class ProfileLikedVideosBloc
     required VideosRepository videosRepository,
     required ContentBlocklistRepository contentBlocklistRepository,
     required String currentUserPubkey,
+    required Stream<String> removedVideoIds,
+    required bool Function(VideoEvent video) deletedVideoFilter,
     String? targetUserPubkey,
   }) : _likesRepository = likesRepository,
        _videosRepository = videosRepository,
        _blocklistRepository = contentBlocklistRepository,
        _currentUserPubkey = currentUserPubkey,
        _targetUserPubkey = targetUserPubkey,
+       _deletedVideoFilter = deletedVideoFilter,
        super(const ProfileLikedVideosState()) {
     on<ProfileLikedVideosSyncRequested>(
       _onSyncRequested,
@@ -68,6 +71,10 @@ class ProfileLikedVideosBloc
       _onBlocklistChanged,
       transformer: droppable(),
     );
+    on<ProfileLikedVideosVideoRemoved>(
+      _onVideoRemoved,
+      transformer: sequential(),
+    );
 
     // Re-filter the loaded grid whenever the blocklist changes. Broad changes
     // (account switch / identity adoption, relay-synced blocked-by-others,
@@ -76,6 +83,10 @@ class ProfileLikedVideosBloc
     _blocklistSubscription = _blocklistRepository.stateStream.listen((_) {
       if (isClosed) return;
       add(const ProfileLikedVideosBlocklistChanged());
+    });
+    _removedVideoIdsSubscription = removedVideoIds.listen((videoId) {
+      if (isClosed) return;
+      add(ProfileLikedVideosVideoRemoved(videoId));
     });
   }
 
@@ -86,6 +97,8 @@ class ProfileLikedVideosBloc
 
   /// Subscription to broad blocklist changes; cancelled in [close].
   late final StreamSubscription<ContentPolicyState> _blocklistSubscription;
+  late final StreamSubscription<String> _removedVideoIdsSubscription;
+  final bool Function(VideoEvent video) _deletedVideoFilter;
 
   /// The pubkey of the user whose likes to display.
   /// If null or same as current user, uses LikesRepository sync.
@@ -284,7 +297,8 @@ class ProfileLikedVideosBloc
     if (isClosed) return;
 
     if (listEquals(freshIds, state.likedEventIds) &&
-        !_isWindowUnderfilled(freshIds)) {
+        !_isWindowUnderfilled(freshIds) &&
+        !state.videos.any(_deletedVideoFilter)) {
       // Nothing changed — just hide the bar. No re-fetch, no re-serialize.
       emit(state.copyWith(isRefreshing: false));
       return;
@@ -322,7 +336,10 @@ class ProfileLikedVideosBloc
   /// bulk-fetches.
   Future<({List<VideoEvent> videos, int nextPageOffset, bool hasMoreContent})>
   _reconcile(List<String> freshIds) async {
-    final byId = {for (final video in state.videos) video.id: video};
+    final byId = {
+      for (final video in state.videos)
+        if (!_deletedVideoFilter(video)) video.id: video,
+    };
     // Count items newly prepended at the top by anchoring on the previous
     // top ID rather than on a length delta. A length delta breaks when the
     // persisted ID list was capped (its length no longer reflects the true
@@ -394,10 +411,11 @@ class ProfileLikedVideosBloc
   /// failure (cache problems must never break the load).
   Future<ProfileVideoListSnapshot?> _readCachedSnapshot() async {
     try {
-      return await CacheSync.read<ProfileVideoListSnapshot>(
+      final snapshot = await CacheSync.read<ProfileVideoListSnapshot>(
         key: _cacheKey,
         fromJson: ProfileVideoListSnapshot.fromJson,
       );
+      return snapshot == null ? null : _filterDeletedSnapshot(snapshot);
     } on Object catch (e) {
       Log.warning(
         'ProfileLikedVideosBloc: Failed to read cached snapshot - $e',
@@ -406,6 +424,31 @@ class ProfileLikedVideosBloc
       );
       return null;
     }
+  }
+
+  ProfileVideoListSnapshot _filterDeletedSnapshot(
+    ProfileVideoListSnapshot snapshot,
+  ) {
+    final deletedVideoIds = snapshot.videos
+        .where(_deletedVideoFilter)
+        .map((video) => video.id)
+        .toSet();
+    if (deletedVideoIds.isEmpty) return snapshot;
+
+    final videos = snapshot.videos
+        .where((video) => !deletedVideoIds.contains(video.id))
+        .toList();
+    final pruned = pruneProfileVideoListIds(
+      itemIds: snapshot.itemIds,
+      removedIds: deletedVideoIds,
+      nextPageOffset: snapshot.nextPageOffset,
+    );
+    return ProfileVideoListSnapshot(
+      videos: videos,
+      itemIds: pruned.itemIds,
+      nextPageOffset: pruned.nextPageOffset,
+      hasMoreContent: snapshot.hasMoreContent,
+    );
   }
 
   /// Persists [snapshot] under [_cacheKey] so reopening restores it. Cache
@@ -687,6 +730,51 @@ class ProfileLikedVideosBloc
     }
   }
 
+  Future<void> _onVideoRemoved(
+    ProfileLikedVideosVideoRemoved event,
+    Emitter<ProfileLikedVideosState> emit,
+  ) async {
+    final removedVideoIds = <String>{event.videoId};
+    final videos = <VideoEvent>[];
+    for (final video in state.videos) {
+      final isRemoved = video.id == event.videoId || _deletedVideoFilter(video);
+      if (isRemoved) {
+        removedVideoIds.add(video.id);
+      } else {
+        videos.add(video);
+      }
+    }
+
+    final pruned = pruneProfileVideoListIds(
+      itemIds: state.likedEventIds,
+      removedIds: removedVideoIds,
+      nextPageOffset: state.nextPageOffset,
+    );
+    if (videos.length == state.videos.length &&
+        pruned.itemIds.length == state.likedEventIds.length &&
+        pruned.nextPageOffset == state.nextPageOffset) {
+      return;
+    }
+
+    final hasMoreContent = state.hasMoreContent;
+    emit(
+      state.copyWith(
+        videos: videos,
+        likedEventIds: pruned.itemIds,
+        nextPageOffset: pruned.nextPageOffset,
+        hasMoreContent: hasMoreContent,
+      ),
+    );
+    await _persistSnapshot(
+      ProfileVideoListSnapshot(
+        videos: videos,
+        itemIds: pruned.itemIds,
+        nextPageOffset: pruned.nextPageOffset,
+        hasMoreContent: hasMoreContent,
+      ),
+    );
+  }
+
   /// Fetch videos for the given event IDs.
   ///
   /// Uses [VideosRepository.getVideosByIds] which implements cache-first:
@@ -792,6 +880,7 @@ class ProfileLikedVideosBloc
 
   @override
   Future<void> close() {
+    _removedVideoIdsSubscription.cancel();
     _blocklistSubscription.cancel();
     return super.close();
   }

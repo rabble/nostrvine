@@ -8158,6 +8158,12 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get commentsVideoReplyPending => 'جارٍ النشر…';
+
+  @override
+  String get commentsVideoReplyPendingSemanticLabel => 'يتم نشر ردك بالفيديو';
+
+  @override
   String get commentsSortNew => 'New';
 
   @override

@@ -69,9 +69,14 @@ void main() {
       await CacheSync.init(dao: cacheDao);
     });
 
-    ProfileCollabVideosBloc createBloc() => ProfileCollabVideosBloc(
+    ProfileCollabVideosBloc createBloc({
+      Stream<String>? removedVideoIds,
+      bool Function(VideoEvent video)? deletedVideoFilter,
+    }) => ProfileCollabVideosBloc(
       videosRepository: mockVideosRepository,
       targetUserPubkey: targetPubkey,
+      removedVideoIds: removedVideoIds ?? const Stream<String>.empty(),
+      deletedVideoFilter: deletedVideoFilter ?? (_) => false,
     );
 
     VideoEvent createTestVideo({
@@ -477,6 +482,102 @@ void main() {
                 'cached-1',
               ]),
         ],
+      );
+
+      blocTest<ProfileCollabVideosBloc, ProfileCollabVideosState>(
+        'filters tombstoned videos from cached cursor snapshot restore',
+        build: () {
+          when(
+            () => mockVideosRepository.getCollabVideos(
+              taggedPubkey: targetPubkey,
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              createTestVideo(id: 'cached-1', pubkey: authorPubkey),
+            ],
+          );
+          return createBloc(
+            deletedVideoFilter: (video) => video.id == 'deleted',
+          );
+        },
+        setUp: () async {
+          await cacheDao.write(
+            key: '$targetPubkey:profile_collab_videos',
+            payload: ProfileVideoCursorSnapshot(
+              videos: [
+                createTestVideo(
+                  id: 'cached-1',
+                  pubkey: authorPubkey,
+                  createdAt: 200,
+                ),
+                createTestVideo(
+                  id: 'deleted',
+                  pubkey: authorPubkey,
+                  createdAt: 100,
+                ),
+              ],
+              paginationCursor: 100,
+              hasMoreContent: false,
+            ).toJson(),
+          );
+        },
+        act: (bloc) => bloc.add(const ProfileCollabVideosFetchRequested()),
+        wait: const Duration(milliseconds: 50),
+        expect: () => [
+          isA<ProfileCollabVideosState>()
+              .having((s) => s.isRefreshing, 'isRefreshing', true)
+              .having((s) => s.videos.map((v) => v.id).toList(), 'cached', [
+                'cached-1',
+              ]),
+          isA<ProfileCollabVideosState>()
+              .having((s) => s.isRefreshing, 'isRefreshing', false)
+              .having((s) => s.videos.map((v) => v.id).toList(), 'reconciled', [
+                'cached-1',
+              ]),
+        ],
+      );
+
+      blocTest<ProfileCollabVideosBloc, ProfileCollabVideosState>(
+        'removal event drops video and persists cursor snapshot without it',
+        build: () =>
+            createBloc(deletedVideoFilter: (video) => video.id == 'deleted'),
+        seed: () => ProfileCollabVideosState(
+          status: ProfileCollabVideosStatus.success,
+          videos: [
+            createTestVideo(
+              id: 'cached-1',
+              pubkey: authorPubkey,
+              createdAt: 200,
+            ),
+            createTestVideo(
+              id: 'deleted',
+              pubkey: authorPubkey,
+              createdAt: 100,
+            ),
+          ],
+          paginationCursor: 100,
+          hasMoreContent: false,
+        ),
+        act: (bloc) =>
+            bloc.add(const ProfileCollabVideosVideoRemoved('deleted')),
+        wait: const Duration(milliseconds: 50),
+        expect: () => [
+          isA<ProfileCollabVideosState>()
+              .having((s) => s.videos.map((v) => v.id).toList(), 'videos', [
+                'cached-1',
+              ])
+              .having((s) => s.paginationCursor, 'paginationCursor', 200),
+        ],
+        verify: (_) async {
+          final cached = await CacheSync.read<ProfileVideoCursorSnapshot>(
+            key: '$targetPubkey:profile_collab_videos',
+            fromJson: ProfileVideoCursorSnapshot.fromJson,
+          );
+          expect(cached, isNotNull);
+          expect(cached!.videos.map((v) => v.id), ['cached-1']);
+          expect(cached.paginationCursor, 200);
+        },
       );
 
       blocTest<ProfileCollabVideosBloc, ProfileCollabVideosState>(

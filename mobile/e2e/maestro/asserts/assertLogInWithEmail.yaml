@@ -1,9 +1,0 @@
-appId: co.openvine.app
----
-- assertVisible: Sign in
-- assertVisible: Email
-- assertVisible: Password
-- assertVisible: Sign In
-- assertVisible: Forgot password?
-- assertVisible: "New to Divine? "
-- assertVisible: Create account

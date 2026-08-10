@@ -156,10 +156,19 @@ void main() {
     when(
       repostsRepository.watchRepostedAddressableIds,
     ).thenAnswer((_) => const Stream<Set<String>>.empty());
+    when(
+      () => videosRepository.removedVideoIds,
+    ).thenAnswer((_) => const Stream<String>.empty());
+    when(
+      () => videosRepository.isVideoKnownDeleted(any()),
+    ).thenReturn(false);
 
     when(
       () => videoEventService.authorVideos(any()),
     ).thenReturn(const <VideoEvent>[]);
+    when(
+      () => videoEventService.removedVideoIds,
+    ).thenAnswer((_) => const Stream<String>.empty());
     when(() => videoEventService.filterVideoList(any())).thenAnswer(
       (invocation) => invocation.positionalArguments.first as List<VideoEvent>,
     );

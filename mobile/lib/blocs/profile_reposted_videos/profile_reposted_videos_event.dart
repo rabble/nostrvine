@@ -41,6 +41,14 @@ final class ProfileRepostedVideosLoadMoreRequested
   const ProfileRepostedVideosLoadMoreRequested();
 }
 
+/// Internal: drop a video after the deletion bus reports it removed.
+final class ProfileRepostedVideosVideoRemoved
+    extends ProfileRepostedVideosEvent {
+  const ProfileRepostedVideosVideoRemoved(this.videoId);
+
+  final String videoId;
+}
+
 /// Internal: reconcile the displayed videos against a fresh reposted-ID list.
 ///
 /// Dispatched from the [RepostsRepository.watchRepostedAddressableIds]

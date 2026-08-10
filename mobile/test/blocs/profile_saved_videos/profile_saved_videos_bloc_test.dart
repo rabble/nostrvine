@@ -71,10 +71,15 @@ void main() {
       await CacheSync.init(dao: cacheDao);
     });
 
-    ProfileSavedVideosBloc createBloc() => ProfileSavedVideosBloc(
+    ProfileSavedVideosBloc createBloc({
+      Stream<String>? removedVideoIds,
+      bool Function(VideoEvent video)? deletedVideoFilter,
+    }) => ProfileSavedVideosBloc(
       bookmarkService: Future.value(mockBookmarkService),
       videosRepository: mockVideosRepository,
       currentUserPubkey: currentUserPubkey,
+      removedVideoIds: removedVideoIds ?? const Stream<String>.empty(),
+      deletedVideoFilter: deletedVideoFilter ?? (_) => false,
     );
 
     VideoEvent createTestVideo(String id) {
@@ -255,6 +260,168 @@ void main() {
             ),
           );
         },
+      );
+
+      blocTest<ProfileSavedVideosBloc, ProfileSavedVideosState>(
+        'filters tombstoned videos from cached snapshot restore',
+        setUp: () async {
+          await cacheDao.write(
+            key: '$currentUserPubkey:profile_saved_videos',
+            payload: ProfileVideoListSnapshot(
+              videos: [
+                createTestVideo('video-1'),
+                createTestVideo('deleted-video'),
+              ],
+              itemIds: const ['video-1', 'deleted-video'],
+              nextPageOffset: 2,
+              hasMoreContent: false,
+            ).toJson(),
+          );
+          when(
+            () => mockBookmarkService.globalBookmarks,
+          ).thenReturn(const [BookmarkItem(type: 'e', id: 'video-1')]);
+        },
+        build: () => createBloc(
+          deletedVideoFilter: (video) => video.id == 'deleted-video',
+        ),
+        act: (bloc) => bloc.add(const ProfileSavedVideosSyncRequested()),
+        wait: const Duration(milliseconds: 50),
+        expect: () => [
+          isA<ProfileSavedVideosState>()
+              .having((s) => s.isRefreshing, 'isRefreshing', true)
+              .having(
+                (s) => s.videos.map((v) => v.id).toList(),
+                'cached videos',
+                ['video-1'],
+              )
+              .having((s) => s.savedEventIds, 'savedEventIds', ['video-1']),
+          isA<ProfileSavedVideosState>()
+              .having((s) => s.isRefreshing, 'isRefreshing', false)
+              .having(
+                (s) => s.videos.map((v) => v.id).toList(),
+                'unchanged videos',
+                ['video-1'],
+              ),
+        ],
+      );
+
+      blocTest<ProfileSavedVideosBloc, ProfileSavedVideosState>(
+        'removal event drops video and persists snapshot without it',
+        build: () => createBloc(
+          deletedVideoFilter: (video) => video.id == 'deleted-video',
+        ),
+        seed: () => ProfileSavedVideosState(
+          status: ProfileSavedVideosStatus.success,
+          videos: [
+            createTestVideo('video-1'),
+            createTestVideo('deleted-video'),
+          ],
+          savedEventIds: const ['video-1', 'deleted-video'],
+          nextPageOffset: 2,
+          hasMoreContent: false,
+        ),
+        act: (bloc) =>
+            bloc.add(const ProfileSavedVideosVideoRemoved('deleted-video')),
+        wait: const Duration(milliseconds: 50),
+        expect: () => [
+          isA<ProfileSavedVideosState>()
+              .having((s) => s.videos.map((v) => v.id).toList(), 'videos', [
+                'video-1',
+              ])
+              .having((s) => s.savedEventIds, 'savedEventIds', ['video-1'])
+              .having((s) => s.nextPageOffset, 'nextPageOffset', 1),
+        ],
+        verify: (_) async {
+          final cached = await CacheSync.read<ProfileVideoListSnapshot>(
+            key: '$currentUserPubkey:profile_saved_videos',
+            fromJson: ProfileVideoListSnapshot.fromJson,
+          );
+          expect(cached, isNotNull);
+          expect(cached!.videos.map((v) => v.id), ['video-1']);
+          expect(cached.itemIds, ['video-1']);
+        },
+      );
+
+      blocTest<ProfileSavedVideosBloc, ProfileSavedVideosState>(
+        'removal shifts nextPageOffset left when deleting before the cursor',
+        build: () => createBloc(
+          deletedVideoFilter: (video) => video.id == 'deleted-video',
+        ),
+        seed: () => ProfileSavedVideosState(
+          status: ProfileSavedVideosStatus.success,
+          videos: [
+            createTestVideo('video-1'),
+            createTestVideo('deleted-video'),
+          ],
+          savedEventIds: const ['video-1', 'deleted-video', 'video-2'],
+          nextPageOffset: 2,
+        ),
+        act: (bloc) =>
+            bloc.add(const ProfileSavedVideosVideoRemoved('deleted-video')),
+        wait: const Duration(milliseconds: 50),
+        expect: () => [
+          isA<ProfileSavedVideosState>()
+              .having((s) => s.videos.map((v) => v.id).toList(), 'videos', [
+                'video-1',
+              ])
+              .having((s) => s.savedEventIds, 'savedEventIds', [
+                'video-1',
+                'video-2',
+              ])
+              .having((s) => s.nextPageOffset, 'nextPageOffset', 1),
+        ],
+      );
+
+      blocTest<ProfileSavedVideosBloc, ProfileSavedVideosState>(
+        'removal drops IDs for videos removed only by the deletion filter',
+        build: () => createBloc(
+          deletedVideoFilter: (video) => video.id == 'edited-video',
+        ),
+        seed: () => ProfileSavedVideosState(
+          status: ProfileSavedVideosStatus.success,
+          videos: [createTestVideo('video-1'), createTestVideo('edited-video')],
+          savedEventIds: const ['video-1', 'edited-video', 'video-2'],
+          nextPageOffset: 2,
+        ),
+        act: (bloc) =>
+            bloc.add(const ProfileSavedVideosVideoRemoved('original-video')),
+        wait: const Duration(milliseconds: 50),
+        expect: () => [
+          isA<ProfileSavedVideosState>()
+              .having((s) => s.videos.map((v) => v.id).toList(), 'videos', [
+                'video-1',
+              ])
+              .having((s) => s.savedEventIds, 'savedEventIds', [
+                'video-1',
+                'video-2',
+              ])
+              .having((s) => s.nextPageOffset, 'nextPageOffset', 1),
+        ],
+      );
+
+      blocTest<ProfileSavedVideosBloc, ProfileSavedVideosState>(
+        'removal prunes unloaded IDs from the backing list',
+        build: createBloc,
+        seed: () => ProfileSavedVideosState(
+          status: ProfileSavedVideosStatus.success,
+          videos: [createTestVideo('video-1')],
+          savedEventIds: const ['video-1', 'deleted-unloaded', 'video-2'],
+          nextPageOffset: 2,
+        ),
+        act: (bloc) =>
+            bloc.add(const ProfileSavedVideosVideoRemoved('deleted-unloaded')),
+        wait: const Duration(milliseconds: 50),
+        expect: () => [
+          isA<ProfileSavedVideosState>()
+              .having((s) => s.videos.map((v) => v.id).toList(), 'videos', [
+                'video-1',
+              ])
+              .having((s) => s.savedEventIds, 'savedEventIds', [
+                'video-1',
+                'video-2',
+              ])
+              .having((s) => s.nextPageOffset, 'nextPageOffset', 1),
+        ],
       );
 
       blocTest<ProfileSavedVideosBloc, ProfileSavedVideosState>(

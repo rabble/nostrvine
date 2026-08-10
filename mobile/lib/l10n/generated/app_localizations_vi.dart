@@ -8222,6 +8222,13 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String get commentsVideoReplyPending => 'Đang đăng…';
+
+  @override
+  String get commentsVideoReplyPendingSemanticLabel =>
+      'Câu trả lời video của bạn đang được đăng';
+
+  @override
   String get commentsSortNew => 'Mới';
 
   @override

@@ -14,6 +14,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/blocs/settings_account/settings_account_cubit.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
@@ -421,6 +422,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 DivineListTile(
                   title: context.l10n.settingsNostrSettings,
                   icon: DivineIconName.graph,
+                  semanticIdentifier: SemanticIds.settingsNostrRow,
                   onTap: () => context.push(NostrSettingsScreen.path),
                 ),
                 DivineListTile(

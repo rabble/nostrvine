@@ -538,6 +538,9 @@ void main() {
           dmReactionsRepositoryProvider.overrideWithValue(
             mockDmReactionsRepository,
           ),
+          videoEventServiceProvider.overrideWithValue(
+            createMockVideoEventService(),
+          ),
         ],
       );
       addTearDown(() async {
@@ -585,6 +588,9 @@ void main() {
           dmRepositoryProvider.overrideWithValue(mockDmRepository),
           dmReactionsRepositoryProvider.overrideWithValue(
             mockDmReactionsRepository,
+          ),
+          videoEventServiceProvider.overrideWithValue(
+            createMockVideoEventService(),
           ),
         ],
       );

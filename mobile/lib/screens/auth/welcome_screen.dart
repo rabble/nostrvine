@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/welcome/welcome_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
@@ -244,6 +245,7 @@ class _NewUserLayout extends StatelessWidget {
           DivineButton(
             label: context.l10n.authCreateNewAccount,
             expanded: true,
+            semanticIdentifier: SemanticIds.authCreateAccountButton,
             onPressed: () => context.read<WelcomeBloc>().add(
               const WelcomeCreateAccountRequested(),
             ),
@@ -253,6 +255,7 @@ class _NewUserLayout extends StatelessWidget {
             label: context.l10n.authSignInDifferentAccount,
             expanded: true,
             type: .secondary,
+            semanticIdentifier: SemanticIds.authSignInButton,
             onPressed: () => context.read<WelcomeBloc>().add(
               const WelcomeLoginOptionsRequested(),
             ),
@@ -322,6 +325,7 @@ class _ReturningUserLayout extends StatelessWidget {
                 label: context.l10n.authContinueAs(displayName),
                 isLoading: isLoading,
                 expanded: true,
+                semanticIdentifier: SemanticIds.authContinueAsButton,
                 onPressed: () => context.read<WelcomeBloc>().add(
                   const WelcomeLogBackInRequested(),
                 ),
@@ -334,6 +338,7 @@ class _ReturningUserLayout extends StatelessWidget {
                 label: context.l10n.authUseAnotherAccount,
                 expanded: true,
                 type: .secondary,
+                semanticIdentifier: SemanticIds.authUseAnotherAccountButton,
                 onPressed: isLoading
                     ? null
                     : () => context.read<WelcomeBloc>().add(
@@ -348,6 +353,7 @@ class _ReturningUserLayout extends StatelessWidget {
                 label: context.l10n.authCreateNewAccountShort,
                 expanded: true,
                 type: .secondary,
+                semanticIdentifier: SemanticIds.authCreateAccountButton,
                 onPressed: isLoading
                     ? null
                     : () => context.read<WelcomeBloc>().add(

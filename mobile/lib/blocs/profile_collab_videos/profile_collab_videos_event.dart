@@ -28,3 +28,10 @@ final class ProfileCollabVideosLoadMoreRequested
     extends ProfileCollabVideosEvent {
   const ProfileCollabVideosLoadMoreRequested();
 }
+
+/// Internal: drop a video after the deletion bus reports it removed.
+final class ProfileCollabVideosVideoRemoved extends ProfileCollabVideosEvent {
+  const ProfileCollabVideosVideoRemoved(this.videoId);
+
+  final String videoId;
+}

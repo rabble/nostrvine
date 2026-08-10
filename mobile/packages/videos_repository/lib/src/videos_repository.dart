@@ -4,6 +4,7 @@
 // ABOUTME: Returns Future<List<VideoEvent>>, not streams -
 // ABOUTME: loading is pagination-based.
 
+import 'dart:async';
 import 'dart:math';
 
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
@@ -182,6 +183,8 @@ class VideosRepository {
     required NostrClient nostrClient,
     VideoLocalStorage? localStorage,
     BlockedVideoFilter? blockFilter,
+    DeletedVideoFilter? deletedFilter,
+    this.removedVideoIds = const Stream<String>.empty(),
     VideoContentFilter? contentFilter,
     VideoWarningLabelsResolver? warningLabelsResolver,
     FunnelcakeApiClient? funnelcakeApiClient,
@@ -191,6 +194,7 @@ class VideosRepository {
   }) : _nostrClient = nostrClient,
        _localStorage = localStorage,
        _blockFilter = blockFilter,
+       _deletedFilter = deletedFilter,
        _contentFilter = contentFilter,
        _warningLabelsResolver = warningLabelsResolver,
        _funnelcakeApiClient = funnelcakeApiClient,
@@ -201,6 +205,11 @@ class VideosRepository {
   final NostrClient _nostrClient;
   final VideoLocalStorage? _localStorage;
   final BlockedVideoFilter? _blockFilter;
+  final DeletedVideoFilter? _deletedFilter;
+
+  /// Emits IDs for videos removed by deletion handling.
+  final Stream<String> removedVideoIds;
+
   final VideoContentFilter? _contentFilter;
   final VideoWarningLabelsResolver? _warningLabelsResolver;
   final FunnelcakeApiClient? _funnelcakeApiClient;
@@ -212,6 +221,11 @@ class VideosRepository {
   final Random _random;
 
   String _recommendationSessionSeed = generateRecommendationSessionSeed();
+
+  /// Whether [video] is already known deleted by the app-wide deletion
+  /// contract supplied to this repository.
+  bool isVideoKnownDeleted(VideoEvent video) =>
+      _deletedFilter?.call(video) ?? false;
 
   /// Clears the in-memory feed cache.
   ///
@@ -1512,8 +1526,8 @@ class VideosRepository {
           final videoAddressableId = video.addressableId;
           if (videoAddressableId != null &&
               dTags.contains(video.addressableDTag)) {
-            // Apply content filter if configured
             if (_blockFilter?.call(video.pubkey) ?? false) continue;
+            if (_deletedFilter?.call(video) ?? false) continue;
             if (!video.hasVideo) continue;
             // Reject non-loopback http:// URLs that the OS layer blocks
             // under release transport security (#3836).
@@ -1556,8 +1570,8 @@ class VideosRepository {
 
       final video = stats.toVideoEvent();
 
-      // Block filter - check pubkey
       if (_blockFilter?.call(video.pubkey) ?? false) continue;
+      if (_deletedFilter?.call(video) ?? false) continue;
 
       // Skip videos without a playable URL
       if (!video.hasVideo) continue;
@@ -1608,6 +1622,8 @@ class VideosRepository {
     }
 
     final video = VideoEvent.fromNostrEvent(event, permissive: permissive);
+
+    if (_deletedFilter?.call(video) ?? false) return null;
 
     // Skip videos without a playable URL
     if (!video.hasVideo) return null;
@@ -1755,6 +1771,7 @@ class VideosRepository {
     final out = <VideoEvent>[];
     for (final video in videos) {
       if (_blockFilter?.call(video.pubkey) ?? false) continue;
+      if (_deletedFilter?.call(video) ?? false) continue;
       if (!_hasAllowedTransportScheme(video)) continue;
       final processed = _applyContentPreferences(video);
       if (processed != null) out.add(processed);

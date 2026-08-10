@@ -161,7 +161,10 @@ class CommentsListBloc extends Bloc<CommentsListEvent, CommentsListState> {
   }
 
   void _emitLoadFailureOrRecover(Emitter<CommentsListState> emit) {
-    if (state.commentsById.isNotEmpty) {
+    final hasLoadedRealComments = state.commentsById.keys.any(
+      (id) => !id.startsWith(commentPlaceholderIdPrefix),
+    );
+    if (hasLoadedRealComments) {
       emit(state.copyWith(status: CommentsStatus.success));
       return;
     }
@@ -188,7 +191,7 @@ class CommentsListBloc extends Bloc<CommentsListEvent, CommentsListState> {
     // agnostic so `oldest` / `topEngagement` don't fold to the wrong cursor.
     // Returns early if every comment is an optimistic placeholder.
     final realCreatedAts = state.commentsById.values
-        .where((c) => !c.id.startsWith('pending_comment_'))
+        .where((c) => !c.id.startsWith(commentPlaceholderIdPrefix))
         .map((c) => c.createdAt);
     if (realCreatedAts.isEmpty) return;
     final cursor = realCreatedAts.reduce((a, b) => a.isBefore(b) ? a : b);
@@ -313,7 +316,7 @@ class CommentsListBloc extends Bloc<CommentsListEvent, CommentsListState> {
     String? placeholderToReplace;
     for (final entry in state.commentsById.entries) {
       final existing = entry.value;
-      if (existing.id.startsWith('pending_comment_') &&
+      if (existing.id.startsWith(commentPlaceholderIdPrefix) &&
           existing.authorPubkey == comment.authorPubkey &&
           existing.content == comment.content) {
         placeholderToReplace = entry.key;

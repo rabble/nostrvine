@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
@@ -25,6 +26,7 @@ import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
+import 'package:openvine/services/video_event_service.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -52,6 +54,14 @@ class MockFollowRepository extends Mock implements FollowRepository {}
 
 class MockModerationLabelService extends Mock
     implements ModerationLabelService {}
+
+class MockVideoEventService extends Mock implements VideoEventService {
+  @override
+  Stream<String> get removedVideoIds => const Stream<String>.empty();
+
+  @override
+  bool isVideoEventKnownDeleted(VideoEvent video) => false;
+}
 
 /// Creates a properly stubbed MockSharedPreferences for testing
 MockSharedPreferences createMockSharedPreferences() {
@@ -327,6 +337,10 @@ MockModerationLabelService createMockModerationLabelService() {
   return mock;
 }
 
+MockVideoEventService createMockVideoEventService() {
+  return MockVideoEventService();
+}
+
 /// Standard provider overrides that fix most ProviderException failures
 List<dynamic> getStandardTestOverrides({
   SharedPreferences? mockSharedPreferences,
@@ -435,6 +449,7 @@ Widget testProviderScope({
   Nip05VerificationService? mockNip05VerificationService,
   ModerationLabelService? mockModerationLabelService,
   FollowRepository? mockFollowRepository,
+  VideoEventService? mockVideoEventService,
 }) {
   return ProviderScope(
     overrides: [
@@ -451,10 +466,20 @@ Widget testProviderScope({
         mockModerationLabelService: mockModerationLabelService,
         mockFollowRepository: mockFollowRepository,
       ),
+      if (!_overridesProvider(additionalOverrides, videoEventServiceProvider))
+        videoEventServiceProvider.overrideWithValue(
+          mockVideoEventService ?? createMockVideoEventService(),
+        ),
       ...?additionalOverrides,
     ],
     child: child,
   );
+}
+
+bool _overridesProvider(List<dynamic>? overrides, Object provider) {
+  final providerPrefix = '$provider.';
+  return overrides?.any((override) => '$override'.startsWith(providerPrefix)) ??
+      false;
 }
 
 /// MaterialApp wrapper with provider overrides for widget tests
@@ -487,6 +512,7 @@ Widget testMaterialApp({
   Nip05VerificationService? mockNip05VerificationService,
   ModerationLabelService? mockModerationLabelService,
   FollowRepository? mockFollowRepository,
+  VideoEventService? mockVideoEventService,
   ThemeData? theme,
 }) {
   return testProviderScope(
@@ -502,6 +528,7 @@ Widget testMaterialApp({
     mockNip05VerificationService: mockNip05VerificationService,
     mockModerationLabelService: mockModerationLabelService,
     mockFollowRepository: mockFollowRepository,
+    mockVideoEventService: mockVideoEventService,
     child: MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,

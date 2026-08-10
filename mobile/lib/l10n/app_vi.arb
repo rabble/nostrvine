@@ -4927,6 +4927,8 @@
       }
     }
   },
+  "commentsVideoReplyPending": "Đang đăng…",
+  "commentsVideoReplyPendingSemanticLabel": "Câu trả lời video của bạn đang được đăng",
   "commentsSortNew": "Mới",
   "@commentsSortNew": {
     "description": "Comments-sort toggle label for newest-first order."

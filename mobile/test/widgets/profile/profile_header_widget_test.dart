@@ -20,6 +20,7 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/monetization/monetization_storefront_policy.dart';
@@ -771,6 +772,32 @@ void main() {
       );
       expect(gear.color, VineTheme.lightColors.onSurface);
       expect(gear.color, isNot(VineTheme.onSurface));
+    });
+
+    testWidgets('settings gear carries a test anchor and an accessible name', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: true,
+          profile: createTestProfile(displayName: 'Test User'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final gear = find.byWidgetPredicate(
+        (w) => w is DivineIconButton && w.icon == DivineIconName.gear,
+      );
+      final semantics = tester.getSemantics(gear);
+
+      // This is the only entry point to Settings, and removeKeys — the
+      // teardown of every smoke flow — reaches it through here.
+      expect(semantics.identifier, equals(SemanticIds.profileSettingsButton));
+      expect(
+        semantics.label,
+        equals(lookupAppLocalizations(const Locale('en')).settingsTitle),
+      );
     });
 
     testWidgets('avatar lightbox seeds placeholder with the pubkey so the '
