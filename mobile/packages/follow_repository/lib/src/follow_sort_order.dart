@@ -23,6 +23,13 @@ enum FollowSortOrder {
   /// in both directions, because "we don't know when" is not the same claim as
   /// "a long time ago".
   ///
+  /// That justifies where the tail sits, not which way it runs. Undated
+  /// followers come from the REST source, whose page is itself
+  /// `ORDER BY rf.created_at DESC` server-side — so the tail is newest-first
+  /// and stays that way under [oldestFirst], running against the label above
+  /// it. Nothing in the response says so today, which is what the `sort` echo
+  /// in divinevideo/divine-funnelcake#883 is for.
+  ///
   /// Always returns a fresh list, so the no-op order cannot hand back an alias
   /// of the caller's own state.
   List<String> fromNewestFirst(
@@ -42,12 +49,18 @@ enum FollowSortOrder {
   /// Arranges a following list for this order.
   ///
   /// [pubkeys] must be in follow order as `FollowRepository` returns it: the
-  /// `p` tags of the user's own kind 3 contact list, verbatim. New follows are
-  /// appended, so that order runs oldest to newest and needs no timestamps.
+  /// `p` tags of the user's own kind 3 contact list, verbatim.
   ///
-  /// The order is only as good as the last client that wrote the contact list.
-  /// One that rebuilds the tag list instead of appending loses it, and this
-  /// then reverses whatever order that client chose.
+  /// NIP-02 makes that order load-bearing rather than incidental: "Whenever
+  /// new follows are added to an existing list, clients SHOULD append them to
+  /// the end of the list, so they are stored in chronological order." So the
+  /// tag order runs oldest to newest by spec and needs no timestamps — which
+  /// is just as well, since a contact list carries one `created_at` for the
+  /// whole list rather than one per entry.
+  ///
+  /// The order is therefore only as good as the last client that wrote the
+  /// list. One that rebuilds the tag list instead of appending violates that
+  /// SHOULD, and this then reverses whatever order it chose.
   ///
   /// Always returns a fresh list, for the same reason [fromNewestFirst] does.
   List<String> fromFollowOrder(List<String> pubkeys) => switch (this) {
