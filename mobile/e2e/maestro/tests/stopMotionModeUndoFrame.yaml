@@ -1,0 +1,45 @@
+appId: co.openvine.app
+tags:
+  - recorder
+---
+#TC to undo captured stop-motion stills,
+# given the session holds the two stills stopMotionModeCaptureFrame shot,
+# validate undo drops one still per tap and the recorder returns to its empty
+# state.
+#
+# This is also the teardown for the recorder flow. Every still is written to
+# the clip library as it is shot — the session is upserted on each frame, not
+# on the assemble — so stills left behind survive the run and the next one
+# would start against a non-empty library. Undoing the last still drops the
+# session's library row again.
+#Steps:
+# 1. Tap undo: one still goes, the session chrome stays up
+# 2. Tap undo again: the last still goes and the empty state is restored
+
+# 1. Undo the second still. There is no confirmation dialog and no Undo
+# snackbar — unlike capture mode's clip delete, the stop-motion undo removes
+# the still and its file on the tap.
+#
+# The assertion is that next and undo are *still* there: they are gated on
+# `stopMotionFrameCount > 0`, so this is what proves the session held two
+# stills and that undo removed exactly one of them.
+- tapOn:
+    id: camera_delete_clip_button
+# Wait the fade out before asserting. Both buttons leave over a 220ms
+# AnimatedOpacity, so an assertVisible landing mid-fade would pass on a session
+# that just went empty — exactly the failure this step exists to catch.
+# `waitForAnimationToEnd` runs its timeout out here, because the live camera
+# preview never stops changing.
+- waitForAnimationToEnd:
+    timeout: 1000
+- runFlow: ../asserts/assertStopMotionFrameCaptured.yaml
+
+# 2. Undo the last one. next/undo drop back out of the semantics tree once the
+# session is empty.
+- tapOn:
+    id: camera_delete_clip_button
+- extendedWaitUntil:
+    notVisible:
+      id: camera_next_button
+    timeout: 15000
+- runFlow: ../asserts/assertStopMotionMode.yaml
