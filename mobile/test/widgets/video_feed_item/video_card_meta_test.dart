@@ -86,17 +86,29 @@ void main() {
         expect(meta.loopCount, isNull);
       });
 
-      test('hides a small count on a classic Vine too', () {
-        // The archival source does not redeem a discouraging number: 47 loops
-        // reads as a warning whether it was earned in 2014 or last week.
+      test('shows a small count on a classic Vine', () {
+        // The archival figure is a fact about how the clip did on Vine, not a
+        // verdict on diVine, so the floor does not apply. The median archived
+        // Vine is near 300 loops — flooring here would hide most of them.
         final meta = resolveVideoCardMeta(
           video: _classicVine(originalLoops: 47),
           isOwnVideo: false,
           showPostDate: true,
         );
 
-        expect(meta.loopCount, isNull);
+        expect(meta.loopCount, equals(47));
         expect(meta.timestamp, equals(_vineEraCreatedAt));
+      });
+
+      test('shows a median-sized classic Vine count', () {
+        // p50 of the archive sits near 300; a size-based floor hid 64% of it.
+        final meta = resolveVideoCardMeta(
+          video: _classicVine(originalLoops: 298),
+          isOwnVideo: false,
+          showPostDate: true,
+        );
+
+        expect(meta.loopCount, equals(298));
       });
 
       test('surfaces a large count on a classic Vine', () {
