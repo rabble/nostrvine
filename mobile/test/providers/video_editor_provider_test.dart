@@ -3319,12 +3319,12 @@ void main() {
       expect(oldRendered.existsSync(), isTrue);
       expect(notifier.deferredFileCleanupForTest, contains(oldRendered.path));
 
+      // onDispose leaves the reap unawaited too, so poll rather than assuming a
+      // single pump covers the DAO round trip behind the delete.
       disposeContainer();
-      await pumpEventQueue();
 
-      expect(
-        oldRendered.existsSync(),
-        isFalse,
+      await expectFileReaped(
+        oldRendered,
         reason:
             'onDispose must reap a replaced rendered export once the new '
             'draft row no longer references it',
