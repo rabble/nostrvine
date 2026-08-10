@@ -7362,17 +7362,11 @@ class AppLocalizationsAm extends AppLocalizations {
       'ይህ ሰው Divine በማህደር ውስጥ ያገኘውን ዋና Vine ለጥፏል። ይህ የመለያ ማረጋገጫ ባጅ አይደለም።';
 
   @override
-  String get profileBadgeOgVinerSemanticHint => 'የOG Viner ባጅን ያብራራል';
-
-  @override
   String get profileBadgeCheckmarkTitle => 'የመገለጫ ምልክት';
 
   @override
   String get profileBadgeCheckmarkBody =>
       'ይህ መለያ በDivine የመገለጫ ምልክት ዝርዝር ውስጥ ነው። ከNIP-05፣ ከተረጋገጡ የመለያ አገናኞች እና ከOG Viner ሁኔታ የተለየ ነው።';
-
-  @override
-  String get profileBadgeCheckmarkSemanticHint => 'የመገለጫ ምልክቱን ያብራራል';
 
   @override
   String shareVideoInListsCount(int count) {

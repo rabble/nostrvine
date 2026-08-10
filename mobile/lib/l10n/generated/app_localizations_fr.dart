@@ -7615,17 +7615,11 @@ class AppLocalizationsFr extends AppLocalizations {
       'Cette personne a publié un Vine original que Divine a retrouvé dans les archives. Ce n\'est pas un badge de vérification de compte.';
 
   @override
-  String get profileBadgeOgVinerSemanticHint => 'Explique le badge OG Viner';
-
-  @override
   String get profileBadgeCheckmarkTitle => 'Coche de profil';
 
   @override
   String get profileBadgeCheckmarkBody =>
       'Ce compte figure sur la liste des coches de profil de Divine. C\'est indépendant de NIP-05, des liens de compte vérifiés et du statut OG Viner.';
-
-  @override
-  String get profileBadgeCheckmarkSemanticHint => 'Explique la coche de profil';
 
   @override
   String shareVideoInListsCount(int count) {

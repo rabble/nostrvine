@@ -7463,17 +7463,11 @@ class AppLocalizationsAr extends AppLocalizations {
       'نشر هذا الشخص مقطع Vine أصليًا عثرت عليه Divine في الأرشيف. هذه ليست شارة توثيق حساب.';
 
   @override
-  String get profileBadgeOgVinerSemanticHint => 'يشرح شارة OG Viner';
-
-  @override
   String get profileBadgeCheckmarkTitle => 'علامة الملف الشخصي';
 
   @override
   String get profileBadgeCheckmarkBody =>
       'هذا الحساب مدرج في قائمة علامات الملف الشخصي لدى Divine. وهي منفصلة عن NIP-05 وروابط الحسابات الموثّقة وحالة OG Viner.';
-
-  @override
-  String get profileBadgeCheckmarkSemanticHint => 'يشرح علامة الملف الشخصي';
 
   @override
   String shareVideoInListsCount(int count) {

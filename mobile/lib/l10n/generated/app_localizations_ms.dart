@@ -7569,18 +7569,11 @@ class AppLocalizationsMs extends AppLocalizations {
       'Orang ini pernah menyiarkan Vine asli yang ditemui Divine dalam arkib. Ini bukan lencana pengesahan akaun.';
 
   @override
-  String get profileBadgeOgVinerSemanticHint => 'Menerangkan lencana OG Viner';
-
-  @override
   String get profileBadgeCheckmarkTitle => 'Tanda semak profil';
 
   @override
   String get profileBadgeCheckmarkBody =>
       'Akaun ini ada dalam senarai tanda semak profil Divine. Ia berasingan daripada NIP-05, pautan akaun disahkan dan status OG Viner.';
-
-  @override
-  String get profileBadgeCheckmarkSemanticHint =>
-      'Menerangkan tanda semak profil';
 
   @override
   String shareVideoInListsCount(int count) {

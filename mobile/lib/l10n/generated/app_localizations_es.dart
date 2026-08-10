@@ -7587,17 +7587,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'Esta persona publicó un Vine original que Divine encontró en el archivo. No es una insignia de verificación de cuenta.';
 
   @override
-  String get profileBadgeOgVinerSemanticHint => 'Explica la insignia OG Viner';
-
-  @override
   String get profileBadgeCheckmarkTitle => 'Tilde de perfil';
 
   @override
   String get profileBadgeCheckmarkBody =>
       'Esta cuenta está en la lista de tildes de perfil de Divine. Es independiente de NIP-05, de los enlaces de cuenta verificados y del estado OG Viner.';
-
-  @override
-  String get profileBadgeCheckmarkSemanticHint => 'Explica la tilde de perfil';
 
   @override
   String shareVideoInListsCount(int count) {

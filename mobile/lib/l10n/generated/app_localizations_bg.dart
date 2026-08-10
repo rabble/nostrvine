@@ -7593,18 +7593,11 @@ class AppLocalizationsBg extends AppLocalizations {
       'Този човек е публикувал оригинален Vine, който Divine намери в архива. Това не е значка за потвърден профил.';
 
   @override
-  String get profileBadgeOgVinerSemanticHint => 'Обяснява значката OG Viner';
-
-  @override
   String get profileBadgeCheckmarkTitle => 'Отметка на профила';
 
   @override
   String get profileBadgeCheckmarkBody =>
       'Този профил е в списъка с отметки на профил на Divine. Това е различно от NIP-05, потвърдените връзки към профила и статуса OG Viner.';
-
-  @override
-  String get profileBadgeCheckmarkSemanticHint =>
-      'Обяснява отметката на профила';
 
   @override
   String shareVideoInListsCount(int count) {

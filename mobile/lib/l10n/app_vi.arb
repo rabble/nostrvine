@@ -4387,10 +4387,8 @@
   },
   "ogVinerBadgeLabel": "OG Viner",
   "profileBadgeOgVinerBody": "Người này đã đăng một Vine gốc mà Divine tìm thấy trong kho lưu trữ. Đây không phải huy hiệu xác minh tài khoản.",
-  "profileBadgeOgVinerSemanticHint": "Giải thích huy hiệu OG Viner",
   "profileBadgeCheckmarkTitle": "Dấu tích hồ sơ",
   "profileBadgeCheckmarkBody": "Tài khoản này nằm trong danh sách dấu tích hồ sơ của Divine. Nó tách biệt với NIP-05, liên kết tài khoản đã xác minh và trạng thái OG Viner.",
-  "profileBadgeCheckmarkSemanticHint": "Giải thích dấu tích hồ sơ",
   "shareVideoInListsCount": "{count, plural, =1{Trong 1 danh sách} other{Trong {count} danh sách}}",
   "@shareVideoInListsCount": {
     "placeholders": {

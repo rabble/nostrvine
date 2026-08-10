@@ -7573,18 +7573,11 @@ class AppLocalizationsPt extends AppLocalizations {
       'Essa pessoa postou um Vine original que a Divine encontrou no arquivo. Não é um selo de verificação de conta.';
 
   @override
-  String get profileBadgeOgVinerSemanticHint => 'Explica o selo Viner OG';
-
-  @override
   String get profileBadgeCheckmarkTitle => 'Marca de verificação do perfil';
 
   @override
   String get profileBadgeCheckmarkBody =>
       'Essa conta está na lista de marcas de verificação de perfil da Divine. É separado do NIP-05, dos links de conta verificados e do status de Viner OG.';
-
-  @override
-  String get profileBadgeCheckmarkSemanticHint =>
-      'Explica a marca de verificação do perfil';
 
   @override
   String shareVideoInListsCount(int count) {

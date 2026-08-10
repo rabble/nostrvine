@@ -7513,17 +7513,11 @@ class AppLocalizationsSv extends AppLocalizations {
       'Den här personen postade en originalvine som Divine hittade i arkivet. Det är inte en verifieringsbadge för kontot.';
 
   @override
-  String get profileBadgeOgVinerSemanticHint => 'Förklarar OG Viner-badgen';
-
-  @override
   String get profileBadgeCheckmarkTitle => 'Profilbock';
 
   @override
   String get profileBadgeCheckmarkBody =>
       'Det här kontot finns på Divines lista över profilbockar. Det är skilt från NIP-05, verifierade kontolänkar och OG Viner-status.';
-
-  @override
-  String get profileBadgeCheckmarkSemanticHint => 'Förklarar profilbocken';
 
   @override
   String shareVideoInListsCount(int count) {

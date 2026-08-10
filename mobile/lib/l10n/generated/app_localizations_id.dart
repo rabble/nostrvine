@@ -7479,17 +7479,11 @@ class AppLocalizationsId extends AppLocalizations {
       'Orang ini pernah memposting Vine asli yang ditemukan Divine di arsip. Ini bukan lencana verifikasi akun.';
 
   @override
-  String get profileBadgeOgVinerSemanticHint => 'Menjelaskan lencana OG Viner';
-
-  @override
   String get profileBadgeCheckmarkTitle => 'Centang profil';
 
   @override
   String get profileBadgeCheckmarkBody =>
       'Akun ini ada di daftar centang profil Divine. Ini terpisah dari NIP-05, tautan akun terverifikasi, dan status OG Viner.';
-
-  @override
-  String get profileBadgeCheckmarkSemanticHint => 'Menjelaskan centang profil';
 
   @override
   String shareVideoInListsCount(int count) {

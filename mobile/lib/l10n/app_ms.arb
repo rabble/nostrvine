@@ -4387,10 +4387,8 @@
   },
   "ogVinerBadgeLabel": "OG Viner",
   "profileBadgeOgVinerBody": "Orang ini pernah menyiarkan Vine asli yang ditemui Divine dalam arkib. Ini bukan lencana pengesahan akaun.",
-  "profileBadgeOgVinerSemanticHint": "Menerangkan lencana OG Viner",
   "profileBadgeCheckmarkTitle": "Tanda semak profil",
   "profileBadgeCheckmarkBody": "Akaun ini ada dalam senarai tanda semak profil Divine. Ia berasingan daripada NIP-05, pautan akaun disahkan dan status OG Viner.",
-  "profileBadgeCheckmarkSemanticHint": "Menerangkan tanda semak profil",
   "shareVideoInListsCount": "{count, plural, =1{Dalam 1 senarai} other{Dalam {count} senarai}}",
   "@shareVideoInListsCount": {
     "placeholders": {

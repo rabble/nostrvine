@@ -7688,17 +7688,11 @@ class AppLocalizationsRo extends AppLocalizations {
       'Persoana asta a postat un Vine original pe care Divine l-a găsit în arhivă. Nu e o insignă de verificare a contului.';
 
   @override
-  String get profileBadgeOgVinerSemanticHint => 'Explică insigna OG Viner';
-
-  @override
   String get profileBadgeCheckmarkTitle => 'Bifa de profil';
 
   @override
   String get profileBadgeCheckmarkBody =>
       'Contul ăsta e pe lista de bife de profil a Divine. E separat de NIP-05, de linkurile de cont verificate și de statutul OG Viner.';
-
-  @override
-  String get profileBadgeCheckmarkSemanticHint => 'Explică bifa de profil';
 
   @override
   String shareVideoInListsCount(int count) {

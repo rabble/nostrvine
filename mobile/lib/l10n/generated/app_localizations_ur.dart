@@ -7523,18 +7523,11 @@ class AppLocalizationsUr extends AppLocalizations {
       'اس شخص نے ایک اصل Vine پوسٹ کیا تھا جو Divine کو آرکائیو میں ملا۔ یہ اکاؤنٹ کی تصدیق کا بیج نہیں ہے۔';
 
   @override
-  String get profileBadgeOgVinerSemanticHint => 'OG Viner بیج کی وضاحت کرتا ہے';
-
-  @override
   String get profileBadgeCheckmarkTitle => 'پروفائل چیک مارک';
 
   @override
   String get profileBadgeCheckmarkBody =>
       'یہ اکاؤنٹ Divine کی پروفائل چیک مارک فہرست میں ہے۔ یہ NIP-05، تصدیق شدہ اکاؤنٹ لنکس اور OG Viner اسٹیٹس سے الگ ہے۔';
-
-  @override
-  String get profileBadgeCheckmarkSemanticHint =>
-      'پروفائل چیک مارک کی وضاحت کرتا ہے';
 
   @override
   String shareVideoInListsCount(int count) {

@@ -7589,18 +7589,11 @@ class AppLocalizationsIt extends AppLocalizations {
       'Questa persona ha pubblicato un Vine originale che Divine ha trovato nell\'archivio. Non è un badge di verifica dell\'account.';
 
   @override
-  String get profileBadgeOgVinerSemanticHint => 'Spiega il badge OG Viner';
-
-  @override
   String get profileBadgeCheckmarkTitle => 'Spunta del profilo';
 
   @override
   String get profileBadgeCheckmarkBody =>
       'Questo account è nella lista delle spunte di profilo di Divine. È separato da NIP-05, dai link di account verificati e dallo status OG Viner.';
-
-  @override
-  String get profileBadgeCheckmarkSemanticHint =>
-      'Spiega la spunta del profilo';
 
   @override
   String shareVideoInListsCount(int count) {

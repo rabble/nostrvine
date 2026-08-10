@@ -7550,17 +7550,11 @@ class AppLocalizationsNl extends AppLocalizations {
       'Deze persoon plaatste een originele Vine die Divine in het archief vond. Dit is geen verificatiebadge voor het account.';
 
   @override
-  String get profileBadgeOgVinerSemanticHint => 'Legt de OG Viner-badge uit';
-
-  @override
   String get profileBadgeCheckmarkTitle => 'Profielvinkje';
 
   @override
   String get profileBadgeCheckmarkBody =>
       'Dit account staat op Divine\'s lijst met profielvinkjes. Dat staat los van NIP-05, geverifieerde accountlinks en de OG Viner-status.';
-
-  @override
-  String get profileBadgeCheckmarkSemanticHint => 'Legt het profielvinkje uit';
 
   @override
   String shareVideoInListsCount(int count) {

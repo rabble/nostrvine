@@ -7140,17 +7140,11 @@ class AppLocalizationsZh extends AppLocalizations {
       '这个人发过一条原版 Vine，被 Divine 在存档里找到了。这不是账号认证徽章。';
 
   @override
-  String get profileBadgeOgVinerSemanticHint => '说明 OG Viner 徽章';
-
-  @override
   String get profileBadgeCheckmarkTitle => '个人资料对勾';
 
   @override
   String get profileBadgeCheckmarkBody =>
       '这个账号在 Divine 的个人资料对勾名单里。它与 NIP-05、已验证的账号链接和 OG Viner 状态无关。';
-
-  @override
-  String get profileBadgeCheckmarkSemanticHint => '说明个人资料对勾';
 
   @override
   String shareVideoInListsCount(int count) {

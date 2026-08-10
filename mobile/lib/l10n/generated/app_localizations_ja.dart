@@ -7185,17 +7185,11 @@ class AppLocalizationsJa extends AppLocalizations {
       'この人はオリジナルの Vine を投稿していて、Divine がアーカイブで見つけたよ。アカウントの認証バッジではないので注意。';
 
   @override
-  String get profileBadgeOgVinerSemanticHint => 'OG Viner バッジについて説明する';
-
-  @override
   String get profileBadgeCheckmarkTitle => 'プロフィールのチェックマーク';
 
   @override
   String get profileBadgeCheckmarkBody =>
       'このアカウントは Divine のプロフィールチェックマークのリストに入ってる。NIP-05、認証済みアカウントのリンク、OG Viner ステータスとは別物だよ。';
-
-  @override
-  String get profileBadgeCheckmarkSemanticHint => 'プロフィールのチェックマークについて説明する';
 
   @override
   String shareVideoInListsCount(int count) {

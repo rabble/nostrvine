@@ -7527,17 +7527,11 @@ class AppLocalizationsVi extends AppLocalizations {
       'Người này đã đăng một Vine gốc mà Divine tìm thấy trong kho lưu trữ. Đây không phải huy hiệu xác minh tài khoản.';
 
   @override
-  String get profileBadgeOgVinerSemanticHint => 'Giải thích huy hiệu OG Viner';
-
-  @override
   String get profileBadgeCheckmarkTitle => 'Dấu tích hồ sơ';
 
   @override
   String get profileBadgeCheckmarkBody =>
       'Tài khoản này nằm trong danh sách dấu tích hồ sơ của Divine. Nó tách biệt với NIP-05, liên kết tài khoản đã xác minh và trạng thái OG Viner.';
-
-  @override
-  String get profileBadgeCheckmarkSemanticHint => 'Giải thích dấu tích hồ sơ';
 
   @override
   String shareVideoInListsCount(int count) {
