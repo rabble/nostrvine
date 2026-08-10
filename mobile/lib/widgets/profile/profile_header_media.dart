@@ -1,5 +1,17 @@
 part of 'profile_header_widget.dart';
 
+/// Smallest lifetime loop total a profile shows to visitors.
+///
+/// Below this the Loops column is omitted for everyone but the owner: a small
+/// headline number on a new creator's profile discourages the visitor and
+/// tells them nothing useful. Owners always see their own total, since
+/// correcting a creator's underestimate of their audience is what keeps them
+/// posting.
+///
+/// A product call, not a technical one — the single value to change if the
+/// bar sits wrong.
+const int profileLoopsVisibilityFloor = 10000;
+
 /// Hero tag for the avatar ↔ lightbox shared-element flight, scoped to the
 /// user. A global tag would let two profile headers with the same tag in one
 /// navigator (e.g. other-profile → other-profile, both on the root navigator)
@@ -214,9 +226,21 @@ class _BannerImage extends StatelessWidget {
 /// shimmering indefinitely or collapsing the row (which would shift the
 /// surrounding profile layout).
 class _ProfileStatsRow extends StatefulWidget {
-  const _ProfileStatsRow({required this.userIdHex, this.profileStats});
+  const _ProfileStatsRow({
+    required this.userIdHex,
+    required this.isOwnProfile,
+    this.profileStats,
+  });
 
   final String userIdHex;
+
+  /// Whether the signed-in viewer owns this profile.
+  ///
+  /// Owners always see their own loop total, however small. A visitor only
+  /// sees it once it is large enough to impress — see
+  /// [profileLoopsVisibilityFloor].
+  final bool isOwnProfile;
+
   final ProfileStats? profileStats;
 
   @override
@@ -257,15 +281,20 @@ class _ProfileStatsRowState extends State<_ProfileStatsRow> {
     final hasFollowers = widget.profileStats?.followers != null;
     final hasFollowing = widget.profileStats?.following != null;
     final hasLikes = widget.profileStats?.totalLikes != null;
-    final hasLoops = widget.profileStats?.totalViews != null;
+    final totalViews = widget.profileStats?.totalViews;
+    // A visitor landing on a new creator's profile should not be met by a
+    // discouraging headline number. Owners keep theirs, and a total large
+    // enough to impress still leads the row.
+    final loopsAreVisible =
+        totalViews != null &&
+        (widget.isOwnProfile || totalViews >= profileLoopsVisibilityFloor);
+    final hasLoops = loopsAreVisible;
 
     final l10n = context.l10n;
     final columns = <Widget>[
       if (hasLoops || isLoading)
         ProfileStatColumn(
-          count: isLoading
-              ? _skeletonPlaceholderCount
-              : widget.profileStats!.totalViews,
+          count: isLoading ? _skeletonPlaceholderCount : totalViews!,
           label: l10n.profileLoopsLabel,
           isLoading: isLoading && _timeoutExpired,
         ),
