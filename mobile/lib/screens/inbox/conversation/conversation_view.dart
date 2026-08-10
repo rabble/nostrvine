@@ -707,10 +707,14 @@ class _MessageList extends StatelessWidget {
   /// sheet whose primary action republishes the rumor — delivering a DM to the
   /// account the viewer blocked, from the one screen built to make that
   /// impossible. The bubble stays rendered; only the affordance goes, so the
-  /// evidence is intact and nothing is force-deleted. The row has already
-  /// exhausted the retry sweep's budget by the time it reads `failed`, so
-  /// leaving it alone sends nothing in the background either. Unblocking
-  /// restores the sheet along with the composer.
+  /// evidence is intact and nothing is force-deleted. Unblocking restores the
+  /// sheet along with the composer.
+  ///
+  /// This closes the user-initiated path only. The reconnect sweep still
+  /// re-drives a failed row that is under `maxRetries`
+  /// (`OutgoingDmsDao.getRetryableForOwner`), because blocking has never
+  /// cancelled the viewer's own queued sends — a repository-layer question,
+  /// not a property of this screen.
   final bool sendRecoveryEnabled;
 
   Future<void> _onMessageLongPress(
