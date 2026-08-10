@@ -734,19 +734,31 @@ workflows:
   e2e-smoke-ios:
     name: E2E Smoke Tests (iOS)
     working_directory: mobile
-    # 40 minutes: roughly 2x the observed build-plus-smoke runtime, not the
-    # 60-minute backstop a hung simulator would otherwise burn per PR
-    # (review on #6979). Tighten again once the flake baseline produces
-    # real timings.
-    max_build_duration: 40
+    # 20 minutes: the only full run on record took 7m49s end to end
+    # (2026-07-29, per the #6979 review), so this is ~2.5x with headroom for
+    # a cold cache. A hung simulator costs 20 billed minutes, not 60.
+    max_build_duration: 20
     instance_type: mac_mini_m2
     environment:
       flutter: 3.44.0
-      xcode: latest
+      # Pinned, not latest: Maestro 2.1.0's iOS driver never starts on Xcode
+      # 26.2 (upstream mobile-dev-inc/Maestro#2932 — xcodebuild
+      # test-without-building exits instantly and port 7001 never binds), and
+      # latest now resolves to 26.4, which is unverified. 26.1 is the newest
+      # Codemagic image with no reported Maestro breakage. Verify on the
+      # first run after the maestro_e2e_credentials group exists; if the
+      # driver still fails, drop to 16.4 or move the Maestro pin past the
+      # upstream fix together with this one.
+      xcode: 26.1
       cocoapods: default
       groups:
         - zendesk_credentials
         - proofmode_credentials
+        # PREREQUISITE: this group must exist in Codemagic before any run —
+        # the config validator rejects a workflow naming an unknown group
+        # before a machine is provisioned (confirmed by triggering
+        # e2e-smoke-ios on main, #6979 review), so no run — manual or PR —
+        # reaches the credential guard until the group is created.
         - maestro_e2e_credentials
       vars:
         DEFAULT_ENV: STAGING
