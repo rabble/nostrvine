@@ -11018,4 +11018,178 @@ class AppLocalizationsKo extends AppLocalizations {
   ) {
     return '$picker, $color';
   }
+
+  @override
+  String get verifyTitle => '인증된 계정';
+
+  @override
+  String get verifySignedOutMessage => '계정을 연결하려면 로그인해.';
+
+  @override
+  String get verifyIntro => '이미 쓰는 계정을 연결하면 진짜 너라는 걸 바로 알 수 있어.';
+
+  @override
+  String get verifyLoadFailed => '연결을 불러오지 못했어.';
+
+  @override
+  String get verifyRetry => '다시 시도';
+
+  @override
+  String get verifyLinkedSectionTitle => '연결됨';
+
+  @override
+  String get verifyVerifierUnreachable => '인증 서비스에 연결하지 못해서 전부 확인 안 됨으로 표시돼.';
+
+  @override
+  String get verifyAddSectionTitle => '계정 추가';
+
+  @override
+  String get verifyAllPlatformsLinked => '지원하는 건 전부 연결했어.';
+
+  @override
+  String get verifyStatusVerified => '인증됨';
+
+  @override
+  String get verifyStatusUnverified => '인증 안 됨';
+
+  @override
+  String verifyUnlinkSemanticLabel(String platform, String identity) {
+    return '$platform 계정 $identity 연결 해제';
+  }
+
+  @override
+  String verifyLinkSemanticLabel(String platform) {
+    return '$platform 계정 연결';
+  }
+
+  @override
+  String get verifyOneTapBadge => '한 번 탭';
+
+  @override
+  String verifyConnectOauthExplainer(String platform) {
+    return '$platform에 로그인하면 나머지는 우리가 처리해. 아무것도 게시되지 않아.';
+  }
+
+  @override
+  String verifyConnectOauthCta(String platform) {
+    return '$platform(으)로 계속';
+  }
+
+  @override
+  String get verifyConnectProofTitle => '또는 증명을 게시';
+
+  @override
+  String get verifyConnectProofExplainer => '그 계정에 npub을 게시하고, 그 게시물 링크를 붙여넣어.';
+
+  @override
+  String get verifyNpubLabel => '내 npub';
+
+  @override
+  String get verifyCopyNpubSemanticLabel => 'npub 복사';
+
+  @override
+  String get verifyNpubCopied => 'npub 복사됨';
+
+  @override
+  String get verifyIdentityLabel => '계정 이름';
+
+  @override
+  String get verifyProofLabel => '게시물 링크';
+
+  @override
+  String get verifyConnectProofCta => '확인하고 연결';
+
+  @override
+  String get verifyErrorProofRejected => '그 게시물에서 npub을 찾지 못했어.';
+
+  @override
+  String get verifyErrorVerifierUnreachable => '인증 서비스에 연결하지 못했어. 잠시 후 다시 시도해.';
+
+  @override
+  String get verifyErrorOauthFailed => '잘 안 됐어. 한 번 더 해봐.';
+
+  @override
+  String get verifyErrorHandleRequired => '핸들부터 입력해.';
+
+  @override
+  String get verifyErrorPublishFailed => '인증은 됐는데 업데이트를 받아준 릴레이가 없어. 다시 시도해.';
+
+  @override
+  String get verifyErrorOauthUnavailable =>
+      '여기는 아직 원탭 로그인이 준비 안 됐어. 아래 증명 게시물을 써.';
+
+  @override
+  String get verifyConnectProofExplainerGithub =>
+      '첫 번째 파일에 npub을 넣은 공개 gist를 만들고 그 gist 링크를 붙여넣어.';
+
+  @override
+  String get verifyConnectProofExplainerDiscord =>
+      '우리 봇이 읽을 수 있는 Discord 채널에 npub을 올리고 그 메시지 링크를 붙여넣어. 서버 초대는 아무것도 증명하지 못해.';
+
+  @override
+  String get verifyConnectProofExplainerTwitter =>
+      '그 계정에서 npub을 트윗하고, 그 트윗 링크를 붙여넣어.';
+
+  @override
+  String get verifyConnectProofExplainerMastodon =>
+      '그 계정에서 npub을 올리고 링크를 붙여넣어. 계정 이름에는 인스턴스가 있어야 해 — alice가 아니라 mastodon.social/@alice.';
+
+  @override
+  String get verifyConnectProofExplainerTelegram =>
+      '연결되는 건 채널이야, 네 텔레그램 계정이 아니라. 먼저 공개 링크가 필요해 (텔레그램은 새 채널을 비공개로 만들어). 거기에 npub을 올리고 메시지 링크를 붙여넣어.';
+
+  @override
+  String get verifyConnectProofExplainerBluesky =>
+      '위에서 로그인했어? 그럼 더 필요 없어. 안 했으면 npub을 올리고 그 게시물 링크를 붙여넣어.';
+
+  @override
+  String get verifyConnectProofExplainerTiktok =>
+      '영상 캡션에 npub을 넣고, 그 영상 링크를 붙여넣어.';
+
+  @override
+  String get verifyConnectProofExplainerYoutube =>
+      '영상 설명에 npub을 넣고, 그 영상 링크를 붙여넣어.';
+
+  @override
+  String verifyLinkedConfirmation(String platform) {
+    return '$platform 연결됐어.';
+  }
+
+  @override
+  String get verifyErrorTelegramNotPublic =>
+      '그건 비공개 채널이거나 초대 링크야. 채널에 공개 링크를 설정한 다음 메시지 링크를 붙여넣어.';
+
+  @override
+  String get verifyErrorRemoveFailed => '연결을 해제하지 못했어. 다시 시도해.';
+
+  @override
+  String get verifyErrorLinksUnreadable =>
+      '현재 연결을 읽지 못해서 아무것도 바꾸지 않았어. 연결 상태를 확인하고 다시 시도해.';
+
+  @override
+  String get verifyChannelLabel => '채널 이름';
+
+  @override
+  String get verifyHowItWorksTitle => '어떻게 작동해?';
+
+  @override
+  String get verifyHowItWorksIntro => '두 계정이 악수한다고 생각하면 돼:';
+
+  @override
+  String get verifyHowItWorksYourSide => '네 Divine 프로필이 말해: “트위터의 @alice가 나야.”';
+
+  @override
+  String get verifyHowItWorksOtherSide =>
+      '네 트위터 계정이 확인해줘: “맞아, 그 Divine 프로필은 내 거야.”';
+
+  @override
+  String get verifyHowItWorksBothSides =>
+      '우리가 양쪽을 다 확인해. 맞으면 인증 완료. 위조는 못 해 — 이름과 사진은 베낄 수 있어도 네 진짜 계정에서 글을 올릴 수는 없거든.';
+
+  @override
+  String get verifyHowItWorksOwnership =>
+      '연결은 네 Nostr 신원에 저장되니까 여기서 언제든 지울 수 있어.';
+
+  @override
+  String get generalSettingsSectionIdentity => '신원';
 }

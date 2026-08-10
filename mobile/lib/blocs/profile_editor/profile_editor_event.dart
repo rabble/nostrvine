@@ -225,20 +225,6 @@ final class ProfilePictureUrlSet extends ProfileEditorEvent {
   final String url;
 }
 
-/// User tapped the "Get verified" CTA. The UI listens for this and opens the
-/// verifier. The bloc only flips a status; no navigation here.
-final class VerifierLaunchRequested extends ProfileEditorEvent {
-  const VerifierLaunchRequested();
-}
-
-/// UI handled the one-shot verifier launch request.
-///
-/// The UI owns navigation/browser launch and any follow-up profile refresh.
-/// The bloc only resets the launch signal so future taps can emit again.
-final class VerifierLaunchHandled extends ProfileEditorEvent {
-  const VerifierLaunchHandled();
-}
-
 /// Sets the user's existing persisted banner value after profile load.
 ///
 /// Mirrors what the user's kind 0 currently advertises. The banner string

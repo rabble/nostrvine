@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -19,8 +18,8 @@ class ProfileSetupScreenView extends ConsumerStatefulWidget {
       _ProfileSetupScreenViewState();
 }
 
-class _ProfileSetupScreenViewState extends ConsumerState<ProfileSetupScreenView>
-    with WidgetsBindingObserver {
+class _ProfileSetupScreenViewState
+    extends ConsumerState<ProfileSetupScreenView> {
   final _nameController = TextEditingController();
   final _bioController = TextEditingController();
   final _websiteController = TextEditingController();
@@ -30,24 +29,11 @@ class _ProfileSetupScreenViewState extends ConsumerState<ProfileSetupScreenView>
   final _nameFocusNode = FocusNode();
   // Owned here so the username field's next key can target it directly.
   final _bioFocusNode = FocusNode();
-  bool _refreshProfileOnResume = false;
   bool _isLeavingProfileSetup = false;
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    if (state != AppLifecycleState.resumed || !_refreshProfileOnResume) {
-      return;
-    }
-
-    _refreshProfileOnResume = false;
-    context.read<MyProfileBloc>().add(const MyProfileFetchRequested());
-  }
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _nameController.addListener(_onProfileTextChanged);
     _bioController.addListener(_onProfileTextChanged);
     _websiteController.addListener(_onProfileTextChanged);
@@ -55,7 +41,6 @@ class _ProfileSetupScreenViewState extends ConsumerState<ProfileSetupScreenView>
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     _nameController.removeListener(_onProfileTextChanged);
     _bioController.removeListener(_onProfileTextChanged);
     _websiteController.removeListener(_onProfileTextChanged);
@@ -86,7 +71,6 @@ class _ProfileSetupScreenViewState extends ConsumerState<ProfileSetupScreenView>
       bioController: _bioController,
       websiteController: _websiteController,
       nip05Controller: _nip05Controller,
-      onNativeVerifierLaunched: () => _refreshProfileOnResume = true,
       child: BlocBuilder<ProfileEditorBloc, ProfileEditorState>(
         builder: (context, profileEditorState) {
           return PopScope(

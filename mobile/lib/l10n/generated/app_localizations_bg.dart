@@ -11575,4 +11575,187 @@ class AppLocalizationsBg extends AppLocalizations {
   ) {
     return '$picker, $color';
   }
+
+  @override
+  String get verifyTitle => 'Потвърдени профили';
+
+  @override
+  String get verifySignedOutMessage => 'Влез, за да свържеш профилите си.';
+
+  @override
+  String get verifyIntro =>
+      'Свържи профилите, които вече имаш, за да се вижда, че наистина си ти.';
+
+  @override
+  String get verifyLoadFailed => 'Връзките ти не можаха да се заредят.';
+
+  @override
+  String get verifyRetry => 'Опитай пак';
+
+  @override
+  String get verifyLinkedSectionTitle => 'Свързани';
+
+  @override
+  String get verifyVerifierUnreachable =>
+      'Проверяващият не отговори, затова всичко излиза като непроверено.';
+
+  @override
+  String get verifyAddSectionTitle => 'Добави профил';
+
+  @override
+  String get verifyAllPlatformsLinked => 'Свърза всичко, което поддържаме.';
+
+  @override
+  String get verifyStatusVerified => 'Потвърден';
+
+  @override
+  String get verifyStatusUnverified => 'Непотвърден';
+
+  @override
+  String verifyUnlinkSemanticLabel(String platform, String identity) {
+    return 'Премахни връзката с профила $identity в $platform';
+  }
+
+  @override
+  String verifyLinkSemanticLabel(String platform) {
+    return 'Свържи профила си в $platform';
+  }
+
+  @override
+  String get verifyOneTapBadge => 'Едно докосване';
+
+  @override
+  String verifyConnectOauthExplainer(String platform) {
+    return 'Влез в $platform и ние поемаме останалото. Нищо не се публикува.';
+  }
+
+  @override
+  String verifyConnectOauthCta(String platform) {
+    return 'Продължи с $platform';
+  }
+
+  @override
+  String get verifyConnectProofTitle => 'Или публикувай доказателство';
+
+  @override
+  String get verifyConnectProofExplainer =>
+      'Публикувай своя npub в профила си и после постави линка към публикацията.';
+
+  @override
+  String get verifyNpubLabel => 'Твоят npub';
+
+  @override
+  String get verifyCopyNpubSemanticLabel => 'Копирай своя npub';
+
+  @override
+  String get verifyNpubCopied => 'npub копиран';
+
+  @override
+  String get verifyIdentityLabel => 'Име на профила';
+
+  @override
+  String get verifyProofLabel => 'Линк към публикацията ти';
+
+  @override
+  String get verifyConnectProofCta => 'Провери и свържи';
+
+  @override
+  String get verifyErrorProofRejected =>
+      'Не намерихме твоя npub в тази публикация.';
+
+  @override
+  String get verifyErrorVerifierUnreachable =>
+      'Проверяващият не отговаря. Опитай пак след малко.';
+
+  @override
+  String get verifyErrorOauthFailed => 'Не се получи. Пробвай отново.';
+
+  @override
+  String get verifyErrorHandleRequired => 'Първо въведи своя handle.';
+
+  @override
+  String get verifyErrorPublishFailed =>
+      'Потвърдено, но нито едно реле не прие промяната. Опитай пак.';
+
+  @override
+  String get verifyErrorOauthUnavailable =>
+      'Влизането с едно докосване още не е настроено тук. Използвай доказателството по-долу.';
+
+  @override
+  String get verifyConnectProofExplainerGithub =>
+      'Направи публичен gist с твоя npub в първия файл и постави линка към gist-а.';
+
+  @override
+  String get verifyConnectProofExplainerDiscord =>
+      'Публикувай своя npub в Discord канал, който нашият бот може да чете, и постави линка към съобщението. Покана за сървър не доказва нищо.';
+
+  @override
+  String get verifyConnectProofExplainerTwitter =>
+      'Публикувай своя npub от този профил и постави линка към туита.';
+
+  @override
+  String get verifyConnectProofExplainerMastodon =>
+      'Публикувай своя npub от този профил и постави линка. Името на профила трябва да включва инстанцията — mastodon.social/@alice, не само alice.';
+
+  @override
+  String get verifyConnectProofExplainerTelegram =>
+      'Свързва се каналът, не твоят профил в Telegram. Първо му трябва публичен линк (Telegram създава новите като частни). Публикувай там своя npub и постави линка към съобщението.';
+
+  @override
+  String get verifyConnectProofExplainerBluesky =>
+      'Влезе ли горе? Тогава нищо повече. Иначе публикувай своя npub и постави линка към публикацията.';
+
+  @override
+  String get verifyConnectProofExplainerTiktok =>
+      'Сложи своя npub в описанието на видео и постави линка към това видео.';
+
+  @override
+  String get verifyConnectProofExplainerYoutube =>
+      'Сложи своя npub в описанието на видео и постави линка към това видео.';
+
+  @override
+  String verifyLinkedConfirmation(String platform) {
+    return '$platform е свързан.';
+  }
+
+  @override
+  String get verifyErrorTelegramNotPublic =>
+      'Това е частен канал или покана. Дай на канала публичен линк и после постави линка към съобщението.';
+
+  @override
+  String get verifyErrorRemoveFailed =>
+      'Връзката не можа да се премахне. Опитай пак.';
+
+  @override
+  String get verifyErrorLinksUnreadable =>
+      'Не успяхме да прочетем текущите ти връзки, затова нищо не е променено. Провери връзката си и опитай пак.';
+
+  @override
+  String get verifyChannelLabel => 'Име на канала';
+
+  @override
+  String get verifyHowItWorksTitle => 'Как работи?';
+
+  @override
+  String get verifyHowItWorksIntro =>
+      'Представи си го като ръкостискане между два профила:';
+
+  @override
+  String get verifyHowItWorksYourSide =>
+      'Твоят Divine профил казва: „Аз съм @alice в Twitter“.';
+
+  @override
+  String get verifyHowItWorksOtherSide =>
+      'Твоят Twitter профил потвърждава: „Да, този Divine профил е мой“.';
+
+  @override
+  String get verifyHowItWorksBothSides =>
+      'Проверяваме и двете страни. Съвпаднат ли, си потвърден. Не може да се подправи — име и снимка се копират, публикуване от истинския ти профил не.';
+
+  @override
+  String get verifyHowItWorksOwnership =>
+      'Връзките стоят в твоята собствена Nostr идентичност, така че можеш да ги махнеш оттук когато поискаш.';
+
+  @override
+  String get generalSettingsSectionIdentity => 'Самоличност';
 }

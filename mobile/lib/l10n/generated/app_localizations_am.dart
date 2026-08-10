@@ -11211,4 +11211,183 @@ class AppLocalizationsAm extends AppLocalizations {
   ) {
     return '$picker, $color';
   }
+
+  @override
+  String get verifyTitle => 'የተረጋገጡ መለያዎች';
+
+  @override
+  String get verifySignedOutMessage => 'መለያዎችህን ለማገናኘት ግባ።';
+
+  @override
+  String get verifyIntro =>
+      'አስቀድመህ ያሉህን መለያዎች አገናኝ፣ ሰዎች በእርግጥ አንተ መሆንህን እንዲያውቁ።';
+
+  @override
+  String get verifyLoadFailed => 'ግንኙነቶችህን መጫን አልተቻለም።';
+
+  @override
+  String get verifyRetry => 'እንደገና ሞክር';
+
+  @override
+  String get verifyLinkedSectionTitle => 'የተገናኙ';
+
+  @override
+  String get verifyVerifierUnreachable =>
+      'አረጋጋጩ አልተገኘም፣ ስለዚህ ሁሉም ያልተመረመሩ ሆነው ይታያሉ።';
+
+  @override
+  String get verifyAddSectionTitle => 'መለያ ጨምር';
+
+  @override
+  String get verifyAllPlatformsLinked => 'የምንደግፈውን ሁሉ አገናኝተሃል።';
+
+  @override
+  String get verifyStatusVerified => 'የተረጋገጠ';
+
+  @override
+  String get verifyStatusUnverified => 'ያልተረጋገጠ';
+
+  @override
+  String verifyUnlinkSemanticLabel(String platform, String identity) {
+    return 'የ$platform መለያ $identity ግንኙነት አቋርጥ';
+  }
+
+  @override
+  String verifyLinkSemanticLabel(String platform) {
+    return 'የ$platform መለያህን አገናኝ';
+  }
+
+  @override
+  String get verifyOneTapBadge => 'አንድ ንክኪ';
+
+  @override
+  String verifyConnectOauthExplainer(String platform) {
+    return 'ወደ $platform ግባ፣ የቀረውን እኛ እንሠራዋለን። ምንም አይለጠፍም።';
+  }
+
+  @override
+  String verifyConnectOauthCta(String platform) {
+    return 'በ$platform ቀጥል';
+  }
+
+  @override
+  String get verifyConnectProofTitle => 'ወይም ማስረጃ ለጥፍ';
+
+  @override
+  String get verifyConnectProofExplainer =>
+      'npub ህን በመለያህ ላይ ለጥፍ፣ ከዚያ የዚያን ልጥፍ አገናኝ ለጥፍ።';
+
+  @override
+  String get verifyNpubLabel => 'የአንተ npub';
+
+  @override
+  String get verifyCopyNpubSemanticLabel => 'npub ህን ቅዳ';
+
+  @override
+  String get verifyNpubCopied => 'npub ተቀድቷል';
+
+  @override
+  String get verifyIdentityLabel => 'የመለያ ስም';
+
+  @override
+  String get verifyProofLabel => 'የልጥፍህ አገናኝ';
+
+  @override
+  String get verifyConnectProofCta => 'መርምር እና አገናኝ';
+
+  @override
+  String get verifyErrorProofRejected => 'በዚያ ልጥፍ ውስጥ npub ህን አላገኘንም።';
+
+  @override
+  String get verifyErrorVerifierUnreachable => 'አረጋጋጩ አልተገኘም። ትንሽ ቆይተህ ሞክር።';
+
+  @override
+  String get verifyErrorOauthFailed => 'አልተሳካም። እንደገና ሞክር።';
+
+  @override
+  String get verifyErrorHandleRequired => 'መጀመሪያ ሃንድልህን አስገባ።';
+
+  @override
+  String get verifyErrorPublishFailed =>
+      'ተረጋግጧል፣ ግን ማንኛውም ሪሌይ ዝማኔውን አልተቀበለም። እንደገና ሞክር።';
+
+  @override
+  String get verifyErrorOauthUnavailable =>
+      'የአንድ ንክኪ መግቢያ ለዚህ ገና አልተዘጋጀም። ከታች ያለውን ማስረጃ ተጠቀም።';
+
+  @override
+  String get verifyConnectProofExplainerGithub =>
+      'npub ህ በመጀመሪያው ፋይል ውስጥ ያለበት ይፋዊ gist ፍጠር፣ ከዚያ የgist አገናኝ ለጥፍ።';
+
+  @override
+  String get verifyConnectProofExplainerDiscord =>
+      'ቦታችን ሊያነበው በሚችል የDiscord ቻናል ውስጥ npub ህን ለጥፍ፣ ከዚያ የመልእክቱን አገናኝ ለጥፍ። የአገልጋይ ግብዣ ምንም አያረጋግጥም።';
+
+  @override
+  String get verifyConnectProofExplainerTwitter =>
+      'npub ህን ከዚያ መለያ ለጥፍ፣ ከዚያ የtweet ኡን አገናኝ ለጥፍ።';
+
+  @override
+  String get verifyConnectProofExplainerMastodon =>
+      'npub ህን ከዚያ መለያ ለጥፍ፣ ከዚያ አገናኙን ለጥፍ። የመለያው ስም ኢንስታንሱን ይፈልጋል — alice ብቻ ሳይሆን mastodon.social/@alice።';
+
+  @override
+  String get verifyConnectProofExplainerTelegram =>
+      'የሚገናኘው ቻናሉ ነው፣ የቴሌግራም መለያህ አይደለም። ቻናሉ መጀመሪያ ይፋዊ አገናኝ ያስፈልገዋል (ቴሌግራም አዲሶቹን የግል ያደርጋቸዋል)። npub ህን እዚያ ለጥፍ እና የመልእክቱን አገናኝ ለጥፍ።';
+
+  @override
+  String get verifyConnectProofExplainerBluesky =>
+      'ከላይ ገብተሃል? ከዚያ ሌላ ምንም አያስፈልግም። ካልሆነ npub ህን ለጥፍ እና የዚያን ልጥፍ አገናኝ ለጥፍ።';
+
+  @override
+  String get verifyConnectProofExplainerTiktok =>
+      'npub ህን በቪዲዮ መግለጫ ውስጥ አስገባ፣ ከዚያ የዚያን ቪዲዮ አገናኝ ለጥፍ።';
+
+  @override
+  String get verifyConnectProofExplainerYoutube =>
+      'npub ህን በቪዲዮ መግለጫ ውስጥ አስገባ፣ ከዚያ የዚያን ቪዲዮ አገናኝ ለጥፍ።';
+
+  @override
+  String verifyLinkedConfirmation(String platform) {
+    return '$platform ተገናኝቷል።';
+  }
+
+  @override
+  String get verifyErrorTelegramNotPublic =>
+      'ያ የግል ቻናል ወይም ግብዣ ነው። ለቻናሉ ይፋዊ አገናኝ ስጠው፣ ከዚያ የመልእክቱን አገናኝ ለጥፍ።';
+
+  @override
+  String get verifyErrorRemoveFailed => 'ግንኙነቱ አልተቋረጠም። እንደገና ሞክር።';
+
+  @override
+  String get verifyErrorLinksUnreadable =>
+      'አሁን ያሉህ ግንኙነቶች ሊነበቡ አልቻሉም፣ ስለዚህ ምንም አልተቀየረም። ግንኙነትህን አረጋግጠህ እንደገና ሞክር።';
+
+  @override
+  String get verifyChannelLabel => 'የቻናል ስም';
+
+  @override
+  String get verifyHowItWorksTitle => 'ይህ እንዴት ይሠራል?';
+
+  @override
+  String get verifyHowItWorksIntro => 'እንደ ሁለት መለያዎች መጨባበጥ አስበው፦';
+
+  @override
+  String get verifyHowItWorksYourSide =>
+      'የDivine መገለጫህ „በTwitter ላይ @alice እኔ ነኝ“ ይላል።';
+
+  @override
+  String get verifyHowItWorksOtherSide =>
+      'የTwitter መለያህ „አዎ፣ ያ የDivine መገለጫ የእኔ ነው“ ብሎ ያረጋግጣል።';
+
+  @override
+  String get verifyHowItWorksBothSides =>
+      'ሁለቱንም ወገን እንመረምራለን። ከተዛመዱ ተረጋግጠሃል። ማጭበርበር አይቻልም — ስምህንና ፎቶህን መቅዳት ይቻላል፣ ከእውነተኛ መለያህ መለጠፍ ግን አይቻልም።';
+
+  @override
+  String get verifyHowItWorksOwnership =>
+      'ግንኙነቶቹ በራስህ የNostr ማንነት ላይ ናቸው፣ ስለዚህ በፈለግህ ጊዜ ከዚህ ማስወገድ ትችላለህ።';
+
+  @override
+  String get generalSettingsSectionIdentity => 'ማንነት';
 }

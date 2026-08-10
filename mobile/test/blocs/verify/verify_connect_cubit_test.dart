@@ -1,0 +1,480 @@
+// ABOUTME: Tests linking one platform — proof post and OAuth — and that a
+// ABOUTME: claim is published only once the verifier has confirmed it.
+
+import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart' hide VerificationResult;
+import 'package:openvine/blocs/verify/verify_connect_cubit.dart';
+import 'package:profile_repository/profile_repository.dart';
+
+class _MockIdentityClaimsRepository extends Mock
+    implements IdentityClaimsRepository {}
+
+const _pubkey =
+    '1111111111111111111111111111111111111111111111111111111111111111';
+const _returnUrl = 'https://divine.video/app/callback';
+
+const _github = VerifierPlatform(
+  key: 'github',
+  label: 'GitHub',
+  supported: true,
+);
+const _twitter = VerifierPlatform(
+  key: 'twitter',
+  label: 'Twitter / X',
+  supported: true,
+);
+const _bluesky = VerifierPlatform(
+  key: 'bluesky',
+  label: 'Bluesky',
+  supported: true,
+);
+const _telegram = VerifierPlatform(
+  key: 'telegram',
+  label: 'Telegram',
+  supported: true,
+);
+const _discord = VerifierPlatform(
+  key: 'discord',
+  label: 'Discord',
+  supported: true,
+);
+const _youtube = VerifierPlatform(
+  key: 'youtube',
+  label: 'YouTube',
+  supported: true,
+);
+
+VerificationResult _result({required bool verified}) => VerificationResult(
+  platform: 'github',
+  identity: 'octocat',
+  verified: verified,
+  checkedAt: 1,
+  cached: false,
+);
+
+void main() {
+  group(VerifyConnectCubit, () {
+    late _MockIdentityClaimsRepository repository;
+    late List<Uri> launched;
+    late Uri? callback;
+
+    setUpAll(() {
+      registerFallbackValue(
+        const IdentityClaim(
+          pubkey: _pubkey,
+          platform: 'github',
+          identity: 'octocat',
+          proof: 'abc',
+        ),
+      );
+    });
+
+    setUp(() {
+      repository = _MockIdentityClaimsRepository();
+      launched = [];
+      callback = Uri.parse(
+        '$_returnUrl?oauth_verified=true&platform=twitter&identity=jack',
+      );
+      when(() => repository.verifyClaim(any())).thenAnswer(
+        (_) async => _result(verified: true),
+      );
+      when(() => repository.publishClaim(any())).thenAnswer((_) async => []);
+      when(
+        () => repository.canStartOAuth(
+          platform: any(named: 'platform'),
+          pubkey: any(named: 'pubkey'),
+          returnUrl: any(named: 'returnUrl'),
+          handle: any(named: 'handle'),
+        ),
+      ).thenAnswer((_) async => true);
+      when(
+        () => repository.oauthStartUri(
+          platform: any(named: 'platform'),
+          pubkey: any(named: 'pubkey'),
+          returnUrl: any(named: 'returnUrl'),
+          handle: any(named: 'handle'),
+        ),
+      ).thenReturn(
+        Uri.parse('https://verifier.divine.video/auth/twitter/start'),
+      );
+    });
+
+    VerifyConnectCubit build(VerifierPlatform platform) => VerifyConnectCubit(
+      repository: repository,
+      pubkey: _pubkey,
+      platform: platform,
+      oauthReturnUrl: _returnUrl,
+      launchOAuth: (uri) async {
+        launched.add(uri);
+        return callback;
+      },
+    );
+
+    group('submitProof', () {
+      blocTest<VerifyConnectCubit, VerifyConnectState>(
+        'publishes the claim once the verifier confirms it',
+        build: () => build(_github),
+        act: (cubit) async {
+          cubit
+            ..identityChanged('octocat')
+            ..proofChanged('https://gist.github.com/octocat/abc');
+          await cubit.submitProof();
+        },
+        verify: (cubit) {
+          expect(cubit.state.status, equals(VerifyConnectStatus.linked));
+          final claim =
+              verify(
+                    () => repository.publishClaim(captureAny()),
+                  ).captured.single
+                  as IdentityClaim;
+          expect(claim.platform, equals('github'));
+          expect(claim.identity, equals('octocat'));
+          // The pasted link is split into the id the verifier looks up.
+          expect(claim.proof, equals('abc'));
+          // Handed back so the dashboard can render it straight away.
+          expect(cubit.state.linkedClaim, equals(claim));
+        },
+      );
+
+      blocTest<VerifyConnectCubit, VerifyConnectState>(
+        'publishes nothing when the proof does not check out',
+        build: () => build(_github),
+        setUp: () {
+          when(() => repository.verifyClaim(any())).thenAnswer(
+            (_) async => _result(verified: false),
+          );
+        },
+        act: (cubit) async {
+          cubit
+            ..identityChanged('octocat')
+            ..proofChanged('https://gist.github.com/octocat/abc');
+          await cubit.submitProof();
+        },
+        verify: (cubit) {
+          expect(cubit.state.error, equals(VerifyConnectError.proofRejected));
+          expect(cubit.state.status, equals(VerifyConnectStatus.editing));
+          verifyNever(() => repository.publishClaim(any()));
+        },
+      );
+
+      blocTest<VerifyConnectCubit, VerifyConnectState>(
+        'reports an unreachable verifier separately from a rejection',
+        build: () => build(_github),
+        setUp: () {
+          when(
+            () => repository.verifyClaim(any()),
+          ).thenThrow(const VerifierNetworkException('offline'));
+        },
+        act: (cubit) async {
+          cubit
+            ..identityChanged('octocat')
+            ..proofChanged('abc');
+          await cubit.submitProof();
+        },
+        verify: (cubit) {
+          expect(
+            cubit.state.error,
+            equals(VerifyConnectError.verifierUnreachable),
+          );
+        },
+        errors: () => [isA<VerifierNetworkException>()],
+      );
+
+      blocTest<VerifyConnectCubit, VerifyConnectState>(
+        'surfaces a publish that no relay accepted',
+        build: () => build(_github),
+        setUp: () {
+          when(() => repository.publishClaim(any())).thenThrow(
+            const IdentityClaimPublishException('no relay confirmed'),
+          );
+        },
+        act: (cubit) async {
+          cubit
+            ..identityChanged('octocat')
+            ..proofChanged('abc');
+          await cubit.submitProof();
+        },
+        verify: (cubit) {
+          expect(cubit.state.error, equals(VerifyConnectError.publishFailed));
+          expect(cubit.state.status, equals(VerifyConnectStatus.editing));
+        },
+        errors: () => [isA<IdentityClaimPublishException>()],
+      );
+
+      blocTest<VerifyConnectCubit, VerifyConnectState>(
+        'separates an unreadable link list from a failed publish',
+        build: () => build(_github),
+        setUp: () {
+          when(() => repository.publishClaim(any())).thenThrow(
+            const IdentityClaimReadException('relays went quiet'),
+          );
+        },
+        act: (cubit) async {
+          cubit
+            ..identityChanged('octocat')
+            ..proofChanged('abc');
+          await cubit.submitProof();
+        },
+        verify: (cubit) {
+          expect(cubit.state.error, equals(VerifyConnectError.linksUnreadable));
+        },
+        errors: () => [isA<IdentityClaimReadException>()],
+      );
+
+      blocTest<VerifyConnectCubit, VerifyConnectState>(
+        'does nothing without an account name',
+        build: () => build(_github),
+        act: (cubit) async {
+          cubit.proofChanged('abc');
+          await cubit.submitProof();
+        },
+        verify: (_) {
+          verifyNever(() => repository.verifyClaim(any()));
+        },
+      );
+
+      blocTest<VerifyConnectCubit, VerifyConnectState>(
+        'sends the id from a pasted post link, not the link',
+        build: () => build(_github),
+        act: (cubit) async {
+          cubit.proofChanged('https://gist.github.com/octocat/abc123');
+          await cubit.submitProof();
+        },
+        verify: (_) {
+          final claim =
+              verify(() => repository.verifyClaim(captureAny())).captured.single
+                  as IdentityClaim;
+          expect(claim.identity, equals('octocat'));
+          expect(claim.proof, equals('abc123'));
+        },
+      );
+
+      blocTest<VerifyConnectCubit, VerifyConnectState>(
+        'says why a private telegram link cannot work, before asking',
+        build: () => build(_telegram),
+        act: (cubit) async {
+          cubit.proofChanged('https://t.me/c/2812345678/42');
+          // The button stays live so pressing it is what explains the problem.
+          expect(cubit.state.canSubmitProof, isTrue);
+          await cubit.submitProof();
+        },
+        verify: (cubit) {
+          expect(
+            cubit.state.error,
+            equals(VerifyConnectError.telegramNotPublic),
+          );
+          verifyNever(() => repository.verifyClaim(any()));
+        },
+      );
+
+      blocTest<VerifyConnectCubit, VerifyConnectState>(
+        'accepts an empty proof for bluesky, which resolves it itself',
+        build: () => build(_bluesky),
+        act: (cubit) async {
+          cubit.identityChanged('alice.bsky.social');
+          await cubit.submitProof();
+        },
+        verify: (_) {
+          verify(() => repository.verifyClaim(any())).called(1);
+        },
+      );
+    });
+
+    group('connectWithOAuth', () {
+      blocTest<VerifyConnectCubit, VerifyConnectState>(
+        'never opens a browser when the flow is not configured',
+        build: () => build(_twitter),
+        setUp: () {
+          when(
+            () => repository.canStartOAuth(
+              platform: any(named: 'platform'),
+              pubkey: any(named: 'pubkey'),
+              returnUrl: any(named: 'returnUrl'),
+              handle: any(named: 'handle'),
+            ),
+          ).thenAnswer((_) async => false);
+        },
+        act: (cubit) => cubit.connectWithOAuth(),
+        verify: (cubit) {
+          expect(
+            cubit.state.error,
+            equals(VerifyConnectError.oauthUnavailable),
+          );
+          expect(launched, isEmpty);
+          expect(cubit.state.status, equals(VerifyConnectStatus.editing));
+        },
+      );
+
+      blocTest<VerifyConnectCubit, VerifyConnectState>(
+        'publishes the account the provider confirmed',
+        build: () => build(_twitter),
+        act: (cubit) => cubit.connectWithOAuth(),
+        verify: (cubit) {
+          expect(cubit.state.status, equals(VerifyConnectStatus.linked));
+          final claim =
+              verify(
+                    () => repository.publishClaim(captureAny()),
+                  ).captured.single
+                  as IdentityClaim;
+          expect(claim.identity, equals('jack'));
+          expect(claim.proof, equals(IdentityClaim.oauthProof));
+          expect(launched, hasLength(1));
+          expect(cubit.state.linkedClaim, equals(claim));
+        },
+      );
+
+      blocTest<VerifyConnectCubit, VerifyConnectState>(
+        'returns to the form without an error when dismissed',
+        build: () => build(_twitter),
+        setUp: () => callback = null,
+        act: (cubit) => cubit.connectWithOAuth(),
+        verify: (cubit) {
+          expect(cubit.state.status, equals(VerifyConnectStatus.editing));
+          expect(cubit.state.error, isNull);
+          verifyNever(() => repository.publishClaim(any()));
+        },
+      );
+
+      blocTest<VerifyConnectCubit, VerifyConnectState>(
+        'treats a denied callback as a failure',
+        build: () => build(_twitter),
+        setUp: () => callback = Uri.parse(
+          '$_returnUrl?oauth_error=Verification%20failed',
+        ),
+        act: (cubit) => cubit.connectWithOAuth(),
+        verify: (cubit) {
+          expect(cubit.state.error, equals(VerifyConnectError.oauthFailed));
+          verifyNever(() => repository.publishClaim(any()));
+        },
+      );
+
+      blocTest<VerifyConnectCubit, VerifyConnectState>(
+        'logs the provider reason a refusal came back with',
+        build: () => build(_twitter),
+        setUp: () => callback = Uri.parse(
+          '$_returnUrl?oauth_error=Verification%20failed',
+        ),
+        act: (cubit) => cubit.connectWithOAuth(),
+        // Free-form and not fit to show, but undiagnosable if it is dropped.
+        errors: () => [
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            allOf(contains('twitter'), contains('Verification failed')),
+          ),
+        ],
+      );
+
+      blocTest<VerifyConnectCubit, VerifyConnectState>(
+        'refuses a success that names no account',
+        build: () => build(_twitter),
+        setUp: () => callback = Uri.parse(
+          '$_returnUrl?oauth_verified=true&platform=twitter&identity=',
+        ),
+        act: (cubit) => cubit.connectWithOAuth(),
+        verify: (cubit) {
+          expect(cubit.state.error, equals(VerifyConnectError.oauthFailed));
+          verifyNever(() => repository.publishClaim(any()));
+        },
+      );
+
+      blocTest<VerifyConnectCubit, VerifyConnectState>(
+        'asks for the handle before starting bluesky',
+        build: () => build(_bluesky),
+        act: (cubit) => cubit.connectWithOAuth(),
+        verify: (cubit) {
+          expect(cubit.state.error, equals(VerifyConnectError.handleRequired));
+          expect(launched, isEmpty);
+        },
+      );
+
+      blocTest<VerifyConnectCubit, VerifyConnectState>(
+        'passes the bluesky handle to the start URL',
+        build: () => build(_bluesky),
+        setUp: () => callback = Uri.parse(
+          '$_returnUrl?oauth_verified=true&platform=bluesky'
+          '&identity=alice.bsky.social',
+        ),
+        act: (cubit) async {
+          cubit.identityChanged('alice.bsky.social');
+          await cubit.connectWithOAuth();
+        },
+        verify: (_) {
+          verify(
+            () => repository.oauthStartUri(
+              platform: 'bluesky',
+              pubkey: _pubkey,
+              returnUrl: _returnUrl,
+              handle: 'alice.bsky.social',
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<VerifyConnectCubit, VerifyConnectState>(
+        'reports a browser session that threw',
+        build: () => VerifyConnectCubit(
+          repository: repository,
+          pubkey: _pubkey,
+          platform: _twitter,
+          oauthReturnUrl: _returnUrl,
+          launchOAuth: (_) async => throw const FormatException('bad callback'),
+        ),
+        act: (cubit) => cubit.connectWithOAuth(),
+        verify: (cubit) {
+          expect(cubit.state.error, equals(VerifyConnectError.oauthFailed));
+        },
+        errors: () => [isA<FormatException>()],
+      );
+    });
+
+    group('needsIdentityInput', () {
+      test('stays out of the way when the link carries the account', () {
+        final cubit = build(_telegram);
+        addTearDown(cubit.close);
+
+        // Nothing pasted yet: the link field is the only thing to fill in.
+        expect(cubit.state.needsIdentityInput, isFalse);
+
+        cubit.proofChanged('https://t.me/testdivine/2');
+        expect(cubit.state.needsIdentityInput, isFalse);
+        expect(cubit.state.normalizedInput.identity, equals('testdivine'));
+      });
+
+      test('appears when the pasted text is not a link we can read', () {
+        final cubit = build(_telegram);
+        addTearDown(cubit.close);
+
+        cubit.proofChanged('some nonsense');
+
+        expect(cubit.state.needsIdentityInput, isTrue);
+      });
+
+      test('always asks where the link cannot carry the account', () {
+        for (final platform in [_discord, _youtube, _bluesky]) {
+          final cubit = build(platform);
+          addTearDown(cubit.close);
+
+          expect(
+            cubit.state.needsIdentityInput,
+            isTrue,
+            reason: '${platform.key} links do not name the account',
+          );
+        }
+      });
+    });
+
+    test('trims whitespace off the inputs', () {
+      final cubit = build(_github);
+      addTearDown(cubit.close);
+
+      cubit
+        ..identityChanged('  octocat ')
+        ..proofChanged('  abc ');
+
+      expect(cubit.state.identity, equals('octocat'));
+      expect(cubit.state.proof, equals('abc'));
+    });
+  });
+}

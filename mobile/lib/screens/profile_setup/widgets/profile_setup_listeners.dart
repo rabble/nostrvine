@@ -1,5 +1,4 @@
 import 'package:divine_ui/divine_ui.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,12 +10,11 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/profile_setup/widgets/profile_setup_upload_errors.dart';
-import 'package:openvine/screens/profile_setup/widgets/verifier_flow.dart';
 import 'package:openvine/widgets/profile_editor/username_status_indicator.dart';
 
 /// Wraps the profile-setup form with all of its [BlocListener] side effects
 /// (profile load -> controllers, save status snackbars/dialogs/navigation,
-/// avatar/banner upload status, and the verifier launch). Kept separate from
+/// and avatar/banner upload status). Kept separate from
 /// the view so the view body stays a thin composition.
 class ProfileSetupListeners extends ConsumerStatefulWidget {
   const ProfileSetupListeners({
@@ -25,7 +23,6 @@ class ProfileSetupListeners extends ConsumerStatefulWidget {
     required this.bioController,
     required this.websiteController,
     required this.nip05Controller,
-    required this.onNativeVerifierLaunched,
     required this.child,
     super.key,
   });
@@ -35,10 +32,6 @@ class ProfileSetupListeners extends ConsumerStatefulWidget {
   final TextEditingController bioController;
   final TextEditingController websiteController;
   final TextEditingController nip05Controller;
-
-  /// Called after a native (non-web) verifier launch so the view can refresh
-  /// the profile when the app resumes.
-  final VoidCallback onNativeVerifierLaunched;
 
   final Widget child;
 
@@ -422,31 +415,6 @@ class _ProfileSetupListenersState extends ConsumerState<ProfileSetupListeners> {
               case PendingBannerStatus.idle:
               case PendingBannerStatus.uploading:
                 break;
-            }
-          },
-        ),
-        BlocListener<ProfileEditorBloc, ProfileEditorState>(
-          listenWhen: (prev, curr) =>
-              prev.verifierStatus != curr.verifierStatus &&
-              curr.verifierStatus == VerifierStatus.launchRequested,
-          listener: (context, state) async {
-            final launched = await launchVerifierFlow(
-              editorBloc: context.read<ProfileEditorBloc>(),
-              myProfileBloc: context.read<MyProfileBloc>(),
-              pushVerifierRoute: (location, {extra}) async {
-                await context.push(location, extra: extra);
-              },
-            );
-            if (launched && !kIsWeb && context.mounted) {
-              widget.onNativeVerifierLaunched();
-            }
-            if (!launched && context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                DivineSnackbarContainer.snackBar(
-                  context.l10n.relaySettingsCouldNotOpenBrowser,
-                  error: true,
-                ),
-              );
             }
           },
         ),

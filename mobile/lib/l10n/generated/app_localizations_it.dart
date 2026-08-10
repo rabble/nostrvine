@@ -11580,4 +11580,189 @@ class AppLocalizationsIt extends AppLocalizations {
   ) {
     return '$picker, $color';
   }
+
+  @override
+  String get verifyTitle => 'Account verificati';
+
+  @override
+  String get verifySignedOutMessage => 'Accedi per collegare i tuoi account.';
+
+  @override
+  String get verifyIntro =>
+      'Collega gli account che hai già, così si vede che sei davvero tu.';
+
+  @override
+  String get verifyLoadFailed =>
+      'Non siamo riusciti a caricare i tuoi collegamenti.';
+
+  @override
+  String get verifyRetry => 'Riprova';
+
+  @override
+  String get verifyLinkedSectionTitle => 'Collegati';
+
+  @override
+  String get verifyVerifierUnreachable =>
+      'Il verificatore non era raggiungibile, quindi risultano non controllati.';
+
+  @override
+  String get verifyAddSectionTitle => 'Aggiungi un account';
+
+  @override
+  String get verifyAllPlatformsLinked =>
+      'Hai collegato tutto quello che supportiamo.';
+
+  @override
+  String get verifyStatusVerified => 'Verificato';
+
+  @override
+  String get verifyStatusUnverified => 'Non verificato';
+
+  @override
+  String verifyUnlinkSemanticLabel(String platform, String identity) {
+    return 'Scollega l\'account $platform $identity';
+  }
+
+  @override
+  String verifyLinkSemanticLabel(String platform) {
+    return 'Collega il tuo account $platform';
+  }
+
+  @override
+  String get verifyOneTapBadge => 'Un tap';
+
+  @override
+  String verifyConnectOauthExplainer(String platform) {
+    return 'Accedi a $platform e al resto pensiamo noi. Non viene pubblicato niente.';
+  }
+
+  @override
+  String verifyConnectOauthCta(String platform) {
+    return 'Continua con $platform';
+  }
+
+  @override
+  String get verifyConnectProofTitle => 'Oppure pubblica una prova';
+
+  @override
+  String get verifyConnectProofExplainer =>
+      'Pubblica il tuo npub sul tuo account, poi incolla il link a quel post.';
+
+  @override
+  String get verifyNpubLabel => 'Il tuo npub';
+
+  @override
+  String get verifyCopyNpubSemanticLabel => 'Copia il tuo npub';
+
+  @override
+  String get verifyNpubCopied => 'npub copiato';
+
+  @override
+  String get verifyIdentityLabel => 'Nome dell\'account';
+
+  @override
+  String get verifyProofLabel => 'Link al tuo post';
+
+  @override
+  String get verifyConnectProofCta => 'Controlla e collega';
+
+  @override
+  String get verifyErrorProofRejected =>
+      'Non abbiamo trovato il tuo npub in quel post.';
+
+  @override
+  String get verifyErrorVerifierUnreachable =>
+      'Verificatore non raggiungibile. Riprova tra poco.';
+
+  @override
+  String get verifyErrorOauthFailed => 'Non è andata. Riprova.';
+
+  @override
+  String get verifyErrorHandleRequired => 'Inserisci prima il tuo handle.';
+
+  @override
+  String get verifyErrorPublishFailed =>
+      'Verificato, ma nessun relay ha accettato l\'aggiornamento. Riprova.';
+
+  @override
+  String get verifyErrorOauthUnavailable =>
+      'L\'accesso con un tap non è ancora configurato per questa. Usa la prova qui sotto.';
+
+  @override
+  String get verifyConnectProofExplainerGithub =>
+      'Crea un gist pubblico con il tuo npub nel primo file, poi incolla il link del gist.';
+
+  @override
+  String get verifyConnectProofExplainerDiscord =>
+      'Pubblica il tuo npub in un canale Discord che il nostro bot può leggere, poi incolla il link del messaggio. Un invito al server non prova niente.';
+
+  @override
+  String get verifyConnectProofExplainerTwitter =>
+      'Twitta il tuo npub da quell\'account, poi incolla il link del tweet.';
+
+  @override
+  String get verifyConnectProofExplainerMastodon =>
+      'Pubblica il tuo npub da quell\'account, poi incolla il link. Il nome account deve avere l\'istanza — mastodon.social/@alice, non solo alice.';
+
+  @override
+  String get verifyConnectProofExplainerTelegram =>
+      'Viene collegato il canale, non il tuo account Telegram. Serve prima un link pubblico (Telegram crea i nuovi come privati). Pubblica lì il tuo npub e incolla il link del messaggio.';
+
+  @override
+  String get verifyConnectProofExplainerBluesky =>
+      'Hai fatto l\'accesso qui sopra? Non serve altro. Altrimenti pubblica il tuo npub e incolla il link del post.';
+
+  @override
+  String get verifyConnectProofExplainerTiktok =>
+      'Metti il tuo npub nella didascalia di un video, poi incolla il link di quel video.';
+
+  @override
+  String get verifyConnectProofExplainerYoutube =>
+      'Metti il tuo npub nella descrizione di un video, poi incolla il link di quel video.';
+
+  @override
+  String verifyLinkedConfirmation(String platform) {
+    return '$platform è collegato.';
+  }
+
+  @override
+  String get verifyErrorTelegramNotPublic =>
+      'Quello è un canale privato o un invito. Dai al canale un link pubblico, poi incolla il link del messaggio.';
+
+  @override
+  String get verifyErrorRemoveFailed =>
+      'Non siamo riusciti a scollegarlo. Riprova.';
+
+  @override
+  String get verifyErrorLinksUnreadable =>
+      'Non siamo riusciti a leggere i tuoi collegamenti attuali, quindi non è stato cambiato niente. Controlla la connessione e riprova.';
+
+  @override
+  String get verifyChannelLabel => 'Nome del canale';
+
+  @override
+  String get verifyHowItWorksTitle => 'Come funziona?';
+
+  @override
+  String get verifyHowItWorksIntro =>
+      'Pensalo come una stretta di mano tra due account:';
+
+  @override
+  String get verifyHowItWorksYourSide =>
+      'Il tuo profilo Divine dice: «Sono @alice su Twitter».';
+
+  @override
+  String get verifyHowItWorksOtherSide =>
+      'Il tuo account Twitter conferma: «Sì, quel profilo Divine è mio».';
+
+  @override
+  String get verifyHowItWorksBothSides =>
+      'Controlliamo entrambi i lati. Se combaciano, sei verificato. Falsificarlo non si può: nome e foto si copiano, postare dal tuo account vero no.';
+
+  @override
+  String get verifyHowItWorksOwnership =>
+      'I collegamenti stanno sulla tua identità Nostr, quindi puoi rimuoverli da qui quando vuoi.';
+
+  @override
+  String get generalSettingsSectionIdentity => 'Identità';
 }

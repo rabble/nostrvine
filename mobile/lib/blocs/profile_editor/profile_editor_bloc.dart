@@ -100,8 +100,6 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     on<ProfileBannerColorSelected>(_onProfileBannerColorSelected);
     on<ProfileBannerUrlSet>(_onProfileBannerUrlSet);
     on<ProfileBannerCleared>(_onProfileBannerCleared);
-    on<VerifierLaunchRequested>(_onVerifierLaunchRequested);
-    on<VerifierLaunchHandled>(_onVerifierLaunchHandled);
   }
 
   final ProfileRepository _profileRepository;
@@ -1365,19 +1363,5 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       );
       return rawAbout;
     }
-  }
-
-  void _onVerifierLaunchRequested(
-    VerifierLaunchRequested event,
-    Emitter<ProfileEditorState> emit,
-  ) {
-    emit(state.copyWith(verifierStatus: VerifierStatus.launchRequested));
-  }
-
-  void _onVerifierLaunchHandled(
-    VerifierLaunchHandled event,
-    Emitter<ProfileEditorState> emit,
-  ) {
-    emit(state.copyWith(verifierStatus: VerifierStatus.handled));
   }
 }

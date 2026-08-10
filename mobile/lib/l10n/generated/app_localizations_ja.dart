@@ -10989,4 +10989,180 @@ class AppLocalizationsJa extends AppLocalizations {
   ) {
     return '$picker、$color';
   }
+
+  @override
+  String get verifyTitle => '認証済みアカウント';
+
+  @override
+  String get verifySignedOutMessage => 'アカウントを連携するにはログインしてね。';
+
+  @override
+  String get verifyIntro => 'すでに持っているアカウントを連携すれば、本人だとひと目でわかるよ。';
+
+  @override
+  String get verifyLoadFailed => '連携を読み込めなかった。';
+
+  @override
+  String get verifyRetry => 'もう一度試す';
+
+  @override
+  String get verifyLinkedSectionTitle => '連携済み';
+
+  @override
+  String get verifyVerifierUnreachable => '認証サービスにつながらなかったから、すべて未確認と表示されてる。';
+
+  @override
+  String get verifyAddSectionTitle => 'アカウントを追加';
+
+  @override
+  String get verifyAllPlatformsLinked => '対応しているものは全部連携済みだよ。';
+
+  @override
+  String get verifyStatusVerified => '認証済み';
+
+  @override
+  String get verifyStatusUnverified => '未認証';
+
+  @override
+  String verifyUnlinkSemanticLabel(String platform, String identity) {
+    return '$platform のアカウント $identity の連携を解除';
+  }
+
+  @override
+  String verifyLinkSemanticLabel(String platform) {
+    return '$platform のアカウントを連携';
+  }
+
+  @override
+  String get verifyOneTapBadge => 'ワンタップ';
+
+  @override
+  String verifyConnectOauthExplainer(String platform) {
+    return '$platform にログインすれば、あとはこっちでやるよ。投稿は一切されない。';
+  }
+
+  @override
+  String verifyConnectOauthCta(String platform) {
+    return '$platform で続ける';
+  }
+
+  @override
+  String get verifyConnectProofTitle => 'または証明を投稿';
+
+  @override
+  String get verifyConnectProofExplainer =>
+      '自分の npub をそのアカウントで投稿して、その投稿のリンクを貼ってね。';
+
+  @override
+  String get verifyNpubLabel => 'あなたの npub';
+
+  @override
+  String get verifyCopyNpubSemanticLabel => 'npub をコピー';
+
+  @override
+  String get verifyNpubCopied => 'npub をコピーしたよ';
+
+  @override
+  String get verifyIdentityLabel => 'アカウント名';
+
+  @override
+  String get verifyProofLabel => '投稿のリンク';
+
+  @override
+  String get verifyConnectProofCta => '確認して連携';
+
+  @override
+  String get verifyErrorProofRejected => 'その投稿に npub が見つからなかった。';
+
+  @override
+  String get verifyErrorVerifierUnreachable => '認証サービスにつながらなかった。少ししてからもう一度。';
+
+  @override
+  String get verifyErrorOauthFailed => 'うまくいかなかった。もう一度試してみて。';
+
+  @override
+  String get verifyErrorHandleRequired => '先にハンドルを入力してね。';
+
+  @override
+  String get verifyErrorPublishFailed => '認証はできたけど、どのリレーも更新を受け取らなかった。もう一度試して。';
+
+  @override
+  String get verifyErrorOauthUnavailable =>
+      'ワンタップのログインはこれにはまだ用意されてない。下の証明投稿を使ってね。';
+
+  @override
+  String get verifyConnectProofExplainerGithub =>
+      '最初のファイルに npub を入れた公開 gist を作って、その gist のリンクを貼ってね。';
+
+  @override
+  String get verifyConnectProofExplainerDiscord =>
+      'うちのボットが読める Discord チャンネルに npub を投稿して、そのメッセージのリンクを貼ってね。サーバー招待では証明にならないよ。';
+
+  @override
+  String get verifyConnectProofExplainerTwitter =>
+      'そのアカウントから npub をツイートして、そのツイートのリンクを貼ってね。';
+
+  @override
+  String get verifyConnectProofExplainerMastodon =>
+      'そのアカウントから npub を投稿して、リンクを貼ってね。アカウント名にはインスタンスが必要だよ — alice ではなく mastodon.social/@alice。';
+
+  @override
+  String get verifyConnectProofExplainerTelegram =>
+      '連携されるのはチャンネルで、Telegram アカウントじゃないよ。まず公開リンクが必要（Telegram は新規チャンネルを非公開で作る）。そこに npub を投稿して、メッセージのリンクを貼ってね。';
+
+  @override
+  String get verifyConnectProofExplainerBluesky =>
+      '上でログインした？ならこれ以上は不要。していないなら npub を投稿して、その投稿のリンクを貼ってね。';
+
+  @override
+  String get verifyConnectProofExplainerTiktok =>
+      '動画のキャプションに npub を入れて、その動画のリンクを貼ってね。';
+
+  @override
+  String get verifyConnectProofExplainerYoutube =>
+      '動画の説明欄に npub を入れて、その動画のリンクを貼ってね。';
+
+  @override
+  String verifyLinkedConfirmation(String platform) {
+    return '$platform を連携したよ。';
+  }
+
+  @override
+  String get verifyErrorTelegramNotPublic =>
+      'それは非公開チャンネルか招待リンクだよ。チャンネルに公開リンクを設定してから、メッセージのリンクを貼ってね。';
+
+  @override
+  String get verifyErrorRemoveFailed => '連携を解除できなかった。もう一度試してね。';
+
+  @override
+  String get verifyErrorLinksUnreadable =>
+      'いまの連携を読み取れなかったから、何も変更していないよ。接続を確認してもう一度試してね。';
+
+  @override
+  String get verifyChannelLabel => 'チャンネル名';
+
+  @override
+  String get verifyHowItWorksTitle => 'これはどういう仕組み？';
+
+  @override
+  String get verifyHowItWorksIntro => 'ふたつのアカウントの握手だと思ってね：';
+
+  @override
+  String get verifyHowItWorksYourSide =>
+      'きみの Divine プロフィールが「Twitter の @alice は私です」と言う。';
+
+  @override
+  String get verifyHowItWorksOtherSide =>
+      'きみの Twitter アカウントが「はい、その Divine プロフィールは私のものです」と認める。';
+
+  @override
+  String get verifyHowItWorksBothSides =>
+      '両方をこちらで照合するよ。一致すれば認証完了。偽装はできない — 名前や写真は真似できても、きみの本物のアカウントから投稿はできないからね。';
+
+  @override
+  String get verifyHowItWorksOwnership =>
+      'リンクはきみ自身の Nostr アイデンティティ上にあるから、ここからいつでも外せるよ。';
+
+  @override
+  String get generalSettingsSectionIdentity => 'アイデンティティ';
 }

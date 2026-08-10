@@ -11465,4 +11465,189 @@ class AppLocalizationsUr extends AppLocalizations {
   ) {
     return '$picker، $color';
   }
+
+  @override
+  String get verifyTitle => 'تصدیق شدہ اکاؤنٹس';
+
+  @override
+  String get verifySignedOutMessage =>
+      'اپنے اکاؤنٹس جوڑنے کے لیے سائن اِن کریں۔';
+
+  @override
+  String get verifyIntro =>
+      'جو اکاؤنٹس آپ کے پاس پہلے سے ہیں انہیں جوڑیں، تاکہ لوگ جان سکیں کہ یہ واقعی آپ ہیں۔';
+
+  @override
+  String get verifyLoadFailed => 'آپ کے جوڑ لوڈ نہیں ہو سکے۔';
+
+  @override
+  String get verifyRetry => 'دوبارہ کوشش کریں';
+
+  @override
+  String get verifyLinkedSectionTitle => 'جُڑے ہوئے';
+
+  @override
+  String get verifyVerifierUnreachable =>
+      'تصدیقی سروس تک رسائی نہیں ہو سکی، اس لیے سب غیر جانچا ہوا دکھ رہا ہے۔';
+
+  @override
+  String get verifyAddSectionTitle => 'اکاؤنٹ شامل کریں';
+
+  @override
+  String get verifyAllPlatformsLinked =>
+      'جو کچھ ہم سپورٹ کرتے ہیں، آپ سب جوڑ چکے ہیں۔';
+
+  @override
+  String get verifyStatusVerified => 'تصدیق شدہ';
+
+  @override
+  String get verifyStatusUnverified => 'غیر تصدیق شدہ';
+
+  @override
+  String verifyUnlinkSemanticLabel(String platform, String identity) {
+    return '$platform اکاؤنٹ $identity کا جوڑ ختم کریں';
+  }
+
+  @override
+  String verifyLinkSemanticLabel(String platform) {
+    return 'اپنا $platform اکاؤنٹ جوڑیں';
+  }
+
+  @override
+  String get verifyOneTapBadge => 'ایک ٹیپ';
+
+  @override
+  String verifyConnectOauthExplainer(String platform) {
+    return '$platform میں سائن اِن کریں، باقی ہم سنبھال لیں گے۔ کچھ پوسٹ نہیں ہوگا۔';
+  }
+
+  @override
+  String verifyConnectOauthCta(String platform) {
+    return '$platform کے ساتھ جاری رکھیں';
+  }
+
+  @override
+  String get verifyConnectProofTitle => 'یا ثبوت پوسٹ کریں';
+
+  @override
+  String get verifyConnectProofExplainer =>
+      'اپنا npub اپنے اکاؤنٹ پر پوسٹ کریں، پھر اس پوسٹ کا لنک یہاں چسپاں کریں۔';
+
+  @override
+  String get verifyNpubLabel => 'آپ کا npub';
+
+  @override
+  String get verifyCopyNpubSemanticLabel => 'اپنا npub کاپی کریں';
+
+  @override
+  String get verifyNpubCopied => 'npub کاپی ہو گیا';
+
+  @override
+  String get verifyIdentityLabel => 'اکاؤنٹ کا نام';
+
+  @override
+  String get verifyProofLabel => 'آپ کی پوسٹ کا لنک';
+
+  @override
+  String get verifyConnectProofCta => 'جانچیں اور جوڑیں';
+
+  @override
+  String get verifyErrorProofRejected =>
+      'ہمیں اس پوسٹ میں آپ کا npub نہیں ملا۔';
+
+  @override
+  String get verifyErrorVerifierUnreachable =>
+      'تصدیقی سروس تک رسائی نہیں ہوئی۔ تھوڑی دیر بعد کوشش کریں۔';
+
+  @override
+  String get verifyErrorOauthFailed => 'بات نہیں بنی۔ ایک بار پھر کوشش کریں۔';
+
+  @override
+  String get verifyErrorHandleRequired => 'پہلے اپنا ہینڈل درج کریں۔';
+
+  @override
+  String get verifyErrorPublishFailed =>
+      'تصدیق ہو گئی، مگر کسی ریلے نے اپ ڈیٹ قبول نہیں کی۔ دوبارہ کوشش کریں۔';
+
+  @override
+  String get verifyErrorOauthUnavailable =>
+      'ایک ٹیپ والا سائن اِن ابھی اس کے لیے تیار نہیں۔ نیچے والا ثبوت استعمال کریں۔';
+
+  @override
+  String get verifyConnectProofExplainerGithub =>
+      'ایک عوامی gist بنائیں جس کی پہلی فائل میں آپ کا npub ہو، پھر gist کا لنک چسپاں کریں۔';
+
+  @override
+  String get verifyConnectProofExplainerDiscord =>
+      'اپنا npub ایسے Discord چینل میں پوسٹ کریں جسے ہمارا بوٹ پڑھ سکے، پھر پیغام کا لنک چسپاں کریں۔ سرور کی دعوت کچھ ثابت نہیں کرتی۔';
+
+  @override
+  String get verifyConnectProofExplainerTwitter =>
+      'اُس اکاؤنٹ سے اپنا npub ٹویٹ کریں، پھر ٹویٹ کا لنک چسپاں کریں۔';
+
+  @override
+  String get verifyConnectProofExplainerMastodon =>
+      'اُس اکاؤنٹ سے اپنا npub پوسٹ کریں، پھر لنک چسپاں کریں۔ اکاؤنٹ کے نام میں انسٹنس بھی چاہیے — صرف alice نہیں بلکہ mastodon.social/@alice۔';
+
+  @override
+  String get verifyConnectProofExplainerTelegram =>
+      'جُڑتا چینل ہے، آپ کا ٹیلیگرام اکاؤنٹ نہیں۔ چینل کو پہلے عوامی لنک چاہیے (ٹیلیگرام نئے چینل نجی بناتا ہے)۔ وہاں اپنا npub پوسٹ کریں اور پیغام کا لنک چسپاں کریں۔';
+
+  @override
+  String get verifyConnectProofExplainerBluesky =>
+      'اوپر سائن اِن کر لیا؟ تو اور کچھ درکار نہیں۔ ورنہ اپنا npub پوسٹ کریں اور اُس پوسٹ کا لنک چسپاں کریں۔';
+
+  @override
+  String get verifyConnectProofExplainerTiktok =>
+      'اپنا npub ویڈیو کے کیپشن میں لکھیں، پھر اُس ویڈیو کا لنک چسپاں کریں۔';
+
+  @override
+  String get verifyConnectProofExplainerYoutube =>
+      'اپنا npub ویڈیو کی تفصیل میں لکھیں، پھر اُس ویڈیو کا لنک چسپاں کریں۔';
+
+  @override
+  String verifyLinkedConfirmation(String platform) {
+    return '$platform جُڑ گیا۔';
+  }
+
+  @override
+  String get verifyErrorTelegramNotPublic =>
+      'یہ نجی چینل یا دعوت کا لنک ہے۔ چینل کو عوامی لنک دیں، پھر پیغام کا لنک چسپاں کریں۔';
+
+  @override
+  String get verifyErrorRemoveFailed =>
+      'جوڑ ختم نہیں ہو سکا۔ دوبارہ کوشش کریں۔';
+
+  @override
+  String get verifyErrorLinksUnreadable =>
+      'آپ کے موجودہ جوڑ پڑھے نہیں جا سکے، اس لیے کچھ تبدیل نہیں ہوا۔ اپنا کنکشن دیکھ کر دوبارہ کوشش کریں۔';
+
+  @override
+  String get verifyChannelLabel => 'چینل کا نام';
+
+  @override
+  String get verifyHowItWorksTitle => 'یہ کام کیسے کرتا ہے؟';
+
+  @override
+  String get verifyHowItWorksIntro =>
+      'اسے دو اکاؤنٹس کے درمیان ہاتھ ملانے کی طرح سمجھیں:';
+
+  @override
+  String get verifyHowItWorksYourSide =>
+      'آپ کا Divine پروفائل کہتا ہے: ”میں ٹوئٹر پر @alice ہوں۔“';
+
+  @override
+  String get verifyHowItWorksOtherSide =>
+      'آپ کا ٹوئٹر اکاؤنٹ تصدیق کرتا ہے: ”ہاں، وہ Divine پروفائل میرا ہے۔“';
+
+  @override
+  String get verifyHowItWorksBothSides =>
+      'ہم دونوں طرف جانچتے ہیں۔ مطابقت ہو تو آپ تصدیق شدہ ہیں۔ اسے جعلی نہیں بنایا جا سکتا — نام اور تصویر نقل ہو سکتی ہے، آپ کے اصلی اکاؤنٹ سے پوسٹ کرنا نہیں۔';
+
+  @override
+  String get verifyHowItWorksOwnership =>
+      'یہ جوڑ آپ کی اپنی Nostr شناخت پر رہتے ہیں، اس لیے آپ انہیں یہاں سے جب چاہیں ہٹا سکتے ہیں۔';
+
+  @override
+  String get generalSettingsSectionIdentity => 'شناخت';
 }

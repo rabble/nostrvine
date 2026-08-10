@@ -11375,4 +11375,184 @@ class AppLocalizationsAr extends AppLocalizations {
   ) {
     return '$picker، $color';
   }
+
+  @override
+  String get verifyTitle => 'الحسابات الموثّقة';
+
+  @override
+  String get verifySignedOutMessage => 'سجّل الدخول لربط حساباتك.';
+
+  @override
+  String get verifyIntro =>
+      'اربط الحسابات التي تملكها أصلاً، ليعرف الناس أنك أنت فعلاً.';
+
+  @override
+  String get verifyLoadFailed => 'تعذّر تحميل روابطك.';
+
+  @override
+  String get verifyRetry => 'حاول مجدداً';
+
+  @override
+  String get verifyLinkedSectionTitle => 'مرتبطة';
+
+  @override
+  String get verifyVerifierUnreachable =>
+      'تعذّر الوصول إلى خدمة التوثيق، لذلك تظهر كلها غير مفحوصة.';
+
+  @override
+  String get verifyAddSectionTitle => 'إضافة حساب';
+
+  @override
+  String get verifyAllPlatformsLinked => 'ربطت كل ما ندعمه.';
+
+  @override
+  String get verifyStatusVerified => 'موثّق';
+
+  @override
+  String get verifyStatusUnverified => 'غير موثّق';
+
+  @override
+  String verifyUnlinkSemanticLabel(String platform, String identity) {
+    return 'فك ارتباط حساب $platform ‏$identity';
+  }
+
+  @override
+  String verifyLinkSemanticLabel(String platform) {
+    return 'اربط حسابك على $platform';
+  }
+
+  @override
+  String get verifyOneTapBadge => 'نقرة واحدة';
+
+  @override
+  String verifyConnectOauthExplainer(String platform) {
+    return 'سجّل الدخول إلى $platform وسنتولى الباقي. لن يُنشر أي شيء.';
+  }
+
+  @override
+  String verifyConnectOauthCta(String platform) {
+    return 'المتابعة باستخدام $platform';
+  }
+
+  @override
+  String get verifyConnectProofTitle => 'أو انشر إثباتاً';
+
+  @override
+  String get verifyConnectProofExplainer =>
+      'انشر npub الخاص بك على حسابك، ثم الصق رابط ذلك المنشور.';
+
+  @override
+  String get verifyNpubLabel => 'npub الخاص بك';
+
+  @override
+  String get verifyCopyNpubSemanticLabel => 'نسخ npub الخاص بك';
+
+  @override
+  String get verifyNpubCopied => 'تم نسخ npub';
+
+  @override
+  String get verifyIdentityLabel => 'اسم الحساب';
+
+  @override
+  String get verifyProofLabel => 'رابط منشورك';
+
+  @override
+  String get verifyConnectProofCta => 'افحص واربط';
+
+  @override
+  String get verifyErrorProofRejected => 'لم نجد npub الخاص بك في ذلك المنشور.';
+
+  @override
+  String get verifyErrorVerifierUnreachable =>
+      'تعذّر الوصول إلى خدمة التوثيق. حاول بعد قليل.';
+
+  @override
+  String get verifyErrorOauthFailed => 'لم تنجح العملية. جرّب مرة أخرى.';
+
+  @override
+  String get verifyErrorHandleRequired => 'أدخل المُعرّف أولاً.';
+
+  @override
+  String get verifyErrorPublishFailed =>
+      'تم التوثيق، لكن لم يقبل أي مُرحِّل التحديث. حاول مجدداً.';
+
+  @override
+  String get verifyErrorOauthUnavailable =>
+      'تسجيل الدخول بنقرة واحدة غير مُعدّ لهذه المنصة بعد. استخدم إثبات المنشور بالأسفل.';
+
+  @override
+  String get verifyConnectProofExplainerGithub =>
+      'أنشئ gist عاماً يحتوي npub الخاص بك في الملف الأول، ثم الصق رابط الـ gist.';
+
+  @override
+  String get verifyConnectProofExplainerDiscord =>
+      'انشر npub الخاص بك في قناة Discord يستطيع بوتنا قراءتها، ثم الصق رابط الرسالة. دعوة الخادم لا تثبت شيئاً.';
+
+  @override
+  String get verifyConnectProofExplainerTwitter =>
+      'انشر npub الخاص بك من ذلك الحساب، ثم الصق رابط التغريدة.';
+
+  @override
+  String get verifyConnectProofExplainerMastodon =>
+      'انشر npub الخاص بك من ذلك الحساب، ثم الصق الرابط. اسم الحساب يحتاج إلى الخادم — mastodon.social/@alice وليس alice فقط.';
+
+  @override
+  String get verifyConnectProofExplainerTelegram =>
+      'ما يُربط هو القناة، لا حساب تلغرام الخاص بك. تحتاج القناة أولاً رابطاً عاماً (تلغرام ينشئ الجديدة خاصة). انشر npub الخاص بك هناك والصق رابط الرسالة.';
+
+  @override
+  String get verifyConnectProofExplainerBluesky =>
+      'سجّلت الدخول بالأعلى؟ لا حاجة لشيء آخر. وإلا فانشر npub الخاص بك والصق رابط المنشور.';
+
+  @override
+  String get verifyConnectProofExplainerTiktok =>
+      'ضع npub الخاص بك في وصف فيديو، ثم الصق رابط ذلك الفيديو.';
+
+  @override
+  String get verifyConnectProofExplainerYoutube =>
+      'ضع npub الخاص بك في وصف فيديو، ثم الصق رابط ذلك الفيديو.';
+
+  @override
+  String verifyLinkedConfirmation(String platform) {
+    return 'تم ربط $platform.';
+  }
+
+  @override
+  String get verifyErrorTelegramNotPublic =>
+      'هذه قناة خاصة أو رابط دعوة. اجعل للقناة رابطاً عاماً، ثم الصق رابط الرسالة.';
+
+  @override
+  String get verifyErrorRemoveFailed => 'تعذّر فك الارتباط. حاول مجدداً.';
+
+  @override
+  String get verifyErrorLinksUnreadable =>
+      'تعذّرت قراءة روابطك الحالية، لذلك لم يتغيّر شيء. تحقق من اتصالك وحاول مجدداً.';
+
+  @override
+  String get verifyChannelLabel => 'اسم القناة';
+
+  @override
+  String get verifyHowItWorksTitle => 'كيف يعمل هذا؟';
+
+  @override
+  String get verifyHowItWorksIntro => 'تخيّله مصافحة بين حسابين:';
+
+  @override
+  String get verifyHowItWorksYourSide =>
+      'ملفك في Divine يقول: «أنا @alice على تويتر».';
+
+  @override
+  String get verifyHowItWorksOtherSide =>
+      'وحسابك على تويتر يؤكد: «نعم، ذلك الملف في Divine يخصني».';
+
+  @override
+  String get verifyHowItWorksBothSides =>
+      'نتحقق من الطرفين. إذا تطابقا فأنت موثّق. لا يمكن تزييف ذلك — يمكن نسخ اسمك وصورتك، لكن لا يمكن النشر من حسابك الحقيقي.';
+
+  @override
+  String get verifyHowItWorksOwnership =>
+      'الروابط موجودة على هويتك في Nostr، فيمكنك إزالتها من هنا متى شئت.';
+
+  @override
+  String get generalSettingsSectionIdentity => 'الهوية';
 }

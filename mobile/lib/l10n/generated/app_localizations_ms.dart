@@ -11530,4 +11530,187 @@ class AppLocalizationsMs extends AppLocalizations {
   ) {
     return '$picker, $color';
   }
+
+  @override
+  String get verifyTitle => 'Akaun disahkan';
+
+  @override
+  String get verifySignedOutMessage => 'Log masuk untuk memautkan akaun anda.';
+
+  @override
+  String get verifyIntro =>
+      'Pautkan akaun yang anda sudah ada, supaya orang tahu ini memang anda.';
+
+  @override
+  String get verifyLoadFailed => 'Pautan anda gagal dimuatkan.';
+
+  @override
+  String get verifyRetry => 'Cuba lagi';
+
+  @override
+  String get verifyLinkedSectionTitle => 'Dipautkan';
+
+  @override
+  String get verifyVerifierUnreachable =>
+      'Pengesah tidak dapat dihubungi, jadi semuanya dipaparkan belum disemak.';
+
+  @override
+  String get verifyAddSectionTitle => 'Tambah akaun';
+
+  @override
+  String get verifyAllPlatformsLinked =>
+      'Anda sudah memautkan semua yang kami sokong.';
+
+  @override
+  String get verifyStatusVerified => 'Disahkan';
+
+  @override
+  String get verifyStatusUnverified => 'Belum disahkan';
+
+  @override
+  String verifyUnlinkSemanticLabel(String platform, String identity) {
+    return 'Nyahpaut akaun $platform $identity';
+  }
+
+  @override
+  String verifyLinkSemanticLabel(String platform) {
+    return 'Pautkan akaun $platform anda';
+  }
+
+  @override
+  String get verifyOneTapBadge => 'Satu ketik';
+
+  @override
+  String verifyConnectOauthExplainer(String platform) {
+    return 'Log masuk ke $platform, kami uruskan yang selebihnya. Tiada apa-apa disiarkan.';
+  }
+
+  @override
+  String verifyConnectOauthCta(String platform) {
+    return 'Teruskan dengan $platform';
+  }
+
+  @override
+  String get verifyConnectProofTitle => 'Atau siarkan bukti';
+
+  @override
+  String get verifyConnectProofExplainer =>
+      'Siarkan npub anda pada akaun anda, kemudian tampal pautan ke siaran itu.';
+
+  @override
+  String get verifyNpubLabel => 'npub anda';
+
+  @override
+  String get verifyCopyNpubSemanticLabel => 'Salin npub anda';
+
+  @override
+  String get verifyNpubCopied => 'npub disalin';
+
+  @override
+  String get verifyIdentityLabel => 'Nama akaun';
+
+  @override
+  String get verifyProofLabel => 'Pautan ke siaran anda';
+
+  @override
+  String get verifyConnectProofCta => 'Semak dan pautkan';
+
+  @override
+  String get verifyErrorProofRejected =>
+      'Kami tidak jumpa npub anda dalam siaran itu.';
+
+  @override
+  String get verifyErrorVerifierUnreachable =>
+      'Pengesah tidak dapat dihubungi. Cuba lagi sebentar.';
+
+  @override
+  String get verifyErrorOauthFailed => 'Tak menjadi. Cuba sekali lagi.';
+
+  @override
+  String get verifyErrorHandleRequired => 'Masukkan handle anda dahulu.';
+
+  @override
+  String get verifyErrorPublishFailed =>
+      'Disahkan, tetapi tiada geganti menerima kemas kini. Cuba lagi.';
+
+  @override
+  String get verifyErrorOauthUnavailable =>
+      'Log masuk satu ketik belum disediakan untuk yang ini. Gunakan bukti di bawah.';
+
+  @override
+  String get verifyConnectProofExplainerGithub =>
+      'Buat gist awam dengan npub anda dalam fail pertama, kemudian tampal pautan gist.';
+
+  @override
+  String get verifyConnectProofExplainerDiscord =>
+      'Siarkan npub anda dalam saluran Discord yang boleh dibaca bot kami, kemudian tampal pautan mesej. Jemputan pelayan tidak membuktikan apa-apa.';
+
+  @override
+  String get verifyConnectProofExplainerTwitter =>
+      'Tweet npub anda dari akaun itu, kemudian tampal pautan tweet.';
+
+  @override
+  String get verifyConnectProofExplainerMastodon =>
+      'Siarkan npub anda dari akaun itu, kemudian tampal pautannya. Nama akaun perlu instance — mastodon.social/@alice, bukan alice sahaja.';
+
+  @override
+  String get verifyConnectProofExplainerTelegram =>
+      'Yang dipautkan ialah saluran, bukan akaun Telegram anda. Saluran perlu pautan awam dahulu (Telegram jadikan yang baharu peribadi). Siarkan npub anda di sana dan tampal pautan mesej.';
+
+  @override
+  String get verifyConnectProofExplainerBluesky =>
+      'Sudah log masuk di atas? Tiada apa lagi diperlukan. Jika tidak, siarkan npub anda dan tampal pautan siaran itu.';
+
+  @override
+  String get verifyConnectProofExplainerTiktok =>
+      'Letak npub anda dalam kapsyen video, kemudian tampal pautan video itu.';
+
+  @override
+  String get verifyConnectProofExplainerYoutube =>
+      'Letak npub anda dalam penerangan video, kemudian tampal pautan video itu.';
+
+  @override
+  String verifyLinkedConfirmation(String platform) {
+    return '$platform sudah dipautkan.';
+  }
+
+  @override
+  String get verifyErrorTelegramNotPublic =>
+      'Itu saluran peribadi atau jemputan. Beri saluran itu pautan awam, kemudian tampal pautan mesej.';
+
+  @override
+  String get verifyErrorRemoveFailed => 'Gagal menyahpaut. Cuba lagi.';
+
+  @override
+  String get verifyErrorLinksUnreadable =>
+      'Kami tidak dapat membaca pautan semasa anda, jadi tiada apa yang diubah. Semak sambungan anda dan cuba lagi.';
+
+  @override
+  String get verifyChannelLabel => 'Nama saluran';
+
+  @override
+  String get verifyHowItWorksTitle => 'Bagaimana ia berfungsi?';
+
+  @override
+  String get verifyHowItWorksIntro =>
+      'Anggap ia sebagai jabat tangan antara dua akaun:';
+
+  @override
+  String get verifyHowItWorksYourSide =>
+      'Profil Divine anda berkata: “Saya @alice di Twitter.”';
+
+  @override
+  String get verifyHowItWorksOtherSide =>
+      'Akaun Twitter anda mengesahkan: “Ya, profil Divine itu milik saya.”';
+
+  @override
+  String get verifyHowItWorksBothSides =>
+      'Kami semak kedua-dua pihak. Jika sepadan, anda disahkan. Tiada siapa boleh memalsukannya — nama dan foto boleh disalin, menyiar dari akaun sebenar anda tidak.';
+
+  @override
+  String get verifyHowItWorksOwnership =>
+      'Pautan ini berada pada identiti Nostr anda sendiri, jadi anda boleh membuangnya dari sini bila-bila masa.';
+
+  @override
+  String get generalSettingsSectionIdentity => 'Identiti';
 }
