@@ -6,15 +6,16 @@ appId: co.openvine.app
     text: "[0-9]+\nFollowers"
 - assertVisible:
     text: "[0-9]+\nFollowing"
-- assertVisible: |-
-    Tab 1 of 4
-    videos_tab
-- assertVisible: |-
-    Tab 2 of 4
-    liked_tab
-- assertVisible: |-
-    Tab 3 of 4
-    reposted_tab
-- assertVisible: |-
-    Tab 4 of 4
-    collabs_tab
+# The tabs, by identifier, as assertProfile.yaml already does. These were
+# text matchers on "Tab N of 4\n<anchor>", which relied on the anchor being
+# the accessible label -- it is now the localized tab name, so the anchor
+# only survives on the identifier. The count was stale either way: another
+# user's profile shows 5 tabs, not 4.
+- assertVisible:
+    id: "videos_tab"
+- assertVisible:
+    id: "liked_tab"
+- assertVisible:
+    id: "reposted_tab"
+- assertVisible:
+    id: "collabs_tab"
