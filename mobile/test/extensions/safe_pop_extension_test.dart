@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/extensions/safe_pop_extension.dart';
+
+import '../helpers/go_router.dart';
 
 class _BackButtonScreen extends StatelessWidget {
   const _BackButtonScreen({this.fallback});
@@ -154,6 +157,37 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('home'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'pops with no arguments when no result was asked for',
+      (tester) async {
+        final router = MockGoRouter();
+        when(router.canPop).thenReturn(true);
+        when(router.pop).thenReturn(null);
+
+        await tester.pumpWidget(
+          MockGoRouterProvider(
+            goRouter: router,
+            child: MaterialApp(
+              home: Builder(
+                builder: (context) => Scaffold(
+                  body: TextButton(
+                    onPressed: context.safePop,
+                    child: const Text('back'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.tap(find.text('back'));
+        await tester.pumpAndSettle();
+
+        // Not pop(null): call sites that never asked for a result are
+        // verified against the no-argument shape all over the app.
+        verify(router.pop).called(1);
       },
     );
 
