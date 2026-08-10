@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -142,6 +143,34 @@ void main() {
         expect(opacities.any((o) => o.opacity == 1), isTrue);
         expect(
           find.bySemanticsLabel(l10n.videoRecorderContinueToEditorLabel),
+          findsOneWidget,
+        );
+      });
+
+      // Anchors for the Maestro capture-mode flow, which drives both buttons
+      // by id (e2e/maestro/tests/captureModeOpen.yaml). The labels above stay
+      // green if an identifier is dropped, so pin the identifiers too.
+      testWidgets('exposes E2E identifiers on close and next', (tester) async {
+        final clips = [
+          DivineVideoClip(
+            id: 'clip1',
+            video: EditorVideo.file('/test/clip1.mp4'),
+            duration: const Duration(seconds: 2),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          ),
+        ];
+
+        await tester.pumpWidget(buildWidget(clips: clips));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.cameraCloseButton),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.cameraNextButton),
           findsOneWidget,
         );
       });

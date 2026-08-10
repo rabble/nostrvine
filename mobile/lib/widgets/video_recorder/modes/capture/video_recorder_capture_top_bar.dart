@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
@@ -68,6 +69,7 @@ class VideoRecorderCaptureTopBar extends ConsumerWidget {
                     DivineIconButton(
                       icon: .x,
                       semanticLabel: context.l10n.videoRecorderCloseLabel,
+                      semanticIdentifier: SemanticIds.cameraCloseButton,
                       size: .small,
                       type: .ghostOverMedia,
                       onPressed: () => fromEditor
@@ -82,6 +84,7 @@ class VideoRecorderCaptureTopBar extends ConsumerWidget {
                         icon: .caretRight,
                         semanticLabel:
                             context.l10n.videoRecorderContinueToEditorLabel,
+                        semanticIdentifier: SemanticIds.cameraNextButton,
                         size: .small,
                         type: .ghostOverMedia,
                         onPressed: capturesStills

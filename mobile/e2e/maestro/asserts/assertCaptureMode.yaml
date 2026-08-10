@@ -1,0 +1,39 @@
+appId: co.openvine.app
+---
+# Capture mode, idle: the viewfinder chrome is up and no clip is recorded yet.
+
+# Mode wheel with Capture armed. `selected` is load-bearing: the wheel renders
+# an entry for every mode in every mode, so a bare id assertion here passes
+# just as happily on the Upload tab.
+- assertVisible:
+    id: camera_mode_capture
+    selected: true
+- assertVisible:
+    id: camera_record_button
+- assertVisible:
+    id: camera_close_button
+- assertVisible:
+    id: camera_library_button
+
+# Control rail, top to bottom. Timer and stabilization are rendered only by
+# the modes that declare `supportsCountdownTimer` / `supportsVideoStabilization`
+# (capture and lip-sync), so this set is also what separates capture mode from
+# classic and stop-motion.
+- assertVisible:
+    id: camera_flash_button
+- assertVisible:
+    id: camera_timer_button
+- assertVisible:
+    id: camera_aspect_ratio_button
+- assertVisible:
+    id: camera_switch_camera_button
+- assertVisible:
+    id: camera_stabilization_button
+
+# Nothing recorded yet. Both buttons sit inside an AnimatedOpacity, and
+# RenderAnimatedOpacity drops its child from the semantics tree at opacity 0 —
+# so "not visible" here means "no clip in the session", not "scrolled away".
+- assertNotVisible:
+    id: camera_next_button
+- assertNotVisible:
+    id: camera_delete_clip_button

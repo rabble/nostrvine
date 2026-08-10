@@ -11,6 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -465,6 +466,36 @@ void main() {
           node.value,
           equals(l10n.videoRecorderStabilizationModeCinematic),
         );
+
+        handle.dispose();
+      });
+
+      // The Maestro capture-mode flow drives the whole rail by identifier
+      // (e2e/maestro/asserts/assertCaptureMode.yaml). Dropping one is
+      // invisible to every other test here — the labels would still be
+      // correct — and only surfaces on a manual E2E run.
+      testWidgets('exposes an E2E identifier on every rail control', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildWidget(isVideoStabilizationSupported: true),
+        );
+        await tester.pumpAndSettle();
+
+        for (final identifier in const [
+          SemanticIds.cameraFlashButton,
+          SemanticIds.cameraTimerButton,
+          SemanticIds.cameraAspectRatioButton,
+          SemanticIds.cameraSwitchCameraButton,
+          SemanticIds.cameraStabilizationButton,
+        ]) {
+          expect(
+            find.bySemanticsIdentifier(identifier),
+            findsOneWidget,
+            reason: 'missing E2E anchor: $identifier',
+          );
+        }
 
         handle.dispose();
       });
