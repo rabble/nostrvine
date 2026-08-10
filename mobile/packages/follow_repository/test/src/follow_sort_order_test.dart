@@ -16,13 +16,23 @@ void main() {
         'undatedB',
       ];
 
-      test('leaves the list untouched for newestFirst', () {
+      test('leaves the order untouched for newestFirst', () {
         expect(
           FollowSortOrder.newestFirst.fromNewestFirst(
             newestFirst,
             datedCount: 3,
           ),
-          same(newestFirst),
+          equals(newestFirst),
+        );
+      });
+
+      test('hands back a copy rather than the caller list', () {
+        expect(
+          FollowSortOrder.newestFirst.fromNewestFirst(
+            newestFirst,
+            datedCount: 3,
+          ),
+          isNot(same(newestFirst)),
         );
       });
 
@@ -100,10 +110,17 @@ void main() {
       // verbatim, so the follow the user added first leads.
       const followOrder = ['first', 'second', 'third'];
 
-      test('leaves the list untouched for oldestFirst', () {
+      test('leaves the order untouched for oldestFirst', () {
         expect(
           FollowSortOrder.oldestFirst.fromFollowOrder(followOrder),
-          same(followOrder),
+          equals(followOrder),
+        );
+      });
+
+      test('hands back a copy rather than the caller list', () {
+        expect(
+          FollowSortOrder.oldestFirst.fromFollowOrder(followOrder),
+          isNot(same(followOrder)),
         );
       });
 

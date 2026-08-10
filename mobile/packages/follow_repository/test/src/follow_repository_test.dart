@@ -1581,6 +1581,28 @@ void main() {
         ]);
       });
 
+      test('primes the dated boundary alongside the cached list', () async {
+        final slowRelay = Completer<List<Event>>();
+        repository = buildRepository(
+          relayResult: () => slowRelay.future,
+          apiFollowers: const [follower1],
+        );
+
+        final done = repository.streamMyFollowers().forEach((_) {});
+        await pumpEventQueue();
+        slowRelay.complete([contactListOf(follower1)]);
+        await done;
+
+        // The relay timestamped follower1 without moving them, so the stream
+        // never re-emitted. The primed boundary still has to record that
+        // timestamp, or watchMyFollowers hands its cached list out as undated
+        // and 'oldest first' silently leaves it alone.
+        final cached = await repository.watchMyFollowers().first;
+
+        expect(cached.pubkeys, equals([follower1]));
+        expect(cached.datedCount, 1);
+      });
+
       test('re-emits when a later source reorders the list', () async {
         final slowRelay = Completer<List<Event>>();
         repository = buildRepository(

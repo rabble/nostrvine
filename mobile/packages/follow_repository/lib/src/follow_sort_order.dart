@@ -22,13 +22,16 @@ enum FollowSortOrder {
   /// Only the dated prefix flips: followers with no timestamp stay at the end
   /// in both directions, because "we don't know when" is not the same claim as
   /// "a long time ago".
+  ///
+  /// Always returns a fresh list, so the no-op order cannot hand back an alias
+  /// of the caller's own state.
   List<String> fromNewestFirst(
     List<String> pubkeys, {
     required int datedCount,
   }) {
     final boundary = datedCount.clamp(0, pubkeys.length);
     return switch (this) {
-      FollowSortOrder.newestFirst => pubkeys,
+      FollowSortOrder.newestFirst => List<String>.of(pubkeys),
       FollowSortOrder.oldestFirst => [
         ...pubkeys.take(boundary).toList().reversed,
         ...pubkeys.skip(boundary),
@@ -45,8 +48,10 @@ enum FollowSortOrder {
   /// The order is only as good as the last client that wrote the contact list.
   /// One that rebuilds the tag list instead of appending loses it, and this
   /// then reverses whatever order that client chose.
+  ///
+  /// Always returns a fresh list, for the same reason [fromNewestFirst] does.
   List<String> fromFollowOrder(List<String> pubkeys) => switch (this) {
     FollowSortOrder.newestFirst => pubkeys.reversed.toList(),
-    FollowSortOrder.oldestFirst => pubkeys,
+    FollowSortOrder.oldestFirst => List<String>.of(pubkeys),
   };
 }

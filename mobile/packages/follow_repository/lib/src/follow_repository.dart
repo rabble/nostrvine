@@ -1219,7 +1219,7 @@ class FollowRepository {
     }
 
     final merged = <_FollowerRef>[];
-    var lastEmitted = const <String>[];
+    var lastOrdered = (pubkeys: const <String>[], datedCount: 0);
     Object? lastError;
     StackTrace? lastStackTrace;
 
@@ -1246,14 +1246,17 @@ class FollowRepository {
         continue;
       }
       merged.addAll(refs);
-      final ordered = _newestFirst(merged).pubkeys;
+      final ordered = _newestFirst(merged);
       // The union only grows, but a later source can still reorder it by
       // supplying a timestamp for a follower the REST source reported bare.
       // Comparing the ordered list keeps the "nobody new, nothing moved"
       // emission from churning the consumer's UI.
-      if (!_sameOrder(ordered, lastEmitted)) {
-        lastEmitted = ordered;
-        yield List<String>.unmodifiable(ordered);
+      final reordered = !_sameOrder(ordered.pubkeys, lastOrdered.pubkeys);
+      // Tracked even when the order held: a late timestamp for a follower
+      // already in place moves the dated boundary without moving anybody.
+      lastOrdered = ordered;
+      if (reordered) {
+        yield List<String>.unmodifiable(ordered.pubkeys);
       }
     }
 
@@ -1262,7 +1265,8 @@ class FollowRepository {
     }
 
     if (pubkey == _nostrClient.publicKey) {
-      _cachedMyFollowersPubkeys = List<String>.of(lastEmitted);
+      _cachedMyFollowersPubkeys = List<String>.of(lastOrdered.pubkeys);
+      _cachedMyFollowersDatedCount = lastOrdered.datedCount;
       _hasMyFollowersCache = true;
     }
   }
