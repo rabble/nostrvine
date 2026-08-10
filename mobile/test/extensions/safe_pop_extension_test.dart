@@ -158,6 +158,84 @@ void main() {
     );
 
     testWidgets(
+      'hands the result to the awaiting caller when it can pop',
+      (tester) async {
+        Object? received = 'untouched';
+        final router = GoRouter(
+          initialLocation: '/home',
+          routes: [
+            GoRoute(
+              path: '/home',
+              builder: (context, _) => Scaffold(
+                body: TextButton(
+                  onPressed: () async {
+                    received = await context.push<bool>('/home/detail');
+                  },
+                  child: const Text('open'),
+                ),
+              ),
+              routes: [
+                GoRoute(
+                  path: 'detail',
+                  builder: (context, _) => Scaffold(
+                    body: TextButton(
+                      onPressed: () => context.safePop(result: true),
+                      child: const Text('done'),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+        addTearDown(router.dispose);
+
+        await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+        await tester.tap(find.text('open'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('done'));
+        await tester.pumpAndSettle();
+
+        expect(received, isTrue);
+      },
+    );
+
+    testWidgets(
+      'drops the result and navigates when there is nothing to pop',
+      (tester) async {
+        final router = GoRouter(
+          initialLocation: '/key-management',
+          routes: [
+            GoRoute(
+              path: '/home/0',
+              builder: (_, _) => homeScreen(),
+            ),
+            GoRoute(
+              path: '/key-management',
+              builder: (context, _) => Scaffold(
+                body: TextButton(
+                  onPressed: () => context.safePop(result: true),
+                  child: const Text('done'),
+                ),
+              ),
+            ),
+          ],
+        );
+        addTearDown(router.dispose);
+
+        await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('done'));
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        expect(find.text('home'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
       'does not throw GoError when stack is empty',
       (tester) async {
         final router = GoRouter(

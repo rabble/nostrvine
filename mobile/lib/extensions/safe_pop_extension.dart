@@ -23,9 +23,13 @@ extension SafePopExtension on BuildContext {
   /// from AppBar back buttons and similar affordances degrades gracefully
   /// to [fallback] (or [defaultSafePopFallback] when omitted) instead of
   /// crashing.
-  void safePop({String? fallback}) {
+  ///
+  /// [result] is handed to whoever awaited the pushed route. It is dropped
+  /// when there is nothing to pop, since the awaiting caller does not exist
+  /// on a deep-linked stack either.
+  void safePop({Object? result, String? fallback}) {
     if (canPop()) {
-      pop();
+      pop(result);
     } else {
       go(fallback ?? defaultSafePopFallback);
     }
