@@ -34,6 +34,7 @@ class UserProfileTile extends ConsumerWidget {
     this.onToggleFollow,
     this.index,
     this.addToListEntryPoint = PeopleListEntryPoint.followersList,
+    this.padding = const EdgeInsets.all(16),
   });
 
   /// The public key of the user to display.
@@ -59,6 +60,14 @@ class UserProfileTile extends ConsumerWidget {
   /// Which entry point to attribute the "Add to list" action to when the
   /// profile-list-features flag is on. Defaults to followers-list context.
   final PeopleListEntryPoint addToListEntryPoint;
+
+  /// Inset around the row.
+  ///
+  /// Defaults to the list-row inset used by the follower, following, and
+  /// engagement lists, whose scroll views add no padding of their own.
+  /// Surfaces that already pad their container — the badge screens — pass a
+  /// zero start inset so the avatar is not indented twice.
+  final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -103,8 +112,8 @@ class UserProfileTile extends ConsumerWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: Container(
-          padding: const .fromLTRB(0, 12, 16, 12),
+        child: Padding(
+          padding: padding,
           child: Row(
             children: [
               // Avatar with border (matching video player style)

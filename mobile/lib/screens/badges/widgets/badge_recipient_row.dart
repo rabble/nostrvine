@@ -30,7 +30,12 @@ class BadgeRecipientRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        UserProfileTile(pubkey: pubkey, showFollowButton: false),
+        UserProfileTile(
+          pubkey: pubkey,
+          showFollowButton: false,
+          // The enclosing sliver already pads to the screen inset.
+          padding: const EdgeInsets.fromLTRB(0, 12, 16, 12),
+        ),
         Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: BadgeStatusPill(
