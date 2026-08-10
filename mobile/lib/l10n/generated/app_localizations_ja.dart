@@ -9695,7 +9695,7 @@ class AppLocalizationsJa extends AppLocalizations {
       'バッジは Nostr で誰でも作れる小さな賞。友だちやクリエイター、今日をいい日にしてくれた人に贈ってみて。';
 
   @override
-  String get profileBadgeFooterLink => 'badges.divine.video で自分のバッジを作る';
+  String get profileBadgeFooterLink => '自分のバッジを作る';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';

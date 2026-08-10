@@ -10054,7 +10054,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'الشارات جوائز صغيرة يمكن لأي شخص إنشاؤها على Nostr. امنح واحدة لصديق أو لصانع محتوى أو لشخص أسعد يومك.';
 
   @override
-  String get profileBadgeFooterLink => 'أنشئ شارتك على badges.divine.video';
+  String get profileBadgeFooterLink => 'أنشئ شارتك الخاصة';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';

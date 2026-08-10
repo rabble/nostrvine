@@ -10088,8 +10088,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Rozetler, Nostr\'da herkesin oluşturabileceği küçük ödüllerdir. Bir arkadaşına, bir içerik üreticisine ya da gününü güzelleştiren birine ver.';
 
   @override
-  String get profileBadgeFooterLink =>
-      'Kendi rozetini badges.divine.video\'da oluştur';
+  String get profileBadgeFooterLink => 'Kendi rozetini yap';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';

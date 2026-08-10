@@ -10340,8 +10340,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Insignele sunt mici recompense pe care oricine le poate crea pe Nostr. Dăruiește una unui prieten, unui creator sau cuiva care ți-a făcut ziua mai bună.';
 
   @override
-  String get profileBadgeFooterLink =>
-      'Creează-ți propria insignă pe badges.divine.video';
+  String get profileBadgeFooterLink => 'Fă-ți propria insignă';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';

@@ -6172,9 +6172,9 @@
   "@profileBadgeFooterBody": {
     "description": "Short explainer at the bottom of the profile badge detail sheet, inviting people to create their own badges."
   },
-  "profileBadgeFooterLink": "Make your own at badges.divine.video",
+  "profileBadgeFooterLink": "Make your own badge",
   "@profileBadgeFooterLink": {
-    "description": "Link label in the profile badge detail sheet that opens the Divine Badges app (badges.divine.video)."
+    "description": "Button label in the profile badge detail sheet that opens the in-app badge editor."
   },
   "minorAccountReviewWelcomePageTitle": "Family guide",
   "minorAccountReviewWelcomeCta": "Not 16 yet? That's OK. Here's what you can do.",

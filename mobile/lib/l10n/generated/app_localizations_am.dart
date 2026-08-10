@@ -9904,7 +9904,7 @@ class AppLocalizationsAm extends AppLocalizations {
       'ባጆች በNostr ላይ ማንኛውም ሰው መፍጠር የሚችላቸው ትንንሽ ሽልማቶች ናቸው። ለጓደኛ፣ ለፈጣሪ ወይም ቀንህን ላሳመረልህ ሰው አንዷን ስጥ።';
 
   @override
-  String get profileBadgeFooterLink => 'የራስህን በbadges.divine.video ፍጠር';
+  String get profileBadgeFooterLink => 'የራስህን ባጅ ሥራ';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';

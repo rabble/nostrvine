@@ -4125,7 +4125,7 @@
     "profileBadgeSemanticLabel": "{name} badge",
     "profileBadgeFallbackSemanticLabel": "Badge",
     "profileBadgeFooterBody": "Значките са малки награди, които всеки може да създаде в Nostr. Подари една на приятел, на творец или на някой, който ти е разведрил деня.",
-    "profileBadgeFooterLink": "Създай своя на badges.divine.video",
+    "profileBadgeFooterLink": "Направи си свой знак",
     "authSignInWithBrowserExtension": "Вход с разширение за браузър",
     "authNip07ConnectionFailed": "Неуспешно свързване с разширението на браузъра.",
     "authNip07ExtensionNotFound": "Не е открито разширение за браузър. Инсталирайте Alby, nos2x или друго съвместимо с NIP-07 разширение.",

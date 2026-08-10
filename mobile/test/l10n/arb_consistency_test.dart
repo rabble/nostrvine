@@ -386,14 +386,14 @@ void main() {
           );
         }
 
-        // The link label names the badges app host; a translation that drops
-        // it leaves the call to action unactionable.
+        // The button opens the in-app editor now, so a translation that still
+        // sends people to the website is stale rather than merely wordy.
         expect(
           arb['profileBadgeFooterLink'],
-          contains('badges.divine.video'),
+          isNot(contains('badges.divine.video')),
           reason:
-              '${file.path} must keep badges.divine.video in '
-              'profileBadgeFooterLink',
+              '${file.path} must not point profileBadgeFooterLink at '
+              'badges.divine.video',
         );
       }
     });

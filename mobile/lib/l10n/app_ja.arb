@@ -3994,7 +3994,7 @@
     "profileBadgeSemanticLabel": "{name} badge",
     "profileBadgeFallbackSemanticLabel": "Badge",
     "profileBadgeFooterBody": "バッジは Nostr で誰でも作れる小さな賞。友だちやクリエイター、今日をいい日にしてくれた人に贈ってみて。",
-    "profileBadgeFooterLink": "badges.divine.video で自分のバッジを作る",
+    "profileBadgeFooterLink": "自分のバッジを作る",
     "authSignInWithBrowserExtension": "ブラウザ拡張機能でサインイン",
     "authNip07ConnectionFailed": "ブラウザ拡張機能に接続できませんでした。",
     "authNip07ExtensionNotFound": "ブラウザ拡張機能が見つかりません。Alby、nos2x、またはその他の NIP-07 対応拡張機能をインストールしてください。",

@@ -3994,7 +3994,7 @@
     "profileBadgeSemanticLabel": "{name} badge",
     "profileBadgeFallbackSemanticLabel": "Badge",
     "profileBadgeFooterBody": "Odznaki to małe wyróżnienia, które każdy może stworzyć w Nostr. Podaruj jedną przyjacielowi, twórcy albo komuś, kto umilił ci dzień.",
-    "profileBadgeFooterLink": "Stwórz własną na badges.divine.video",
+    "profileBadgeFooterLink": "Zrób własną odznakę",
     "authSignInWithBrowserExtension": "Zaloguj się przez rozszerzenie przeglądarki",
     "authNip07ConnectionFailed": "Nie udało się połączyć z rozszerzeniem przeglądarki.",
     "authNip07ExtensionNotFound": "Nie znaleziono rozszerzenia przeglądarki. Zainstaluj Alby, nos2x lub inne rozszerzenie zgodne z NIP-07.",

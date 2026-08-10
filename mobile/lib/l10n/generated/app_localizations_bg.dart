@@ -10233,7 +10233,7 @@ class AppLocalizationsBg extends AppLocalizations {
       'Значките са малки награди, които всеки може да създаде в Nostr. Подари една на приятел, на творец или на някой, който ти е разведрил деня.';
 
   @override
-  String get profileBadgeFooterLink => 'Създай своя на badges.divine.video';
+  String get profileBadgeFooterLink => 'Направи си свой знак';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';

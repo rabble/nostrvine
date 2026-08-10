@@ -10249,8 +10249,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Badges sind kleine Auszeichnungen, die jeder auf Nostr erstellen kann. Verschenk eins an eine Freundin, einen Creator oder jemanden, der dir den Tag gerettet hat.';
 
   @override
-  String get profileBadgeFooterLink =>
-      'Mach dein eigenes auf badges.divine.video';
+  String get profileBadgeFooterLink => 'Mach dein eigenes Badge';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';

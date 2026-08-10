@@ -10132,7 +10132,7 @@ class AppLocalizationsUr extends AppLocalizations {
       'بیجز چھوٹے انعامات ہیں جو کوئی بھی Nostr پر بنا سکتا ہے۔ کسی دوست، تخلیق کار، یا اس شخص کو دیں جس نے آپ کا دن بنا دیا۔';
 
   @override
-  String get profileBadgeFooterLink => 'badges.divine.video پر اپنا بیج بنائیں';
+  String get profileBadgeFooterLink => 'اپنا بیج بنائیں';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'خاندانی رہنما';

@@ -10189,8 +10189,7 @@ class AppLocalizationsMs extends AppLocalizations {
       'Lencana ialah anugerah kecil yang sesiapa sahaja boleh buat di Nostr. Berikan satu kepada rakan, pencipta, atau seseorang yang menceriakan hari anda.';
 
   @override
-  String get profileBadgeFooterLink =>
-      'Buat lencana anda sendiri di badges.divine.video';
+  String get profileBadgeFooterLink => 'Cipta lencana anda sendiri';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Panduan keluarga';

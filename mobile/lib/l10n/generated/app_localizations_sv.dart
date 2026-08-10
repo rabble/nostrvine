@@ -10135,7 +10135,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Märken är små utmärkelser som vem som helst kan skapa på Nostr. Ge ett till en vän, en kreatör eller någon som gjorde din dag.';
 
   @override
-  String get profileBadgeFooterLink => 'Skapa ditt eget på badges.divine.video';
+  String get profileBadgeFooterLink => 'Gör din egen badge';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';

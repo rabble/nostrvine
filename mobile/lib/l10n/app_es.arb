@@ -3994,7 +3994,7 @@
     "profileBadgeSemanticLabel": "{name} badge",
     "profileBadgeFallbackSemanticLabel": "Badge",
     "profileBadgeFooterBody": "Las insignias son pequeños premios que cualquiera puede crear en Nostr. Regalale una a un amigo, a un creador o a alguien que te alegró el día.",
-    "profileBadgeFooterLink": "Creá la tuya en badges.divine.video",
+    "profileBadgeFooterLink": "Crea tu propia insignia",
     "authSignInWithBrowserExtension": "Iniciar sesión con extensión del navegador",
     "authNip07ConnectionFailed": "No se pudo conectar con tu extensión del navegador.",
     "authNip07ExtensionNotFound": "No se encontró ninguna extensión del navegador. Instalá Alby, nos2x u otra extensión compatible con NIP-07.",

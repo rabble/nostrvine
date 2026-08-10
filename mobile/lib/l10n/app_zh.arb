@@ -6847,7 +6847,7 @@
   },
   "relaySettingsRemoveRelayTooltip": "移除中继",
   "profileBadgeFooterBody": "徽章是任何人都可以在 Nostr 上制作的小奖励。送一个给朋友、创作者,或那个让你今天很开心的人。",
-  "profileBadgeFooterLink": "在 badges.divine.video 制作你自己的徽章",
+  "profileBadgeFooterLink": "做一个自己的徽章",
   "videoMetadataTagsPickerCancelSemanticLabel": "取消标签选择",
   "videoMetadataTagsPickerConfirmSemanticLabel": "应用所选标签",
   "userPickerCancelSemanticLabel": "取消用户选择",

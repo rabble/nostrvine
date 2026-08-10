@@ -3994,7 +3994,7 @@
     "profileBadgeSemanticLabel": "{name} badge",
     "profileBadgeFallbackSemanticLabel": "Badge",
     "profileBadgeFooterBody": "Rozetler, Nostr'da herkesin oluşturabileceği küçük ödüllerdir. Bir arkadaşına, bir içerik üreticisine ya da gününü güzelleştiren birine ver.",
-    "profileBadgeFooterLink": "Kendi rozetini badges.divine.video'da oluştur",
+    "profileBadgeFooterLink": "Kendi rozetini yap",
     "authSignInWithBrowserExtension": "Tarayıcı uzantısı ile giriş yap",
     "authNip07ConnectionFailed": "Tarayıcı uzantınıza bağlanılamadı.",
     "authNip07ExtensionNotFound": "Tarayıcı uzantısı bulunamadı. Alby, nos2x veya NIP-07 uyumlu başka bir uzantı yükleyin.",

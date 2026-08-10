@@ -9722,7 +9722,7 @@ class AppLocalizationsKo extends AppLocalizations {
       '배지는 Nostr에서 누구나 만들 수 있는 작은 상이에요. 친구나 크리에이터, 오늘 하루를 즐겁게 해준 사람에게 하나 보내보세요.';
 
   @override
-  String get profileBadgeFooterLink => 'badges.divine.video에서 직접 만들기';
+  String get profileBadgeFooterLink => '내 배지 만들기';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';

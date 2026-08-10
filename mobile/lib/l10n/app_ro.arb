@@ -3994,7 +3994,7 @@
     "profileBadgeSemanticLabel": "{name} badge",
     "profileBadgeFallbackSemanticLabel": "Badge",
     "profileBadgeFooterBody": "Insignele sunt mici recompense pe care oricine le poate crea pe Nostr. Dăruiește una unui prieten, unui creator sau cuiva care ți-a făcut ziua mai bună.",
-    "profileBadgeFooterLink": "Creează-ți propria insignă pe badges.divine.video",
+    "profileBadgeFooterLink": "Fă-ți propria insignă",
     "authSignInWithBrowserExtension": "Conectare cu extensia browserului",
     "authNip07ConnectionFailed": "Nu s-a putut conecta la extensia browserului.",
     "authNip07ExtensionNotFound": "Nu a fost găsită nicio extensie de browser. Instalează Alby, nos2x sau altă extensie compatibilă cu NIP-07.",

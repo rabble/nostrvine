@@ -3994,7 +3994,7 @@
     "profileBadgeSemanticLabel": "{name} badge",
     "profileBadgeFallbackSemanticLabel": "Badge",
     "profileBadgeFooterBody": "Badges sind kleine Auszeichnungen, die jeder auf Nostr erstellen kann. Verschenk eins an eine Freundin, einen Creator oder jemanden, der dir den Tag gerettet hat.",
-    "profileBadgeFooterLink": "Mach dein eigenes auf badges.divine.video",
+    "profileBadgeFooterLink": "Mach dein eigenes Badge",
     "authSignInWithBrowserExtension": "Mit Browser-Erweiterung anmelden",
     "authNip07ConnectionFailed": "Verbindung zur Browser-Erweiterung fehlgeschlagen.",
     "authNip07ExtensionNotFound": "Keine Browser-Erweiterung gefunden. Installiere Alby, nos2x oder eine andere NIP-07-kompatible Erweiterung.",

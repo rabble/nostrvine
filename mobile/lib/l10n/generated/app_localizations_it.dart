@@ -10240,7 +10240,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'I badge sono piccoli riconoscimenti che chiunque può creare su Nostr. Regalane uno a un amico, a un creator o a chi ti ha svoltato la giornata.';
 
   @override
-  String get profileBadgeFooterLink => 'Crea il tuo su badges.divine.video';
+  String get profileBadgeFooterLink => 'Crea il tuo badge';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';

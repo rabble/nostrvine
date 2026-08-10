@@ -10321,7 +10321,7 @@ class AppLocalizationsPl extends AppLocalizations {
       'Odznaki to małe wyróżnienia, które każdy może stworzyć w Nostr. Podaruj jedną przyjacielowi, twórcy albo komuś, kto umilił ci dzień.';
 
   @override
-  String get profileBadgeFooterLink => 'Stwórz własną na badges.divine.video';
+  String get profileBadgeFooterLink => 'Zrób własną odznakę';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';

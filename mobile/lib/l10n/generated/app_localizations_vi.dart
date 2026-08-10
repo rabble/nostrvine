@@ -10135,8 +10135,7 @@ class AppLocalizationsVi extends AppLocalizations {
       'Huy hiệu là những phần thưởng nhỏ mà bất kỳ ai cũng có thể tạo trên Nostr. Tặng một huy hiệu cho bạn bè, nhà sáng tạo, hoặc người đã làm bừng sáng ngày của bạn.';
 
   @override
-  String get profileBadgeFooterLink =>
-      'Tạo huy hiệu của riêng bạn tại badges.divine.video';
+  String get profileBadgeFooterLink => 'Tạo huy hiệu của riêng bạn';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Hướng dẫn gia đình';

@@ -9620,7 +9620,7 @@ class AppLocalizationsZh extends AppLocalizations {
       '徽章是任何人都可以在 Nostr 上制作的小奖励。送一个给朋友、创作者,或那个让你今天很开心的人。';
 
   @override
-  String get profileBadgeFooterLink => '在 badges.divine.video 制作你自己的徽章';
+  String get profileBadgeFooterLink => '做一个自己的徽章';
 
   @override
   String get minorAccountReviewWelcomePageTitle => '家庭指南';

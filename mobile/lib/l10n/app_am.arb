@@ -4119,7 +4119,7 @@
     "profileBadgeSemanticLabel": "{name} badge",
     "profileBadgeFallbackSemanticLabel": "Badge",
     "profileBadgeFooterBody": "ባጆች በNostr ላይ ማንኛውም ሰው መፍጠር የሚችላቸው ትንንሽ ሽልማቶች ናቸው። ለጓደኛ፣ ለፈጣሪ ወይም ቀንህን ላሳመረልህ ሰው አንዷን ስጥ።",
-    "profileBadgeFooterLink": "የራስህን በbadges.divine.video ፍጠር",
+    "profileBadgeFooterLink": "የራስህን ባጅ ሥራ",
     "authSignInWithBrowserExtension": "በአሳሽ ቅጥያ ይግቡ",
     "authNip07ConnectionFailed": "ከአሳሽ ቅጥያዎ ጋር መገናኘት አልተቻለም።",
     "authNip07ExtensionNotFound": "የአሳሽ ቅጥያ አልተገኘም። Alby፣ nos2x ወይም ሌላ ከ NIP-07 ጋር ተኳሃኝ የሆነ ቅጥያ ይጫኑ።",

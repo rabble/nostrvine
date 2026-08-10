@@ -10234,7 +10234,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Las insignias son pequeños premios que cualquiera puede crear en Nostr. Regalale una a un amigo, a un creador o a alguien que te alegró el día.';
 
   @override
-  String get profileBadgeFooterLink => 'Creá la tuya en badges.divine.video';
+  String get profileBadgeFooterLink => 'Crea tu propia insignia';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';

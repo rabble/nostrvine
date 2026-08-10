@@ -17440,10 +17440,10 @@ abstract class AppLocalizations {
   /// **'Badges are little awards anyone can make on Nostr. Give one to a friend, a creator, or someone who made your day.'**
   String get profileBadgeFooterBody;
 
-  /// Link label in the profile badge detail sheet that opens the Divine Badges app (badges.divine.video).
+  /// Button label in the profile badge detail sheet that opens the in-app badge editor.
   ///
   /// In en, this message translates to:
-  /// **'Make your own at badges.divine.video'**
+  /// **'Make your own badge'**
   String get profileBadgeFooterLink;
 
   /// No description provided for @minorAccountReviewWelcomePageTitle.
