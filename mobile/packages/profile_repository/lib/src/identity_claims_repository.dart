@@ -518,6 +518,12 @@ class IdentityClaimsRepository {
   /// * Reading has nothing to lose by showing the last known good set, and
   ///   everything to lose by blanking the screen — a list that empties itself
   ///   on a relay hiccup reads as "my links are gone".
+  ///
+  /// The kind-0 fallback needs the same suspicion as an empty read rather than
+  /// less: it answers for every profile, so reaching it is not evidence the
+  /// kind-10011 read worked. On the write path it goes through the same
+  /// lagging-read merge as the identity event, and the same refusal when the
+  /// local snapshot knows claims it does not carry.
   Future<List<List<String>>> _currentIdentityTags(
     String pubkey, {
     required bool forWrite,
@@ -562,12 +568,16 @@ class IdentityClaimsRepository {
 
     final legacyEvent = await _newestEventOfKind(client, pubkey, 0);
     if (legacyEvent != null) {
-      final tags = identityTagsOf(legacyEvent.tags);
+      final tags = _mergeWithLastPublished(
+        pubkey,
+        identityTagsOf(legacyEvent.tags),
+      );
       Log.info(
         'No kind-$identityEventKind event for $pubkey; kind-0 carries '
         '${tags.length} claim tag(s)',
         name: 'IdentityClaimsRepository',
       );
+      if (forWrite) await _refuseIfLocalEvidenceIsAhead(pubkey, tags);
       return tags;
     }
 
@@ -597,6 +607,47 @@ class IdentityClaimsRepository {
       );
     }
     return cached;
+  }
+
+  /// Refuses a write whose relay read is behind what this device already knows.
+  ///
+  /// Reaching the kind-0 fallback says nothing about whether the kind-10011
+  /// read succeeded: every profile has a kind-0 metadata event, so that query
+  /// answers even when the identity event does not come back — including right
+  /// after the OAuth browser round trip, when the pool has reconnected but has
+  /// not caught up. Publishing on it would replace the identity event with a
+  /// set that predates the claims this device has already seen, which is the
+  /// same silent unlink the empty-read branch refuses, reached through the one
+  /// branch that used to skip every guard.
+  ///
+  /// A claim unlinked in this session is not evidence of a lagging read, so
+  /// [_lastRemovedKeys] is excluded rather than counted as missing.
+  Future<void> _refuseIfLocalEvidenceIsAhead(
+    String pubkey,
+    List<List<String>> tags,
+  ) async {
+    final present = {for (final tag in tags) _tagIdentityKey(tag)};
+    final removed = _lastRemovedKeys[pubkey] ?? const <String>{};
+    final snapshot = identityTagsOf(
+      await _cachedIdentityTags(pubkey) ?? const [],
+    );
+    final missing = snapshot
+        .map(_tagIdentityKey)
+        .where((key) => !present.contains(key) && !removed.contains(key))
+        .length;
+    if (missing > 0) {
+      throw IdentityClaimReadException(
+        'No kind-$identityEventKind event came back and the kind-0 fallback '
+        'is missing $missing claim(s) this device has already seen — '
+        'refusing to publish over them',
+      );
+    }
+    if (tags.isEmpty && await _hasVerdictSnapshot(pubkey)) {
+      throw const IdentityClaimReadException(
+        'Only a kind-0 event with no claims came back, but verified claims '
+        'are on record for this profile — refusing to publish over them',
+      );
+    }
   }
 
   /// Whether the verdict snapshot has ever recorded a verified claim here.

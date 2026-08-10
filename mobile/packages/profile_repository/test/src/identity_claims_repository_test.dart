@@ -2044,6 +2044,89 @@ void main() {
         );
       });
 
+      test('keeps the first when only the kind-0 fallback answers', () async {
+        // Every profile has a kind-0 metadata event, so the fallback answers
+        // even when the kind-10011 read does not — the lagging-read merge has
+        // to run on that branch too, or the second link publishes a base that
+        // predates the first and deletes it.
+        stubIdentityEvents(const [], kind0: [_event(id: _eventId(11))]);
+
+        await repo.publishClaim(
+          const IdentityClaim(
+            pubkey: _pubkey,
+            platform: 'github',
+            identity: 'octocat',
+            proof: 'abc',
+          ),
+        );
+        final afterSecond = await repo.publishClaim(
+          const IdentityClaim(
+            pubkey: _pubkey,
+            platform: 'telegram',
+            identity: 'chan',
+            proof: 'chan/2',
+          ),
+        );
+
+        expect(
+          afterSecond.map((t) => t[1]),
+          containsAll(<String>['github:octocat', 'telegram:chan']),
+        );
+      });
+
+      test(
+        'refuses when the kind-0 fallback is missing a known claim',
+        () async {
+          // The snapshot proves a kind-10011 claim exists that this read did
+          // not carry, so the read is incomplete rather than authoritative.
+          stubIdentityEvents(const [], kind0: [_event(id: _eventId(11))]);
+          when(() => identityEventsDao.getEvent(_pubkey)).thenAnswer(
+            (_) async => const IdentityEventRow(
+              pubkey: _pubkey,
+              tagsJson: '[["i","twitter:jack","oauth"]]',
+              sourceKind: 10011,
+            ),
+          );
+
+          await expectLater(
+            () => repo.publishClaim(
+              const IdentityClaim(
+                pubkey: _pubkey,
+                platform: 'github',
+                identity: 'octocat',
+                proof: 'abc',
+              ),
+            ),
+            throwsA(isA<IdentityClaimReadException>()),
+          );
+          verifyNever(() => nostrClient.publishEventAwaitOk(any()));
+        },
+      );
+
+      test('refuses a claimless kind-0 when verdicts are on record', () async {
+        stubIdentityEvents(const [], kind0: [_event(id: _eventId(11))]);
+        when(() => verificationsDao.getVerification(_pubkey)).thenAnswer(
+          (_) async => _row(
+            claimsJson:
+                '[{"platform":"twitter","identity":"jack","proof":"oauth"}]',
+            checkedAtFloor: 1,
+          ),
+        );
+
+        await expectLater(
+          () => repo.publishClaim(
+            const IdentityClaim(
+              pubkey: _pubkey,
+              platform: 'github',
+              identity: 'octocat',
+              proof: 'abc',
+            ),
+          ),
+          throwsA(isA<IdentityClaimReadException>()),
+        );
+        verifyNever(() => nostrClient.publishEventAwaitOk(any()));
+      });
+
       test('does not resurrect a claim this device just removed', () async {
         stubIdentityEvents([
           _event(
