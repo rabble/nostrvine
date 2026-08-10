@@ -23,17 +23,34 @@ class _EmptyForYouFeed extends ForYouFeed {
       const VideoFeedState(videos: [], hasMoreContent: false);
 }
 
-Widget _host() => ProviderScope(
+Widget _host({double textScale = 1}) => ProviderScope(
   overrides: [
     funnelcakeAvailableProvider.overrideWith(_AvailableFunnelcake.new),
     forYouFeedProvider.overrideWith(_EmptyForYouFeed.new),
   ],
-  child: const MaterialApp(
+  child: MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    home: Scaffold(body: ForYouTab()),
+    home: Builder(
+      builder: (context) => MediaQuery(
+        data: MediaQuery.of(
+          context,
+        ).copyWith(textScaler: TextScaler.linear(textScale)),
+        child: const Scaffold(body: ForYouTab()),
+      ),
+    ),
   ),
 );
+
+/// Narrowest screen the app targets, where the header has the least room.
+const _narrowWidth = 320.0;
+
+void _useNarrowScreen(WidgetTester tester) {
+  tester.view.physicalSize = const Size(_narrowWidth, 640);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+}
 
 void main() {
   final l10n = lookupAppLocalizations(const Locale('en'));
@@ -81,6 +98,24 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.forYouAlgorithmSubtitle), findsOneWidget);
+    });
+
+    // The largest scale is deliberate: at the default scale the title's
+    // measured width depends on which font resolves in the test environment,
+    // so that case would report on font loading rather than on layout.
+    // Asserting geometry rather than a caught overflow exception keeps this
+    // independent of the debug-only overflow reporter.
+    testWidgets('header keeps the info button on screen at the largest text '
+        'scale', (tester) async {
+      _useNarrowScreen(tester);
+
+      await tester.pumpWidget(_host(textScale: 3));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getRect(find.byType(DivineIconButton)).right,
+        lessThanOrEqualTo(_narrowWidth),
+      );
     });
   });
 }
