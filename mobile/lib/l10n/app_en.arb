@@ -3425,6 +3425,14 @@
   "@inboxFilterUnread": {
     "description": "Filter chip label showing only unread conversations in the Messages inbox."
   },
+  "dmBlockedThreadTitle": "You blocked this account",
+  "@dmBlockedThreadTitle": {
+    "description": "Title of the notice that replaces the message composer in a conversation with an account the viewer has blocked."
+  },
+  "dmBlockedThreadBody": "Messages stay here so you can read or screenshot them. Unblock to reply.",
+  "@dmBlockedThreadBody": {
+    "description": "Body of the notice replacing the composer in a blocked conversation. Explains that history is preserved and names unblocking as the way to reply again."
+  },
   "inboxFilterBlocked": "Blocked",
   "@inboxFilterBlocked": {
     "description": "Filter chip label showing conversations with accounts the viewer has blocked. Only rendered once the viewer has blocked someone."

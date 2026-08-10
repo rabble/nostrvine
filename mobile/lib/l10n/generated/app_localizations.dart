@@ -10292,6 +10292,18 @@ abstract class AppLocalizations {
   /// **'Unread'**
   String get inboxFilterUnread;
 
+  /// Title of the notice that replaces the message composer in a conversation with an account the viewer has blocked.
+  ///
+  /// In en, this message translates to:
+  /// **'You blocked this account'**
+  String get dmBlockedThreadTitle;
+
+  /// Body of the notice replacing the composer in a blocked conversation. Explains that history is preserved and names unblocking as the way to reply again.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages stay here so you can read or screenshot them. Unblock to reply.'**
+  String get dmBlockedThreadBody;
+
   /// Filter chip label showing conversations with accounts the viewer has blocked. Only rendered once the viewer has blocked someone.
   ///
   /// In en, this message translates to:

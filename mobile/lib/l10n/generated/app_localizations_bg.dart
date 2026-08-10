@@ -5929,6 +5929,13 @@ class AppLocalizationsBg extends AppLocalizations {
   String get inboxFilterUnread => 'Непрочетени';
 
   @override
+  String get dmBlockedThreadTitle => 'You blocked this account';
+
+  @override
+  String get dmBlockedThreadBody =>
+      'Messages stay here so you can read or screenshot them. Unblock to reply.';
+
+  @override
   String get inboxFilterBlocked => 'Blocked';
 
   @override
