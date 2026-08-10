@@ -100,8 +100,12 @@ class BadgeDetailCubit extends Cubit<BadgeDetailState> {
         state.copyWith(
           status: BadgeDetailStatus.loaded,
           // Same as the catch below: a reload clears the previous action's
-          // outcome rather than leaving a stale failure note on screen.
-          actionStatus: BadgeDetailActionStatus.idle,
+          // outcome rather than leaving a stale failure note on screen. An
+          // in-flight action keeps its status — it still gates the buttons —
+          // and so does `deleted`, which pops the route.
+          actionStatus: state.hasSettledAction
+              ? BadgeDetailActionStatus.idle
+              : state.actionStatus,
           detail: detail,
         ),
       );

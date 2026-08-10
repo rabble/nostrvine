@@ -66,6 +66,14 @@ class BadgesState extends Equatable {
   /// Awards the user dismissed on this device, kept so they can be restored.
   final List<BadgeAwardViewData> hidden;
 
+  /// Whether [actionStatus] is a finished outcome a reload should clear.
+  ///
+  /// The in-flight values gate the action buttons, so a pull to refresh
+  /// landing mid-publish must leave them alone.
+  bool get hasSettledAction =>
+      actionStatus == BadgeActionStatus.completed ||
+      actionStatus == BadgeActionStatus.error;
+
   /// Returns a copy with selected fields replaced.
   BadgesState copyWith({
     BadgesStatus? status,

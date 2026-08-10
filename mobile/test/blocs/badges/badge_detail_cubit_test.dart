@@ -334,6 +334,54 @@ void main() {
       expect: () => <BadgeDetailState>[],
       verify: (_) => verifyNever(() => repository.removeAward(any())),
     );
+
+    blocTest<BadgeDetailCubit, BadgeDetailState>(
+      'refresh clears a previous action failure',
+      setUp: () {
+        when(
+          () => repository.loadBadgeDetail(any()),
+        ).thenAnswer((_) async => _detail(definition: _definition()));
+      },
+      build: buildCubit,
+      seed: () => const BadgeDetailState(
+        coordinate: _coordinate,
+        status: BadgeDetailStatus.loaded,
+        actionStatus: BadgeDetailActionStatus.failure,
+      ),
+      act: (cubit) => cubit.refresh(),
+      expect: () => [
+        isA<BadgeDetailState>().having(
+          (state) => state.actionStatus,
+          'actionStatus',
+          BadgeDetailActionStatus.idle,
+        ),
+      ],
+    );
+
+    blocTest<BadgeDetailCubit, BadgeDetailState>(
+      'refresh leaves an in-flight action status alone',
+      setUp: () {
+        when(
+          () => repository.loadBadgeDetail(any()),
+        ).thenAnswer((_) async => _detail(definition: _definition()));
+      },
+      build: buildCubit,
+      seed: () => const BadgeDetailState(
+        coordinate: _coordinate,
+        status: BadgeDetailStatus.loaded,
+        actionStatus: BadgeDetailActionStatus.deleting,
+      ),
+      act: (cubit) => cubit.refresh(),
+      // `deleting` is what `isBusy` reads to disable delete, accept, and
+      // remove. A pull to refresh landing mid-publish must not re-enable them.
+      expect: () => [
+        isA<BadgeDetailState>().having(
+          (state) => state.actionStatus,
+          'actionStatus',
+          BadgeDetailActionStatus.deleting,
+        ),
+      ],
+    );
   });
 }
 

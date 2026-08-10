@@ -267,6 +267,29 @@ void main() {
         ),
       ],
     );
+
+    blocTest<BadgesCubit, BadgesState>(
+      'refresh leaves an in-flight action status alone',
+      setUp: () {
+        when(repository.loadDashboard).thenAnswer((_) async => dashboard);
+      },
+      build: () => BadgesCubit(repository: repository),
+      seed: () => const BadgesState(
+        status: BadgesStatus.loaded,
+        actionStatus: BadgeActionStatus.accepting,
+      ),
+      act: (cubit) => cubit.refresh(),
+      // `accepting` is what disables the accept and reject buttons. Clearing
+      // it because a pull to refresh landed first re-enabled them while the
+      // publish was still running.
+      expect: () => [
+        isA<BadgesState>().having(
+          (state) => state.actionStatus,
+          'actionStatus',
+          BadgeActionStatus.accepting,
+        ),
+      ],
+    );
   });
 }
 

@@ -79,6 +79,15 @@ class BadgeDetailState extends Equatable {
       actionStatus == BadgeDetailActionStatus.removing ||
       actionStatus == BadgeDetailActionStatus.deleting;
 
+  /// Whether [actionStatus] is a finished outcome a reload should clear.
+  ///
+  /// [isBusy] gates the action buttons and [BadgeDetailActionStatus.deleted]
+  /// pops the route, so a reload must leave both alone.
+  bool get hasSettledAction =>
+      actionStatus == BadgeDetailActionStatus.completed ||
+      actionStatus == BadgeDetailActionStatus.failure ||
+      actionStatus == BadgeDetailActionStatus.deleteRejected;
+
   /// Whether the badge loaded but no definition event was found for it.
   bool get isMissing =>
       status == BadgeDetailStatus.loaded && detail?.definition == null;
