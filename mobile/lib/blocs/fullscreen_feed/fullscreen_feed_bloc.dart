@@ -320,6 +320,17 @@ class FullscreenFeedBloc
         return state;
       },
     );
+
+    // The source stream completed. Single-emit sources — a static video list,
+    // the hashtag snapshot (`Stream.fromFuture`) — cannot deliver anything
+    // else, so an empty list here is terminal rather than a warm-up. Without
+    // this the screen holds its loading placeholder forever. Live sources
+    // only complete when the route is going away, which `isDone` covers.
+    if (!emit.isDone &&
+        state.videos.isEmpty &&
+        state.status != FullscreenFeedStatus.emptyAfterRemoval) {
+      emit(state.copyWith(status: FullscreenFeedStatus.empty));
+    }
   }
 
   ({int index, bool initialTargetResolved}) _nextIndexForVideos(

@@ -651,6 +651,47 @@ void main() {
         },
       );
 
+      // Single-emit sources (StaticFeedRepository's `Stream.value`, the
+      // hashtag snapshot's `Stream.fromFuture`) close after one event, so an
+      // empty one is terminal — nothing can arrive later to clear the
+      // placeholder.
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'emits empty when an empty source stream closes without ever '
+        'delivering a video',
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController
+            ..add(const [])
+            ..close();
+        },
+        wait: const Duration(milliseconds: 200),
+        verify: (bloc) {
+          expect(bloc.state.status, FullscreenFeedStatus.empty);
+          expect(bloc.state.videos, isEmpty);
+        },
+      );
+
+      // A closing stream that DID deliver videos must not be reported as
+      // drained — the list is still on screen and playable.
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'stays ready when a source stream closes after delivering videos',
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController
+            ..add([createTestVideo('video1')])
+            ..close();
+        },
+        wait: const Duration(milliseconds: 200),
+        verify: (bloc) {
+          expect(bloc.state.status, FullscreenFeedStatus.ready);
+          expect(bloc.state.videos.single.id, 'video1');
+        },
+      );
+
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'resolves initial video identity when source order changes',
         build: () => createBloc(
