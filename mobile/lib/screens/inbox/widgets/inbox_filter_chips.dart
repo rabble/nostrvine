@@ -36,7 +36,13 @@ class InboxFilterChips extends StatelessWidget {
     // Deliberately no MediaQuery.withNoTextScaling: these are controls to read
     // and tap, not fixed overlay badges. The pinned header hosting this row
     // declares a text-scale-aware extent so the row has room to grow into.
-    return Padding(
+    // Horizontally scrollable because the chips size to their intrinsic
+    // width: `DivineButton`'s internal `Flexible` sits inside its own
+    // MainAxisSize.min Row, so it can never yield width to a sibling, and a
+    // third chip pushes long-label locales past a narrow viewport at default
+    // text scale. Scrolling absorbs that instead of overflowing.
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         spacing: 8,

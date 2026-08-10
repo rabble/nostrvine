@@ -216,8 +216,14 @@ class ConversationListBloc
         // Blocking removes a thread from the inbox but must not remove the
         // viewer's own copy of it (#7025) — that turned a block into evidence
         // destruction, so retrieving a screenshot meant unblocking and
-        // re-exposing yourself. Keep what the filter above removed, plus every
-        // blocked account with no thread at all, for the Blocked chip.
+        // re-exposing yourself.
+        //
+        // This recovers the viewer's OWN blocks only, not everything the
+        // filter above removed: `shouldFilterFromFeeds` unions five buckets,
+        // and the other four (`_mutedPubkeys`, `_mutualMuteBlocklist`,
+        // `_blockedByOthers`, `_internalBlocklist`) stay hidden. A thread
+        // hidden because the counterparty blocked or muted *us* is still
+        // unreachable — deliberately out of scope, see #7025.
         final blockedConversations = _computeBlockedConversations(
           userPubkey: userPubkey,
           candidates: [...inboxConversations, ...split.requests],
@@ -457,7 +463,12 @@ class ConversationListBloc
     if (query.isEmpty || profileRepository == null) return;
 
     var profileNames = state.profileNames;
-    final unresolved = state.conversations
+    // Blocked counterparties are structurally absent from `conversations` —
+    // `filterBlockedConversations` removed them — so resolving only that list
+    // left the Blocked slice searchable by the generated "Adjective Animal N"
+    // fallback while the row rendered the real kind-0 name. Searching for the
+    // name on screen found nothing.
+    final unresolved = [...state.conversations, ...state.blockedConversations]
         .map((c) => _otherParticipant(c, userPubkey))
         .where((pk) => !profileNames.containsKey(pk))
         .toSet()
@@ -528,27 +539,37 @@ class ConversationListBloc
     final blocked = _blocklistRepository?.runtimeBlockedUsers;
     if (blocked == null || blocked.isEmpty) return const [];
 
-    final threadByPubkey = <String, DmConversation>{};
+    // Every hidden thread gets its own row, not one row per blocked account.
+    // `filterBlockedConversations` removes a group from the inbox whenever its
+    // first non-self participant is blocked, so collapsing to one row per
+    // pubkey let a group displace the 1:1 with that same account — and the
+    // displaced 1:1 then appeared in no list at all, which is the evidence
+    // loss this whole feature exists to prevent.
+    final rows = <DmConversation>[];
+    final pubkeysWithThread = <String>{};
     for (final conversation in candidates) {
       final other = _otherParticipant(conversation, userPubkey);
       if (!blocked.contains(other)) continue;
-      // First match wins. Each source is recency-sorted, and a pubkey holds
-      // at most one 1:1 thread across the two, so there is nothing to choose
-      // between in practice.
-      threadByPubkey.putIfAbsent(other, () => conversation);
+      rows.add(conversation);
+      if (!conversation.isGroup) pubkeysWithThread.add(other);
     }
 
-    final rows = [
-      for (final pubkey in blocked)
-        threadByPubkey[pubkey] ??
-            DmConversation(
-              id: DmRepository.computeConversationId([userPubkey, pubkey]),
-              participantPubkeys: [userPubkey, pubkey],
-              isGroup: false,
-              createdAt: _blockedPlaceholderEpoch,
-            ),
-    ]..sort((a, b) => b.effectiveTimestamp.compareTo(a.effectiveTimestamp));
-    return rows;
+    // A blocked account the viewer never messaged 1:1 still gets a row, so the
+    // list answers "who have I blocked" as well as "what did they send me".
+    for (final pubkey in blocked) {
+      if (pubkeysWithThread.contains(pubkey)) continue;
+      rows.add(
+        DmConversation(
+          id: DmRepository.computeConversationId([userPubkey, pubkey]),
+          participantPubkeys: [userPubkey, pubkey],
+          isGroup: false,
+          createdAt: _blockedPlaceholderEpoch,
+        ),
+      );
+    }
+
+    return rows
+      ..sort((a, b) => b.effectiveTimestamp.compareTo(a.effectiveTimestamp));
   }
 
   static String _otherParticipant(DmConversation conversation, String self) {

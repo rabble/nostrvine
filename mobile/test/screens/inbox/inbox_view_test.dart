@@ -387,6 +387,39 @@ void main() {
         expect(find.byType(ConversationTile), findsOneWidget);
       });
 
+      // #7025. Holding a block keeps the chip row alive past the empty-inbox
+      // early return, so the unfiltered empty state has to stay honest — "All"
+      // with no query must not claim "You're all caught up", which asserts a
+      // filter did the emptying.
+      testWidgets('an all-blocked inbox still shows the empty state', (
+        tester,
+      ) async {
+        final blocked = DmConversation(
+          id: 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+          participantPubkeys: const [currentPubkey, otherPubkey],
+          isGroup: false,
+          createdAt: nowUnix,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              blockedConversations: [blocked],
+              hasMore: false,
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.tap(find.text('Messages'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.byType(InboxEmptyState), findsOneWidget);
+        expect(find.text(l10n.inboxUnreadEmptyTitle), findsNothing);
+      });
+
       // #7025. Only the Blocked slice synthesises message-less rows. A real
       // conversation whose first message has not landed yet must stay
       // tappable, or the inert treatment leaks into the ordinary inbox.

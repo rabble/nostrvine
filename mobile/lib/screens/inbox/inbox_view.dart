@@ -824,21 +824,32 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
               onTap: () => _openMessageRequests(context),
             ),
           ),
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: _FilteredEmptyContent(
-            title: searchQuery.isNotEmpty
-                ? context.l10n.inboxSearchEmptyTitle
-                : showingBlocked
-                ? context.l10n.inboxBlockedEmptyTitle
-                : context.l10n.inboxUnreadEmptyTitle,
-            subtitle: searchQuery.isNotEmpty
-                ? context.l10n.inboxSearchEmptySubtitle
-                : showingBlocked
-                ? context.l10n.inboxBlockedEmptySubtitle
-                : context.l10n.inboxUnreadEmptySubtitle,
+        // With no filter and no query there is nothing narrowing the list, so
+        // an empty result means the inbox itself is empty — say that, rather
+        // than "You're all caught up", which claims a filter did the emptying.
+        // Reachable now that a viewer holding only blocked conversations skips
+        // the early return above.
+        if (searchQuery.isEmpty && filter == InboxFilter.all)
+          const SliverFillRemaining(
+            hasScrollBody: false,
+            child: InboxEmptyState(),
+          )
+        else
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: _FilteredEmptyContent(
+              title: searchQuery.isNotEmpty
+                  ? context.l10n.inboxSearchEmptyTitle
+                  : showingBlocked
+                  ? context.l10n.inboxBlockedEmptyTitle
+                  : context.l10n.inboxUnreadEmptyTitle,
+              subtitle: searchQuery.isNotEmpty
+                  ? context.l10n.inboxSearchEmptySubtitle
+                  : showingBlocked
+                  ? context.l10n.inboxBlockedEmptySubtitle
+                  : context.l10n.inboxUnreadEmptySubtitle,
+            ),
           ),
-        ),
       ] else ...[
         if (hasRequests && !showingBlocked)
           SliverToBoxAdapter(

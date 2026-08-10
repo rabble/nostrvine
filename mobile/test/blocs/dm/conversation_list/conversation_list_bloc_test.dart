@@ -297,6 +297,74 @@ void main() {
         );
       });
 
+      test(
+        'keeps a blocked 1:1 that a group would otherwise displace',
+        () async {
+          // `filterBlockedConversations` drops a group whose first non-self
+          // participant is blocked, so if the group took the account's only
+          // slot the 1:1 appeared in no list at all — the exact evidence loss
+          // this feature exists to prevent.
+          final direct = _createConversation(id: _testConversationId1);
+          final group = _createConversation(
+            id: _testConversationId2,
+            isGroup: true,
+            participantPubkeys: const [
+              _testPubkey1,
+              _testPubkey2,
+              _testPubkey3,
+            ],
+          );
+          _stubStreams(mockDmRepository, accepted: [group, direct]);
+          final bloc = createBlocWith(blocklistBlocking({_testPubkey2}));
+          addTearDown(bloc.close);
+
+          final state = await load(bloc);
+
+          expect(
+            state.blockedConversations.map((c) => c.id),
+            containsAll([_testConversationId1, _testConversationId2]),
+          );
+        },
+      );
+
+      test(
+        'resolves names for blocked counterparties so search matches',
+        () async {
+          // `conversations` never contains a blocked counterparty, so resolving
+          // only that list left the Blocked slice searchable by the generated
+          // fallback name while the row rendered the real one.
+          _stubStreams(
+            mockDmRepository,
+            accepted: [_createConversation(id: _testConversationId1)],
+          );
+          final profiles = _MockProfileRepository();
+          when(
+            () => profiles.fetchBatchProfiles(pubkeys: any(named: 'pubkeys')),
+          ).thenAnswer((_) async => const <String, UserProfile>{});
+
+          final bloc = ConversationListBloc(
+            dmRepository: mockDmRepository,
+            followRepository: mockFollowRepository,
+            contentBlocklistRepository: blocklistBlocking({_testPubkey2}),
+            profileRepository: profiles,
+            recomputeDebounce: Duration.zero,
+          );
+          addTearDown(bloc.close);
+          await load(bloc);
+
+          bloc.add(const ConversationListSearchQueryChanged('zzzz'));
+          final state = await bloc.stream.firstWhere(
+            (s) => s.profileNames.isNotEmpty,
+          );
+
+          expect(
+            state.profileNames.keys,
+            contains(_testPubkey2),
+            reason: 'the blocked counterparty must be resolvable by name',
+          );
+        },
+      );
+
       test('falls back to All when the last block is lifted', () async {
         final acceptedController = StreamController<List<DmConversation>>();
         addTearDown(acceptedController.close);
