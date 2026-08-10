@@ -265,6 +265,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                                   reactionsEnabled:
                                       !isRetiredModerationThread &&
                                       !isBlockedByUs,
+                                  sendRecoveryEnabled: !isBlockedByUs,
                                   imageUrl: isDeleted ? null : profile?.picture,
                                   nip05: isDeleted
                                       ? null
@@ -577,6 +578,7 @@ class _ConversationContent extends StatelessWidget {
     required this.blockedPubkeys,
     required this.displayName,
     required this.reactionsEnabled,
+    required this.sendRecoveryEnabled,
     this.imageUrl,
     this.nip05,
     this.onViewProfile,
@@ -590,6 +592,9 @@ class _ConversationContent extends StatelessWidget {
   final Set<String> blockedPubkeys;
   final String displayName;
   final bool reactionsEnabled;
+
+  /// Whether tapping a failed own bubble may offer to resend it.
+  final bool sendRecoveryEnabled;
   final String? imageUrl;
   final String? nip05;
   final VoidCallback? onViewProfile;
@@ -636,6 +641,7 @@ class _ConversationContent extends StatelessWidget {
                     blockedPubkeys: blockedPubkeys,
                     senderDisplayName: displayName,
                     reactionsEnabled: reactionsEnabled,
+                    sendRecoveryEnabled: sendRecoveryEnabled,
                   ),
         };
       },
@@ -681,6 +687,7 @@ class _MessageList extends StatelessWidget {
     required this.blockedPubkeys,
     required this.senderDisplayName,
     required this.reactionsEnabled,
+    required this.sendRecoveryEnabled,
   });
 
   final List<DmMessage> messages;
@@ -691,6 +698,20 @@ class _MessageList extends StatelessWidget {
   final Set<String> blockedPubkeys;
   final String senderDisplayName;
   final bool reactionsEnabled;
+
+  /// Whether tapping a failed own bubble may offer to resend it (#7025).
+  ///
+  /// False in a thread with an account the viewer blocked. Removing the
+  /// composer is not enough on its own: a message that hard-failed before the
+  /// block is still on screen as a red bubble, and its tap opens a recovery
+  /// sheet whose primary action republishes the rumor — delivering a DM to the
+  /// account the viewer blocked, from the one screen built to make that
+  /// impossible. The bubble stays rendered; only the affordance goes, so the
+  /// evidence is intact and nothing is force-deleted. The row has already
+  /// exhausted the retry sweep's budget by the time it reads `failed`, so
+  /// leaving it alone sends nothing in the background either. Unblocking
+  /// restores the sheet along with the composer.
+  final bool sendRecoveryEnabled;
 
   Future<void> _onMessageLongPress(
     BuildContext context,
@@ -930,7 +951,12 @@ class _MessageList extends StatelessWidget {
                 _onMessageLongPress(context, message, isSent, status),
             // A single tap on a failed own bubble opens the resend/stop-trying
             // recovery bottom sheet; every other bubble keeps its default tap.
-            onTap: isSent && status == DmDeliveryStatus.failed
+            // Withheld in a blocked thread, where resending would publish to
+            // the blocked account (see [sendRecoveryEnabled]).
+            onTap:
+                sendRecoveryEnabled &&
+                    isSent &&
+                    status == DmDeliveryStatus.failed
                 ? () => _onFailedMessageTap(context, message)
                 : null,
             // Double-tap-to-like, hidden on failed own sends to mirror the
