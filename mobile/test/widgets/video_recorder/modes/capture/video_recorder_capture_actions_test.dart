@@ -500,6 +500,85 @@ void main() {
         handle.dispose();
       });
 
+      // Same contract for the two controls only stop-motion renders, driven by
+      // e2e/maestro/tests/stopMotionModeControls.yaml. Asserted separately
+      // because the capture-mode rail above renders neither.
+      testWidgets('exposes an E2E identifier on the stop-motion controls', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildWidget(recorderMode: VideoRecorderMode.stopMotion),
+        );
+        await tester.pumpAndSettle();
+
+        for (final identifier in const [
+          SemanticIds.cameraGhostFrameButton,
+          SemanticIds.cameraGridButton,
+        ]) {
+          expect(
+            find.bySemanticsIdentifier(identifier),
+            findsOneWidget,
+            reason: 'missing E2E anchor: $identifier',
+          );
+        }
+
+        handle.dispose();
+      });
+
+      // assertCaptureMode and assertStopMotionMode tell the two viewfinders
+      // apart by the controls each one leaves out. An id leaking into the
+      // wrong mode makes both asserts pass on either screen, and every other
+      // test here would stay green.
+      testWidgets('keeps the stop-motion controls out of capture mode', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildWidget(isVideoStabilizationSupported: true),
+        );
+        await tester.pumpAndSettle();
+
+        for (final identifier in const [
+          SemanticIds.cameraGhostFrameButton,
+          SemanticIds.cameraGridButton,
+        ]) {
+          expect(
+            find.bySemanticsIdentifier(identifier),
+            findsNothing,
+            reason: '$identifier must not render in capture mode',
+          );
+        }
+
+        handle.dispose();
+      });
+
+      testWidgets('keeps the capture-only controls out of stop-motion mode', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildWidget(
+            recorderMode: VideoRecorderMode.stopMotion,
+            isVideoStabilizationSupported: true,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        for (final identifier in const [
+          SemanticIds.cameraTimerButton,
+          SemanticIds.cameraStabilizationButton,
+        ]) {
+          expect(
+            find.bySemanticsIdentifier(identifier),
+            findsNothing,
+            reason: '$identifier must not render in stop-motion mode',
+          );
+        }
+
+        handle.dispose();
+      });
+
       testWidgets('announces the grid overlay as toggled when on', (
         tester,
       ) async {

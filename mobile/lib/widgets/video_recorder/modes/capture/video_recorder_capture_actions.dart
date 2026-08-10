@@ -81,6 +81,7 @@ class VideoRecorderCaptureActions extends ConsumerWidget {
                   _IconButton(
                     icon: .gridNine,
                     label: l10n.videoRecorderToggleGridLabel,
+                    identifier: SemanticIds.cameraGridButton,
                     toggled: state.showGridLines,
                     onTap: () => context.read<VideoRecorderBloc>().add(
                       const VideoRecorderGridLinesToggled(),
@@ -135,6 +136,7 @@ class _GhostFrameButton extends StatelessWidget {
     return _IconButton(
       icon: .ghost,
       label: context.l10n.videoRecorderToggleGhostFrameLabel,
+      identifier: SemanticIds.cameraGhostFrameButton,
       toggled: isVisible,
       onTap: () {
         final willEnable = !isVisible;
