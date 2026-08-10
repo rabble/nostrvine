@@ -111,6 +111,21 @@ void main() {
       handle.dispose();
     });
 
+    testWidgets('scales its icons with the system text scale', (tester) async {
+      await pumpBar(tester);
+      final base = tester.getSize(find.byType(DivineIcon).first);
+
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await pumpBar(tester);
+      final scaled = tester.getSize(find.byType(DivineIcon).first);
+
+      // DivineIcon caps growth at maxScaleFactor (1.3x) so tight rows do not
+      // overflow. A raw SvgPicture at a hardcoded size would not move at all.
+      expect(scaled.width, greaterThan(base.width));
+      expect(scaled.width, base.width * DivineIcon.maxScaleFactor);
+    });
+
     testWidgets('keeps the snake_case identifier as the E2E anchor', (
       tester,
     ) async {

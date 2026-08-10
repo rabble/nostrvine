@@ -3,7 +3,6 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/widgets/profile/profile_cache_load_indicator.dart';
 
 /// How one profile tab is presented.
@@ -162,16 +161,12 @@ class _ProfileTab extends StatelessWidget {
         // giving "Tab 3 of 6, Liked".
         identifier: semanticId,
         label: label,
-        child: SvgPicture.asset(
-          icon.assetPath,
-          width: 28,
-          height: 28,
-          colorFilter: ColorFilter.mode(
-            isSelected
-                ? context.vineColors.primaryText
-                : context.vineColors.onSurfaceMuted,
-            BlendMode.srcIn,
-          ),
+        child: DivineIcon(
+          icon: icon,
+          size: 28,
+          color: isSelected
+              ? context.vineColors.primaryText
+              : context.vineColors.onSurfaceMuted,
         ),
       ),
     );
