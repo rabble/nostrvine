@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
@@ -165,10 +166,9 @@ class _LikedGridTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => Semantics(
-    // Same snake_case anchor as the label; see ProfileTabBar for why the
-    // label is left alone rather than localized here.
-    identifier: 'liked_video_thumbnail_$index',
-    label: 'liked_video_thumbnail_$index',
+    identifier: SemanticIds.likedVideoThumbnail(index),
+    label: context.l10n.profileVideoThumbnailLabel(index + 1),
+    button: true,
     child: GestureDetector(
       onTap: () {
         Log.info(

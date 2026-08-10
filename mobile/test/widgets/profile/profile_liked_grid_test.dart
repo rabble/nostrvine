@@ -1,11 +1,13 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/profile/profile_liked_grid.dart';
@@ -265,6 +267,40 @@ void main() {
             extra: any(named: 'extra'),
           ),
         ).called(1);
+      });
+    });
+
+    group('accessibility', () {
+      testWidgets('tiles announce a localized name and act as buttons', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        final videos = _createTestVideos(count: 3);
+        when(() => mockBloc.state).thenReturn(
+          ProfileLikedVideosState(
+            status: ProfileLikedVideosStatus.success,
+            videos: videos,
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        // Read the merged SemanticsData: SemanticsNode.label is the node's
+        // own pre-merge config and is not what the platform receives.
+        final data = tester
+            .getSemantics(
+              find.bySemanticsIdentifier(SemanticIds.likedVideoThumbnail(0)),
+            )
+            .getSemanticsData();
+
+        expect(data.label, l10n.profileVideoThumbnailLabel(1));
+        expect(data.label, isNot(contains('liked_video_thumbnail')));
+        expect(data.flagsCollection.isButton, isTrue);
+        expect(data.hasAction(SemanticsAction.tap), isTrue);
+
+        handle.dispose();
       });
     });
 
