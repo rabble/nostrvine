@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:hive_ce/hive.dart';
 import 'package:meta/meta.dart';
+import 'package:openvine/constants/hive_box_names.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -14,10 +15,10 @@ class CacheRecoveryService {
   static const String _logName = 'CacheRecoveryService';
 
   static const Set<String> _disposableHiveBoxNames = {
-    'personal_events',
-    'personal_events_metadata',
-    'hashtag_stats',
-    'people_lists_v1',
+    HiveBoxNames.personalEvents,
+    HiveBoxNames.personalEventsMetadata,
+    HiveBoxNames.hashtagStats,
+    HiveBoxNames.peopleLists,
   };
 
   /// Clear all app caches and databases to recover from corruption
@@ -154,9 +155,9 @@ class CacheRecoveryService {
   /// why [_clearAppSupportDirectory] has to protect them by path as well as
   /// skipping them above.
   static const Set<String> _durableHiveBoxNames = {
-    'pending_uploads',
-    'notifications',
-    'push_notification_preferences_dirty',
+    HiveBoxNames.pendingUploads,
+    HiveBoxNames.notifications,
+    HiveBoxNames.pushNotificationPreferencesDirty,
   };
 
   @visibleForTesting

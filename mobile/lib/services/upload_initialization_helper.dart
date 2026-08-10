@@ -8,6 +8,7 @@ import 'dart:math';
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:hive_ce_flutter/hive_flutter.dart';
+import 'package:openvine/constants/hive_box_names.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/utils/async_utils.dart';
@@ -17,7 +18,7 @@ import 'package:unified_logger/unified_logger.dart';
 
 /// Robust initialization helper for UploadManager
 class UploadInitializationHelper {
-  static const String _uploadsBoxName = 'pending_uploads';
+  static const String _uploadsBoxName = HiveBoxNames.pendingUploads;
   static const int _maxRetries =
       3; // Reduced from 5 since we fail fast on permanent errors
   static const Duration _baseDelay = Duration(milliseconds: 250);
