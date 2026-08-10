@@ -5151,6 +5151,76 @@ void main() {
         },
       );
 
+      test(
+        'chunks the vote-target reaction query so no REQ exceeds the frame '
+        'limit',
+        () async {
+          // The vote path is a third unbounded Kind 7 `#e` filter, bounded
+          // today only by the comment page size — the same incidental bound
+          // the like path already stopped relying on.
+          final eventIds = [for (var i = 0; i < 600; i++) 'vote_target_$i'];
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => <Event>[]);
+
+          repository = createRepository(withLocalStorage: false);
+          await repository.getVoteCounts(eventIds);
+
+          final eFilters =
+              verify(() => mockNostrClient.queryEvents(captureAny())).captured
+                  .cast<List<Filter>>()
+                  .map((filters) => filters.single)
+                  .where((f) => f.e != null)
+                  .toList();
+
+          expect(eFilters, hasLength(2));
+          expect(eFilters[0].e, hasLength(500));
+          expect(eFilters[1].e, hasLength(100));
+          expect(
+            {...eFilters[0].e!, ...eFilters[1].e!},
+            hasLength(600),
+            reason: 'chunks partition every id without overlap',
+          );
+        },
+      );
+
+      test(
+        'chunks the vote-target coordinate query too',
+        () async {
+          // A `kind:pubkey:dtag` coordinate is longer than a bare id, so the
+          // `#a` leg reaches the frame cap sooner than the `#e` leg it runs
+          // beside.
+          final eventIds = [for (var i = 0; i < 600; i++) 'vote_target_$i'];
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => <Event>[]);
+
+          repository = createRepository(withLocalStorage: false);
+          await repository.getVoteCounts(
+            eventIds,
+            addressableIds: {
+              for (final id in eventIds) id: '34236:$testAuthorPubkey:$id',
+            },
+          );
+
+          final aFilters =
+              verify(() => mockNostrClient.queryEvents(captureAny())).captured
+                  .cast<List<Filter>>()
+                  .map((filters) => filters.single)
+                  .where((f) => f.a != null)
+                  .toList();
+
+          expect(aFilters, hasLength(2));
+          expect(aFilters[0].a, hasLength(500));
+          expect(aFilters[1].a, hasLength(100));
+          expect(
+            {...aFilters[0].a!, ...aFilters[1].a!},
+            hasLength(600),
+            reason: 'chunks partition every coordinate without overlap',
+          );
+        },
+      );
+
       test('getUserVoteStatuses resolves the own vote by coordinate', () async {
         mockQueryEventsSequence([
           <Event>[],
