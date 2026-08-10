@@ -74,6 +74,7 @@ import 'package:openvine/providers/device_scope.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/foreground_idle_warmup_provider.dart';
 import 'package:openvine/providers/install_source_provider.dart';
+import 'package:openvine/providers/invite_status_auth_sessions.dart';
 import 'package:openvine/providers/layer_rasterizer_provider.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -2766,22 +2767,11 @@ class _DivineAppState extends ConsumerState<DivineApp>
               ),
               BlocProvider(
                 lazy: false,
-                create: (context) {
-                  final authService = ref.read(authServiceProvider);
-                  InviteStatusAuthSession currentAuthSession() =>
-                      InviteStatusAuthSession(
-                        accountId: authService.currentPublicKeyHex,
-                        isSignerReady: authService.canPublishNostrWritesNow,
-                      );
-
-                  return InviteStatusCubit(
-                    inviteApiClient: context.read<InviteApiClient>(),
-                    initialAuthSession: currentAuthSession(),
-                    authSessionStream: authService.authStateStream.map(
-                      (_) => currentAuthSession(),
-                    ),
-                  )..start();
-                },
+                create: (context) => InviteStatusCubit(
+                  inviteApiClient: context.read<InviteApiClient>(),
+                  initialAuthSession: ref.read(inviteStatusAuthSessionProvider),
+                  authSessionStream: ref.read(inviteStatusAuthSessionsProvider),
+                )..start(),
               ),
               BlocProvider(
                 create: (_) => AppUpdateBloc(

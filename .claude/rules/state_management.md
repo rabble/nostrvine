@@ -11,6 +11,52 @@
 **Riverpod owns:** app-level DI, long-lived services/clients, infrastructure side-effects.  
 **BLoC/Cubit owns:** all feature UI state, all UI side effects, all loading/error/success states.
 
+## Signing readiness: identity known is not signer ready
+
+`AuthState.authenticated` means the pubkey is known. It does **not** mean
+anything can be signed. For a Keycast identity with no local key the
+signer becomes usable *after* the auth state settles, on a different
+signal entirely.
+
+`nostrSessionProvider` (`lib/providers/nostr_client_provider.dart`) is the
+app-wide contract, and it is two-tier:
+
+| Phase | Carries | Use it for |
+|-------|---------|------------|
+| `identityKnown` | pubkey | reads, scoping caches/repositories to an owner, UI gating |
+| `nostrReady` | pubkey **and** a keyed `NostrClient` | Nostr-client signing/publishing that needs the initialized client |
+
+Rules:
+
+- **Anything that signs or publishes through the app-wide `NostrClient`
+  watches `nostrReady`**, via
+  `ref.watch(nostrSessionProvider).isReadyForActiveClient` or a
+  `ref.listen` on the provider. `profileRepositoryProvider` (nullable
+  gate) and `notificationsProviders` (auth state for teardown +
+  readiness for work) are the reference implementations.
+- **Relay-free signing watches signer capability, not relay readiness.**
+  For example, REST NIP-98 calls that use `Nip98AuthService(authService:)`
+  need an identity that can sign now, but do not need relay connections.
+  Watch `currentAuthStateProvider` for account changes and
+  `currentAuthRpcCapabilityProvider` for the Keycast
+  `unavailable -> rpcReady` transition, then sample
+  `AuthService.canPublishNostrWritesNow`.
+- **Never gate a signer-dependent side effect on `authStateStream` or
+  `currentAuthStateProvider` alone.** Those are identity signals.
+  Watching them is correct when you only need to re-scope to a new
+  pubkey or show/hide UI.
+- `AuthService.canPublishNostrWritesNow` answers "is this identity
+  *capable* of signing", not "is the client ready". It has no direct
+  stream, so sample it at the moment of use; for push consumers, pair
+  that sample with a real rebuild trigger such as
+  `currentAuthRpcCapabilityProvider`.
+
+The distinction matters most for **push** consumers — code that asks
+once and then waits. Pull consumers that re-read at call time cannot go
+stale and are fine either way. #6977 is the worked example: the invites
+screen asked at `authenticated`, got "cannot sign", and never heard the
+correction 21ms later.
+
 ## Allowed / Disallowed Patterns
 
 | Pattern | Verdict |
@@ -291,9 +337,8 @@ world.
 
 **Before applying this rule, check whether Pattern A is available.**
 Some Riverpod-provided dependencies are *already* gated on a
-readiness signal — `profileRepositoryProvider` and
-`pendingActionServiceProvider` return `null` until
-`isNostrReadyProvider` resolves. When that's the case, the consumer
+readiness signal — `profileRepositoryProvider` returns `null` until
+`nostrSessionProvider` reports `isReadyForActiveClient`. When that's the case, the consumer
 reads the nullable value and renders a loading / disabled
 affordance until it's non-null; the bloc never gets a chance to
 capture a stale instance, and there's nothing for this rule to
@@ -417,8 +462,8 @@ that test fails loudly so the state loss can be re-evaluated.
 3. **Pattern A (gate the provider on readiness) is available.**
    When the dependency can be in a "not ready" state, the cleaner
    option is to gate the *provider itself* on a readiness flag —
-   `profileRepositoryProvider` and `pendingActionServiceProvider`
-   already gate on `isNostrReadyProvider` and return `null` until
+   `profileRepositoryProvider` already gates on
+   `nostrSessionProvider` and returns `null` until
    the real instance is available. The widget renders a loading /
    disabled affordance until the provider hands over a non-null
    dependency, and the bloc never gets to capture a stale one.
