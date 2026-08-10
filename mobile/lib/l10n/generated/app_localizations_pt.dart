@@ -4364,6 +4364,20 @@ class AppLocalizationsPt extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
+  String get soundSyncStatusSyncing => 'Sincronizando seus sons…';
+
+  @override
+  String get soundSyncStatusSynced => 'Sons atualizados';
+
+  @override
+  String get soundSyncStatusFailed =>
+      'Não foi possível sincronizar seus sons. Vamos tentar de novo.';
+
+  @override
+  String get soundSyncStatusLocked =>
+      'Não dá para desbloquear sua biblioteca sincronizada neste dispositivo.';
+
+  @override
   String get soundsFailedToLoad => 'Falha ao carregar sons';
 
   @override
@@ -6022,6 +6036,21 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get dmSendBlockedMessage =>
       'You can only message official Divine accounts';
+
+  @override
+  String get dmSendBlockedRetiredMessage =>
+      'Ninguém está lendo esta conversa. Envie uma mensagem para a Divine Moderation.';
+
+  @override
+  String get dmRetiredThreadClosedTitle => 'Esta conversa está encerrada.';
+
+  @override
+  String get dmRetiredThreadClosedBody =>
+      'Movemos a Divine Moderation para uma nova conta. Ninguém lê mais esta.';
+
+  @override
+  String get dmRetiredThreadOpenSupport =>
+      'Enviar mensagem para a Divine Moderation';
 
   @override
   String get dmSendFailedMessage => 'Falha ao enviar a mensagem';
@@ -7718,6 +7747,21 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get followersUpdateFollowFailed =>
       'Falha ao atualizar status de seguir. Tente novamente.';
+
+  @override
+  String get followersSortSemanticLabel => 'Ordenar seguidores';
+
+  @override
+  String get followingSortSemanticLabel => 'Ordenar seguidos';
+
+  @override
+  String get followSortTitle => 'Ordenar por';
+
+  @override
+  String get followSortNewest => 'Mais recentes primeiro';
+
+  @override
+  String get followSortOldest => 'Mais antigos primeiro';
 
   @override
   String get reportMessageTitle => 'Denunciar mensagem';

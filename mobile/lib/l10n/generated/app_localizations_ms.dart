@@ -4367,6 +4367,20 @@ class AppLocalizationsMs extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
+  String get soundSyncStatusSyncing => 'Menyegerakkan bunyi anda…';
+
+  @override
+  String get soundSyncStatusSynced => 'Bunyi sudah terkini';
+
+  @override
+  String get soundSyncStatusFailed =>
+      'Tidak dapat menyegerakkan bunyi anda. Kami akan cuba lagi.';
+
+  @override
+  String get soundSyncStatusLocked =>
+      'Tidak dapat membuka pustaka tersegerak anda pada peranti ini.';
+
+  @override
   String get soundsFailedToLoad => 'Gagal memuatkan bunyi';
 
   @override
@@ -6027,6 +6041,21 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get dmSendBlockedMessage =>
       'Anda hanya boleh menghantar mesej kepada akaun rasmi Divine';
+
+  @override
+  String get dmSendBlockedRetiredMessage =>
+      'Tiada sesiapa membaca perbualan ini. Hantar mesej kepada Divine Moderation sebaliknya.';
+
+  @override
+  String get dmRetiredThreadClosedTitle => 'Perbualan ini telah ditutup.';
+
+  @override
+  String get dmRetiredThreadClosedBody =>
+      'Kami telah memindahkan Divine Moderation ke akaun baharu. Akaun ini tidak dibaca lagi.';
+
+  @override
+  String get dmRetiredThreadOpenSupport =>
+      'Hantar mesej kepada Divine Moderation';
 
   @override
   String get dmSendFailedMessage => 'Mesej tidak dapat dihantar';
@@ -7712,6 +7741,21 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get followersUpdateFollowFailed =>
       'Gagal mengemas kini status ikutan. Sila cuba lagi.';
+
+  @override
+  String get followersSortSemanticLabel => 'Isih pengikut';
+
+  @override
+  String get followingSortSemanticLabel => 'Isih yang diikuti';
+
+  @override
+  String get followSortTitle => 'Isih mengikut';
+
+  @override
+  String get followSortNewest => 'Terbaharu dahulu';
+
+  @override
+  String get followSortOldest => 'Terlama dahulu';
 
   @override
   String get reportMessageTitle => 'Laporkan Mesej';

@@ -709,6 +709,22 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
           'processedGiftWraps',
           db.processedGiftWrapsDao.clearAll,
         );
+        // Reaction rows keep decrypted rumor payloads (rumor_event_json). Most
+        // are re-fetchable DM data and should be wiped with direct_messages,
+        // but retryable own rows are also the outgoing queue for unpublished
+        // reactions and kind-5 removals. Preserve that subset on a plain
+        // account switch, matching outgoing_dms; destructive cleanup wipes all.
+        // Owner-scoped rather than clearAll: ownerPubkey is non-nullable here,
+        // so unlike direct_messages there are no legacy NULL-owner rows a
+        // scoped delete would strand. See #6984.
+        if (userPubkey != null) {
+          await safeCleanup(
+            'dmReactions',
+            () => deleteUserData
+                ? db.dmReactionsDao.deleteAllForOwner(userPubkey)
+                : db.dmReactionsDao.deleteNonRetryableForOwner(userPubkey),
+          );
+        }
         // Scoped to the leaving account so a switch does not wipe the other
         // account's cached inbox along with this one's.
         await safeCleanup(

@@ -2370,6 +2370,10 @@
   "soundsFeaturedSounds": "精选声音",
   "soundsTrendingSounds": "热门声音",
   "soundsAllSounds": "全部声音",
+  "soundSyncStatusSyncing": "正在同步你的声音…",
+  "soundSyncStatusSynced": "声音已是最新",
+  "soundSyncStatusFailed": "无法同步你的声音，我们会再试一次。",
+  "soundSyncStatusLocked": "无法在此设备上解锁你的同步音库。",
   "soundsSearchResults": "搜索结果",
   "soundsNoSoundsAvailable": "暂无声音",
   "soundsNoSoundsDescription": "创作者分享音频后，声音会显示在这里",
@@ -3360,6 +3364,10 @@
   "@dmSendBlockedMessage": {
     "description": "SnackBar text shown when a protected minor (13-15) tries to DM a non-approved account (#176). Neutral, no retry action."
   },
+  "dmSendBlockedRetiredMessage": "没有人会看到这个对话。请改为给 Divine Moderation 发私信。",
+  "dmRetiredThreadClosedTitle": "此对话已关闭。",
+  "dmRetiredThreadClosedBody": "我们已把 Divine Moderation 迁移到新账号。这个账号已经没人看了。",
+  "dmRetiredThreadOpenSupport": "给 Divine Moderation 发私信",
   "dmSendFailedMessage": "消息发送失败",
   "@dmSendFailedMessage": {
     "description": "Accessibility announcement text, and the recovery bottom sheet's title, shown in a DM conversation when a send fails (relay error, signer error, network error). The bottom sheet pairs it with `dmSendFailedSubtitle` and the `dmMessageActionRetrySend` / `dmMessageActionCancelSend` actions."
@@ -4485,6 +4493,11 @@
   "followersFailedToLoadList": "粉丝列表加载失败",
   "followersEmptyTitle": "还没有粉丝",
   "followersUpdateFollowFailed": "更新关注状态失败，请重试。",
+  "followersSortSemanticLabel": "排序粉丝",
+  "followingSortSemanticLabel": "排序关注",
+  "followSortTitle": "排序方式",
+  "followSortNewest": "最新优先",
+  "followSortOldest": "最早优先",
   "reportMessageTitle": "举报消息",
   "reportMessageWhyReporting": "你为什么要举报这条消息？",
   "reportMessageSelectReason": "请选择举报这条消息的原因",

@@ -144,11 +144,11 @@ class CrashReportingService {
   }
 
   /// Set user identifier for crash reports
-  Future<void> setUserId(String userId) async {
+  Future<void> setUserId(String? userId) async {
     if (!_initialized) return;
 
     try {
-      await FirebaseCrashlytics.instance.setUserIdentifier(userId);
+      await FirebaseCrashlytics.instance.setUserIdentifier(userId ?? '');
     } catch (e) {
       Log.error(
         'Failed to set user ID in Crashlytics: $e',

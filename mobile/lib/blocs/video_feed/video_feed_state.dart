@@ -48,6 +48,13 @@ extension VideoFeedSourceTypeAnalytics on VideoFeedSourceType {
   /// These values are persisted analytics data. Renaming one silently splits
   /// its history in two, so add new values rather than repurposing existing
   /// ones.
+  ///
+  /// [VideoFeedSourceType.subscribedList] deliberately reports the bare `list`
+  /// rather than the list id, unlike the hashtag and search-query call sites
+  /// that pass their discriminating value. A list id is unbounded in
+  /// cardinality and closer to user data than a public hashtag is, and the
+  /// question this field answers — which of the five home modes served the
+  /// view — is answered without it.
   String get analyticsTag => switch (this) {
     VideoFeedSourceType.forYou => 'foryou',
     VideoFeedSourceType.following => 'following',

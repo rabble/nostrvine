@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:analytics/analytics.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -18,6 +19,32 @@ class _MockKeycastOAuth extends Mock implements KeycastOAuth {}
 class _MockAuthService extends Mock implements AuthService {}
 
 class _MockInviteApiClient extends Mock implements InviteApiClient {}
+
+class _RecordingAnalytics implements AnalyticsEventSink {
+  final properties = <({String name, String? value})>[];
+
+  @override
+  Future<void> setUserProperty({
+    required String name,
+    required String? value,
+  }) async => properties.add((name: name, value: value));
+
+  @override
+  Future<void> setUserId(String? userId) async {}
+
+  @override
+  Future<void> logEvent({
+    required String name,
+    required Map<String, Object> parameters,
+  }) async {}
+
+  @override
+  Future<void> logScreenView({
+    required String screenName,
+    String? screenClass,
+    Map<String, Object>? parameters,
+  }) async {}
+}
 
 class _FakeKeycastSession extends Fake implements KeycastSession {}
 
@@ -37,6 +64,7 @@ void main() {
     late _MockKeycastOAuth mockOAuth;
     late _MockAuthService mockAuthService;
     late _MockInviteApiClient mockInviteApiClient;
+    late _RecordingAnalytics analytics;
 
     const testDeviceCode = 'test-device-code-abc123';
     const testVerifier = 'test-verifier-xyz789';
@@ -47,6 +75,7 @@ void main() {
       mockOAuth = _MockKeycastOAuth();
       mockAuthService = _MockAuthService();
       mockInviteApiClient = _MockInviteApiClient();
+      analytics = _RecordingAnalytics();
       when(
         () => mockAuthService.clearPendingDivineOAuthSession(),
       ).thenAnswer((_) async {});
@@ -59,6 +88,7 @@ void main() {
         oauthClient: mockOAuth,
         authService: mockAuthService,
         inviteApiClient: mockInviteApiClient,
+        analytics: analytics,
       );
     }
 
@@ -440,6 +470,9 @@ void main() {
             () => mockAuthService.signInWithDivineOAuth(any()),
           ]);
           verifyNever(() => mockAuthService.clearPendingDivineOAuthSession());
+          expect(analytics.properties, [
+            (name: AnalyticsUserProperty.inviteCode, value: 'AB12-EF34'),
+          ]);
 
           cubit.close();
           fake.flushMicrotasks();

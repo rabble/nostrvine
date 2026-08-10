@@ -38,6 +38,7 @@ workspace:
   - packages/content_blocklist_repository
   - packages/content_policy
   - packages/count_formatter
+  - packages/creator_sync
   - packages/curated_list_repository
   - packages/curation_repository
   - packages/divine_blurhash
@@ -217,6 +218,9 @@ dependencies:
   # Feed Tuning Repository - publishes swipe "more/less like this" signals
   feed_tuning_repository:
 
+  # Creator Sync - cross-device sync for saved sounds, clips, and drafts
+  creator_sync:
+
   # Curated List Repository - NIP-51 kind 30005 curated video lists
   curated_list_repository:
 
@@ -303,6 +307,8 @@ dependencies:
   window_manager: ^0.5.1
   firebase_core: ^4.4.0
   firebase_crashlytics: ^5.0.7
+  # Pinned to the Firebase Core 4.4-compatible FlutterFire release family.
+  firebase_remote_config: 6.1.4
   go_router: ^16.2.4
   # Runtime splash-screen control via FlutterNativeSplash.preserve/remove.
   # Used ONLY for the runtime API — do NOT add a flutter_native_splash:

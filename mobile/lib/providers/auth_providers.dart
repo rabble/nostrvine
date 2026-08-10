@@ -1,6 +1,6 @@
 // ABOUTME: Auth & identity Riverpod providers split from app_providers.dart
 // ABOUTME: Secure storage, OAuth/Keycast, AuthService keystone, NIP-98/CAWG/NIP-39,
-// ABOUTME: account deletion, Zendesk identity sync (eager)
+// ABOUTME: account deletion, Zendesk and analytics identity sync (eager)
 
 import 'dart:async';
 import 'dart:convert';
@@ -13,6 +13,7 @@ import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/models/known_account.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -311,6 +312,34 @@ void zendeskIdentitySync(Ref ref) {
         name: 'ZendeskIdentitySync',
         category: LogCategory.system,
       );
+    }
+  });
+
+  ref.onDispose(subscription.cancel);
+}
+
+/// Provider that mirrors the authenticated identity into Firebase Analytics
+/// and Crashlytics.
+///
+/// Deliberately independent of [zendeskIdentitySync]: campaign attribution
+/// joins BigQuery `user_id` against the ClickHouse pubkey, so it must not be
+/// coupled to the lifetime of the support-desk integration. Watch this
+/// provider at app startup to keep the analytics identity in sync with auth.
+@Riverpod(keepAlive: true)
+void analyticsIdentitySync(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+  final coordinator = ref.read(analyticsIdentityCoordinatorProvider);
+
+  final restoredPubkeyHex = authService.currentPublicKeyHex;
+  if (authService.isAuthenticated && restoredPubkeyHex != null) {
+    unawaited(coordinator.setUserId(restoredPubkeyHex));
+  }
+
+  final subscription = authService.authStateStream.listen((authState) async {
+    if (authState == AuthState.authenticated) {
+      await coordinator.setUserId(authService.currentPublicKeyHex);
+    } else if (authState == AuthState.unauthenticated) {
+      await coordinator.setUserId(null);
     }
   });
 

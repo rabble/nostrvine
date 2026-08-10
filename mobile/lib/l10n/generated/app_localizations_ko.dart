@@ -4131,6 +4131,18 @@ class AppLocalizationsKo extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
+  String get soundSyncStatusSyncing => '사운드를 동기화하는 중…';
+
+  @override
+  String get soundSyncStatusSynced => '사운드가 최신 상태입니다';
+
+  @override
+  String get soundSyncStatusFailed => '사운드를 동기화하지 못했어요. 다시 시도할게요.';
+
+  @override
+  String get soundSyncStatusLocked => '이 기기에서는 동기화된 라이브러리를 열 수 없어요.';
+
+  @override
   String get soundsFailedToLoad => '사운드를 불러오지 못했어요';
 
   @override
@@ -5735,6 +5747,20 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get dmSendBlockedMessage =>
       'You can only message official Divine accounts';
+
+  @override
+  String get dmSendBlockedRetiredMessage =>
+      '이 대화는 아무도 읽지 않습니다. 대신 Divine Moderation에 메시지를 보내세요.';
+
+  @override
+  String get dmRetiredThreadClosedTitle => '이 대화는 종료되었습니다.';
+
+  @override
+  String get dmRetiredThreadClosedBody =>
+      'Divine Moderation을 새 계정으로 옮겼습니다. 이 계정은 더 이상 아무도 읽지 않습니다.';
+
+  @override
+  String get dmRetiredThreadOpenSupport => 'Divine Moderation에 메시지 보내기';
 
   @override
   String get dmSendFailedMessage => '메시지를 보내지 못했어요';
@@ -7347,6 +7373,21 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get followersUpdateFollowFailed => '팔로우 상태를 업데이트하지 못했어요. 다시 시도해주세요.';
+
+  @override
+  String get followersSortSemanticLabel => '팔로워 정렬';
+
+  @override
+  String get followingSortSemanticLabel => '팔로잉 정렬';
+
+  @override
+  String get followSortTitle => '정렬 기준';
+
+  @override
+  String get followSortNewest => '최신순';
+
+  @override
+  String get followSortOldest => '오래된순';
 
   @override
   String get reportMessageTitle => '메시지 신고';

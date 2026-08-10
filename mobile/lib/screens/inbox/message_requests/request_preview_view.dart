@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit.dart';
 import 'package:openvine/blocs/dm/message_requests/request_preview_cubit.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/collaborator_invite.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -17,6 +18,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
+import 'package:openvine/screens/inbox/widgets/moderation_identity.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/collaborator_invite_parser.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -68,6 +70,7 @@ class RequestPreviewView extends ConsumerWidget {
     final profile = profileAsync.asData?.value;
 
     final displayName =
+        moderationDisplayName(context, otherPubkey) ??
         profile?.bestDisplayName ??
         UserProfile.defaultDisplayNameFor(otherPubkey);
 
@@ -142,6 +145,9 @@ class _ProfileContent extends StatelessWidget {
                 name: displayName,
                 placeholderSeed: otherPubkey,
                 size: 96,
+                contentOverride: isModerationAccount(otherPubkey)
+                    ? const ModerationAvatar()
+                    : null,
               ),
               const SizedBox(height: 32),
               Text(

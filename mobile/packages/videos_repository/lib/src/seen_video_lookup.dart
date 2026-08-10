@@ -3,7 +3,7 @@
 
 import 'package:models/models.dart';
 
-/// Default window used to move recently watched For You candidates later.
+/// Default window used to move recently watched candidates later.
 const Duration defaultRecentlySeenVideoWindow = Duration(hours: 24);
 
 /// Function signature for checking whether a video was seen recently.
@@ -33,7 +33,7 @@ class SeenVideoLookup {
 /// Returns candidates with not-recently-seen videos first.
 ///
 /// Recently seen videos are appended instead of dropped so small candidate
-/// pools still produce a feed.
+/// pools still produce a feed. Neutral name — used across home surfaces.
 List<VideoEvent> prioritizeNotRecentlySeenVideos(
   Iterable<VideoEvent> videos, {
   SeenVideoLookup? seenVideoLookup,
@@ -56,4 +56,43 @@ List<VideoEvent> prioritizeNotRecentlySeenVideos(
 
   if (notRecentlySeen.isEmpty || recentlySeen.isEmpty) return candidates;
   return [...notRecentlySeen, ...recentlySeen];
+}
+
+/// Filters out recently-seen videos entirely (drop, not demote).
+///
+/// Used for classics/discovery where inventory is effectively unlimited and
+/// repeating the same leaderboard top would otherwise trap heavy viewers.
+/// Returns all candidates if none were recently seen. By default it also
+/// retains all candidates when every candidate was seen, so callers with a
+/// finite candidate pool do not accidentally create an empty feed. Callers
+/// that can fetch deeper may set [retainAllWhenAllSeen] to `false` and decide
+/// how to recover from an empty filtered page themselves.
+List<VideoEvent> filterOutRecentlySeenVideos(
+  Iterable<VideoEvent> videos, {
+  SeenVideoLookup? seenVideoLookup,
+  Duration recencyWindow = defaultRecentlySeenVideoWindow,
+  bool retainAllWhenAllSeen = true,
+}) {
+  final candidates = videos is List<VideoEvent> ? videos : videos.toList();
+  if (seenVideoLookup == null || candidates.isEmpty) return candidates;
+
+  final filtered = <VideoEvent>[];
+  var dropped = 0;
+  for (final video in candidates) {
+    if (video.id.isNotEmpty &&
+        seenVideoLookup.wasSeenRecently(video.id, within: recencyWindow)) {
+      dropped++;
+    } else {
+      filtered.add(video);
+    }
+  }
+  // If we would drop everything, return original to avoid empty feed
+  // (caller can decide to deep-fetch instead).
+  if (retainAllWhenAllSeen &&
+      filtered.isEmpty &&
+      dropped > 0 &&
+      candidates.isNotEmpty) {
+    return candidates;
+  }
+  return filtered;
 }

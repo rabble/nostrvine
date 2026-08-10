@@ -4103,6 +4103,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
+  String get soundSyncStatusSyncing => '正在同步你的声音…';
+
+  @override
+  String get soundSyncStatusSynced => '声音已是最新';
+
+  @override
+  String get soundSyncStatusFailed => '无法同步你的声音，我们会再试一次。';
+
+  @override
+  String get soundSyncStatusLocked => '无法在此设备上解锁你的同步音库。';
+
+  @override
   String get soundsFailedToLoad => '声音加载失败';
 
   @override
@@ -5692,6 +5704,20 @@ class AppLocalizationsZh extends AppLocalizations {
   String get dmSendBlockedMessage => '你只能给 Divine 官方账号发私信';
 
   @override
+  String get dmSendBlockedRetiredMessage =>
+      '没有人会看到这个对话。请改为给 Divine Moderation 发私信。';
+
+  @override
+  String get dmRetiredThreadClosedTitle => '此对话已关闭。';
+
+  @override
+  String get dmRetiredThreadClosedBody =>
+      '我们已把 Divine Moderation 迁移到新账号。这个账号已经没人看了。';
+
+  @override
+  String get dmRetiredThreadOpenSupport => '给 Divine Moderation 发私信';
+
+  @override
   String get dmSendFailedMessage => '消息发送失败';
 
   @override
@@ -7275,6 +7301,21 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get followersUpdateFollowFailed => '更新关注状态失败，请重试。';
+
+  @override
+  String get followersSortSemanticLabel => '排序粉丝';
+
+  @override
+  String get followingSortSemanticLabel => '排序关注';
+
+  @override
+  String get followSortTitle => '排序方式';
+
+  @override
+  String get followSortNewest => '最新优先';
+
+  @override
+  String get followSortOldest => '最早优先';
 
   @override
   String get reportMessageTitle => '举报消息';

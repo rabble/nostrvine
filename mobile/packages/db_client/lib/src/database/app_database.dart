@@ -41,6 +41,7 @@ const _notificationRetentionDays = 7;
     PendingProfileSaves,
     IdentityEvents,
     IdentityVerifications,
+    SeenVideos,
     VanishedProfiles,
   ],
   daos: [
@@ -68,6 +69,7 @@ const _notificationRetentionDays = 7;
     PendingProfileSavesDao,
     IdentityEventsDao,
     IdentityVerificationsDao,
+    SeenVideosDao,
     VanishedProfilesDao,
   ],
 )
@@ -819,6 +821,30 @@ class AppDatabase extends _$AppDatabase {
         )
       ''');
     }
+
+    // Check if seen_videos table exists, create if missing.
+    // Added for client-seen filtering (unbounded id+lastSeen, ~1yr TTL).
+    // Schema version stays at 1 — same runtime CREATE-IF-NOT-EXISTS pattern
+    // as vanished_profiles above. Column order/types must match Drift's
+    // m.createAll() output. Single index on last_seen_at for TTL pruning.
+    final seenVideosResult = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type='table' "
+      "AND name='seen_videos'",
+    ).get();
+
+    if (seenVideosResult.isEmpty) {
+      await customStatement('''
+        CREATE TABLE seen_videos (
+          video_id TEXT NOT NULL PRIMARY KEY,
+          first_seen_at INTEGER NOT NULL,
+          last_seen_at INTEGER NOT NULL
+        )
+      ''');
+    }
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_seen_videos_last_seen_at
+      ON seen_videos (last_seen_at DESC)
+    ''');
 
     // Denormalized NIP-33 d-tag column so replaceable-event upserts can use
     // an indexed lookup instead of decoding the tags JSON of every

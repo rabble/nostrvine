@@ -14,6 +14,7 @@ import 'package:reposts_repository/src/exceptions.dart';
 import 'package:reposts_repository/src/models/repost_record.dart';
 import 'package:reposts_repository/src/models/reposts_sync_result.dart';
 import 'package:reposts_repository/src/reposts_local_storage.dart';
+import 'package:reposts_repository/src/reposts_repository_reportable_sites.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -31,6 +32,26 @@ typedef QueueOfflineRepostCallback =
       required String originalAuthorPubkey,
       String? eventId,
     });
+
+/// Reporter port for programming-invariant violations swallowed by the
+/// best-effort local-storage paths.
+///
+/// The repository swallows local-storage failures so an unusable cache can
+/// never block a relay publish. Expected IO and corruption failures stay in
+/// the unified log, but an `Error` — `StateError`, `TypeError`,
+/// `RangeError` — means the storage layer itself is broken, and a swallowed
+/// bug is a bug nobody ever sees. Wiring an implementation routes that
+/// signal to Crashlytics without crossing the `reposts_repository` → app
+/// package boundary.
+///
+/// [site] is one of `RepostsRepositoryReportableSites`'s constants and is
+/// used as the Crashlytics `reason:` suffix so the dashboard aggregates per
+/// swallow site.
+///
+/// Implementations MUST NOT throw — the repository invokes this from inside
+/// the swallow and any throw would defeat it.
+typedef RepostsRepositoryErrorReporter =
+    void Function(Object error, StackTrace stackTrace, {required String site});
 
 /// Repository for managing user reposts (Kind 16 generic reposts) on videos.
 ///
@@ -62,20 +83,31 @@ class RepostsRepository {
   /// - [queueOfflineAction]: Optional callback to queue actions when offline
   /// - [blockFilter]: Optional callback to hide blocked/muted users from
   ///   engagement lists ([fetchEventReposters])
+  /// - [errorReporter]: Optional reporter invoked from the best-effort
+  ///   local-storage swallow sites when the swallowed failure is a
+  ///   programming-invariant violation (see
+  ///   [RepostsRepositoryErrorReporter]). Defaults to `null` so test
+  ///   fixtures need no rewiring; production wires it through
+  ///   `repostsRepositoryProvider` to forward to Crashlytics.
   RepostsRepository({
     required NostrClient nostrClient,
     RepostsLocalStorage? localStorage,
     IsOnlineCallback? isOnline,
     QueueOfflineRepostCallback? queueOfflineAction,
     BlockedReposterFilter? blockFilter,
+    RepostsRepositoryErrorReporter? errorReporter,
   }) : _nostrClient = nostrClient,
        _localStorage = localStorage,
        _isOnline = isOnline,
        _queueOfflineAction = queueOfflineAction,
-       _blockFilter = blockFilter;
+       _blockFilter = blockFilter,
+       _errorReporter = errorReporter;
 
   final NostrClient _nostrClient;
   final RepostsLocalStorage? _localStorage;
+
+  /// Reporter for invariant violations swallowed by the storage paths.
+  final RepostsRepositoryErrorReporter? _errorReporter;
 
   /// Callback to hide blocked/muted users from engagement lists
   final BlockedReposterFilter? _blockFilter;
@@ -104,6 +136,15 @@ class RepostsRepository {
   /// Whether the repository has been initialized with data from storage.
   bool _isInitialized = false;
 
+  /// Whether local storage has proven unusable during this session.
+  ///
+  /// Latched by any swallowed storage failure. A store that cannot answer a
+  /// read or a write also cannot serve a live query stream, so
+  /// [watchRepostedAddressableIds] must not hand the UI a stream backed by
+  /// it — see that method for why a dead stream costs the repost button its
+  /// state.
+  bool _storageDegraded = false;
+
   /// Whether [dispose] has been called.
   ///
   /// Once disposed, all stream emissions are no-ops.
@@ -127,12 +168,23 @@ class RepostsRepository {
   ///
   /// Emits a new set whenever the user's reposts change.
   /// This is useful for UI components that need to reactively update.
-  Stream<Set<String>> watchRepostedAddressableIds() {
-    // If we have local storage, delegate to its reactive stream
-    if (_localStorage != null) {
-      return _localStorage.watchRepostedAddressableIds();
+  ///
+  /// Backed by local storage's own query stream when storage is healthy, and
+  /// by the repository's in-memory cache when it is not. The fallback is what
+  /// keeps the repost button honest on a device whose database is present but
+  /// unreadable: storage's stream never emits there, while every mutation
+  /// still ticks [_repostedIdsController], so a UI wired to the dead stream
+  /// would show the publish succeed and the button never flip.
+  Stream<Set<String>> watchRepostedAddressableIds() async* {
+    // Initialize before choosing the source so a broken store has already
+    // been observed by the time the choice is made.
+    await _ensureInitialized();
+    final localStorage = _localStorage;
+    if (localStorage != null && !_storageDegraded) {
+      yield* localStorage.watchRepostedAddressableIds();
+    } else {
+      yield* _repostedIdsController.stream;
     }
-    return _repostedIdsController.stream;
   }
 
   /// Get the current set of reposted addressable IDs.
@@ -285,7 +337,11 @@ class RepostsRepository {
       createdAt: DateTime.now(),
     );
     _repostRecords[addressableId] = placeholder;
-    await _localStorage?.saveRepostRecord(placeholder);
+    await _bestEffortLocalStorage(
+      () async => _localStorage?.saveRepostRecord(placeholder),
+      description: 'saving the repost placeholder',
+      site: RepostsRepositoryReportableSites.repostVideoSavePlaceholder,
+    );
     if (previousCount != null) {
       _cacheRepostCount(addressableId, previousCount + 1);
     }
@@ -327,7 +383,11 @@ class RepostsRepository {
         createdAt: placeholder.createdAt,
       );
       _repostRecords[addressableId] = confirmed;
-      await _localStorage?.saveRepostRecord(confirmed);
+      await _bestEffortLocalStorage(
+        () async => _localStorage?.saveRepostRecord(confirmed),
+        description: 'saving the confirmed repost',
+        site: RepostsRepositoryReportableSites.repostVideoSaveConfirmed,
+      );
 
       return sentEvent.id;
     } catch (e, stackTrace) {
@@ -348,7 +408,11 @@ class RepostsRepository {
         return placeholderId;
       }
       _repostRecords.remove(addressableId);
-      await _localStorage?.deleteRepostRecord(addressableId);
+      await _bestEffortLocalStorage(
+        () async => _localStorage?.deleteRepostRecord(addressableId),
+        description: 'rolling back the repost placeholder',
+        site: RepostsRepositoryReportableSites.repostVideoRollbackPlaceholder,
+      );
       if (previousCount != null) {
         _cacheRepostCount(addressableId, previousCount);
       }
@@ -411,10 +475,21 @@ class RepostsRepository {
     // Try in-memory cache first, then fall back to database.
     // This handles the case where the cache hasn't been populated yet.
     var record = _repostRecords[addressableId];
-    if (record == null && _localStorage != null) {
-      record = await _localStorage.getRepostRecord(addressableId);
+    final localStorage = _localStorage;
+    if (record == null && localStorage != null) {
+      record = await _bestEffortLocalStorage<RepostRecord?>(
+        () => localStorage.getRepostRecord(addressableId),
+        description: 'reading the repost record',
+        site: RepostsRepositoryReportableSites.unrepostVideoReadRecord,
+      );
     }
 
+    // A swallowed read failure is indistinguishable from "no such record"
+    // here, so a degraded store reports "not reposted" when the truth is
+    // "cannot tell". Both answers end the same way — there is no repost
+    // event id to reference in a Kind 5, so nothing can be published either
+    // way — and widening the contract with a second exception would push a
+    // distinction the UI has no recovery for onto every caller.
     if (record == null) {
       throw NotRepostedException(addressableId);
     }
@@ -427,7 +502,11 @@ class RepostsRepository {
     // watchRepostedAddressableIds stream BEFORE any network I/O (mirror of
     // repostVideo).
     _repostRecords.remove(addressableId);
-    await _localStorage?.deleteRepostRecord(addressableId);
+    await _bestEffortLocalStorage(
+      () async => _localStorage?.deleteRepostRecord(addressableId),
+      description: 'deleting the repost record',
+      site: RepostsRepositoryReportableSites.unrepostVideoDeleteRecord,
+    );
     if (previousCount != null) {
       _cacheRepostCount(addressableId, previousCount - 1);
     }
@@ -479,7 +558,11 @@ class RepostsRepository {
         return;
       }
       _repostRecords[addressableId] = snapshotRecord;
-      await _localStorage?.saveRepostRecord(snapshotRecord);
+      await _bestEffortLocalStorage(
+        () async => _localStorage?.saveRepostRecord(snapshotRecord),
+        description: 'restoring the repost record',
+        site: RepostsRepositoryReportableSites.unrepostVideoRestoreRecord,
+      );
       if (previousCount != null) {
         _cacheRepostCount(addressableId, previousCount);
       }
@@ -550,9 +633,17 @@ class RepostsRepository {
     await _ensureInitialized();
 
     // Query the database directly as source of truth to avoid cache/db
-    // inconsistency after app restart
+    // inconsistency after app restart. Best-effort for the same reason
+    // [repostVideo]'s writes are: this is the only entry point the repost
+    // button uses, so an unreadable cache throwing here costs the Kind 16
+    // outright. A swallowed read falls back to the in-memory cache, which is
+    // exactly what the null-storage branch of the `??` already does.
     final isCurrentlyReposted =
-        await _localStorage?.isReposted(addressableId) ??
+        await _bestEffortLocalStorage<bool?>(
+          () async => _localStorage?.isReposted(addressableId),
+          description: 'checking the repost state',
+          site: RepostsRepositoryReportableSites.toggleRepostReadState,
+        ) ??
         _repostRecords.containsKey(addressableId);
 
     if (isCurrentlyReposted) {
@@ -587,13 +678,22 @@ class RepostsRepository {
   ///
   /// Throws `SyncFailedException` if syncing fails.
   Future<RepostsSyncResult> syncUserReposts() async {
-    // First, load from local storage (fast)
-    if (_localStorage != null) {
-      final records = await _localStorage.getAllRepostRecords();
-      for (final record in records) {
-        _repostRecords[record.addressableId] = record;
+    // First, load from local storage (fast). Best-effort and deliberately
+    // outside the relay try/catch below: an unreadable cache must not skip
+    // the authoritative relay fetch, which is the whole point of a sync.
+    final localStorage = _localStorage;
+    if (localStorage != null) {
+      final records = await _bestEffortLocalStorage(
+        localStorage.getAllRepostRecords,
+        description: 'loading persisted reposts for sync',
+        site: RepostsRepositoryReportableSites.syncUserRepostsLoadRecords,
+      );
+      if (records != null) {
+        for (final record in records) {
+          _repostRecords[record.addressableId] = record;
+        }
+        _emitRepostedIds();
       }
-      _emitRepostedIds();
     }
 
     try {
@@ -644,8 +744,12 @@ class RepostsRepository {
       }
 
       // Batch save new records to storage
-      if (newRecords.isNotEmpty && _localStorage != null) {
-        await _localStorage.saveRepostRecordsBatch(newRecords);
+      if (newRecords.isNotEmpty && localStorage != null) {
+        await _bestEffortLocalStorage(
+          () => localStorage.saveRepostRecordsBatch(newRecords),
+          description: 'persisting the synced reposts',
+          site: RepostsRepositoryReportableSites.syncUserRepostsSaveBatch,
+        );
       }
 
       _emitRepostedIds();
@@ -890,13 +994,22 @@ class RepostsRepository {
   Future<void> initialize() async {
     if (_isInitialized) return;
 
-    // Load from local storage first for immediate UI display
-    if (_localStorage != null) {
-      final records = await _localStorage.getAllRepostRecords();
-      for (final record in records) {
-        _repostRecords[record.addressableId] = record;
+    // Load from local storage first for immediate UI display. Best-effort:
+    // throwing here would skip _subscribeToReposts below, so an unreadable
+    // cache would also cost the session its cross-device sync.
+    final localStorage = _localStorage;
+    if (localStorage != null) {
+      final records = await _bestEffortLocalStorage(
+        localStorage.getAllRepostRecords,
+        description: 'loading persisted reposts at startup',
+        site: RepostsRepositoryReportableSites.initializeLoadRecords,
+      );
+      if (records != null) {
+        for (final record in records) {
+          _repostRecords[record.addressableId] = record;
+        }
+        _emitRepostedIds();
       }
-      _emitRepostedIds();
     }
 
     final pubkey = await _currentUserPubkey();
@@ -965,7 +1078,17 @@ class RepostsRepository {
     );
 
     _repostRecords[addressableId] = record;
-    unawaited(_localStorage?.saveRepostRecord(record));
+    // Best-effort: `unawaited` attaches no error handler, so a raw rejection
+    // here would surface as an uncaught async error in the app's zone guard
+    // and reach Crashlytics as exactly the expected-IO noise the decision
+    // matrix keeps out.
+    unawaited(
+      _bestEffortLocalStorage(
+        () async => _localStorage?.saveRepostRecord(record),
+        description: 'saving a repost from the live subscription',
+        site: RepostsRepositoryReportableSites.processIncomingRepostSaveRecord,
+      ),
+    );
     _emitRepostedIds();
   }
 
@@ -1010,14 +1133,85 @@ class RepostsRepository {
   Future<void> _ensureInitialized() async {
     if (_isInitialized) return;
 
-    if (_localStorage != null) {
-      final records = await _localStorage.getAllRepostRecords();
-      for (final record in records) {
-        _repostRecords[record.addressableId] = record;
+    final localStorage = _localStorage;
+    if (localStorage != null) {
+      try {
+        final records = await localStorage.getAllRepostRecords();
+        for (final record in records) {
+          _repostRecords[record.addressableId] = record;
+        }
+        _emitRepostedIds();
+      } on Object catch (e, stackTrace) {
+        // Degrade to an in-memory-only cache rather than failing the caller.
+        // Callers are publish paths: an unreadable cache costs a stale
+        // already-reposted check, while throwing here costs the Kind 16.
+        _markStorageDegraded(
+          e,
+          stackTrace,
+          site: RepostsRepositoryReportableSites.ensureInitializedLoadRecords,
+        );
+        Log.warning(
+          'Repost cache unavailable; continuing without persisted records: $e',
+          name: 'RepostsRepository',
+          category: LogCategory.system,
+        );
       }
-      _emitRepostedIds();
     }
+    // Latched on both paths: an unreadable database stays unreadable for the
+    // session, so retrying would re-throw on every call instead of degrading.
     _isInitialized = true;
+  }
+
+  /// Runs a local-storage side effect that must never block a relay publish.
+  ///
+  /// The local database is a cache. A repost that reached relays survives
+  /// without its cache row; a repost blocked by an unwritable cache is lost
+  /// outright. Storage failures are therefore logged and swallowed.
+  ///
+  /// Expected IO/corruption failures are not Crashlytics-reportable (see the
+  /// decision matrix in `.claude/rules/error_handling.md`); the unified log is
+  /// where a degraded cache surfaces. Programming-invariant violations are
+  /// routed to [_errorReporter] instead of vanishing — see
+  /// [_markStorageDegraded].
+  ///
+  /// [site] is the stable `RepostsRepositoryReportableSites` identifier for
+  /// this call site; [description] is the human phrasing used in the log.
+  Future<T?> _bestEffortLocalStorage<T>(
+    Future<T> Function() operation, {
+    required String description,
+    required String site,
+  }) async {
+    try {
+      return await operation();
+    } on Object catch (e, stackTrace) {
+      _markStorageDegraded(e, stackTrace, site: site);
+      Log.warning(
+        'Local repost storage unavailable ($description); '
+        'continuing without it: $e',
+        name: 'RepostsRepository',
+        category: LogCategory.system,
+      );
+      return null;
+    }
+  }
+
+  /// Latches [_storageDegraded] and reports [error] when it is a
+  /// programming-invariant violation.
+  ///
+  /// Storage IO and corruption failures arrive as `Exception`s
+  /// (`SqliteException`, `IOException`) and are expected on a broken device,
+  /// so per the decision matrix in `.claude/rules/error_handling.md` they
+  /// stay out of Crashlytics. `Error` subtypes — `StateError`, `TypeError`,
+  /// `RangeError` — mean the storage layer itself is buggy; swallowing those
+  /// silently is how a real defect ships unnoticed behind a warning log.
+  void _markStorageDegraded(
+    Object error,
+    StackTrace stackTrace, {
+    required String site,
+  }) {
+    _storageDegraded = true;
+    if (error is! Error) return;
+    _errorReporter?.call(error, stackTrace, site: site);
   }
 
   /// Extracts the addressable ID from a repost event's 'a' tag.

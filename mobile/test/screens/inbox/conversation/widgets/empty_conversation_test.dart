@@ -1,5 +1,7 @@
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/empty_conversation.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -124,6 +126,54 @@ void main() {
         await tester.pump();
 
         expect(wasCalled, isTrue);
+      });
+    });
+
+    // Caught on device (#6416): opening the moderation thread before it has
+    // any messages showed the generic orange placeholder, because this card
+    // renders its own avatar rather than the one the tile and header use.
+    group('moderation identity', () {
+      Finder wordmarkFinder() => find.byWidgetPredicate(
+        (widget) => widget is DivineIcon && widget.icon == DivineIconName.logo,
+        description: 'bundled Divine wordmark',
+      );
+
+      Future<void> pumpFor(WidgetTester tester, String pubkey) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: EmptyConversation(
+                displayName: 'Divine Moderation',
+                pubkey: pubkey,
+                onViewProfile: () {},
+              ),
+            ),
+          ),
+        );
+      }
+
+      testWidgets('the current moderation key gets the wordmark', (
+        tester,
+      ) async {
+        await pumpFor(tester, kModerationPubkeyHex);
+
+        expect(wordmarkFinder(), findsOneWidget);
+      });
+
+      testWidgets('a retired moderation key gets it too', (tester) async {
+        await pumpFor(tester, kLegacyModerationPubkeys.first);
+
+        expect(wordmarkFinder(), findsOneWidget);
+      });
+
+      testWidgets('an ordinary account keeps the generated placeholder', (
+        tester,
+      ) async {
+        await pumpFor(tester, 'b' * 64);
+
+        expect(wordmarkFinder(), findsNothing);
       });
     });
   });

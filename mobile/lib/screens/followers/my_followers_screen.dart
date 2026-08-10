@@ -15,6 +15,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/profile/follow_sort_menu.dart';
 import 'package:openvine/widgets/profile/follower_count_title.dart';
 import 'package:openvine/widgets/profile/searchable_follow_list.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
@@ -106,6 +107,14 @@ class _MyFollowersView extends ConsumerWidget {
         showBackButton: true,
         onBackPressed: () => Navigator.of(context).pop(),
         backButtonSemanticLabel: context.l10n.commonBack,
+        actions: [
+          DiVineAppBarAction(
+            icon: SvgIconSource(DivineIconName.funnelSimple.assetPath),
+            semanticLabel: context.l10n.followersSortSemanticLabel,
+            tooltip: context.l10n.followersSortSemanticLabel,
+            onPressed: () => _openSortMenu(context),
+          ),
+        ],
       ),
       body: MultiBlocListener(
         listeners: [
@@ -157,6 +166,17 @@ class _MyFollowersView extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _openSortMenu(BuildContext context) async {
+    final bloc = context.read<MyFollowersBloc>();
+    final selected = await showFollowSortMenu(
+      context: context,
+      current: bloc.state.sortOrder,
+    );
+
+    if (selected == null) return;
+    bloc.add(MyFollowersSortOrderChanged(selected));
   }
 }
 

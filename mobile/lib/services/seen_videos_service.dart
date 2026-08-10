@@ -1,9 +1,12 @@
 // ABOUTME: Service for tracking which videos have been viewed by the user with engagement metrics
 // ABOUTME: Stores view history with timestamps, loop counts, and watch duration for smart feed ordering
+// ABOUTME: Split storage: seen set (id+lastSeen) in Drift seen_videos table (unbounded, ~1yr TTL),
+// ABOUTME: rich metrics (loops/durations) stay bounded in SharedPreferences JSON (1000).
 
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:db_client/db_client.dart';
 import 'package:meta/meta.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -26,7 +29,6 @@ class SeenVideoMetrics {
   Duration totalWatchDuration;
   Duration lastWatchDuration;
 
-  /// Update metrics with new viewing session
   void updateSession({
     required DateTime timestamp,
     int? loops,
@@ -68,39 +70,53 @@ class SeenVideoMetrics {
       );
 }
 
-/// Service for tracking seen videos with engagement metrics
-/// REFACTORED: Extended to store timestamps, loop counts, and watch duration
+/// Service for tracking seen videos with engagement metrics.
+///
+/// Storage split (fixes 1000-cap truncation for heavy viewers — p90 6,458/30d):
+/// * Seen set (id + lastSeen) → Drift `seen_videos` table, unbounded (~1yr TTL),
+///   indexed on `videoId`/`lastSeenAt`. Reads via DAO, writes batched.
+/// * Rich metrics (loops, watch durations) → bounded SharedPreferences JSON
+///   (`seen_video_metrics`, 1000 most recent). Keeps existing ANR-safe size.
+///
+/// Migration: on first init with a DB available, existing SharedPreferences
+/// JSON is bulk-inserted into `seen_videos` (idempotent), then retained.
+/// When no DB is present (tests, early startup), falls back to pure
+/// SharedPreferences in-memory set so tests stay hermetic without a Drift
+/// instance.
 class SeenVideosService {
   SeenVideosService({
     @visibleForTesting Duration? saveDebounceDuration,
+    @visibleForTesting AppDatabase? database,
+    @visibleForTesting SharedPreferences? prefsOverride,
   }) : _saveDebounceDuration =
-           saveDebounceDuration ?? const Duration(milliseconds: 100);
+           saveDebounceDuration ?? const Duration(milliseconds: 100),
+       _database = database,
+       _prefsOverride = prefsOverride;
 
-  static const String _seenVideosKey = 'seen_video_ids'; // Legacy key
-  static const String _seenVideosMetricsKey = 'seen_video_metrics'; // New key
-  static const int _maxSeenVideos =
-      1000; // Limit storage to prevent unbounded growth
+  static const String _seenVideosKey = 'seen_video_ids';
+  static const String _seenVideosMetricsKey = 'seen_video_metrics';
+  static const String _seenVideosMigratedKey = 'seen_videos_migrated_to_db';
+  static const int _maxSeenVideos = 1000;
 
   final Map<String, SeenVideoMetrics> _seenVideos = {};
+  final Map<String, DateTime> _seenLastSeen = {};
   final Duration _saveDebounceDuration;
+  final AppDatabase? _database;
+  final SharedPreferences? _prefsOverride;
   SharedPreferences? _prefs;
   bool _isInitialized = false;
   Future<void>? _initializeFuture;
   Timer? _saveDebounceTimer;
   Completer<void>? _pendingSaveCompleter;
 
-  /// Whether the service has been initialized
   bool get isInitialized => _isInitialized;
+  int get seenVideoCount => _seenLastSeen.length;
+  AppDatabase? get _effectiveDb => _database;
 
-  /// Get count of seen videos
-  int get seenVideoCount => _seenVideos.length;
-
-  /// Initialize the service and load seen videos from storage
   Future<void> initialize() {
     if (_isInitialized) return Future.value();
     final pending = _initializeFuture;
     if (pending != null) return pending;
-
     final future = _initialize();
     _initializeFuture = future;
     return future;
@@ -108,12 +124,19 @@ class SeenVideosService {
 
   Future<void> _initialize() async {
     try {
-      _prefs = await SharedPreferences.getInstance();
+      _prefs = _prefsOverride ?? await SharedPreferences.getInstance();
       await _loadSeenVideos();
+      if (_effectiveDb != null) {
+        unawaited(
+          _effectiveDb!.seenVideosDao.pruneExpired().then<void>(
+            (_) {},
+            onError: (Object e, StackTrace s) {},
+          ),
+        );
+      }
       _isInitialized = true;
-
       Log.info(
-        '📱️ SeenVideosService initialized with ${_seenVideos.length} seen videos',
+        '📱️ SeenVideosService initialized with ${_seenLastSeen.length} seen videos (${_seenVideos.length} with metrics)',
         name: 'SeenVideosService',
         category: LogCategory.system,
       );
@@ -124,57 +147,84 @@ class SeenVideosService {
         category: LogCategory.system,
       );
     } finally {
-      if (!_isInitialized) {
-        _initializeFuture = null;
-      }
+      if (!_isInitialized) _initializeFuture = null;
     }
   }
 
-  /// Load seen videos from persistent storage with migration from legacy format
   Future<void> _loadSeenVideos() async {
     if (_prefs == null) return;
-
     try {
-      // Try loading new format first
       final metricsJson = _prefs!.getString(_seenVideosMetricsKey);
       if (metricsJson != null) {
         final List<dynamic> metricsList = jsonDecode(metricsJson);
         _seenVideos.clear();
+        _seenLastSeen.clear();
         for (final json in metricsList) {
           final metrics = SeenVideoMetrics.fromJson(
             json as Map<String, dynamic>,
           );
           _seenVideos[metrics.videoId] = metrics;
+          _seenLastSeen[metrics.videoId] = metrics.lastSeenAt;
         }
         Log.debug(
           '📱 Loaded ${_seenVideos.length} seen videos with metrics',
           name: 'SeenVideosService',
           category: LogCategory.system,
         );
-        return;
+      } else {
+        final legacyList = _prefs!.getStringList(_seenVideosKey);
+        if (legacyList != null && legacyList.isNotEmpty) {
+          _seenVideos.clear();
+          _seenLastSeen.clear();
+          final now = DateTime.now();
+          for (final videoId in legacyList) {
+            _seenVideos[videoId] = SeenVideoMetrics(
+              videoId: videoId,
+              firstSeenAt: now,
+              lastSeenAt: now,
+            );
+            _seenLastSeen[videoId] = now;
+          }
+          Log.info(
+            '📱 Migrated ${_seenVideos.length} videos from legacy format',
+            name: 'SeenVideosService',
+            category: LogCategory.system,
+          );
+          await _saveSeenVideosNow();
+          await _prefs!.remove(_seenVideosKey);
+        }
       }
-
-      // Migrate from legacy format (Set<String> with no metrics)
-      final legacyList = _prefs!.getStringList(_seenVideosKey);
-      if (legacyList != null && legacyList.isNotEmpty) {
-        _seenVideos.clear();
-        final now = DateTime.now();
-        for (final videoId in legacyList) {
-          _seenVideos[videoId] = SeenVideoMetrics(
-            videoId: videoId,
-            firstSeenAt: now,
-            lastSeenAt: now,
+      if (_effectiveDb != null) {
+        try {
+          final dbRows = await _effectiveDb!.seenVideosDao.getAll();
+          for (final row in dbRows) {
+            final lastSeen = DateTime.fromMillisecondsSinceEpoch(
+              row.lastSeenAt,
+            );
+            final existing = _seenLastSeen[row.videoId];
+            if (existing == null || lastSeen.isAfter(existing)) {
+              _seenLastSeen[row.videoId] = lastSeen;
+            }
+          }
+          final migrated = _prefs!.getBool(_seenVideosMigratedKey) ?? false;
+          if (!migrated && dbRows.isEmpty && _seenVideos.isNotEmpty) {
+            await _migrateMetricsToDb();
+            await _prefs!.setBool(_seenVideosMigratedKey, true);
+          } else if (dbRows.isNotEmpty && !migrated) {
+            await _prefs!.setBool(_seenVideosMigratedKey, true);
+          }
+          Log.debug(
+            '📱 Seen DB hydrated: ${dbRows.length} rows, merged to ${_seenLastSeen.length} total',
+            name: 'SeenVideosService',
+            category: LogCategory.system,
+          );
+        } catch (e) {
+          Log.warning(
+            'Seen DB hydrate failed, using prefs set: $e',
+            name: 'SeenVideosService',
+            category: LogCategory.system,
           );
         }
-        Log.info(
-          '📱 Migrated ${_seenVideos.length} videos from legacy format',
-          name: 'SeenVideosService',
-          category: LogCategory.system,
-        );
-
-        // Save in new format and remove legacy key
-        await _saveSeenVideosNow();
-        await _prefs!.remove(_seenVideosKey);
       }
     } catch (e) {
       Log.error(
@@ -185,34 +235,52 @@ class SeenVideosService {
     }
   }
 
-  /// Save seen videos to persistent storage
+  Future<void> _migrateMetricsToDb() async {
+    final db = _effectiveDb;
+    if (db == null || _seenVideos.isEmpty) return;
+    try {
+      final rows = _seenVideos.values
+          .map(
+            (m) => SeenVideoRow(
+              videoId: m.videoId,
+              firstSeenAt: m.firstSeenAt.millisecondsSinceEpoch,
+              lastSeenAt: m.lastSeenAt.millisecondsSinceEpoch,
+            ),
+          )
+          .toList();
+      await db.seenVideosDao.markSeenBatch(rows);
+      Log.info(
+        '📱 Migrated ${rows.length} seen ids to Drift',
+        name: 'SeenVideosService',
+        category: LogCategory.system,
+      );
+    } catch (e) {
+      Log.warning(
+        'Seen DB migration failed: $e',
+        name: 'SeenVideosService',
+        category: LogCategory.system,
+      );
+    }
+  }
+
   Future<void> _saveSeenVideosNow() async {
     if (_prefs == null) return;
-
     try {
-      // Sort by lastSeenAt to keep most recent
       final sortedVideos = _seenVideos.values.toList()
         ..sort((a, b) => b.lastSeenAt.compareTo(a.lastSeenAt));
-
-      // Limit size if needed (keep most recent)
       final videosToSave = sortedVideos.length > _maxSeenVideos
           ? sortedVideos.sublist(0, _maxSeenVideos)
           : sortedVideos;
-
-      // Update in-memory map if we trimmed
       if (videosToSave.length < _seenVideos.length) {
         _seenVideos.clear();
         for (final metrics in videosToSave) {
           _seenVideos[metrics.videoId] = metrics;
         }
       }
-
-      // Serialize to JSON
       final metricsList = videosToSave.map((m) => m.toJson()).toList();
       await _prefs!.setString(_seenVideosMetricsKey, jsonEncode(metricsList));
-
       Log.debug(
-        '📱 Saved ${videosToSave.length} seen videos with metrics',
+        '📱 Saved ${videosToSave.length} seen videos with metrics (seen set: ${_seenLastSeen.length})',
         name: 'SeenVideosService',
         category: LogCategory.system,
       );
@@ -227,7 +295,6 @@ class SeenVideosService {
 
   Future<void> _scheduleSeenVideosSave() {
     if (_prefs == null) return Future.value();
-
     _saveDebounceTimer?.cancel();
     final completer = _pendingSaveCompleter ??= Completer<void>();
     _saveDebounceTimer = Timer(
@@ -240,36 +307,23 @@ class SeenVideosService {
   Future<void> _flushPendingSeenVideosSave() async {
     _saveDebounceTimer?.cancel();
     _saveDebounceTimer = null;
-
     final completer = _pendingSaveCompleter;
     if (completer == null) return;
     _pendingSaveCompleter = null;
-
     try {
       await _saveSeenVideosNow();
       if (!completer.isCompleted) completer.complete();
     } catch (error, stackTrace) {
-      if (!completer.isCompleted) {
-        completer.completeError(error, stackTrace);
-      }
+      if (!completer.isCompleted) completer.completeError(error, stackTrace);
     }
   }
 
-  /// Check if a video has been seen
-  bool hasSeenVideo(String videoId) => _seenVideos.containsKey(videoId);
-
-  /// Get all seen video IDs
-  Set<String> getSeenVideoIds() => _seenVideos.keys.toSet();
-
-  /// Get metrics for a specific video (null if never seen)
+  bool hasSeenVideo(String videoId) => _seenLastSeen.containsKey(videoId);
+  Set<String> getSeenVideoIds() => _seenLastSeen.keys.toSet();
   SeenVideoMetrics? getVideoMetrics(String videoId) => _seenVideos[videoId];
+  Future<void> markVideoAsSeen(String videoId) async =>
+      recordVideoView(videoId);
 
-  /// Mark a video as seen (simple version without metrics)
-  Future<void> markVideoAsSeen(String videoId) async {
-    await recordVideoView(videoId);
-  }
-
-  /// Record a video view with engagement metrics
   Future<void> recordVideoView(
     String videoId, {
     int? loopCount,
@@ -277,9 +331,7 @@ class SeenVideosService {
   }) async {
     final now = DateTime.now();
     final existing = _seenVideos[videoId];
-
     if (existing != null) {
-      // Update existing metrics
       existing.updateSession(
         timestamp: now,
         loops: loopCount,
@@ -291,7 +343,6 @@ class SeenVideosService {
         category: LogCategory.system,
       );
     } else {
-      // Create new metrics
       _seenVideos[videoId] = SeenVideoMetrics(
         videoId: videoId,
         firstSeenAt: now,
@@ -306,32 +357,89 @@ class SeenVideosService {
         category: LogCategory.system,
       );
     }
-
-    await _scheduleSeenVideosSave();
+    _seenLastSeen[videoId] = now;
+    await Future.wait([
+      _persistSeenVideo(
+        videoId,
+        firstSeenAt: _seenVideos[videoId]!.firstSeenAt.millisecondsSinceEpoch,
+        lastSeenAt: now.millisecondsSinceEpoch,
+      ),
+      _scheduleSeenVideosSave(),
+    ]);
   }
 
-  /// Mark multiple videos as seen (batch operation)
   Future<void> markVideosAsSeen(List<String> videoIds) async {
     var hasChanges = false;
     final now = DateTime.now();
-
     for (final videoId in videoIds) {
-      if (!_seenVideos.containsKey(videoId)) {
+      if (!_seenLastSeen.containsKey(videoId)) {
+        _seenLastSeen[videoId] = now;
+        _seenVideos.putIfAbsent(
+          videoId,
+          () => SeenVideoMetrics(
+            videoId: videoId,
+            firstSeenAt: now,
+            lastSeenAt: now,
+          ),
+        );
+        hasChanges = true;
+      } else if (!_seenVideos.containsKey(videoId)) {
         _seenVideos[videoId] = SeenVideoMetrics(
           videoId: videoId,
-          firstSeenAt: now,
+          firstSeenAt: _seenLastSeen[videoId]!,
           lastSeenAt: now,
         );
+        _seenLastSeen[videoId] = now;
         hasChanges = true;
       }
     }
-
     if (hasChanges) {
-      await _scheduleSeenVideosSave();
+      await Future.wait([
+        _persistSeenVideos(videoIds, nowMs: now.millisecondsSinceEpoch),
+        _scheduleSeenVideosSave(),
+      ]);
     }
   }
 
-  /// Get videos sorted by most recently seen
+  Future<void> _persistSeenVideo(
+    String videoId, {
+    required int firstSeenAt,
+    required int lastSeenAt,
+  }) async {
+    final database = _effectiveDb;
+    if (database == null) return;
+    try {
+      await database.seenVideosDao.markSeen(
+        videoId,
+        firstSeenAt: firstSeenAt,
+        lastSeenAt: lastSeenAt,
+      );
+    } catch (error) {
+      Log.warning(
+        'Seen DB write failed; preferences remain available: $error',
+        name: 'SeenVideosService',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  Future<void> _persistSeenVideos(
+    Iterable<String> videoIds, {
+    required int nowMs,
+  }) async {
+    final database = _effectiveDb;
+    if (database == null) return;
+    try {
+      await database.seenVideosDao.upsertBatch(videoIds, nowMs: nowMs);
+    } catch (error) {
+      Log.warning(
+        'Seen DB batch write failed; preferences remain available: $error',
+        name: 'SeenVideosService',
+        category: LogCategory.system,
+      );
+    }
+  }
+
   List<SeenVideoMetrics> getVideosByRecency({int? limit}) {
     final sorted = _seenVideos.values.toList()
       ..sort((a, b) => b.lastSeenAt.compareTo(a.lastSeenAt));
@@ -340,28 +448,24 @@ class SeenVideosService {
         : sorted;
   }
 
-  /// Get videos not seen within a time period (for "show fresh content")
   List<String> getVideosNotSeenSince(Duration duration) {
     final cutoff = DateTime.now().subtract(duration);
-    return _seenVideos.values
-        .where((metrics) => metrics.lastSeenAt.isBefore(cutoff))
-        .map((metrics) => metrics.videoId)
+    return _seenLastSeen.entries
+        .where((e) => e.value.isBefore(cutoff))
+        .map((e) => e.key)
         .toList();
   }
 
-  /// Check if video was seen recently
   bool wasSeenRecently(
     String videoId, {
     Duration within = const Duration(hours: 24),
   }) {
-    final metrics = _seenVideos[videoId];
-    if (metrics == null) return false;
-
+    final lastSeen = _seenLastSeen[videoId];
+    if (lastSeen == null) return false;
     final cutoff = DateTime.now().subtract(within);
-    return metrics.lastSeenAt.isAfter(cutoff);
+    return lastSeen.isAfter(cutoff);
   }
 
-  /// Clear all seen videos (for testing or user preference)
   Future<void> clearSeenVideos() async {
     Log.debug(
       '📱️ Clearing all seen videos',
@@ -369,31 +473,41 @@ class SeenVideosService {
       category: LogCategory.system,
     );
     _seenVideos.clear();
+    _seenLastSeen.clear();
     await _flushPendingSeenVideosSave();
-
     if (_prefs != null) {
       await _prefs!.remove(_seenVideosMetricsKey);
-      await _prefs!.remove(_seenVideosKey); // Also remove legacy key
+      await _prefs!.remove(_seenVideosKey);
+      await _prefs!.remove(_seenVideosMigratedKey);
+    }
+    if (_effectiveDb != null) {
+      try {
+        await _effectiveDb!.seenVideosDao.clearAll();
+      } catch (_) {
+        // best-effort cleanup: DB clear failure is non-fatal
+      }
     }
   }
 
-  /// Remove a specific video from seen list (mark as unseen)
   Future<void> markVideoAsUnseen(String videoId) async {
-    if (!_seenVideos.containsKey(videoId)) {
-      return; // Not in seen list
-    }
-
+    if (!_seenLastSeen.containsKey(videoId)) return;
     Log.debug(
       '📱️ Marking video as unseen: $videoId',
       name: 'SeenVideosService',
       category: LogCategory.system,
     );
+    _seenLastSeen.remove(videoId);
     _seenVideos.remove(videoId);
-
+    if (_effectiveDb != null) {
+      try {
+        await _effectiveDb!.seenVideosDao.remove(videoId);
+      } catch (_) {
+        // best-effort cleanup: remove failure is non-fatal
+      }
+    }
     await _scheduleSeenVideosSave();
   }
 
-  /// Get statistics about seen videos
   Map<String, dynamic> getStatistics() {
     final totalLoops = _seenVideos.values.fold<int>(
       0,
@@ -403,9 +517,9 @@ class SeenVideosService {
       Duration.zero,
       (sum, metrics) => sum + metrics.totalWatchDuration,
     );
-
     return {
-      'totalSeen': _seenVideos.length,
+      'totalSeen': _seenLastSeen.length,
+      'metricsCount': _seenVideos.length,
       'storageLimit': _maxSeenVideos,
       'percentageFull': (_seenVideos.length / _maxSeenVideos * 100)
           .toStringAsFixed(1),

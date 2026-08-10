@@ -1,6 +1,6 @@
-// ABOUTME: Tests the protected-minor DM send policy (#176) — the app-level
-// ABOUTME: composition (DM restriction ∩ approved official) injected into
-// ABOUTME: NIP17MessageService as a DmSendPolicy.
+// ABOUTME: Tests the outbound DM send policy — the app-level composition
+// ABOUTME: (retired-moderation refusal, then DM restriction ∩ approved
+// ABOUTME: official) injected into NIP17MessageService as a DmSendPolicy.
 
 import 'dart:async';
 
@@ -8,6 +8,7 @@ import 'package:dm_repository/dm_repository.dart' show DmSendPolicyDecision;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/models/protected_minor_status.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/official_accounts_providers.dart';
@@ -33,14 +34,17 @@ void main() {
     officials = _MockOfficials();
   });
 
-  ProviderContainer containerWith({required bool isRestricted}) =>
-      ProviderContainer(
-        overrides: [
-          isDmRestrictedProvider.overrideWithValue(isRestricted),
-          hasConfirmedDmRestrictionProvider.overrideWithValue(isRestricted),
-          officialAccountsServiceProvider.overrideWithValue(officials),
-        ],
-      );
+  ProviderContainer containerWith({required bool isRestricted}) {
+    final container = ProviderContainer(
+      overrides: [
+        isDmRestrictedProvider.overrideWithValue(isRestricted),
+        hasConfirmedDmRestrictionProvider.overrideWithValue(isRestricted),
+        officialAccountsServiceProvider.overrideWithValue(officials),
+      ],
+    );
+    addTearDown(container.dispose);
+    return container;
+  }
 
   test(
     'an unrestricted user may send to anyone; officials not consulted',
@@ -52,6 +56,70 @@ void main() {
       verifyNever(() => officials.isApprovedMinorDmRecipient(any()));
     },
   );
+
+  // #6416. Nothing has read a retired moderation key since the rotation, so an
+  // appeal typed into one of those threads was gift-wrapped, published, and
+  // reported as delivered while reaching nobody. These four fail on `main`,
+  // where the policy returns `allowed` for every non-restricted user.
+  group('a retired moderation recipient', () {
+    test('is terminally blocked for an unrestricted adult', () async {
+      expect(kLegacyModerationPubkeys, isNotEmpty);
+      final container = containerWith(isRestricted: false);
+      final policy = container.read(dmSendPolicyProvider);
+
+      for (final retired in kLegacyModerationPubkeys) {
+        expect(
+          await policy(retired),
+          DmSendPolicyDecision.terminallyBlocked,
+          reason: 'retired key $retired must never be a send target',
+        );
+      }
+    });
+
+    // Run restricted so the assertion has something to catch: without the
+    // retired check the restricted branch reaches the officials service, so
+    // `verifyNever` here is only satisfied by short-circuiting first.
+    test('short-circuits ahead of the officials service', () async {
+      when(
+        () => officials.isApprovedMinorDmRecipient(any()),
+      ).thenAnswer((_) async => false);
+      final container = containerWith(isRestricted: true);
+
+      await container.read(dmSendPolicyProvider)(
+        kLegacyModerationPubkeys.first,
+      );
+
+      verifyNever(() => officials.isApprovedMinorDmRecipient(any()));
+    });
+
+    test('stays blocked for a restricted minor', () async {
+      when(
+        () => officials.isApprovedMinorDmRecipient(any()),
+      ).thenAnswer((_) async => true);
+      final container = containerWith(isRestricted: true);
+
+      final decision = await container.read(dmSendPolicyProvider)(
+        kLegacyModerationPubkeys.first,
+      );
+
+      expect(
+        decision,
+        DmSendPolicyDecision.terminallyBlocked,
+        reason: 'a stubbed approval must not reopen a retired identity',
+      );
+    });
+  });
+
+  // The other half of the same predicate: closing the retired key must not
+  // close the live support lane.
+  test('the current moderation key stays sendable', () async {
+    final container = containerWith(isRestricted: false);
+
+    expect(
+      await container.read(dmSendPolicyProvider)(kModerationPubkeyHex),
+      DmSendPolicyDecision.allowed,
+    );
+  });
 
   test('a restricted user may send to an approved official', () async {
     when(
@@ -70,10 +138,7 @@ void main() {
     final container = containerWith(isRestricted: true);
     final policy = container.read(dmSendPolicyProvider);
 
-    expect(
-      await policy(strangerHex),
-      DmSendPolicyDecision.terminallyBlocked,
-    );
+    expect(await policy(strangerHex), DmSendPolicyDecision.terminallyBlocked);
   });
 
   test(
@@ -156,10 +221,7 @@ void main() {
 
       final decision = await container.read(dmSendPolicyProvider)(strangerHex);
 
-      expect(
-        decision,
-        DmSendPolicyDecision.temporarilyBlocked,
-      );
+      expect(decision, DmSendPolicyDecision.temporarilyBlocked);
     },
   );
 }

@@ -2,12 +2,117 @@
 // ABOUTME: migrated off the factory-singleton pattern to constructor injection (#4743).
 
 import 'package:analytics/analytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/features/creation_analytics/creation_analytics_tracker.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:unified_logger/unified_logger.dart';
+
+typedef CrashUserIdSetter = Future<void> Function(String? userId);
+
+/// Keeps Firebase Analytics and Crashlytics on the same authenticated identity.
+class AnalyticsIdentityCoordinator {
+  AnalyticsIdentityCoordinator({
+    required AnalyticsEventSink analytics,
+    required CrashUserIdSetter setCrashUserId,
+  }) : _analytics = analytics,
+       _setCrashUserId = setCrashUserId;
+
+  static final _hexPubkey = RegExp(r'^[0-9a-fA-F]{64}$');
+
+  /// The identity this app process last applied to Firebase.
+  ///
+  /// Static because the Firebase identity is process-global while this
+  /// coordinator is not: an account switch builds a fresh [ProviderContainer],
+  /// so a per-instance field would start at `null` and read the switch as a
+  /// first login.
+  static String? _lastAppliedUserId;
+
+  @visibleForTesting
+  static void resetLastAppliedUserId() => _lastAppliedUserId = null;
+
+  final AnalyticsEventSink _analytics;
+  final CrashUserIdSetter _setCrashUserId;
+
+  Future<void> setUserId(String? rawPubkeyHex) async {
+    if (rawPubkeyHex != null && !_hexPubkey.hasMatch(rawPubkeyHex)) {
+      Log.error(
+        'Refusing to set a non-hex analytics user ID',
+        name: 'AnalyticsIdentityCoordinator',
+        category: LogCategory.auth,
+      );
+      return;
+    }
+
+    // An external signer can hand back uppercase hex. The campaign join is a
+    // string compare against the lowercase pubkey stored downstream, so the
+    // identity is lowercased rather than passed through as received.
+    final pubkeyHex = rawPubkeyHex?.toLowerCase();
+
+    // `invite_code` is user-scoped, so it outlives the identity it was
+    // recorded for unless every identity change clears it. Logout is not the
+    // only one: an in-place account switch swaps containers without ever
+    // passing through an unauthenticated state.
+    final previousUserId = _lastAppliedUserId;
+    final identityChanged =
+        previousUserId != null && previousUserId != pubkeyHex;
+    _lastAppliedUserId = pubkeyHex;
+
+    try {
+      await _analytics.setUserId(pubkeyHex);
+    } catch (error) {
+      Log.warning(
+        'Failed to update the Firebase Analytics identity: $error',
+        name: 'AnalyticsIdentityCoordinator',
+        category: LogCategory.auth,
+      );
+    }
+
+    if (pubkeyHex == null || identityChanged) {
+      try {
+        await _analytics.setUserProperty(
+          name: AnalyticsUserProperty.inviteCode,
+          value: null,
+        );
+      } catch (error) {
+        Log.warning(
+          'Failed to clear Firebase Analytics invite attribution: $error',
+          name: 'AnalyticsIdentityCoordinator',
+          category: LogCategory.auth,
+        );
+      }
+    }
+
+    try {
+      await _setCrashUserId(pubkeyHex);
+    } catch (error) {
+      Log.warning(
+        'Failed to update the Crashlytics identity: $error',
+        name: 'AnalyticsIdentityCoordinator',
+        category: LogCategory.auth,
+      );
+    }
+  }
+}
 
 /// Provides the low-level analytics event sink for feature-specific events.
 final analyticsEventSinkProvider = Provider<AnalyticsEventSink>(
   (ref) => FirebaseAnalyticsEventSink(),
 );
+
+final creationAnalyticsTrackerProvider = Provider<CreationAnalyticsTracker>(
+  (ref) => CreationAnalyticsTracker(
+    analytics: ref.watch(analyticsEventSinkProvider),
+  ),
+);
+
+final analyticsIdentityCoordinatorProvider =
+    Provider<AnalyticsIdentityCoordinator>(
+      (ref) => AnalyticsIdentityCoordinator(
+        analytics: ref.watch(analyticsEventSinkProvider),
+        setCrashUserId: CrashReportingService.instance.setUserId,
+      ),
+    );
 
 /// Provides the app's shared [SurfacePerformanceTracker].
 ///

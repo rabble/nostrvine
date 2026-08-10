@@ -53,6 +53,7 @@ import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/people_lists/curated_lists_gate.dart';
 import 'package:openvine/features/people_lists/people_lists.dart';
+import 'package:openvine/features/post_publish/post_publish_experiment.dart';
 import 'package:openvine/l10n/current_app_l10n.dart';
 import 'package:openvine/l10n/email_verification_error_l10n.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -62,18 +63,22 @@ import 'package:openvine/network/vine_cdn_http_overrides.dart'
 import 'package:openvine/notifications/routing/notification_tap_target.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/observability/divine_bloc_observer.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/providers/container_swap_host.dart';
+import 'package:openvine/providers/creator_sync_provider.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/deep_link_provider.dart';
 import 'package:openvine/providers/device_scope.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/foreground_idle_warmup_provider.dart';
 import 'package:openvine/providers/install_source_provider.dart';
+import 'package:openvine/providers/invite_status_auth_sessions.dart';
 import 'package:openvine/providers/layer_rasterizer_provider.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/post_publish_providers.dart';
 import 'package:openvine/providers/saved_sounds_provider.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -544,7 +549,9 @@ class _AppQuickActionsNavigator implements QuickActionsNavigator {
 
   @override
   void openCamera() {
-    _router.go(VideoRecorderScreen.path);
+    _router.go(
+      VideoRecorderScreen.pathForEntryPoint(CreationEntryPoint.quickAction),
+    );
   }
 
   @override
@@ -1904,6 +1911,7 @@ class _DivineAppState extends ConsumerState<DivineApp>
   }
 
   void _initializeDeferredStartup() {
+    unawaited(ref.read(postPublishExperimentProvider).initialize());
     unawaited(
       widget.startupCoordinator.initializeRemaining().catchError((
         Object error,
@@ -2706,6 +2714,11 @@ class _DivineAppState extends ConsumerState<DivineApp>
       // eager (`lazy: false`) wiring that stops the #6115 re-entrant create.
       child: SavedSoundsScope(
         service: ref.watch(savedSoundsServiceProvider),
+        // A stream, not a watched value: SavedSoundsScope sits above
+        // MaterialApp.router, so keying its BlocProvider on the resolved
+        // repository would re-inflate the whole app shell every time it
+        // resolves (#6477/#6480). The bloc subscribes and re-points itself.
+        syncRepositoryStream: ref.read(soundSyncRepositoryStreamProvider),
         child: AppShellBadgeScope(
           child: MultiBlocProvider(
             providers: [
@@ -2749,26 +2762,16 @@ class _DivineAppState extends ConsumerState<DivineApp>
                   oauthClient: ref.read(oauthClientProvider),
                   authService: ref.read(authServiceProvider),
                   inviteApiClient: context.read<InviteApiClient>(),
+                  analytics: ref.read(analyticsEventSinkProvider),
                 ),
               ),
               BlocProvider(
                 lazy: false,
-                create: (context) {
-                  final authService = ref.read(authServiceProvider);
-                  InviteStatusAuthSession currentAuthSession() =>
-                      InviteStatusAuthSession(
-                        accountId: authService.currentPublicKeyHex,
-                        isSignerReady: authService.canPublishNostrWritesNow,
-                      );
-
-                  return InviteStatusCubit(
-                    inviteApiClient: context.read<InviteApiClient>(),
-                    initialAuthSession: currentAuthSession(),
-                    authSessionStream: authService.authStateStream.map(
-                      (_) => currentAuthSession(),
-                    ),
-                  )..start();
-                },
+                create: (context) => InviteStatusCubit(
+                  inviteApiClient: context.read<InviteApiClient>(),
+                  initialAuthSession: ref.read(inviteStatusAuthSessionProvider),
+                  authSessionStream: ref.read(inviteStatusAuthSessionsProvider),
+                )..start(),
               ),
               BlocProvider(
                 create: (_) => AppUpdateBloc(
@@ -2927,14 +2930,14 @@ class _UploadFailureListenerState extends State<UploadFailureListener> {
   var _lastKnownFailedIds = <String>{};
   var _lastKnownSucceededIds = <String>{};
   var _pendingSuccessCount = 0;
+  PostPublishCreateAgainOffer? _pendingCreateAgainOffer;
 
   @override
   Widget build(BuildContext context) {
     return BlocListener<BackgroundPublishBloc, BackgroundPublishState>(
       listener: (context, state) {
-        final authService = ProviderScope.containerOf(
-          context,
-        ).read(authServiceProvider);
+        final container = ProviderScope.containerOf(context);
+        final authService = container.read(authServiceProvider);
 
         // Use the bloc's own recentlySucceededIds so we never confuse a
         // BackgroundPublishVanished removal with a true publish success.
@@ -2943,18 +2946,27 @@ class _UploadFailureListenerState extends State<UploadFailureListener> {
         );
         _lastKnownSucceededIds = state.recentlySucceededIds;
         final succeededCount = succeededIds.length;
+        final createAgainOffer = container
+            .read(postPublishExperimentProvider)
+            .completed(succeededIds);
 
         if (succeededCount > 0) {
           if (authService.isAuthenticated) {
             // Show immediately — user is still in-app. If the root navigator
             // context is unavailable the snackbar would be silently dropped,
             // so buffer it and replay once the context is ready.
-            if (!_showPublishSuccessSnackbar(succeededCount)) {
+            if (!_showPublishSuccessSnackbar(
+              succeededCount,
+              createAgainOffer: createAgainOffer,
+              container: container,
+            )) {
               _pendingSuccessCount += succeededCount;
+              _pendingCreateAgainOffer ??= createAgainOffer;
             }
           } else {
             // Buffer for when auth is restored after re-auth redirect.
             _pendingSuccessCount += succeededCount;
+            _pendingCreateAgainOffer ??= createAgainOffer;
           }
         }
 
@@ -2973,11 +2985,17 @@ class _UploadFailureListenerState extends State<UploadFailureListener> {
 
         // Auth is now confirmed — flush buffered successes from re-auth window.
         if (_pendingSuccessCount > 0 &&
-            _showPublishSuccessSnackbar(_pendingSuccessCount)) {
+            _showPublishSuccessSnackbar(
+              _pendingSuccessCount,
+              createAgainOffer: _pendingCreateAgainOffer,
+              container: container,
+            )) {
           _pendingSuccessCount = 0;
+          _pendingCreateAgainOffer = null;
         }
 
         final newFailedIds = currentFailedIds.difference(_lastKnownFailedIds);
+        container.read(postPublishExperimentProvider).failed(newFailedIds);
         _lastKnownFailedIds = currentFailedIds;
 
         if (newFailedIds.isEmpty) return;
@@ -3004,7 +3022,11 @@ class _UploadFailureListenerState extends State<UploadFailureListener> {
 /// [ScaffoldMessenger] from inside the app tree. The listener itself is mounted
 /// above [MaterialApp], so its own [BuildContext] does not have localization or
 /// scaffold ancestors in production.
-bool _showPublishSuccessSnackbar(int count) {
+bool _showPublishSuccessSnackbar(
+  int count, {
+  required ProviderContainer container,
+  PostPublishCreateAgainOffer? createAgainOffer,
+}) {
   final navContext = NavigatorKeys.root.currentContext;
   if (navContext == null || !navContext.mounted) return false;
   final l10n = navContext.l10n;
@@ -3016,6 +3038,30 @@ bool _showPublishSuccessSnackbar(int count) {
       ),
       backgroundColor: navContext.vineColors.nav,
       behavior: SnackBarBehavior.floating,
+      action: createAgainOffer == null
+          ? null
+          : SnackBarAction(
+              label: l10n.libraryRecordVideo,
+              onPressed: () {
+                unawaited(
+                  container
+                      .read(postPublishExperimentProvider)
+                      .createAgainTapped(createAgainOffer),
+                );
+                // Push, not go: the payoff this experiment measures is the
+                // profile the user is standing on, so closing the recorder
+                // has to pop back to it instead of resetting to the feed.
+                unawaited(
+                  container
+                      .read(goRouterProvider)
+                      .push<void>(
+                        VideoRecorderScreen.pathForEntryPoint(
+                          CreationEntryPoint.postPublish,
+                        ),
+                      ),
+                );
+              },
+            ),
     ),
   );
   return true;

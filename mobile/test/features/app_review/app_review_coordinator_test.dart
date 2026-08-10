@@ -50,6 +50,15 @@ class _ImmediateFrameScheduler implements AppReviewFrameScheduler {
 
 class _NoopAnalytics implements AnalyticsEventSink {
   @override
+  Future<void> setUserId(String? userId) async {}
+
+  @override
+  Future<void> setUserProperty({
+    required String name,
+    required String? value,
+  }) async {}
+
+  @override
   Future<void> logEvent({
     required String name,
     required Map<String, Object> parameters,
@@ -75,9 +84,7 @@ void main() {
     String? activePubkey = pubkey;
     final authService = _MockAuthService();
     when(() => authService.authState).thenAnswer((_) => authState);
-    when(
-      () => authService.currentPublicKeyHex,
-    ).thenAnswer((_) => activePubkey);
+    when(() => authService.currentPublicKeyHex).thenAnswer((_) => activePubkey);
 
     final statsController = StreamController<ProfileStats?>();
     addTearDown(statsController.close);

@@ -10,6 +10,7 @@ import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/inbox/widgets/moderation_identity.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/utils/divine_video_url.dart';
 import 'package:openvine/utils/string_utils.dart';
@@ -72,6 +73,7 @@ class ConversationTile extends ConsumerWidget {
     final displayName = isDeleted
         ? context.l10n.profileDeletedAccountName
         : displayNameOverride ??
+              moderationDisplayName(context, otherPubkey) ??
               profileAsync.maybeWhen<String>(
                 data: (profile) =>
                     profile?.bestDisplayName ??
@@ -93,6 +95,11 @@ class ConversationTile extends ConsumerWidget {
             locale: Localizations.localeOf(context).toLanguageTag(),
           )
         : '';
+    final effectiveSubtitleOverride =
+        subtitleOverride ??
+        (isRetiredModerationAccount(otherPubkey)
+            ? context.l10n.dmRetiredThreadClosedTitle
+            : null);
 
     return Semantics(
       button: true,
@@ -142,9 +149,9 @@ class ConversationTile extends ConsumerWidget {
                     placeholderSeed: otherPubkey,
                     size: 40,
                     // Bundled artwork for the moderation account, whose kind-0
-                    // picture does not survive the SVG parser (see below).
+                    // picture does not survive the SVG parser.
                     contentOverride: isModerationAccount(otherPubkey)
-                        ? const _ModerationAvatar()
+                        ? const ModerationAvatar()
                         : null,
                   ),
                 ),
@@ -181,7 +188,7 @@ class ConversationTile extends ConsumerWidget {
                           ],
                         ],
                       ),
-                      if (subtitleOverride case final subtitle?) ...[
+                      if (effectiveSubtitleOverride case final subtitle?) ...[
                         const SizedBox(height: 4),
                         Text(
                           subtitle,
@@ -208,34 +215,6 @@ class ConversationTile extends ConsumerWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Brand artwork for the Divine moderation account's avatar.
-///
-/// The account's kind-0 `picture` is the hosted `divine-logo.svg`, which
-/// colours its paths through a `<style>` block. `vector_graphics_compiler` has
-/// no `<style>` parser, so it discards the stylesheet and every path falls
-/// back to opaque black — 1.1:1 against the inbox surface. The bundled
-/// `logo.svg` is the same wordmark carrying presentational `fill` attributes
-/// instead, so it survives the parser and renders in brand green.
-///
-/// `BoxFit.cover` matches how divine-web frames the same artwork: the wordmark
-/// is 3.8:1, so filling a square avatar crops it to the middle "Vi". Contain
-/// would letterbox the whole lockup into an illegible 40px sliver.
-class _ModerationAvatar extends StatelessWidget {
-  const _ModerationAvatar();
-
-  @override
-  Widget build(BuildContext context) {
-    return ColoredBox(
-      color: context.vineColors.containerLow,
-      child: const DivineIcon(
-        icon: DivineIconName.logo,
-        size: 40,
-        fit: BoxFit.cover,
       ),
     );
   }

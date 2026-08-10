@@ -324,6 +324,9 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
     // Initialize Zendesk identity sync to keep user identity in sync with auth
     ref.watch(zendeskIdentitySyncProvider);
 
+    // Mirrors the authenticated pubkey into Firebase Analytics + Crashlytics.
+    ref.watch(analyticsIdentitySyncProvider);
+
     // Transitional scaffold: syncs notification preferences on auth change.
     // TODO(#4338): remove when NotificationPreferencesCubit owns this lifecycle.
     ref.watch(notificationPreferencesDirtySyncBridgeProvider);

@@ -690,6 +690,71 @@ final class ZendeskIdentitySyncProvider
 String _$zendeskIdentitySyncHash() =>
     r'e49d4f9cedf56ec4131b30a6f1d9d45dada68bed';
 
+/// Provider that mirrors the authenticated identity into Firebase Analytics
+/// and Crashlytics.
+///
+/// Deliberately independent of [zendeskIdentitySync]: campaign attribution
+/// joins BigQuery `user_id` against the ClickHouse pubkey, so it must not be
+/// coupled to the lifetime of the support-desk integration. Watch this
+/// provider at app startup to keep the analytics identity in sync with auth.
+
+@ProviderFor(analyticsIdentitySync)
+final analyticsIdentitySyncProvider = AnalyticsIdentitySyncProvider._();
+
+/// Provider that mirrors the authenticated identity into Firebase Analytics
+/// and Crashlytics.
+///
+/// Deliberately independent of [zendeskIdentitySync]: campaign attribution
+/// joins BigQuery `user_id` against the ClickHouse pubkey, so it must not be
+/// coupled to the lifetime of the support-desk integration. Watch this
+/// provider at app startup to keep the analytics identity in sync with auth.
+
+final class AnalyticsIdentitySyncProvider
+    extends $FunctionalProvider<void, void, void>
+    with $Provider<void> {
+  /// Provider that mirrors the authenticated identity into Firebase Analytics
+  /// and Crashlytics.
+  ///
+  /// Deliberately independent of [zendeskIdentitySync]: campaign attribution
+  /// joins BigQuery `user_id` against the ClickHouse pubkey, so it must not be
+  /// coupled to the lifetime of the support-desk integration. Watch this
+  /// provider at app startup to keep the analytics identity in sync with auth.
+  AnalyticsIdentitySyncProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'analyticsIdentitySyncProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$analyticsIdentitySyncHash();
+
+  @$internal
+  @override
+  $ProviderElement<void> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  void create(Ref ref) {
+    return analyticsIdentitySync(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(void value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<void>(value),
+    );
+  }
+}
+
+String _$analyticsIdentitySyncHash() =>
+    r'18eadd08461e9c7074095cc74e7c05f606566374';
+
 /// Provider for [VerifierClient] pointed at the current environment's
 /// verifier base URL. Stateless — every call hits the network.
 

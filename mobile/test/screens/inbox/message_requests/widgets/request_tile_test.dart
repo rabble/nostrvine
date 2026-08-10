@@ -2,9 +2,12 @@
 // ABOUTME: Verifies avatar, display name, "Sent a message request" subtitle,
 // ABOUTME: unread dot, and tap callback.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:openvine/config/official_accounts.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/message_requests/widgets/request_tile.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -185,6 +188,86 @@ void main() {
         await tester.tap(find.byType(RequestTile));
 
         expect(tapped, isTrue);
+      });
+    });
+
+    // #6416. Moderation recognition reached only the inbox list, so an
+    // enforcement notice that arrived inbound-first — the normal shape for an
+    // automated notice — rendered here as an unidentified stranger with
+    // "Decline and remove" beside it. Neither key has a kind-0 the app can
+    // read, so the profile is always null and the name was always generated.
+    group('moderation identity', () {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      Future<void> pumpTileFor(
+        WidgetTester tester,
+        String counterparty,
+      ) async {
+        await tester.pumpWidget(
+          testMaterialApp(
+            additionalOverrides: [
+              userProfileReactiveProvider(
+                counterparty,
+              ).overrideWith((ref) => Stream.value(null)),
+            ],
+            home: Scaffold(
+              body: RequestTile(
+                conversation: DmConversation(
+                  id:
+                      'dddddddddddddddddddddddddddddddddddddddddddddddddd'
+                      'dddddddddddddd',
+                  participantPubkeys: [currentPubkey, counterparty],
+                  isGroup: false,
+                  createdAt: nowUnix,
+                ),
+                currentUserPubkey: currentPubkey,
+                onTap: () {},
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      Finder wordmarkFinder() => find.byWidgetPredicate(
+        (widget) => widget is DivineIcon && widget.icon == DivineIconName.logo,
+        description: 'bundled Divine wordmark',
+      );
+
+      testWidgets('a retired moderation request is named and badged', (
+        tester,
+      ) async {
+        final retired = kLegacyModerationPubkeys.first;
+
+        await pumpTileFor(tester, retired);
+
+        expect(find.text(l10n.inboxSupportRowTitle), findsOneWidget);
+        expect(find.text(l10n.dmRetiredThreadClosedTitle), findsOneWidget);
+        expect(find.text(l10n.inboxRequestTileSubtitle), findsNothing);
+        expect(
+          find.text(UserProfile.defaultDisplayNameFor(retired)),
+          findsNothing,
+        );
+        expect(wordmarkFinder(), findsOneWidget);
+      });
+
+      testWidgets('the current moderation key is named and badged too', (
+        tester,
+      ) async {
+        await pumpTileFor(tester, kModerationPubkeyHex);
+
+        expect(find.text(l10n.inboxSupportRowTitle), findsOneWidget);
+        expect(wordmarkFinder(), findsOneWidget);
+      });
+
+      testWidgets('an ordinary request is untouched', (tester) async {
+        await pumpTileFor(tester, otherPubkey);
+
+        expect(
+          find.text(UserProfile.defaultDisplayNameFor(otherPubkey)),
+          findsOneWidget,
+        );
+        expect(wordmarkFinder(), findsNothing);
       });
     });
   });

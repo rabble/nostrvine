@@ -4396,6 +4396,20 @@ class AppLocalizationsFil extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
+  String get soundSyncStatusSyncing => 'Sini-sync ang iyong mga tunog…';
+
+  @override
+  String get soundSyncStatusSynced => 'Napapanahon na ang mga tunog';
+
+  @override
+  String get soundSyncStatusFailed =>
+      'Hindi na-sync ang iyong mga tunog. Susubukan ulit namin.';
+
+  @override
+  String get soundSyncStatusLocked =>
+      'Hindi mabuksan ang iyong naka-sync na library sa device na ito.';
+
+  @override
   String get soundsFailedToLoad => 'Hindi na-load ang sounds';
 
   @override
@@ -6055,6 +6069,20 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get dmSendBlockedMessage =>
       'You can only message official Divine accounts';
+
+  @override
+  String get dmSendBlockedRetiredMessage =>
+      'Walang nagbabasa ng usapang ito. Mag-message na lang sa Divine Moderation.';
+
+  @override
+  String get dmRetiredThreadClosedTitle => 'Sarado na ang usapang ito.';
+
+  @override
+  String get dmRetiredThreadClosedBody =>
+      'Inilipat namin ang Divine Moderation sa bagong account. Wala nang nagbabasa nito.';
+
+  @override
+  String get dmRetiredThreadOpenSupport => 'I-message ang Divine Moderation';
 
   @override
   String get dmSendFailedMessage => 'Hindi naipadala ang message';
@@ -7752,6 +7780,21 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get followersUpdateFollowFailed =>
       'Hindi na-update ang follow status. Subukan ulit.';
+
+  @override
+  String get followersSortSemanticLabel => 'Ayusin ang mga follower';
+
+  @override
+  String get followingSortSemanticLabel => 'Ayusin ang mga sinusundan';
+
+  @override
+  String get followSortTitle => 'Ayusin ayon sa';
+
+  @override
+  String get followSortNewest => 'Pinakabago muna';
+
+  @override
+  String get followSortOldest => 'Pinakaluma muna';
 
   @override
   String get reportMessageTitle => 'I-report ang Message';

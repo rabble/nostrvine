@@ -1,6 +1,7 @@
 // ABOUTME: Cubit for managing Divine authentication flow
 // ABOUTME: Handles sign in, sign up, and email verification states
 
+import 'package:analytics/analytics.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:invite_api_client/invite_api_client.dart';
@@ -32,6 +33,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
     String? inviteCode,
     String? inviteSourceSlug,
     bool requirePasswordConfirmation = false,
+    AnalyticsEventSink analytics = const NoOpAnalyticsEventSink(),
   }) : _oauthClient = oauthClient,
        _authService = authService,
        _pendingVerificationService = pendingVerificationService,
@@ -42,6 +44,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
        _inviteSourceSlug = inviteSourceSlug,
        _validationMessages = validationMessages,
        _requirePasswordConfirmation = requirePasswordConfirmation,
+       _analytics = analytics,
        super(const DivineAuthInitial());
 
   final KeycastOAuth _oauthClient;
@@ -52,6 +55,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
   final String? _inviteSourceSlug;
   final AuthValidationMessages _validationMessages;
   final bool _requirePasswordConfirmation;
+  final AnalyticsEventSink _analytics;
 
   /// Initialize form with default state (sign up mode)
   void initialize({
@@ -483,6 +487,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
             code: inviteCode,
             keyContainer: pendingKey,
           );
+          await _setInviteCodeProperty(inviteCode);
           await _authService.createAnonymousAccountFromKeyContainer(pendingKey);
         } finally {
           pendingKey.dispose();
@@ -558,6 +563,22 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       oauthConfig: _oauthClient.config,
       session: session,
     );
+    await _setInviteCodeProperty(inviteCode);
+  }
+
+  Future<void> _setInviteCodeProperty(String inviteCode) async {
+    try {
+      await _analytics.setUserProperty(
+        name: AnalyticsUserProperty.inviteCode,
+        value: inviteCode,
+      );
+    } catch (error) {
+      Log.warning(
+        'Failed to set invite attribution: $error',
+        name: 'DivineAuthCubit',
+        category: LogCategory.auth,
+      );
+    }
   }
 
   /// Return to form from email verification state

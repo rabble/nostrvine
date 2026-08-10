@@ -4111,6 +4111,18 @@ class AppLocalizationsJa extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
+  String get soundSyncStatusSyncing => 'サウンドを同期しています…';
+
+  @override
+  String get soundSyncStatusSynced => 'サウンドは最新です';
+
+  @override
+  String get soundSyncStatusFailed => 'サウンドを同期できませんでした。もう一度試します。';
+
+  @override
+  String get soundSyncStatusLocked => 'この端末では同期済みライブラリのロックを解除できません。';
+
+  @override
   String get soundsFailedToLoad => 'サウンドの読み込みがうまくいかなかった';
 
   @override
@@ -5714,6 +5726,20 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get dmSendBlockedMessage =>
       'You can only message official Divine accounts';
+
+  @override
+  String get dmSendBlockedRetiredMessage =>
+      'このスレッドは誰も読んでいません。Divine Moderation にメッセージを送ってください。';
+
+  @override
+  String get dmRetiredThreadClosedTitle => 'このスレッドは終了しました。';
+
+  @override
+  String get dmRetiredThreadClosedBody =>
+      'Divine Moderation は新しいアカウントに移りました。こちらはもう誰も読んでいません。';
+
+  @override
+  String get dmRetiredThreadOpenSupport => 'Divine Moderation にメッセージを送る';
 
   @override
   String get dmSendFailedMessage => 'メッセージを送信できなかった';
@@ -7321,6 +7347,21 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get followersUpdateFollowFailed => 'フォロー状態の更新に失敗。もう一回試してみて。';
+
+  @override
+  String get followersSortSemanticLabel => 'フォロワーを並べ替え';
+
+  @override
+  String get followingSortSemanticLabel => 'フォロー中を並べ替え';
+
+  @override
+  String get followSortTitle => '並べ替え';
+
+  @override
+  String get followSortNewest => '新しい順';
+
+  @override
+  String get followSortOldest => '古い順';
 
   @override
   String get reportMessageTitle => 'メッセージを報告';

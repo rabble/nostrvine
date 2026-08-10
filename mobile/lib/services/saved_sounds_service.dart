@@ -57,6 +57,31 @@ class SavedSoundsService {
   List<AudioEvent> loadSounds() =>
       loadSavedSounds().map((sound) => sound.audio).toList(growable: false);
 
+  /// Whether the stored library is present but undecodable by this build.
+  ///
+  /// [loadSavedSounds] answers `[]` for an unreadable library exactly as it
+  /// does for an empty one, which is the right call for the UI — there is
+  /// nothing to draw either way — but not for callers that act on the
+  /// absence of a sound. Cross-device sync uses this to tell "the user
+  /// saved nothing" apart from "this build cannot read what they saved",
+  /// and refuses to publish deletions in the second case.
+  ///
+  /// Covers a payload from a newer build ([_isForeignPayload]) as well as
+  /// one whose JSON no longer parses into a recognized shape.
+  bool get isLibraryUnreadable {
+    final raw = _preferences.getString(storageKey);
+    if (raw == null || raw.isEmpty) return false;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is List) return false;
+      if (decoded is! Map) return true;
+      final map = Map<String, dynamic>.from(decoded);
+      return _isNewerSchema(map) || map['sounds'] is! List;
+    } catch (_) {
+      return true;
+    }
+  }
+
   List<SavedSound> loadSavedSounds() {
     _migrateLegacyBucketIfNeeded();
     final rawSounds = _preferences.getString(storageKey);

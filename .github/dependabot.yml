@@ -1,0 +1,66 @@
+# Automated dependency monitoring (#3655).
+#
+# Scope note: this covers GitHub Actions only. The `pub` ecosystem is
+# deliberately NOT enabled yet — see the deferral below.
+version: 2
+updates:
+  # Only 1 of 96 `uses:` references in .github/workflows is SHA-pinned, while
+  # every third-party action floats on a mutable major tag. Keeping those refs
+  # current is the highest-value slice available today, and the ecosystem has no
+  # open defects blocking it. `/` is the documented directory for Actions: it
+  # covers .github/workflows plus a root action.yml.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # ~106 PRs merge here per week and `main` requires branches to be up to date,
+    # so every open bot PR pays repeated rebase + CI cost. Keep the queue short.
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "ci(deps)"
+    labels:
+      - "dependencies"
+    # `reviewers:` was removed from dependabot.yml in favour of CODEOWNERS, and
+    # this repo has no CODEOWNERS file GitHub actually reads (mobile/docs/CODEOWNERS
+    # is not a path GitHub honours; tracked in #6994), so assignment is the only
+    # working handle.
+    assignees:
+      - "realmeylisdev"
+    groups:
+      # One PR per week for the routine churn; majors still arrive individually
+      # because they are the ones that actually need reading.
+      actions-minor-and-patch:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+
+# Deferred: package-ecosystem "pub" on directory "/mobile".
+#
+# pub version updates work against a Dart workspace like this one — dependabot-core
+# ships a `can_update_workspace` fixture that updates a member pubspec plus the
+# root lockfile — but three open upstream defects make it a poor bet right now:
+#
+#   • dependabot/dependabot-core#8356 — no PRs are created when resolution is
+#     constrained by `dependency_overrides`. mobile/pubspec.yaml has exactly that
+#     shape, so the ecosystem could silently produce nothing at all.
+#   • dependabot/dependabot-core#15654 — unmerged fix for Dependabot rewriting the
+#     lockfile's Flutter constraint (`3.44.0` -> `>=3.44.0`), which would dirty
+#     mobile/pubspec.lock on every run and fight the Generated Files check.
+#   • dependabot/dependabot-core#11860 — the Flutter checkout that pub updates
+#     depend on fails on `bin/internal/engine.version`.
+#
+# pub is also a community-maintained ecosystem, so these carry no GitHub SLA.
+# When #8356 and #15654 land, enable the pub entry below. `directory` MUST be
+# "/mobile" (the workspace root), because pub's dependency_services refuses to
+# run anywhere else.
+#
+#   - package-ecosystem: "pub"
+#     directory: "/mobile"
+#     schedule:
+#       interval: "weekly"
+#     open-pull-requests-limit: 3
+#     commit-message:
+#       prefix: "ci(deps)"
+#     labels:
+#       - "dependencies"

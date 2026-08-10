@@ -4383,6 +4383,20 @@ class AppLocalizationsIt extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
+  String get soundSyncStatusSyncing => 'Sincronizzazione dei tuoi suoni…';
+
+  @override
+  String get soundSyncStatusSynced => 'Suoni aggiornati';
+
+  @override
+  String get soundSyncStatusFailed =>
+      'Non siamo riusciti a sincronizzare i tuoi suoni. Riproveremo.';
+
+  @override
+  String get soundSyncStatusLocked =>
+      'Impossibile sbloccare la tua libreria sincronizzata su questo dispositivo.';
+
+  @override
   String get soundsFailedToLoad => 'Impossibile caricare i suoni';
 
   @override
@@ -6039,6 +6053,20 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get dmSendBlockedMessage =>
       'You can only message official Divine accounts';
+
+  @override
+  String get dmSendBlockedRetiredMessage =>
+      'Nessuno legge questa conversazione. Scrivi a Divine Moderation.';
+
+  @override
+  String get dmRetiredThreadClosedTitle => 'Questa conversazione è chiusa.';
+
+  @override
+  String get dmRetiredThreadClosedBody =>
+      'Abbiamo spostato Divine Moderation su un nuovo account. Questo non lo legge più nessuno.';
+
+  @override
+  String get dmRetiredThreadOpenSupport => 'Scrivi a Divine Moderation';
 
   @override
   String get dmSendFailedMessage => 'Impossibile inviare il messaggio';
@@ -7736,6 +7764,21 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get followersUpdateFollowFailed =>
       'Impossibile aggiornare lo stato del follow. Riprova.';
+
+  @override
+  String get followersSortSemanticLabel => 'Ordina follower';
+
+  @override
+  String get followingSortSemanticLabel => 'Ordina seguiti';
+
+  @override
+  String get followSortTitle => 'Ordina per';
+
+  @override
+  String get followSortNewest => 'Prima i più recenti';
+
+  @override
+  String get followSortOldest => 'Prima i meno recenti';
 
   @override
   String get reportMessageTitle => 'Segnala messaggio';

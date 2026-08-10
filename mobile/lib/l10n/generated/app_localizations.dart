@@ -7526,6 +7526,30 @@ abstract class AppLocalizations {
   /// **'Couldn\'t remove that sound. Try again.'**
   String get soundsRemoveFailed;
 
+  /// Shown while a saved-sound library sync pass with other devices is in progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Syncing your sounds…'**
+  String get soundSyncStatusSyncing;
+
+  /// Shown after a saved-sound library sync pass completes successfully; the local library matches other devices.
+  ///
+  /// In en, this message translates to:
+  /// **'Sounds up to date'**
+  String get soundSyncStatusSynced;
+
+  /// Shown when a saved-sound library sync pass fails for a transient reason (e.g. the relay is unreachable). The app will retry automatically on the next trigger.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t sync your sounds. We\'ll try again.'**
+  String get soundSyncStatusFailed;
+
+  /// Shown when this device cannot obtain the encryption key that protects the synced sound library (e.g. the signer refused to decrypt it, or the account has no key yet). Sync stays disabled until this resolves; it is not a network error.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t unlock your synced library on this device.'**
+  String get soundSyncStatusLocked;
+
   /// No description provided for @soundsFailedToLoad.
   ///
   /// In en, this message translates to:
@@ -10460,6 +10484,30 @@ abstract class AppLocalizations {
   /// **'You can only message official Divine accounts'**
   String get dmSendBlockedMessage;
 
+  /// SnackBar text shown when a send is refused because the recipient is a moderation account Divine has rotated away from (#6416). Used instead of `dmSendBlockedMessage`, whose copy is wrong here: a retired moderation key IS an official Divine account, it is just one nobody reads any more. Reached only by deep link, queue drain, or share-to-DM — the conversation itself shows `dmRetiredThreadClosedTitle` in place of the composer.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody is reading this conversation. Message Divine Moderation instead.'**
+  String get dmSendBlockedRetiredMessage;
+
+  /// Heading of the notice that replaces the message composer in a DM thread keyed on a retired Divine Moderation account (#6416).
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation is closed.'**
+  String get dmRetiredThreadClosedTitle;
+
+  /// Body of the closed-thread notice in a retired Divine Moderation DM thread (#6416), below `dmRetiredThreadClosedTitle`. Deliberately promises no reply: the current support inbox is ingested but only lightly staffed, so copy implying someone is waiting would overstate it. 'Divine Moderation' is the account name — keep it as shown in `inboxSupportRowTitle` for this locale.
+  ///
+  /// In en, this message translates to:
+  /// **'We moved Divine Moderation to a new account. Nobody reads this one anymore.'**
+  String get dmRetiredThreadClosedBody;
+
+  /// Action on the closed-thread notice (#6416) that opens the current pinned Divine Moderation conversation. A redirect, not a promise of a response. 'Divine Moderation' is the account name — keep it as shown in `inboxSupportRowTitle` for this locale.
+  ///
+  /// In en, this message translates to:
+  /// **'Message Divine Moderation'**
+  String get dmRetiredThreadOpenSupport;
+
   /// Accessibility announcement text, and the recovery bottom sheet's title, shown in a DM conversation when a send fails (relay error, signer error, network error). The bottom sheet pairs it with `dmSendFailedSubtitle` and the `dmMessageActionRetrySend` / `dmMessageActionCancelSend` actions.
   ///
   /// In en, this message translates to:
@@ -13237,6 +13285,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to update follow status. Please try again.'**
   String get followersUpdateFollowFailed;
+
+  /// Accessibility label for the app bar button that opens the follower sort options.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort followers'**
+  String get followersSortSemanticLabel;
+
+  /// Accessibility label for the app bar button that opens the sort options for the list of people the user follows.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort following'**
+  String get followingSortSemanticLabel;
+
+  /// Header of the bottom sheet listing sort options. Shared by the followers and following lists.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by'**
+  String get followSortTitle;
+
+  /// Sort option showing the most recent follow at the top of the list. Shared by the followers and following lists.
+  ///
+  /// In en, this message translates to:
+  /// **'Newest first'**
+  String get followSortNewest;
+
+  /// Sort option showing the longest-standing follow at the top of the list. Shared by the followers and following lists.
+  ///
+  /// In en, this message translates to:
+  /// **'Oldest first'**
+  String get followSortOldest;
 
   /// No description provided for @reportMessageTitle.
   ///

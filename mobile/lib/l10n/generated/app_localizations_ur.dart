@@ -4341,6 +4341,20 @@ class AppLocalizationsUr extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
+  String get soundSyncStatusSyncing => 'آپ کی آوازیں ہم آہنگ ہو رہی ہیں…';
+
+  @override
+  String get soundSyncStatusSynced => 'آوازیں تازہ ترین ہیں';
+
+  @override
+  String get soundSyncStatusFailed =>
+      'آپ کی آوازیں ہم آہنگ نہیں ہو سکیں۔ ہم دوبارہ کوشش کریں گے۔';
+
+  @override
+  String get soundSyncStatusLocked =>
+      'اس ڈیوائس پر آپ کی ہم آہنگ لائبریری کھولی نہیں جا سکتی۔';
+
+  @override
   String get soundsFailedToLoad => 'آوازیں لوڈ نہیں ہو سکیں';
 
   @override
@@ -5988,6 +6002,20 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get dmSendBlockedMessage =>
       'آپ صرف سرکاری Divine اکاؤنٹس کو پیغام بھیج سکتے ہیں';
+
+  @override
+  String get dmSendBlockedRetiredMessage =>
+      'یہ گفتگو کوئی نہیں پڑھ رہا۔ اس کے بجائے Divine Moderation کو پیغام بھیجیں۔';
+
+  @override
+  String get dmRetiredThreadClosedTitle => 'یہ گفتگو بند ہو چکی ہے۔';
+
+  @override
+  String get dmRetiredThreadClosedBody =>
+      'ہم نے Divine Moderation کو نئے اکاؤنٹ پر منتقل کر دیا ہے۔ اسے اب کوئی نہیں پڑھتا۔';
+
+  @override
+  String get dmRetiredThreadOpenSupport => 'Divine Moderation کو پیغام بھیجیں';
 
   @override
   String get dmSendFailedMessage => 'پیغام نہیں بھیجا جا سکا';
@@ -7666,6 +7694,21 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get followersUpdateFollowFailed =>
       'فالو اسٹیٹس اپڈیٹ نہیں ہو سکا۔ براہ کرم دوبارہ کوشش کریں۔';
+
+  @override
+  String get followersSortSemanticLabel => 'فالوورز ترتیب دیں';
+
+  @override
+  String get followingSortSemanticLabel => 'فالوئنگ ترتیب دیں';
+
+  @override
+  String get followSortTitle => 'ترتیب بلحاظ';
+
+  @override
+  String get followSortNewest => 'پہلے نئے';
+
+  @override
+  String get followSortOldest => 'پہلے پرانے';
 
   @override
   String get reportMessageTitle => 'پیغام کی رپورٹ کریں';

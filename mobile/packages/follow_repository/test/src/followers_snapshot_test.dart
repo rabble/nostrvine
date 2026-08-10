@@ -32,6 +32,37 @@ void main() {
         expect(restored.pubkeys, isEmpty);
         expect(restored.count, equals(5));
       });
+
+      test('round-trips datedCount', () {
+        const dated = FollowersSnapshot(
+          pubkeys: pubkeys,
+          count: 42,
+          datedCount: 1,
+        );
+
+        expect(
+          FollowersSnapshot.fromJson(dated.toJson()).datedCount,
+          equals(1),
+        );
+      });
+
+      test('reads a payload written before datedCount existed as undated', () {
+        const json = '{"pubkeys":["aabbcc","ddeeff"],"count":2}';
+
+        expect(FollowersSnapshot.fromJson(json).datedCount, isZero);
+      });
+
+      test('clamps a datedCount that overruns the list', () {
+        const json = '{"pubkeys":["aabbcc"],"count":1,"datedCount":9}';
+
+        expect(FollowersSnapshot.fromJson(json).datedCount, equals(1));
+      });
+
+      test('clamps a negative datedCount', () {
+        const json = '{"pubkeys":["aabbcc"],"count":1,"datedCount":-3}';
+
+        expect(FollowersSnapshot.fromJson(json).datedCount, isZero);
+      });
     });
 
     group('toJson', () {
@@ -81,6 +112,16 @@ void main() {
       test('not equal to unrelated object', () {
         expect(snapshot == ('unrelated' as Object), isFalse);
       });
+
+      test('different datedCount is not equal', () {
+        const other = FollowersSnapshot(
+          pubkeys: pubkeys,
+          count: 42,
+          datedCount: 2,
+        );
+
+        expect(snapshot, isNot(equals(other)));
+      });
     });
 
     group('hashCode', () {
@@ -98,6 +139,7 @@ void main() {
 
         expect(result, contains('count: 42'));
         expect(result, contains('pubkeys: 2'));
+        expect(result, contains('datedCount: 0'));
       });
     });
   });

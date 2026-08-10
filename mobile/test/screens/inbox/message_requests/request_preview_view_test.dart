@@ -3,6 +3,7 @@
 // ABOUTME: and navigation to profile view, conversation, and decline action.
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,6 +12,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation/collaborator_invite_actions_cubit.dart';
 import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit.dart';
 import 'package:openvine/blocs/dm/message_requests/request_preview_cubit.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/collaborator_invite.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -165,6 +167,87 @@ void main() {
         ),
       );
     }
+
+    // #6416. This screen is where an inbound-first moderation notice is first
+    // seen, and it offered "Decline and remove" against an unidentified
+    // "Adjective Animal N" — moderation recognition never reached the requests
+    // flow, and neither moderation key has a kind-0 the app can read.
+    group('moderation identity', () {
+      Widget buildModerationSubject(String counterparty) {
+        when(() => mockPreviewCubit.state).thenReturn(
+          RequestPreviewState(
+            status: RequestPreviewStatus.loaded,
+            messageCount: 1,
+            participantPubkeys: [counterparty],
+          ),
+        );
+
+        return testMaterialApp(
+          mockAuthService: mockAuthService,
+          mockNostrService: mockNostrClient,
+          additionalOverrides: [
+            goRouterProvider.overrideWithValue(mockGoRouter),
+            videosRepositoryProvider.overrideWithValue(mockVideosRepository),
+            userProfileReactiveProvider(
+              counterparty,
+            ).overrideWith((ref) => Stream.value(null)),
+          ],
+          home: MockGoRouterProvider(
+            goRouter: mockGoRouter,
+            child: MultiBlocProvider(
+              providers: [
+                BlocProvider<RequestPreviewCubit>.value(
+                  value: mockPreviewCubit,
+                ),
+                BlocProvider<MessageRequestActionsCubit>.value(
+                  value: mockActionsCubit,
+                ),
+                BlocProvider<CollaboratorInviteActionsCubit>.value(
+                  value: mockInviteActionsCubit,
+                ),
+              ],
+              child: const RequestPreviewView(),
+            ),
+          ),
+        );
+      }
+
+      testWidgets('a retired moderation request identifies itself as Divine', (
+        tester,
+      ) async {
+        final retired = kLegacyModerationPubkeys.first;
+
+        await tester.pumpWidget(buildModerationSubject(retired));
+        await tester.pumpAndSettle();
+
+        // Header, the name under the avatar, and the "wants to message you"
+        // sentence all read from the same resolved name.
+        expect(find.text(l10n.inboxSupportRowTitle), findsWidgets);
+        expect(
+          find.textContaining(UserProfile.defaultDisplayNameFor(retired)),
+          findsNothing,
+        );
+        expect(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is DivineIcon && widget.icon == DivineIconName.logo,
+            description: 'bundled Divine wordmark',
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('an ordinary request is untouched', (tester) async {
+        await tester.pumpWidget(buildModerationSubject(otherPubkey));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(UserProfile.defaultDisplayNameFor(otherPubkey)),
+          findsWidgets,
+        );
+        expect(find.text(l10n.inboxSupportRowTitle), findsNothing);
+      });
+    });
 
     group('renders', () {
       testWidgets('renders app bar with display name as title', (tester) async {

@@ -4444,6 +4444,20 @@ class AppLocalizationsPl extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
+  String get soundSyncStatusSyncing => 'Synchronizowanie twoich dźwięków…';
+
+  @override
+  String get soundSyncStatusSynced => 'Dźwięki są aktualne';
+
+  @override
+  String get soundSyncStatusFailed =>
+      'Nie udało się zsynchronizować twoich dźwięków. Spróbujemy ponownie.';
+
+  @override
+  String get soundSyncStatusLocked =>
+      'Nie można odblokować zsynchronizowanej biblioteki na tym urządzeniu.';
+
+  @override
   String get soundsFailedToLoad => 'Nie udało się wczytać dźwięków';
 
   @override
@@ -6132,6 +6146,20 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get dmSendBlockedMessage =>
       'You can only message official Divine accounts';
+
+  @override
+  String get dmSendBlockedRetiredMessage =>
+      'Nikt nie czyta tej rozmowy. Napisz do Divine Moderation.';
+
+  @override
+  String get dmRetiredThreadClosedTitle => 'Ta rozmowa jest zamknięta.';
+
+  @override
+  String get dmRetiredThreadClosedBody =>
+      'Przenieśliśmy Divine Moderation na nowe konto. Tego nikt już nie czyta.';
+
+  @override
+  String get dmRetiredThreadOpenSupport => 'Napisz do Divine Moderation';
 
   @override
   String get dmSendFailedMessage => 'Nie udało się wysłać wiadomości';
@@ -7836,6 +7864,21 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get followersUpdateFollowFailed =>
       'Nie udało się zaktualizować statusu obserwowania. Spróbuj ponownie.';
+
+  @override
+  String get followersSortSemanticLabel => 'Sortuj obserwujących';
+
+  @override
+  String get followingSortSemanticLabel => 'Sortuj obserwowanych';
+
+  @override
+  String get followSortTitle => 'Sortuj według';
+
+  @override
+  String get followSortNewest => 'Najpierw najnowsi';
+
+  @override
+  String get followSortOldest => 'Najpierw najstarsi';
 
   @override
   String get reportMessageTitle => 'Zgłoś wiadomość';

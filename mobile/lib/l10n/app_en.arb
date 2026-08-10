@@ -2539,6 +2539,22 @@
   "@soundsRemoveFailed": {
     "description": "Snackbar shown when removing a sound from the local library fails to persist."
   },
+  "soundSyncStatusSyncing": "Syncing your sounds…",
+  "@soundSyncStatusSyncing": {
+    "description": "Shown while a saved-sound library sync pass with other devices is in progress."
+  },
+  "soundSyncStatusSynced": "Sounds up to date",
+  "@soundSyncStatusSynced": {
+    "description": "Shown after a saved-sound library sync pass completes successfully; the local library matches other devices."
+  },
+  "soundSyncStatusFailed": "Couldn't sync your sounds. We'll try again.",
+  "@soundSyncStatusFailed": {
+    "description": "Shown when a saved-sound library sync pass fails for a transient reason (e.g. the relay is unreachable). The app will retry automatically on the next trigger."
+  },
+  "soundSyncStatusLocked": "Can't unlock your synced library on this device.",
+  "@soundSyncStatusLocked": {
+    "description": "Shown when this device cannot obtain the encryption key that protects the synced sound library (e.g. the signer refused to decrypt it, or the account has no key yet). Sync stays disabled until this resolves; it is not a network error."
+  },
   "soundsFailedToLoad": "Failed to load sounds",
   "soundsRetry": "Retry",
   "soundsScreenLabel": "Sounds screen",
@@ -3554,6 +3570,22 @@
     "description": "SnackBar text shown when a protected minor (13-15) tries to DM a non-approved account (#176). Neutral, no retry action."
 
   },
+  "dmSendBlockedRetiredMessage": "Nobody is reading this conversation. Message Divine Moderation instead.",
+  "@dmSendBlockedRetiredMessage": {
+    "description": "SnackBar text shown when a send is refused because the recipient is a moderation account Divine has rotated away from (#6416). Used instead of `dmSendBlockedMessage`, whose copy is wrong here: a retired moderation key IS an official Divine account, it is just one nobody reads any more. Reached only by deep link, queue drain, or share-to-DM — the conversation itself shows `dmRetiredThreadClosedTitle` in place of the composer."
+  },
+  "dmRetiredThreadClosedTitle": "This conversation is closed.",
+  "@dmRetiredThreadClosedTitle": {
+    "description": "Heading of the notice that replaces the message composer in a DM thread keyed on a retired Divine Moderation account (#6416)."
+  },
+  "dmRetiredThreadClosedBody": "We moved Divine Moderation to a new account. Nobody reads this one anymore.",
+  "@dmRetiredThreadClosedBody": {
+    "description": "Body of the closed-thread notice in a retired Divine Moderation DM thread (#6416), below `dmRetiredThreadClosedTitle`. Deliberately promises no reply: the current support inbox is ingested but only lightly staffed, so copy implying someone is waiting would overstate it. 'Divine Moderation' is the account name — keep it as shown in `inboxSupportRowTitle` for this locale."
+  },
+  "dmRetiredThreadOpenSupport": "Message Divine Moderation",
+  "@dmRetiredThreadOpenSupport": {
+    "description": "Action on the closed-thread notice (#6416) that opens the current pinned Divine Moderation conversation. A redirect, not a promise of a response. 'Divine Moderation' is the account name — keep it as shown in `inboxSupportRowTitle` for this locale."
+  },
   "dmSendFailedMessage": "Message couldn't be sent",
   "@dmSendFailedMessage": {
     "description": "Accessibility announcement text, and the recovery bottom sheet's title, shown in a DM conversation when a send fails (relay error, signer error, network error). The bottom sheet pairs it with `dmSendFailedSubtitle` and the `dmMessageActionRetrySend` / `dmMessageActionCancelSend` actions."
@@ -4484,6 +4516,26 @@
   "followersFailedToLoadList": "Failed to load followers list",
   "followersEmptyTitle": "No followers yet",
   "followersUpdateFollowFailed": "Failed to update follow status. Please try again.",
+  "followersSortSemanticLabel": "Sort followers",
+  "@followersSortSemanticLabel": {
+    "description": "Accessibility label for the app bar button that opens the follower sort options."
+  },
+  "followingSortSemanticLabel": "Sort following",
+  "@followingSortSemanticLabel": {
+    "description": "Accessibility label for the app bar button that opens the sort options for the list of people the user follows."
+  },
+  "followSortTitle": "Sort by",
+  "@followSortTitle": {
+    "description": "Header of the bottom sheet listing sort options. Shared by the followers and following lists."
+  },
+  "followSortNewest": "Newest first",
+  "@followSortNewest": {
+    "description": "Sort option showing the most recent follow at the top of the list. Shared by the followers and following lists."
+  },
+  "followSortOldest": "Oldest first",
+  "@followSortOldest": {
+    "description": "Sort option showing the longest-standing follow at the top of the list. Shared by the followers and following lists."
+  },
   "reportMessageTitle": "Report Message",
   "reportMessageWhyReporting": "Why are you reporting this message?",
   "reportMessageSelectReason": "Please select a reason for reporting this message",

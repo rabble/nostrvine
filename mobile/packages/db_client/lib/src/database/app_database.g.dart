@@ -16177,6 +16177,287 @@ class IdentityVerificationsCompanion
   }
 }
 
+class $SeenVideosTable extends SeenVideos
+    with TableInfo<$SeenVideosTable, SeenVideoRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SeenVideosTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _videoIdMeta = const VerificationMeta(
+    'videoId',
+  );
+  @override
+  late final GeneratedColumn<String> videoId = GeneratedColumn<String>(
+    'video_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _firstSeenAtMeta = const VerificationMeta(
+    'firstSeenAt',
+  );
+  @override
+  late final GeneratedColumn<int> firstSeenAt = GeneratedColumn<int>(
+    'first_seen_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastSeenAtMeta = const VerificationMeta(
+    'lastSeenAt',
+  );
+  @override
+  late final GeneratedColumn<int> lastSeenAt = GeneratedColumn<int>(
+    'last_seen_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [videoId, firstSeenAt, lastSeenAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'seen_videos';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SeenVideoRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('video_id')) {
+      context.handle(
+        _videoIdMeta,
+        videoId.isAcceptableOrUnknown(data['video_id']!, _videoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_videoIdMeta);
+    }
+    if (data.containsKey('first_seen_at')) {
+      context.handle(
+        _firstSeenAtMeta,
+        firstSeenAt.isAcceptableOrUnknown(
+          data['first_seen_at']!,
+          _firstSeenAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_firstSeenAtMeta);
+    }
+    if (data.containsKey('last_seen_at')) {
+      context.handle(
+        _lastSeenAtMeta,
+        lastSeenAt.isAcceptableOrUnknown(
+          data['last_seen_at']!,
+          _lastSeenAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lastSeenAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {videoId};
+  @override
+  SeenVideoRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SeenVideoRow(
+      videoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}video_id'],
+      )!,
+      firstSeenAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}first_seen_at'],
+      )!,
+      lastSeenAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_seen_at'],
+      )!,
+    );
+  }
+
+  @override
+  $SeenVideosTable createAlias(String alias) {
+    return $SeenVideosTable(attachedDatabase, alias);
+  }
+}
+
+class SeenVideoRow extends DataClass implements Insertable<SeenVideoRow> {
+  /// Nostr event id of the seen video (hex).
+  final String videoId;
+
+  /// Unix milliseconds of first-seen (for diagnostics, not filtering).
+  final int firstSeenAt;
+
+  /// Unix milliseconds of last-seen — the recency signal.
+  final int lastSeenAt;
+  const SeenVideoRow({
+    required this.videoId,
+    required this.firstSeenAt,
+    required this.lastSeenAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['video_id'] = Variable<String>(videoId);
+    map['first_seen_at'] = Variable<int>(firstSeenAt);
+    map['last_seen_at'] = Variable<int>(lastSeenAt);
+    return map;
+  }
+
+  SeenVideosCompanion toCompanion(bool nullToAbsent) {
+    return SeenVideosCompanion(
+      videoId: Value(videoId),
+      firstSeenAt: Value(firstSeenAt),
+      lastSeenAt: Value(lastSeenAt),
+    );
+  }
+
+  factory SeenVideoRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SeenVideoRow(
+      videoId: serializer.fromJson<String>(json['videoId']),
+      firstSeenAt: serializer.fromJson<int>(json['firstSeenAt']),
+      lastSeenAt: serializer.fromJson<int>(json['lastSeenAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'videoId': serializer.toJson<String>(videoId),
+      'firstSeenAt': serializer.toJson<int>(firstSeenAt),
+      'lastSeenAt': serializer.toJson<int>(lastSeenAt),
+    };
+  }
+
+  SeenVideoRow copyWith({String? videoId, int? firstSeenAt, int? lastSeenAt}) =>
+      SeenVideoRow(
+        videoId: videoId ?? this.videoId,
+        firstSeenAt: firstSeenAt ?? this.firstSeenAt,
+        lastSeenAt: lastSeenAt ?? this.lastSeenAt,
+      );
+  SeenVideoRow copyWithCompanion(SeenVideosCompanion data) {
+    return SeenVideoRow(
+      videoId: data.videoId.present ? data.videoId.value : this.videoId,
+      firstSeenAt: data.firstSeenAt.present
+          ? data.firstSeenAt.value
+          : this.firstSeenAt,
+      lastSeenAt: data.lastSeenAt.present
+          ? data.lastSeenAt.value
+          : this.lastSeenAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SeenVideoRow(')
+          ..write('videoId: $videoId, ')
+          ..write('firstSeenAt: $firstSeenAt, ')
+          ..write('lastSeenAt: $lastSeenAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(videoId, firstSeenAt, lastSeenAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SeenVideoRow &&
+          other.videoId == this.videoId &&
+          other.firstSeenAt == this.firstSeenAt &&
+          other.lastSeenAt == this.lastSeenAt);
+}
+
+class SeenVideosCompanion extends UpdateCompanion<SeenVideoRow> {
+  final Value<String> videoId;
+  final Value<int> firstSeenAt;
+  final Value<int> lastSeenAt;
+  final Value<int> rowid;
+  const SeenVideosCompanion({
+    this.videoId = const Value.absent(),
+    this.firstSeenAt = const Value.absent(),
+    this.lastSeenAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SeenVideosCompanion.insert({
+    required String videoId,
+    required int firstSeenAt,
+    required int lastSeenAt,
+    this.rowid = const Value.absent(),
+  }) : videoId = Value(videoId),
+       firstSeenAt = Value(firstSeenAt),
+       lastSeenAt = Value(lastSeenAt);
+  static Insertable<SeenVideoRow> custom({
+    Expression<String>? videoId,
+    Expression<int>? firstSeenAt,
+    Expression<int>? lastSeenAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (videoId != null) 'video_id': videoId,
+      if (firstSeenAt != null) 'first_seen_at': firstSeenAt,
+      if (lastSeenAt != null) 'last_seen_at': lastSeenAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SeenVideosCompanion copyWith({
+    Value<String>? videoId,
+    Value<int>? firstSeenAt,
+    Value<int>? lastSeenAt,
+    Value<int>? rowid,
+  }) {
+    return SeenVideosCompanion(
+      videoId: videoId ?? this.videoId,
+      firstSeenAt: firstSeenAt ?? this.firstSeenAt,
+      lastSeenAt: lastSeenAt ?? this.lastSeenAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (videoId.present) {
+      map['video_id'] = Variable<String>(videoId.value);
+    }
+    if (firstSeenAt.present) {
+      map['first_seen_at'] = Variable<int>(firstSeenAt.value);
+    }
+    if (lastSeenAt.present) {
+      map['last_seen_at'] = Variable<int>(lastSeenAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SeenVideosCompanion(')
+          ..write('videoId: $videoId, ')
+          ..write('firstSeenAt: $firstSeenAt, ')
+          ..write('lastSeenAt: $lastSeenAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $VanishedProfilesTable extends VanishedProfiles
     with TableInfo<$VanishedProfilesTable, VanishedProfileRow> {
   @override
@@ -16441,6 +16722,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $IdentityEventsTable identityEvents = $IdentityEventsTable(this);
   late final $IdentityVerificationsTable identityVerifications =
       $IdentityVerificationsTable(this);
+  late final $SeenVideosTable seenVideos = $SeenVideosTable(this);
   late final $VanishedProfilesTable vanishedProfiles = $VanishedProfilesTable(
     this,
   );
@@ -16507,6 +16789,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final IdentityVerificationsDao identityVerificationsDao =
       IdentityVerificationsDao(this as AppDatabase);
+  late final SeenVideosDao seenVideosDao = SeenVideosDao(this as AppDatabase);
   late final VanishedProfilesDao vanishedProfilesDao = VanishedProfilesDao(
     this as AppDatabase,
   );
@@ -16539,6 +16822,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     pendingProfileSaves,
     identityEvents,
     identityVerifications,
+    seenVideos,
     vanishedProfiles,
   ];
 }
@@ -24167,6 +24451,172 @@ typedef $$IdentityVerificationsTableProcessedTableManager =
       IdentityVerificationRow,
       PrefetchHooks Function()
     >;
+typedef $$SeenVideosTableCreateCompanionBuilder =
+    SeenVideosCompanion Function({
+      required String videoId,
+      required int firstSeenAt,
+      required int lastSeenAt,
+      Value<int> rowid,
+    });
+typedef $$SeenVideosTableUpdateCompanionBuilder =
+    SeenVideosCompanion Function({
+      Value<String> videoId,
+      Value<int> firstSeenAt,
+      Value<int> lastSeenAt,
+      Value<int> rowid,
+    });
+
+class $$SeenVideosTableFilterComposer
+    extends Composer<_$AppDatabase, $SeenVideosTable> {
+  $$SeenVideosTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get videoId => $composableBuilder(
+    column: $table.videoId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get firstSeenAt => $composableBuilder(
+    column: $table.firstSeenAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lastSeenAt => $composableBuilder(
+    column: $table.lastSeenAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SeenVideosTableOrderingComposer
+    extends Composer<_$AppDatabase, $SeenVideosTable> {
+  $$SeenVideosTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get videoId => $composableBuilder(
+    column: $table.videoId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get firstSeenAt => $composableBuilder(
+    column: $table.firstSeenAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lastSeenAt => $composableBuilder(
+    column: $table.lastSeenAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SeenVideosTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SeenVideosTable> {
+  $$SeenVideosTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get videoId =>
+      $composableBuilder(column: $table.videoId, builder: (column) => column);
+
+  GeneratedColumn<int> get firstSeenAt => $composableBuilder(
+    column: $table.firstSeenAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get lastSeenAt => $composableBuilder(
+    column: $table.lastSeenAt,
+    builder: (column) => column,
+  );
+}
+
+class $$SeenVideosTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SeenVideosTable,
+          SeenVideoRow,
+          $$SeenVideosTableFilterComposer,
+          $$SeenVideosTableOrderingComposer,
+          $$SeenVideosTableAnnotationComposer,
+          $$SeenVideosTableCreateCompanionBuilder,
+          $$SeenVideosTableUpdateCompanionBuilder,
+          (
+            SeenVideoRow,
+            BaseReferences<_$AppDatabase, $SeenVideosTable, SeenVideoRow>,
+          ),
+          SeenVideoRow,
+          PrefetchHooks Function()
+        > {
+  $$SeenVideosTableTableManager(_$AppDatabase db, $SeenVideosTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SeenVideosTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SeenVideosTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SeenVideosTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> videoId = const Value.absent(),
+                Value<int> firstSeenAt = const Value.absent(),
+                Value<int> lastSeenAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SeenVideosCompanion(
+                videoId: videoId,
+                firstSeenAt: firstSeenAt,
+                lastSeenAt: lastSeenAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String videoId,
+                required int firstSeenAt,
+                required int lastSeenAt,
+                Value<int> rowid = const Value.absent(),
+              }) => SeenVideosCompanion.insert(
+                videoId: videoId,
+                firstSeenAt: firstSeenAt,
+                lastSeenAt: lastSeenAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SeenVideosTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SeenVideosTable,
+      SeenVideoRow,
+      $$SeenVideosTableFilterComposer,
+      $$SeenVideosTableOrderingComposer,
+      $$SeenVideosTableAnnotationComposer,
+      $$SeenVideosTableCreateCompanionBuilder,
+      $$SeenVideosTableUpdateCompanionBuilder,
+      (
+        SeenVideoRow,
+        BaseReferences<_$AppDatabase, $SeenVideosTable, SeenVideoRow>,
+      ),
+      SeenVideoRow,
+      PrefetchHooks Function()
+    >;
 typedef $$VanishedProfilesTableCreateCompanionBuilder =
     VanishedProfilesCompanion Function({
       required String pubkey,
@@ -24374,6 +24824,8 @@ class $AppDatabaseManager {
       $$IdentityEventsTableTableManager(_db, _db.identityEvents);
   $$IdentityVerificationsTableTableManager get identityVerifications =>
       $$IdentityVerificationsTableTableManager(_db, _db.identityVerifications);
+  $$SeenVideosTableTableManager get seenVideos =>
+      $$SeenVideosTableTableManager(_db, _db.seenVideos);
   $$VanishedProfilesTableTableManager get vanishedProfiles =>
       $$VanishedProfilesTableTableManager(_db, _db.vanishedProfiles);
 }

@@ -30,8 +30,14 @@ List<RouteBase> videoRoutes() {
       name: VideoRecorderScreen.routeName,
       // The recorder is a modal creation mode, not the next screen in a
       // flow — open it with the fade-upwards transition.
-      pageBuilder: (_, state) =>
-          fadeUpwardsPage(state: state, child: const VideoRecorderRoute()),
+      pageBuilder: (_, state) => fadeUpwardsPage(
+        state: state,
+        child: VideoRecorderRoute(
+          entryPoint: CreationEntryPoint.fromName(
+            state.uri.queryParameters['entry_point'],
+          ),
+        ),
+      ),
     ),
     GoRoute(
       path: CreatorAnalyticsScreen.path,

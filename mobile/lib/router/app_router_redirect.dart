@@ -108,7 +108,8 @@ bool _isAuthEntryLocation(String location) {
 }
 
 bool _isPublicRecorderLocation(String location) =>
-    location == VideoRecorderScreen.path;
+    location == VideoRecorderScreen.path ||
+    location.startsWith('${VideoRecorderScreen.path}?');
 
 /// The slice of [MinorAccountReviewStatus] (plus its async loading shape)
 /// that [appRouterRedirect] actually branches on. Two emissions with an

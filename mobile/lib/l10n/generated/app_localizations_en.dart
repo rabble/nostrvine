@@ -4334,6 +4334,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
+  String get soundSyncStatusSyncing => 'Syncing your sounds…';
+
+  @override
+  String get soundSyncStatusSynced => 'Sounds up to date';
+
+  @override
+  String get soundSyncStatusFailed =>
+      'Couldn\'t sync your sounds. We\'ll try again.';
+
+  @override
+  String get soundSyncStatusLocked =>
+      'Can\'t unlock your synced library on this device.';
+
+  @override
   String get soundsFailedToLoad => 'Failed to load sounds';
 
   @override
@@ -5981,6 +5995,20 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get dmSendBlockedMessage =>
       'You can only message official Divine accounts';
+
+  @override
+  String get dmSendBlockedRetiredMessage =>
+      'Nobody is reading this conversation. Message Divine Moderation instead.';
+
+  @override
+  String get dmRetiredThreadClosedTitle => 'This conversation is closed.';
+
+  @override
+  String get dmRetiredThreadClosedBody =>
+      'We moved Divine Moderation to a new account. Nobody reads this one anymore.';
+
+  @override
+  String get dmRetiredThreadOpenSupport => 'Message Divine Moderation';
 
   @override
   String get dmSendFailedMessage => 'Message couldn\'t be sent';
@@ -7651,6 +7679,21 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get followersUpdateFollowFailed =>
       'Failed to update follow status. Please try again.';
+
+  @override
+  String get followersSortSemanticLabel => 'Sort followers';
+
+  @override
+  String get followingSortSemanticLabel => 'Sort following';
+
+  @override
+  String get followSortTitle => 'Sort by';
+
+  @override
+  String get followSortNewest => 'Newest first';
+
+  @override
+  String get followSortOldest => 'Oldest first';
 
   @override
   String get reportMessageTitle => 'Report Message';

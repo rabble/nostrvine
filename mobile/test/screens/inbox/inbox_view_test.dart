@@ -1737,6 +1737,42 @@ void main() {
         expect(find.text(l10n.inboxSupportRowTitle), findsOneWidget);
       });
 
+      testWidgets('distinguishes a retired moderation thread from the live pin', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final retiredConversation = DmConversation(
+          id: 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+          participantPubkeys: [currentPubkey, kLegacyModerationPubkeys.first],
+          isGroup: false,
+          createdAt: nowUnix,
+          lastMessageContent: 'You can reply to this message to appeal.',
+          lastMessageTimestamp: nowUnix,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [retiredConversation],
+              visibleConversations: [retiredConversation],
+              pinnedSupport: supportPin(),
+              hasMore: false,
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        expect(find.byType(ConversationTile), findsNWidgets(2));
+        expect(find.text(l10n.inboxSupportRowTitle), findsNWidgets(2));
+        expect(find.text(l10n.inboxSupportRowSubtitle), findsOneWidget);
+        expect(find.text(l10n.dmRetiredThreadClosedTitle), findsOneWidget);
+        expect(
+          find.text('You can reply to this message to appeal.'),
+          findsNothing,
+        );
+      });
+
       testWidgets('drops out of a search it does not match', (tester) async {
         final l10n = lookupAppLocalizations(const Locale('en'));
         final conversation = DmConversation(

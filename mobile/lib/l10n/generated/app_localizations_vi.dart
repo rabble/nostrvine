@@ -4338,6 +4338,20 @@ class AppLocalizationsVi extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
+  String get soundSyncStatusSyncing => 'Đang đồng bộ âm thanh của bạn…';
+
+  @override
+  String get soundSyncStatusSynced => 'Âm thanh đã được cập nhật';
+
+  @override
+  String get soundSyncStatusFailed =>
+      'Không đồng bộ được âm thanh của bạn. Chúng tôi sẽ thử lại.';
+
+  @override
+  String get soundSyncStatusLocked =>
+      'Không thể mở khoá thư viện đã đồng bộ trên thiết bị này.';
+
+  @override
   String get soundsFailedToLoad => 'Không tải được âm thanh';
 
   @override
@@ -5988,6 +6002,20 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get dmSendBlockedMessage =>
       'Bạn chỉ có thể nhắn tin cho các tài khoản Divine chính thức';
+
+  @override
+  String get dmSendBlockedRetiredMessage =>
+      'Không ai đọc cuộc trò chuyện này. Hãy nhắn cho Divine Moderation.';
+
+  @override
+  String get dmRetiredThreadClosedTitle => 'Cuộc trò chuyện này đã đóng.';
+
+  @override
+  String get dmRetiredThreadClosedBody =>
+      'Chúng tôi đã chuyển Divine Moderation sang một tài khoản mới. Không còn ai đọc tài khoản này nữa.';
+
+  @override
+  String get dmRetiredThreadOpenSupport => 'Nhắn tin cho Divine Moderation';
 
   @override
   String get dmSendFailedMessage => 'Tin nhắn không gửi được';
@@ -7671,6 +7699,21 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get followersUpdateFollowFailed =>
       'Không cập nhật được trạng thái theo dõi. Vui lòng thử lại.';
+
+  @override
+  String get followersSortSemanticLabel => 'Sắp xếp người theo dõi';
+
+  @override
+  String get followingSortSemanticLabel => 'Sắp xếp đang theo dõi';
+
+  @override
+  String get followSortTitle => 'Sắp xếp theo';
+
+  @override
+  String get followSortNewest => 'Mới nhất trước';
+
+  @override
+  String get followSortOldest => 'Cũ nhất trước';
 
   @override
   String get reportMessageTitle => 'Báo cáo tin nhắn';

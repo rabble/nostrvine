@@ -482,4 +482,27 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
       dmMessageReactions,
     )..where((t) => t.ownerPubkey.equals(ownerPubkey))).go();
   }
+
+  /// Delete owner-scoped reaction rows that can be recovered from relays.
+  ///
+  /// Non-destructive account switches preserve retryable own rows because their
+  /// stored `rumor_event_json` is the only durable payload for unpublished
+  /// reactions and pending kind-5 removals.
+  Future<int> deleteNonRetryableForOwner(String ownerPubkey) async {
+    return (delete(dmMessageReactions)..where((t) {
+          final retryableOwnReaction =
+              t.reactorPubkey.equals(ownerPubkey) &
+              t.isDeleted.equals(false) &
+              t.rumorEventJson.isNotNull() &
+              t.publishStatus.isIn(const ['failed', 'pending']);
+          final retryableOwnDeletion =
+              t.reactorPubkey.equals(ownerPubkey) &
+              t.isDeleted.equals(true) &
+              t.rumorEventJson.isNotNull() &
+              t.publishStatus.equals(_deletionPendingStatus);
+          return t.ownerPubkey.equals(ownerPubkey) &
+              (retryableOwnReaction | retryableOwnDeletion).not();
+        }))
+        .go();
+  }
 }

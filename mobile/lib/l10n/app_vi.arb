@@ -2370,6 +2370,10 @@
   "soundsFeaturedSounds": "Âm thanh nổi bật",
   "soundsTrendingSounds": "Âm thanh thịnh hành",
   "soundsAllSounds": "Tất cả âm thanh",
+  "soundSyncStatusSyncing": "Đang đồng bộ âm thanh của bạn…",
+  "soundSyncStatusSynced": "Âm thanh đã được cập nhật",
+  "soundSyncStatusFailed": "Không đồng bộ được âm thanh của bạn. Chúng tôi sẽ thử lại.",
+  "soundSyncStatusLocked": "Không thể mở khoá thư viện đã đồng bộ trên thiết bị này.",
   "soundsSearchResults": "Kết quả tìm kiếm",
   "soundsNoSoundsAvailable": "Không có âm thanh nào",
   "soundsNoSoundsDescription": "Âm thanh sẽ xuất hiện ở đây khi nhà sáng tạo chia sẻ audio",
@@ -3360,6 +3364,10 @@
   "@dmSendBlockedMessage": {
     "description": "SnackBar text shown when a protected minor (13-15) tries to DM a non-approved account (#176). Neutral, no retry action."
   },
+  "dmSendBlockedRetiredMessage": "Không ai đọc cuộc trò chuyện này. Hãy nhắn cho Divine Moderation.",
+  "dmRetiredThreadClosedTitle": "Cuộc trò chuyện này đã đóng.",
+  "dmRetiredThreadClosedBody": "Chúng tôi đã chuyển Divine Moderation sang một tài khoản mới. Không còn ai đọc tài khoản này nữa.",
+  "dmRetiredThreadOpenSupport": "Nhắn tin cho Divine Moderation",
   "dmSendFailedMessage": "Tin nhắn không gửi được",
   "@dmSendFailedMessage": {
     "description": "Accessibility announcement text, and the recovery bottom sheet's title, shown in a DM conversation when a send fails (relay error, signer error, network error). The bottom sheet pairs it with `dmSendFailedSubtitle` and the `dmMessageActionRetrySend` / `dmMessageActionCancelSend` actions."
@@ -4485,6 +4493,11 @@
   "followersFailedToLoadList": "Không tải được danh sách người theo dõi",
   "followersEmptyTitle": "Chưa có người theo dõi",
   "followersUpdateFollowFailed": "Không cập nhật được trạng thái theo dõi. Vui lòng thử lại.",
+  "followersSortSemanticLabel": "Sắp xếp người theo dõi",
+  "followingSortSemanticLabel": "Sắp xếp đang theo dõi",
+  "followSortTitle": "Sắp xếp theo",
+  "followSortNewest": "Mới nhất trước",
+  "followSortOldest": "Cũ nhất trước",
   "reportMessageTitle": "Báo cáo tin nhắn",
   "reportMessageWhyReporting": "Tại sao bạn báo cáo tin nhắn này?",
   "reportMessageSelectReason": "Vui lòng chọn lý do báo cáo tin nhắn này",

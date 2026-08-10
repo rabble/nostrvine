@@ -60,6 +60,17 @@ class OthersFollowingBloc
         .toList();
   }
 
+  /// The rows to show: [rawPubkeys] in newest-follow-first order, filtered.
+  ///
+  /// There is no sort control on this screen, but the order still has to match
+  /// [MyFollowingBloc]'s default — otherwise the same list reads oldest-first
+  /// for someone else and newest-first for yourself.
+  ///
+  /// Ordering runs before filtering because filtering preserves relative
+  /// order, so the blocklist can never disturb the sort.
+  List<String> _visiblePubkeys(List<String> rawPubkeys) =>
+      _filterPubkeys(FollowSortOrder.newestFirst.fromFollowOrder(rawPubkeys));
+
   /// Handle request to load another user's following list.
   ///
   /// Delegates to [FollowRepository.watchOthersFollowingCached] for
@@ -91,7 +102,7 @@ class OthersFollowingBloc
           return state.copyWith(
             status: OthersFollowingStatus.success,
             rawFollowingPubkeys: result.data.pubkeys,
-            followingPubkeys: _filterPubkeys(result.data.pubkeys),
+            followingPubkeys: _visiblePubkeys(result.data.pubkeys),
             isRefreshing: result.isStale,
           );
         },
@@ -140,7 +151,7 @@ class OthersFollowingBloc
 
     emit(
       state.copyWith(
-        followingPubkeys: _filterPubkeys(state.rawFollowingPubkeys),
+        followingPubkeys: _visiblePubkeys(state.rawFollowingPubkeys),
       ),
     );
   }

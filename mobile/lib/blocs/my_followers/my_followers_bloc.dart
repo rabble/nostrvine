@@ -27,6 +27,7 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
        super(const MyFollowersState()) {
     on<MyFollowersListLoadRequested>(_onLoadRequested);
     on<MyFollowersBlocklistChanged>(_onBlocklistChanged);
+    on<MyFollowersSortOrderChanged>(_onSortOrderChanged);
   }
 
   final FollowRepository _followRepository;
@@ -40,6 +41,21 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
             !_blocklistRepository.isFollowSevered(pk),
       )
       .toList();
+
+  /// The rows to show: [rawPubkeys] arranged for [sortOrder], then filtered.
+  ///
+  /// Ordering runs first because filtering preserves relative order, so the
+  /// blocklist can never disturb the sort.
+  List<String> _visiblePubkeys({
+    required List<String> rawPubkeys,
+    required int datedCount,
+    required FollowSortOrder sortOrder,
+  }) => _filterPubkeys(
+    sortOrder.fromNewestFirst(
+      rawPubkeys,
+      datedCount: datedCount,
+    ),
+  );
 
   /// Handle request to load current user's followers list.
   ///
@@ -64,7 +80,12 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
           return state.copyWith(
             status: MyFollowersStatus.success,
             rawFollowersPubkeys: result.data.pubkeys,
-            followersPubkeys: _filterPubkeys(result.data.pubkeys),
+            rawDatedCount: result.data.datedCount,
+            followersPubkeys: _visiblePubkeys(
+              rawPubkeys: result.data.pubkeys,
+              datedCount: result.data.datedCount,
+              sortOrder: state.sortOrder,
+            ),
             followerCount: result.data.count,
             isRefreshing: result.isStale,
           );
@@ -91,7 +112,32 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
 
     emit(
       state.copyWith(
-        followersPubkeys: _filterPubkeys(state.rawFollowersPubkeys),
+        followersPubkeys: _visiblePubkeys(
+          rawPubkeys: state.rawFollowersPubkeys,
+          datedCount: state.rawDatedCount,
+          sortOrder: state.sortOrder,
+        ),
+      ),
+    );
+  }
+
+  /// Re-order the loaded followers without refetching them.
+  void _onSortOrderChanged(
+    MyFollowersSortOrderChanged event,
+    Emitter<MyFollowersState> emit,
+  ) {
+    if (event.sortOrder == state.sortOrder) return;
+
+    // The sort is remembered even before the first load resolves, so the
+    // pending list arrives in the order the user already asked for.
+    emit(
+      state.copyWith(
+        sortOrder: event.sortOrder,
+        followersPubkeys: _visiblePubkeys(
+          rawPubkeys: state.rawFollowersPubkeys,
+          datedCount: state.rawDatedCount,
+          sortOrder: event.sortOrder,
+        ),
       ),
     );
   }

@@ -2370,6 +2370,10 @@
   "soundsFeaturedSounds": "Bunyi Pilihan",
   "soundsTrendingSounds": "Bunyi Trending",
   "soundsAllSounds": "Semua Bunyi",
+  "soundSyncStatusSyncing": "Menyegerakkan bunyi anda…",
+  "soundSyncStatusSynced": "Bunyi sudah terkini",
+  "soundSyncStatusFailed": "Tidak dapat menyegerakkan bunyi anda. Kami akan cuba lagi.",
+  "soundSyncStatusLocked": "Tidak dapat membuka pustaka tersegerak anda pada peranti ini.",
   "soundsSearchResults": "Hasil Carian",
   "soundsNoSoundsAvailable": "Tiada bunyi tersedia",
   "soundsNoSoundsDescription": "Bunyi akan muncul di sini apabila pencipta berkongsi audio",
@@ -3360,6 +3364,10 @@
   "@dmSendBlockedMessage": {
     "description": "SnackBar text shown when a protected minor (13-15) tries to DM a non-approved account (#176). Neutral, no retry action."
   },
+  "dmSendBlockedRetiredMessage": "Tiada sesiapa membaca perbualan ini. Hantar mesej kepada Divine Moderation sebaliknya.",
+  "dmRetiredThreadClosedTitle": "Perbualan ini telah ditutup.",
+  "dmRetiredThreadClosedBody": "Kami telah memindahkan Divine Moderation ke akaun baharu. Akaun ini tidak dibaca lagi.",
+  "dmRetiredThreadOpenSupport": "Hantar mesej kepada Divine Moderation",
   "dmSendFailedMessage": "Mesej tidak dapat dihantar",
   "@dmSendFailedMessage": {
     "description": "Accessibility announcement text, and the recovery bottom sheet's title, shown in a DM conversation when a send fails (relay error, signer error, network error). The bottom sheet pairs it with `dmSendFailedSubtitle` and the `dmMessageActionRetrySend` / `dmMessageActionCancelSend` actions."
@@ -4485,6 +4493,11 @@
   "followersFailedToLoadList": "Gagal memuatkan senarai pengikut",
   "followersEmptyTitle": "Belum ada pengikut",
   "followersUpdateFollowFailed": "Gagal mengemas kini status ikutan. Sila cuba lagi.",
+  "followersSortSemanticLabel": "Isih pengikut",
+  "followingSortSemanticLabel": "Isih yang diikuti",
+  "followSortTitle": "Isih mengikut",
+  "followSortNewest": "Terbaharu dahulu",
+  "followSortOldest": "Terlama dahulu",
   "reportMessageTitle": "Laporkan Mesej",
   "reportMessageWhyReporting": "Mengapa anda melaporkan mesej ini?",
   "reportMessageSelectReason": "Sila pilih sebab untuk melaporkan mesej ini",

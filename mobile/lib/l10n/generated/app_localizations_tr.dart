@@ -4302,6 +4302,20 @@ class AppLocalizationsTr extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
+  String get soundSyncStatusSyncing => 'Sesleriniz eşitleniyor…';
+
+  @override
+  String get soundSyncStatusSynced => 'Sesler güncel';
+
+  @override
+  String get soundSyncStatusFailed =>
+      'Sesleriniz eşitlenemedi. Tekrar deneyeceğiz.';
+
+  @override
+  String get soundSyncStatusLocked =>
+      'Eşitlenen kitaplığınız bu cihazda açılamıyor.';
+
+  @override
   String get soundsFailedToLoad => 'Sesler yüklenemedi';
 
   @override
@@ -5948,6 +5962,20 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get dmSendBlockedMessage =>
       'You can only message official Divine accounts';
+
+  @override
+  String get dmSendBlockedRetiredMessage =>
+      'Bu sohbeti kimse okumuyor. Bunun yerine Divine Moderation\'a yazın.';
+
+  @override
+  String get dmRetiredThreadClosedTitle => 'Bu sohbet kapatıldı.';
+
+  @override
+  String get dmRetiredThreadClosedBody =>
+      'Divine Moderation\'ı yeni bir hesaba taşıdık. Bu hesabı artık kimse okumuyor.';
+
+  @override
+  String get dmRetiredThreadOpenSupport => 'Divine Moderation\'a mesaj gönder';
 
   @override
   String get dmSendFailedMessage => 'Mesaj gönderilemedi';
@@ -7622,6 +7650,21 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get followersUpdateFollowFailed =>
       'Takip durumu güncellenemedi. Lütfen tekrar dene.';
+
+  @override
+  String get followersSortSemanticLabel => 'Takipçileri sırala';
+
+  @override
+  String get followingSortSemanticLabel => 'Takip edilenleri sırala';
+
+  @override
+  String get followSortTitle => 'Sıralama ölçütü';
+
+  @override
+  String get followSortNewest => 'Önce en yeniler';
+
+  @override
+  String get followSortOldest => 'Önce en eskiler';
 
   @override
   String get reportMessageTitle => 'Mesajı Bildir';

@@ -4295,6 +4295,20 @@ class AppLocalizationsId extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
+  String get soundSyncStatusSyncing => 'Menyinkronkan suaramu…';
+
+  @override
+  String get soundSyncStatusSynced => 'Suara sudah terbaru';
+
+  @override
+  String get soundSyncStatusFailed =>
+      'Tidak bisa menyinkronkan suaramu. Kami akan coba lagi.';
+
+  @override
+  String get soundSyncStatusLocked =>
+      'Tidak bisa membuka pustaka tersinkronmu di perangkat ini.';
+
+  @override
   String get soundsFailedToLoad => 'Gagal memuat suara';
 
   @override
@@ -5945,6 +5959,20 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get dmSendBlockedMessage =>
       'You can only message official Divine accounts';
+
+  @override
+  String get dmSendBlockedRetiredMessage =>
+      'Tidak ada yang membaca percakapan ini. Kirim pesan ke Divine Moderation saja.';
+
+  @override
+  String get dmRetiredThreadClosedTitle => 'Percakapan ini sudah ditutup.';
+
+  @override
+  String get dmRetiredThreadClosedBody =>
+      'Kami memindahkan Divine Moderation ke akun baru. Akun ini tidak dibaca lagi.';
+
+  @override
+  String get dmRetiredThreadOpenSupport => 'Kirim pesan ke Divine Moderation';
 
   @override
   String get dmSendFailedMessage => 'Pesan gagal dikirim';
@@ -7621,6 +7649,21 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get followersUpdateFollowFailed =>
       'Gagal memperbarui status follow. Coba lagi.';
+
+  @override
+  String get followersSortSemanticLabel => 'Urutkan pengikut';
+
+  @override
+  String get followingSortSemanticLabel => 'Urutkan yang diikuti';
+
+  @override
+  String get followSortTitle => 'Urutkan menurut';
+
+  @override
+  String get followSortNewest => 'Terbaru dulu';
+
+  @override
+  String get followSortOldest => 'Terlama dulu';
 
   @override
   String get reportMessageTitle => 'Laporkan Pesan';

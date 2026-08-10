@@ -1,6 +1,26 @@
 part of '../services/video_event_publisher.dart';
 
 extension _VideoEventPublisherAudio on VideoEventPublisher {
+  /// Mirrors a sound just saved to "My Sounds" to the user's other devices.
+  ///
+  /// Best-effort, matching the [SavedSoundsService.saveSound] call above it:
+  /// a sync failure must never surface as a failed video publish. Any
+  /// failure — expected (relay down, vault key unavailable) or not — is
+  /// logged and swallowed, same as this file's other "My Sounds" errors.
+  Future<void> _mirrorSavedSound(AudioEvent audio) async {
+    final repository = _soundSyncRepositoryGetter?.call();
+    if (repository == null) return;
+    try {
+      await repository.publishLocalChange(audio.id);
+    } catch (e) {
+      Log.warning(
+        'Failed to sync saved audio event to other devices: $e',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+    }
+  }
+
   /// Extracts audio from video, uploads to Blossom, and publishes Kind 1063 event
   ///
   /// Returns the event ID of the published audio event, or null if any step fails.
@@ -133,16 +153,19 @@ extension _VideoEventPublisherAudio on VideoEventPublisher {
       return null;
     }
 
-    try {
-      await _savedSoundsService?.saveSound(
-        AudioEvent.fromNostrEvent(signedAudioEvent),
-      );
-    } catch (e) {
-      Log.warning(
-        'Failed to save imported audio event to My Sounds: $e',
-        name: 'VideoEventPublisher',
-        category: LogCategory.video,
-      );
+    final savedSoundsService = _savedSoundsService;
+    if (savedSoundsService != null) {
+      final importedAudioEvent = AudioEvent.fromNostrEvent(signedAudioEvent);
+      try {
+        await savedSoundsService.saveSound(importedAudioEvent);
+        await _mirrorSavedSound(importedAudioEvent);
+      } catch (e) {
+        Log.warning(
+          'Failed to save imported audio event to My Sounds: $e',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+      }
     }
 
     return signedAudioEvent.id;
@@ -438,10 +461,12 @@ extension _VideoEventPublisherAudio on VideoEventPublisher {
       );
 
       if (_savedSoundsService != null) {
+        final publishedAudioEvent = AudioEvent.fromNostrEvent(
+          signedAudioEvent,
+        );
         try {
-          await _savedSoundsService.saveSound(
-            AudioEvent.fromNostrEvent(signedAudioEvent),
-          );
+          await _savedSoundsService.saveSound(publishedAudioEvent);
+          await _mirrorSavedSound(publishedAudioEvent);
           Log.info(
             'Saved published audio event to My Sounds: ${signedAudioEvent.id}',
             name: 'VideoEventPublisher',

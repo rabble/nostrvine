@@ -2,6 +2,7 @@
 // ABOUTME: Displays grouped message bubbles and a bottom input bar.
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:dm_repository/dm_repository.dart' show DmRepository;
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart' show SemanticsService;
 import 'package:flutter/services.dart' show HapticFeedback;
@@ -13,13 +14,16 @@ import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
 import 'package:openvine/blocs/dm/reactions/conversation_reactions_cubit.dart';
 import 'package:openvine/blocs/dm/restore_status/dm_restore_status_cubit.dart';
 import 'package:openvine/blocs/dm/shared_video_save/shared_video_save_cubit.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/feed/dm_reply_context.dart';
+import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/conversation/dm_video_target.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
+import 'package:openvine/screens/inbox/widgets/moderation_identity.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/collaborator_invite_parser.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
@@ -56,6 +60,12 @@ class ConversationView extends ConsumerStatefulWidget {
 enum _FailedMessageAction { resend, delete }
 
 class _ConversationViewState extends ConsumerState<ConversationView> {
+  /// The account this thread addresses. The route passes `participantPubkeys`
+  /// as the counterparty list, so self is already excluded.
+  String get _otherPubkey => widget.participantPubkeys.isNotEmpty
+      ? widget.participantPubkeys.first
+      : '';
+
   void _showSnackbar(String message, {required bool error}) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -133,9 +143,8 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
         .feedHiddenPubkeys;
 
     // Resolve other participant's profile for the app bar + empty state
-    final otherPubkey = widget.participantPubkeys.isNotEmpty
-        ? widget.participantPubkeys.first
-        : '';
+    final otherPubkey = _otherPubkey;
+    final isRetiredModerationThread = isRetiredModerationAccount(otherPubkey);
     final profileAsync = ref.watch(fetchUserProfileProvider(otherPubkey));
     final profile = profileAsync.asData?.value;
     // The conversation and its history remain readable — they are the viewer's
@@ -146,7 +155,8 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
         .maybeWhen(data: (vanished) => vanished, orElse: () => false);
     final displayName = isDeleted
         ? context.l10n.profileDeletedAccountName
-        : profile?.bestDisplayName ??
+        : moderationDisplayName(context, otherPubkey) ??
+              profile?.bestDisplayName ??
               UserProfile.defaultDisplayNameFor(otherPubkey);
     // Prefer the profile's NIP-05 / divine handle when set, otherwise
     // fall back to a truncated npub so the header always carries a
@@ -245,6 +255,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                                   participantPubkeys: widget.participantPubkeys,
                                   blockedPubkeys: blockedReactors,
                                   displayName: displayName,
+                                  reactionsEnabled: !isRetiredModerationThread,
                                   imageUrl: isDeleted ? null : profile?.picture,
                                   nip05: isDeleted
                                       ? null
@@ -266,7 +277,10 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                     ),
                   ),
                 ),
-                _SendBar(participantPubkeys: widget.participantPubkeys),
+                if (isRetiredModerationThread)
+                  _ClosedThreadNotice(currentPubkey: currentPubkey)
+                else
+                  _SendBar(participantPubkeys: widget.participantPubkeys),
               ],
             ),
           ),
@@ -315,11 +329,15 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
   void _onSendOutcome(BuildContext context, ConversationState state) {
     final l10n = context.l10n;
 
-    // Protected-minor DM restriction (#176): the send was refused by policy.
-    // No bubble is created for a blocked send, so surface it as a toast (no
-    // retry — retrying only re-hits the same block).
+    // The send was refused by policy (#176, #6416). No bubble is created for a
+    // blocked send, so surface it as a toast (no retry — retrying only re-hits
+    // the same block). The reason is re-derived from the peer rather than
+    // carried in state: `DmSendPolicyDecision` deliberately does not name it,
+    // so that `dm_repository` stays free of Divine's policy semantics.
     if (state.sendStatus == SendStatus.blocked) {
-      final message = l10n.dmSendBlockedMessage;
+      final message = isRetiredModerationAccount(_otherPubkey)
+          ? l10n.dmSendBlockedRetiredMessage
+          : l10n.dmSendBlockedMessage;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(DivineSnackbarContainer.snackBar(message, error: true));
@@ -412,6 +430,82 @@ class _SendBar extends StatelessWidget {
   }
 }
 
+/// Takes the composer's place in a thread keyed on a retired moderation
+/// account, and offers the current one instead (#6416).
+///
+/// Nothing has read those keys since the rotation, so the composer was a silent
+/// dead end: the gift wrap published, the bubble turned green, and the message
+/// reached nobody. Worst on an enforcement notice, whose own copy invites a
+/// reply as the appeal channel.
+///
+/// Replaces [MessageInputBar] rather than disabling it. `MessageInputBar` has
+/// no disabled state, and adding one would leave a focusable text field that
+/// still reads as "maybe this works".
+class _ClosedThreadNotice extends StatelessWidget {
+  const _ClosedThreadNotice({required this.currentPubkey});
+
+  final String currentPubkey;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
+    // Matches the composer's slot geometry so the layout does not shift.
+    return Container(
+      color: context.vineColors.surface,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: 8,
+          children: [
+            Text(
+              l10n.dmRetiredThreadClosedTitle,
+              style: VineTheme.titleSmallFont(
+                color: context.vineColors.primaryText,
+              ),
+            ),
+            Text(
+              l10n.dmRetiredThreadClosedBody,
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.onSurfaceVariant,
+              ),
+            ),
+            DivineButton(
+              label: l10n.dmRetiredThreadOpenSupport,
+              type: DivineButtonType.secondary,
+              expanded: true,
+              onPressed: currentPubkey.isEmpty
+                  ? null
+                  : () => _openCurrentSupportThread(context),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Opens the live moderation thread, replacing this route rather than
+  /// stacking on it — backing out of the destination should reach the inbox,
+  /// not return the user to the dead thread they were just moved off.
+  ///
+  /// The id is derived rather than looked up, so this works even when no
+  /// current-key thread exists yet: `ConversationPage` renders an empty thread,
+  /// which is the same state the pinned inbox row opens.
+  void _openCurrentSupportThread(BuildContext context) {
+    context.pushReplacement(
+      ConversationPage.pathForId(
+        DmRepository.computeConversationId([
+          currentPubkey,
+          kModerationPubkeyHex,
+        ]),
+      ),
+      extra: const [kModerationPubkeyHex],
+    );
+  }
+}
+
 /// Selects status and messages from the bloc and switches between loading,
 /// error, empty, and message-list states.
 class _ConversationContent extends StatelessWidget {
@@ -421,6 +515,7 @@ class _ConversationContent extends StatelessWidget {
     required this.participantPubkeys,
     required this.blockedPubkeys,
     required this.displayName,
+    required this.reactionsEnabled,
     this.imageUrl,
     this.nip05,
     this.onViewProfile,
@@ -433,6 +528,7 @@ class _ConversationContent extends StatelessWidget {
   /// Effective block/mute set; reactions from these pubkeys are hidden.
   final Set<String> blockedPubkeys;
   final String displayName;
+  final bool reactionsEnabled;
   final String? imageUrl;
   final String? nip05;
   final VoidCallback? onViewProfile;
@@ -478,6 +574,7 @@ class _ConversationContent extends StatelessWidget {
                     participantPubkeys: participantPubkeys,
                     blockedPubkeys: blockedPubkeys,
                     senderDisplayName: displayName,
+                    reactionsEnabled: reactionsEnabled,
                   ),
         };
       },
@@ -522,6 +619,7 @@ class _MessageList extends StatelessWidget {
     required this.participantPubkeys,
     required this.blockedPubkeys,
     required this.senderDisplayName,
+    required this.reactionsEnabled,
   });
 
   final List<DmMessage> messages;
@@ -531,6 +629,7 @@ class _MessageList extends StatelessWidget {
   /// Effective block/mute set; reactions from these pubkeys are hidden.
   final Set<String> blockedPubkeys;
   final String senderDisplayName;
+  final bool reactionsEnabled;
 
   Future<void> _onMessageLongPress(
     BuildContext context,
@@ -546,7 +645,9 @@ class _MessageList extends StatelessWidget {
     // message the recipient never received is meaningless (#4633 round 25).
     // A failed bubble's resend/delete affordance lives on a single TAP
     // (see [_onFailedMessageTap]), not this long-press menu.
-    final showPicker = !(isSent && deliveryStatus == DmDeliveryStatus.failed);
+    final showPicker =
+        reactionsEnabled &&
+        !(isSent && deliveryStatus == DmDeliveryStatus.failed);
     final result = await ReactionPickerOverlay.show(
       context: context,
       isSent: isSent,
@@ -774,7 +875,9 @@ class _MessageList extends StatelessWidget {
             // Double-tap-to-like, hidden on failed own sends to mirror the
             // long-press picker guard (reacting to a message the recipient
             // never received is meaningless).
-            onDoubleTap: isSent && status == DmDeliveryStatus.failed
+            onDoubleTap:
+                !reactionsEnabled ||
+                    (isSent && status == DmDeliveryStatus.failed)
                 ? null
                 : () => _likeOnDoubleTap(context, message),
             deliveryStatus: status,

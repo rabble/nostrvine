@@ -32,7 +32,8 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
                ? MyFollowingStatus.initial
                : MyFollowingStatus.success,
            rawFollowingPubkeys: followRepository.followingPubkeys,
-           followingPubkeys: followRepository.followingPubkeys
+           followingPubkeys: FollowSortOrder.newestFirst
+               .fromFollowOrder(followRepository.followingPubkeys)
                .where((pk) => !contentBlocklistRepository.isBlocked(pk))
                .toList(),
          ),
@@ -46,6 +47,7 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
       transformer: droppable(),
     );
     on<MyFollowingBlocklistChanged>(_onBlocklistChanged);
+    on<MyFollowingSortOrderChanged>(_onSortOrderChanged);
     on<_MyFollowingRepositoryUpdated>(_onRepositoryUpdated);
   }
 
@@ -56,6 +58,37 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
   /// Filter pubkeys by removing blocked users.
   List<String> _filterPubkeys(List<String> pubkeys) =>
       pubkeys.where((pk) => !_blocklistRepository.isBlocked(pk)).toList();
+
+  /// The rows to show: [rawPubkeys] arranged for [sortOrder], then filtered.
+  ///
+  /// Ordering runs first because filtering preserves relative order, so the
+  /// blocklist can never disturb the sort.
+  List<String> _visiblePubkeys(
+    List<String> rawPubkeys, {
+    FollowSortOrder? sortOrder,
+  }) => _filterPubkeys(
+    (sortOrder ?? state.sortOrder).fromFollowOrder(rawPubkeys),
+  );
+
+  /// Re-order the loaded following list without refetching it.
+  void _onSortOrderChanged(
+    MyFollowingSortOrderChanged event,
+    Emitter<MyFollowingState> emit,
+  ) {
+    if (event.sortOrder == state.sortOrder) return;
+
+    // The sort is remembered even before the first load resolves, so the
+    // pending list arrives in the order the user already asked for.
+    emit(
+      state.copyWith(
+        sortOrder: event.sortOrder,
+        followingPubkeys: _visiblePubkeys(
+          state.rawFollowingPubkeys,
+          sortOrder: event.sortOrder,
+        ),
+      ),
+    );
+  }
 
   /// Listen to repository's cached stream for stale-while-revalidate.
   Future<void> _onLoadRequested(
@@ -79,7 +112,7 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
           return state.copyWith(
             status: MyFollowingStatus.success,
             rawFollowingPubkeys: pubkeys,
-            followingPubkeys: _filterPubkeys(pubkeys),
+            followingPubkeys: _visiblePubkeys(pubkeys),
             isRefreshing: result.isStale,
           );
         },
@@ -179,7 +212,7 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
       state.copyWith(
         status: MyFollowingStatus.success,
         rawFollowingPubkeys: event.pubkeys,
-        followingPubkeys: _filterPubkeys(event.pubkeys),
+        followingPubkeys: _visiblePubkeys(event.pubkeys),
         isRefreshing: false,
       ),
     );
@@ -194,7 +227,7 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
 
     emit(
       state.copyWith(
-        followingPubkeys: _filterPubkeys(state.rawFollowingPubkeys),
+        followingPubkeys: _visiblePubkeys(state.rawFollowingPubkeys),
       ),
     );
   }

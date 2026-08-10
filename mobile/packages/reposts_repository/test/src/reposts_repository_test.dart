@@ -264,6 +264,409 @@ void main() {
       });
     });
 
+    group('unavailable local storage', () {
+      // The local database is a cache, not a precondition. When it is
+      // unreadable (at-rest cipher bootstrap left it unopenable, runtime
+      // corruption, disk full) the Kind 16 must still reach relays: the signed
+      // event is the irreplaceable half of the operation, the cache row is not.
+      // Regression for the SQLITE_NOTADB launch where every repost threw
+      // before `sendGenericRepost` was ever called.
+      final storageFailure = Exception('database is unavailable');
+
+      test('publishes the repost when local storage cannot be read', () async {
+        when(
+          () => mockLocalStorage.getAllRepostRecords(),
+        ).thenThrow(storageFailure);
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final eventId = await repository.repostVideo(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+        );
+
+        expect(eventId, equals(testRepostEventId));
+        verify(
+          () => mockNostrClient.sendGenericRepost(
+            addressableId: testAddressableId,
+            targetKind: EventKind.videoVertical,
+            authorPubkey: testAuthorPubkey,
+            content: any(named: 'content'),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).called(1);
+      });
+
+      test('publishes the repost when the local write fails', () async {
+        when(
+          () => mockLocalStorage.saveRepostRecord(any()),
+        ).thenThrow(storageFailure);
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final eventId = await repository.repostVideo(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+        );
+
+        expect(eventId, equals(testRepostEventId));
+        verify(
+          () => mockNostrClient.sendGenericRepost(
+            addressableId: testAddressableId,
+            targetKind: EventKind.videoVertical,
+            authorPubkey: testAuthorPubkey,
+            content: any(named: 'content'),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).called(1);
+      });
+
+      test(
+        'a failed read does not strand the repository uninitialized',
+        () async {
+          // Without this the `_isInitialized` latch never flips and every call
+          // re-runs the throwing read — the retry storm that filled the report
+          // with 26 identical failures for two taps.
+          when(
+            () => mockLocalStorage.getAllRepostRecords(),
+          ).thenThrow(storageFailure);
+
+          final repository = RepostsRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+          );
+
+          await repository.getRepostedAddressableIds();
+          await repository.getRepostedAddressableIds();
+
+          verify(() => mockLocalStorage.getAllRepostRecords()).called(1);
+        },
+      );
+
+      test('publishes the deletion when the local delete fails', () async {
+        when(
+          () => mockLocalStorage.deleteRepostRecord(any()),
+        ).thenThrow(storageFailure);
+        when(() => mockNostrClient.deleteEvent(any())).thenAnswer(
+          (_) async => createMockEvent(
+            id: 'deletion_event_id',
+            kind: EventKind.eventDeletion,
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        );
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        // Establish the record in memory so the deletion knows which event id
+        // to reference; an unknown repost still throws NotRepostedException.
+        await repository.repostVideo(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+        );
+
+        await repository.unrepostVideo(testAddressableId);
+
+        verify(() => mockNostrClient.deleteEvent(testRepostEventId)).called(1);
+      });
+
+      test(
+        'reports an invariant violation raised by a storage write',
+        () async {
+          // An Error from the storage layer means the storage layer itself is
+          // broken. Still swallowed so the Kind 16 goes out, but routed to the
+          // reporter — a swallowed bug nobody can see is how a real defect
+          // ships behind a warning log.
+          final reported = <({Object error, String site})>[];
+          when(
+            () => mockLocalStorage.saveRepostRecord(any()),
+          ).thenThrow(StateError('storage invariant violated'));
+
+          final repository = RepostsRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+            errorReporter: (error, stackTrace, {required site}) {
+              reported.add((error: error, site: site));
+            },
+          );
+
+          await repository.repostVideo(
+            addressableId: testAddressableId,
+            originalAuthorPubkey: testAuthorPubkey,
+          );
+
+          expect(reported, hasLength(2));
+          expect(reported.first.error, isA<StateError>());
+          expect(
+            reported.map((r) => r.site),
+            equals([
+              RepostsRepositoryReportableSites.repostVideoSavePlaceholder,
+              RepostsRepositoryReportableSites.repostVideoSaveConfirmed,
+            ]),
+          );
+        },
+      );
+
+      test(
+        'reports an invariant violation raised by the initial read',
+        () async {
+          final reported = <String>[];
+          when(
+            () => mockLocalStorage.getAllRepostRecords(),
+          ).thenThrow(TypeError());
+
+          final repository = RepostsRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+            errorReporter: (error, stackTrace, {required site}) {
+              reported.add(site);
+            },
+          );
+
+          await repository.getRepostedAddressableIds();
+
+          expect(
+            reported,
+            equals([
+              RepostsRepositoryReportableSites.ensureInitializedLoadRecords,
+            ]),
+          );
+        },
+      );
+
+      test('does not report an expected storage failure', () async {
+        // SqliteException and friends are Exceptions, not Errors: expected on
+        // a broken device and explicitly not Crashlytics-reportable per the
+        // decision matrix in `.claude/rules/error_handling.md`.
+        var reportCount = 0;
+        when(
+          () => mockLocalStorage.getAllRepostRecords(),
+        ).thenThrow(storageFailure);
+        when(
+          () => mockLocalStorage.saveRepostRecord(any()),
+        ).thenThrow(storageFailure);
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+          errorReporter: (error, stackTrace, {required site}) {
+            reportCount++;
+          },
+        );
+
+        await repository.repostVideo(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+        );
+
+        expect(reportCount, isZero);
+      });
+
+      test('publishes the repost when the toggle state read fails', () async {
+        // The repost button only ever reaches the repository through
+        // toggleRepost (video_interactions_bloc.dart), so a storage read
+        // that throws there costs the Kind 16 just as surely as one inside
+        // repostVideo. repostVideo's own guard never gets a chance to run.
+        when(
+          () => mockLocalStorage.getAllRepostRecords(),
+        ).thenThrow(storageFailure);
+        when(
+          () => mockLocalStorage.isReposted(any()),
+        ).thenThrow(storageFailure);
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final isNowReposted = await repository.toggleRepost(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+        );
+
+        expect(isNowReposted, isTrue);
+        verify(
+          () => mockNostrClient.sendGenericRepost(
+            addressableId: testAddressableId,
+            targetKind: EventKind.videoVertical,
+            authorPubkey: testAuthorPubkey,
+            content: any(named: 'content'),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).called(1);
+      });
+
+      test('unreposts from the in-memory cache when the read fails', () async {
+        // The swallowed read must fall back to the cache, not to "not
+        // reposted" — otherwise the toggle publishes a duplicate Kind 16
+        // instead of deleting the live one.
+        when(() => mockNostrClient.deleteEvent(any())).thenAnswer(
+          (_) async => createMockEvent(
+            id: 'deletion_event_id',
+            kind: EventKind.eventDeletion,
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        );
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+        await repository.repostVideo(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+        );
+        when(
+          () => mockLocalStorage.isReposted(any()),
+        ).thenThrow(storageFailure);
+
+        final isNowReposted = await repository.toggleRepost(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+        );
+
+        expect(isNowReposted, isFalse);
+        verify(() => mockNostrClient.deleteEvent(testRepostEventId)).called(1);
+      });
+
+      test('syncs from relays when the persisted read fails', () async {
+        // The relay half is the authoritative one. A cache read that throws
+        // used to escape syncUserReposts before the fetch below ever ran,
+        // so the profile Reposts tab errored while relays were reachable.
+        when(
+          () => mockLocalStorage.getAllRepostRecords(),
+        ).thenThrow(storageFailure);
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            createMockEvent(
+              id: testRepostEventId,
+              kind: EventKind.genericRepost,
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              tags: [
+                ['a', testAddressableId],
+                ['p', testAuthorPubkey],
+              ],
+            ),
+          ],
+        );
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final result = await repository.syncUserReposts();
+
+        expect(result.orderedAddressableIds, equals([testAddressableId]));
+      });
+
+      test('completes the sync when the batch save fails', () async {
+        when(
+          () => mockLocalStorage.saveRepostRecordsBatch(any()),
+        ).thenThrow(storageFailure);
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            createMockEvent(
+              id: testRepostEventId,
+              kind: EventKind.genericRepost,
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              tags: [
+                ['a', testAddressableId],
+                ['p', testAuthorPubkey],
+              ],
+            ),
+          ],
+        );
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final result = await repository.syncUserReposts();
+
+        expect(result.orderedAddressableIds, equals([testAddressableId]));
+      });
+
+      test('still subscribes when the startup read fails', () async {
+        // initialize() reads storage before _subscribeToReposts, so a throw
+        // there costs the session its cross-device sync too.
+        when(
+          () => mockLocalStorage.getAllRepostRecords(),
+        ).thenThrow(storageFailure);
+        when(() => mockNostrClient.hasKeys).thenReturn(true);
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => const Stream.empty());
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        await repository.initialize();
+
+        verify(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).called(1);
+      });
+
+      test('caches a subscription repost when its write fails', () async {
+        // The write is fire-and-forget, so an unguarded rejection would be
+        // an uncaught async error rather than a swallowed cache miss.
+        final controller = StreamController<Event>();
+        addTearDown(controller.close);
+        when(
+          () => mockLocalStorage.saveRepostRecord(any()),
+        ).thenThrow(storageFailure);
+        when(() => mockNostrClient.hasKeys).thenReturn(true);
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => controller.stream);
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+        await repository.initialize();
+
+        controller.add(
+          createMockEvent(
+            id: testRepostEventId,
+            kind: EventKind.genericRepost,
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            tags: [
+              ['a', testAddressableId],
+              ['p', testAuthorPubkey],
+            ],
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(repository.isRepostedSync(testAddressableId), isTrue);
+      });
+    });
+
     group('repostVideo', () {
       test('creates and publishes Kind 16 event', () async {
         final repository = RepostsRepository(nostrClient: mockNostrClient);
@@ -1951,22 +2354,63 @@ void main() {
         await subscription.cancel();
       });
 
-      test('delegates to local storage when available', () {
-        final storageStream = Stream.value(<String>{'test-id'});
+      test('delegates to local storage when available', () async {
         when(
           () => mockLocalStorage.watchRepostedAddressableIds(),
-        ).thenAnswer((_) => storageStream);
+        ).thenAnswer((_) => Stream.value(<String>{'test-id'}));
 
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
           localStorage: mockLocalStorage,
         );
 
-        final stream = repository.watchRepostedAddressableIds();
-
-        expect(stream, equals(storageStream));
+        await expectLater(
+          repository.watchRepostedAddressableIds(),
+          emits(equals(<String>{'test-id'})),
+        );
         verify(() => mockLocalStorage.watchRepostedAddressableIds()).called(1);
       });
+
+      test(
+        'falls back to the in-memory cache when storage is degraded',
+        () async {
+          // The regression: on a device whose database is present but
+          // unreadable, storage's query stream never emits, so a UI wired to it
+          // watches the repost publish succeed and the button never flip. Every
+          // mutation still ticks the repository's own controller, so that is
+          // what the stream must follow once storage has proven unusable.
+          when(
+            () => mockLocalStorage.getAllRepostRecords(),
+          ).thenThrow(Exception('database is unavailable'));
+          when(
+            () => mockLocalStorage.watchRepostedAddressableIds(),
+          ).thenAnswer((_) => const Stream<Set<String>>.empty());
+
+          final repository = RepostsRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+          );
+
+          final emittedValues = <Set<String>>[];
+          final subscription = repository.watchRepostedAddressableIds().listen(
+            emittedValues.add,
+          );
+
+          await Future<void>.delayed(Duration.zero);
+          expect(emittedValues.last, isEmpty);
+
+          await repository.repostVideo(
+            addressableId: testAddressableId,
+            originalAuthorPubkey: testAuthorPubkey,
+          );
+
+          await Future<void>.delayed(Duration.zero);
+          expect(emittedValues.last, contains(testAddressableId));
+          verifyNever(() => mockLocalStorage.watchRepostedAddressableIds());
+
+          await subscription.cancel();
+        },
+      );
     });
 
     group('initialize', () {

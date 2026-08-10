@@ -4456,6 +4456,20 @@ class AppLocalizationsRo extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
+  String get soundSyncStatusSyncing => 'Se sincronizează sunetele tale…';
+
+  @override
+  String get soundSyncStatusSynced => 'Sunetele sunt la zi';
+
+  @override
+  String get soundSyncStatusFailed =>
+      'Nu am putut sincroniza sunetele tale. Vom încerca din nou.';
+
+  @override
+  String get soundSyncStatusLocked =>
+      'Nu putem debloca biblioteca ta sincronizată pe acest dispozitiv.';
+
+  @override
   String get soundsFailedToLoad => 'N-am putut încărca sunetele';
 
   @override
@@ -6137,6 +6151,20 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get dmSendBlockedMessage =>
       'You can only message official Divine accounts';
+
+  @override
+  String get dmSendBlockedRetiredMessage =>
+      'Nimeni nu citește această conversație. Scrie către Divine Moderation.';
+
+  @override
+  String get dmRetiredThreadClosedTitle => 'Această conversație este închisă.';
+
+  @override
+  String get dmRetiredThreadClosedBody =>
+      'Am mutat Divine Moderation pe un cont nou. Acesta nu mai este citit de nimeni.';
+
+  @override
+  String get dmRetiredThreadOpenSupport => 'Scrie către Divine Moderation';
 
   @override
   String get dmSendFailedMessage => 'Mesajul nu a putut fi trimis';
@@ -7835,6 +7863,21 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get followersUpdateFollowFailed =>
       'Actualizarea stării de urmărire a eșuat. Încearcă din nou.';
+
+  @override
+  String get followersSortSemanticLabel => 'Sortează urmăritorii';
+
+  @override
+  String get followingSortSemanticLabel => 'Sortează urmăriții';
+
+  @override
+  String get followSortTitle => 'Sortează după';
+
+  @override
+  String get followSortNewest => 'Cei mai noi primii';
+
+  @override
+  String get followSortOldest => 'Cei mai vechi primii';
 
   @override
   String get reportMessageTitle => 'Raportează mesajul';

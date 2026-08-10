@@ -4351,6 +4351,20 @@ class AppLocalizationsNl extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
+  String get soundSyncStatusSyncing => 'Je sounds worden gesynchroniseerd…';
+
+  @override
+  String get soundSyncStatusSynced => 'Sounds zijn up-to-date';
+
+  @override
+  String get soundSyncStatusFailed =>
+      'Je sounds konden niet worden gesynchroniseerd. We proberen het opnieuw.';
+
+  @override
+  String get soundSyncStatusLocked =>
+      'Je gesynchroniseerde bibliotheek kan op dit apparaat niet worden ontgrendeld.';
+
+  @override
   String get soundsFailedToLoad => 'Laden van geluiden mislukt';
 
   @override
@@ -6008,6 +6022,21 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get dmSendBlockedMessage =>
       'You can only message official Divine accounts';
+
+  @override
+  String get dmSendBlockedRetiredMessage =>
+      'Niemand leest dit gesprek. Stuur in plaats daarvan een bericht naar Divine Moderation.';
+
+  @override
+  String get dmRetiredThreadClosedTitle => 'Dit gesprek is gesloten.';
+
+  @override
+  String get dmRetiredThreadClosedBody =>
+      'We hebben Divine Moderation naar een nieuw account verplaatst. Dit account leest niemand meer.';
+
+  @override
+  String get dmRetiredThreadOpenSupport =>
+      'Bericht sturen naar Divine Moderation';
 
   @override
   String get dmSendFailedMessage => 'Bericht kon niet worden verzonden';
@@ -7693,6 +7722,21 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get followersUpdateFollowFailed =>
       'Volgstatus bijwerken mislukt. Probeer het opnieuw.';
+
+  @override
+  String get followersSortSemanticLabel => 'Volgers sorteren';
+
+  @override
+  String get followingSortSemanticLabel => 'Gevolgden sorteren';
+
+  @override
+  String get followSortTitle => 'Sorteren op';
+
+  @override
+  String get followSortNewest => 'Nieuwste eerst';
+
+  @override
+  String get followSortOldest => 'Oudste eerst';
 
   @override
   String get reportMessageTitle => 'Bericht rapporteren';

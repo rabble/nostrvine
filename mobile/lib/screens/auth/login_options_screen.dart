@@ -15,6 +15,7 @@ import 'package:go_router/go_router.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show AndroidPlugin;
 import 'package:openvine/blocs/divine_auth/divine_auth_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/nostr_connect_screen.dart';
@@ -57,6 +58,7 @@ class LoginOptionsScreen extends ConsumerWidget {
             authService: authService,
             pendingVerificationService: pendingVerificationService,
             validationMessages: AuthValidationMessages.fromL10n(l10n),
+            analytics: ref.read(analyticsEventSinkProvider),
           )..initialize(
             isSignIn: true,
             initialEmail: initialEmail,

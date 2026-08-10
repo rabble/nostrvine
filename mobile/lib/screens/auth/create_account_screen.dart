@@ -14,6 +14,7 @@ import 'package:openvine/blocs/divine_auth/divine_auth_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
@@ -53,6 +54,7 @@ class CreateAccountScreen extends ConsumerWidget {
         inviteSourceSlug: inviteAccessGrant?.creatorSlug,
         validationMessages: AuthValidationMessages.fromL10n(l10n),
         requirePasswordConfirmation: true,
+        analytics: ref.read(analyticsEventSinkProvider),
       )..initialize(),
       child: _CreateAccountView(inviteAccessGrant: inviteAccessGrant),
     );

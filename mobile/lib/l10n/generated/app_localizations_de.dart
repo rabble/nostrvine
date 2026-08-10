@@ -4386,6 +4386,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
+  String get soundSyncStatusSyncing => 'Deine Sounds werden synchronisiert…';
+
+  @override
+  String get soundSyncStatusSynced => 'Sounds sind aktuell';
+
+  @override
+  String get soundSyncStatusFailed =>
+      'Deine Sounds konnten nicht synchronisiert werden. Wir versuchen es erneut.';
+
+  @override
+  String get soundSyncStatusLocked =>
+      'Deine synchronisierte Bibliothek lässt sich auf diesem Gerät nicht entsperren.';
+
+  @override
   String get soundsFailedToLoad => 'Sounds konnten nicht geladen werden';
 
   @override
@@ -6056,6 +6070,21 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get dmSendBlockedMessage =>
       'You can only message official Divine accounts';
+
+  @override
+  String get dmSendBlockedRetiredMessage =>
+      'Diese Unterhaltung liest niemand. Schreib stattdessen an Divine Moderation.';
+
+  @override
+  String get dmRetiredThreadClosedTitle =>
+      'Diese Unterhaltung ist geschlossen.';
+
+  @override
+  String get dmRetiredThreadClosedBody =>
+      'Wir haben Divine Moderation auf ein neues Konto umgezogen. Dieses hier liest niemand mehr.';
+
+  @override
+  String get dmRetiredThreadOpenSupport => 'Divine Moderation schreiben';
 
   @override
   String get dmSendFailedMessage => 'Nachricht konnte nicht gesendet werden';
@@ -7757,6 +7786,21 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get followersUpdateFollowFailed =>
       'Follow-Status konnte nicht aktualisiert werden. Versuch es nochmal.';
+
+  @override
+  String get followersSortSemanticLabel => 'Follower sortieren';
+
+  @override
+  String get followingSortSemanticLabel => 'Gefolgte sortieren';
+
+  @override
+  String get followSortTitle => 'Sortieren nach';
+
+  @override
+  String get followSortNewest => 'Neueste zuerst';
+
+  @override
+  String get followSortOldest => 'Älteste zuerst';
 
   @override
   String get reportMessageTitle => 'Nachricht melden';

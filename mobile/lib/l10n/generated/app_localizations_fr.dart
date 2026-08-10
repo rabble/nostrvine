@@ -4397,6 +4397,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
+  String get soundSyncStatusSyncing => 'Synchronisation de tes sons…';
+
+  @override
+  String get soundSyncStatusSynced => 'Sons à jour';
+
+  @override
+  String get soundSyncStatusFailed =>
+      'Impossible de synchroniser tes sons. On réessaiera.';
+
+  @override
+  String get soundSyncStatusLocked =>
+      'Impossible de déverrouiller ta bibliothèque synchronisée sur cet appareil.';
+
+  @override
   String get soundsFailedToLoad => 'Échec du chargement des sons';
 
   @override
@@ -6058,6 +6072,20 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get dmSendBlockedMessage =>
       'You can only message official Divine accounts';
+
+  @override
+  String get dmSendBlockedRetiredMessage =>
+      'Personne ne lit cette conversation. Écris plutôt à Divine Moderation.';
+
+  @override
+  String get dmRetiredThreadClosedTitle => 'Cette conversation est fermée.';
+
+  @override
+  String get dmRetiredThreadClosedBody =>
+      'Nous avons déplacé Divine Moderation vers un nouveau compte. Personne ne lit plus celui-ci.';
+
+  @override
+  String get dmRetiredThreadOpenSupport => 'Écrire à Divine Moderation';
 
   @override
   String get dmSendFailedMessage => 'Impossible d\'envoyer le message';
@@ -7763,6 +7791,21 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get followersUpdateFollowFailed =>
       'Échec de la mise à jour du suivi. Réessaie.';
+
+  @override
+  String get followersSortSemanticLabel => 'Trier les abonnés';
+
+  @override
+  String get followingSortSemanticLabel => 'Trier les abonnements';
+
+  @override
+  String get followSortTitle => 'Trier par';
+
+  @override
+  String get followSortNewest => 'Plus récents d\'abord';
+
+  @override
+  String get followSortOldest => 'Plus anciens d\'abord';
 
   @override
   String get reportMessageTitle => 'Signaler le message';

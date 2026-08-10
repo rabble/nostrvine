@@ -4246,6 +4246,19 @@ class AppLocalizationsAm extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
+  String get soundSyncStatusSyncing => 'ድምፆችዎ በማመሳሰል ላይ…';
+
+  @override
+  String get soundSyncStatusSynced => 'ድምፆች ወቅታዊ ናቸው';
+
+  @override
+  String get soundSyncStatusFailed => 'ድምፆችዎን ማመሳሰል አልተቻለም። እንደገና እንሞክራለን።';
+
+  @override
+  String get soundSyncStatusLocked =>
+      'በዚህ መሣሪያ ላይ የተመሳሰለ ቤተ-መጻሕፍትዎን መክፈት አልተቻለም።';
+
+  @override
   String get soundsFailedToLoad => 'ድምጾችን መጫን አልተሳካም።';
 
   @override
@@ -5859,6 +5872,20 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get dmSendBlockedMessage =>
       'You can only message official Divine accounts';
+
+  @override
+  String get dmSendBlockedRetiredMessage =>
+      'ይህን ውይይት የሚያነበው የለም። በምትኩ Divine Moderation ላይ መልእክት ይላኩ።';
+
+  @override
+  String get dmRetiredThreadClosedTitle => 'ይህ ውይይት ተዘግቷል።';
+
+  @override
+  String get dmRetiredThreadClosedBody =>
+      'Divine Moderation ወደ አዲስ መለያ አዛውረናል። ይህን መለያ የሚያነበው የለም።';
+
+  @override
+  String get dmRetiredThreadOpenSupport => 'Divine Moderation ላይ መልእክት ይላኩ';
 
   @override
   String get dmSendFailedMessage => 'መልዕክቱ መላክ አልተሳካም';
@@ -7501,6 +7528,21 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get followersUpdateFollowFailed =>
       'የመከተል ሁኔታን ማዘመን አልተሳካም። እባክዎ እንደገና ይሞክሩ።';
+
+  @override
+  String get followersSortSemanticLabel => 'ተከታዮችን ደርድር';
+
+  @override
+  String get followingSortSemanticLabel => 'የሚከተሉትን ደርድር';
+
+  @override
+  String get followSortTitle => 'ደርድር በ';
+
+  @override
+  String get followSortNewest => 'አዲሶቹ መጀመሪያ';
+
+  @override
+  String get followSortOldest => 'አሮጌዎቹ መጀመሪያ';
 
   @override
   String get reportMessageTitle => 'መልዕክትን ሪፖርት አድርግ';

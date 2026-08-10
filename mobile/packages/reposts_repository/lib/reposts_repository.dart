@@ -7,3 +7,4 @@ export 'src/exceptions.dart';
 export 'src/models/models.dart';
 export 'src/reposts_local_storage.dart';
 export 'src/reposts_repository.dart';
+export 'src/reposts_repository_reportable_sites.dart';

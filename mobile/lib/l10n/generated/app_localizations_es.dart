@@ -4378,6 +4378,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
+  String get soundSyncStatusSyncing => 'Sincronizando tus sonidos…';
+
+  @override
+  String get soundSyncStatusSynced => 'Sonidos actualizados';
+
+  @override
+  String get soundSyncStatusFailed =>
+      'No pudimos sincronizar tus sonidos. Lo intentaremos de nuevo.';
+
+  @override
+  String get soundSyncStatusLocked =>
+      'No se puede desbloquear tu biblioteca sincronizada en este dispositivo.';
+
+  @override
   String get soundsFailedToLoad => 'No se pudieron cargar los sonidos';
 
   @override
@@ -6032,6 +6046,20 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get dmSendBlockedMessage =>
       'You can only message official Divine accounts';
+
+  @override
+  String get dmSendBlockedRetiredMessage =>
+      'Nadie lee esta conversación. Escribe a Divine Moderation en su lugar.';
+
+  @override
+  String get dmRetiredThreadClosedTitle => 'Esta conversación está cerrada.';
+
+  @override
+  String get dmRetiredThreadClosedBody =>
+      'Movimos Divine Moderation a una cuenta nueva. Ya nadie lee esta.';
+
+  @override
+  String get dmRetiredThreadOpenSupport => 'Enviar mensaje a Divine Moderation';
 
   @override
   String get dmSendFailedMessage => 'No se pudo enviar el mensaje';
@@ -7733,6 +7761,21 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get followersUpdateFollowFailed =>
       'No se pudo actualizar el estado de seguimiento. Probá de nuevo.';
+
+  @override
+  String get followersSortSemanticLabel => 'Ordenar seguidores';
+
+  @override
+  String get followingSortSemanticLabel => 'Ordenar seguidos';
+
+  @override
+  String get followSortTitle => 'Ordenar por';
+
+  @override
+  String get followSortNewest => 'Más recientes primero';
+
+  @override
+  String get followSortOldest => 'Más antiguos primero';
 
   @override
   String get reportMessageTitle => 'Reportar mensaje';

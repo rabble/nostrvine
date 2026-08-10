@@ -4383,6 +4383,20 @@ class AppLocalizationsBg extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
+  String get soundSyncStatusSyncing => 'Синхронизиране на звуците ви…';
+
+  @override
+  String get soundSyncStatusSynced => 'Звуците са актуални';
+
+  @override
+  String get soundSyncStatusFailed =>
+      'Звуците ви не бяха синхронизирани. Ще опитаме пак.';
+
+  @override
+  String get soundSyncStatusLocked =>
+      'Синхронизираната ви библиотека не може да се отключи на това устройство.';
+
+  @override
   String get soundsFailedToLoad => 'Не успяхме да заредим звуците';
 
   @override
@@ -6038,6 +6052,20 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get dmSendBlockedMessage =>
       'You can only message official Divine accounts';
+
+  @override
+  String get dmSendBlockedRetiredMessage =>
+      'Никой не чете този разговор. Вместо това пишете на Divine Moderation.';
+
+  @override
+  String get dmRetiredThreadClosedTitle => 'Този разговор е затворен.';
+
+  @override
+  String get dmRetiredThreadClosedBody =>
+      'Преместихме Divine Moderation в нов профил. Този вече не се чете от никого.';
+
+  @override
+  String get dmRetiredThreadOpenSupport => 'Пишете на Divine Moderation';
 
   @override
   String get dmSendFailedMessage => 'Съобщението не мина';
@@ -7739,6 +7767,21 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get followersUpdateFollowFailed =>
       'Актуализирането на следването не успя. Опитай пак.';
+
+  @override
+  String get followersSortSemanticLabel => 'Сортиране на последователите';
+
+  @override
+  String get followingSortSemanticLabel => 'Сортиране на следваните';
+
+  @override
+  String get followSortTitle => 'Сортиране по';
+
+  @override
+  String get followSortNewest => 'Първо най-новите';
+
+  @override
+  String get followSortOldest => 'Първо най-старите';
 
   @override
   String get reportMessageTitle => 'Докладвай съобщението';

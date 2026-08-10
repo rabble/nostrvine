@@ -2370,6 +2370,10 @@
   "soundsFeaturedSounds": "نمایاں آوازیں",
   "soundsTrendingSounds": "مقبول آوازیں",
   "soundsAllSounds": "تمام آوازیں",
+  "soundSyncStatusSyncing": "آپ کی آوازیں ہم آہنگ ہو رہی ہیں…",
+  "soundSyncStatusSynced": "آوازیں تازہ ترین ہیں",
+  "soundSyncStatusFailed": "آپ کی آوازیں ہم آہنگ نہیں ہو سکیں۔ ہم دوبارہ کوشش کریں گے۔",
+  "soundSyncStatusLocked": "اس ڈیوائس پر آپ کی ہم آہنگ لائبریری کھولی نہیں جا سکتی۔",
   "soundsSearchResults": "تلاش کے نتائج",
   "soundsNoSoundsAvailable": "کوئی آواز دستیاب نہیں",
   "soundsNoSoundsDescription": "جب کریئیٹرز آڈیو شیئر کریں گے تو آوازیں یہاں نظر آئیں گی",
@@ -3360,6 +3364,10 @@
   "@dmSendBlockedMessage": {
     "description": "SnackBar text shown when a protected minor (13-15) tries to DM a non-approved account (#176). Neutral, no retry action."
   },
+  "dmSendBlockedRetiredMessage": "یہ گفتگو کوئی نہیں پڑھ رہا۔ اس کے بجائے Divine Moderation کو پیغام بھیجیں۔",
+  "dmRetiredThreadClosedTitle": "یہ گفتگو بند ہو چکی ہے۔",
+  "dmRetiredThreadClosedBody": "ہم نے Divine Moderation کو نئے اکاؤنٹ پر منتقل کر دیا ہے۔ اسے اب کوئی نہیں پڑھتا۔",
+  "dmRetiredThreadOpenSupport": "Divine Moderation کو پیغام بھیجیں",
   "dmSendFailedMessage": "پیغام نہیں بھیجا جا سکا",
   "@dmSendFailedMessage": {
     "description": "Accessibility announcement text, and the recovery bottom sheet's title, shown in a DM conversation when a send fails (relay error, signer error, network error). The bottom sheet pairs it with `dmSendFailedSubtitle` and the `dmMessageActionRetrySend` / `dmMessageActionCancelSend` actions."
@@ -4485,6 +4493,11 @@
   "followersFailedToLoadList": "فالوورز فہرست لوڈ نہیں ہو سکی",
   "followersEmptyTitle": "ابھی کوئی فالوور نہیں",
   "followersUpdateFollowFailed": "فالو اسٹیٹس اپڈیٹ نہیں ہو سکا۔ براہ کرم دوبارہ کوشش کریں۔",
+  "followersSortSemanticLabel": "فالوورز ترتیب دیں",
+  "followingSortSemanticLabel": "فالوئنگ ترتیب دیں",
+  "followSortTitle": "ترتیب بلحاظ",
+  "followSortNewest": "پہلے نئے",
+  "followSortOldest": "پہلے پرانے",
   "reportMessageTitle": "پیغام کی رپورٹ کریں",
   "reportMessageWhyReporting": "آپ یہ پیغام کیوں رپورٹ کر رہے ہیں؟",
   "reportMessageSelectReason": "براہ کرم اس پیغام کی رپورٹ کرنے کی وجہ منتخب کریں",

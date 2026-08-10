@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/relay_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -78,6 +79,17 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
       // Clear any stale error/completed state from a previous publish attempt
       // so the overlay doesn't block the new publish flow.
       ref.read(videoPublishProvider.notifier).clearError();
+      final recorderMode =
+          widget.draftMode ??
+          ref.read(creationAnalyticsTrackerProvider).activeMode ??
+          VideoRecorderMode.fromName(
+            ref
+                .read(sharedPreferencesProvider)
+                .getString(VideoRecorderMode.persistenceKey),
+          );
+      unawaited(
+        ref.read(creationAnalyticsTrackerProvider).editorOpened(recorderMode),
+      );
       // `ref.listen` only fires on a *change*, so a render that already failed
       // signing before this screen mounted (resumed draft, or capture/lip-sync
       // where the render is kicked off before navigation) would never surface
