@@ -4363,7 +4363,6 @@
   "likedVideosEmpty": "No liked videos",
   "likedVideosInvalidRoute": "Invalid route",
   "likedVideosTitle": "Liked Videos",
-  "ogVinerBadgeSemanticLabel": "OG Viner",
   "uploadFailureSheetRetryingSnackbar": "Retrying upload\u2026",
   "uploadFailureSheetSaveToDraftsButton": "Save to Drafts",
   "uploadFailureSheetSavedToDraftsSnackbar": "Saved to drafts",
@@ -4428,6 +4427,18 @@
   "globalUploadPendingCount": "Pending Uploads ({count})",
   "@globalUploadPendingCount": {"placeholders": {"count": {"type": "int"}}},
   "ogVinerBadgeLabel": "OG Viner",
+  "profileBadgeOgVinerBody": "This person posted an original Vine that Divine found in the archive. It is not an account verification badge.",
+  "@profileBadgeOgVinerBody": {
+    "description": "Body copy explaining that the OG Viner profile badge identifies original Vine archive participation, not account verification."
+  },
+  "profileBadgeCheckmarkTitle": "Profile checkmark",
+  "@profileBadgeCheckmarkTitle": {
+    "description": "Title for the dialog explaining the special profile checkmark badge."
+  },
+  "profileBadgeCheckmarkBody": "This account is on Divine's profile checkmark list. It is separate from NIP-05, verified account links, and OG Viner status.",
+  "@profileBadgeCheckmarkBody": {
+    "description": "Body copy explaining that the special profile checkmark is a Divine-specific profile marker, not NIP-05, verified-account links, or OG Viner status."
+  },
   "shareVideoInListsCount": "{count, plural, =1{In 1 list} other{In {count} lists}}",
   "@shareVideoInListsCount": {"placeholders": {"count": {"type": "int"}}},
   "unfollowConfirmButton": "Unfollow",

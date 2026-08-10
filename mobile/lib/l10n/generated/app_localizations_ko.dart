@@ -7011,9 +7011,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get likedVideosTitle => '좋아요한 영상';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar => '업로드 다시 시도 중…';
 
   @override
@@ -7207,6 +7204,17 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      '이 사람은 Divine이 아카이브에서 찾은 오리지널 Vine을 올렸어요. 계정 인증 배지는 아니에요.';
+
+  @override
+  String get profileBadgeCheckmarkTitle => '프로필 체크마크';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      '이 계정은 Divine의 프로필 체크마크 목록에 있어요. NIP-05, 인증된 계정 링크, OG Viner 상태와는 별개예요.';
 
   @override
   String shareVideoInListsCount(int count) {

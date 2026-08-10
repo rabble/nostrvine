@@ -4229,7 +4229,6 @@
   "likedVideosEmpty": "Tiada video disukai",
   "likedVideosInvalidRoute": "Laluan tidak sah",
   "likedVideosTitle": "Video Disukai",
-  "ogVinerBadgeSemanticLabel": "OG Viner",
   "uploadFailureSheetRetryingSnackbar": "Mencuba semula muat naik…",
   "uploadFailureSheetSaveToDraftsButton": "Simpan ke Draf",
   "uploadFailureSheetSavedToDraftsSnackbar": "Disimpan ke draf",
@@ -4387,6 +4386,9 @@
     }
   },
   "ogVinerBadgeLabel": "OG Viner",
+  "profileBadgeOgVinerBody": "Orang ini pernah menyiarkan Vine asli yang ditemui Divine dalam arkib. Ini bukan lencana pengesahan akaun.",
+  "profileBadgeCheckmarkTitle": "Tanda semak profil",
+  "profileBadgeCheckmarkBody": "Akaun ini ada dalam senarai tanda semak profil Divine. Ia berasingan daripada NIP-05, pautan akaun disahkan dan status OG Viner.",
   "shareVideoInListsCount": "{count, plural, =1{Dalam 1 senarai} other{Dalam {count} senarai}}",
   "@shareVideoInListsCount": {
     "placeholders": {

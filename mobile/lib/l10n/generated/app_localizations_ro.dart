@@ -7479,9 +7479,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get likedVideosTitle => 'Videoclipuri apreciate';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar => 'Se reîncearcă încărcarea…';
 
   @override
@@ -7685,6 +7682,17 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      'Persoana asta a postat un Vine original pe care Divine l-a găsit în arhivă. Nu e o insignă de verificare a contului.';
+
+  @override
+  String get profileBadgeCheckmarkTitle => 'Bifa de profil';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      'Contul ăsta e pe lista de bife de profil a Divine. E separat de NIP-05, de linkurile de cont verificate și de statutul OG Viner.';
 
   @override
   String shareVideoInListsCount(int count) {

@@ -7381,9 +7381,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get likedVideosTitle => 'Video piaciuti';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar =>
       'Nuovo tentativo di caricamento…';
 
@@ -7586,6 +7583,17 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      'Questa persona ha pubblicato un Vine originale che Divine ha trovato nell\'archivio. Non è un badge di verifica dell\'account.';
+
+  @override
+  String get profileBadgeCheckmarkTitle => 'Spunta del profilo';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      'Questo account è nella lista delle spunte di profilo di Divine. È separato da NIP-05, dai link di account verificati e dallo status OG Viner.';
 
   @override
   String shareVideoInListsCount(int count) {

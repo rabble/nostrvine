@@ -7478,9 +7478,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get likedVideosTitle => 'Polubione filmy';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar => 'Ponawianie przesyłania…';
 
   @override
@@ -7684,6 +7681,17 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      'Ta osoba opublikowała oryginalnego Vine\'a, którego Divine znalazło w archiwum. To nie jest odznaka weryfikacji konta.';
+
+  @override
+  String get profileBadgeCheckmarkTitle => 'Znacznik profilu';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      'To konto jest na liście znaczników profilu Divine. To coś innego niż NIP-05, zweryfikowane linki konta i status OG Viner.';
 
   @override
   String shareVideoInListsCount(int count) {

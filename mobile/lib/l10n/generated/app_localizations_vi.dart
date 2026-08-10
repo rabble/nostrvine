@@ -7321,9 +7321,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get likedVideosTitle => 'Video đã thích';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar => 'Đang thử tải lên lại…';
 
   @override
@@ -7524,6 +7521,17 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      'Người này đã đăng một Vine gốc mà Divine tìm thấy trong kho lưu trữ. Đây không phải huy hiệu xác minh tài khoản.';
+
+  @override
+  String get profileBadgeCheckmarkTitle => 'Dấu tích hồ sơ';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      'Tài khoản này nằm trong danh sách dấu tích hồ sơ của Divine. Nó tách biệt với NIP-05, liên kết tài khoản đã xác minh và trạng thái OG Viner.';
 
   @override
   String shareVideoInListsCount(int count) {

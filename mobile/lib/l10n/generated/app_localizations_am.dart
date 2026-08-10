@@ -7158,9 +7158,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get likedVideosTitle => 'የተወደዱ ቪዲዮዎች';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar => 'ስቀላን እንደገና በመሞከር ላይ…';
 
   @override
@@ -7359,6 +7356,17 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      'ይህ ሰው Divine በማህደር ውስጥ ያገኘውን ዋና Vine ለጥፏል። ይህ የመለያ ማረጋገጫ ባጅ አይደለም።';
+
+  @override
+  String get profileBadgeCheckmarkTitle => 'የመገለጫ ምልክት';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      'ይህ መለያ በDivine የመገለጫ ምልክት ዝርዝር ውስጥ ነው። ከNIP-05፣ ከተረጋገጡ የመለያ አገናኞች እና ከOG Viner ሁኔታ የተለየ ነው።';
 
   @override
   String shareVideoInListsCount(int count) {

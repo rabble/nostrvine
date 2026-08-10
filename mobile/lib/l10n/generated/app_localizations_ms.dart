@@ -7361,9 +7361,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get likedVideosTitle => 'Video Disukai';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar => 'Mencuba semula muat naik…';
 
   @override
@@ -7566,6 +7563,17 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      'Orang ini pernah menyiarkan Vine asli yang ditemui Divine dalam arkib. Ini bukan lencana pengesahan akaun.';
+
+  @override
+  String get profileBadgeCheckmarkTitle => 'Tanda semak profil';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      'Akaun ini ada dalam senarai tanda semak profil Divine. Ia berasingan daripada NIP-05, pautan akaun disahkan dan status OG Viner.';
 
   @override
   String shareVideoInListsCount(int count) {

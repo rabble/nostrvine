@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 const _specialProfileHosts = {
   'kirstenswasey.divine.video',
@@ -53,18 +54,24 @@ class SpecialProfileCheckmark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsetsDirectional.only(start: 4),
-      child: Container(
-        padding: EdgeInsets.all(padding),
-        decoration: const BoxDecoration(
-          color: VineTheme.info,
-          shape: BoxShape.circle,
-        ),
-        child: DivineIcon(
-          icon: DivineIconName.check,
-          color: context.vineColors.primaryText,
-          size: iconSize,
+    return Semantics(
+      label: context.l10n.profileBadgeCheckmarkTitle,
+      container: true,
+      child: ExcludeSemantics(
+        child: Padding(
+          padding: const EdgeInsetsDirectional.only(start: 4),
+          child: Container(
+            padding: EdgeInsets.all(padding),
+            decoration: const BoxDecoration(
+              color: VineTheme.info,
+              shape: BoxShape.circle,
+            ),
+            child: DivineIcon(
+              icon: DivineIconName.check,
+              color: context.vineColors.primaryText,
+              size: iconSize,
+            ),
+          ),
         ),
       ),
     );

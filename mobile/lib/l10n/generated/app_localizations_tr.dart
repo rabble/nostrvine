@@ -7272,9 +7272,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get likedVideosTitle => 'Beğenilen Videolar';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar => 'Yükleme tekrar deneniyor…';
 
   @override
@@ -7477,6 +7474,17 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      'Bu kişi, Divine\'ın arşivde bulduğu orijinal bir Vine paylaşmış. Bu bir hesap doğrulama rozeti değil.';
+
+  @override
+  String get profileBadgeCheckmarkTitle => 'Profil onay işareti';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      'Bu hesap Divine\'ın profil onay işareti listesinde. NIP-05\'ten, doğrulanmış hesap bağlantılarından ve OG Viner durumundan ayrıdır.';
 
   @override
   String shareVideoInListsCount(int count) {
