@@ -7606,23 +7606,22 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get profileBadgeOgVinerBody =>
-      'This person posted an original Vine that Divine found in the archive. It is not an account verification badge.';
+      'Nag-post ang taong ito ng orihinal na Vine na nakita ng Divine sa archive. Hindi ito badge ng verification ng account.';
 
   @override
-  String get profileBadgeOgVinerSemanticLabel => 'Explain OG Viner badge';
+  String get profileBadgeOgVinerSemanticHint =>
+      'Ipinapaliwanag ang OG Viner badge';
 
   @override
-  String get profileBadgeCheckmarkTitle => 'Profile checkmark';
+  String get profileBadgeCheckmarkTitle => 'Tsek sa profile';
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'This account is on Divine\'s profile checkmark list. It is separate from NIP-05, verified account links, and OG Viner status.';
+      'Nasa listahan ng profile checkmark ng Divine ang account na ito. Hiwalay ito sa NIP-05, sa mga verified na link ng account, at sa OG Viner status.';
 
   @override
-  String get profileBadgeCheckmarkSemanticLabel => 'Explain profile checkmark';
-
-  @override
-  String get profileBadgeExplanationClose => 'Close';
+  String get profileBadgeCheckmarkSemanticHint =>
+      'Ipinapaliwanag ang tsek sa profile';
 
   @override
   String shareVideoInListsCount(int count) {

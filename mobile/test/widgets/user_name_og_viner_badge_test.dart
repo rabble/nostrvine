@@ -57,7 +57,8 @@ void main() {
         (widget) =>
             widget is Semantics &&
             widget.properties.button == true &&
-            widget.properties.label == l10n.profileBadgeOgVinerSemanticLabel,
+            widget.properties.label == l10n.ogVinerBadgeLabel &&
+            widget.properties.hint == l10n.profileBadgeOgVinerSemanticHint,
       ),
       findsOneWidget,
     );
@@ -73,7 +74,7 @@ void main() {
 
     expect(find.text(l10n.profileBadgeOgVinerTitle), findsOneWidget);
     expect(find.text(l10n.profileBadgeOgVinerBody), findsOneWidget);
-    expect(find.text(l10n.profileBadgeExplanationClose), findsOneWidget);
+    expect(find.text(l10n.commonClose), findsOneWidget);
   });
 
   testWidgets('hides OG Viner badge for unknown pubkey', (tester) async {
@@ -87,7 +88,7 @@ void main() {
       find.byWidgetPredicate(
         (widget) =>
             widget is Semantics &&
-            widget.properties.label == l10n.profileBadgeOgVinerSemanticLabel,
+            widget.properties.label == l10n.ogVinerBadgeLabel,
       ),
       findsNothing,
     );

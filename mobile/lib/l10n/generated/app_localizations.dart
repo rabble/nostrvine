@@ -13010,11 +13010,11 @@ abstract class AppLocalizations {
   /// **'This person posted an original Vine that Divine found in the archive. It is not an account verification badge.'**
   String get profileBadgeOgVinerBody;
 
-  /// Screen-reader label for the tappable OG Viner profile badge.
+  /// Screen-reader hint describing what tapping the OG Viner profile badge does. The badge's own meaning is carried by ogVinerBadgeLabel.
   ///
   /// In en, this message translates to:
-  /// **'Explain OG Viner badge'**
-  String get profileBadgeOgVinerSemanticLabel;
+  /// **'Explains the OG Viner badge'**
+  String get profileBadgeOgVinerSemanticHint;
 
   /// Title for the dialog explaining the special profile checkmark badge.
   ///
@@ -13028,17 +13028,11 @@ abstract class AppLocalizations {
   /// **'This account is on Divine\'s profile checkmark list. It is separate from NIP-05, verified account links, and OG Viner status.'**
   String get profileBadgeCheckmarkBody;
 
-  /// Screen-reader label for the tappable special profile checkmark badge.
+  /// Screen-reader hint describing what tapping the special profile checkmark badge does. The badge's own meaning is carried by profileBadgeCheckmarkTitle.
   ///
   /// In en, this message translates to:
-  /// **'Explain profile checkmark'**
-  String get profileBadgeCheckmarkSemanticLabel;
-
-  /// Button label that closes a profile badge explanation dialog.
-  ///
-  /// In en, this message translates to:
-  /// **'Close'**
-  String get profileBadgeExplanationClose;
+  /// **'Explains the profile checkmark'**
+  String get profileBadgeCheckmarkSemanticHint;
 
   /// No description provided for @shareVideoInListsCount.
   ///

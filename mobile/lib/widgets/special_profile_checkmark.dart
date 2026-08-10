@@ -57,7 +57,8 @@ class SpecialProfileCheckmark extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: context.l10n.profileBadgeCheckmarkSemanticLabel,
+      label: context.l10n.profileBadgeCheckmarkTitle,
+      hint: context.l10n.profileBadgeCheckmarkSemanticHint,
       container: true,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,

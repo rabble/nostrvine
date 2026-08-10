@@ -4435,9 +4435,9 @@
   "@profileBadgeOgVinerBody": {
     "description": "Body copy explaining that the OG Viner profile badge identifies original Vine archive participation, not account verification."
   },
-  "profileBadgeOgVinerSemanticLabel": "Explain OG Viner badge",
-  "@profileBadgeOgVinerSemanticLabel": {
-    "description": "Screen-reader label for the tappable OG Viner profile badge."
+  "profileBadgeOgVinerSemanticHint": "Explains the OG Viner badge",
+  "@profileBadgeOgVinerSemanticHint": {
+    "description": "Screen-reader hint describing what tapping the OG Viner profile badge does. The badge's own meaning is carried by ogVinerBadgeLabel."
   },
   "profileBadgeCheckmarkTitle": "Profile checkmark",
   "@profileBadgeCheckmarkTitle": {
@@ -4447,13 +4447,9 @@
   "@profileBadgeCheckmarkBody": {
     "description": "Body copy explaining that the special profile checkmark is a Divine-specific profile marker, not NIP-05, verified-account links, or OG Viner status."
   },
-  "profileBadgeCheckmarkSemanticLabel": "Explain profile checkmark",
-  "@profileBadgeCheckmarkSemanticLabel": {
-    "description": "Screen-reader label for the tappable special profile checkmark badge."
-  },
-  "profileBadgeExplanationClose": "Close",
-  "@profileBadgeExplanationClose": {
-    "description": "Button label that closes a profile badge explanation dialog."
+  "profileBadgeCheckmarkSemanticHint": "Explains the profile checkmark",
+  "@profileBadgeCheckmarkSemanticHint": {
+    "description": "Screen-reader hint describing what tapping the special profile checkmark badge does. The badge's own meaning is carried by profileBadgeCheckmarkTitle."
   },
   "shareVideoInListsCount": "{count, plural, =1{In 1 list} other{In {count} lists}}",
   "@shareVideoInListsCount": {"placeholders": {"count": {"type": "int"}}},

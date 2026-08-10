@@ -3,15 +3,20 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/special_profile_checkmark.dart';
 
 Widget _buildSubject() {
-  return const MaterialApp(
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
-    supportedLocales: AppLocalizations.supportedLocales,
-    home: Scaffold(body: Center(child: SpecialProfileCheckmark())),
+  // The explanation sheet is pause-aware, so it reads the overlay-visibility
+  // notifier off the enclosing ProviderScope.
+  return const ProviderScope(
+    child: MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(body: Center(child: SpecialProfileCheckmark())),
+    ),
   );
 }
 
@@ -25,7 +30,8 @@ void main() {
         (widget) =>
             widget is Semantics &&
             widget.properties.button == true &&
-            widget.properties.label == l10n.profileBadgeCheckmarkSemanticLabel,
+            widget.properties.label == l10n.profileBadgeCheckmarkTitle &&
+            widget.properties.hint == l10n.profileBadgeCheckmarkSemanticHint,
       ),
       findsOneWidget,
     );
@@ -48,8 +54,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text(l10n.profileBadgeCheckmarkTitle), findsOneWidget);
+    expect(find.text(l10n.profileBadgeCheckmarkTitle), findsWidgets);
     expect(find.text(l10n.profileBadgeCheckmarkBody), findsOneWidget);
-    expect(find.text(l10n.profileBadgeExplanationClose), findsOneWidget);
+    expect(find.text(l10n.commonClose), findsOneWidget);
   });
 }

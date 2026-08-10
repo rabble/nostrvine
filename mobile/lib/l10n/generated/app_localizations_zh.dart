@@ -7140,23 +7140,20 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get profileBadgeOgVinerBody =>
-      'This person posted an original Vine that Divine found in the archive. It is not an account verification badge.';
+      '这个人发过一条原版 Vine，被 Divine 在存档里找到了。这不是账号认证徽章。';
 
   @override
-  String get profileBadgeOgVinerSemanticLabel => 'Explain OG Viner badge';
+  String get profileBadgeOgVinerSemanticHint => '说明 OG Viner 徽章';
 
   @override
-  String get profileBadgeCheckmarkTitle => 'Profile checkmark';
+  String get profileBadgeCheckmarkTitle => '个人资料对勾';
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'This account is on Divine\'s profile checkmark list. It is separate from NIP-05, verified account links, and OG Viner status.';
+      '这个账号在 Divine 的个人资料对勾名单里。它与 NIP-05、已验证的账号链接和 OG Viner 状态无关。';
 
   @override
-  String get profileBadgeCheckmarkSemanticLabel => 'Explain profile checkmark';
-
-  @override
-  String get profileBadgeExplanationClose => 'Close';
+  String get profileBadgeCheckmarkSemanticHint => '说明个人资料对勾';
 
   @override
   String shareVideoInListsCount(int count) {

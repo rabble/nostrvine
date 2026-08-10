@@ -119,8 +119,7 @@ void main() {
           (widget) =>
               widget is Semantics &&
               widget.properties.button == true &&
-              widget.properties.label ==
-                  enL10n.profileBadgeOgVinerSemanticLabel,
+              widget.properties.label == enL10n.ogVinerBadgeLabel,
         ),
         findsOneWidget,
       );

@@ -4387,12 +4387,11 @@
   },
   "ogVinerBadgeLabel": "OG Viner",
   "profileBadgeOgVinerTitle": "OG Viner",
-  "profileBadgeOgVinerBody": "This person posted an original Vine that Divine found in the archive. It is not an account verification badge.",
-  "profileBadgeOgVinerSemanticLabel": "Explain OG Viner badge",
-  "profileBadgeCheckmarkTitle": "Profile checkmark",
-  "profileBadgeCheckmarkBody": "This account is on Divine's profile checkmark list. It is separate from NIP-05, verified account links, and OG Viner status.",
-  "profileBadgeCheckmarkSemanticLabel": "Explain profile checkmark",
-  "profileBadgeExplanationClose": "Close",
+  "profileBadgeOgVinerBody": "Orang ini pernah menyiarkan Vine asli yang ditemui Divine dalam arkib. Ini bukan lencana pengesahan akaun.",
+  "profileBadgeOgVinerSemanticHint": "Menerangkan lencana OG Viner",
+  "profileBadgeCheckmarkTitle": "Tanda semak profil",
+  "profileBadgeCheckmarkBody": "Akaun ini ada dalam senarai tanda semak profil Divine. Ia berasingan daripada NIP-05, pautan akaun disahkan dan status OG Viner.",
+  "profileBadgeCheckmarkSemanticHint": "Menerangkan tanda semak profil",
   "shareVideoInListsCount": "{count, plural, =1{Dalam 1 senarai} other{Dalam {count} senarai}}",
   "@shareVideoInListsCount": {
     "placeholders": {

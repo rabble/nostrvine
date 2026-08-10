@@ -14,9 +14,13 @@ class OgVinerBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dimension = DivineIcon.scaleSize(context, size);
+    // The label states what the badge means; the hint states what tapping
+    // does. Folding both into the label would drop the meaning for screen
+    // reader users, who would hear only the affordance.
     return Semantics(
       button: true,
-      label: context.l10n.profileBadgeOgVinerSemanticLabel,
+      label: context.l10n.ogVinerBadgeLabel,
+      hint: context.l10n.profileBadgeOgVinerSemanticHint,
       container: true,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
