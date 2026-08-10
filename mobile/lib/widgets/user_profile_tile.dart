@@ -4,7 +4,6 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -105,7 +104,7 @@ class UserProfileTile extends ConsumerWidget {
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const .fromLTRB(0, 12, 16, 12),
           child: Row(
             children: [
               // Avatar with border (matching video player style)
@@ -210,73 +209,25 @@ class _FollowButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final indexSuffix = index != null ? ' $index' : '';
 
+    // Both states map onto a design-system button: `secondary` already is the
+    // surface-container fill with a muted border and a green icon, and
+    // `primary` at `small` is the 40px green chip inside a 48px tap target.
     if (isFollowing) {
-      // Following state: surfaceContainer bg, outlineMuted border, userMinus icon
-      return Semantics(
-        identifier: 'unfollow_user',
-        label: 'Unfollow user$indexSuffix',
-        button: true,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () => _confirmUnfollow(context),
-          child: Container(
-            width: 48,
-            height: 48,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: context.vineColors.surfaceContainer,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: context.vineColors.outlineMuted,
-                width: 2,
-              ),
-            ),
-            child: SvgPicture.asset(
-              DivineIconName.userMinus.assetPath,
-              width: 24,
-              height: 24,
-              colorFilter: const ColorFilter.mode(
-                VineTheme.vineGreen,
-                BlendMode.srcIn,
-              ),
-            ),
-          ),
-        ),
+      return DivineIconButton(
+        icon: .userMinus,
+        type: .secondary,
+        semanticIdentifier: 'unfollow_user',
+        semanticLabel: 'Unfollow user$indexSuffix',
+        onPressed: () => _confirmUnfollow(context),
       );
     }
 
-    // Follow state: vineGreen bg, userPlus icon
-    return Semantics(
-      identifier: 'follow_user',
-      label: 'Follow user$indexSuffix',
-      button: true,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onToggleFollow,
-        child: SizedBox.square(
-          dimension: 48,
-          child: Center(
-            child: Container(
-              width: 40,
-              height: 40,
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: VineTheme.vineGreen,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: SvgPicture.asset(
-                DivineIconName.userPlus.assetPath,
-                width: 24,
-                height: 24,
-                colorFilter: const ColorFilter.mode(
-                  VineTheme.onPrimary,
-                  BlendMode.srcIn,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+    return DivineIconButton(
+      icon: .userPlus,
+      size: .small,
+      semanticIdentifier: 'follow_user',
+      semanticLabel: 'Follow user$indexSuffix',
+      onPressed: onToggleFollow,
     );
   }
 }
