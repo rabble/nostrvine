@@ -14,9 +14,18 @@ const _credentialSeparator = r'''["']?\s*(?::=?|=>?)\s*''';
 /// so a multi-word secret is redacted whole. Partial redaction is worse than
 /// none: the `[REDACTED]` marker reads as proof the value was handled while
 /// the rest of the secret sits next to it. A bracketed or braced value is
-/// consumed to its closing delimiter for the same reason - without those two
-/// branches `{"token":["a","b"]}` and `{"token":{"v":"a"}}` redact the opening
+/// consumed for the same reason - without those branches
+/// `{"token":["a","b"]}` and `{"token":{"v":"a"}}` redact the opening
 /// punctuation and leave the secret in the ticket.
+///
+/// Collection values are matched to the *last* delimiter in range, not the
+/// first. Stopping at the first `}` would leave `{"token":{"h":{},"jwt":"x"}}`
+/// half-redacted with the jwt still beside the marker, and no depth-limited
+/// pattern fixes that for arbitrary nesting. Redacting a sibling field on the
+/// same line is the cheap direction of that trade. The same-line branch is
+/// tried first; the 300-character branch behind it is what catches a
+/// pretty-printed value, and its bound is what keeps a stray `{` from
+/// swallowing the rest of the report.
 ///
 /// Both quoted branches require the closing quote and stop at a newline, so an
 /// unbalanced quote (`password: "oops` typed into a bug report) falls through
@@ -24,8 +33,8 @@ const _credentialSeparator = r'''["']?\s*(?::=?|=>?)\s*''';
 /// field printed after it. The optional `bearer`/`basic`/`token` scheme word
 /// keeps `Authorization: Bearer <jwt>` from redacting only the word "Bearer".
 const _credentialValue =
-    r'''(?:\[[^\]\n]*\]'''
-    r'''|\{[^}\n]*\}'''
+    r'''(?:\[[^\n]*\]|\[[\s\S]{0,300}\]'''
+    r'''|\{[^\n]*\}|\{[\s\S]{0,300}\}'''
     r'''|"(?:\\.|[^"\\\n])*"'''
     r"""|'(?:''|\\.|[^'\\\n])*'"""
     r'''|["']?(?:(?:bearer|basic|token)\s+)?[^\s"',;}]+)''';

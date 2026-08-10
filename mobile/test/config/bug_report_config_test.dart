@@ -88,6 +88,21 @@ void main() {
         // leaves the secret sitting next to the `[REDACTED]` marker.
         'json object value': '{"token":{"value":"eyJhbGciOi"}}',
         'json object secret value': '{"secret":{"nested":"hunter2"}}',
+        // Stopping at the *first* closing delimiter puts the secret right
+        // back beside the marker as soon as the object has a sibling.
+        'nested json object value':
+            '{"token":{"header":{},"jwt":"eyJhbGciOi"}}',
+        'nested json api key value':
+            '{"api_key":{"meta":{"rotated":1},"value":"abc123"}}',
+        'nested dart map value': 'Auth: {secret: {inner: {}, real: hunter2}}',
+        'closing brace inside a quoted value': 'token: {"v":"hun}ter2"}',
+        'array of objects value': '{"token":[{"a":1},{"jwt":"eyJhbGciOi"}]}',
+        // Sanitization runs over the assembled multi-line body, so a
+        // pretty-printed value is a real shape, not a synthetic one.
+        'pretty printed object value': 'token: {\n  "value": "hunter2"\n}',
+        'pretty printed array value': 'apiKey: [\n  "abc123"\n]',
+        'pretty printed value mid report':
+            '1. open app\npassword: {\n  "new": "hunter2"\n}\n2. it crashes',
         'acronym-prefixed key': 'AESKey: abc123',
         'hmac key': 'HMACKey=deadbeef',
         'pwd compound key': 'pwdHash: deadbeef',
@@ -135,6 +150,22 @@ void main() {
       expect(sanitized, contains('[REDACTED]'));
       expect(sanitized, isNot(contains('test1')));
       expect(sanitized, contains('feed loaded 42 videos'));
+      expect(sanitized, contains('upload failed: connection reset'));
+    });
+
+    test('an unclosed brace cannot swallow the rest of the report', () {
+      // The bounded collection branch is what stops `password: {` typed into a
+      // bug report from consuming every log line printed after it. Losing a
+      // couple of lines to over-redaction is the cheap direction; losing the
+      // whole diagnostic body is not.
+      final payload =
+          'password: {oops\n'
+          '${'[10:00] [INFO] feed loaded 42 videos\n' * 12}'
+          '[10:12] [ERROR] upload failed: connection reset';
+
+      final sanitized = sanitizeDiagnosticText(payload);
+
+      expect(sanitized, contains('[REDACTED]'));
       expect(sanitized, contains('upload failed: connection reset'));
     });
 

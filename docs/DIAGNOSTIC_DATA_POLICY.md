@@ -75,6 +75,12 @@ submission boundary. These limits are known and accepted:
   word). Without a closing delimiter there is nothing to mark the end of the
   value. Quoted values, which is how serialized payloads are written, are
   redacted whole.
+- A bracketed or braced value (`token: {...}`, `apiKey: [...]`) is redacted
+  whole when it closes on the same line, or within 300 characters when it is
+  pretty-printed across lines. A credential object larger than that keeps
+  whatever falls past the bound. The limit exists so an unclosed `{` typed into
+  a report cannot swallow the rest of the diagnostics; the cost is that a very
+  large serialized credential object is only partly redacted.
 - Text typed inside the native Zendesk SDK screens is never sanitized. The
   ticket list (`ZendeskSupportService.showTicketListScreen`, reachable from the
   support center) opens the SDK's own UI, where a reply to an existing ticket is
