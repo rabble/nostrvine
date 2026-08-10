@@ -4,7 +4,16 @@ This document describes how to manage database migrations for the `db_client` pa
 
 ## Current Schema Version
 
-**Version: 2** (see `app_database.dart:48`)
+**Version: 2** (see `app_database.dart`).
+
+Version 2 is the legacy-normalization baseline. Earlier releases kept Drift's
+user-version at 1 while startup repair SQL added tables, columns, indexes, and
+backfills in `beforeOpen`. The v1 -> v2 migration is intentionally idempotent so
+any shipped v1 database shape can be brought to the current schema.
+
+Going forward, schema changes must be versioned Drift migrations. Do not add new
+tables, columns, indexes, or schema backfills to `beforeOpen`; that hook is only
+for startup cleanup and guarded recovery of damaged local databases.
 
 ## Project Structure
 
@@ -81,28 +90,30 @@ This command:
 Edit `lib/src/database/app_database.dart` to add the migration step:
 
 ```dart
-extension Migrations on GeneratedDatabase {
-  OnUpgrade get _schemaUpgrade => stepByStep(
-    from1To2: (m, schema) async {
+MigrationStrategy get migration => MigrationStrategy(
+  onCreate: (m) async {
+    await m.createAll();
+    await _normalizeLegacyV1Schema();
+  },
+  onUpgrade: (m, from, to) async {
+    if (from < 3) {
       await m.alterTable(
         TableMigration(
-          schema.event,
-          newColumns: [schema.event.expireAt],
+          nostrEvents,
+          newColumns: [nostrEvents.newColumn],
         ),
       );
-    },
-    // ADD NEW MIGRATION:
-    from2To3: (m, schema) async {
-      await m.alterTable(
-        TableMigration(
-          schema.nostrEvents,
-          newColumns: [schema.nostrEvents.newColumn],
-        ),
-      );
-    },
-  );
-}
+    }
+  },
+  beforeOpen: (details) async {
+    // Keep startup cleanup and guarded recovery here.
+  },
+);
 ```
+
+For schema changes that need custom SQL or idempotent repair, add that logic to
+the versioned `onUpgrade` path for the new version. Keep it covered by migration
+tests and avoid making `beforeOpen` the primary schema evolution mechanism.
 
 ### Step 6: Run Migration Tests
 
@@ -233,7 +244,7 @@ targets:
 
 1. Ensure schema version matches the latest `drift_schema_vN.json`
 2. Run `dart run drift_dev make-migrations` to regenerate files
-3. Check that migration logic in `_schemaUpgrade` handles all versions
+3. Check that migration logic in `MigrationStrategy.onUpgrade` handles all versions
 
 ### Generated files out of date
 
