@@ -24,7 +24,7 @@ lib/widgets/auth/forgot_password_dialog.dart	1
 lib/widgets/classic_viners_slider.dart	1
 lib/widgets/classic_vines_tab.dart	2
 lib/widgets/composable_video_grid.dart	2
-lib/widgets/for_you_tab.dart	6
+lib/widgets/for_you_tab.dart	2
 lib/widgets/library/sounds_tab.dart	3
 lib/widgets/list_card.dart	1
 lib/widgets/new_videos_tab.dart	1
