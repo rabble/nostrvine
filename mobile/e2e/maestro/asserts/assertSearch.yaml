@@ -1,17 +1,24 @@
 appId: co.openvine.app
 ---
+# Asserts the search results screen.
+#
+# Rewritten rather than patched: the three-tab TabBar this file described is
+# gone. The screen is now a filter pill plus sliver sections (People, Lists,
+# Tags, Videos), so every `Videos (0) / Tab 1 of 3` selector described a UI
+# that no longer exists -- and the counts it matched were never rendered by
+# the current layout at all.
+#
+# The chrome is asserted by identifier. The idle placeholder copy is not
+# asserted: it is product copy that moved once already ("Search for videos"
+# -> "Enter a search query") and the identifiers below already prove which
+# screen we are on.
+
+- extendedWaitUntil:
+    visible:
+      id: "search_field"
+    timeout: 30000
+
 - assertVisible:
-    text: "Search.*"
-- assertVisible: Find something cool...
-- assertVisible: |-
-    Videos (0)
-    Tab 1 of 3
-- assertVisible: |-
-    Users (0)
-    Tab 2 of 3
-- assertVisible: |-
-    Hashtags (0)
-    Tab 3 of 3
-- assertVisible: |-
-    Search for videos
-    Enter keywords, hashtags, or user names
+    id: "search_back_button"
+- assertVisible:
+    id: "search_filter_pill"

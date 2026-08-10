@@ -389,7 +389,7 @@ definitions:
         # Credentials come from the `maestro_e2e_credentials` group, never the
         # repo. Fail here rather than letting Maestro resolve a missing
         # variable to `undefined` and report it as a selector failure.
-        for var in MAESTRO_USER_EMAIL MAESTRO_USER_PWD; do
+        for var in MAESTRO_USER_EMAIL MAESTRO_USER_PWD MAESTRO_SEARCH_USER; do
           if [ -z "$(eval echo \"\$$var\")" ]; then
             echo "Missing $var — add it to the maestro_e2e_credentials group." >&2
             exit 1
@@ -398,6 +398,7 @@ definitions:
         maestro test \
           -e USER_EMAIL="$MAESTRO_USER_EMAIL" \
           -e USER_PWD="$MAESTRO_USER_PWD" \
+          -e SEARCH_USER="$MAESTRO_SEARCH_USER" \
           e2e/maestro/suites/smoke.yaml
     - &boot_ios_simulator
       name: Boot iOS Simulator

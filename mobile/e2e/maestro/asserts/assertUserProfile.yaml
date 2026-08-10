@@ -1,21 +1,31 @@
 appId: co.openvine.app
 ---
-- assertVisible: Refresh
-- assertVisible: Videos
+# Asserts somebody else's profile. See assertProfile.yaml for your own.
+#
+# Rewritten rather than patched. "Refresh" has no call site, the header no
+# longer renders a "Videos" label, and the tab set is 5 here (6 on your own
+# profile) -- so the old "Tab N of 4" selectors described neither.
+
+- extendedWaitUntil:
+    visible:
+      id: "profile_back_button"
+    timeout: 30000
+
 - assertVisible:
-    text: "[0-9]+\nFollowers"
-- assertVisible:
-    text: "[0-9]+\nFollowing"
-# The tabs, by identifier, as assertProfile.yaml already does. These were
-# text matchers on "Tab N of 4\n<anchor>", which relied on the anchor being
-# the accessible label -- it is now the localized tab name, so the anchor
-# only survives on the identifier. The count was stale either way: another
-# user's profile shows 5 tabs, not 4.
+    id: "profile_stats_row"
+
+# The long-standing tabs, by identifier. #7009 gave the tabs real localized
+# accessible names, so the snake_case anchor now survives only on the
+# identifier -- never match these as text. Collabs and Comments are omitted
+# on purpose: asserting every tab pins a feature-flag configuration.
 - assertVisible:
     id: "videos_tab"
 - assertVisible:
     id: "liked_tab"
 - assertVisible:
     id: "reposted_tab"
+
 - assertVisible:
-    id: "collabs_tab"
+    text: "^.*\\sFollowers$"
+- assertVisible:
+    text: "^.*\\sFollowing$"
