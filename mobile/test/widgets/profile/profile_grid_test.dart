@@ -14,6 +14,7 @@ import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/blocs/profile_feed/profile_feed_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -280,21 +281,51 @@ void main() {
         await tester.pumpWidget(buildSubject(isOwnProfile: false));
         await tester.pump();
 
-        expect(find.bySemanticsLabel('videos_tab'), findsOneWidget);
-        expect(find.bySemanticsLabel('collabs_tab'), findsOneWidget);
-        expect(find.bySemanticsLabel('lists_tab'), findsNothing);
-        expect(find.bySemanticsLabel('comments_tab'), findsOneWidget);
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.profileVideosTab),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.profileCollabsTab),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.profileListsTab),
+          findsNothing,
+        );
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.profileCommentsTab),
+          findsOneWidget,
+        );
 
         await tester.pumpWidget(buildSubject(isOwnProfile: true));
         await tester.pump();
 
         expect(tester.takeException(), isNull);
-        expect(find.bySemanticsLabel('videos_tab'), findsOneWidget);
-        expect(find.bySemanticsLabel('collabs_tab'), findsOneWidget);
-        expect(find.bySemanticsLabel('liked_tab'), findsOneWidget);
-        expect(find.bySemanticsLabel('reposted_tab'), findsOneWidget);
-        expect(find.bySemanticsLabel('lists_tab'), findsOneWidget);
-        expect(find.bySemanticsLabel('comments_tab'), findsOneWidget);
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.profileVideosTab),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.profileCollabsTab),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.profileLikedTab),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.profileRepostsTab),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.profileListsTab),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.profileCommentsTab),
+          findsOneWidget,
+        );
       },
     );
 
@@ -340,7 +371,9 @@ void main() {
 
         await tester.pumpWidget(buildSubjectWithContainer(container));
         await tester.pump();
-        await tester.tap(find.bySemanticsLabel('reposted_tab'));
+        await tester.tap(
+          find.bySemanticsIdentifier(SemanticIds.profileRepostsTab),
+        );
         await tester.pumpAndSettle();
         expect(tester.widget<TabBar>(find.byType(TabBar)).controller?.index, 2);
 
@@ -505,7 +538,7 @@ void main() {
       await tester.pump();
 
       // The tab is lazy: it only participates in refresh once viewed.
-      await tester.tap(find.bySemanticsLabel('lists_tab'));
+      await tester.tap(find.bySemanticsIdentifier(SemanticIds.profileListsTab));
       await tester.pumpAndSettle();
 
       final refreshIndicator = tester.widget<RefreshIndicator>(
