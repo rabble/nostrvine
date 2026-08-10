@@ -7352,13 +7352,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get followersSortSemanticLabel => 'フォロワーを並べ替え';
 
   @override
-  String get followersSortTitle => '並べ替え';
+  String get followingSortSemanticLabel => 'フォロー中を並べ替え';
 
   @override
-  String get followersSortNewest => '新しい順';
+  String get followSortTitle => '並べ替え';
 
   @override
-  String get followersSortOldest => '古い順';
+  String get followSortNewest => '新しい順';
+
+  @override
+  String get followSortOldest => '古い順';
 
   @override
   String get reportMessageTitle => 'メッセージを報告';

@@ -7796,13 +7796,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get followersSortSemanticLabel => 'Trier les abonnés';
 
   @override
-  String get followersSortTitle => 'Trier par';
+  String get followingSortSemanticLabel => 'Trier les abonnements';
 
   @override
-  String get followersSortNewest => 'Plus récents d\'abord';
+  String get followSortTitle => 'Trier par';
 
   @override
-  String get followersSortOldest => 'Plus anciens d\'abord';
+  String get followSortNewest => 'Plus récents d\'abord';
+
+  @override
+  String get followSortOldest => 'Plus anciens d\'abord';
 
   @override
   String get reportMessageTitle => 'Signaler le message';

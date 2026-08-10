@@ -90,7 +90,13 @@ void main() {
         act: (bloc) => bloc.add(const MyFollowingListLoadRequested()),
         verify: (bloc) {
           expect(bloc.state.status, MyFollowingStatus.success);
+          // Newest first by default, so the last `p` tag leads.
           expect(bloc.state.followingPubkeys, [
+            validPubkey('following2'),
+            validPubkey('following1'),
+          ]);
+          // The repository's follow order is kept intact for re-sorting.
+          expect(bloc.state.rawFollowingPubkeys, [
             validPubkey('following1'),
             validPubkey('following2'),
           ]);
@@ -205,8 +211,8 @@ void main() {
         verify: (bloc) {
           expect(bloc.state.status, MyFollowingStatus.success);
           expect(bloc.state.followingPubkeys, [
-            validPubkey('following1'),
             validPubkey('following2'),
+            validPubkey('following1'),
           ]);
         },
       );
@@ -488,9 +494,10 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(bloc.state.status, MyFollowingStatus.success);
+      // A follow the repository appended is the newest, so it leads.
       expect(bloc.state.followingPubkeys, [
-        validPubkey('live1'),
         validPubkey('live2'),
+        validPubkey('live1'),
       ]);
 
       await bloc.close();
@@ -565,6 +572,122 @@ void main() {
             bloc.state.followingPubkeys,
             contains(validPubkey('following1')),
           );
+        },
+      );
+    });
+
+    group('MyFollowingSortOrderChanged', () {
+      /// Three follows in contact-list order: `first` was followed first.
+      void stubLoadedFollowing() {
+        when(() => mockFollowRepository.watchMyFollowingCached()).thenAnswer(
+          (_) => Stream.value(
+            CacheResult.live(
+              FollowingSnapshot(
+                pubkeys: [
+                  validPubkey('first'),
+                  validPubkey('second'),
+                  validPubkey('third'),
+                ],
+                count: 3,
+              ),
+            ),
+          ),
+        );
+      }
+
+      blocTest<MyFollowingBloc, MyFollowingState>(
+        'restores contact-list order for oldestFirst',
+        setUp: stubLoadedFollowing,
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const MyFollowingListLoadRequested());
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(
+            const MyFollowingSortOrderChanged(FollowSortOrder.oldestFirst),
+          );
+        },
+        verify: (bloc) {
+          expect(bloc.state.sortOrder, FollowSortOrder.oldestFirst);
+          expect(bloc.state.followingPubkeys, [
+            validPubkey('first'),
+            validPubkey('second'),
+            validPubkey('third'),
+          ]);
+        },
+      );
+
+      blocTest<MyFollowingBloc, MyFollowingState>(
+        're-orders without asking the repository again',
+        setUp: stubLoadedFollowing,
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const MyFollowingListLoadRequested());
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(
+            const MyFollowingSortOrderChanged(FollowSortOrder.oldestFirst),
+          );
+          await Future<void>.delayed(Duration.zero);
+        },
+        verify: (_) {
+          verify(() => mockFollowRepository.watchMyFollowingCached()).called(1);
+        },
+      );
+
+      blocTest<MyFollowingBloc, MyFollowingState>(
+        'ignores a re-pick of the active order',
+        setUp: stubLoadedFollowing,
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const MyFollowingListLoadRequested());
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(
+            const MyFollowingSortOrderChanged(FollowSortOrder.newestFirst),
+          );
+        },
+        skip: 1,
+        expect: () => <MyFollowingState>[],
+      );
+
+      blocTest<MyFollowingBloc, MyFollowingState>(
+        'remembers a sort picked before the list has loaded',
+        setUp: stubLoadedFollowing,
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(
+            const MyFollowingSortOrderChanged(FollowSortOrder.oldestFirst),
+          );
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const MyFollowingListLoadRequested());
+        },
+        verify: (bloc) {
+          expect(bloc.state.followingPubkeys, [
+            validPubkey('first'),
+            validPubkey('second'),
+            validPubkey('third'),
+          ]);
+        },
+      );
+
+      blocTest<MyFollowingBloc, MyFollowingState>(
+        'keeps the picked order when the repository pushes a live update',
+        setUp: stubLoadedFollowing,
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const MyFollowingListLoadRequested());
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(
+            const MyFollowingSortOrderChanged(FollowSortOrder.oldestFirst),
+          );
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const MyFollowingBlocklistChanged());
+        },
+        verify: (bloc) {
+          expect(bloc.state.sortOrder, FollowSortOrder.oldestFirst);
+          expect(bloc.state.followingPubkeys, [
+            validPubkey('first'),
+            validPubkey('second'),
+            validPubkey('third'),
+          ]);
         },
       );
     });

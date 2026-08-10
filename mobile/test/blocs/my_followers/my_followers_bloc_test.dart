@@ -321,14 +321,14 @@ void main() {
           bloc.add(const MyFollowersListLoadRequested());
           await Future<void>.delayed(Duration.zero);
           bloc.add(
-            const MyFollowersSortOrderChanged(FollowersSortOrder.oldestFirst),
+            const MyFollowersSortOrderChanged(FollowSortOrder.oldestFirst),
           );
         },
         skip: 2,
         expect: () => [
           MyFollowersState(
             status: MyFollowersStatus.success,
-            sortOrder: FollowersSortOrder.oldestFirst,
+            sortOrder: FollowSortOrder.oldestFirst,
             followersPubkeys: [
               validPubkey('oldest'),
               validPubkey('newest'),
@@ -353,7 +353,7 @@ void main() {
           bloc.add(const MyFollowersListLoadRequested());
           await Future<void>.delayed(Duration.zero);
           bloc.add(
-            const MyFollowersSortOrderChanged(FollowersSortOrder.oldestFirst),
+            const MyFollowersSortOrderChanged(FollowSortOrder.oldestFirst),
           );
           await Future<void>.delayed(Duration.zero);
         },
@@ -370,7 +370,7 @@ void main() {
           bloc.add(const MyFollowersListLoadRequested());
           await Future<void>.delayed(Duration.zero);
           bloc.add(
-            const MyFollowersSortOrderChanged(FollowersSortOrder.newestFirst),
+            const MyFollowersSortOrderChanged(FollowSortOrder.newestFirst),
           );
         },
         skip: 2,
@@ -383,7 +383,7 @@ void main() {
         build: createBloc,
         act: (bloc) async {
           bloc.add(
-            const MyFollowersSortOrderChanged(FollowersSortOrder.oldestFirst),
+            const MyFollowersSortOrderChanged(FollowSortOrder.oldestFirst),
           );
           await Future<void>.delayed(Duration.zero);
           bloc.add(const MyFollowersListLoadRequested());
@@ -392,7 +392,7 @@ void main() {
         expect: () => [
           MyFollowersState(
             status: MyFollowersStatus.success,
-            sortOrder: FollowersSortOrder.oldestFirst,
+            sortOrder: FollowSortOrder.oldestFirst,
             followersPubkeys: [
               validPubkey('oldest'),
               validPubkey('newest'),
@@ -422,14 +422,14 @@ void main() {
           bloc.add(const MyFollowersListLoadRequested());
           await Future<void>.delayed(Duration.zero);
           bloc.add(
-            const MyFollowersSortOrderChanged(FollowersSortOrder.oldestFirst),
+            const MyFollowersSortOrderChanged(FollowSortOrder.oldestFirst),
           );
         },
         skip: 2,
         expect: () => [
           MyFollowersState(
             status: MyFollowersStatus.success,
-            sortOrder: FollowersSortOrder.oldestFirst,
+            sortOrder: FollowSortOrder.oldestFirst,
             followersPubkeys: [
               validPubkey('oldest'),
               validPubkey('undated'),
@@ -497,7 +497,7 @@ void main() {
         ['pubkey1'],
         <String>[], // rawFollowersPubkeys
         0, // rawDatedCount
-        FollowersSortOrder.newestFirst,
+        FollowSortOrder.newestFirst,
         10,
         false, // isRefreshing
       ]);

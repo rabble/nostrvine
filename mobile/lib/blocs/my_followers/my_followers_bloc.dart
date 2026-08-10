@@ -49,8 +49,13 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
   List<String> _visiblePubkeys({
     required List<String> rawPubkeys,
     required int datedCount,
-    required FollowersSortOrder sortOrder,
-  }) => _filterPubkeys(sortOrder.apply(rawPubkeys, datedCount: datedCount));
+    required FollowSortOrder sortOrder,
+  }) => _filterPubkeys(
+    sortOrder.fromNewestFirst(
+      rawPubkeys,
+      datedCount: datedCount,
+    ),
+  );
 
   /// Handle request to load current user's followers list.
   ///

@@ -7655,13 +7655,16 @@ class AppLocalizationsTr extends AppLocalizations {
   String get followersSortSemanticLabel => 'Takipçileri sırala';
 
   @override
-  String get followersSortTitle => 'Sıralama ölçütü';
+  String get followingSortSemanticLabel => 'Takip edilenleri sırala';
 
   @override
-  String get followersSortNewest => 'Önce en yeniler';
+  String get followSortTitle => 'Sıralama ölçütü';
 
   @override
-  String get followersSortOldest => 'Önce en eskiler';
+  String get followSortNewest => 'Önce en yeniler';
+
+  @override
+  String get followSortOldest => 'Önce en eskiler';
 
   @override
   String get reportMessageTitle => 'Mesajı Bildir';

@@ -25,7 +25,7 @@ final class MyFollowersState extends Equatable {
     this.followersPubkeys = const [],
     this.rawFollowersPubkeys = const [],
     this.rawDatedCount = 0,
-    this.sortOrder = FollowersSortOrder.newestFirst,
+    this.sortOrder = FollowSortOrder.newestFirst,
     this.followerCount = 0,
     this.isRefreshing = false,
   });
@@ -45,12 +45,12 @@ final class MyFollowersState extends Equatable {
 
   /// How many leading [rawFollowersPubkeys] carry a contact-list timestamp.
   ///
-  /// Passed to [FollowersSortOrder.apply] so [sortOrder] can flip the dated
+  /// Passed to [FollowSortOrder.fromNewestFirst] so [sortOrder] can flip the dated
   /// prefix while leaving undated followers at the end.
   final int rawDatedCount;
 
   /// The order [followersPubkeys] is presented in.
-  final FollowersSortOrder sortOrder;
+  final FollowSortOrder sortOrder;
 
   /// Authoritative follower count (max of list length and COUNT query).
   ///
@@ -68,7 +68,7 @@ final class MyFollowersState extends Equatable {
     List<String>? followersPubkeys,
     List<String>? rawFollowersPubkeys,
     int? rawDatedCount,
-    FollowersSortOrder? sortOrder,
+    FollowSortOrder? sortOrder,
     int? followerCount,
     bool? isRefreshing,
   }) {

@@ -7533,13 +7533,16 @@ class AppLocalizationsAm extends AppLocalizations {
   String get followersSortSemanticLabel => 'ተከታዮችን ደርድር';
 
   @override
-  String get followersSortTitle => 'ደርድር በ';
+  String get followingSortSemanticLabel => 'የሚከተሉትን ደርድር';
 
   @override
-  String get followersSortNewest => 'አዲሶቹ መጀመሪያ';
+  String get followSortTitle => 'ደርድር በ';
 
   @override
-  String get followersSortOldest => 'አሮጌዎቹ መጀመሪያ';
+  String get followSortNewest => 'አዲሶቹ መጀመሪያ';
+
+  @override
+  String get followSortOldest => 'አሮጌዎቹ መጀመሪያ';
 
   @override
   String get reportMessageTitle => 'መልዕክትን ሪፖርት አድርግ';

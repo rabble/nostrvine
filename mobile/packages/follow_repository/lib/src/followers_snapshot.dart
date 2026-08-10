@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:follow_repository/src/followers_sort_order.dart';
+import 'package:follow_repository/src/follow_sort_order.dart';
 import 'package:meta/meta.dart';
 
 /// A point-in-time snapshot of a user's followers.
@@ -18,8 +18,8 @@ class FollowersSnapshot {
   /// Deserializes from a JSON string produced by [toJson].
   ///
   /// A payload written before [datedCount] existed restores with `0`, which
-  /// reads as "nothing here is dated" — [FollowersSortOrder.apply] then leaves
-  /// the order alone until the next live fetch rewrites the entry.
+  /// reads as "nothing here is dated" — [FollowSortOrder.fromNewestFirst]
+  /// then leaves the order alone until the next live fetch rewrites the entry.
   factory FollowersSnapshot.fromJson(String json) {
     final data = jsonDecode(json) as Map<String, dynamic>;
     final pubkeys = (data['pubkeys'] as List<dynamic>? ?? []).cast<String>();
@@ -54,7 +54,7 @@ class FollowersSnapshot {
   /// the undated tail. Storing the boundary rather than the timestamps keeps
   /// the cached payload the same size it has always been.
   ///
-  /// Hand this to [FollowersSortOrder.apply] to re-order [pubkeys].
+  /// Hand this to [FollowSortOrder.fromNewestFirst] to re-order [pubkeys].
   final int datedCount;
 
   /// Serializes to a JSON string for cache storage.

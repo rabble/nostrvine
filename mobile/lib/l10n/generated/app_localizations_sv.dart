@@ -7689,13 +7689,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get followersSortSemanticLabel => 'Sortera följare';
 
   @override
-  String get followersSortTitle => 'Sortera efter';
+  String get followingSortSemanticLabel => 'Sortera följda';
 
   @override
-  String get followersSortNewest => 'Nyaste först';
+  String get followSortTitle => 'Sortera efter';
 
   @override
-  String get followersSortOldest => 'Äldsta först';
+  String get followSortNewest => 'Nyaste först';
+
+  @override
+  String get followSortOldest => 'Äldsta först';
 
   @override
   String get reportMessageTitle => 'Rapportera meddelande';

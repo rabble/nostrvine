@@ -7868,13 +7868,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get followersSortSemanticLabel => 'Sortează urmăritorii';
 
   @override
-  String get followersSortTitle => 'Sortează după';
+  String get followingSortSemanticLabel => 'Sortează urmăriții';
 
   @override
-  String get followersSortNewest => 'Cei mai noi primii';
+  String get followSortTitle => 'Sortează după';
 
   @override
-  String get followersSortOldest => 'Cei mai vechi primii';
+  String get followSortNewest => 'Cei mai noi primii';
+
+  @override
+  String get followSortOldest => 'Cei mai vechi primii';
 
   @override
   String get reportMessageTitle => 'Raportează mesajul';

@@ -7306,13 +7306,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get followersSortSemanticLabel => '排序粉丝';
 
   @override
-  String get followersSortTitle => '排序方式';
+  String get followingSortSemanticLabel => '排序关注';
 
   @override
-  String get followersSortNewest => '最新优先';
+  String get followSortTitle => '排序方式';
 
   @override
-  String get followersSortOldest => '最早优先';
+  String get followSortNewest => '最新优先';
+
+  @override
+  String get followSortOldest => '最早优先';
 
   @override
   String get reportMessageTitle => '举报消息';

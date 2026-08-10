@@ -15,6 +15,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/profile/follow_sort_menu.dart';
 import 'package:openvine/widgets/profile/follower_count_title.dart';
 import 'package:openvine/widgets/profile/searchable_follow_list.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
@@ -169,33 +170,13 @@ class _MyFollowersView extends ConsumerWidget {
 
   Future<void> _openSortMenu(BuildContext context) async {
     final bloc = context.read<MyFollowersBloc>();
-    final selected = await VineBottomSheetSelectionMenu.show(
+    final selected = await showFollowSortMenu(
       context: context,
-      title: Text(
-        context.l10n.followersSortTitle,
-        style: VineTheme.titleMediumFont(color: context.vineColors.onSurface),
-      ),
-      selectedValue: bloc.state.sortOrder.name,
-      options: [
-        VineBottomSheetSelectionOptionData(
-          label: context.l10n.followersSortNewest,
-          value: FollowersSortOrder.newestFirst.name,
-          leadingIcon: .arrowFatLineDown,
-        ),
-        VineBottomSheetSelectionOptionData(
-          label: context.l10n.followersSortOldest,
-          value: FollowersSortOrder.oldestFirst.name,
-          leadingIcon: .arrowFatLineUp,
-        ),
-      ],
+      current: bloc.state.sortOrder,
     );
 
     if (selected == null) return;
-    bloc.add(
-      MyFollowersSortOrderChanged(
-        FollowersSortOrder.values.byName(selected),
-      ),
-    );
+    bloc.add(MyFollowersSortOrderChanged(selected));
   }
 }
 

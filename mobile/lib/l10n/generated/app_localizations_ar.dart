@@ -7643,13 +7643,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get followersSortSemanticLabel => 'ترتيب المتابِعين';
 
   @override
-  String get followersSortTitle => 'الترتيب حسب';
+  String get followingSortSemanticLabel => 'ترتيب المتابَعين';
 
   @override
-  String get followersSortNewest => 'الأحدث أولاً';
+  String get followSortTitle => 'الترتيب حسب';
 
   @override
-  String get followersSortOldest => 'الأقدم أولاً';
+  String get followSortNewest => 'الأحدث أولاً';
+
+  @override
+  String get followSortOldest => 'الأقدم أولاً';
 
   @override
   String get reportMessageTitle => 'الإبلاغ عن الرسالة';

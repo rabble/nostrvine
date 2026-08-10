@@ -7727,13 +7727,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String get followersSortSemanticLabel => 'Volgers sorteren';
 
   @override
-  String get followersSortTitle => 'Sorteren op';
+  String get followingSortSemanticLabel => 'Gevolgden sorteren';
 
   @override
-  String get followersSortNewest => 'Nieuwste eerst';
+  String get followSortTitle => 'Sorteren op';
 
   @override
-  String get followersSortOldest => 'Oudste eerst';
+  String get followSortNewest => 'Nieuwste eerst';
+
+  @override
+  String get followSortOldest => 'Oudste eerst';
 
   @override
   String get reportMessageTitle => 'Bericht rapporteren';

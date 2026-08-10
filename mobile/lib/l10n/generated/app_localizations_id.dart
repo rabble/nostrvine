@@ -7654,13 +7654,16 @@ class AppLocalizationsId extends AppLocalizations {
   String get followersSortSemanticLabel => 'Urutkan pengikut';
 
   @override
-  String get followersSortTitle => 'Urutkan menurut';
+  String get followingSortSemanticLabel => 'Urutkan yang diikuti';
 
   @override
-  String get followersSortNewest => 'Terbaru dulu';
+  String get followSortTitle => 'Urutkan menurut';
 
   @override
-  String get followersSortOldest => 'Terlama dulu';
+  String get followSortNewest => 'Terbaru dulu';
+
+  @override
+  String get followSortOldest => 'Terlama dulu';
 
   @override
   String get reportMessageTitle => 'Laporkan Pesan';

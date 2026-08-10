@@ -7378,13 +7378,16 @@ class AppLocalizationsKo extends AppLocalizations {
   String get followersSortSemanticLabel => '팔로워 정렬';
 
   @override
-  String get followersSortTitle => '정렬 기준';
+  String get followingSortSemanticLabel => '팔로잉 정렬';
 
   @override
-  String get followersSortNewest => '최신순';
+  String get followSortTitle => '정렬 기준';
 
   @override
-  String get followersSortOldest => '오래된순';
+  String get followSortNewest => '최신순';
+
+  @override
+  String get followSortOldest => '오래된순';
 
   @override
   String get reportMessageTitle => '메시지 신고';

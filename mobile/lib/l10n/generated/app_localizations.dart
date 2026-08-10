@@ -13292,23 +13292,29 @@ abstract class AppLocalizations {
   /// **'Sort followers'**
   String get followersSortSemanticLabel;
 
-  /// Header of the bottom sheet listing follower sort options.
+  /// Accessibility label for the app bar button that opens the sort options for the list of people the user follows.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort following'**
+  String get followingSortSemanticLabel;
+
+  /// Header of the bottom sheet listing sort options. Shared by the followers and following lists.
   ///
   /// In en, this message translates to:
   /// **'Sort by'**
-  String get followersSortTitle;
+  String get followSortTitle;
 
-  /// Sort option showing the most recent follower at the top of the list.
+  /// Sort option showing the most recent follow at the top of the list. Shared by the followers and following lists.
   ///
   /// In en, this message translates to:
   /// **'Newest first'**
-  String get followersSortNewest;
+  String get followSortNewest;
 
-  /// Sort option showing the longest-standing follower at the top of the list.
+  /// Sort option showing the longest-standing follow at the top of the list. Shared by the followers and following lists.
   ///
   /// In en, this message translates to:
   /// **'Oldest first'**
-  String get followersSortOldest;
+  String get followSortOldest;
 
   /// No description provided for @reportMessageTitle.
   ///

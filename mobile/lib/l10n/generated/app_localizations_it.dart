@@ -7769,13 +7769,16 @@ class AppLocalizationsIt extends AppLocalizations {
   String get followersSortSemanticLabel => 'Ordina follower';
 
   @override
-  String get followersSortTitle => 'Ordina per';
+  String get followingSortSemanticLabel => 'Ordina seguiti';
 
   @override
-  String get followersSortNewest => 'Prima i più recenti';
+  String get followSortTitle => 'Ordina per';
 
   @override
-  String get followersSortOldest => 'Prima i meno recenti';
+  String get followSortNewest => 'Prima i più recenti';
+
+  @override
+  String get followSortOldest => 'Prima i meno recenti';
 
   @override
   String get reportMessageTitle => 'Segnala messaggio';

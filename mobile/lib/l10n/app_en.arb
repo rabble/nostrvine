@@ -4520,17 +4520,21 @@
   "@followersSortSemanticLabel": {
     "description": "Accessibility label for the app bar button that opens the follower sort options."
   },
-  "followersSortTitle": "Sort by",
-  "@followersSortTitle": {
-    "description": "Header of the bottom sheet listing follower sort options."
+  "followingSortSemanticLabel": "Sort following",
+  "@followingSortSemanticLabel": {
+    "description": "Accessibility label for the app bar button that opens the sort options for the list of people the user follows."
   },
-  "followersSortNewest": "Newest first",
-  "@followersSortNewest": {
-    "description": "Sort option showing the most recent follower at the top of the list."
+  "followSortTitle": "Sort by",
+  "@followSortTitle": {
+    "description": "Header of the bottom sheet listing sort options. Shared by the followers and following lists."
   },
-  "followersSortOldest": "Oldest first",
-  "@followersSortOldest": {
-    "description": "Sort option showing the longest-standing follower at the top of the list."
+  "followSortNewest": "Newest first",
+  "@followSortNewest": {
+    "description": "Sort option showing the most recent follow at the top of the list. Shared by the followers and following lists."
+  },
+  "followSortOldest": "Oldest first",
+  "@followSortOldest": {
+    "description": "Sort option showing the longest-standing follow at the top of the list. Shared by the followers and following lists."
   },
   "reportMessageTitle": "Report Message",
   "reportMessageWhyReporting": "Why are you reporting this message?",

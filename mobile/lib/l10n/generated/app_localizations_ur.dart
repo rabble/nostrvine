@@ -7699,13 +7699,16 @@ class AppLocalizationsUr extends AppLocalizations {
   String get followersSortSemanticLabel => 'فالوورز ترتیب دیں';
 
   @override
-  String get followersSortTitle => 'ترتیب بلحاظ';
+  String get followingSortSemanticLabel => 'فالوئنگ ترتیب دیں';
 
   @override
-  String get followersSortNewest => 'پہلے نئے';
+  String get followSortTitle => 'ترتیب بلحاظ';
 
   @override
-  String get followersSortOldest => 'پہلے پرانے';
+  String get followSortNewest => 'پہلے نئے';
+
+  @override
+  String get followSortOldest => 'پہلے پرانے';
 
   @override
   String get reportMessageTitle => 'پیغام کی رپورٹ کریں';

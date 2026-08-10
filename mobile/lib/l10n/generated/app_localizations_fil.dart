@@ -7785,13 +7785,16 @@ class AppLocalizationsFil extends AppLocalizations {
   String get followersSortSemanticLabel => 'Ayusin ang mga follower';
 
   @override
-  String get followersSortTitle => 'Ayusin ayon sa';
+  String get followingSortSemanticLabel => 'Ayusin ang mga sinusundan';
 
   @override
-  String get followersSortNewest => 'Pinakabago muna';
+  String get followSortTitle => 'Ayusin ayon sa';
 
   @override
-  String get followersSortOldest => 'Pinakaluma muna';
+  String get followSortNewest => 'Pinakabago muna';
+
+  @override
+  String get followSortOldest => 'Pinakaluma muna';
 
   @override
   String get reportMessageTitle => 'I-report ang Message';

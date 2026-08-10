@@ -7704,13 +7704,16 @@ class AppLocalizationsVi extends AppLocalizations {
   String get followersSortSemanticLabel => 'Sắp xếp người theo dõi';
 
   @override
-  String get followersSortTitle => 'Sắp xếp theo';
+  String get followingSortSemanticLabel => 'Sắp xếp đang theo dõi';
 
   @override
-  String get followersSortNewest => 'Mới nhất trước';
+  String get followSortTitle => 'Sắp xếp theo';
 
   @override
-  String get followersSortOldest => 'Cũ nhất trước';
+  String get followSortNewest => 'Mới nhất trước';
+
+  @override
+  String get followSortOldest => 'Cũ nhất trước';
 
   @override
   String get reportMessageTitle => 'Báo cáo tin nhắn';

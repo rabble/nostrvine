@@ -7772,13 +7772,16 @@ class AppLocalizationsBg extends AppLocalizations {
   String get followersSortSemanticLabel => 'Сортиране на последователите';
 
   @override
-  String get followersSortTitle => 'Сортиране по';
+  String get followingSortSemanticLabel => 'Сортиране на следваните';
 
   @override
-  String get followersSortNewest => 'Първо най-новите';
+  String get followSortTitle => 'Сортиране по';
 
   @override
-  String get followersSortOldest => 'Първо най-старите';
+  String get followSortNewest => 'Първо най-новите';
+
+  @override
+  String get followSortOldest => 'Първо най-старите';
 
   @override
   String get reportMessageTitle => 'Докладвай съобщението';

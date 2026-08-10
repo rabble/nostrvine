@@ -1,4 +1,4 @@
-// ABOUTME: Widget tests for MyFollowersScreen's sort control
+// ABOUTME: Widget tests for MyFollowingScreen's sort control
 // ABOUTME: Ensures the app bar button opens the sheet and re-orders the list
 
 import 'package:cache_sync/cache_sync.dart';
@@ -10,7 +10,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/screens/followers/my_followers_screen.dart';
+import 'package:openvine/screens/following/my_following_screen.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 
 import '../../helpers/test_provider_overrides.dart';
@@ -49,16 +49,17 @@ class _FakeCacheDao implements CacheDao {
 void main() {
   const currentUserPubkey =
       'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
-  const newestFollower =
+  // In contact-list order: `firstFollowed` is the oldest `p` tag.
+  const firstFollowed =
       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-  const oldestFollower =
+  const secondFollowed =
       'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
-  const undatedFollower =
+  const thirdFollowed =
       'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
 
   final l10n = lookupAppLocalizations(const Locale('en'));
 
-  group(MyFollowersScreen, () {
+  group(MyFollowingScreen, () {
     late _MockFollowRepository mockFollowRepository;
     late _MockContentBlocklistRepository mockBlocklistRepository;
     late _MockNostrClient mockNostrClient;
@@ -74,27 +75,24 @@ void main() {
       when(
         () => mockBlocklistRepository.isFollowSevered(any()),
       ).thenReturn(false);
-      when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
-      when(() => mockFollowRepository.followingPubkeys).thenReturn(const []);
-      when(
-        () => mockFollowRepository.followingStream,
-      ).thenAnswer((_) => Stream<List<String>>.value(const []));
+      when(() => mockFollowRepository.isFollowing(any())).thenReturn(true);
+      // All three sources agree on the contact-list order, as they do in
+      // production — the screen is what turns it newest-first.
+      when(() => mockFollowRepository.followingPubkeys).thenReturn(
+        const [firstFollowed, secondFollowed, thirdFollowed],
+      );
+      when(() => mockFollowRepository.followingStream).thenAnswer(
+        (_) => Stream<List<String>>.value(
+          const [firstFollowed, secondFollowed, thirdFollowed],
+        ),
+      );
       when(() => mockNostrClient.publicKey).thenReturn(currentUserPubkey);
       when(() => mockFollowRepository.watchMyFollowingCached()).thenAnswer(
         (_) => Stream.value(
           const CacheResult.live(
-            FollowingSnapshot(pubkeys: <String>[], count: 0),
-          ),
-        ),
-      );
-      // Newest first, with one follower the REST source could not date.
-      when(() => mockFollowRepository.watchMyFollowersCached()).thenAnswer(
-        (_) => Stream.value(
-          const CacheResult.live(
-            FollowersSnapshot(
-              pubkeys: [newestFollower, oldestFollower, undatedFollower],
+            FollowingSnapshot(
+              pubkeys: [firstFollowed, secondFollowed, thirdFollowed],
               count: 3,
-              datedCount: 2,
             ),
           ),
         ),
@@ -104,7 +102,7 @@ void main() {
     Future<void> pumpScreen(WidgetTester tester) async {
       await tester.pumpWidget(
         testMaterialApp(
-          home: const MyFollowersScreen(displayName: 'Alice'),
+          home: const MyFollowingScreen(displayName: 'Alice'),
           mockProfileRepository: createMockProfileRepository(),
           mockNostrService: mockNostrClient,
           mockFollowRepository: mockFollowRepository,
@@ -124,21 +122,24 @@ void main() {
         .map((tile) => tile.pubkey)
         .toList();
 
-    testWidgets('lists followers newest first before any sort is picked', (
-      tester,
-    ) async {
-      await pumpScreen(tester);
+    testWidgets(
+      'lists the most recent follow first before any sort is picked',
+      (
+        tester,
+      ) async {
+        await pumpScreen(tester);
 
-      expect(
-        visibleOrder(tester),
-        equals([newestFollower, oldestFollower, undatedFollower]),
-      );
-    });
+        expect(
+          visibleOrder(tester),
+          equals([thirdFollowed, secondFollowed, firstFollowed]),
+        );
+      },
+    );
 
     testWidgets('opens the sort sheet from the app bar', (tester) async {
       await pumpScreen(tester);
 
-      await tester.tap(find.bySemanticsLabel(l10n.followersSortSemanticLabel));
+      await tester.tap(find.bySemanticsLabel(l10n.followingSortSemanticLabel));
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.followSortTitle), findsOneWidget);
@@ -146,27 +147,26 @@ void main() {
       expect(find.text(l10n.followSortOldest), findsOneWidget);
     });
 
-    testWidgets('picking oldest first flips the dated followers', (
+    testWidgets('picking oldest first restores contact-list order', (
       tester,
     ) async {
       await pumpScreen(tester);
 
-      await tester.tap(find.bySemanticsLabel(l10n.followersSortSemanticLabel));
+      await tester.tap(find.bySemanticsLabel(l10n.followingSortSemanticLabel));
       await tester.pumpAndSettle();
       await tester.tap(find.text(l10n.followSortOldest));
       await tester.pumpAndSettle();
 
-      // The undated follower stays last — only the datable pair swaps.
       expect(
         visibleOrder(tester),
-        equals([oldestFollower, newestFollower, undatedFollower]),
+        equals([firstFollowed, secondFollowed, thirdFollowed]),
       );
     });
 
     testWidgets('dismissing the sheet leaves the order alone', (tester) async {
       await pumpScreen(tester);
 
-      await tester.tap(find.bySemanticsLabel(l10n.followersSortSemanticLabel));
+      await tester.tap(find.bySemanticsLabel(l10n.followingSortSemanticLabel));
       await tester.pumpAndSettle();
       // Tap the barrier above the sheet to dismiss without choosing.
       await tester.tapAt(const Offset(10, 10));
@@ -174,7 +174,7 @@ void main() {
 
       expect(
         visibleOrder(tester),
-        equals([newestFollower, oldestFollower, undatedFollower]),
+        equals([thirdFollowed, secondFollowed, firstFollowed]),
       );
     });
   });

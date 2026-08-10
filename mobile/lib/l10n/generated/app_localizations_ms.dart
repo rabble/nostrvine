@@ -7746,13 +7746,16 @@ class AppLocalizationsMs extends AppLocalizations {
   String get followersSortSemanticLabel => 'Isih pengikut';
 
   @override
-  String get followersSortTitle => 'Isih mengikut';
+  String get followingSortSemanticLabel => 'Isih yang diikuti';
 
   @override
-  String get followersSortNewest => 'Terbaharu dahulu';
+  String get followSortTitle => 'Isih mengikut';
 
   @override
-  String get followersSortOldest => 'Terlama dahulu';
+  String get followSortNewest => 'Terbaharu dahulu';
+
+  @override
+  String get followSortOldest => 'Terlama dahulu';
 
   @override
   String get reportMessageTitle => 'Laporkan Mesej';
