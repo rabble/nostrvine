@@ -131,11 +131,16 @@ void main() {
       final seen = _stats('seen-new');
       final unseen = _stats('unseen-new');
       when(
-        () => mockFunnelcake.getRecentVideos(
+        () => mockFunnelcake.getRecentVideosPage(
           limit: any(named: 'limit'),
           before: any(named: 'before'),
         ),
-      ).thenAnswer((_) async => [seen, unseen]);
+      ).thenAnswer(
+        (_) async => RecentVideosResponse(
+          videos: [seen, unseen],
+          serverItemCount: 2,
+        ),
+      );
       when(
         () => mockFunnelcake.getBulkVideoStats(any()),
       ).thenAnswer((_) async => const BulkVideoStatsResponse(stats: {}));
@@ -149,8 +154,11 @@ void main() {
         ),
       );
 
-      final videos = await repo.getNewVideos();
-      expect(videos.map((v) => v.id).toList(), ['unseen-new', 'seen-new']);
+      final result = await repo.getNewVideos();
+      expect(result.videos.map((v) => v.id).toList(), [
+        'unseen-new',
+        'seen-new',
+      ]);
     });
 
     test(
@@ -185,13 +193,8 @@ void main() {
     );
 
     test('getProfileVideos is untouched even if seen', () async {
-      final seen = _event(
-        'seen-profile',
-      );
-      final unseen = _event(
-        'unseen-profile',
-        createdAt: 1704067100,
-      );
+      final seen = _event('seen-profile');
+      final unseen = _event('unseen-profile', createdAt: 1704067100);
       when(
         () => mockNostr.queryEvents(any()),
       ).thenAnswer((_) async => [seen, unseen]);
@@ -437,10 +440,8 @@ void main() {
           viewerCountry: any(named: 'viewerCountry'),
         ),
       ).thenAnswer(
-        (_) async => RecommendationsResponse(
-          videos: [fresh],
-          source: 'personalized',
-        ),
+        (_) async =>
+            RecommendationsResponse(videos: [fresh], source: 'personalized'),
       );
 
       final repo = VideosRepository(
