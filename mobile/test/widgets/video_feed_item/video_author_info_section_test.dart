@@ -117,7 +117,10 @@ void main() {
       expect(
         find.byWidgetPredicate(
           (widget) =>
-              widget is Semantics && widget.properties.label == 'OG Viner',
+              widget is Semantics &&
+              widget.properties.button == true &&
+              widget.properties.label ==
+                  enL10n.profileBadgeOgVinerSemanticLabel,
         ),
         findsOneWidget,
       );

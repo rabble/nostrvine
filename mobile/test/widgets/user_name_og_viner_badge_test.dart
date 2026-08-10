@@ -48,6 +48,7 @@ void main() {
   testWidgets('shows OG Viner badge for cached pubkey', (tester) async {
     await tester.pumpWidget(await buildSubject(cachedOgViner: true));
     await tester.pump();
+    final l10n = lookupAppLocalizations(const Locale('en'));
 
     expect(find.text('Alice'), findsOneWidget);
     expect(find.text('V'), findsOneWidget);
@@ -55,23 +56,38 @@ void main() {
       find.byWidgetPredicate(
         (widget) =>
             widget is Semantics &&
-            widget.properties.label ==
-                lookupAppLocalizations(const Locale('en')).ogVinerBadgeLabel,
+            widget.properties.button == true &&
+            widget.properties.label == l10n.profileBadgeOgVinerSemanticLabel,
       ),
       findsOneWidget,
     );
   });
 
+  testWidgets('explains OG Viner badge when tapped', (tester) async {
+    await tester.pumpWidget(await buildSubject(cachedOgViner: true));
+    await tester.pump();
+    final l10n = lookupAppLocalizations(const Locale('en'));
+
+    await tester.tap(find.text('V'));
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.profileBadgeOgVinerTitle), findsOneWidget);
+    expect(find.text(l10n.profileBadgeOgVinerBody), findsOneWidget);
+    expect(find.text(l10n.profileBadgeExplanationClose), findsOneWidget);
+  });
+
   testWidgets('hides OG Viner badge for unknown pubkey', (tester) async {
     await tester.pumpWidget(await buildSubject(cachedOgViner: false));
     await tester.pump();
+    final l10n = lookupAppLocalizations(const Locale('en'));
 
     expect(find.text('Alice'), findsOneWidget);
     expect(find.text('V'), findsNothing);
     expect(
       find.byWidgetPredicate(
         (widget) =>
-            widget is Semantics && widget.properties.label == 'OG Viner',
+            widget is Semantics &&
+            widget.properties.label == l10n.profileBadgeOgVinerSemanticLabel,
       ),
       findsNothing,
     );
