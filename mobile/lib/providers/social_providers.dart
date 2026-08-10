@@ -709,6 +709,18 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
           'processedGiftWraps',
           db.processedGiftWrapsDao.clearAll,
         );
+        // Reaction rows keep decrypted rumor payloads (rumor_event_json) —
+        // DM data of the same class as direct_messages, so they must not
+        // outlive the account's DMs on any sign-out path, including Delete
+        // Account. Owner-scoped rather than clearAll: ownerPubkey is
+        // non-nullable here, so unlike direct_messages there are no legacy
+        // NULL-owner rows a scoped delete would strand. See #6984.
+        if (userPubkey != null) {
+          await safeCleanup(
+            'dmReactions',
+            () => db.dmReactionsDao.deleteAllForOwner(userPubkey),
+          );
+        }
         // Scoped to the leaving account so a switch does not wipe the other
         // account's cached inbox along with this one's.
         await safeCleanup(

@@ -33,6 +33,14 @@ const _pubkeyA =
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const _pubkeyB =
     'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+const _reactionIdA =
+    'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+const _reactionIdB =
+    'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+const _dmConversationId =
+    'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+const _dmTargetMessageId =
+    'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
 void main() {
   group(userDataCleanupServiceProvider, () {
@@ -180,5 +188,83 @@ void main() {
         isEmpty,
       );
     });
+
+    Future<void> seedDmReaction({
+      required String id,
+      required String ownerPubkey,
+    }) {
+      return db.dmReactionsDao.upsertIncoming(
+        id: id,
+        conversationId: _dmConversationId,
+        targetMessageId: _dmTargetMessageId,
+        targetMessageAuthor: _pubkeyB,
+        reactorPubkey: _pubkeyB,
+        emoji: '😂',
+        createdAt: 1_700_000_000,
+        giftWrapId: id,
+        ownerPubkey: ownerPubkey,
+      );
+    }
+
+    test(
+      'destructive cleanup purges dm reactions for the departing user',
+      () async {
+        await seedDmReaction(id: _reactionIdA, ownerPubkey: _pubkeyA);
+        await seedDmReaction(id: _reactionIdB, ownerPubkey: _pubkeyB);
+
+        final subscription = container.listen(
+          userDataCleanupServiceProvider,
+          (_, _) {},
+        );
+        addTearDown(subscription.close);
+        final service = subscription.read();
+
+        expect(service.onDatabaseCleanup, isNotNull);
+        await service.onDatabaseCleanup!(
+          userPubkey: _pubkeyA,
+          deleteUserData: true,
+        );
+
+        expect(
+          await db.dmReactionsDao.getById(
+            id: _reactionIdA,
+            ownerPubkey: _pubkeyA,
+          ),
+          isNull,
+        );
+        expect(
+          await db.dmReactionsDao.getById(
+            id: _reactionIdB,
+            ownerPubkey: _pubkeyB,
+          ),
+          isNotNull,
+        );
+      },
+    );
+
+    test(
+      'non-destructive cleanup clears dm reactions for the leaving account',
+      () async {
+        await seedDmReaction(id: _reactionIdA, ownerPubkey: _pubkeyA);
+
+        final subscription = container.listen(
+          userDataCleanupServiceProvider,
+          (_, _) {},
+        );
+        addTearDown(subscription.close);
+        final service = subscription.read();
+
+        expect(service.onDatabaseCleanup, isNotNull);
+        await service.onDatabaseCleanup!(userPubkey: _pubkeyA);
+
+        expect(
+          await db.dmReactionsDao.getById(
+            id: _reactionIdA,
+            ownerPubkey: _pubkeyA,
+          ),
+          isNull,
+        );
+      },
+    );
   });
 }
