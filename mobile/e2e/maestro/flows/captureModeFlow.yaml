@@ -1,0 +1,44 @@
+appId: co.openvine.app
+---
+#Capture-mode journey: create an account, open the recorder, record a clip,
+#delete it again, and sign the device back out.
+#
+# Account creation is a precondition, not part of what is under test. The
+# recorder route itself is public — appRouterRedirect exempts it — but the only
+# way into it is the feed's camera button, and the feed is not public: an
+# unauthenticated launch redirects to Welcome.
+#
+# Requires real camera hardware for captureModeRecordClip; see that file.
+
+- runFlow: ../tests/loginFreshInstall.yaml
+
+# Relaunch with camera and microphone pre-granted. Otherwise the first camera
+# tap raises the native OS permission dialog, whose buttons are OS-localized
+# copy that no selector should depend on.
+#
+# Deliberately no clearState: on Android `pm clear` wipes the encrypted
+# preferences the Nostr key lives in, which would sign the account straight
+# back out. (The iOS keychain survives it — the platforms disagree here, so
+# the flow takes the option that works on both.)
+- launchApp:
+    permissions:
+      all: allow
+- extendedWaitUntil:
+    visible:
+      id: camera_button
+    timeout: 60000
+
+- runFlow: ../tests/captureModeOpen.yaml
+
+- runFlow: ../utils/openCaptureMode.yaml
+# Before the recording tests, not after: the aspect-ratio control is disabled
+# once the session holds a clip.
+- runFlow: ../tests/captureModeControls.yaml
+- runFlow: ../tests/captureModeRecordClip.yaml
+- runFlow: ../tests/captureModeDeleteClip.yaml
+
+# Leave the recorder before teardown: removeKeys drives Settings from the
+# profile tab, which the full-screen recorder covers.
+- tapOn:
+    id: camera_close_button
+- runFlow: ../tests/removeKeys.yaml

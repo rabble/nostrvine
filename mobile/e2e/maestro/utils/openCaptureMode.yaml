@@ -1,0 +1,32 @@
+appId: co.openvine.app
+---
+#Utility: given the user is signed in and on a feed surface, open the recorder
+#and leave it on a ready capture-mode viewfinder.
+#
+# No launchApp, so this runs against whatever is already on screen — see the
+# "Iterating" section of e2e/maestro/README.md.
+
+- tapOn:
+    id: camera_button
+
+# The first camera open of an install shows the "Why six seconds?" education
+# sheet on top of the recorder. It is one-shot per install (the
+# `why_six_seconds_shown` preference), so a rerun on a device that has already
+# seen it must not wait for it — hence the conditional.
+#
+# Selected by copy rather than by id: the sheet is a VineBottomSheetPrompt,
+# which takes no semantics identifier. Adding one is a divine_ui change that
+# drags that package's 100% coverage gate along with it — the same call
+# removeKeys.yaml already makes for its confirmation sheet.
+#
+# Which means this line needs an English app UI, like the rest of the suite.
+# On a localized device the `when` simply never matches, the sheet stays up
+# over the recorder, and assertCaptureMode fails on every id at once. See the
+# "Put the device's app UI in English" step in e2e/maestro/README.md.
+- runFlow:
+    when:
+      visible: "Why six seconds?"
+    commands:
+      - tapOn: "Got it!"
+
+- runFlow: ../asserts/assertCaptureMode.yaml

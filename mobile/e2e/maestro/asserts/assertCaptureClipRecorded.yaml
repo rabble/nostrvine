@@ -1,0 +1,18 @@
+appId: co.openvine.app
+---
+# The capture session holds at least one clip: the top bar reveals its
+# continue-to-editor button and the shutter row reveals delete-last-clip.
+#
+# Both are gated on `hasClips` through an AnimatedOpacity, which drops its
+# child from the semantics tree at opacity 0. Their presence is therefore the
+# assertion that the recording actually produced a clip — there is no clip
+# counter on this screen to read instead.
+#
+# The wait covers the gap between the stop tap and the recorder finalizing the
+# file; on a cold camera the first clip can take a moment to land.
+- extendedWaitUntil:
+    visible:
+      id: camera_next_button
+    timeout: 15000
+- assertVisible:
+    id: camera_delete_clip_button
