@@ -92,10 +92,10 @@ class _ProfileNameAndBio extends StatelessWidget {
                       )
                     : null,
               ),
-              _VerifiedAccountsBlock(isOwnProfile: isOwnProfile),
             ],
           ),
         ),
+        _VerifiedAccountsBlock(isOwnProfile: isOwnProfile),
       ],
     );
   }

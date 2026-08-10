@@ -17,12 +17,17 @@ class VerifiedAccountsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (claims.isEmpty) return const SizedBox.shrink();
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        for (final c in claims) VerifiedAccountChip(claim: c),
-      ],
+    return Center(
+      child: SingleChildScrollView(
+        scrollDirection: .horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          spacing: 8,
+          children: [
+            for (final c in claims) VerifiedAccountChip(claim: c),
+          ],
+        ),
+      ),
     );
   }
 }
