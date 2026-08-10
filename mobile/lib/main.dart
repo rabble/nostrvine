@@ -2769,12 +2769,8 @@ class _DivineAppState extends ConsumerState<DivineApp>
                 lazy: false,
                 create: (context) => InviteStatusCubit(
                   inviteApiClient: context.read<InviteApiClient>(),
-                  initialAuthSession: inviteStatusAuthSessionOf(
-                    ref.read(nostrSessionProvider),
-                  ),
-                  authSessionStream: ref.read(
-                    inviteStatusAuthSessionsProvider,
-                  ),
+                  initialAuthSession: ref.read(inviteStatusAuthSessionProvider),
+                  authSessionStream: ref.read(inviteStatusAuthSessionsProvider),
                 )..start(),
               ),
               BlocProvider(

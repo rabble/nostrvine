@@ -403,9 +403,10 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// Stream of authentication state changes.
   ///
   /// Identity only. `authenticated` says the pubkey is known, not that anything
-  /// can be signed. Side effects that sign or publish must watch
-  /// `nostrSessionProvider` instead; gating them here strands them when the
-  /// signer arrives later (#6977).
+  /// can be signed. Side effects that sign through the app-wide Nostr client
+  /// must watch `nostrSessionProvider`; relay-free signing must watch a signer
+  /// capability signal such as `currentAuthRpcCapabilityProvider`. Gating them
+  /// here strands them when the signer arrives later (#6977).
   Stream<AuthState> get authStateStream => _authStateController.stream;
 
   /// Current user profile (null if not authenticated)
@@ -505,9 +506,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// are still waiting for RPC warmup.
   ///
   /// This answers "is this identity *capable* of signing", not "is the
-  /// signer-backed client ready". It has no stream, so it is safe to sample at
-  /// the moment of use and unsafe to gate a one-shot side effect on. For the
-  /// latter, watch `nostrSessionProvider`.
+  /// signer-backed client ready". It has no direct stream, so it is safe to
+  /// sample at the moment of use. Push consumers that wait for this to flip must
+  /// also watch a rebuild trigger such as `currentAuthRpcCapabilityProvider`.
   bool get canPublishNostrWritesNow {
     return switch (_currentIdentity) {
       null => false,

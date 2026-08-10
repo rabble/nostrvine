@@ -24,23 +24,32 @@ app-wide contract, and it is two-tier:
 | Phase | Carries | Use it for |
 |-------|---------|------------|
 | `identityKnown` | pubkey | reads, scoping caches/repositories to an owner, UI gating |
-| `nostrReady` | pubkey **and** a keyed `NostrClient` | anything that signs, publishes, or sends a NIP-98 header |
+| `nostrReady` | pubkey **and** a keyed `NostrClient` | Nostr-client signing/publishing that needs the initialized client |
 
 Rules:
 
-- **Anything that signs watches `nostrReady`**, via
+- **Anything that signs or publishes through the app-wide `NostrClient`
+  watches `nostrReady`**, via
   `ref.watch(nostrSessionProvider).isReadyForActiveClient` or a
   `ref.listen` on the provider. `profileRepositoryProvider` (nullable
   gate) and `notificationsProviders` (auth state for teardown +
   readiness for work) are the reference implementations.
+- **Relay-free signing watches signer capability, not relay readiness.**
+  For example, REST NIP-98 calls that use `Nip98AuthService(authService:)`
+  need an identity that can sign now, but do not need relay connections.
+  Watch `currentAuthStateProvider` for account changes and
+  `currentAuthRpcCapabilityProvider` for the Keycast
+  `unavailable -> rpcReady` transition, then sample
+  `AuthService.canPublishNostrWritesNow`.
 - **Never gate a signer-dependent side effect on `authStateStream` or
-  `currentAuthStateProvider`.** Those are identity signals. Watching
-  them is correct when you only need to re-scope to a new pubkey or
-  show/hide UI.
+  `currentAuthStateProvider` alone.** Those are identity signals.
+  Watching them is correct when you only need to re-scope to a new
+  pubkey or show/hide UI.
 - `AuthService.canPublishNostrWritesNow` answers "is this identity
-  *capable* of signing", not "is the client ready". It has no stream, so
-  sample it at the moment of use; never use it as the trigger a
-  one-shot effect waits on.
+  *capable* of signing", not "is the client ready". It has no direct
+  stream, so sample it at the moment of use; for push consumers, pair
+  that sample with a real rebuild trigger such as
+  `currentAuthRpcCapabilityProvider`.
 
 The distinction matters most for **push** consumers — code that asks
 once and then waits. Pull consumers that re-read at call time cannot go
