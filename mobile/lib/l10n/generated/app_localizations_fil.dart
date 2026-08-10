@@ -426,6 +426,21 @@ class AppLocalizationsFil extends AppLocalizations {
   String get profileVideosLabel => 'Mga Video';
 
   @override
+  String get profileCollabsLabel => 'Mga Collab';
+
+  @override
+  String get profileLikedLabel => 'Na-like';
+
+  @override
+  String get profileRepostsLabel => 'Mga Repost';
+
+  @override
+  String get profileListsLabel => 'Mga List';
+
+  @override
+  String get profileCommentsLabel => 'Mga Komento';
+
+  @override
   String profileCollaboratorInvitePendingHeadline(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

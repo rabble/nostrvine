@@ -238,6 +238,11 @@
     "profileFollowersLabel": "ተከታዮች",
     "profileFollowingStatLabel": "በመከተል ላይ",
     "profileVideosLabel": "ቪዲዮዎች",
+    "profileCollabsLabel": "ትብብሮች",
+    "profileLikedLabel": "የተወደዱ",
+    "profileRepostsLabel": "ድጋሚ ልጥፎች",
+    "profileListsLabel": "ዝርዝሮች",
+    "profileCommentsLabel": "አስተያየቶች",
     "profileFollowerCountUsers": "{count} ተጠቃሚዎች",
     "@profileFollowerCountUsers": {
         "placeholders": {

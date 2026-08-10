@@ -218,6 +218,11 @@
   "profileFollowersLabel": "粉丝",
   "profileFollowingStatLabel": "关注",
   "profileVideosLabel": "视频",
+  "profileCollabsLabel": "合作",
+  "profileLikedLabel": "已点赞",
+  "profileRepostsLabel": "转发",
+  "profileListsLabel": "列表",
+  "profileCommentsLabel": "评论",
   "profileCollaboratorInvitePendingHeadline": "{count, plural, =1{还有 1 个合作邀请待发送} other{还有 {count} 个合作邀请待发送}}",
   "@profileCollaboratorInvitePendingHeadline": {
     "placeholders": {

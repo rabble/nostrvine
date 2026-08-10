@@ -426,6 +426,21 @@ class AppLocalizationsVi extends AppLocalizations {
   String get profileVideosLabel => 'Video';
 
   @override
+  String get profileCollabsLabel => 'Cộng tác';
+
+  @override
+  String get profileLikedLabel => 'Đã thích';
+
+  @override
+  String get profileRepostsLabel => 'Lượt đăng lại';
+
+  @override
+  String get profileListsLabel => 'Danh sách';
+
+  @override
+  String get profileCommentsLabel => 'Bình luận';
+
+  @override
   String profileCollaboratorInvitePendingHeadline(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

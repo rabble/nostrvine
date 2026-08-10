@@ -205,6 +205,11 @@
     "profileFollowersLabel": "Volgers",
     "profileFollowingStatLabel": "Volgend",
     "profileVideosLabel": "Video's",
+    "profileCollabsLabel": "Collabs",
+    "profileLikedLabel": "Leuk gevonden",
+    "profileRepostsLabel": "Reposts",
+    "profileListsLabel": "Lijsten",
+    "profileCommentsLabel": "Reacties",
     "profileFollowerCountUsers": "{count} gebruikers",
     "@profileFollowerCountUsers": {
         "placeholders": {

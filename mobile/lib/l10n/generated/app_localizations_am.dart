@@ -420,6 +420,21 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileVideosLabel => 'ቪዲዮዎች';
 
   @override
+  String get profileCollabsLabel => 'ትብብሮች';
+
+  @override
+  String get profileLikedLabel => 'የተወደዱ';
+
+  @override
+  String get profileRepostsLabel => 'ድጋሚ ልጥፎች';
+
+  @override
+  String get profileListsLabel => 'ዝርዝሮች';
+
+  @override
+  String get profileCommentsLabel => 'አስተያየቶች';
+
+  @override
   String profileCollaboratorInvitePendingHeadline(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
