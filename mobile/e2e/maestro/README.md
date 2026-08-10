@@ -34,16 +34,22 @@ Two of the recorder's five modes are covered, one flow each:
 | Flow | Mode | Covers |
 |---|---|---|
 | `flows/captureModeFlow.yaml` | capture | open, drive the control rail, record a clip, delete it, close |
-| `flows/lipSyncModeFlow.yaml` | lip-sync | open, drive the control rail, prove the shutter is gated on picking a sound, close |
+| `flows/lipSyncModeFlow.yaml` | lip-sync | open, drive the control rail, prove the shutter refuses without a sound and records with one, delete the clip, close |
 
 Classic, stop-motion and upload are not covered yet.
 
-Lip-sync is the short one on purpose. **Recording a lip-sync clip is out of
-scope**: the shutter is gated on a selected sound, and picking one means
-driving the audio sheet against whatever the relay is serving — the same
-live-content dependency this file already names as the suite's main source of
-flakiness. What `lipSyncModeAudioGate` covers instead is the gate, which is the
-only behaviour lip-sync adds over capture.
+The gate is lip-sync's own behaviour and it takes **both** shutter tests to
+cover it. `lipSyncModeAudioGate` proves the shutter refuses with no sound
+picked, which on its own is also what a permanently broken shutter does;
+`lipSyncModeRecordClip` picks one and records against it. They run in that
+order and cannot be swapped — the gate test needs the editor to hold no sound,
+and the record test is what puts one there.
+
+Picking a sound stays deterministic because the flow only ever touches the
+picker's **Divine** tab, whose entries come from
+`assets/sounds/sounds_manifest.json` and ship with the app. The Community tab
+is the relay-backed one, and it is the live-content dependency this file names
+elsewhere as the suite's main source of flakiness — no flow goes near it.
 
 Every file in both flows has been run green on a Galaxy SM-S942B. The lip-sync
 tests were driven test-by-test against an already-signed-in app rather than
@@ -61,8 +67,8 @@ Neither is in **`smoke.yaml`**, and both are deliberately off the iOS lane:
   scene camera is enough, and a device is best.
 - **The `…Open` tests alone** — the chrome assertions — do pass without a
   camera, because the viewfinder falls back to a placeholder and every control
-  still renders. So does `lipSyncModeAudioGate`, which is driven by the audio
-  selection rather than the camera.
+  still renders. So does `lipSyncModeAudioGate`: the blocked shutter is
+  rendered from the audio selection, not from the camera being ready.
 
 Run one against a booted Android emulator or a connected device:
 
@@ -159,11 +165,27 @@ Lip-sync only:
   absent and so never opens here on its own. It walks the wheel one entry at a
   time: Lip Sync sits two places from Capture, and the wheel is a lazy
   `ListView` that only builds entries near the armed one.
-- **No sound picked, ever.** Nothing in the flow selects one, which is what
-  keeps `lipSyncModeAudioGate` meaningful and the aspect-ratio control enabled.
-  The selection lives in the editor provider rather than a preference, so a
-  relaunch clears it — but an iterating run that picked a sound by hand has to
-  relaunch before the gate test means anything again.
+- **No sound picked before the gate test.** The selection lives in the editor
+  provider rather than a preference, so a relaunch clears it — but an iterating
+  run that already reached `lipSyncModeRecordClip`, or picked a sound by hand,
+  has to relaunch before `lipSyncModeAudioGate` means anything again. Same for
+  the rail: the aspect-ratio control is disabled once a clip exists, so
+  `lipSyncModeControls` runs ahead of both.
+- **The keyboard hides the confirm bar.** The picker's done button is anchored
+  to the bottom of the sheet, so with the search keyboard up it is pushed off
+  screen entirely. `lipSyncModeRecordClip` types its query and then calls
+  `hideKeyboard` before touching the list. Skip that and the failure is a
+  nasty one to read: the sound selects correctly, the tile turns green in the
+  failure screenshot, and the run dies waiting on a button that is simply not
+  in the hierarchy.
+- **The sound is picked by title, from the manifest.** The test searches
+  "Bruh Sound Effect" and asserts the title back off the first result, so a
+  reordered or renamed manifest fails there rather than silently recording
+  against a different sound. That title comes from the asset manifest, not
+  l10n, so unlike the rest of the copy in this suite it reads the same in every
+  locale. It is chosen for being 864ms — under the 6.3s maximum clip length, so
+  confirming pops straight back instead of routing through the trim screen a
+  longer sound would need.
 - **The "add audio" snackbar is asserted by copy.** `DivineSnackbarContainer`
   takes no identifier, and adding one is a `divine_ui` change that drags that
   package's 100% coverage gate along with it — the same call `openRecorder`

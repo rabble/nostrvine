@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show AudioEvent, VineSound;
 import 'package:openvine/blocs/saved_sounds/saved_sounds_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/reduced_motion_tab_controller_mixin.dart';
@@ -588,30 +589,33 @@ class _PickerSearchInput extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       color: context.vineColors.surface,
-      child: TextField(
-        controller: controller,
-        onChanged: onChanged,
-        style: TextStyle(color: context.vineColors.primaryText),
-        decoration: InputDecoration(
-          hintText: context.l10n.soundsSearchHint,
-          hintStyle: TextStyle(color: context.vineColors.onSurfaceMuted),
-          prefixIconConstraints: const BoxConstraints(),
-          prefixIcon: Padding(
-            padding: const EdgeInsetsDirectional.only(start: 12, end: 8),
-            child: DivineIcon(
-              icon: DivineIconName.search,
-              color: context.vineColors.onSurfaceMuted,
+      child: Semantics(
+        identifier: SemanticIds.audioSearchField,
+        child: TextField(
+          controller: controller,
+          onChanged: onChanged,
+          style: TextStyle(color: context.vineColors.primaryText),
+          decoration: InputDecoration(
+            hintText: context.l10n.soundsSearchHint,
+            hintStyle: TextStyle(color: context.vineColors.onSurfaceMuted),
+            prefixIconConstraints: const BoxConstraints(),
+            prefixIcon: Padding(
+              padding: const EdgeInsetsDirectional.only(start: 12, end: 8),
+              child: DivineIcon(
+                icon: DivineIconName.search,
+                color: context.vineColors.onSurfaceMuted,
+              ),
             ),
-          ),
-          filled: true,
-          fillColor: context.vineColors.background,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
+            filled: true,
+            fillColor: context.vineColors.background,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
           ),
         ),
       ),
@@ -662,6 +666,7 @@ class _SoundsContent extends StatelessWidget {
               return AudioListTile(
                 audio: audio,
                 isSelected: false,
+                semanticIdentifier: SemanticIds.audioSoundTile(index),
                 onTap: () => onSelect(audio),
               );
             }
@@ -677,6 +682,7 @@ class _SoundsContent extends StatelessWidget {
                   audio: displayAudio,
                   isSelected: true,
                   isPlaying: snapshot.data ?? false,
+                  semanticIdentifier: SemanticIds.audioSoundTile(index),
                   onTap: () => onSelect(displayAudio),
                 );
               },

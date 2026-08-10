@@ -12,7 +12,39 @@ class AudioListTile extends StatelessWidget {
     required this.isSelected,
     required this.onTap,
     this.isPlaying = false,
+    this.semanticIdentifier,
     super.key,
+  });
+
+  final AudioEvent audio;
+  final bool isSelected;
+  final bool isPlaying;
+  final VoidCallback onTap;
+
+  /// Stable `Semantics(identifier:)` anchor for E2E tests. Never announced, so
+  /// it carries no meaning for a screen-reader user — that is the title below.
+  final String? semanticIdentifier;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      identifier: semanticIdentifier,
+      child: _Tile(
+        audio: audio,
+        isSelected: isSelected,
+        isPlaying: isPlaying,
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+class _Tile extends StatelessWidget {
+  const _Tile({
+    required this.audio,
+    required this.isSelected,
+    required this.isPlaying,
+    required this.onTap,
   });
 
   final AudioEvent audio;

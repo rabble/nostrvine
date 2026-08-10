@@ -49,6 +49,21 @@ abstract class SemanticIds {
   /// different route, so the id stays unambiguous on any one screen.
   static const String audioChip = 'audio_chip';
 
+  /// The sound picker the chip opens. Every sound on the Divine tab is an
+  /// asset shipped in `assets/sounds/sounds_manifest.json`, so this path is
+  /// driveable without touching the relay — which is what lets the lip-sync
+  /// E2E flow record against a real sound rather than only proving the
+  /// no-sound gate blocks it.
+  ///
+  /// Tiles are indexed because the list is a search result: the E2E narrows it
+  /// to one entry and takes index 0, rather than depending on the manifest's
+  /// order.
+  static const String audioSearchField = 'audio_search_field';
+
+  static String audioSoundTile(int index) => 'audio_sound_tile_$index';
+
+  static const String audioSelectionDoneButton = 'audio_selection_done_button';
+
   /// Welcome screen. The fresh-install and returning-user branches show
   /// different buttons, so each action gets its own id rather than being
   /// disambiguated by position.

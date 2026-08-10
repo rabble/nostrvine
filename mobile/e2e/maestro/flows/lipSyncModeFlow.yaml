@@ -1,22 +1,26 @@
 appId: co.openvine.app
 ---
 #Lip-sync journey: create an account, open the recorder on lip-sync, drive its
-#control rail, prove the shutter is gated on picking a sound, and sign the
-#device back out.
+#control rail, prove the shutter is gated on picking a sound and then records
+#once one is picked, delete the clip, and sign the device back out.
 #
 # Account creation is a precondition, not part of what is under test. The
 # recorder route itself is public — appRouterRedirect exempts it — but the only
 # way into it is the feed's camera button, and the feed is not public: an
 # unauthenticated launch redirects to Welcome.
 #
-# Requires real camera hardware for the lens switch in lipSyncModeControls.
+# Requires real camera hardware, for the lens switch in lipSyncModeControls
+# and for the recording in lipSyncModeRecordClip.
 #
-# **Recording a lip-sync clip is out of scope**, and that is the whole reason
-# this flow is shorter than the other two. The shutter is gated on a selected
-# sound, and picking one means driving the audio sheet against whatever the
-# relay is serving — the same live-content dependency the README already names
-# as the suite's main source of flakiness. What is covered instead is the gate
-# itself, which is the behaviour lip-sync actually adds.
+# The two shutter tests run in this order and cannot be swapped:
+# lipSyncModeAudioGate needs the editor to hold no sound, and
+# lipSyncModeRecordClip is what picks one. Between them they prove the gate
+# refuses without a sound *and* releases with one — either alone is also what a
+# permanently stuck shutter looks like.
+#
+# The sound comes from the picker's Divine tab, which is bundled with the app
+# rather than served by the relay, so the whole path stays deterministic. See
+# lipSyncModeRecordClip.
 
 - runFlow: ../tests/loginFreshInstall.yaml
 
@@ -44,6 +48,7 @@ appId: co.openvine.app
 - runFlow: ../utils/openLipSyncMode.yaml
 - runFlow: ../tests/lipSyncModeControls.yaml
 - runFlow: ../tests/lipSyncModeAudioGate.yaml
+- runFlow: ../tests/lipSyncModeRecordClip.yaml
 
 # Leave the recorder before teardown: removeKeys drives Settings from the
 # profile tab, which the full-screen recorder covers.
