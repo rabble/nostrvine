@@ -55,7 +55,14 @@ void main() {
       expect(tags.last, equals(['sha256', 'a' * 64]));
     });
 
-    for (final (label, sha256) in [('null', null), ('empty', '')]) {
+    for (final (label, sha256) in [
+      ('null', null),
+      ('empty', ''),
+      ('whitespace only', '   '),
+      ('too short', 'a' * 63),
+      ('too long', 'a' * 65),
+      ('not hex', 'g' * 64),
+    ]) {
       test('omits sha256 when the hash is $label', () {
         expect(
           ContentReportingService.moderationDmTags(
@@ -64,12 +71,25 @@ void main() {
           ).where((tag) => tag.first == 'sha256'),
           isEmpty,
           reason:
-              'user_reports.sha256 is NOT NULL server-side; a blank tag would '
-              'let a malformed report through instead of degrading cleanly to '
+              'user_reports.sha256 is NOT NULL server-side; a malformed tag '
+              'would let a bad report through instead of degrading cleanly to '
               'no report row',
         );
       });
     }
+
+    test('normalizes a valid hash the publishing client wrote oddly', () {
+      // VideoEvent.sha256 is the imeta `x` tag verbatim, unvalidated. An
+      // upper-case or padded hash is a real hash the backend's own check would
+      // reject, silently filing no report at all.
+      expect(
+        ContentReportingService.moderationDmTags(
+          reason: ContentFilterReason.spam,
+          sha256: '  ${'AB' * 32}  ',
+        ).last,
+        equals(['sha256', 'ab' * 32]),
+      );
+    });
   });
 
   group('ContentReportingService', () {

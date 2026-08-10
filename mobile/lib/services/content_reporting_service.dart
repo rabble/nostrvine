@@ -11,6 +11,7 @@ import 'package:nostr_sdk/event_kind.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/content_moderation_types.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
+import 'package:openvine/utils/blossom_blob_hash.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -463,16 +464,27 @@ class ContentReportingService {
   /// omitting the tag degrades to no report row rather than a malformed one —
   /// a blank tag must never ship.
   ///
+  /// The hash is put through [normalizeSha256Hash] rather than forwarded
+  /// verbatim. `VideoEvent.sha256` is whatever the publishing client wrote in
+  /// the `imeta` `x` tag, unvalidated, so an upper-case or padded hash would
+  /// be rejected by the backend's own check and silently file no report at
+  /// all; normalizing files it correctly instead. Anything that is not 64 hex
+  /// characters is dropped here, which makes the documented degrade explicit
+  /// rather than something the backend has to catch.
+  ///
   /// Tag order is pinned by divine-moderation-service's
   /// `dm-report-contract.test.mjs` fixture.
   static List<List<String>> moderationDmTags({
     required ContentFilterReason reason,
     String? sha256,
-  }) => [
-    ..._nip32ReportLabelTags(reason),
-    ['report_type', contentFilterReasonToNip56Type(reason)],
-    if (sha256 != null && sha256.isNotEmpty) ['sha256', sha256],
-  ];
+  }) {
+    final blobHash = normalizeSha256Hash(sha256);
+    return [
+      ..._nip32ReportLabelTags(reason),
+      ['report_type', contentFilterReasonToNip56Type(reason)],
+      if (blobHash != null) ['sha256', blobHash],
+    ];
+  }
 
   /// Create NIP-56 reporting event (kind 1984) for Apple compliance
   Future<Event?> _createReportingEvent({
