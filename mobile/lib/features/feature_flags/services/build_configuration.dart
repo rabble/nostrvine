@@ -62,6 +62,11 @@ class BuildConfiguration {
         // d=notify subscribers. On without it, the bell publishes a
         // subscription no service reads.
         return const bool.fromEnvironment('FF_NEW_POST_NOTIFICATIONS');
+      case FeatureFlag.clientSeenFiltering:
+        return const bool.fromEnvironment(
+          'FF_CLIENT_SEEN_FILTERING',
+          defaultValue: true,
+        );
     }
   }
 
@@ -110,6 +115,8 @@ class BuildConfiguration {
         return 'FF_DIVINE_SUPPORTERS';
       case FeatureFlag.newPostNotifications:
         return 'FF_NEW_POST_NOTIFICATIONS';
+      case FeatureFlag.clientSeenFiltering:
+        return 'FF_CLIENT_SEEN_FILTERING';
     }
   }
 }

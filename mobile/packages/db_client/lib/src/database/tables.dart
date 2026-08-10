@@ -1575,7 +1575,49 @@ class IdentityVerifications extends Table {
   Set<Column> get primaryKey => {pubkey};
 }
 
+/// Unbounded seen-video set — id + last-seen timestamp only.
+///
+/// Rich engagement metrics (loops, watch durations) stay in the bounded
+/// SharedPreferences `seen_video_metrics` JSON blob (1000 entries). This
+/// table holds the minimal membership needed for `wasSeenRecently` so heavy
+/// viewers (p90 6,458 distinct/30d, max 19,867) don't truncate history and
+/// don't pay multi-MB SharedPreferences rewrites on every watch. Indexed
+/// on id (PK) for O(1) membership; `lastSeenAt` lets `wasSeenRecently`
+/// answer recency without decoding metrics. TTL pruning (~1yr) keeps the
+/// table bounded without a hard cap.
+///
+/// Write path is idempotent upsert (INSERT OR REPLACE) from
+/// `SeenVideosService`; read path is `wasSeenRecently(id, within)` via
+/// direct lookup. No foreign key — videos may be deleted from the event
+/// table but seen history survives.
+@DataClassName('SeenVideoRow')
+class SeenVideos extends Table {
+  @override
+  String get tableName => 'seen_videos';
+
+  /// Nostr event id of the seen video (hex).
+  TextColumn get videoId => text().named('video_id')();
+
+  /// Unix milliseconds of first-seen (for diagnostics, not filtering).
+  IntColumn get firstSeenAt => integer().named('first_seen_at')();
+
+  /// Unix milliseconds of last-seen — the recency signal.
+  IntColumn get lastSeenAt => integer().named('last_seen_at')();
+
+  @override
+  Set<Column> get primaryKey => {videoId};
+
+  List<Index> get indexes => [
+    Index(
+      'idx_seen_videos_last_seen_at',
+      'CREATE INDEX IF NOT EXISTS idx_seen_videos_last_seen_at '
+          'ON seen_videos (last_seen_at DESC)',
+    ),
+  ];
+}
+
 /// Pubkeys the server has reported as having a NIP-62 request to vanish.
+
 ///
 /// Exists to *honour* an erasure request rather than to retain data about one:
 /// it holds an already-public pubkey and a local timestamp, and it is what

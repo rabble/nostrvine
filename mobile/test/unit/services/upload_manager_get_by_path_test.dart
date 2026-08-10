@@ -12,8 +12,10 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/upload_manager.dart';
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import '../../helpers/real_integration_test_helper.dart';
 import '../../helpers/test_helpers.dart';
+import '../../mocks/mock_path_provider_platform.dart';
 
 class MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
@@ -23,32 +25,29 @@ void main() {
   late UploadManager uploadManager;
   late MockBlossomUploadService mockUploadService;
   late Directory tempDir;
+  late PathProviderPlatform originalPathProviderInstance;
 
   setUpAll(() async {
     // Setup test environment with platform channel mocks
     await RealIntegrationTestHelper.setupTestEnvironment();
+    originalPathProviderInstance = PathProviderPlatform.instance;
     registerFallbackValue(File(''));
-    // Initialize Hive for testing
-    await Hive.initFlutter();
-
-    // CRITICAL: Delete the entire pending_uploads box from disk ONCE before any tests run
-    // This ensures we don't have accumulated data from previous test runs
-    try {
-      if (Hive.isBoxOpen('pending_uploads')) {
-        await Hive.box('pending_uploads').close();
-      }
-      await Hive.deleteBoxFromDisk('pending_uploads');
-    } catch (e) {
-      // Box might not exist, that's fine
-    }
   });
 
   setUp(() async {
-    // Use the reusable test helper to ensure a fresh empty Hive box
-    await TestHelpers.cleanupHiveBox('pending_uploads');
     tempDir = await Directory.systemTemp.createTemp(
       'upload_manager_get_by_path_test_',
     );
+    final pathProvider = MockPathProviderPlatform()
+      ..setTemporaryPath(tempDir.path)
+      ..setApplicationDocumentsPath('${tempDir.path}/documents')
+      ..setApplicationSupportPath('${tempDir.path}/support');
+    PathProviderPlatform.instance = pathProvider;
+
+    // Use the reusable test helper to ensure a fresh empty Hive box. The
+    // per-test path prevents concurrent Flutter test processes from sharing
+    // the same pending_uploads file.
+    await TestHelpers.cleanupHiveBox('pending_uploads');
 
     mockUploadService = MockBlossomUploadService();
     when(
@@ -106,6 +105,8 @@ void main() {
       }
     } catch (e) {
       // Manager or box might already be disposed/closed
+    } finally {
+      PathProviderPlatform.instance = originalPathProviderInstance;
     }
     reset(mockUploadService);
   });
