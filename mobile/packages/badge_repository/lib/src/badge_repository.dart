@@ -270,6 +270,14 @@ class BadgeRepository {
   /// stops mattering as soon as the relay catches up.
   ({String pubkey, Nip58ProfileBadges badges})? _publishedProfileBadges;
 
+  /// Badge definitions this repository published, keyed by coordinate.
+  ///
+  /// Same window as [_publishedProfileBadges], for the same reason:
+  /// `kind:30009` is parameterized-replaceable, so it is not optimistically
+  /// cached either, and an edit would read the previous definition straight
+  /// back — the badge would keep its old name until a manual refresh.
+  final Map<String, Nip58BadgeDefinition> _publishedDefinitions = {};
+
   Future<BadgeDashboardData> loadDashboard() async {
     final memo = _DashboardLookupMemo();
     final awardedFuture = _loadAwardedBadges(memo);
@@ -461,10 +469,10 @@ class BadgeRepository {
   }) async {
     final pubkey = _requireCurrentPubkey();
     final results = await Future.wait<Object?>([
-      _queryDefinitionsByAuthor(pubkey, limit: limit),
+      _ownDefinitions(pubkey, limit: limit),
       memo.issuedAwards(pubkey, () => _queryAwardsByAuthor(pubkey)),
     ]);
-    final definitionEvents = results[0]! as List<Event>;
+    final definitions = results[0]! as List<Nip58BadgeDefinition>;
     final awards = results[1]! as List<Nip58BadgeAward>;
 
     final awardsByCoordinate = <String, List<Nip58BadgeAward>>{};
@@ -476,9 +484,7 @@ class BadgeRepository {
 
     final created =
         [
-          for (final definition in _newestDefinitionPerIdentifier(
-            definitionEvents,
-          ))
+          for (final definition in definitions)
             CreatedBadgeViewData(
               definition: definition,
               awardCount:
@@ -635,6 +641,7 @@ class BadgeRepository {
     if (definition == null) {
       throw StateError('Signed badge definition event is not parseable');
     }
+    _publishedDefinitions[definition.coordinate] = definition;
     return definition;
   }
 
@@ -714,6 +721,10 @@ class BadgeRepository {
     final definition = results[0] as Nip58BadgeDefinition?;
     final awards = results[1]! as List<Nip58BadgeAward>;
 
+    // Drop it from the published map first: otherwise a deleted badge would
+    // keep being served back out of memory.
+    _publishedDefinitions.remove(coordinate.value);
+
     await _signAndPublish(
       kind: EventKind.eventDeletion,
       label: 'badge deletion',
@@ -737,9 +748,8 @@ class BadgeRepository {
   /// Throws [StateError] if there is no current pubkey.
   Future<Set<String>> loadCreatedIdentifiers({int limit = 100}) async {
     final pubkey = _requireCurrentPubkey();
-    final events = await _queryDefinitionsByAuthor(pubkey, limit: limit);
     return {
-      for (final definition in _newestDefinitionPerIdentifier(events))
+      for (final definition in await _ownDefinitions(pubkey, limit: limit))
         definition.dTag,
     };
   }
@@ -974,10 +984,54 @@ class BadgeRepository {
       ),
     ]);
 
-    if (events.isEmpty) return null;
     final sorted = events.toList()
       ..sort((left, right) => right.createdAt.compareTo(left.createdAt));
-    return Nip58BadgeParser.parseDefinition(sorted.first);
+    final fromRelay = sorted.isEmpty
+        ? null
+        : Nip58BadgeParser.parseDefinition(sorted.first);
+    return _preferPublishedDefinition(coordinate, fromRelay);
+  }
+
+  /// Prefers a definition this repository published over a relay read that is
+  /// not strictly newer.
+  ///
+  /// A genuinely newer definition — an edit made on another device — still
+  /// wins, so this stops mattering as soon as the relay catches up.
+  Nip58BadgeDefinition? _preferPublishedDefinition(
+    String coordinate,
+    Nip58BadgeDefinition? fromRelay,
+  ) {
+    final published = _publishedDefinitions[coordinate];
+    if (published == null) return fromRelay;
+    if (fromRelay != null &&
+        fromRelay.event.createdAt > published.event.createdAt) {
+      return fromRelay;
+    }
+    return published;
+  }
+
+  /// The current user's badge definitions, newest per identifier.
+  ///
+  /// Merges in anything this repository published that the relay is not
+  /// serving yet, so a badge created or edited moments ago is already part
+  /// of the list.
+  Future<List<Nip58BadgeDefinition>> _ownDefinitions(
+    String pubkey, {
+    required int limit,
+  }) async {
+    final events = await _queryDefinitionsByAuthor(pubkey, limit: limit);
+    final byCoordinate = {
+      for (final definition in _newestDefinitionPerIdentifier(events))
+        definition.coordinate: definition,
+    };
+    for (final published in _publishedDefinitions.values) {
+      if (published.event.pubkey != pubkey) continue;
+      byCoordinate[published.coordinate] = _preferPublishedDefinition(
+        published.coordinate,
+        byCoordinate[published.coordinate],
+      )!;
+    }
+    return byCoordinate.values.toList(growable: false);
   }
 
   Future<Nip58BadgeAward?> _loadAward(String eventId) async {

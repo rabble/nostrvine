@@ -1129,6 +1129,98 @@ void main() {
       });
     });
 
+    group('editing reflects before the relay serves the write back', () {
+      final coordinate = BadgeCoordinate(
+        pubkey: _pubkey(1),
+        identifier: 'scene-stealer',
+      );
+
+      /// The relay keeps answering with the pre-edit definition, which is the
+      /// window the badge used to keep its old name in.
+      void stubStaleDefinition() {
+        _stubQueries(nostrClient, {
+          'created:${_pubkey(1)}': [
+            _definitionEvent(
+              id: _eventId(60),
+              pubkey: _pubkey(1),
+              dTag: 'scene-stealer',
+              name: 'Old Name',
+              createdAt: 500,
+            ),
+          ],
+          'definition:${coordinate.value}': [
+            _definitionEvent(
+              id: _eventId(61),
+              pubkey: _pubkey(1),
+              dTag: 'scene-stealer',
+              name: 'Old Name',
+              createdAt: 500,
+            ),
+          ],
+        });
+      }
+
+      Future<void> publishEdit() => repository.saveDefinition(
+        const BadgeDefinitionDraft(
+          identifier: 'scene-stealer',
+          name: 'New Name',
+          imageUrl: _artworkUrl,
+        ),
+      );
+
+      test('the detail page shows the edited name right away', () async {
+        stubStaleDefinition();
+        await publishEdit();
+
+        final detail = await repository.loadBadgeDetail(coordinate);
+
+        expect(detail.definition?.name, 'New Name');
+      });
+
+      test('the created list shows the edited name right away', () async {
+        stubStaleDefinition();
+        await publishEdit();
+
+        final created = await repository.loadCreatedBadges();
+
+        expect(created.single.displayName, 'New Name');
+      });
+
+      test('a brand-new badge appears before the relay serves it', () async {
+        await publishEdit();
+
+        expect(await repository.loadCreatedIdentifiers(), {'scene-stealer'});
+      });
+
+      test('an edit made on another device still wins', () async {
+        await publishEdit();
+        _stubQueries(nostrClient, {
+          'definition:${coordinate.value}': [
+            _definitionEvent(
+              id: _eventId(62),
+              pubkey: _pubkey(1),
+              dTag: 'scene-stealer',
+              name: 'Newer Elsewhere',
+              // The signer stamps the published event with createdAt 1000.
+              createdAt: 4000,
+            ),
+          ],
+        });
+
+        final detail = await repository.loadBadgeDetail(coordinate);
+
+        expect(detail.definition?.name, 'Newer Elsewhere');
+      });
+
+      test('a deleted badge is not served back out of memory', () async {
+        await publishEdit();
+
+        await repository.deleteBadge(coordinate);
+
+        expect(await repository.loadCreatedIdentifiers(), isEmpty);
+      });
+    });
+
     group('unhideAward', () {
       test('puts a dismissed award back on the awarded list', () async {
         _stubQueries(nostrClient, {
