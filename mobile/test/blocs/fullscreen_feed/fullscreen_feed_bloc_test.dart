@@ -651,6 +651,26 @@ void main() {
         },
       );
 
+      // emptyAfterRemoval carries the pop signal the screen listens on, so a
+      // late empty emit from the source must not overwrite it — that would
+      // both lose the pop and put the screen back on the placeholder.
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'a later empty emission does not downgrade emptyAfterRemoval',
+        build: createBloc,
+        seed: () => const FullscreenFeedState(
+          status: FullscreenFeedStatus.emptyAfterRemoval,
+        ),
+        act: (bloc) async {
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add(const []);
+        },
+        wait: const Duration(milliseconds: 200),
+        verify: (bloc) {
+          expect(bloc.state.status, FullscreenFeedStatus.emptyAfterRemoval);
+        },
+      );
+
       // Single-emit sources (StaticFeedRepository's `Stream.value`, the
       // hashtag snapshot's `Stream.fromFuture`) close after one event, so an
       // empty one is terminal — nothing can arrive later to clear the
