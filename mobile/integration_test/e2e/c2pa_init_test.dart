@@ -1,8 +1,9 @@
 // ABOUTME: E2E test verifying C2PA signer initializes without crashing
 // ABOUTME: Catches StrongBox fallback bug (issue #2019) where StrongBoxSigner
 // ABOUTME: was used with a software-backed key on devices without StrongBox
-// ABOUTME: Requires: NO Docker stack. Android or iOS only — c2pa_flutter
-// ABOUTME: ships android/ and ios/ implementations and no desktop one.
+// ABOUTME: Requires: NO Docker stack, and an Android device. c2pa_flutter
+// ABOUTME: ships no desktop implementation, and on the iOS simulator the
+// ABOUTME: cert is never produced, so the assertion below fails there.
 
 @Tags(['service'])
 import 'dart:io';
