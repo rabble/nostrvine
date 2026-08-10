@@ -76,6 +76,13 @@ void main() {
         'camel case key with suffix': 'privateKeyHex: aabbccdd',
         'nested camel case key with suffix': 'senderPrivateKeyHex: aabbccdd',
         'raw camel case key with suffix': 'rawKeyHex: aabbccdd',
+        // Plurals hide a credential exactly as well as singulars, and the
+        // enumerated words already accept `s`. Without the same `s` on the two
+        // `key` rules, `privateKey` is covered and `privateKeys` is not.
+        'plural generic key': 'signing_keys: abc123',
+        'plural camel case key': 'sessionKeys: abc123',
+        'plural camel case private key': 'privateKeys: ["aabbccdd"]',
+        'plural screaming snake generic key': 'ENCRYPTION_KEYS=deadbeef',
         'acronym-prefixed key': 'AESKey: abc123',
         'hmac key': 'HMACKey=deadbeef',
         'pwd compound key': 'pwdHash: deadbeef',
@@ -163,6 +170,13 @@ void main() {
         'theirPubKey: npub1abc',
         'pubkeyHex: abc123def',
         'user_pubkeyHex: abc123def',
+        // Plural public-key spellings are the most common identifiers in this
+        // repo (`pubkeys` alone appears ~900 times); the `s` on the key rules
+        // must not reach past the public-key guards.
+        'pubkeys: [npub1abc]',
+        'participantPubkeys: [npub1abc]',
+        'publicKeys: [npub1abc]',
+        'pub_keys: [npub1abc]',
         // Bare `key` is an ordinary English word. These are real in-repo
         // strings: an l10n error message, a model's toString, and Flutter key
         // events - none of them carry a credential.

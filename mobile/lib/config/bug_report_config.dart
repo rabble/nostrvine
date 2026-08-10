@@ -76,7 +76,9 @@ class BugReportConfig {
     // `Cache key: video_123` and `KeyEvent: KeyDownEvent` readable. The
     // compound forms are further guarded against every spelling of the public
     // key (`pub_key`, `public_key`, `publicKey`), which support needs for
-    // triage and which is public by construction.
+    // triage and which is public by construction. Plurals count the same as
+    // singulars everywhere: `privateKeys` hides a hex-form private key exactly
+    // as well as `privateKey` does.
     //
     // The continuation class after `[_-]` deliberately excludes `_`: writing
     // it as `\w` would let the same key be parsed 2^n ways, and a
@@ -86,7 +88,7 @@ class BugReportConfig {
     RegExp(
       '(?:(?:authorization|passphrase|passcode|password|passwd|pwd'
       '|token|secret|api[_-]?key)s?'
-      '|(?<=[_-])(?<!pub[_-])(?<!public[_-])key)'
+      '|(?<=[_-])(?<!pub[_-])(?<!public[_-])keys?)'
       '(?:[_-][A-Za-z0-9]+)*'
       '$_credentialSeparator$_credentialValue',
       caseSensitive: false,
@@ -112,7 +114,7 @@ class BugReportConfig {
     // credentials.
     RegExp(
       '(?<=[A-Za-z])(?<![Pp]ub)(?<![Pp]ublic)'
-      '(?<![Pp]hysical)(?<![Ll]ogical)Key'
+      '(?<![Pp]hysical)(?<![Ll]ogical)Keys?'
       '(?:[A-Z][a-z0-9]*)*'
       '$_credentialSeparator$_credentialValue',
     ),
