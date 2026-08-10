@@ -20,6 +20,7 @@ import 'package:openvine/screens/settings/appearance_settings_screen.dart';
 import 'package:openvine/screens/settings/bluesky_settings_screen.dart';
 import 'package:openvine/screens/settings/crossposting_settings_screen.dart';
 import 'package:openvine/screens/settings/storage/storage_management_page.dart';
+import 'package:openvine/screens/verify/verify_screen.dart';
 import 'package:openvine/services/feed_aspect_ratio_preference_service.dart';
 import 'package:openvine/services/locale_preference_service.dart';
 
@@ -138,6 +139,26 @@ class GeneralSettingsScreen extends ConsumerWidget {
                   color: context.vineColors.mutedText,
                 ),
                 onTap: () => context.push(StorageManagementPage.path),
+              ),
+              DivineSectionHeader(context.l10n.generalSettingsSectionIdentity),
+              ListTile(
+                leading: const DivineIcon(
+                  icon: DivineIconName.sealCheck,
+                  color: VineTheme.vineGreen,
+                ),
+                title: Text(
+                  context.l10n.verifyTitle,
+                  style: _titleStyleOf(context),
+                ),
+                subtitle: Text(
+                  context.l10n.verifyIntro,
+                  style: _subtitleStyleOf(context),
+                ),
+                trailing: DivineIcon(
+                  icon: DivineIconName.caretRight,
+                  color: context.vineColors.mutedText,
+                ),
+                onTap: () => context.push(VerifyPage.path),
               ),
             ],
           ),
