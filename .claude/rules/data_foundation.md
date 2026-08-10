@@ -116,6 +116,15 @@ migrations.
 Startup repair SQL may be used only as a narrow compatibility bridge for
 already-shipped damage, and should not be the pattern for new schema changes.
 
+`db_client`'s v1 is a special case for whoever writes its first real
+migration. Because the repair block lives in `beforeOpen`, two installs can
+both report `user_version = 1` with different tables, columns, and indexes on
+disk — and Drift runs `onUpgrade` *before* `beforeOpen`, so the repair has not
+run yet when the upgrade step executes. Make the first `1 -> 2` step
+idempotent (probe `sqlite_master` / `PRAGMA table_info` before altering), and
+treat the generated v1 snapshot as the declared schema rather than as what
+every install actually has.
+
 ## Review Checklist
 
 Before approving a data/storage change, confirm:
