@@ -652,14 +652,19 @@ class BadgeRepository {
   /// Throws:
   ///
   /// * [ArgumentError] if no valid recipient remains.
-  /// * [StateError] if there is no current pubkey or the event cannot be
-  ///   signed into a valid award.
+  /// * [StateError] if there is no current pubkey, the badge belongs to
+  ///   someone else, or the event cannot be signed into a valid award.
   /// * [BadgePublishException] when no relay accepts the award.
   Future<Nip58BadgeAward> awardBadge({
     required BadgeCoordinate coordinate,
     required List<String> recipientPubkeys,
   }) async {
-    _requireCurrentPubkey();
+    final pubkey = _requireCurrentPubkey();
+    // Readers resolve awards through the badge's own issuer, so an award
+    // signed by anyone else is an event nothing will ever honour.
+    if (coordinate.pubkey != pubkey) {
+      throw StateError('Cannot award a badge issued by someone else');
+    }
 
     final recipients = <String>{
       for (final recipientPubkey in recipientPubkeys)
@@ -721,10 +726,6 @@ class BadgeRepository {
     final definition = results[0] as Nip58BadgeDefinition?;
     final awards = results[1]! as List<Nip58BadgeAward>;
 
-    // Drop it from the published map first: otherwise a deleted badge would
-    // keep being served back out of memory.
-    _publishedDefinitions.remove(coordinate.value);
-
     await _signAndPublish(
       kind: EventKind.eventDeletion,
       label: 'badge deletion',
@@ -736,6 +737,12 @@ class BadgeRepository {
         if (awards.isNotEmpty) ['k', '${EventKind.badgeAward}'],
       ],
     );
+
+    // Only once the request is out: a relay can refuse a deletion, and
+    // dropping the badge here first would make a freshly created badge — the
+    // case a relay is most likely to refuse — vanish from the dashboard while
+    // it still exists and the relay is not serving it yet.
+    _publishedDefinitions.remove(coordinate.value);
   }
 
   /// The `d` identifiers of every badge the current user has published.

@@ -1219,6 +1219,26 @@ void main() {
 
         expect(await repository.loadCreatedIdentifiers(), isEmpty);
       });
+
+      test('a refused deletion leaves the badge in place', () async {
+        await publishEdit();
+        // The relay refuses a deletion for a badge it has only just accepted,
+        // which is exactly when it is not serving the definition back yet.
+        when(() => nostrClient.publishEventAwaitOk(any())).thenAnswer((
+          invocation,
+        ) async {
+          return _rejectedPublishOutcome(
+            invocation.positionalArguments.single as Event,
+          );
+        });
+
+        await expectLater(
+          repository.deleteBadge(coordinate),
+          throwsA(isA<BadgePublishException>()),
+        );
+
+        expect(await repository.loadCreatedIdentifiers(), {'scene-stealer'});
+      });
     });
 
     group('unhideAward', () {
@@ -1731,6 +1751,26 @@ void main() {
           ['p', _pubkey(3)],
         ]);
         expect(award.recipientPubkeys, [_pubkey(2), _pubkey(3)]);
+      });
+
+      test("refuses to award someone else's badge", () async {
+        await expectLater(
+          repository.awardBadge(
+            coordinate: BadgeCoordinate(
+              pubkey: _pubkey(2),
+              identifier: 'scene-stealer',
+            ),
+            recipientPubkeys: [_pubkey(3)],
+          ),
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              'Cannot award a badge issued by someone else',
+            ),
+          ),
+        );
+        expect(lastSignedEvent(), isNull);
       });
 
       test('rejects an award without a usable recipient', () async {
