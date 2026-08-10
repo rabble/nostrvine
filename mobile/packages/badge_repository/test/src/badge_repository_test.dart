@@ -87,6 +87,45 @@ void main() {
     });
 
     test(
+      'loadAwardedBadges marks a newer re-award accepted by coordinate',
+      () async {
+        final coordinate = '30009:${_pubkey(2)}:daily-diviner';
+        final olderAward = _awardEvent(
+          id: _eventId(1),
+          issuerPubkey: _pubkey(2),
+          definitionCoordinate: coordinate,
+          recipients: [_pubkey(1)],
+          createdAt: 1000,
+        );
+        final newerAward = _awardEvent(
+          id: _eventId(2),
+          issuerPubkey: _pubkey(2),
+          definitionCoordinate: coordinate,
+          recipients: [_pubkey(1)],
+          createdAt: 2000,
+        );
+        final profileBadges = _profileBadgesEvent(
+          id: _eventId(3),
+          pubkey: _pubkey(1),
+          tags: [
+            ['a', coordinate],
+            ['e', _eventId(1)],
+          ],
+        );
+        _stubQueries(nostrClient, {
+          'awarded': [olderAward, newerAward],
+          'profileCurrent:${_pubkey(1)}': [profileBadges],
+        });
+
+        final awards = await repository.loadAwardedBadges();
+
+        expect(awards, hasLength(1));
+        expect(awards.single.awardEventId, _eventId(2));
+        expect(awards.single.isAccepted, isTrue);
+      },
+    );
+
+    test(
       'loadAwardedBadges reads legacy profile badges compatibility',
       () async {
         final award = _awardEvent(
@@ -171,6 +210,38 @@ void main() {
       },
     );
 
+    test(
+      'loadAcceptedBadgesForProfile keeps a badge when the award is unavailable',
+      () async {
+        final coordinate = '30009:${_pubkey(3)}:daily-diviner';
+        final profileBadges = _profileBadgesEvent(
+          id: _eventId(16),
+          pubkey: _pubkey(2),
+          tags: [
+            ['a', coordinate],
+            ['e', _eventId(17)],
+          ],
+        );
+        final definition = _definitionEvent(
+          pubkey: _pubkey(3),
+          dTag: 'daily-diviner',
+          name: 'Diviner of the Day',
+        );
+        _stubQueries(nostrClient, {
+          'profileCurrent:${_pubkey(2)}': [profileBadges],
+          'definition:$coordinate': [definition],
+        });
+
+        final badges = await repository.loadAcceptedBadgesForProfile(
+          _pubkey(2),
+        );
+
+        expect(badges, hasLength(1));
+        expect(badges.single.definitionCoordinate, coordinate);
+        expect(badges.single.award, isNull);
+      },
+    );
+
     test('acceptAward publishes a kind 10008 profile badges event', () async {
       final award = _awardEvent(
         id: _eventId(5),
@@ -241,6 +312,41 @@ void main() {
       verify(() => nostrClient.publishEventAwaitOk(event)).called(1);
     });
 
+    test(
+      'removeAward removes the accepted badge coordinate when ids differ',
+      () async {
+        final coordinate = '30009:${_pubkey(2)}:daily-diviner';
+        final newerAward = _awardEvent(
+          id: _eventId(11),
+          issuerPubkey: _pubkey(2),
+          definitionCoordinate: coordinate,
+          recipients: [_pubkey(1)],
+        );
+        final existingProfileBadges = _profileBadgesEvent(
+          id: _eventId(12),
+          pubkey: _pubkey(1),
+          tags: [
+            ['a', coordinate],
+            ['e', _eventId(8)],
+            ['a', '30009:${_pubkey(3)}:weekly-diviner'],
+            ['e', _eventId(10)],
+          ],
+        );
+        _stubQueries(nostrClient, {
+          'profileCurrent:${_pubkey(1)}': [existingProfileBadges],
+        });
+
+        await repository.removeAward(
+          BadgeAwardViewData(award: Nip58BadgeParser.parseAward(newerAward)!),
+        );
+
+        expect(lastSignedEvent()!.tags, [
+          ['a', '30009:${_pubkey(3)}:weekly-diviner'],
+          ['e', _eventId(10)],
+        ]);
+      },
+    );
+
     test('hideAward stores a local per-user dismissal', () async {
       final award = _awardEvent(
         id: _eventId(11),
@@ -299,35 +405,32 @@ void main() {
       expect(callCounts['definition:$coordinate'], 1);
     });
 
-    test(
-      'loadAwardedBadges keeps only the newest award per badge',
-      () async {
-        final coordinate = '30009:${_pubkey(2)}:daily-diviner';
-        final older = _awardEvent(
-          id: _eventId(20),
-          issuerPubkey: _pubkey(2),
-          definitionCoordinate: coordinate,
-          recipients: [_pubkey(1)],
-        );
-        final newer = _awardEvent(
-          id: _eventId(21),
-          issuerPubkey: _pubkey(2),
-          definitionCoordinate: coordinate,
-          recipients: [_pubkey(1)],
-          createdAt: 2000,
-        );
-        _stubQueries(nostrClient, {
-          'awarded': [older, newer],
-        });
+    test('loadAwardedBadges keeps only the newest award per badge', () async {
+      final coordinate = '30009:${_pubkey(2)}:daily-diviner';
+      final older = _awardEvent(
+        id: _eventId(20),
+        issuerPubkey: _pubkey(2),
+        definitionCoordinate: coordinate,
+        recipients: [_pubkey(1)],
+      );
+      final newer = _awardEvent(
+        id: _eventId(21),
+        issuerPubkey: _pubkey(2),
+        definitionCoordinate: coordinate,
+        recipients: [_pubkey(1)],
+        createdAt: 2000,
+      );
+      _stubQueries(nostrClient, {
+        'awarded': [older, newer],
+      });
 
-        final awards = await repository.loadAwardedBadges();
+      final awards = await repository.loadAwardedBadges();
 
-        // Listing both would leave a row that can never resolve: the profile
-        // badge list references exactly one award per badge.
-        expect(awards, hasLength(1));
-        expect(awards.single.awardEventId, _eventId(21));
-      },
-    );
+      // Listing both would leave a row that can never resolve: the profile
+      // badge list references exactly one award per badge.
+      expect(awards, hasLength(1));
+      expect(awards.single.awardEventId, _eventId(21));
+    });
 
     test(
       'loadIssuedBadges checks each unique recipient once across awards',
@@ -680,9 +783,7 @@ void main() {
         // lookups, so the recipient past it carries no status rather than
         // being dropped from the list.
         expect(
-          [
-            for (final recipient in issued.single.recipients) recipient.pubkey,
-          ],
+          [for (final recipient in issued.single.recipients) recipient.pubkey],
           [_pubkey(2), _pubkey(3), _pubkey(4)],
         );
         expect(
@@ -762,42 +863,39 @@ void main() {
       },
     );
 
-    test(
-      'acceptAward replaces an earlier award for the same badge',
-      () async {
-        final coordinate = '30009:${_pubkey(2)}:daily-diviner';
-        final newer = _awardEvent(
-          id: _eventId(45),
-          issuerPubkey: _pubkey(2),
-          definitionCoordinate: coordinate,
-          recipients: [_pubkey(1)],
-          createdAt: 2000,
-        );
-        _stubQueries(nostrClient, {
-          'profileCurrent:${_pubkey(1)}': [
-            _profileBadgesEvent(
-              id: _eventId(46),
-              pubkey: _pubkey(1),
-              tags: [
-                ['a', coordinate],
-                ['e', _eventId(44)],
-              ],
-            ),
-          ],
-        });
+    test('acceptAward replaces an earlier award for the same badge', () async {
+      final coordinate = '30009:${_pubkey(2)}:daily-diviner';
+      final newer = _awardEvent(
+        id: _eventId(45),
+        issuerPubkey: _pubkey(2),
+        definitionCoordinate: coordinate,
+        recipients: [_pubkey(1)],
+        createdAt: 2000,
+      );
+      _stubQueries(nostrClient, {
+        'profileCurrent:${_pubkey(1)}': [
+          _profileBadgesEvent(
+            id: _eventId(46),
+            pubkey: _pubkey(1),
+            tags: [
+              ['a', coordinate],
+              ['e', _eventId(44)],
+            ],
+          ),
+        ],
+      });
 
-        await repository.acceptAward(
-          BadgeAwardViewData(award: Nip58BadgeParser.parseAward(newer)!),
-        );
+      await repository.acceptAward(
+        BadgeAwardViewData(award: Nip58BadgeParser.parseAward(newer)!),
+      );
 
-        // One a/e pair per badge: a second pair for the same coordinate
-        // renders the badge twice on the profile.
-        expect(lastSignedEvent()!.tags, [
-          ['a', coordinate],
-          ['e', _eventId(45)],
-        ]);
-      },
-    );
+      // One a/e pair per badge: a second pair for the same coordinate
+      // renders the badge twice on the profile.
+      expect(lastSignedEvent()!.tags, [
+        ['a', coordinate],
+        ['e', _eventId(45)],
+      ]);
+    });
 
     test(
       'loadAwardedBadges drops awards not signed by the badge issuer',
@@ -1516,6 +1614,49 @@ void main() {
         expect(detail.viewerAward?.isAccepted, isTrue);
       });
 
+      test('marks a newer viewer re-award accepted by coordinate', () async {
+        _stubQueries(nostrClient, {
+          'definition:${coordinate.value}': [
+            _definitionEvent(
+              pubkey: _pubkey(2),
+              dTag: 'scene-stealer',
+              name: 'Scene Stealer',
+            ),
+          ],
+          'awardsFor:${coordinate.value}': [
+            _awardEvent(
+              id: _eventId(70),
+              issuerPubkey: _pubkey(2),
+              definitionCoordinate: coordinate.value,
+              recipients: [_pubkey(1)],
+              createdAt: 1000,
+            ),
+            _awardEvent(
+              id: _eventId(71),
+              issuerPubkey: _pubkey(2),
+              definitionCoordinate: coordinate.value,
+              recipients: [_pubkey(1)],
+              createdAt: 2000,
+            ),
+          ],
+          'profileCurrent:${_pubkey(1)}': [
+            _profileBadgesEvent(
+              id: _eventId(72),
+              pubkey: _pubkey(1),
+              tags: [
+                ['a', coordinate.value],
+                ['e', _eventId(70)],
+              ],
+            ),
+          ],
+        });
+
+        final detail = await repository.loadBadgeDetail(coordinate);
+
+        expect(detail.viewerAward?.awardEventId, _eventId(71));
+        expect(detail.viewerAward?.isAccepted, isTrue);
+      });
+
       test('marks the viewer as owner for their own badge', () async {
         final ownCoordinate = BadgeCoordinate(
           pubkey: _pubkey(1),
@@ -1618,11 +1759,7 @@ void main() {
           _pubkey(4),
           _pubkey(1),
         ]);
-        expect(detail.recipients.map((r) => r.isAccepted), [
-          false,
-          null,
-          true,
-        ]);
+        expect(detail.recipients.map((r) => r.isAccepted), [false, null, true]);
         expect(detail.viewerAward?.isAccepted, isTrue);
       });
 
@@ -1845,12 +1982,7 @@ void main() {
       test('publishes a kind 8 award with deduplicated recipients', () async {
         final award = await repository.awardBadge(
           coordinate: coordinate,
-          recipientPubkeys: [
-            _pubkey(2),
-            _pubkey(2),
-            'not-a-key',
-            _pubkey(3),
-          ],
+          recipientPubkeys: [_pubkey(2), _pubkey(2), 'not-a-key', _pubkey(3)],
         );
 
         final event = lastSignedEvent()!;
@@ -2116,59 +2248,53 @@ void main() {
   });
 
   group(ProfileBadgeViewData, () {
-    test(
-      'exposes issuer, recipients, deduplicated unique recipients, and a '
-      'coordinate-derived name when no definition is present',
-      () {
-        final coordinate = '30009:${_pubkey(5)}:daily-diviner';
-        final award = Nip58BadgeParser.parseAward(
-          _awardEvent(
-            id: _eventId(40),
-            issuerPubkey: _pubkey(5),
-            definitionCoordinate: coordinate,
-            recipients: [_pubkey(6), _pubkey(6), _pubkey(7)],
-          ),
-        )!;
-        final viewData = ProfileBadgeViewData(
-          badge: Nip58ProfileBadgeRef(
-            definitionCoordinate: coordinate,
-            awardEventId: _eventId(40),
-          ),
-          award: award,
-        );
+    test('exposes issuer, recipients, deduplicated unique recipients, and a '
+        'coordinate-derived name when no definition is present', () {
+      final coordinate = '30009:${_pubkey(5)}:daily-diviner';
+      final award = Nip58BadgeParser.parseAward(
+        _awardEvent(
+          id: _eventId(40),
+          issuerPubkey: _pubkey(5),
+          definitionCoordinate: coordinate,
+          recipients: [_pubkey(6), _pubkey(6), _pubkey(7)],
+        ),
+      )!;
+      final viewData = ProfileBadgeViewData(
+        badge: Nip58ProfileBadgeRef(
+          definitionCoordinate: coordinate,
+          awardEventId: _eventId(40),
+        ),
+        award: award,
+      );
 
-        expect(viewData.issuerPubkey, _pubkey(5));
-        expect(viewData.recipientPubkeys, [_pubkey(6), _pubkey(6), _pubkey(7)]);
-        expect(viewData.uniqueRecipientPubkeys, [_pubkey(6), _pubkey(7)]);
-        expect(viewData.displayName, 'daily-diviner');
-        expect(viewData.description, isNull);
-        expect(viewData.imageUrl, isNull);
-      },
-    );
+      expect(viewData.issuerPubkey, _pubkey(5));
+      expect(viewData.recipientPubkeys, [_pubkey(6), _pubkey(6), _pubkey(7)]);
+      expect(viewData.uniqueRecipientPubkeys, [_pubkey(6), _pubkey(7)]);
+      expect(viewData.displayName, 'daily-diviner');
+      expect(viewData.description, isNull);
+      expect(viewData.imageUrl, isNull);
+    });
   });
 
   group(BadgeAwardViewData, () {
-    test(
-      'exposes award id, coordinate, and a coordinate-derived name when no '
-      'definition is present',
-      () {
-        final coordinate = '30009:${_pubkey(8)}:weekly-diviner';
-        final award = Nip58BadgeParser.parseAward(
-          _awardEvent(
-            id: _eventId(41),
-            issuerPubkey: _pubkey(8),
-            definitionCoordinate: coordinate,
-            recipients: [_pubkey(1)],
-          ),
-        )!;
-        final viewData = BadgeAwardViewData(award: award);
+    test('exposes award id, coordinate, and a coordinate-derived name when no '
+        'definition is present', () {
+      final coordinate = '30009:${_pubkey(8)}:weekly-diviner';
+      final award = Nip58BadgeParser.parseAward(
+        _awardEvent(
+          id: _eventId(41),
+          issuerPubkey: _pubkey(8),
+          definitionCoordinate: coordinate,
+          recipients: [_pubkey(1)],
+        ),
+      )!;
+      final viewData = BadgeAwardViewData(award: award);
 
-        expect(viewData.awardEventId, _eventId(41));
-        expect(viewData.definitionCoordinate, coordinate);
-        expect(viewData.displayName, 'weekly-diviner');
-        expect(viewData.imageUrl, isNull);
-      },
-    );
+      expect(viewData.awardEventId, _eventId(41));
+      expect(viewData.definitionCoordinate, coordinate);
+      expect(viewData.displayName, 'weekly-diviner');
+      expect(viewData.imageUrl, isNull);
+    });
 
     test(
       'prefers the definition name and image when a definition is present',

@@ -354,7 +354,7 @@ class BadgeRepository {
             BadgeAwardViewData(
               award: award,
               definition: definitions[award.definitionCoordinate],
-              isAccepted: _containsAward(profileBadges, award),
+              isAccepted: _containsBadgeCoordinate(profileBadges, award),
               isHidden: dismissedAwardIds.contains(award.event.id),
             ),
         ]..sort(
@@ -387,8 +387,10 @@ class BadgeRepository {
     );
 
     // A profile badge list is its owner's event, so it can reference an award
-    // nobody but its own publisher stands behind. Render only the ones the
-    // badge's issuer actually signed.
+    // nobody but its own publisher stands behind. When the award event is
+    // available, render only awards the badge's issuer actually signed. Missing
+    // award events are kept because they may be unavailable on the queried
+    // relay while still existing elsewhere.
     return List<ProfileBadgeViewData>.unmodifiable([
       for (final badge in viewData)
         if (badge.award == null || _isIssuedByBadgeOwner(badge.award!)) badge,
@@ -463,7 +465,7 @@ class BadgeRepository {
                   IssuedBadgeRecipientViewData(
                     pubkey: recipient.key,
                     isAccepted: checked.contains(recipient.key)
-                        ? _containsAward(
+                        ? _containsBadgeCoordinate(
                             profileBadges[recipient.key],
                             recipient.value,
                           )
@@ -580,7 +582,7 @@ class BadgeRepository {
           pubkey: entry.key,
           awardEventId: entry.value.event.id,
           isAccepted: checked.contains(entry.key)
-              ? _containsAward(profileBadges[entry.key], entry.value)
+              ? _containsBadgeCoordinate(profileBadges[entry.key], entry.value)
               : null,
         ),
     ];
@@ -598,7 +600,7 @@ class BadgeRepository {
           : BadgeAwardViewData(
               award: viewerAward,
               definition: definition,
-              isAccepted: _containsAward(
+              isAccepted: _containsBadgeCoordinate(
                 profileBadges[viewerPubkey],
                 viewerAward,
               ),
@@ -936,9 +938,7 @@ class BadgeRepository {
         (currentProfileBadges?.badges ?? const <Nip58ProfileBadgeRef>[])
             .where(
               (ref) =>
-                  ref.definitionCoordinate !=
-                      award.award.definitionCoordinate ||
-                  ref.awardEventId != award.award.event.id,
+                  ref.definitionCoordinate != award.award.definitionCoordinate,
             )
             .toList(growable: false);
 
@@ -1192,14 +1192,12 @@ class BadgeRepository {
     return sorted.first;
   }
 
-  static bool _containsAward(
+  static bool _containsBadgeCoordinate(
     Nip58ProfileBadges? profileBadges,
     Nip58BadgeAward award,
   ) {
     return profileBadges?.badges.any(
-          (ref) =>
-              ref.definitionCoordinate == award.definitionCoordinate &&
-              ref.awardEventId == award.event.id,
+          (ref) => ref.definitionCoordinate == award.definitionCoordinate,
         ) ??
         false;
   }
