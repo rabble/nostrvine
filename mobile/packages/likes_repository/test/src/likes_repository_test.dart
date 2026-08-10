@@ -3230,6 +3230,66 @@ void main() {
             expect(published, isEmpty);
           });
 
+          test(
+            'publishes nothing when the background pass finds fewer likers',
+            () async {
+              // Relay responses are not deterministic: per-REQ caps, dropped
+              // connections, or a later deletion probe can make the background
+              // re-resolve narrower than the baseline list the UI already has.
+              // Enrichment is additive only, so a narrower result must not
+              // shrink the open "Liked by" sheet.
+              var currentIdReactionQueries = 0;
+              when(() => mockNostrClient.queryEvents(any())).thenAnswer((
+                invocation,
+              ) async {
+                final filters =
+                    invocation.positionalArguments.first as List<Filter>;
+                final filter = filters.first;
+                if (filter.kinds?.first == EventKind.eventDeletion) {
+                  return <Event>[];
+                }
+                if (filter.e?.contains(targetEventId) ?? false) {
+                  currentIdReactionQueries++;
+                  if (currentIdReactionQueries == 1) {
+                    return [
+                      currentReaction(),
+                      createReaction(
+                        id: 'second_current_id_like',
+                        authorPubkey: likerB,
+                        tags: [
+                          ['e', targetEventId],
+                        ],
+                      ),
+                    ];
+                  }
+                  return [currentReaction()];
+                }
+                return <Event>[];
+              });
+
+              repository = createRepository(
+                revisionsResolver: (ids) async => {
+                  targetEventId: [targetEventId, supersededEventId],
+                },
+              );
+
+              final published = <RevisionEnrichedLikers>[];
+              final subscription = repository
+                  .watchRevisionEnrichedLikers()
+                  .listen(published.add);
+              addTearDown(subscription.cancel);
+
+              expect(
+                await fetchLikers(),
+                containsAll(<String>[likerA, likerB]),
+              );
+              await letRevisionsLand();
+              await letRevisionsLand();
+
+              expect(published, isEmpty);
+            },
+          );
+
           test('survives a relay failure in the re-resolve', () async {
             // Nothing awaits the pass, so a throw escaping it would be an
             // unhandled async error — for a list the caller already has.

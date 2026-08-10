@@ -2112,7 +2112,10 @@ class LikesRepository {
 
     for (final id in enrichableIds) {
       final likers = resolved.likersByEvent[id] ?? const <String>[];
-      if (_sameLikers(likers, baselineLikers[id] ?? const <String>[])) continue;
+      final baseline = baselineLikers[id] ?? const <String>[];
+      if (likers.length < baseline.length || _sameLikers(likers, baseline)) {
+        continue;
+      }
       if (_isDisposed || _revisionEnrichedLikersController.isClosed) return;
       _revisionEnrichedLikersController.add(
         RevisionEnrichedLikers(eventId: id, likerPubkeys: likers),
