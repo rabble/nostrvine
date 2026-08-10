@@ -6,8 +6,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:openvine/features/crossposting/crossposting_oauth_launcher.dart';
 
+// The callback validator is shared with the verify flow, so the message is
+// no longer crossposting-specific.
 const _invalidCallbackMessage =
-    'Invalid crossposting OAuth callback. Expected '
+    'Invalid OAuth callback. Expected '
     'https://divine.video/app/callback with no user info or explicit port.';
 
 void main() {
