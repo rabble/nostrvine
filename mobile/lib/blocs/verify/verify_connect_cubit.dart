@@ -112,12 +112,18 @@ class VerifyConnectCubit extends Cubit<VerifyConnectState> {
     // Twitter and YouTube ship an OAuth route the deployment has no
     // credentials for. Without this check the browser session opens on the
     // verifier's 503 page and never comes back.
-    final available = await _repository.canStartOAuth(
-      platform: state.platform.key,
-      pubkey: _pubkey,
-      returnUrl: _oauthReturnUrl,
-      handle: state.identity.isEmpty ? null : state.identity,
-    );
+    final bool available;
+    try {
+      available = await _repository.canStartOAuth(
+        platform: state.platform.key,
+        pubkey: _pubkey,
+        returnUrl: _oauthReturnUrl,
+        handle: state.identity.isEmpty ? null : state.identity,
+      );
+    } on Object catch (error, stackTrace) {
+      addError(error, stackTrace);
+      return _fail(VerifyConnectError.oauthFailed);
+    }
     if (!available) return _fail(VerifyConnectError.oauthUnavailable);
 
     final Uri? callback;

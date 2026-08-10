@@ -110,6 +110,25 @@ class _VerificationOutcome {
   final Set<String> confirmedNegativeKeys;
 }
 
+class _PublishedIdentityTags {
+  const _PublishedIdentityTags({
+    required this.tags,
+    required this.createdAt,
+    required this.id,
+  });
+
+  final List<List<String>> tags;
+  final int createdAt;
+  final String id;
+}
+
+class _IdentityEventBase {
+  const _IdentityEventBase({required this.tags, required this.content});
+
+  final List<List<String>> tags;
+  final String content;
+}
+
 /// Composes [VerifierClient] with NIP-39 `i` tag parsing off identity
 /// events (kind 10011, with kind-0 tags as the legacy fallback) and a
 /// persistent verified-claims cache.
@@ -177,7 +196,7 @@ class IdentityClaimsRepository {
   /// links added in quick succession would each read a base that predates the
   /// other and publish it away. What this device published is the one thing
   /// it can be sure of, so it is merged over a read that has not caught up.
-  final Map<String, List<List<String>>> _lastPublishedTags = {};
+  final Map<String, _PublishedIdentityTags> _lastPublishedTags = {};
 
   /// Claim keys this instance last unlinked per pubkey.
   ///
@@ -429,15 +448,19 @@ class IdentityClaimsRepository {
   /// * [IdentityClaimPublishException] if the event cannot be signed, or no
   ///   relay confirms it.
   Future<List<List<String>>> publishClaim(IdentityClaim claim) async {
-    final current = await _currentIdentityTags(claim.pubkey, forWrite: true);
+    final base = await _currentIdentityEventBase(claim.pubkey, forWrite: true);
     final key = _identityKeyOf(claim);
     // Linking again undoes an earlier unlink from this session.
     _lastRemovedKeys[claim.pubkey]?.remove(key);
-    return _publishIdentityTags(claim.pubkey, [
-      for (final tag in current)
-        if (_tagIdentityKey(tag) != key) tag,
-      ['i', '${claim.platform}:${claim.identity}', claim.proof],
-    ]);
+    return _publishIdentityEvent(
+      claim.pubkey,
+      content: base.content,
+      tags: [
+        for (final tag in base.tags)
+          if (_tagIdentityKeyOrNull(tag) != key) tag,
+        ['i', '${claim.platform}:${claim.identity}', claim.proof],
+      ],
+    );
   }
 
   /// Unlinks the claim matching [claim]'s `platform:identity` and returns the
@@ -456,14 +479,18 @@ class IdentityClaimsRepository {
   ///
   /// Throws the same exceptions as [publishClaim].
   Future<List<List<String>>> removeClaim(IdentityClaim claim) async {
-    final current = await _currentIdentityTags(claim.pubkey, forWrite: true);
+    final base = await _currentIdentityEventBase(claim.pubkey, forWrite: true);
     final key = _identityKeyOf(claim);
     final next = [
-      for (final tag in current)
-        if (_tagIdentityKey(tag) != key) tag,
+      for (final tag in base.tags)
+        if (_tagIdentityKeyOrNull(tag) != key) tag,
     ];
-    if (next.length == current.length) return current;
-    final published = await _publishIdentityTags(claim.pubkey, next);
+    if (next.length == base.tags.length) return identityTagsOf(base.tags);
+    final published = await _publishIdentityEvent(
+      claim.pubkey,
+      content: base.content,
+      tags: next,
+    );
     (_lastRemovedKeys[claim.pubkey] ??= <String>{}).add(key);
     await _revokeOAuthLink(claim);
     return published;
@@ -501,11 +528,10 @@ class IdentityClaimsRepository {
     }
   }
 
-  /// Reads the `i` tags the next write must build on.
+  /// Reads the `i` tags currently on [pubkey]'s identity event.
   ///
   /// Uncached on purpose: the event is about to be replaced wholesale, and a
   /// stale read would silently drop a claim linked on another device.
-  /// Reads the `i` tags currently on [pubkey]'s identity event.
   ///
   /// [forWrite] decides what an unanswered read means. The query cannot say
   /// whether an empty result is "no claims yet" or "no relay answered", and
@@ -525,6 +551,14 @@ class IdentityClaimsRepository {
   /// lagging-read merge as the identity event, and the same refusal when the
   /// local snapshot knows claims it does not carry.
   Future<List<List<String>>> _currentIdentityTags(
+    String pubkey, {
+    required bool forWrite,
+  }) async {
+    final base = await _currentIdentityEventBase(pubkey, forWrite: forWrite);
+    return identityTagsOf(base.tags);
+  }
+
+  Future<_IdentityEventBase> _currentIdentityEventBase(
     String pubkey, {
     required bool forWrite,
   }) async {
@@ -556,14 +590,17 @@ class IdentityClaimsRepository {
     if (identityEvent != null) {
       final tags = _mergeWithLastPublished(
         pubkey,
-        identityTagsOf(identityEvent.tags),
+        identityEvent.tags,
+        identityEventCreatedAt: identityEvent.createdAt,
+        identityEventId: identityEvent.id,
       );
       Log.info(
-        'Identity event for $pubkey carries ${tags.length} claim tag(s)',
+        'Identity event for $pubkey carries '
+        '${identityTagsOf(tags).length} claim tag(s)',
         name: 'IdentityClaimsRepository',
       );
-      await _cacheIdentityTags(pubkey, tags);
-      return tags;
+      await _cacheIdentityTags(pubkey, identityTagsOf(tags));
+      return _IdentityEventBase(tags: tags, content: identityEvent.content);
     }
 
     final legacyEvent = await _newestEventOfKind(client, pubkey, 0);
@@ -578,7 +615,7 @@ class IdentityClaimsRepository {
         name: 'IdentityClaimsRepository',
       );
       if (forWrite) await _refuseIfLocalEvidenceIsAhead(pubkey, tags);
-      return tags;
+      return _IdentityEventBase(tags: tags, content: '');
     }
 
     final cached = await _cachedIdentityTags(pubkey);
@@ -598,7 +635,7 @@ class IdentityClaimsRepository {
           'record for this profile — refusing to publish over them',
         );
       }
-      return const [];
+      return const _IdentityEventBase(tags: [], content: '');
     }
     if (forWrite) {
       throw const IdentityClaimReadException(
@@ -606,7 +643,7 @@ class IdentityClaimsRepository {
         'claims — refusing to publish over them',
       );
     }
-    return cached;
+    return _IdentityEventBase(tags: cached, content: '');
   }
 
   /// Refuses a write whose relay read is behind what this device already knows.
@@ -700,19 +737,18 @@ class IdentityClaimsRepository {
     final events = await client.queryEvents([
       Filter(kinds: [kind], authors: [pubkey], limit: 5),
     ], useCache: false);
-    return newestIdentityEvent(
-      events.where((e) => e.kind == kind).toList(),
-    );
+    return newestIdentityEvent(events.where((e) => e.kind == kind).toList());
   }
 
-  Future<List<List<String>>> _publishIdentityTags(
-    String pubkey,
-    List<List<String>> tags,
-  ) async {
+  Future<List<List<String>>> _publishIdentityEvent(
+    String pubkey, {
+    required List<List<String>> tags,
+    required String content,
+  }) async {
     final deps = _writeDeps();
     final event = await deps.sign(
       kind: identityEventKind,
-      content: '',
+      content: content,
       tags: tags,
     );
     if (event == null) {
@@ -728,28 +764,46 @@ class IdentityClaimsRepository {
       );
     }
 
-    await _cacheIdentityTags(pubkey, tags);
-    _lastPublishedTags[pubkey] = tags;
-    return tags;
+    final identityTags = identityTagsOf(tags);
+    await _cacheIdentityTags(pubkey, identityTags);
+    _lastPublishedTags[pubkey] = _PublishedIdentityTags(
+      tags: identityTags,
+      createdAt: event.createdAt,
+      id: event.id,
+    );
+    return identityTags;
   }
 
   /// Adds back any claim this device published that [relayTags] does not carry
   /// yet, so a relay that has not caught up cannot make the next write drop it.
   List<List<String>> _mergeWithLastPublished(
     String pubkey,
-    List<List<String>> relayTags,
-  ) {
+    List<List<String>> relayTags, {
+    int? identityEventCreatedAt,
+    String? identityEventId,
+  }) {
     final published = _lastPublishedTags[pubkey];
     if (published == null) return relayTags;
+    if (_isAtLeastAsNewAsLastPublished(
+      published,
+      identityEventCreatedAt: identityEventCreatedAt,
+      identityEventId: identityEventId,
+    )) {
+      _lastPublishedTags.remove(pubkey);
+      _lastRemovedKeys.remove(pubkey);
+      return relayTags;
+    }
 
     final removed = _lastRemovedKeys[pubkey] ?? const <String>{};
     final kept = [
       for (final tag in relayTags)
-        if (!removed.contains(_tagIdentityKey(tag))) tag,
+        if (!removed.contains(_tagIdentityKeyOrNull(tag))) tag,
     ];
-    final present = {for (final tag in kept) _tagIdentityKey(tag)};
+    final present = {
+      for (final tag in identityTagsOf(kept)) _tagIdentityKey(tag),
+    };
     final missing = [
-      for (final tag in published)
+      for (final tag in published.tags)
         if (!present.contains(_tagIdentityKey(tag))) tag,
     ];
     if (missing.isEmpty && kept.length == relayTags.length) return relayTags;
@@ -760,6 +814,18 @@ class IdentityClaimsRepository {
       name: 'IdentityClaimsRepository',
     );
     return [...kept, ...missing];
+  }
+
+  bool _isAtLeastAsNewAsLastPublished(
+    _PublishedIdentityTags published, {
+    required int? identityEventCreatedAt,
+    required String? identityEventId,
+  }) {
+    if (identityEventCreatedAt == null || identityEventId == null) return false;
+    if (identityEventCreatedAt != published.createdAt) {
+      return identityEventCreatedAt > published.createdAt;
+    }
+    return identityEventId.compareTo(published.id) <= 0;
   }
 
   /// Mirrors the published tags into the local identity cache so the new
@@ -797,6 +863,10 @@ class IdentityClaimsRepository {
 
   /// Normalized `platform:identity` key of a raw `i` tag.
   static String _tagIdentityKey(List<String> tag) => tag[1].toLowerCase();
+
+  /// Normalized `platform:identity` key when [tag] is a raw `i` tag.
+  static String? _tagIdentityKeyOrNull(List<String> tag) =>
+      tag.length >= 3 && tag[0] == 'i' ? _tagIdentityKey(tag) : null;
 
   /// Asks the verifier to re-check [claims] and returns only the verified
   /// ones, preserving input order.
@@ -870,9 +940,7 @@ class IdentityClaimsRepository {
       for (final claim in freshClaims)
         if (verifiedKeys.contains(_identityKeyOf(claim)) ||
             (knownGoodKeys.contains(_identityKeyOf(claim)) &&
-                !outcome.confirmedNegativeKeys.contains(
-                  _identityKeyOf(claim),
-                )))
+                !outcome.confirmedNegativeKeys.contains(_identityKeyOf(claim))))
           claim,
     ];
   }

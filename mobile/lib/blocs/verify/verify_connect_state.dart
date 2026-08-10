@@ -118,7 +118,8 @@ class VerifyConnectState extends Equatable {
     if (_typedIdentityPlatforms.contains(platform.key.toLowerCase())) {
       return true;
     }
-    return proof.isNotEmpty && normalizedInput.identity.isEmpty;
+    return proof.isNotEmpty &&
+        (identity.isNotEmpty || normalizedInput.identity.isEmpty);
   }
 
   /// The inputs as the verifier wants them — a pasted post link taken apart

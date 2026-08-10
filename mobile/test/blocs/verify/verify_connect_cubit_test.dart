@@ -76,9 +76,9 @@ void main() {
       callback = Uri.parse(
         '$_returnUrl?oauth_verified=true&platform=twitter&identity=jack',
       );
-      when(() => repository.verifyClaim(any())).thenAnswer(
-        (_) async => _result(verified: true),
-      );
+      when(
+        () => repository.verifyClaim(any()),
+      ).thenAnswer((_) async => _result(verified: true));
       when(() => repository.publishClaim(any())).thenAnswer((_) async => []);
       when(
         () => repository.canStartOAuth(
@@ -141,9 +141,9 @@ void main() {
         'publishes nothing when the proof does not check out',
         build: () => build(_github),
         setUp: () {
-          when(() => repository.verifyClaim(any())).thenAnswer(
-            (_) async => _result(verified: false),
-          );
+          when(
+            () => repository.verifyClaim(any()),
+          ).thenAnswer((_) async => _result(verified: false));
         },
         act: (cubit) async {
           cubit
@@ -206,9 +206,9 @@ void main() {
         'separates an unreadable link list from a failed publish',
         build: () => build(_github),
         setUp: () {
-          when(() => repository.publishClaim(any())).thenThrow(
-            const IdentityClaimReadException('relays went quiet'),
-          );
+          when(
+            () => repository.publishClaim(any()),
+          ).thenThrow(const IdentityClaimReadException('relays went quiet'));
         },
         act: (cubit) async {
           cubit
@@ -304,6 +304,28 @@ void main() {
           expect(launched, isEmpty);
           expect(cubit.state.status, equals(VerifyConnectStatus.editing));
         },
+      );
+
+      blocTest<VerifyConnectCubit, VerifyConnectState>(
+        'returns to editing when the OAuth preflight throws',
+        build: () => build(_twitter),
+        setUp: () {
+          when(
+            () => repository.canStartOAuth(
+              platform: any(named: 'platform'),
+              pubkey: any(named: 'pubkey'),
+              returnUrl: any(named: 'returnUrl'),
+              handle: any(named: 'handle'),
+            ),
+          ).thenThrow(const FormatException('bad start URL'));
+        },
+        act: (cubit) => cubit.connectWithOAuth(),
+        verify: (cubit) {
+          expect(cubit.state.error, equals(VerifyConnectError.oauthFailed));
+          expect(cubit.state.status, equals(VerifyConnectStatus.editing));
+          expect(launched, isEmpty);
+        },
+        errors: () => [isA<FormatException>()],
       );
 
       blocTest<VerifyConnectCubit, VerifyConnectState>(
@@ -449,6 +471,18 @@ void main() {
         cubit.proofChanged('some nonsense');
 
         expect(cubit.state.needsIdentityInput, isTrue);
+      });
+
+      test('stays visible after the user starts typing the account', () {
+        final cubit = build(_telegram);
+        addTearDown(cubit.close);
+
+        cubit
+          ..proofChanged('some nonsense')
+          ..identityChanged('testdivine');
+
+        expect(cubit.state.needsIdentityInput, isTrue);
+        expect(cubit.state.canSubmitProof, isTrue);
       });
 
       test('always asks where the link cannot carry the account', () {

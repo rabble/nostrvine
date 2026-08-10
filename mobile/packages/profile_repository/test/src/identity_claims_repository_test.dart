@@ -56,10 +56,7 @@ void main() {
         ['p', 'somepubkey'],
         ['i', 'github:octocat', 'abc'],
       ];
-      expect(
-        IdentityClaimsRepository.parseClaims(_pubkey, tags),
-        hasLength(1),
-      );
+      expect(IdentityClaimsRepository.parseClaims(_pubkey, tags), hasLength(1));
     });
 
     test('skips i tags without a platform:identity prefix', () {
@@ -119,10 +116,7 @@ void main() {
         <String>[],
         ['i', 'github:octocat', 'abc'],
       ];
-      expect(
-        IdentityClaimsRepository.parseClaims(_pubkey, tags),
-        hasLength(1),
-      );
+      expect(IdentityClaimsRepository.parseClaims(_pubkey, tags), hasLength(1));
     });
 
     test('dedupes by case-insensitive platform:identity, keeping first', () {
@@ -295,9 +289,9 @@ void main() {
     });
 
     test('propagates VerifierApiException', () async {
-      when(() => client.verifyBatch(any())).thenThrow(
-        const VerifierApiException(500, 'boom'),
-      );
+      when(
+        () => client.verifyBatch(any()),
+      ).thenThrow(const VerifierApiException(500, 'boom'));
       await expectLater(
         () => repo.resolveClaims(
           pubkey: _pubkey,
@@ -452,64 +446,54 @@ void main() {
       );
     });
 
-    test(
-      'returns null when the snapshot is valid JSON of the wrong shape '
-      '(TypeError, not just Exception)',
-      () async {
-        // A JSON object instead of a list, and a list of the wrong element
-        // shape, both throw TypeError on the decode casts — the decoder must
-        // still degrade to null rather than let an Error escape.
-        for (final malformed in const [
-          '{"platform":"github"}',
-          '[{"platform":123,"identity":"octocat","proof":"a"}]',
-        ]) {
-          when(() => dao.getVerification(_pubkey)).thenAnswer(
-            (_) async => _row(claimsJson: malformed, checkedAtFloor: 1),
-          );
-          expect(
-            await repo.cachedVerifiedClaims(
-              pubkey: _pubkey,
-              tags: [
-                ['i', 'github:octocat', 'a'],
-              ],
-            ),
-            isNull,
-            reason: 'wrong-shape snapshot "$malformed" should decode to null',
-          );
-        }
-      },
-    );
-
-    test(
-      'intersects current claims with the snapshot — case-insensitive '
-      'platform/identity, exact proof',
-      () async {
+    test('returns null when the snapshot is valid JSON of the wrong shape '
+        '(TypeError, not just Exception)', () async {
+      // A JSON object instead of a list, and a list of the wrong element
+      // shape, both throw TypeError on the decode casts — the decoder must
+      // still degrade to null rather than let an Error escape.
+      for (final malformed in const [
+        '{"platform":"github"}',
+        '[{"platform":123,"identity":"octocat","proof":"a"}]',
+      ]) {
         when(() => dao.getVerification(_pubkey)).thenAnswer(
-          (_) async => _row(
-            claimsJson: snapshotJson,
-            checkedAtFloor: _nowSeconds(),
+          (_) async => _row(claimsJson: malformed, checkedAtFloor: 1),
+        );
+        expect(
+          await repo.cachedVerifiedClaims(
+            pubkey: _pubkey,
+            tags: [
+              ['i', 'github:octocat', 'a'],
+            ],
           ),
+          isNull,
+          reason: 'wrong-shape snapshot "$malformed" should decode to null',
         );
-        final cached = await repo.cachedVerifiedClaims(
-          pubkey: _pubkey,
-          tags: [
-            ['i', 'github:Octocat', 'a'],
-            ['i', 'twitter:unverified', 'b'],
-          ],
-        );
-        expect(cached, isNotNull);
-        expect(cached!.claims, hasLength(1));
-        expect(cached.claims.single.platform, equals('github'));
-        expect(cached.isFresh, isTrue);
-      },
-    );
+      }
+    });
+
+    test('intersects current claims with the snapshot — case-insensitive '
+        'platform/identity, exact proof', () async {
+      when(() => dao.getVerification(_pubkey)).thenAnswer(
+        (_) async =>
+            _row(claimsJson: snapshotJson, checkedAtFloor: _nowSeconds()),
+      );
+      final cached = await repo.cachedVerifiedClaims(
+        pubkey: _pubkey,
+        tags: [
+          ['i', 'github:Octocat', 'a'],
+          ['i', 'twitter:unverified', 'b'],
+        ],
+      );
+      expect(cached, isNotNull);
+      expect(cached!.claims, hasLength(1));
+      expect(cached.claims.single.platform, equals('github'));
+      expect(cached.isFresh, isTrue);
+    });
 
     test('a rotated proof misses the snapshot', () async {
       when(() => dao.getVerification(_pubkey)).thenAnswer(
-        (_) async => _row(
-          claimsJson: snapshotJson,
-          checkedAtFloor: _nowSeconds(),
-        ),
+        (_) async =>
+            _row(claimsJson: snapshotJson, checkedAtFloor: _nowSeconds()),
       );
       final cached = await repo.cachedVerifiedClaims(
         pubkey: _pubkey,
@@ -605,9 +589,7 @@ void main() {
             verify(
                   () => dao.upsertVerification(
                     pubkey: _pubkey,
-                    verifiedClaimsJson: captureAny(
-                      named: 'verifiedClaimsJson',
-                    ),
+                    verifiedClaimsJson: captureAny(named: 'verifiedClaimsJson'),
                     checkedAtFloor: 300,
                   ),
                 ).captured.single
@@ -695,54 +677,51 @@ void main() {
       },
     );
 
-    test(
-      'leaves the snapshot untouched when every result is rate-limited '
-      '(zero verified must not trigger the delete path)',
-      () async {
-        // The rate-limit guard must be checked BEFORE the zero-verified
-        // delete: an all-rate-limited burst has no verified claims, so
-        // reordering the guards would wipe a good snapshot here.
-        when(() => client.verifyBatch(any())).thenAnswer(
-          (_) async => const [
-            VerificationResult(
-              platform: 'github',
-              identity: 'octocat',
-              verified: false,
-              checkedAt: 900,
-              cached: false,
-              error: 'Rate limit exceeded for this pubkey',
-            ),
-            VerificationResult(
-              platform: 'twitter',
-              identity: 'octo',
-              verified: false,
-              checkedAt: 900,
-              cached: false,
-              error: 'Rate limit exceeded for this platform',
-            ),
-          ],
-        );
-
-        final result = await repo.resolveClaims(
-          pubkey: _pubkey,
-          freshTags: [
-            ['i', 'github:octocat', 'a'],
-            ['i', 'twitter:octo', 'b'],
-          ],
-          cached: null,
-        );
-
-        expect(result, isEmpty);
-        verifyNever(() => dao.deleteVerification(any()));
-        verifyNever(
-          () => dao.upsertVerification(
-            pubkey: any(named: 'pubkey'),
-            verifiedClaimsJson: any(named: 'verifiedClaimsJson'),
-            checkedAtFloor: any(named: 'checkedAtFloor'),
+    test('leaves the snapshot untouched when every result is rate-limited '
+        '(zero verified must not trigger the delete path)', () async {
+      // The rate-limit guard must be checked BEFORE the zero-verified
+      // delete: an all-rate-limited burst has no verified claims, so
+      // reordering the guards would wipe a good snapshot here.
+      when(() => client.verifyBatch(any())).thenAnswer(
+        (_) async => const [
+          VerificationResult(
+            platform: 'github',
+            identity: 'octocat',
+            verified: false,
+            checkedAt: 900,
+            cached: false,
+            error: 'Rate limit exceeded for this pubkey',
           ),
-        );
-      },
-    );
+          VerificationResult(
+            platform: 'twitter',
+            identity: 'octo',
+            verified: false,
+            checkedAt: 900,
+            cached: false,
+            error: 'Rate limit exceeded for this platform',
+          ),
+        ],
+      );
+
+      final result = await repo.resolveClaims(
+        pubkey: _pubkey,
+        freshTags: [
+          ['i', 'github:octocat', 'a'],
+          ['i', 'twitter:octo', 'b'],
+        ],
+        cached: null,
+      );
+
+      expect(result, isEmpty);
+      verifyNever(() => dao.deleteVerification(any()));
+      verifyNever(
+        () => dao.upsertVerification(
+          pubkey: any(named: 'pubkey'),
+          verifiedClaimsJson: any(named: 'verifiedClaimsJson'),
+          checkedAtFloor: any(named: 'checkedAtFloor'),
+        ),
+      );
+    });
 
     test(
       'returns cached current claims when stale revalidation is rate-limited',
@@ -795,260 +774,242 @@ void main() {
       },
     );
 
-    test(
-      'preserves rendered claims when rate-limited with no usable snapshot '
-      '(#6176 review)',
-      () async {
-        const renderedClaim = IdentityClaim(
-          pubkey: _pubkey,
-          platform: 'github',
-          identity: 'octocat',
-          proof: 'a',
-        );
-        when(() => client.verifyBatch(any())).thenAnswer(
-          (_) async => const [
-            VerificationResult(
-              platform: 'github',
-              identity: 'octocat',
-              verified: false,
-              checkedAt: 900,
-              cached: false,
-              error: 'Rate limit exceeded for this pubkey',
-            ),
-          ],
-        );
-
-        final result = await repo.resolveClaims(
-          pubkey: _pubkey,
-          freshTags: [
-            ['i', 'github:octocat', 'a'],
-          ],
-          cached: null,
-          renderedClaims: const [renderedClaim],
-        );
-
-        expect(result, equals([renderedClaim]));
-        verifyNever(() => dao.deleteVerification(any()));
-        verifyNever(
-          () => dao.upsertVerification(
-            pubkey: any(named: 'pubkey'),
-            verifiedClaimsJson: any(named: 'verifiedClaimsJson'),
-            checkedAtFloor: any(named: 'checkedAtFloor'),
+    test('preserves rendered claims when rate-limited with no usable snapshot '
+        '(#6176 review)', () async {
+      const renderedClaim = IdentityClaim(
+        pubkey: _pubkey,
+        platform: 'github',
+        identity: 'octocat',
+        proof: 'a',
+      );
+      when(() => client.verifyBatch(any())).thenAnswer(
+        (_) async => const [
+          VerificationResult(
+            platform: 'github',
+            identity: 'octocat',
+            verified: false,
+            checkedAt: 900,
+            cached: false,
+            error: 'Rate limit exceeded for this pubkey',
           ),
-        );
-      },
-    );
+        ],
+      );
 
-    test(
-      'preserves rendered claims when rate-limited with an empty snapshot '
-      'intersection',
-      () async {
-        const renderedClaim = IdentityClaim(
-          pubkey: _pubkey,
-          platform: 'github',
-          identity: 'octocat',
-          proof: 'a',
-        );
-        when(() => client.verifyBatch(any())).thenAnswer(
-          (_) async => const [
-            VerificationResult(
-              platform: 'github',
-              identity: 'octocat',
-              verified: false,
-              checkedAt: 900,
-              cached: false,
-              error: 'Rate limit exceeded for this pubkey',
-            ),
-          ],
-        );
+      final result = await repo.resolveClaims(
+        pubkey: _pubkey,
+        freshTags: [
+          ['i', 'github:octocat', 'a'],
+        ],
+        cached: null,
+        renderedClaims: const [renderedClaim],
+      );
 
-        final result = await repo.resolveClaims(
-          pubkey: _pubkey,
-          freshTags: [
-            ['i', 'github:octocat', 'a'],
-          ],
-          cached: const CachedVerifiedClaims(claims: [], isFresh: false),
-          renderedClaims: const [renderedClaim],
-        );
+      expect(result, equals([renderedClaim]));
+      verifyNever(() => dao.deleteVerification(any()));
+      verifyNever(
+        () => dao.upsertVerification(
+          pubkey: any(named: 'pubkey'),
+          verifiedClaimsJson: any(named: 'verifiedClaimsJson'),
+          checkedAtFloor: any(named: 'checkedAtFloor'),
+        ),
+      );
+    });
 
-        expect(result, equals([renderedClaim]));
-      },
-    );
-
-    test(
-      'drops rendered claims no longer present in the fresh tags even when '
-      'rate-limited',
-      () async {
-        const removedRenderedClaim = IdentityClaim(
-          pubkey: _pubkey,
-          platform: 'twitter',
-          identity: 'old',
-          proof: 'removed-proof',
-        );
-        when(() => client.verifyBatch(any())).thenAnswer(
-          (_) async => const [
-            VerificationResult(
-              platform: 'github',
-              identity: 'octocat',
-              verified: false,
-              checkedAt: 900,
-              cached: false,
-              error: 'Rate limit exceeded for this pubkey',
-            ),
-          ],
-        );
-
-        final result = await repo.resolveClaims(
-          pubkey: _pubkey,
-          freshTags: [
-            ['i', 'github:octocat', 'a'],
-          ],
-          cached: null,
-          renderedClaims: const [removedRenderedClaim],
-        );
-
-        expect(result, isEmpty);
-      },
-    );
-
-    test(
-      'clears rendered claims when the verifier returns a confirmed '
-      'negative (non-rate-limited)',
-      () async {
-        const renderedClaim = IdentityClaim(
-          pubkey: _pubkey,
-          platform: 'github',
-          identity: 'octocat',
-          proof: 'a',
-        );
-        when(() => client.verifyBatch(any())).thenAnswer(
-          (_) async => const [
-            VerificationResult(
-              platform: 'github',
-              identity: 'octocat',
-              verified: false,
-              checkedAt: 900,
-              cached: false,
-              error: 'Gist not found',
-            ),
-          ],
-        );
-
-        final result = await repo.resolveClaims(
-          pubkey: _pubkey,
-          freshTags: [
-            ['i', 'github:octocat', 'a'],
-          ],
-          cached: null,
-          renderedClaims: const [renderedClaim],
-        );
-
-        expect(result, isEmpty);
-        verify(() => dao.deleteVerification(_pubkey)).called(1);
-      },
-    );
-
-    test(
-      'preserves a rendered claim across proof rotation and casing drift '
-      'when rate-limited (identity-granular matching)',
-      () async {
-        const renderedClaim = IdentityClaim(
-          pubkey: _pubkey,
-          platform: 'github',
-          identity: 'octocat',
-          proof: 'old-proof',
-        );
-        when(() => client.verifyBatch(any())).thenAnswer(
-          (_) async => const [
-            VerificationResult(
-              platform: 'GitHub',
-              identity: 'Octocat',
-              verified: false,
-              checkedAt: 900,
-              cached: false,
-              error: 'Rate limit exceeded for this pubkey',
-            ),
-          ],
-        );
-
-        final result = await repo.resolveClaims(
-          pubkey: _pubkey,
-          freshTags: [
-            ['i', 'github:Octocat', 'new-proof'],
-          ],
-          cached: null,
-          renderedClaims: const [renderedClaim],
-        );
-
-        // The verifier judges platform:identity, not proof strings — an
-        // inconclusive (rate-limited) verdict on a rotated proof must not
-        // drop the previously verified identity's chip.
-        expect(result, hasLength(1));
-        expect(result.single.proof, equals('new-proof'));
-      },
-    );
-
-    test(
-      'drops a claim whose own result is a confirmed negative inside a '
-      'rate-limited batch',
-      () async {
-        const githubClaim = IdentityClaim(
-          pubkey: _pubkey,
-          platform: 'github',
-          identity: 'octocat',
-          proof: 'a',
-        );
-        const twitterClaim = IdentityClaim(
-          pubkey: _pubkey,
-          platform: 'twitter',
-          identity: 'octo',
-          proof: 'b',
-        );
-        when(() => client.verifyBatch(any())).thenAnswer(
-          (_) async => const [
-            VerificationResult(
-              platform: 'github',
-              identity: 'octocat',
-              verified: false,
-              checkedAt: 900,
-              cached: false,
-              error: 'Rate limit exceeded for this platform',
-            ),
-            VerificationResult(
-              platform: 'twitter',
-              identity: 'octo',
-              verified: false,
-              checkedAt: 900,
-              cached: false,
-              error: 'Tweet not found',
-            ),
-          ],
-        );
-
-        final result = await repo.resolveClaims(
-          pubkey: _pubkey,
-          freshTags: [
-            ['i', 'github:octocat', 'a'],
-            ['i', 'twitter:octo', 'b'],
-          ],
-          cached: null,
-          renderedClaims: const [githubClaim, twitterClaim],
-        );
-
-        // github's own result is rate-limited (inconclusive) → preserved;
-        // twitter's own result is a confirmed negative → dropped even
-        // though the batch as a whole is rate-limited.
-        expect(result, equals([githubClaim]));
-        verifyNever(() => dao.deleteVerification(any()));
-        verifyNever(
-          () => dao.upsertVerification(
-            pubkey: any(named: 'pubkey'),
-            verifiedClaimsJson: any(named: 'verifiedClaimsJson'),
-            checkedAtFloor: any(named: 'checkedAtFloor'),
+    test('preserves rendered claims when rate-limited with an empty snapshot '
+        'intersection', () async {
+      const renderedClaim = IdentityClaim(
+        pubkey: _pubkey,
+        platform: 'github',
+        identity: 'octocat',
+        proof: 'a',
+      );
+      when(() => client.verifyBatch(any())).thenAnswer(
+        (_) async => const [
+          VerificationResult(
+            platform: 'github',
+            identity: 'octocat',
+            verified: false,
+            checkedAt: 900,
+            cached: false,
+            error: 'Rate limit exceeded for this pubkey',
           ),
-        );
-      },
-    );
+        ],
+      );
+
+      final result = await repo.resolveClaims(
+        pubkey: _pubkey,
+        freshTags: [
+          ['i', 'github:octocat', 'a'],
+        ],
+        cached: const CachedVerifiedClaims(claims: [], isFresh: false),
+        renderedClaims: const [renderedClaim],
+      );
+
+      expect(result, equals([renderedClaim]));
+    });
+
+    test('drops rendered claims no longer present in the fresh tags even when '
+        'rate-limited', () async {
+      const removedRenderedClaim = IdentityClaim(
+        pubkey: _pubkey,
+        platform: 'twitter',
+        identity: 'old',
+        proof: 'removed-proof',
+      );
+      when(() => client.verifyBatch(any())).thenAnswer(
+        (_) async => const [
+          VerificationResult(
+            platform: 'github',
+            identity: 'octocat',
+            verified: false,
+            checkedAt: 900,
+            cached: false,
+            error: 'Rate limit exceeded for this pubkey',
+          ),
+        ],
+      );
+
+      final result = await repo.resolveClaims(
+        pubkey: _pubkey,
+        freshTags: [
+          ['i', 'github:octocat', 'a'],
+        ],
+        cached: null,
+        renderedClaims: const [removedRenderedClaim],
+      );
+
+      expect(result, isEmpty);
+    });
+
+    test('clears rendered claims when the verifier returns a confirmed '
+        'negative (non-rate-limited)', () async {
+      const renderedClaim = IdentityClaim(
+        pubkey: _pubkey,
+        platform: 'github',
+        identity: 'octocat',
+        proof: 'a',
+      );
+      when(() => client.verifyBatch(any())).thenAnswer(
+        (_) async => const [
+          VerificationResult(
+            platform: 'github',
+            identity: 'octocat',
+            verified: false,
+            checkedAt: 900,
+            cached: false,
+            error: 'Gist not found',
+          ),
+        ],
+      );
+
+      final result = await repo.resolveClaims(
+        pubkey: _pubkey,
+        freshTags: [
+          ['i', 'github:octocat', 'a'],
+        ],
+        cached: null,
+        renderedClaims: const [renderedClaim],
+      );
+
+      expect(result, isEmpty);
+      verify(() => dao.deleteVerification(_pubkey)).called(1);
+    });
+
+    test('preserves a rendered claim across proof rotation and casing drift '
+        'when rate-limited (identity-granular matching)', () async {
+      const renderedClaim = IdentityClaim(
+        pubkey: _pubkey,
+        platform: 'github',
+        identity: 'octocat',
+        proof: 'old-proof',
+      );
+      when(() => client.verifyBatch(any())).thenAnswer(
+        (_) async => const [
+          VerificationResult(
+            platform: 'GitHub',
+            identity: 'Octocat',
+            verified: false,
+            checkedAt: 900,
+            cached: false,
+            error: 'Rate limit exceeded for this pubkey',
+          ),
+        ],
+      );
+
+      final result = await repo.resolveClaims(
+        pubkey: _pubkey,
+        freshTags: [
+          ['i', 'github:Octocat', 'new-proof'],
+        ],
+        cached: null,
+        renderedClaims: const [renderedClaim],
+      );
+
+      // The verifier judges platform:identity, not proof strings — an
+      // inconclusive (rate-limited) verdict on a rotated proof must not
+      // drop the previously verified identity's chip.
+      expect(result, hasLength(1));
+      expect(result.single.proof, equals('new-proof'));
+    });
+
+    test('drops a claim whose own result is a confirmed negative inside a '
+        'rate-limited batch', () async {
+      const githubClaim = IdentityClaim(
+        pubkey: _pubkey,
+        platform: 'github',
+        identity: 'octocat',
+        proof: 'a',
+      );
+      const twitterClaim = IdentityClaim(
+        pubkey: _pubkey,
+        platform: 'twitter',
+        identity: 'octo',
+        proof: 'b',
+      );
+      when(() => client.verifyBatch(any())).thenAnswer(
+        (_) async => const [
+          VerificationResult(
+            platform: 'github',
+            identity: 'octocat',
+            verified: false,
+            checkedAt: 900,
+            cached: false,
+            error: 'Rate limit exceeded for this platform',
+          ),
+          VerificationResult(
+            platform: 'twitter',
+            identity: 'octo',
+            verified: false,
+            checkedAt: 900,
+            cached: false,
+            error: 'Tweet not found',
+          ),
+        ],
+      );
+
+      final result = await repo.resolveClaims(
+        pubkey: _pubkey,
+        freshTags: [
+          ['i', 'github:octocat', 'a'],
+          ['i', 'twitter:octo', 'b'],
+        ],
+        cached: null,
+        renderedClaims: const [githubClaim, twitterClaim],
+      );
+
+      // github's own result is rate-limited (inconclusive) → preserved;
+      // twitter's own result is a confirmed negative → dropped even
+      // though the batch as a whole is rate-limited.
+      expect(result, equals([githubClaim]));
+      verifyNever(() => dao.deleteVerification(any()));
+      verifyNever(
+        () => dao.upsertVerification(
+          pubkey: any(named: 'pubkey'),
+          verifiedClaimsJson: any(named: 'verifiedClaimsJson'),
+          checkedAtFloor: any(named: 'checkedAtFloor'),
+        ),
+      );
+    });
 
     group(
       'confirmed-negative snapshot pruning during a rate-limited batch',
@@ -1077,9 +1038,9 @@ void main() {
         ];
 
         test('prunes the negated entry and keeps the rest', () async {
-          when(() => client.verifyBatch(any())).thenAnswer(
-            (_) async => mixedResults,
-          );
+          when(
+            () => client.verifyBatch(any()),
+          ).thenAnswer((_) async => mixedResults);
           when(() => dao.getVerification(_pubkey)).thenAnswer(
             (_) async => _row(
               claimsJson:
@@ -1110,9 +1071,9 @@ void main() {
         });
 
         test('deletes the snapshot when every entry is negated', () async {
-          when(() => client.verifyBatch(any())).thenAnswer(
-            (_) async => mixedResults,
-          );
+          when(
+            () => client.verifyBatch(any()),
+          ).thenAnswer((_) async => mixedResults);
           when(() => dao.getVerification(_pubkey)).thenAnswer(
             (_) async => _row(
               claimsJson:
@@ -1138,9 +1099,9 @@ void main() {
         });
 
         test('writes nothing when no snapshot entry is negated', () async {
-          when(() => client.verifyBatch(any())).thenAnswer(
-            (_) async => mixedResults,
-          );
+          when(
+            () => client.verifyBatch(any()),
+          ).thenAnswer((_) async => mixedResults);
           when(() => dao.getVerification(_pubkey)).thenAnswer(
             (_) async => _row(
               claimsJson:
@@ -1166,9 +1127,9 @@ void main() {
         });
 
         test('leaves a malformed snapshot row alone', () async {
-          when(() => client.verifyBatch(any())).thenAnswer(
-            (_) async => mixedResults,
-          );
+          when(
+            () => client.verifyBatch(any()),
+          ).thenAnswer((_) async => mixedResults);
           when(() => dao.getVerification(_pubkey)).thenAnswer(
             (_) async => _row(claimsJson: 'not json', checkedAtFloor: 500),
           );
@@ -1199,6 +1160,7 @@ void main() {
     late _MockIdentityVerificationsDao verificationsDao;
     late IdentityClaimsRepository repo;
     late List<List<String>>? signedTags;
+    late String? signedContent;
     late int? signedKind;
     late bool signerRefuses;
 
@@ -1213,6 +1175,7 @@ void main() {
       identityEventsDao = _MockIdentityEventsDao();
       verificationsDao = _MockIdentityVerificationsDao();
       signedTags = null;
+      signedContent = null;
       signedKind = null;
       signerRefuses = false;
 
@@ -1230,9 +1193,9 @@ void main() {
           checkedAtFloor: any(named: 'checkedAtFloor'),
         ),
       ).thenAnswer((_) async {});
-      when(() => nostrClient.retryDisconnectedRelays()).thenAnswer(
-        (_) async {},
-      );
+      when(
+        () => nostrClient.retryDisconnectedRelays(),
+      ).thenAnswer((_) async {});
       when(
         () => nostrClient.queryEvents(any(), useCache: any(named: 'useCache')),
       ).thenAnswer((_) async => <Event>[]);
@@ -1266,8 +1229,15 @@ void main() {
         signEvent: ({required kind, required content, required tags}) async {
           signedKind = kind;
           signedTags = tags;
+          signedContent = content;
           if (signerRefuses) return null;
-          return _event(id: _eventId(2), kind: kind, tags: tags);
+          return _event(
+            id: _eventId(2),
+            kind: kind,
+            tags: tags,
+            content: content,
+            createdAt: 1500,
+          );
         },
       );
     });
@@ -1730,6 +1700,48 @@ void main() {
         );
       });
 
+      test('carries non-identity tags and content through untouched', () async {
+        stubIdentityEvents([
+          _event(
+            id: _eventId(10),
+            kind: 10011,
+            content: 'identity event notes',
+            tags: [
+              ['alt', 'NIP-39 identity claims'],
+              ['client', 'some-client'],
+              ['i', 'github:octocat', 'abc'],
+            ],
+          ),
+        ]);
+
+        final tags = await repo.publishClaim(
+          const IdentityClaim(
+            pubkey: _pubkey,
+            platform: 'twitter',
+            identity: 'jack',
+            proof: IdentityClaim.oauthProof,
+          ),
+        );
+
+        expect(
+          tags,
+          equals([
+            ['i', 'github:octocat', 'abc'],
+            ['i', 'twitter:jack', 'oauth'],
+          ]),
+        );
+        expect(
+          signedTags,
+          equals([
+            ['alt', 'NIP-39 identity claims'],
+            ['client', 'some-client'],
+            ['i', 'github:octocat', 'abc'],
+            ['i', 'twitter:jack', 'oauth'],
+          ]),
+        );
+        expect(signedContent, equals('identity event notes'));
+      });
+
       test('carries kind-0 i tags forward on the first write', () async {
         stubIdentityEvents(
           const [],
@@ -2160,6 +2172,106 @@ void main() {
 
         expect(tags.map((t) => t[1]), isNot(contains('telegram:chan')));
       });
+
+      test(
+        'accepts a newer relay event missing this device published claim',
+        () async {
+          stubIdentityEvents([
+            _event(
+              id: _eventId(10),
+              kind: 10011,
+              createdAt: 100,
+              tags: [
+                ['i', 'bluesky:alice.bsky.social', 'oauth'],
+              ],
+            ),
+          ]);
+
+          await repo.publishClaim(
+            const IdentityClaim(
+              pubkey: _pubkey,
+              platform: 'github',
+              identity: 'octocat',
+              proof: 'abc',
+            ),
+          );
+
+          stubIdentityEvents([
+            _event(
+              id: _eventId(11),
+              kind: 10011,
+              createdAt: 2000,
+              tags: [
+                ['i', 'bluesky:alice.bsky.social', 'oauth'],
+              ],
+            ),
+          ]);
+
+          final tags = await repo.publishClaim(
+            const IdentityClaim(
+              pubkey: _pubkey,
+              platform: 'telegram',
+              identity: 'chan',
+              proof: 'chan/2',
+            ),
+          );
+
+          expect(tags.map((t) => t[1]), isNot(contains('github:octocat')));
+          expect(
+            tags.map((t) => t[1]),
+            containsAll(<String>['bluesky:alice.bsky.social', 'telegram:chan']),
+          );
+        },
+      );
+
+      test(
+        'accepts a newer relay event carrying a claim removed here',
+        () async {
+          stubIdentityEvents([
+            _event(
+              id: _eventId(10),
+              kind: 10011,
+              createdAt: 100,
+              tags: [
+                ['i', 'github:octocat', 'abc'],
+                ['i', 'telegram:chan', 'chan/2'],
+              ],
+            ),
+          ]);
+
+          await repo.removeClaim(
+            const IdentityClaim(
+              pubkey: _pubkey,
+              platform: 'telegram',
+              identity: 'chan',
+              proof: 'chan/2',
+            ),
+          );
+
+          stubIdentityEvents([
+            _event(
+              id: _eventId(11),
+              kind: 10011,
+              createdAt: 2000,
+              tags: [
+                ['i', 'github:octocat', 'abc'],
+                ['i', 'telegram:chan', 'new-proof'],
+              ],
+            ),
+          ]);
+
+          final tags = await repo.publishClaim(
+            const IdentityClaim(
+              pubkey: _pubkey,
+              platform: 'bluesky',
+              identity: 'alice.bsky.social',
+              proof: IdentityClaim.oauthProof,
+            ),
+          );
+
+          expect(tags.map((t) => t[1]), contains('telegram:chan'));
+        },
+      );
     });
 
     group('removeClaim', () {
@@ -2203,9 +2315,9 @@ void main() {
             ],
           ),
         ]);
-        when(() => client.oauthRevokeUrl).thenReturn(
-          'https://verifier.example/auth/oauth/revoke',
-        );
+        when(
+          () => client.oauthRevokeUrl,
+        ).thenReturn('https://verifier.example/auth/oauth/revoke');
         when(
           () => client.revokeOAuth(
             platform: any(named: 'platform'),
@@ -2252,9 +2364,9 @@ void main() {
             ],
           ),
         ]);
-        when(() => client.oauthRevokeUrl).thenReturn(
-          'https://verifier.example/auth/oauth/revoke',
-        );
+        when(
+          () => client.oauthRevokeUrl,
+        ).thenReturn('https://verifier.example/auth/oauth/revoke');
         when(
           () => client.revokeOAuth(
             platform: any(named: 'platform'),
@@ -2288,9 +2400,9 @@ void main() {
               ],
             ),
           ]);
-          when(() => client.oauthRevokeUrl).thenReturn(
-            'https://verifier.example/auth/oauth/revoke',
-          );
+          when(
+            () => client.oauthRevokeUrl,
+          ).thenReturn('https://verifier.example/auth/oauth/revoke');
           var signCalls = 0;
           repo = IdentityClaimsRepository(
             verifierClient: client,
@@ -2538,6 +2650,7 @@ Event _event({
   required String id,
   int kind = 0,
   List<List<String>> tags = const [],
+  String content = '',
   int createdAt = 1000,
 }) {
   return Event.fromJson({
@@ -2546,7 +2659,7 @@ Event _event({
     'created_at': createdAt,
     'kind': kind,
     'tags': tags,
-    'content': '',
+    'content': content,
     'sig': '',
   });
 }

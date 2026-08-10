@@ -87,9 +87,8 @@ class VerifyCubit extends Cubit<VerifyState> {
 
   /// Unlinks [claim] and drops it from the rendered list.
   ///
-  /// The list is updated from the tags the publish actually carried rather
-  /// than from a fresh relay read, so the row disappears as soon as a relay
-  /// confirms rather than one round trip later.
+  /// The list is updated locally after the publish confirms rather than from a
+  /// fresh relay read, so the row disappears immediately even if relays lag.
   Future<void> removeClaim(IdentityClaim claim) async {
     final key = VerifyState.keyOf(claim);
     if (state.removingKey != null) return;

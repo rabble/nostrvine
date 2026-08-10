@@ -158,7 +158,7 @@ class GeneralSettingsScreen extends ConsumerWidget {
                   icon: DivineIconName.caretRight,
                   color: context.vineColors.mutedText,
                 ),
-                onTap: () => context.push(VerifyPage.path),
+                onTap: () => context.pushNamed(VerifyPage.routeName),
               ),
             ],
           ),

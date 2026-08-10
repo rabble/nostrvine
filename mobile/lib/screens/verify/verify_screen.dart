@@ -77,14 +77,11 @@ class VerifyView extends StatelessWidget {
     if (error == null) return;
     final l10n = context.l10n;
     ScaffoldMessenger.of(context).showSnackBar(
-      DivineSnackbarContainer.snackBar(
-        switch (error) {
-          VerifyError.remove => l10n.verifyErrorRemoveFailed,
-          VerifyError.linksUnreadable => l10n.verifyErrorLinksUnreadable,
-          VerifyError.load => l10n.verifyLoadFailed,
-        },
-        error: true,
-      ),
+      DivineSnackbarContainer.snackBar(switch (error) {
+        VerifyError.remove => l10n.verifyErrorRemoveFailed,
+        VerifyError.linksUnreadable => l10n.verifyErrorLinksUnreadable,
+        VerifyError.load => l10n.verifyLoadFailed,
+      }, error: true),
     );
   }
 }
@@ -119,9 +116,7 @@ class _VerifySignedOut extends StatelessWidget {
         child: Text(
           context.l10n.verifySignedOutMessage,
           textAlign: TextAlign.center,
-          style: VineTheme.bodyMediumFont(
-            color: context.vineColors.mutedText,
-          ),
+          style: VineTheme.bodyMediumFont(color: context.vineColors.mutedText),
         ),
       ),
     );
@@ -182,8 +177,19 @@ class _VerifyContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final state = context.watch<VerifyCubit>().state;
-    final linkable = state.linkablePlatforms;
+    final claims = context.select((VerifyCubit cubit) => cubit.state.claims);
+    final verifiedKeys = context.select(
+      (VerifyCubit cubit) => cubit.state.verifiedKeys,
+    );
+    final verifierReachable = context.select(
+      (VerifyCubit cubit) => cubit.state.verifierReachable,
+    );
+    final removingKey = context.select(
+      (VerifyCubit cubit) => cubit.state.removingKey,
+    );
+    final linkable = context.select(
+      (VerifyCubit cubit) => cubit.state.linkablePlatforms,
+    );
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
@@ -195,9 +201,9 @@ class _VerifyContent extends StatelessWidget {
         const SizedBox(height: 8),
         const _HowItWorksLink(),
         const SizedBox(height: 24),
-        if (state.claims.isNotEmpty) ...[
+        if (claims.isNotEmpty) ...[
           _SectionLabel(l10n.verifyLinkedSectionTitle),
-          if (!state.verifierReachable)
+          if (!verifierReachable)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Text(
@@ -207,12 +213,18 @@ class _VerifyContent extends StatelessWidget {
                 ),
               ),
             ),
-          for (final claim in state.claims)
+          for (final claim in claims)
             VerifyClaimRow(
               claim: claim,
-              isVerified: state.isVerified(claim),
-              isRemoving: state.isRemoving(claim),
-              onRemove: state.removingKey != null
+              isVerified: verifiedKeys.contains(
+                '${claim.platform.toLowerCase()}:'
+                '${claim.identity.toLowerCase()}',
+              ),
+              isRemoving:
+                  removingKey ==
+                  '${claim.platform.toLowerCase()}:'
+                      '${claim.identity.toLowerCase()}',
+              onRemove: removingKey != null
                   ? null
                   : () => _confirmRemove(context, claim),
             ),
@@ -222,9 +234,7 @@ class _VerifyContent extends StatelessWidget {
         if (linkable.isEmpty)
           Text(
             l10n.verifyAllPlatformsLinked,
-            style: VineTheme.bodySmallFont(
-              color: context.vineColors.mutedText,
-            ),
+            style: VineTheme.bodySmallFont(color: context.vineColors.mutedText),
           )
         else
           for (final platform in linkable)
