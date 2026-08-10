@@ -22,7 +22,7 @@ const String _audioPubkey =
 
 /// local_stack's relay, reached the same way every other
 /// `mobile/integration_test/` suite reaches it.
-const String _relayUrl = 'ws://$localHost:$localRelayPort';
+String get _relayUrl => 'ws://$localHost:$localRelayPort';
 
 /// One simulated device: its own sync repository, applied-state store,
 /// and local sound library, plus the vault key it resolved.
