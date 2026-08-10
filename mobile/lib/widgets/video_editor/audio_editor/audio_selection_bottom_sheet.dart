@@ -591,6 +591,7 @@ class _PickerSearchInput extends StatelessWidget {
       color: context.vineColors.surface,
       child: Semantics(
         identifier: SemanticIds.audioSearchField,
+        textField: true,
         child: TextField(
           controller: controller,
           onChanged: onChanged,

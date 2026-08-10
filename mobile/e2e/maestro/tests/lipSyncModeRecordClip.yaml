@@ -80,31 +80,9 @@ tags:
       text: ".*Bruh Sound Effect.*"
     timeout: 15000
 
-# 4. Record. The record button looks near-identical in both states, so it is
-# the close button that reports the transition: while recording, the top bar
-# swaps its close/next row out entirely.
-- tapOn:
-    id: camera_record_button
-- extendedWaitUntil:
-    notVisible:
-      id: camera_close_button
-    timeout: 15000
-
-# Let a couple of seconds of footage accumulate. Nothing auto-stops here — the
-# sound plays under the recording but does not end it — so this is a plain
-# wait, and `waitForAnimationToEnd` runs its timeout out because the live
-# preview never settles.
-- waitForAnimationToEnd:
-    timeout: 3000
-
-- tapOn:
-    id: camera_record_button
-- extendedWaitUntil:
-    visible:
-      id: camera_next_button
-    timeout: 15000
-- assertVisible:
-    id: camera_delete_clip_button
+# 4. Record. The sound plays under the recording but does not end it; once a
+# sound is selected, lip-sync uses the same tap-to-toggle capture stack.
+- runFlow: ../utils/recordCaptureClip.yaml
 
 # 5. Delete it again. This is teardown, not just symmetry: a clip left behind
 # is written to the clip library and survives the run, so the next one would
@@ -112,10 +90,5 @@ tags:
 #
 # The sound stays picked, which is fine — the flow is done with the gate, and a
 # relaunch clears the editor's selection anyway.
-- tapOn:
-    id: camera_delete_clip_button
-- extendedWaitUntil:
-    notVisible:
-      id: camera_next_button
-    timeout: 15000
+- runFlow: ../utils/deleteLastRecorderClip.yaml
 - runFlow: ../asserts/assertLipSyncMode.yaml

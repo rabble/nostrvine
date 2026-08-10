@@ -28,6 +28,9 @@ tags:
 #
 # It is worth the copy dependency: without it the step only proves that
 # nothing happened, which is also what a dead button looks like.
+- assertVisible:
+    id: audio_chip
+    text: ".*Add audio.*"
 - tapOn:
     id: camera_record_button
 - extendedWaitUntil:

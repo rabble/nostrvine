@@ -1,6 +1,6 @@
 appId: co.openvine.app
 ---
-# Lip-sync mode, idle: the viewfinder chrome is up, no sound is picked and no
+# Lip-sync mode, idle: the viewfinder chrome and sound picker are up, and no
 # clip is recorded yet.
 #
 # Lip-sync renders the capture stack with the same control rail, so the sound
