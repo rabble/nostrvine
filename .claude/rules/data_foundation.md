@@ -19,9 +19,10 @@ cached, or how a local schema evolves.
    options, and other values where losing the value is recoverable and no
    query/schema model is needed.
 4. **Secrets and signing material** never belong in these general stores.
-   Use the existing secure-storage/key-management path.
+   Use `mobile/packages/nostr_key_manager` and its secure-storage path.
 5. **Media bytes and file downloads** use the owning media cache or file
-   pipeline, not ad hoc rows in app data stores.
+   pipeline, such as `mobile/packages/media_cache`, not ad hoc rows in app
+   data stores.
 
 If a value fits multiple buckets, prefer the more structured shared store.
 Avoid inventing a feature-local persistence layer just because it is faster to
@@ -44,7 +45,10 @@ Good `cache_sync` candidates:
 When adding a `cache_sync` cache:
 
 - choose a key shape that is stable, explicit, and scoped by pubkey when the
-  data is account-specific
+  data is account-specific. Account-scoped keys should follow the
+  `${pubkeyHex}:${operation}` convention from `cache_sync` (RFC #4244) so
+  `CacheSync.invalidatePrefix(pubkeyHex)` clears that account's entries at
+  sign-out without touching other accounts.
 - set a TTL that matches the product freshness expectation
 - define invalidation at the repository or service boundary that owns the
   data, not in the UI
@@ -98,7 +102,9 @@ justification must explain:
 
 Existing Hive-backed paths can stay while they are being retired
 incrementally, but new work should not expand Hive usage without a deliberate
-storage decision.
+storage decision. Known legacy owners include the hashtag and personal-event
+cache services, notification preferences, pending/resumable upload state, the
+people-lists local cache, and cache recovery.
 
 ## Drift Schema Changes Use Real Migrations
 
@@ -108,8 +114,9 @@ migrations.
 - Bump `schemaVersion` when the schema changes for existing installs.
 - Add `MigrationStrategy.onUpgrade` steps for table, column, index, and data
   migrations.
-- Keep migration tests with generated schema snapshots where the package uses
-  them.
+- For `db_client`, keep generated snapshots under
+  `mobile/packages/db_client/drift_schemas/app_database/` and migration tests
+  in `mobile/packages/db_client/test/drift/app_database/migration_test.dart`.
 - Use `beforeOpen` for startup cleanup and validation only, not as the primary
   place to accumulate `CREATE TABLE IF NOT EXISTS` or `ALTER TABLE` repair SQL.
 
@@ -124,6 +131,8 @@ run yet when the upgrade step executes. Make the first `1 -> 2` step
 idempotent (probe `sqlite_master` / `PRAGMA table_info` before altering), and
 treat the generated v1 snapshot as the declared schema rather than as what
 every install actually has.
+
+See #6921 for the tracked `db_client` repair-to-migration cleanup.
 
 ## Review Checklist
 
