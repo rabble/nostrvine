@@ -1,0 +1,26 @@
+appId: co.openvine.app
+tags:
+  - recorder
+---
+#TC to open the video recorder in capture mode,
+# given the user is signed in and on a feed surface,
+# validate the capture viewfinder comes up with its full control set and that
+# closing it puts the user back on the feed.
+#Steps:
+# 1. Tap the bottom-nav camera button: capture mode is displayed
+# 2. Close the recorder: the user is back on the feed
+
+# 1. Open the recorder
+- runFlow: ../utils/openCaptureMode.yaml
+
+# 2. Close it. The recorder is a full-screen push, so the bottom nav coming
+# back is what proves we left it — and the record button going away proves we
+# left it rather than stacking something on top.
+- tapOn:
+    id: camera_close_button
+- extendedWaitUntil:
+    visible:
+      id: camera_button
+    timeout: 15000
+- assertNotVisible:
+    id: camera_record_button

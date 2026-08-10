@@ -1,0 +1,42 @@
+appId: co.openvine.app
+tags:
+  - recorder
+---
+#TC to record a clip in capture mode,
+# given the recorder is open on an idle capture viewfinder,
+# validate tap-to-start / tap-to-stop produces a clip in the session.
+#
+# Needs real camera hardware. Without it the bloc never reports
+# `isCameraInitialized`, the record button stays disabled, and the first tap
+# does nothing — so this cannot pass on the iOS Simulator. Run it on an
+# Android emulator (which has a virtual scene camera) or on a device.
+#
+# Tap-to-toggle is the default; hold-to-record is opt-in
+# (`HoldToRecordPreferenceService` defaults to false). A run against a device
+# where a previous session enabled it will hang on the first assertion.
+#Steps:
+# 1. Tap the record button: recording starts and the top-bar chrome collapses
+# 2. Tap it again: recording stops and the session holds one clip
+
+# 1. Start recording.
+#
+# The record button looks near-identical in both states, so it is the close
+# button that reports the transition: while recording, the top bar swaps its
+# close/next row out for the recording-progress bar entirely.
+- tapOn:
+    id: camera_record_button
+- extendedWaitUntil:
+    notVisible:
+      id: camera_close_button
+    timeout: 15000
+
+# Let a couple of seconds of footage accumulate. The progress bar animates for
+# the whole recording, so this waits the timeout out instead of returning
+# early — there is no elapsed-duration element to wait on instead.
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# 2. Stop recording
+- tapOn:
+    id: camera_record_button
+- runFlow: ../asserts/assertCaptureClipRecorded.yaml

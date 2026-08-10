@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
@@ -113,6 +114,7 @@ class _VideoRecorderLibraryButtonState
     return Padding(
       padding: const .only(left: 16),
       child: Semantics(
+        identifier: SemanticIds.cameraLibraryButton,
         button: widget.interactive,
         // A stop-motion session counts captured stills, not clips — the clip
         // label would announce 12 stills as "12 clips". Its own label also

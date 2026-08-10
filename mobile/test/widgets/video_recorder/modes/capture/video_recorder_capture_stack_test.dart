@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -155,6 +156,32 @@ void main() {
             .widgetList<AnimatedOpacity>(find.byType(AnimatedOpacity))
             .toList();
         expect(opacities.any((o) => o.opacity == 1), isTrue);
+      });
+
+      // Anchor for the Maestro capture-mode flow, which deletes the recorded
+      // clip by id as its teardown (e2e/maestro/tests/captureModeDeleteClip
+      // .yaml). Nothing else in this file would notice the id going missing.
+      testWidgets('exposes an E2E identifier on the undo button', (
+        tester,
+      ) async {
+        final clips = [
+          DivineVideoClip(
+            id: 'clip1',
+            video: EditorVideo.file('/test/clip1.mp4'),
+            duration: const Duration(seconds: 2),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          ),
+        ];
+
+        await tester.pumpWidget(buildWidget(clips: clips));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.cameraDeleteClipButton),
+          findsOneWidget,
+        );
       });
 
       testWidgets('undo button is hidden during recording even with clips', (
