@@ -79,6 +79,26 @@ abstract class SemanticIds {
   static const String settingsNostrRow = 'nostr_settings_tile';
   static const String settingsRemoveKeysRow = 'remove_keys_tile';
 
+  /// Search. The results screen has no tabs and its rows are keyed by
+  /// pubkey, so E2E flows need an ordinal handle plus anchors for the
+  /// chrome — otherwise they fall back to matching translated copy or
+  /// tapping fixed screen coordinates.
+  static const String exploreSearchBar = 'explore_search_bar';
+  static const String searchField = 'search_field';
+  static const String searchBackButton = 'search_back_button';
+  static const String searchFilterPill = 'search_filter_pill';
+
+  static String searchSectionHeader(String section) =>
+      'search_section_header_$section';
+
+  /// Ordinal handle for a People result row, alongside the pubkey-keyed
+  /// `search_user_tile_<pubkey>` that the row itself carries.
+  static String searchUserTileAt(int index) => 'search_user_tile_$index';
+
+  /// Comments sheet title. Doubles as the drag anchor: the sheet has no
+  /// close button, so dismissing it means dragging the header down.
+  static const String commentsSheetTitle = 'comments_sheet_title';
+
   static const String profileStatsRow = 'profile_stats_row';
 
   /// Opens Settings from the own-profile header. This is the only entry

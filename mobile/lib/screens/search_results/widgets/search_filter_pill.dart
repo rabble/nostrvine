@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/search_results_filter/search_results_filter.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/search_results/widgets/search_filter_sheet.dart';
 import 'package:videos_repository/videos_repository.dart';
@@ -43,6 +44,7 @@ class _SearchFilterButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
+      identifier: SemanticIds.searchFilterPill,
       label: context.l10n.searchFilterPillSemanticLabel(filter.label),
       button: true,
       child: GestureDetector(

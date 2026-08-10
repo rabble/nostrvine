@@ -10,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/blocs/list_search/list_search_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/router/routes/route_extras.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
@@ -59,6 +60,7 @@ class ListsSection extends StatelessWidget {
             child: SectionHeader(
               title: context.l10n.searchListsSectionHeader,
               onTap: onSeeAll,
+              semanticIdentifier: SemanticIds.searchSectionHeader('lists'),
             ),
           ),
         _ListsContent(showAll: showAll),
