@@ -1,20 +1,18 @@
 // ABOUTME: Resolves what a video card's secondary meta line shows.
-// ABOUTME: Vines always show their archival count; diVine counts carry a floor.
+// ABOUTME: A public count appears only when it is large enough to attract.
 
 import 'package:meta/meta.dart';
 import 'package:models/models.dart';
 
-/// Smallest live diVine count that reads as a recommendation rather than a
-/// warning.
+/// Smallest public count that reads as a recommendation rather than a warning.
 ///
-/// Applies only to counts diVine itself accumulated. Our current view volume
-/// is small enough that a bare number below this tells a viewer not to bother
-/// with content the feed just paid to surface.
-///
-/// Archival Vine counts are deliberately exempt — see [_resolveLoopCount].
+/// A number below this tells a viewer not to bother — which is worse than
+/// silence on content the feed just paid to surface. Above it, the number is
+/// doing useful work: a classic Vine with millions of loops is famous, and
+/// saying so is the point.
 ///
 /// This threshold is a product call, not a technical one. It is the single
-/// value to change if the bar sits wrong.
+/// value to change if the bar turns out to sit in the wrong place.
 const int publicLoopCountFloor = 1000;
 
 /// The date and count a video card's secondary line should render.
@@ -64,22 +62,14 @@ VideoCardMeta resolveVideoCardMeta({
 int? _resolveLoopCount({required VideoEvent video, required bool isOwnVideo}) {
   if (isOwnVideo) return video.totalLoops;
 
-  // A classic Vine always shows its archival figure, however small. The
-  // number is a historical fact about how the clip did on Vine, not a claim
-  // about diVine, so it never reads as a verdict on us. The median archived
-  // Vine sits near 300 loops, so a floor here would silently hide most of the
-  // archive — the opposite of the intent.
-  //
-  // Never [VideoEvent.totalLoops]: adding live diVine views to an archival
-  // count both misreports how popular the Vine was and buries the archival
-  // number under ours.
-  if (video.isOriginalVine) {
-    final originalLoops = video.originalLoops;
-    if (originalLoops == null || originalLoops <= 0) return null;
-    return originalLoops;
-  }
-
-  // diVine's own counts are the ones that read small, so they carry the floor.
-  final liveCount = video.totalLoops;
-  return liveCount >= publicLoopCountFloor ? liveCount : null;
+  final publicCount = _publicCount(video);
+  return publicCount >= publicLoopCountFloor ? publicCount : null;
 }
+
+/// The count a stranger would be shown, before the floor is applied.
+///
+/// Classic Vines report their archival figure alone. Folding live diVine
+/// views into it would misreport how popular the Vine actually was, and our
+/// current view volume is too small to change the number meaningfully anyway.
+int _publicCount(VideoEvent video) =>
+    video.isOriginalVine ? video.originalLoops ?? 0 : video.totalLoops;
