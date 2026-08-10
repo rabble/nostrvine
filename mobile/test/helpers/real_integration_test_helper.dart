@@ -1,8 +1,6 @@
 // ABOUTME: Helper utilities for real integration tests without over-mocking
 // ABOUTME: Provides real Nostr relay connections and minimal platform channel mocking
 
-import 'dart:io';
-
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -17,32 +15,6 @@ import 'shared_channel_override.dart';
 class RealIntegrationTestHelper {
   static bool _isSetup = false;
 
-  /// Per-process root for the directories `path_provider` hands back.
-  ///
-  /// `very_good test --optimization` runs the merged bundle and every
-  /// VGV-skip-tagged file as *separate, concurrent* processes.
-  /// These paths were hardcoded to `/tmp/test_documents` and
-  /// `/tmp/test_support`, so every one of those processes resolved to the
-  /// same directory — and therefore the same Hive boxes on disk.
-  ///
-  /// Sixteen suites open the `pending_uploads` box; eleven live in the
-  /// bundle and five run standalone. When a standalone suite called
-  /// `Hive.deleteBoxFromDisk('pending_uploads')` while a bundled one was
-  /// reading it, whichever lost the race failed on a box it did not mutate —
-  /// a seed-dependent failure with no connection to the diff under test.
-  /// Keying the root on the process id removes the shared resource.
-  static final Directory _processRoot = Directory.systemTemp.createTempSync(
-    'divine_test_${pid}_',
-  );
-
-  static final Directory _documentsDirectory = Directory(
-    '${_processRoot.path}/documents',
-  )..createSync(recursive: true);
-
-  static final Directory _supportDirectory = Directory(
-    '${_processRoot.path}/support',
-  )..createSync(recursive: true);
-
   static const MethodChannel _prefsChannel = MethodChannel(
     'plugins.flutter.io/shared_preferences',
   );
@@ -51,9 +23,6 @@ class RealIntegrationTestHelper {
   );
   static const MethodChannel _secureStorageChannel = MethodChannel(
     'plugins.it_nomads.com/flutter_secure_storage',
-  );
-  static const MethodChannel _pathProviderChannel = MethodChannel(
-    'plugins.flutter.io/path_provider',
   );
 
   /// Setup test environment with platform channel mocks and real Nostr
@@ -161,17 +130,8 @@ class RealIntegrationTestHelper {
       return null;
     });
 
-    overrideSharedChannel(_pathProviderChannel, (MethodCall methodCall) async {
-      if (methodCall.method == 'getApplicationDocumentsDirectory') {
-        return _documentsDirectory.path;
-      }
-      if (methodCall.method == 'getTemporaryDirectory') {
-        return '/tmp';
-      }
-      if (methodCall.method == 'getApplicationSupportDirectory') {
-        return _supportDirectory.path;
-      }
-      return null;
-    });
+    // path_provider needs no override here: `setupTestEnvironment` already
+    // points both `PathProviderPlatform.instance` and the channel at this
+    // process's own directories.
   }
 }

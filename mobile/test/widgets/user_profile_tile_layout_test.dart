@@ -1,8 +1,6 @@
 // ABOUTME: Layout-focused TDD tests for UserProfileTile addressing widget display bugs
 // ABOUTME: Tests responsive layout, element positioning, state visibility, and edge case rendering
 
-import 'dart:io';
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -644,30 +642,9 @@ void _setupPlatformMocks() {
     return null;
   });
 
-  // PathProvider mock — shared channel; sanctioned override auto-restores (#5738).
-  const MethodChannel pathProviderChannel = MethodChannel(
-    'plugins.flutter.io/path_provider',
-  );
-  // Per-process directories, not the shared `/tmp/test_*` these used to
-  // return: very_good runs the merged bundle and each VGV-skip-tagged
-  // file concurrently, and a shared path puts them all on the same Hive
-  // boxes on disk. See RealIntegrationTestHelper._processRoot.
-  final processRoot = Directory.systemTemp.createTempSync(
-    'divine_tile_layout_${pid}_',
-  );
-  overrideSharedChannel(pathProviderChannel, (call) async {
-    if (call.method == 'getApplicationDocumentsDirectory') {
-      return (Directory(
-        '${processRoot.path}/documents',
-      )..createSync(recursive: true)).path;
-    }
-    if (call.method == 'getApplicationSupportDirectory') {
-      return (Directory(
-        '${processRoot.path}/support',
-      )..createSync(recursive: true)).path;
-    }
-    return processRoot.path;
-  });
+  // No path_provider mock: `setupTestEnvironment` already points both
+  // `PathProviderPlatform.instance` and the channel at this process's own
+  // directories.
 
   // Connectivity mock
   const MethodChannel connectivityChannel = MethodChannel(

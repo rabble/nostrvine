@@ -1,6 +1,8 @@
 // ABOUTME: Test setup configuration for handling platform channels and mock services
 // ABOUTME: Provides mock implementations for plugins that aren't available in test environment
 
+import 'dart:io';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -91,11 +93,33 @@ void _installShared(MethodChannel channel, SharedChannelHandler handler) {
       .setMockMethodCallHandler(channel, handler);
 }
 
+/// Root of the directories `path_provider` resolves to in tests, unique per
+/// process.
+///
+/// `very_good test --optimization` does not run one process: it runs the merged
+/// bundle plus each VGV-skip-tagged file as its own process, concurrently
+/// (`--concurrency=4` in CI). These paths were the fixed `/tmp/documents` and
+/// `/tmp/support`, so every one of those processes resolved to the same
+/// directories — and therefore to the same Hive boxes and database files on
+/// disk. A suite that deleted a box could pull it out from under a suite in
+/// another process, failing on state it never mutated. Keying the root on the
+/// process id removes the shared resource.
+final Directory _processRoot = Directory.systemTemp.createTempSync(
+  'divine_test_${pid}_',
+);
+
+Directory _processDirectory(String name) =>
+    Directory('${_processRoot.path}/$name')..createSync();
+
+final Directory _temporaryDirectory = _processDirectory('temporary');
+final Directory _documentsDirectory = _processDirectory('documents');
+final Directory _supportDirectory = _processDirectory('support');
+
 final MockPathProviderPlatform _mockPathProviderPlatform =
     MockPathProviderPlatform()
-      ..setTemporaryPath('/tmp')
-      ..setApplicationDocumentsPath('/tmp/documents')
-      ..setApplicationSupportPath('/tmp/support');
+      ..setTemporaryPath(_temporaryDirectory.path)
+      ..setApplicationDocumentsPath(_documentsDirectory.path)
+      ..setApplicationSupportPath(_supportDirectory.path);
 
 /// Process-global mocktail fallback values for sealed event types whose
 /// concrete subclasses are constructed at call time (so [any]/[captureAny]
@@ -176,14 +200,18 @@ Future<Object?>? _deviceInfoHandler(MethodCall methodCall) async {
   return null;
 }
 
+/// Mirrors [_mockPathProviderPlatform]. The app-facing `path_provider` API
+/// resolves through `PathProviderPlatform.instance`, so this channel handler
+/// only serves a caller that invokes the raw MethodChannel — keep the two in
+/// step so such a caller cannot land on a different directory.
 Future<Object?>? _pathProviderHandler(MethodCall methodCall) async {
   switch (methodCall.method) {
     case 'getTemporaryDirectory':
-      return '/tmp';
+      return _temporaryDirectory.path;
     case 'getApplicationDocumentsDirectory':
-      return '/tmp/documents';
+      return _documentsDirectory.path;
     case 'getApplicationSupportDirectory':
-      return '/tmp/support';
+      return _supportDirectory.path;
     default:
       return null;
   }
