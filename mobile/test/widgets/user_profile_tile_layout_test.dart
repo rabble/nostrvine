@@ -649,10 +649,9 @@ void _setupPlatformMocks() {
     'plugins.flutter.io/path_provider',
   );
   // Per-process directories, not the shared `/tmp/test_*` these used to
-  // return: very_good runs the merged bundle and each
-  // skip_very_good_optimization file concurrently, and a shared path puts
-  // them all on the same Hive boxes on disk. See
-  // RealIntegrationTestHelper._processRoot.
+  // return: very_good runs the merged bundle and each VGV-skip-tagged
+  // file concurrently, and a shared path puts them all on the same Hive
+  // boxes on disk. See RealIntegrationTestHelper._processRoot.
   final processRoot = Directory.systemTemp.createTempSync(
     'divine_tile_layout_${pid}_',
   );

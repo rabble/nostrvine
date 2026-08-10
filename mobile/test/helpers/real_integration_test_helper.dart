@@ -20,7 +20,7 @@ class RealIntegrationTestHelper {
   /// Per-process root for the directories `path_provider` hands back.
   ///
   /// `very_good test --optimization` runs the merged bundle and every
-  /// `skip_very_good_optimization` file as *separate, concurrent* processes.
+  /// VGV-skip-tagged file as *separate, concurrent* processes.
   /// These paths were hardcoded to `/tmp/test_documents` and
   /// `/tmp/test_support`, so every one of those processes resolved to the
   /// same directory — and therefore the same Hive boxes on disk.
