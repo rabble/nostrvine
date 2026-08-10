@@ -32,6 +32,11 @@ class VerifyPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final repository = ref.watch(identityClaimsRepositoryProvider);
+    // `authServiceProvider` is a keepAlive singleton that does not rebuild when
+    // the signed-in identity changes, so without this the pubkey below stays
+    // whatever it was on first build. The key already keeps the cubit alive
+    // across rebuilds that do not change it.
+    ref.watch(currentAuthStateProvider);
     final pubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
 
     if (pubkey == null || pubkey.isEmpty) {

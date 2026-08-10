@@ -33,6 +33,9 @@ class VerifyConnectPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final repository = ref.watch(identityClaimsRepositoryProvider);
+    // See VerifyPage: the auth service instance itself never changes, so the
+    // identity has to be watched separately for the pubkey to stay current.
+    ref.watch(currentAuthStateProvider);
     final pubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
     // iOS below 17.4 can report a completed OAuth session as a cancel, so the
     // one-tap route is hidden there and the proof post carries the flow.
