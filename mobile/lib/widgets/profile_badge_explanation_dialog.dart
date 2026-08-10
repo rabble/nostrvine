@@ -4,15 +4,23 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/utils/pause_aware_modals.dart';
 
 enum ProfileBadgeExplanationType { ogViner, profileCheckmark }
 
+/// Opens the explainer for a compact profile badge.
+///
+/// Uses [showVideoPausingVineBottomSheet] because both badges also render
+/// inside the video feed, over a playing video: the pause-aware wrapper is
+/// what flips `OverlayVisibility.setBottomSheetOpen`, and without it the
+/// video keeps playing behind the sheet. It also defaults `useRootNavigator`
+/// to true, so the sheet covers the shell's tab bar instead of opening
+/// underneath it.
 Future<void> showProfileBadgeExplanationDialog(
   BuildContext context,
   ProfileBadgeExplanationType type,
 ) {
-  return VineBottomSheet.show<void>(
-    context: context,
+  return context.showVideoPausingVineBottomSheet<void>(
     scrollable: false,
     expanded: false,
     contentTitle: type.title(context.l10n),
@@ -37,10 +45,7 @@ class ProfileBadgeExplanationContent extends StatelessWidget {
         children: [
           Row(
             children: [
-              DivineIcon(
-                icon: type.icon,
-                color: type.iconColor,
-              ),
+              DivineIcon(icon: type.icon, color: type.iconColor),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -56,7 +61,7 @@ class ProfileBadgeExplanationContent extends StatelessWidget {
           Align(
             alignment: Alignment.centerRight,
             child: DivineButton(
-              label: l10n.profileBadgeExplanationClose,
+              label: l10n.commonClose,
               onPressed: () => Navigator.of(context).pop(),
               type: DivineButtonType.secondary,
               size: DivineButtonSize.small,

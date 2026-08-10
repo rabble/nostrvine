@@ -1,0 +1,78 @@
+// ABOUTME: Tests the profile badge explainer sheet's video-pause integration.
+// ABOUTME: Both badges also render over a playing video in the feed.
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/overlay_visibility_provider.dart';
+import 'package:openvine/widgets/profile_badge_explanation_dialog.dart';
+
+void main() {
+  group('showProfileBadgeExplanationDialog', () {
+    late ProviderContainer container;
+
+    setUp(() {
+      container = ProviderContainer();
+      addTearDown(container.dispose);
+    });
+
+    Widget buildSubject(ProfileBadgeExplanationType type) {
+      return UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => Center(
+                child: TextButton(
+                  onPressed: () =>
+                      showProfileBadgeExplanationDialog(context, type),
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    for (final type in ProfileBadgeExplanationType.values) {
+      testWidgets('pauses the feed video while $type is explained', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject(type));
+
+        expect(
+          container.read(overlayVisibilityProvider).isBottomSheetOpen,
+          isFalse,
+        );
+
+        await tester.tap(find.text('open'));
+        await tester.pumpAndSettle();
+
+        // Without this the video keeps playing behind the sheet, because
+        // activeVideoProvider is gated on hasVisibleOverlay.
+        expect(
+          container.read(overlayVisibilityProvider).isBottomSheetOpen,
+          isTrue,
+        );
+
+        await tester.tap(
+          find.text(
+            lookupAppLocalizations(
+              const Locale('en'),
+            ).commonClose,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          container.read(overlayVisibilityProvider).isBottomSheetOpen,
+          isFalse,
+        );
+      });
+    }
+  });
+}
