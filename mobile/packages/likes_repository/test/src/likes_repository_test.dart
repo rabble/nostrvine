@@ -945,6 +945,54 @@ void main() {
     });
 
     group('unlikeEvent', () {
+      test(
+        'retracts a reaction whose publish is still in flight (#7001)',
+        () async {
+          // The placeholder id means "the confirmed swap has not run yet",
+          // NOT "the reaction never reached a relay" — likeEvent only swaps
+          // it after sendLike returns, and RelayPool.send reports success as
+          // soon as one socket takes the frame. Unliking inside that window
+          // must still publish the Kind 5, or the reaction stays live and
+          // counted forever while local state says "not liked", so the next
+          // tap publishes a second one.
+          final publishGate = Completer<Event>();
+          final reactionA = MockEvent();
+          when(() => reactionA.id).thenReturn('reaction_a');
+          when(
+            () => mockNostrClient.sendLike(
+              any(),
+              content: any(named: 'content'),
+              addressableId: any(named: 'addressableId'),
+              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenAnswer((_) => publishGate.future);
+          when(
+            () => mockNostrClient.deleteEvent(any()),
+          ).thenAnswer((_) async => MockEvent());
+
+          repository = createRepository();
+          final inFlightLike = repository.likeEvent(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+          );
+          await Future<void>.delayed(Duration.zero);
+
+          // The user taps again before the relay round-trip resolves.
+          await repository.unlikeEvent(testEventId);
+
+          // The relay had already stored it.
+          publishGate.complete(reactionA);
+          await inFlightLike;
+
+          verify(() => mockNostrClient.deleteEvent('reaction_a')).called(1);
+          expect(
+            await repository.isLiked(testEventId),
+            isFalse,
+            reason: 'the confirmed swap must not resurrect an unliked record',
+          );
+        },
+      );
       test('publishes deletion and removes record', () async {
         when(
           () => mockLocalStorage.getAllLikeRecords(),

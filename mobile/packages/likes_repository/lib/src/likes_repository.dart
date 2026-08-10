@@ -151,6 +151,18 @@ class LikesRepository {
   /// (unlike the in-memory-only precedent in #4478's comment count cache).
   final Map<String, LikeRecord> _likeRecordsByAddressableId = {};
 
+  /// Target event ids whose in-flight like publish must be retracted as soon
+  /// as it resolves.
+  ///
+  /// [unlikeEvent] cannot reference a `pending_` placeholder in a Kind 5 —
+  /// the real reaction id does not exist yet. The reaction may already be
+  /// live on a relay by then, because [likeEvent] only swaps the placeholder
+  /// after `sendLike` returns and a send succeeds as soon as one socket takes
+  /// the frame. Dropping the intent strands the reaction: live and counted
+  /// forever, while local state says "not liked", so the next tap publishes a
+  /// second one (#7001).
+  final Set<String> _unlikeRequestedWhilePending = {};
+
   /// In-memory cache of downvote records keyed by target event ID.
   ///
   /// Mirror of [_likeRecords] for kind-7 reactions whose content is `-`.
@@ -567,6 +579,12 @@ class LikesRepository {
         createdAt: placeholder.createdAt,
         addressableId: addressableId,
       );
+
+      if (_unlikeRequestedWhilePending.remove(eventId)) {
+        await _retractLikeUnlikedMidPublish(reactionEvent.id, confirmed);
+        return reactionEvent.id;
+      }
+
       _indexLikeRecord(confirmed);
       await _bestEffortLocalStorage(
         () async => _localStorage?.saveLikeRecord(confirmed),
@@ -576,6 +594,9 @@ class LikesRepository {
 
       return reactionEvent.id;
     } catch (e, stackTrace) {
+      // Nothing reached the relay, so there is nothing to retract. Drop the
+      // intent rather than leaving it to fire against an unrelated later like.
+      _unlikeRequestedWhilePending.remove(eventId);
       if (_queueOfflineAction != null) {
         Log.error(
           'Like publish failed; queuing optimistic action for retry',
@@ -608,6 +629,42 @@ class LikesRepository {
       }
       _emitLikedIds();
       rethrow;
+    }
+  }
+
+  /// Publishes the Kind 5 for a reaction the user unliked while its own
+  /// publish was still in flight (#7001).
+  ///
+  /// On failure the [confirmed] record is indexed after all, so a later
+  /// unlike can still reference the real reaction id — dropping it would
+  /// leave the reaction live and unreachable by the normal unlike flow.
+  Future<void> _retractLikeUnlikedMidPublish(
+    String reactionEventId,
+    LikeRecord confirmed,
+  ) async {
+    try {
+      final deletion = await _nostrClient.deleteEvent(reactionEventId);
+      if (deletion == null) {
+        throw const UnlikeFailedException(
+          'Failed to publish unlike deletion',
+        );
+      }
+    } on Object catch (e, stackTrace) {
+      Log.error(
+        'Failed to retract a like unliked mid-publish; keeping the record '
+        'so a later unlike can reference the reaction',
+        name: 'LikesRepository',
+        category: LogCategory.relay,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      _indexLikeRecord(confirmed);
+      await _bestEffortLocalStorage(
+        () async => _localStorage?.saveLikeRecord(confirmed),
+        description: 'saving the confirmed like',
+        site: LikesRepositoryReportableSites.likeEventSaveConfirmed,
+      );
+      _emitLikedIds();
     }
   }
 
@@ -771,13 +828,17 @@ class LikesRepository {
       return;
     }
 
-    // 3. Online → publish kind 5 (skipped for never-synced placeholders).
+    // 3. Online → publish kind 5 (deferred while the like is still in
+    // flight; see [_unlikeRequestedWhilePending]).
     // On failure, prefer queuing via [_queueOfflineAction] when wired so the
     // optimistic unlike survives transient relay-pool problems (mirror of
     // [likeEvent]). Without a wired callback, fall back to rollback +
     // rethrow to preserve the original contract.
     if (snapshotRecord.reactionEventId.startsWith('pending_')) {
-      // Pending like never reached the relay; nothing to delete on the wire.
+      // The real reaction id does not exist yet, so nothing can be referenced
+      // in a Kind 5 here. Record the intent instead — [likeEvent] retracts it
+      // the moment the publish resolves (#7001).
+      _unlikeRequestedWhilePending.add(resolvedEventId);
       return;
     }
 
@@ -2130,6 +2191,7 @@ class LikesRepository {
   Future<void> clearCache() async {
     _likeRecords.clear();
     _likeRecordsByAddressableId.clear();
+    _unlikeRequestedWhilePending.clear();
     _downvoteRecords.clear();
     _downvoteRecordsByAddressableId.clear();
     _likeCountCache.clear();
