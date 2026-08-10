@@ -552,7 +552,11 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
           skipNip04Fallback: true,
           additionalTags: ContentReportingService.moderationDmTags(
             reason: _selectedReason!,
-            sha256: widget.video?.sha256,
+            // A user report targets the account, not one of its videos. The
+            // constructor allows `video` and `userPubkey` together, so gate on
+            // the routing decision rather than on `video` being present —
+            // otherwise the backend files the report against that blob.
+            sha256: _isUserReport ? null : widget.video?.sha256,
           ),
         );
       } else {

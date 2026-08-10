@@ -1877,7 +1877,7 @@ void main() {
       );
     });
 
-    Widget buildUserReportSubject() {
+    Widget buildUserReportSubject({VideoEvent? video}) {
       final router = GoRouter(
         routes: [
           GoRoute(
@@ -1889,6 +1889,7 @@ void main() {
                     context: context,
                     builder: (_) => Material(
                       child: ReportContentDialog(
+                        video: video,
                         userPubkey: testUserPubkey,
                         moderationKindLabel: 'User Report',
                         moderationEventLabel: 'User Pubkey',
@@ -1923,8 +1924,11 @@ void main() {
       );
     }
 
-    Future<void> openAndSubmitUserReport(WidgetTester tester) async {
-      await tester.pumpWidget(buildUserReportSubject());
+    Future<void> openAndSubmitUserReport(
+      WidgetTester tester, {
+      VideoEvent? video,
+    }) async {
+      await tester.pumpWidget(buildUserReportSubject(video: video));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Open Report'));
       await tester.pumpAndSettle();
@@ -1935,6 +1939,34 @@ void main() {
       await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
       await tester.pumpAndSettle();
     }
+
+    testWidgets('DM omits sha256 even when a video was also supplied', (
+      tester,
+    ) async {
+      // The constructor permits `video` and `userPubkey` together, and
+      // `userPubkey` is what decides the report targets the account. Attaching
+      // the video's blob hash anyway would make the backend file a user report
+      // against that specific video.
+      await setLargeSurface(tester);
+      await openAndSubmitUserReport(
+        tester,
+        video: testVideo.copyWith(sha256: 'a' * 64),
+      );
+
+      final tags =
+          verify(
+                () => mockDmRepository.sendMessage(
+                  recipientPubkey: any(named: 'recipientPubkey'),
+                  content: any(named: 'content'),
+                  replyToId: any(named: 'replyToId'),
+                  skipNip04Fallback: any(named: 'skipNip04Fallback'),
+                  additionalTags: captureAny(named: 'additionalTags'),
+                ),
+              ).captured.single
+              as List<List<String>>;
+
+      expect(tags.where((tag) => tag.first == 'sha256'), isEmpty);
+    });
 
     testWidgets(
       'submission calls reportUser with the user pubkey and skips reportContent',
