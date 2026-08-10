@@ -31,12 +31,23 @@ abstract class SemanticIds {
   static const String cameraDeleteClipButton = 'camera_delete_clip_button';
   static const String cameraLibraryButton = 'camera_library_button';
 
-  /// Capture-mode control rail, top to bottom.
+  /// Capture-mode control rail, top to bottom. Lip-sync declares the same
+  /// countdown-timer and stabilization support, so it renders this rail
+  /// unchanged and drives it with the same E2E util.
   static const String cameraFlashButton = 'camera_flash_button';
   static const String cameraTimerButton = 'camera_timer_button';
   static const String cameraAspectRatioButton = 'camera_aspect_ratio_button';
   static const String cameraSwitchCameraButton = 'camera_switch_camera_button';
   static const String cameraStabilizationButton = 'camera_stabilization_button';
+
+  /// Sound picker on [VideoEditorAudioChip]. Lip-sync puts it in the top-bar
+  /// slot capture mode leaves empty, and because the two render an identical
+  /// control rail it is the *only* thing separating those viewfinders — so
+  /// `assertCaptureMode` asserts its absence.
+  ///
+  /// The chip is shared with the editor's audio-timing screen, which is a
+  /// different route, so the id stays unambiguous on any one screen.
+  static const String audioChip = 'audio_chip';
 
   /// Welcome screen. The fresh-install and returning-user branches show
   /// different buttons, so each action gets its own id rather than being

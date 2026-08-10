@@ -27,71 +27,151 @@ The `e2e-smoke-ios` and `e2e-smoke-android` Codemagic workflows are
 `triggering: events: []`, so nothing runs them automatically. They are manual
 dispatches, and GitHub CI does not cover this lane at all.
 
-## The recorder flow
+## The recorder flows
 
-`flows/captureModeFlow.yaml` covers the recorder's **capture** mode: open it
-from the feed, drive the control rail, record a clip, delete it, close. The
-other four modes (classic, stop-motion, lip-sync, upload) are not covered yet.
+Two of the recorder's five modes are covered, one flow each:
 
-Every file in it has been run green on a Galaxy SM-S942B.
+| Flow | Mode | Covers |
+|---|---|---|
+| `flows/captureModeFlow.yaml` | capture | open, drive the control rail, record a clip, delete it, close |
+| `flows/lipSyncModeFlow.yaml` | lip-sync | open, drive the control rail, prove the shutter is gated on picking a sound, close |
 
-It is **not in `smoke.yaml`**, and it is deliberately not on the iOS lane:
+Classic, stop-motion and upload are not covered yet.
 
-- **It needs real camera hardware.** Without a camera the bloc never reports
+Lip-sync is the short one on purpose. **Recording a lip-sync clip is out of
+scope**: the shutter is gated on a selected sound, and picking one means
+driving the audio sheet against whatever the relay is serving — the same
+live-content dependency this file already names as the suite's main source of
+flakiness. What `lipSyncModeAudioGate` covers instead is the gate, which is the
+only behaviour lip-sync adds over capture.
+
+Every file in both flows has been run green on a Galaxy SM-S942B. The lip-sync
+tests were driven test-by-test against an already-signed-in app rather than
+through `lipSyncModeFlow.yaml` end to end, because the device runs a German
+system locale and `loginFreshInstall`'s `clearState` drops the per-app English
+override mid-run (see step 0b). The login and `removeKeys` bookends of that
+flow are the same ones `captureModeFlow` already runs.
+
+Neither is in **`smoke.yaml`**, and both are deliberately off the iOS lane:
+
+- **They need real camera hardware.** Without a camera the bloc never reports
   `isCameraInitialized`, the record button stays disabled, and the recording
-  test hangs on its first wait. The iOS Simulator has no camera at all;
-  an Android emulator's virtual scene camera is enough, and a device is best.
-- **`captureModeOpen` alone** — the chrome assertion — does pass without a
+  test hangs on its first wait. The lens switch in the shared rail needs one
+  too. The iOS Simulator has no camera at all; an Android emulator's virtual
+  scene camera is enough, and a device is best.
+- **The `…Open` tests alone** — the chrome assertions — do pass without a
   camera, because the viewfinder falls back to a placeholder and every control
-  still renders.
+  still renders. So does `lipSyncModeAudioGate`, which is driven by the audio
+  selection rather than the camera.
 
-Run it against a booted Android emulator or a connected device:
+Run one against a booted Android emulator or a connected device:
 
 ```bash
 maestro --device <serial> test e2e/maestro/flows/captureModeFlow.yaml
+maestro --device <serial> test e2e/maestro/flows/lipSyncModeFlow.yaml
 ```
 
-`captureModeControls` asserts the icon-only rail controls by their Semantics
-`value` (`.*Square.*`, `.*3 seconds.*`, `.*Front camera.*`). That works:
-Flutter folds `value` into the Android content description, and Maestro
+### Reading state off an icon-only control
+
+`utils/driveCaptureRail.yaml` asserts the icon-only rail controls by their
+Semantics `value` (`.*Square.*`, `.*3 seconds.*`, `.*Front camera.*`). That
+works: Flutter folds `value` into the Android content description, and Maestro
 matches against it — confirmed on device. Two things follow, both worth
 knowing before writing more recorder selectors:
 
 - **A selector may combine `id` with `text`**, and here it must: "Off" is the
   value of the flash control *and* the timer control — and, once its sheet is
   open, of the stabilization menu's own first row.
-- **`selected: true` is readable too**, which is what `assertCaptureMode` uses
-  to prove Capture is armed. The mode wheel renders an entry for every mode in
-  every mode, so a bare `id: camera_mode_capture` would pass on the Upload tab
-  just as happily.
+- **`selected: true` is readable too**, which is what `assertCaptureMode` and
+  `assertLipSyncMode` use to prove the right mode is armed. The mode wheel
+  renders an entry for every mode in every mode, so a bare
+  `id: camera_mode_capture` would pass on the Upload tab just as happily.
 
-Five things the flow depends on that are easy to break by accident:
+### What the two viewfinders share, and what tells them apart
 
-- **The recorder opening on Capture.** It doesn't always: the recorder
-  restores the last-used mode from `camera_last_used_recorder_mode`
-  (`VideoRecorderMode.fromName` falls back to `capture` only when that key is
-  absent), and `openCaptureMode` asserts the mode rather than selecting it.
-  Run from the top this is safe — `loginFreshInstall`'s `clearState` wipes the
-  key — but a standalone run against a device whose last session used another
-  mode dies on `id: camera_mode_capture, selected` with no hint why. Reproduced
-  on the iOS Simulator with the key left on `classic`.
-- **Tap-to-toggle recording.** `HoldToRecordPreferenceService` defaults to
-  false. On a device where a previous session turned hold-to-record on, the
-  first tap does nothing and `captureModeRecordClip` fails on its wait.
-- **An empty session when the rail is driven.** `captureModeControls` runs
-  before the recording tests because the aspect-ratio control is disabled once
-  a clip exists — clips of mixed ratios cannot share an editor timeline.
+Lip-sync *is* the capture stack: same close, next, delete, library button,
+record button, and the same five rail controls in the same order, because it
+declares the same countdown-timer and stabilization support. The **only**
+element that differs is the sound picker it puts in the top bar's center slot,
+which capture mode leaves empty.
+
+That makes the two asserts a subset trap. Assert only what each mode renders
+and `assertCaptureMode` passes on the Lip Sync tab, because everything it
+checks is there. So it asserts `audio_chip` *absent*, and that one line is what
+keeps it honest. `video_editor_audio_chip_test.dart` pins the anchor itself at
+the widget level.
+
+Because the rail is shared, both modes also *drive* it with the same file —
+`utils/driveCaptureRail.yaml`. Each mode's `…Controls` test is that util plus
+its own mode assert. Modes that render a different set (stop-motion adds a
+ghost-frame and grid toggle and drops timer and stabilization) will want their
+own sequence rather than this one with parts skipped.
+
+### Things the flows depend on that are easy to break by accident
+
+Shared:
+
+- **Camera and mic pre-granted.** Each flow relaunches with
+  `permissions: all: allow` rather than tapping through the native dialog,
+  whose buttons are OS-localized copy. Note the relaunch deliberately does
+  *not* clear state: on Android `pm clear` wipes the encrypted preferences the
+  Nostr key lives in and would sign the account back out mid-flow.
 - **Hardware for two of the five rail controls.** Flash and stabilization are
   driven behind an `enabled: true` guard, because both are disabled outright
   when the active lens has no flash unit or reports a single stabilization
   mode. Where the feature is missing the block prints `SKIPPED` rather than
   failing — check the run output before reading a green run as full rail
   coverage. Both were exercised for real on the SM-S942B's back lens.
-- **Camera and mic pre-granted.** The flow relaunches with
-  `permissions: all: allow` rather than tapping through the native dialog,
-  whose buttons are OS-localized copy. Note the relaunch deliberately does
-  *not* clear state: on Android `pm clear` wipes the encrypted preferences the
-  Nostr key lives in and would sign the account back out mid-flow.
+- **Everything the recorder persists, which is more than the mode.** Three
+  preferences survive a run and each is asserted as a default somewhere:
+  `camera_last_used_recorder_mode` (absent ⇒ Capture), `camera_last_used_lens`
+  (absent ⇒ back, which the rail asserts first) and
+  `camera_last_used_stabilization`. Run from the top this is handled —
+  `loginFreshInstall`'s `clearState` wipes all three — but a standalone run
+  inherits whatever the last session left. A phone whose last session used the
+  front lens fails the rail on its first `.*Back camera.*`, and the two flows
+  leave the mode key on different values, so a `captureModeFlow` run straight
+  after a lip-sync one, skipping the login step, opens on the wrong mode. When
+  iterating standalone, either reset the keys or start from a flow that clears
+  state.
+- **An empty session when the rail is driven.** The aspect-ratio control is
+  disabled once the session holds a clip, because clips of mixed ratios cannot
+  share an editor timeline. `captureModeControls` therefore runs before the
+  recording tests; lip-sync gets this for free, since nothing in that flow
+  records.
+
+Capture only:
+
+- **The recorder opening on Capture.** `openCaptureMode` asserts the mode
+  rather than selecting it, so a standalone run against a device whose last
+  session used another mode dies on `id: camera_mode_capture, selected` with no
+  hint why. Reproduced on the iOS Simulator with the key left on `classic`.
+  Selecting it there is not a one-liner: the wheel is a lazy `ListView`, so
+  from Classic the Capture entry is not rendered at all.
+- **Tap-to-toggle recording.** `HoldToRecordPreferenceService` defaults to
+  false. On a device where a previous session turned hold-to-record on, the
+  first tap does nothing and `captureModeRecordClip` fails on its wait.
+
+Lip-sync only:
+
+- **Reaching the mode at all.** `openLipSyncMode` selects rather than asserts,
+  because the recorder falls back to Capture whenever the persisted key is
+  absent and so never opens here on its own. It walks the wheel one entry at a
+  time: Lip Sync sits two places from Capture, and the wheel is a lazy
+  `ListView` that only builds entries near the armed one.
+- **No sound picked, ever.** Nothing in the flow selects one, which is what
+  keeps `lipSyncModeAudioGate` meaningful and the aspect-ratio control enabled.
+  The selection lives in the editor provider rather than a preference, so a
+  relaunch clears it — but an iterating run that picked a sound by hand has to
+  relaunch before the gate test means anything again.
+- **The "add audio" snackbar is asserted by copy.** `DivineSnackbarContainer`
+  takes no identifier, and adding one is a `divine_ui` change that drags that
+  package's 100% coverage gate along with it — the same call `openRecorder`
+  makes for the education sheet. It earns the copy dependency: without it the
+  test only proves nothing happened, which is also what a dead button looks
+  like. The two assertions in that test catch different failures and both are
+  needed: the snackbar proves the gate *fired*, the still-visible
+  `camera_close_button` proves no recording started behind it.
 
 Account creation is a precondition, not part of what is tested. The recorder
 route itself is public (`appRouterRedirect` exempts it), but the only way in is
