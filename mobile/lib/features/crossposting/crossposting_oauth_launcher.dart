@@ -1,7 +1,7 @@
 // ABOUTME: Launches crossposting OAuth through the shared Divine OAuth
 // ABOUTME: session. Accepts only Divine's exact HTTPS callback route.
 
-import 'package:openvine/services/oauth/app_oauth_callback.dart';
+import 'package:openvine/features/oauth/app_oauth_callback.dart';
 
 /// Authentication seam matching the arguments used by `FlutterWebAuth2`.
 typedef CrosspostingAuthenticate = AppOAuthAuthenticate;

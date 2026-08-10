@@ -1461,7 +1461,7 @@ void main() {
 
       test('still reads, so the screen is not blanked', () async {
         when(() => identityEventsDao.getEvent(any())).thenAnswer(
-          (_) async => IdentityEventRow(
+          (_) async => const IdentityEventRow(
             pubkey: _pubkey,
             tagsJson: '[["i","github:octocat","abc"]]',
             sourceKind: 10011,
@@ -1545,7 +1545,7 @@ void main() {
     group('reading when relays go quiet', () {
       setUp(() {
         when(() => identityEventsDao.getEvent(_pubkey)).thenAnswer(
-          (_) async => IdentityEventRow(
+          (_) async => const IdentityEventRow(
             pubkey: _pubkey,
             tagsJson:
                 '[["i","github:octocat","abc"],["i","telegram:chan","chan/2"]]',
@@ -1759,7 +1759,7 @@ void main() {
 
       test('refuses to publish when the read looks incomplete', () async {
         when(() => identityEventsDao.getEvent(_pubkey)).thenAnswer(
-          (_) async => IdentityEventRow(
+          (_) async => const IdentityEventRow(
             pubkey: _pubkey,
             tagsJson: '[["i","twitter:jack","oauth"]]',
             sourceKind: 10011,
@@ -2308,7 +2308,7 @@ void main() {
         // republishing here would drop every other claim, and reporting
         // success would make the unlink look like it worked.
         when(() => identityEventsDao.getEvent(_pubkey)).thenAnswer(
-          (_) async => IdentityEventRow(
+          (_) async => const IdentityEventRow(
             pubkey: _pubkey,
             tagsJson: '[["i","github:octocat","abc"]]',
             sourceKind: 10011,
@@ -2415,7 +2415,7 @@ void main() {
       // Where the tags were last seen does not change the fact that this
       // profile has some, and publishing over them loses them either way.
       when(() => identityEventsDao.getEvent(_pubkey)).thenAnswer(
-        (_) async => IdentityEventRow(
+        (_) async => const IdentityEventRow(
           pubkey: _pubkey,
           tagsJson: '[["i","github:octocat","abc"]]',
           sourceKind: 0,

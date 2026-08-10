@@ -2,7 +2,7 @@
 // ABOUTME: Aliases only — the canonical parts live in app_oauth_callback.dart
 // ABOUTME: so crossposting and verify cannot drift onto different App Links.
 
-import 'package:openvine/services/oauth/app_oauth_callback.dart';
+import 'package:openvine/features/oauth/app_oauth_callback.dart';
 
 /// Scheme of the crossposting OAuth callback URL.
 const String crosspostingOAuthCallbackScheme = appOAuthCallbackScheme;

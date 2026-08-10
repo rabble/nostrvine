@@ -4,7 +4,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
-import 'package:openvine/services/oauth/app_oauth_callback.dart';
+import 'package:openvine/features/oauth/app_oauth_callback.dart';
 
 void main() {
   group('parseAppOAuthCallback', () {

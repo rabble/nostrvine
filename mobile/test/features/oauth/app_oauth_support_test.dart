@@ -2,7 +2,7 @@
 // ABOUTME: Below 17.4 a completed session can report as a cancel.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/services/oauth/app_oauth_support.dart';
+import 'package:openvine/features/oauth/app_oauth_support.dart';
 
 void main() {
   group('iosVersionSupportsAppOAuth', () {
