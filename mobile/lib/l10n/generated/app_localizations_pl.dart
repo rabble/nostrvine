@@ -6020,23 +6020,24 @@ class AppLocalizationsPl extends AppLocalizations {
   String get inboxFilterUnread => 'Nieprzeczytane';
 
   @override
-  String get dmBlockedThreadTitle => 'You blocked this account';
+  String get dmBlockedThreadTitle => 'Zablokowano to konto';
 
   @override
   String get dmBlockedThreadBody =>
-      'Messages stay here so you can read or screenshot them. Unblock to reply.';
+      'Wiadomości pozostają tutaj, żebyś mógł je przeczytać lub zrobić zrzut ekranu. Odblokuj, aby odpowiedzieć.';
 
   @override
-  String get inboxFilterBlocked => 'Blocked';
+  String get inboxFilterBlocked => 'Zablokowane';
 
   @override
-  String get inboxBlockedEmptyTitle => 'No blocked chats';
+  String get inboxBlockedEmptyTitle => 'Brak zablokowanych czatów';
 
   @override
-  String get inboxBlockedEmptySubtitle => 'Accounts you block show up here.';
+  String get inboxBlockedEmptySubtitle =>
+      'Konta, które zablokujesz, pojawią się tutaj.';
 
   @override
-  String get inboxBlockedNoMessages => 'No messages';
+  String get inboxBlockedNoMessages => 'Brak wiadomości';
 
   @override
   String get inboxUnreadEmptyTitle => 'Wszystko nadrobione';

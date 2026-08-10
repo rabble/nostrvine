@@ -6867,5 +6867,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "{tool} میں تبدیلیاں لاگو کریں",
   "videoEditorRemoveAudioSemanticLabel": "آڈیو ہٹائیں",
   "rgbColorSemanticLabel": "RGB {red}، {green}، {blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}، {color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}، {color}",
+  "inboxFilterBlocked": "مسدود",
+  "inboxBlockedEmptyTitle": "کوئی مسدود چیٹ نہیں",
+  "inboxBlockedEmptySubtitle": "آپ جن اکاؤنٹس کو مسدود کرتے ہیں وہ یہاں دکھائی دیتے ہیں۔",
+  "inboxBlockedNoMessages": "کوئی پیغام نہیں",
+  "dmBlockedThreadTitle": "آپ نے یہ اکاؤنٹ مسدود کیا ہے",
+  "dmBlockedThreadBody": "پیغامات یہیں رہتے ہیں تاکہ آپ انہیں پڑھ سکیں یا اسکرین شاٹ لے سکیں۔ جواب دینے کے لیے بلاک ہٹائیں۔"
 }

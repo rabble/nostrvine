@@ -5841,23 +5841,24 @@ class AppLocalizationsTr extends AppLocalizations {
   String get inboxFilterUnread => 'Okunmamış';
 
   @override
-  String get dmBlockedThreadTitle => 'You blocked this account';
+  String get dmBlockedThreadTitle => 'Bu hesabı engelledin';
 
   @override
   String get dmBlockedThreadBody =>
-      'Messages stay here so you can read or screenshot them. Unblock to reply.';
+      'Mesajlar burada kalır, böylece okuyabilir veya ekran görüntüsü alabilirsin. Yanıtlamak için engeli kaldır.';
 
   @override
-  String get inboxFilterBlocked => 'Blocked';
+  String get inboxFilterBlocked => 'Engellenenler';
 
   @override
-  String get inboxBlockedEmptyTitle => 'No blocked chats';
+  String get inboxBlockedEmptyTitle => 'Engellenmiş sohbet yok';
 
   @override
-  String get inboxBlockedEmptySubtitle => 'Accounts you block show up here.';
+  String get inboxBlockedEmptySubtitle =>
+      'Engellediğin hesaplar burada görünür.';
 
   @override
-  String get inboxBlockedNoMessages => 'No messages';
+  String get inboxBlockedNoMessages => 'Mesaj yok';
 
   @override
   String get inboxUnreadEmptyTitle => 'Her şeyi okudun';

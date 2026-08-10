@@ -5825,23 +5825,23 @@ class AppLocalizationsAr extends AppLocalizations {
   String get inboxFilterUnread => 'غير المقروءة';
 
   @override
-  String get dmBlockedThreadTitle => 'You blocked this account';
+  String get dmBlockedThreadTitle => 'لقد حظرت هذا الحساب';
 
   @override
   String get dmBlockedThreadBody =>
-      'Messages stay here so you can read or screenshot them. Unblock to reply.';
+      'تبقى الرسائل هنا لتتمكن من قراءتها أو التقاط صورة لها. ألغِ الحظر للرد.';
 
   @override
-  String get inboxFilterBlocked => 'Blocked';
+  String get inboxFilterBlocked => 'محظور';
 
   @override
-  String get inboxBlockedEmptyTitle => 'No blocked chats';
+  String get inboxBlockedEmptyTitle => 'لا توجد محادثات محظورة';
 
   @override
-  String get inboxBlockedEmptySubtitle => 'Accounts you block show up here.';
+  String get inboxBlockedEmptySubtitle => 'تظهر هنا الحسابات التي تحظرها.';
 
   @override
-  String get inboxBlockedNoMessages => 'No messages';
+  String get inboxBlockedNoMessages => 'لا توجد رسائل';
 
   @override
   String get inboxUnreadEmptyTitle => 'أنت على اطلاع بكل شيء';

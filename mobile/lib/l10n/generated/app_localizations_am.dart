@@ -5752,23 +5752,23 @@ class AppLocalizationsAm extends AppLocalizations {
   String get inboxFilterUnread => 'ያልተነበቡ';
 
   @override
-  String get dmBlockedThreadTitle => 'You blocked this account';
+  String get dmBlockedThreadTitle => 'ይህን መለያ አግደዋል';
 
   @override
   String get dmBlockedThreadBody =>
-      'Messages stay here so you can read or screenshot them. Unblock to reply.';
+      'መልእክቶቹ እዚህ ይቆያሉ፣ ስለዚህ ማንበብ ወይም ቅጽበታዊ ገጽ እይታ ማንሳት ይችላሉ። ለመመለስ እገዳውን ያንሱ።';
 
   @override
-  String get inboxFilterBlocked => 'Blocked';
+  String get inboxFilterBlocked => 'የታገዱ';
 
   @override
-  String get inboxBlockedEmptyTitle => 'No blocked chats';
+  String get inboxBlockedEmptyTitle => 'የታገዱ ውይይቶች የሉም';
 
   @override
-  String get inboxBlockedEmptySubtitle => 'Accounts you block show up here.';
+  String get inboxBlockedEmptySubtitle => 'የሚያግዷቸው መለያዎች እዚህ ይታያሉ።';
 
   @override
-  String get inboxBlockedNoMessages => 'No messages';
+  String get inboxBlockedNoMessages => 'መልእክቶች የሉም';
 
   @override
   String get inboxUnreadEmptyTitle => 'ሁሉንም አንብበሃል';

@@ -5584,23 +5584,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get inboxFilterUnread => '未读';
 
   @override
-  String get dmBlockedThreadTitle => 'You blocked this account';
+  String get dmBlockedThreadTitle => '你已屏蔽此账号';
 
   @override
-  String get dmBlockedThreadBody =>
-      'Messages stay here so you can read or screenshot them. Unblock to reply.';
+  String get dmBlockedThreadBody => '消息会保留在这里，方便你查看或截图。解除屏蔽后即可回复。';
 
   @override
-  String get inboxFilterBlocked => 'Blocked';
+  String get inboxFilterBlocked => '已屏蔽';
 
   @override
-  String get inboxBlockedEmptyTitle => 'No blocked chats';
+  String get inboxBlockedEmptyTitle => '没有已屏蔽的聊天';
 
   @override
-  String get inboxBlockedEmptySubtitle => 'Accounts you block show up here.';
+  String get inboxBlockedEmptySubtitle => '你屏蔽的账号会显示在这里。';
 
   @override
-  String get inboxBlockedNoMessages => 'No messages';
+  String get inboxBlockedNoMessages => '暂无消息';
 
   @override
   String get inboxUnreadEmptyTitle => '都看完啦';

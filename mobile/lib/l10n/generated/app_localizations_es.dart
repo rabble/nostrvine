@@ -5922,23 +5922,24 @@ class AppLocalizationsEs extends AppLocalizations {
   String get inboxFilterUnread => 'No leídos';
 
   @override
-  String get dmBlockedThreadTitle => 'You blocked this account';
+  String get dmBlockedThreadTitle => 'Bloqueaste esta cuenta';
 
   @override
   String get dmBlockedThreadBody =>
-      'Messages stay here so you can read or screenshot them. Unblock to reply.';
+      'Los mensajes se quedan aquí para que puedas leerlos o capturarlos. Desbloquea para responder.';
 
   @override
-  String get inboxFilterBlocked => 'Blocked';
+  String get inboxFilterBlocked => 'Bloqueados';
 
   @override
-  String get inboxBlockedEmptyTitle => 'No blocked chats';
+  String get inboxBlockedEmptyTitle => 'No hay chats bloqueados';
 
   @override
-  String get inboxBlockedEmptySubtitle => 'Accounts you block show up here.';
+  String get inboxBlockedEmptySubtitle =>
+      'Las cuentas que bloquees aparecerán aquí.';
 
   @override
-  String get inboxBlockedNoMessages => 'No messages';
+  String get inboxBlockedNoMessages => 'Sin mensajes';
 
   @override
   String get inboxUnreadEmptyTitle => 'Estás al día';

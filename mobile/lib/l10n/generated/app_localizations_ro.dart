@@ -6028,23 +6028,24 @@ class AppLocalizationsRo extends AppLocalizations {
   String get inboxFilterUnread => 'Necitite';
 
   @override
-  String get dmBlockedThreadTitle => 'You blocked this account';
+  String get dmBlockedThreadTitle => 'Ai blocat acest cont';
 
   @override
   String get dmBlockedThreadBody =>
-      'Messages stay here so you can read or screenshot them. Unblock to reply.';
+      'Mesajele rămân aici ca să le poți citi sau captura. Deblochează pentru a răspunde.';
 
   @override
-  String get inboxFilterBlocked => 'Blocked';
+  String get inboxFilterBlocked => 'Blocate';
 
   @override
-  String get inboxBlockedEmptyTitle => 'No blocked chats';
+  String get inboxBlockedEmptyTitle => 'Nicio conversație blocată';
 
   @override
-  String get inboxBlockedEmptySubtitle => 'Accounts you block show up here.';
+  String get inboxBlockedEmptySubtitle =>
+      'Conturile pe care le blochezi apar aici.';
 
   @override
-  String get inboxBlockedNoMessages => 'No messages';
+  String get inboxBlockedNoMessages => 'Niciun mesaj';
 
   @override
   String get inboxUnreadEmptyTitle => 'Ești la zi';

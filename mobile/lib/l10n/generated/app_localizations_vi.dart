@@ -5880,23 +5880,24 @@ class AppLocalizationsVi extends AppLocalizations {
   String get inboxFilterUnread => 'Chưa đọc';
 
   @override
-  String get dmBlockedThreadTitle => 'You blocked this account';
+  String get dmBlockedThreadTitle => 'Bạn đã chặn tài khoản này';
 
   @override
   String get dmBlockedThreadBody =>
-      'Messages stay here so you can read or screenshot them. Unblock to reply.';
+      'Tin nhắn vẫn ở đây để bạn có thể đọc hoặc chụp màn hình. Bỏ chặn để trả lời.';
 
   @override
-  String get inboxFilterBlocked => 'Blocked';
+  String get inboxFilterBlocked => 'Đã chặn';
 
   @override
-  String get inboxBlockedEmptyTitle => 'No blocked chats';
+  String get inboxBlockedEmptyTitle => 'Không có cuộc trò chuyện bị chặn';
 
   @override
-  String get inboxBlockedEmptySubtitle => 'Accounts you block show up here.';
+  String get inboxBlockedEmptySubtitle =>
+      'Các tài khoản bạn chặn sẽ xuất hiện ở đây.';
 
   @override
-  String get inboxBlockedNoMessages => 'No messages';
+  String get inboxBlockedNoMessages => 'Không có tin nhắn';
 
   @override
   String get inboxUnreadEmptyTitle => 'Bạn đã đọc hết rồi';

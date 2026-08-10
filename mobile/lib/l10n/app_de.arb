@@ -5028,5 +5028,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "Änderungen in „{tool}“ anwenden",
   "videoEditorRemoveAudioSemanticLabel": "Audio entfernen",
   "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}",
+  "inboxFilterBlocked": "Blockiert",
+  "inboxBlockedEmptyTitle": "Keine blockierten Chats",
+  "inboxBlockedEmptySubtitle": "Konten, die du blockierst, erscheinen hier.",
+  "inboxBlockedNoMessages": "Keine Nachrichten",
+  "dmBlockedThreadTitle": "Du hast dieses Konto blockiert",
+  "dmBlockedThreadBody": "Nachrichten bleiben hier, damit du sie lesen oder einen Screenshot machen kannst. Hebe die Blockierung auf, um zu antworten."
 }

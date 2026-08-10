@@ -6867,5 +6867,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "Áp dụng thay đổi trong {tool}",
   "videoEditorRemoveAudioSemanticLabel": "Xóa âm thanh",
   "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}",
+  "inboxFilterBlocked": "Đã chặn",
+  "inboxBlockedEmptyTitle": "Không có cuộc trò chuyện bị chặn",
+  "inboxBlockedEmptySubtitle": "Các tài khoản bạn chặn sẽ xuất hiện ở đây.",
+  "inboxBlockedNoMessages": "Không có tin nhắn",
+  "dmBlockedThreadTitle": "Bạn đã chặn tài khoản này",
+  "dmBlockedThreadBody": "Tin nhắn vẫn ở đây để bạn có thể đọc hoặc chụp màn hình. Bỏ chặn để trả lời."
 }

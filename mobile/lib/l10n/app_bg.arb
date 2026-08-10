@@ -5159,5 +5159,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "Прилагане на промените в {tool}",
   "videoEditorRemoveAudioSemanticLabel": "Премахване на аудиото",
   "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}",
+  "inboxFilterBlocked": "Блокирани",
+  "inboxBlockedEmptyTitle": "Няма блокирани чатове",
+  "inboxBlockedEmptySubtitle": "Акаунтите, които блокирате, се показват тук.",
+  "inboxBlockedNoMessages": "Няма съобщения",
+  "dmBlockedThreadTitle": "Блокирахте този акаунт",
+  "dmBlockedThreadBody": "Съобщенията остават тук, за да можете да ги прочетете или да направите екранна снимка. Отблокирайте, за да отговорите."
 }

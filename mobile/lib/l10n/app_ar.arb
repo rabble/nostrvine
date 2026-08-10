@@ -5028,5 +5028,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "تطبيق التغييرات في {tool}",
   "videoEditorRemoveAudioSemanticLabel": "إزالة الصوت",
   "rgbColorSemanticLabel": "RGB {red}، {green}، {blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}، {color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}، {color}",
+  "inboxFilterBlocked": "محظور",
+  "inboxBlockedEmptyTitle": "لا توجد محادثات محظورة",
+  "inboxBlockedEmptySubtitle": "تظهر هنا الحسابات التي تحظرها.",
+  "inboxBlockedNoMessages": "لا توجد رسائل",
+  "dmBlockedThreadTitle": "لقد حظرت هذا الحساب",
+  "dmBlockedThreadBody": "تبقى الرسائل هنا لتتمكن من قراءتها أو التقاط صورة لها. ألغِ الحظر للرد."
 }

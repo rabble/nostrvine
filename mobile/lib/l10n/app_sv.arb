@@ -5028,5 +5028,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "Tillämpa ändringar i {tool}",
   "videoEditorRemoveAudioSemanticLabel": "Ta bort ljud",
   "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}",
+  "inboxFilterBlocked": "Blockerade",
+  "inboxBlockedEmptyTitle": "Inga blockerade chattar",
+  "inboxBlockedEmptySubtitle": "Konton du blockerar visas här.",
+  "inboxBlockedNoMessages": "Inga meddelanden",
+  "dmBlockedThreadTitle": "Du blockerade det här kontot",
+  "dmBlockedThreadBody": "Meddelandena stannar kvar så att du kan läsa dem eller ta en skärmbild. Häv blockeringen för att svara."
 }

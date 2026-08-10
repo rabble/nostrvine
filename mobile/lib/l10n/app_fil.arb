@@ -3614,5 +3614,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "Ilapat ang mga pagbabago sa {tool}",
   "videoEditorRemoveAudioSemanticLabel": "Alisin ang audio",
   "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}",
+  "inboxFilterBlocked": "Naka-block",
+  "inboxBlockedEmptyTitle": "Walang naka-block na chat",
+  "inboxBlockedEmptySubtitle": "Lumalabas dito ang mga account na bina-block mo.",
+  "inboxBlockedNoMessages": "Walang mensahe",
+  "dmBlockedThreadTitle": "Na-block mo ang account na ito",
+  "dmBlockedThreadBody": "Nananatili rito ang mga mensahe para mabasa o ma-screenshot mo. Mag-unblock para makasagot."
 }
