@@ -390,7 +390,7 @@ class _AwardedBadgeCard extends StatelessWidget {
               ),
             ],
           ),
-          if (award.definition?.description != null) ...[
+          if (award.definition?.description?.isNotEmpty ?? false) ...[
             const SizedBox(height: 12),
             Text(
               award.definition!.description!,

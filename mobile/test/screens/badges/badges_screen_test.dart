@@ -66,6 +66,31 @@ void main() {
       expect(find.text('Diviner of the Month'), findsNothing);
     });
 
+    testWidgets('awarded card skips the description line when it is empty', (
+      tester,
+    ) async {
+      // A definition published by another client can carry ["description", ""],
+      // which parses back as '' rather than null.
+      when(repository.loadDashboard).thenAnswer(
+        (_) async => BadgeDashboardData(
+          awarded: [_awardViewData(isAccepted: false, description: '')],
+          issued: [issuedBadge],
+          created: [createdBadge],
+        ),
+      );
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Diviner of the Day'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (widget) => widget is Text && (widget.data?.isEmpty ?? false),
+        ),
+        findsNothing,
+      );
+    });
+
     testWidgets('created tab lists the badges the user made', (tester) async {
       when(repository.loadDashboard).thenAnswer(
         (_) async => BadgeDashboardData(
@@ -209,7 +234,10 @@ void main() {
   });
 }
 
-BadgeAwardViewData _awardViewData({required bool isAccepted}) {
+BadgeAwardViewData _awardViewData({
+  required bool isAccepted,
+  String description = 'Awarded for showing up with a good eye.',
+}) {
   final issuerPubkey = _pubkey(2);
   final definitionCoordinate = '30009:$issuerPubkey:daily-diviner';
   return BadgeAwardViewData(
@@ -235,7 +263,7 @@ BadgeAwardViewData _awardViewData({required bool isAccepted}) {
       coordinate: definitionCoordinate,
       dTag: 'daily-diviner',
       name: 'Diviner of the Day',
-      description: 'Awarded for showing up with a good eye.',
+      description: description,
     ),
     isAccepted: isAccepted,
   );
