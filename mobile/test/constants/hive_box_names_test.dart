@@ -6,10 +6,14 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/constants/hive_box_names.dart';
 
-/// `Hive.openBox<T>(arg` / `Hive.openLazyBox(arg`, capturing the first
-/// argument. The argument may sit on the next line, so whitespace is skipped.
+/// `.openBox<T>(arg` / `.openLazyBox(arg`, capturing the first argument. The
+/// argument may sit on the next line, so whitespace is skipped.
+///
+/// The receiver is intentionally broad: app-layer code can use `Hive.openBox`
+/// directly, while packages receive injected open-box callbacks because they
+/// cannot import app-owned [HiveBoxNames].
 final _openBoxCall = RegExp(
-  r'''Hive\.open(?:Lazy)?Box(?:<[^>]*>)?\(\s*([A-Za-z_$][\w.]*|'[^']*'|"[^"]*")''',
+  r'''\.open(?:Lazy)?Box(?:<[^>]*>)?\(\s*([A-Za-z_$][\w.]*|'[^']*'|"[^"]*")''',
 );
 
 /// A `static const`/`const` declaration and its initializer, e.g.
@@ -37,6 +41,18 @@ Iterable<File> _dartSources() sync* {
 
 void main() {
   group(HiveBoxNames, () {
+    test('openBox scanner includes injected HiveInterface receivers', () {
+      const source = '''
+class ProbeB {
+  ProbeB(this._hive);
+  final HiveInterface _hive;
+  Future<Box<dynamic>> open() => _hive.openBox<dynamic>('draft_notes_v1');
+}
+''';
+
+      expect(_openBoxCall.firstMatch(source)?.group(1), "'draft_notes_v1'");
+    });
+
     test('every declared box name is in HiveBoxNames.all', () {
       final source = File(
         'lib/constants/hive_box_names.dart',
