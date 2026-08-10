@@ -3209,11 +3209,11 @@ void main() {
       // not the @visibleForTesting flush — this exercises the wiring an app
       // actually hits when the editor closes.
       await notifier.reset(keepAutosavedDraft: true);
-      await pumpEventQueue();
 
-      expect(
-        orphan.existsSync(),
-        isFalse,
+      // reset() leaves the reap unawaited, so poll rather than assuming a
+      // single pump covers the DAO round trip behind the delete.
+      await expectFileReaped(
+        orphan,
         reason: 'session end reaps a deferred file once nothing references it',
       );
       expect(notifier.deferredFileCleanupForTest, isEmpty);
