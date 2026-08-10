@@ -149,9 +149,12 @@ class VideoOverlayActions extends ConsumerWidget {
     final showPostDate = ref.watch(
       isFeatureEnabledProvider(FeatureFlag.videoCardPostDate),
     );
-    final currentUserPubkey = ref
-        .watch(authServiceProvider)
-        .currentPublicKeyHex;
+    // Selected rather than watching the whole service: this rebuilds on every
+    // visible feed card, and AuthService notifies for far more than a pubkey
+    // change. Matches the read in feed_videos.dart.
+    final currentUserPubkey = ref.watch(
+      authServiceProvider.select((service) => service.currentPublicKeyHex),
+    );
     final isOwnVideo =
         video != null &&
         currentUserPubkey != null &&
