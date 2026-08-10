@@ -641,7 +641,17 @@ void main() {
         expect(rendered, isNot(contains('ago')));
       });
 
-      testWidgets('renders the local calendar day, not the UTC one', (
+      // NOTE: inert on CI. Mobile CI runs ubuntu-24.04 with no TZ override, so
+      // the process timezone is UTC, `toLocal()` is the identity, and both
+      // sides of this comparison collapse to the same string whichever way the
+      // implementation goes — removing `toLocal()` from formatPostAge keeps
+      // this green. It only bites on a developer machine outside UTC, which is
+      // where the bug it pins was found. Making it real on CI needs the suite
+      // running under a non-UTC TZ, which is a workflow change, not a test
+      // change. Kept deliberately: it costs nothing and catches the regression
+      // locally. Do not read it as CI coverage.
+      testWidgets('renders the local calendar day, not the UTC one (off-UTC '
+          'machines only)', (
         tester,
       ) async {
         final en = await _loadL10n(tester, const Locale('en'));

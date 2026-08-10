@@ -103,6 +103,7 @@ enum FeatureFlag {
         'counts discourage viewing on exactly the new content the feed pays '
         'to surface. Creators still see their own numbers, and counts large '
         'enough to attract — classic Vines especially — still show.',
+    audience: FeatureFlagAudience.internal,
   );
 
   const FeatureFlag(
