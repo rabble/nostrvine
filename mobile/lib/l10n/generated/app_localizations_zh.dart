@@ -6950,9 +6950,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get likedVideosTitle => '点赞的视频';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar => '正在重试上传…';
 
   @override
@@ -7137,6 +7134,17 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      '这个人发过一条原版 Vine，被 Divine 在存档里找到了。这不是账号认证徽章。';
+
+  @override
+  String get profileBadgeCheckmarkTitle => '个人资料对勾';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      '这个账号在 Divine 的个人资料对勾名单里。它与 NIP-05、已验证的账号链接和 OG Viner 状态无关。';
 
   @override
   String shareVideoInListsCount(int count) {
@@ -10067,6 +10075,27 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get subtitleEditorProcessing => '字幕还在生成中，过会儿再来看看。';
+
+  @override
+  String get subtitleEditorNoSpeech => '这个视频里没检测到人声，所以没有可以做字幕的内容。';
+
+  @override
+  String get subtitleEditorWriteOwn => '自己写字幕';
+
+  @override
+  String get subtitleEditorAddCue => '添加一行';
+
+  @override
+  String get subtitleEditorRemoveCue => '删除这一行';
+
+  @override
+  String get subtitleEditorStartLabel => '开始';
+
+  @override
+  String get subtitleEditorEndLabel => '结束';
+
+  @override
+  String get subtitleEditorInvalidHint => '每一行都需要文字，而且结束时间要晚于开始时间。';
 
   @override
   String get subtitleEditorLoadError => '字幕加载失败，请重试。';

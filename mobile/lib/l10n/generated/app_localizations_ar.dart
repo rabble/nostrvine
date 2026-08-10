@@ -7257,9 +7257,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get likedVideosTitle => 'الفيديوهات المعجب بها';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar => 'جارٍ إعادة محاولة الرفع…';
 
   @override
@@ -7460,6 +7457,17 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      'نشر هذا الشخص مقطع Vine أصليًا عثرت عليه Divine في الأرشيف. هذه ليست شارة توثيق حساب.';
+
+  @override
+  String get profileBadgeCheckmarkTitle => 'علامة الملف الشخصي';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      'هذا الحساب مدرج في قائمة علامات الملف الشخصي لدى Divine. وهي منفصلة عن NIP-05 وروابط الحسابات الموثّقة وحالة OG Viner.';
 
   @override
   String shareVideoInListsCount(int count) {
@@ -10556,6 +10564,29 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get subtitleEditorProcessing =>
       'ما زالت الترجمات قيد الإنشاء. عُد بعد لحظة.';
+
+  @override
+  String get subtitleEditorNoSpeech =>
+      'لم يتم رصد أي كلام في هذا الفيديو، لذا لا يوجد ما يمكن كتابته كترجمة.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'اكتبها بنفسك';
+
+  @override
+  String get subtitleEditorAddCue => 'أضف سطرًا';
+
+  @override
+  String get subtitleEditorRemoveCue => 'احذف هذا السطر';
+
+  @override
+  String get subtitleEditorStartLabel => 'البداية';
+
+  @override
+  String get subtitleEditorEndLabel => 'النهاية';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'كل سطر يحتاج نصًا ونهاية بعد بدايته.';
 
   @override
   String get subtitleEditorLoadError => 'تعذّر تحميل الترجمات. حاول مرّة أخرى.';

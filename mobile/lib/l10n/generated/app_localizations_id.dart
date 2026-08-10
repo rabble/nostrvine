@@ -7271,9 +7271,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get likedVideosTitle => 'Video yang Disukai';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar => 'Mencoba mengunggah lagi…';
 
   @override
@@ -7476,6 +7473,17 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      'Orang ini pernah memposting Vine asli yang ditemukan Divine di arsip. Ini bukan lencana verifikasi akun.';
+
+  @override
+  String get profileBadgeCheckmarkTitle => 'Centang profil';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      'Akun ini ada di daftar centang profil Divine. Ini terpisah dari NIP-05, tautan akun terverifikasi, dan status OG Viner.';
 
   @override
   String shareVideoInListsCount(int count) {
@@ -10592,6 +10600,29 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get subtitleEditorProcessing =>
       'Subtitle masih dibuat. Cek lagi sebentar.';
+
+  @override
+  String get subtitleEditorNoSpeech =>
+      'Tidak ada percakapan yang terdeteksi di video ini, jadi tidak ada yang perlu disubtitle.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'Tulis sendiri';
+
+  @override
+  String get subtitleEditorAddCue => 'Tambah baris';
+
+  @override
+  String get subtitleEditorRemoveCue => 'Hapus baris ini';
+
+  @override
+  String get subtitleEditorStartLabel => 'Mulai';
+
+  @override
+  String get subtitleEditorEndLabel => 'Selesai';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'Setiap baris butuh teks dan waktu selesai setelah waktu mulai.';
 
   @override
   String get subtitleEditorLoadError =>

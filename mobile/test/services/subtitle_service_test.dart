@@ -6,6 +6,49 @@ import 'package:openvine/services/subtitle_service.dart';
 
 void main() {
   group(SubtitleService, () {
+    group('isWebVtt', () {
+      test('accepts a track with cues', () {
+        const vtt = 'WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nhi\n';
+        expect(SubtitleService.isWebVtt(vtt), isTrue);
+      });
+
+      test('accepts a header-only track', () {
+        expect(SubtitleService.isWebVtt('WEBVTT\n\n'), isTrue);
+        expect(SubtitleService.isWebVtt('WEBVTT'), isTrue);
+      });
+
+      test('accepts a byte-order mark before the signature', () {
+        expect(SubtitleService.isWebVtt('﻿WEBVTT\n\n'), isTrue);
+      });
+
+      test('accepts a header carrying metadata', () {
+        expect(SubtitleService.isWebVtt('WEBVTT - en\n\n'), isTrue);
+      });
+
+      // These are what a CDN or gateway answers 200 with when the real
+      // request failed. parseVtt reads them as zero cues, so the signature
+      // is the only thing separating them from a silent video's track.
+      test('rejects an HTML error page', () {
+        expect(
+          SubtitleService.isWebVtt('<!DOCTYPE html><html>404</html>'),
+          isFalse,
+        );
+      });
+
+      test('rejects a JSON envelope', () {
+        expect(SubtitleService.isWebVtt('{"error":"not found"}'), isFalse);
+      });
+
+      test('rejects an empty body', () {
+        expect(SubtitleService.isWebVtt(''), isFalse);
+        expect(SubtitleService.isWebVtt('   \n'), isFalse);
+      });
+
+      test('rejects a word merely starting with the signature', () {
+        expect(SubtitleService.isWebVtt('WEBVTTish content'), isFalse);
+      });
+    });
+
     group('parseVtt', () {
       test('parses standard WebVTT content', () {
         const vtt =

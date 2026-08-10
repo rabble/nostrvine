@@ -7406,9 +7406,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get likedVideosTitle => 'Vidéos aimées';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar => 'Nouvel essai d\'envoi…';
 
   @override
@@ -7612,6 +7609,17 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      'Cette personne a publié un Vine original que Divine a retrouvé dans les archives. Ce n\'est pas un badge de vérification de compte.';
+
+  @override
+  String get profileBadgeCheckmarkTitle => 'Coche de profil';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      'Ce compte figure sur la liste des coches de profil de Divine. C\'est indépendant de NIP-05, des liens de compte vérifiés et du statut OG Viner.';
 
   @override
   String shareVideoInListsCount(int count) {
@@ -10782,6 +10790,29 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get subtitleEditorProcessing =>
       'Les sous-titres sont encore en cours de génération. Reviens dans un instant.';
+
+  @override
+  String get subtitleEditorNoSpeech =>
+      'Aucune parole n\'a été détectée dans cette vidéo, il n\'y a donc rien à sous-titrer.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'Écris-les toi-même';
+
+  @override
+  String get subtitleEditorAddCue => 'Ajouter une ligne';
+
+  @override
+  String get subtitleEditorRemoveCue => 'Supprimer cette ligne';
+
+  @override
+  String get subtitleEditorStartLabel => 'Début';
+
+  @override
+  String get subtitleEditorEndLabel => 'Fin';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'Chaque ligne a besoin de texte et d\'une fin après son début.';
 
   @override
   String get subtitleEditorLoadError =>

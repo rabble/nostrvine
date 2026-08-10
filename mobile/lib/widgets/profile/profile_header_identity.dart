@@ -48,50 +48,13 @@ class _ProfileNameAndBio extends StatelessWidget {
           padding: inset,
           child: Column(
             children: [
-              if (isVanished)
-                // Deliberately not a UserName: that widget re-resolves the
-                // profile through its own provider and falls back to a
-                // generated handle, which is exactly what must not appear.
-                Text(
-                  context.l10n.profileDeletedAccountName,
-                  style: VineTheme.titleLargeFont(
-                    color: context.vineColors.primaryText,
-                  ),
-                )
-              else if (profile != null)
-                UserName.fromUserProfile(
-                  profile!,
-                  style: VineTheme.titleLargeFont(
-                    color: context.vineColors.primaryText,
-                  ),
-                  // A kind-0 with empty name and display_name still falls
-                  // through to the generated handle without this (#6423). Use
-                  // the route hint, then the full npub, as the non-generated
-                  // steady state so the header never renders a blank title.
-                  anonymousName: _ownProfileNamePlaceholder(
-                    isOwnProfile: isOwnProfile,
-                    displayNameHint: displayNameHint,
-                    userIdHex: userIdHex,
-                  ),
-                  neverGenerateName: isOwnProfile,
-                )
-              else
-                UserName.fromPubKey(
-                  userIdHex,
-                  style: VineTheme.titleLargeFont(
-                    color: context.vineColors.primaryText,
-                  ),
-                  anonymousName:
-                      _ownProfileNamePlaceholder(
-                        isOwnProfile: isOwnProfile,
-                        displayNameHint: displayNameHint,
-                        userIdHex: userIdHex,
-                      ) ??
-                      displayNameHint,
-                  // Never show the signed-in user a generated handle in place
-                  // of their own name — that is the #6423 report verbatim.
-                  neverGenerateName: isOwnProfile,
-                ),
+              _ProfileHeaderNameRow(
+                isVanished: isVanished,
+                profile: profile,
+                userIdHex: userIdHex,
+                isOwnProfile: isOwnProfile,
+                displayNameHint: displayNameHint,
+              ),
               Skeleton.keep(
                 child: _UniqueIdentifier(
                   userIdHex: userIdHex,
@@ -152,6 +115,135 @@ String? _ownProfileNamePlaceholder({
 /// Horizontal inset applied to the name/bio identity block. Shared so the
 /// badge row can break out of it and scroll edge-to-edge.
 const double _profileIdentityHorizontalInset = 16;
+
+class _ProfileHeaderNameRow extends ConsumerWidget {
+  const _ProfileHeaderNameRow({
+    required this.isVanished,
+    required this.profile,
+    required this.userIdHex,
+    required this.isOwnProfile,
+    required this.displayNameHint,
+  });
+
+  final bool isVanished;
+  final UserProfile? profile;
+  final String userIdHex;
+  final bool isOwnProfile;
+  final String? displayNameHint;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final textStyle = VineTheme.titleLargeFont(
+      color: context.vineColors.primaryText,
+    );
+    final isOgViner = ref.watch(
+      ogVinerCacheServiceProvider.select(
+        (service) => service.isOgViner(userIdHex),
+      ),
+    );
+    final showCheckmark = shouldShowSpecialProfileCheckmark(profile);
+    final name = isVanished
+        // Deliberately not a UserName: that widget re-resolves the profile
+        // through its own provider and falls back to a generated handle, which
+        // is exactly what must not appear.
+        ? Text(context.l10n.profileDeletedAccountName, style: textStyle)
+        : profile != null
+        ? UserName.fromUserProfile(
+            profile!,
+            style: textStyle,
+            // A kind-0 with empty name and display_name still falls through to
+            // the generated handle without this (#6423). Use the route hint,
+            // then the full npub, as the non-generated steady state so the
+            // header never renders a blank title.
+            anonymousName: _ownProfileNamePlaceholder(
+              isOwnProfile: isOwnProfile,
+              displayNameHint: displayNameHint,
+              userIdHex: userIdHex,
+            ),
+            neverGenerateName: isOwnProfile,
+            showProfileBadges: false,
+          )
+        : UserName.fromPubKey(
+            userIdHex,
+            style: textStyle,
+            anonymousName:
+                _ownProfileNamePlaceholder(
+                  isOwnProfile: isOwnProfile,
+                  displayNameHint: displayNameHint,
+                  userIdHex: userIdHex,
+                ) ??
+                displayNameHint,
+            // Never show the signed-in user a generated handle in place of
+            // their own name — that is the #6423 report verbatim.
+            neverGenerateName: isOwnProfile,
+            showProfileBadges: false,
+          );
+
+    if (!isOgViner && !showCheckmark) return name;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(child: name),
+        if (showCheckmark)
+          const _ProfileHeaderBadgeExplanationButton(
+            type: ProfileBadgeExplanationType.profileCheckmark,
+          ),
+        if (isOgViner)
+          const _ProfileHeaderBadgeExplanationButton(
+            type: ProfileBadgeExplanationType.ogViner,
+          ),
+      ],
+    );
+  }
+}
+
+class _ProfileHeaderBadgeExplanationButton extends StatelessWidget {
+  const _ProfileHeaderBadgeExplanationButton({required this.type});
+
+  final ProfileBadgeExplanationType type;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return DivineIconButton(
+      icon: type.icon,
+      type: DivineIconButtonType.ghostSecondary,
+      size: DivineIconButtonSize.small,
+      showShadow: false,
+      tooltip: type.title(l10n),
+      semanticLabel: type.title(l10n),
+      semanticValue: type.body(l10n),
+      onPressed: () => showProfileBadgeExplanationSheet(context, type),
+    );
+  }
+}
+
+extension on ProfileBadgeExplanationType {
+  String title(AppLocalizations l10n) {
+    return switch (this) {
+      ProfileBadgeExplanationType.ogViner => l10n.ogVinerBadgeLabel,
+      ProfileBadgeExplanationType.profileCheckmark =>
+        l10n.profileBadgeCheckmarkTitle,
+    };
+  }
+
+  String body(AppLocalizations l10n) {
+    return switch (this) {
+      ProfileBadgeExplanationType.ogViner => l10n.profileBadgeOgVinerBody,
+      ProfileBadgeExplanationType.profileCheckmark =>
+        l10n.profileBadgeCheckmarkBody,
+    };
+  }
+
+  DivineIconName get icon {
+    return switch (this) {
+      ProfileBadgeExplanationType.ogViner => DivineIconName.videoCamera,
+      ProfileBadgeExplanationType.profileCheckmark => DivineIconName.check,
+    };
+  }
+}
 
 /// Grows a late-arriving header block into place instead of snapping it in.
 ///

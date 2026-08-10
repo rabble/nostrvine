@@ -6984,9 +6984,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get likedVideosTitle => 'いいねした動画';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar => 'アップロードを再試行中…';
 
   @override
@@ -7182,6 +7179,17 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      'この人はオリジナルの Vine を投稿していて、Divine がアーカイブで見つけたよ。アカウントの認証バッジではないので注意。';
+
+  @override
+  String get profileBadgeCheckmarkTitle => 'プロフィールのチェックマーク';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      'このアカウントは Divine のプロフィールチェックマークのリストに入ってる。NIP-05、認証済みアカウントのリンク、OG Viner ステータスとは別物だよ。';
 
   @override
   String shareVideoInListsCount(int count) {
@@ -10193,6 +10201,27 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get subtitleEditorProcessing => '字幕はまだ生成中だよ。少し待ってからもう一回見てね。';
+
+  @override
+  String get subtitleEditorNoSpeech => 'この動画からは話し声が見つからなかったよ。字幕にするものがないみたい。';
+
+  @override
+  String get subtitleEditorWriteOwn => '自分で書く';
+
+  @override
+  String get subtitleEditorAddCue => '行を追加';
+
+  @override
+  String get subtitleEditorRemoveCue => 'この行を削除';
+
+  @override
+  String get subtitleEditorStartLabel => '開始';
+
+  @override
+  String get subtitleEditorEndLabel => '終了';
+
+  @override
+  String get subtitleEditorInvalidHint => 'どの行にもテキストと、開始より後の終了時間が必要だよ。';
 
   @override
   String get subtitleEditorLoadError => '字幕を読み込めなかったよ。もう一回試してね。';

@@ -4229,7 +4229,6 @@
   "likedVideosEmpty": "没有点赞的视频",
   "likedVideosInvalidRoute": "无效的路由",
   "likedVideosTitle": "点赞的视频",
-  "ogVinerBadgeSemanticLabel": "OG Viner",
   "uploadFailureSheetRetryingSnackbar": "正在重试上传…",
   "uploadFailureSheetSaveToDraftsButton": "存为草稿",
   "uploadFailureSheetSavedToDraftsSnackbar": "已存为草稿",
@@ -4387,6 +4386,9 @@
     }
   },
   "ogVinerBadgeLabel": "OG Viner",
+  "profileBadgeOgVinerBody": "这个人发过一条原版 Vine，被 Divine 在存档里找到了。这不是账号认证徽章。",
+  "profileBadgeCheckmarkTitle": "个人资料对勾",
+  "profileBadgeCheckmarkBody": "这个账号在 Divine 的个人资料对勾名单里。它与 NIP-05、已验证的账号链接和 OG Viner 状态无关。",
   "shareVideoInListsCount": "{count, plural, =1{已在 1 个列表中} other{已在 {count} 个列表中}}",
   "@shareVideoInListsCount": {
     "placeholders": {
@@ -6343,6 +6345,13 @@
   "subtitleEditorTitle": "编辑字幕",
   "subtitleEditorSave": "保存",
   "subtitleEditorProcessing": "字幕还在生成中，过会儿再来看看。",
+  "subtitleEditorNoSpeech": "这个视频里没检测到人声，所以没有可以做字幕的内容。",
+  "subtitleEditorWriteOwn": "自己写字幕",
+  "subtitleEditorAddCue": "添加一行",
+  "subtitleEditorRemoveCue": "删除这一行",
+  "subtitleEditorStartLabel": "开始",
+  "subtitleEditorEndLabel": "结束",
+  "subtitleEditorInvalidHint": "每一行都需要文字，而且结束时间要晚于开始时间。",
   "subtitleEditorLoadError": "字幕加载失败，请重试。",
   "subtitleEditorSaveSuccess": "字幕已更新",
   "subtitleEditorSaveError": "字幕保存失败，请重试。",

@@ -7312,9 +7312,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get likedVideosTitle => 'پسندیدہ ویڈیوز';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar =>
       'اپلوڈ دوبارہ کوشش ہو رہی ہے…';
 
@@ -7520,6 +7517,17 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      'اس شخص نے ایک اصل Vine پوسٹ کیا تھا جو Divine کو آرکائیو میں ملا۔ یہ اکاؤنٹ کی تصدیق کا بیج نہیں ہے۔';
+
+  @override
+  String get profileBadgeCheckmarkTitle => 'پروفائل چیک مارک';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      'یہ اکاؤنٹ Divine کی پروفائل چیک مارک فہرست میں ہے۔ یہ NIP-05، تصدیق شدہ اکاؤنٹ لنکس اور OG Viner اسٹیٹس سے الگ ہے۔';
 
   @override
   String shareVideoInListsCount(int count) {
@@ -10635,6 +10643,29 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get subtitleEditorProcessing =>
       'سب ٹائٹلز ابھی بن رہے ہیں۔ تھوڑی دیر میں دیکھیں۔';
+
+  @override
+  String get subtitleEditorNoSpeech =>
+      'اس ویڈیو میں کوئی گفتگو نہیں ملی، اس لیے سب ٹائٹل بنانے کے لیے کچھ نہیں ہے۔';
+
+  @override
+  String get subtitleEditorWriteOwn => 'خود لکھیں';
+
+  @override
+  String get subtitleEditorAddCue => 'ایک لائن شامل کریں';
+
+  @override
+  String get subtitleEditorRemoveCue => 'یہ لائن ہٹائیں';
+
+  @override
+  String get subtitleEditorStartLabel => 'شروع';
+
+  @override
+  String get subtitleEditorEndLabel => 'اختتام';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'ہر لائن میں متن اور شروع کے بعد اختتام ہونا چاہیے۔';
 
   @override
   String get subtitleEditorLoadError =>

@@ -7479,9 +7479,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get likedVideosTitle => 'Videoclipuri apreciate';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar => 'Se reîncearcă încărcarea…';
 
   @override
@@ -7685,6 +7682,17 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      'Persoana asta a postat un Vine original pe care Divine l-a găsit în arhivă. Nu e o insignă de verificare a contului.';
+
+  @override
+  String get profileBadgeCheckmarkTitle => 'Bifa de profil';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      'Contul ăsta e pe lista de bife de profil a Divine. E separat de NIP-05, de linkurile de cont verificate și de statutul OG Viner.';
 
   @override
   String shareVideoInListsCount(int count) {
@@ -10846,6 +10854,29 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get subtitleEditorProcessing =>
       'Subtitrările sunt încă în curs de generare. Revino într-o clipă.';
+
+  @override
+  String get subtitleEditorNoSpeech =>
+      'Nu s-a detectat vorbire în acest videoclip, deci nu e nimic de subtitrat.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'Scrie-le tu';
+
+  @override
+  String get subtitleEditorAddCue => 'Adaugă o linie';
+
+  @override
+  String get subtitleEditorRemoveCue => 'Șterge această linie';
+
+  @override
+  String get subtitleEditorStartLabel => 'Început';
+
+  @override
+  String get subtitleEditorEndLabel => 'Sfârșit';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'Fiecare linie are nevoie de text și de un sfârșit după început.';
 
   @override
   String get subtitleEditorLoadError =>

@@ -7396,9 +7396,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get likedVideosTitle => 'Mga Naka-like na Video';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar =>
       'Sinusubukan ulit ang upload…';
 
@@ -7603,6 +7600,17 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      'Nag-post ang taong ito ng orihinal na Vine na nakita ng Divine sa archive. Hindi ito badge ng verification ng account.';
+
+  @override
+  String get profileBadgeCheckmarkTitle => 'Tsek sa profile';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      'Nasa listahan ng profile checkmark ng Divine ang account na ito. Hiwalay ito sa NIP-05, sa mga verified na link ng account, at sa OG Viner status.';
 
   @override
   String shareVideoInListsCount(int count) {
@@ -10753,6 +10761,29 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get subtitleEditorProcessing =>
       'Ginagawa pa ang subtitles. Bumalik ka mamaya.';
+
+  @override
+  String get subtitleEditorNoSpeech =>
+      'Walang na-detect na salita sa video na ito, kaya walang gagawing subtitle.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'Ikaw na ang magsulat';
+
+  @override
+  String get subtitleEditorAddCue => 'Magdagdag ng linya';
+
+  @override
+  String get subtitleEditorRemoveCue => 'Alisin ang linyang ito';
+
+  @override
+  String get subtitleEditorStartLabel => 'Simula';
+
+  @override
+  String get subtitleEditorEndLabel => 'Katapusan';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'Kailangan ng bawat linya ng teksto at katapusan pagkatapos ng simula.';
 
   @override
   String get subtitleEditorLoadError =>

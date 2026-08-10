@@ -24,6 +24,56 @@ enum SubtitleSourcePreference {
   refsFirst,
 }
 
+/// Why [fetchSubtitleCues] returned the cues it did.
+///
+/// Callers need this to tell "transcription is still running" apart from
+/// "transcription finished and there was nothing to transcribe" — both yield
+/// zero cues but mean opposite things to the user.
+enum SubtitleFetchStatus {
+  /// A source returned at least one cue.
+  available,
+
+  /// A source was reachable and served a subtitle track that holds no cues,
+  /// e.g. a video with no speech. Transcription is done; there is nothing
+  /// to show.
+  empty,
+
+  /// A source reported the track is still being generated (HTTP 202).
+  processing,
+
+  /// No source was configured, reachable, or held a subtitle track.
+  unavailable,
+}
+
+/// Outcome of a subtitle fetch: the cues plus why they are what they are.
+class SubtitleFetchResult {
+  /// Creates a result with an explicit [status].
+  const SubtitleFetchResult(this.status, {this.cues = const []});
+
+  /// Classifies a [body] a source served as a subtitle track:
+  /// [SubtitleFetchStatus.available] when it holds cues, or
+  /// [SubtitleFetchStatus.empty] when it is a track with none.
+  ///
+  /// Returns `null` when [body] is not WebVTT at all. An HTML error page or a
+  /// JSON envelope served with HTTP 200 parses to zero cues just like a
+  /// silent video's track does, and calling that `empty` would tell the
+  /// creator no speech was detected when the fetch actually failed.
+  static SubtitleFetchResult? fromBody(String body) {
+    if (!SubtitleService.isWebVtt(body)) return null;
+    final cues = SubtitleService.parseVtt(body);
+    return cues.isEmpty
+        ? const SubtitleFetchResult(SubtitleFetchStatus.empty)
+        : SubtitleFetchResult(SubtitleFetchStatus.available, cues: cues);
+  }
+
+  /// Why the fetch ended the way it did.
+  final SubtitleFetchStatus status;
+
+  /// The resolved cues. Empty unless [status] is
+  /// [SubtitleFetchStatus.available].
+  final List<SubtitleCue> cues;
+}
+
 Duration _parseRetryAfter(Map<String, String> headers) {
   final rawValue = headers['retry-after'];
   if (rawValue == null) return _defaultBlossomRetryAfter;
@@ -43,11 +93,17 @@ Uri? _parseHttpSubtitleUrl(String ref) {
   return uri;
 }
 
-Future<List<SubtitleCue>?> _fetchHttp(http.Client client, Uri url) async {
+Future<SubtitleFetchResult?> _fetchHttp(http.Client client, Uri url) async {
   try {
     final response = await client.get(url);
     if (response.statusCode == 200 && response.body.trim().isNotEmpty) {
-      return SubtitleService.parseVtt(response.body);
+      return SubtitleFetchResult.fromBody(response.body);
+    }
+    // Saved refs can point at the same generator Blossom fronts, so a direct
+    // ref answers 202 while transcription runs. Report it rather than poll:
+    // the retry-after contract belongs to the Blossom path.
+    if (response.statusCode == 202) {
+      return const SubtitleFetchResult(SubtitleFetchStatus.processing);
     }
   } catch (e) {
     Log.warning(
@@ -59,7 +115,7 @@ Future<List<SubtitleCue>?> _fetchHttp(http.Client client, Uri url) async {
   return null;
 }
 
-Future<List<SubtitleCue>?> _fetchRelay(
+Future<SubtitleFetchResult?> _fetchRelay(
   NostrClient nostrClient,
   String ref,
 ) async {
@@ -81,10 +137,10 @@ Future<List<SubtitleCue>?> _fetchRelay(
   );
 
   if (events.isEmpty) return null;
-  return SubtitleService.parseVtt(events.first.content);
+  return SubtitleFetchResult.fromBody(events.first.content);
 }
 
-Future<List<SubtitleCue>?> _fetchBlossom({
+Future<SubtitleFetchResult?> _fetchBlossom({
   required http.Client client,
   required SubtitlePollDelay delay,
   required Uri vttUrl,
@@ -95,14 +151,17 @@ Future<List<SubtitleCue>?> _fetchBlossom({
     final response = await client.get(vttUrl);
 
     if (response.statusCode == 200 && response.body.trim().isNotEmpty) {
-      return SubtitleService.parseVtt(response.body);
+      return SubtitleFetchResult.fromBody(response.body);
     }
 
     if (response.statusCode == 202) {
-      if (attempt == _maxBlossomPollAttempts - 1) return null;
+      const stillProcessing = SubtitleFetchResult(
+        SubtitleFetchStatus.processing,
+      );
+      if (attempt == _maxBlossomPollAttempts - 1) return stillProcessing;
 
       final retryAfter = _parseRetryAfter(response.headers);
-      if (waited + retryAfter > _maxBlossomPollWait) return null;
+      if (waited + retryAfter > _maxBlossomPollWait) return stillProcessing;
 
       waited += retryAfter;
       await delay(retryAfter);
@@ -117,7 +176,7 @@ Future<List<SubtitleCue>?> _fetchBlossom({
 
 /// Resolves subtitle cues with ordered fallback.
 ///
-/// Strategy (first success wins):
+/// Strategy (first source with cues wins):
 /// 1. If [textTrackContent] is non-empty, parse it directly (zero network).
 /// 2. For each ref in [textTrackRefs], try HTTP fetch (http/https) or relay
 ///    query (Nostr NIP coords). [nostrClient] may be null; relay refs are
@@ -125,8 +184,15 @@ Future<List<SubtitleCue>?> _fetchBlossom({
 /// 3. If [sha256] is present, fetch from Blossom at
 ///    `https://media.divine.video/{sha256}/vtt`, polling on 202.
 ///
-/// Returns `[]` when no source yields cues.
-Future<List<SubtitleCue>> fetchSubtitleCues({
+/// A source that resolves to zero cues does not end the chain — the next
+/// source still gets a turn. When no source yields cues, the returned status
+/// says why: [SubtitleFetchStatus.processing] if any source reported the track
+/// is still being generated, [SubtitleFetchStatus.empty] if a track was served
+/// but held no cues, otherwise [SubtitleFetchStatus.unavailable].
+///
+/// Only a body carrying the WebVTT signature counts as a served track — see
+/// [SubtitleFetchResult.fromBody].
+Future<SubtitleFetchResult> fetchSubtitleCues({
   required http.Client httpClient,
   required NostrClient? nostrClient,
   required SubtitlePollDelay delay,
@@ -136,27 +202,47 @@ Future<List<SubtitleCue>> fetchSubtitleCues({
   SubtitleSourcePreference sourcePreference =
       SubtitleSourcePreference.embeddedFirst,
 }) async {
-  List<SubtitleCue>? embeddedCues() {
+  var sawProcessing = false;
+  var sawEmpty = false;
+
+  // Returns the result only when it carries cues; otherwise records why this
+  // source came up short so the chain can continue and still explain itself.
+  SubtitleFetchResult? accept(SubtitleFetchResult? result) {
+    switch (result?.status) {
+      case SubtitleFetchStatus.available:
+        return result;
+      case SubtitleFetchStatus.processing:
+        sawProcessing = true;
+      case SubtitleFetchStatus.empty:
+        sawEmpty = true;
+      case SubtitleFetchStatus.unavailable:
+      case null:
+        break;
+    }
+    return null;
+  }
+
+  SubtitleFetchResult? embedded() {
     if (textTrackContent == null || textTrackContent.isEmpty) return null;
-    return SubtitleService.parseVtt(textTrackContent);
+    return SubtitleFetchResult.fromBody(textTrackContent);
   }
 
   if (sourcePreference == SubtitleSourcePreference.embeddedFirst) {
-    final cues = embeddedCues();
+    final cues = accept(embedded());
     if (cues != null) return cues;
   }
 
   for (final ref in textTrackRefs) {
     final httpUrl = _parseHttpSubtitleUrl(ref);
     if (httpUrl != null) {
-      final cues = await _fetchHttp(httpClient, httpUrl);
+      final cues = accept(await _fetchHttp(httpClient, httpUrl));
       if (cues != null) return cues;
       continue;
     }
 
     if (nostrClient != null) {
       try {
-        final cues = await _fetchRelay(nostrClient, ref);
+        final cues = accept(await _fetchRelay(nostrClient, ref));
         if (cues != null) return cues;
       } catch (e) {
         Log.warning(
@@ -169,17 +255,15 @@ Future<List<SubtitleCue>> fetchSubtitleCues({
   }
 
   if (sourcePreference == SubtitleSourcePreference.refsFirst) {
-    final cues = embeddedCues();
+    final cues = accept(embedded());
     if (cues != null) return cues;
   }
 
   if (sha256 != null && sha256.isNotEmpty) {
     final vttUrl = Uri.parse('https://media.divine.video/$sha256/vtt');
     try {
-      final cues = await _fetchBlossom(
-        client: httpClient,
-        delay: delay,
-        vttUrl: vttUrl,
+      final cues = accept(
+        await _fetchBlossom(client: httpClient, delay: delay, vttUrl: vttUrl),
       );
       if (cues != null) return cues;
     } catch (e) {
@@ -191,5 +275,9 @@ Future<List<SubtitleCue>> fetchSubtitleCues({
     }
   }
 
-  return [];
+  if (sawProcessing) {
+    return const SubtitleFetchResult(SubtitleFetchStatus.processing);
+  }
+  if (sawEmpty) return const SubtitleFetchResult(SubtitleFetchStatus.empty);
+  return const SubtitleFetchResult(SubtitleFetchStatus.unavailable);
 }

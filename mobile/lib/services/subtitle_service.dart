@@ -21,6 +21,28 @@ class SubtitleCue {
 
 /// Service for parsing and generating WebVTT subtitle content.
 class SubtitleService {
+  static const _signature = 'WEBVTT';
+
+  /// Whether [content] carries the WebVTT file signature.
+  ///
+  /// [parseVtt] is deliberately tolerant and answers `[]` for anything it
+  /// cannot read, so an HTML error page or a JSON envelope served with
+  /// HTTP 200 is indistinguishable from a subtitle track with no cues.
+  /// Callers that act on that difference must check the signature first.
+  ///
+  /// A byte-order mark and leading whitespace are tolerated; the signature
+  /// itself must be followed by whitespace or end the content, so `WEBVTTish`
+  /// is not a track.
+  static bool isWebVtt(String content) {
+    final body = (content.startsWith('﻿') ? content.substring(1) : content)
+        .trimLeft();
+    if (!body.startsWith(_signature)) return false;
+    if (body.length == _signature.length) return true;
+    return _whitespace.hasMatch(body[_signature.length]);
+  }
+
+  static final _whitespace = RegExp(r'\s');
+
   /// Parse a WebVTT string into a list of [SubtitleCue]s.
   ///
   /// Tolerant parser: skips malformed cues rather than throwing.

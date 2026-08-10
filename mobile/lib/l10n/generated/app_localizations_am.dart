@@ -7158,9 +7158,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get likedVideosTitle => 'የተወደዱ ቪዲዮዎች';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar => 'ስቀላን እንደገና በመሞከር ላይ…';
 
   @override
@@ -7359,6 +7356,17 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      'ይህ ሰው Divine በማህደር ውስጥ ያገኘውን ዋና Vine ለጥፏል። ይህ የመለያ ማረጋገጫ ባጅ አይደለም።';
+
+  @override
+  String get profileBadgeCheckmarkTitle => 'የመገለጫ ምልክት';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      'ይህ መለያ በDivine የመገለጫ ምልክት ዝርዝር ውስጥ ነው። ከNIP-05፣ ከተረጋገጡ የመለያ አገናኞች እና ከOG Viner ሁኔታ የተለየ ነው።';
 
   @override
   String shareVideoInListsCount(int count) {
@@ -10402,6 +10410,29 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get subtitleEditorProcessing =>
       'የትርጉም ጽሑፎች አሁንም እየተፈጠሩ ነው። ከአፍታ በኋላ ተመልሰው ይመልከቱ።';
+
+  @override
+  String get subtitleEditorNoSpeech =>
+      'በዚህ ቪዲዮ ውስጥ ንግግር አልተገኘም፤ ስለዚህ የሚጻፍ ትርጉም የለም።';
+
+  @override
+  String get subtitleEditorWriteOwn => 'እራስዎ ይጻፉ';
+
+  @override
+  String get subtitleEditorAddCue => 'መስመር ያክሉ';
+
+  @override
+  String get subtitleEditorRemoveCue => 'ይህን መስመር ያስወግዱ';
+
+  @override
+  String get subtitleEditorStartLabel => 'መጀመሪያ';
+
+  @override
+  String get subtitleEditorEndLabel => 'መጨረሻ';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'እያንዳንዱ መስመር ጽሑፍና ከመጀመሪያው በኋላ የሆነ መጨረሻ ያስፈልገዋል።';
 
   @override
   String get subtitleEditorLoadError => 'የትርጉም ጽሑፎችን መጫን አልተቻለም። እንደገና ይሞክሩ።';

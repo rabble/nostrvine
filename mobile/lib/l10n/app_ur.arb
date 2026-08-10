@@ -4229,7 +4229,6 @@
   "likedVideosEmpty": "کوئی پسندیدہ ویڈیو نہیں",
   "likedVideosInvalidRoute": "غلط روٹ",
   "likedVideosTitle": "پسندیدہ ویڈیوز",
-  "ogVinerBadgeSemanticLabel": "OG Viner",
   "uploadFailureSheetRetryingSnackbar": "اپلوڈ دوبارہ کوشش ہو رہی ہے…",
   "uploadFailureSheetSaveToDraftsButton": "مسودوں میں محفوظ کریں",
   "uploadFailureSheetSavedToDraftsSnackbar": "مسودوں میں محفوظ ہو گیا",
@@ -4387,6 +4386,9 @@
     }
   },
   "ogVinerBadgeLabel": "OG Viner",
+  "profileBadgeOgVinerBody": "اس شخص نے ایک اصل Vine پوسٹ کیا تھا جو Divine کو آرکائیو میں ملا۔ یہ اکاؤنٹ کی تصدیق کا بیج نہیں ہے۔",
+  "profileBadgeCheckmarkTitle": "پروفائل چیک مارک",
+  "profileBadgeCheckmarkBody": "یہ اکاؤنٹ Divine کی پروفائل چیک مارک فہرست میں ہے۔ یہ NIP-05، تصدیق شدہ اکاؤنٹ لنکس اور OG Viner اسٹیٹس سے الگ ہے۔",
   "shareVideoInListsCount": "{count, plural, =1{1 فہرست میں} other{{count} فہرستوں میں}}",
   "@shareVideoInListsCount": {
     "placeholders": {
@@ -6343,6 +6345,13 @@
   "subtitleEditorTitle": "سب ٹائٹلز میں ترمیم کریں",
   "subtitleEditorSave": "محفوظ کریں",
   "subtitleEditorProcessing": "سب ٹائٹلز ابھی بن رہے ہیں۔ تھوڑی دیر میں دیکھیں۔",
+  "subtitleEditorNoSpeech": "اس ویڈیو میں کوئی گفتگو نہیں ملی، اس لیے سب ٹائٹل بنانے کے لیے کچھ نہیں ہے۔",
+  "subtitleEditorWriteOwn": "خود لکھیں",
+  "subtitleEditorAddCue": "ایک لائن شامل کریں",
+  "subtitleEditorRemoveCue": "یہ لائن ہٹائیں",
+  "subtitleEditorStartLabel": "شروع",
+  "subtitleEditorEndLabel": "اختتام",
+  "subtitleEditorInvalidHint": "ہر لائن میں متن اور شروع کے بعد اختتام ہونا چاہیے۔",
   "subtitleEditorLoadError": "سب ٹائٹلز لوڈ نہیں ہو سکے۔ دوبارہ کوشش کریں۔",
   "subtitleEditorSaveSuccess": "سب ٹائٹلز اپڈیٹ ہو گئے",
   "subtitleEditorSaveError": "سب ٹائٹلز محفوظ نہیں ہو سکے۔ دوبارہ کوشش کریں۔",

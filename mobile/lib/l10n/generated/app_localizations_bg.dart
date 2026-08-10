@@ -7385,9 +7385,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get likedVideosTitle => 'Харесани видеа';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar => 'Повторно качване…';
 
   @override
@@ -7590,6 +7587,17 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      'Този човек е публикувал оригинален Vine, който Divine намери в архива. Това не е значка за потвърден профил.';
+
+  @override
+  String get profileBadgeCheckmarkTitle => 'Отметка на профила';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      'Този профил е в списъка с отметки на профил на Divine. Това е различно от NIP-05, потвърдените връзки към профила и статуса OG Viner.';
 
   @override
   String shareVideoInListsCount(int count) {
@@ -10738,6 +10746,29 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get subtitleEditorProcessing =>
       'Субтитрите все още се генерират. Върни се след малко.';
+
+  @override
+  String get subtitleEditorNoSpeech =>
+      'В това видео не е открита реч, така че няма какво да се субтитрира.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'Напиши ги сам';
+
+  @override
+  String get subtitleEditorAddCue => 'Добави ред';
+
+  @override
+  String get subtitleEditorRemoveCue => 'Премахни този ред';
+
+  @override
+  String get subtitleEditorStartLabel => 'Начало';
+
+  @override
+  String get subtitleEditorEndLabel => 'Край';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'Всеки ред се нуждае от текст и край след началото си.';
 
   @override
   String get subtitleEditorLoadError =>

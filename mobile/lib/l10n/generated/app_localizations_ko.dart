@@ -7011,9 +7011,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get likedVideosTitle => '좋아요한 영상';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar => '업로드 다시 시도 중…';
 
   @override
@@ -7207,6 +7204,17 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      '이 사람은 Divine이 아카이브에서 찾은 오리지널 Vine을 올렸어요. 계정 인증 배지는 아니에요.';
+
+  @override
+  String get profileBadgeCheckmarkTitle => '프로필 체크마크';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      '이 계정은 Divine의 프로필 체크마크 목록에 있어요. NIP-05, 인증된 계정 링크, OG Viner 상태와는 별개예요.';
 
   @override
   String shareVideoInListsCount(int count) {
@@ -10220,6 +10228,28 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get subtitleEditorProcessing => '자막을 아직 생성하고 있어요. 잠시 후 다시 확인해주세요.';
+
+  @override
+  String get subtitleEditorNoSpeech =>
+      '이 영상에서는 말소리가 감지되지 않았어요. 자막으로 만들 내용이 없네요.';
+
+  @override
+  String get subtitleEditorWriteOwn => '직접 쓰기';
+
+  @override
+  String get subtitleEditorAddCue => '줄 추가';
+
+  @override
+  String get subtitleEditorRemoveCue => '이 줄 삭제';
+
+  @override
+  String get subtitleEditorStartLabel => '시작';
+
+  @override
+  String get subtitleEditorEndLabel => '끝';
+
+  @override
+  String get subtitleEditorInvalidHint => '모든 줄에는 텍스트와 시작보다 늦은 종료 시간이 필요해요.';
 
   @override
   String get subtitleEditorLoadError => '자막을 불러오지 못했어요. 다시 시도해주세요.';

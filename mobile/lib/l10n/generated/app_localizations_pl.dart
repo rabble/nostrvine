@@ -7478,9 +7478,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get likedVideosTitle => 'Polubione filmy';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar => 'Ponawianie przesyłania…';
 
   @override
@@ -7684,6 +7681,17 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      'Ta osoba opublikowała oryginalnego Vine\'a, którego Divine znalazło w archiwum. To nie jest odznaka weryfikacji konta.';
+
+  @override
+  String get profileBadgeCheckmarkTitle => 'Znacznik profilu';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      'To konto jest na liście znaczników profilu Divine. To coś innego niż NIP-05, zweryfikowane linki konta i status OG Viner.';
 
   @override
   String shareVideoInListsCount(int count) {
@@ -10825,6 +10833,29 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get subtitleEditorProcessing =>
       'Napisy są jeszcze generowane. Zajrzyj za chwilę.';
+
+  @override
+  String get subtitleEditorNoSpeech =>
+      'Nie wykryto mowy w tym filmie, więc nie ma nic do opisania napisami.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'Napisz je sam';
+
+  @override
+  String get subtitleEditorAddCue => 'Dodaj linijkę';
+
+  @override
+  String get subtitleEditorRemoveCue => 'Usuń tę linijkę';
+
+  @override
+  String get subtitleEditorStartLabel => 'Początek';
+
+  @override
+  String get subtitleEditorEndLabel => 'Koniec';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'Każda linijka potrzebuje tekstu i końca po swoim początku.';
 
   @override
   String get subtitleEditorLoadError =>

@@ -7272,9 +7272,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get likedVideosTitle => 'Beğenilen Videolar';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar => 'Yükleme tekrar deneniyor…';
 
   @override
@@ -7477,6 +7474,17 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      'Bu kişi, Divine\'ın arşivde bulduğu orijinal bir Vine paylaşmış. Bu bir hesap doğrulama rozeti değil.';
+
+  @override
+  String get profileBadgeCheckmarkTitle => 'Profil onay işareti';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      'Bu hesap Divine\'ın profil onay işareti listesinde. NIP-05\'ten, doğrulanmış hesap bağlantılarından ve OG Viner durumundan ayrıdır.';
 
   @override
   String shareVideoInListsCount(int count) {
@@ -10591,6 +10599,29 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get subtitleEditorProcessing =>
       'Altyazılar hâlâ oluşturuluyor. Birazdan tekrar bak.';
+
+  @override
+  String get subtitleEditorNoSpeech =>
+      'Bu videoda konuşma algılanmadı, yani altyazı yapılacak bir şey yok.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'Kendin yaz';
+
+  @override
+  String get subtitleEditorAddCue => 'Satır ekle';
+
+  @override
+  String get subtitleEditorRemoveCue => 'Bu satırı kaldır';
+
+  @override
+  String get subtitleEditorStartLabel => 'Başlangıç';
+
+  @override
+  String get subtitleEditorEndLabel => 'Bitiş';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'Her satırda metin ve başlangıçtan sonra gelen bir bitiş olmalı.';
 
   @override
   String get subtitleEditorLoadError => 'Altyazılar yüklenemedi. Tekrar dene.';

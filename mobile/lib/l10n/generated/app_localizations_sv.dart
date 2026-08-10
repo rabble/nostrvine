@@ -7306,9 +7306,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get likedVideosTitle => 'Gillade videor';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar => 'Försöker ladda upp igen…';
 
   @override
@@ -7510,6 +7507,17 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      'Den här personen postade en originalvine som Divine hittade i arkivet. Det är inte en verifieringsbadge för kontot.';
+
+  @override
+  String get profileBadgeCheckmarkTitle => 'Profilbock';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      'Det här kontot finns på Divines lista över profilbockar. Det är skilt från NIP-05, verifierade kontolänkar och OG Viner-status.';
 
   @override
   String shareVideoInListsCount(int count) {
@@ -10635,6 +10643,29 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get subtitleEditorProcessing =>
       'Undertexter genereras fortfarande. Kom tillbaka om en stund.';
+
+  @override
+  String get subtitleEditorNoSpeech =>
+      'Inget tal hittades i den här videon, så det finns inget att texta.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'Skriv dem själv';
+
+  @override
+  String get subtitleEditorAddCue => 'Lägg till en rad';
+
+  @override
+  String get subtitleEditorRemoveCue => 'Ta bort den här raden';
+
+  @override
+  String get subtitleEditorStartLabel => 'Start';
+
+  @override
+  String get subtitleEditorEndLabel => 'Slut';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'Varje rad behöver text och ett slut efter sin start.';
 
   @override
   String get subtitleEditorLoadError =>

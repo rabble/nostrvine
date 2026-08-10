@@ -7321,9 +7321,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get likedVideosTitle => 'Video đã thích';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar => 'Đang thử tải lên lại…';
 
   @override
@@ -7524,6 +7521,17 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      'Người này đã đăng một Vine gốc mà Divine tìm thấy trong kho lưu trữ. Đây không phải huy hiệu xác minh tài khoản.';
+
+  @override
+  String get profileBadgeCheckmarkTitle => 'Dấu tích hồ sơ';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      'Tài khoản này nằm trong danh sách dấu tích hồ sơ của Divine. Nó tách biệt với NIP-05, liên kết tài khoản đã xác minh và trạng thái OG Viner.';
 
   @override
   String shareVideoInListsCount(int count) {
@@ -10638,6 +10646,29 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get subtitleEditorProcessing =>
       'Phụ đề vẫn đang được tạo. Quay lại sau ít phút.';
+
+  @override
+  String get subtitleEditorNoSpeech =>
+      'Không phát hiện giọng nói nào trong video này, nên không có gì để làm phụ đề.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'Tự viết phụ đề';
+
+  @override
+  String get subtitleEditorAddCue => 'Thêm một dòng';
+
+  @override
+  String get subtitleEditorRemoveCue => 'Xoá dòng này';
+
+  @override
+  String get subtitleEditorStartLabel => 'Bắt đầu';
+
+  @override
+  String get subtitleEditorEndLabel => 'Kết thúc';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'Mỗi dòng cần có nội dung và thời điểm kết thúc sau lúc bắt đầu.';
 
   @override
   String get subtitleEditorLoadError => 'Không tải được phụ đề. Thử lại nhé.';

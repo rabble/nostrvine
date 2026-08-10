@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
@@ -30,6 +31,8 @@ void main() {
         ),
       ],
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: Center(
             child: UserName.fromUserProfile(
@@ -107,9 +110,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          userProfileReactiveProvider(defaultPubkey).overrideWith(
-            (ref) => const Stream<UserProfile?>.empty(),
-          ),
+          userProfileReactiveProvider(
+            defaultPubkey,
+          ).overrideWith((ref) => const Stream<UserProfile?>.empty()),
           nip05VerificationProvider.overrideWith(
             (ref, pubkey) async => Nip05VerificationStatus.none,
           ),
