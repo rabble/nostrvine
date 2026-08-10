@@ -22,7 +22,8 @@ updates:
       - "dependencies"
     # `reviewers:` was removed from dependabot.yml in favour of CODEOWNERS, and
     # this repo has no CODEOWNERS file GitHub actually reads (mobile/docs/CODEOWNERS
-    # is not a path GitHub honours), so assignment is the only working handle.
+    # is not a path GitHub honours; tracked in #6994), so assignment is the only
+    # working handle.
     assignees:
       - "realmeylisdev"
     groups:
@@ -50,6 +51,16 @@ updates:
 #     depend on fails on `bin/internal/engine.version`.
 #
 # pub is also a community-maintained ecosystem, so these carry no GitHub SLA.
-# When #8356 and #15654 land, add the entry described in tasks/plan_3655.md —
-# note `directory` MUST be "/mobile" (the workspace root), because pub's
-# dependency_services refuses to run anywhere else.
+# When #8356 and #15654 land, enable the pub entry below. `directory` MUST be
+# "/mobile" (the workspace root), because pub's dependency_services refuses to
+# run anywhere else.
+#
+#   - package-ecosystem: "pub"
+#     directory: "/mobile"
+#     schedule:
+#       interval: "weekly"
+#     open-pull-requests-limit: 3
+#     commit-message:
+#       prefix: "ci(deps)"
+#     labels:
+#       - "dependencies"

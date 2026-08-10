@@ -1,4 +1,5 @@
-# Emit one line per non-hosted dependency source in a pubspec.lock.
+# Emit one line per dependency source in a pubspec.lock that does not resolve
+# from pub.dev.
 #
 # Sourced by check_dependency_provenance.sh (issue #3655 / #3363 AC3). Kept as a
 # separate awk file — rather than inline in the shell script — so the detector
@@ -6,9 +7,10 @@
 # lib/dart_code_only.awk.
 #
 # Output (one per line, unsorted; the caller sorts):
-#   git:<package>:PINNED     ref == resolved-ref and ref is a 40-hex SHA
-#   git:<package>:MUTABLE    anything else (branch, tag, short ref, absent ref)
-#   path:<package>:<path>    a path-sourced dependency
+#   git:<package>:<url>:PINNED     ref == resolved-ref and ref is a 40-hex SHA
+#   git:<package>:<url>:MUTABLE    anything else (branch, tag, short ref, absent ref)
+#   path:<package>:<path>          a path-sourced dependency
+#   hosted:<package>:<url>         a hosted dependency from a non-pub.dev registry
 #
 # Why ref vs resolved-ref: pub records both for a git source. A movable ref (a
 # branch or tag) resolves to a SHA that differs from the ref as written, so the
@@ -19,18 +21,20 @@
 # `ref` absent entirely (no ref given, pub defaults to the default branch HEAD)
 # must also be MUTABLE, so the default is set at package start, not on match.
 
-BEGIN { pkg = ""; source = ""; ref = ""; resolved = ""; dpath = "" }
+BEGIN { pkg = ""; source = ""; ref = ""; resolved = ""; dpath = ""; url = "" }
 
 function flush() {
   if (pkg == "") return
   if (source == "git") {
     if (ref != "" && ref == resolved && ref ~ /^[0-9a-f]{40}$/) {
-      print "git:" pkg ":PINNED"
+      print "git:" pkg ":" url ":PINNED"
     } else {
-      print "git:" pkg ":MUTABLE"
+      print "git:" pkg ":" url ":MUTABLE"
     }
   } else if (source == "path") {
     print "path:" pkg ":" dpath
+  } else if (source == "hosted" && url != "" && url != "https://pub.dev") {
+    print "hosted:" pkg ":" url
   }
 }
 
@@ -40,7 +44,7 @@ function flush() {
   pkg = $0
   sub(/^  /, "", pkg)
   sub(/:[[:space:]]*$/, "", pkg)
-  source = ""; ref = ""; resolved = ""; dpath = ""
+  source = ""; ref = ""; resolved = ""; dpath = ""; url = ""
   next
 }
 
@@ -54,6 +58,7 @@ pkg == "" { next }
 /^      ref:[[:space:]]/        { ref = trim($0, "ref"); next }
 /^      resolved-ref:[[:space:]]/ { resolved = trim($0, "resolved-ref"); next }
 /^      path:[[:space:]]/       { dpath = trim($0, "path"); next }
+/^      url:[[:space:]]/        { url = trim($0, "url"); next }
 
 END { flush() }
 

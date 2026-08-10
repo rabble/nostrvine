@@ -39,6 +39,8 @@ void main() {
     baselinePath,
   ).readAsLinesSync().where((l) => l.isNotEmpty && !l.startsWith('#')).toList();
 
+  String outputOf(ProcessResult result) => '${result.stdout}\n${result.stderr}';
+
   void writeLock(String body) => File(lockPath).writeAsStringSync(body);
 
   /// Registers [relativePath] as a tracked pubspec containing [body].
@@ -47,6 +49,13 @@ void main() {
     file.parent.createSync(recursive: true);
     file.writeAsStringSync(body);
     File(pubspecListPath).writeAsStringSync('$relativePath\n');
+  }
+
+  void appendPubspecPath(String relativePath) {
+    File(pubspecListPath).writeAsStringSync(
+      '$relativePath\n',
+      mode: FileMode.append,
+    );
   }
 
   setUp(() {
@@ -80,8 +89,13 @@ packages:
 
       final res = run();
 
-      expect(res.exitCode, 1, reason: res.stdout.toString());
-      expect(res.stdout, contains('git:c2pa_flutter:MUTABLE'));
+      expect(res.exitCode, 1, reason: outputOf(res));
+      expect(
+        res.stdout,
+        contains(
+          'git:c2pa_flutter:https://github.com/guardianproject/c2pa-flutter.git:MUTABLE',
+        ),
+      );
       expect(res.stdout, contains('MOVABLE ref'));
     });
 
@@ -101,8 +115,53 @@ packages:
 ''');
 
       expect(run(update: true).exitCode, 0);
-      expect(baselineRows(), equals(['git:c2pa_flutter:PINNED']));
+      expect(
+        baselineRows(),
+        equals([
+          'git:c2pa_flutter:https://github.com/guardianproject/c2pa-flutter.git:PINNED',
+        ]),
+      );
       expect(run().exitCode, 0);
+    });
+
+    test('flags a pinned git dependency repointed to a different repository', () {
+      const sha = '847d0c0183c9c09946ce321c107decd3fd9f56b2';
+      writeLock('''
+packages:
+  c2pa_flutter:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: "$sha"
+      resolved-ref: "$sha"
+      url: "https://github.com/guardianproject/c2pa-flutter.git"
+    source: git
+    version: "0.0.3"
+''');
+      expect(run(update: true).exitCode, 0);
+
+      writeLock('''
+packages:
+  c2pa_flutter:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: "$sha"
+      resolved-ref: "$sha"
+      url: "https://github.com/attacker/c2pa-flutter-fork.git"
+    source: git
+    version: "0.0.3"
+''');
+
+      final res = run();
+
+      expect(res.exitCode, 1, reason: outputOf(res));
+      expect(
+        res.stdout,
+        contains(
+          'git:c2pa_flutter:https://github.com/attacker/c2pa-flutter-fork.git:PINNED',
+        ),
+      );
     });
 
     test('a movable ref cannot be silenced by baselining it', () {
@@ -140,7 +199,12 @@ packages:
 ''');
 
       expect(run().exitCode, 1);
-      expect(run().stdout, contains('git:floating:MUTABLE'));
+      expect(
+        run().stdout,
+        contains(
+          'git:floating:https://github.com/example/floating.git:MUTABLE',
+        ),
+      );
     });
 
     test('flags a path-sourced dependency that is not baselined', () {
@@ -211,6 +275,28 @@ dev_dependencies:
       );
     });
 
+    test('flags a hosted dependency from a non-pub.dev registry', () {
+      writeLock('''
+packages:
+  private_package:
+    dependency: "direct main"
+    description:
+      name: private_package
+      sha256: "deadbeef"
+      url: "https://pub.internal.example.com"
+    source: hosted
+    version: "1.0.0"
+''');
+
+      final res = run();
+
+      expect(res.exitCode, 1);
+      expect(
+        res.stdout,
+        contains('hosted:private_package:https://pub.internal.example.com'),
+      );
+    });
+
     test('does not mistake a nested override key for a second entry', () {
       writePubspec('app/pubspec.yaml', '''
 name: app
@@ -244,6 +330,31 @@ packages:
 
       expect(res.exitCode, 1);
       expect(res.stdout, contains('no longer offending'));
+    });
+
+    test('fails hard when the lockfile is missing', () {
+      File(lockPath).deleteSync();
+
+      final res = run(update: true);
+
+      expect(res.exitCode, 1);
+      expect(outputOf(res), contains('lockfile not found'));
+      expect(File(baselinePath).existsSync(), isFalse);
+    });
+
+    test('fails hard when a listed pubspec is missing', () {
+      writePubspec('app/pubspec.yaml', '''
+name: app
+dependency_overrides:
+  device_info_plus: ^10.1.2
+''');
+      appendPubspecPath('missing/pubspec.yaml');
+
+      final res = run(update: true);
+
+      expect(res.exitCode, 1);
+      expect(outputOf(res), contains('listed pubspec not found'));
+      expect(File(baselinePath).existsSync(), isFalse);
     });
   });
 }
