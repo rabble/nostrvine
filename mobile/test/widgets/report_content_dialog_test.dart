@@ -2,6 +2,7 @@
 // ABOUTME: Tests Apple compliance requirements, reason selection, and submission
 
 import 'dart:async';
+import 'dart:ui' show Tristate;
 
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
@@ -1222,6 +1223,7 @@ void main() {
       // own side of that gap, one report gets two different NIP-32 labels,
       // which is the divergence this whole change exists to prevent. Needs no
       // failure or parked row: it is the ordinary success path.
+      final handle = tester.ensureSemantics();
       serviceGate = Completer<ContentReportingService>();
       final publish = Completer<ReportResult>();
       when(
@@ -1256,6 +1258,26 @@ void main() {
         find.text(l10n.reportReasonTitle(ContentFilterReason.harassment)),
       );
       await tester.pump();
+
+      // State the premise the assertions below rely on. Everything this test
+      // discriminates comes from that tap having actually moved the selection;
+      // if a later change stops it landing — an `_isSubmitting` guard on
+      // `_onReasonSelected`, an AbsorbPointer over the form — both channels
+      // would report spam, the test would stay green, and it would be checking
+      // nothing.
+      expect(
+        tester
+            .getSemantics(
+              find.text(l10n.reportReasonTitle(ContentFilterReason.harassment)),
+            )
+            .getSemanticsData()
+            .flagsCollection
+            .isSelected,
+        Tristate.isTrue,
+        reason:
+            'the mid-submit reason tap must land for this test to mean '
+            'anything',
+      );
 
       serviceGate!.complete(mockReportingService);
       await tester.pump();
@@ -1293,6 +1315,7 @@ void main() {
               as List<List<String>>;
 
       // Whichever reason the submit committed to, both channels carry it.
+      handle.dispose();
       expect(reportedReason, ContentFilterReason.spam);
       expect(
         tags,
