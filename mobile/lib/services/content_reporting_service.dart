@@ -466,11 +466,14 @@ class ContentReportingService {
   ///
   /// The hash is put through [normalizeSha256Hash] rather than forwarded
   /// verbatim. `VideoEvent.sha256` is whatever the publishing client wrote in
-  /// the `imeta` `x` tag, unvalidated, so an upper-case or padded hash would
-  /// be rejected by the backend's own check and silently file no report at
-  /// all; normalizing files it correctly instead. Anything that is not 64 hex
-  /// characters is dropped here, which makes the documented degrade explicit
-  /// rather than something the backend has to catch.
+  /// the `imeta` `x` tag, unvalidated, so a padded hash reaches the backend
+  /// with its surrounding whitespace intact, fails the anchored hash check
+  /// there, and silently files no report at all; trimming files it correctly
+  /// instead. Case is not the reason — the backend lower-cases before
+  /// matching — but this is the identifier the report is keyed by, so it is
+  /// canonicalised here rather than left to the consumer. Anything that is
+  /// not 64 hex characters is dropped, which makes the documented degrade
+  /// explicit rather than something the backend has to catch.
   ///
   /// Tag order is pinned by divine-moderation-service's
   /// `dm-report-contract.test.mjs` fixture.

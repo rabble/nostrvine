@@ -1340,6 +1340,99 @@ void main() {
       );
     });
 
+    testWidgets('replaces the parked DM when the reason changed mid-send', (
+      tester,
+    ) async {
+      // Same divergence as the test above, through the narrower window the
+      // offline path opens: it fires the dispatch unawaited and leaves the
+      // reason cards live, so the selection can move while the send is still
+      // in flight. The parked row must be recorded under the reason its rumor
+      // actually carries, not whatever is selected when the await returns.
+      stubReportDeliveries([ReportDelivery.localOnly, ReportDelivery.reached]);
+      final firstSend = Completer<NIP17SendResult>();
+      when(
+        () => mockDmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
+          additionalTags: any(named: 'additionalTags'),
+        ),
+      ).thenAnswer(
+        (_) => firstSend.isCompleted
+            ? Future.value(
+                NIP17SendResult.success(
+                  rumorEventId: 'replacement_rumor_id',
+                  messageEventId: 'dm_event_id',
+                  recipientPubkey:
+                      ModerationLabelService.fallbackModerationPubkeyHex,
+                ),
+              )
+            : firstSend.future,
+      );
+      when(
+        () => mockDmRepository.cancelOutgoingSend(
+          rumorId: any(named: 'rumorId'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+
+      // The send is still pending here — change the reason before it parks.
+      final csam = l10n.reportReasonTitle(ContentFilterReason.csam);
+      await tester.scrollUntilVisible(
+        find.text(csam),
+        100,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.tap(find.text(csam));
+      await tester.pumpAndSettle();
+
+      firstSend.complete(
+        const NIP17SendResult.failure(
+          'No relays connected',
+          queuedRumorId: 'parked_rumor_id',
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
+      await tester.pumpAndSettle();
+
+      // The parked row was built with spam, so it is superseded and must not
+      // be re-driven, even though csam was already selected when it parked.
+      verify(
+        () => mockDmRepository.cancelOutgoingSend(rumorId: 'parked_rumor_id'),
+      ).called(1);
+      verifyNever(
+        () => mockDmRepository.recoverFullSend(
+          rumorId: any(named: 'rumorId'),
+          resetRetryBudget: any(named: 'resetRetryBudget'),
+        ),
+      );
+
+      final tags =
+          verify(
+                () => mockDmRepository.sendMessage(
+                  recipientPubkey: any(named: 'recipientPubkey'),
+                  content: any(named: 'content'),
+                  replyToId: any(named: 'replyToId'),
+                  skipNip04Fallback: any(named: 'skipNip04Fallback'),
+                  additionalTags: captureAny(named: 'additionalTags'),
+                ),
+              ).captured.last
+              as List<List<String>>;
+      expect(
+        tags,
+        equals([
+          ['L', kReportLabelNamespace],
+          ['l', 'NS-csam', kReportLabelNamespace],
+          ['report_type', 'illegal'],
+        ]),
+      );
+    });
+
     testWidgets(
       'keeps the delayed caveat when recovery cannot prove delivery',
       (tester) async {

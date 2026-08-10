@@ -79,9 +79,10 @@ void main() {
     }
 
     test('normalizes a valid hash the publishing client wrote oddly', () {
-      // VideoEvent.sha256 is the imeta `x` tag verbatim, unvalidated. An
-      // upper-case or padded hash is a real hash the backend's own check would
-      // reject, silently filing no report at all.
+      // VideoEvent.sha256 is the imeta `x` tag verbatim, unvalidated. A padded
+      // hash is a real hash that fails the backend's anchored check, silently
+      // filing no report at all. Case is canonicalised for the same reason a
+      // key should be canonical, not because the backend needs it to be.
       expect(
         ContentReportingService.moderationDmTags(
           reason: ContentFilterReason.spam,

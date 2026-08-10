@@ -514,8 +514,15 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
       final dmRepo = ref.read(dmRepositoryProvider);
       final labelService = ref.read(moderationLabelServiceProvider);
       final moderationPubkey = labelService.divineModerationPubkeyHex;
+      // Snapshot the reason before the first await and use only this copy for
+      // the rest of the dispatch. The offline path fires this unawaited and
+      // leaves the reason cards live, so `_selectedReason` can change while a
+      // send is in flight; reading it again after the await would record the
+      // parked row under a reason its rumor does not carry, which is exactly
+      // the mismatch the staleness check below exists to catch.
+      final dispatchReason = _selectedReason!;
       final content = _formatReportDm(
-        reason: _selectedReason!,
+        reason: dispatchReason,
         eventId: _eventId,
         details: _detailsController.text.trim(),
       );
@@ -525,12 +532,16 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
       // would ship the OLD NIP-32 label while the kind-1984 republish carries
       // the new one — the exact cross-channel divergence this DM's tags exist
       // to prevent, and permanent once `user_reports` pins the first write.
-      // Drop that row and mint a correct one instead. Best effort: if the
-      // sweep already delivered it, cancelling is a no-op and the team gets a
-      // second DM, which beats a report filed under the wrong reason.
+      // Drop that row and mint a correct one instead.
+      //
+      // Best effort: if the sweep already delivered the superseded copy, the
+      // cancel is a no-op and the team ends up triaging two DMs while
+      // `user_reports` keeps the reason the delivered one pinned. That case is
+      // unrecoverable from here either way — re-driving it would pin the same
+      // wrong reason and skip the correction entirely.
       final staleReason =
           _queuedModerationDmReason != null &&
-          _queuedModerationDmReason != _selectedReason;
+          _queuedModerationDmReason != dispatchReason;
       if (staleReason) {
         final stale = _queuedModerationDmId;
         if (stale != null) {
@@ -551,7 +562,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
           // plaintext duplicate. NIP-17 gift wrap only.
           skipNip04Fallback: true,
           additionalTags: ContentReportingService.moderationDmTags(
-            reason: _selectedReason!,
+            reason: dispatchReason,
             // A user report targets the account, not one of its videos. The
             // constructor allows `video` and `userPubkey` together, so gate on
             // the routing decision rather than on `video` being present —
@@ -612,9 +623,11 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
       };
       // Track the row's reason alongside it, so the staleness check above can
       // tell a plain resubmit (coalesce, #6610) from a changed mind (replace).
+      // The snapshot, not `_selectedReason`: this runs after an await, and the
+      // rumor now parked was built with the snapshot.
       _queuedModerationDmReason = _queuedModerationDmId == null
           ? null
-          : _selectedReason;
+          : dispatchReason;
       if (dmResult case final NIP17SendFailure failure) {
         Log.warning(
           'Moderation DM not delivered '
