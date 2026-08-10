@@ -13,7 +13,10 @@ const _credentialSeparator = r'''["']?\s*(?::=?|=>?)\s*''';
 /// A quoted value is consumed to its closing quote, escaped quotes included,
 /// so a multi-word secret is redacted whole. Partial redaction is worse than
 /// none: the `[REDACTED]` marker reads as proof the value was handled while
-/// the rest of the secret sits next to it.
+/// the rest of the secret sits next to it. A bracketed or braced value is
+/// consumed to its closing delimiter for the same reason - without those two
+/// branches `{"token":["a","b"]}` and `{"token":{"v":"a"}}` redact the opening
+/// punctuation and leave the secret in the ticket.
 ///
 /// Both quoted branches require the closing quote and stop at a newline, so an
 /// unbalanced quote (`password: "oops` typed into a bug report) falls through
@@ -22,6 +25,7 @@ const _credentialSeparator = r'''["']?\s*(?::=?|=>?)\s*''';
 /// keeps `Authorization: Bearer <jwt>` from redacting only the word "Bearer".
 const _credentialValue =
     r'''(?:\[[^\]\n]*\]'''
+    r'''|\{[^}\n]*\}'''
     r'''|"(?:\\.|[^"\\\n])*"'''
     r"""|'(?:''|\\.|[^'\\\n])*'"""
     r'''|["']?(?:(?:bearer|basic|token)\s+)?[^\s"',;}]+)''';

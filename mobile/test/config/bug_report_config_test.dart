@@ -83,6 +83,11 @@ void main() {
         'plural camel case key': 'sessionKeys: abc123',
         'plural camel case private key': 'privateKeys: ["aabbccdd"]',
         'plural screaming snake generic key': 'ENCRYPTION_KEYS=deadbeef',
+        // A braced value must be consumed to its closing brace for the same
+        // reason a bracketed one is: otherwise the rule redacts `{"` and
+        // leaves the secret sitting next to the `[REDACTED]` marker.
+        'json object value': '{"token":{"value":"eyJhbGciOi"}}',
+        'json object secret value': '{"secret":{"nested":"hunter2"}}',
         'acronym-prefixed key': 'AESKey: abc123',
         'hmac key': 'HMACKey=deadbeef',
         'pwd compound key': 'pwdHash: deadbeef',
@@ -177,6 +182,7 @@ void main() {
         'participantPubkeys: [npub1abc]',
         'publicKeys: [npub1abc]',
         'pub_keys: [npub1abc]',
+        'physicalKeys: {KeyA}',
         // Bare `key` is an ordinary English word. These are real in-repo
         // strings: an l10n error message, a model's toString, and Flutter key
         // events - none of them carry a credential.
