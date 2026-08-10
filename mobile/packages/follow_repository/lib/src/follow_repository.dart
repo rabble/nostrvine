@@ -1096,11 +1096,17 @@ class FollowRepository {
       ...indexerFollowers,
     ]);
 
+    // Unique per source, not raw events: the relay and indexer paths hand
+    // back one ref per kind 3 they saw, so a follower whose superseded event
+    // is still being served would otherwise inflate them against `merged`.
+    int uniqueCount(List<_FollowerRef> refs) =>
+        refs.map((ref) => ref.pubkey).toSet().length;
+
     Log.info(
       'Followers for $pubkey: '
-      'API=${apiFollowers.length}, '
-      'relays=${relayFollowers.length}, '
-      'indexers=${indexerFollowers.length}, '
+      'API=${uniqueCount(apiFollowers)}, '
+      'relays=${uniqueCount(relayFollowers)}, '
+      'indexers=${uniqueCount(indexerFollowers)}, '
       'merged=${merged.pubkeys.length}',
       name: 'FollowRepository',
       category: LogCategory.system,
