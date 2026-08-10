@@ -4378,6 +4378,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
+  String get soundSyncStatusSyncing => 'Sincronizando tus sonidos…';
+
+  @override
+  String get soundSyncStatusSynced => 'Sonidos actualizados';
+
+  @override
+  String get soundSyncStatusFailed =>
+      'No pudimos sincronizar tus sonidos. Lo intentaremos de nuevo.';
+
+  @override
+  String get soundSyncStatusLocked =>
+      'No se puede desbloquear tu biblioteca sincronizada en este dispositivo.';
+
+  @override
   String get soundsFailedToLoad => 'No se pudieron cargar los sonidos';
 
   @override

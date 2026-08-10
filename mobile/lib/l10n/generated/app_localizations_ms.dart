@@ -4367,6 +4367,20 @@ class AppLocalizationsMs extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
+  String get soundSyncStatusSyncing => 'Menyegerakkan bunyi anda…';
+
+  @override
+  String get soundSyncStatusSynced => 'Bunyi sudah terkini';
+
+  @override
+  String get soundSyncStatusFailed =>
+      'Tidak dapat menyegerakkan bunyi anda. Kami akan cuba lagi.';
+
+  @override
+  String get soundSyncStatusLocked =>
+      'Tidak dapat membuka pustaka tersegerak anda pada peranti ini.';
+
+  @override
   String get soundsFailedToLoad => 'Gagal memuatkan bunyi';
 
   @override

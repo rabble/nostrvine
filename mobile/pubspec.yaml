@@ -38,6 +38,7 @@ workspace:
   - packages/content_blocklist_repository
   - packages/content_policy
   - packages/count_formatter
+  - packages/creator_sync
   - packages/curated_list_repository
   - packages/curation_repository
   - packages/divine_blurhash
@@ -216,6 +217,9 @@ dependencies:
 
   # Feed Tuning Repository - publishes swipe "more/less like this" signals
   feed_tuning_repository:
+
+  # Creator Sync - cross-device sync for saved sounds, clips, and drafts
+  creator_sync:
 
   # Curated List Repository - NIP-51 kind 30005 curated video lists
   curated_list_repository:

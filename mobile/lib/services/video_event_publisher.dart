@@ -8,6 +8,7 @@ import 'dart:io';
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:blurhash_service/blurhash_service.dart';
 //adding c2pa support for publishing c2pa manifest data into nostr
+import 'package:creator_sync/creator_sync.dart';
 import 'package:db_client/db_client.dart' hide Filter;
 import 'package:meta/meta.dart';
 import 'package:models/models.dart'
@@ -177,6 +178,7 @@ class VideoEventPublisher {
     AudioExtractionService? audioExtractionService,
     ProfileStatsDao? profileStatsDao,
     SavedSoundsService? savedSoundsService,
+    SoundSyncRepository? Function()? soundSyncRepositoryGetter,
     EventApiClient? eventApiClient,
     AudioReuseConsentChecker? audioReuseConsentChecker,
     IosDeviceAttestationService? iosDeviceAttestationService,
@@ -192,6 +194,7 @@ class VideoEventPublisher {
        _audioExtractionService = audioExtractionService,
        _profileStatsDao = profileStatsDao,
        _savedSoundsService = savedSoundsService,
+       _soundSyncRepositoryGetter = soundSyncRepositoryGetter,
        _eventApiClient = eventApiClient,
        _audioReuseConsentChecker = audioReuseConsentChecker;
   final UploadManager _uploadManager;
@@ -204,6 +207,18 @@ class VideoEventPublisher {
   final AudioExtractionService? _audioExtractionService;
   final ProfileStatsDao? _profileStatsDao;
   final SavedSoundsService? _savedSoundsService;
+
+  /// Reads the current cross-device sync repository at call time, or null
+  /// until the vault key resolves. A getter rather than a captured value:
+  /// this publisher lives behind a `keepAlive` Riverpod provider, and
+  /// watching `soundSyncAvailabilityProvider` there would rebuild the
+  /// provider — discarding `_inFlightDirectPublishes` (the #6018
+  /// duplicate-publish coalescer) — every time the vault key resolves,
+  /// which lands strictly later than the auth transitions this provider
+  /// already rebuilds on. Best-effort: a mirror failure never affects
+  /// video publishing, and the next Sounds-tab reconcile pass on this
+  /// device picks up anything that did not mirror.
+  final SoundSyncRepository? Function()? _soundSyncRepositoryGetter;
   final IosDeviceAttestationService _iosDeviceAttestation;
 
   /// REST-first publish client. When non-null, video events are published

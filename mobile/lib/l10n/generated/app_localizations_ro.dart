@@ -4456,6 +4456,20 @@ class AppLocalizationsRo extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
+  String get soundSyncStatusSyncing => 'Se sincronizează sunetele tale…';
+
+  @override
+  String get soundSyncStatusSynced => 'Sunetele sunt la zi';
+
+  @override
+  String get soundSyncStatusFailed =>
+      'Nu am putut sincroniza sunetele tale. Vom încerca din nou.';
+
+  @override
+  String get soundSyncStatusLocked =>
+      'Nu putem debloca biblioteca ta sincronizată pe acest dispozitiv.';
+
+  @override
   String get soundsFailedToLoad => 'N-am putut încărca sunetele';
 
   @override

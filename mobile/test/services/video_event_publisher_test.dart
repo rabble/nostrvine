@@ -6,6 +6,7 @@ import 'dart:io';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:collection/collection.dart';
+import 'package:creator_sync/creator_sync.dart';
 import 'package:crypto/crypto.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -47,6 +48,8 @@ class _MockAudioExtractionService extends Mock
     implements AudioExtractionService {}
 
 class _MockSavedSoundsService extends Mock implements SavedSoundsService {}
+
+class _MockSoundSyncRepository extends Mock implements SoundSyncRepository {}
 
 class _FakeEvent extends Fake implements Event {}
 
@@ -1327,11 +1330,13 @@ void main() {
     group('local imported audio', () {
       late _MockBlossomUploadService blossomUploadService;
       late _MockSavedSoundsService savedSoundsService;
+      late _MockSoundSyncRepository syncRepository;
       late List<Event> signedEvents;
 
       setUp(() {
         blossomUploadService = _MockBlossomUploadService();
         savedSoundsService = _MockSavedSoundsService();
+        syncRepository = _MockSoundSyncRepository();
         signedEvents = [];
 
         publisher = VideoEventPublisher(
@@ -1341,11 +1346,16 @@ void main() {
           videoEventService: videoEventService,
           blossomUploadService: blossomUploadService,
           savedSoundsService: savedSoundsService,
+          soundSyncRepositoryGetter: () => syncRepository,
         );
 
         when(
           () => savedSoundsService.saveSound(any()),
         ).thenAnswer((_) async => SavedSoundSaveResult.saved);
+
+        when(
+          () => syncRepository.publishLocalChange(any()),
+        ).thenAnswer((_) async {});
 
         when(
           () => authService.createAndSignEvent(
@@ -1487,6 +1497,74 @@ void main() {
             isTrue,
           );
           verify(() => savedSoundsService.saveSound(any())).called(1);
+          verify(
+            () => syncRepository.publishLocalChange(audioEvent.id),
+          ).called(1);
+        },
+      );
+
+      test(
+        'a sync failure does not fail the video publish',
+        () async {
+          when(
+            () => syncRepository.publishLocalChange(any()),
+          ).thenThrow(SyncIndexException('relay down'));
+
+          final audioFile = File(
+            '${Directory.systemTemp.path}/imported_audio_sync_failure.mp3',
+          );
+          await audioFile.writeAsBytes([1, 2, 3]);
+          addTearDown(() {
+            if (audioFile.existsSync()) audioFile.deleteSync();
+          });
+
+          when(
+            () => blossomUploadService.uploadAudio(
+              audioFile: any(named: 'audioFile'),
+              mimeType: 'audio/mpeg',
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).thenAnswer(
+            (_) async => const BlossomUploadResult(
+              success: true,
+              url: 'https://cdn.example/audiohash',
+              fallbackUrl: 'https://cdn.example/audiohash',
+              videoId:
+                  'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+            ),
+          );
+
+          final result = await publisher.publishVideoEvent(
+            upload: createUpload(),
+            allowAudioReuse: true,
+            selectedAudio: AudioEvent.fromLocalImport(
+              id: 'local_import_1700000000001',
+              filePath: audioFile.path,
+              createdAt: 1700000000,
+              title: 'imported_audio_sync_failure',
+              mimeType: 'audio/mpeg',
+              duration: 3,
+            ),
+            audioShareAttribution: const AudioShareAttribution(
+              title: 'Rain on a roof',
+              creatorName: 'Field Recordist',
+              creatorUrl: 'https://creator.example/profile',
+              sourceUrl: 'https://creator.example/rain',
+              licenseName: 'CC BY 4.0',
+              licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
+              publicTags: ['rain', 'field-recording'],
+              confirmedOwnWork: false,
+            ),
+          );
+
+          expect(result, isTrue);
+          verify(() => savedSoundsService.saveSound(any())).called(1);
+          // The mirror sits inside an enclosing catch-and-log, so without
+          // this the test would pass unchanged even if _mirrorSavedSound's
+          // own try/catch — or the mirror call entirely — were deleted.
+          verify(
+            () => syncRepository.publishLocalChange(any()),
+          ).called(1);
         },
       );
 

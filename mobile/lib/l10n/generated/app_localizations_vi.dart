@@ -4338,6 +4338,20 @@ class AppLocalizationsVi extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
+  String get soundSyncStatusSyncing => 'Đang đồng bộ âm thanh của bạn…';
+
+  @override
+  String get soundSyncStatusSynced => 'Âm thanh đã được cập nhật';
+
+  @override
+  String get soundSyncStatusFailed =>
+      'Không đồng bộ được âm thanh của bạn. Chúng tôi sẽ thử lại.';
+
+  @override
+  String get soundSyncStatusLocked =>
+      'Không thể mở khoá thư viện đã đồng bộ trên thiết bị này.';
+
+  @override
   String get soundsFailedToLoad => 'Không tải được âm thanh';
 
   @override

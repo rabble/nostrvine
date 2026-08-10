@@ -1,20 +1,43 @@
 // ABOUTME: Widget tests for the Library Sounds tab.
 // ABOUTME: Verifies the tab shows user-saved reusable sounds, not asset sounds.
 
+import 'dart:async';
+
+import 'package:creator_sync/creator_sync.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/signer/nostr_signer.dart';
 import 'package:openvine/blocs/saved_sounds/saved_sound_media_probe.dart';
 import 'package:openvine/blocs/saved_sounds/saved_sounds_scope.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/saved_sound.dart';
+import 'package:openvine/providers/creator_sync_provider.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/widgets/library/sounds_tab.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+class _MockSoundSyncRepository extends Mock implements SoundSyncRepository {}
+
+class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockNostrSigner extends Mock implements NostrSigner {}
+
+class _TestNostrSession extends NostrSession {
+  _TestNostrSession(this._readiness);
+
+  final NostrSessionReadiness _readiness;
+
+  @override
+  NostrSessionReadiness build() => _readiness;
+}
 
 AudioEvent _sound({
   required String id,
@@ -193,6 +216,172 @@ void main() {
 
       expect(find.text('Original sound - rabble'), findsNothing);
       expect(find.text('No saved sounds yet'), findsOneWidget);
+    });
+
+    group('sync trigger', () {
+      late _MockSoundSyncRepository syncRepository;
+
+      Future<void> pumpSyncedSoundsTab(WidgetTester tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+              soundSyncAvailabilityProvider.overrideWith(
+                (ref) async => SoundSyncAvailable(syncRepository),
+              ),
+            ],
+            child: SavedSoundsScope(
+              service: SavedSoundsService(sharedPreferences),
+              mediaProbe: const _NoopSavedSoundMediaProbe(),
+              child: MaterialApp.router(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                theme: VineTheme.theme,
+                routerConfig: GoRouter(
+                  routes: [
+                    GoRoute(
+                      path: '/',
+                      builder: (context, state) =>
+                          const Scaffold(body: SoundsTab()),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+        // Lets soundSyncAvailabilityProvider's FutureProvider resolve so
+        // SoundsTab rebuilds with the now-available repository and mounts
+        // BlocProvider<SoundSyncCubit>, whose create: fires syncNow().
+        await tester.pump();
+        await tester.pump();
+      }
+
+      setUp(() {
+        syncRepository = _MockSoundSyncRepository();
+      });
+
+      testWidgets('reconciles once when the tab opens', (tester) async {
+        final completer = Completer<SoundSyncOutcome>();
+        when(syncRepository.reconcile).thenAnswer((_) => completer.future);
+
+        await pumpSyncedSoundsTab(tester);
+
+        verify(syncRepository.reconcile).called(1);
+
+        completer.complete(
+          const SoundSyncOutcome(
+            pulled: 0,
+            pushed: 0,
+            deleted: 0,
+            deletionsRetried: 0,
+          ),
+        );
+        await tester.pumpAndSettle();
+      });
+
+      testWidgets('shows syncing then synced status', (tester) async {
+        final completer = Completer<SoundSyncOutcome>();
+        when(syncRepository.reconcile).thenAnswer((_) => completer.future);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        await pumpSyncedSoundsTab(tester);
+
+        expect(find.text(l10n.soundSyncStatusSyncing), findsOneWidget);
+        expect(find.text(l10n.soundSyncStatusSynced), findsNothing);
+
+        completer.complete(
+          const SoundSyncOutcome(
+            pulled: 1,
+            pushed: 0,
+            deleted: 0,
+            deletionsRetried: 0,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.soundSyncStatusSyncing), findsNothing);
+        expect(find.text(l10n.soundSyncStatusSynced), findsOneWidget);
+      });
+
+      testWidgets('shows locked status when the vault key is unavailable', (
+        tester,
+      ) async {
+        when(
+          syncRepository.reconcile,
+        ).thenThrow(VaultKeyUnavailableException('locked'));
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        await pumpSyncedSoundsTab(tester);
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.soundSyncStatusLocked), findsOneWidget);
+      });
+    });
+
+    group('vault key locked at the provider', () {
+      const testPubkey =
+          'a1b2c3d4e5f6789012345678901234567890abcdef1234567890123456789012';
+
+      testWidgets(
+        'shows the locked banner when the vault key cannot be unlocked',
+        (tester) async {
+          final mockClient = _MockNostrClient();
+          final mockSigner = _MockNostrSigner();
+          when(() => mockClient.signer).thenReturn(mockSigner);
+          when(() => mockClient.hasKeys).thenReturn(true);
+          when(() => mockClient.publicKey).thenReturn(testPubkey);
+          // No signed-in account from the signer's perspective —
+          // VaultKeyService throws VaultKeyUnavailableException before ever
+          // touching secure storage or a relay. Unlike the mocked-cubit
+          // "shows locked status" case above, this drives the real
+          // soundSyncAvailabilityProvider failure path end to end.
+          when(mockSigner.getPublicKey).thenAnswer((_) async => null);
+          final l10n = lookupAppLocalizations(const Locale('en'));
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                sharedPreferencesProvider.overrideWithValue(
+                  sharedPreferences,
+                ),
+                nostrSessionProvider.overrideWith(
+                  () => _TestNostrSession(
+                    NostrSessionReadiness.nostrReady(
+                      pubkey: testPubkey,
+                      client: mockClient,
+                    ),
+                  ),
+                ),
+              ],
+              child: SavedSoundsScope(
+                service: SavedSoundsService(sharedPreferences),
+                mediaProbe: const _NoopSavedSoundMediaProbe(),
+                child: MaterialApp.router(
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  theme: VineTheme.theme,
+                  routerConfig: GoRouter(
+                    routes: [
+                      GoRoute(
+                        path: '/',
+                        builder: (context, state) =>
+                            const Scaffold(body: SoundsTab()),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text(l10n.soundSyncStatusLocked), findsOneWidget);
+          expect(find.text(l10n.soundSyncStatusSyncing), findsNothing);
+          expect(find.text(l10n.soundSyncStatusSynced), findsNothing);
+        },
+      );
     });
   });
 }

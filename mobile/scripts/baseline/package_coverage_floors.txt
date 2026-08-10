@@ -19,6 +19,7 @@ comments_repository 80
 content_blocklist_repository 100
 content_policy 100
 count_formatter 100
+creator_sync 100
 curated_list_repository 100
 curation_repository 100
 db_client 40

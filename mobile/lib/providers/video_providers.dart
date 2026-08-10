@@ -9,6 +9,7 @@ import 'package:likes_repository/likes_repository.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/l10n/current_app_l10n.dart';
 import 'package:openvine/providers/auth_providers.dart';
+import 'package:openvine/providers/creator_sync_provider.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -267,6 +268,12 @@ VideoEventPublisher videoEventPublisher(Ref ref) {
     profileRepository: profileRepository,
     profileStatsDao: profileStatsDao,
     savedSoundsService: savedSoundsService,
+    // ref.read, not watch: watching soundSyncRepositoryValueProvider here
+    // would rebuild this keepAlive provider (and discard its in-flight
+    // publish coalescer) every time the vault key resolves. Reading inside
+    // the getter instead makes the publisher check the current value at
+    // call time without subscribing to it.
+    soundSyncRepositoryGetter: () => ref.read(soundSyncRepositoryValueProvider),
     eventApiClient: eventApiClient,
     audioReuseConsentChecker: consentResolver.verify,
   );

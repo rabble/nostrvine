@@ -4302,6 +4302,20 @@ class AppLocalizationsTr extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
+  String get soundSyncStatusSyncing => 'Sesleriniz eşitleniyor…';
+
+  @override
+  String get soundSyncStatusSynced => 'Sesler güncel';
+
+  @override
+  String get soundSyncStatusFailed =>
+      'Sesleriniz eşitlenemedi. Tekrar deneyeceğiz.';
+
+  @override
+  String get soundSyncStatusLocked =>
+      'Eşitlenen kitaplığınız bu cihazda açılamıyor.';
+
+  @override
   String get soundsFailedToLoad => 'Sesler yüklenemedi';
 
   @override

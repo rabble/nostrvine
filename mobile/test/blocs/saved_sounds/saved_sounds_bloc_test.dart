@@ -3,13 +3,29 @@
 
 import 'dart:async';
 
+import 'package:bloc/bloc.dart';
+import 'package:creator_sync/creator_sync.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/saved_sounds/saved_sound_media_probe.dart';
 import 'package:openvine/blocs/saved_sounds/saved_sounds_bloc.dart';
 import 'package:openvine/models/saved_sound.dart';
+import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+class _MockSoundSyncRepository extends Mock implements SoundSyncRepository {}
+
+class _CapturingObserver extends BlocObserver {
+  final errors = <Object>[];
+
+  @override
+  void onError(BlocBase<dynamic> bloc, Object error, StackTrace stackTrace) {
+    errors.add(error);
+    super.onError(bloc, error, stackTrace);
+  }
+}
 
 class _ControlledProbe implements SavedSoundMediaProbe {
   final calls = <AudioEvent>[];
@@ -60,15 +76,35 @@ void main() {
   late _ControlledProbe probe;
   late SavedSoundsBloc bloc;
 
+  SavedSoundsBloc buildBloc({SoundSyncRepository? syncRepository}) =>
+      SavedSoundsBloc(
+        service: service,
+        mediaProbe: probe,
+        syncRepositoryStream: syncRepository == null
+            ? const Stream.empty()
+            : Stream.value(syncRepository),
+        now: () => DateTime.utc(2026, 7, 31),
+      );
+
+  /// Builds a synced bloc and waits for [syncRepository] to be applied.
+  ///
+  /// `syncRepositoryStream`'s seed value reaches `_syncRepository` through
+  /// an async stream subscription plus the bloc's own sequential event
+  /// queue, not synchronously at construction — matching how the real
+  /// `soundSyncRepositoryStreamProvider` seed arrives in production.
+  Future<SavedSoundsBloc> buildSyncedBloc(
+    SoundSyncRepository syncRepository,
+  ) async {
+    final syncedBloc = buildBloc(syncRepository: syncRepository);
+    await _settle();
+    return syncedBloc;
+  }
+
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     service = SavedSoundsService(await SharedPreferences.getInstance());
     probe = _ControlledProbe();
-    bloc = SavedSoundsBloc(
-      service: service,
-      mediaProbe: probe,
-      now: () => DateTime.utc(2026, 7, 31),
-    );
+    bloc = buildBloc();
   });
 
   tearDown(() => bloc.close());
@@ -218,6 +254,7 @@ void main() {
     final failingBloc = SavedSoundsBloc(
       service: _FailingRemoveService(await SharedPreferences.getInstance()),
       mediaProbe: probe,
+      syncRepositoryStream: const Stream.empty(),
       now: () => DateTime.utc(2026, 7, 31),
     );
     addTearDown(failingBloc.close);
@@ -235,6 +272,231 @@ void main() {
       failingBloc.state.sounds,
       hasLength(1),
       reason: 'a delete that did not persist must not clear the row',
+    );
+  });
+
+  group('sync triggers', () {
+    late _MockSoundSyncRepository syncRepository;
+
+    setUp(() {
+      syncRepository = _MockSoundSyncRepository();
+      when(
+        () => syncRepository.publishLocalChange(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => syncRepository.publishLocalDeletion(any()),
+      ).thenAnswer((_) async {});
+    });
+
+    test('publishes a change after a successful save', () async {
+      final syncedBloc = await buildSyncedBloc(syncRepository);
+      addTearDown(syncedBloc.close);
+
+      await syncedBloc.saveSound(_sound(id: 'a' * 64));
+
+      verify(() => syncRepository.publishLocalChange('a' * 64)).called(1);
+    });
+
+    test('publishes a tombstone after a successful removal', () async {
+      final syncedBloc = await buildSyncedBloc(syncRepository);
+      addTearDown(syncedBloc.close);
+      await syncedBloc.saveSound(_sound(id: 'b' * 64));
+
+      await syncedBloc.removeSound('b' * 64);
+
+      verify(
+        () => syncRepository.publishLocalDeletion('b' * 64),
+      ).called(1);
+    });
+
+    test('a sync failure does not fail the local save', () async {
+      when(
+        () => syncRepository.publishLocalChange(any()),
+      ).thenThrow(SyncIndexException('relay down'));
+      final syncedBloc = await buildSyncedBloc(syncRepository);
+      addTearDown(syncedBloc.close);
+
+      await expectLater(
+        syncedBloc.saveSound(_sound(id: 'c' * 64)),
+        completes,
+      );
+      expect(service.loadSavedSounds(), hasLength(1));
+    });
+
+    test('saves normally when no sync repository is available', () async {
+      final unsyncedBloc = buildBloc();
+      addTearDown(unsyncedBloc.close);
+
+      await unsyncedBloc.saveSound(_sound(id: 'd' * 64));
+
+      expect(service.loadSavedSounds(), hasLength(1));
+    });
+
+    test(
+      'publishes a change again after editing personal details',
+      () async {
+        final syncedBloc = await buildSyncedBloc(syncRepository);
+        addTearDown(syncedBloc.close);
+        await syncedBloc.saveSound(_sound(id: 'e' * 64));
+
+        syncedBloc.add(
+          SavedSoundDetailsChanged(
+            soundId: 'e' * 64,
+            label: 'Warm up',
+            hashtags: const ['practice'],
+          ),
+        );
+        await _settle();
+
+        verify(
+          () => syncRepository.publishLocalChange('e' * 64),
+        ).called(2);
+      },
+    );
+
+    test(
+      'publishes a change again after waveform enrichment completes',
+      () async {
+        probe.result = const SavedSoundMediaResult(
+          durationSeconds: 4.5,
+          waveformSamples: [0.1, 0.8],
+        );
+        final syncedBloc = await buildSyncedBloc(syncRepository);
+        addTearDown(syncedBloc.close);
+
+        await syncedBloc.saveSound(_sound(id: 'f' * 64));
+        await _settle();
+
+        verify(
+          () => syncRepository.publishLocalChange('f' * 64),
+        ).called(2);
+      },
+    );
+
+    test(
+      'starts unsynced then picks up sync once the repository resolves '
+      '(cold start)',
+      () async {
+        // Pins the #6480 re-pointing mechanism: soundSyncAvailabilityProvider
+        // resolves asynchronously, well after this bloc is constructed at
+        // app-shell scope, so a save issued before it resolves must not
+        // publish, and a later save must — without recreating the bloc.
+        final controller = StreamController<SoundSyncRepository?>();
+        addTearDown(controller.close);
+        final coldStartBloc = SavedSoundsBloc(
+          service: service,
+          mediaProbe: probe,
+          syncRepositoryStream: controller.stream,
+          now: () => DateTime.utc(2026, 7, 31),
+        );
+        addTearDown(coldStartBloc.close);
+
+        await coldStartBloc.saveSound(_sound(id: 'g' * 64));
+        verifyNever(() => syncRepository.publishLocalChange(any()));
+
+        controller.add(syncRepository);
+        await _settle();
+        await coldStartBloc.saveSound(_sound(id: 'h' * 64));
+
+        verify(() => syncRepository.publishLocalChange('h' * 64)).called(1);
+      },
+    );
+
+    test(
+      'an unexpected sync error does not fail the local save and is '
+      'reported',
+      () async {
+        when(
+          () => syncRepository.publishLocalChange(any()),
+        ).thenThrow(StateError('signer refused'));
+        final observer = _CapturingObserver();
+        final priorObserver = Bloc.observer;
+        Bloc.observer = observer;
+        addTearDown(() => Bloc.observer = priorObserver);
+        final syncedBloc = await buildSyncedBloc(syncRepository);
+        addTearDown(syncedBloc.close);
+
+        await expectLater(
+          syncedBloc.saveSound(_sound(id: 'i' * 64)),
+          completes,
+        );
+
+        expect(service.loadSavedSounds(), hasLength(1));
+        expect(
+          observer.errors,
+          [isA<Reportable<Object>>()],
+          reason:
+              'an unexpected error (not the two typed sync exceptions) '
+              'must still be wrapped and reported, not silently dropped',
+        );
+      },
+    );
+
+    test(
+      'an unexpected sync error during removal does not hang removeSound()',
+      () async {
+        // Pins the specific worst case from the "mirror sits outside the
+        // local-removal try" placement: before _mirror's catch-all, any
+        // exception type it did not name escaped _remove entirely, so
+        // event.completer was never completed and removeSound() awaited
+        // forever. .timeout() turns a regression into a failure instead
+        // of a hung test run.
+        when(
+          () => syncRepository.publishLocalDeletion(any()),
+        ).thenThrow(StateError('signer refused'));
+        final syncedBloc = await buildSyncedBloc(syncRepository);
+        addTearDown(syncedBloc.close);
+        await syncedBloc.saveSound(_sound(id: 'j' * 64));
+
+        await expectLater(
+          syncedBloc.removeSound('j' * 64).timeout(const Duration(seconds: 2)),
+          completes,
+        );
+        expect(service.loadSavedSounds(), isEmpty);
+      },
+    );
+
+    test(
+      'a save completes without waiting on the relay publish',
+      () async {
+        // The publish is best-effort, so the sound must reach the library
+        // while it is still in flight rather than after it settles.
+        final publishing = Completer<void>();
+        when(
+          () => syncRepository.publishLocalChange(any()),
+        ).thenAnswer((_) => publishing.future);
+        final syncedBloc = await buildSyncedBloc(syncRepository);
+        addTearDown(syncedBloc.close);
+
+        await syncedBloc
+            .saveSound(_sound(id: 'k' * 64))
+            .timeout(const Duration(seconds: 2));
+
+        expect(publishing.isCompleted, isFalse);
+        expect(syncedBloc.state.sounds.single.id, 'k' * 64);
+        publishing.complete();
+      },
+    );
+
+    test(
+      'a removal drops the row without waiting on the relay publish',
+      () async {
+        final publishing = Completer<void>();
+        final syncedBloc = await buildSyncedBloc(syncRepository);
+        addTearDown(syncedBloc.close);
+        await syncedBloc.saveSound(_sound(id: 'l' * 64));
+        when(
+          () => syncRepository.publishLocalDeletion(any()),
+        ).thenAnswer((_) => publishing.future);
+
+        await syncedBloc
+            .removeSound('l' * 64)
+            .timeout(const Duration(seconds: 2));
+
+        expect(publishing.isCompleted, isFalse);
+        expect(syncedBloc.state.sounds, isEmpty);
+        publishing.complete();
+      },
     );
   });
 }

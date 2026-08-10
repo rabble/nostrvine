@@ -1,6 +1,8 @@
 // ABOUTME: Service to clear user-specific cached data when identity changes
 // ABOUTME: Prevents data leakage between different Nostr accounts after reinstall
 
+import 'package:creator_sync/creator_sync.dart';
+import 'package:openvine/services/creator_sync/prefs_sync_state_store.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -207,6 +209,26 @@ class UserDataCleanupService {
         await _prefs.remove(savedSoundsKey);
         clearedCount++;
         clearedKeys.add(savedSoundsKey);
+      }
+
+      // The creator-sync cursor records, per item, what this device last
+      // applied or published — it only makes sense paired with the local
+      // bucket above. If the bucket is cleared but the cursor survives, the
+      // next reconcile sees every previously-synced item as absent locally
+      // and reads that as this device having deleted them, publishing
+      // tombstones that wipe the account's synced library on every other
+      // device. Clearing both together makes the next reconcile a fresh
+      // pull from remote instead.
+      for (final kind in SyncItemKind.values) {
+        final cursorKey = PrefsSyncStateStore.appliedStorageKey(
+          kind,
+          userPubkey,
+        );
+        if (_prefs.containsKey(cursorKey)) {
+          await _prefs.remove(cursorKey);
+          clearedCount++;
+          clearedKeys.add(cursorKey);
+        }
       }
     }
 

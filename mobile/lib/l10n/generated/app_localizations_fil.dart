@@ -4396,6 +4396,20 @@ class AppLocalizationsFil extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
+  String get soundSyncStatusSyncing => 'Sini-sync ang iyong mga tunog…';
+
+  @override
+  String get soundSyncStatusSynced => 'Napapanahon na ang mga tunog';
+
+  @override
+  String get soundSyncStatusFailed =>
+      'Hindi na-sync ang iyong mga tunog. Susubukan ulit namin.';
+
+  @override
+  String get soundSyncStatusLocked =>
+      'Hindi mabuksan ang iyong naka-sync na library sa device na ito.';
+
+  @override
   String get soundsFailedToLoad => 'Hindi na-load ang sounds';
 
   @override

@@ -67,6 +67,7 @@ import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/providers/container_swap_host.dart';
+import 'package:openvine/providers/creator_sync_provider.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/deep_link_provider.dart';
 import 'package:openvine/providers/device_scope.dart';
@@ -2712,6 +2713,11 @@ class _DivineAppState extends ConsumerState<DivineApp>
       // eager (`lazy: false`) wiring that stops the #6115 re-entrant create.
       child: SavedSoundsScope(
         service: ref.watch(savedSoundsServiceProvider),
+        // A stream, not a watched value: SavedSoundsScope sits above
+        // MaterialApp.router, so keying its BlocProvider on the resolved
+        // repository would re-inflate the whole app shell every time it
+        // resolves (#6477/#6480). The bloc subscribes and re-points itself.
+        syncRepositoryStream: ref.read(soundSyncRepositoryStreamProvider),
         child: AppShellBadgeScope(
           child: MultiBlocProvider(
             providers: [

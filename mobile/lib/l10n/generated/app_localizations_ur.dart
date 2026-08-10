@@ -4341,6 +4341,20 @@ class AppLocalizationsUr extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
+  String get soundSyncStatusSyncing => 'آپ کی آوازیں ہم آہنگ ہو رہی ہیں…';
+
+  @override
+  String get soundSyncStatusSynced => 'آوازیں تازہ ترین ہیں';
+
+  @override
+  String get soundSyncStatusFailed =>
+      'آپ کی آوازیں ہم آہنگ نہیں ہو سکیں۔ ہم دوبارہ کوشش کریں گے۔';
+
+  @override
+  String get soundSyncStatusLocked =>
+      'اس ڈیوائس پر آپ کی ہم آہنگ لائبریری کھولی نہیں جا سکتی۔';
+
+  @override
   String get soundsFailedToLoad => 'آوازیں لوڈ نہیں ہو سکیں';
 
   @override

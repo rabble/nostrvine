@@ -4111,6 +4111,18 @@ class AppLocalizationsJa extends AppLocalizations {
   String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
 
   @override
+  String get soundSyncStatusSyncing => 'サウンドを同期しています…';
+
+  @override
+  String get soundSyncStatusSynced => 'サウンドは最新です';
+
+  @override
+  String get soundSyncStatusFailed => 'サウンドを同期できませんでした。もう一度試します。';
+
+  @override
+  String get soundSyncStatusLocked => 'この端末では同期済みライブラリのロックを解除できません。';
+
+  @override
   String get soundsFailedToLoad => 'サウンドの読み込みがうまくいかなかった';
 
   @override
