@@ -92,15 +92,18 @@ class BookmarkService {
     required NostrClient nostrService,
     required AuthService authService,
     required SharedPreferences prefs,
+    DateTime Function() now = DateTime.now,
   }) : _nostrService = nostrService,
        _authService = authService,
-       _prefs = prefs {
+       _prefs = prefs,
+       _now = now {
     _loadBookmarksFromSharedPreferences();
   }
 
   final NostrClient _nostrService;
   final AuthService _authService;
   final SharedPreferences _prefs;
+  final DateTime Function() _now;
 
   static const String globalBookmarksStorageKey = 'global_bookmarks';
 
@@ -116,6 +119,37 @@ class BookmarkService {
   /// Divine cannot read those items yet, so it carries the ciphertext through
   /// untouched instead of overwriting another client's private bookmarks.
   String _lastKnownRemoteContent = '';
+
+  /// How long a full-settlement "this user has no list" answer is reused
+  /// before the next empty answer is confirmed again.
+  ///
+  /// Bounds two opposing costs: without it a user who genuinely has no
+  /// bookmarks pays a full-settlement wait every time Saved opens, and with an
+  /// unbounded latch a list created on another device stays invisible for the
+  /// life of the service whenever a relay is mute.
+  ///
+  /// The exact value is uninteresting because this is only ever consulted
+  /// after a read came back empty — a user who has bookmarks never reaches it
+  /// and pays nothing for it.
+  static const absenceConfirmationTtl = Duration(minutes: 5);
+
+  /// When a full-settlement read last established that this user has no
+  /// kind-10003 at all.
+  DateTime? _absenceConfirmedAt;
+
+  /// Whether an empty answer from a partial set of relays still has to be
+  /// confirmed before it is believed.
+  ///
+  /// Always, while this device holds bookmarks an unconfirmed empty would
+  /// discard. Otherwise whenever the last confirmation has aged out — the
+  /// reinstall case starts with an empty cache, so "nothing to lose" is
+  /// exactly when the confirmation matters.
+  bool get _mustConfirmAbsence {
+    if (_globalBookmarks.isNotEmpty) return true;
+    final confirmedAt = _absenceConfirmedAt;
+    return confirmedAt == null ||
+        _now().difference(confirmedAt) >= absenceConfirmationTtl;
+  }
 
   List<BookmarkItem> get globalBookmarks => List.unmodifiable(_globalBookmarks);
 
@@ -141,6 +175,15 @@ class BookmarkService {
   /// bookmarks, and from a newer revision not existing. Republishing on that
   /// answer is what deletes the list. With it, the query holds out for every
   /// relay and an incomplete answer reports `false` instead.
+  ///
+  /// A non-authoritative read still never *discards* a list on a partial
+  /// answer. An empty answer is confirmed against every relay before it is
+  /// believed — always while this device holds bookmarks, otherwise at most
+  /// once per [absenceConfirmationTtl] counted from the last confirmed
+  /// absence. Seeing a list resets that count, so a list that keeps going
+  /// missing is re-confirmed each time rather than once per window. An answer
+  /// that stays unconfirmed changes nothing. A read that finds a list keeps
+  /// the fast trade and pays for none of this.
   Future<bool> syncGlobalBookmarks({bool requireAuthoritative = false}) async {
     final pubkey = _authService.currentPublicKeyHex;
     if (!_authService.isAuthenticated || pubkey == null) {
@@ -153,39 +196,58 @@ class BookmarkService {
     }
 
     try {
-      final result = await _nostrService.queryEventsDetailed(
-        [
-          Filter(kinds: [globalBookmarksKind], authors: [pubkey], limit: 1),
-        ],
-        requireAllRelaysSettled: requireAuthoritative,
+      var events = await _readRemoteGlobalBookmarks(
+        pubkey,
+        requireAuthoritative: requireAuthoritative,
       );
+      if (events == null) return false;
+      var answeredAuthoritatively = requireAuthoritative;
 
-      if (result.timedOut || result.noRelays) {
-        Log.warning(
-          'Bookmark sync inconclusive (timedOut=${result.timedOut}, '
-          'noRelays=${result.noRelays}, '
-          'requireAuthoritative=$requireAuthoritative) - '
-          'remote list left unchanged',
-          name: 'BookmarkService',
-          category: LogCategory.system,
+      if (events.isEmpty && !requireAuthoritative && _mustConfirmAbsence) {
+        // Only *some* relay said the list does not exist, and the settle
+        // window's latency trade cannot afford to be wrong about that one
+        // answer: it is indistinguishable from a relay that stayed mute. Left
+        // unchecked it either tells a user with bookmarks that they have none
+        // — the reinstall #6627 is about, where the cache is empty too — or
+        // overwrites the snapshot Saved falls back to offline. Confirm it
+        // against every relay before believing it.
+        events = await _readRemoteGlobalBookmarks(
+          pubkey,
+          requireAuthoritative: true,
         );
-        return false;
+        if (events == null) {
+          Log.warning(
+            'Empty bookmark answer not confirmed by every relay - keeping '
+            'the ${_globalBookmarks.length} bookmarks this device has',
+            name: 'BookmarkService',
+            category: LogCategory.system,
+          );
+          return false;
+        }
+        answeredAuthoritatively = true;
       }
 
-      final events = result.events
-          .where((event) => event.kind == globalBookmarksKind)
-          .toList();
       if (events.isEmpty) {
-        // Nobody who answered holds a list. Under [requireAuthoritative]
-        // everybody answered, so that is a genuinely empty list and the first
-        // save may create one. Without it a relay that stayed silent could
-        // still hold one, which is why the write path never reconciles
-        // without it.
+        // Nobody holds a list, and — because of the confirmation above — that
+        // is either an authoritative answer or one that had nothing to
+        // destroy. The first save may create one.
+        //
+        // Only an authoritative answer renews the absence: stamping an
+        // unconfirmed one would slide the window forward on every read, and a
+        // session that opens Saved often enough would never re-confirm.
+        if (answeredAuthoritatively) _absenceConfirmedAt = _now();
         _globalBookmarks.clear();
         _lastKnownRemoteContent = '';
       } else {
-        events.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        _adoptGlobalBookmarksFromEvent(events.first);
+        // Seeing the event disproves the absence, so the stamp cannot stand.
+        // A list whose items are all private has no public tags, leaving
+        // [_globalBookmarks] empty while [_lastKnownRemoteContent] holds
+        // another client's ciphertext — a stale stamp would let the next
+        // partial empty answer through unconfirmed and wipe it.
+        _absenceConfirmedAt = null;
+        final newestFirst = [...events]
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        _adoptGlobalBookmarksFromEvent(newestFirst.first);
       }
 
       await _saveBookmarksToSharedPreferences();
@@ -204,6 +266,44 @@ class BookmarkService {
       );
       return false;
     }
+  }
+
+  /// The user's kind-10003 events as the relays report them, or `null` when
+  /// the answer was inconclusive — no reachable relay, or a query that timed
+  /// out. `null` is never "you have no bookmarks": mistaking the two is what
+  /// truncates the list.
+  ///
+  /// An authoritative read skips the local event cache. The cache is merged in
+  /// regardless of settlement, so leaving it on would let a stale locally-held
+  /// kind-10003 stand in for a relay answer — and the next publish would
+  /// resurrect a list the user had already emptied.
+  Future<List<Event>?> _readRemoteGlobalBookmarks(
+    String pubkey, {
+    required bool requireAuthoritative,
+  }) async {
+    final result = await _nostrService.queryEventsDetailed(
+      [
+        Filter(kinds: [globalBookmarksKind], authors: [pubkey], limit: 1),
+      ],
+      useCache: !requireAuthoritative,
+      requireAllRelaysSettled: requireAuthoritative,
+    );
+
+    if (result.timedOut || result.noRelays) {
+      Log.warning(
+        'Bookmark sync inconclusive (timedOut=${result.timedOut}, '
+        'noRelays=${result.noRelays}, '
+        'requireAuthoritative=$requireAuthoritative) - '
+        'remote list left unchanged',
+        name: 'BookmarkService',
+        category: LogCategory.system,
+      );
+      return null;
+    }
+
+    return result.events
+        .where((event) => event.kind == globalBookmarksKind)
+        .toList();
   }
 
   /// If [videoEventId] is globally bookmarked, removes it; otherwise adds it.

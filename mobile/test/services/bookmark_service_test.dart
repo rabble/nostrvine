@@ -57,6 +57,7 @@ void main() {
       when(
         () => nostrClient.queryEventsDetailed(
           any(),
+          useCache: any(named: 'useCache'),
           requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
         ),
       ).thenAnswer(
@@ -76,11 +77,24 @@ void main() {
       when(
         () => nostrClient.queryEventsDetailed(
           any(),
+          useCache: any(named: 'useCache'),
           requireAllRelaysSettled: fullSettlement,
         ),
       ).thenAnswer(
         (_) async => (events: events, timedOut: timedOut, noRelays: noRelays),
       );
+    }
+
+    /// Puts [eventIds] in the SharedPreferences snapshot a service reads at
+    /// construction — the state a device has before it reconciles.
+    Future<void> seedCachedBookmarks(List<String> eventIds) async {
+      SharedPreferences.setMockInitialValues({
+        BookmarkService.globalBookmarksStorageKey: jsonEncode([
+          for (final id in eventIds)
+            {'type': 'e', 'id': id, 'relay': null, 'petname': null},
+        ]),
+      });
+      prefs = await SharedPreferences.getInstance();
     }
 
     /// Makes every relay refuse the kind-10003 publish.
@@ -95,11 +109,23 @@ void main() {
       );
     }
 
-    BookmarkService createService() => BookmarkService(
-      nostrService: nostrClient,
-      authService: authService,
-      prefs: prefs,
-    );
+    BookmarkService createService({DateTime Function()? now}) =>
+        BookmarkService(
+          nostrService: nostrClient,
+          authService: authService,
+          prefs: prefs,
+          now: now ?? DateTime.now,
+        );
+
+    /// The `requireAllRelaysSettled` argument of every reconcile query so far,
+    /// in call order.
+    List<dynamic> capturedSettlementDemands() => verify(
+      () => nostrClient.queryEventsDetailed(
+        any(),
+        useCache: any(named: 'useCache'),
+        requireAllRelaysSettled: captureAny(named: 'requireAllRelaysSettled'),
+      ),
+    ).captured;
 
     setUp(() async {
       pubkey = getPublicKey(generatePrivateKey());
@@ -234,12 +260,126 @@ void main() {
         expect(service.globalBookmarks, isEmpty);
       });
 
-      test('does not hold the display read out for every relay', () async {
-        // Opening Saved only renders what it finds, so it keeps the settle
-        // window's latency trade. Nothing destructive can follow from it: the
-        // write path runs its own full-settlement reconcile and never
-        // republishes from what this left in memory.
+      test(
+        'confirms an empty answer against every relay before dropping a '
+        'cached list',
+        () async {
+          await seedCachedBookmarks(['cached']);
+          // The fast read finds nothing because a relay stayed mute; the
+          // relay that holds the list answers once the query waits for it.
+          stubRelayForSettlementMode(fullSettlement: false, events: []);
+          stubRelayForSettlementMode(
+            fullSettlement: true,
+            events: [
+              bookmarkListEvent(['cached', 'from-another-device']),
+            ],
+          );
+          final service = createService();
+
+          expect(await service.syncGlobalBookmarks(), isTrue);
+          expect(
+            service.globalBookmarks.map((item) => item.id),
+            equals(['cached', 'from-another-device']),
+          );
+        },
+      );
+
+      test(
+        'keeps the cached list when the confirming query cannot settle',
+        () async {
+          await seedCachedBookmarks(['cached']);
+          // Some relay says there is nothing, and the query that would confirm
+          // it never settles. Acting on the first answer would drop the list —
+          // from memory and from the snapshot Saved falls back to offline.
+          stubRelayForSettlementMode(fullSettlement: false, events: []);
+          stubRelayForSettlementMode(
+            fullSettlement: true,
+            events: [],
+            timedOut: true,
+          );
+          final service = createService();
+
+          expect(await service.syncGlobalBookmarks(), isFalse);
+          expect(
+            service.globalBookmarks.map((item) => item.id),
+            equals(['cached']),
+            reason: 'an unconfirmed empty answer is not an empty list',
+          );
+          expect(
+            jsonDecode(
+              prefs.getString(BookmarkService.globalBookmarksStorageKey)!,
+            ),
+            hasLength(1),
+            reason: 'and it must not overwrite the offline snapshot either',
+          );
+        },
+      );
+
+      test(
+        'confirms an empty answer on a fresh install, where there is no cache '
+        'to protect',
+        () async {
+          // The filed bug: a reinstall has an empty cache, so gating the
+          // confirmation on having something to lose would leave Saved
+          // showing "Nothing saved yet" for a user who has bookmarks.
+          stubRelayForSettlementMode(fullSettlement: false, events: []);
+          stubRelayForSettlementMode(
+            fullSettlement: true,
+            events: [
+              bookmarkListEvent(['from-before-the-reinstall']),
+            ],
+          );
+          final service = createService();
+
+          expect(await service.syncGlobalBookmarks(), isTrue);
+          expect(
+            service.globalBookmarks.map((item) => item.id),
+            equals(['from-before-the-reinstall']),
+          );
+        },
+      );
+
+      test(
+        'does not let a cached event stand in for an authoritative read',
+        () async {
+          stubRelay(events: []);
+          final service = createService();
+
+          await service.syncGlobalBookmarks(requireAuthoritative: true);
+
+          verify(
+            () => nostrClient.queryEventsDetailed(
+              any(),
+              useCache: false,
+              requireAllRelaysSettled: true,
+            ),
+          ).called(1);
+        },
+      );
+
+      test('clears the cache once every relay confirms it is empty', () async {
+        await seedCachedBookmarks(['removed-elsewhere']);
         stubRelay(events: []);
+        final service = createService();
+
+        expect(await service.syncGlobalBookmarks(), isTrue);
+        expect(
+          service.globalBookmarks,
+          isEmpty,
+          reason: 'a bookmark cleared on another device must disappear here',
+        );
+      });
+
+      test('keeps the fast trade when the relay returns a list', () async {
+        // Opening Saved only renders what it finds, so the read keeps the
+        // settle window's latency trade. Only a *no list at all* answer is
+        // ever confirmed, because that is the one this cannot afford to be
+        // wrong about.
+        stubRelay(
+          events: [
+            bookmarkListEvent(['video-a']),
+          ],
+        );
         final service = createService();
 
         await service.syncGlobalBookmarks();
@@ -247,6 +387,7 @@ void main() {
         final demandedSettlement = verify(
           () => nostrClient.queryEventsDetailed(
             any(),
+            useCache: any(named: 'useCache'),
             requireAllRelaysSettled: captureAny(
               named: 'requireAllRelaysSettled',
             ),
@@ -254,6 +395,114 @@ void main() {
         ).captured.single;
         expect(demandedSettlement, isFalse);
       });
+
+      test(
+        'reuses a fresh absence confirmation instead of re-paying for it',
+        () async {
+          // A user who genuinely has no bookmarks must not pay a
+          // full-settlement wait every time Saved opens.
+          stubRelay(events: []);
+          final service = createService();
+
+          await service.syncGlobalBookmarks();
+          await service.syncGlobalBookmarks();
+
+          expect(
+            capturedSettlementDemands(),
+            equals([false, true, false]),
+            reason: 'the second read reuses the confirmation from the first',
+          );
+        },
+      );
+
+      test(
+        'stops trusting a confirmed absence once the list turns up',
+        () async {
+          // A list whose items are all private carries no public tags, so it
+          // leaves the bookmark list empty while holding another client's
+          // ciphertext. A stamp from before it existed must not let a later
+          // partial empty answer through unconfirmed and wipe that content.
+          var clock = DateTime(2026);
+          final service = createService(now: () => clock);
+
+          stubRelay(events: []);
+          await service.syncGlobalBookmarks();
+
+          clock = clock.add(const Duration(minutes: 1));
+          stubRelay(events: [bookmarkListEvent([], content: 'ciphertext')]);
+          await service.syncGlobalBookmarks();
+
+          clock = clock.add(const Duration(minutes: 1));
+          stubRelayForSettlementMode(fullSettlement: false, events: []);
+          stubRelayForSettlementMode(
+            fullSettlement: true,
+            events: [],
+            timedOut: true,
+          );
+          expect(await service.syncGlobalBookmarks(), isFalse);
+
+          // The unconfirmed empty must not have reached the content, so a
+          // publish still carries the other client's private items.
+          stubRelay(events: [bookmarkListEvent([], content: 'ciphertext')]);
+          await service.addToGlobalBookmarks(
+            const BookmarkItem(type: 'e', id: 'mine'),
+          );
+          expect(
+            signedContent,
+            equals('ciphertext'),
+            reason: 'a stale absence must not strip private bookmarks',
+          );
+        },
+      );
+
+      test(
+        'does not let unconfirmed reads slide the confirmation window',
+        () async {
+          // Each skipped read must leave the deadline where the confirmation
+          // put it. Renewing it here would restore the permanent latch for
+          // any session that opens Saved more often than the TTL.
+          stubRelay(events: []);
+          var clock = DateTime(2026);
+          final service = createService(now: () => clock);
+
+          await service.syncGlobalBookmarks();
+          clock = clock.add(const Duration(minutes: 4));
+          await service.syncGlobalBookmarks();
+          clock = clock.add(const Duration(minutes: 4));
+          await service.syncGlobalBookmarks();
+
+          expect(
+            capturedSettlementDemands(),
+            equals([false, true, false, false, true]),
+            reason:
+                'the third read is past the original deadline, so it '
+                're-confirms even though the second read was recent',
+          );
+        },
+      );
+
+      test(
+        'confirms absence again once the last confirmation ages out',
+        () async {
+          // Latching the absence for the life of the service would hide a list
+          // created on another device for as long as a relay stays mute.
+          stubRelay(events: []);
+          var clock = DateTime(2026);
+          final service = createService(now: () => clock);
+
+          await service.syncGlobalBookmarks();
+          clock = clock.add(
+            BookmarkService.absenceConfirmationTtl + const Duration(seconds: 1),
+          );
+          await service.syncGlobalBookmarks();
+
+          expect(
+            capturedSettlementDemands(),
+            equals([false, true, false, true]),
+            reason: 'a stale absence is re-confirmed, not believed',
+          );
+        },
+      );
 
       test('reports failure when signed out, without throwing', () async {
         when(() => authService.isAuthenticated).thenReturn(false);
@@ -388,6 +637,7 @@ void main() {
         verify(
           () => nostrClient.queryEventsDetailed(
             any(),
+            useCache: false,
             requireAllRelaysSettled: true,
           ),
         ).called(1);
