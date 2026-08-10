@@ -5,6 +5,14 @@ appId: co.openvine.app
 #
 # No launchApp, so this runs against whatever is already on screen — see the
 # "Iterating" section of e2e/maestro/README.md.
+#
+# It asserts Capture rather than selecting it. The recorder restores the
+# last-used mode from `camera_last_used_recorder_mode`, so that only holds
+# after a `clearState` (which the flow gets from loginFreshInstall). Run
+# standalone against a device whose last session used another mode, this fails
+# on `id: camera_mode_capture, selected`. Selecting the mode here is not a
+# one-liner: the wheel is a lazy ListView, so from Classic the Capture entry
+# is not rendered and a bare tapOn cannot find it.
 
 - tapOn:
     id: camera_button

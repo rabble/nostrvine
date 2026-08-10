@@ -65,8 +65,16 @@ knowing before writing more recorder selectors:
   every mode, so a bare `id: camera_mode_capture` would pass on the Upload tab
   just as happily.
 
-Three things the flow depends on that are easy to break by accident:
+Five things the flow depends on that are easy to break by accident:
 
+- **The recorder opening on Capture.** It doesn't always: the recorder
+  restores the last-used mode from `camera_last_used_recorder_mode`
+  (`VideoRecorderMode.fromName` falls back to `capture` only when that key is
+  absent), and `openCaptureMode` asserts the mode rather than selecting it.
+  Run from the top this is safe — `loginFreshInstall`'s `clearState` wipes the
+  key — but a standalone run against a device whose last session used another
+  mode dies on `id: camera_mode_capture, selected` with no hint why. Reproduced
+  on the iOS Simulator with the key left on `classic`.
 - **Tap-to-toggle recording.** `HoldToRecordPreferenceService` defaults to
   false. On a device where a previous session turned hold-to-record on, the
   first tap does nothing and `captureModeRecordClip` fails on its wait.
