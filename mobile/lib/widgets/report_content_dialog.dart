@@ -217,6 +217,13 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   /// (#6610). Cleared once the row is consumed.
   String? _queuedModerationDmId;
 
+  /// The reason [_queuedModerationDmId]'s rumor was built with.
+  ///
+  /// The parked rumor's tags are frozen at build time and replayed verbatim by
+  /// `recoverFullSend`, so a re-drive after the user changed their mind would
+  /// label the report with the superseded reason. Compared before re-driving.
+  ContentFilterReason? _queuedModerationDmReason;
+
   /// What this dialog knows about the moderation DM so far.
   ///
   /// A resubmit deliberately re-publishes the kind-1984 and files a second
@@ -513,6 +520,25 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
         details: _detailsController.text.trim(),
       );
 
+      // A parked row carries the reason it was built with, baked into its
+      // stored rumor. Re-driving it after the user picked a different reason
+      // would ship the OLD NIP-32 label while the kind-1984 republish carries
+      // the new one — the exact cross-channel divergence this DM's tags exist
+      // to prevent, and permanent once `user_reports` pins the first write.
+      // Drop that row and mint a correct one instead. Best effort: if the
+      // sweep already delivered it, cancelling is a no-op and the team gets a
+      // second DM, which beats a report filed under the wrong reason.
+      final staleReason =
+          _queuedModerationDmReason != null &&
+          _queuedModerationDmReason != _selectedReason;
+      if (staleReason) {
+        final stale = _queuedModerationDmId;
+        if (stale != null) {
+          await dmRepo.cancelOutgoingSend(rumorId: stale);
+        }
+        _queuedModerationDmId = null;
+      }
+
       final parked = _queuedModerationDmId;
 
       final NIP17SendResult dmResult;
@@ -550,6 +576,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
           // team has this copy when the repository could not prove that — so
           // this dialog stops sending and keeps the caveat.
           _queuedModerationDmId = null;
+          _queuedModerationDmReason = null;
           _moderationDmOutcome = _ModerationDmOutcome.unverifiable;
           return true;
         }
@@ -579,6 +606,11 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
         // reports nothing new and keeps the row it was given.
         NIP17SendFailure(:final queuedRumorId) => queuedRumorId ?? parked,
       };
+      // Track the row's reason alongside it, so the staleness check above can
+      // tell a plain resubmit (coalesce, #6610) from a changed mind (replace).
+      _queuedModerationDmReason = _queuedModerationDmId == null
+          ? null
+          : _selectedReason;
       if (dmResult case final NIP17SendFailure failure) {
         Log.warning(
           'Moderation DM not delivered '

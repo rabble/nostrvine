@@ -1266,6 +1266,80 @@ void main() {
       expect(find.text(l10n.reportModerationDmDelayed), findsNothing);
     });
 
+    testWidgets('replaces the parked DM when the user changes the reason', (
+      tester,
+    ) async {
+      // A parked rumor's tags are frozen at build time and replayed verbatim
+      // by recoverFullSend, so re-driving it after the user picked a different
+      // reason would ship the OLD NIP-32 label while the kind-1984 republish
+      // carries the new one. `user_reports` is INSERT OR IGNORE on
+      // (sha256, reporter_pubkey), so the first write to land would pin the
+      // superseded reason permanently.
+      stubReportDeliveries([ReportDelivery.localOnly, ReportDelivery.reached]);
+      stubDmResult(
+        const NIP17SendResult.failure(
+          'No relays connected',
+          queuedRumorId: 'parked_rumor_id',
+        ),
+      );
+      when(
+        () => mockDmRepository.cancelOutgoingSend(
+          rumorId: any(named: 'rumorId'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+      expect(find.text(l10n.reportNotSent), findsOneWidget);
+
+      // Change of mind: spam -> csam. NIP-56 collapses csam to 'illegal'
+      // while spam stays 'spam', so a stale re-drive is visible in both tags.
+      final csam = l10n.reportReasonTitle(ContentFilterReason.csam);
+      await tester.scrollUntilVisible(
+        find.text(csam),
+        100,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.tap(find.text(csam));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
+      await tester.pumpAndSettle();
+
+      // The superseded row is dropped rather than re-driven...
+      verify(
+        () => mockDmRepository.cancelOutgoingSend(rumorId: 'parked_rumor_id'),
+      ).called(1);
+      verifyNever(
+        () => mockDmRepository.recoverFullSend(
+          rumorId: any(named: 'rumorId'),
+          resetRetryBudget: any(named: 'resetRetryBudget'),
+        ),
+      );
+
+      // ...and the replacement DM carries the reason the user actually ended
+      // on, not the one the parked rumor froze.
+      final tags =
+          verify(
+                () => mockDmRepository.sendMessage(
+                  recipientPubkey: any(named: 'recipientPubkey'),
+                  content: any(named: 'content'),
+                  replyToId: any(named: 'replyToId'),
+                  skipNip04Fallback: any(named: 'skipNip04Fallback'),
+                  additionalTags: captureAny(named: 'additionalTags'),
+                ),
+              ).captured.last
+              as List<List<String>>;
+      expect(
+        tags,
+        equals([
+          ['L', kReportLabelNamespace],
+          ['l', 'NS-csam', kReportLabelNamespace],
+          // NIP-56 collapses csam to 'illegal'; spam would have stayed 'spam'.
+          ['report_type', 'illegal'],
+        ]),
+      );
+    });
+
     testWidgets(
       'keeps the delayed caveat when recovery cannot prove delivery',
       (tester) async {
