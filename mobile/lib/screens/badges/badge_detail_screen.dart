@@ -66,6 +66,17 @@ class BadgeDetailView extends StatelessWidget {
         // Nothing left to render once the badge is gone.
         if (state.actionStatus == BadgeDetailActionStatus.deleted) {
           context.pop(true);
+          return;
+        }
+        if (state.actionStatus == BadgeDetailActionStatus.deleteRejected) {
+          // Same refusal, same advice as a refused video delete, so the
+          // shared string is reused rather than translated twice.
+          ScaffoldMessenger.of(context).showSnackBar(
+            DivineSnackbarContainer.snackBar(
+              l10n.shareMenuDeleteFailedRelayRejected,
+              error: true,
+            ),
+          );
         }
       },
       builder: (context, state) {

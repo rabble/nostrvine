@@ -260,6 +260,62 @@ void main() {
     );
 
     blocTest<BadgeDetailCubit, BadgeDetailState>(
+      'deleteBadge separates an outright relay refusal from other failures',
+      setUp: () {
+        when(() => repository.deleteBadge(any())).thenThrow(
+          const BadgePublishException(
+            'rejected',
+            outcome: PublishOutcome(
+              eventId: 'deadbeef',
+              acceptedBy: [],
+              rejectedBy: {'wss://relay.divine.video': 'delete not authorized'},
+              noResponseFrom: [],
+            ),
+          ),
+        );
+      },
+      build: buildCubit,
+      act: (cubit) => cubit.deleteBadge(),
+      skip: 1,
+      expect: () => [
+        isA<BadgeDetailState>().having(
+          (state) => state.actionStatus,
+          'actionStatus',
+          BadgeDetailActionStatus.deleteRejected,
+        ),
+      ],
+      errors: () => [isA<BadgePublishException>()],
+    );
+
+    blocTest<BadgeDetailCubit, BadgeDetailState>(
+      'deleteBadge reports a publish that no relay answered as a failure',
+      setUp: () {
+        when(() => repository.deleteBadge(any())).thenThrow(
+          const BadgePublishException(
+            'no relay responded',
+            outcome: PublishOutcome(
+              eventId: 'deadbeef',
+              acceptedBy: [],
+              rejectedBy: {},
+              noResponseFrom: ['wss://relay.divine.video'],
+            ),
+          ),
+        );
+      },
+      build: buildCubit,
+      act: (cubit) => cubit.deleteBadge(),
+      skip: 1,
+      expect: () => [
+        isA<BadgeDetailState>().having(
+          (state) => state.actionStatus,
+          'actionStatus',
+          BadgeDetailActionStatus.failure,
+        ),
+      ],
+      errors: () => [isA<BadgePublishException>()],
+    );
+
+    blocTest<BadgeDetailCubit, BadgeDetailState>(
       'acceptAward does nothing when the viewer has no award',
       build: buildCubit,
       act: (cubit) => cubit.acceptAward(),

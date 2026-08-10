@@ -62,6 +62,15 @@ class BadgeDetailCubit extends Cubit<BadgeDetailState> {
     try {
       await _repository.deleteBadge(state.coordinate);
       emit(state.copyWith(actionStatus: BadgeDetailActionStatus.deleted));
+    } on BadgePublishException catch (error, stackTrace) {
+      addError(error, stackTrace);
+      emit(
+        state.copyWith(
+          actionStatus: error.outcome.rejectedBy.isEmpty
+              ? BadgeDetailActionStatus.failure
+              : BadgeDetailActionStatus.deleteRejected,
+        ),
+      );
     } catch (error, stackTrace) {
       addError(error, stackTrace);
       emit(state.copyWith(actionStatus: BadgeDetailActionStatus.failure));

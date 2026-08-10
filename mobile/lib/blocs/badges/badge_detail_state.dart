@@ -40,6 +40,14 @@ enum BadgeDetailActionStatus {
 
   /// The last mutation failed.
   failure,
+
+  /// A relay refused the deletion request outright.
+  ///
+  /// Kept apart from [failure] because a refusal is usually transient: the
+  /// relay authorizes a badge deletion only against event ids it has already
+  /// indexed, so deleting a badge seconds after creating it is refused while
+  /// the identical request succeeds a moment later.
+  deleteRejected,
 }
 
 /// State for the [BadgeDetailCubit].

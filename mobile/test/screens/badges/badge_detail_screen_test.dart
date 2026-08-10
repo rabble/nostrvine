@@ -143,6 +143,40 @@ void main() {
       verify(() => repository.deleteBadge(_coordinate)).called(1);
     });
 
+    testWidgets('tells the owner when a relay refuses the deletion', (
+      tester,
+    ) async {
+      when(() => repository.loadBadgeDetail(any())).thenAnswer(
+        (_) async => _detail(definition: _definition(), isOwner: true),
+      );
+      when(() => repository.deleteBadge(any())).thenThrow(
+        const BadgePublishException(
+          'rejected',
+          outcome: PublishOutcome(
+            eventId: 'deadbeef',
+            acceptedBy: [],
+            rejectedBy: {'wss://relay.divine.video': 'delete not authorized'},
+            noResponseFrom: [],
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.bySemanticsLabel(l10n.badgeDetailDeleteAction));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.badgeDetailDeleteConfirm));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(l10n.shareMenuDeleteFailedRelayRejected),
+        findsOneWidget,
+      );
+      // The badge is still there, so the page must not have popped.
+      expect(find.text('Scene Stealer'), findsWidgets);
+    });
+
     testWidgets('hides the delete action from non-owners', (tester) async {
       when(() => repository.loadBadgeDetail(any())).thenAnswer(
         (_) async => _detail(definition: _definition(), isOwner: false),
