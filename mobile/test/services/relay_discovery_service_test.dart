@@ -487,7 +487,13 @@ void _authenticityTests() {
 
     test('rejects a frame with an invalid signature', () async {
       final badSignature = signedRelayList(privateKey: victimKey);
-      badSignature['sig'] = '00${(badSignature['sig'] as String).substring(2)}';
+      final sig = badSignature['sig'] as String;
+      // BIP-340 signing draws fresh aux randomness every run, so overwriting
+      // the first byte with a constant '00' is a no-op on the 1-in-256
+      // signature that already starts with '00' — leaving the frame valid.
+      final flipped = int.parse(sig.substring(0, 2), radix: 16) ^ 0xff;
+      badSignature['sig'] =
+          '${flipped.toRadixString(16).padLeft(2, '0')}${sig.substring(2)}';
       expect(await query(badSignature), isEmpty);
     });
 
