@@ -10141,6 +10141,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Tu as déjà un badge avec cet identifiant. Modifie plutôt celui-là : publier ici le remplacerait.';
 
   @override
+  String get badgeEditorIdentifierRequired =>
+      'Chaque badge a besoin d\'un identifiant : saisis-en un si le nom ne l\'a pas rempli.';
+
+  @override
   String get badgeEditorDescriptionLabel => 'Description';
 
   @override
@@ -10248,6 +10252,7 @@ class AppLocalizationsFr extends AppLocalizations {
       locale: localeName,
       other: 'Décerner à $count personnes',
       one: 'Décerner à 1 personne',
+      zero: 'Décerner le badge',
     );
     return '$_temp0';
   }

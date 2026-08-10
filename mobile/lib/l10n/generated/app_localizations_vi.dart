@@ -10000,6 +10000,10 @@ class AppLocalizationsVi extends AppLocalizations {
       'Bạn đã có một huy hiệu với định danh này. Hãy sửa cái đó — đăng ở đây sẽ thay thế nó.';
 
   @override
+  String get badgeEditorIdentifierRequired =>
+      'Mỗi huy hiệu cần một định danh — hãy tự nhập nếu tên không điền giúp.';
+
+  @override
   String get badgeEditorDescriptionLabel => 'Mô tả';
 
   @override
@@ -10107,6 +10111,7 @@ class AppLocalizationsVi extends AppLocalizations {
       locale: localeName,
       other: 'Trao cho $count người',
       one: 'Trao cho 1 người',
+      zero: 'Trao huy hiệu',
     );
     return '$_temp0';
   }

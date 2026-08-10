@@ -9488,6 +9488,9 @@ class AppLocalizationsZh extends AppLocalizations {
       '你已经有使用这个标识符的徽章了。请去编辑那一个——在这里发布会把它替换掉。';
 
   @override
+  String get badgeEditorIdentifierRequired => '每个徽章都需要一个标识符——名称没填上的话，自己输入一个。';
+
+  @override
   String get badgeEditorDescriptionLabel => '描述';
 
   @override
@@ -9592,6 +9595,7 @@ class AppLocalizationsZh extends AppLocalizations {
       count,
       locale: localeName,
       other: '颁发给 $count 人',
+      zero: '颁发徽章',
     );
     return '$_temp0';
   }

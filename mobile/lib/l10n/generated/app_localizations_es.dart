@@ -10099,6 +10099,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Ya tenés una insignia con este identificador. Editá esa: publicar acá la reemplazaría.';
 
   @override
+  String get badgeEditorIdentifierRequired =>
+      'Cada insignia necesita un identificador: escribí uno si el nombre no lo completó.';
+
+  @override
   String get badgeEditorDescriptionLabel => 'Descripción';
 
   @override
@@ -10206,6 +10210,7 @@ class AppLocalizationsEs extends AppLocalizations {
       locale: localeName,
       other: 'Entregar a $count personas',
       one: 'Entregar a 1 persona',
+      zero: 'Entregar insignia',
     );
     return '$_temp0';
   }

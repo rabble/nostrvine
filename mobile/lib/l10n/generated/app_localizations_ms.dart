@@ -10054,6 +10054,10 @@ class AppLocalizationsMs extends AppLocalizations {
       'Anda sudah ada lencana dengan pengecam ini. Edit yang itu — menerbitkan di sini akan menggantikannya.';
 
   @override
+  String get badgeEditorIdentifierRequired =>
+      'Setiap lencana perlukan pengecam — taip sendiri kalau nama tidak mengisinya.';
+
+  @override
   String get badgeEditorDescriptionLabel => 'Penerangan';
 
   @override
@@ -10161,6 +10165,7 @@ class AppLocalizationsMs extends AppLocalizations {
       locale: localeName,
       other: 'Berikan kepada $count orang',
       one: 'Berikan kepada 1 orang',
+      zero: 'Berikan lencana',
     );
     return '$_temp0';
   }

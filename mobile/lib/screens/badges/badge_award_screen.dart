@@ -6,10 +6,11 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/badges/badge_detail_cubit.dart';
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/badges/badges_screen.dart';
 import 'package:openvine/widgets/user_picker_sheet.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 
@@ -77,7 +78,7 @@ class _BadgeAwardViewState extends State<BadgeAwardView> {
       context,
       autoFocus: true,
       filterMode: UserPickerFilterMode.allUsers,
-      title: context.mounted ? context.l10n.badgeAwardPickAction : '',
+      title: context.l10n.badgeAwardPickAction,
       excludePubkeys: _pickedPubkeys.toSet(),
       onUserToggled: (profile) {
         setState(() {
@@ -124,7 +125,7 @@ class _BadgeAwardViewState extends State<BadgeAwardView> {
           previous.actionStatus != current.actionStatus,
       listener: (context, state) {
         if (state.actionStatus == BadgeDetailActionStatus.completed) {
-          context.pop(true);
+          context.safePop(result: true, fallback: BadgesScreen.path);
         }
       },
       builder: (context, state) {
@@ -132,7 +133,7 @@ class _BadgeAwardViewState extends State<BadgeAwardView> {
           appBar: DiVineAppBar(
             title: l10n.badgeAwardTitle,
             showBackButton: true,
-            onBackPressed: context.pop,
+            onBackPressed: () => context.safePop(fallback: BadgesScreen.path),
           ),
           backgroundColor: context.vineColors.background,
           body: ListView(
@@ -220,7 +221,12 @@ class _SelectedRecipientRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: UserProfileTile(pubkey: pubkey, showFollowButton: false),
+          child: UserProfileTile(
+            pubkey: pubkey,
+            showFollowButton: false,
+            // The enclosing list already pads to the screen inset.
+            padding: const EdgeInsets.fromLTRB(0, 12, 16, 12),
+          ),
         ),
         DivineIconButton(
           icon: .x,

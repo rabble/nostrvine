@@ -9954,6 +9954,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bu tanımlayıcıyla zaten bir rozetin var. Onu düzenle — burada yayınlamak onun yerine geçer.';
 
   @override
+  String get badgeEditorIdentifierRequired =>
+      'Her rozetin bir tanımlayıcısı olmalı — ad doldurmadıysa kendin yaz.';
+
+  @override
   String get badgeEditorDescriptionLabel => 'Açıklama';
 
   @override
@@ -10060,6 +10064,7 @@ class AppLocalizationsTr extends AppLocalizations {
       locale: localeName,
       other: '$count kişiye ver',
       one: '1 kişiye ver',
+      zero: 'Rozeti ver',
     );
     return '$_temp0';
   }

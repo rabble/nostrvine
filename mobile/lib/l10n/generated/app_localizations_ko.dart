@@ -9590,6 +9590,10 @@ class AppLocalizationsKo extends AppLocalizations {
       '이 식별자를 쓰는 배지가 이미 있어요. 여기서 게시하면 덮어쓰니 그 배지를 수정해 주세요.';
 
   @override
+  String get badgeEditorIdentifierRequired =>
+      '배지에는 식별자가 필요해요. 이름으로 채워지지 않았다면 직접 입력해 주세요.';
+
+  @override
   String get badgeEditorDescriptionLabel => '설명';
 
   @override
@@ -9694,6 +9698,7 @@ class AppLocalizationsKo extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count명에게 주기',
+      zero: '배지 주기',
     );
     return '$_temp0';
   }

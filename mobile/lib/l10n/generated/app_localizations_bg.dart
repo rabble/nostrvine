@@ -10098,6 +10098,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Вече имаш знак с този идентификатор. Редактирай онзи — публикуването тук би го заместило.';
 
   @override
+  String get badgeEditorIdentifierRequired =>
+      'Всеки знак се нуждае от идентификатор — напиши го сам, ако името не го е попълнило.';
+
+  @override
   String get badgeEditorDescriptionLabel => 'Описание';
 
   @override
@@ -10205,6 +10209,7 @@ class AppLocalizationsBg extends AppLocalizations {
       locale: localeName,
       other: 'Раздай на $count души',
       one: 'Раздай на 1 човек',
+      zero: 'Раздай знак',
     );
     return '$_temp0';
   }

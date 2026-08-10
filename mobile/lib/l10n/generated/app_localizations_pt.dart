@@ -10070,6 +10070,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Você já tem um selo com este identificador. Edite aquele — publicar aqui iria substituí-lo.';
 
   @override
+  String get badgeEditorIdentifierRequired =>
+      'Todo selo precisa de um identificador — digite um se o nome não preencheu.';
+
+  @override
   String get badgeEditorDescriptionLabel => 'Descrição';
 
   @override
@@ -10176,6 +10180,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: 'Entregar a $count pessoas',
       one: 'Entregar a 1 pessoa',
+      zero: 'Entregar selo',
     );
     return '$_temp0';
   }

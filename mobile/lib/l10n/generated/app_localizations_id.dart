@@ -9956,6 +9956,10 @@ class AppLocalizationsId extends AppLocalizations {
       'Kamu sudah punya lencana dengan pengenal ini. Ubah yang itu — menerbitkan di sini akan menggantikannya.';
 
   @override
+  String get badgeEditorIdentifierRequired =>
+      'Setiap lencana butuh pengenal — ketik sendiri kalau nama tidak mengisinya.';
+
+  @override
   String get badgeEditorDescriptionLabel => 'Deskripsi';
 
   @override
@@ -10063,6 +10067,7 @@ class AppLocalizationsId extends AppLocalizations {
       locale: localeName,
       other: 'Berikan ke $count orang',
       one: 'Berikan ke 1 orang',
+      zero: 'Berikan lencana',
     );
     return '$_temp0';
   }

@@ -9771,6 +9771,10 @@ class AppLocalizationsAm extends AppLocalizations {
       'በዚህ መለያ ያለህ ባጅ አስቀድሞ አለ። እዚህ ማተም እሱን ስለሚተካ ያንን አርትዕ አድርግ።';
 
   @override
+  String get badgeEditorIdentifierRequired =>
+      'እያንዳንዱ ባጅ መለያ ያስፈልገዋል — ስሙ ካልሞላው በእጅ ጻፍ።';
+
+  @override
   String get badgeEditorDescriptionLabel => 'መግለጫ';
 
   @override
@@ -9876,6 +9880,7 @@ class AppLocalizationsAm extends AppLocalizations {
       locale: localeName,
       other: 'ለ$count ሰዎች ስጥ',
       one: 'ለ1 ሰው ስጥ',
+      zero: 'ባጅ ስጥ',
     );
     return '$_temp0';
   }

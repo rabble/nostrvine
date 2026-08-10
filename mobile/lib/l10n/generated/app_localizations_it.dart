@@ -10101,6 +10101,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Hai già un badge con questo identificatore. Modifica quello: pubblicare qui lo sostituirebbe.';
 
   @override
+  String get badgeEditorIdentifierRequired =>
+      'Ogni badge ha bisogno di un identificatore: scrivilo tu se il nome non l\'ha riempito.';
+
+  @override
   String get badgeEditorDescriptionLabel => 'Descrizione';
 
   @override
@@ -10212,6 +10216,7 @@ class AppLocalizationsIt extends AppLocalizations {
       locale: localeName,
       other: 'Assegna a $count persone',
       one: 'Assegna a 1 persona',
+      zero: 'Assegna il badge',
     );
     return '$_temp0';
   }

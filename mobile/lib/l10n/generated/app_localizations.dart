@@ -17206,6 +17206,12 @@ abstract class AppLocalizations {
   /// **'You already have a badge with this identifier. Edit that one instead — publishing here would replace it.'**
   String get badgeEditorIdentifierTaken;
 
+  /// No description provided for @badgeEditorIdentifierRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Every badge needs an identifier — type one if the name did not fill it in.'**
+  String get badgeEditorIdentifierRequired;
+
   /// No description provided for @badgeEditorDescriptionLabel.
   ///
   /// In en, this message translates to:
@@ -17401,7 +17407,7 @@ abstract class AppLocalizations {
   /// Confirm button on the award badge screen, counting the selected recipients.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{Award to 1 person} other{Award to {count} people}}'**
+  /// **'{count, plural, =0{Award badge} =1{Award to 1 person} other{Award to {count} people}}'**
   String badgeAwardSubmitAction(int count);
 
   /// No description provided for @profileBadgeAwardedBy.

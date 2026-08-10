@@ -6,12 +6,13 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:openvine/blocs/badges/badge_editor_cubit.dart';
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/image_crop_launcher_provider.dart';
+import 'package:openvine/screens/badges/badges_screen.dart';
 import 'package:openvine/screens/image_crop_editor/image_crop_editor.dart';
 import 'package:openvine/screens/profile_setup/widgets/profile_image_actions_sheet.dart';
 import 'package:openvine/screens/profile_setup/widgets/profile_image_picker.dart';
@@ -191,7 +192,9 @@ class _BadgeEditorViewState extends ConsumerState<BadgeEditorView> {
       listener: (context, state) {
         _syncControllers(state);
         if (state.status == BadgeEditorStatus.saved) {
-          context.pop(true);
+          // Deep-linked straight into `/badges/new`, there is nothing to pop
+          // back to; the dashboard is where the new badge now lives.
+          context.safePop(result: true, fallback: BadgesScreen.path);
         }
       },
       builder: (context, state) {
@@ -201,7 +204,7 @@ class _BadgeEditorViewState extends ConsumerState<BadgeEditorView> {
                 ? l10n.badgeEditorEditTitle
                 : l10n.badgeEditorCreateTitle,
             showBackButton: true,
-            onBackPressed: context.pop,
+            onBackPressed: () => context.safePop(fallback: BadgesScreen.path),
           ),
           backgroundColor: context.vineColors.background,
           body: switch (state.status) {
@@ -293,12 +296,9 @@ class _BadgeEditorForm extends StatelessWidget {
                 DivineButton(
                   label: l10n.badgeEditorSaveAction,
                   isLoading: state.status == BadgeEditorStatus.saving,
-                  // Pressable without artwork on purpose: pressing it is what
-                  // surfaces the missing-artwork message.
-                  onPressed:
-                      state.hasRequiredText &&
-                          !state.isIdentifierTaken &&
-                          !state.isBusy
+                  // Pressable without artwork or identifier on purpose:
+                  // pressing it is what surfaces what is still missing.
+                  onPressed: state.canSubmit && !state.isBusy
                       ? cubit.save
                       : null,
                 ),
@@ -327,6 +327,7 @@ class _IdentifierField extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final isTaken = state.isIdentifierTaken;
+    final isMissing = state.showIdentifierRequired;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: 6,
@@ -335,7 +336,9 @@ class _IdentifierField extends StatelessWidget {
           labelText: l10n.badgeEditorIdentifierLabel,
           // The warning replaces the explanation rather than stacking under
           // it: two lines of small print under one field read as noise.
-          helperText: isTaken ? null : l10n.badgeEditorIdentifierHelp,
+          helperText: isTaken || isMissing
+              ? null
+              : l10n.badgeEditorIdentifierHelp,
           controller: controller,
           filled: true,
           fillColor: context.vineColors.surfaceContainer,
@@ -351,6 +354,11 @@ class _IdentifierField extends StatelessWidget {
         if (isTaken)
           Text(
             l10n.badgeEditorIdentifierTaken,
+            style: VineTheme.bodySmallFont(color: VineTheme.error),
+          )
+        else if (isMissing)
+          Text(
+            l10n.badgeEditorIdentifierRequired,
             style: VineTheme.bodySmallFont(color: VineTheme.error),
           ),
       ],

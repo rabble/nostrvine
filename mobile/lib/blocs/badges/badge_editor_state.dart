@@ -105,11 +105,17 @@ class BadgeEditorState extends Equatable {
       !isEditing && takenIdentifiers.contains(identifier.trim());
 
   /// Whether the written fields are filled in.
-  ///
-  /// Publish stays pressable on this alone: artwork is the one requirement
-  /// reported on submit rather than by a dead button.
   bool get hasRequiredText =>
       name.trim().isNotEmpty && identifier.trim().isNotEmpty;
+
+  /// Whether Publish is pressable.
+  ///
+  /// A name is the only thing that gates the button. Artwork and the
+  /// identifier are reported on submit rather than by a dead button — the
+  /// identifier is derived from the name, and the derivation yields nothing
+  /// for a name written in a script without `a-z0-9`, which would otherwise
+  /// leave the button greyed out with nothing pointing at why.
+  bool get canSubmit => name.trim().isNotEmpty && !isIdentifierTaken;
 
   /// Whether the form carries everything a definition needs.
   ///
@@ -120,6 +126,10 @@ class BadgeEditorState extends Equatable {
 
   /// Whether to tell the user that artwork is still missing.
   bool get showArtworkRequired => submitAttempted && imageUrl.isEmpty;
+
+  /// Whether to tell the user the identifier still has to be filled in.
+  bool get showIdentifierRequired =>
+      submitAttempted && identifier.trim().isEmpty;
 
   /// Whether an action that owns the whole form is in flight.
   ///

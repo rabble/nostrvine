@@ -9998,6 +9998,10 @@ class AppLocalizationsUr extends AppLocalizations {
       'اس شناخت کنندہ کے ساتھ آپ کے پاس پہلے ہی ایک بیج ہے۔ اسی میں ترمیم کریں — یہاں شائع کرنے سے وہ بدل جائے گا۔';
 
   @override
+  String get badgeEditorIdentifierRequired =>
+      'ہر بیج کو ایک شناخت کنندہ چاہیے — اگر نام سے نہ بھرا ہو تو خود لکھیں۔';
+
+  @override
   String get badgeEditorDescriptionLabel => 'تفصیل';
 
   @override
@@ -10104,6 +10108,7 @@ class AppLocalizationsUr extends AppLocalizations {
       locale: localeName,
       other: '$count افراد کو دیں',
       one: '1 شخص کو دیں',
+      zero: 'بیج دیں',
     );
     return '$_temp0';
   }

@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/badges/badges_cubit.dart';
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/reduced_motion_tab_controller_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -68,7 +69,7 @@ class _BadgesViewState extends State<BadgesView>
       appBar: DiVineAppBar(
         title: l10n.badgesTitle,
         showBackButton: true,
-        onBackPressed: context.pop,
+        onBackPressed: context.safePop,
         actions: [
           DiVineAppBarAction(
             icon: SvgIconSource(DivineIconName.plus.assetPath),
@@ -108,6 +109,9 @@ class _BadgesViewState extends State<BadgesView>
 Future<void> _openAndRefresh(BuildContext context, String path) async {
   final cubit = context.read<BadgesCubit>();
   await context.push<bool>(path);
+  // The dashboard can be gone by the time the pushed route pops — a deep link
+  // out of it, or a sign-out rebuilding the repository.
+  if (cubit.isClosed) return;
   await cubit.refresh();
 }
 
@@ -452,7 +456,11 @@ Future<void> _hideWithUndo(
     DivineSnackbarContainer.snackBar(
       l10n.badgesHiddenSnackbar,
       actionLabel: l10n.badgesHiddenSnackbarUndo,
-      onActionPressed: () => cubit.unhideAward(award),
+      // The snackbar lives on the app-level messenger, so it outlives this
+      // route; undoing into a closed cubit would throw.
+      onActionPressed: () {
+        if (!cubit.isClosed) cubit.unhideAward(award);
+      },
     ),
   );
 }

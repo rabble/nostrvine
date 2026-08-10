@@ -9563,6 +9563,10 @@ class AppLocalizationsJa extends AppLocalizations {
       'この識別子のバッジはすでにあります。ここで公開すると置き換わるので、そちらを編集してください。';
 
   @override
+  String get badgeEditorIdentifierRequired =>
+      'バッジには識別子が必要です。名前から入らなかったときは自分で入力してください。';
+
+  @override
   String get badgeEditorDescriptionLabel => '説明';
 
   @override
@@ -9667,6 +9671,7 @@ class AppLocalizationsJa extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count人に贈る',
+      zero: 'バッジを贈る',
     );
     return '$_temp0';
   }

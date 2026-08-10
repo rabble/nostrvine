@@ -9974,6 +9974,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'You already have a badge with this identifier. Edit that one instead — publishing here would replace it.';
 
   @override
+  String get badgeEditorIdentifierRequired =>
+      'Every badge needs an identifier — type one if the name did not fill it in.';
+
+  @override
   String get badgeEditorDescriptionLabel => 'Description';
 
   @override
@@ -10080,6 +10084,7 @@ class AppLocalizationsEn extends AppLocalizations {
       locale: localeName,
       other: 'Award to $count people',
       one: 'Award to 1 person',
+      zero: 'Award badge',
     );
     return '$_temp0';
   }

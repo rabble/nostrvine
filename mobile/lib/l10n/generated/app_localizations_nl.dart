@@ -10045,6 +10045,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Je hebt al een badge met deze identificatie. Bewerk die — hier publiceren zou hem vervangen.';
 
   @override
+  String get badgeEditorIdentifierRequired =>
+      'Elke badge heeft een identificatie nodig — typ er zelf een als de naam er geen invulde.';
+
+  @override
   String get badgeEditorDescriptionLabel => 'Omschrijving';
 
   @override
@@ -10152,6 +10156,7 @@ class AppLocalizationsNl extends AppLocalizations {
       locale: localeName,
       other: 'Uitreiken aan $count personen',
       one: 'Uitreiken aan 1 persoon',
+      zero: 'Badge uitreiken',
     );
     return '$_temp0';
   }

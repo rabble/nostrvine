@@ -177,6 +177,29 @@ void main() {
       expect(publish.onPressed, isNull);
     });
 
+    testWidgets(
+      'asks for an identifier a non-Latin name could not derive',
+      (tester) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        // The slug is derived from `a-z0-9`, so a name written in another
+        // script derives nothing and the user has to supply one by hand.
+        await tester.enterText(find.byType(DivineTextField).first, 'スシ職人');
+        await tester.pumpAndSettle();
+        expect(find.text(l10n.badgeEditorIdentifierRequired), findsNothing);
+
+        final publish = find.text(l10n.badgeEditorSaveAction);
+        await tester.ensureVisible(publish);
+        await tester.pumpAndSettle();
+        await tester.tap(publish);
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.badgeEditorIdentifierRequired), findsOneWidget);
+        verifyNever(() => repository.saveDefinition(any()));
+      },
+    );
+
     testWidgets('leaves Publish dead until the badge is named', (tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();

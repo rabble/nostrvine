@@ -9921,6 +9921,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'لديك بالفعل شارة بهذا المعرّف. عدّل تلك الشارة — فالنشر هنا سيحل محلها.';
 
   @override
+  String get badgeEditorIdentifierRequired =>
+      'كل شارة تحتاج معرّفًا — اكتب واحدًا إن لم يملأه الاسم.';
+
+  @override
   String get badgeEditorDescriptionLabel => 'الوصف';
 
   @override
@@ -10026,6 +10030,7 @@ class AppLocalizationsAr extends AppLocalizations {
       locale: localeName,
       other: 'امنحها لـ $count أشخاص',
       one: 'امنحها لشخص واحد',
+      zero: 'امنح الشارة',
     );
     return '$_temp0';
   }

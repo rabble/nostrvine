@@ -10114,6 +10114,10 @@ class AppLocalizationsFil extends AppLocalizations {
       'May badge ka nang ganitong identifier. I-edit na lang iyon — kung mag-publish ka rito, mapapalitan iyon.';
 
   @override
+  String get badgeEditorIdentifierRequired =>
+      'Kailangan ng bawat badge ng identifier — mag-type ka kung hindi ito napunan ng pangalan.';
+
+  @override
   String get badgeEditorDescriptionLabel => 'Paglalarawan';
 
   @override
@@ -10222,6 +10226,7 @@ class AppLocalizationsFil extends AppLocalizations {
       locale: localeName,
       other: 'Ibigay sa $count tao',
       one: 'Ibigay sa 1 tao',
+      zero: 'Ibigay ang badge',
     );
     return '$_temp0';
   }

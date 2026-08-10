@@ -10001,6 +10001,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Du har redan en badge med den här identifieraren. Redigera den i stället — att publicera här skulle ersätta den.';
 
   @override
+  String get badgeEditorIdentifierRequired =>
+      'Varje badge behöver en identifierare — skriv en själv om namnet inte fyllde i den.';
+
+  @override
   String get badgeEditorDescriptionLabel => 'Beskrivning';
 
   @override
@@ -10107,6 +10111,7 @@ class AppLocalizationsSv extends AppLocalizations {
       locale: localeName,
       other: 'Dela ut till $count personer',
       one: 'Dela ut till 1 person',
+      zero: 'Dela ut badge',
     );
     return '$_temp0';
   }

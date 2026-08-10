@@ -8,11 +8,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/badges/badge_detail_cubit.dart';
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/badges/badge_award_screen.dart';
 import 'package:openvine/screens/badges/badge_delete_confirmation_sheet.dart';
 import 'package:openvine/screens/badges/badge_editor_screen.dart';
+import 'package:openvine/screens/badges/badges_screen.dart';
 import 'package:openvine/screens/badges/widgets/badge_recipient_row.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
@@ -65,7 +67,9 @@ class BadgeDetailView extends StatelessWidget {
       listener: (context, state) {
         // Nothing left to render once the badge is gone.
         if (state.actionStatus == BadgeDetailActionStatus.deleted) {
-          context.pop(true);
+          // A shared badge link opens this screen with nothing beneath it, so
+          // popping is not always available; the dashboard is the way out.
+          context.safePop(result: true, fallback: BadgesScreen.path);
           return;
         }
         if (state.actionStatus == BadgeDetailActionStatus.deleteRejected) {
@@ -86,7 +90,7 @@ class BadgeDetailView extends StatelessWidget {
           appBar: DiVineAppBar(
             title: definition?.name ?? l10n.badgeDetailTitle,
             showBackButton: true,
-            onBackPressed: context.pop,
+            onBackPressed: () => context.safePop(fallback: BadgesScreen.path),
             actions: [
               DiVineAppBarAction(
                 icon: SvgIconSource(DivineIconName.shareNetwork.assetPath),
@@ -150,6 +154,7 @@ class BadgeDetailView extends StatelessWidget {
   ) async {
     final cubit = context.read<BadgeDetailCubit>();
     await context.push<bool>(BadgeEditorScreen.editPathFor(coordinate));
+    if (cubit.isClosed) return;
     await cubit.refresh();
   }
 }
@@ -296,6 +301,8 @@ class _BadgeHero extends StatelessWidget {
             UserProfileTile(
               pubkey: coordinate.pubkey,
               showFollowButton: false,
+              // The enclosing sliver already pads to the screen inset.
+              padding: const EdgeInsets.fromLTRB(0, 12, 16, 12),
             ),
           ],
         ),
@@ -388,6 +395,7 @@ class _BadgeActions extends StatelessWidget {
   ) async {
     final cubit = context.read<BadgeDetailCubit>();
     await context.push<bool>(BadgeAwardScreen.pathFor(coordinate));
+    if (cubit.isClosed) return;
     await cubit.refresh();
   }
 }

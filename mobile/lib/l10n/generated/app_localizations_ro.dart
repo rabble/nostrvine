@@ -10205,6 +10205,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Ai deja o insignă cu acest identificator. Editeaz-o pe aceea — publicarea aici ar înlocui-o.';
 
   @override
+  String get badgeEditorIdentifierRequired =>
+      'Fiecare insignă are nevoie de un identificator — scrie-l tu dacă numele nu l-a completat.';
+
+  @override
   String get badgeEditorDescriptionLabel => 'Descriere';
 
   @override
@@ -10312,6 +10316,7 @@ class AppLocalizationsRo extends AppLocalizations {
       locale: localeName,
       other: 'Acordă la $count persoane',
       one: 'Acordă unei persoane',
+      zero: 'Acordă insigna',
     );
     return '$_temp0';
   }

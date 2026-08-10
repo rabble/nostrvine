@@ -10186,6 +10186,10 @@ class AppLocalizationsPl extends AppLocalizations {
       'Masz już odznakę z tym identyfikatorem. Edytuj tamtą — opublikowanie tutaj by ją zastąpiło.';
 
   @override
+  String get badgeEditorIdentifierRequired =>
+      'Każda odznaka potrzebuje identyfikatora — wpisz go, jeśli nazwa go nie uzupełniła.';
+
+  @override
   String get badgeEditorDescriptionLabel => 'Opis';
 
   @override
@@ -10293,6 +10297,7 @@ class AppLocalizationsPl extends AppLocalizations {
       locale: localeName,
       other: 'Przyznaj $count osobom',
       one: 'Przyznaj 1 osobie',
+      zero: 'Przyznaj odznakę',
     );
     return '$_temp0';
   }
