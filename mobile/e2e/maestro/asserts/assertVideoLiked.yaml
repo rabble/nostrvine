@@ -1,7 +1,11 @@
 appId: co.openvine.app
 ---
-# See assertVideoUnliked: like state is only observable through the label,
-# and the toggle round-trips through a relay publish.
+# Like state is only observable through the button's label -- the identifier
+# is constant across both states by design, so there is no id to key on.
+#
+# Waited on rather than asserted outright: toggling a like publishes a Nostr
+# event, and although the UI updates optimistically the button can settle a
+# moment later.
 - extendedWaitUntil:
     visible: Unlike video
     timeout: 15000
