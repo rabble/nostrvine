@@ -765,10 +765,10 @@ packages:
     dependency: "direct main"
     description:
       name: firebase_remote_config
-      sha256: "5d23c7021e69fbc9ef489ebcf4b1b941575e34ebacc7f20173c2a97f37f45b74"
+      sha256: "6d7be334b726537b3aa3a3ef1db9782951cd93c2b996eebc33f64a9f140e0409"
       url: "https://pub.dev"
     source: hosted
-    version: "6.1.2"
+    version: "6.1.4"
   firebase_remote_config_platform_interface:
     dependency: transitive
     description:
