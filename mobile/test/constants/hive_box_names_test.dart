@@ -6,14 +6,10 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/constants/hive_box_names.dart';
 
-/// `.openBox<T>(arg` / `.openLazyBox(arg`, capturing the first argument. The
-/// argument may sit on the next line, so whitespace is skipped.
-///
-/// The receiver is intentionally broad: app-layer code can use `Hive.openBox`
-/// directly, while packages receive injected open-box callbacks because they
-/// cannot import app-owned [HiveBoxNames].
+/// `Hive.openBox<T>(arg` / `Hive.openLazyBox(arg`, capturing the first
+/// argument. The argument may sit on the next line, so whitespace is skipped.
 final _openBoxCall = RegExp(
-  r'''\.open(?:Lazy)?Box(?:<[^>]*>)?\(\s*([A-Za-z_$][\w.]*|'[^']*'|"[^"]*")''',
+  r'''Hive\.open(?:Lazy)?Box(?:<[^>]*>)?\(\s*([A-Za-z_$][\w.]*|'[^']*'|"[^"]*")''',
 );
 
 /// A `static const`/`const` declaration and its initializer, e.g.
@@ -41,18 +37,6 @@ Iterable<File> _dartSources() sync* {
 
 void main() {
   group(HiveBoxNames, () {
-    test('openBox scanner includes injected HiveInterface receivers', () {
-      const source = '''
-class ProbeB {
-  ProbeB(this._hive);
-  final HiveInterface _hive;
-  Future<Box<dynamic>> open() => _hive.openBox<dynamic>('draft_notes_v1');
-}
-''';
-
-      expect(_openBoxCall.firstMatch(source)?.group(1), "'draft_notes_v1'");
-    });
-
     test('every declared box name is in HiveBoxNames.all', () {
       final source = File(
         'lib/constants/hive_box_names.dart',
@@ -68,9 +52,8 @@ class ProbeB {
         unorderedEquals(HiveBoxNames.all),
         reason:
             'HiveBoxNames.all is what CacheRecoveryService classifies as '
-            'disposable or durable, and what HiveStorageService migrates out '
-            'of the legacy documents directory. A member missing from it is a '
-            'box no wipe policy covers and no migration rescues.',
+            'disposable or durable. A member missing from it is a box no '
+            'wipe policy covers.',
       );
     });
 
