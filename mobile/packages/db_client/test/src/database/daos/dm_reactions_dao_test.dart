@@ -61,11 +61,12 @@ void main() {
       String reactorPubkey = _reactorA,
       String emoji = '🔥',
       int createdAt = 1_700_000_000,
+      String targetMessageId = _targetMessageId,
     }) {
       return dao.insertOwnReactionSuperseding(
         placeholderId: id,
         conversationId: _conversationId,
-        targetMessageId: _targetMessageId,
+        targetMessageId: targetMessageId,
         targetMessageAuthor: _targetAuthor,
         reactorPubkey: reactorPubkey,
         emoji: emoji,
@@ -757,5 +758,77 @@ void main() {
       expect(await dao.getById(id: _pendingId, ownerPubkey: _ownerA), isNull);
       expect(await dao.getById(id: _sentId, ownerPubkey: _ownerB), isNotNull);
     });
+
+    test(
+      'deleteNonRetryableForOwner preserves outgoing retry rows only',
+      () async {
+        const failedId =
+            '2222222222222222222222222222222222222222222222222222222222222222';
+        const deletionId =
+            '3333333333333333333333333333333333333333333333333333333333333333';
+        const incomingId =
+            '4444444444444444444444444444444444444444444444444444444444444444';
+        const blockedId =
+            '5555555555555555555555555555555555555555555555555555555555555555';
+        const otherOwnerId =
+            '6666666666666666666666666666666666666666666666666666666666666666';
+        const target2 =
+            '7777777777777777777777777777777777777777777777777777777777777777';
+        const target3 =
+            '8888888888888888888888888888888888888888888888888888888888888888';
+        const target4 =
+            '9999999999999999999999999999999999999999999999999999999999999999';
+
+        await insertPending();
+        await insertPending(id: failedId, targetMessageId: target2);
+        await dao.markFailed(placeholderId: failedId, ownerPubkey: _ownerA);
+        await insertPending(id: deletionId, targetMessageId: target3);
+        await dao.markOwnDeletionPending(
+          id: deletionId,
+          ownerPubkey: _ownerA,
+          deletionRumorJson: '{"kind":5}',
+        );
+        await insertPending(id: blockedId, targetMessageId: target4);
+        await dao.markBlocked(id: blockedId, ownerPubkey: _ownerA);
+        await dao.upsertIncoming(
+          id: incomingId,
+          conversationId: _conversationId,
+          targetMessageId: _targetMessageId,
+          targetMessageAuthor: _targetAuthor,
+          reactorPubkey: _reactorB,
+          emoji: '😂',
+          createdAt: 1_700_000_200,
+          giftWrapId: incomingId,
+          ownerPubkey: _ownerA,
+        );
+        await insertPending(
+          id: otherOwnerId,
+          ownerPubkey: _ownerB,
+          reactorPubkey: _ownerB,
+        );
+
+        final deleted = await dao.deleteNonRetryableForOwner(_ownerA);
+
+        expect(deleted, equals(2));
+        expect(
+          await dao.getById(id: _pendingId, ownerPubkey: _ownerA),
+          isNotNull,
+        );
+        expect(
+          await dao.getById(id: failedId, ownerPubkey: _ownerA),
+          isNotNull,
+        );
+        expect(
+          await dao.getById(id: deletionId, ownerPubkey: _ownerA),
+          isNotNull,
+        );
+        expect(await dao.getById(id: incomingId, ownerPubkey: _ownerA), isNull);
+        expect(await dao.getById(id: blockedId, ownerPubkey: _ownerA), isNull);
+        expect(
+          await dao.getById(id: otherOwnerId, ownerPubkey: _ownerB),
+          isNotNull,
+        );
+      },
+    );
   });
 }

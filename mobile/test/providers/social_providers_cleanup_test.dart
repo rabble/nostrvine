@@ -41,6 +41,12 @@ const _dmConversationId =
     'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 const _dmTargetMessageId =
     'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+const _dmSecondTargetMessageId =
+    '1111111111111111111111111111111111111111111111111111111111111111';
+const _pendingReactionId =
+    '2222222222222222222222222222222222222222222222222222222222222222';
+const _pendingDeletionId =
+    '3333333333333333333333333333333333333333333333333333333333333333';
 
 void main() {
   group(userDataCleanupServiceProvider, () {
@@ -206,11 +212,48 @@ void main() {
       );
     }
 
+    Future<void> seedPendingOwnReaction({
+      required String id,
+      required String targetMessageId,
+    }) async {
+      await db.dmReactionsDao.insertOwnReactionSuperseding(
+        placeholderId: id,
+        conversationId: _dmConversationId,
+        targetMessageId: targetMessageId,
+        targetMessageAuthor: _pubkeyB,
+        reactorPubkey: _pubkeyA,
+        emoji: '😂',
+        createdAt: 1_700_000_000,
+        ownerPubkey: _pubkeyA,
+        rumorEventJson: '{"id":"$id"}',
+      );
+    }
+
+    Future<void> seedPendingOwnDeletion({
+      required String id,
+      required String targetMessageId,
+    }) async {
+      await seedPendingOwnReaction(id: id, targetMessageId: targetMessageId);
+      await db.dmReactionsDao.markOwnDeletionPending(
+        id: id,
+        ownerPubkey: _pubkeyA,
+        deletionRumorJson: '{"kind":5}',
+      );
+    }
+
     test(
       'destructive cleanup purges dm reactions for the departing user',
       () async {
         await seedDmReaction(id: _reactionIdA, ownerPubkey: _pubkeyA);
         await seedDmReaction(id: _reactionIdB, ownerPubkey: _pubkeyB);
+        await seedPendingOwnReaction(
+          id: _pendingReactionId,
+          targetMessageId: _dmTargetMessageId,
+        );
+        await seedPendingOwnDeletion(
+          id: _pendingDeletionId,
+          targetMessageId: _dmSecondTargetMessageId,
+        );
 
         final subscription = container.listen(
           userDataCleanupServiceProvider,
@@ -234,6 +277,20 @@ void main() {
         );
         expect(
           await db.dmReactionsDao.getById(
+            id: _pendingReactionId,
+            ownerPubkey: _pubkeyA,
+          ),
+          isNull,
+        );
+        expect(
+          await db.dmReactionsDao.getById(
+            id: _pendingDeletionId,
+            ownerPubkey: _pubkeyA,
+          ),
+          isNull,
+        );
+        expect(
+          await db.dmReactionsDao.getById(
             id: _reactionIdB,
             ownerPubkey: _pubkeyB,
           ),
@@ -243,9 +300,17 @@ void main() {
     );
 
     test(
-      'non-destructive cleanup clears dm reactions for the leaving account',
+      'non-destructive cleanup preserves retryable outgoing dm reactions',
       () async {
         await seedDmReaction(id: _reactionIdA, ownerPubkey: _pubkeyA);
+        await seedPendingOwnReaction(
+          id: _pendingReactionId,
+          targetMessageId: _dmTargetMessageId,
+        );
+        await seedPendingOwnDeletion(
+          id: _pendingDeletionId,
+          targetMessageId: _dmSecondTargetMessageId,
+        );
 
         final subscription = container.listen(
           userDataCleanupServiceProvider,
@@ -264,6 +329,19 @@ void main() {
           ),
           isNull,
         );
+        expect(
+          await db.dmReactionsDao.getById(
+            id: _pendingReactionId,
+            ownerPubkey: _pubkeyA,
+          ),
+          isNotNull,
+        );
+        final deletion = await db.dmReactionsDao.getById(
+          id: _pendingDeletionId,
+          ownerPubkey: _pubkeyA,
+        );
+        expect(deletion, isNotNull);
+        expect(deletion!.publishStatus, equals('deletion_pending'));
       },
     );
   });
