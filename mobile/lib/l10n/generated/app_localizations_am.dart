@@ -2714,11 +2714,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get analyticsViewDataUnavailableShort => 'የእይታ ውሂብ አይገኝም';
 
   @override
-  String analyticsWatchedCount(String count) {
-    return '$count people watched this';
-  }
-
-  @override
   String analyticsViewsCount(String count) {
     return '$count እይታዎች';
   }

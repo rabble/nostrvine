@@ -629,13 +629,38 @@ void main() {
       testWidgets('carries the year on a classic Vine date', (tester) async {
         final en = await _loadL10n(tester, const Locale('en'));
 
-        // 2014-04-22. Without the year an archive post is indistinguishable
-        // from something posted this spring.
+        // Without the year an archive post is indistinguishable from
+        // something posted this spring. The day itself is timezone-dependent
+        // (the sibling test pins the local-vs-UTC contract), so assert the
+        // year and the absolute form.
+        final rendered = _withFixedClock(
+          () => LocalizedTimeFormatter.formatPostAge(en, 1398168000),
+        );
+
+        expect(rendered, contains('2014'));
+        expect(rendered, isNot(contains('ago')));
+      });
+
+      testWidgets('renders the local calendar day, not the UTC one', (
+        tester,
+      ) async {
+        final en = await _loadL10n(tester, const Locale('en'));
+
+        // 2014-04-22T00:00Z. Anywhere west of UTC this is still Apr 21
+        // locally, so formatting the UTC value would print the wrong day.
+        const midnightUtc = 1398124800;
+        final expected = DateFormat.yMMMd('en').format(
+          DateTime.fromMillisecondsSinceEpoch(
+            midnightUtc * 1000,
+            isUtc: true,
+          ).toLocal(),
+        );
+
         expect(
           _withFixedClock(
-            () => LocalizedTimeFormatter.formatPostAge(en, 1398124800),
+            () => LocalizedTimeFormatter.formatPostAge(en, midnightUtc),
           ),
-          equals('Apr 22, 2014'),
+          equals(expected),
         );
       });
 

@@ -2807,11 +2807,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Данните за гледанията са недостъпни';
 
   @override
-  String analyticsWatchedCount(String count) {
-    return '$count people watched this';
-  }
-
-  @override
   String analyticsViewsCount(String count) {
     return '$count показвания';
   }

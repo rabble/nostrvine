@@ -2796,11 +2796,6 @@ class AppLocalizationsIt extends AppLocalizations {
       'Dati visualizzazioni non disponibili';
 
   @override
-  String analyticsWatchedCount(String count) {
-    return '$count people watched this';
-  }
-
-  @override
   String analyticsViewsCount(String count) {
     return '$count visualizzazioni';
   }

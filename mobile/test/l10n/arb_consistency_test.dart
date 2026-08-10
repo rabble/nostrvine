@@ -413,10 +413,6 @@ const _knownUntranslatedDebt = <String>{
   // Warning shown when a requested reusable sound fails to publish; translation
   // is deferred to the next sound-library localization pass.
   'publishAudioReuseDegradedWarning',
-  // Creator-analytics 'people watched this' framing, added with the
-  // video-card post-date change; translation deferred to the next
-  // analytics localization pass.
-  'analyticsWatchedCount',
   // Saved-sound organization and public-credit copy; translation is deferred
   // to the next sound-library localization pass.
   'savedSoundYourLabel',

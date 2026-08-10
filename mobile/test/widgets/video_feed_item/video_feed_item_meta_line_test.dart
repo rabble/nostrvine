@@ -1,6 +1,8 @@
 // ABOUTME: Widget tests for the video card's date-and-count meta line.
 // ABOUTME: Pins that small public counts stay hidden behind the post-date flag.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -22,7 +24,9 @@ const _authorPubkey =
     'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
 const _strangerPubkey =
     '1111111111111111111111111111111111111111111111111111111111111111';
-const _vineEraCreatedAt = 1398124800; // 2014-04-22
+// 2014-04-22T12:00Z — midday keeps the calendar day stable across
+// runner timezones.
+const _vineEraCreatedAt = 1398168000;
 
 class _MockVideoInteractionsBloc extends Mock
     implements VideoInteractionsBloc {}
@@ -55,8 +59,10 @@ void main() {
   late _MockVideoInteractionsBloc mockInteractionsBloc;
   late _MockRepostsRepository mockRepostsRepository;
   late _MockAuthService mockAuthService;
+  late StreamController<AuthState> authStateController;
 
   setUp(() {
+    authStateController = StreamController<AuthState>.broadcast();
     mockInteractionsBloc = _MockVideoInteractionsBloc();
     mockRepostsRepository = _MockRepostsRepository();
     mockAuthService = _MockAuthService();
@@ -74,7 +80,13 @@ void main() {
       ),
     ).thenAnswer((_) async => const <String>[]);
     when(() => mockAuthService.currentPublicKeyHex).thenReturn(_strangerPubkey);
+    when(() => mockAuthService.authState).thenReturn(AuthState.authenticated);
+    when(
+      () => mockAuthService.authStateStream,
+    ).thenAnswer((_) => authStateController.stream);
   });
+
+  tearDown(() => authStateController.close());
 
   Future<void> pump(
     WidgetTester tester, {
@@ -141,7 +153,6 @@ void main() {
       );
 
       expect(find.text(loopLine(tester, 7)), findsNothing);
-      expect(find.textContaining('7 loops'), findsNothing);
     });
 
     testWidgets('shows a large count to a stranger when the flag is on', (
@@ -153,7 +164,7 @@ void main() {
         postDateEnabled: true,
       );
 
-      expect(find.textContaining('50K'), findsOneWidget);
+      expect(find.textContaining(loopLine(tester, 50000)), findsOneWidget);
     });
 
     testWidgets('shows the creator their own small count', (tester) async {
@@ -164,7 +175,7 @@ void main() {
         viewerIsAuthor: true,
       );
 
-      expect(find.textContaining('7 loops'), findsOneWidget);
+      expect(find.textContaining(loopLine(tester, 7)), findsOneWidget);
     });
 
     testWidgets('shows a classic Vine date alongside its archival count', (
@@ -185,8 +196,38 @@ void main() {
       );
 
       // Archival figure only: live diVine views must not inflate it.
-      expect(find.textContaining('2.1M loops'), findsOneWidget);
-      expect(find.textContaining('Apr 22, 2014'), findsOneWidget);
+      expect(find.textContaining(loopLine(tester, 2100000)), findsOneWidget);
+      // The year is the point — it is what makes the clip read as an artifact
+      // rather than as something posted this spring. The exact calendar day is
+      // timezone-dependent and is pinned in localized_time_formatter_test.
+      expect(find.textContaining('2014'), findsOneWidget);
+    });
+
+    testWidgets('reveals the creator their count after they sign in', (
+      tester,
+    ) async {
+      // authServiceProvider hands back a stable singleton, so without watching
+      // currentAuthStateProvider this card would stay stuck on the signed-out
+      // reading and keep hiding its owner's count.
+      when(
+        () => mockAuthService.authState,
+      ).thenReturn(AuthState.unauthenticated);
+      when(() => mockAuthService.currentPublicKeyHex).thenReturn(null);
+
+      await pump(
+        tester,
+        video: _video(rawTags: {'views': '7'}),
+        postDateEnabled: true,
+      );
+
+      expect(find.textContaining(loopLine(tester, 7)), findsNothing);
+
+      when(() => mockAuthService.currentPublicKeyHex).thenReturn(_authorPubkey);
+      when(() => mockAuthService.authState).thenReturn(AuthState.authenticated);
+      authStateController.add(AuthState.authenticated);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining(loopLine(tester, 7)), findsOneWidget);
     });
 
     testWidgets('shows a relative date on a fresh post', (tester) async {

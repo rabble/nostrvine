@@ -204,11 +204,15 @@ abstract class LocalizedTimeFormatter {
     int unixSeconds, {
     String? locale,
   }) {
+    // Formatted in local time like every other method here: DateFormat reads
+    // the DateTime's field accessors, so formatting a UTC value renders the
+    // UTC calendar day. A Vine published near midnight UTC would otherwise
+    // show a day late for every viewer in the Americas.
     final date = DateTime.fromMillisecondsSinceEpoch(
       unixSeconds * 1000,
       isUtc: true,
-    );
-    final difference = clock.now().difference(date.toLocal());
+    ).toLocal();
+    final difference = clock.now().difference(date);
 
     if (difference.inDays >= _absoluteDateAfterDays) {
       return DateFormat.yMMMd(locale).format(date);

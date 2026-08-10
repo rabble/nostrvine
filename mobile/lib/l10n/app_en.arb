@@ -1696,15 +1696,6 @@
   "analyticsMostReposted": "Most reposted",
   "analyticsNoVideosYet": "No videos yet",
   "analyticsViewDataUnavailableShort": "View data unavailable",
-  "analyticsWatchedCount": "{count} people watched this",
-  "@analyticsWatchedCount": {
-    "description": "Creator-facing count of who watched a video. Framed as people rather than \"views\" because at small numbers the framing does more work than the number.",
-    "placeholders": {
-      "count": {
-        "type": "String"
-      }
-    }
-  },
   "analyticsViewsCount": "{count} views",
   "@analyticsViewsCount": {
     "placeholders": {

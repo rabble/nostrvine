@@ -2629,11 +2629,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get analyticsViewDataUnavailableShort => '观看数据不可用';
 
   @override
-  String analyticsWatchedCount(String count) {
-    return '$count people watched this';
-  }
-
-  @override
   String analyticsViewsCount(String count) {
     return '$count 次观看';
   }

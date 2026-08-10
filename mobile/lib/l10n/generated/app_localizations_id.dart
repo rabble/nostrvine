@@ -2725,11 +2725,6 @@ class AppLocalizationsId extends AppLocalizations {
       'Data tontonan tidak tersedia';
 
   @override
-  String analyticsWatchedCount(String count) {
-    return '$count people watched this';
-  }
-
-  @override
   String analyticsViewsCount(String count) {
     return '$count tontonan';
   }

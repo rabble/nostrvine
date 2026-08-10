@@ -2758,11 +2758,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get analyticsViewDataUnavailableShort => 'Visningsdata otillgänglig';
 
   @override
-  String analyticsWatchedCount(String count) {
-    return '$count people watched this';
-  }
-
-  @override
   String analyticsViewsCount(String count) {
     return '$count visningar';
   }

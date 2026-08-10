@@ -149,12 +149,12 @@ class VideoOverlayActions extends ConsumerWidget {
     final showPostDate = ref.watch(
       isFeatureEnabledProvider(FeatureFlag.videoCardPostDate),
     );
-    // Selected rather than watching the whole service: this rebuilds on every
-    // visible feed card, and AuthService notifies for far more than a pubkey
-    // change. Matches the read in feed_videos.dart.
-    final currentUserPubkey = ref.watch(
-      authServiceProvider.select((service) => service.currentPublicKeyHex),
-    );
+    // Watched purely for its invalidation. AuthService is not a ChangeNotifier
+    // and authServiceProvider hands back a stable singleton, so watching it
+    // (with or without select) never rebuilds on sign-in or account switch —
+    // a card mounted while signed out would keep hiding its owner's counts.
+    ref.watch(currentAuthStateProvider);
+    final currentUserPubkey = ref.read(authServiceProvider).currentPublicKeyHex;
     final isOwnVideo =
         video != null &&
         currentUserPubkey != null &&

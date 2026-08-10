@@ -715,7 +715,7 @@ class _PerformanceHighlights extends StatelessWidget {
                       context.l10n.analyticsNoVideosYet)
                 : context.l10n.analyticsViewDataUnavailableShort,
             metricText: summary.hasViewData && summary.mostViewed != null
-                ? context.l10n.analyticsWatchedCount(
+                ? context.l10n.analyticsViewsCount(
                     StringUtils.formatCompactNumber(
                       summary.mostViewed!.views ?? 0,
                     ),

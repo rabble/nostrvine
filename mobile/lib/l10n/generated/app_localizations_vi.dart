@@ -2769,11 +2769,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get analyticsViewDataUnavailableShort => 'Chưa có dữ liệu lượt xem';
 
   @override
-  String analyticsWatchedCount(String count) {
-    return '$count people watched this';
-  }
-
-  @override
   String analyticsViewsCount(String count) {
     return '$count lượt xem';
   }
