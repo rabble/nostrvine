@@ -127,7 +127,7 @@ LOGCAT_PID=$!
 # Disable errexit so we can capture the exit code through the pipe.
 cd "$MOBILE_DIR"
 set +e
-if grep -q 'patrolTest' "$TEST_PATH"; then
+if grep -rq 'patrolTest' "$TEST_PATH"; then
     echo "Running: patrol test ${TEST_PATH} ..." >&2
     PATH="$PUB_CACHE_BIN:$PATH" patrol test \
         --device "$DEVICE" \
@@ -140,17 +140,23 @@ if grep -q 'patrolTest' "$TEST_PATH"; then
 else
     # Plain integration_test suite. There is no native automator on this
     # path, so a permission dialog would block Flutter interaction with no
-    # way to dismiss it — pre-grant the one the app requests after auth.
-    # The grant fails harmlessly on the first run, before the app exists.
+    # way to dismiss it. Install first so the pre-grant has a package to
+    # target even after a fresh emulator wipe or Patrol's default uninstall.
     echo "Running: flutter test ${TEST_PATH} ..." >&2
-    adb -s "$DEVICE" shell pm grant co.openvine.app \
-        android.permission.POST_NOTIFICATIONS >/dev/null 2>&1 || true
-    flutter test "$TEST_PATH" \
-        --device-id "$DEVICE" \
-        --dart-define=DEFAULT_ENV=LOCAL \
-        --dart-define=INVITE_SERVER_URL="$INVITE_SERVER_URL" \
-        2>&1 | tee "$APP_LOG"
-    TEST_EXIT="${PIPESTATUS[0]}"
+    flutter install --device-id "$DEVICE" 2>&1 | tee "$APP_LOG"
+    INSTALL_EXIT="${PIPESTATUS[0]}"
+    if [[ $INSTALL_EXIT -eq 0 ]]; then
+        adb -s "$DEVICE" shell pm grant co.openvine.app \
+            android.permission.POST_NOTIFICATIONS >/dev/null 2>&1 || true
+        flutter test "$TEST_PATH" \
+            --device-id "$DEVICE" \
+            --dart-define=DEFAULT_ENV=LOCAL \
+            --dart-define=INVITE_SERVER_URL="$INVITE_SERVER_URL" \
+            2>&1 | tee -a "$APP_LOG"
+        TEST_EXIT="${PIPESTATUS[0]}"
+    else
+        TEST_EXIT="$INSTALL_EXIT"
+    fi
 fi
 set -e
 

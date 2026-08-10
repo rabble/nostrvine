@@ -31,17 +31,17 @@ mise run e2e_test integration_test/auth/auth_journey_test.dart # Single test
 `e2e_test` brings up the Docker stack, runs the suite, captures a
 merged docker+logcat+app timeline at `test_reports/*.jsonl`, and
 prints the native test XML path + failure excerpts when the APK
-fails to install. **Never call `patrol test` or `flutter test`
-directly** — you'll lose the timeline and the diagnostics.
+fails to install. **For e2e targets, never call `patrol test` or
+`flutter test` directly** — you'll lose the timeline and the diagnostics.
 
-Not every suite is a patrol suite. `profile.sh` greps the target for
-`patrolTest` and dispatches: patrol suites go to `patrol test`, plain
-`integration_test` suites go to `flutter test --device-id`. Everything
-under `integration_test/e2e/` is now the plain kind — those four
-converted off patrol in #7005 because none of them used the native
-automator for anything load-bearing. The plain path pre-grants
-`POST_NOTIFICATIONS`, since without an automator nothing can dismiss
-that dialog.
+Not every suite is a patrol suite. `profile.sh` recursively greps the
+target for `patrolTest` and dispatches: patrol suites go to
+`patrol test`, plain `integration_test` suites go to
+`flutter test --device-id`. Everything under `integration_test/e2e/`
+is now the plain kind — those four converted off patrol in #7005
+because none of them used the native automator for anything
+load-bearing. The plain path pre-grants `POST_NOTIFICATIONS`, since
+without an automator nothing can dismiss that dialog.
 
 ## Version pair
 
