@@ -1361,6 +1361,55 @@ void main() {
         },
       );
 
+      test('demotes a future-dated contact list to the undated tail', () async {
+        // created_at is author-signed and nothing on the read path bounds it,
+        // so an event dated far ahead would otherwise hold the top slot of
+        // every follower list it appears in, permanently.
+        final farFuture =
+            DateTime.now().millisecondsSinceEpoch ~/ 1000 + 365 * 86400;
+        withApiFollowers(const []);
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            contactListAt(followerA, farFuture),
+            contactListAt(followerB, 3000),
+          ],
+        );
+
+        final result = await repository
+            .watchOthersFollowersCached(testTargetPubkey)
+            .last;
+
+        expect(result.data.pubkeys, equals([followerB, followerA]));
+        expect(
+          result.data.datedCount,
+          equals(1),
+          reason:
+              'the future-dated follower must not count as datable, or '
+              '"oldest first" would flip it back to the top',
+        );
+      });
+
+      test('keeps a contact list within the tolerated clock skew', () async {
+        // Honest skew is minutes; demoting it would cost the follower their
+        // real position for no benefit.
+        final slightlyAhead =
+            DateTime.now().millisecondsSinceEpoch ~/ 1000 + 60;
+        withApiFollowers(const []);
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            contactListAt(followerA, slightlyAhead),
+            contactListAt(followerB, 3000),
+          ],
+        );
+
+        final result = await repository
+            .watchOthersFollowersCached(testTargetPubkey)
+            .last;
+
+        expect(result.data.pubkeys, equals([followerA, followerB]));
+        expect(result.data.datedCount, equals(2));
+      });
+
       test('sorts timestamped followers above untimestamped ones', () async {
         // The REST source answers with bare pubkeys, so followerA and
         // followerC have no timestamp to rank by.

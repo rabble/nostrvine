@@ -1109,6 +1109,32 @@ class FollowRepository {
     return merged;
   }
 
+  /// How far ahead of now a contact list's `created_at` may sit and still be
+  /// trusted as a sort key.
+  ///
+  /// Honest clock skew is measured in minutes. `created_at` is author-signed
+  /// and nothing on the read path bounds it, so without this an event dated
+  /// 2100 would pin its author to the top of every follower list it appears
+  /// in, permanently. The indexers are third-party relays, so their skew
+  /// policy is not ours to lean on.
+  ///
+  /// Stricter than `DmSyncState.maxFutureSkewSeconds` (one day) because the
+  /// costs differ: a DM must be kept and can only have its ordering clamped,
+  /// while a follower demoted here still appears — just in the undated tail.
+  static const _maxFutureFollowSkewSeconds = 300;
+
+  /// The `created_at` to sort a follower by, or `null` when it cannot be
+  /// trusted as one.
+  ///
+  /// A future-dated contact list is demoted to the undated tail rather than
+  /// clamped to now, because clamping would still leave it at the very top —
+  /// which is the thing worth preventing.
+  static int? _datableFollowedAt(int? createdAt) {
+    if (createdAt == null) return null;
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    return createdAt > now + _maxFutureFollowSkewSeconds ? null : createdAt;
+  }
+
   /// Orders follower references newest first and drops duplicates.
   ///
   /// `followedAt` is the `created_at` of the follower's kind 3 event. Kind 3
@@ -1305,7 +1331,10 @@ class FollowRepository {
 
       return [
         for (final event in events)
-          (pubkey: event.pubkey, followedAt: event.createdAt),
+          (
+            pubkey: event.pubkey,
+            followedAt: _datableFollowedAt(event.createdAt),
+          ),
       ];
     } on TimeoutException {
       Log.warning(
@@ -1370,7 +1399,9 @@ class FollowRepository {
         if (eventPubkey != null) {
           followers.add((
             pubkey: eventPubkey,
-            followedAt: (eventJson['created_at'] as num?)?.toInt(),
+            followedAt: _datableFollowedAt(
+              (eventJson['created_at'] as num?)?.toInt(),
+            ),
           ));
         }
       } else if (messageType == 'EOSE') {
