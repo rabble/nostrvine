@@ -22,6 +22,16 @@ SharedChannelHandler get _canonical =>
     canonicalSharedHandlers[_secureStorage.name]!;
 
 void main() {
+  late PathProviderPlatform originalPathProviderPlatform;
+
+  setUp(() {
+    originalPathProviderPlatform = PathProviderPlatform.instance;
+  });
+
+  tearDown(() {
+    PathProviderPlatform.instance = originalPathProviderPlatform;
+  });
+
   group('overrideSharedChannel', () {
     test('installs the override and sanctions the channel', () {
       expect(
