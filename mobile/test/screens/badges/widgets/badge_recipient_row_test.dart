@@ -6,7 +6,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/badges/widgets/badge_recipient_row.dart';
 import 'package:openvine/screens/badges/widgets/badge_status_pill.dart';
 
-import '../../helpers/test_provider_overrides.dart';
+import '../../../helpers/test_provider_overrides.dart';
 
 void main() {
   group(BadgeRecipientRow, () {
