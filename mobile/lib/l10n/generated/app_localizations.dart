@@ -10460,6 +10460,30 @@ abstract class AppLocalizations {
   /// **'You can only message official Divine accounts'**
   String get dmSendBlockedMessage;
 
+  /// SnackBar text shown when a send is refused because the recipient is a moderation account Divine has rotated away from (#6416). Used instead of `dmSendBlockedMessage`, whose copy is wrong here: a retired moderation key IS an official Divine account, it is just one nobody reads any more. Reached only by deep link, queue drain, or share-to-DM — the conversation itself shows `dmRetiredThreadClosedTitle` in place of the composer.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody is reading this conversation. Message Divine Moderation instead.'**
+  String get dmSendBlockedRetiredMessage;
+
+  /// Heading of the notice that replaces the message composer in a DM thread keyed on a retired Divine Moderation account (#6416).
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation is closed.'**
+  String get dmRetiredThreadClosedTitle;
+
+  /// Body of the closed-thread notice in a retired Divine Moderation DM thread (#6416), below `dmRetiredThreadClosedTitle`. Deliberately promises no reply: the current support inbox is ingested but only lightly staffed, so copy implying someone is waiting would overstate it. 'Divine Moderation' is the account name — keep it as shown in `inboxSupportRowTitle` for this locale.
+  ///
+  /// In en, this message translates to:
+  /// **'We moved Divine Moderation to a new account. Nobody reads this one anymore.'**
+  String get dmRetiredThreadClosedBody;
+
+  /// Action on the closed-thread notice (#6416) that opens the current pinned Divine Moderation conversation. A redirect, not a promise of a response. 'Divine Moderation' is the account name — keep it as shown in `inboxSupportRowTitle` for this locale.
+  ///
+  /// In en, this message translates to:
+  /// **'Message Divine Moderation'**
+  String get dmRetiredThreadOpenSupport;
+
   /// Accessibility announcement text, and the recovery bottom sheet's title, shown in a DM conversation when a send fails (relay error, signer error, network error). The bottom sheet pairs it with `dmSendFailedSubtitle` and the `dmMessageActionRetrySend` / `dmMessageActionCancelSend` actions.
   ///
   /// In en, this message translates to:

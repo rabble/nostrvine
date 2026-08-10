@@ -7,6 +7,7 @@ import 'package:dm_repository/dm_repository.dart'
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/dm/conversation_list/protected_minor_inbox_gate.dart';
 import 'package:openvine/blocs/dm/conversation_list/protected_minor_inbox_gate_impl.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/nip05_resolver.dart';
@@ -25,11 +26,23 @@ final officialAccountsServiceProvider = Provider<OfficialAccountsService>((
   );
 });
 
-/// The outbound-DM policy injected into [NIP17MessageService] (#176).
+/// The outbound-DM policy injected into [NIP17MessageService] (#176, #6416).
 ///
-/// Keys off [isDmRestrictedProvider], the fail-closed seam: only a positive
-/// not-protected verdict (trusted live or persisted) is unrestricted; a
-/// restricted user may only send to an account currently approved by
+/// Two rules, in order:
+///
+/// A retired moderation identity is refused for everyone. Nothing reads those
+/// keys, so a send there is accepted by the relay and reported as delivered
+/// while reaching nobody — worst on an enforcement thread whose own copy
+/// invites a reply. Terminal rather than temporary: a retired recipient can
+/// never become deliverable, so the cold-start drain is right to drop a queued
+/// row instead of retrying forever. Checked ahead of the restriction branch
+/// because it applies to adults too — a protected minor is already bounced off
+/// these threads by [ConversationPage]'s route guard, since retired keys are
+/// absent from [kPinnedOfficialAccounts].
+///
+/// Otherwise, keys off [isDmRestrictedProvider], the fail-closed seam: only a
+/// positive not-protected verdict (trusted live or persisted) is unrestricted;
+/// a restricted user may only send to an account currently approved by
 /// [OfficialAccountsService] (pin ∩ live NIP-05). Reads state at call time
 /// (send-time) so the decision is fresh: a mid-session approval/revocation
 /// takes effect on the next send without rebuilding. An unknown/loading
@@ -37,6 +50,9 @@ final officialAccountsServiceProvider = Provider<OfficialAccountsService>((
 /// so a durable queue row is retained until Keycast provides a trusted verdict.
 final dmSendPolicyProvider = Provider<DmSendPolicy>((ref) {
   return (String recipientPubkey) async {
+    if (isRetiredModerationAccount(recipientPubkey)) {
+      return DmSendPolicyDecision.terminallyBlocked;
+    }
     if (!ref.read(isDmRestrictedProvider)) {
       return DmSendPolicyDecision.allowed;
     }

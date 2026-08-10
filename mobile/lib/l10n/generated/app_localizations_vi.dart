@@ -5990,6 +5990,20 @@ class AppLocalizationsVi extends AppLocalizations {
       'Bạn chỉ có thể nhắn tin cho các tài khoản Divine chính thức';
 
   @override
+  String get dmSendBlockedRetiredMessage =>
+      'Không ai đọc cuộc trò chuyện này. Hãy nhắn cho Divine Moderation.';
+
+  @override
+  String get dmRetiredThreadClosedTitle => 'Cuộc trò chuyện này đã đóng.';
+
+  @override
+  String get dmRetiredThreadClosedBody =>
+      'Chúng tôi đã chuyển Divine Moderation sang một tài khoản mới. Không còn ai đọc tài khoản này nữa.';
+
+  @override
+  String get dmRetiredThreadOpenSupport => 'Nhắn tin cho Divine Moderation';
+
+  @override
   String get dmSendFailedMessage => 'Tin nhắn không gửi được';
 
   @override

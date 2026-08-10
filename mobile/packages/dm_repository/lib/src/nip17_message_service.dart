@@ -348,10 +348,9 @@ class NIP17MessageService {
     try {
       // Send gate (#176): the lowest recipient-delivering primitive, so every
       // publisher — direct send, group fan-out, drain replay, reactions,
-      // file — is covered at one seam. A protected minor's policy blocks any
-      // recipient outside the approved official set. Checked before any wrap
-      // build or publish, so a blocked send leaks no metadata to relays and
-      // performs no signing work.
+      // file — is covered at one seam. The injected policy decides which
+      // recipients are refused. Checked before any wrap build or publish, so a
+      // blocked send leaks no metadata to relays and performs no signing work.
       final policyDecision = await _sendPolicy(recipientPubkey);
       if (policyDecision != DmSendPolicyDecision.allowed) {
         Log.info(

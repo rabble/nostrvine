@@ -8,6 +8,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:db_client/db_client.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:dm_repository/dm_repository.dart' show DmRepository;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -19,11 +20,13 @@ import 'package:openvine/blocs/dm/conversation/collaborator_invite_actions_cubit
 import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
 import 'package:openvine/blocs/dm/reactions/conversation_reactions_cubit.dart';
 import 'package:openvine/blocs/dm/restore_status/dm_restore_status_cubit.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/collaborator_invite.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/watermark_download_provider.dart';
+import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_view.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
 import 'package:openvine/services/watermark_download_service.dart';
@@ -176,6 +179,8 @@ void main() {
       bool otherProfileVanished = false,
       MockGoRouter? goRouter,
       DmRestoreStatusState? restoreStatus,
+      String counterparty = otherPubkey,
+      ConversationState? previousState,
     }) {
       final effectiveState = state ?? const ConversationState();
       if (restoreStatus != null) {
@@ -185,10 +190,14 @@ void main() {
           initialState: restoreStatus,
         );
       }
+      // `previousState` seeds a different initial state so the emission below
+      // is a real transition. The view's send-outcome listener is gated on
+      // `previous.sendStatus != current.sendStatus`, so a state emitted as both
+      // initial and stream value never reaches it.
       whenListen(
         mockBloc,
         Stream<ConversationState>.value(effectiveState),
-        initialState: effectiveState,
+        initialState: previousState ?? effectiveState,
       );
 
       final app = testMaterialApp(
@@ -202,10 +211,10 @@ void main() {
           profileRepositoryProvider.overrideWithValue(null),
           profileReadRepositoryProvider.overrideWithValue(null),
           fetchUserProfileProvider(
-            otherPubkey,
+            counterparty,
           ).overrideWith((ref) async => otherProfile),
           profileVanishedProvider(
-            otherPubkey,
+            counterparty,
           ).overrideWith((ref) => Stream.value(otherProfileVanished)),
           // The view now reads the blocklist eagerly in build() to filter
           // reaction reactors, so every pump needs a stubbed repository.
@@ -219,8 +228,8 @@ void main() {
               value: mockReactionsCubit,
               child: BlocProvider<DmRestoreStatusCubit>.value(
                 value: mockRestoreStatusCubit,
-                child: const ConversationView(
-                  participantPubkeys: [otherPubkey],
+                child: ConversationView(
+                  participantPubkeys: [counterparty],
                 ),
               ),
             ),
@@ -334,6 +343,199 @@ void main() {
         await doubleTapBubble(tester);
 
         verifyNever(() => mockReactionsCubit.add(any()));
+      });
+
+      testWidgets('retired moderation thread disables double-tap reactions', (
+        tester,
+      ) async {
+        final retired = kLegacyModerationPubkeys.first;
+        final message = DmMessage(
+          id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          conversationId:
+              'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+          senderPubkey: retired,
+          content: 'React to me',
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          giftWrapId:
+              'aaaaaaaabbbbbbbbccccccccddddddddaaaaaaaabbbbbbbbccccccccdddddddd',
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            counterparty: retired,
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              messages: [message],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await doubleTapBubble(tester);
+
+        verifyNever(() => mockReactionsCubit.add(any()));
+      });
+
+      testWidgets('retired moderation long-press keeps actions but hides '
+          'reaction choices', (tester) async {
+        final retired = kLegacyModerationPubkeys.first;
+        final message = DmMessage(
+          id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          conversationId:
+              'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+          senderPubkey: retired,
+          content: 'React to me',
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          giftWrapId:
+              'aaaaaaaabbbbbbbbccccccccddddddddaaaaaaaabbbbbbbbccccccccdddddddd',
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            counterparty: retired,
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              messages: [message],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.longPress(find.text('React to me'));
+        await tester.pumpAndSettle();
+
+        expect(find.text(kDefaultDmReactionEmojis.first), findsNothing);
+        expect(find.text(l10n.dmMessageActionCopyText), findsOneWidget);
+      });
+    });
+
+    // #6416. The header resolved the peer from kind-0 only, and neither
+    // moderation key has one the app can read — the current account's is not on
+    // the single relay production queries, and a retired key has no events at
+    // all — so an enforcement thread was titled "Adjective Animal N".
+    group('moderation identity', () {
+      testWidgets('titles a retired moderation thread as Divine', (
+        tester,
+      ) async {
+        final retired = kLegacyModerationPubkeys.first;
+
+        await tester.pumpWidget(buildSubject(counterparty: retired));
+        await tester.pump();
+
+        expect(find.text(l10n.inboxSupportRowTitle), findsOneWidget);
+        expect(
+          find.text(UserProfile.defaultDisplayNameFor(retired)),
+          findsNothing,
+        );
+      });
+
+      testWidgets('leaves an ordinary thread on its generated name', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        expect(
+          find.text(UserProfile.defaultDisplayNameFor(otherPubkey)),
+          findsOneWidget,
+        );
+        expect(find.text(l10n.inboxSupportRowTitle), findsNothing);
+      });
+    });
+
+    // #6416. Nothing has read a retired moderation key since the rotation, so
+    // an appeal typed here published, turned the bubble green, and reached
+    // nobody. Replace the composer rather than disable it: `MessageInputBar`
+    // has no disabled state, and a greyed-out field still reads as usable.
+    group('retired moderation thread', () {
+      final retired = kLegacyModerationPubkeys.first;
+
+      testWidgets('replaces the composer with the closed-thread notice', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject(counterparty: retired));
+        await tester.pump();
+
+        expect(find.byType(MessageInputBar), findsNothing);
+        expect(find.text(l10n.dmRetiredThreadClosedTitle), findsOneWidget);
+        expect(find.text(l10n.dmRetiredThreadClosedBody), findsOneWidget);
+        expect(find.text(l10n.dmRetiredThreadOpenSupport), findsOneWidget);
+      });
+
+      testWidgets('keeps the thread history readable', (tester) async {
+        await tester.pumpWidget(buildSubject(counterparty: retired));
+        await tester.pump();
+
+        // Closing the composer must not hide the enforcement notice itself —
+        // for an affected user this is their only record of the action.
+        expect(find.byType(ConversationAppBar), findsOneWidget);
+      });
+
+      testWidgets('routes to the current moderation thread, replacing this '
+          'route so back does not return to the dead one', (tester) async {
+        final goRouter = MockGoRouter();
+        when(
+          () => goRouter.pushReplacement<Object?>(
+            any(),
+            extra: any(named: 'extra'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        await tester.pumpWidget(
+          buildSubject(counterparty: retired, goRouter: goRouter),
+        );
+        await tester.pump();
+        await tester.tap(find.text(l10n.dmRetiredThreadOpenSupport));
+        await tester.pump();
+
+        verify(
+          () => goRouter.pushReplacement<Object?>(
+            ConversationPage.pathForId(
+              DmRepository.computeConversationId([
+                currentPubkey,
+                kModerationPubkeyHex,
+              ]),
+            ),
+            extra: const [kModerationPubkeyHex],
+          ),
+        ).called(1);
+      });
+
+      testWidgets('a live thread keeps its composer', (tester) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        expect(find.byType(MessageInputBar), findsOneWidget);
+        expect(find.text(l10n.dmRetiredThreadClosedTitle), findsNothing);
+      });
+
+      testWidgets('the current moderation key keeps its composer', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(counterparty: kModerationPubkeyHex),
+        );
+        await tester.pump();
+
+        expect(find.byType(MessageInputBar), findsOneWidget);
+      });
+
+      testWidgets('a blocked send explains the retired recipient', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            counterparty: retired,
+            previousState: const ConversationState(),
+            state: const ConversationState(sendStatus: SendStatus.blocked),
+          ),
+        );
+        await tester.pump();
+
+        // The protected-minor copy would be wrong here: a retired moderation
+        // key IS an official Divine account, just one nobody reads.
+        expect(find.text(l10n.dmSendBlockedRetiredMessage), findsOneWidget);
+        expect(find.text(l10n.dmSendBlockedMessage), findsNothing);
       });
     });
 

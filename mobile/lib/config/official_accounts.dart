@@ -74,13 +74,16 @@ const List<OfficialAccount> kPinnedOfficialAccounts = [
 /// A DM thread opened before a rotation stays keyed on the old pubkey. Those
 /// threads are deliberately NOT folded into the pinned support row: the row
 /// routes on its own participants all the way to `sendMessage`, so adopting one
-/// would address replies to a key nobody reads. They stay where they are and
-/// render as ordinary rows, keeping their enforcement history reachable until
-/// #6416 gives it an archived read-only presentation.
+/// would address replies to a key nobody reads. They stay in whichever list
+/// they arrived in, keeping their history reachable, and #6416 gave them the
+/// identity and the closed composer that make that safe — see
+/// [isRetiredModerationAccount].
 ///
 /// Never a send target — messages always go to the current pin above. Used for
 /// recognising the account ([isModerationAccount], which drives the bundled
-/// avatar) and for the `ModerationLabelService` subscription migration.
+/// avatar and the display name), for refusing outbound sends
+/// ([isRetiredModerationAccount]), and for the `ModerationLabelService`
+/// subscription migration.
 ///
 /// `121b915b…` was retired in #2321 (2026-03-20); `ModerationLabelService`
 /// carries the matching one-time migration for labeler subscriptions.
@@ -96,4 +99,15 @@ const List<String> kLegacyModerationPubkeys = [
 /// "is this the moderation team", not "where do replies go".
 bool isModerationAccount(String pubkeyHex) =>
     pubkeyHex == kModerationPubkeyHex ||
+    kLegacyModerationPubkeys.contains(pubkeyHex);
+
+/// Whether [pubkeyHex] is a moderation account the team has rotated away from.
+///
+/// Nothing reads a retired key: `divine-moderation-service`'s DM reader
+/// subscribes to exactly one pubkey, derived from its current signing key. A
+/// message addressed here is accepted by the relay and read by nobody, so the
+/// DM surface refuses the send and closes the composer instead of reporting a
+/// success. Keyed on set membership rather than one literal so the next
+/// rotation inherits the behaviour.
+bool isRetiredModerationAccount(String pubkeyHex) =>
     kLegacyModerationPubkeys.contains(pubkeyHex);

@@ -58,6 +58,30 @@ void main() {
       });
     });
 
+    group('isRetiredModerationAccount', () {
+      test('accepts every retired key', () {
+        expect(kLegacyModerationPubkeys, isNotEmpty);
+        for (final retired in kLegacyModerationPubkeys) {
+          expect(
+            isRetiredModerationAccount(retired),
+            isTrue,
+            reason: 'retired key $retired must be recognised as retired',
+          );
+        }
+      });
+
+      // The load-bearing half: this predicate closes the composer and refuses
+      // the send. Answering true for the live key would silently take the
+      // whole support lane offline.
+      test('rejects the current key', () {
+        expect(isRetiredModerationAccount(kModerationPubkeyHex), isFalse);
+      });
+
+      test('rejects an unrelated pubkey', () {
+        expect(isRetiredModerationAccount(kHqAccount.pubkeyHex), isFalse);
+      });
+    });
+
     // A rotation that forgot to drop the old key from the retired list would
     // collapse the pin's known-id set to a single entry and silently stop
     // de-duplicating.

@@ -179,6 +179,11 @@ void main() {
           );
 
           expect(result.success, isFalse);
+          // The complement of the temporary case below, and the signal the app
+          // layer branches on: `blocked` drives the refusal copy in the
+          // conversation view and tells the cold-start drain to drop the row
+          // instead of retrying a send that can never succeed.
+          expect(result.blocked, isTrue);
           verifyNever(() => mockNostrClient.publishEvent(any()));
           verifyNever(
             () => mockNostrClient.publishEvent(

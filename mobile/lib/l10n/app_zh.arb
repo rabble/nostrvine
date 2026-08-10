@@ -3360,6 +3360,10 @@
   "@dmSendBlockedMessage": {
     "description": "SnackBar text shown when a protected minor (13-15) tries to DM a non-approved account (#176). Neutral, no retry action."
   },
+  "dmSendBlockedRetiredMessage": "没有人会看到这个对话。请改为给 Divine Moderation 发私信。",
+  "dmRetiredThreadClosedTitle": "此对话已关闭。",
+  "dmRetiredThreadClosedBody": "我们已把 Divine Moderation 迁移到新账号。这个账号已经没人看了。",
+  "dmRetiredThreadOpenSupport": "给 Divine Moderation 发私信",
   "dmSendFailedMessage": "消息发送失败",
   "@dmSendFailedMessage": {
     "description": "Accessibility announcement text, and the recovery bottom sheet's title, shown in a DM conversation when a send fails (relay error, signer error, network error). The bottom sheet pairs it with `dmSendFailedSubtitle` and the `dmMessageActionRetrySend` / `dmMessageActionCancelSend` actions."

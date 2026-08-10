@@ -6058,6 +6058,21 @@ class AppLocalizationsDe extends AppLocalizations {
       'You can only message official Divine accounts';
 
   @override
+  String get dmSendBlockedRetiredMessage =>
+      'Diese Unterhaltung liest niemand. Schreib stattdessen an Divine Moderation.';
+
+  @override
+  String get dmRetiredThreadClosedTitle =>
+      'Diese Unterhaltung ist geschlossen.';
+
+  @override
+  String get dmRetiredThreadClosedBody =>
+      'Wir haben Divine Moderation auf ein neues Konto umgezogen. Dieses hier liest niemand mehr.';
+
+  @override
+  String get dmRetiredThreadOpenSupport => 'Divine Moderation schreiben';
+
+  @override
   String get dmSendFailedMessage => 'Nachricht konnte nicht gesendet werden';
 
   @override

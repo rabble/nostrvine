@@ -10,18 +10,24 @@ enum DmSendPolicyDecision {
   /// Fail closed for now, but the missing account-state verdict may resolve.
   temporarilyBlocked,
 
-  /// A confirmed protected-minor policy blocks this recipient.
+  /// A confirmed policy blocks this recipient — the send can never succeed.
+  ///
+  /// The reason is deliberately not carried here: the app owns the policy and
+  /// therefore owns the copy. A caller that needs to explain the refusal
+  /// re-derives it from the recipient it already holds.
   terminallyBlocked,
 }
 
 /// Decides whether the current sender may deliver a DM to [recipientPubkey].
 ///
-/// The default is [allowAllDmSendPolicy]; the app injects a policy that blocks
-/// a protected minor from DMing anyone outside the approved official set. It is
-/// consulted at the lowest send primitive so every publisher (direct, group
-/// fan-out, drain replay, reactions, file) is covered at one seam. Temporary
-/// fail-closed denials remain distinguishable from confirmed terminal blocks,
-/// so a cold-start queue drain cannot delete a legitimate queued send.
+/// The default is [allowAllDmSendPolicy]; the app injects a policy that refuses
+/// recipients its own rules forbid — a protected minor DMing outside the
+/// approved official set, or anyone addressing an identity the product has
+/// retired. It is consulted at the lowest send primitive so every publisher
+/// (direct, group fan-out, drain replay, reactions, file) is covered at one
+/// seam. Temporary fail-closed denials remain distinguishable from confirmed
+/// terminal blocks, so a cold-start queue drain cannot delete a legitimate
+/// queued send.
 typedef DmSendPolicy =
     Future<DmSendPolicyDecision> Function(String recipientPubkey);
 
