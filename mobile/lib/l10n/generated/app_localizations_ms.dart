@@ -9940,6 +9940,10 @@ class AppLocalizationsMs extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'Video dialih keluar';
 
   @override
+  String get fullscreenFeedEmptyMessage =>
+      'Tiada apa-apa lagi untuk dimainkan di sini';
+
+  @override
   String get settingsBadgesTitle => 'Lencana';
 
   @override

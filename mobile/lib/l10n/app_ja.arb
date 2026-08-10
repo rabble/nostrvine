@@ -3348,6 +3348,7 @@
     "videoEditorAudioSegmentInstruction": "動画に使うオーディオ範囲を選択",
     "videoEditorClipGalleryInstruction": "タップして編集。長押ししてドラッグで並べ替え。",
     "fullscreenFeedRemovedMessage": "動画を削除しました",
+    "fullscreenFeedEmptyMessage": "ここに再生できる動画はもうありません",
     "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
     "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
     "invitesGenerateButtonLabel": "Generate invite",

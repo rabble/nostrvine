@@ -9842,6 +9842,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'Video dihapus';
 
   @override
+  String get fullscreenFeedEmptyMessage =>
+      'Tidak ada lagi yang bisa diputar di sini';
+
+  @override
   String get settingsBadgesTitle => 'Badge';
 
   @override

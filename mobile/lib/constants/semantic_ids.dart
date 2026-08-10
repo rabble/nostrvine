@@ -116,4 +116,10 @@ abstract class SemanticIds {
   static const String editorTimeline = 'editor_timeline';
 
   static const String videoDetailLoading = 'video_detail_loading';
+
+  /// Fullscreen pooled feed placeholders. Both states used to be the same
+  /// unlabelled spinner, so an E2E run could not tell "still loading" from
+  /// "this feed has nothing left" and simply timed out (#6949).
+  static const String fullscreenFeedLoading = 'fullscreen_feed_loading';
+  static const String fullscreenFeedEmpty = 'fullscreen_feed_empty';
 }

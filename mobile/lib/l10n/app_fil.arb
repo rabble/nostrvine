@@ -2187,6 +2187,7 @@
     "videoMetadataClosePreviewSemanticLabel": "Isara ang video preview",
     "videoMetadataRemoveSemanticLabel": "Alisin",
     "fullscreenFeedRemovedMessage": "Naalis ang video",
+    "fullscreenFeedEmptyMessage": "Wala nang matutugtog dito",
     "appsPermissionsEmptySubtitle": "Lalabas dito ang mga approved integration kapag may na-remember kang access approval.",
     "appsPermissionsEmptyTitle": "Walang naka-save na integration permission",
     "appsPermissionsRevoke": "I-revoke",

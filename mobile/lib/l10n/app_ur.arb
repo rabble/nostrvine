@@ -5944,6 +5944,7 @@
   "videoMetadataClosePreviewSemanticLabel": "ویڈیو پیش منظر بند کریں",
   "videoMetadataRemoveSemanticLabel": "ہٹائیں",
   "fullscreenFeedRemovedMessage": "ویڈیو ہٹا دی گئی",
+  "fullscreenFeedEmptyMessage": "یہاں چلانے کے لیے اب کچھ نہیں بچا",
   "@fullscreenFeedRemovedMessage": {
     "description": "Empty-state message shown in the fullscreen feed when the last visible video has just been deleted, blocked, or muted and the route cannot be popped back to a parent (e.g. a cold deep-link)."
   },

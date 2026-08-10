@@ -10000,6 +10000,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'Naalis ang video';
 
   @override
+  String get fullscreenFeedEmptyMessage => 'Wala nang matutugtog dito';
+
+  @override
   String get settingsBadgesTitle => 'Mga Badge';
 
   @override

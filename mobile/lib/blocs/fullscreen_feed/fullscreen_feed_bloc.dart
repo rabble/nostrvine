@@ -284,8 +284,24 @@ class FullscreenFeedBloc
 
         final indexResolution = _nextIndexForVideos(videos);
 
+        // An empty list means one of two very different things. Before any
+        // video has arrived it is the source still warming up, and the next
+        // emit resolves it — that stays `ready` so the screen keeps showing
+        // its loading placeholder. Once videos *have* arrived, an empty list
+        // means the feed drained (the user unliked their last liked video,
+        // a filter dropped the remainder), and no further emit is coming, so
+        // `ready` would strand the screen on that same spinner forever.
+        // Latching on the existing `empty` status keeps repeated empty emits
+        // from flipping back. See #6949.
+        final drained =
+            videos.isEmpty &&
+            (state.videos.isNotEmpty ||
+                state.status == FullscreenFeedStatus.empty);
+
         return state.copyWith(
-          status: FullscreenFeedStatus.ready,
+          status: drained
+              ? FullscreenFeedStatus.empty
+              : FullscreenFeedStatus.ready,
           videos: videos,
           currentIndex: indexResolution.index,
           isLoadingMore: false,

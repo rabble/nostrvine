@@ -9809,6 +9809,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'تمت إزالة الفيديو';
 
   @override
+  String get fullscreenFeedEmptyMessage => 'لم يتبقَّ شيء لتشغيله هنا';
+
+  @override
   String get settingsBadgesTitle => 'الشارات';
 
   @override

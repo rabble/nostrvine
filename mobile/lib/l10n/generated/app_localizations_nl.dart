@@ -9931,6 +9931,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'Video verwijderd';
 
   @override
+  String get fullscreenFeedEmptyMessage => 'Hier is niets meer om af te spelen';
+
+  @override
   String get settingsBadgesTitle => 'Badges';
 
   @override

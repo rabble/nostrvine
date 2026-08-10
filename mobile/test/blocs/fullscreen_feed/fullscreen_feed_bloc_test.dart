@@ -540,6 +540,117 @@ void main() {
         ],
       );
 
+      // #6949. Unliking the only video in the Liked feed makes
+      // ProfileLikedVideosBloc re-emit an empty list into the still-open
+      // fullscreen route. Reporting that as `ready` left the screen on the
+      // loading placeholder forever — no video, no action buttons, no
+      // explanation — because the UI renders that placeholder for
+      // `status == initial || !hasVideos`.
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'emits empty when the source drains after having supplied videos',
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add([createTestVideo('video1')]);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add(const []);
+        },
+        wait: const Duration(milliseconds: 200),
+        expect: () => [
+          isA<FullscreenFeedState>()
+              .having((s) => s.status, 'status', FullscreenFeedStatus.ready)
+              .having((s) => s.videos.length, 'videos count', 1),
+          isA<FullscreenFeedState>()
+              .having((s) => s.status, 'status', FullscreenFeedStatus.empty)
+              .having((s) => s.videos, 'videos', isEmpty),
+        ],
+      );
+
+      // The status has to latch: a second empty emit must not fall back to
+      // `ready`, which would put the screen back on the spinner.
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'stays empty across repeated empty emissions',
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add([createTestVideo('video1')]);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add(const []);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add(const []);
+        },
+        wait: const Duration(milliseconds: 250),
+        verify: (bloc) {
+          expect(bloc.state.status, FullscreenFeedStatus.empty);
+          expect(bloc.state.videos, isEmpty);
+        },
+      );
+
+      // Draining is not a tombstone: pagination, a re-like, or an unblock can
+      // refill the source, and the feed has to come back.
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'returns to ready when the source refills after draining',
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add([createTestVideo('video1')]);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add(const []);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add([createTestVideo('video2')]);
+        },
+        wait: const Duration(milliseconds: 250),
+        verify: (bloc) {
+          expect(bloc.state.status, FullscreenFeedStatus.ready);
+          expect(bloc.state.videos.single.id, 'video2');
+        },
+      );
+
+      // The mirror image of the case above, and the reason `empty` cannot
+      // simply be "videos.isEmpty": a source that has not warmed up yet
+      // emits [] first, and that must stay a loading state. Pinned
+      // alongside 'preserves initial index through empty-first source
+      // emissions', which covers the index half of the same contract.
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'an empty first emission is loading, not empty',
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add(const []);
+        },
+        wait: const Duration(milliseconds: 150),
+        verify: (bloc) {
+          expect(bloc.state.status, isNot(FullscreenFeedStatus.empty));
+          expect(bloc.state.videos, isEmpty);
+        },
+      );
+
+      // The unavailable/block filters run at the same boundary, so a source
+      // that keeps pushing videos which all get filtered out drains the feed
+      // just as effectively as one that pushes an empty list.
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'emits empty when every video in a later emission is filtered out',
+        build: () => createBloc(
+          unavailableFilter: (videoId) => videoId == 'video2',
+        ),
+        act: (bloc) async {
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add([createTestVideo('video1')]);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add([createTestVideo('video2')]);
+        },
+        wait: const Duration(milliseconds: 250),
+        verify: (bloc) {
+          expect(bloc.state.status, FullscreenFeedStatus.empty);
+          expect(bloc.state.videos, isEmpty);
+        },
+      );
+
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'resolves initial video identity when source order changes',
         build: () => createBloc(
