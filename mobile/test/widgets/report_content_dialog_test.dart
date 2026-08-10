@@ -709,12 +709,18 @@ void main() {
   group('moderation DM integration', () {
     late MockNostrClient mockNostrClient;
     late _MockDmRepository mockDmRepository;
+
     late _MockModerationLabelService mockModerationLabelService;
+
+    /// When set, holds `contentReportingServiceProvider` unresolved so a test
+    /// can act inside the await `_submitReport` performs before it publishes.
+    Completer<ContentReportingService>? serviceGate;
 
     setUp(() {
       mockNostrClient = createMockNostrService();
       mockDmRepository = _MockDmRepository();
       mockModerationLabelService = _MockModerationLabelService();
+      serviceGate = null;
 
       when(() => mockNostrClient.publicKey).thenReturn('test_pubkey_hex');
       when(
@@ -763,7 +769,7 @@ void main() {
         mockModerationLabelService: mockModerationLabelService,
         additionalOverrides: [
           contentReportingServiceProvider.overrideWith(
-            (ref) async => mockReportingService,
+            (ref) => serviceGate?.future ?? Future.value(mockReportingService),
           ),
           contentBlocklistRepositoryProvider.overrideWith(
             (ref) => mockBlocklistRepository,
@@ -1207,6 +1213,97 @@ void main() {
       });
     }
 
+    testWidgets('both channels label one submit with the reason it started on', (
+      tester,
+    ) async {
+      // The kind-1984 publish and the moderation DM sit a relay round trip
+      // apart, and the reason cards stay tappable across it — `_isSubmitting`
+      // does not swap the form out. If each channel reads the selection on its
+      // own side of that gap, one report gets two different NIP-32 labels,
+      // which is the divergence this whole change exists to prevent. Needs no
+      // failure or parked row: it is the ordinary success path.
+      serviceGate = Completer<ContentReportingService>();
+      final publish = Completer<ReportResult>();
+      when(
+        () => mockReportingService.reportContent(
+          eventId: any(named: 'eventId'),
+          authorPubkey: any(named: 'authorPubkey'),
+          reason: any(named: 'reason'),
+          details: any(named: 'details'),
+          sourceRelay: any(named: 'sourceRelay'),
+          hashtags: any(named: 'hashtags'),
+        ),
+      ).thenAnswer((_) => publish.future);
+
+      await setLargeSurface(tester);
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Open Report'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.reportReasonSpam));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
+      // Not pumpAndSettle: the submit spinner animates for as long as the
+      // submit is outstanding, so nothing settles until it completes.
+      await tester.pump();
+
+      // Change of mind inside the FIRST await — `_submitReport` resolves the
+      // reporting service before it publishes, so this is the window where the
+      // kind-1984 side could pick up a reason the DM side never sees.
+      // harassment is the second card, so it needs no scroll while the sheet
+      // is mid-submit, and NIP-56 maps it to 'profanity' rather than 'spam'.
+      await tester.tap(
+        find.text(l10n.reportReasonTitle(ContentFilterReason.harassment)),
+      );
+      await tester.pump();
+
+      serviceGate!.complete(mockReportingService);
+      await tester.pump();
+
+      publish.complete(
+        ReportResult.createSuccess(
+          'test_report_id',
+          delivery: ReportDelivery.reached,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final reportedReason =
+          verify(
+                () => mockReportingService.reportContent(
+                  eventId: any(named: 'eventId'),
+                  authorPubkey: any(named: 'authorPubkey'),
+                  reason: captureAny(named: 'reason'),
+                  details: any(named: 'details'),
+                  sourceRelay: any(named: 'sourceRelay'),
+                  hashtags: any(named: 'hashtags'),
+                ),
+              ).captured.single
+              as ContentFilterReason;
+      final tags =
+          verify(
+                () => mockDmRepository.sendMessage(
+                  recipientPubkey: any(named: 'recipientPubkey'),
+                  content: any(named: 'content'),
+                  replyToId: any(named: 'replyToId'),
+                  skipNip04Fallback: any(named: 'skipNip04Fallback'),
+                  additionalTags: captureAny(named: 'additionalTags'),
+                ),
+              ).captured.single
+              as List<List<String>>;
+
+      // Whichever reason the submit committed to, both channels carry it.
+      expect(reportedReason, ContentFilterReason.spam);
+      expect(
+        tags,
+        equals([
+          ['L', kReportLabelNamespace],
+          ['l', 'NS-spam', kReportLabelNamespace],
+          ['report_type', 'spam'],
+        ]),
+      );
+    });
+
     testWidgets('re-drives the parked DM when a later submit gets through', (
       tester,
     ) async {
@@ -1411,6 +1508,91 @@ void main() {
           resetRetryBudget: any(named: 'resetRetryBudget'),
         ),
       );
+
+      final tags =
+          verify(
+                () => mockDmRepository.sendMessage(
+                  recipientPubkey: any(named: 'recipientPubkey'),
+                  content: any(named: 'content'),
+                  replyToId: any(named: 'replyToId'),
+                  skipNip04Fallback: any(named: 'skipNip04Fallback'),
+                  additionalTags: captureAny(named: 'additionalTags'),
+                ),
+              ).captured.last
+              as List<List<String>>;
+      expect(
+        tags,
+        equals([
+          ['L', kReportLabelNamespace],
+          ['l', 'NS-csam', kReportLabelNamespace],
+          ['report_type', 'illegal'],
+        ]),
+      );
+    });
+
+    testWidgets("a resubmit does not inherit an in-flight send's reason", (
+      tester,
+    ) async {
+      // The narrowest window of the three: resubmit while the FIRST send is
+      // still pending. Returning that outstanding future would report its
+      // spam-labelled result as this submit's outcome and never run the
+      // replacement pass at all, so the team keeps only the superseded label.
+      // The queued submit has to wait for the row to park, then replace it.
+      stubReportDeliveries([ReportDelivery.localOnly, ReportDelivery.reached]);
+      final firstSend = Completer<NIP17SendResult>();
+      when(
+        () => mockDmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
+          additionalTags: any(named: 'additionalTags'),
+        ),
+      ).thenAnswer(
+        (_) => firstSend.isCompleted
+            ? Future.value(
+                NIP17SendResult.success(
+                  rumorEventId: 'replacement_rumor_id',
+                  messageEventId: 'dm_event_id',
+                  recipientPubkey:
+                      ModerationLabelService.fallbackModerationPubkeyHex,
+                ),
+              )
+            : firstSend.future,
+      );
+      when(
+        () => mockDmRepository.cancelOutgoingSend(
+          rumorId: any(named: 'rumorId'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+
+      final csam = l10n.reportReasonTitle(ContentFilterReason.csam);
+      await tester.scrollUntilVisible(
+        find.text(csam),
+        100,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.tap(find.text(csam));
+      await tester.pumpAndSettle();
+
+      // Resubmit BEFORE the first send settles.
+      await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
+      await tester.pump();
+
+      firstSend.complete(
+        const NIP17SendResult.failure(
+          'No relays connected',
+          queuedRumorId: 'parked_rumor_id',
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockDmRepository.cancelOutgoingSend(rumorId: 'parked_rumor_id'),
+      ).called(1);
 
       final tags =
           verify(

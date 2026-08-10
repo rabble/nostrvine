@@ -381,15 +381,20 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   }
 
   Future<void> _submitReport() async {
-    if (_selectedReason == null) return;
+    final reason = _selectedReason;
+    if (reason == null) return;
 
+    // One reason serves this whole submit, captured before the first await.
+    // The kind-1984 publish and the moderation DM are a relay round trip
+    // apart, and nothing freezes the selection in between — the reason cards
+    // stay tappable while `_isSubmitting` is true. Re-reading `_selectedReason`
+    // on the far side let the two channels label the same report differently,
+    // which is the divergence these tags exist to prevent.
     setState(() {
       _isSubmitting = true;
       _errorMessage = null;
     });
-    final selectedReasonTitle = context.l10n.reportReasonTitle(
-      _selectedReason!,
-    );
+    final selectedReasonTitle = context.l10n.reportReasonTitle(reason);
 
     try {
       final reportService = await ref.read(
@@ -401,13 +406,13 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
       final result = _isUserReport
           ? await reportService.reportUser(
               userPubkey: widget.userPubkey!,
-              reason: _selectedReason!,
+              reason: reason,
               details: details,
             )
           : await reportService.reportContent(
               eventId: _eventId,
               authorPubkey: _authorPubkey,
-              reason: _selectedReason!,
+              reason: reason,
               details: details,
               sourceRelay: widget.video?.sourceRelay,
             );
@@ -434,12 +439,12 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
           // `_sendModerationDm` coalesces onto whatever this dialog already
           // has outstanding, so a repeat tap re-drives the parked row
           // instead of stacking a second one for the sweep (#6610).
-          unawaited(_sendModerationDm());
+          unawaited(_sendModerationDm(reason));
           setState(() {
             _errorMessage = context.l10n.reportNotSent;
           });
         } else if (result.success) {
-          final moderationDmFailed = await _sendModerationDm();
+          final moderationDmFailed = await _sendModerationDm(reason);
 
           if (mounted) {
             setState(() {
@@ -491,17 +496,45 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   /// - the team already received it: nothing to do.
   /// - a parked row went unreachable: nothing left to drive, and a fresh
   ///   send would be that second copy. Keep the caveat and stop.
-  /// - a send is still in flight: join it and report its outcome.
+  /// - a send is still in flight: queue behind it rather than run alongside
+  ///   it, so the first has parked its row before the second looks for one.
   /// - an earlier submit parked a queue row: re-drive that row, in
   ///   [_dispatchModerationDm].
-  Future<bool> _sendModerationDm() => switch (_moderationDmOutcome) {
-    _ModerationDmOutcome.delivered => Future.value(false),
-    _ModerationDmOutcome.unverifiable => Future.value(true),
-    _ModerationDmOutcome.pending =>
-      _moderationDmInFlight ??= _dispatchModerationDm().whenComplete(
-        () => _moderationDmInFlight = null,
-      ),
-  };
+  ///
+  /// [reason] is the submit's own snapshot, not `_selectedReason`. Queuing
+  /// rather than joining is what makes that matter: an outstanding send
+  /// carries the label it was built with, so returning its result to a submit
+  /// the user has since re-aimed would report the superseded reason. Waiting
+  /// lets the re-aimed submit see the row the first one parked and replace it.
+  Future<bool> _sendModerationDm(ContentFilterReason reason) {
+    final outstanding = _moderationDmInFlight;
+    final next = outstanding == null
+        ? _runModerationDm(reason)
+        // _dispatchModerationDm absorbs its own errors, but handle the error
+        // arm anyway so a hypothetical one cannot cancel the queued submit.
+        : outstanding.then<bool>(
+            (_) => _runModerationDm(reason),
+            onError: (_) => _runModerationDm(reason),
+          );
+    _moderationDmInFlight = next;
+    unawaited(
+      next.whenComplete(() {
+        if (identical(_moderationDmInFlight, next)) {
+          _moderationDmInFlight = null;
+        }
+      }),
+    );
+    return next;
+  }
+
+  /// One link in the [_sendModerationDm] queue: re-checks the terminal
+  /// outcomes, which an earlier link may have reached while this one waited.
+  Future<bool> _runModerationDm(ContentFilterReason reason) =>
+      switch (_moderationDmOutcome) {
+        _ModerationDmOutcome.delivered => Future.value(false),
+        _ModerationDmOutcome.unverifiable => Future.value(true),
+        _ModerationDmOutcome.pending => _dispatchModerationDm(reason),
+      };
 
   /// Drives one moderation-DM attempt: a fresh send, or a re-drive of the
   /// row a previous undelivered submit parked.
@@ -509,18 +542,16 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   /// The whole body sits under the catch, preflight reads included: the
   /// undelivered path fires this unawaited, so a `ref.read` on a disposed
   /// dialog would otherwise land in the zone handler with nobody to catch it.
-  Future<bool> _dispatchModerationDm() async {
+  /// [dispatchReason] is the submitting call's snapshot. Nothing here reads
+  /// `_selectedReason`: the offline path fires this unawaited and leaves the
+  /// reason cards live, so the selection can move while a send is in flight,
+  /// and the row parked below must be recorded under the reason its rumor
+  /// actually carries or the staleness check above it goes blind.
+  Future<bool> _dispatchModerationDm(ContentFilterReason dispatchReason) async {
     try {
       final dmRepo = ref.read(dmRepositoryProvider);
       final labelService = ref.read(moderationLabelServiceProvider);
       final moderationPubkey = labelService.divineModerationPubkeyHex;
-      // Snapshot the reason before the first await and use only this copy for
-      // the rest of the dispatch. The offline path fires this unawaited and
-      // leaves the reason cards live, so `_selectedReason` can change while a
-      // send is in flight; reading it again after the await would record the
-      // parked row under a reason its rumor does not carry, which is exactly
-      // the mismatch the staleness check below exists to catch.
-      final dispatchReason = _selectedReason!;
       final content = _formatReportDm(
         reason: dispatchReason,
         eventId: _eventId,
