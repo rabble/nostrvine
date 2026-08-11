@@ -412,6 +412,21 @@ class AppLocalizationsSv extends AppLocalizations {
   String get profileVideosLabel => 'Videor';
 
   @override
+  String get profileCollabsLabel => 'Samarbeten';
+
+  @override
+  String get profileLikedLabel => 'Gillade';
+
+  @override
+  String get profileRepostsLabel => 'Återpubliceringar';
+
+  @override
+  String get profileListsLabel => 'Listor';
+
+  @override
+  String get profileCommentsLabel => 'Kommentarer';
+
+  @override
   String profileCollaboratorInvitePendingHeadline(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -7306,9 +7321,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get likedVideosTitle => 'Gillade videor';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar => 'Försöker ladda upp igen…';
 
   @override
@@ -7510,6 +7522,17 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      'Den här personen postade en originalvine som Divine hittade i arkivet. Det är inte en verifieringsbadge för kontot.';
+
+  @override
+  String get profileBadgeCheckmarkTitle => 'Profilbock';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      'Det här kontot finns på Divines lista över profilbockar. Det är skilt från NIP-05, verifierade kontolänkar och OG Viner-status.';
 
   @override
   String shareVideoInListsCount(int count) {
@@ -9874,23 +9897,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get badgesTitle => 'Märken';
 
   @override
-  String get badgesIntroTitle => 'Förstå ditt märkesspår';
-
-  @override
-  String get badgesIntroBody =>
-      'Se märkesutmärkelser som skickats till dig, välj vilka du vill fästa på din Nostr-profil, och kolla om folk accepterat märken du utfärdat.';
-
-  @override
-  String get badgesOpenApp => 'Öppna märkesappen';
-
-  @override
   String get badgesLoadError => 'Kunde inte ladda märken';
 
   @override
   String get badgesUpdateError => 'Kunde inte uppdatera märke';
-
-  @override
-  String get badgesAwardedSectionTitle => 'Tilldelade dig';
 
   @override
   String get badgesAwardedEmptyTitle => 'Inga märkesutmärkelser än';
@@ -9915,9 +9925,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get badgesActionReject => 'Avvisa';
 
   @override
-  String get badgesIssuedSectionTitle => 'Utfärdade av dig';
-
-  @override
   String get badgesIssuedEmptyTitle => 'Inga utfärdade märken än';
 
   @override
@@ -9935,30 +9942,220 @@ class AppLocalizationsSv extends AppLocalizations {
   String get badgesRecipientWaitingStatus => 'Väntar på mottagare';
 
   @override
-  String get profileBadgeAwardedBy => 'Awarded by';
+  String badgesHiddenSectionTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Dolda ($count)',
+      one: 'Dold (1)',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get profileBadgeRecipients => 'Recipients';
+  String get badgesActionRestore => 'Återställ';
+
+  @override
+  String get badgesHiddenSnackbar => 'Badge dold';
+
+  @override
+  String get badgesHiddenSnackbarUndo => 'Ångra';
+
+  @override
+  String get badgesTabAwarded => 'Mottagna';
+
+  @override
+  String get badgesTabCreated => 'Skapade';
+
+  @override
+  String get badgesTabIssued => 'Utdelade';
+
+  @override
+  String get badgesCreateAction => 'Ny badge';
+
+  @override
+  String get badgesCreatedEmptyTitle => 'Inga badges gjorda än';
+
+  @override
+  String get badgesCreatedEmptySubtitle =>
+      'Gör en och ge den till någon som förtjänar den.';
+
+  @override
+  String badgesCreatedAwardSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Utdelad till $count personer',
+      one: 'Utdelad till 1 person',
+      zero: 'Inte utdelad än',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeEditorCreateTitle => 'Ny badge';
+
+  @override
+  String get badgeEditorEditTitle => 'Redigera badge';
+
+  @override
+  String get badgeEditorNameLabel => 'Namn';
+
+  @override
+  String get badgeEditorNameHint => 'Scenstjälaren';
+
+  @override
+  String get badgeEditorIdentifierLabel => 'Identifierare';
+
+  @override
+  String get badgeEditorIdentifierHelp =>
+      'Den ingår i badgens adress, så den ligger fast när badgen väl finns.';
+
+  @override
+  String get badgeEditorIdentifierTaken =>
+      'Du har redan en badge med den här identifieraren. Redigera den i stället — att publicera här skulle ersätta den.';
+
+  @override
+  String get badgeEditorIdentifierRequired =>
+      'Varje badge behöver en identifierare — skriv en själv om namnet inte fyllde i den.';
+
+  @override
+  String get badgeEditorDescriptionLabel => 'Beskrivning';
+
+  @override
+  String get badgeEditorDescriptionHint =>
+      'Till den som stjäl showen med en enda loop.';
+
+  @override
+  String get badgeEditorArtworkLabel => 'Bild';
+
+  @override
+  String get badgeEditorArtworkAdd => 'Lägg till bild';
+
+  @override
+  String get badgeEditorArtworkReplace => 'Byt ut';
+
+  @override
+  String get badgeEditorArtworkError => 'Bilden kunde inte laddas upp';
+
+  @override
+  String get badgeEditorArtworkRequired => 'Varje badge behöver en bild.';
+
+  @override
+  String get badgeEditorArtworkRemove => 'Ta bort bilden';
+
+  @override
+  String get badgeEditorArtworkSheetTitle => 'Badgebild';
+
+  @override
+  String get badgeDetailDeleteAction => 'Ta bort badge';
+
+  @override
+  String get badgeDetailDeleteTitle => 'Ta bort den här badgen?';
+
+  @override
+  String get badgeDetailDeleteBody =>
+      'Det här ber reläerna släppa badgen och alla utdelningar du gjort. Reläer kan neka, och den som fäst den behåller den på sin profil tills den tas bort.';
+
+  @override
+  String get badgeDetailDeleteConfirm => 'Ta bort';
+
+  @override
+  String get badgeEditorSaveAction => 'Publicera badge';
+
+  @override
+  String get badgeEditorSaveError => 'Badgen kunde inte publiceras';
+
+  @override
+  String get badgeEditorLoadError => 'Den här badgen kunde inte laddas';
+
+  @override
+  String get badgeDetailTitle => 'Badge';
+
+  @override
+  String get badgeDetailMadeBy => 'Skapad av';
+
+  @override
+  String get badgeDetailRecipientsTitle => 'Utdelad till';
+
+  @override
+  String get badgeDetailNoRecipients => 'Ingen har den här än.';
+
+  @override
+  String get badgeDetailAwardAction => 'Dela ut den här badgen';
+
+  @override
+  String get badgeDetailEditAction => 'Redigera badge';
+
+  @override
+  String get badgeDetailShareAction => 'Dela';
+
+  @override
+  String badgeDetailShareMessage(String link) {
+    return 'Kolla in den här badgen på Divine: $link';
+  }
+
+  @override
+  String get badgeDetailLoadError => 'Den här badgen kunde inte laddas';
+
+  @override
+  String get badgeDetailMissing => 'Vi hittar inte badgen på något relä.';
+
+  @override
+  String get badgeDetailActionError => 'Det gick inte';
+
+  @override
+  String get badgeAwardTitle => 'Dela ut badge';
+
+  @override
+  String get badgeAwardPickAction => 'Välj personer';
+
+  @override
+  String get badgeAwardManualLabel => 'Eller klistra in nycklar';
+
+  @override
+  String get badgeAwardManualHint => 'npub1…, npub1…';
+
+  @override
+  String get badgeAwardEmptyHint => 'Välj minst en person.';
+
+  @override
+  String badgeAwardSubmitAction(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Dela ut till $count personer',
+      one: 'Dela ut till 1 person',
+      zero: 'Dela ut badge',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get profileBadgeAwardedBy => 'Utdelad av';
+
+  @override
+  String get profileBadgeRecipients => 'Mottagare';
 
   @override
   String profileBadgeMoreRecipients(int count) {
-    return '+$count more';
+    return '+$count till';
   }
 
   @override
   String profileBadgeSemanticLabel(String name) {
-    return '$name badge';
+    return 'Märket $name';
   }
 
   @override
-  String get profileBadgeFallbackSemanticLabel => 'Badge';
+  String get profileBadgeFallbackSemanticLabel => 'Märke';
 
   @override
   String get profileBadgeFooterBody =>
       'Märken är små utmärkelser som vem som helst kan skapa på Nostr. Ge ett till en vän, en kreatör eller någon som gjorde din dag.';
 
   @override
-  String get profileBadgeFooterLink => 'Skapa ditt eget på badges.divine.video';
+  String get profileBadgeFooterLink => 'Gör din egen badge';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';
@@ -10635,6 +10832,29 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get subtitleEditorProcessing =>
       'Undertexter genereras fortfarande. Kom tillbaka om en stund.';
+
+  @override
+  String get subtitleEditorNoSpeech =>
+      'Inget tal hittades i den här videon, så det finns inget att texta.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'Skriv dem själv';
+
+  @override
+  String get subtitleEditorAddCue => 'Lägg till en rad';
+
+  @override
+  String get subtitleEditorRemoveCue => 'Ta bort den här raden';
+
+  @override
+  String get subtitleEditorStartLabel => 'Start';
+
+  @override
+  String get subtitleEditorEndLabel => 'Slut';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'Varje rad behöver text och ett slut efter sin start.';
 
   @override
   String get subtitleEditorLoadError =>

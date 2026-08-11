@@ -154,6 +154,42 @@ void main() {
         );
       });
 
+      testWidgets('header offers confirm in uncapped multi-select too', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              profileRepositoryProvider.overrideWithValue(
+                _createMockProfileRepository(),
+              ),
+              followRepositoryProvider.overrideWithValue(
+                _createMockFollowRepository(),
+              ),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: UserPickerSheet(
+                  title: 'Title',
+                  filterMode: UserPickerFilterMode.allUsers,
+                  // No maxCount: the caller tracks the selection itself, and
+                  // still needs a way to say "done".
+                  onUserToggled: (_) {},
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          find.bySemanticsLabel(l10n.userPickerConfirmSemanticLabel),
+          findsOneWidget,
+        );
+      });
+
       testWidgets('header describes clearing an existing selection', (
         tester,
       ) async {

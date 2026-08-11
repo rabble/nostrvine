@@ -3209,11 +3209,9 @@ void main() {
       // not the @visibleForTesting flush — this exercises the wiring an app
       // actually hits when the editor closes.
       await notifier.reset(keepAutosavedDraft: true);
-      await pumpEventQueue();
 
-      expect(
-        orphan.existsSync(),
-        isFalse,
+      await expectFileReaped(
+        orphan,
         reason: 'session end reaps a deferred file once nothing references it',
       );
       expect(notifier.deferredFileCleanupForTest, isEmpty);
@@ -3320,11 +3318,9 @@ void main() {
       expect(notifier.deferredFileCleanupForTest, contains(oldRendered.path));
 
       disposeContainer();
-      await pumpEventQueue();
 
-      expect(
-        oldRendered.existsSync(),
-        isFalse,
+      await expectFileReaped(
+        oldRendered,
         reason:
             'onDispose must reap a replaced rendered export once the new '
             'draft row no longer references it',

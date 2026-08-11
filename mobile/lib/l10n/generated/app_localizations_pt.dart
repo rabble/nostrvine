@@ -430,6 +430,21 @@ class AppLocalizationsPt extends AppLocalizations {
   String get profileVideosLabel => 'Vídeos';
 
   @override
+  String get profileCollabsLabel => 'Colaborações';
+
+  @override
+  String get profileLikedLabel => 'Curtidos';
+
+  @override
+  String get profileRepostsLabel => 'Reposts';
+
+  @override
+  String get profileListsLabel => 'Listas';
+
+  @override
+  String get profileCommentsLabel => 'Comentários';
+
+  @override
   String profileCollaboratorInvitePendingHeadline(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -7364,9 +7379,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get likedVideosTitle => 'Vídeos curtidos';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'Viner OG';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar => 'Tentando enviar de novo…';
 
   @override
@@ -7570,6 +7582,17 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'Viner OG';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      'Essa pessoa postou um Vine original que a Divine encontrou no arquivo. Não é um selo de verificação de conta.';
+
+  @override
+  String get profileBadgeCheckmarkTitle => 'Marca de verificação do perfil';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      'Essa conta está na lista de marcas de verificação de perfil da Divine. É separado do NIP-05, dos links de conta verificados e do status de Viner OG.';
 
   @override
   String shareVideoInListsCount(int count) {
@@ -9944,23 +9967,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get badgesTitle => 'Badges';
 
   @override
-  String get badgesIntroTitle => 'Entenda seu rastro de badges';
-
-  @override
-  String get badgesIntroBody =>
-      'Veja as badges que você recebeu, escolha quais fixar no seu perfil Nostr e confira se as pessoas aceitaram as badges que você emitiu.';
-
-  @override
-  String get badgesOpenApp => 'Abrir app de badges';
-
-  @override
   String get badgesLoadError => 'Não foi possível carregar as badges';
 
   @override
   String get badgesUpdateError => 'Não foi possível atualizar a badge';
-
-  @override
-  String get badgesAwardedSectionTitle => 'Recebidas por você';
 
   @override
   String get badgesAwardedEmptyTitle => 'Nenhuma badge recebida ainda';
@@ -9985,9 +9995,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get badgesActionReject => 'Recusar';
 
   @override
-  String get badgesIssuedSectionTitle => 'Emitidas por você';
-
-  @override
   String get badgesIssuedEmptyTitle => 'Nenhuma badge emitida ainda';
 
   @override
@@ -10005,30 +10012,219 @@ class AppLocalizationsPt extends AppLocalizations {
   String get badgesRecipientWaitingStatus => 'Aguardando destinatário';
 
   @override
-  String get profileBadgeAwardedBy => 'Awarded by';
+  String badgesHiddenSectionTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Ocultos ($count)',
+      one: 'Oculto (1)',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get profileBadgeRecipients => 'Recipients';
+  String get badgesActionRestore => 'Restaurar';
+
+  @override
+  String get badgesHiddenSnackbar => 'Selo oculto';
+
+  @override
+  String get badgesHiddenSnackbarUndo => 'Desfazer';
+
+  @override
+  String get badgesTabAwarded => 'Recebidos';
+
+  @override
+  String get badgesTabCreated => 'Criados';
+
+  @override
+  String get badgesTabIssued => 'Entregues';
+
+  @override
+  String get badgesCreateAction => 'Novo selo';
+
+  @override
+  String get badgesCreatedEmptyTitle => 'Nenhum selo criado ainda';
+
+  @override
+  String get badgesCreatedEmptySubtitle => 'Crie um e entregue a quem merece.';
+
+  @override
+  String badgesCreatedAwardSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Entregue a $count pessoas',
+      one: 'Entregue a 1 pessoa',
+      zero: 'Ainda não entregue',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeEditorCreateTitle => 'Novo selo';
+
+  @override
+  String get badgeEditorEditTitle => 'Editar selo';
+
+  @override
+  String get badgeEditorNameLabel => 'Nome';
+
+  @override
+  String get badgeEditorNameHint => 'Rouba a cena';
+
+  @override
+  String get badgeEditorIdentifierLabel => 'Identificador';
+
+  @override
+  String get badgeEditorIdentifierHelp =>
+      'Faz parte do endereço do selo, então fica fixo depois que ele existe.';
+
+  @override
+  String get badgeEditorIdentifierTaken =>
+      'Você já tem um selo com este identificador. Edite aquele — publicar aqui iria substituí-lo.';
+
+  @override
+  String get badgeEditorIdentifierRequired =>
+      'Todo selo precisa de um identificador — digite um se o nome não preencheu.';
+
+  @override
+  String get badgeEditorDescriptionLabel => 'Descrição';
+
+  @override
+  String get badgeEditorDescriptionHint =>
+      'Para quem rouba a cena com um único loop.';
+
+  @override
+  String get badgeEditorArtworkLabel => 'Arte';
+
+  @override
+  String get badgeEditorArtworkAdd => 'Adicionar arte';
+
+  @override
+  String get badgeEditorArtworkReplace => 'Substituir';
+
+  @override
+  String get badgeEditorArtworkError => 'Não foi possível enviar essa imagem';
+
+  @override
+  String get badgeEditorArtworkRequired => 'Todo selo precisa de uma arte.';
+
+  @override
+  String get badgeEditorArtworkRemove => 'Remover a arte';
+
+  @override
+  String get badgeEditorArtworkSheetTitle => 'Arte do selo';
+
+  @override
+  String get badgeDetailDeleteAction => 'Excluir selo';
+
+  @override
+  String get badgeDetailDeleteTitle => 'Excluir este selo?';
+
+  @override
+  String get badgeDetailDeleteBody =>
+      'Isso pede aos relays que removam o selo e todas as entregas que você fez. Os relays podem recusar, e quem fixou continua com ele no perfil até tirar.';
+
+  @override
+  String get badgeDetailDeleteConfirm => 'Excluir';
+
+  @override
+  String get badgeEditorSaveAction => 'Publicar selo';
+
+  @override
+  String get badgeEditorSaveError => 'Não foi possível publicar o selo';
+
+  @override
+  String get badgeEditorLoadError => 'Não foi possível carregar este selo';
+
+  @override
+  String get badgeDetailTitle => 'Selo';
+
+  @override
+  String get badgeDetailMadeBy => 'Criado por';
+
+  @override
+  String get badgeDetailRecipientsTitle => 'Entregue a';
+
+  @override
+  String get badgeDetailNoRecipients => 'Ninguém tem este ainda.';
+
+  @override
+  String get badgeDetailAwardAction => 'Entregar este selo';
+
+  @override
+  String get badgeDetailEditAction => 'Editar selo';
+
+  @override
+  String get badgeDetailShareAction => 'Compartilhar';
+
+  @override
+  String badgeDetailShareMessage(String link) {
+    return 'Olha este selo no Divine: $link';
+  }
+
+  @override
+  String get badgeDetailLoadError => 'Não foi possível carregar este selo';
+
+  @override
+  String get badgeDetailMissing => 'Não achamos este selo em nenhum relay.';
+
+  @override
+  String get badgeDetailActionError => 'Isso não deu certo';
+
+  @override
+  String get badgeAwardTitle => 'Entregar selo';
+
+  @override
+  String get badgeAwardPickAction => 'Escolher pessoas';
+
+  @override
+  String get badgeAwardManualLabel => 'Ou cole chaves';
+
+  @override
+  String get badgeAwardManualHint => 'npub1…, npub1…';
+
+  @override
+  String get badgeAwardEmptyHint => 'Escolha pelo menos uma pessoa.';
+
+  @override
+  String badgeAwardSubmitAction(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Entregar a $count pessoas',
+      one: 'Entregar a 1 pessoa',
+      zero: 'Entregar selo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get profileBadgeAwardedBy => 'Entregue por';
+
+  @override
+  String get profileBadgeRecipients => 'Destinatários';
 
   @override
   String profileBadgeMoreRecipients(int count) {
-    return '+$count more';
+    return '+$count mais';
   }
 
   @override
   String profileBadgeSemanticLabel(String name) {
-    return '$name badge';
+    return 'Selo $name';
   }
 
   @override
-  String get profileBadgeFallbackSemanticLabel => 'Badge';
+  String get profileBadgeFallbackSemanticLabel => 'Selo';
 
   @override
   String get profileBadgeFooterBody =>
       'Badges são pequenos prêmios que qualquer pessoa pode criar no Nostr. Dê uma para um amigo, um criador ou alguém que alegrou o seu dia.';
 
   @override
-  String get profileBadgeFooterLink => 'Crie a sua em badges.divine.video';
+  String get profileBadgeFooterLink => 'Crie o seu próprio selo';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';
@@ -10709,6 +10905,29 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get subtitleEditorProcessing =>
       'As legendas ainda estão sendo geradas. Volte daqui a pouco.';
+
+  @override
+  String get subtitleEditorNoSpeech =>
+      'Nenhuma fala foi detectada neste vídeo, então não há nada para legendar.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'Escreva você mesmo';
+
+  @override
+  String get subtitleEditorAddCue => 'Adicionar uma linha';
+
+  @override
+  String get subtitleEditorRemoveCue => 'Remover esta linha';
+
+  @override
+  String get subtitleEditorStartLabel => 'Início';
+
+  @override
+  String get subtitleEditorEndLabel => 'Fim';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'Cada linha precisa de texto e de um fim depois do início.';
 
   @override
   String get subtitleEditorLoadError =>

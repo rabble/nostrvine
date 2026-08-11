@@ -1,5 +1,6 @@
 // ABOUTME: Semantics regressions for shared author overlay metadata.
 import 'dart:convert';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -82,6 +83,7 @@ void main() {
   testWidgets(
     'author row uses shared username badge rendering for OG Viners',
     (tester) async {
+      final handle = tester.ensureSemantics();
       SharedPreferences.setMockInitialValues({
         ogVinerPubkeysCacheKey: jsonEncode([testPubkey]),
       });
@@ -114,13 +116,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(video.authorName!), findsOneWidget);
-      expect(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is Semantics && widget.properties.label == 'OG Viner',
-        ),
-        findsOneWidget,
-      );
+      final data = tester
+          .getSemantics(find.bySemanticsLabel(enL10n.ogVinerBadgeLabel))
+          .getSemanticsData();
+      expect(data.hasAction(ui.SemanticsAction.tap), isFalse);
+      handle.dispose();
     },
   );
 }

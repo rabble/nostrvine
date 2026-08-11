@@ -153,14 +153,15 @@ class _ForYouContent extends ConsumerStatefulWidget {
 class _ForYouContentState extends ConsumerState<_ForYouContent>
     with ScrollToHideMixin {
   void _showAlgorithmExplainer(BuildContext context) {
-    showModalBottomSheet<void>(
+    VineBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: context.vineColors.card,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => const _AlgorithmExplainerSheet(),
+      // Long-form content: keep the pre-design-system sizing so the explainer
+      // still opens nearly full-height instead of the 0.6 default.
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      buildScrollBody: (scrollController) =>
+          _AlgorithmExplainerSheet(scrollController: scrollController),
     );
   }
 
@@ -237,35 +238,51 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
           top: headerOffset,
           left: 0,
           right: 0,
-          child: GestureDetector(
-            key: headerKey,
-            onTap: () => _showAlgorithmExplainer(context),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: context.vineColors.background,
-              child: Row(
-                children: [
-                  const DivineIcon(
-                    icon: DivineIconName.sparkle,
-                    color: VineTheme.vineGreen,
-                    size: 20,
+          child: Semantics(
+            button: true,
+            // The visible title is the button's name; the hint says what
+            // activating it does.
+            hint: context.l10n.forYouAlgorithmHowItWorksTitle,
+            child: GestureDetector(
+              key: headerKey,
+              onTap: () => _showAlgorithmExplainer(context),
+              child: ColoredBox(
+                color: context.vineColors.background,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      const DivineIcon(
+                        icon: DivineIconName.sparkle,
+                        color: VineTheme.vineGreen,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          context.l10n.forYouAlgorithmTitle,
+                          style: VineTheme.labelLargeFont(
+                            color: VineTheme.vineGreen,
+                          ),
+                        ),
+                      ),
+                      // The row and the button open the same sheet, so the row
+                      // owns the semantics — otherwise a screen reader
+                      // announces one action twice.
+                      ExcludeSemantics(
+                        child: DivineIconButton(
+                          icon: DivineIconName.info,
+                          size: DivineIconButtonSize.small,
+                          backgroundColor: VineTheme.transparent,
+                          foregroundColor: context.vineColors.secondaryText,
+                          showShadow: false,
+                          tooltip: context.l10n.forYouAlgorithmHowItWorksTitle,
+                          onPressed: () => _showAlgorithmExplainer(context),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    context.l10n.forYouAlgorithmTitle,
-                    style: const TextStyle(
-                      color: VineTheme.vineGreen,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  DivineIcon(
-                    icon: DivineIconName.info,
-                    color: context.vineColors.secondaryText,
-                    size: 16,
-                  ),
-                ],
+                ),
               ),
             ),
           ),
@@ -277,197 +294,163 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
 
 /// Bottom sheet explaining how the Divine Algorithm works
 class _AlgorithmExplainerSheet extends StatelessWidget {
-  const _AlgorithmExplainerSheet();
+  const _AlgorithmExplainerSheet({required this.scrollController});
+
+  final ScrollController scrollController;
 
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.85,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      expand: false,
-      builder: (context, scrollController) {
-        return Container(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-          child: ListView(
-            controller: scrollController,
-            children: [
-              // Drag handle
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(
-                    color: context.vineColors.secondaryText.withValues(
-                      alpha: 0.3,
-                    ),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+      controller: scrollController,
+      children: [
+        // Title
+        Row(
+          spacing: 12,
+          children: [
+            const DivineIcon(
+              icon: DivineIconName.sparkle,
+              color: VineTheme.vineGreen,
+              size: 28,
+            ),
+            Expanded(
+              child: Text(
+                context.l10n.forYouAlgorithmTitle,
+                style: VineTheme.titleLargeFont(
+                  color: context.vineColors.primaryText,
                 ),
               ),
-              // Title
-              Row(
-                children: [
-                  const DivineIcon(
-                    icon: DivineIconName.sparkle,
-                    color: VineTheme.vineGreen,
-                    size: 28,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      context.l10n.forYouAlgorithmTitle,
-                      style: TextStyle(
-                        color: context.vineColors.primaryText,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                context.l10n.forYouAlgorithmSubtitle,
-                style: const TextStyle(
-                  color: VineTheme.vineGreen,
-                  fontSize: 13,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-              const SizedBox(height: 24),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          context.l10n.forYouAlgorithmSubtitle,
+          style: VineTheme.bodySmallFont(
+            color: VineTheme.vineGreen,
+          ).copyWith(fontStyle: FontStyle.italic),
+        ),
+        const SizedBox(height: 24),
 
-              // Section: How it works
-              _buildSectionTitle(
-                context,
-                context.l10n.forYouAlgorithmHowItWorksTitle,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                context.l10n.forYouAlgorithmHowItWorksBody,
-                style: _bodyTextStyleOf(context),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                context.l10n.forYouAlgorithmInteractionsIntro,
-                style: _bodyTextStyleOf(context),
-              ),
-              const SizedBox(height: 12),
+        // Section: How it works
+        _SectionTitle(context.l10n.forYouAlgorithmHowItWorksTitle),
+        const SizedBox(height: 12),
+        Text(
+          context.l10n.forYouAlgorithmHowItWorksBody,
+          style: _bodyTextStyleOf(context),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          context.l10n.forYouAlgorithmInteractionsIntro,
+          style: _bodyTextStyleOf(context),
+        ),
+        const SizedBox(height: 12),
 
-              // Interaction weights
-              _buildInteractionItem(
-                context,
-                Icons.repeat,
-                context.l10n.metadataRepostsLabel,
-                context.l10n.forYouAlgorithmRepostsDescription,
-              ),
-              _buildInteractionItem(
-                context,
-                Icons.chat_bubble_outline,
-                context.l10n.profileCommentsSection,
-                context.l10n.forYouAlgorithmCommentsDescription,
-              ),
-              _buildInteractionItem(
-                context,
-                Icons.favorite_outline,
-                context.l10n.forYouAlgorithmReactionsTitle,
-                context.l10n.forYouAlgorithmReactionsDescription,
-              ),
-              _buildInteractionItem(
-                context,
-                Icons.play_circle_outline,
-                context.l10n.analyticsViews,
-                context.l10n.forYouAlgorithmViewsDescription,
-              ),
-              const SizedBox(height: 24),
+        // Interaction weights
+        _InteractionItem(
+          icon: DivineIconName.repeat,
+          title: context.l10n.metadataRepostsLabel,
+          description: context.l10n.forYouAlgorithmRepostsDescription,
+        ),
+        _InteractionItem(
+          icon: DivineIconName.chat,
+          title: context.l10n.profileCommentsSection,
+          description: context.l10n.forYouAlgorithmCommentsDescription,
+        ),
+        _InteractionItem(
+          icon: DivineIconName.heart,
+          title: context.l10n.forYouAlgorithmReactionsTitle,
+          description: context.l10n.forYouAlgorithmReactionsDescription,
+        ),
+        _InteractionItem(
+          icon: DivineIconName.playCircle,
+          title: context.l10n.analyticsViews,
+          description: context.l10n.forYouAlgorithmViewsDescription,
+        ),
+        const SizedBox(height: 24),
 
-              // Section: Cold start
-              _buildSectionTitle(
-                context,
-                context.l10n.forYouAlgorithmNewToDivineTitle,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                context.l10n.forYouAlgorithmNewToDivineBody1,
-                style: _bodyTextStyleOf(context),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                context.l10n.forYouAlgorithmNewToDivineBody2,
-                style: _bodyTextStyleOf(context),
-              ),
-              const SizedBox(height: 24),
+        // Section: Cold start
+        _SectionTitle(context.l10n.forYouAlgorithmNewToDivineTitle),
+        const SizedBox(height: 12),
+        Text(
+          context.l10n.forYouAlgorithmNewToDivineBody1,
+          style: _bodyTextStyleOf(context),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          context.l10n.forYouAlgorithmNewToDivineBody2,
+          style: _bodyTextStyleOf(context),
+        ),
+        const SizedBox(height: 24),
 
-              // Section: Future vision
-              _buildSectionTitle(
-                context,
-                context.l10n.forYouAlgorithmChoiceTitle,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                context.l10n.forYouAlgorithmChoiceBody,
-                style: _bodyTextStyleOf(context),
-              ),
-              const SizedBox(height: 12),
-              _buildFutureFeatureItem(
-                context,
-                context.l10n.forYouAlgorithmChoicePersonalizedFeed,
-              ),
-              _buildFutureFeatureItem(
-                context,
-                context.l10n.forYouAlgorithmChoiceChronological,
-              ),
-              _buildFutureFeatureItem(
-                context,
-                context.l10n.forYouAlgorithmChoiceTrending,
-              ),
-              _buildFutureFeatureItem(
-                context,
-                context.l10n.forYouAlgorithmChoiceCustomFeeds,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                context.l10n.forYouAlgorithmChoiceClosing,
-                style: _bodyTextStyleOf(context),
-              ),
-              const SizedBox(height: 24),
+        // Section: Future vision
+        _SectionTitle(context.l10n.forYouAlgorithmChoiceTitle),
+        const SizedBox(height: 12),
+        Text(
+          context.l10n.forYouAlgorithmChoiceBody,
+          style: _bodyTextStyleOf(context),
+        ),
+        const SizedBox(height: 12),
+        _FutureFeatureItem(context.l10n.forYouAlgorithmChoicePersonalizedFeed),
+        _FutureFeatureItem(context.l10n.forYouAlgorithmChoiceChronological),
+        _FutureFeatureItem(context.l10n.forYouAlgorithmChoiceTrending),
+        _FutureFeatureItem(context.l10n.forYouAlgorithmChoiceCustomFeeds),
+        const SizedBox(height: 16),
+        Text(
+          context.l10n.forYouAlgorithmChoiceClosing,
+          style: _bodyTextStyleOf(context),
+        ),
+        const SizedBox(height: 24),
 
-              DivineInfoCard(
-                icon: DivineIconName.bracketsAngle,
-                compact: true,
-                title: context.l10n.forYouAlgorithmOpenSourceTitle,
-                message: context.l10n.forYouAlgorithmOpenSourceBody,
-              ),
-              const SizedBox(height: 32),
-            ],
-          ),
-        );
-      },
+        DivineInfoCard(
+          icon: DivineIconName.bracketsAngle,
+          compact: true,
+          title: context.l10n.forYouAlgorithmOpenSourceTitle,
+          message: context.l10n.forYouAlgorithmOpenSourceBody,
+        ),
+        const SizedBox(height: 32),
+      ],
     );
   }
+}
 
-  Widget _buildSectionTitle(BuildContext context, String title) {
+TextStyle _bodyTextStyleOf(BuildContext context) =>
+    VineTheme.bodyMediumFont(color: context.vineColors.primaryText);
+
+/// Heading for one section of the algorithm explainer.
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle(this.title);
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
     return Text(
       title,
-      style: TextStyle(
-        color: context.vineColors.primaryText,
-        fontSize: 17,
-        fontWeight: FontWeight.w600,
-      ),
+      style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
     );
   }
+}
 
-  Widget _buildInteractionItem(
-    BuildContext context,
-    IconData icon,
-    String title,
-    String description,
-  ) {
+/// One interaction weight row: badge icon, label and description.
+class _InteractionItem extends StatelessWidget {
+  const _InteractionItem({
+    required this.icon,
+    required this.title,
+    required this.description,
+  });
+
+  final DivineIconName icon;
+  final String title;
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 12,
         children: [
           Container(
             padding: const EdgeInsets.all(8),
@@ -475,28 +458,23 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
               color: context.vineColors.card,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, color: VineTheme.vineGreen, size: 18),
+            child: DivineIcon(icon: icon, color: VineTheme.vineGreen, size: 18),
           ),
-          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: TextStyle(
+                  style: VineTheme.labelLargeFont(
                     color: context.vineColors.primaryText,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   description,
-                  style: TextStyle(
+                  style: VineTheme.bodySmallFont(
                     color: context.vineColors.secondaryText,
-                    fontSize: 13,
-                    height: 1.3,
                   ),
                 ),
               ],
@@ -506,30 +484,32 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildFutureFeatureItem(BuildContext context, String text) {
+/// One bullet in the "what's coming" list.
+class _FutureFeatureItem extends StatelessWidget {
+  const _FutureFeatureItem(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsetsDirectional.only(start: 8, bottom: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 8,
         children: [
           const DivineIcon(
             icon: DivineIconName.checkCircle,
             color: VineTheme.vineGreen,
             size: 18,
           ),
-          const SizedBox(width: 8),
           Expanded(child: Text(text, style: _bodyTextStyleOf(context))),
         ],
       ),
     );
   }
-
-  static TextStyle _bodyTextStyleOf(BuildContext context) => TextStyle(
-    color: context.vineColors.primaryText,
-    fontSize: 14,
-    height: 1.5,
-  );
 }
 
 /// Unavailable state when recommendations are not available
@@ -552,20 +532,16 @@ class _ForYouUnavailableState extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               context.l10n.forYouUnavailableTitle,
-              style: TextStyle(
+              style: VineTheme.titleMediumFont(
                 color: context.vineColors.primaryText,
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
               ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
             Text(
               context.l10n.forYouUnavailableDescription,
-              style: TextStyle(
+              style: VineTheme.bodyMediumFont(
                 color: context.vineColors.secondaryText,
-                fontSize: 14,
-                height: 1.4,
               ),
               textAlign: TextAlign.center,
             ),
@@ -594,10 +570,8 @@ class _ForYouEmptyState extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             context.l10n.forYouEmptyTitle,
-            style: TextStyle(
+            style: VineTheme.titleMediumFont(
               color: context.vineColors.primaryText,
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 8),
@@ -605,9 +579,8 @@ class _ForYouEmptyState extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Text(
               context.l10n.forYouEmptyDescription,
-              style: TextStyle(
+              style: VineTheme.bodyMediumFont(
                 color: context.vineColors.secondaryText,
-                fontSize: 14,
               ),
               textAlign: TextAlign.center,
             ),
@@ -634,16 +607,15 @@ class _ForYouErrorState extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             context.l10n.forYouErrorTitle,
-            style: const TextStyle(color: VineTheme.likeRed, fontSize: 18),
+            style: VineTheme.titleMediumFont(color: VineTheme.likeRed),
           ),
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Text(
               error,
-              style: TextStyle(
+              style: VineTheme.bodySmallFont(
                 color: context.vineColors.secondaryText,
-                fontSize: 12,
               ),
               textAlign: TextAlign.center,
             ),

@@ -12,6 +12,7 @@ void main() {
     late _MockBadgeRepository repository;
     late BadgeAwardViewData awardedBadge;
     late IssuedBadgeViewData issuedBadge;
+    late CreatedBadgeViewData createdBadge;
     late BadgeDashboardData dashboard;
 
     setUpAll(() {
@@ -22,9 +23,11 @@ void main() {
       repository = _MockBadgeRepository();
       awardedBadge = _awardViewData();
       issuedBadge = _issuedViewData();
+      createdBadge = _createdViewData();
       dashboard = BadgeDashboardData(
         awarded: [awardedBadge],
         issued: [issuedBadge],
+        created: [createdBadge],
       );
     });
 
@@ -51,7 +54,8 @@ void main() {
         isA<BadgesState>()
             .having((state) => state.status, 'status', BadgesStatus.loaded)
             .having((state) => state.awarded, 'awarded', [awardedBadge])
-            .having((state) => state.issued, 'issued', [issuedBadge]),
+            .having((state) => state.issued, 'issued', [issuedBadge])
+            .having((state) => state.created, 'created', [createdBadge]),
       ],
     );
 
@@ -148,6 +152,7 @@ void main() {
           (_) async => const BadgeDashboardData(
             awarded: [],
             issued: [],
+            created: [],
           ),
         );
       },
@@ -170,6 +175,40 @@ void main() {
       ],
       verify: (_) {
         verify(() => repository.hideAward(awardedBadge.awardEventId)).called(1);
+      },
+    );
+
+    blocTest<BadgesCubit, BadgesState>(
+      'unhideAward restores a dismissed award then refreshes dashboard',
+      setUp: () {
+        when(() => repository.unhideAward(any())).thenAnswer((_) async {});
+        when(repository.loadDashboard).thenAnswer((_) async => dashboard);
+      },
+      build: () => BadgesCubit(repository: repository),
+      seed: () => BadgesState(
+        status: BadgesStatus.loaded,
+        hidden: [awardedBadge],
+      ),
+      act: (cubit) => cubit.unhideAward(awardedBadge),
+      expect: () => [
+        BadgesState(
+          status: BadgesStatus.loaded,
+          actionStatus: BadgeActionStatus.hiding,
+          hidden: [awardedBadge],
+        ),
+        isA<BadgesState>()
+            .having(
+              (state) => state.actionStatus,
+              'actionStatus',
+              BadgeActionStatus.completed,
+            )
+            .having((state) => state.awarded, 'awarded', [awardedBadge])
+            .having((state) => state.hidden, 'hidden', isEmpty),
+      ],
+      verify: (_) {
+        verify(
+          () => repository.unhideAward(awardedBadge.awardEventId),
+        ).called(1);
       },
     );
 
@@ -199,6 +238,57 @@ void main() {
         ),
       ],
       errors: () => [isA<Exception>()],
+    );
+
+    blocTest<BadgesCubit, BadgesState>(
+      'refresh clears a previous action failure',
+      setUp: () {
+        when(
+          () => repository.loadDashboard(),
+        ).thenAnswer(
+          (_) async => const BadgeDashboardData(
+            awarded: [],
+            issued: [],
+            created: [],
+          ),
+        );
+      },
+      build: () => BadgesCubit(repository: repository),
+      seed: () => const BadgesState(
+        status: BadgesStatus.loaded,
+        actionStatus: BadgeActionStatus.error,
+      ),
+      act: (cubit) => cubit.refresh(),
+      // Without this the "Could not update badge" note outlived a pull to
+      // refresh, while the failure path already reset it.
+      expect: () => [
+        const BadgesState(
+          status: BadgesStatus.loaded,
+        ),
+      ],
+    );
+
+    blocTest<BadgesCubit, BadgesState>(
+      'refresh leaves an in-flight action status alone',
+      setUp: () {
+        when(repository.loadDashboard).thenAnswer((_) async => dashboard);
+      },
+      build: () => BadgesCubit(repository: repository),
+      seed: () => const BadgesState(
+        status: BadgesStatus.loaded,
+        actionStatus: BadgeActionStatus.accepting,
+      ),
+      act: (cubit) => cubit.refresh(),
+      // `accepting` is what disables the accept and reject buttons. Clearing
+      // it because a pull to refresh landed first re-enabled them while the
+      // publish was still running.
+      expect: () => [
+        isA<BadgesState>().having(
+          (state) => state.actionStatus,
+          'actionStatus',
+          BadgeActionStatus.accepting,
+        ),
+      ],
     );
   });
 }
@@ -233,26 +323,46 @@ BadgeAwardViewData _awardViewData() {
   );
 }
 
+CreatedBadgeViewData _createdViewData() {
+  final issuerPubkey = _pubkey(1);
+  return CreatedBadgeViewData(
+    definition: Nip58BadgeDefinition(
+      event: _event(
+        id: _eventId(5),
+        pubkey: issuerPubkey,
+        kind: EventKind.badgeDefinition,
+      ),
+      coordinate: '30009:$issuerPubkey:monthly-diviner',
+      dTag: 'monthly-diviner',
+      name: 'Diviner of the Month',
+    ),
+    awardCount: 2,
+    recipientCount: 3,
+  );
+}
+
 IssuedBadgeViewData _issuedViewData() {
   final issuerPubkey = _pubkey(1);
   final recipientPubkey = _pubkey(3);
   final definitionCoordinate = '30009:$issuerPubkey:weekly-diviner';
   return IssuedBadgeViewData(
-    award: Nip58BadgeAward(
+    coordinate: definitionCoordinate,
+    latestAwardedAt: 1000,
+    definition: Nip58BadgeDefinition(
       event: _event(
-        id: _eventId(3),
+        id: _eventId(4),
         pubkey: issuerPubkey,
-        kind: EventKind.badgeAward,
-        tags: [
-          ['a', definitionCoordinate],
-          ['p', recipientPubkey],
-        ],
+        kind: EventKind.badgeDefinition,
       ),
-      definitionCoordinate: definitionCoordinate,
-      recipientPubkeys: [recipientPubkey],
+      coordinate: definitionCoordinate,
+      dTag: 'weekly-diviner',
+      name: 'Diviner of the Week',
     ),
     recipients: [
-      IssuedBadgeRecipientViewData(pubkey: recipientPubkey, isAccepted: true),
+      IssuedBadgeRecipientViewData(
+        pubkey: recipientPubkey,
+        isAccepted: true,
+      ),
     ],
   );
 }

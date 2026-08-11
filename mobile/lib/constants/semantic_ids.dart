@@ -22,6 +22,44 @@ abstract class SemanticIds {
   static String cameraMode(String mode) => 'camera_mode_$mode';
   static const String cameraRecordButton = 'camera_record_button';
 
+  /// Recorder chrome. Close, next and delete-clip come from the capture
+  /// stack, which capture, stop-motion and lip-sync all render; the library
+  /// button lives in the bottom bar, which every mode renders. Every label
+  /// behind these is localized, so the E2E capture flow drives them by id.
+  static const String cameraCloseButton = 'camera_close_button';
+  static const String cameraNextButton = 'camera_next_button';
+  static const String cameraDeleteClipButton = 'camera_delete_clip_button';
+  static const String cameraLibraryButton = 'camera_library_button';
+
+  /// Capture-mode control rail, top to bottom. Lip-sync declares the same
+  /// countdown-timer and stabilization support, so it renders this rail
+  /// unchanged and drives it with the same E2E util.
+  static const String cameraFlashButton = 'camera_flash_button';
+  static const String cameraTimerButton = 'camera_timer_button';
+  static const String cameraAspectRatioButton = 'camera_aspect_ratio_button';
+  static const String cameraSwitchCameraButton = 'camera_switch_camera_button';
+  static const String cameraStabilizationButton = 'camera_stabilization_button';
+
+  /// Sound picker on [VideoEditorAudioChip]. Lip-sync puts it in the top-bar
+  /// slot capture mode leaves empty, and because the two render an identical
+  /// control rail it is the *only* thing separating those viewfinders — so
+  /// `assertCaptureMode` asserts its absence.
+  ///
+  /// The chip is shared with the editor's audio-timing screen, which is a
+  /// different route, so the id stays unambiguous on any one screen.
+  static const String audioChip = 'audio_chip';
+
+  /// Search field in the sound picker the chip opens.
+  static const String audioSearchField = 'audio_search_field';
+
+  /// Sound picker result tile. Tiles are indexed because the list is a search
+  /// result: the E2E narrows it to one entry and takes index 0, rather than
+  /// depending on the manifest's order.
+  static String audioSoundTile(int index) => 'audio_sound_tile_$index';
+
+  /// Confirms the currently selected sound in the sound picker.
+  static const String audioSelectionDoneButton = 'audio_selection_done_button';
+
   /// Welcome screen. The fresh-install and returning-user branches show
   /// different buttons, so each action gets its own id rather than being
   /// disambiguated by position.
@@ -49,6 +87,22 @@ abstract class SemanticIds {
   static const String profileSettingsButton = 'settings_button';
   static const String profileBackButton = 'profile_back_button';
   static const String profileMoreButton = 'profile_more_button';
+
+  /// Profile content tabs. The bar is icon-only and its tab count varies by
+  /// profile (6 on the own profile, 5 on another user's), so tests address a
+  /// tab by identifier rather than by position or by the compound
+  /// "Tab N of M" label Material generates.
+  static const String profileVideosTab = 'videos_tab';
+  static const String profileCollabsTab = 'collabs_tab';
+  static const String profileLikedTab = 'liked_tab';
+  static const String profileRepostsTab = 'reposted_tab';
+  static const String profileListsTab = 'lists_tab';
+  static const String profileCommentsTab = 'comments_tab';
+
+  static String likedVideoThumbnail(int index) =>
+      'liked_video_thumbnail_$index';
+  static String savedVideoThumbnail(int index) =>
+      'saved_video_thumbnail_$index';
 
   static String listCard(int index) => 'list_card_$index';
 

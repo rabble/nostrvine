@@ -1,0 +1,17 @@
+appId: co.openvine.app
+---
+#Utility: given the capture-stack recorder session holds at least one clip,
+#delete the last clip and wait for the empty-session chrome.
+#
+# The caller owns the final mode-specific assertion.
+
+# There is no confirmation dialog — the delete is a soft-delete with an Undo
+# snackbar, so the clip leaves the session on the tap.
+- tapOn:
+    id: camera_delete_clip_button
+
+# next/delete drop back out of the semantics tree once the session is empty.
+- extendedWaitUntil:
+    notVisible:
+      id: camera_next_button
+    timeout: 15000

@@ -426,6 +426,21 @@ class AppLocalizationsFil extends AppLocalizations {
   String get profileVideosLabel => 'Mga Video';
 
   @override
+  String get profileCollabsLabel => 'Mga Collab';
+
+  @override
+  String get profileLikedLabel => 'Na-like';
+
+  @override
+  String get profileRepostsLabel => 'Mga Repost';
+
+  @override
+  String get profileListsLabel => 'Mga List';
+
+  @override
+  String get profileCommentsLabel => 'Mga Komento';
+
+  @override
   String profileCollaboratorInvitePendingHeadline(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -7396,9 +7411,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get likedVideosTitle => 'Mga Naka-like na Video';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar =>
       'Sinusubukan ulit ang upload…';
 
@@ -7603,6 +7615,17 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      'Nag-post ang taong ito ng orihinal na Vine na nakita ng Divine sa archive. Hindi ito badge ng verification ng account.';
+
+  @override
+  String get profileBadgeCheckmarkTitle => 'Tsek sa profile';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      'Nasa listahan ng profile checkmark ng Divine ang account na ito. Hiwalay ito sa NIP-05, sa mga verified na link ng account, at sa OG Viner status.';
 
   @override
   String shareVideoInListsCount(int count) {
@@ -9987,23 +10010,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get badgesTitle => 'Mga Badge';
 
   @override
-  String get badgesIntroTitle => 'Intindihin ang iyong badge trail';
-
-  @override
-  String get badgesIntroBody =>
-      'Tingnan ang mga badge award na ipinadala sa iyo, piliin kung ano ang i-pin sa iyong Nostr profile, at tingnan kung tinanggap ng mga tao ang mga badge na inisyu mo.';
-
-  @override
-  String get badgesOpenApp => 'Buksan ang badges app';
-
-  @override
   String get badgesLoadError => 'Hindi na-load ang mga badge';
 
   @override
   String get badgesUpdateError => 'Hindi na-update ang badge';
-
-  @override
-  String get badgesAwardedSectionTitle => 'Ginawad sa iyo';
 
   @override
   String get badgesAwardedEmptyTitle => 'Wala pang badge award';
@@ -10028,9 +10038,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get badgesActionReject => 'Tanggihan';
 
   @override
-  String get badgesIssuedSectionTitle => 'Inisyu mo';
-
-  @override
   String get badgesIssuedEmptyTitle => 'Wala ka pang issued badge';
 
   @override
@@ -10048,19 +10055,211 @@ class AppLocalizationsFil extends AppLocalizations {
   String get badgesRecipientWaitingStatus => 'Naghihintay ng recipient';
 
   @override
-  String get profileBadgeAwardedBy => 'Awarded by';
+  String badgesHiddenSectionTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Nakatago ($count)',
+      one: 'Nakatago (1)',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get profileBadgeRecipients => 'Recipients';
+  String get badgesActionRestore => 'Ibalik';
+
+  @override
+  String get badgesHiddenSnackbar => 'Nakatago ang badge';
+
+  @override
+  String get badgesHiddenSnackbarUndo => 'I-undo';
+
+  @override
+  String get badgesTabAwarded => 'Natanggap';
+
+  @override
+  String get badgesTabCreated => 'Ginawa';
+
+  @override
+  String get badgesTabIssued => 'Naibigay';
+
+  @override
+  String get badgesCreateAction => 'Bagong badge';
+
+  @override
+  String get badgesCreatedEmptyTitle => 'Wala ka pang gawang badge';
+
+  @override
+  String get badgesCreatedEmptySubtitle =>
+      'Gumawa ng isa at ibigay sa taong karapat-dapat.';
+
+  @override
+  String badgesCreatedAwardSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Naibigay sa $count tao',
+      one: 'Naibigay sa 1 tao',
+      zero: 'Hindi pa naibibigay',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeEditorCreateTitle => 'Bagong badge';
+
+  @override
+  String get badgeEditorEditTitle => 'I-edit ang badge';
+
+  @override
+  String get badgeEditorNameLabel => 'Pangalan';
+
+  @override
+  String get badgeEditorNameHint => 'Nangunguha ng Eksena';
+
+  @override
+  String get badgeEditorIdentifierLabel => 'Identifier';
+
+  @override
+  String get badgeEditorIdentifierHelp =>
+      'Bahagi ito ng address ng badge, kaya hindi na ito nagbabago kapag umiiral na ang badge.';
+
+  @override
+  String get badgeEditorIdentifierTaken =>
+      'May badge ka nang ganitong identifier. I-edit na lang iyon — kung mag-publish ka rito, mapapalitan iyon.';
+
+  @override
+  String get badgeEditorIdentifierRequired =>
+      'Kailangan ng bawat badge ng identifier — mag-type ka kung hindi ito napunan ng pangalan.';
+
+  @override
+  String get badgeEditorDescriptionLabel => 'Paglalarawan';
+
+  @override
+  String get badgeEditorDescriptionHint =>
+      'Para sa nangunguha ng eksena sa isang loop lang.';
+
+  @override
+  String get badgeEditorArtworkLabel => 'Artwork';
+
+  @override
+  String get badgeEditorArtworkAdd => 'Magdagdag ng artwork';
+
+  @override
+  String get badgeEditorArtworkReplace => 'Palitan';
+
+  @override
+  String get badgeEditorArtworkError => 'Hindi na-upload ang larawang iyon';
+
+  @override
+  String get badgeEditorArtworkRequired =>
+      'Kailangan ng artwork ang bawat badge.';
+
+  @override
+  String get badgeEditorArtworkRemove => 'Alisin ang artwork';
+
+  @override
+  String get badgeEditorArtworkSheetTitle => 'Artwork ng badge';
+
+  @override
+  String get badgeDetailDeleteAction => 'Burahin ang badge';
+
+  @override
+  String get badgeDetailDeleteTitle => 'Burahin ang badge na ito?';
+
+  @override
+  String get badgeDetailDeleteBody =>
+      'Hinihiling nito sa mga relay na tanggalin ang badge at lahat ng ibinigay mo. Puwedeng tumanggi ang mga relay, at mananatili ito sa profile ng nag-pin hangga\'t hindi nila inaalis.';
+
+  @override
+  String get badgeDetailDeleteConfirm => 'Burahin';
+
+  @override
+  String get badgeEditorSaveAction => 'I-publish ang badge';
+
+  @override
+  String get badgeEditorSaveError => 'Hindi na-publish ang badge';
+
+  @override
+  String get badgeEditorLoadError => 'Hindi na-load ang badge na ito';
+
+  @override
+  String get badgeDetailTitle => 'Badge';
+
+  @override
+  String get badgeDetailMadeBy => 'Ginawa ni';
+
+  @override
+  String get badgeDetailRecipientsTitle => 'Naibigay kay';
+
+  @override
+  String get badgeDetailNoRecipients => 'Wala pang may hawak nito.';
+
+  @override
+  String get badgeDetailAwardAction => 'Ibigay ang badge na ito';
+
+  @override
+  String get badgeDetailEditAction => 'I-edit ang badge';
+
+  @override
+  String get badgeDetailShareAction => 'Ibahagi';
+
+  @override
+  String badgeDetailShareMessage(String link) {
+    return 'Tingnan ang badge na ito sa Divine: $link';
+  }
+
+  @override
+  String get badgeDetailLoadError => 'Hindi na-load ang badge na ito';
+
+  @override
+  String get badgeDetailMissing =>
+      'Hindi namin makita ang badge na ito sa kahit anong relay.';
+
+  @override
+  String get badgeDetailActionError => 'Hindi ito natuloy';
+
+  @override
+  String get badgeAwardTitle => 'Magbigay ng badge';
+
+  @override
+  String get badgeAwardPickAction => 'Pumili ng tao';
+
+  @override
+  String get badgeAwardManualLabel => 'O mag-paste ng mga key';
+
+  @override
+  String get badgeAwardManualHint => 'npub1…, npub1…';
+
+  @override
+  String get badgeAwardEmptyHint => 'Pumili ng kahit isang tao.';
+
+  @override
+  String badgeAwardSubmitAction(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Ibigay sa $count tao',
+      one: 'Ibigay sa 1 tao',
+      zero: 'Ibigay ang badge',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get profileBadgeAwardedBy => 'Ibinigay ni';
+
+  @override
+  String get profileBadgeRecipients => 'Mga tumanggap';
 
   @override
   String profileBadgeMoreRecipients(int count) {
-    return '+$count more';
+    return '+$count pa';
   }
 
   @override
   String profileBadgeSemanticLabel(String name) {
-    return '$name badge';
+    return 'Badge na $name';
   }
 
   @override
@@ -10071,8 +10270,7 @@ class AppLocalizationsFil extends AppLocalizations {
       'Ang mga badge ay maliliit na parangal na kahit sino ay puwedeng gumawa sa Nostr. Bigyan ang isang kaibigan, isang creator, o kung sino man ang nagpasaya sa araw mo.';
 
   @override
-  String get profileBadgeFooterLink =>
-      'Gumawa ng sarili mo sa badges.divine.video';
+  String get profileBadgeFooterLink => 'Gumawa ng sarili mong badge';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';
@@ -10753,6 +10951,29 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get subtitleEditorProcessing =>
       'Ginagawa pa ang subtitles. Bumalik ka mamaya.';
+
+  @override
+  String get subtitleEditorNoSpeech =>
+      'Walang na-detect na salita sa video na ito, kaya walang gagawing subtitle.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'Ikaw na ang magsulat';
+
+  @override
+  String get subtitleEditorAddCue => 'Magdagdag ng linya';
+
+  @override
+  String get subtitleEditorRemoveCue => 'Alisin ang linyang ito';
+
+  @override
+  String get subtitleEditorStartLabel => 'Simula';
+
+  @override
+  String get subtitleEditorEndLabel => 'Katapusan';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'Kailangan ng bawat linya ng teksto at katapusan pagkatapos ng simula.';
 
   @override
   String get subtitleEditorLoadError =>

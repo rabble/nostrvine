@@ -38,7 +38,12 @@ while IFS= read -r yaml; do
       echo "❌ ${yaml#"${MAESTRO_DIR}/"}: unresolved reference '${ref}'" >&2
       failures=$((failures + 1))
     fi
-  done < <(sed 's/#.*//' "${yaml}" | grep -oE '\.\./[A-Za-z0-9_/&.-]+\.yaml' || true)
+  done < <(
+    sed 's/#.*//' "${yaml}" \
+      | grep -oE 'runFlow:[[:space:]]*["'\'']?[A-Za-z0-9_./&-]+\.yaml["'\'']?' \
+      | sed -E 's/^runFlow:[[:space:]]*["'\'']?//; s/["'\'']$//' \
+      || true
+  )
 done < <(find "${MAESTRO_DIR}" -name '*.yaml' -type f)
 
 if [[ "${failures}" -gt 0 ]]; then

@@ -140,6 +140,16 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
   bool get _useLocalSearch =>
       widget.filterMode == UserPickerFilterMode.mutualFollowsOnly;
 
+  /// Whether the sheet stays open while the user picks more than one person.
+  ///
+  /// True for both multi-select shapes: a capped selection the sheet owns
+  /// ([UserPickerSheet.maxCount]) and an uncapped one the caller tracks
+  /// through [UserPickerSheet.onUserToggled]. Both need a way to say "done" —
+  /// without one the only way out is the close button, which reads as
+  /// discarding the picks.
+  bool get _isMultiSelect =>
+      widget.maxCount != null || widget.onUserToggled != null;
+
   @override
   void initState() {
     super.initState();
@@ -319,10 +329,11 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
   void _onUserSelected(UserProfile profile) {
     if (widget.onUserToggled != null) {
       setState(() {
-        if (_selectedPubkeys.contains(profile.pubkey)) {
-          _selectedPubkeys.remove(profile.pubkey);
+        if (_selectedPubkeys.remove(profile.pubkey)) {
+          _selectedProfiles.removeWhere((p) => p.pubkey == profile.pubkey);
         } else {
           _selectedPubkeys.add(profile.pubkey);
+          _selectedProfiles.add(profile);
         }
       });
       widget.onUserToggled!(profile);
@@ -363,6 +374,12 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     final disabledPubkeys = widget.onUserToggled == null
         ? widget.excludePubkeys
         : const <String>{};
+    // Only the capped mode moves a pick out of the list and into the chips
+    // row; the callback mode has no chips, so a picked row has to stay put
+    // and just render as checked.
+    final hidePubkeys = widget.maxCount == null
+        ? const <String>{}
+        : {for (final profile in _selectedProfiles) profile.pubkey};
 
     return Column(
       crossAxisAlignment: .stretch,
@@ -382,7 +399,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
             selectedCount: _selectedProfiles.length,
             maxCount: widget.maxCount,
           ),
-          trailingAction: widget.maxCount != null
+          trailingAction: _isMultiSelect
               ? DivineIconButton(
                   icon: .check,
                   size: .small,
@@ -508,7 +525,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
                     onUserSelected: _onUserSelected,
                     excludePubkeys: disabledPubkeys,
                     selectedPubkeys: _selectedPubkeys,
-                    hidePubkeys: {for (final p in _selectedProfiles) p.pubkey},
+                    hidePubkeys: hidePubkeys,
                   )
                 : _NetworkResults(
                     searchBloc: _searchBloc!,
@@ -516,7 +533,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
                     onUserSelected: _onUserSelected,
                     excludePubkeys: disabledPubkeys,
                     selectedPubkeys: _selectedPubkeys,
-                    hidePubkeys: {for (final p in _selectedProfiles) p.pubkey},
+                    hidePubkeys: hidePubkeys,
                   ),
           ),
         ),

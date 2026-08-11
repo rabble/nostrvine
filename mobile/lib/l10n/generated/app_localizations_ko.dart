@@ -377,6 +377,21 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileVideosLabel => '영상';
 
   @override
+  String get profileCollabsLabel => '콜라보';
+
+  @override
+  String get profileLikedLabel => '좋아요함';
+
+  @override
+  String get profileRepostsLabel => '리포스트';
+
+  @override
+  String get profileListsLabel => '리스트';
+
+  @override
+  String get profileCommentsLabel => '댓글';
+
+  @override
   String profileCollaboratorInvitePendingHeadline(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -7011,9 +7026,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get likedVideosTitle => '좋아요한 영상';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar => '업로드 다시 시도 중…';
 
   @override
@@ -7207,6 +7219,17 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      '이 사람은 Divine이 아카이브에서 찾은 오리지널 Vine을 올렸어요. 계정 인증 배지는 아니에요.';
+
+  @override
+  String get profileBadgeCheckmarkTitle => '프로필 체크마크';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      '이 계정은 Divine의 프로필 체크마크 목록에 있어요. NIP-05, 인증된 계정 링크, OG Viner 상태와는 별개예요.';
 
   @override
   String shareVideoInListsCount(int count) {
@@ -9470,23 +9493,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get badgesTitle => '배지';
 
   @override
-  String get badgesIntroTitle => '내 배지 흔적을 살펴보세요';
-
-  @override
-  String get badgesIntroBody =>
-      '받은 배지를 보고, Nostr 프로필에 어떤 걸 고정할지 고르고, 발급한 배지를 사람들이 수락했는지 확인해요.';
-
-  @override
-  String get badgesOpenApp => '배지 앱 열기';
-
-  @override
   String get badgesLoadError => '배지를 불러오지 못했어요';
 
   @override
   String get badgesUpdateError => '배지를 업데이트하지 못했어요';
-
-  @override
-  String get badgesAwardedSectionTitle => '받은 배지';
 
   @override
   String get badgesAwardedEmptyTitle => '아직 받은 배지가 없어요';
@@ -9510,9 +9520,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get badgesActionReject => '거절';
 
   @override
-  String get badgesIssuedSectionTitle => '발급한 배지';
-
-  @override
   String get badgesIssuedEmptyTitle => '아직 발급한 배지가 없어요';
 
   @override
@@ -9528,30 +9535,214 @@ class AppLocalizationsKo extends AppLocalizations {
   String get badgesRecipientWaitingStatus => '수령자를 기다리는 중';
 
   @override
-  String get profileBadgeAwardedBy => 'Awarded by';
+  String badgesHiddenSectionTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '숨김 ($count)',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get profileBadgeRecipients => 'Recipients';
+  String get badgesActionRestore => '복원';
+
+  @override
+  String get badgesHiddenSnackbar => '배지를 숨겼어요';
+
+  @override
+  String get badgesHiddenSnackbarUndo => '실행 취소';
+
+  @override
+  String get badgesTabAwarded => '받은 배지';
+
+  @override
+  String get badgesTabCreated => '만든 배지';
+
+  @override
+  String get badgesTabIssued => '준 배지';
+
+  @override
+  String get badgesCreateAction => '새 배지';
+
+  @override
+  String get badgesCreatedEmptyTitle => '아직 만든 배지가 없어요';
+
+  @override
+  String get badgesCreatedEmptySubtitle => '하나 만들어서 받을 자격이 있는 사람에게 주세요.';
+
+  @override
+  String badgesCreatedAwardSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count명에게 줬어요',
+      zero: '아직 준 사람이 없어요',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeEditorCreateTitle => '새 배지';
+
+  @override
+  String get badgeEditorEditTitle => '배지 수정';
+
+  @override
+  String get badgeEditorNameLabel => '이름';
+
+  @override
+  String get badgeEditorNameHint => '장면 도둑';
+
+  @override
+  String get badgeEditorIdentifierLabel => '식별자';
+
+  @override
+  String get badgeEditorIdentifierHelp => '배지 주소의 일부라서, 배지를 만든 뒤에는 바꿀 수 없어요.';
+
+  @override
+  String get badgeEditorIdentifierTaken =>
+      '이 식별자를 쓰는 배지가 이미 있어요. 여기서 게시하면 덮어쓰니 그 배지를 수정해 주세요.';
+
+  @override
+  String get badgeEditorIdentifierRequired =>
+      '배지에는 식별자가 필요해요. 이름으로 채워지지 않았다면 직접 입력해 주세요.';
+
+  @override
+  String get badgeEditorDescriptionLabel => '설명';
+
+  @override
+  String get badgeEditorDescriptionHint => '단 하나의 루프로 시선을 훔친 사람에게.';
+
+  @override
+  String get badgeEditorArtworkLabel => '이미지';
+
+  @override
+  String get badgeEditorArtworkAdd => '이미지 추가';
+
+  @override
+  String get badgeEditorArtworkReplace => '교체';
+
+  @override
+  String get badgeEditorArtworkError => '그 이미지를 올리지 못했어요';
+
+  @override
+  String get badgeEditorArtworkRequired => '배지에는 이미지가 꼭 필요해요.';
+
+  @override
+  String get badgeEditorArtworkRemove => '이미지 삭제';
+
+  @override
+  String get badgeEditorArtworkSheetTitle => '배지 이미지';
+
+  @override
+  String get badgeDetailDeleteAction => '배지 삭제';
+
+  @override
+  String get badgeDetailDeleteTitle => '이 배지를 삭제할까요?';
+
+  @override
+  String get badgeDetailDeleteBody =>
+      '릴레이에 배지와 당신이 준 모든 수여 기록을 지워 달라고 요청해요. 릴레이는 거절할 수 있고, 프로필에 고정한 사람은 직접 뺄 때까지 계속 갖고 있어요.';
+
+  @override
+  String get badgeDetailDeleteConfirm => '삭제';
+
+  @override
+  String get badgeEditorSaveAction => '배지 게시';
+
+  @override
+  String get badgeEditorSaveError => '배지를 게시하지 못했어요';
+
+  @override
+  String get badgeEditorLoadError => '이 배지를 불러오지 못했어요';
+
+  @override
+  String get badgeDetailTitle => '배지';
+
+  @override
+  String get badgeDetailMadeBy => '만든 사람';
+
+  @override
+  String get badgeDetailRecipientsTitle => '받은 사람';
+
+  @override
+  String get badgeDetailNoRecipients => '아직 아무도 갖고 있지 않아요.';
+
+  @override
+  String get badgeDetailAwardAction => '이 배지 주기';
+
+  @override
+  String get badgeDetailEditAction => '배지 수정';
+
+  @override
+  String get badgeDetailShareAction => '공유';
+
+  @override
+  String badgeDetailShareMessage(String link) {
+    return 'Divine에서 이 배지를 확인해 보세요: $link';
+  }
+
+  @override
+  String get badgeDetailLoadError => '이 배지를 불러오지 못했어요';
+
+  @override
+  String get badgeDetailMissing => '어떤 릴레이에서도 이 배지를 찾을 수 없어요.';
+
+  @override
+  String get badgeDetailActionError => '처리하지 못했어요';
+
+  @override
+  String get badgeAwardTitle => '배지 주기';
+
+  @override
+  String get badgeAwardPickAction => '사람 고르기';
+
+  @override
+  String get badgeAwardManualLabel => '또는 키 붙여넣기';
+
+  @override
+  String get badgeAwardManualHint => 'npub1…, npub1…';
+
+  @override
+  String get badgeAwardEmptyHint => '최소 한 명은 골라 주세요.';
+
+  @override
+  String badgeAwardSubmitAction(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count명에게 주기',
+      zero: '배지 주기',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get profileBadgeAwardedBy => '준 사람';
+
+  @override
+  String get profileBadgeRecipients => '받은 사람';
 
   @override
   String profileBadgeMoreRecipients(int count) {
-    return '+$count more';
+    return '외 $count명';
   }
 
   @override
   String profileBadgeSemanticLabel(String name) {
-    return '$name badge';
+    return '$name 배지';
   }
 
   @override
-  String get profileBadgeFallbackSemanticLabel => 'Badge';
+  String get profileBadgeFallbackSemanticLabel => '배지';
 
   @override
   String get profileBadgeFooterBody =>
       '배지는 Nostr에서 누구나 만들 수 있는 작은 상이에요. 친구나 크리에이터, 오늘 하루를 즐겁게 해준 사람에게 하나 보내보세요.';
 
   @override
-  String get profileBadgeFooterLink => 'badges.divine.video에서 직접 만들기';
+  String get profileBadgeFooterLink => '내 배지 만들기';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';
@@ -10220,6 +10411,28 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get subtitleEditorProcessing => '자막을 아직 생성하고 있어요. 잠시 후 다시 확인해주세요.';
+
+  @override
+  String get subtitleEditorNoSpeech =>
+      '이 영상에서는 말소리가 감지되지 않았어요. 자막으로 만들 내용이 없네요.';
+
+  @override
+  String get subtitleEditorWriteOwn => '직접 쓰기';
+
+  @override
+  String get subtitleEditorAddCue => '줄 추가';
+
+  @override
+  String get subtitleEditorRemoveCue => '이 줄 삭제';
+
+  @override
+  String get subtitleEditorStartLabel => '시작';
+
+  @override
+  String get subtitleEditorEndLabel => '끝';
+
+  @override
+  String get subtitleEditorInvalidHint => '모든 줄에는 텍스트와 시작보다 늦은 종료 시간이 필요해요.';
 
   @override
   String get subtitleEditorLoadError => '자막을 불러오지 못했어요. 다시 시도해주세요.';

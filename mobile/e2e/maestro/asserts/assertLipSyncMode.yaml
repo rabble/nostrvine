@@ -1,0 +1,46 @@
+appId: co.openvine.app
+---
+# Lip-sync mode, idle: the viewfinder chrome and sound picker are up, and no
+# clip is recorded yet.
+#
+# Lip-sync renders the capture stack with the same control rail, so the sound
+# picker below is the *only* element that separates this screen from capture
+# mode's. assertCaptureMode asserts its absence for the same reason.
+
+# Mode wheel with Lip Sync armed. `selected` is load-bearing: the wheel renders
+# an entry for every mode in every mode, so a bare id assertion here passes
+# just as happily on the Capture tab.
+- assertVisible:
+    id: camera_mode_lipSync
+    selected: true
+- assertVisible:
+    id: camera_record_button
+- assertVisible:
+    id: camera_close_button
+- assertVisible:
+    id: camera_library_button
+
+# The sound picker, in the top-bar slot capture mode leaves empty.
+- assertVisible:
+    id: audio_chip
+
+# Control rail, top to bottom — identical to capture mode's, driven by the
+# same ../utils/driveCaptureRail.yaml.
+- assertVisible:
+    id: camera_flash_button
+- assertVisible:
+    id: camera_timer_button
+- assertVisible:
+    id: camera_aspect_ratio_button
+- assertVisible:
+    id: camera_switch_camera_button
+- assertVisible:
+    id: camera_stabilization_button
+
+# Nothing recorded yet. Both buttons sit inside an AnimatedOpacity, and
+# RenderAnimatedOpacity drops its child from the semantics tree at opacity 0 —
+# so "not visible" here means "no clip in the session", not "scrolled away".
+- assertNotVisible:
+    id: camera_next_button
+- assertNotVisible:
+    id: camera_delete_clip_button

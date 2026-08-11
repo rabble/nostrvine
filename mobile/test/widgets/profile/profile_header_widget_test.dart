@@ -2,6 +2,7 @@
 // ABOUTME: Verifies profile header displays avatar, stats, name, bio, and npub correctly
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:badge_repository/badge_repository.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -14,7 +15,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
-import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
@@ -30,9 +30,11 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
+import 'package:openvine/screens/badges/badge_editor_screen.dart';
+import 'package:openvine/screens/badges/badges_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
+import 'package:openvine/services/og_viner_cache_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
@@ -532,7 +534,78 @@ void main() {
       ).called(1);
     });
 
-    testWidgets('badge detail sheet links into the badges app', (
+    testWidgets('opens OG Viner explainer from profile header target', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({
+        ogVinerPubkeysCacheKey: jsonEncode([testUserHex]),
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: false,
+          suppliedProfile: createTestProfile(displayName: 'OG User'),
+          sharedPreferences: prefs,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final target = find.byTooltip(l10n.ogVinerBadgeLabel);
+      expect(target, findsOneWidget);
+      expect(find.text('V'), findsNothing);
+      final button = find.ancestor(
+        of: target,
+        matching: find.byType(DivineIconButton),
+      );
+      expect(button, findsOneWidget);
+      expect(tester.getSize(button), const Size(52, 52));
+
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.ogVinerBadgeLabel), findsWidgets);
+      expect(find.text(l10n.profileBadgeOgVinerBody), findsOneWidget);
+      expect(find.text(l10n.commonClose), findsOneWidget);
+    });
+
+    testWidgets('opens checkmark explainer from profile header target', (
+      tester,
+    ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: false,
+          suppliedProfile: createTestProfile(
+            displayName: 'Checked User',
+            nip05: 'rabble.divine.video',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final target = find.byTooltip(l10n.profileBadgeCheckmarkTitle);
+      expect(target, findsOneWidget);
+      final button = find.ancestor(
+        of: target,
+        matching: find.byType(DivineIconButton),
+      );
+      expect(button, findsOneWidget);
+      expect(tester.getSize(button), const Size(52, 52));
+
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.profileBadgeCheckmarkTitle), findsWidgets);
+      expect(find.text(l10n.profileBadgeCheckmarkBody), findsOneWidget);
+      expect(find.text(l10n.commonClose), findsOneWidget);
+    });
+
+    testWidgets('badge detail sheet opens the in-app badge editor', (
       tester,
     ) async {
       final testProfile = createTestProfile(displayName: 'Badged User');
@@ -586,11 +659,12 @@ void main() {
       await tester.tap(link);
       await tester.pumpAndSettle();
 
-      verify(
-        () => mockGoRouter.push<Object?>(
-          NostrAppSandboxScreen.pathForAppId(divineBadgesNostrApp.slug),
-        ),
-      ).called(1);
+      // Order matters: the dashboard has to sit under the editor, so that
+      // publishing pops onto the badge list rather than back to the profile.
+      verifyInOrder([
+        () => mockGoRouter.push<Object?>(BadgesScreen.path),
+        () => mockGoRouter.push<Object?>(BadgeEditorScreen.createPath),
+      ]);
     });
 
     testWidgets('caps accepted badge recipients in detail sheet', (
@@ -2579,25 +2653,24 @@ void main() {
         expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
       });
 
-      testWidgets(
-        'avatar comes back once the identity skeleton is disabled',
-        (tester) async {
-          await tester.pumpWidget(
-            buildTestWidget(
-              userIdHex: testUserHex,
-              isOwnProfile: true,
-              myProfileState: MyProfileLoaded(
-                profile: createTestProfile(displayName: 'Loaded'),
-                isFresh: true,
-              ),
+      testWidgets('avatar comes back once the identity skeleton is disabled', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            myProfileState: MyProfileLoaded(
+              profile: createTestProfile(displayName: 'Loaded'),
+              isFresh: true,
             ),
-          );
-          await tester.pump();
+          ),
+        );
+        await tester.pump();
 
-          expect(findIdentitySkeletonizer(tester).enabled, isFalse);
-          expect(find.byType(UserAvatar), findsOneWidget);
-        },
-      );
+        expect(findIdentitySkeletonizer(tester).enabled, isFalse);
+        expect(find.byType(UserAvatar), findsOneWidget);
+      });
 
       testWidgets(
         'never mounts two avatar Heroes while the skeleton cross-fades out',

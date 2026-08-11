@@ -1,0 +1,21 @@
+appId: co.openvine.app
+tags:
+  - recorder
+---
+#TC to record a clip in capture mode,
+# given the recorder is open on an idle capture viewfinder,
+# validate tap-to-start / tap-to-stop produces a clip in the session.
+#
+# Needs real camera hardware. Without it the bloc never reports
+# `isCameraInitialized`, the record button stays disabled, and the first tap
+# does nothing — so this cannot pass on the iOS Simulator. Run it on an
+# Android emulator (which has a virtual scene camera) or on a device.
+#
+# Tap-to-toggle is the default; hold-to-record is opt-in
+# (`HoldToRecordPreferenceService` defaults to false). A run against a device
+# where a previous session enabled it will hang on the first assertion.
+#Steps:
+# 1. Tap the record button: recording starts and the top-bar chrome collapses
+# 2. Tap it again: recording stops and the session holds one clip
+
+- runFlow: ../utils/recordCaptureClip.yaml
