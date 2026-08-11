@@ -9256,6 +9256,18 @@ class AppLocalizationsTr extends AppLocalizations {
       'Dönüştürülemiyor: klip yerel olarak mevcut değil.';
 
   @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Seçili kareyi kırp, döndür veya çevir';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'Bir saniye, kareni dönüştürüyoruz';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Kare dönüştürülemedi. Lütfen tekrar dene.';
+
+  @override
   String get videoEditorTransformRotateLabel => 'Döndür';
 
   @override

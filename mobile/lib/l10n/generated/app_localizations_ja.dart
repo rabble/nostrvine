@@ -8905,6 +8905,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorTransformNoLocalFile => '変形できません：クリップがローカルに利用できません。';
 
   @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      '選択したフレームをトリミング、回転、反転';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel => '少々お待ちください。フレームを変換しています';
+
+  @override
+  String get videoEditorTransformFrameFailed => 'フレームを変換できませんでした。もう一度お試しください。';
+
+  @override
   String get videoEditorTransformRotateLabel => '回転';
 
   @override

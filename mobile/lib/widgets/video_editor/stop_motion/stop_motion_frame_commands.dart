@@ -1,17 +1,24 @@
 // ABOUTME: Commits stop-motion frame-list edits to the clip editor + history
 // ABOUTME: Shared by the frame strip, the action bar, and the toolbar control
 
+import 'dart:typed_data';
+
 import 'package:divine_ui/divine_ui.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/extensions/video_editor_extensions.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
+import 'package:openvine/screens/video_editor/stop_motion_frame_transform_screen.dart';
+import 'package:openvine/services/video_editor/stop_motion_frame_transform_service.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/stop_motion/stop_motion_frames_per_image_sheet.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Commits a new stop-motion frame list for the single stop-motion clip
 /// [clipId].
@@ -65,14 +72,90 @@ void commitStopMotionFrames(
   );
 }
 
+DivineVideoClip? _clip(BuildContext context, String clipId) {
+  for (final clip in context.read<ClipEditorBloc>().state.clips) {
+    if (clip.id == clipId) return clip;
+  }
+  return null;
+}
+
 List<StopMotionClipFrame>? _stopMotionFrames(
   BuildContext context,
   String clipId,
-) {
-  for (final clip in context.read<ClipEditorBloc>().state.clips) {
-    if (clip.id == clipId) return clip.stopMotionFrames;
+) => _clip(context, clipId)?.stopMotionFrames;
+
+/// Opens the still at [frameIndex] of the stop-motion clip [clipId] in the
+/// crop / rotate / flip editor and points that still at the transformed image.
+///
+/// Unlike the clip-level transform — which queues a native re-render through
+/// [ClipEditorBloc] — a still is finished the moment the editor hands its
+/// pixels back, so this writes the new image and commits the frame list
+/// directly.
+///
+/// Only the edited slot changes: duplicates of the same still elsewhere in the
+/// sequence keep the original image, because the transform is committed as a
+/// new file rather than an overwrite.
+Future<void> transformStopMotionFrame(
+  BuildContext context, {
+  required String clipId,
+  required int frameIndex,
+}) async {
+  final clip = _clip(context, clipId);
+  final frames = clip?.stopMotionFrames;
+  if (clip == null ||
+      frames == null ||
+      frameIndex < 0 ||
+      frameIndex >= frames.length) {
+    return;
   }
-  return null;
+
+  final bytes = await Navigator.of(context).push<Uint8List>(
+    PageRouteBuilder<Uint8List>(
+      opaque: false,
+      barrierColor: context.vineColors.surfaceContainerHigh,
+      pageBuilder: (_, _, _) => StopMotionFrameTransformScreen(
+        framePath: frames[frameIndex].path,
+        targetAspectRatio: clip.targetAspectRatio,
+      ),
+      transitionsBuilder: (_, animation, _, child) =>
+          FadeTransition(opacity: animation, child: child),
+    ),
+  );
+
+  if (bytes == null || bytes.isEmpty || !context.mounted) return;
+
+  final String path;
+  try {
+    path = await StopMotionFrameTransformService.writeTransformedFrame(bytes);
+  } catch (e, stackTrace) {
+    Log.error(
+      '❌ Failed to save transformed stop-motion still: $e',
+      name: 'StopMotionFrameCommands',
+      error: e,
+      stackTrace: stackTrace,
+      category: LogCategory.video,
+    );
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      DivineSnackbarContainer.snackBar(
+        context.l10n.videoEditorTransformFrameFailed,
+      ),
+    );
+    return;
+  }
+
+  if (!context.mounted) return;
+
+  // Re-read across the async gaps, the same way the hold commands do — the
+  // clip can be gone or shorter by the time the editor closes.
+  final latest = _stopMotionFrames(context, clipId);
+  if (latest == null || frameIndex >= latest.length) return;
+
+  commitStopMotionFrames(
+    context,
+    clipId: clipId,
+    frames: StopMotionFrameOps.setFramePath(latest, frameIndex, path),
+  );
 }
 
 /// Opens the frames-per-image wheel sheet and applies the chosen hold to every

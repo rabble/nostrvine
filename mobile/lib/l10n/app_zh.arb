@@ -5481,6 +5481,18 @@
   "@videoEditorTransformNoLocalFile": {
     "description": "Snackbar message shown when a transform is requested for a clip that has no locally available file."
   },
+  "videoEditorTransformSelectedFrameSemanticLabel": "裁剪、旋转或翻转选中帧",
+  "@videoEditorTransformSelectedFrameSemanticLabel": {
+    "description": "Accessibility label for the Transform button in the stop-motion frame controls."
+  },
+  "videoEditorTransformFrameProgressLabel": "稍等，正在处理你的帧",
+  "@videoEditorTransformFrameProgressLabel": {
+    "description": "Status text shown while a stop-motion frame is being rendered with the applied crop/rotate transform."
+  },
+  "videoEditorTransformFrameFailed": "无法处理该帧，请重试。",
+  "@videoEditorTransformFrameFailed": {
+    "description": "Snackbar message shown when saving a transformed stop-motion frame fails."
+  },
   "videoEditorTransformRotateLabel": "旋转",
   "@videoEditorTransformRotateLabel": {
     "description": "Label for the rotate action button in the clip transform editor."

@@ -266,6 +266,25 @@ abstract class StopMotionFrameOps {
     return next;
   }
 
+  /// [frames] with the still at [index] pointing at the image file at [path] —
+  /// the crop / rotate / flip of that still, baked into a new file.
+  ///
+  /// Only the image changes: the hold (and whether it was overridden) belongs
+  /// to the slot in the sequence, not to the pixels. Returns the source list
+  /// unchanged for an out-of-range [index] or a path the still already uses, so
+  /// the commit's `identical` no-op guard skips a redundant history entry.
+  static List<StopMotionClipFrame> setFramePath(
+    List<StopMotionClipFrame> frames,
+    int index,
+    String path,
+  ) {
+    if (index < 0 || index >= frames.length) return frames;
+    if (frames[index].path == path) return frames;
+    final next = [...frames];
+    next[index] = frames[index].copyWith(path: path);
+    return next;
+  }
+
   /// [frames] with the selected stills' order reversed among their own slots:
   /// the indexes in [indexes] keep their positions, but the stills sitting on
   /// them swap into reverse order (frame multi-select "reverse").

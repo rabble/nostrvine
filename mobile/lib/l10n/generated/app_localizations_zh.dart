@@ -8839,6 +8839,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoEditorTransformNoLocalFile => '无法变换：片段不在本地。';
 
   @override
+  String get videoEditorTransformSelectedFrameSemanticLabel => '裁剪、旋转或翻转选中帧';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel => '稍等，正在处理你的帧';
+
+  @override
+  String get videoEditorTransformFrameFailed => '无法处理该帧，请重试。';
+
+  @override
   String get videoEditorTransformRotateLabel => '旋转';
 
   @override

@@ -9301,6 +9301,18 @@ class AppLocalizationsUr extends AppLocalizations {
       'ٹرانسفارم نہیں ہو سکتا: کلپ مقامی طور پر دستیاب نہیں ہے۔';
 
   @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'منتخب فریم کو کراپ، گھمائیں یا پلٹیں';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'ایک لمحہ، ہم آپ کا فریم تبدیل کر رہے ہیں';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'فریم تبدیل نہیں ہو سکا۔ براہ کرم دوبارہ کوشش کریں۔';
+
+  @override
   String get videoEditorTransformRotateLabel => 'گھمائیں';
 
   @override

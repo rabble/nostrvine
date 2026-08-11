@@ -9102,6 +9102,18 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorTransformNoLocalFile => 'መለወጥ አይቻልም፦ ክሊፑ በአካባቢው አይገኝም።';
 
   @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'የተመረጠውን ፍሬም ቁረጥ፣ አሽከርክር ወይም ገልብጥ';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'ትንሽ ይቆዩ፣ ፍሬምዎን እየለወጥን ነው';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'ፍሬሙን መለወጥ አልተቻለም። እባክዎ እንደገና ይሞክሩ።';
+
+  @override
   String get videoEditorTransformRotateLabel => 'አሽከርክር';
 
   @override

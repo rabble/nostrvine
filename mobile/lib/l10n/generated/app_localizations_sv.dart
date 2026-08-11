@@ -9300,6 +9300,18 @@ class AppLocalizationsSv extends AppLocalizations {
       'Kan inte transformera: klippet är inte tillgängligt lokalt.';
 
   @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Beskär, rotera eller spegelvänd markerad bildruta';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'Ett ögonblick, vi transformerar din bildruta';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Det gick inte att transformera bildrutan. Försök igen.';
+
+  @override
   String get videoEditorTransformRotateLabel => 'Rotera';
 
   @override

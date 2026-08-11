@@ -9410,6 +9410,18 @@ class AppLocalizationsDe extends AppLocalizations {
       'Transformieren nicht möglich: Clip ist nicht lokal verfügbar.';
 
   @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Ausgewähltes Frame zuschneiden, drehen oder spiegeln';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'Einen Moment, wir transformieren dein Frame';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Frame konnte nicht transformiert werden. Bitte versuche es erneut.';
+
+  @override
   String get videoEditorTransformRotateLabel => 'Drehen';
 
   @override

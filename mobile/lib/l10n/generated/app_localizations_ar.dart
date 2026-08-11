@@ -9239,6 +9239,18 @@ class AppLocalizationsAr extends AppLocalizations {
       'لا يمكن التحويل: المقطع غير متوفر محليًا.';
 
   @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'قص الإطار المحدد أو تدويره أو قلبه';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'لحظة واحدة، نحن نحوّل إطارك';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'تعذّر تحويل الإطار. يرجى المحاولة مرة أخرى.';
+
+  @override
   String get videoEditorTransformRotateLabel => 'تدوير';
 
   @override

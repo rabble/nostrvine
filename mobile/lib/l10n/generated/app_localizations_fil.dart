@@ -9411,6 +9411,18 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi ma-transform: hindi available nang lokal ang clip.';
 
   @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'I-crop, i-rotate, o i-flip ang napiling frame';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'Sandali lang, tina-transform namin ang frame mo';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Hindi ma-transform ang frame. Subukan ulit.';
+
+  @override
   String get videoEditorTransformRotateLabel => 'I-rotate';
 
   @override

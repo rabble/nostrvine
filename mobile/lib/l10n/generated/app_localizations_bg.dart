@@ -9386,6 +9386,18 @@ class AppLocalizationsBg extends AppLocalizations {
       'Преобразуването е невъзможно: клипът не е наличен локално.';
 
   @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Изрязване, завъртане или обръщане на избрания кадър';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'Само момент, преобразуваме кадъра ти';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Кадърът не можа да бъде преобразуван. Опитай отново.';
+
+  @override
   String get videoEditorTransformRotateLabel => 'Завъртане';
 
   @override
