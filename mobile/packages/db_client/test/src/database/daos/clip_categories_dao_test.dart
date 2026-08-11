@@ -251,16 +251,42 @@ void main() {
       },
     );
 
-    test('clearCategoryAssignments unfiles every clip in a category', () async {
-      await insertCategory('cat-a');
-      await insertLibraryClip('clip-1', categoryId: 'cat-a');
-      await insertLibraryClip('clip-2', categoryId: 'cat-a');
+    test(
+      'setClipCategory can clear the archive marker in the same write',
+      () async {
+        await insertCategory('cat-a');
+        await insertLibraryClip('clip-1');
+        await clipsDao.setClipArchived(
+          id: 'clip-1',
+          archivedAt: DateTime(2026, 3, 2),
+        );
 
-      final cleared = await clipsDao.clearCategoryAssignments('cat-a');
+        await clipsDao.setClipCategory(
+          id: 'clip-1',
+          categoryId: 'cat-a',
+          clearArchived: true,
+        );
 
-      expect(cleared, 2);
-      final clips = await clipsDao.getLibraryClips();
-      expect(clips.every((c) => c.categoryId == null), isTrue);
-    });
+        final row = await clipsDao.getClipById('clip-1');
+        expect(row?.categoryId, 'cat-a');
+        expect(row?.archivedAt, null);
+      },
+    );
+
+    test(
+      'setClipCategory leaves the archive marker alone by default',
+      () async {
+        await insertLibraryClip('clip-1');
+        await clipsDao.setClipArchived(
+          id: 'clip-1',
+          archivedAt: DateTime(2026, 3, 2),
+        );
+
+        await clipsDao.setClipCategory(id: 'clip-1', categoryId: null);
+
+        final row = await clipsDao.getClipById('clip-1');
+        expect(row?.archivedAt, DateTime(2026, 3, 2));
+      },
+    );
   });
 }

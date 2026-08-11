@@ -246,13 +246,20 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
   /// File a clip under [categoryId], or pass `null` to remove it from its
   /// current category. Does not validate that the category exists.
   ///
+  /// Pass [clearArchived] to drop the archive marker in the same statement,
+  /// so a clip can never be left filed under a category *and* archived.
+  ///
   /// Returns true if a row was updated.
   Future<bool> setClipCategory({
     required String id,
     required String? categoryId,
+    bool clearArchived = false,
   }) async {
     final rows = await (update(clips)..where((t) => t.id.equals(id))).write(
-      ClipsCompanion(categoryId: Value(categoryId)),
+      ClipsCompanion(
+        categoryId: Value(categoryId),
+        archivedAt: clearArchived ? const Value(null) : const Value.absent(),
+      ),
     );
     return rows > 0;
   }
@@ -268,17 +275,6 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
       ClipsCompanion(archivedAt: Value(archivedAt)),
     );
     return rows > 0;
-  }
-
-  /// Remove every clip from the category [categoryId], leaving the clips
-  /// themselves in place. Called when a category is deleted so its clips
-  /// fall back to the library's default view rather than disappearing.
-  ///
-  /// Returns the number of clips that were unfiled.
-  Future<int> clearCategoryAssignments(String categoryId) {
-    return (update(clips)..where((t) => t.categoryId.equals(categoryId))).write(
-      const ClipsCompanion(categoryId: Value(null)),
-    );
   }
 
   // -- Trash methods --
