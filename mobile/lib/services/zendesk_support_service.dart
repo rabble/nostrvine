@@ -1164,6 +1164,10 @@ class ZendeskSupportService {
     if (whenToUse != null && whenToUse.isNotEmpty) {
       buffer.writeln();
       buffer.writeln('### When would you use this?');
+      // No test distinguishes this call from the whole-ticket pass in
+      // `createTicket`, because nothing user-controlled is appended after it -
+      // the containment it provides has nothing left to contain. Keep it: it
+      // stops being redundant the moment a section is added below.
       buffer.writeln(sanitizeDiagnosticText(whenToUse));
     }
     final effectivePubkey = userPubkey ?? _userNpub;

@@ -111,6 +111,14 @@ submission boundary. These limits are known and accepted:
   field is full. Truncation must not be silent: nothing else in the payload
   carries the dropped tail, since attachments are images only and the log
   summary comes from in-app logs rather than pasted text.
+- A credential key written with nothing after it (`...my password:`) consumes
+  the start of whatever follows, across the line break, because the separator
+  between a key and its value may span whitespace. Between assembled fields
+  that costs a few characters of the next heading; inside the log summary,
+  where entries abut with no heading between them, it can cost the start of the
+  next entry or a braced line. Diagnostic loss, not a leak - the alternative,
+  refusing to span a line break, would leave `password:` followed by its value
+  on the next line unredacted.
 - Text typed inside the native Zendesk SDK screens is never sanitized. The
   ticket list (`ZendeskSupportService.showTicketListScreen`, reachable from the
   support center) opens the SDK's own UI, where a reply to an existing ticket is
