@@ -176,7 +176,13 @@ class _SubtitleEditorStageState extends State<SubtitleEditorStage>
       try {
         final file = File(frame.path);
         if (file.existsSync()) file.deleteSync();
-      } catch (_) {}
+      } catch (error) {
+        Log.debug(
+          'Could not delete subtitle timeline frame ${frame.path}: $error',
+          name: 'SubtitleEditorStage',
+          category: LogCategory.video,
+        );
+      }
     }
   }
 
