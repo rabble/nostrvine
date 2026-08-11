@@ -37,6 +37,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
   String? _errorMessage;
   StreamSubscription<List<CuratedList>>? _subscription;
   final _scrollController = ScrollController();
+  Timer? _initialLoadTimeoutTimer;
 
   // Debounce timer for batching rapid stream updates
   Timer? _updateDebounceTimer;
@@ -49,6 +50,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
   int _autoPaginationAttempts = 0;
   static const int _maxAutoPaginationAttempts = 5;
   static const int _minListsBeforeAutoPaginate = 10;
+  static const Duration _initialLoadTimeout = Duration(seconds: 8);
 
   @override
   ScrollController get paginationScrollController => _scrollController;
@@ -76,6 +78,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
 
   @override
   void dispose() {
+    _initialLoadTimeoutTimer?.cancel();
     _updateDebounceTimer?.cancel();
     _subscription?.cancel();
     disposePagination();
@@ -97,13 +100,13 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
       _hasReachedEnd = false;
     });
 
-    // Set loading state in provider
-    provider.setLoading(!hadExistingLists);
-
     // Clear lists only if not refreshing
     if (!isRefresh) {
       provider.clear();
     }
+
+    // Set loading state in provider after any clear() call.
+    provider.setLoading(!hadExistingLists);
 
     try {
       final service = ref.read(curatedListsStateProvider.notifier).service;
@@ -117,9 +120,26 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
       }
 
       // Stream results - UI updates with debouncing to handle rapid events
-      _subscription?.cancel();
+      await _subscription?.cancel();
+      _initialLoadTimeoutTimer?.cancel();
+      var hasReceivedStreamUpdate = false;
+      _initialLoadTimeoutTimer = Timer(_initialLoadTimeout, () {
+        if (!mounted || hasReceivedStreamUpdate) return;
+
+        unawaited(_subscription?.cancel());
+        _subscription = null;
+        provider.setLoading(false);
+        setState(() {
+          _isRefreshing = false;
+          _errorMessage = context.l10n.discoverListsFailedToLoadWithError(
+            'The relay did not return lists in time. Try again.',
+          );
+        });
+      });
       _subscription = service.streamPublicListsFromRelays().listen(
         (lists) {
+          hasReceivedStreamUpdate = true;
+          _initialLoadTimeoutTimer?.cancel();
           if (mounted) {
             // Track oldest timestamp for pagination
             for (final list in lists) {
@@ -191,23 +211,34 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
           }
         },
         onError: (error) {
+          _initialLoadTimeoutTimer?.cancel();
           if (mounted) {
             provider.setLoading(false);
             setState(() {
+              _isRefreshing = false;
               _errorMessage = context.l10n.discoverListsFailedToLoadWithError(
                 '$error',
               );
             });
           }
         },
+        onDone: () {
+          _initialLoadTimeoutTimer?.cancel();
+          if (mounted && !hasReceivedStreamUpdate) {
+            provider.setLoading(false);
+            setState(() {
+              _isRefreshing = false;
+            });
+          }
+        },
       );
     } catch (e) {
+      _initialLoadTimeoutTimer?.cancel();
       if (mounted) {
         ref.read(discoveredListsProvider.notifier).setLoading(false);
         setState(() {
-          _errorMessage = context.l10n.discoverListsFailedToLoadWithError(
-            '$e',
-          );
+          _isRefreshing = false;
+          _errorMessage = context.l10n.discoverListsFailedToLoadWithError('$e');
         });
         Log.error(
           'Failed to discover public lists: $e',

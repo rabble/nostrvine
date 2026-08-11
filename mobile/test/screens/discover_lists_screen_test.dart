@@ -81,9 +81,11 @@ void main() {
       final lists = initialLists ?? preloadedLists;
       final oldest =
           oldestTimestamp ??
-          lists
-              .map((list) => list.createdAt)
-              .reduce((a, b) => a.isBefore(b) ? a : b);
+          (lists.isEmpty
+              ? null
+              : lists
+                    .map((list) => list.createdAt)
+                    .reduce((a, b) => a.isBefore(b) ? a : b));
 
       return ProviderScope(
         overrides: [
@@ -196,5 +198,29 @@ void main() {
         );
       },
     );
+
+    testWidgets('initial load times out when relay stream never emits', (
+      tester,
+    ) async {
+      final controller = StreamController<List<CuratedList>>();
+      addTearDown(controller.close);
+
+      when(
+        () => mockService.streamPublicListsFromRelays(),
+      ).thenAnswer((_) => controller.stream);
+
+      await tester.pumpWidget(buildSubject(initialLists: []));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 9));
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.text('Failed to load lists'), findsOneWidget);
+      expect(find.text('Retry'), findsOneWidget);
+    });
   });
 }

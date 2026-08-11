@@ -618,11 +618,13 @@ class NostrClient {
   /// Number of active subscriptions
   int get activeSubscriptionCount => _subscriptionStreams.length;
 
-  /// Map of subscription IDs to their filter hashes (for deduplication)
+  /// Map of subscription IDs to their filter hashes (for diagnostics)
   final Map<String, String> _subscriptionFilters = {};
 
   /// Map of active subscriptions
   final Map<String, StreamController<Event>> _subscriptionStreams = {};
+
+  int _anonymousSubscriptionCounter = 0;
 
   /// Publishes an event to relays
   ///
@@ -1115,10 +1117,11 @@ class NostrClient {
     return null;
   }
 
-  /// Subscribes to events matching the given filters
+  /// Subscribes to events matching the given filters.
   ///
-  /// Returns a stream of events. Automatically deduplicates subscriptions
-  /// with identical filters to prevent duplicate WebSocket subscriptions.
+  /// Returns a broadcast stream of events. Anonymous subscriptions receive a
+  /// fresh relay subscription every call so bounded query screens can
+  /// re-enter safely after a previous listener was canceled.
   Stream<Event> subscribe(
     List<Filter> filters, {
     String? subscriptionId,
@@ -1130,12 +1133,15 @@ class NostrClient {
   }) {
     final effectiveTempRelays = _allowedRelays(tempRelays);
     final effectiveTargetRelays = _allowedRelays(targetRelays);
-    // Generate deterministic subscription ID based on filter content
     final filterHash = _generateFilterHash(filters);
-    final id = subscriptionId ?? 'sub_$filterHash';
+    final id =
+        subscriptionId ??
+        'sub_${filterHash}_${_anonymousSubscriptionCounter++}';
 
-    // Check if we already have this exact subscription
-    if (_subscriptionStreams.containsKey(id) &&
+    // Explicit subscription IDs are caller-owned. Preserve their sharing
+    // semantics so manual unsubscribe call sites keep working as before.
+    if (subscriptionId != null &&
+        _subscriptionStreams.containsKey(id) &&
         !_subscriptionStreams[id]!.isClosed) {
       return _subscriptionStreams[id]!.stream;
     }
@@ -1145,8 +1151,21 @@ class NostrClient {
       unawaited(retryDisconnectedRelays());
     }
 
+    late final StreamController<Event> controller;
+    var effectiveId = id;
+
+    void cleanupSubscription() {
+      if (!_subscriptionStreams.containsKey(effectiveId)) return;
+      _nostr.unsubscribe(effectiveId);
+      _subscriptionStreams.remove(effectiveId);
+      _subscriptionFilters.remove(effectiveId);
+      statisticsObserver?.onSubscriptionClosed(effectiveId);
+    }
+
     // Create new stream controller
-    final controller = StreamController<Event>.broadcast();
+    controller = StreamController<Event>.broadcast(
+      onCancel: cleanupSubscription,
+    );
     _subscriptionStreams[id] = controller;
     _subscriptionFilters[id] = filterHash;
 
@@ -1184,7 +1203,7 @@ class NostrClient {
     );
 
     // If nostr_sdk generated a different ID, update our mapping
-    final effectiveId = (actualId != id && actualId.isNotEmpty) ? actualId : id;
+    effectiveId = (actualId != id && actualId.isNotEmpty) ? actualId : id;
     if (effectiveId != id) {
       _subscriptionStreams.remove(id);
       _subscriptionStreams[effectiveId] = controller;
