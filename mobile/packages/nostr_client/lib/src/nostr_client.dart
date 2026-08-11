@@ -59,7 +59,7 @@ typedef NostrClientInitializationObserver =
 /// Abstraction layer for Nostr communication
 ///
 /// This client wraps nostr_sdk and provides:
-/// - Subscription deduplication (prevents duplicate subscriptions)
+/// - Subscription lifecycle (relay REQ closed when the last listener cancels)
 /// - Local database caching for faster queries
 /// - Clean API for repositories to use
 /// - Proper resource management
