@@ -65,6 +65,12 @@ class VideoRecorderClassicStack extends ConsumerWidget {
                     child: Semantics(
                       identifier: SemanticIds.cameraClassicShutter,
                       button: true,
+                      // Same value the gesture detector below is gated on, so
+                      // the node stops announcing a tappable button once the
+                      // shutter is dead — no camera, or the session's 6.3s
+                      // budget spent. Mirrors the capture stack's record
+                      // button, which has always reported it.
+                      enabled: isEnabled,
                       liveRegion: true,
                       label: state.isRecording
                           ? context.l10n.videoRecorderRecordingTapToStopLabel

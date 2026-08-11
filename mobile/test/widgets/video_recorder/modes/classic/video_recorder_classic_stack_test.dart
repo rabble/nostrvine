@@ -1,3 +1,5 @@
+import 'dart:ui' show Tristate;
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -44,12 +46,14 @@ void main() {
     Widget buildWidget({
       VideoRecorderState recordingState = VideoRecorderState.idle,
       List<DivineVideoClip>? clips,
+      bool isCameraInitialized = true,
+      bool canRecord = true,
     }) {
       when(() => recorderBloc.state).thenReturn(
         VideoRecorderBlocState(
           recordingState: recordingState,
-          isCameraInitialized: true,
-          canRecord: true,
+          isCameraInitialized: isCameraInitialized,
+          canRecord: canRecord,
         ),
       );
 
@@ -211,6 +215,45 @@ void main() {
           find.bySemanticsIdentifier(SemanticIds.cameraClassicShutter),
           findsOneWidget,
         );
+
+        handle.dispose();
+      });
+
+      // The anchor is stable across recording states, but the node's enabled
+      // flag is not meant to be: it carries the same gate the gesture detector
+      // runs on, so a screen reader stops offering a button that does nothing
+      // and assertClassicMode can tell a live viewfinder from a dead one. The
+      // capture stack's record button has always reported this.
+      //
+      // One pump per state: the bloc is a mock and does not emit, so
+      // re-pumping over a live tree leaves `context.select` on the value it
+      // already read.
+      testWidgets('reports the shutter enabled once the camera is ready', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
+
+        final node = tester.getSemantics(
+          find.bySemanticsIdentifier(SemanticIds.cameraClassicShutter),
+        );
+        expect(node.flagsCollection.isEnabled, Tristate.isTrue);
+
+        handle.dispose();
+      });
+
+      testWidgets('reports the shutter disabled before the camera is ready', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(buildWidget(isCameraInitialized: false));
+        await tester.pumpAndSettle();
+
+        final node = tester.getSemantics(
+          find.bySemanticsIdentifier(SemanticIds.cameraClassicShutter),
+        );
+        expect(node.flagsCollection.isEnabled, Tristate.isFalse);
 
         handle.dispose();
       });
