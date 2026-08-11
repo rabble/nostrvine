@@ -89,38 +89,43 @@ void main() {
       },
     );
 
-    testWidgets(
-      'back from a cold entry lands on settings instead of throwing',
-      (tester) async {
-        final router = GoRouter(
-          initialLocation: FeatureFlagScreen.path,
-          routes: [
-            GoRoute(
-              path: SettingsScreen.path,
-              builder: (_, _) => const Scaffold(body: Text('SETTINGS-STUB')),
-            ),
-            GoRoute(
-              path: FeatureFlagScreen.path,
-              builder: (_, _) => const FeatureFlagScreen(),
-            ),
-          ],
-        );
-        addTearDown(router.dispose);
+    testWidgets('cold entry nests under settings and pops back to settings', (
+      tester,
+    ) async {
+      final router = GoRouter(
+        initialLocation: FeatureFlagScreen.path,
+        routes: [
+          GoRoute(
+            path: SettingsScreen.path,
+            builder: (_, _) => const Scaffold(body: Text('SETTINGS-STUB')),
+            routes: [
+              GoRoute(
+                path: FeatureFlagScreen.subpath,
+                builder: (_, _) => const FeatureFlagScreen(),
+              ),
+            ],
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
 
-        await pumpRouter(tester, router);
-        expect(find.byType(FeatureFlagScreen), findsOneWidget);
-        // Cold entry leaves a one-entry stack: a raw context.pop would throw
-        // GoError here, which is the regression this test guards.
-        expect(router.canPop(), isFalse);
+      await pumpRouter(tester, router);
+      expect(find.byType(FeatureFlagScreen), findsOneWidget);
+      expect(
+        router.canPop(),
+        isTrue,
+        reason:
+            'Feature flags should be a real settings child route, so back is '
+            'a pop to Settings rather than a fallback navigation.',
+      );
 
-        await tester.tap(find.byType(DiVineAppBarLeading));
-        await tester.pumpAndSettle();
+      await tester.tap(find.byType(DiVineAppBarLeading));
+      await tester.pumpAndSettle();
 
-        expect(tester.takeException(), isNull);
-        expect(find.text('SETTINGS-STUB'), findsOneWidget);
-        expect(find.byType(FeatureFlagScreen), findsNothing);
-      },
-    );
+      expect(tester.takeException(), isNull);
+      expect(find.text('SETTINGS-STUB'), findsOneWidget);
+      expect(find.byType(FeatureFlagScreen), findsNothing);
+    });
 
     testWidgets('back from a pushed entry returns to the pushing screen', (
       tester,
@@ -131,10 +136,12 @@ void main() {
           GoRoute(
             path: SettingsScreen.path,
             builder: (_, _) => const Scaffold(body: Text('SETTINGS-STUB')),
-          ),
-          GoRoute(
-            path: FeatureFlagScreen.path,
-            builder: (_, _) => const FeatureFlagScreen(),
+            routes: [
+              GoRoute(
+                path: FeatureFlagScreen.subpath,
+                builder: (_, _) => const FeatureFlagScreen(),
+              ),
+            ],
           ),
         ],
       );

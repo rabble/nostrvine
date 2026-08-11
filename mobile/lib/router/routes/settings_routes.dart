@@ -46,6 +46,13 @@ List<RouteBase> settingsRoutes(Ref ref) {
       path: SettingsScreen.path,
       name: SettingsScreen.routeName,
       builder: (_, _) => const SettingsScreen(),
+      routes: [
+        GoRoute(
+          path: FeatureFlagScreen.subpath,
+          name: FeatureFlagScreen.routeName,
+          builder: (_, _) => const FeatureFlagScreen(),
+        ),
+      ],
     ),
     GoRoute(
       path: BadgesScreen.path,
@@ -210,11 +217,6 @@ List<RouteBase> settingsRoutes(Ref ref) {
       path: ContentFiltersScreen.path,
       name: ContentFiltersScreen.routeName,
       builder: (_, _) => const ContentFiltersScreen(),
-    ),
-    GoRoute(
-      path: FeatureFlagScreen.path,
-      name: FeatureFlagScreen.routeName,
-      builder: (_, _) => const FeatureFlagScreen(),
     ),
     GoRoute(
       path: DeveloperOptionsScreen.path,

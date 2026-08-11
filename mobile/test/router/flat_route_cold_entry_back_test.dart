@@ -4,7 +4,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
 import 'package:openvine/screens/settings/monetization_links_settings_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
@@ -21,7 +20,6 @@ import 'package:openvine/widgets/feature_request_dialog.dart';
 /// false and a raw `context.pop()` throws `GoError: There is nothing to pop`,
 /// stranding the user on a dead back button (#6112, #6481).
 const _flatMultiSegmentPaths = <String>[
-  FeatureFlagScreen.path,
   SupporterScreen.path,
   MonetizationLinksSettingsScreen.path,
   BugReportScreen.path,

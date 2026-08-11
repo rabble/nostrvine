@@ -5,12 +5,14 @@ import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/blocs/signature_verification_policy/signature_verification_policy_cubit.dart';
 import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/models/nostr_signature_verification_policy.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
-import 'package:openvine/services/nostr_signature_verification_preference_service.dart';
 
 class SignatureVerificationPolicyScreen extends ConsumerWidget {
   const SignatureVerificationPolicyScreen({super.key});
@@ -21,7 +23,25 @@ class SignatureVerificationPolicyScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final current = ref.watch(nostrSignatureVerificationPolicyProvider);
+    return BlocProvider(
+      create: (_) => SignatureVerificationPolicyCubit(
+        preferenceService: ref.read(
+          nostrSignatureVerificationPreferenceServiceProvider,
+        ),
+        onPolicyChanged: () =>
+            ref.invalidate(nostrSignatureVerificationPolicyProvider),
+      ),
+      child: const _SignatureVerificationPolicyView(),
+    );
+  }
+}
+
+class _SignatureVerificationPolicyView extends StatelessWidget {
+  const _SignatureVerificationPolicyView();
+
+  @override
+  Widget build(BuildContext context) {
+    final current = context.watch<SignatureVerificationPolicyCubit>().state;
 
     return Scaffold(
       appBar: DiVineAppBar(
@@ -58,7 +78,11 @@ class SignatureVerificationPolicyScreen extends ConsumerWidget {
                   isSelected: policy == current,
                   onTap: () {
                     if (policy == current) return;
-                    unawaited(_setPolicy(ref, policy));
+                    unawaited(
+                      context
+                          .read<SignatureVerificationPolicyCubit>()
+                          .setPolicy(policy),
+                    );
                   },
                 ),
             ],
@@ -66,17 +90,6 @@ class SignatureVerificationPolicyScreen extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  Future<void> _setPolicy(
-    WidgetRef ref,
-    NostrSignatureVerificationPolicy value,
-  ) async {
-    final service = ref.read(
-      nostrSignatureVerificationPreferenceServiceProvider,
-    );
-    await service.setPolicy(value);
-    ref.invalidate(nostrSignatureVerificationPolicyProvider);
   }
 }
 
