@@ -378,28 +378,35 @@ definitions:
       name: Install Maestro CLI
       script: |
         set -e
+        # THROWAWAY PROBE BRANCH — do not merge.
+        # 2.1.0 cannot start its iOS driver on Xcode 26.x: the XCTest runner
+        # installs, reports success, and never binds port 7001
+        # (mobile-dev-inc/Maestro#2932). 2.8.0 carries the iOS 26 fixes and
+        # runs these flows green locally. This build answers one question:
+        # does 2.8.0 work on Codemagic's Xcode 26.4.1 image?
+        export MAESTRO_VERSION=2.8.0
         curl -Ls "https://get.maestro.mobile.dev" | bash
         export PATH="$PATH:$HOME/.maestro/bin"
         maestro --version
+        xcodebuild -version
     - &run_maestro_smoke_tests
       name: Run Maestro Smoke Tests
       script: |
         set -e
         export PATH="$PATH:$HOME/.maestro/bin"
-        # Credentials come from the `maestro_e2e_credentials` group, never the
-        # repo. Fail here rather than letting Maestro resolve a missing
-        # variable to `undefined` and report it as a selector failure.
-        for var in MAESTRO_USER_EMAIL MAESTRO_USER_PWD MAESTRO_SEARCH_USER; do
-          if [ -z "$(eval echo \"\$$var\")" ]; then
-            echo "Missing $var — add it to the maestro_e2e_credentials group." >&2
-            exit 1
-          fi
-        done
+        # Probe only: the two smoke flows that need no credentials, so this
+        # runs without the maestro_e2e_credentials group (which does not yet
+        # exist — Codemagic rejects the whole workflow at config validation
+        # when it is referenced).
+        #
+        # Passed as individual flow files rather than suites/smoke.yaml: the
+        # suite form collapses to a single <testcase> with no flow name, while
+        # per-flow yields one <testcase> each with name, file, timing and tags.
         maestro test \
-          -e USER_EMAIL="$MAESTRO_USER_EMAIL" \
-          -e USER_PWD="$MAESTRO_USER_PWD" \
-          -e SEARCH_USER="$MAESTRO_SEARCH_USER" \
-          e2e/maestro/suites/smoke.yaml
+          --format junit \
+          --output report.xml \
+          e2e/maestro/tests/loginFreshInstall.yaml \
+          e2e/maestro/tests/removeKeys.yaml
     - &boot_ios_simulator
       name: Boot iOS Simulator
       script: |
@@ -733,7 +740,6 @@ workflows:
       groups:
         - zendesk_credentials
         - proofmode_credentials
-        - maestro_e2e_credentials
       vars:
         DEFAULT_ENV: STAGING
         BUNDLE_ID: co.openvine.app
@@ -771,7 +777,6 @@ workflows:
       groups:
         - zendesk_credentials
         - proofmode_credentials
-        - maestro_e2e_credentials
       vars:
         DEFAULT_ENV: STAGING
         BUNDLE_ID: co.openvine.app
