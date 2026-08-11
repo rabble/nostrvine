@@ -166,6 +166,42 @@ esac
       expect(run.result.stdout, contains('touches 3001 files'));
     });
 
+    test('pull request falls open when files output is empty', () {
+      final run = runDetector(event: 'pull_request', changedTotal: 1);
+
+      expectScope(run, app: true, native: true);
+      expect(
+        run.result.stdout,
+        contains('returned 0 files but reported 1 changed files'),
+      );
+    });
+
+    test('pull request falls open when files output is truncated', () {
+      final run = runDetector(
+        event: 'pull_request',
+        changedFiles: ['docs/only.md'],
+        changedTotal: 2,
+      );
+
+      expectScope(run, app: true, native: true);
+      expect(
+        run.result.stdout,
+        contains('returned 1 files but reported 2 changed files'),
+      );
+    });
+
+    test('detector changes run native checks', () {
+      expectScope(
+        runDetector(
+          event: 'pull_request',
+          changedFiles: ['mobile/scripts/ci/detect_mobile_ci_scope.sh'],
+          changedTotal: 1,
+        ),
+        app: true,
+        native: true,
+      );
+    });
+
     test('push falls open to preserve the full main-branch matrix', () {
       expectScope(runDetector(event: 'push'), app: true, native: true);
     });

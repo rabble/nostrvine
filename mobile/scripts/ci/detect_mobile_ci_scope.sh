@@ -26,6 +26,11 @@ case "${GITHUB_EVENT_NAME}" in
     gh api --method GET --paginate -F per_page=100 \
       "/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" \
       --jq '.[].filename' > "$changed_files"
+
+    file_count=$(( $(wc -l < "$changed_files") ))
+    if [ "$file_count" -eq 0 ] || [ "$file_count" -ne "$changed_total" ]; then
+      fall_open "PR returned $file_count files but reported $changed_total changed files; running full app CI."
+    fi
     ;;
   merge_group)
     # The queue head is a speculative merge of main plus every PR ahead of it
@@ -37,7 +42,7 @@ case "${GITHUB_EVENT_NAME}" in
     # The compare endpoint includes at most 300 changed files for the whole
     # comparison. A queue entry always has a change, so empty or capped output
     # is unusable and must fall open to the full matrix.
-    file_count=$(wc -l < "$changed_files")
+    file_count=$(( $(wc -l < "$changed_files") ))
     if [ "$file_count" -eq 0 ] || [ "$file_count" -ge 300 ]; then
       fall_open "Merge group returned $file_count files (empty or at the 300-file compare API cap); running full app CI."
     fi
@@ -82,7 +87,7 @@ while IFS= read -r path; do
   # scripts. Match at directory level so this gate cannot silently drift when
   # the guard gains another native input.
   case "$path" in
-    mobile/android/*|mobile/ios/*|mobile/macos/*|mobile/scripts/check_native_transport_security.sh|mobile/scripts/check_ios_shipping_versions.sh)
+    mobile/android/*|mobile/ios/*|mobile/macos/*|mobile/scripts/check_native_transport_security.sh|mobile/scripts/check_ios_shipping_versions.sh|mobile/scripts/ci/detect_mobile_ci_scope.sh)
       native=true
       ;;
   esac
