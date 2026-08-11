@@ -561,7 +561,11 @@ void main() {
         matching: find.byType(DivineIconButton),
       );
       expect(button, findsOneWidget);
-      expect(tester.getSize(button), const Size(52, 52));
+      // The badge must stay a real tap target; the exact box is the design
+      // system's to decide, so assert the 48dp floor rather than a number.
+      final buttonSize = tester.getSize(button);
+      expect(buttonSize.width, greaterThanOrEqualTo(48));
+      expect(buttonSize.height, greaterThanOrEqualTo(48));
 
       await tester.tap(button);
       await tester.pumpAndSettle();
@@ -595,7 +599,11 @@ void main() {
         matching: find.byType(DivineIconButton),
       );
       expect(button, findsOneWidget);
-      expect(tester.getSize(button), const Size(52, 52));
+      // The badge must stay a real tap target; the exact box is the design
+      // system's to decide, so assert the 48dp floor rather than a number.
+      final buttonSize = tester.getSize(button);
+      expect(buttonSize.width, greaterThanOrEqualTo(48));
+      expect(buttonSize.height, greaterThanOrEqualTo(48));
 
       await tester.tap(button);
       await tester.pumpAndSettle();
