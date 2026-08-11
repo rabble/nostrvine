@@ -949,10 +949,13 @@ class _ResendRow extends StatelessWidget {
     final cooldownSeconds = context.select(
       (EmailVerificationCubit c) => c.state.resendCooldownSeconds,
     );
+    // `unavailable` stays tappable: the only cause is a server build without
+    // the resend-pin route, so a session spanning that deploy should be able
+    // to tap again and have it work. A repeat tap before then just re-shows
+    // the same message.
     final disabled =
         resendStatus == ResendStatus.sending ||
-        resendStatus == ResendStatus.cooldown ||
-        resendStatus == ResendStatus.unavailable;
+        resendStatus == ResendStatus.cooldown;
     final label = resendStatus == ResendStatus.cooldown
         ? l10n.authVerificationResendCooldown(_formatCooldown(cooldownSeconds))
         : l10n.authVerificationResend;

@@ -1023,7 +1023,7 @@ void main() {
       });
 
       testWidgets(
-        'an unavailable resend endpoint says so and disables the button',
+        'an unavailable resend endpoint says so but stays retryable',
         (tester) async {
           when(() => mockCubit.resendVerification()).thenAnswer((_) async {});
 
@@ -1047,10 +1047,12 @@ void main() {
           // Not the generic "try again" copy — retrying cannot help here.
           expect(find.text(l10n.authVerificationResendFailed), findsNothing);
 
+          // The route is missing from this server build, not from the app.
+          // A session spanning the deploy that adds it must be able to retry.
           await tester.tap(find.text(l10n.authVerificationResend));
           await tester.pump();
 
-          verifyNever(() => mockCubit.resendVerification());
+          verify(() => mockCubit.resendVerification()).called(1);
         },
       );
 
