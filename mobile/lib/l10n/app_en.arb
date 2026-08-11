@@ -6067,6 +6067,10 @@
   "@fullscreenFeedRemovedMessage": {
     "description": "Empty-state message shown in the fullscreen feed when the last visible video has just been deleted, blocked, or muted and the route cannot be popped back to a parent (e.g. a cold deep-link)."
   },
+  "fullscreenFeedEmptyMessage": "Nothing left to play here",
+  "@fullscreenFeedEmptyMessage": {
+    "description": "Empty-state message shown in the fullscreen feed when the feed it is playing has drained after having had videos — for example the viewer unliked the last video in their Liked feed."
+  },
   "settingsBadgesTitle": "Badges",
   "settingsBadgesSubtitle": "Accept awards and check issued badge status.",
   "badgesTitle": "Badges",

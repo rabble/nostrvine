@@ -3595,6 +3595,7 @@
     "videoMetadataClosePreviewSemanticLabel": "Затворете визуализацията на видеото",
     "videoMetadataRemoveSemanticLabel": "Премахни",
     "fullscreenFeedRemovedMessage": "Видеото е премахнато",
+    "fullscreenFeedEmptyMessage": "Тук няма какво повече да се пусне",
     "@fullscreenFeedRemovedMessage": {
         "description": "Empty-state message shown in the fullscreen feed when the last visible video has just been deleted, blocked, or muted and the route cannot be popped back to a parent (e.g. a cold deep-link)."
     },

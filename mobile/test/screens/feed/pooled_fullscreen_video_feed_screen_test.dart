@@ -24,6 +24,7 @@ import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -353,6 +354,67 @@ void main() {
         expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
         expect(find.byType(FeedVideos), findsNothing);
         expect(find.byType(InfiniteVideoFeed), findsNothing);
+      });
+
+      // #6949. Unliking the only video in the Liked feed re-emits an empty
+      // list, which used to land on the loading branch above and strand the
+      // route on a spinner with no video, no action buttons and no way out
+      // but the back button.
+      testWidgets(
+        'renders the drained empty-state, not the spinner, when status is '
+        'empty',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              state: const FullscreenFeedState(
+                status: FullscreenFeedStatus.empty,
+              ),
+              contextTitle: 'Liked',
+            ),
+          );
+
+          final emptyText = lookupAppLocalizations(
+            const Locale('en'),
+          ).fullscreenFeedEmptyMessage;
+          expect(find.text(emptyText), findsOneWidget);
+          expect(find.byType(BrandedLoadingIndicator), findsNothing);
+          expect(find.byType(FeedVideos), findsNothing);
+          expect(find.byType(InfiniteVideoFeed), findsNothing);
+        },
+      );
+
+      // The two placeholders are visually near-identical, so E2E needs the
+      // identifiers to tell "still loading" from "nothing left to play".
+      testWidgets('placeholders carry distinct semantics identifiers', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(state: const FullscreenFeedState()),
+        );
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.fullscreenFeedLoading),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.fullscreenFeedEmpty),
+          findsNothing,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: const FullscreenFeedState(
+              status: FullscreenFeedStatus.empty,
+            ),
+          ),
+        );
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.fullscreenFeedEmpty),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.fullscreenFeedLoading),
+          findsNothing,
+        );
       });
 
       testWidgets(

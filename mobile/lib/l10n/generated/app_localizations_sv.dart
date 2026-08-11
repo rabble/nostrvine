@@ -9887,6 +9887,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'Video borttagen';
 
   @override
+  String get fullscreenFeedEmptyMessage =>
+      'Det finns inget mer att spela upp här';
+
+  @override
   String get settingsBadgesTitle => 'Märken';
 
   @override

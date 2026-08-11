@@ -9984,6 +9984,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'Видеото е премахнато';
 
   @override
+  String get fullscreenFeedEmptyMessage => 'Тук няма какво повече да се пусне';
+
+  @override
   String get settingsBadgesTitle => 'Значки';
 
   @override

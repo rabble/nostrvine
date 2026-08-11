@@ -5944,6 +5944,7 @@
   "videoMetadataClosePreviewSemanticLabel": "Tutup pratonton video",
   "videoMetadataRemoveSemanticLabel": "Alih Keluar",
   "fullscreenFeedRemovedMessage": "Video dialih keluar",
+  "fullscreenFeedEmptyMessage": "Tiada apa-apa lagi untuk dimainkan di sini",
   "@fullscreenFeedRemovedMessage": {
     "description": "Empty-state message shown in the fullscreen feed when the last visible video has just been deleted, blocked, or muted and the route cannot be popped back to a parent (e.g. a cold deep-link)."
   },

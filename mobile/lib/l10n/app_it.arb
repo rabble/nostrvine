@@ -3355,6 +3355,7 @@
     "navSearch": "Cerca",
     "navSearchTooltip": "Cerca",
     "fullscreenFeedRemovedMessage": "Video rimosso",
+    "fullscreenFeedEmptyMessage": "Qui non c’è più niente da riprodurre",
     "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
     "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
     "invitesGenerateButtonLabel": "Generate invite",
