@@ -165,7 +165,7 @@ void main() {
         },
         appVersion: '1.0.0',
         recentLogs: [],
-        errorCounts: {'auth:sessionKey=hunter2': 3},
+        errorCounts: {'auth:sessionKey=hunter2': 3, 'login:token=abc': 5},
       );
 
       final sanitized = service.sanitizeSensitiveData(input);
@@ -179,6 +179,9 @@ void main() {
       // Error-count keys are `'$location:$errorType'` strings, so they can
       // carry a credential-shaped name too.
       expect(sanitized.errorCounts.keys.join(), isNot(contains('hunter2')));
+      // Both credential-shaped keys collapse to the same placeholder, so the
+      // counts are summed rather than one silently replacing the other.
+      expect(sanitized.errorCounts['[REDACTED]'], 8);
       // Ordinary device fields are untouched - the rule is key-driven, not a
       // blanket redaction of everything in the map.
       expect(sanitized.deviceInfo['platform'], 'ios');

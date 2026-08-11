@@ -210,12 +210,18 @@ class BugReportService {
   /// Done here rather than only where the counts are rendered, so every
   /// consumer of the sanitized report inherits it.
   Map<String, int> _sanitizeErrorCounts(Map<String, int> input) {
-    return input.map((key, value) {
+    final sanitized = <String, int>{};
+    input.forEach((key, value) {
       final composed = '$key: $value';
-      return sanitizeDiagnosticText(composed) == composed
-          ? MapEntry(key, value)
-          : MapEntry('[REDACTED]', value);
+      final safeKey = sanitizeDiagnosticText(composed) == composed
+          ? key
+          : '[REDACTED]';
+      // Summed rather than overwritten: two credential-shaped keys both
+      // collapse to the same placeholder, and silently dropping one of the
+      // counts is the kind of quiet loss this sanitizer exists to avoid.
+      sanitized[safeKey] = (sanitized[safeKey] ?? 0) + value;
     });
+    return sanitized;
   }
 
   /// Estimate report size in bytes
@@ -284,6 +290,11 @@ class BugReportService {
         buffer.writeln('Error Counts:');
         sanitizedData.errorCounts.forEach((key, value) {
           // Composed, then sanitized: the key is what identifies a credential.
+          // No test distinguishes this from the upstream pass in
+          // `_sanitizeErrorCounts`, which has already replaced a
+          // credential-shaped key by the time the data reaches here. Keep it:
+          // it is the pass that holds if this method is ever handed data that
+          // did not come through `sanitizeSensitiveData`.
           buffer.writeln(sanitizeDiagnosticText('  $key: $value'));
         });
       }
