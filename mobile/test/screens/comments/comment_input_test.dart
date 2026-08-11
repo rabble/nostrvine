@@ -75,6 +75,40 @@ void main() {
       expect(_divineIcon(DivineIconName.arrowUp), findsOneWidget);
     });
 
+    testWidgets(
+      'drops the send button when the controller is cleared programmatically',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: CommentInput(
+                controller: controller,
+                onSubmit: () {},
+                onVideoReplyPressed: () {},
+              ),
+            ),
+          ),
+        );
+
+        await tester.enterText(find.byType(TextField), 'Test comment');
+        await tester.pump();
+        expect(_divineIcon(DivineIconName.arrowUp), findsOneWidget);
+
+        // The comments sheet clears the composer this way after a post.
+        // TextField.onChanged does not fire for it.
+        controller.clear();
+        await tester.pump();
+
+        expect(_divineIcon(DivineIconName.arrowUp), findsNothing);
+        expect(
+          find.bySemanticsIdentifier('record_video_comment_button'),
+          findsOneWidget,
+        );
+      },
+    );
+
     testWidgets('shows video reply button when callback is provided', (
       tester,
     ) async {

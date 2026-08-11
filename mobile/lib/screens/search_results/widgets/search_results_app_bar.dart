@@ -6,6 +6,7 @@ import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
 import 'package:openvine/blocs/list_search/list_search_bloc.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/explore/explore_screen.dart';
 import 'package:openvine/screens/search_results/widgets/search_filter_pill.dart';
@@ -139,6 +140,7 @@ class _SearchResultsAppBarState extends State<SearchResultsAppBar> {
               size: DivineIconButtonSize.small,
               onPressed: _handleBack,
               semanticLabel: context.l10n.commonBack,
+              semanticIdentifier: SemanticIds.searchBackButton,
             ),
             Expanded(
               child: DivineSearchBar(
@@ -146,6 +148,7 @@ class _SearchResultsAppBarState extends State<SearchResultsAppBar> {
                 focusNode: _focusNode,
                 hintText: context.l10n.exploreSearchHint,
                 suffixIcon: const SearchFilterPill(),
+                semanticIdentifier: SemanticIds.searchField,
               ),
             ),
           ],

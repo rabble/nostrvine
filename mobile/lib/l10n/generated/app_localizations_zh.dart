@@ -7940,12 +7940,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get commentsEmptySubtitle => '来开个头吧！';
 
   @override
-  String get commentsHeaderTitle => '评论';
-
-  @override
-  String get commentsHeaderCloseLabel => '关闭评论';
-
-  @override
   String get draftUntitled => '未命名';
 
   @override

@@ -1,42 +1,65 @@
 appId: co.openvine.app
 env:
   COMMENT: "Automated comment"
-  FULL_COMMENT: ""
 ---
+# `env` is read-only inside evalScript; the writable namespace is `output.*`.
+# Every read below therefore goes through ${output.FULL_COMMENT}. The old
+# file wrote output.FULL_COMMENT and then asserted the bare ${FULL_COMMENT},
+# which resolved to the empty env default -- an empty pattern matches an
+# empty-text node, so the only proof-of-post assertion in the flow passed
+# without ever looking at the comment.
 - evalScript: ${output.FULL_COMMENT = COMMENT + " on " + new Date().toISOString().replace('T',' ').split('.')[0]}
 
 #TC to comment a video,
-# given the user is logged in in the app in the Explore/New tab,
-# Comment the video with description VIDEO_TITLE
+# given the user is logged in and on the Explore grid,
+# post a comment and leave the sheet closed for deleteComment to reopen.
 #Steps:
-# 1. Open 1st video of the New grid: Validate video playback
-# 2. Tap on Comment to Open the comments modal: Validate Comments section is displayed
-# 3. Input comment FULL_COMMENT and tap send: Validate comment is displayed with "now" as timestamp.
-# 4. Close the comments section: Validate playback screen is displayed
+# 1. Open the 1st video of the grid: Validate video playback
+# 2. Open the comments sheet: Validate the sheet
+# 3. Post FULL_COMMENT: Validate it is listed as yours
+# 4. Drag the sheet away: Validate the playback screen is back
 
-# 1. Open 1st video of the New grid
+# 1. Open the 1st video of the grid. The grid fills from the network, so wait
+# for it explicitly instead of letting `tapOn`'s short default timeout decide
+# — a cold Explore can still be empty when this step is reached.
+- extendedWaitUntil:
+    visible:
+      id: video_thumbnail_0
+    timeout: 30000
 - tapOn:
     id: video_thumbnail_0
+- runFlow: ../asserts/assertVideoPlayback.yaml
 
-# 2. Tap on Comment to Open the comments modal: Validate Comments section is displayed
+# 2. Open the comments sheet.
 - tapOn:
     id: comments_button
 - runFlow: "../asserts/assertCommentsModal.yaml"
 
-# 3. Input comment COMMENT with current timestamp: Validate comment is displayed with "now" as timestamp
+# 3. Post the comment.
 - tapOn:
     id: comment_text_field
 - inputText: ${output.FULL_COMMENT}
 - tapOn:
     id: send_comment_button
-- assertVisible: ${FULL_COMMENT}
-- waitForAnimationToEnd
-- assertVisible: "now\n • \nYou.*"
 
-# 4. Close the comments section: Validate playback screen is displayed
+# A posted row merges its timestamp, the "You" marker and the body into one
+# accessibility label, and Maestro matches the whole label -- so the comment
+# text has to be anchored rather than asserted bare.
+- extendedWaitUntil:
+    visible:
+      text: ".*${output.FULL_COMMENT}"
+    timeout: 30000
+- assertVisible:
+    text: ".*•.*You.*"
+
+# 4. Drag the sheet away by its title.
+#
+# The sheet has no close button, and its count text merges into a node that
+# spans the whole sheet -- a swipe anchored there starts in the middle of
+# the list and scrolls instead of dismissing. The title carries its own
+# node at the top of the sheet, which is what makes the drag land.
 - swipe:
     from:
-      text: "\\d+\\sComments?" # Matches one or more digits followed by " Comment" or " Comments"
+      id: comments_sheet_title
     direction: DOWN
 - runFlow: ../asserts/assertVideoPlayback.yaml
-

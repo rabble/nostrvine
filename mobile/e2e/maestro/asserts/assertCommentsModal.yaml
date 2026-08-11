@@ -1,8 +1,15 @@
 appId: co.openvine.app
 ---
+# The sheet still renders a pluralized count ("0 Comments" / "1 Comment"),
+# so the count regex is kept -- it is the only assertion here that proves
+# the list, not just the chrome, is up.
+#
+# "Add comment..." is deliberately not asserted: the same placeholder is
+# rendered by the inline composer on the video screen underneath, so it
+# passed whether or not the sheet had opened.
 - assertVisible:
-    text: "\\d+\\sComments?" # Matches one or more digits followed by " Comment" or " Comments"
+    id: comments_sheet_title
 - assertVisible:
-    text: "Add comment..." # Ensure this line is properly formatted
+    text: "\\d+\\sComments?"
 - assertVisible:
     id: comment_text_field

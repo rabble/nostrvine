@@ -7,6 +7,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
@@ -49,6 +50,7 @@ class VideosSection extends StatelessWidget {
             child: SectionHeader(
               title: context.l10n.searchVideosSectionHeader,
               onTap: onSeeAll,
+              semanticIdentifier: SemanticIds.searchSectionHeader('videos'),
             ),
           ),
         _VideosContent(showAll: showAll),
