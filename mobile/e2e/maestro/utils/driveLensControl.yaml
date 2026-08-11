@@ -1,0 +1,28 @@
+appId: co.openvine.app
+---
+#Utility: switch to the front lens and back, leaving it on its default. Every
+#mode that renders the control rail renders this one.
+#
+# Slower than the other rail controls — the native camera rebinds and the
+# preview remounts on a fresh texture — so it gets a longer wait.
+#
+# Precondition the caller owns: **real camera hardware**, for the switch to do
+# anything at all.
+
+- assertVisible:
+    id: camera_switch_camera_button
+    text: ".*Back camera.*"
+- tapOn:
+    id: camera_switch_camera_button
+- extendedWaitUntil:
+    visible:
+      id: camera_switch_camera_button
+      text: ".*Front camera.*"
+    timeout: 20000
+- tapOn:
+    id: camera_switch_camera_button
+- extendedWaitUntil:
+    visible:
+      id: camera_switch_camera_button
+      text: ".*Back camera.*"
+    timeout: 20000

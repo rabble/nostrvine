@@ -1,0 +1,30 @@
+appId: co.openvine.app
+---
+#Utility: flip the aspect-ratio control to Square and back, leaving it on its
+#default. Every mode that renders the control rail renders this one.
+#
+# The assertions read the control's Semantics `value`, which Flutter folds into
+# the Android content description / iOS accessibilityValue — see "Reading state
+# off an icon-only control" in e2e/maestro/README.md.
+#
+# Precondition the caller owns: **no clips in the session.** The control is
+# disabled once the session holds one, because clips of mixed ratios cannot
+# share an editor timeline.
+
+- assertVisible:
+    id: camera_aspect_ratio_button
+    text: ".*Vertical.*"
+- tapOn:
+    id: camera_aspect_ratio_button
+- extendedWaitUntil:
+    visible:
+      id: camera_aspect_ratio_button
+      text: ".*Square.*"
+    timeout: 10000
+- tapOn:
+    id: camera_aspect_ratio_button
+- extendedWaitUntil:
+    visible:
+      id: camera_aspect_ratio_button
+      text: ".*Vertical.*"
+    timeout: 10000

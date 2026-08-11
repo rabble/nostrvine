@@ -7,15 +7,16 @@ tags:
 # validate each control actually changes recorder state, and leave every one
 # of them back on its default.
 #
-# Two kinds of readable evidence, both off the controls' own Semantics:
-# - the cycling controls (aspect ratio, lens, flash) announce a `value`, which
-#   Flutter folds into the Android content description — same mechanism
-#   captureModeControls uses, confirmed on device;
-# - the two on/off controls (ghost frame, grid) carry a `toggled` flag, which
-#   Flutter maps to the accessibility node's checked state, so they are driven
-#   with `checked:` rather than `text:`. That selector is new to this suite —
-#   if it turns out not to resolve, the fallback is the ghost toggle's
-#   confirmation snackbar, which is copy and only works on an English UI.
+# Three of the five controls here — aspect ratio, lens and flash — are the
+# unconditional ones every rail renders, so they are the same per-control utils
+# driveCaptureRail sequences, in the same order. What is local to this file is
+# the pair capture mode does not render: the ghost-frame and grid toggles.
+#
+# Those two carry a Semantics `toggled` flag rather than a `value`, which
+# Flutter maps to the accessibility node's checked state, so they are driven
+# with `checked:` rather than `text:`. That selector is new to this suite — if
+# it turns out not to resolve, the fallback is the ghost toggle's confirmation
+# snackbar, which is copy and only works on an English UI.
 #
 # Preconditions beyond an open viewfinder:
 # - **Real camera hardware**, for the lens switch. See
@@ -24,17 +25,11 @@ tags:
 #   (`camera_grid_lines_enabled`) and defaults to on for grid-supporting modes,
 #   so step 2 reads it as on. Run from the top this is safe —
 #   loginFreshInstall's clearState wipes the key.
-#
-# Unlike capture mode, an empty session is *not* required: the aspect-ratio
-# control is disabled by clips, and stop-motion stills do not become a clip
-# until the assemble on "next". The order below still matches capture mode's,
-# because the shutter tests want a rail on defaults, not the other way round.
-#
-# Flash is driven behind an `enabled` guard, because it is disabled outright on
-# hardware whose active lens has no flash unit. An unguarded tap-and-assert
-# there would go green or red on the phone rather than on the code. A guarded
-# block prints "SKIPPED" in the run output, so a skipped control is visible
-# rather than silently counted as covered.
+# - **An empty session.** The rail itself does not need one, unlike capture
+#   mode's: the aspect-ratio control is disabled by clips, and stop-motion
+#   stills do not become a clip until the assemble on "next". The mode assert
+#   this closes on does, though — it pins next and undo absent — so the flow
+#   still runs this before the shutter tests.
 #Steps:
 # 1. Ghost frame: off -> on -> off
 # 2. Grid: on -> off -> on
@@ -84,78 +79,13 @@ tags:
     timeout: 10000
 
 # 3. Aspect ratio flips between two states.
-- assertVisible:
-    id: camera_aspect_ratio_button
-    text: ".*Vertical.*"
-- tapOn:
-    id: camera_aspect_ratio_button
-- extendedWaitUntil:
-    visible:
-      id: camera_aspect_ratio_button
-      text: ".*Square.*"
-    timeout: 10000
-- tapOn:
-    id: camera_aspect_ratio_button
-- extendedWaitUntil:
-    visible:
-      id: camera_aspect_ratio_button
-      text: ".*Vertical.*"
-    timeout: 10000
+- runFlow: ../utils/driveAspectRatioControl.yaml
 
-# 4. Lens switch. Slower than the others — the native camera rebinds and the
-# preview remounts on a fresh texture — so it gets a longer wait.
-- assertVisible:
-    id: camera_switch_camera_button
-    text: ".*Back camera.*"
-- tapOn:
-    id: camera_switch_camera_button
-- extendedWaitUntil:
-    visible:
-      id: camera_switch_camera_button
-      text: ".*Front camera.*"
-    timeout: 20000
-- tapOn:
-    id: camera_switch_camera_button
-- extendedWaitUntil:
-    visible:
-      id: camera_switch_camera_button
-      text: ".*Back camera.*"
-    timeout: 20000
+# 4. Lens switch.
+- runFlow: ../utils/driveLensControl.yaml
 
-# 5. Flash. Guarded: the control is disabled when the active lens reports no
-# flash unit (`hasFlash`) — true of most emulators, and of the front lens on
-# many phones. Selectors pin `id` as well as `text` for the same reason
-# captureModeControls does: "Off" is not a unique value on this screen.
-- runFlow:
-    when:
-      visible:
-        id: camera_flash_button
-        enabled: true
-    commands:
-      - assertVisible:
-          id: camera_flash_button
-          text: ".*Off.*"
-      - tapOn:
-          id: camera_flash_button
-      - extendedWaitUntil:
-          visible:
-            id: camera_flash_button
-            text: ".*On.*"
-          timeout: 10000
-      - tapOn:
-          id: camera_flash_button
-      - extendedWaitUntil:
-          visible:
-            id: camera_flash_button
-            text: ".*Auto.*"
-          timeout: 10000
-      - tapOn:
-          id: camera_flash_button
-      - extendedWaitUntil:
-          visible:
-            id: camera_flash_button
-            text: ".*Off.*"
-          timeout: 10000
+# 5. Flash, if the active lens has a unit.
+- runFlow: ../utils/driveFlashControl.yaml
 
 # The ghost-frame toggle raises a 4-second confirmation snackbar per tap, and
 # it floats over the bottom of the screen — the record and undo buttons

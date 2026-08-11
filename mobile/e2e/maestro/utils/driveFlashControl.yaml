@@ -1,0 +1,45 @@
+appId: co.openvine.app
+---
+#Utility: cycle the flash control Off -> On -> Auto -> Off, leaving it on its
+#default. Every mode that renders the control rail renders this one.
+#
+# Guarded: the control is disabled when the active lens reports no flash unit
+# (`hasFlash`) — true of most emulators, and of the front lens on many phones.
+# An unguarded tap-and-assert there would go green or red on the phone rather
+# than on the code. A guarded block prints "SKIPPED" in the run output, so a
+# skipped control is visible rather than silently counted as covered.
+#
+# Selectors pin `id` as well as `text` because "Off" is not a unique value on
+# this screen — the timer control reads the same, and so does the first row of
+# the stabilization menu once its sheet is open.
+
+- runFlow:
+    when:
+      visible:
+        id: camera_flash_button
+        enabled: true
+    commands:
+      - assertVisible:
+          id: camera_flash_button
+          text: ".*Off.*"
+      - tapOn:
+          id: camera_flash_button
+      - extendedWaitUntil:
+          visible:
+            id: camera_flash_button
+            text: ".*On.*"
+          timeout: 10000
+      - tapOn:
+          id: camera_flash_button
+      - extendedWaitUntil:
+          visible:
+            id: camera_flash_button
+            text: ".*Auto.*"
+          timeout: 10000
+      - tapOn:
+          id: camera_flash_button
+      - extendedWaitUntil:
+          visible:
+            id: camera_flash_button
+            text: ".*Off.*"
+          timeout: 10000
