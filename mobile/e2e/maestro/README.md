@@ -171,13 +171,16 @@ different reason. Its rail and capture's are **disjoint**, not nested — captur
 has timer and stabilization, stop-motion has ghost frame and grid — so each
 assert already fails on the other's viewfinder on the rail alone. What settles
 which viewfinder is up before either gets that far is the mode wheel's
-`selected` state, asserted on the first line of all three files.
+`selected` state, asserted on the first line of all four files.
 
 So the pairs those two asserts carry — `assertStopMotionMode` pinning timer and
 stabilization absent, `assertCaptureMode` pinning ghost frame, grid and the
 budget absent — are **leak guards**, not mode separators: they fail when a
 control starts rendering in a mode that does not declare it, which nothing else
-in the suite would catch. `video_recorder_capture_actions_test.dart` pins the
+in the suite would catch. `camera_classic_shutter`, pinned absent by all three
+capture-stack asserts, is the same kind of line: the record button is already
+enough to tell classic apart, and `assertClassicMode` pins that one absent from
+its side. `video_recorder_capture_actions_test.dart` pins the
 same split at the widget level.
 
 Because flash, aspect ratio and the lens switch are unconditional *on that

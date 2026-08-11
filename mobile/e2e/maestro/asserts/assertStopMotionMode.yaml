@@ -53,6 +53,12 @@ appId: co.openvine.app
 - assertNotVisible:
     id: camera_stabilization_button
 
+# And classic's shutter, for the same reason assertCaptureMode pins it: the
+# record button is pinned absent in assertClassicMode and this one absent in
+# every capture-stack mode, so the pair is what proves which stack is up.
+- assertNotVisible:
+    id: camera_classic_shutter
+
 # Nothing captured yet. Both buttons sit inside an AnimatedOpacity, and
 # RenderAnimatedOpacity drops its child from the semantics tree at opacity 0 —
 # so "not visible" here means "no still in the session", not "scrolled away".

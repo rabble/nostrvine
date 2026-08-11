@@ -25,8 +25,8 @@ abstract class SemanticIds {
   /// Classic mode's shutter. It has no record button — the square preview
   /// itself is the tap target — so it gets its own id rather than reusing
   /// [cameraRecordButton] for a different widget. The E2E asserts pin the
-  /// record button *absent* in classic and this one absent everywhere else,
-  /// which is what proves the right stack is up.
+  /// record button *absent* in classic and this one absent in every
+  /// capture-stack mode, which is what proves the right stack is up.
   static const String cameraClassicShutter = 'camera_classic_shutter';
 
   /// Recorder chrome. Close, next and delete-clip come from the capture
