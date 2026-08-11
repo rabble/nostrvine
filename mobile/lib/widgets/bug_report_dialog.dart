@@ -133,6 +133,7 @@ class _BugReportView extends StatelessWidget {
                       const SupportPublicSubmissionNotice(),
                       DivineTextField(
                         controller: fields.subject,
+                        maxLength: BugReportConfig.maxSubjectLength,
                         labelText: l10n.supportSubjectRequiredLabel,
                         hintText: l10n.bugReportSubjectHint,
                         helperText: l10n.supportRequiredHelper,
@@ -144,6 +145,7 @@ class _BugReportView extends StatelessWidget {
                       ),
                       DivineTextField(
                         controller: fields.description,
+                        maxLength: BugReportConfig.maxFreeTextFieldLength,
                         focusNode: fields.descriptionFocus,
                         labelText: l10n.bugReportDescriptionRequiredLabel,
                         hintText: l10n.bugReportDescriptionHint,
@@ -156,6 +158,7 @@ class _BugReportView extends StatelessWidget {
                       ),
                       DivineTextField(
                         controller: fields.steps,
+                        maxLength: BugReportConfig.maxFreeTextFieldLength,
                         labelText: l10n.bugReportStepsLabel,
                         hintText: l10n.bugReportStepsHint,
                         enabled: !isSubmitting,
@@ -166,6 +169,7 @@ class _BugReportView extends StatelessWidget {
                       ),
                       DivineTextField(
                         controller: fields.expected,
+                        maxLength: BugReportConfig.maxFreeTextFieldLength,
                         labelText: l10n.bugReportExpectedBehaviorLabel,
                         hintText: l10n.bugReportExpectedBehaviorHint,
                         enabled: !isSubmitting,

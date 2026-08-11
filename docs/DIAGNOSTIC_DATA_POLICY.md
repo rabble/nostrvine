@@ -91,6 +91,13 @@ submission boundary. These limits are known and accepted:
   Each contributed field is sanitized before the report is assembled, and each
   log entry before the summary is built, so that loss stays inside the field or
   entry that caused it rather than reaching the rest of the ticket.
+- A credential key with more than 24 `_`/`-` or camelCase segments is not
+  redacted. The cap exists because an uncapped key run costs seconds per 100KB
+  of pasted text on the UI thread. No real credential key is that long, so this
+  is a bound on pathological input rather than on anything support sees.
+- Free-text bug report fields are capped at 10000 characters and the subject at
+  200, so a pasted field cannot make sanitization slow enough to freeze
+  submission.
 - Text typed inside the native Zendesk SDK screens is never sanitized. The
   ticket list (`ZendeskSupportService.showTicketListScreen`, reachable from the
   support center) opens the SDK's own UI, where a reply to an existing ticket is

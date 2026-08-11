@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show BugReportData;
 import 'package:openvine/blocs/bug_report/bug_report_cubit.dart';
+import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';
@@ -107,6 +108,26 @@ void main() {
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
     }
+
+    testWidgets('caps a pasted free-text field', (tester) async {
+      // Sanitization is linear in field size but with a large constant, so an
+      // uncapped paste can freeze submission on the main isolate. The cap is
+      // far above any typed description.
+      await openFlow(tester);
+
+      final descriptionField = find.byType(DivineTextField).at(1);
+      await tester.enterText(
+        descriptionField,
+        'a' * (BugReportConfig.maxFreeTextFieldLength + 500),
+      );
+      await tester.pump();
+
+      final widget = tester.widget<DivineTextField>(descriptionField);
+      expect(
+        widget.controller!.text.length,
+        BugReportConfig.maxFreeTextFieldLength,
+      );
+    });
 
     BugReportData testReportData() {
       return BugReportData(

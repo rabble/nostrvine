@@ -66,6 +66,19 @@ class BugReportConfig {
   /// including full SQL statements or serialized event payloads.
   static const int maxLogEntryLength = 500;
 
+  /// Max characters accepted in the bug report subject field.
+  static const int maxSubjectLength = 200;
+
+  /// Max characters accepted in each free-text bug report field.
+  ///
+  /// Sanitization is linear in the size of the field but with a large
+  /// constant: every credential-key candidate scans up to the collection
+  /// bound. Unbounded, a pasted 1MB field costs ~7.7s on the main isolate,
+  /// past Android's ANR threshold. At this cap the same worst case is under
+  /// 100ms per field, and 10000 characters is far more than a typed
+  /// description or repro steps.
+  static const int maxFreeTextFieldLength = 10000;
+
   /// Max total characters for the log summary sent to Zendesk.
   /// Zendesk description limit is 64K; logs share that space with
   /// device info, steps to reproduce, etc. 32KB leaves headroom.
