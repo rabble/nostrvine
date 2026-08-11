@@ -5029,5 +5029,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "{tool} içindeki değişiklikleri uygula",
   "videoEditorRemoveAudioSemanticLabel": "Sesi kaldır",
   "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}",
+  "inboxFilterBlocked": "Engellenenler",
+  "inboxBlockedEmptyTitle": "Engellenmiş sohbet yok",
+  "inboxBlockedEmptySubtitle": "Engellediğin hesaplar burada görünür.",
+  "inboxBlockedNoMessages": "Mesaj yok",
+  "dmBlockedThreadTitle": "Bu hesabı engelledin",
+  "dmBlockedThreadBody": "Mesajlar burada kalır, böylece okuyabilir veya ekran görüntüsü alabilirsin. Yanıtlamak için engeli kaldır."
 }

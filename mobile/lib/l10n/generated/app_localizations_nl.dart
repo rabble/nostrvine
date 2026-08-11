@@ -5896,6 +5896,26 @@ class AppLocalizationsNl extends AppLocalizations {
   String get inboxFilterUnread => 'Ongelezen';
 
   @override
+  String get dmBlockedThreadTitle => 'Je hebt dit account geblokkeerd';
+
+  @override
+  String get dmBlockedThreadBody =>
+      'Berichten blijven hier staan zodat je ze kunt lezen of er een screenshot van kunt maken. Deblokkeer om te reageren.';
+
+  @override
+  String get inboxFilterBlocked => 'Geblokkeerd';
+
+  @override
+  String get inboxBlockedEmptyTitle => 'Geen geblokkeerde chats';
+
+  @override
+  String get inboxBlockedEmptySubtitle =>
+      'Accounts die je blokkeert verschijnen hier.';
+
+  @override
+  String get inboxBlockedNoMessages => 'Geen berichten';
+
+  @override
   String get inboxUnreadEmptyTitle => 'Je bent helemaal bij';
 
   @override

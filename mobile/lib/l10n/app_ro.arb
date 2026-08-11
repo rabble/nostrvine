@@ -5029,5 +5029,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "Aplică modificările din {tool}",
   "videoEditorRemoveAudioSemanticLabel": "Elimină sunetul",
   "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}",
+  "inboxFilterBlocked": "Blocate",
+  "inboxBlockedEmptyTitle": "Nicio conversație blocată",
+  "inboxBlockedEmptySubtitle": "Conturile pe care le blochezi apar aici.",
+  "inboxBlockedNoMessages": "Niciun mesaj",
+  "dmBlockedThreadTitle": "Ai blocat acest cont",
+  "dmBlockedThreadBody": "Mesajele rămân aici ca să le poți citi sau captura. Deblochează pentru a răspunde."
 }

@@ -31,9 +31,9 @@ import 'package:openvine/screens/inbox/widgets/following_bar.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_empty_state.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_error_state.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_fab.dart';
+import 'package:openvine/screens/inbox/widgets/inbox_filter_chips.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_segmented_toggle.dart';
 import 'package:openvine/screens/inbox/widgets/restore_paused_banner.dart';
-import 'package:openvine/screens/inbox/widgets/unread_filter_chips.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Main inbox view containing the Messages/Notifications segmented toggle
@@ -706,9 +706,13 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
         .select<ConversationListBloc, List<DmConversation>>(
           (bloc) => bloc.state.visibleConversations,
         );
-    final unreadOnly = context.select<ConversationListBloc, bool>(
-      (bloc) => bloc.state.unreadOnly,
+    final filter = context.select<ConversationListBloc, InboxFilter>(
+      (bloc) => bloc.state.filter,
     );
+    final hasBlocked = context.select<ConversationListBloc, bool>(
+      (bloc) => bloc.state.blockedConversations.isNotEmpty,
+    );
+    final showingBlocked = filter == InboxFilter.blocked;
     final hasRequests = context.select<ConversationListBloc, bool>(
       (bloc) => bloc.state.requestConversations.isNotEmpty,
     );
@@ -751,7 +755,11 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
     // brand-new user still needs to be told the inbox is empty — but render
     // the row above it rather than dropping it, and skip the search field and
     // filter chips, which have nothing to act on.
-    if (conversations.isEmpty) {
+    // `hasBlocked` keeps the chip row alive here: blocking your only
+    // correspondent empties `conversations` while leaving a blocked chat to
+    // read, and the early return would drop the only affordance that reaches
+    // it.
+    if (conversations.isEmpty && !hasBlocked) {
       return [
         if (supportRow != null) SliverToBoxAdapter(child: supportRow),
         if (hasRequests)
@@ -785,14 +793,12 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
       SliverPersistentHeader(
         pinned: true,
         delegate: _FilterChipsHeaderDelegate(
-          unreadOnly: unreadOnly,
+          selected: filter,
+          hasBlocked: hasBlocked,
           extent: _filterChipsExtent(context),
-          onUnreadOnlyChanged: (value) {
-            if (value == unreadOnly) return;
-            context.read<ConversationListBloc>().add(
-              const ConversationListUnreadFilterToggled(),
-            );
-          },
+          onChanged: (value) => context.read<ConversationListBloc>().add(
+            ConversationListFilterChanged(value),
+          ),
         ),
       ),
       // First tile of the list, ahead of the requests banner and every real
@@ -803,31 +809,49 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
           _supportRowSurvivesFilter(
             context,
             pinned: pinned!.conversation,
-            unreadOnly: unreadOnly,
+            filter: filter,
             query: searchQuery,
           ))
         SliverToBoxAdapter(child: supportRow),
+      // Requests are a slice of the inbox, not of the blocked list — leaving
+      // the banner up under the Blocked chip reads as if these requests are
+      // themselves blocked.
       if (visibleConversations.isEmpty) ...[
-        if (hasRequests)
+        if (hasRequests && !showingBlocked)
           SliverToBoxAdapter(
             child: MessageRequestsBanner(
               requestCount: requestUnreadCount,
               onTap: () => _openMessageRequests(context),
             ),
           ),
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: _FilteredEmptyContent(
-            title: searchQuery.isNotEmpty
-                ? context.l10n.inboxSearchEmptyTitle
-                : context.l10n.inboxUnreadEmptyTitle,
-            subtitle: searchQuery.isNotEmpty
-                ? context.l10n.inboxSearchEmptySubtitle
-                : context.l10n.inboxUnreadEmptySubtitle,
+        // With no filter and no query there is nothing narrowing the list, so
+        // an empty result means the inbox itself is empty — say that, rather
+        // than "You're all caught up", which claims a filter did the emptying.
+        // Reachable now that a viewer holding only blocked conversations skips
+        // the early return above.
+        if (searchQuery.isEmpty && filter == InboxFilter.all)
+          const SliverFillRemaining(
+            hasScrollBody: false,
+            child: InboxEmptyState(),
+          )
+        else
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: _FilteredEmptyContent(
+              title: searchQuery.isNotEmpty
+                  ? context.l10n.inboxSearchEmptyTitle
+                  : showingBlocked
+                  ? context.l10n.inboxBlockedEmptyTitle
+                  : context.l10n.inboxUnreadEmptyTitle,
+              subtitle: searchQuery.isNotEmpty
+                  ? context.l10n.inboxSearchEmptySubtitle
+                  : showingBlocked
+                  ? context.l10n.inboxBlockedEmptySubtitle
+                  : context.l10n.inboxUnreadEmptySubtitle,
+            ),
           ),
-        ),
       ] else ...[
-        if (hasRequests)
+        if (hasRequests && !showingBlocked)
           SliverToBoxAdapter(
             child: MessageRequestsBanner(
               requestCount: requestUnreadCount,
@@ -838,13 +862,29 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
           itemCount: visibleConversations.length,
           itemBuilder: (context, index) {
             final conversation = visibleConversations[index];
+            // Only the Blocked slice synthesises rows for accounts with no
+            // thread; everywhere else a missing timestamp is a real
+            // conversation whose first message has yet to land, and must stay
+            // tappable. The synthesised row states it has nothing to open and
+            // goes inert — the sheet's actions (mute, remove conversation) act
+            // on a database row, and one that was never written would only
+            // produce a confirmation snackbar for work that did not happen.
+            final isBlockedPlaceholder =
+                showingBlocked && conversation.lastMessageTimestamp == null;
             return ConversationTile(
               conversation: conversation,
               currentUserPubkey: widget.currentUserPubkey,
               highlighted: conversation.id == _highlightedConversationId,
-              onTap: () => _onConversationTapped(context, conversation),
-              onLongPress: () =>
-                  _onConversationLongPressed(context, ref, conversation),
+              subtitleOverride: isBlockedPlaceholder
+                  ? context.l10n.inboxBlockedNoMessages
+                  : null,
+              onTap: isBlockedPlaceholder
+                  ? null
+                  : () => _onConversationTapped(context, conversation),
+              onLongPress: isBlockedPlaceholder
+                  ? null
+                  : () =>
+                        _onConversationLongPressed(context, ref, conversation),
             );
           },
         ),
@@ -894,10 +934,14 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
   bool _supportRowSurvivesFilter(
     BuildContext context, {
     required DmConversation pinned,
-    required bool unreadOnly,
+    required InboxFilter filter,
     required String query,
   }) {
-    if (unreadOnly && pinned.isRead) return false;
+    // The Blocked slice is a list of accounts the viewer blocked. Moderation
+    // is not one of them — a blocked moderation account produces no pin at all
+    // (`_extractPinnedSupport`) — so the row has no business sitting above it.
+    if (filter == InboxFilter.blocked) return false;
+    if (filter == InboxFilter.unread && pinned.isRead) return false;
     if (query.isEmpty) return true;
     final needle = query.toLowerCase();
     final preview =
@@ -1131,13 +1175,15 @@ class _FilteredEmptyContent extends StatelessWidget {
 /// conversation list scrolls underneath it.
 class _FilterChipsHeaderDelegate extends SliverPersistentHeaderDelegate {
   const _FilterChipsHeaderDelegate({
-    required this.unreadOnly,
-    required this.onUnreadOnlyChanged,
+    required this.selected,
+    required this.hasBlocked,
+    required this.onChanged,
     required this.extent,
   });
 
-  final bool unreadOnly;
-  final ValueChanged<bool> onUnreadOnlyChanged;
+  final InboxFilter selected;
+  final bool hasBlocked;
+  final ValueChanged<InboxFilter> onChanged;
 
   /// Height the chips need at the caller's text scale. Passed in rather than
   /// read here: [SliverPersistentHeaderDelegate]'s extent getters take no
@@ -1156,16 +1202,18 @@ class _FilterChipsHeaderDelegate extends SliverPersistentHeaderDelegate {
   Widget build(BuildContext context, double shrinkOffset, bool overlaps) {
     return ColoredBox(
       color: context.vineColors.surfaceContainerHigh,
-      child: UnreadFilterChips(
-        unreadOnly: unreadOnly,
-        onUnreadOnlyChanged: onUnreadOnlyChanged,
+      child: InboxFilterChips(
+        selected: selected,
+        hasBlocked: hasBlocked,
+        onChanged: onChanged,
       ),
     );
   }
 
   @override
   bool shouldRebuild(_FilterChipsHeaderDelegate oldDelegate) =>
-      oldDelegate.unreadOnly != unreadOnly ||
-      oldDelegate.onUnreadOnlyChanged != onUnreadOnlyChanged ||
+      oldDelegate.selected != selected ||
+      oldDelegate.hasBlocked != hasBlocked ||
+      oldDelegate.onChanged != onChanged ||
       oldDelegate.extent != extent;
 }

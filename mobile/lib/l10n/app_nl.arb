@@ -5029,5 +5029,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "Wijzigingen in {tool} toepassen",
   "videoEditorRemoveAudioSemanticLabel": "Audio verwijderen",
   "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}",
+  "inboxFilterBlocked": "Geblokkeerd",
+  "inboxBlockedEmptyTitle": "Geen geblokkeerde chats",
+  "inboxBlockedEmptySubtitle": "Accounts die je blokkeert verschijnen hier.",
+  "inboxBlockedNoMessages": "Geen berichten",
+  "dmBlockedThreadTitle": "Je hebt dit account geblokkeerd",
+  "dmBlockedThreadBody": "Berichten blijven hier staan zodat je ze kunt lezen of er een screenshot van kunt maken. Deblokkeer om te reageren."
 }

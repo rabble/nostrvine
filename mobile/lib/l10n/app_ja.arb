@@ -5029,5 +5029,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "{tool}での変更を適用",
   "videoEditorRemoveAudioSemanticLabel": "音声を削除",
   "rgbColorSemanticLabel": "RGB {red}、{green}、{blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}、{color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}、{color}",
+  "inboxFilterBlocked": "ブロック済み",
+  "inboxBlockedEmptyTitle": "ブロックしたチャットはありません",
+  "inboxBlockedEmptySubtitle": "ブロックしたアカウントがここに表示されます。",
+  "inboxBlockedNoMessages": "メッセージなし",
+  "dmBlockedThreadTitle": "このアカウントをブロックしました",
+  "dmBlockedThreadBody": "メッセージはここに残るので、読んだりスクリーンショットを撮ったりできます。返信するにはブロックを解除してください。"
 }

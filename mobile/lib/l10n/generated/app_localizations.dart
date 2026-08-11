@@ -10292,6 +10292,42 @@ abstract class AppLocalizations {
   /// **'Unread'**
   String get inboxFilterUnread;
 
+  /// Title of the notice that replaces the message composer in a conversation with an account the viewer has blocked.
+  ///
+  /// In en, this message translates to:
+  /// **'You blocked this account'**
+  String get dmBlockedThreadTitle;
+
+  /// Body of the notice replacing the composer in a blocked conversation. Explains that history is preserved and names unblocking as the way to reply again.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages stay here so you can read or screenshot them. Unblock to reply.'**
+  String get dmBlockedThreadBody;
+
+  /// Filter chip label showing conversations with accounts the viewer has blocked. Only rendered once the viewer has blocked someone.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked'**
+  String get inboxFilterBlocked;
+
+  /// Shown in place of the conversation list when the Blocked filter is on and a search query matches none of the blocked chats.
+  ///
+  /// In en, this message translates to:
+  /// **'No blocked chats'**
+  String get inboxBlockedEmptyTitle;
+
+  /// Subtitle under inboxBlockedEmptyTitle explaining what the Blocked filter collects.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts you block show up here.'**
+  String get inboxBlockedEmptySubtitle;
+
+  /// Preview text on a Blocked row for an account the viewer blocked but never exchanged messages with. The row is not tappable.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages'**
+  String get inboxBlockedNoMessages;
+
   /// Shown in place of the conversation list when the Unread filter is on and every conversation has been read.
   ///
   /// In en, this message translates to:

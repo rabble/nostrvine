@@ -33,6 +33,8 @@ Four invariants that every component in the design must uphold.
 
 Blocked content must not cross an app ingress boundary into app state. The filter runs at repository parse boundaries, REST model-construction loops, and relay-subscription delivery seams. If the policy engine says block, the event or model is dropped before it is cached, exposed to app subscribers, or rendered by downstream features.
 
+**Out of scope: already-delivered DM history.** This invariant governs content arriving *from* the network. It has never applied to NIP-17 messages the viewer already received and decrypted — `dm_repository` has no dependency on `content_blocklist_repository`, so those rows persist regardless of any later block, and blocking is applied as a read-time filter over the conversation list. Deleting them would be evidence destruction: a gift wrap is decryptable only by the recipient's key and exists on no relay in readable form, so the viewer's copy is the only copy. Blocked threads stay out of the default inbox and are reachable through the Blocked filter (divine-mobile#7025).
+
 ### 2. Interaction invariant
 
 The app must not offer UI affordances for interactions the recipient has blocked. When the current user's local state indicates a target pubkey has blocked us (via that pubkey's published kind 10000 or kind 30000 block list), UI affordances targeting that pubkey — follow, DM, reply, mention, tag, share-to — must be hidden, not greyed-out with an explanation, not disabled with a tooltip. Absent, full stop.
@@ -273,12 +275,34 @@ Gated affordances (non-exhaustive; the implementation plan audits all):
 
 | Surface | Behavior when `canTarget` returns false |
 |---|---|
-| Follow / Unfollow button on profile | Hidden |
+| Follow button on profile | Hidden |
+| **Unfollow** button on profile | **Shown** — see "Disengagement actions" below |
 | Send DM action on profile | Hidden |
 | Reply compose on any event from them | Hidden (rarely reachable since content is filtered) |
 | @-mention autocomplete | Excluded from suggestion list |
 | Share-to-user picker | Excluded |
 | Tag-in-video picker | Excluded |
+| **Report** action | **Shown** — see "Disengagement actions" below |
+
+#### Disengagement actions are exempt
+
+`canTarget` answers "does the recipient want to hear from us?", so it
+governs affordances that would **reach** the other person. Two do not:
+
+- **Unfollow** severs a tie in the *viewer's own* follow graph. Hiding it
+  alongside Follow left a user unable to stop following an account that had
+  blocked her — the block trapped her in the relationship it was supposed to
+  end.
+- **Report** is addressed to Divine moderation, not to the reported account.
+  Suppressing it removes the escalation path exactly when it is most needed.
+
+Both stay available on the stand-in screens that replace a profile we may not
+render (`UserNotAvailableScreen`, `BlockedUserScreen`), via the standard
+profile more-sheet. This does not weaken the **Disclosure invariant**: the
+sheet is the same one every profile shows and its copy never states that a
+block exists.
+
+Amended 2026-08-10 after a Trust & Safety report; see divine-mobile#7025.
 
 Gating is **absence**, not a disabled state with explanation. No copy, no tooltip, no reason.
 

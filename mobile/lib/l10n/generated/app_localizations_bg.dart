@@ -5929,6 +5929,26 @@ class AppLocalizationsBg extends AppLocalizations {
   String get inboxFilterUnread => 'Непрочетени';
 
   @override
+  String get dmBlockedThreadTitle => 'Блокирахте този акаунт';
+
+  @override
+  String get dmBlockedThreadBody =>
+      'Съобщенията остават тук, за да можете да ги прочетете или да направите екранна снимка. Отблокирайте, за да отговорите.';
+
+  @override
+  String get inboxFilterBlocked => 'Блокирани';
+
+  @override
+  String get inboxBlockedEmptyTitle => 'Няма блокирани чатове';
+
+  @override
+  String get inboxBlockedEmptySubtitle =>
+      'Акаунтите, които блокирате, се показват тук.';
+
+  @override
+  String get inboxBlockedNoMessages => 'Няма съобщения';
+
+  @override
   String get inboxUnreadEmptyTitle => 'В крак си с всичко';
 
   @override
