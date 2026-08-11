@@ -737,6 +737,43 @@ void main() {
       );
 
       test(
+        'reports a relay CLOSED refusal as a timeout, not an empty answer',
+        () async {
+          final nostr = _newNostr();
+          final refusing = _SilentRelay('wss://refuses-req.example');
+          expect(await nostr.relayPool.add(refusing), isTrue);
+
+          final pending = nostr.queryEventsDetailed(
+            [
+              {
+                'kinds': [10003],
+              },
+            ],
+            timeout: unacceptedTimeout,
+            requireAllRelaysSettled: true,
+          );
+
+          final subId = await refusing.awaitPendingQuery();
+          await refusing.deliver([
+            'CLOSED',
+            subId,
+            'error: too many concurrent REQs',
+          ]);
+
+          final result = await pending;
+
+          expect(result.events, isEmpty);
+          expect(
+            result.timedOut,
+            isTrue,
+            reason:
+                'a relay refusal is not a data-bearing answer, so a '
+                'replaceable-event caller must treat it as inconclusive',
+          );
+        },
+      );
+
+      test(
         'a query no relay accepted still completes at once without the flag',
         () async {
           final nostr = _newNostr();

@@ -194,6 +194,15 @@ class RelayPool {
   /// pay its full timeout, which is the stall this whole path exists to stop.
   final Set<String> _queryAnswered = {};
 
+  /// One-shot queries where a relay refused or abandoned the REQ with `CLOSED`.
+  ///
+  /// A `CLOSED` frame is useful evidence for default display reads: the relay is
+  /// alive and the caller should not burn its full timeout once every relay has
+  /// either answered or refused. But for [requireAllRelaysSettled], a refusal is
+  /// not evidence that the relay had no events. A caller about to replace a
+  /// replaceable event must treat that as inconclusive, the same as silence.
+  final Set<String> _queryClosedWithoutAnswer = {};
+
   /// Track publishes awaiting OK confirmations (per event id).
   final Map<String, PublishTracker> _pendingPublishes = {};
 
@@ -773,18 +782,22 @@ class RelayPool {
   ///
   /// Both terminal frames route here: `EOSE` (the relay finished sending
   /// stored events) and `CLOSED` (the relay ended the subscription without
-  /// finishing). Either way the caller must be released rather than left to
-  /// burn its whole timeout budget.
+  /// finishing). Either way a default caller must be released rather than left
+  /// to burn its whole timeout budget.
   /// Set [afterTerminalFrame] when the call is driven by a relay's own `EOSE`
   /// or `CLOSED`. That is the proof at least one relay is answering, and it is
   /// what arms [querySettleWindow] for whichever relays are still silent.
+  /// Set [afterClosedWithoutAnswer] for `CLOSED` frames that cannot prove
+  /// absence for callers that require full settlement.
   void _fireQueryCompleteIfSettled(
     String subId, {
     bool afterTerminalFrame = false,
+    bool afterClosedWithoutAnswer = false,
   }) {
     final callback = _queryCompleteCallbacks[subId];
     if (callback == null) return;
     if (afterTerminalFrame) _queryAnswered.add(subId);
+    if (afterClosedWithoutAnswer) _queryClosedWithoutAnswer.add(subId);
     if (_queryFanoutInProgress.contains(subId)) return;
 
     final list = [
@@ -804,14 +817,16 @@ class RelayPool {
     }
 
     // Nothing is pending — but for a full-settlement caller that only means
-    // the query is finished if some relay actually answered it. When every
-    // `relayDoQuery` send failed, no relay ever saved the query, so this sweep
-    // finds nothing outstanding and would hand back an empty box no relay
-    // contributed to. A caller about to replace what it read cannot tell that
-    // apart from "every relay says there is nothing", so let it run out to its
-    // own timeout instead.
+    // the query is finished if some relay actually answered it, and no relay
+    // refused to answer. When every `relayDoQuery` send failed, no relay ever
+    // saved the query, so this sweep finds nothing outstanding and would hand
+    // back an empty box no relay contributed to. Likewise, a relay `CLOSED` the
+    // REQ has made no data claim. A caller about to replace what it read cannot
+    // tell either apart from "every relay says there is nothing", so let it run
+    // out to its own timeout instead.
     if (_queriesRequiringFullSettlement.contains(subId) &&
-        !_queryAnswered.contains(subId)) {
+        (!_queryAnswered.contains(subId) ||
+            _queryClosedWithoutAnswer.contains(subId))) {
       return;
     }
 
@@ -884,6 +899,7 @@ class RelayPool {
   void _completeQuery(String subId, Function callback) {
     _queryCompleteCallbacks.remove(subId);
     _queryAnswered.remove(subId);
+    _queryClosedWithoutAnswer.remove(subId);
     _queriesRequiringFullSettlement.remove(subId);
     _querySettleTimers.remove(subId)?.cancel();
     _releaseQuery(subId);
@@ -1477,7 +1493,11 @@ class RelayPool {
         // later query on that socket pays its full budget.
         if (!_hasLiveAuthHandshake(relay)) _closeAuthGate(relay);
       } else if (relay.discardQuery(subscriptionId)) {
-        _fireQueryCompleteIfSettled(subscriptionId, afterTerminalFrame: true);
+        _fireQueryCompleteIfSettled(
+          subscriptionId,
+          afterTerminalFrame: true,
+          afterClosedWithoutAnswer: true,
+        );
       }
     }
   }
@@ -1658,6 +1678,7 @@ class RelayPool {
       _queryCompleteCallbacks.remove(id);
       _queryFanoutInProgress.remove(id);
       _queryAnswered.remove(id);
+      _queryClosedWithoutAnswer.remove(id);
       _queriesRequiringFullSettlement.remove(id);
       _querySettleTimers.remove(id)?.cancel();
       _releaseQuery(id);
