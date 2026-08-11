@@ -41,6 +41,14 @@ Zendesk fields at the `ZendeskSupportService` submission boundary. Text composed
 inside the native Zendesk SDK screens does not cross that boundary; see
 [Residual Risks](#residual-risks).
 
+A content report has three destinations, not one: the Zendesk ticket, the
+kind-1984 Nostr event published to relays, and the moderation DM. The
+kind-1984 event is the most exposed of the three - world-readable, permanent
+and unretractable - so `ContentReportingService.reportContent` redacts the
+reporter's details and additional context once at the entry point, before any
+of the three projections is built, and the moderation DM redacts the same
+details before sending.
+
 The email redaction rule also redacts NIP-05 identifiers such as
 `name@divine.video`. That is intentional for public support payloads: NIP-05s
 are public handles, but incidentally collected handles still identify people
@@ -95,9 +103,12 @@ submission boundary. These limits are known and accepted:
   redacted. The cap exists because an uncapped key run costs seconds per 100KB
   of pasted text on the UI thread. No real credential key is that long, so this
   is a bound on pathological input rather than on anything support sees.
-- Free-text bug report fields are capped at 10000 characters and the subject at
-  200, so a pasted field cannot make sanitization slow enough to freeze
-  submission.
+- Free-text fields on the bug report, feature request and content report forms
+  are capped at 10000 characters and subjects at 200, so a pasted field cannot
+  make sanitization slow enough to freeze submission. The cap is an input
+  formatter, so truncation is silent: 10000 characters is far past a typed
+  description, and a pasted crash log is already carried by the attached log
+  summary.
 - Text typed inside the native Zendesk SDK screens is never sanitized. The
   ticket list (`ZendeskSupportService.showTicketListScreen`, reachable from the
   support center) opens the SDK's own UI, where a reply to an existing ticket is

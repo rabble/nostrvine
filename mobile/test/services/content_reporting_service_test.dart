@@ -547,6 +547,62 @@ void main() {
       expect(result.error, isNull);
     });
 
+    test('never publishes a credential in the kind 1984 event', () async {
+      // The NIP-56 event goes to public relays: world-readable, permanent and
+      // unretractable, so it is a worse destination for a pasted secret than
+      // the Zendesk ticket. Both the content body and the `alt` tag carry
+      // user-typed text.
+      String? capturedContent;
+      List<List<String>>? capturedTags;
+
+      final reportEvent = createTestEvent(
+        pubkey: testPublicKey,
+        kind: 1984,
+        tags: [
+          ['e', _validEventId('d')],
+          ['p', 'reported_author'],
+        ],
+        content: 'spam',
+      );
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedContent =
+            invocation.namedArguments[const Symbol('content')] as String?;
+        capturedTags =
+            invocation.namedArguments[const Symbol('tags')]
+                as List<List<String>>?;
+        return reportEvent;
+      });
+      when(
+        () => mockNostrService.publishEvent(
+          any(),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
+
+      final _ = await service.reportContent(
+        eventId: _validEventId('d'),
+        authorPubkey: 'reported_author',
+        reason: ContentFilterReason.other,
+        details: 'they posted my password: hunter2 and my token: abc123',
+        additionalContext: 'also my api_key=SECRETKEY123',
+      );
+
+      expect(capturedContent, contains('[REDACTED]'));
+      expect(capturedContent, isNot(contains('hunter2')));
+      expect(capturedContent, isNot(contains('abc123')));
+      expect(capturedContent, isNot(contains('SECRETKEY123')));
+      expect(
+        capturedTags!.expand((tag) => tag).join(' '),
+        isNot(contains('SECRETKEY123')),
+      );
+    });
+
     test(
       'a stray brace in details cannot erase the reporter context',
       () async {

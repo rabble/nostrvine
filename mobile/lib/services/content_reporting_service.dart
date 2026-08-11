@@ -209,14 +209,23 @@ class ContentReportingService {
       // Generate report ID
       final reportId = 'report_${DateTime.now().millisecondsSinceEpoch}';
 
+      // Redact once, here, so every projection of this report inherits it.
+      // The kind-1984 event is published to relays in plaintext and the
+      // Zendesk ticket can be mirrored publicly, so a credential pasted into
+      // the details field must not survive into either.
+      final safeDetails = sanitizeDiagnosticText(details);
+      final safeAdditionalContext = additionalContext == null
+          ? null
+          : sanitizeDiagnosticText(additionalContext);
+
       // Create and broadcast NIP-56 reporting event (kind 1984)
       final reportEvent = await _createReportingEvent(
         reportId: reportId,
         eventId: eventId,
         authorPubkey: authorPubkey,
         reason: reason,
-        details: details,
-        additionalContext: additionalContext,
+        details: safeDetails,
+        additionalContext: safeAdditionalContext,
         hashtags: hashtags,
         nip56EventIds: nip56EventIds,
       );
@@ -252,8 +261,8 @@ class ContentReportingService {
         eventId: eventId,
         authorPubkey: authorPubkey,
         reason: reason,
-        details: details,
-        additionalContext: additionalContext,
+        details: safeDetails,
+        additionalContext: safeAdditionalContext,
       );
 
       // Save report to local history

@@ -7,6 +7,7 @@ import 'package:bloc/bloc.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/services/content_moderation_types.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -636,7 +637,9 @@ class ReportSubmissionCubit extends Cubit<ReportSubmissionState> {
       ..writeln('Reason: $reasonTitle')
       ..writeln('${_target.moderationEventLabel}: ${_target.eventId}');
     if (details.isNotEmpty) {
-      buffer.writeln('Details: $details');
+      // The moderation DM is private, but still leaves the device. Redact
+      // per field before assembly, matching the public report projections.
+      buffer.writeln('Details: ${sanitizeDiagnosticText(details)}');
     }
     return buffer.toString().trimRight();
   }

@@ -546,6 +546,11 @@ class _ReportFormBody extends StatelessWidget {
                     ),
                     minLines: 3,
                     maxLines: 5,
+                    inputFormatters: [
+                      LengthLimitingTextInputFormatter(
+                        BugReportConfig.maxFreeTextFieldLength,
+                      ),
+                    ],
                     decoration: const InputDecoration(
                       border: InputBorder.none,
                       isCollapsed: true,
