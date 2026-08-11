@@ -192,15 +192,13 @@ class ReportContentDialog extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return BlocProvider<ReportSubmissionCubit>(
       create: (_) => ReportSubmissionCubit(
-        // Both dependencies are resolved late rather than watched here. The
+        // Account-scoped dependencies are resolved late rather than watched
+        // here. The primary report service is read per submit so account
+        // switches and Nostr client rebuilds use the current signer; the
         // moderation DM's transport is read inside the cubit's dispatch, where
-        // a throw stays a DM-only failure instead of breaking the sheet; and
-        // because nothing is captured, no `ValueKey` is needed to survive an
-        // account switch. See .claude/rules/state_management.md ("When the
-        // rule does NOT apply").
-        contentReportingServiceFuture: ref.read(
-          contentReportingServiceProvider.future,
-        ),
+        // a throw stays a DM-only failure instead of breaking the sheet.
+        resolveContentReportingService: () =>
+            ref.read(contentReportingServiceProvider.future),
         resolveModerationDmTransport: () => (
           repository: ref.read(dmRepositoryProvider),
           pubkey: ref

@@ -97,6 +97,11 @@ enum ModerationDmOutcome {
   /// neither confirmed nor retried — there is no row left to re-drive, and
   /// minting a fresh one would be the #6610 duplicate. Keeps the caveat.
   unverifiable,
+
+  /// The DM was refused by the sender/recipient policy gate. This is terminal:
+  /// retrying just re-hits the same policy, so resubmits keep the caveat and do
+  /// not call `sendMessage` again.
+  blocked,
 }
 
 /// The moderation DM's progress across every submit this sheet makes.
@@ -193,6 +198,10 @@ typedef ModerationDmTransport = ({DmRepository repository, String pubkey});
 ///   previous account's repository.
 typedef ModerationDmTransportResolver = ModerationDmTransport Function();
 
+/// Resolves the primary report service at submit time.
+typedef ContentReportingServiceResolver =
+    Future<ContentReportingService> Function();
+
 /// Where one report submission has got to.
 enum ReportSubmissionStatus {
   /// Nothing in flight; the form is live.
@@ -251,19 +260,19 @@ class ReportSubmissionState extends Equatable {
 /// one report differently. The caller captures the reason before the first
 /// await and hands it in; nothing here reads live form state.
 ///
-/// Services are constructor-injected so the widget layer never reads Riverpod
-/// providers at submit time.
+/// Service resolvers are constructor-injected so the cubit stays free of
+/// Riverpod while still reading account-scoped dependencies at submit time.
 class ReportSubmissionCubit extends Cubit<ReportSubmissionState> {
   ReportSubmissionCubit({
-    required Future<ContentReportingService> contentReportingServiceFuture,
+    required ContentReportingServiceResolver resolveContentReportingService,
     required ModerationDmTransportResolver resolveModerationDmTransport,
     required ReportTarget target,
-  }) : _contentReportingServiceFuture = contentReportingServiceFuture,
+  }) : _resolveContentReportingService = resolveContentReportingService,
        _resolveModerationDmTransport = resolveModerationDmTransport,
        _target = target,
        super(const ReportSubmissionState());
 
-  final Future<ContentReportingService> _contentReportingServiceFuture;
+  final ContentReportingServiceResolver _resolveContentReportingService;
   final ModerationDmTransportResolver _resolveModerationDmTransport;
   final ReportTarget _target;
 
@@ -300,7 +309,7 @@ class ReportSubmissionCubit extends Cubit<ReportSubmissionState> {
     _update(status: ReportSubmissionStatus.submitting);
 
     try {
-      final service = await _contentReportingServiceFuture;
+      final service = await _resolveContentReportingService();
       final userPubkey = _target.userPubkey;
       final result = userPubkey != null
           ? await service.reportUser(
@@ -432,7 +441,8 @@ class ReportSubmissionCubit extends Cubit<ReportSubmissionState> {
   ) {
     final progress = state.moderationDm;
     if (progress.matchesDelivered(reason, details)) return Future.value(false);
-    if (progress.outcome == ModerationDmOutcome.unverifiable) {
+    if (progress.outcome
+        case ModerationDmOutcome.unverifiable || ModerationDmOutcome.blocked) {
       return Future.value(true);
     }
     return _dispatchModerationDm(reason, reasonTitle, details);
@@ -558,11 +568,14 @@ class ReportSubmissionCubit extends Cubit<ReportSubmissionState> {
         // reports nothing new and keeps the row it was given.
         NIP17SendFailure(:final queuedRumorId) => queuedRumorId ?? parked,
       };
+      final outcome = switch (dmResult) {
+        NIP17SendSuccess() => ModerationDmOutcome.delivered,
+        NIP17SendFailure(blocked: true) => ModerationDmOutcome.blocked,
+        NIP17SendFailure() => ModerationDmOutcome.pending,
+      };
       _update(
         moderationDm: ModerationDmProgress(
-          outcome: failed
-              ? ModerationDmOutcome.pending
-              : ModerationDmOutcome.delivered,
+          outcome: outcome,
           delivered: failed
               ? state.moderationDm.delivered
               : (reason: dispatchReason, details: dispatchDetails),

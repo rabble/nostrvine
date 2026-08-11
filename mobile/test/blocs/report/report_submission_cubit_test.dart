@@ -99,9 +99,11 @@ void main() {
     });
 
     ReportSubmissionCubit buildCubit({
+      ContentReportingServiceResolver? resolveReportingService,
       ModerationDmTransportResolver? resolveTransport,
     }) => ReportSubmissionCubit(
-      contentReportingServiceFuture: Future.value(reportingService),
+      resolveContentReportingService:
+          resolveReportingService ?? () async => reportingService,
       resolveModerationDmTransport:
           resolveTransport ??
           () => (repository: dmRepository, pubkey: _moderationPubkey),
@@ -126,10 +128,7 @@ void main() {
       verify: (cubit) {
         expect(cubit.state.status, ReportSubmissionStatus.submitted);
         expect(cubit.state.moderationDmFailed, isFalse);
-        expect(
-          cubit.state.moderationDm.outcome,
-          ModerationDmOutcome.delivered,
-        );
+        expect(cubit.state.moderationDm.outcome, ModerationDmOutcome.delivered);
       },
     );
 
@@ -207,6 +206,98 @@ void main() {
       );
     });
 
+    test('resolves the reporting service for each submit', () async {
+      final nextReportingService = _MockContentReportingService();
+      when(
+        () => nextReportingService.reportContent(
+          eventId: any(named: 'eventId'),
+          authorPubkey: any(named: 'authorPubkey'),
+          reason: any(named: 'reason'),
+          details: any(named: 'details'),
+          sourceRelay: any(named: 'sourceRelay'),
+          additionalContext: any(named: 'additionalContext'),
+          hashtags: any(named: 'hashtags'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            ReportResult.createSuccess('id', delivery: ReportDelivery.reached),
+      );
+
+      final services = <ContentReportingService>[
+        reportingService,
+        nextReportingService,
+      ];
+      final cubit = buildCubit(
+        resolveReportingService: () async => services.removeAt(0),
+      );
+      addTearDown(cubit.close);
+
+      await submit(cubit);
+      await submit(cubit);
+
+      verify(
+        () => reportingService.reportContent(
+          eventId: any(named: 'eventId'),
+          authorPubkey: any(named: 'authorPubkey'),
+          reason: any(named: 'reason'),
+          details: any(named: 'details'),
+          sourceRelay: any(named: 'sourceRelay'),
+          additionalContext: any(named: 'additionalContext'),
+          hashtags: any(named: 'hashtags'),
+        ),
+      ).called(1);
+      verify(
+        () => nextReportingService.reportContent(
+          eventId: any(named: 'eventId'),
+          authorPubkey: any(named: 'authorPubkey'),
+          reason: any(named: 'reason'),
+          details: any(named: 'details'),
+          sourceRelay: any(named: 'sourceRelay'),
+          additionalContext: any(named: 'additionalContext'),
+          hashtags: any(named: 'hashtags'),
+        ),
+      ).called(1);
+    });
+
+    test('does not retry a blocked moderation DM on resubmit', () async {
+      when(
+        () => dmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
+          additionalTags: any(named: 'additionalTags'),
+        ),
+      ).thenAnswer(
+        (_) async => const NIP17SendResult.blocked(
+          'blocked: recipient not permitted by send policy',
+        ),
+      );
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+
+      await submit(cubit);
+      await submit(cubit);
+
+      expect(cubit.state.moderationDmFailed, isTrue);
+      expect(cubit.state.moderationDm.outcome, ModerationDmOutcome.blocked);
+      verify(
+        () => dmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
+          additionalTags: any(named: 'additionalTags'),
+        ),
+      ).called(1);
+      verifyNever(
+        () => dmRepository.recoverFullSend(
+          rumorId: any(named: 'rumorId'),
+          resetRetryBudget: any(named: 'resetRetryBudget'),
+        ),
+      );
+    });
+
     test('re-drives the parked row rather than minting a second DM', () async {
       when(
         () => dmRepository.sendMessage(
@@ -238,10 +329,7 @@ void main() {
       addTearDown(cubit.close);
 
       await submit(cubit);
-      expect(
-        cubit.state.moderationDm.queuedRumorId,
-        equals('parked_rumor_id'),
-      );
+      expect(cubit.state.moderationDm.queuedRumorId, equals('parked_rumor_id'));
 
       // The same reason again: coalesce onto the row rather than stack a
       // second one for the sweep to deliver (#6610).
