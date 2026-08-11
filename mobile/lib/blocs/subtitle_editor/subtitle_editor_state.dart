@@ -84,7 +84,14 @@ class SubtitleEditorState extends Equatable {
     this.isDirty = false,
     this.updatedVideo,
     this.videoDurationMs,
+    this.selectedCueIndex,
   });
+
+  /// Timeline room left past the last cue when the video length is unknown.
+  ///
+  /// Without a declared duration the axis would end exactly on the last cue,
+  /// leaving no space to drag it later or stretch it longer.
+  static const _unknownDurationHeadroomMs = 2000;
 
   /// Current editor status.
   final SubtitleEditorStatus status;
@@ -103,8 +110,38 @@ class SubtitleEditorState extends Equatable {
   /// `null` means unknown, in which case cue timings are not bounded.
   final int? videoDurationMs;
 
+  /// Index into [cues] of the cue the creator is working on, or `null` when
+  /// none is selected.
+  ///
+  /// Drives which cue the timeline shows trim handles on and which row the
+  /// list highlights.
+  final int? selectedCueIndex;
+
   /// Whether [cues] can be published as they stand.
   bool get isValid => cues.isNotEmpty && cues.every((cue) => cue.isValid);
+
+  /// Length of the timeline axis in milliseconds.
+  ///
+  /// The video's own duration when it declares one, stretched to cover a cue
+  /// that already runs past it so no line ends up off the axis. Without a
+  /// declared duration the axis is derived from the cues themselves.
+  int get timelineDurationMs {
+    final lastEnd = cues.isEmpty
+        ? 0
+        : cues.map((cue) => cue.end).reduce((a, b) => a > b ? a : b);
+    final declared = videoDurationMs;
+    if (declared != null && declared > 0) {
+      return declared > lastEnd ? declared : lastEnd;
+    }
+    return lastEnd + _unknownDurationHeadroomMs;
+  }
+
+  /// The selected cue, or `null` when the selection is unset or stale.
+  EditableCue? get selectedCue {
+    final index = selectedCueIndex;
+    if (index == null || index < 0 || index >= cues.length) return null;
+    return cues[index];
+  }
 
   /// Whether there is room in the video for another cue.
   ///
@@ -117,12 +154,17 @@ class SubtitleEditorState extends Equatable {
   }
 
   /// Returns a copy with selected fields replaced.
+  ///
+  /// Pass [clearSelectedCue] to drop the selection, which `null` cannot
+  /// express.
   SubtitleEditorState copyWith({
     SubtitleEditorStatus? status,
     List<EditableCue>? cues,
     bool? isDirty,
     VideoEvent? updatedVideo,
     int? videoDurationMs,
+    int? selectedCueIndex,
+    bool clearSelectedCue = false,
   }) {
     return SubtitleEditorState(
       status: status ?? this.status,
@@ -130,6 +172,9 @@ class SubtitleEditorState extends Equatable {
       isDirty: isDirty ?? this.isDirty,
       updatedVideo: updatedVideo ?? this.updatedVideo,
       videoDurationMs: videoDurationMs ?? this.videoDurationMs,
+      selectedCueIndex: clearSelectedCue
+          ? null
+          : (selectedCueIndex ?? this.selectedCueIndex),
     );
   }
 
@@ -140,5 +185,6 @@ class SubtitleEditorState extends Equatable {
     isDirty,
     updatedVideo,
     videoDurationMs,
+    selectedCueIndex,
   ];
 }

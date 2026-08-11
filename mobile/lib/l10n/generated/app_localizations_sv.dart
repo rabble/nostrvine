@@ -10864,10 +10864,14 @@ class AppLocalizationsSv extends AppLocalizations {
   String get subtitleEditorRemoveCue => 'Ta bort den här raden';
 
   @override
-  String get subtitleEditorStartLabel => 'Start';
+  String get subtitleEditorPreviewUnavailable =>
+      'Videon går inte att spela upp just nu, men du kan ändå fixa undertexterna.';
 
   @override
-  String get subtitleEditorEndLabel => 'Slut';
+  String get subtitleEditorPlayPreview => 'Spela upp videon';
+
+  @override
+  String get subtitleEditorPausePreview => 'Pausa videon';
 
   @override
   String get subtitleEditorInvalidHint =>

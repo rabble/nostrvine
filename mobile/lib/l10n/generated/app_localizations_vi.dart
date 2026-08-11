@@ -10867,10 +10867,14 @@ class AppLocalizationsVi extends AppLocalizations {
   String get subtitleEditorRemoveCue => 'Xoá dòng này';
 
   @override
-  String get subtitleEditorStartLabel => 'Bắt đầu';
+  String get subtitleEditorPreviewUnavailable =>
+      'Hiện không phát được video, nhưng bạn vẫn có thể sửa phụ đề.';
 
   @override
-  String get subtitleEditorEndLabel => 'Kết thúc';
+  String get subtitleEditorPlayPreview => 'Phát video';
+
+  @override
+  String get subtitleEditorPausePreview => 'Tạm dừng video';
 
   @override
   String get subtitleEditorInvalidHint =>

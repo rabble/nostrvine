@@ -1,0 +1,392 @@
+// ABOUTME: Video preview plus cue timeline for the subtitle editor, owning the
+// ABOUTME: player and filmstrip both of them read from.
+
+import 'dart:async';
+
+import 'package:divine_ui/divine_ui.dart';
+import 'package:divine_video_player/divine_video_player.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:openvine/blocs/subtitle_editor/subtitle_editor_cubit.dart';
+import 'package:openvine/extensions/video_event_extensions.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/services/subtitle_timeline_thumbnail_service.dart';
+import 'package:openvine/services/video_thumbnail_service.dart';
+import 'package:openvine/widgets/caption_pill.dart';
+import 'package:openvine/widgets/subtitle_editor/subtitle_cue_timeline.dart';
+import 'package:unified_logger/unified_logger.dart';
+
+/// The video being captioned, with its cues laid out on a timeline beneath it.
+///
+/// Owns the player: the timeline scrubs it, playback moves the timeline, and
+/// the preview shows the cue that is live at the current position — so a
+/// caption is timed against the picture instead of against numbers.
+class SubtitleEditorStage extends StatefulWidget {
+  /// Creates the stage.
+  const SubtitleEditorStage({
+    required this.videoUrl,
+    required this.videoId,
+    required this.cues,
+    required this.totalDuration,
+    required this.selectedCue,
+    required this.thumbnailService,
+    super.key,
+  });
+
+  /// Playable URL of the published video.
+  final String videoUrl;
+
+  /// Full event id of the video, used as the media-cache key.
+  final String videoId;
+
+  /// Cues to lay out, in list order.
+  final List<EditableCue> cues;
+
+  /// Length of the time axis.
+  final Duration totalDuration;
+
+  /// The cue the creator is working on, or `null`.
+  ///
+  /// Selecting one jumps the preview to where it starts, so the frame the
+  /// caption lands on is on screen while its timing is edited.
+  final EditableCue? selectedCue;
+
+  /// Supplies the timeline's filmstrip.
+  final SubtitleTimelineThumbnailService thumbnailService;
+
+  @override
+  State<SubtitleEditorStage> createState() => _SubtitleEditorStageState();
+}
+
+class _SubtitleEditorStageState extends State<SubtitleEditorStage>
+    with SingleTickerProviderStateMixin {
+  final ValueNotifier<Duration> _position = ValueNotifier(Duration.zero);
+  final ValueNotifier<List<StripThumbnail>> _thumbnails = ValueNotifier(
+    const [],
+  );
+
+  DivineVideoPlayerController? _controller;
+  StreamSubscription<DivineVideoPlayerState>? _playerStates;
+  StreamSubscription<List<StripThumbnail>>? _thumbnailBatches;
+
+  /// Drives the playhead between position events.
+  ///
+  /// The player reports its position a few times a second, which is far too
+  /// coarse to scroll a timeline with — following it directly makes the film
+  /// stutter. The ticker advances the last reported position by real elapsed
+  /// time every frame, and each new report re-anchors it.
+  late final Ticker _playhead;
+  Duration _reportedPosition = Duration.zero;
+  Duration _reportedAt = Duration.zero;
+  Duration _tickerElapsed = Duration.zero;
+
+  bool _isPlaying = false;
+  bool _failed = false;
+  double _aspectRatio = 9 / 16;
+
+  @override
+  void initState() {
+    super.initState();
+    // Built here rather than lazily: a `late` ticker first touched in dispose
+    // would be created against a deactivated element.
+    _playhead = createTicker(_onPlayheadTick);
+    unawaited(_openPlayer());
+  }
+
+  @override
+  void didUpdateWidget(SubtitleEditorStage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final selected = widget.selectedCue;
+    if (selected == null || selected.start == oldWidget.selectedCue?.start) {
+      return;
+    }
+    _seekTo(Duration(milliseconds: selected.start));
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _thumbnailBatches ??= widget.thumbnailService
+        .thumbnailsFor(
+          videoUrl: widget.videoUrl,
+          videoId: widget.videoId,
+          duration: widget.totalDuration,
+          devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+        )
+        .listen((batch) => _thumbnails.value = batch);
+  }
+
+  void _onPlayheadTick(Duration elapsed) {
+    _tickerElapsed = elapsed;
+    final projected = _reportedPosition + (elapsed - _reportedAt);
+    _position.value = projected < widget.totalDuration
+        ? projected
+        : widget.totalDuration;
+  }
+
+  void _anchorPlayhead(Duration position) {
+    _reportedPosition = position;
+    _reportedAt = _tickerElapsed;
+    _position.value = position;
+  }
+
+  @override
+  void dispose() {
+    _playhead.dispose();
+    unawaited(_playerStates?.cancel());
+    unawaited(_thumbnailBatches?.cancel());
+    unawaited(_controller?.dispose());
+    _position.dispose();
+    _thumbnails.dispose();
+    super.dispose();
+  }
+
+  Future<void> _openPlayer() async {
+    // An m3u8 source has to be resolved to its MP4 before the native player
+    // can take it; for anything else this hands back the URL unchanged.
+    final url = await VideoEventAppExtensions.resolvePlayableUrl(
+      widget.videoUrl,
+    );
+    if (!mounted) return;
+    if (url == null || url.isEmpty) {
+      setState(() => _failed = true);
+      return;
+    }
+
+    final controller = DivineVideoPlayerController(useTexture: true);
+    try {
+      await controller.initialize();
+      await controller.setSource(VideoClip.network(url));
+      await controller.setLooping(looping: true);
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+      _playerStates = controller.stateStream.listen(_onPlayerState);
+      setState(() => _controller = controller);
+      // Started only once the surface is mounted, so the first decoded frame
+      // has somewhere to land. A player that never plays never decodes one,
+      // and the preview would sit on its placeholder forever.
+      await controller.play();
+    } on Object catch (error) {
+      // Without this the failure would be an unhandled async error and the
+      // preview would show an unexplained black box.
+      Log.warning(
+        'Could not play the video being captioned: $error',
+        name: 'SubtitleEditorStage',
+        category: LogCategory.video,
+      );
+      unawaited(_playerStates?.cancel());
+      _playerStates = null;
+      unawaited(controller.dispose());
+      if (!mounted) return;
+      setState(() {
+        _controller = null;
+        _failed = true;
+      });
+    }
+  }
+
+  void _onPlayerState(DivineVideoPlayerState state) {
+    _anchorPlayhead(state.position);
+    if (state.status == PlaybackStatus.error && !_failed) {
+      Log.warning(
+        'Video playback failed while captioning: ${state.errorMessage}',
+        name: 'SubtitleEditorStage',
+        category: LogCategory.video,
+      );
+      if (mounted) setState(() => _failed = true);
+      return;
+    }
+    final isPlaying = state.status == PlaybackStatus.playing;
+    final ratio = state.videoHeight > 0
+        ? state.videoWidth / state.videoHeight
+        : _aspectRatio;
+    if (isPlaying == _isPlaying && ratio == _aspectRatio) return;
+    if (!mounted) return;
+    // Only interpolate while the picture is actually moving; a paused playhead
+    // must stay exactly where the last report put it.
+    if (isPlaying && !_playhead.isActive) {
+      _playhead.start();
+    } else if (!isPlaying && _playhead.isActive) {
+      _playhead.stop();
+      _tickerElapsed = Duration.zero;
+      _reportedAt = Duration.zero;
+    }
+    setState(() {
+      _isPlaying = isPlaying;
+      _aspectRatio = ratio;
+    });
+  }
+
+  Future<void> _togglePlayback() async {
+    final controller = _controller;
+    if (controller == null) return;
+    await (_isPlaying ? controller.pause() : controller.play());
+  }
+
+  /// Moves the picture to [position] and holds it there.
+  ///
+  /// Both scrubbing and picking a cue land here: a moving picture under a
+  /// dragged playhead makes the frame you are aiming at impossible to land on.
+  void _seekTo(Duration position) {
+    final controller = _controller;
+    if (controller == null) return;
+    if (_isPlaying) unawaited(controller.pause());
+    _anchorPlayhead(position);
+    unawaited(controller.seekTo(position));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // The timeline takes the height it needs; the preview lives on whatever
+    // the enclosing screen left over, so a keyboard or a short screen shrinks
+    // the picture rather than overflowing.
+    return Column(
+      children: [
+        Expanded(
+          child: _Preview(
+            controller: _controller,
+            hasFailed: _failed,
+            aspectRatio: _aspectRatio,
+            isPlaying: _isPlaying,
+            position: _position,
+            cues: widget.cues,
+            onTogglePlayback: _togglePlayback,
+          ),
+        ),
+        const SizedBox(height: 8),
+        SubtitleCueTimeline(
+          totalDuration: widget.totalDuration,
+          playbackPosition: _position,
+          thumbnails: _thumbnails,
+          onScrubbed: _seekTo,
+        ),
+      ],
+    );
+  }
+}
+
+class _Preview extends StatelessWidget {
+  const _Preview({
+    required this.controller,
+    required this.hasFailed,
+    required this.aspectRatio,
+    required this.isPlaying,
+    required this.position,
+    required this.cues,
+    required this.onTogglePlayback,
+  });
+
+  final DivineVideoPlayerController? controller;
+
+  /// Whether the video could not be played at all.
+  final bool hasFailed;
+
+  final double aspectRatio;
+  final bool isPlaying;
+  final ValueListenable<Duration> position;
+  final List<EditableCue> cues;
+  final VoidCallback onTogglePlayback;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    if (hasFailed) {
+      return ColoredBox(
+        color: context.vineColors.surfaceContainerHigh,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              l10n.subtitleEditorPreviewUnavailable,
+              textAlign: TextAlign.center,
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.secondaryText,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    return Semantics(
+      label: isPlaying
+          ? l10n.subtitleEditorPausePreview
+          : l10n.subtitleEditorPlayPreview,
+      button: true,
+      child: GestureDetector(
+        onTap: onTogglePlayback,
+        child: ColoredBox(
+          color: context.vineColors.surfaceContainerHigh,
+          child: Center(
+            child: AspectRatio(
+              aspectRatio: aspectRatio,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  DivineVideoPlayer(
+                    controller: controller,
+                    placeholder: ColoredBox(
+                      color: context.vineColors.surfaceContainerHigh,
+                    ),
+                  ),
+                  _LiveCue(position: position, cues: cues),
+                  if (!isPlaying)
+                    Center(
+                      // Duplicates the surrounding tap target on purpose: the
+                      // whole picture toggles playback, this is what says so.
+                      child: ExcludeSemantics(
+                        child: DivineIconButton(
+                          icon: .play,
+                          type: .ghost,
+                          semanticLabel: l10n.subtitleEditorPlayPreview,
+                          onPressed: onTogglePlayback,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The cue that is live at the current position, drawn over the picture.
+///
+/// Reads the cues being edited rather than the published track, so a timing
+/// change shows up here the moment it is made.
+class _LiveCue extends StatelessWidget {
+  const _LiveCue({required this.position, required this.cues});
+
+  final ValueListenable<Duration> position;
+  final List<EditableCue> cues;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<Duration>(
+      valueListenable: position,
+      builder: (context, value, _) {
+        final ms = value.inMilliseconds;
+        final live = cues
+            .where((cue) => ms >= cue.start && ms < cue.end)
+            .where((cue) => cue.text.trim().isNotEmpty)
+            .firstOrNull;
+        if (live == null) return const SizedBox.shrink();
+        return Align(
+          alignment: Alignment.bottomCenter,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            // Silent to screen readers: the same text is announced by the
+            // cue's own row below, and merging it here would garble the
+            // preview's play/pause label.
+            child: ExcludeSemantics(child: CaptionPill(text: live.text)),
+          ),
+        );
+      },
+    );
+  }
+}

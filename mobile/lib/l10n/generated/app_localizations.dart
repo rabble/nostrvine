@@ -18652,17 +18652,23 @@ abstract class AppLocalizations {
   /// **'Remove this line'**
   String get subtitleEditorRemoveCue;
 
-  /// No description provided for @subtitleEditorStartLabel.
+  /// Shown in place of the subtitle editor's video preview when the video cannot be played, so the creator knows the captions are still editable.
   ///
   /// In en, this message translates to:
-  /// **'Start'**
-  String get subtitleEditorStartLabel;
+  /// **'The video can\'t be played right now, but you can still fix the captions.'**
+  String get subtitleEditorPreviewUnavailable;
 
-  /// No description provided for @subtitleEditorEndLabel.
+  /// Screen-reader label for the subtitle editor's video preview while it is paused; tapping it starts playback.
   ///
   /// In en, this message translates to:
-  /// **'End'**
-  String get subtitleEditorEndLabel;
+  /// **'Play the video'**
+  String get subtitleEditorPlayPreview;
+
+  /// Screen-reader label for the subtitle editor's video preview while it is playing; tapping it pauses playback.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause the video'**
+  String get subtitleEditorPausePreview;
 
   /// No description provided for @subtitleEditorInvalidHint.
   ///

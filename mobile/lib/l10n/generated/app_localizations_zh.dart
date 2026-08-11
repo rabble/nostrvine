@@ -10286,10 +10286,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get subtitleEditorRemoveCue => '删除这一行';
 
   @override
-  String get subtitleEditorStartLabel => '开始';
+  String get subtitleEditorPreviewUnavailable => '视频现在没法播放，但你仍然可以修改字幕。';
 
   @override
-  String get subtitleEditorEndLabel => '结束';
+  String get subtitleEditorPlayPreview => '播放视频';
+
+  @override
+  String get subtitleEditorPausePreview => '暂停视频';
 
   @override
   String get subtitleEditorInvalidHint => '每一行都需要文字，而且结束时间要晚于开始时间。';

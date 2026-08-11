@@ -6581,8 +6581,18 @@
     "subtitleEditorWriteOwn": "Write them yourself",
     "subtitleEditorAddCue": "Add a line",
     "subtitleEditorRemoveCue": "Remove this line",
-    "subtitleEditorStartLabel": "Start",
-    "subtitleEditorEndLabel": "End",
+    "subtitleEditorPreviewUnavailable": "The video can't be played right now, but you can still fix the captions.",
+    "@subtitleEditorPreviewUnavailable": {
+        "description": "Shown in place of the subtitle editor's video preview when the video cannot be played, so the creator knows the captions are still editable."
+    },
+    "subtitleEditorPlayPreview": "Play the video",
+    "@subtitleEditorPlayPreview": {
+        "description": "Screen-reader label for the subtitle editor's video preview while it is paused; tapping it starts playback."
+    },
+    "subtitleEditorPausePreview": "Pause the video",
+    "@subtitleEditorPausePreview": {
+        "description": "Screen-reader label for the subtitle editor's video preview while it is playing; tapping it pauses playback."
+    },
     "subtitleEditorInvalidHint": "Every line needs text and an end after its start.",
     "subtitleEditorLoadError": "Couldn't load subtitles. Try again.",
     "subtitleEditorSaveSuccess": "Subtitles updated",

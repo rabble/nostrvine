@@ -10414,10 +10414,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get subtitleEditorRemoveCue => 'この行を削除';
 
   @override
-  String get subtitleEditorStartLabel => '開始';
+  String get subtitleEditorPreviewUnavailable => 'いま動画を再生できないけど、字幕はこのまま直せるよ。';
 
   @override
-  String get subtitleEditorEndLabel => '終了';
+  String get subtitleEditorPlayPreview => '動画を再生';
+
+  @override
+  String get subtitleEditorPausePreview => '動画を一時停止';
 
   @override
   String get subtitleEditorInvalidHint => 'どの行にもテキストと、開始より後の終了時間が必要だよ。';

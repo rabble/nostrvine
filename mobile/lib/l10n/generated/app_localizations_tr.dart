@@ -10820,10 +10820,14 @@ class AppLocalizationsTr extends AppLocalizations {
   String get subtitleEditorRemoveCue => 'Bu satırı kaldır';
 
   @override
-  String get subtitleEditorStartLabel => 'Başlangıç';
+  String get subtitleEditorPreviewUnavailable =>
+      'Video şu an oynatılamıyor ama altyazıları yine de düzeltebilirsin.';
 
   @override
-  String get subtitleEditorEndLabel => 'Bitiş';
+  String get subtitleEditorPlayPreview => 'Videoyu oynat';
+
+  @override
+  String get subtitleEditorPausePreview => 'Videoyu duraklat';
 
   @override
   String get subtitleEditorInvalidHint =>

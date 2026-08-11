@@ -10924,10 +10924,14 @@ class AppLocalizationsMs extends AppLocalizations {
   String get subtitleEditorRemoveCue => 'Buang baris ini';
 
   @override
-  String get subtitleEditorStartLabel => 'Mula';
+  String get subtitleEditorPreviewUnavailable =>
+      'Video tidak dapat dimainkan sekarang, tetapi anda masih boleh membetulkan kapsyen.';
 
   @override
-  String get subtitleEditorEndLabel => 'Tamat';
+  String get subtitleEditorPlayPreview => 'Main video';
+
+  @override
+  String get subtitleEditorPausePreview => 'Jeda video';
 
   @override
   String get subtitleEditorInvalidHint =>

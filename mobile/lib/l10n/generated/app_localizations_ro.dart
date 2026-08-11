@@ -11075,10 +11075,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get subtitleEditorRemoveCue => 'Șterge această linie';
 
   @override
-  String get subtitleEditorStartLabel => 'Început';
+  String get subtitleEditorPreviewUnavailable =>
+      'Videoclipul nu poate fi redat acum, dar tot poți corecta subtitrările.';
 
   @override
-  String get subtitleEditorEndLabel => 'Sfârșit';
+  String get subtitleEditorPlayPreview => 'Redă videoclipul';
+
+  @override
+  String get subtitleEditorPausePreview => 'Pune videoclipul pe pauză';
 
   @override
   String get subtitleEditorInvalidHint =>

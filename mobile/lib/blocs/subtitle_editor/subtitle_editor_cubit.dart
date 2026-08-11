@@ -62,6 +62,7 @@ class SubtitleEditorCubit extends Cubit<SubtitleEditorState> {
           status: loaded,
           cues: result.cues.map(EditableCue.fromCue).toList(),
           isDirty: false,
+          clearSelectedCue: true,
         ),
       );
     } catch (e, st) {
@@ -94,6 +95,23 @@ class SubtitleEditorCubit extends Cubit<SubtitleEditorState> {
   void updateCueTiming(int index, {int? start, int? end}) =>
       _replaceCue(index, (cue) => cue.copyWith(start: start, end: end));
 
+  /// Marks the cue at [index] as the one being worked on, or clears the
+  /// selection when [index] is `null`.
+  ///
+  /// The timeline shows trim handles on the selected cue and the list
+  /// highlights its row. Out-of-range indices clear the selection instead of
+  /// pointing the timeline at a cue that is not there.
+  void selectCue(int? index) {
+    if (isClosed) return;
+    if (index == null || index < 0 || index >= state.cues.length) {
+      if (state.selectedCueIndex == null) return;
+      emit(state.copyWith(clearSelectedCue: true));
+      return;
+    }
+    if (state.selectedCueIndex == index) return;
+    emit(state.copyWith(selectedCueIndex: index));
+  }
+
   /// Appends a blank cue after the last one and switches to editing.
   ///
   /// The new cue starts where the previous one ends and runs for
@@ -119,6 +137,9 @@ class SubtitleEditorCubit extends Cubit<SubtitleEditorState> {
           EditableCue(start: start, end: end, text: ''),
         ],
         isDirty: true,
+        // A blank cue is useless until it is written, so hand the creator the
+        // new one rather than leaving the previous selection in place.
+        selectedCueIndex: state.cues.length,
       ),
     );
   }
@@ -131,7 +152,20 @@ class SubtitleEditorCubit extends Cubit<SubtitleEditorState> {
     if (_rejectsEdits) return;
     if (index < 0 || index >= state.cues.length) return;
     final updated = List<EditableCue>.from(state.cues)..removeAt(index);
-    emit(state.copyWith(cues: updated, isDirty: true));
+    // Cues are addressed positionally, so removing one shifts every later
+    // index down; without this the selection would silently point at the
+    // cue's neighbour.
+    final selected = state.selectedCueIndex;
+    emit(
+      state.copyWith(
+        cues: updated,
+        isDirty: true,
+        clearSelectedCue: selected == null || selected == index,
+        selectedCueIndex: selected != null && selected > index
+            ? selected - 1
+            : selected,
+      ),
+    );
   }
 
   void _replaceCue(int index, EditableCue Function(EditableCue cue) update) {

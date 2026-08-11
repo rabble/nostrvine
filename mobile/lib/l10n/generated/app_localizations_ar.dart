@@ -10782,10 +10782,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get subtitleEditorRemoveCue => 'احذف هذا السطر';
 
   @override
-  String get subtitleEditorStartLabel => 'البداية';
+  String get subtitleEditorPreviewUnavailable =>
+      'لا يمكن تشغيل الفيديو الآن، لكن ما زال بإمكانك تصحيح التسميات التوضيحية.';
 
   @override
-  String get subtitleEditorEndLabel => 'النهاية';
+  String get subtitleEditorPlayPreview => 'شغّل الفيديو';
+
+  @override
+  String get subtitleEditorPausePreview => 'أوقف الفيديو مؤقتًا';
 
   @override
   String get subtitleEditorInvalidHint =>

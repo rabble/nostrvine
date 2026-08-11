@@ -10442,10 +10442,14 @@ class AppLocalizationsKo extends AppLocalizations {
   String get subtitleEditorRemoveCue => '이 줄 삭제';
 
   @override
-  String get subtitleEditorStartLabel => '시작';
+  String get subtitleEditorPreviewUnavailable =>
+      '지금은 동영상을 재생할 수 없지만 자막은 계속 고칠 수 있어요.';
 
   @override
-  String get subtitleEditorEndLabel => '끝';
+  String get subtitleEditorPlayPreview => '동영상 재생';
+
+  @override
+  String get subtitleEditorPausePreview => '동영상 일시정지';
 
   @override
   String get subtitleEditorInvalidHint => '모든 줄에는 텍스트와 시작보다 늦은 종료 시간이 필요해요.';
