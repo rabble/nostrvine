@@ -127,7 +127,8 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
       _paginationCursor = result.paginationCursor;
 
       Log.info(
-        '🎬 ClassicVinesFeed: Loaded ${result.videos.length} videos',
+        '🎬 ClassicVinesFeed: Loaded ${result.videos.length} videos '
+        '(next cursor: ${result.paginationCursor})',
         name: 'ClassicVinesFeedProvider',
         category: LogCategory.video,
       );
@@ -261,9 +262,10 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     state = AsyncData(currentState.copyWith(isLoadingMore: true));
 
     try {
+      final requestCursor = _paginationCursor;
       final page = await repository.getClassicVideos(
         limit: _pageSize,
-        cursor: _paginationCursor,
+        cursor: requestCursor,
         skipCache: true,
       );
       final filteredVideos = dedupeByFeedKey(
@@ -276,7 +278,7 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
 
       Log.info(
         '🎬 ClassicVinesFeed: Loaded ${filteredVideos.length} more '
-        '(total: ${allVideos.length})',
+        '(cursor: $requestCursor, total: ${allVideos.length})',
         name: 'ClassicVinesFeedProvider',
         category: LogCategory.video,
       );
