@@ -459,121 +459,133 @@ class _EmailVerificationScreenState
       backgroundColor: context.vineColors.background,
       resizeToAvoidBottomInset: false,
       body: SafeArea(
-        child: BlocConsumer<EmailVerificationCubit, EmailVerificationState>(
-          listenWhen: (previous, current) =>
-              previous.status != current.status ||
-              previous.pinStatus != current.pinStatus ||
-              previous.pinErrorCode != current.pinErrorCode ||
-              previous.resendStatus != current.resendStatus,
-          listener: (context, state) {
-            if (state.status == EmailVerificationStatus.success) {
-              _handleSuccess();
-            }
-            // Both messages replace a spinner with text after an async
-            // transition that moves no focus, so a screen reader is otherwise
-            // told nothing on a screen whose only job is explaining the wait.
-            if (state.status == EmailVerificationStatus.pollingTimedOut) {
-              SemanticsService.sendAnnouncement(
+        // Each listener is edge-triggered on its own field. One listener over
+        // the union of fields re-fires every announcement that happens to be
+        // true whenever any single field moves, so a resend after polling had
+        // already stopped would repeat "we stopped checking" and interrupt
+        // itself.
+        child: MultiBlocListener(
+          listeners: [
+            BlocListener<EmailVerificationCubit, EmailVerificationState>(
+              listenWhen: (previous, current) =>
+                  previous.status != current.status &&
+                  current.status == EmailVerificationStatus.success,
+              listener: (context, state) => _handleSuccess(),
+            ),
+            BlocListener<EmailVerificationCubit, EmailVerificationState>(
+              listenWhen: (previous, current) =>
+                  previous.status != current.status &&
+                  current.status == EmailVerificationStatus.pollingTimedOut,
+              listener: (context, state) => SemanticsService.sendAnnouncement(
                 View.of(context),
                 context.l10n.authVerificationPollingStopped,
                 Directionality.of(context),
-              );
-            }
-            if (state.resendStatus == ResendStatus.unavailable) {
-              SemanticsService.sendAnnouncement(
+              ),
+            ),
+            BlocListener<EmailVerificationCubit, EmailVerificationState>(
+              listenWhen: (previous, current) =>
+                  previous.resendStatus != current.resendStatus &&
+                  current.resendStatus == ResendStatus.unavailable,
+              listener: (context, state) => SemanticsService.sendAnnouncement(
                 View.of(context),
                 context.l10n.authVerificationResendUnavailable,
                 Directionality.of(context),
-              );
-            }
-            if (state.pinStatus == PinSubmissionStatus.failure) {
-              final message = context.l10n.emailVerificationErrorMessage(
-                state.pinErrorCode ?? EmailVerificationError.pinFailed,
-              );
-              SemanticsService.sendAnnouncement(
-                View.of(context),
-                message,
-                Directionality.of(context),
-              );
-            }
-          },
-          builder: (context, state) {
-            final pinFallbackEnabled = ref.watch(
-              isFeatureEnabledProvider(
-                FeatureFlag.emailVerificationPinFallback,
               ),
-            );
-            final showCloseButton =
-                state.status != EmailVerificationStatus.success;
-            return Column(
-              children: [
-                // Close button (hidden on success)
-                if (showCloseButton)
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: _CloseButton(
-                        onPressed:
-                            state.status == EmailVerificationStatus.failure
-                            ? _handleStartOver
-                            : _handleCancel,
+            ),
+            BlocListener<EmailVerificationCubit, EmailVerificationState>(
+              listenWhen: (previous, current) =>
+                  (previous.pinStatus != current.pinStatus ||
+                      previous.pinErrorCode != current.pinErrorCode) &&
+                  current.pinStatus == PinSubmissionStatus.failure,
+              listener: (context, state) => SemanticsService.sendAnnouncement(
+                View.of(context),
+                context.l10n.emailVerificationErrorMessage(
+                  state.pinErrorCode ?? EmailVerificationError.pinFailed,
+                ),
+                Directionality.of(context),
+              ),
+            ),
+          ],
+          child: BlocBuilder<EmailVerificationCubit, EmailVerificationState>(
+            builder: (context, state) {
+              final pinFallbackEnabled = ref.watch(
+                isFeatureEnabledProvider(
+                  FeatureFlag.emailVerificationPinFallback,
+                ),
+              );
+              final showCloseButton =
+                  state.status != EmailVerificationStatus.success;
+              return Column(
+                children: [
+                  // Close button (hidden on success)
+                  if (showCloseButton)
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: _CloseButton(
+                          onPressed:
+                              state.status == EmailVerificationStatus.failure
+                              ? _handleStartOver
+                              : _handleCancel,
+                        ),
                       ),
-                    ),
-                  )
-                else
-                  const SizedBox(height: 76),
+                    )
+                  else
+                    const SizedBox(height: 76),
 
-                // Main content
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: switch (state.status) {
-                      EmailVerificationStatus.initial => _PollingContent(
-                        email: null,
-                        isPollingMode: widget.isPollingMode || !_isTokenMode,
-                        showPinFallback: pinFallbackEnabled,
-                      ),
-                      EmailVerificationStatus.polling => _PollingContent(
-                        email: state.pendingEmail,
-                        isPollingMode: widget.isPollingMode || !_isTokenMode,
-                        showPinFallback: pinFallbackEnabled,
-                      ),
-                      EmailVerificationStatus.pollingTimedOut =>
-                        _PollingContent(
+                  // Main content
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: switch (state.status) {
+                        EmailVerificationStatus.initial => _PollingContent(
+                          email: null,
+                          isPollingMode: widget.isPollingMode || !_isTokenMode,
+                          showPinFallback: pinFallbackEnabled,
+                        ),
+                        EmailVerificationStatus.polling => _PollingContent(
                           email: state.pendingEmail,
                           isPollingMode: widget.isPollingMode || !_isTokenMode,
                           showPinFallback: pinFallbackEnabled,
-                          isActivelyPolling: false,
                         ),
-                      EmailVerificationStatus.success =>
-                        const _SuccessContent(),
-                      EmailVerificationStatus.failure => _ErrorContent(
-                        errorCode: state.errorCode,
-                        onStartOver: _handleStartOver,
-                        onSignInInstead:
-                            state.errorCode ==
-                                EmailVerificationError.emailAlreadyRegistered
-                            ? () => _handleSignInRecovery(
-                                state.pendingEmail,
-                                state.errorCode!,
-                              )
-                            : null,
-                        onReturnToInviteGate:
-                            state.showInviteGateRecovery &&
-                                state.inviteRecoveryCode != null
-                            ? () => _handleInviteRecovery(
-                                state.inviteRecoveryCode!,
-                                state.errorCode,
-                              )
-                            : null,
-                      ),
-                    },
+                        EmailVerificationStatus.pollingTimedOut =>
+                          _PollingContent(
+                            email: state.pendingEmail,
+                            isPollingMode:
+                                widget.isPollingMode || !_isTokenMode,
+                            showPinFallback: pinFallbackEnabled,
+                            isActivelyPolling: false,
+                          ),
+                        EmailVerificationStatus.success =>
+                          const _SuccessContent(),
+                        EmailVerificationStatus.failure => _ErrorContent(
+                          errorCode: state.errorCode,
+                          onStartOver: _handleStartOver,
+                          onSignInInstead:
+                              state.errorCode ==
+                                  EmailVerificationError.emailAlreadyRegistered
+                              ? () => _handleSignInRecovery(
+                                  state.pendingEmail,
+                                  state.errorCode!,
+                                )
+                              : null,
+                          onReturnToInviteGate:
+                              state.showInviteGateRecovery &&
+                                  state.inviteRecoveryCode != null
+                              ? () => _handleInviteRecovery(
+                                  state.inviteRecoveryCode!,
+                                  state.errorCode,
+                                )
+                              : null,
+                        ),
+                      },
+                    ),
                   ),
-                ),
-              ],
-            );
-          },
+                ],
+              );
+            },
+          ),
         ),
       ),
     );

@@ -1326,4 +1326,74 @@ void main() {
       );
     });
   });
+
+  group('screen-reader announcements', () {
+    // Regression for a level-triggered listener: a single listener over the
+    // union of status, pinStatus and resendStatus re-announced every message
+    // that happened to be true whenever any one field moved. A resend after
+    // polling had already stopped therefore repeated "we stopped checking"
+    // on each resend transition and then interrupted itself.
+    testWidgets(
+      'announces polling-stopped once, not again on later resend transitions',
+      (tester) async {
+        final announced = <String>[];
+        tester.binding.defaultBinaryMessenger
+            .setMockDecodedMessageHandler<Object?>(
+              SystemChannels.accessibility,
+              (Object? message) async {
+                if (message is Map) {
+                  final data = message['data'];
+                  if (data is Map && data['message'] is String) {
+                    announced.add(data['message'] as String);
+                  }
+                }
+                return null;
+              },
+            );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger
+              .setMockDecodedMessageHandler<Object?>(
+                SystemChannels.accessibility,
+                null,
+              ),
+        );
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        await pumpVerificationScreen(
+          tester,
+          deviceCode: 'device-code',
+          verifier: 'verifier',
+          email: 'someone@example.test',
+          stateStream: Stream<EmailVerificationState>.fromIterable(const [
+            EmailVerificationState(status: EmailVerificationStatus.polling),
+            EmailVerificationState(
+              status: EmailVerificationStatus.pollingTimedOut,
+            ),
+            EmailVerificationState(
+              status: EmailVerificationStatus.pollingTimedOut,
+              resendStatus: ResendStatus.sending,
+            ),
+            EmailVerificationState(
+              status: EmailVerificationStatus.pollingTimedOut,
+              resendStatus: ResendStatus.unavailable,
+            ),
+          ]),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          announced.where((m) => m == l10n.authVerificationPollingStopped),
+          hasLength(1),
+          reason:
+              'polling-stopped must announce on entry only, not on every '
+              'later resend transition while the status is unchanged',
+        );
+        expect(
+          announced.where((m) => m == l10n.authVerificationResendUnavailable),
+          hasLength(1),
+        );
+      },
+    );
+  });
 }
