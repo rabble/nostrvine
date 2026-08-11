@@ -2158,6 +2158,41 @@ void main() {
         expect(result.success, isFalse);
         expect(result.message, contains('TimeoutException'));
       });
+
+      // Both resend methods rely on the generic catch to turn a hang into a
+      // network failure; neither had a timeout test, so that path was
+      // unverified in either direction.
+      test(
+        'resendVerification reports network failure on hung request',
+        () async {
+          final oauth = KeycastOAuth(
+            config: config,
+            httpClient: hangingClient(),
+            requestTimeout: shortTimeout,
+          );
+
+          final result = await oauth.resendVerification('test@example.com');
+
+          expect(result.success, isFalse);
+          expect(result.errorCode, ResendVerificationError.network);
+        },
+      );
+
+      test(
+        'resendHeadlessVerification reports network failure on hung request',
+        () async {
+          final oauth = KeycastOAuth(
+            config: config,
+            httpClient: hangingClient(),
+            requestTimeout: shortTimeout,
+          );
+
+          final result = await oauth.resendHeadlessVerification('device-code');
+
+          expect(result.success, isFalse);
+          expect(result.errorCode, ResendVerificationError.network);
+        },
+      );
     });
 
     group('close', () {
