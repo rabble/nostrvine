@@ -23,7 +23,7 @@ tags:
 #Steps:
 # 1. Tap the preview once: recording starts
 # 2. Wait without touching anything: the recorder comes back on its own
-# 3. Validate the session took the clip
+# 3. Validate the recorder is back on a live idle viewfinder
 
 # 1. Start. The readiness wait is load-bearing here in a way it is not in
 # recordClassicClip: this test needs budget left, and a session already holding
@@ -52,5 +52,10 @@ tags:
       id: camera_close_button
     timeout: 20000
 
-# 3. And the recording became a clip rather than being discarded at the limit.
+# 3. And the recorder came back to a live idle viewfinder rather than a stuck
+# one. This cannot prove the auto-stop produced a *second* clip: both halves of
+# the assert are gated on `hasClips`, which the clip from classicModeRecordClip
+# already satisfies on the way in. classicModeDeleteClip is what pins the count
+# — it deletes once and re-runs this same assert, which only holds if there
+# were two.
 - runFlow: ../asserts/assertClassicClipRecorded.yaml
