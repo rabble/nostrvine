@@ -208,23 +208,36 @@ void main() {
       bool isLoadingVideos = false,
       MockAuthService? mockAuthService,
       CuratedListService? curatedListService,
+      Locale? locale,
     }) {
+      final grid = MultiBlocProvider(
+        providers: [
+          BlocProvider<MyProfileBloc>.value(value: myProfileBloc),
+          BlocProvider<ProfileFeedCubit>.value(value: profileFeedCubit),
+        ],
+        child: ProfileGridView(
+          key: const ValueKey('profile-grid'),
+          userIdHex: userIdHex,
+          isOwnProfile: isOwnProfile,
+          videos: const [],
+          isLoadingVideos: isLoadingVideos,
+        ),
+      );
+
       return testMaterialApp(
         theme: VineTheme.theme,
         home: Scaffold(
-          body: MultiBlocProvider(
-            providers: [
-              BlocProvider<MyProfileBloc>.value(value: myProfileBloc),
-              BlocProvider<ProfileFeedCubit>.value(value: profileFeedCubit),
-            ],
-            child: ProfileGridView(
-              key: const ValueKey('profile-grid'),
-              userIdHex: userIdHex,
-              isOwnProfile: isOwnProfile,
-              videos: const [],
-              isLoadingVideos: isLoadingVideos,
-            ),
-          ),
+          // testMaterialApp takes no locale, so override it here rather than
+          // widen a helper every other profile test shares.
+          body: locale == null
+              ? grid
+              : Builder(
+                  builder: (context) => Localizations.override(
+                    context: context,
+                    locale: locale,
+                    child: grid,
+                  ),
+                ),
         ),
         mockNostrService: nostrClient,
         mockAuthService: mockAuthService,
@@ -329,41 +342,55 @@ void main() {
       },
     );
 
-    testWidgets('tabs announce their localized name, not the test anchor', (
-      tester,
-    ) async {
-      // ProfileTabBar's own test builds its ProfileTab records by hand, so it
-      // cannot see _tabPresentationFor -- the only place a tab kind is mapped
-      // to context.l10n. Without this, reverting one of those labels back to
-      // its SemanticIds anchor reintroduces #6951 with the whole
-      // test/widgets/profile suite still green.
-      final handle = tester.ensureSemantics();
-      await tester.pumpWidget(buildSubject(isOwnProfile: true));
-      await tester.pump();
+    // ProfileTabBar's own test builds its ProfileTab records by hand, so it
+    // cannot see _tabPresentationFor -- the only place a tab kind is mapped to
+    // context.l10n. Without these, reverting one of those labels to its
+    // SemanticIds anchor reintroduces #6951 with the whole
+    // test/widgets/profile suite still green.
+    //
+    // Both locales are pumped through ProfileGridView on purpose: English
+    // alone cannot tell l10n apart from a hardcoded English literal, which is
+    // the other way this mapping regresses. The second locale must differ
+    // from English on every one of the six values -- de shares Videos,
+    // Collabs and Reposts verbatim, so it would leave half the strip
+    // unguarded. ja differs on all six.
+    for (final locale in [const Locale('en'), const Locale('ja')]) {
+      testWidgets(
+        'tabs announce their localized name in ${locale.languageCode}, '
+        'not the test anchor',
+        (tester) async {
+          final handle = tester.ensureSemantics();
 
-      final l10n = lookupAppLocalizations(const Locale('en'));
-      final expectations = <String, String>{
-        SemanticIds.profileVideosTab: l10n.profileVideosLabel,
-        SemanticIds.profileCollabsTab: l10n.profileCollabsLabel,
-        SemanticIds.profileLikedTab: l10n.profileLikedLabel,
-        SemanticIds.profileRepostsTab: l10n.profileRepostsLabel,
-        SemanticIds.profileListsTab: l10n.profileListsLabel,
-        SemanticIds.profileCommentsTab: l10n.profileCommentsLabel,
-      };
+          await tester.pumpWidget(
+            buildSubject(isOwnProfile: true, locale: locale),
+          );
+          await tester.pump();
 
-      for (final entry in expectations.entries) {
-        // Merged data, not SemanticsNode.label: Material puts "Tab N of M" on
-        // the node's own config and merges the icon's label up.
-        final label = tester
-            .getSemantics(find.bySemanticsIdentifier(entry.key))
-            .getSemanticsData()
-            .label;
-        expect(label, contains(entry.value));
-        expect(label, isNot(contains(entry.key)));
-      }
+          final l10n = lookupAppLocalizations(locale);
+          final expectations = <String, String>{
+            SemanticIds.profileVideosTab: l10n.profileVideosLabel,
+            SemanticIds.profileCollabsTab: l10n.profileCollabsLabel,
+            SemanticIds.profileLikedTab: l10n.profileLikedLabel,
+            SemanticIds.profileRepostsTab: l10n.profileRepostsLabel,
+            SemanticIds.profileListsTab: l10n.profileListsLabel,
+            SemanticIds.profileCommentsTab: l10n.profileCommentsLabel,
+          };
 
-      handle.dispose();
-    });
+          for (final entry in expectations.entries) {
+            // Merged data, not SemanticsNode.label: Material puts "Tab N of M"
+            // on the node's own config and merges the icon's label up.
+            final label = tester
+                .getSemantics(find.bySemanticsIdentifier(entry.key))
+                .getSemanticsData()
+                .label;
+            expect(label, contains(entry.value));
+            expect(label, isNot(contains(entry.key)));
+          }
+
+          handle.dispose();
+        },
+      );
+    }
 
     testWidgets(
       'does not restore another viewer identity tab index after auth change',
