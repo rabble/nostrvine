@@ -1573,12 +1573,42 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         event.frameIndex >= frames.length) {
       return;
     }
+    // The editor hands back an empty list when its screenshot pass failed
+    // (`CropRotateEditor.done` retries, then closes with `Uint8List(0)`
+    // anyway). Writing that would produce a frame pointing at a broken image,
+    // and dropping it silently leaves the user staring at an unchanged still
+    // after a visible wait — so it surfaces as the same failure a bad write
+    // does.
+    if (event.imageBytes.isEmpty) {
+      Log.error(
+        '❌ Transform produced no image for ${event.clipId} '
+        'frame ${event.frameIndex}',
+        name: 'ClipEditorBloc',
+        category: LogCategory.video,
+      );
+      emit(state.copyWith(lastTransformResult: ClipTransformFrameFailure()));
+      return;
+    }
+
+    // The still this transform was started from. Re-checked after the write:
+    // the sequence can be edited while the bytes are on their way to disk, and
+    // an index alone would then name a different still.
+    final sourcePath = frames[event.frameIndex].path;
 
     final String path;
     try {
       path = await _writeStopMotionFrame(event.imageBytes);
     } catch (e, stackTrace) {
-      addError(e, stackTrace);
+      // Matches `_onClipTransformRequested`: an IO failure here is expected
+      // (full disk, revoked sandbox) and stays out of Crashlytics, while a
+      // broken invariant is a bug worth reporting.
+      final error = switch (e) {
+        StateError() ||
+        TypeError() ||
+        RangeError() => Reportable(e, context: '_onStopMotionFrameTransformed'),
+        _ => e,
+      };
+      addError(error, stackTrace);
       Log.error(
         '❌ Failed to save transformed still for ${event.clipId}: $e',
         name: 'ClipEditorBloc',
@@ -1588,13 +1618,22 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       return;
     }
 
-    // Re-resolve across the write: the sequence can have been edited while the
-    // bytes were being written, so a stale index would repoint the wrong still.
     final currentClips = state.clips;
     final currentIndex = currentClips.indexWhere((c) => c.id == event.clipId);
     if (currentIndex == -1) return;
     final currentFrames = currentClips[currentIndex].stopMotionFrames;
-    if (currentFrames == null || event.frameIndex >= currentFrames.length) {
+    if (currentFrames == null ||
+        event.frameIndex >= currentFrames.length ||
+        currentFrames[event.frameIndex].path != sourcePath) {
+      // The slot no longer holds the still the user transformed — it was
+      // deleted, reordered or already repointed. Repointing it now would apply
+      // the crop to whatever moved in, so the write is abandoned instead.
+      Log.warning(
+        '⚠️ Transformed still discarded: frame ${event.frameIndex} of '
+        '${event.clipId} moved while the image was being written',
+        name: 'ClipEditorBloc',
+        category: LogCategory.video,
+      );
       return;
     }
 

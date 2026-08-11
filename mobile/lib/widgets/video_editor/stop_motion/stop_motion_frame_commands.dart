@@ -4,7 +4,7 @@
 import 'dart:typed_data';
 
 import 'package:divine_ui/divine_ui.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
@@ -116,7 +116,10 @@ Future<void> transformStopMotionFrame(
     ),
   );
 
-  if (bytes == null || bytes.isEmpty || !context.mounted) return;
+  // `null` is Cancel and stays silent. Empty bytes are not: they mean the
+  // editor gave up rasterizing and closed anyway, so they travel on and the
+  // bloc turns them into the failure snackbar rather than a silent no-op.
+  if (bytes == null || !context.mounted) return;
 
   // The bloc owns the write and the frame swap: persisting the pixels is
   // data-layer work, and it also puts the change in editor history through the

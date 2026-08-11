@@ -2731,6 +2731,83 @@ void main() {
         ),
         expect: () => <ClipEditorState>[],
       );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'reports a failure when the editor rasterized nothing',
+        // `CropRotateEditor.done` retries its screenshot, then closes with an
+        // empty list anyway. Writing it would point the frame at a broken
+        // image; dropping it silently would leave the user with an unchanged
+        // still and no explanation after a visible wait.
+        build: () => buildBloc(
+          writeStopMotionFrame: (_) async =>
+              throw StateError('must not be called'),
+        ),
+        seed: () => ClipEditorState(clips: [_createStopMotionClip()]),
+        act: (bloc) => bloc.add(
+          ClipEditorStopMotionFrameTransformed(
+            clipId: 'sm',
+            frameIndex: 0,
+            imageBytes: Uint8List(0),
+          ),
+        ),
+        // Rejected before the write, not by it: reaching the writer and
+        // failing there would produce the same state off a thrown error.
+        errors: () => <Object>[],
+        expect: () => [
+          isA<ClipEditorState>()
+              .having(
+                (s) => s.lastTransformResult,
+                'result',
+                isA<ClipTransformFrameFailure>(),
+              )
+              .having(
+                (s) => s.clips.first.stopMotionFrames!.first.path,
+                'untouched still',
+                'sm-0.jpg',
+              ),
+        ],
+      );
+
+      test(
+        'discards the write when the still moved out from under it',
+        () async {
+          // The write is awaited, so a frame delete can land in between. The
+          // index alone then names a different still, and repointing it would
+          // apply the crop to whatever moved in.
+          final gate = Completer<String>();
+          final bloc = buildBloc(writeStopMotionFrame: (_) => gate.future)
+            ..emit(ClipEditorState(clips: [_createStopMotionClip()]));
+
+          bloc.add(
+            ClipEditorStopMotionFrameTransformed(
+              clipId: 'sm',
+              frameIndex: 1,
+              imageBytes: bytes,
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+
+          // Frame 0 goes away, so the still the user transformed slides to 0 and
+          // index 1 now holds the one that was at 2.
+          final shifted = StopMotionFrameOps.clipWithFrames(
+            bloc.state.clips.first,
+            StopMotionFrameOps.removeFrame(
+              bloc.state.clips.first.stopMotionFrames!,
+              0,
+            ),
+          );
+          bloc.emit(ClipEditorState(clips: [shifted]));
+
+          gate.complete('transformed.jpg');
+          await Future<void>.delayed(Duration.zero);
+
+          expect(
+            bloc.state.clips.first.stopMotionFrames!.map((f) => f.path),
+            ['sm-1.jpg', 'sm-2.jpg'],
+          );
+          await bloc.close();
+        },
+      );
     });
 
     group('ClipEditorClipTransformRequested', () {
