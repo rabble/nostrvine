@@ -9881,6 +9881,61 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailBlockClaimantsAction => 'የባጅ ጠያቂዎችን አግድ';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'የባጅ ጠያቂዎችን አግድ';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError => 'ይህን ባጅ የጠየቁትን መጫን አልተቻለም';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle => 'አሁን ይህን ባጅ የጠየቀ የለም';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody => 'ለማገድ የአሁን ጠያቂዎችን አላገኘንም።';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count መለያዎች ይታገዱ?',
+      one: '1 መለያ ይታገድ?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'ይህ አሁን ይህን ባጅ የጠየቁትን $count መለያዎች ያግዳል። ፖስቶቻቸው ከፊዶችህ ይጠፋሉ፣ ማሳወቂያም አይደርሳቸውም።',
+      one: 'ይህ አሁን ይህን ባጅ የጠየቀውን መለያ ያግዳል። ፖስቶቹ ከፊዶችህ ይጠፋሉ፣ ማሳወቂያም አይደርሰውም።',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count መለያዎች አግድ',
+      one: '1 መለያ አግድ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess => 'የባጅ ጠያቂዎች ታግደዋል';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure => 'የባጅ ጠያቂዎችን ማገድ አልተቻለም';
+
+  @override
   String get badgeDetailLoadError => 'ይህን ባጅ መጫን አልተቻለም';
 
   @override

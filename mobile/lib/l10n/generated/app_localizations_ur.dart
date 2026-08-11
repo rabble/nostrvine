@@ -10110,6 +10110,67 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailBlockClaimantsAction => 'بیج رکھنے والوں کو بلاک کریں';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'بیج رکھنے والوں کو بلاک کریں';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'اس بیج کو رکھنے والوں کو لوڈ نہیں کیا جا سکا';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'ابھی کوئی یہ بیج نہیں رکھتا';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'ہمیں فی الحال بلاک کرنے کے لیے کوئی نہیں ملا۔';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count اکاؤنٹس بلاک کریں؟',
+      one: '1 اکاؤنٹ بلاک کریں؟',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'اس سے وہ $count اکاؤنٹس بلاک ہو جائیں گے جو ابھی یہ بیج رکھتے ہیں۔ ان کی پوسٹیں آپ کے فیڈز میں نظر نہیں آئیں گی اور انہیں اطلاع نہیں دی جائے گی۔',
+      one:
+          'اس سے وہ اکاؤنٹ بلاک ہو جائے گا جو ابھی یہ بیج رکھتا ہے۔ ان کی پوسٹیں آپ کے فیڈز میں نظر نہیں آئیں گی اور انہیں اطلاع نہیں دی جائے گی۔',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count اکاؤنٹس بلاک کریں',
+      one: '1 اکاؤنٹ بلاک کریں',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess =>
+      'بیج رکھنے والے بلاک کر دیے گئے';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'بیج رکھنے والوں کو بلاک نہیں کیا جا سکا';
+
+  @override
   String get badgeDetailLoadError => 'یہ بیج لوڈ نہیں ہو سکا';
 
   @override

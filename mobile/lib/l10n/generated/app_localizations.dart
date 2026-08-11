@@ -17416,6 +17416,66 @@ abstract class AppLocalizations {
   /// **'Check out this badge on Divine: {link}'**
   String badgeDetailShareMessage(String link);
 
+  /// No description provided for @badgeDetailBlockClaimantsAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Block badge claimants'**
+  String get badgeDetailBlockClaimantsAction;
+
+  /// No description provided for @badgeDetailBlockClaimantsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Block badge claimants'**
+  String get badgeDetailBlockClaimantsTitle;
+
+  /// No description provided for @badgeDetailBlockClaimantsLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load claimants for this badge'**
+  String get badgeDetailBlockClaimantsLoadError;
+
+  /// No description provided for @badgeDetailBlockClaimantsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No one claims this badge right now'**
+  String get badgeDetailBlockClaimantsEmptyTitle;
+
+  /// No description provided for @badgeDetailBlockClaimantsEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We did not find any current claimants to block.'**
+  String get badgeDetailBlockClaimantsEmptyBody;
+
+  /// Full-screen confirmation heading before blocking everyone who currently claims a badge.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Block 1 claimant?} other{Block {count} claimants?}}'**
+  String badgeDetailBlockClaimantsHeading(int count);
+
+  /// Full-screen confirmation body explaining the effect of blocking everyone who currently claims a badge.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{This blocks the account currently claiming this badge. Their posts will leave your feeds, and they will not be notified.} other{This blocks the {count} accounts currently claiming this badge. Their posts will leave your feeds, and they will not be notified.}}'**
+  String badgeDetailBlockClaimantsBody(int count);
+
+  /// Destructive confirmation button for blocking everyone who currently claims a badge.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Block 1 account} other{Block {count} accounts}}'**
+  String badgeDetailBlockClaimantsConfirm(int count);
+
+  /// No description provided for @badgeDetailBlockClaimantsSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Badge claimants blocked'**
+  String get badgeDetailBlockClaimantsSuccess;
+
+  /// No description provided for @badgeDetailBlockClaimantsFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not block badge claimants'**
+  String get badgeDetailBlockClaimantsFailure;
+
   /// No description provided for @badgeDetailLoadError.
   ///
   /// In en, this message translates to:

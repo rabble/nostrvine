@@ -2,6 +2,7 @@
 // ABOUTME: gets, and how a badge with no definition event is surfaced.
 
 import 'package:badge_repository/badge_repository.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -15,9 +16,13 @@ import '../../helpers/test_provider_overrides.dart';
 
 class _MockBadgeRepository extends Mock implements BadgeRepository {}
 
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
+
 void main() {
   group('BadgeDetailScreen', () {
     late _MockBadgeRepository repository;
+    late _MockContentBlocklistRepository contentBlocklistRepository;
     final l10n = lookupAppLocalizations(const Locale('en'));
 
     setUpAll(() {
@@ -27,6 +32,7 @@ void main() {
 
     setUp(() {
       repository = _MockBadgeRepository();
+      contentBlocklistRepository = _MockContentBlocklistRepository();
     });
 
     /// Pumps the screen behind a real [GoRouter].
@@ -56,6 +62,9 @@ void main() {
       return testProviderScope(
         additionalOverrides: [
           badgeRepositoryProvider.overrideWithValue(repository),
+          contentBlocklistRepositoryProvider.overrideWithValue(
+            contentBlocklistRepository,
+          ),
         ],
         child: MaterialApp.router(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -95,6 +104,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.badgesActionAccept), findsOneWidget);
+      expect(find.text(l10n.badgeDetailBlockClaimantsAction), findsOneWidget);
       expect(find.text(l10n.badgeDetailAwardAction), findsNothing);
     });
 
@@ -114,6 +124,137 @@ void main() {
 
       expect(find.text(l10n.badgesActionRemove), findsOneWidget);
       expect(find.text(l10n.badgesActionAccept), findsNothing);
+    });
+
+    testWidgets('blocks badge claimants only after confirmation', (
+      tester,
+    ) async {
+      final claimants = {_pubkey(2), _pubkey(3)};
+      when(() => repository.loadBadgeDetail(any())).thenAnswer(
+        (_) async => _detail(definition: _definition(), isOwner: false),
+      );
+      when(
+        () => repository.loadClaimantPubkeys(any()),
+      ).thenAnswer((_) async => claimants);
+      when(
+        () => contentBlocklistRepository.blockUsers(any()),
+      ).thenAnswer((_) async {});
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.badgeDetailBlockClaimantsAction));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(l10n.badgeDetailBlockClaimantsHeading(claimants.length)),
+        findsOneWidget,
+      );
+      expect(
+        find.text(l10n.badgeDetailBlockClaimantsBody(claimants.length)),
+        findsOneWidget,
+      );
+
+      await tester.tap(
+        find.text(l10n.badgeDetailBlockClaimantsConfirm(claimants.length)),
+      );
+      await tester.pumpAndSettle();
+
+      verify(() => repository.loadClaimantPubkeys(_coordinate)).called(1);
+      verify(() => contentBlocklistRepository.blockUsers(claimants)).called(1);
+      expect(find.text(l10n.badgeDetailBlockClaimantsSuccess), findsOneWidget);
+    });
+
+    testWidgets('shows an empty state when no claimants are found', (
+      tester,
+    ) async {
+      when(() => repository.loadBadgeDetail(any())).thenAnswer(
+        (_) async => _detail(definition: _definition(), isOwner: false),
+      );
+      when(
+        () => repository.loadClaimantPubkeys(any()),
+      ).thenAnswer((_) async => const <String>{});
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.badgeDetailBlockClaimantsAction));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(l10n.badgeDetailBlockClaimantsEmptyTitle),
+        findsOneWidget,
+      );
+      expect(
+        find.text(l10n.badgeDetailBlockClaimantsEmptyBody),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text(l10n.commonCancel));
+      await tester.pumpAndSettle();
+
+      verifyNever(() => contentBlocklistRepository.blockUsers(any()));
+    });
+
+    testWidgets('offers retry when loading claimants fails', (tester) async {
+      var attempts = 0;
+      final claimants = {_pubkey(2)};
+      when(() => repository.loadBadgeDetail(any())).thenAnswer(
+        (_) async => _detail(definition: _definition(), isOwner: false),
+      );
+      when(() => repository.loadClaimantPubkeys(any())).thenAnswer((_) async {
+        attempts += 1;
+        if (attempts == 1) throw Exception('relay unavailable');
+        return claimants;
+      });
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.badgeDetailBlockClaimantsAction));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(l10n.badgeDetailBlockClaimantsLoadError),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text(l10n.commonRetry));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(l10n.badgeDetailBlockClaimantsHeading(claimants.length)),
+        findsOneWidget,
+      );
+      verify(() => repository.loadClaimantPubkeys(_coordinate)).called(2);
+    });
+
+    testWidgets('shows a failure snackbar when blocking claimants fails', (
+      tester,
+    ) async {
+      final claimants = {_pubkey(2)};
+      when(() => repository.loadBadgeDetail(any())).thenAnswer(
+        (_) async => _detail(definition: _definition(), isOwner: false),
+      );
+      when(
+        () => repository.loadClaimantPubkeys(any()),
+      ).thenAnswer((_) async => claimants);
+      when(
+        () => contentBlocklistRepository.blockUsers(any()),
+      ).thenThrow(Exception('prefs failed'));
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.badgeDetailBlockClaimantsAction));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.text(l10n.badgeDetailBlockClaimantsConfirm(claimants.length)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.badgeDetailBlockClaimantsFailure), findsOneWidget);
+      expect(find.text(l10n.badgeDetailBlockClaimantsTitle), findsOneWidget);
     });
 
     testWidgets('deletes only after the owner confirms', (tester) async {
@@ -185,10 +326,7 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      expect(
-        find.bySemanticsLabel(l10n.badgeDetailDeleteAction),
-        findsNothing,
-      );
+      expect(find.bySemanticsLabel(l10n.badgeDetailDeleteAction), findsNothing);
     });
 
     testWidgets('says so when no definition event could be found', (

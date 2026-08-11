@@ -9596,6 +9596,60 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailBlockClaimantsAction => '屏蔽佩戴该徽章的人';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => '屏蔽佩戴该徽章的人';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError => '无法加载佩戴该徽章的人';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle => '目前没有人佩戴这个徽章';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody => '我们没有找到可以屏蔽的人。';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '屏蔽 $count 个账号？',
+      one: '屏蔽 1 个账号？',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '这会屏蔽目前佩戴该徽章的 $count 个账号。对方的帖子不会出现在你的信息流中，也不会收到此操作的通知。',
+      one: '这会屏蔽目前佩戴该徽章的账号。对方的帖子不会出现在你的信息流中，也不会收到此操作的通知。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '屏蔽 $count 个账号',
+      one: '屏蔽 1 个账号',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess => '已屏蔽佩戴该徽章的人';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure => '无法屏蔽佩戴该徽章的人';
+
+  @override
   String get badgeDetailLoadError => '无法加载这个徽章';
 
   @override

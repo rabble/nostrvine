@@ -10254,6 +10254,68 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailBlockClaimantsAction =>
+      'Bloquer les porteurs de ce badge';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle =>
+      'Bloquer les porteurs de ce badge';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'Impossible de charger les porteurs de ce badge';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'Personne ne porte ce badge pour l\'instant';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'Nous n\'avons trouvé personne à bloquer pour l\'instant.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Bloquer $count comptes ?',
+      one: 'Bloquer 1 compte ?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Cela bloque les $count comptes qui portent ce badge en ce moment. Leurs posts n\'apparaîtront plus dans tes fils, et ils ne seront pas prévenus.',
+      one:
+          'Cela bloque le compte qui porte ce badge en ce moment. Ses posts n\'apparaîtront plus dans tes fils, et il ne sera pas prévenu.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Bloquer $count comptes',
+      one: 'Bloquer 1 compte',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess => 'Porteurs du badge bloqués';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'Impossible de bloquer les porteurs du badge';
+
+  @override
   String get badgeDetailLoadError => 'Impossible de charger ce badge';
 
   @override

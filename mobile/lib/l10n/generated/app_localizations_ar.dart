@@ -10031,6 +10031,64 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailBlockClaimantsAction => 'حظر من يضعون الشارة';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'حظر من يضعون الشارة';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'تعذّر تحميل من يضعون هذه الشارة';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'لا أحد يضع هذه الشارة الآن';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody => 'لم نجد أحدًا لحظره الآن.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'حظر $count حسابات؟',
+      one: 'حظر حساب واحد؟',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'ستُحظر $count حسابات تضع هذه الشارة الآن. لن تظهر منشوراتها في تغذياتك ولن يتم إبلاغها.',
+      one:
+          'سيُحظر الحساب الذي يضع هذه الشارة الآن. لن تظهر منشوراته في تغذياتك ولن يتم إبلاغه.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'حظر $count حسابات',
+      one: 'حظر حساب واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess => 'تم حظر من يضعون الشارة';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure => 'تعذّر حظر من يضعون الشارة';
+
+  @override
   String get badgeDetailLoadError => 'تعذّر تحميل هذه الشارة';
 
   @override

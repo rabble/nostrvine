@@ -10298,6 +10298,75 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailBlockClaimantsAction => 'Zablokuj osoby z tą odznaką';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'Zablokuj osoby z tą odznaką';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'Nie udało się wczytać osób z tą odznaką';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'Nikt teraz nie ma tej odznaki';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'Nie znaleźliśmy teraz nikogo do zablokowania.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Zablokować $count konta?',
+      many: 'Zablokować $count kont?',
+      few: 'Zablokować $count konta?',
+      one: 'Zablokować 1 konto?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'To zablokuje $count konta, które mają teraz tę odznakę. Ich posty nie będą pojawiać się w twoich kanałach i nie zostaną powiadomione.',
+      many:
+          'To zablokuje $count kont, które mają teraz tę odznakę. Ich posty nie będą pojawiać się w twoich kanałach i nie zostaną powiadomione.',
+      few:
+          'To zablokuje $count konta, które mają teraz tę odznakę. Ich posty nie będą pojawiać się w twoich kanałach i nie zostaną powiadomione.',
+      one:
+          'To zablokuje konto, które ma teraz tę odznakę. Jego posty nie będą pojawiać się w twoich kanałach i nie zostanie powiadomione.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Zablokuj $count konta',
+      many: 'Zablokuj $count kont',
+      few: 'Zablokuj $count konta',
+      one: 'Zablokuj 1 konto',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess =>
+      'Zablokowano osoby z tą odznaką';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'Nie udało się zablokować osób z tą odznaką';
+
+  @override
   String get badgeDetailLoadError => 'Nie udało się wczytać tej odznaki';
 
   @override

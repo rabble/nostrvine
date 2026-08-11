@@ -10183,6 +10183,66 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailBlockClaimantsAction => 'Bloquear quem usa o selo';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'Bloquear quem usa o selo';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'Não foi possível carregar quem usa este selo';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'Ninguém está usando este selo agora';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'Não encontramos ninguém para bloquear agora.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Bloquear $count contas?',
+      one: 'Bloquear 1 conta?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Isso bloqueia as $count contas que estão usando este selo agora. Os posts delas não vão aparecer no seu feed e elas não serão notificadas.',
+      one:
+          'Isso bloqueia a conta que está usando este selo agora. Os posts dessa pessoa não vão aparecer no seu feed e ela não será notificada.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Bloquear $count contas',
+      one: 'Bloquear 1 conta',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess => 'Contas com o selo bloqueadas';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'Não foi possível bloquear quem usa o selo';
+
+  @override
   String get badgeDetailLoadError => 'Não foi possível carregar este selo';
 
   @override

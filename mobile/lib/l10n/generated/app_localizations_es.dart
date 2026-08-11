@@ -10212,6 +10212,69 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailBlockClaimantsAction =>
+      'Bloquear a quienes llevan la insignia';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle =>
+      'Bloquear a quienes llevan la insignia';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'No pudimos cargar a quienes llevan esta insignia';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'Ahora mismo nadie lleva esta insignia';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'No encontramos a nadie a quien bloquear ahora mismo.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '¿Bloquear $count cuentas?',
+      one: '¿Bloquear 1 cuenta?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Esto bloquea las $count cuentas que llevan esta insignia ahora mismo. Sus publicaciones no van a aparecer en tus feeds y no les vamos a avisar.',
+      one:
+          'Esto bloquea la cuenta que lleva esta insignia ahora mismo. Sus publicaciones no van a aparecer en tus feeds y no le vamos a avisar.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Bloquear $count cuentas',
+      one: 'Bloquear 1 cuenta',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess =>
+      'Cuentas con la insignia bloqueadas';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'No pudimos bloquear a quienes llevan la insignia';
+
+  @override
   String get badgeDetailLoadError => 'No se pudo cargar esta insignia';
 
   @override

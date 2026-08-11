@@ -10113,6 +10113,68 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailBlockClaimantsAction =>
+      'Blockera alla med den här badgen';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle =>
+      'Blockera alla med den här badgen';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'Kunde inte ladda vilka som har den här badgen';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'Ingen har den här badgen just nu';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'Vi hittade ingen att blockera just nu.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Blockera $count konton?',
+      one: 'Blockera 1 konto?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Det här blockerar de $count konton som har den här badgen just nu. Deras inlägg visas inte i dina flöden och de meddelas inte.',
+      one:
+          'Det här blockerar kontot som har den här badgen just nu. Deras inlägg visas inte i dina flöden och de meddelas inte.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Blockera $count konton',
+      one: 'Blockera 1 konto',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess => 'Konton med badgen blockerade';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'Kunde inte blockera kontona med badgen';
+
+  @override
   String get badgeDetailLoadError => 'Den här badgen kunde inte laddas';
 
   @override

@@ -4,6 +4,7 @@
 import 'package:badge_repository/badge_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show SemanticsService;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -42,11 +43,16 @@ class BadgeDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final repository = ref.watch(badgeRepositoryProvider);
+    final contentBlocklistRepository = ref.watch(
+      contentBlocklistRepositoryProvider,
+    );
     return BlocProvider(
       key: ValueKey((repository, coordinate)),
-      create: (_) =>
-          BadgeDetailCubit(repository: repository, coordinate: coordinate)
-            ..load(),
+      create: (_) => BadgeDetailCubit(
+        repository: repository,
+        contentBlocklistRepository: contentBlocklistRepository,
+        coordinate: coordinate,
+      )..load(),
       child: const BadgeDetailView(),
     );
   }
@@ -117,10 +123,8 @@ class BadgeDetailView extends StatelessWidget {
           ),
           backgroundColor: context.vineColors.background,
           body: switch (state.status) {
-            BadgeDetailStatus.initial ||
-            BadgeDetailStatus.loading => const Center(
-              child: BrandedLoadingIndicator(size: 60),
-            ),
+            BadgeDetailStatus.initial || BadgeDetailStatus.loading =>
+              const Center(child: BrandedLoadingIndicator(size: 60)),
             BadgeDetailStatus.failure => _DetailMessage(
               message: l10n.badgeDetailLoadError,
               onRetry: () => context.read<BadgeDetailCubit>().load(),
@@ -385,6 +389,15 @@ class _BadgeActions extends StatelessWidget {
                   state.actionStatus == BadgeDetailActionStatus.accepting,
               onPressed: state.isBusy ? null : cubit.acceptAward,
             ),
+        if (!detail.isOwner)
+          DivineButton(
+            label: l10n.badgeDetailBlockClaimantsAction,
+            type: DivineButtonType.secondary,
+            leadingIcon: DivineIconName.prohibit,
+            isLoading:
+                state.actionStatus == BadgeDetailActionStatus.blockingClaimants,
+            onPressed: state.isBusy ? null : () => _openBlockClaimants(context),
+          ),
       ],
     );
   }
@@ -397,6 +410,185 @@ class _BadgeActions extends StatelessWidget {
     await context.push<bool>(BadgeAwardScreen.pathFor(coordinate));
     if (cubit.isClosed) return;
     await cubit.refresh();
+  }
+
+  static Future<void> _openBlockClaimants(BuildContext context) {
+    final cubit = context.read<BadgeDetailCubit>();
+    return Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => BlocProvider.value(
+          value: cubit,
+          child: const _BlockClaimantsConfirmationScreen(),
+        ),
+      ),
+    );
+  }
+}
+
+class _BlockClaimantsConfirmationScreen extends StatefulWidget {
+  const _BlockClaimantsConfirmationScreen();
+
+  @override
+  State<_BlockClaimantsConfirmationScreen> createState() =>
+      _BlockClaimantsConfirmationScreenState();
+}
+
+class _BlockClaimantsConfirmationScreenState
+    extends State<_BlockClaimantsConfirmationScreen> {
+  late Future<Set<String>> _claimantsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _claimantsFuture = context.read<BadgeDetailCubit>().loadClaimantPubkeys();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return BlocListener<BadgeDetailCubit, BadgeDetailState>(
+      listenWhen: (previous, current) =>
+          previous.actionStatus != current.actionStatus,
+      listener: (context, state) {
+        if (state.actionStatus == BadgeDetailActionStatus.completed) {
+          final message = l10n.badgeDetailBlockClaimantsSuccess;
+          SemanticsService.sendAnnouncement(
+            View.of(context),
+            message,
+            Directionality.of(context),
+          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(DivineSnackbarContainer.snackBar(message));
+          context.safePop(result: true);
+        } else if (state.actionStatus == BadgeDetailActionStatus.failure) {
+          final message = l10n.badgeDetailBlockClaimantsFailure;
+          SemanticsService.sendAnnouncement(
+            View.of(context),
+            message,
+            Directionality.of(context),
+          );
+          ScaffoldMessenger.of(context).showSnackBar(
+            DivineSnackbarContainer.snackBar(message, error: true),
+          );
+        }
+      },
+      child: Scaffold(
+        appBar: DiVineAppBar(
+          title: l10n.badgeDetailBlockClaimantsTitle,
+          showBackButton: true,
+          onBackPressed: context.safePop,
+        ),
+        backgroundColor: context.vineColors.background,
+        body: FutureBuilder<Set<String>>(
+          future: _claimantsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const Center(child: BrandedLoadingIndicator(size: 60));
+            }
+            if (snapshot.hasError) {
+              return _DetailMessage(
+                message: l10n.badgeDetailBlockClaimantsLoadError,
+                onRetry: () => setState(() {
+                  _claimantsFuture = context
+                      .read<BadgeDetailCubit>()
+                      .loadClaimantPubkeys();
+                }),
+              );
+            }
+
+            final claimants = snapshot.data ?? const <String>{};
+            return SafeArea(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 640),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            spacing: 16,
+                            children: [
+                              Text(
+                                claimants.isEmpty
+                                    ? l10n.badgeDetailBlockClaimantsEmptyTitle
+                                    : l10n.badgeDetailBlockClaimantsHeading(
+                                        claimants.length,
+                                      ),
+                                textAlign: TextAlign.center,
+                                style: VineTheme.titleLargeFont(
+                                  color: context.vineColors.onSurface,
+                                ),
+                              ),
+                              Text(
+                                claimants.isEmpty
+                                    ? l10n.badgeDetailBlockClaimantsEmptyBody
+                                    : l10n.badgeDetailBlockClaimantsBody(
+                                        claimants.length,
+                                      ),
+                                textAlign: TextAlign.center,
+                                style: VineTheme.bodyMediumFont(
+                                  color: context.vineColors.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        BlocBuilder<BadgeDetailCubit, BadgeDetailState>(
+                          builder: (context, state) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              spacing: 12,
+                              children: [
+                                DivineButton(
+                                  label: claimants.isEmpty
+                                      ? l10n.commonCancel
+                                      : l10n.badgeDetailBlockClaimantsConfirm(
+                                          claimants.length,
+                                        ),
+                                  type: claimants.isEmpty
+                                      ? DivineButtonType.secondary
+                                      : DivineButtonType.error,
+                                  leadingIcon: claimants.isEmpty
+                                      ? null
+                                      : DivineIconName.prohibit,
+                                  isLoading:
+                                      state.actionStatus ==
+                                      BadgeDetailActionStatus.blockingClaimants,
+                                  onPressed: state.isBusy
+                                      ? null
+                                      : claimants.isEmpty
+                                      ? () => context.safePop()
+                                      : () => context
+                                            .read<BadgeDetailCubit>()
+                                            .blockClaimants(claimants),
+                                ),
+                                if (claimants.isNotEmpty)
+                                  DivineButton(
+                                    label: l10n.commonCancel,
+                                    type: DivineButtonType.secondary,
+                                    onPressed: state.isBusy
+                                        ? null
+                                        : () => context.safePop(),
+                                  ),
+                              ],
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
   }
 }
 

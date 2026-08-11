@@ -10112,6 +10112,67 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailBlockClaimantsAction => 'Chặn những người gắn huy hiệu';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'Chặn những người gắn huy hiệu';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'Không tải được những người gắn huy hiệu này';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'Hiện chưa ai gắn huy hiệu này';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'Chúng tôi không tìm thấy ai để chặn lúc này.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Chặn $count tài khoản?',
+      one: 'Chặn 1 tài khoản?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Thao tác này chặn $count tài khoản đang gắn huy hiệu này. Bài đăng của họ sẽ không xuất hiện trong bảng tin của bạn và họ sẽ không được thông báo.',
+      one:
+          'Thao tác này chặn tài khoản đang gắn huy hiệu này. Bài đăng của họ sẽ không xuất hiện trong bảng tin của bạn và họ sẽ không được thông báo.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Chặn $count tài khoản',
+      one: 'Chặn 1 tài khoản',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess =>
+      'Đã chặn những người gắn huy hiệu';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'Không chặn được những người gắn huy hiệu';
+
+  @override
   String get badgeDetailLoadError => 'Không tải được huy hiệu này';
 
   @override

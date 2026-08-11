@@ -10167,6 +10167,66 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailBlockClaimantsAction => 'Sekat pemegang lencana';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'Sekat pemegang lencana';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'Tidak dapat memuatkan pemegang lencana ini';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'Tiada sesiapa memegang lencana ini sekarang';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'Kami tidak menemui sesiapa untuk disekat buat masa ini.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Sekat $count akaun?',
+      one: 'Sekat 1 akaun?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Ini menyekat $count akaun yang sedang memegang lencana ini. Siaran mereka tidak akan muncul dalam suapan anda dan mereka tidak akan diberitahu.',
+      one:
+          'Ini menyekat akaun yang sedang memegang lencana ini. Siaran mereka tidak akan muncul dalam suapan anda dan mereka tidak akan diberitahu.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Sekat $count akaun',
+      one: 'Sekat 1 akaun',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess => 'Pemegang lencana disekat';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'Tidak dapat menyekat pemegang lencana';
+
+  @override
   String get badgeDetailLoadError => 'Lencana ini gagal dimuatkan';
 
   @override

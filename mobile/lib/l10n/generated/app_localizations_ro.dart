@@ -10318,6 +10318,71 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailBlockClaimantsAction => 'Blochează cine poartă insigna';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'Blochează cine poartă insigna';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'Nu am putut încărca cine poartă această insignă';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'Nimeni nu poartă această insignă acum';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'Nu am găsit pe nimeni de blocat acum.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Blochezi $count de conturi?',
+      few: 'Blochezi $count conturi?',
+      one: 'Blochezi 1 cont?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Asta blochează cele $count de conturi care poartă acum această insignă. Postările lor nu vor mai apărea în feedurile tale și nu vor fi notificate.',
+      few:
+          'Asta blochează cele $count conturi care poartă acum această insignă. Postările lor nu vor mai apărea în feedurile tale și nu vor fi notificate.',
+      one:
+          'Asta blochează contul care poartă acum această insignă. Postările lui nu vor mai apărea în feedurile tale și nu va fi notificat.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Blochează $count de conturi',
+      few: 'Blochează $count conturi',
+      one: 'Blochează 1 cont',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess =>
+      'Am blocat cine poartă insigna';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'Nu am putut bloca cine poartă insigna';
+
+  @override
   String get badgeDetailLoadError => 'Această insignă nu a putut fi încărcată';
 
   @override
