@@ -170,9 +170,18 @@ const Duration _dmRelayListSignTimeout = Duration(seconds: 10);
 /// recipient had already received, parking them as soft-unconfirmed until the
 /// retry budget terminalised them into a red bubble. The cure is not a bigger
 /// number — the wrap builds now carry explicit bounds
-/// ([DmSendBudget.recipientWrapBuild], [DmSendBudget.selfWrapBuild]) so the
-/// chain cannot outrun this cap for ANY signer, including Amber, whose own
-/// per-op bound is 300s.
+/// ([DmSendBudget.recipientWrapBuild], [DmSendBudget.selfWrapBuild]), which is
+/// what stops the *signing chain* outrunning this cap regardless of the
+/// signer's own per-op bound — Amber's `AndroidNostrSigner` allows 300s.
+///
+/// That covers the signing chain, not the whole send. Three awaited steps
+/// inside this cap are still unbounded and deliberately NOT in
+/// [DmSendBudget.chainWorstCase]: `refreshPublicKey()` (a real round trip for
+/// any signer that doesn't cache the pubkey, e.g. a NIP-46 bunker — Keycast
+/// does cache it), the send-policy protected-minor check, and the connectivity
+/// probe. So this cap remains a genuine backstop for those, and
+/// [DmSendBudget.chainWorstCase] is a floor on what a send can cost, not a
+/// ceiling. Bounding them is tracked separately.
 ///
 /// A 15s cap here (the original value) fired during routine slow-Keycast
 /// sends, turning sends that were still legitimately in flight into

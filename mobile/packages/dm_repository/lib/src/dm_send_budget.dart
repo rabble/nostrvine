@@ -34,9 +34,31 @@
 /// wraps in one isolate hop and spend no round trips at all — these bounds sit
 /// far above that path and never bind it.
 abstract final class DmSendBudget {
+  /// The two seal round trips a wrap build spends, at the transport's own
+  /// per-op bound (`KeycastRpc.defaultRequestTimeout`, 30s).
+  ///
+  /// Restated here because `dm_repository` cannot import `keycast_flutter`.
+  /// The app-layer guard test asserts the real relationship, so this going
+  /// stale fails CI rather than silently under-sizing the bound — which is the
+  /// #6586 failure mode itself.
+  static const int _twoTransportBoundsSeconds = 60;
+
+  /// Margin inside a wrap-build bound for the local work that runs alongside
+  /// the two remote round trips: seal construction, the ephemeral keypair,
+  /// the NIP-44 ECDH + ChaCha20 encryption of the seal, and the wrap's
+  /// secp256k1 signature (`GiftWrapUtil.getGiftWrapEvent`).
+  ///
+  /// Without it the bound would sit at *exactly* two transport bounds, so two
+  /// ops that each returned just under 30s would still blow it — failing a
+  /// build the transport itself had completed. That is the same
+  /// "sized at the worst case with no margin" shape #6586 was about, one step
+  /// earlier in the chain.
+  static const int _wrapBuildLocalCryptoSeconds = 5;
+
   /// Seconds allowed for building the recipient gift wrap. See
   /// [recipientWrapBuild].
-  static const int _recipientWrapBuildSeconds = 60;
+  static const int _recipientWrapBuildSeconds =
+      _twoTransportBoundsSeconds + _wrapBuildLocalCryptoSeconds;
 
   /// Seconds allowed for the recipient OK confirmation. See
   /// [recipientOkConfirm].
@@ -55,16 +77,25 @@ abstract final class DmSendBudget {
   /// Absorbs event-loop scheduling, isolate hops, and the DAO work interleaved
   /// with the publish. The backstop must sit strictly above the capped worst
   /// case or it fires mid-send and misclassifies it — the #6586 defect.
-  static const int _headroomSeconds = 20;
+  ///
+  /// Trimmed by [_wrapBuildLocalCryptoSeconds] when that margin was moved into
+  /// [_recipientWrapBuildSeconds], so [messagePublishTimeout] holds at 120s and
+  /// `OutgoingDmRetryService.interruptedMinAge` does not have to move with it.
+  static const int _headroomSeconds = 15;
 
   /// Hard bound on building the recipient gift wrap.
   ///
   /// Sized as two Keycast single-op round trips at the transport's own 30s
-  /// bound (`KeycastRpc.defaultRequestTimeout`), so this can never fail a
-  /// request the transport itself would have allowed. Tightening it below that
-  /// is the specific mistake #6046 made and #6075 reverted: production Keycast
-  /// runs 20-30s per single op under DB-pool contention (keycast#291), and a
-  /// tighter bound turns slow-but-succeeding sends into hard failures.
+  /// bound (`KeycastRpc.defaultRequestTimeout`) **plus**
+  /// [_wrapBuildLocalCryptoSeconds] for the local crypto that runs between and
+  /// after them, so two ops that each returned inside the transport's limit
+  /// cannot together trip this bound. Sizing it at exactly `2 × 30s` would
+  /// leave nothing for that work and fail such a build.
+  ///
+  /// Tightening it below two transport bounds is the specific mistake #6046
+  /// made and #6075 reverted: production Keycast runs 20-30s per single op
+  /// under DB-pool contention (keycast#291), and a tighter bound turns
+  /// slow-but-succeeding sends into hard failures.
   ///
   /// It bounds the *chain*, not the transport, so it also covers signers whose
   /// own per-op bound is far looser — Amber's `AndroidNostrSigner` allows 300s
