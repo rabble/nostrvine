@@ -3182,6 +3182,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'On n\'a pas pu renvoyer l\'e-mail. Réessaie.';
 
   @override
+  String get authVerificationResendUnavailable =>
+      'Resending isn\'t available right now. Use the 6-digit code from the email we already sent you.';
+
+  @override
   String get authWelcomeToDivine => 'Bienvenue sur Divine !';
 
   @override

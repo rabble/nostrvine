@@ -1022,6 +1022,38 @@ void main() {
         verify(() => mockCubit.resendVerification()).called(1);
       });
 
+      testWidgets(
+        'an unavailable resend endpoint says so and disables the button',
+        (tester) async {
+          when(() => mockCubit.resendVerification()).thenAnswer((_) async {});
+
+          await pumpVerificationScreen(
+            tester,
+            deviceCode: 'test-device-code',
+            verifier: 'test-verifier',
+            email: 'user@example.com',
+            initialState: const EmailVerificationState(
+              status: EmailVerificationStatus.polling,
+              pendingEmail: 'user@example.com',
+              resendStatus: ResendStatus.unavailable,
+            ),
+          );
+          await tester.pump();
+
+          expect(
+            find.text(l10n.authVerificationResendUnavailable),
+            findsOneWidget,
+          );
+          // Not the generic "try again" copy — retrying cannot help here.
+          expect(find.text(l10n.authVerificationResendFailed), findsNothing);
+
+          await tester.tap(find.text(l10n.authVerificationResend));
+          await tester.pump();
+
+          verifyNever(() => mockCubit.resendVerification());
+        },
+      );
+
       testWidgets('pollingTimedOut keeps PIN entry but drops the spinner', (
         tester,
       ) async {

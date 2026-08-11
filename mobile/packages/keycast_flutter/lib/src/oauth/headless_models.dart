@@ -265,22 +265,49 @@ class VerifyPinResult {
   final String? errorDescription;
 }
 
+/// Why a resend request did not send a new verification email.
+enum ResendVerificationError {
+  /// The resend endpoint is absent (404). This server build cannot resend at
+  /// all, so retrying is pointless until it is redeployed — the UI should
+  /// steer the user to the PIN from the email they already have.
+  unavailable,
+
+  /// The request reached the server and it declined to send (4xx other than
+  /// 404, or a 2xx body reporting `success: false`). Retrying may work.
+  declined,
+
+  /// Server returned a 5xx.
+  server,
+
+  /// Transient network error or timeout — the request may not have arrived.
+  network,
+}
+
 /// Result from POST /api/auth/resend-verification
 class ResendVerificationResult {
-  ResendVerificationResult({required this.success, this.message});
+  ResendVerificationResult({
+    required this.success,
+    this.message,
+    this.errorCode,
+  });
 
   factory ResendVerificationResult.fromJson(Map<String, dynamic> json) {
+    final success = json['success'] as bool? ?? false;
     return ResendVerificationResult(
-      success: json['success'] as bool? ?? false,
+      success: success,
       message: json['message'] as String?,
+      errorCode: success ? null : ResendVerificationError.declined,
     );
   }
 
-  factory ResendVerificationResult.failure() =>
-      ResendVerificationResult(success: false);
+  factory ResendVerificationResult.failure(ResendVerificationError errorCode) =>
+      ResendVerificationResult(success: false, errorCode: errorCode);
 
   final bool success;
   final String? message;
+
+  /// Reason code on failure (null on success).
+  final ResendVerificationError? errorCode;
 }
 
 /// Result from POST /api/auth/forgot-password

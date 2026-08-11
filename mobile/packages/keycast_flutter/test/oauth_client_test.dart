@@ -1217,6 +1217,41 @@ void main() {
         final result = await oauth.resendHeadlessVerification('device123');
 
         expect(result.success, isFalse);
+        expect(result.errorCode, ResendVerificationError.network);
+      });
+
+      test('reports a 404 as unavailable, not a decline', () async {
+        final mockClient = MockClient((request) async {
+          return http.Response('Not Found', 404);
+        });
+
+        final oauth = KeycastOAuth(config: config, httpClient: mockClient);
+        final result = await oauth.resendHeadlessVerification('device123');
+
+        expect(result.success, isFalse);
+        expect(result.errorCode, ResendVerificationError.unavailable);
+      });
+
+      test('reports a 4xx other than 404 as declined', () async {
+        final mockClient = MockClient((request) async {
+          return http.Response(jsonEncode({'error': 'too_many'}), 429);
+        });
+
+        final oauth = KeycastOAuth(config: config, httpClient: mockClient);
+        final result = await oauth.resendHeadlessVerification('device123');
+
+        expect(result.errorCode, ResendVerificationError.declined);
+      });
+
+      test('reports a 5xx as a server failure', () async {
+        final mockClient = MockClient((request) async {
+          return http.Response('boom', 503);
+        });
+
+        final oauth = KeycastOAuth(config: config, httpClient: mockClient);
+        final result = await oauth.resendHeadlessVerification('device123');
+
+        expect(result.errorCode, ResendVerificationError.server);
       });
     });
 

@@ -5456,6 +5456,12 @@ abstract class AppLocalizations {
   /// **'We couldn\'t resend the email. Try again.'**
   String get authVerificationResendFailed;
 
+  /// Shown under a disabled Resend button when the server has no resend endpoint, so retrying cannot help. Points the user at the PIN in the email they already received.
+  ///
+  /// In en, this message translates to:
+  /// **'Resending isn\'t available right now. Use the 6-digit code from the email we already sent you.'**
+  String get authVerificationResendUnavailable;
+
   /// No description provided for @authWelcomeToDivine.
   ///
   /// In en, this message translates to:

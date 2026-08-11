@@ -3107,6 +3107,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'E-posta tekrar gönderilemedi. Yeniden dene.';
 
   @override
+  String get authVerificationResendUnavailable =>
+      'Resending isn\'t available right now. Use the 6-digit code from the email we already sent you.';
+
+  @override
   String get authWelcomeToDivine => 'Divine\'a Hoş Geldin!';
 
   @override

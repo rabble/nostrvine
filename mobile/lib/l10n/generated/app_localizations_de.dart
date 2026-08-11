@@ -3170,6 +3170,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wir konnten die E-Mail nicht erneut senden. Versuch es noch mal.';
 
   @override
+  String get authVerificationResendUnavailable =>
+      'Resending isn\'t available right now. Use the 6-digit code from the email we already sent you.';
+
+  @override
   String get authWelcomeToDivine => 'Willkommen bei Divine!';
 
   @override

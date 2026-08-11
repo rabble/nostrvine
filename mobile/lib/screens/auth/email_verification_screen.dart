@@ -943,7 +943,8 @@ class _ResendRow extends StatelessWidget {
     );
     final disabled =
         resendStatus == ResendStatus.sending ||
-        resendStatus == ResendStatus.cooldown;
+        resendStatus == ResendStatus.cooldown ||
+        resendStatus == ResendStatus.unavailable;
     final label = resendStatus == ResendStatus.cooldown
         ? l10n.authVerificationResendCooldown(_formatCooldown(cooldownSeconds))
         : l10n.authVerificationResend;
@@ -998,6 +999,15 @@ class _ResendRow extends StatelessWidget {
           Text(
             l10n.authVerificationResendFailed,
             style: VineTheme.bodySmallFont(color: VineTheme.error),
+            textAlign: TextAlign.center,
+          ),
+        ] else if (resendStatus == ResendStatus.unavailable) ...[
+          const SizedBox(height: 4),
+          Text(
+            l10n.authVerificationResendUnavailable,
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.secondaryText,
+            ),
             textAlign: TextAlign.center,
           ),
         ],

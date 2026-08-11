@@ -3145,6 +3145,10 @@ class AppLocalizationsVi extends AppLocalizations {
       'Bọn mình không gửi lại được email. Thử lại nhé.';
 
   @override
+  String get authVerificationResendUnavailable =>
+      'Resending isn\'t available right now. Use the 6-digit code from the email we already sent you.';
+
+  @override
   String get authWelcomeToDivine => 'Chào mừng đến với Divine!';
 
   @override

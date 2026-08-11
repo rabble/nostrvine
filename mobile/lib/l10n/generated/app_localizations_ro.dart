@@ -3234,6 +3234,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu am putut retrimite emailul. Încearcă din nou.';
 
   @override
+  String get authVerificationResendUnavailable =>
+      'Resending isn\'t available right now. Use the 6-digit code from the email we already sent you.';
+
+  @override
   String get authWelcomeToDivine => 'Bun venit pe Divine!';
 
   @override

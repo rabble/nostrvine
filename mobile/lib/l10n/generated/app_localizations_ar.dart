@@ -3108,6 +3108,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'تعذّر علينا إعادة إرسال البريد الإلكتروني. حاول مرّة أخرى.';
 
   @override
+  String get authVerificationResendUnavailable =>
+      'Resending isn\'t available right now. Use the 6-digit code from the email we already sent you.';
+
+  @override
   String get authWelcomeToDivine => 'أهلاً بك في Divine!';
 
   @override

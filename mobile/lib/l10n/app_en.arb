@@ -1933,6 +1933,10 @@
     }
   },
   "authVerificationResendFailed": "We couldn't resend the email. Try again.",
+  "authVerificationResendUnavailable": "Resending isn't available right now. Use the 6-digit code from the email we already sent you.",
+  "@authVerificationResendUnavailable": {
+    "description": "Shown under a disabled Resend button when the server has no resend endpoint, so retrying cannot help. Points the user at the PIN in the email they already received."
+  },
   "authWelcomeToDivine": "Welcome to Divine!",
   "authEmailVerified": "Your email has been verified.",
   "authSigningYouIn": "Signing you in",

@@ -55,6 +55,10 @@ enum ResendStatus {
 
   /// The last resend attempt failed; the user may retry.
   failure,
+
+  /// This server build has no resend endpoint, so retrying cannot help. The
+  /// user still has the PIN in the email they already received.
+  unavailable,
 }
 
 /// Reason codes for a verification failure.
