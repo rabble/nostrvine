@@ -10069,6 +10069,66 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailBlockClaimantsAction => 'Blokir pengklaim lencana';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'Blokir pengklaim lencana';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'Tidak bisa memuat pengklaim lencana ini';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'Belum ada yang mengklaim lencana ini';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'Kami tidak menemukan pengklaim saat ini untuk diblokir.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Blokir $count pengklaim?',
+      one: 'Blokir 1 pengklaim?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Ini memblokir $count akun yang sedang mengklaim lencana ini. Postingan mereka akan keluar dari feed-mu, dan mereka tidak akan diberi tahu.',
+      one:
+          'Ini memblokir akun yang sedang mengklaim lencana ini. Postingannya akan keluar dari feed-mu, dan mereka tidak akan diberi tahu.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Blokir $count akun',
+      one: 'Blokir 1 akun',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess => 'Pengklaim lencana diblokir';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'Tidak bisa memblokir pengklaim lencana';
+
+  @override
   String get badgeDetailLoadError => 'Lencana ini gagal dimuat';
 
   @override

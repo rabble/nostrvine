@@ -9673,6 +9673,60 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailBlockClaimantsAction => 'バッジの申請者をブロック';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'バッジの申請者をブロック';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError => 'このバッジの申請者を読み込めませんでした';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle => '今このバッジを申請している人はいません';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody => 'ブロックできる現在の申請者は見つかりませんでした。';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count人をブロックしますか？',
+      one: '1人をブロックしますか？',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'このバッジを今申請している$count件のアカウントをブロックします。投稿はあなたのフィードから消え、相手に通知は届きません。',
+      one: 'このバッジを今申請しているアカウントをブロックします。投稿はあなたのフィードから消え、相手に通知は届きません。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count件のアカウントをブロック',
+      one: '1件のアカウントをブロック',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess => 'バッジ申請者をブロックしました';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure => 'バッジ申請者をブロックできませんでした';
+
+  @override
   String get badgeDetailLoadError => 'このバッジを読み込めませんでした';
 
   @override

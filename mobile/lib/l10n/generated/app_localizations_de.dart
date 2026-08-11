@@ -10228,6 +10228,66 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailBlockClaimantsAction => 'Badge-Claimants blockieren';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'Badge-Claimants blockieren';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'Claimants fuer dieses Badge konnten nicht geladen werden';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'Gerade beansprucht niemand dieses Badge';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'Wir haben keine aktuellen Claimants gefunden, die blockiert werden koennen.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Claimants blockieren?',
+      one: '1 Claimant blockieren?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Das blockiert die $count Konten, die dieses Badge gerade beanspruchen. Ihre Beitraege verschwinden aus deinen Feeds, und sie werden nicht benachrichtigt.',
+      one:
+          'Das blockiert das Konto, das dieses Badge gerade beansprucht. Seine Beitraege verschwinden aus deinen Feeds, und es wird nicht benachrichtigt.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Konten blockieren',
+      one: '1 Konto blockieren',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess => 'Badge-Claimants blockiert';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'Badge-Claimants konnten nicht blockiert werden';
+
+  @override
   String get badgeDetailLoadError => 'Dieses Badge konnte nicht geladen werden';
 
   @override

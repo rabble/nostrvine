@@ -2,6 +2,7 @@
 // ABOUTME: gets, and how a badge with no definition event is surfaced.
 
 import 'package:badge_repository/badge_repository.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -15,9 +16,13 @@ import '../../helpers/test_provider_overrides.dart';
 
 class _MockBadgeRepository extends Mock implements BadgeRepository {}
 
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
+
 void main() {
   group('BadgeDetailScreen', () {
     late _MockBadgeRepository repository;
+    late _MockContentBlocklistRepository contentBlocklistRepository;
     final l10n = lookupAppLocalizations(const Locale('en'));
 
     setUpAll(() {
@@ -27,6 +32,7 @@ void main() {
 
     setUp(() {
       repository = _MockBadgeRepository();
+      contentBlocklistRepository = _MockContentBlocklistRepository();
     });
 
     /// Pumps the screen behind a real [GoRouter].
@@ -56,6 +62,9 @@ void main() {
       return testProviderScope(
         additionalOverrides: [
           badgeRepositoryProvider.overrideWithValue(repository),
+          contentBlocklistRepositoryProvider.overrideWithValue(
+            contentBlocklistRepository,
+          ),
         ],
         child: MaterialApp.router(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -95,6 +104,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.badgesActionAccept), findsOneWidget);
+      expect(find.text(l10n.badgeDetailBlockClaimantsAction), findsOneWidget);
       expect(find.text(l10n.badgeDetailAwardAction), findsNothing);
     });
 
@@ -114,6 +124,45 @@ void main() {
 
       expect(find.text(l10n.badgesActionRemove), findsOneWidget);
       expect(find.text(l10n.badgesActionAccept), findsNothing);
+    });
+
+    testWidgets('blocks badge claimants only after confirmation', (
+      tester,
+    ) async {
+      final claimants = {_pubkey(2), _pubkey(3)};
+      when(() => repository.loadBadgeDetail(any())).thenAnswer(
+        (_) async => _detail(definition: _definition(), isOwner: false),
+      );
+      when(
+        () => repository.loadClaimantPubkeys(any()),
+      ).thenAnswer((_) async => claimants);
+      when(
+        () => contentBlocklistRepository.blockUsers(any()),
+      ).thenAnswer((_) async {});
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.badgeDetailBlockClaimantsAction));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(l10n.badgeDetailBlockClaimantsHeading(claimants.length)),
+        findsOneWidget,
+      );
+      expect(
+        find.text(l10n.badgeDetailBlockClaimantsBody(claimants.length)),
+        findsOneWidget,
+      );
+
+      await tester.tap(
+        find.text(l10n.badgeDetailBlockClaimantsConfirm(claimants.length)),
+      );
+      await tester.pumpAndSettle();
+
+      verify(() => repository.loadClaimantPubkeys(_coordinate)).called(1);
+      verify(() => contentBlocklistRepository.blockUsers(claimants)).called(1);
+      expect(find.text(l10n.badgeDetailBlockClaimantsSuccess), findsOneWidget);
     });
 
     testWidgets('deletes only after the owner confirms', (tester) async {
@@ -185,10 +234,7 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      expect(
-        find.bySemanticsLabel(l10n.badgeDetailDeleteAction),
-        findsNothing,
-      );
+      expect(find.bySemanticsLabel(l10n.badgeDetailDeleteAction), findsNothing);
     });
 
     testWidgets('says so when no definition event could be found', (

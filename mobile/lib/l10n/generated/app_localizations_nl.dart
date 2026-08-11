@@ -10158,6 +10158,66 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailBlockClaimantsAction => 'Badge-claimers blokkeren';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'Badge-claimers blokkeren';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'Kan claimers voor deze badge niet laden';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'Niemand claimt deze badge nu';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'We hebben geen huidige claimers gevonden om te blokkeren.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count claimers blokkeren?',
+      one: '1 claimer blokkeren?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Dit blokkeert de $count accounts die deze badge nu claimen. Hun posts verdwijnen uit je feeds en ze krijgen geen melding.',
+      one:
+          'Dit blokkeert het account dat deze badge nu claimt. Hun posts verdwijnen uit je feeds en ze krijgen geen melding.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count accounts blokkeren',
+      one: '1 account blokkeren',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess => 'Badge-claimers geblokkeerd';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'Kan badge-claimers niet blokkeren';
+
+  @override
   String get badgeDetailLoadError => 'Deze badge kon niet worden geladen';
 
   @override

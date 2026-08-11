@@ -608,6 +608,32 @@ class BadgeRepository {
     );
   }
 
+  /// Loads pubkeys whose latest profile-badge list claims [coordinate].
+  ///
+  /// NIP-58 profile badges are currently published as kind 10008 and, for
+  /// older clients, legacy kind 30008 with `d=profile_badges`. The initial
+  /// reverse `#a` query finds candidate claimants without walking every award
+  /// recipient; each candidate is then checked against their latest profile
+  /// badge list so an older claim does not survive after a newer removal.
+  Future<Set<String>> loadClaimantPubkeys(BadgeCoordinate coordinate) async {
+    final candidateEvents = await _queryProfileBadgeClaimsForCoordinate(
+      coordinate,
+    );
+    final candidatePubkeys = {
+      for (final event in candidateEvents) event.pubkey,
+    };
+    if (candidatePubkeys.isEmpty) return const {};
+
+    final memo = _DashboardLookupMemo();
+    final latestByPubkey = await _profileBadgesByPubkey(memo, candidatePubkeys);
+
+    return Set.unmodifiable({
+      for (final entry in latestByPubkey.entries)
+        if (_containsBadgeCoordinateValue(entry.value, coordinate.value))
+          entry.key,
+    });
+  }
+
   /// Publishes a badge definition (`kind:30009`) authored by the current user.
   ///
   /// Badge definitions are addressable, so publishing a draft whose
@@ -842,6 +868,30 @@ class BadgeRepository {
                 right.event.createdAt.compareTo(left.event.createdAt),
           );
     return awards;
+  }
+
+  Future<List<Event>> _queryProfileBadgeClaimsForCoordinate(
+    BadgeCoordinate coordinate, {
+    int limit = 1000,
+  }) async {
+    final events = await _nostrClient.queryEvents([
+      Filter(
+        kinds: [EventKind.profileBadges, EventKind.badgeSet],
+        a: [coordinate.value],
+        limit: limit,
+      ),
+    ]);
+
+    return events
+        .where(Nip58BadgeParser.isProfileBadgesEvent)
+        .where(
+          (event) =>
+              Nip58BadgeParser.parseProfileBadges(event)?.badges.any(
+                (ref) => ref.definitionCoordinate == coordinate.value,
+              ) ??
+              false,
+        )
+        .toList(growable: false);
   }
 
   static List<Nip58BadgeDefinition> _newestDefinitionPerIdentifier(
@@ -1196,8 +1246,18 @@ class BadgeRepository {
     Nip58ProfileBadges? profileBadges,
     Nip58BadgeAward award,
   ) {
+    return _containsBadgeCoordinateValue(
+      profileBadges,
+      award.definitionCoordinate,
+    );
+  }
+
+  static bool _containsBadgeCoordinateValue(
+    Nip58ProfileBadges? profileBadges,
+    String coordinate,
+  ) {
     return profileBadges?.badges.any(
-          (ref) => ref.definitionCoordinate == award.definitionCoordinate,
+          (ref) => ref.definitionCoordinate == coordinate,
         ) ??
         false;
   }

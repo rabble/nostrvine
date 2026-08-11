@@ -1788,6 +1788,138 @@ void main() {
       });
     });
 
+    group('loadClaimantPubkeys', () {
+      final coordinate = BadgeCoordinate(
+        pubkey: _pubkey(2),
+        identifier: 'scene-stealer',
+      );
+
+      test(
+        'queries profile badge claims by coordinate across both kinds',
+        () async {
+          _stubQueries(nostrClient, {
+            'profileClaims:${coordinate.value}': [
+              _profileBadgesEvent(
+                id: _eventId(80),
+                pubkey: _pubkey(3),
+                tags: [
+                  ['a', coordinate.value],
+                  ['e', _eventId(70)],
+                ],
+              ),
+              _profileBadgesEvent(
+                id: _eventId(81),
+                pubkey: _pubkey(4),
+                kind: EventKind.badgeSet,
+                tags: [
+                  ['d', 'profile_badges'],
+                  ['a', coordinate.value],
+                  ['e', _eventId(71)],
+                ],
+              ),
+            ],
+            'profileCurrent:${_pubkey(3)}': [
+              _profileBadgesEvent(
+                id: _eventId(82),
+                pubkey: _pubkey(3),
+                tags: [
+                  ['a', coordinate.value],
+                  ['e', _eventId(70)],
+                ],
+              ),
+            ],
+            'profileCurrent:${_pubkey(4)}': [
+              _profileBadgesEvent(
+                id: _eventId(83),
+                pubkey: _pubkey(4),
+                kind: EventKind.badgeSet,
+                tags: [
+                  ['d', 'profile_badges'],
+                  ['a', coordinate.value],
+                  ['e', _eventId(71)],
+                ],
+              ),
+            ],
+          });
+
+          final claimants = await repository.loadClaimantPubkeys(coordinate);
+
+          expect(claimants, {_pubkey(3), _pubkey(4)});
+          final capturedFilters = verify(
+            () => nostrClient.queryEvents(captureAny()),
+          ).captured;
+          final claimFilter = (capturedFilters.first as List<Filter>).single;
+          expect(
+            claimFilter.kinds,
+            containsAll([EventKind.profileBadges, EventKind.badgeSet]),
+          );
+          expect(claimFilter.a, [coordinate.value]);
+        },
+      );
+
+      test(
+        'drops candidates whose newest profile badges removed the badge',
+        () async {
+          final otherCoordinate = BadgeCoordinate(
+            pubkey: _pubkey(2),
+            identifier: 'other-badge',
+          );
+          _stubQueries(nostrClient, {
+            'profileClaims:${coordinate.value}': [
+              _profileBadgesEvent(
+                id: _eventId(84),
+                pubkey: _pubkey(3),
+                tags: [
+                  ['a', coordinate.value],
+                  ['e', _eventId(70)],
+                ],
+              ),
+            ],
+            'profileCurrent:${_pubkey(3)}': [
+              _profileBadgesEvent(
+                id: _eventId(85),
+                pubkey: _pubkey(3),
+                createdAt: 2000,
+                tags: [
+                  ['a', otherCoordinate.value],
+                  ['e', _eventId(72)],
+                ],
+              ),
+            ],
+          });
+
+          final claimants = await repository.loadClaimantPubkeys(coordinate);
+
+          expect(claimants, isEmpty);
+        },
+      );
+
+      test(
+        'ignores non-profile legacy badge sets returned by the relay',
+        () async {
+          _stubQueries(nostrClient, {
+            'profileClaims:${coordinate.value}': [
+              _profileBadgesEvent(
+                id: _eventId(86),
+                pubkey: _pubkey(3),
+                kind: EventKind.badgeSet,
+                tags: [
+                  ['d', 'not_profile_badges'],
+                  ['a', coordinate.value],
+                  ['e', _eventId(70)],
+                ],
+              ),
+            ],
+          });
+
+          final claimants = await repository.loadClaimantPubkeys(coordinate);
+
+          expect(claimants, isEmpty);
+          verify(() => nostrClient.queryEvents(any())).called(1);
+        },
+      );
+    });
+
     group('saveDefinition', () {
       test('publishes a kind 30009 definition', () async {
         final definition = await repository.saveDefinition(
@@ -2363,6 +2495,11 @@ String _queryKey(Filter filter) {
       filter.a?.isNotEmpty == true) {
     return 'awardsFor:${filter.a!.single}';
   }
+  if (filter.kinds?.contains(EventKind.profileBadges) == true &&
+      filter.kinds?.contains(EventKind.badgeSet) == true &&
+      filter.a?.isNotEmpty == true) {
+    return 'profileClaims:${filter.a!.single}';
+  }
   if (filter.kinds?.contains(EventKind.badgeDefinition) == true &&
       filter.authors?.isNotEmpty == true &&
       filter.d == null) {
@@ -2416,12 +2553,13 @@ Event _profileBadgesEvent({
   required String id,
   required String pubkey,
   required List<List<String>> tags,
+  int kind = EventKind.profileBadges,
   int createdAt = 1000,
 }) {
   return _event(
     id: id,
     pubkey: pubkey,
-    kind: EventKind.profileBadges,
+    kind: kind,
     tags: tags,
     createdAt: createdAt,
   );

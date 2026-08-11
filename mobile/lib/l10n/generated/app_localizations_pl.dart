@@ -10298,6 +10298,66 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailBlockClaimantsAction => 'Zablokuj osoby z ta odznaka';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'Zablokuj osoby z odznaka';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'Nie udalo sie wczytac osob roszczacych te odznake';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'Nikt teraz nie roszczy tej odznaki';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'Nie znalezlismy aktualnych osob do zablokowania.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Zablokowac $count osob?',
+      one: 'Zablokowac 1 osobe?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'To zablokuje $count kont, ktore teraz roszcza te odznake. Ich posty znikna z twoich feedow, a konta nie dostana powiadomienia.',
+      one:
+          'To zablokuje konto, ktore teraz roszczy te odznake. Jego posty znikna z twoich feedow, a konto nie dostanie powiadomienia.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Zablokuj $count kont',
+      one: 'Zablokuj 1 konto',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess => 'Osoby z odznaka zablokowane';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'Nie udalo sie zablokowac tych osob';
+
+  @override
   String get badgeDetailLoadError => 'Nie udało się wczytać tej odznaki';
 
   @override

@@ -10227,6 +10227,67 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailBlockClaimantsAction =>
+      'I-block ang nag-claim ng badge';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'I-block ang claimants ng badge';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'Hindi ma-load ang nag-claim ng badge na ito';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'Walang nag-claim ng badge na ito ngayon';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'Wala kaming nahanap na kasalukuyang claimants na iba-block.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'I-block ang $count claimants?',
+      one: 'I-block ang 1 claimant?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Iba-block nito ang $count account na kasalukuyang nag-claim ng badge na ito. Mawawala ang posts nila sa feeds mo, at hindi sila aabisuhan.',
+      one:
+          'Iba-block nito ang account na kasalukuyang nag-claim ng badge na ito. Mawawala ang posts nila sa feeds mo, at hindi sila aabisuhan.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'I-block ang $count account',
+      one: 'I-block ang 1 account',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess => 'Na-block ang badge claimants';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'Hindi ma-block ang badge claimants';
+
+  @override
   String get badgeDetailLoadError => 'Hindi na-load ang badge na ito';
 
   @override

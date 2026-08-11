@@ -10183,6 +10183,67 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailBlockClaimantsAction =>
+      'Bloquear quem reivindica o selo';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'Bloquear reivindicantes';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'Nao foi possivel carregar quem reivindica este selo';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'Ninguem reivindica este selo agora';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'Nao encontramos reivindicantes atuais para bloquear.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Bloquear $count contas?',
+      one: 'Bloquear 1 conta?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Isto bloqueia as $count contas que reivindicam este selo agora. As publicacoes delas sairao dos seus feeds, e elas nao serao avisadas.',
+      one:
+          'Isto bloqueia a conta que reivindica este selo agora. As publicacoes dela sairao dos seus feeds, e ela nao sera avisada.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Bloquear $count contas',
+      one: 'Bloquear 1 conta',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess => 'Reivindicantes bloqueados';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'Nao foi possivel bloquear os reivindicantes';
+
+  @override
   String get badgeDetailLoadError => 'Não foi possível carregar este selo';
 
   @override

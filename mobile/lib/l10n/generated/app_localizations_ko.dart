@@ -9700,6 +9700,60 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailBlockClaimantsAction => '배지 주장 계정 차단';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => '배지 주장 계정 차단';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError => '이 배지를 주장한 계정을 불러올 수 없었습니다';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle => '지금 이 배지를 주장한 사람이 없습니다';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody => '차단할 현재 주장 계정을 찾지 못했습니다.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count명을 차단할까요?',
+      one: '1명을 차단할까요?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '지금 이 배지를 주장한 $count개 계정을 차단합니다. 해당 게시물은 내 피드에서 사라지고 알림은 가지 않습니다.',
+      one: '지금 이 배지를 주장한 계정을 차단합니다. 해당 게시물은 내 피드에서 사라지고 알림은 가지 않습니다.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count개 계정 차단',
+      one: '1개 계정 차단',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess => '배지 주장 계정을 차단했습니다';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure => '배지 주장 계정을 차단할 수 없었습니다';
+
+  @override
   String get badgeDetailLoadError => '이 배지를 불러오지 못했어요';
 
   @override

@@ -10211,6 +10211,67 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailBlockClaimantsAction => 'Блокирай заявилите значката';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'Блокирай заявилите значката';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'Не можахме да заредим заявилите тази значка';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'В момента никой не заявява тази значка';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'Не намерихме текущи заявили за блокиране.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Да блокираме $count акаунта?',
+      one: 'Да блокираме 1 акаунт?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Това блокира $count акаунта, които в момента заявяват тази значка. Публикациите им ще излязат от твоите фийдове и няма да получат известие.',
+      one:
+          'Това блокира акаунта, който в момента заявява тази значка. Публикациите му ще излязат от твоите фийдове и няма да получи известие.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Блокирай $count акаунта',
+      one: 'Блокирай 1 акаунт',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess =>
+      'Заявилите значката са блокирани';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'Не можахме да блокираме заявилите значката';
+
+  @override
   String get badgeDetailLoadError => 'Този знак не можа да се зареди';
 
   @override

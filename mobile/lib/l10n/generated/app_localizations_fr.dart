@@ -10254,6 +10254,67 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailBlockClaimantsAction =>
+      'Bloquer les personnes qui revendiquent ce badge';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'Bloquer les revendications';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'Impossible de charger les personnes qui revendiquent ce badge';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'Personne ne revendique ce badge pour le moment';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'Nous n avons trouve aucune revendication actuelle a bloquer.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Bloquer $count personnes?',
+      one: 'Bloquer 1 personne?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Cela bloque les $count comptes qui revendiquent actuellement ce badge. Leurs posts quitteront tes feeds, sans notification.',
+      one:
+          'Cela bloque le compte qui revendique actuellement ce badge. Ses posts quitteront tes feeds, sans notification.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Bloquer $count comptes',
+      one: 'Bloquer 1 compte',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess => 'Personnes bloquees';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'Impossible de bloquer ces personnes';
+
+  @override
   String get badgeDetailLoadError => 'Impossible de charger ce badge';
 
   @override

@@ -10212,6 +10212,67 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailBlockClaimantsAction =>
+      'Bloquear reclamantes del distintivo';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'Bloquear reclamantes';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'No pudimos cargar quienes reclaman este distintivo';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'Nadie reclama este distintivo ahora mismo';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'No encontramos reclamantes actuales para bloquear.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Bloquear a $count reclamantes?',
+      one: 'Bloquear a 1 reclamante?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Esto bloquea las $count cuentas que reclaman este distintivo ahora. Sus publicaciones saldran de tus feeds y no recibiran aviso.',
+      one:
+          'Esto bloquea la cuenta que reclama este distintivo ahora. Sus publicaciones saldran de tus feeds y no recibira aviso.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Bloquear $count cuentas',
+      one: 'Bloquear 1 cuenta',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess => 'Reclamantes bloqueados';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'No pudimos bloquear a los reclamantes';
+
+  @override
   String get badgeDetailLoadError => 'No se pudo cargar esta insignia';
 
   @override

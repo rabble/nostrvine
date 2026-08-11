@@ -9596,6 +9596,66 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailBlockClaimantsAction => 'Block badge claimants';
+
+  @override
+  String get badgeDetailBlockClaimantsTitle => 'Block badge claimants';
+
+  @override
+  String get badgeDetailBlockClaimantsLoadError =>
+      'Could not load claimants for this badge';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyTitle =>
+      'No one claims this badge right now';
+
+  @override
+  String get badgeDetailBlockClaimantsEmptyBody =>
+      'We did not find any current claimants to block.';
+
+  @override
+  String badgeDetailBlockClaimantsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Block $count claimants?',
+      one: 'Block 1 claimant?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'This blocks the $count accounts currently claiming this badge. Their posts will leave your feeds, and they will not be notified.',
+      one:
+          'This blocks the account currently claiming this badge. Their posts will leave your feeds, and they will not be notified.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String badgeDetailBlockClaimantsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Block $count accounts',
+      one: 'Block 1 account',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeDetailBlockClaimantsSuccess => 'Badge claimants blocked';
+
+  @override
+  String get badgeDetailBlockClaimantsFailure =>
+      'Could not block badge claimants';
+
+  @override
   String get badgeDetailLoadError => '无法加载这个徽章';
 
   @override
