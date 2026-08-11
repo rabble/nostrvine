@@ -4066,7 +4066,7 @@
   },
   "libraryOpenDraftEndsRecordingTitle": "Leave this recording?",
   "@libraryOpenDraftEndsRecordingTitle": {
-    "description": "Title of the sheet shown when opening a draft would end an unfinished recording session."
+    "description": "Title of the sheet shown when opening or posting another draft would end an unfinished recording session."
   },
   "libraryOpenDraftEndsRecordingMessage": "Opening a draft ends the video you're working on. Your clips stay in your library.",
   "@libraryOpenDraftEndsRecordingMessage": {

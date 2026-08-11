@@ -11426,7 +11426,7 @@ abstract class AppLocalizations {
   /// **'{title} (copy {number})'**
   String libraryDraftCopyTitle(String title, int number);
 
-  /// Title of the sheet shown when opening a draft would end an unfinished recording session.
+  /// Title of the sheet shown when opening or posting another draft would end an unfinished recording session.
   ///
   /// In en, this message translates to:
   /// **'Leave this recording?'**
