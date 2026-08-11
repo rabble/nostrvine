@@ -136,30 +136,53 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('scales its icons with the system text scale', (tester) async {
-      // 360dp with all 6 own-profile tabs: the narrowest common phone at the
-      // highest tab count, which is where a per-tab slot is tightest. A wider
-      // surface or fewer tabs leaves so much slack that the assertion below
-      // passes even when the shipping layout clamps the icon flat.
-      tester.view.physicalSize = const Size(360, 800);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+    // 360dp is the narrowest common phone and 320dp the narrowest supported
+    // one. Both are measured at all 6 own-profile tabs, the tightest per-tab
+    // slot the bar ships in: a wider surface or fewer tabs leaves so much
+    // slack that these assertions pass even when the layout clamps the icon
+    // flat. 320dp is also where the headroom is thinnest -- 320/6 - 16 =
+    // 37.3dp against the 36.4dp a capped icon needs.
+    for (final width in [320.0, 360.0]) {
+      testWidgets('scales its icons with the system text scale at ${width}dp', (
+        tester,
+      ) async {
+        tester.view.physicalSize = Size(width, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
-      await pumpBar(tester, ownProfile: true);
-      final base = tester.getSize(find.byType(DivineIcon).first);
+        await pumpBar(tester, ownProfile: true);
+        final base = tester.getSize(find.byType(DivineIcon).first);
 
-      tester.platformDispatcher.textScaleFactorTestValue = 2;
-      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-      await pumpBar(tester, ownProfile: true);
-      final scaled = tester.getSize(find.byType(DivineIcon).first);
+        tester.platformDispatcher.textScaleFactorTestValue = 2;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        await pumpBar(tester, ownProfile: true);
+        final scaled = tester.getSize(find.byType(DivineIcon).first);
 
-      // DivineIcon caps growth at maxScaleFactor (1.3x) so tight rows do not
-      // overflow. A raw SvgPicture at a hardcoded size would not move at all.
-      expect(scaled.width, greaterThan(base.width));
-      expect(scaled.width, base.width * DivineIcon.maxScaleFactor);
-      expect(tester.takeException(), isNull);
-    });
+        // DivineIcon caps growth at maxScaleFactor (1.3x) so tight rows do not
+        // overflow. A raw SvgPicture at a hardcoded size would not move at all.
+        expect(scaled.width, greaterThan(base.width));
+        expect(scaled.width, base.width * DivineIcon.maxScaleFactor);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('renders its icons unclamped at 1.0x at ${width}dp', (
+        tester,
+      ) async {
+        tester.view.physicalSize = Size(width, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await pumpBar(tester, ownProfile: true);
+
+        // At the default text scale the icon must render at its nominal 28dp.
+        // With Material's default labelPadding of 16 this is 21.3dp at 320dp
+        // and exactly 28dp at 360dp, so the 320dp case is the one that pins
+        // the padding at ordinary text sizes rather than only at 2.0x.
+        expect(tester.getSize(find.byType(DivineIcon).first).width, 28.0);
+      });
+    }
 
     testWidgets('keeps the snake_case identifier as the E2E anchor', (
       tester,
