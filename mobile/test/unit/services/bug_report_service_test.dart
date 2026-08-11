@@ -156,16 +156,29 @@ void main() {
         deviceInfo: {
           'platform': 'ios',
           'sessionKey': 'hunter2',
+          // A credential is just as exposed inside a list or a nested map, and
+          // recursing into those hands the rules a bare value with no key.
+          'apiKeys': ['LISTSECRET1', 'LISTSECRET2'],
+          'tokenBag': {'inner': 'NESTEDSECRET'},
+          'passcode': 1234,
           'version': '18.2',
         },
         appVersion: '1.0.0',
         recentLogs: [],
-        errorCounts: {},
+        errorCounts: {'auth:sessionKey=hunter2': 3},
       );
 
       final sanitized = service.sanitizeSensitiveData(input);
+      final rendered = sanitized.deviceInfo.toString();
 
       expect(sanitized.deviceInfo['sessionKey'], isNot(contains('hunter2')));
+      expect(rendered, isNot(contains('LISTSECRET1')));
+      expect(rendered, isNot(contains('LISTSECRET2')));
+      expect(rendered, isNot(contains('NESTEDSECRET')));
+      expect(rendered, isNot(contains('1234')));
+      // Error-count keys are `'$location:$errorType'` strings, so they can
+      // carry a credential-shaped name too.
+      expect(sanitized.errorCounts.keys.join(), isNot(contains('hunter2')));
       // Ordinary device fields are untouched - the rule is key-driven, not a
       // blanket redaction of everything in the map.
       expect(sanitized.deviceInfo['platform'], 'ios');

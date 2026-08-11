@@ -200,7 +200,22 @@ class BugReportService {
       deviceInfo: _sanitizeDeviceInfo(data.deviceInfo),
       recentLogs: sanitizedLogs,
       additionalContext: sanitizedContext,
+      errorCounts: _sanitizeErrorCounts(data.errorCounts),
     );
+  }
+
+  /// Sanitize error-count keys, which are `'<location>:<errorType>'` strings
+  /// and so can carry a credential-shaped name.
+  ///
+  /// Done here rather than only where the counts are rendered, so every
+  /// consumer of the sanitized report inherits it.
+  Map<String, int> _sanitizeErrorCounts(Map<String, int> input) {
+    return input.map((key, value) {
+      final composed = '$key: $value';
+      return sanitizeDiagnosticText(composed) == composed
+          ? MapEntry(key, value)
+          : MapEntry('[REDACTED]', value);
+    });
   }
 
   /// Estimate report size in bytes
@@ -894,24 +909,27 @@ class BugReportService {
 
   /// Sanitize a map by removing sensitive values.
   ///
-  /// A string value is sanitized as `key: value`, not on its own. The rules
-  /// match a credential *key* next to its value, so handing them a bare value
-  /// loses the only evidence they have: `{'sessionKey': '<secret>'}` sanitized
-  /// value-by-value comes back unchanged, and this map is rendered as JSON
-  /// into an export that the user can share anywhere.
+  /// Sensitivity is decided on the `key: value` pair, not on the value alone.
+  /// The rules match a credential *key* next to its value, so a value handed
+  /// over on its own arrives with no key attached and survives:
+  /// `{'sessionKey': '<secret>'}` came back unchanged before this, into an
+  /// export the user can share anywhere.
+  ///
+  /// A credential-shaped key redacts its whole value regardless of type. A
+  /// secret is just as exposed as `{'sessionKey': ['<secret>']}` or
+  /// `{'apiKey': {'value': '<secret>'}}`, and recursing into those loses the
+  /// key that identifies them.
   Map<String, dynamic> _sanitizeMap(Map<String, dynamic> input) {
     final Map<String, dynamic> sanitized = {};
 
     input.forEach((key, value) {
-      if (value is String) {
-        final withKey = _sanitizeString('$key: $value');
-        // Keep only the value side, and only when the pair survived intact -
-        // otherwise the whole value was part of what got redacted.
-        sanitized[key] = withKey == '$key: $value'
-            ? value
-            : (withKey.startsWith('$key: ')
-                  ? withKey.substring('$key: '.length)
-                  : '[REDACTED]');
+      if (_isCredentialKey(key)) {
+        // The whole subtree, whatever shape it is. Recursing would hand the
+        // rules a bare value with no key attached, which is how
+        // `{'apiKey': ['<secret>']}` used to survive.
+        sanitized[key] = '[REDACTED]';
+      } else if (value is String) {
+        sanitized[key] = _sanitizeString(value);
       } else if (value is Map<String, dynamic>) {
         sanitized[key] = _sanitizeMap(value);
       } else if (value is List) {
@@ -922,6 +940,18 @@ class BugReportService {
     });
 
     return sanitized;
+  }
+
+  /// Whether [key] alone reads as a credential key.
+  ///
+  /// Tested with a placeholder value rather than the real one, so the answer
+  /// does not depend on what the value happens to contain: the point is that
+  /// `sessionKey` identifies a credential no matter whether its value is a
+  /// string, a list or a nested map.
+  bool _isCredentialKey(String key) {
+    const probe = 'x';
+    final composed = '$key: $probe';
+    return sanitizeDiagnosticText(composed) != composed;
   }
 
   Map<String, dynamic> _sanitizeDeviceInfo(Map<String, dynamic> input) {
