@@ -110,6 +110,16 @@ class BookmarkService {
   /// NIP-51 kind for the uncategorized ("global") bookmark list.
   static const int globalBookmarksKind = 10003;
 
+  /// The `content` Divine wrote into kind 10003 before it respected NIP-51's
+  /// reservation of that field for the encrypted private-item array.
+  ///
+  /// Carrying an unrecognized `content` through is what protects another
+  /// client's ciphertext, but this literal is Divine's own former output and
+  /// is not ciphertext. Preserving it would republish the malformed value for
+  /// exactly the users who already carry it — every account that saved a
+  /// bookmark on an older build.
+  static const String _legacyProseContent = 'Divine global bookmarks';
+
   // Global bookmarks (Kind 10003)
   final List<BookmarkItem> _globalBookmarks = [];
 
@@ -117,7 +127,9 @@ class BookmarkService {
   ///
   /// NIP-51 reserves `.content` for the NIP-44-encrypted private item array.
   /// Divine cannot read those items yet, so it carries the ciphertext through
-  /// untouched instead of overwriting another client's private bookmarks.
+  /// untouched instead of overwriting another client's private bookmarks —
+  /// except for [_legacyProseContent], which is Divine's own malformed output
+  /// and is dropped rather than propagated.
   String _lastKnownRemoteContent = '';
 
   /// How long a full-settlement "this user has no list" answer is reused
@@ -547,7 +559,9 @@ class BookmarkService {
   /// items, so carrying the ciphertext through unchanged is what keeps a
   /// republish from deleting bookmarks another client stored privately.
   void _adoptGlobalBookmarksFromEvent(Event event) {
-    _lastKnownRemoteContent = event.content;
+    _lastKnownRemoteContent = event.content == _legacyProseContent
+        ? ''
+        : event.content;
     _globalBookmarks.clear();
 
     for (final tag in event.tags) {

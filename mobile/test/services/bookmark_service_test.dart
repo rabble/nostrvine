@@ -733,6 +733,34 @@ void main() {
       });
 
       test(
+        'drops the legacy Divine prose instead of republishing it',
+        () async {
+          // The kind 10003 every user who saved a bookmark on an older build
+          // carries: the pre-reconcile code wrote this literal into `content`,
+          // where NIP-51 reserves the NIP-44 private-item array. Read verbatim
+          // off relay.divine.video from a live account.
+          stubRelay(
+            events: [bookmarkListEvent([], content: 'Divine global bookmarks')],
+          );
+          final service = createService();
+
+          await service.addToGlobalBookmarks(
+            const BookmarkItem(type: 'e', id: 'new-one'),
+          );
+
+          expect(
+            signedContent,
+            isEmpty,
+            reason:
+                "the carry-through protects another client's ciphertext, but "
+                "this literal is Divine's own former output and is not "
+                'ciphertext — preserving it republishes the malformed content '
+                'forever for exactly the users who already have it',
+          );
+        },
+      );
+
+      test(
         "carries another client's encrypted content through untouched",
         () async {
           const ciphertext = 'AhjoBRIcKJZSgAGz/y0uYsggKpn6dgeRHYs=';
