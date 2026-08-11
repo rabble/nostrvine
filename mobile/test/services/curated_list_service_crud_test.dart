@@ -539,6 +539,194 @@ void main() {
       });
 
       test(
+        'does not union a failed local deletion with stale relay items',
+        () async {
+          final list = await service.createList(name: 'Failed Delete');
+          await service.addVideoToList(list!.id, 'kept_video');
+          await service.addVideoToList(list.id, 'removed_video');
+          final beforeDelete = service.getListById(list.id)!;
+          clearInteractions(mockNostr);
+          when(
+            () => mockNostr.publishEvent(any()),
+          ).thenAnswer((_) async => const PublishFailed());
+
+          final removed = await service.removeVideoFromList(
+            list.id,
+            'removed_video',
+          );
+
+          expect(removed, isFalse);
+          var stored = service.getListById(list.id)!;
+          expect(stored.videoEventIds, ['kept_video']);
+          expect(stored.nostrEventId, isNull);
+          expect(stored.pendingRepublish, isTrue);
+
+          when(() => mockNostr.publishEvent(any())).thenAnswer(
+            (invocation) async => PublishSuccess(
+              event: invocation.positionalArguments[0] as Event,
+            ),
+          );
+          when(() => mockNostr.subscribe(any())).thenAnswer(
+            (_) => Stream.value(
+              Event.fromJson({
+                'id': 'stale_relay_event',
+                'pubkey': _ownerPubkey,
+                'created_at':
+                    beforeDelete.updatedAt.millisecondsSinceEpoch ~/ 1000,
+                'kind': 30005,
+                'tags': [
+                  ['d', list.id],
+                  ['title', 'Failed Delete'],
+                  ['e', 'kept_video'],
+                  ['e', 'removed_video'],
+                ],
+                'content': 'Failed Delete',
+                'sig': 'test_signature',
+              }),
+            ),
+          );
+
+          await service.fetchUserListsFromRelays(force: true);
+
+          stored = service.getListById(list.id)!;
+          expect(stored.videoEventIds, ['kept_video']);
+          expect(stored.pendingRepublish, isFalse);
+          final republished =
+              verify(
+                    () => mockNostr.publishEventAwaitOk(captureAny()),
+                  ).captured.last
+                  as Event;
+          expect(
+            republished.tags,
+            isNot(contains(equals(['e', 'removed_video']))),
+          );
+        },
+      );
+
+      test('merge keeps collaborative lists public', () async {
+        SharedPreferences.setMockInitialValues({
+          CuratedListService.listsStorageKey: jsonEncode([
+            CuratedList(
+              id: 'collaborative-local',
+              name: 'Collaborative Local',
+              videoEventIds: const ['local_video'],
+              createdAt: DateTime(2025),
+              updatedAt: DateTime(2025),
+              isPublic: false,
+              isCollaborative: true,
+              allowedCollaborators: const ['collaborator_pubkey'],
+              pubkey: _ownerPubkey,
+            ).toJson(),
+          ]),
+        });
+        when(() => mockNostr.subscribe(any())).thenAnswer(
+          (_) => Stream.value(
+            Event.fromJson({
+              'id': 'relay_collaborative_event',
+              'pubkey': _ownerPubkey,
+              'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              'kind': 30005,
+              'tags': [
+                ['d', 'collaborative-local'],
+                ['title', 'Collaborative Local'],
+                ['e', 'relay_video'],
+              ],
+              'content': 'Collaborative Local',
+              'sig': 'test_signature',
+            }),
+          ),
+        );
+        final upgraded = CuratedListService(
+          nostrService: mockNostr,
+          authService: mockAuth,
+          prefs: await SharedPreferences.getInstance(),
+        );
+
+        await upgraded.fetchUserListsFromRelays();
+
+        final merged = upgraded.getListById('collaborative-local')!;
+        expect(merged.isCollaborative, isTrue);
+        expect(merged.isPublic, isTrue);
+      });
+
+      test(
+        'backs up null-pubkey local lists as the authenticated owner',
+        () async {
+          SharedPreferences.setMockInitialValues({
+            CuratedListService.listsStorageKey: jsonEncode([
+              CuratedList(
+                id: 'null-pubkey-local',
+                name: 'Null Pubkey Local',
+                videoEventIds: const ['local_video'],
+                createdAt: DateTime(2026),
+                updatedAt: DateTime(2026),
+              ).toJson(),
+            ]),
+          });
+          final upgraded = CuratedListService(
+            nostrService: mockNostr,
+            authService: mockAuth,
+            prefs: await SharedPreferences.getInstance(),
+          );
+
+          await upgraded.fetchUserListsFromRelays();
+
+          final stored = upgraded.getListById('null-pubkey-local')!;
+          expect(stored.pubkey, _ownerPubkey);
+          expect(stored.nostrEventId, isNotNull);
+          final published =
+              verify(
+                    () => mockNostr.publishEventAwaitOk(captureAny()),
+                  ).captured.single
+                  as Event;
+          expect(published.pubkey, _ownerPubkey);
+        },
+      );
+
+      test('does not double-publish a list resolved during backfill', () async {
+        SharedPreferences.setMockInitialValues({
+          CuratedListService.listsStorageKey: jsonEncode([
+            CuratedList(
+              id: 'first-stranded',
+              name: 'First Stranded',
+              videoEventIds: const ['first_video'],
+              createdAt: DateTime(2026),
+              updatedAt: DateTime(2026),
+              pubkey: _ownerPubkey,
+            ).toJson(),
+            CuratedList(
+              id: 'second-stranded',
+              name: 'Second Stranded',
+              videoEventIds: const ['second_video'],
+              createdAt: DateTime(2026),
+              updatedAt: DateTime(2026),
+              pubkey: _ownerPubkey,
+            ).toJson(),
+          ]),
+        });
+        var publishCount = 0;
+        late CuratedListService upgraded;
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer((
+          invocation,
+        ) async {
+          publishCount++;
+          if (publishCount == 1) {
+            await upgraded.addVideoToList('second-stranded', 'third_video');
+          }
+          return _accepted(invocation.positionalArguments[0] as Event);
+        });
+        upgraded = CuratedListService(
+          nostrService: mockNostr,
+          authService: mockAuth,
+          prefs: await SharedPreferences.getInstance(),
+        );
+
+        await upgraded.fetchUserListsFromRelays();
+
+        verify(() => mockNostr.publishEventAwaitOk(any())).called(1);
+      });
+
+      test(
         'does not backfill a subscribed list owned by someone else',
         () async {
           SharedPreferences.setMockInitialValues({
@@ -681,9 +869,7 @@ void main() {
 
       test('skips a sealed event if the user signs out during sync', () async {
         final events = StreamController<Event>();
-        when(
-          () => mockNostr.subscribe(any()),
-        ).thenAnswer((_) => events.stream);
+        when(() => mockNostr.subscribe(any())).thenAnswer((_) => events.stream);
 
         final sync = service.fetchUserListsFromRelays();
         when(() => mockAuth.isAuthenticated).thenReturn(false);
@@ -1606,69 +1792,6 @@ void main() {
         expect(jsonDecode(_unseal(addEvent.content)!), [
           ['e', 'added_during_privacy_change'],
         ]);
-      });
-    });
-
-    group('deleteList()', () {
-      test('deletes list successfully', () async {
-        final list = await service.createList(name: 'Test List');
-
-        final result = await service.deleteList(list!.id);
-
-        expect(result, isTrue);
-        expect(service.getListById(list.id), isNull);
-        expect(service.lists, isEmpty);
-      });
-
-      test('removes multiple lists independently', () async {
-        final list1 = await service.createList(name: 'List 1');
-        await Future.delayed(const Duration(milliseconds: 5));
-        final list2 = await service.createList(name: 'List 2');
-        await Future.delayed(const Duration(milliseconds: 5));
-        final list3 = await service.createList(name: 'List 3');
-
-        await service.deleteList(list2!.id);
-
-        expect(service.lists.length, 2);
-        expect(service.getListById(list1!.id), isNotNull);
-        expect(service.getListById(list2.id), isNull);
-        expect(service.getListById(list3!.id), isNotNull);
-      });
-
-      test('prevents deleting default list', () async {
-        await service.initialize();
-
-        final result = await service.deleteList(
-          CuratedListService.defaultListId,
-        );
-
-        expect(result, isFalse);
-        expect(service.hasDefaultList(), isTrue);
-      });
-
-      test('returns false for non-existent list', () async {
-        final result = await service.deleteList('non_existent_list');
-
-        expect(result, isFalse);
-      });
-
-      test('saves updated lists after deletion', () async {
-        final list = await service.createList(name: 'Test List');
-        await service.deleteList(list!.id);
-
-        final savedLists = prefs.getString(CuratedListService.listsStorageKey);
-        expect(savedLists, isNotNull);
-        expect(savedLists, isNot(contains('Test List')));
-      });
-
-      test('handles deleting last non-default list', () async {
-        await service.initialize(); // Creates default list
-        final list = await service.createList(name: 'Extra List');
-
-        await service.deleteList(list!.id);
-
-        expect(service.lists.length, 1);
-        expect(service.hasDefaultList(), isTrue);
       });
     });
 

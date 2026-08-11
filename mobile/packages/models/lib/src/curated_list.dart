@@ -78,6 +78,7 @@ class CuratedList extends Equatable {
     this.imageUrl,
     this.isPublic = true,
     this.nostrEventId,
+    this.pendingRepublish = false,
     this.tags = const [],
     this.isCollaborative = false,
     this.allowedCollaborators = const [],
@@ -98,6 +99,7 @@ class CuratedList extends Equatable {
     updatedAt: DateTime.parse(json['updatedAt'] as String),
     isPublic: json['isPublic'] as bool? ?? true,
     nostrEventId: json['nostrEventId'] as String?,
+    pendingRepublish: json['pendingRepublish'] as bool? ?? false,
     tags: List<String>.from(json['tags'] as List? ?? []),
     isCollaborative: json['isCollaborative'] as bool? ?? false,
     allowedCollaborators: List<String>.from(
@@ -146,6 +148,9 @@ class CuratedList extends Equatable {
   /// The Nostr event ID when published to relays.
   final String? nostrEventId;
 
+  /// Whether a local edit failed to publish and should be retried.
+  final bool pendingRepublish;
+
   /// Tags for categorization and discovery.
   final List<String> tags;
 
@@ -184,6 +189,7 @@ class CuratedList extends Equatable {
     bool? isPublic,
     String? nostrEventId,
     bool clearNostrEventId = false,
+    bool? pendingRepublish,
     List<String>? tags,
     bool? isCollaborative,
     List<String>? allowedCollaborators,
@@ -201,6 +207,7 @@ class CuratedList extends Equatable {
     updatedAt: updatedAt ?? this.updatedAt,
     isPublic: isPublic ?? this.isPublic,
     nostrEventId: clearNostrEventId ? null : nostrEventId ?? this.nostrEventId,
+    pendingRepublish: pendingRepublish ?? this.pendingRepublish,
     tags: tags ?? this.tags,
     isCollaborative: isCollaborative ?? this.isCollaborative,
     allowedCollaborators: allowedCollaborators ?? this.allowedCollaborators,
@@ -221,6 +228,7 @@ class CuratedList extends Equatable {
     'updatedAt': updatedAt.toIso8601String(),
     'isPublic': isPublic,
     'nostrEventId': nostrEventId,
+    'pendingRepublish': pendingRepublish,
     'tags': tags,
     'isCollaborative': isCollaborative,
     'allowedCollaborators': allowedCollaborators,
@@ -241,6 +249,7 @@ class CuratedList extends Equatable {
     updatedAt,
     isPublic,
     nostrEventId,
+    pendingRepublish,
     tags,
     isCollaborative,
     allowedCollaborators,

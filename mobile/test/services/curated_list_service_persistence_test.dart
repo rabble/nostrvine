@@ -163,7 +163,7 @@ void main() {
         );
 
         final list = await service.createList(name: 'To Delete');
-        await service.deleteList(list!.id);
+        await service.deleteOwnedList(list!.id);
 
         final savedData = prefs.getString(CuratedListService.listsStorageKey);
         expect(savedData, isNot(contains('To Delete')));
