@@ -11,7 +11,7 @@ part of 'classic_vines_provider.dart';
 /// ClassicVines feed provider - shows pre-2017 Vine archive sorted by loops
 ///
 /// Uses REST API (Funnelcake) with offset pagination to load pages on demand.
-/// Each page is 50 videos. With ~10k classic vines, there are ~200 pages.
+/// Each page is 50 videos.
 ///
 /// Pull-to-refresh selects a fresh random slice of classics while retrying
 /// transient failures and empty pages.
@@ -22,7 +22,7 @@ final classicVinesFeedProvider = ClassicVinesFeedProvider._();
 /// ClassicVines feed provider - shows pre-2017 Vine archive sorted by loops
 ///
 /// Uses REST API (Funnelcake) with offset pagination to load pages on demand.
-/// Each page is 50 videos. With ~10k classic vines, there are ~200 pages.
+/// Each page is 50 videos.
 ///
 /// Pull-to-refresh selects a fresh random slice of classics while retrying
 /// transient failures and empty pages.
@@ -31,7 +31,7 @@ final class ClassicVinesFeedProvider
   /// ClassicVines feed provider - shows pre-2017 Vine archive sorted by loops
   ///
   /// Uses REST API (Funnelcake) with offset pagination to load pages on demand.
-  /// Each page is 50 videos. With ~10k classic vines, there are ~200 pages.
+  /// Each page is 50 videos.
   ///
   /// Pull-to-refresh selects a fresh random slice of classics while retrying
   /// transient failures and empty pages.
@@ -54,12 +54,12 @@ final class ClassicVinesFeedProvider
   ClassicVinesFeed create() => ClassicVinesFeed();
 }
 
-String _$classicVinesFeedHash() => r'0de34401a1012fa881eaade7880dcd8a62767569';
+String _$classicVinesFeedHash() => r'87d7d1965b601ed2173e0d47ed7662830c9ce7e2';
 
 /// ClassicVines feed provider - shows pre-2017 Vine archive sorted by loops
 ///
 /// Uses REST API (Funnelcake) with offset pagination to load pages on demand.
-/// Each page is 50 videos. With ~10k classic vines, there are ~200 pages.
+/// Each page is 50 videos.
 ///
 /// Pull-to-refresh selects a fresh random slice of classics while retrying
 /// transient failures and empty pages.

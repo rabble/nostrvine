@@ -20,16 +20,30 @@ import 'package:videos_repository/src/home_feed_result.dart';
 /// {@endtemplate}
 class InMemoryFeedCache {
   /// {@macro in_memory_feed_cache}
-  InMemoryFeedCache();
+  InMemoryFeedCache({DateTime Function()? now}) : _now = now ?? DateTime.now;
 
-  final Map<String, HomeFeedResult> _store = {};
+  final DateTime Function() _now;
+  final Map<String, _HomeFeedCacheEntry> _store = {};
   final Map<String, AuthorFeedResult> _authorStore = {};
 
   /// Returns the cached result for [key], or `null` if not cached.
-  HomeFeedResult? get(String key) => _store[key];
+  HomeFeedResult? get(String key) {
+    final entry = _store[key];
+    if (entry == null) return null;
+    if (entry.isExpired(_now())) {
+      _store.remove(key);
+      return null;
+    }
+    return entry.result;
+  }
 
   /// Stores [result] under [key], replacing any previous entry.
-  void set(String key, HomeFeedResult result) => _store[key] = result;
+  void set(String key, HomeFeedResult result, {Duration? ttl}) {
+    _store[key] = _HomeFeedCacheEntry(
+      result,
+      expiresAt: ttl == null ? null : _now().add(ttl),
+    );
+  }
 
   /// Returns the cached author-feed result for [key], or `null`.
   ///
@@ -53,5 +67,17 @@ class InMemoryFeedCache {
   void clear() {
     _store.clear();
     _authorStore.clear();
+  }
+}
+
+class _HomeFeedCacheEntry {
+  const _HomeFeedCacheEntry(this.result, {this.expiresAt});
+
+  final HomeFeedResult result;
+  final DateTime? expiresAt;
+
+  bool isExpired(DateTime now) {
+    final expiresAt = this.expiresAt;
+    return expiresAt != null && !now.isBefore(expiresAt);
   }
 }
