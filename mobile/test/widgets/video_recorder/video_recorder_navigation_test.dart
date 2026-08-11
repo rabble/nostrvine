@@ -15,6 +15,7 @@ import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -25,6 +26,7 @@ import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/widgets/video_recorder/clip_delete_snackbar.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_navigation.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -38,13 +40,35 @@ class _MockVideoRecorderBloc
 
 class _MockAudioSessionService extends Mock implements AudioSessionService {}
 
+class _MockDraftStorageService extends Mock implements DraftStorageService {}
+
 class _FakeVideoEditorNotifier extends VideoEditorNotifier {
   bool saveAsDraftCalled = false;
   bool startRenderVideoCalled = false;
   DraftSaveOutcome saveResult = DraftSaveOutcome.saved;
+  int restoreDraftCalls = 0;
+  int removeAutosavedDraftCalls = 0;
+
+  /// Clips the autosave hands back, mirroring the real restore writing them
+  /// into the clip manager.
+  List<DivineVideoClip> clipsToRestore = const [];
 
   @override
   VideoEditorProviderState build() => VideoEditorProviderState();
+
+  @override
+  Future<bool> restoreDraft([String? draftId]) async {
+    restoreDraftCalls++;
+    if (clipsToRestore.isEmpty) return false;
+    (ref.read(clipManagerProvider.notifier) as _FakeClipManagerNotifier)
+        .setClips(clipsToRestore);
+    return true;
+  }
+
+  @override
+  Future<void> removeAutosavedDraft() async {
+    removeAutosavedDraftCalls++;
+  }
 
   @override
   Future<DraftSaveOutcome> saveAsDraft({
@@ -68,6 +92,7 @@ void main() {
   late _MockAudioSessionService audioSessionService;
   late _FakeVideoEditorNotifier fakeEditor;
   late _FakeClipManagerNotifier fakeClipManager;
+  late _MockDraftStorageService mockDraftStorageService;
 
   setUpAll(() {
     registerFallbackValue(const VideoRecorderCameraPausedForNavigation());
@@ -79,6 +104,10 @@ void main() {
     audioSessionService = _MockAudioSessionService();
     fakeEditor = _FakeVideoEditorNotifier();
     fakeClipManager = _FakeClipManagerNotifier();
+    mockDraftStorageService = _MockDraftStorageService();
+    when(
+      () => mockDraftStorageService.getAutosaveDraft(),
+    ).thenAnswer((_) async => null);
 
     when(() => recorderBloc.state).thenReturn(const VideoRecorderBlocState());
     when(() => recorderBloc.isClosed).thenReturn(false);
@@ -136,6 +165,7 @@ void main() {
         videoEditorProvider.overrideWith(() => fakeEditor),
         clipManagerProvider.overrideWith(() => fakeClipManager),
         audioSessionServiceProvider.overrideWithValue(audioSessionService),
+        draftStorageServiceProvider.overrideWithValue(mockDraftStorageService),
       ],
       child: MaterialApp.router(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -349,16 +379,107 @@ void main() {
       });
     });
   });
+
+  group('autosaved session after the library', () {
+    final sessionClip = DivineVideoClip(
+      id: 'session-clip',
+      video: EditorVideo.file('/path/to/session.mp4'),
+      duration: const Duration(seconds: 2),
+      recordedAt: DateTime(2026),
+      targetAspectRatio: .square,
+      originalAspectRatio: 1,
+    );
+
+    setUp(() {
+      when(() => mockAuthService.authState).thenReturn(AuthState.authenticated);
+    });
+
+    Future<void> openThenCloseLibrary(WidgetTester tester) async {
+      await tester.tap(find.byKey(const Key('open-library')));
+      await tester.pumpAndSettle();
+      expect(find.text('library'), findsOneWidget);
+
+      GoRouter.of(tester.element(find.text('library'))).pop();
+      await tester.pumpAndSettle();
+    }
+
+    void stubAutosaveDraft() {
+      when(() => mockDraftStorageService.getAutosaveDraft()).thenAnswer(
+        (_) async => DivineVideoDraft.create(
+          id: 'draft_autosave',
+          clips: [sessionClip],
+          title: '',
+          description: '',
+          hashtags: const {},
+          selectedApproach: 'video',
+        ),
+      );
+    }
+
+    testWidgets('offers the session back when a draft emptied the recorder', (
+      tester,
+    ) async {
+      // Opening a draft resets the shared clip manager while the recorder
+      // stays mounted, so its own start-up check never re-runs.
+      stubAutosaveDraft();
+      fakeEditor.clipsToRestore = [sessionClip];
+
+      await tester.pumpWidget(buildHarness());
+      await tester.pumpAndSettle();
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      await openThenCloseLibrary(tester);
+
+      expect(find.text(l10n.videoRecorderAutosaveFoundTitle), findsOneWidget);
+
+      await tester.tap(find.text(l10n.videoRecorderAutosaveContinueButton));
+      await tester.pumpAndSettle();
+
+      expect(fakeEditor.restoreDraftCalls, equals(1));
+      expect(fakeClipManager.state.clips, equals([sessionClip]));
+      verify(
+        () => recorderBloc.add(
+          VideoRecorderAspectRatioSet(sessionClip.targetAspectRatio),
+        ),
+      ).called(1);
+      // Unlike the cold-start prompt, coming back from the library leaves the
+      // user on the recorder they navigated to.
+      expect(find.text('editor'), findsNothing);
+    });
+
+    testWidgets('stays quiet when the library left the clips alone', (
+      tester,
+    ) async {
+      stubAutosaveDraft();
+      fakeClipManager.initialClips = [sessionClip];
+
+      await tester.pumpWidget(buildHarness());
+      await tester.pumpAndSettle();
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      await openThenCloseLibrary(tester);
+
+      expect(find.text(l10n.videoRecorderAutosaveFoundTitle), findsNothing);
+      expect(fakeEditor.restoreDraftCalls, isZero);
+    });
+  });
 }
 
 class _FakeClipManagerNotifier extends ClipManagerNotifier {
   bool muteAllClipsCalled = false;
   int commitPendingDeletionCalls = 0;
   ClipPendingDeletion? initialPendingDeletion;
+  List<DivineVideoClip> initialClips = const [];
 
   @override
-  ClipManagerState build() =>
-      ClipManagerState(pendingDeletion: initialPendingDeletion);
+  ClipManagerState build() => ClipManagerState(
+    clips: initialClips,
+    pendingDeletion: initialPendingDeletion,
+  );
+
+  void setClips(List<DivineVideoClip> clips) {
+    state = state.copyWith(clips: clips);
+  }
 
   @override
   void muteAllClips() {

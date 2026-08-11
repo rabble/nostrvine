@@ -30,7 +30,11 @@ List<RouteBase> libraryRoutes() {
         // `type` scopes the clips to the recorder's mode (stop-motion vs normal);
         // absent → both types (the standalone default).
         child: LibraryScreen(
-          tabsMode: LibraryTabsMode.clipsOnly,
+          initialTabIndex: 1,
+          tabsMode: LibraryTabsMode.withoutSounds,
+          // The recorder session owns the autosave draft, so listing it here
+          // would offer the user their own live session to reopen.
+          includeAutosaveDraft: false,
           clipTypeFilter: LibraryClipTypeFilter.fromQuery(
             state.uri.queryParameters['type'],
           ),
