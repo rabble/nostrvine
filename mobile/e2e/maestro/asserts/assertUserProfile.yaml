@@ -14,16 +14,20 @@ appId: co.openvine.app
 - assertVisible:
     id: "profile_stats_row"
 
-# The long-standing tabs, by identifier. #7009 gave the tabs real localized
-# accessible names, so the snake_case anchor now survives only on the
-# identifier -- never match these as text. Collabs and Comments are omitted
-# on purpose: asserting every tab pins a feature-flag configuration.
+# The tabs, by identifier. #7009 gave them real localized accessible names,
+# so the snake_case anchor now survives only on the identifier -- never
+# match these as text. profileTabKinds() is a static list with no flag
+# behind it, so another user's profile always renders exactly these five.
 - assertVisible:
     id: "videos_tab"
 - assertVisible:
     id: "liked_tab"
 - assertVisible:
     id: "reposted_tab"
+- assertVisible:
+    id: "collabs_tab"
+- assertVisible:
+    id: "comments_tab"
 
 - assertVisible:
     text: "^[0-9][0-9.,KM]*\\sFollowers$"
