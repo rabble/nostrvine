@@ -207,7 +207,18 @@ Future<void> _pumpScenario(
       theme: VineTheme.theme,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: Scaffold(body: _scenarioColumn(textScaleFactor: textScaleFactor)),
+      // Scrollable so the column's height is unbounded. VineTheme renders
+      // through google_fonts, which registers its families asynchronously:
+      // whichever test runs first in the isolate lays out with the fallback
+      // test font, whose glyphs are ~2x wider and re-wrap the rows into
+      // roughly twice the height. Against a fixed surface that overflowed
+      // the flex and failed the run-order lottery under
+      // `--test-randomize-ordering-seed random`.
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: _scenarioColumn(textScaleFactor: textScaleFactor),
+        ),
+      ),
     ),
   );
   await tester.pumpAndSettle();
