@@ -2226,6 +2226,63 @@ void main() {
       );
 
       test(
+        'accepts a same-second relay event that wins the id tie-break',
+        () async {
+          stubIdentityEvents([
+            _event(
+              id: _eventId(10),
+              kind: 10011,
+              createdAt: 100,
+              tags: [
+                ['i', 'bluesky:alice.bsky.social', 'oauth'],
+              ],
+            ),
+          ]);
+
+          await repo.publishClaim(
+            const IdentityClaim(
+              pubkey: _pubkey,
+              platform: 'github',
+              identity: 'octocat',
+              proof: 'abc',
+            ),
+          );
+
+          // Same created_at as the event this device published, lower id: by
+          // NIP-01 that event is the replaceable one, so the read is current
+          // rather than lagging and there is nothing to re-add.
+          stubIdentityEvents([
+            _event(
+              id: _eventId(1),
+              kind: 10011,
+              createdAt: 1500,
+              tags: [
+                ['i', 'bluesky:alice.bsky.social', 'oauth'],
+              ],
+            ),
+          ]);
+
+          final tags = await repo.publishClaim(
+            const IdentityClaim(
+              pubkey: _pubkey,
+              platform: 'telegram',
+              identity: 'chan',
+              proof: 'chan/2',
+            ),
+          );
+
+          expect(tags.map((t) => t[1]), isNot(contains('github:octocat')));
+          expect(
+            tags.map((t) => t[1]),
+            containsAll(<String>[
+              'bluesky:alice.bsky.social',
+              'telegram:chan',
+            ]),
+          );
+        },
+      );
+
+      test(
         'accepts a newer relay event carrying a claim removed here',
         () async {
           stubIdentityEvents([
