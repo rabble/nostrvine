@@ -1538,9 +1538,11 @@ void main() {
           ),
         );
 
-        // A 408 is transient — the same request can succeed on retry — so the
-        // chunk gets the same attempt budget as a 5xx or a socket close.
-        expect(failingChunkAttempts, equals(3));
+        // Unlike a 5xx, a 408 means the server already spent its full timeout
+        // waiting, so the chunk is not retried in-loop — stacking more
+        // same-length waits would just delay the failure. Retrying is the
+        // outer policy's job, where the backoff is exponential.
+        expect(failingChunkAttempts, equals(1));
 
         // Progress up to the failing chunk stays banked for the next resume.
         expect(sessionUpdates.map((session) => session.nextOffset), [0, 5]);
