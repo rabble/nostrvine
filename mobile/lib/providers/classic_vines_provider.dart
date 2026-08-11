@@ -3,6 +3,8 @@
 
 import 'dart:async';
 
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/feed_refresh_helpers.dart';
@@ -10,6 +12,7 @@ import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/video_providers.dart';
+import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -92,9 +95,15 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
             cursor: cursor,
             skipCache: skipCache,
           );
+          final filteredResult = _filterRepositoryResult(
+            result,
+            videoEventService,
+            blocklistRepository,
+          );
 
-          if (result.videos.isNotEmpty || (result.hasMore ?? false)) {
-            return result;
+          if (filteredResult.videos.isNotEmpty ||
+              (filteredResult.hasMore ?? false)) {
+            return filteredResult;
           }
 
           if (attempt < attempts) {
@@ -106,7 +115,7 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
             continue;
           }
 
-          return result;
+          return filteredResult;
         } catch (e) {
           if (attempt < attempts) {
             Log.warning(
@@ -254,6 +263,8 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     if (currentState.isLoadingMore) return;
 
     final repository = ref.read(videosRepositoryProvider);
+    final videoEventService = ref.read(videoEventServiceProvider);
+    final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
     final funnelcakeAvailable =
         ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
 
@@ -269,7 +280,11 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
         skipCache: true,
       );
       final filteredVideos = dedupeByFeedKey(
-        page.videos,
+        _filterRepositoryVideos(
+          page.videos,
+          videoEventService,
+          blocklistRepository,
+        ),
         alreadySeen: currentState.videos.map((v) => v.feedDedupKey),
       );
 
@@ -300,6 +315,39 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
         currentState.copyWith(isLoadingMore: false, error: e.toString()),
       );
     }
+  }
+
+  HomeFeedResult _filterRepositoryResult(
+    HomeFeedResult result,
+    VideoEventService videoEventService,
+    ContentBlocklistRepository blocklistRepository,
+  ) {
+    return HomeFeedResult(
+      videos: _filterRepositoryVideos(
+        result.videos,
+        videoEventService,
+        blocklistRepository,
+      ),
+      videoListSources: result.videoListSources,
+      listOnlyVideoIds: result.listOnlyVideoIds,
+      consumedItemCount: result.consumedItemCount,
+      nextCursor: result.nextCursor,
+      paginationCursor: result.paginationCursor,
+      hasMore: result.hasMore,
+    );
+  }
+
+  List<VideoEvent> _filterRepositoryVideos(
+    List<VideoEvent> videos,
+    VideoEventService videoEventService,
+    ContentBlocklistRepository blocklistRepository,
+  ) {
+    return videoEventService.filterVideoList(
+      videos
+          .where((v) => v.isSupportedOnCurrentPlatform)
+          .where((v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey))
+          .toList(),
+    );
   }
 }
 

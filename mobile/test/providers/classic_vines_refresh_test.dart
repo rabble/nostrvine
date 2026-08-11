@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -106,6 +107,55 @@ void main() {
           limit: 50,
         ),
       ).called(1);
+    });
+
+    test('filters repository classics through app feed filters', () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+
+      when(
+        () => mockVideosRepository.getClassicVideos(
+          limit: any(named: 'limit'),
+          cursor: any(named: 'cursor'),
+          skipCache: any(named: 'skipCache'),
+        ),
+      ).thenAnswer(
+        (_) async => HomeFeedResult(
+          videos: [
+            _videoEvent('classic-supported'),
+            _videoEvent('classic-blocked', pubkey: 'blocked-author'),
+            _videoEvent(
+              'classic-webm',
+              videoUrl: 'https://example.com/classic-webm.webm',
+            ),
+          ],
+          paginationCursor: 'classic-offset:50',
+          hasMore: true,
+        ),
+      );
+      when(
+        () => mockBlocklistRepository.shouldFilterFromFeeds('blocked-author'),
+      ).thenReturn(true);
+
+      final filteredIds = <List<String>>[];
+      when(() => mockVideoEventService.filterVideoList(any())).thenAnswer((
+        invocation,
+      ) {
+        final videos = invocation.positionalArguments.first as List<VideoEvent>;
+        filteredIds.add(videos.map((video) => video.id).toList());
+        return videos;
+      });
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      await container.read(funnelcakeAvailableProvider.future);
+      final state = await container.read(classicVinesFeedProvider.future);
+
+      expect(state.videos.map((video) => video.id), ['classic-supported']);
+      expect(filteredIds, [
+        ['classic-supported'],
+      ]);
     });
 
     test('refresh requests a fresh repository page', () async {
@@ -305,6 +355,90 @@ void main() {
       },
     );
 
+    test('loadMore appends the next cursor page and dedupes videos', () async {
+      when(
+        () => mockVideosRepository.getClassicVideos(
+          limit: any(named: 'limit'),
+          cursor: any(named: 'cursor'),
+          skipCache: any(named: 'skipCache'),
+        ),
+      ).thenAnswer((invocation) async {
+        final cursor = invocation.namedArguments[#cursor] as String?;
+        if (cursor == null) {
+          return HomeFeedResult(
+            videos: [_videoEvent('classic-initial')],
+            paginationCursor: 'classic-offset:50',
+            hasMore: true,
+          );
+        }
+        return HomeFeedResult(
+          videos: [
+            _videoEvent('classic-initial'),
+            _videoEvent('classic-more'),
+          ],
+          paginationCursor: 'classic-offset:100',
+          hasMore: false,
+        );
+      });
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      await container.read(funnelcakeAvailableProvider.future);
+      await container.read(classicVinesFeedProvider.future);
+      await container.read(classicVinesFeedProvider.notifier).loadMore();
+
+      final state = container.read(classicVinesFeedProvider).value!;
+      expect(state.videos.map((video) => video.id), [
+        'classic-initial',
+        'classic-more',
+      ]);
+      expect(state.hasMoreContent, isFalse);
+      expect(state.isLoadingMore, isFalse);
+      verify(
+        () => mockVideosRepository.getClassicVideos(
+          limit: 50,
+          cursor: 'classic-offset:50',
+          skipCache: true,
+        ),
+      ).called(1);
+    });
+
+    test(
+      'loadMore preserves existing videos when the next page fails',
+      () async {
+        when(
+          () => mockVideosRepository.getClassicVideos(
+            limit: any(named: 'limit'),
+            cursor: any(named: 'cursor'),
+            skipCache: any(named: 'skipCache'),
+          ),
+        ).thenAnswer((invocation) async {
+          final cursor = invocation.namedArguments[#cursor] as String?;
+          if (cursor == null) {
+            return HomeFeedResult(
+              videos: [_videoEvent('classic-initial')],
+              paginationCursor: 'classic-offset:50',
+              hasMore: true,
+            );
+          }
+          throw Exception('next page unavailable');
+        });
+
+        final container = createContainer();
+        addTearDown(container.dispose);
+
+        await container.read(funnelcakeAvailableProvider.future);
+        await container.read(classicVinesFeedProvider.future);
+        await container.read(classicVinesFeedProvider.notifier).loadMore();
+
+        final state = container.read(classicVinesFeedProvider).value!;
+        expect(state.videos.map((video) => video.id), ['classic-initial']);
+        expect(state.isLoadingMore, isFalse);
+        expect(state.error, contains('next page unavailable'));
+      },
+    );
+
     test('stays loading while funnelcake availability is still resolving', () {
       _loadingAvailabilityCompleter = Completer<bool>();
 
@@ -329,6 +463,7 @@ VideoEvent _videoEvent(
   String id, {
   String? pubkey,
   bool isOriginalVine = false,
+  String? videoUrl,
 }) {
   return VideoEvent(
     id: id,
@@ -337,7 +472,7 @@ VideoEvent _videoEvent(
     content: id,
     timestamp: DateTime(2026, 3, 17),
     title: id,
-    videoUrl: 'https://example.com/$id.mp4',
+    videoUrl: videoUrl ?? 'https://example.com/$id.mp4',
     thumbnailUrl: 'https://example.com/$id.jpg',
     originalLoops: 100,
     rawTags: isOriginalVine ? const {'platform': 'vine'} : const {},
