@@ -19,7 +19,6 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/codec_heavy_surface_guard.dart';
 import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/providers/analytics_providers.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/service_providers.dart';
@@ -261,94 +260,8 @@ class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
     );
   }
 
-  Future<void> _checkAutosavedChanges() async {
-    Log.debug(
-      '📹 isAutosavedDraft: $_isAutosavedDraft',
-      name: 'VideoRecorderScreen',
-      category: LogCategory.video,
-    );
-
-    if (!_isAutosavedDraft) {
-      return;
-    }
-
-    final hasClips = ref.read(clipManagerProvider).hasClips;
-    if (hasClips) {
-      Log.debug(
-        '📹 Skipping autosave check - clips already loaded',
-        name: 'VideoRecorderScreen',
-        category: LogCategory.video,
-      );
-      return;
-    }
-
-    Log.debug(
-      '📹 Checking for autosaved changes',
-      name: 'VideoRecorderScreen',
-      category: LogCategory.video,
-    );
-
-    final draftService = ref.read(draftStorageServiceProvider);
-    final draft = await draftService.getAutosaveDraft();
-    if (!mounted) return;
-
-    if (draft != null) {
-      Log.info(
-        '📹 Found valid autosaved draft',
-        name: 'VideoRecorderScreen',
-        category: LogCategory.video,
-      );
-      await VineBottomSheetPrompt.show(
-        context: context,
-        sticker: .videoClapBoard,
-        title: context.l10n.videoRecorderAutosaveFoundTitle,
-        subtitle: context.l10n.videoRecorderAutosaveFoundSubtitle,
-        primaryButtonText: context.l10n.videoRecorderAutosaveContinueButton,
-        onPrimaryPressed: () async {
-          final restoreSuccessful = await ref
-              .read(videoEditorProvider.notifier)
-              .restoreDraft();
-
-          if (!mounted) return;
-          context.pop();
-
-          if (!restoreSuccessful) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              DivineSnackbarContainer.snackBar(
-                context.l10n.videoRecorderAutosaveRestoreFailure,
-                error: true,
-              ),
-            );
-            return;
-          }
-
-          // Match the restored clips' aspect ratio so the user can't mix
-          // ratios on subsequent recordings. The legacy restoreDraft set this
-          // on the recorder directly; with the bloc the View owns the
-          // cross-feature dispatch.
-          final clips = ref.read(clipManagerProvider).clips;
-          if (clips.isNotEmpty) {
-            context.read<VideoRecorderBloc>().add(
-              VideoRecorderAspectRatioSet(clips.first.targetAspectRatio),
-            );
-          }
-
-          await openVideoEditorFromRecorder(context, ref);
-        },
-        secondaryButtonText: context.l10n.videoRecorderAutosaveDiscardButton,
-        onSecondaryPressed: () {
-          ref.read(videoEditorProvider.notifier).removeAutosavedDraft();
-          context.pop();
-        },
-      );
-    } else {
-      Log.debug(
-        '📹 No valid autosaved draft found',
-        name: 'VideoRecorderScreen',
-        category: LogCategory.video,
-      );
-    }
-  }
+  Future<void> _checkAutosavedChanges() =>
+      offerAutosavedSession(context, ref, openEditorOnRestore: true);
 
   /// Force all background video playback to pause while camera is open.
   void _pauseBackgroundPlayback() {
