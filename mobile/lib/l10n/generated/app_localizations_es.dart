@@ -6519,10 +6519,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Dejar de seleccionar clips';
 
   @override
-  String get libraryOpenTrashSemanticLabel =>
-      'Abrir clips eliminados recientemente';
-
-  @override
   String get librarySortClipsSemanticLabel => 'Ordenar clips';
 
   @override
@@ -8640,9 +8636,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get videoRecorderClipUndoLabel => 'Deshacer';
-
-  @override
-  String get libraryTrashTitle => 'Eliminados recientemente';
 
   @override
   String get libraryTrashEmptyTitle => 'La papelera está vacía';

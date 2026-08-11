@@ -8,6 +8,7 @@ import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:sqlite3/sqlite3.dart';
 
 void main() {
   late AppDatabase database;
@@ -1249,6 +1250,77 @@ void main() {
         final notifications = await notificationsDao.getAllNotifications();
         expect(notifications.length, equals(1));
       });
+    });
+
+    group('schema repair', () {
+      test(
+        'adds v3 clip organization columns to a damaged current schema',
+        () async {
+          await database.customSelect('SELECT 1').get();
+          await database.close();
+          final raw = sqlite3.open(tempDbPath);
+          try {
+            raw
+              ..execute('ALTER TABLE clips RENAME TO clips_old;')
+              ..execute('''
+              CREATE TABLE clips (
+                id TEXT NOT NULL PRIMARY KEY,
+                draft_id TEXT,
+                order_index INTEGER NOT NULL DEFAULT 0,
+                duration_ms INTEGER NOT NULL,
+                recorded_at INTEGER NOT NULL,
+                data TEXT NOT NULL,
+                file_path TEXT,
+                thumbnail_path TEXT,
+                owner_pubkey TEXT,
+                deleted_at INTEGER
+              )
+            ''')
+              ..execute('''
+                INSERT INTO clips (
+                  id,
+                  draft_id,
+                  order_index,
+                  duration_ms,
+                  recorded_at,
+                  data,
+                  file_path,
+                  thumbnail_path,
+                  owner_pubkey,
+                  deleted_at
+                )
+                SELECT
+                  id,
+                  draft_id,
+                  order_index,
+                  duration_ms,
+                  recorded_at,
+                  data,
+                  file_path,
+                  thumbnail_path,
+                  owner_pubkey,
+                  deleted_at
+                FROM clips_old
+              ''')
+              ..execute('DROP TABLE clips_old;')
+              ..execute('PRAGMA user_version = 3;');
+          } finally {
+            raw.close();
+          }
+
+          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+          await database.customSelect('SELECT 1').get();
+
+          final columns = await database
+              .customSelect('PRAGMA table_info(clips)')
+              .get();
+          final columnNames = {
+            for (final row in columns) row.data['name'] as String,
+          };
+          expect(columnNames, contains('category_id'));
+          expect(columnNames, contains('archived_at'));
+        },
+      );
     });
 
     group('identity caches (#3936)', () {

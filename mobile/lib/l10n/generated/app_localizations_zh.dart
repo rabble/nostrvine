@@ -6163,9 +6163,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => '停止选择片段';
 
   @override
-  String get libraryOpenTrashSemanticLabel => '打开最近删除的片段';
-
-  @override
   String get librarySortClipsSemanticLabel => '对片段排序';
 
   @override
@@ -8142,9 +8139,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get videoRecorderClipUndoLabel => '撤销';
-
-  @override
-  String get libraryTrashTitle => '最近删除';
 
   @override
   String get libraryTrashEmptyTitle => '回收站是空的';

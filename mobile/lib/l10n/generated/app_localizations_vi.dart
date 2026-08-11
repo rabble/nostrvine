@@ -6475,9 +6475,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => 'Dừng chọn clip';
 
   @override
-  String get libraryOpenTrashSemanticLabel => 'Mở các clip đã xóa gần đây';
-
-  @override
   String get librarySortClipsSemanticLabel => 'Sắp xếp clip';
 
   @override
@@ -8566,9 +8563,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get videoRecorderClipUndoLabel => 'Hoàn tác';
-
-  @override
-  String get libraryTrashTitle => 'Đã xóa gần đây';
 
   @override
   String get libraryTrashEmptyTitle => 'Thùng rác trống';

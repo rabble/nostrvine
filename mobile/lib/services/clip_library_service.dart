@@ -116,6 +116,11 @@ class ClipLibraryService {
       category: LogCategory.video,
     );
 
+    final existingLibraryRow = await _clipsDao.getClipById(clip.id);
+    final existingAutosaveRow = existingLibraryRow == null
+        ? await _clipsDao.getClipById(_autosaveDraftRowId(clip.id))
+        : null;
+
     await _clipsDao.upsertClip(
       id: clip.id,
       orderIndex: 0,
@@ -130,6 +135,21 @@ class ClipLibraryService {
           : null,
       ownerPubkey: ownerPubkey,
     );
+
+    if (existingLibraryRow == null && existingAutosaveRow != null) {
+      if (existingAutosaveRow.categoryId != null) {
+        await _clipsDao.setClipCategory(
+          id: clip.id,
+          categoryId: existingAutosaveRow.categoryId,
+        );
+      }
+      if (existingAutosaveRow.archivedAt != null) {
+        await _clipsDao.setClipArchived(
+          id: clip.id,
+          archivedAt: existingAutosaveRow.archivedAt,
+        );
+      }
+    }
   }
 
   /// Get all clips from the library, sorted by creation date (newest first).
@@ -190,10 +210,10 @@ class ClipLibraryService {
   }) {
     try {
       final clipJson = json.decode(row.data) as Map<String, dynamic>;
-      return DivineVideoClip.fromJson(clipJson, documentsPath).copyWith(
-        categoryId: row.categoryId,
-        archivedAt: row.archivedAt,
-      );
+      return DivineVideoClip.fromJson(
+        clipJson,
+        documentsPath,
+      ).copyWith(categoryId: row.categoryId, archivedAt: row.archivedAt);
     } catch (e) {
       Log.error(
         '❌ Skipping corrupt $label ${row.id}: $e',

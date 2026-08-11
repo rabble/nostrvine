@@ -2,7 +2,7 @@
 // ABOUTME: Shows tabs for clips and drafts with preview, delete, and import options
 
 import 'package:divine_ui/divine_ui.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/semantics.dart' show SemanticsService;
@@ -631,18 +631,14 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
           final selectionEnabled = _isSelectionEnabled(clipsState);
 
           final sortedClips = clipsState.sortedClips;
-          final targetAspectRatio =
-              widget.selectionMode && editorClips.isNotEmpty
-              ? editorClips.first.targetAspectRatio.value
-              : clipsState.selectedClipIds.isNotEmpty
-              ? sortedClips
-                    .firstWhere(
-                      (el) => el.id == clipsState.selectedClipIds.first,
-                      orElse: () => sortedClips.first,
-                    )
-                    .targetAspectRatio
-                    .value
-              : null;
+          final hasVisibleSelection = sortedClips.any(
+            (clip) => clipsState.selectedClipIds.contains(clip.id),
+          );
+          final targetAspectRatio = libraryTargetAspectRatioForSelection(
+            selectionMode: widget.selectionMode,
+            editorClips: editorClips,
+            clipsState: clipsState,
+          );
 
           return Scaffold(
             backgroundColor: context.vineColors.surface,
@@ -696,16 +692,14 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
                                     bloc: clipsBloc,
                                     category: activeCategory,
                                   ),
-                            onMoveSelectedClips:
-                                clipsState.selectedClipIds.isNotEmpty
+                            onMoveSelectedClips: hasVisibleSelection
                                 ? () => ClipCategoryActions.runMoveFlow(
                                     context: context,
                                     bloc: clipsBloc,
                                     clipIds: clipsState.selectedClipIds,
                                   )
                                 : null,
-                            onDeleteSelectedClips:
-                                clipsState.selectedClipIds.isNotEmpty
+                            onDeleteSelectedClips: hasVisibleSelection
                                 ? () => _softDeleteSelectedClips(clipsBloc)
                                 : null,
                           ),
@@ -736,7 +730,7 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
                               !widget.selectionMode &&
                               selectionEnabled &&
                               isClipsTabActive &&
-                              clipsState.selectedClipIds.isNotEmpty,
+                              hasVisibleSelection,
                           onPressed: () => _createVideoFromSelected(
                             context,
                             selectedClips: clipsState.selectedClips,
@@ -778,6 +772,21 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
       ),
     );
   }
+}
+
+@visibleForTesting
+double? libraryTargetAspectRatioForSelection({
+  required bool selectionMode,
+  required List<DivineVideoClip> editorClips,
+  required ClipsLibraryState clipsState,
+}) {
+  if (selectionMode && editorClips.isNotEmpty) {
+    return editorClips.first.targetAspectRatio.value;
+  }
+
+  final selectedClips = clipsState.selectedClips;
+  if (selectedClips.isEmpty) return null;
+  return selectedClips.first.targetAspectRatio.value;
 }
 
 class _LibraryContent extends StatelessWidget {

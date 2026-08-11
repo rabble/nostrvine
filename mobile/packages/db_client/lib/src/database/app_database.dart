@@ -201,15 +201,32 @@ class AppDatabase extends _$AppDatabase {
 
   /// Adds the v4 entities: user-created clip categories and the clip
   /// archive marker.
-  ///
-  /// Both the table and the two columns are new in v4, so no shipped install
-  /// can already carry them — unlike the legacy-v1 columns below, this step
-  /// needs no existence probe.
   Future<void> _migrateToV4ClipCategories(Migrator m) async {
-    await m.createTable(clipCategories);
-    await m.addColumn(clips, clips.categoryId);
-    await m.addColumn(clips, clips.archivedAt);
+    if (!await _tableExists('clip_categories')) {
+      await m.createTable(clipCategories);
+    }
+
+    final clipColumns = await _columnNames('clips');
+    if (!clipColumns.contains('category_id')) {
+      await m.addColumn(clips, clips.categoryId);
+    }
+    if (!clipColumns.contains('archived_at')) {
+      await m.addColumn(clips, clips.archivedAt);
+    }
     await _createClipCategoryIndexes();
+  }
+
+  Future<void> _createClipCategoriesTableIfMissing() async {
+    await customStatement('''
+      CREATE TABLE IF NOT EXISTS clip_categories (
+        id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        order_index INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL,
+        owner_pubkey TEXT NULL,
+        PRIMARY KEY (id)
+      )
+    ''');
   }
 
   /// Creates the indexes backing category lookups. Kept out of
@@ -446,6 +463,11 @@ class AppDatabase extends _$AppDatabase {
       CREATE INDEX IF NOT EXISTS idx_clip_deleted_at
       ON clips (deleted_at)
     ''');
+
+    await _addColumnIfMissing('clips', 'category_id', 'TEXT NULL');
+    await _addColumnIfMissing('clips', 'archived_at', 'INTEGER NULL');
+    await _createClipCategoriesTableIfMissing();
+    await _createClipCategoryIndexes();
 
     // Check if direct_messages table exists, create if missing
     final dmResult = await customSelect(
@@ -1049,7 +1071,14 @@ class AppDatabase extends _$AppDatabase {
 
     const requiredColumns = <String, List<String>>{
       'event': ['d_tag'],
-      'clips': ['file_path', 'thumbnail_path', 'owner_pubkey', 'deleted_at'],
+      'clips': [
+        'file_path',
+        'thumbnail_path',
+        'owner_pubkey',
+        'deleted_at',
+        'category_id',
+        'archived_at',
+      ],
       'drafts': [
         'rendered_file_path',
         'rendered_thumbnail_path',

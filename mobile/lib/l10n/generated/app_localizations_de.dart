@@ -6544,9 +6544,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => 'Clip-Auswahl beenden';
 
   @override
-  String get libraryOpenTrashSemanticLabel => 'Kürzlich gelöschte Clips öffnen';
-
-  @override
   String get librarySortClipsSemanticLabel => 'Clips sortieren';
 
   @override
@@ -8661,9 +8658,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get videoRecorderClipUndoLabel => 'Rückgängig';
-
-  @override
-  String get libraryTrashTitle => 'Kürzlich gelöscht';
 
   @override
   String get libraryTrashEmptyTitle => 'Papierkorb ist leer';

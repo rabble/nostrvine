@@ -6461,9 +6461,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => 'Sluta välja klipp';
 
   @override
-  String get libraryOpenTrashSemanticLabel => 'Öppna nyligen raderade klipp';
-
-  @override
   String get librarySortClipsSemanticLabel => 'Sortera klipp';
 
   @override
@@ -8556,9 +8553,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoRecorderClipUndoLabel => 'Ångra';
-
-  @override
-  String get libraryTrashTitle => 'Nyligen borttagna';
 
   @override
   String get libraryTrashEmptyTitle => 'Papperskorgen är tom';

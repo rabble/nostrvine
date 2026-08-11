@@ -6337,9 +6337,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => 'ቅንጥቦችን መምረጥ አቁም';
 
   @override
-  String get libraryOpenTrashSemanticLabel => 'በቅርቡ የተሰረዙ ቅንጥቦችን ክፈት';
-
-  @override
   String get librarySortClipsSemanticLabel => 'ቅንጥቦችን ደርድር';
 
   @override
@@ -8383,9 +8380,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoRecorderClipUndoLabel => 'ቀልብስ';
-
-  @override
-  String get libraryTrashTitle => 'በቅርቡ የተሰረዘ';
 
   @override
   String get libraryTrashEmptyTitle => 'መጣያው ባዶ ነው።';

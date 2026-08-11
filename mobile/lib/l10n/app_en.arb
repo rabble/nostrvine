@@ -4054,10 +4054,6 @@
   "@libraryStopSelectingClipsSemanticLabel": {
     "description": "Accessibility label for the library toolbar button that exits clip-selection mode."
   },
-  "libraryOpenTrashSemanticLabel": "Open recently deleted clips",
-  "@libraryOpenTrashSemanticLabel": {
-    "description": "Accessibility label for the library toolbar button that opens the recently deleted clips screen."
-  },
   "librarySortClipsSemanticLabel": "Sort clips",
   "@librarySortClipsSemanticLabel": {
     "description": "Accessibility label for the library toolbar button that opens clip sorting options."
@@ -5251,10 +5247,6 @@
   "videoRecorderClipUndoLabel": "Undo",
   "@videoRecorderClipUndoLabel": {
     "description": "Action button on the 'Clip moved to trash' snackbar shown after the user deletes the last recorded clip. Tapping it restores the clip to its original position in the recording tray."
-  },
-  "libraryTrashTitle": "Recently deleted",
-  "@libraryTrashTitle": {
-    "description": "Screen title for the clip trash bin showing recently deleted clips that can still be restored within the retention window."
   },
   "libraryTrashEmptyTitle": "Trash is empty",
   "@libraryTrashEmptyTitle": {

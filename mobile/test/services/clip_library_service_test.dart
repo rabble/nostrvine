@@ -806,10 +806,7 @@ void main() {
 
           await saveThroughEditor(clip);
           expect((await service.getAllClips()).length, 1);
-          expect(
-            await database.clipsDao.getClipById(autosaveRowId),
-            isNotNull,
-          );
+          expect(await database.clipsDao.getClipById(autosaveRowId), isNotNull);
 
           await service.hardDelete(clip.id);
 
@@ -843,10 +840,7 @@ void main() {
 
           await saveThroughEditor(clip);
           expect((await service.getAllClips()).length, 1);
-          expect(
-            await database.clipsDao.getClipById(autosaveRowId),
-            isNotNull,
-          );
+          expect(await database.clipsDao.getClipById(autosaveRowId), isNotNull);
 
           await service.clearAllClips();
 
@@ -882,10 +876,10 @@ void main() {
 
         expect(first?.orderIndex, 0);
         expect(second?.orderIndex, 1);
-        expect(
-          (await service.getCategories()).map((c) => c.name),
-          ['Travel', 'Food'],
-        );
+        expect((await service.getCategories()).map((c) => c.name), [
+          'Travel',
+          'Food',
+        ]);
       });
 
       test('createCategory trims the name', () async {
@@ -965,6 +959,47 @@ void main() {
           await service.saveClip(clip.copyWith(thumbnailPath: '/tmp/t.jpg'));
 
           final reloaded = (await service.getAllClips()).single;
+          expect(reloaded.categoryId, category.id);
+          expect(reloaded.archivedAt, isNotNull);
+        },
+      );
+
+      test(
+        'autosave-only organization survives autosave and library-row creation',
+        () async {
+          final category = await service.createCategory('Travel');
+          final clip = libraryClip('clip_1');
+          final draftService = DraftStorageService(
+            draftsDao: database.draftsDao,
+            clipsDao: database.clipsDao,
+          );
+          Future<void> saveAutosaveDraft() {
+            return draftService.saveDraft(
+              DivineVideoDraft.create(
+                id: VideoEditorConstants.autoSaveId,
+                clips: [clip],
+                title: '',
+                description: '',
+                hashtags: const {},
+                selectedApproach: 'single_clip',
+              ),
+            );
+          }
+
+          await saveAutosaveDraft();
+          await service.setClipCategory(
+            clipId: clip.id,
+            categoryId: category!.id,
+          );
+          await service.setClipArchived(clipId: clip.id, archived: true);
+
+          await saveAutosaveDraft();
+          var reloaded = (await service.getAllClips()).single;
+          expect(reloaded.categoryId, category.id);
+          expect(reloaded.archivedAt, isNotNull);
+
+          await service.saveClip(clip);
+          reloaded = (await service.getAllClips()).single;
           expect(reloaded.categoryId, category.id);
           expect(reloaded.archivedAt, isNotNull);
         },

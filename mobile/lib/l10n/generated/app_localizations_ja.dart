@@ -6191,9 +6191,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => 'クリップの選択を終了';
 
   @override
-  String get libraryOpenTrashSemanticLabel => '最近削除したクリップを開く';
-
-  @override
   String get librarySortClipsSemanticLabel => 'クリップを並べ替える';
 
   @override
@@ -8198,9 +8195,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get videoRecorderClipUndoLabel => '元に戻す';
-
-  @override
-  String get libraryTrashTitle => '最近削除した項目';
 
   @override
   String get libraryTrashEmptyTitle => 'ゴミ箱は空です';

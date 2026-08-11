@@ -3734,7 +3734,6 @@
   "libraryDeleteSelectedClipsTooltip": "删除选中片段",
   "libraryCloseSemanticLabel": "关闭素材库",
   "libraryStopSelectingClipsSemanticLabel": "停止选择片段",
-  "libraryOpenTrashSemanticLabel": "打开最近删除的片段",
   "librarySortClipsSemanticLabel": "对片段排序",
   "librarySelectClipsSemanticLabel": "选择片段",
   "libraryGridSizeLabel": "网格大小",
@@ -5073,10 +5072,6 @@
   "videoRecorderClipUndoLabel": "撤销",
   "@videoRecorderClipUndoLabel": {
     "description": "Action button on the 'Clip moved to trash' snackbar shown after the user deletes the last recorded clip. Tapping it restores the clip to its original position in the recording tray."
-  },
-  "libraryTrashTitle": "最近删除",
-  "@libraryTrashTitle": {
-    "description": "Screen title for the clip trash bin showing recently deleted clips that can still be restored within the retention window."
   },
   "libraryTrashEmptyTitle": "回收站是空的",
   "@libraryTrashEmptyTitle": {

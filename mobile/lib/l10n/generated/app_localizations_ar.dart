@@ -6421,9 +6421,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => 'إيقاف تحديد المقاطع';
 
   @override
-  String get libraryOpenTrashSemanticLabel => 'فتح المقاطع المحذوفة مؤخرًا';
-
-  @override
   String get librarySortClipsSemanticLabel => 'فرز المقاطع';
 
   @override
@@ -8504,9 +8501,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get videoRecorderClipUndoLabel => 'تراجع';
-
-  @override
-  String get libraryTrashTitle => 'المحذوفة مؤخرًا';
 
   @override
   String get libraryTrashEmptyTitle => 'المهملات فارغة';

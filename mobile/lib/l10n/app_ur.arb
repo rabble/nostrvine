@@ -3734,7 +3734,6 @@
   "libraryDeleteSelectedClipsTooltip": "منتخب کلپس حذف کریں",
   "libraryCloseSemanticLabel": "لائبریری بند کریں",
   "libraryStopSelectingClipsSemanticLabel": "کلپس منتخب کرنا بند کریں",
-  "libraryOpenTrashSemanticLabel": "حال ہی میں حذف شدہ کلپس کھولیں",
   "librarySortClipsSemanticLabel": "کلپس ترتیب دیں",
   "librarySelectClipsSemanticLabel": "کلپس منتخب کریں",
   "libraryGridSizeLabel": "گرڈ کا سائز",
@@ -5073,10 +5072,6 @@
   "videoRecorderClipUndoLabel": "واپس کریں",
   "@videoRecorderClipUndoLabel": {
     "description": "Action button on the 'Clip moved to trash' snackbar shown after the user deletes the last recorded clip. Tapping it restores the clip to its original position in the recording tray."
-  },
-  "libraryTrashTitle": "حال میں حذف شدہ",
-  "@libraryTrashTitle": {
-    "description": "Screen title for the clip trash bin showing recently deleted clips that can still be restored within the retention window."
   },
   "libraryTrashEmptyTitle": "ٹریش خالی ہے",
   "@libraryTrashEmptyTitle": {

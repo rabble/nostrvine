@@ -6619,9 +6619,6 @@ class AppLocalizationsPl extends AppLocalizations {
       'Zakończ wybieranie klipów';
 
   @override
-  String get libraryOpenTrashSemanticLabel => 'Otwórz ostatnio usunięte klipy';
-
-  @override
   String get librarySortClipsSemanticLabel => 'Sortuj klipy';
 
   @override
@@ -8740,9 +8737,6 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get videoRecorderClipUndoLabel => 'Cofnij';
-
-  @override
-  String get libraryTrashTitle => 'Ostatnio usunięte';
 
   @override
   String get libraryTrashEmptyTitle => 'Kosz jest pusty';

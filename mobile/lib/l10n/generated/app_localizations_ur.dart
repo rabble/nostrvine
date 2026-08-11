@@ -6473,9 +6473,6 @@ class AppLocalizationsUr extends AppLocalizations {
       'کلپس منتخب کرنا بند کریں';
 
   @override
-  String get libraryOpenTrashSemanticLabel => 'حال ہی میں حذف شدہ کلپس کھولیں';
-
-  @override
   String get librarySortClipsSemanticLabel => 'کلپس ترتیب دیں';
 
   @override
@@ -8563,9 +8560,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get videoRecorderClipUndoLabel => 'واپس کریں';
-
-  @override
-  String get libraryTrashTitle => 'حال میں حذف شدہ';
 
   @override
   String get libraryTrashEmptyTitle => 'ٹریش خالی ہے';

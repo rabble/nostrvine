@@ -6544,10 +6544,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Ihinto ang pagpili ng mga clip';
 
   @override
-  String get libraryOpenTrashSemanticLabel =>
-      'Buksan ang mga kamakailang na-delete na clip';
-
-  @override
   String get librarySortClipsSemanticLabel => 'Ayusin ang mga clip';
 
   @override
@@ -8659,9 +8655,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get videoRecorderClipUndoLabel => 'I-undo';
-
-  @override
-  String get libraryTrashTitle => 'Kamakailan lang na nabura';
 
   @override
   String get libraryTrashEmptyTitle => 'Walang laman ang basurahan';

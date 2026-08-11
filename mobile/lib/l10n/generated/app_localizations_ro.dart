@@ -6623,10 +6623,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Oprește selectarea clipurilor';
 
   @override
-  String get libraryOpenTrashSemanticLabel =>
-      'Deschide clipurile șterse recent';
-
-  @override
   String get librarySortClipsSemanticLabel => 'Sortează clipurile';
 
   @override
@@ -8741,9 +8737,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get videoRecorderClipUndoLabel => 'Anulează';
-
-  @override
-  String get libraryTrashTitle => 'Șterse recent';
 
   @override
   String get libraryTrashEmptyTitle => 'Coșul de gunoi este gol';

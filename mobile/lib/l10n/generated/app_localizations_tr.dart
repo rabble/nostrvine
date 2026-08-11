@@ -6432,10 +6432,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => 'Klip seçimini bitir';
 
   @override
-  String get libraryOpenTrashSemanticLabel =>
-      'Yakın zamanda silinen klipleri aç';
-
-  @override
   String get librarySortClipsSemanticLabel => 'Klipleri sırala';
 
   @override
@@ -8518,9 +8514,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoRecorderClipUndoLabel => 'Geri al';
-
-  @override
-  String get libraryTrashTitle => 'Son silinenler';
 
   @override
   String get libraryTrashEmptyTitle => 'Çöp kutusu boş';

@@ -11327,12 +11327,6 @@ abstract class AppLocalizations {
   /// **'Stop selecting clips'**
   String get libraryStopSelectingClipsSemanticLabel;
 
-  /// Accessibility label for the library toolbar button that opens the recently deleted clips screen.
-  ///
-  /// In en, this message translates to:
-  /// **'Open recently deleted clips'**
-  String get libraryOpenTrashSemanticLabel;
-
   /// Accessibility label for the library toolbar button that opens clip sorting options.
   ///
   /// In en, this message translates to:
@@ -14747,12 +14741,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Undo'**
   String get videoRecorderClipUndoLabel;
-
-  /// Screen title for the clip trash bin showing recently deleted clips that can still be restored within the retention window.
-  ///
-  /// In en, this message translates to:
-  /// **'Recently deleted'**
-  String get libraryTrashTitle;
 
   /// Empty-state title shown in the clip trash bin when there are no recently deleted clips.
   ///

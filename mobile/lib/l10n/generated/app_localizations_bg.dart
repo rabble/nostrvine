@@ -6523,10 +6523,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => 'Спри избора на клипове';
 
   @override
-  String get libraryOpenTrashSemanticLabel =>
-      'Отвори наскоро изтритите клипове';
-
-  @override
   String get librarySortClipsSemanticLabel => 'Сортирай клиповете';
 
   @override
@@ -8638,9 +8634,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get videoRecorderClipUndoLabel => 'Отмени';
-
-  @override
-  String get libraryTrashTitle => 'Наскоро изтрити';
 
   @override
   String get libraryTrashEmptyTitle => 'Кошчето е празно';

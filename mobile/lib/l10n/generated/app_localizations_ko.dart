@@ -6212,9 +6212,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => '클립 선택 종료';
 
   @override
-  String get libraryOpenTrashSemanticLabel => '최근 삭제한 클립 열기';
-
-  @override
   String get librarySortClipsSemanticLabel => '클립 정렬';
 
   @override
@@ -8221,9 +8218,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoRecorderClipUndoLabel => '실행 취소';
-
-  @override
-  String get libraryTrashTitle => '최근 삭제된 항목';
 
   @override
   String get libraryTrashEmptyTitle => '휴지통이 비어 있습니다';

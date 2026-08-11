@@ -6515,9 +6515,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get libraryStopSelectingClipsSemanticLabel => 'Berhenti memilih klip';
 
   @override
-  String get libraryOpenTrashSemanticLabel => 'Buka klip yang baru dipadam';
-
-  @override
   String get librarySortClipsSemanticLabel => 'Isih klip';
 
   @override
@@ -8613,9 +8610,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get videoRecorderClipUndoLabel => 'Buat Asal';
-
-  @override
-  String get libraryTrashTitle => 'Baru dipadam';
 
   @override
   String get libraryTrashEmptyTitle => 'Tong sampah kosong';

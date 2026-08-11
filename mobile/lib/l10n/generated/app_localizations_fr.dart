@@ -6547,10 +6547,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Arrêter de sélectionner des clips';
 
   @override
-  String get libraryOpenTrashSemanticLabel =>
-      'Ouvrir les clips récemment supprimés';
-
-  @override
   String get librarySortClipsSemanticLabel => 'Trier les clips';
 
   @override
@@ -8671,9 +8667,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get videoRecorderClipUndoLabel => 'Annuler';
-
-  @override
-  String get libraryTrashTitle => 'Récemment supprimés';
 
   @override
   String get libraryTrashEmptyTitle => 'La corbeille est vide';
