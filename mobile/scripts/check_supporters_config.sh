@@ -17,8 +17,7 @@
 # So the invariant enforced here is not "both must be set" — it is "these two
 # must agree". A flag turned on without a server is the broken combination.
 #
-# Portable: POSIX sh constructs + grep -E only, so it runs on CI ubuntu and on
-# the macOS pre-push hook.
+# Runs as a Codemagic build step in every workflow that ships an artifact.
 set -euo pipefail
 
 flag="${FF_DIVINE_SUPPORTERS:-}"
@@ -51,9 +50,6 @@ if [ -z "$base_url" ]; then
   exit 0
 fi
 
-# SupporterApiClient does `_baseUri.resolve(path)`, which discards anything
-# after the last slash of the base. A base with a trailing slash or a path
-# segment therefore silently rewrites every request URL.
 case "$base_url" in
   https://*) ;;
   *)
@@ -63,24 +59,28 @@ case "$base_url" in
     ;;
 esac
 
+# SupporterApiClient normalises the base through _trimBaseUri(), which strips
+# trailing slashes and appends exactly one, then resolves each path against it.
+# Trailing slashes and path prefixes both survive that correctly:
+#
+#   https://host      -> https://host/v1/me
+#   https://host/     -> https://host/v1/me
+#   https://host/api  -> https://host/api/v1/me
+#
+# A query or fragment does not. _trimBaseUri concatenates the slash onto the
+# full string, so 'https://host/api?x=1' becomes 'https://host/api?x=1/' and
+# resolving '/v1/me' against it yields 'https://host/v1/me' — the '/api'
+# prefix is silently dropped and every request goes to the wrong path.
 case "$base_url" in
-  */)
-    echo "ERROR: SUPPORTERS_API_BASE_URL must not end in a slash." >&2
-    echo "  SupporterApiClient calls Uri.resolve(), which drops everything after" >&2
-    echo "  the final slash, so a trailing slash changes where requests go." >&2
+  *\?* | *\#*)
+    echo "ERROR: SUPPORTERS_API_BASE_URL must not contain a query or fragment." >&2
+    echo "  SupporterApiClient appends a slash to this value before resolving" >&2
+    echo "  each request path. A query or fragment makes that resolution drop" >&2
+    echo "  the base path, so requests silently go somewhere else." >&2
     echo "  Got: $base_url" >&2
+    echo "  Expected something like: https://supporters.divine.video" >&2
     exit 1
     ;;
 esac
-
-# Origin only — no path. Same Uri.resolve() reason as above.
-if printf '%s' "$base_url" | grep -Eq '^https://[^/]+/.+'; then
-  echo "ERROR: SUPPORTERS_API_BASE_URL must be an origin with no path." >&2
-  echo "  SupporterApiClient resolves '/v1/...' against this value, so a path" >&2
-  echo "  segment here is discarded and requests silently go elsewhere." >&2
-  echo "  Got: $base_url" >&2
-  echo "  Expected something like: https://supporters.divine.video" >&2
-  exit 1
-fi
 
 echo "Supporter config OK (flag='${flag:-unset}', base='$base_url')."
