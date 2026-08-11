@@ -28,6 +28,7 @@ authSignInWithAmber	e2e/maestro/asserts/assertSignIn.yaml
 authTermsOfService	e2e/maestro/asserts/assertLogin.yaml
 authUseDivineNoBackup	e2e/maestro/tests/loginFreshInstall.yaml
 authUseThisDeviceOnly	e2e/maestro/tests/loginFreshInstall.yaml
+badgeDetailDeleteConfirm	e2e/maestro/asserts/assertDeleteCommentModal.yaml
 blossomSaveTooltip	e2e/maestro/asserts/assertEditProfileModal.yaml
 blossomSaveTooltip	e2e/maestro/asserts/assertEditYourProfile.yaml
 categoryHome	e2e/maestro/asserts/assertHome.yaml
@@ -51,7 +52,6 @@ commonCancel	e2e/maestro/asserts/assertRemoveKeysModal.yaml
 commonCancel	e2e/maestro/tests/deleteAccountData.yaml
 commonCancel	e2e/maestro/tests/editProfile.yaml
 commonCancel	e2e/maestro/tests/removeKeys.yaml
-commonDelete	e2e/maestro/asserts/assertDeleteCommentModal.yaml
 deleteAccountRemoveKeysConfirm	e2e/maestro/tests/removeKeys.yaml
 devOptionsMinorReviewStateLoading	e2e/maestro/asserts/assertProfile.yaml
 devOptionsMinorReviewStateLoading	e2e/maestro/asserts/assertProfileFresh.yaml
@@ -77,6 +77,7 @@ navMyProfile	e2e/maestro/tests/profileNavigation.yaml
 navOpenCamera	e2e/maestro/asserts/assertExplore.yaml
 navOpenCamera	e2e/maestro/asserts/assertHome.yaml
 navUnknown	e2e/maestro/asserts/assertVideoUser&Description.yaml
+nostrInfoGotIt	e2e/maestro/utils/openRecorder.yaml
 profileCompletePrimaryButton	e2e/maestro/asserts/assertEditYourProfile.yaml
 profileCompleteSubtitle	e2e/maestro/asserts/assertProfileFresh.yaml
 profileCompleteYourProfile	e2e/maestro/asserts/assertProfileFresh.yaml
@@ -97,6 +98,7 @@ profileSetupDisplayNameLabel	e2e/maestro/asserts/assertEditProfileModal.yaml
 profileSetupDisplayNameLabel	e2e/maestro/asserts/assertEditYourProfile.yaml
 profileSetupEditProfileTitle	e2e/maestro/asserts/assertEditYourProfile.yaml
 profileSetupEditProfileTitle	e2e/maestro/tests/profileNavigation.yaml
+profileSetupPublicKeyLabel	e2e/maestro/asserts/assertEditProfileModal.yaml
 profileSetupPublicKeyLabel	e2e/maestro/asserts/assertEditProfileModal.yaml
 profileSetupUsernameLabel	e2e/maestro/asserts/assertEditProfileModal.yaml
 profileSetupUsernameLabel	e2e/maestro/asserts/assertEditYourProfile.yaml
