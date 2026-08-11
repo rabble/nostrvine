@@ -385,6 +385,20 @@ void main() {
           reason: 'onUpgrade must record the current schema version',
         );
 
+        final categoryTable = await database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' "
+              "AND name='clip_categories'",
+            )
+            .get();
+        expect(
+          categoryTable,
+          hasLength(1),
+          reason: 'the v3 step must run after legacy v1 normalization',
+        );
+        expect(await _columnNames(database, 'clips'), contains('category_id'));
+        expect(await _columnNames(database, 'clips'), contains('archived_at'));
+
         for (final table in _v1NormalizationTables) {
           final rows = await database
               .customSelect(

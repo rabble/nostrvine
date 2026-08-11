@@ -71,6 +71,7 @@ const legacyV1NormalizationRepairIndexes = <String>[
     Nip05Verifications,
     Drafts,
     Clips,
+    ClipCategories,
     DirectMessages,
     DmMessageReactions,
     Conversations,
@@ -99,6 +100,7 @@ const legacyV1NormalizationRepairIndexes = <String>[
     Nip05VerificationsDao,
     DraftsDao,
     ClipsDao,
+    ClipCategoriesDao,
     DirectMessagesDao,
     DmReactionsDao,
     ConversationsDao,
@@ -122,13 +124,14 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test(super.e);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       await m.createAll();
       await _normalizeLegacyV1Schema();
+      await _createClipCategoryIndexes();
     },
     onUpgrade: (m, from, to) async {
       if (from < 2) {
@@ -153,6 +156,9 @@ class AppDatabase extends _$AppDatabase {
           'INTEGER NULL',
         );
         await _backfillFollowerCountTimestamps();
+      }
+      if (from < 4) {
+        await _migrateToV4ClipCategories(m);
       }
     },
     beforeOpen: (details) async {
@@ -191,6 +197,33 @@ class AppDatabase extends _$AppDatabase {
       'WHERE follower_counts_updated_at IS NULL '
       'AND (follower_count IS NOT NULL OR following_count IS NOT NULL)',
     );
+  }
+
+  /// Adds the v4 entities: user-created clip categories and the clip
+  /// archive marker.
+  ///
+  /// Both the table and the two columns are new in v4, so no shipped install
+  /// can already carry them — unlike the legacy-v1 columns below, this step
+  /// needs no existence probe.
+  Future<void> _migrateToV4ClipCategories(Migrator m) async {
+    await m.createTable(clipCategories);
+    await m.addColumn(clips, clips.categoryId);
+    await m.addColumn(clips, clips.archivedAt);
+    await _createClipCategoryIndexes();
+  }
+
+  /// Creates the indexes backing category lookups. Kept out of
+  /// [_migrateToV4ClipCategories] so `onCreate` — which builds the tables
+  /// through `createAll` rather than the migration steps — gets them too.
+  Future<void> _createClipCategoryIndexes() async {
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_clip_category_id
+      ON clips (category_id)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_clip_category_owner_pubkey
+      ON clip_categories (owner_pubkey)
+    ''');
   }
 
   /// Normalizes all historical schema drift from version 1 to version 2.
