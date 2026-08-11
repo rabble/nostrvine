@@ -6318,6 +6318,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get discoverListsLoading => 'Recherche de listes publiques...';
 
   @override
+  String get discoverListsRelayTimeout =>
+      'Le relais n\'a pas renvoyé de listes à temps. Réessaie.';
+
+  @override
   String get discoverListsEmptyTitle => 'Aucune liste publique trouvée';
 
   @override

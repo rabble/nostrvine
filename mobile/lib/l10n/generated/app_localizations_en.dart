@@ -6238,6 +6238,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get discoverListsLoading => 'Discovering public lists...';
 
   @override
+  String get discoverListsRelayTimeout =>
+      'The relay did not return lists in time. Try again.';
+
+  @override
   String get discoverListsEmptyTitle => 'No public lists found';
 
   @override

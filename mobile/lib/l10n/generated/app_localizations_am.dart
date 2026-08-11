@@ -6114,6 +6114,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get discoverListsLoading => 'የህዝብ ዝርዝሮችን በመፈለግ ላይ...';
 
   @override
+  String get discoverListsRelayTimeout => 'ሪሌው በጊዜው ዝርዝሮችን አልመለሰም። እንደገና ሞክር።';
+
+  @override
   String get discoverListsEmptyTitle => 'ምንም የህዝብ ዝርዝሮች አልተገኙም';
 
   @override

@@ -6208,6 +6208,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get discoverListsLoading => 'Herkese açık listeler keşfediliyor...';
 
   @override
+  String get discoverListsRelayTimeout =>
+      'Relay listeleri zamanında döndürmedi. Tekrar dene.';
+
+  @override
   String get discoverListsEmptyTitle => 'Herkese açık liste bulunamadı';
 
   @override

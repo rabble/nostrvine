@@ -3739,6 +3739,7 @@
         }
     },
     "discoverListsLoading": "Herkese açık listeler keşfediliyor...",
+    "discoverListsRelayTimeout": "Relay listeleri zamanında döndürmedi. Tekrar dene.",
     "discoverListsEmptyTitle": "Herkese açık liste bulunamadı",
     "discoverListsEmptySubtitle": "Yeni listeler için sonra tekrar bak",
     "discoverListsByAuthorPrefix": "yazan",

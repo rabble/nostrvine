@@ -3739,6 +3739,7 @@
         }
     },
     "discoverListsLoading": "Cercando liste pubbliche...",
+    "discoverListsRelayTimeout": "Il relay non ha restituito liste in tempo. Riprova.",
     "discoverListsEmptyTitle": "Nessuna lista pubblica trovata",
     "discoverListsEmptySubtitle": "Torna più tardi per nuove liste",
     "discoverListsByAuthorPrefix": "di",

@@ -131,9 +131,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
         provider.setLoading(false);
         setState(() {
           _isRefreshing = false;
-          _errorMessage = context.l10n.discoverListsFailedToLoadWithError(
-            'The relay did not return lists in time. Try again.',
-          );
+          _errorMessage = context.l10n.discoverListsRelayTimeout;
         });
       });
       _subscription = service.streamPublicListsFromRelays().listen(

@@ -202,6 +202,7 @@ void main() {
     testWidgets('initial load times out when relay stream never emits', (
       tester,
     ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
       final controller = StreamController<List<CuratedList>>();
       addTearDown(controller.close);
 
@@ -219,8 +220,9 @@ void main() {
       await tester.pump();
 
       expect(find.byType(CircularProgressIndicator), findsNothing);
-      expect(find.text('Failed to load lists'), findsOneWidget);
-      expect(find.text('Retry'), findsOneWidget);
+      expect(find.text(l10n.discoverListsFailedToLoad), findsOneWidget);
+      expect(find.text(l10n.discoverListsRelayTimeout), findsOneWidget);
+      expect(find.text(l10n.commonRetry), findsOneWidget);
     });
   });
 }

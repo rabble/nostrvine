@@ -3739,6 +3739,7 @@
         }
     },
     "discoverListsLoading": "Mencari daftar publik...",
+    "discoverListsRelayTimeout": "Relay tidak mengembalikan daftar tepat waktu. Coba lagi.",
     "discoverListsEmptyTitle": "Tidak ada daftar publik",
     "discoverListsEmptySubtitle": "Cek lagi nanti untuk daftar baru",
     "discoverListsByAuthorPrefix": "oleh",

@@ -6238,6 +6238,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get discoverListsLoading => 'Söker upp publika listor...';
 
   @override
+  String get discoverListsRelayTimeout =>
+      'Relayen returnerade inga listor i tid. Försök igen.';
+
+  @override
   String get discoverListsEmptyTitle => 'Inga publika listor hittades';
 
   @override

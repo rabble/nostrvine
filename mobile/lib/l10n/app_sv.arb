@@ -3739,6 +3739,7 @@
         }
     },
     "discoverListsLoading": "Söker upp publika listor...",
+    "discoverListsRelayTimeout": "Relayen returnerade inga listor i tid. Försök igen.",
     "discoverListsEmptyTitle": "Inga publika listor hittades",
     "discoverListsEmptySubtitle": "Kom tillbaka senare för nya listor",
     "discoverListsByAuthorPrefix": "av",
