@@ -4,7 +4,6 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:openvine/blocs/bug_report/bug_report_cubit.dart';
@@ -17,6 +16,7 @@ import 'package:openvine/services/bug_report_log_summary.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/widgets/image_attachment_picker.dart';
+import 'package:openvine/widgets/support_capped_text_field.dart';
 import 'package:openvine/widgets/support_form_actions.dart';
 import 'package:openvine/widgets/support_form_fields.dart';
 import 'package:openvine/widgets/support_public_submission_notice.dart';
@@ -132,65 +132,45 @@ class _BugReportView extends StatelessWidget {
                     spacing: 16,
                     children: [
                       const SupportPublicSubmissionNotice(),
-                      DivineTextField(
+                      SupportCappedTextField(
+                        maxLength: BugReportConfig.maxSubjectLength,
                         controller: fields.subject,
-                        inputFormatters: [
-                          LengthLimitingTextInputFormatter(
-                            BugReportConfig.maxSubjectLength,
-                          ),
-                        ],
                         labelText: l10n.supportSubjectRequiredLabel,
                         hintText: l10n.bugReportSubjectHint,
                         helperText: l10n.supportRequiredHelper,
                         enabled: !isSubmitting,
-                        filled: true,
                         textInputAction: TextInputAction.next,
                         onSubmitted: (_) =>
                             fields.descriptionFocus.requestFocus(),
                       ),
-                      DivineTextField(
+                      SupportCappedTextField(
+                        maxLength: BugReportConfig.maxFreeTextFieldLength,
                         controller: fields.description,
-                        inputFormatters: [
-                          LengthLimitingTextInputFormatter(
-                            BugReportConfig.maxFreeTextFieldLength,
-                          ),
-                        ],
                         focusNode: fields.descriptionFocus,
                         labelText: l10n.bugReportDescriptionRequiredLabel,
                         hintText: l10n.bugReportDescriptionHint,
                         helperText: l10n.supportRequiredHelper,
                         enabled: !isSubmitting,
-                        filled: true,
                         minLines: 3,
                         maxLines: 5,
                         keyboardType: TextInputType.multiline,
                       ),
-                      DivineTextField(
+                      SupportCappedTextField(
+                        maxLength: BugReportConfig.maxFreeTextFieldLength,
                         controller: fields.steps,
-                        inputFormatters: [
-                          LengthLimitingTextInputFormatter(
-                            BugReportConfig.maxFreeTextFieldLength,
-                          ),
-                        ],
                         labelText: l10n.bugReportStepsLabel,
                         hintText: l10n.bugReportStepsHint,
                         enabled: !isSubmitting,
-                        filled: true,
                         minLines: 3,
                         maxLines: 5,
                         keyboardType: TextInputType.multiline,
                       ),
-                      DivineTextField(
+                      SupportCappedTextField(
+                        maxLength: BugReportConfig.maxFreeTextFieldLength,
                         controller: fields.expected,
-                        inputFormatters: [
-                          LengthLimitingTextInputFormatter(
-                            BugReportConfig.maxFreeTextFieldLength,
-                          ),
-                        ],
                         labelText: l10n.bugReportExpectedBehaviorLabel,
                         hintText: l10n.bugReportExpectedBehaviorHint,
                         enabled: !isSubmitting,
-                        filled: true,
                         minLines: 2,
                         maxLines: 4,
                         keyboardType: TextInputType.multiline,

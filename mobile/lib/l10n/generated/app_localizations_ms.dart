@@ -7702,6 +7702,10 @@ class AppLocalizationsMs extends AppLocalizations {
   String get supportRequiredHelper => 'Diperlukan';
 
   @override
+  String get supportFieldLimitReached =>
+      'That\'s the maximum length. Anything past this wasn\'t added.';
+
+  @override
   String get bugReportSubjectHint => 'Ringkasan ringkas isu itu';
 
   @override

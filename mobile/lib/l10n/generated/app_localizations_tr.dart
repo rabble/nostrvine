@@ -7613,6 +7613,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get supportRequiredHelper => 'Zorunlu';
 
   @override
+  String get supportFieldLimitReached =>
+      'That\'s the maximum length. Anything past this wasn\'t added.';
+
+  @override
   String get bugReportSubjectHint => 'Sorunun kısa özeti';
 
   @override

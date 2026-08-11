@@ -13220,6 +13220,12 @@ abstract class AppLocalizations {
   /// **'Required'**
   String get supportRequiredHelper;
 
+  /// Helper shown under a support form field when the user's text hit the character cap and the rest was dropped.
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s the maximum length. Anything past this wasn\'t added.'**
+  String get supportFieldLimitReached;
+
   /// No description provided for @bugReportSubjectHint.
   ///
   /// In en, this message translates to:

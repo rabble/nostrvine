@@ -558,6 +558,21 @@ class _ReportFormBody extends StatelessWidget {
                       isCollapsed: true,
                     ),
                   ),
+                  // Truncation must not be silent: the dropped tail can be the
+                  // exception the reporter meant to include.
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: detailsController,
+                    builder: (context, value, _) =>
+                        value.text.length >=
+                            BugReportConfig.maxFreeTextFieldLength
+                        ? Text(
+                            l10n.supportFieldLimitReached,
+                            style: VineTheme.labelSmallFont(
+                              color: VineTheme.vineGreen,
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
                 ],
               ),
             ),

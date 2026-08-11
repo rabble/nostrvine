@@ -7613,6 +7613,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get supportRequiredHelper => 'Wajib';
 
   @override
+  String get supportFieldLimitReached =>
+      'That\'s the maximum length. Anything past this wasn\'t added.';
+
+  @override
   String get bugReportSubjectHint => 'Ringkasan singkat masalahnya';
 
   @override

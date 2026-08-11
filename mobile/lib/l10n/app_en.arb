@@ -4564,6 +4564,10 @@
   "supportPublicSubmissionTitle": "Public GitHub post",
   "supportPublicSubmissionMessage": "Everything you submit here will be posted to our open-source repository on GitHub so developers can pick it up. Your post and the account you're signed in with will be publicly visible to everyone.",
   "supportRequiredHelper": "Required",
+  "supportFieldLimitReached": "That's the maximum length. Anything past this wasn't added.",
+  "@supportFieldLimitReached": {
+    "description": "Helper shown under a support form field when the user's text hit the character cap and the rest was dropped."
+  },
   "bugReportSubjectHint": "Brief summary of the issue",
   "bugReportDescriptionRequiredLabel": "What happened? *",
   "bugReportDescriptionHint": "Describe the issue you encountered",

@@ -7344,6 +7344,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get supportRequiredHelper => '필수';
 
   @override
+  String get supportFieldLimitReached =>
+      'That\'s the maximum length. Anything past this wasn\'t added.';
+
+  @override
   String get bugReportSubjectHint => '문제를 짧게 요약해주세요';
 
   @override

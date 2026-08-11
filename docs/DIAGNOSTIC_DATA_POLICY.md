@@ -106,9 +106,11 @@ submission boundary. These limits are known and accepted:
 - Free-text fields on the bug report, feature request and content report forms
   are capped at 10000 characters and subjects at 200, so a pasted field cannot
   make sanitization slow enough to freeze submission. The cap is an input
-  formatter, so truncation is silent: 10000 characters is far past a typed
-  description, and a pasted crash log is already carried by the attached log
-  summary.
+  formatter rather than `maxLength`, to keep four Material character counters
+  off the support forms, and the form says "that's the maximum length" once a
+  field is full. Truncation must not be silent: nothing else in the payload
+  carries the dropped tail, since attachments are images only and the log
+  summary comes from in-app logs rather than pasted text.
 - Text typed inside the native Zendesk SDK screens is never sanitized. The
   ticket list (`ZendeskSupportService.showTicketListScreen`, reachable from the
   support center) opens the SDK's own UI, where a reply to an existing ticket is

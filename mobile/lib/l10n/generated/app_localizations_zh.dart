@@ -7274,6 +7274,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get supportRequiredHelper => '必填';
 
   @override
+  String get supportFieldLimitReached =>
+      'That\'s the maximum length. Anything past this wasn\'t added.';
+
+  @override
   String get bugReportSubjectHint => '简要概括问题';
 
   @override

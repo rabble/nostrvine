@@ -66,7 +66,12 @@ class BugReportConfig {
   /// including full SQL statements or serialized event payloads.
   static const int maxLogEntryLength = 500;
 
-  /// Max characters accepted in the bug report subject field.
+  /// Max characters accepted in a support form subject field.
+  ///
+  /// A subject is a one-line summary, and it is written twice - as the Zendesk
+  /// subject and as the first line of the assembled description. The form
+  /// tells the user when this cap truncates a paste, so the limit is visible
+  /// rather than silent.
   static const int maxSubjectLength = 200;
 
   /// Max characters accepted in each free-text bug report field.
