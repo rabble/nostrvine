@@ -268,7 +268,8 @@ class BugReportService {
         buffer.writeln('═' * 80);
         buffer.writeln('Error Counts:');
         sanitizedData.errorCounts.forEach((key, value) {
-          buffer.writeln('  $key: $value');
+          // Composed, then sanitized: the key is what identifies a credential.
+          buffer.writeln(sanitizeDiagnosticText('  $key: $value'));
         });
       }
 
@@ -891,13 +892,26 @@ class BugReportService {
     return sanitizeDiagnosticText(input);
   }
 
-  /// Sanitize a map by removing sensitive values
+  /// Sanitize a map by removing sensitive values.
+  ///
+  /// A string value is sanitized as `key: value`, not on its own. The rules
+  /// match a credential *key* next to its value, so handing them a bare value
+  /// loses the only evidence they have: `{'sessionKey': '<secret>'}` sanitized
+  /// value-by-value comes back unchanged, and this map is rendered as JSON
+  /// into an export that the user can share anywhere.
   Map<String, dynamic> _sanitizeMap(Map<String, dynamic> input) {
     final Map<String, dynamic> sanitized = {};
 
     input.forEach((key, value) {
       if (value is String) {
-        sanitized[key] = _sanitizeString(value);
+        final withKey = _sanitizeString('$key: $value');
+        // Keep only the value side, and only when the pair survived intact -
+        // otherwise the whole value was part of what got redacted.
+        sanitized[key] = withKey == '$key: $value'
+            ? value
+            : (withKey.startsWith('$key: ')
+                  ? withKey.substring('$key: '.length)
+                  : '[REDACTED]');
       } else if (value is Map<String, dynamic>) {
         sanitized[key] = _sanitizeMap(value);
       } else if (value is List) {

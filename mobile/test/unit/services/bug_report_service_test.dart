@@ -145,6 +145,33 @@ void main() {
       expect(sanitized.userDescription, contains('[REDACTED]'));
     });
 
+    test('sanitizes a device value by its key, not on its own', () {
+      // The rules match a credential key next to its value, so a map value
+      // sanitized in isolation arrives with no key attached and survives. This
+      // map is rendered into the shareable export, so the miss ships.
+      final input = BugReportData(
+        reportId: 'test-123',
+        timestamp: DateTime.now(),
+        userDescription: 'it crashed',
+        deviceInfo: {
+          'platform': 'ios',
+          'sessionKey': 'hunter2',
+          'version': '18.2',
+        },
+        appVersion: '1.0.0',
+        recentLogs: [],
+        errorCounts: {},
+      );
+
+      final sanitized = service.sanitizeSensitiveData(input);
+
+      expect(sanitized.deviceInfo['sessionKey'], isNot(contains('hunter2')));
+      // Ordinary device fields are untouched - the rule is key-driven, not a
+      // blanket redaction of everything in the map.
+      expect(sanitized.deviceInfo['platform'], 'ios');
+      expect(sanitized.deviceInfo['version'], '18.2');
+    });
+
     test('should sanitize ncryptsec keys from description', () {
       final input = BugReportData(
         reportId: 'test-123',
