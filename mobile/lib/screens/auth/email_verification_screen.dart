@@ -19,8 +19,6 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
-import 'package:openvine/features/feature_flags/models/feature_flag.dart';
-import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/email_verification_error_l10n.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -508,11 +506,6 @@ class _EmailVerificationScreenState
           ],
           child: BlocBuilder<EmailVerificationCubit, EmailVerificationState>(
             builder: (context, state) {
-              final pinFallbackEnabled = ref.watch(
-                isFeatureEnabledProvider(
-                  FeatureFlag.emailVerificationPinFallback,
-                ),
-              );
               final showCloseButton =
                   state.status != EmailVerificationStatus.success;
               return Column(
@@ -542,19 +535,16 @@ class _EmailVerificationScreenState
                         EmailVerificationStatus.initial => _PollingContent(
                           email: null,
                           isPollingMode: widget.isPollingMode || !_isTokenMode,
-                          showPinFallback: pinFallbackEnabled,
                         ),
                         EmailVerificationStatus.polling => _PollingContent(
                           email: state.pendingEmail,
                           isPollingMode: widget.isPollingMode || !_isTokenMode,
-                          showPinFallback: pinFallbackEnabled,
                         ),
                         EmailVerificationStatus.pollingTimedOut =>
                           _PollingContent(
                             email: state.pendingEmail,
                             isPollingMode:
                                 widget.isPollingMode || !_isTokenMode,
-                            showPinFallback: pinFallbackEnabled,
                             isActivelyPolling: false,
                           ),
                         EmailVerificationStatus.success =>
@@ -668,13 +658,11 @@ class _PollingContent extends StatelessWidget {
   const _PollingContent({
     required this.email,
     required this.isPollingMode,
-    required this.showPinFallback,
     this.isActivelyPolling = true,
   });
 
   final String? email;
   final bool isPollingMode;
-  final bool showPinFallback;
 
   /// Whether the poll loop is still running. When the 15-minute window
   /// elapses this becomes false: the spinner is dropped but PIN entry / resend
@@ -830,7 +818,7 @@ class _PollingContent extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 32, bottom: 32),
                     child: Column(
                       children: [
-                        if (isPollingMode && showPinFallback) ...[
+                        if (isPollingMode) ...[
                           const _PinEntrySection(),
                           const SizedBox(height: 20),
                         ],

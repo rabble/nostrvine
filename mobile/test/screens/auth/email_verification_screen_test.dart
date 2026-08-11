@@ -16,8 +16,6 @@ import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
-import 'package:openvine/features/feature_flags/models/feature_flag.dart';
-import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
@@ -89,7 +87,6 @@ void main() {
     String? email,
     String? token,
     bool restored = false,
-    bool pinFallbackEnabled = true,
     EmailVerificationState initialState = const EmailVerificationState(),
     Stream<EmailVerificationState>? stateStream,
   }) {
@@ -108,9 +105,6 @@ void main() {
         pendingVerificationServiceProvider.overrideWithValue(
           mockPendingVerification,
         ),
-        isFeatureEnabledProvider(
-          FeatureFlag.emailVerificationPinFallback,
-        ).overrideWithValue(pinFallbackEnabled),
       ],
       child: RepositoryProvider<InviteApiClient>.value(
         value: mockInviteApiClient,
@@ -175,7 +169,6 @@ void main() {
     String? email,
     String? token,
     bool restored = false,
-    bool pinFallbackEnabled = true,
     EmailVerificationState initialState = const EmailVerificationState(),
     Stream<EmailVerificationState>? stateStream,
   }) async {
@@ -188,7 +181,6 @@ void main() {
         email: email,
         token: token,
         restored: restored,
-        pinFallbackEnabled: pinFallbackEnabled,
         initialState: initialState,
         stateStream: stateStream,
       ),
@@ -843,31 +835,6 @@ void main() {
         expect(find.byType(TextFormField), findsOneWidget);
         expect(
           find.widgetWithText(DivineButton, l10n.authVerificationPinSubmit),
-          findsOneWidget,
-        );
-      });
-
-      testWidgets('hides the PIN fallback when the feature flag is disabled', (
-        tester,
-      ) async {
-        await pumpVerificationScreen(
-          tester,
-          deviceCode: 'test-device-code',
-          verifier: 'test-verifier',
-          email: 'user@example.com',
-          pinFallbackEnabled: false,
-          initialState: pollingState,
-        );
-        await tester.pump();
-
-        expect(find.text(l10n.authVerificationPinPrompt), findsNothing);
-        expect(find.byType(TextFormField), findsNothing);
-        expect(
-          find.widgetWithText(DivineButton, l10n.authVerificationPinSubmit),
-          findsNothing,
-        );
-        expect(
-          find.widgetWithText(DivineButton, l10n.authOpenEmailApp),
           findsOneWidget,
         );
       });
