@@ -22,8 +22,8 @@ import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/settings/nip05_settings_screen.dart';
+import 'package:openvine/screens/settings/signature_verification_policy_screen.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
-import 'package:openvine/services/nostr_signature_verification_preference_service.dart';
 import 'package:openvine/widgets/delete_account_action.dart';
 import 'package:openvine/widgets/delete_account_dialog.dart';
 import 'package:openvine/widgets/modal_progress_overlay.dart';
@@ -256,98 +256,9 @@ class _SignatureVerificationTile extends ConsumerWidget {
       icon: DivineIconName.shieldCheck,
       iconColor: VineTheme.vineGreen,
       title: context.l10n.nostrSettingsSignatureVerification,
-      subtitle: _policySubtitle(context, policy),
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => const _SignatureVerificationPolicyScreen(),
-        ),
-      ),
+      subtitle: signatureVerificationPolicySubtitle(context, policy),
+      onTap: () =>
+          context.pushNamed(SignatureVerificationPolicyScreen.routeName),
     );
-  }
-}
-
-class _SignatureVerificationPolicyScreen extends ConsumerWidget {
-  const _SignatureVerificationPolicyScreen();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final current = ref.watch(nostrSignatureVerificationPolicyProvider);
-
-    return Scaffold(
-      appBar: DiVineAppBar(
-        title: context.l10n.nostrSettingsSignatureVerification,
-        showBackButton: true,
-        onBackPressed: () => Navigator.of(context).pop(),
-      ),
-      backgroundColor: context.vineColors.background,
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
-          child: ListView(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Text(
-                  context.l10n.nostrSettingsSignatureVerificationIntro,
-                  style: VineTheme.bodyMediumFont(
-                    color: context.vineColors.mutedText,
-                  ),
-                ),
-              ),
-              for (final policy in NostrSignatureVerificationPolicy.values)
-                DivineSelectableRow(
-                  title: _policyTitle(context, policy),
-                  subtitle: _policySubtitle(context, policy),
-                  isSelected: policy == current,
-                  onTap: () {
-                    if (policy == current) return;
-                    unawaited(_setPolicy(ref, policy));
-                  },
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _setPolicy(
-    WidgetRef ref,
-    NostrSignatureVerificationPolicy value,
-  ) async {
-    final service = ref.read(
-      nostrSignatureVerificationPreferenceServiceProvider,
-    );
-    await service.setPolicy(value);
-    ref.invalidate(nostrSignatureVerificationPolicyProvider);
-  }
-}
-
-String _policyTitle(
-  BuildContext context,
-  NostrSignatureVerificationPolicy policy,
-) {
-  switch (policy) {
-    case NostrSignatureVerificationPolicy.all:
-      return context.l10n.nostrSettingsSignatureVerificationAll;
-    case NostrSignatureVerificationPolicy.untrustedRelays:
-      return context.l10n.nostrSettingsSignatureVerificationUntrusted;
-    case NostrSignatureVerificationPolicy.nonDivineRelays:
-      return context.l10n.nostrSettingsSignatureVerificationNonDivine;
-  }
-}
-
-String _policySubtitle(
-  BuildContext context,
-  NostrSignatureVerificationPolicy policy,
-) {
-  switch (policy) {
-    case NostrSignatureVerificationPolicy.all:
-      return context.l10n.nostrSettingsSignatureVerificationAllSubtitle;
-    case NostrSignatureVerificationPolicy.untrustedRelays:
-      return context.l10n.nostrSettingsSignatureVerificationUntrustedSubtitle;
-    case NostrSignatureVerificationPolicy.nonDivineRelays:
-      return context.l10n.nostrSettingsSignatureVerificationNonDivineSubtitle;
   }
 }
