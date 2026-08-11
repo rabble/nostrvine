@@ -16,6 +16,7 @@ import 'package:dm_repository/src/dm_decrypt_isolate.dart';
 import 'package:dm_repository/src/dm_decryption_worker.dart';
 import 'package:dm_repository/src/dm_reactions_repository.dart';
 import 'package:dm_repository/src/dm_repository_reportable_sites.dart';
+import 'package:dm_repository/src/dm_send_budget.dart';
 import 'package:dm_repository/src/dm_shared_video_citation.dart';
 import 'package:dm_repository/src/dm_sync_state.dart';
 import 'package:dm_repository/src/dm_verify_isolate.dart';
@@ -152,16 +153,31 @@ const Duration _dmRelayListSignTimeout = Duration(seconds: 10);
 /// durable queue keeps the row and the retry sweep re-drives it rather than
 /// parking a red chip.
 ///
-/// Every sub-step now carries its own tight bound — Keycast RPCs 12s each
-/// (`KeycastRpc.defaultRequestTimeout`), the recipient OK window 10s, the
-/// self-wrap publish 10s — so this cap exists only to bound a truly hung
-/// await, and it must sit ABOVE the capped worst case or it fires mid-send
-/// and misclassifies it. Remote-signer worst case: recipient wrap build
-/// (2 RPCs, 24s) + OK window (10s) + deferred self-wrap build (2 RPCs, 24s)
-/// + self-wrap publish (10s) ≈ 68s + overhead → 90s. A 15s cap here (the
-/// original value) fired during routine slow-Keycast sends, turning sends
-/// that were still legitimately in flight into eternally-retrying rows.
-const Duration _messagePublishTimeout = Duration(seconds: 90);
+/// Every sub-step carries its own bound — see [DmSendBudget], which owns the
+/// derivation. This cap exists only to bound a truly hung await, and it must
+/// sit ABOVE [DmSendBudget.chainWorstCase] or it fires mid-send and
+/// misclassifies it.
+///
+/// That is exactly what went wrong in #6586. The bound was hand-derived from a
+/// Keycast per-RPC timeout of 12s; #6075 raised that timeout to 30s (correctly
+/// — 12s had regressed video-publish signing, likes, reposts and follows) and
+/// the derivation here was never redone. A 1:1 send costs **four** measured
+/// signer round trips, so the honest chain became (2 × 30s) + 10s + (2 × 30s)
+/// + 10s = 140s against a 90s cap.
+///
+/// Because the self-wrap is built only after the recipient's `OK true`
+/// arrives, that 140s path was the *delivery* path: the cap fired on sends the
+/// recipient had already received, parking them as soft-unconfirmed until the
+/// retry budget terminalised them into a red bubble. The cure is not a bigger
+/// number — the wrap builds now carry explicit bounds
+/// ([DmSendBudget.recipientWrapBuild], [DmSendBudget.selfWrapBuild]) so the
+/// chain cannot outrun this cap for ANY signer, including Amber, whose own
+/// per-op bound is 300s.
+///
+/// A 15s cap here (the original value) fired during routine slow-Keycast
+/// sends, turning sends that were still legitimately in flight into
+/// eternally-retrying rows — the reason this backstop must stay generous.
+const Duration _messagePublishTimeout = DmSendBudget.messagePublishTimeout;
 
 /// Outcome of resolving a user's own kind-10050 DM inbox relay list (#4974).
 ///
