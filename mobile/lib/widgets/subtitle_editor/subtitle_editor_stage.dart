@@ -113,7 +113,17 @@ class _SubtitleEditorStageState extends State<SubtitleEditorStage>
           duration: widget.totalDuration,
           devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
         )
-        .listen((batch) => _thumbnails.value = batch);
+        .listen(
+          (batch) => _thumbnails.value = batch,
+          // The loader is injected, so its no-error contract cannot be
+          // enforced from here. Frames are decoration: keep the ones that
+          // arrived rather than letting the failure reach the zone handler.
+          onError: (Object error, StackTrace _) => Log.warning(
+            'Could not load frames for the subtitle timeline: $error',
+            name: 'SubtitleEditorStage',
+            category: LogCategory.video,
+          ),
+        );
   }
 
   void _onPlayheadTick(Duration elapsed) {

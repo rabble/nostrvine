@@ -47,9 +47,10 @@ class SubtitleTimelineThumbnailService {
   /// Streams progressively denser filmstrips for [videoUrl].
   ///
   /// Each event is the full set extracted so far, so a listener can render the
-  /// latest batch and drop the previous one. Emits nothing when the video
-  /// cannot be cached or [duration] is unknown — the timeline then simply has
-  /// no frames behind its cue bars.
+  /// latest batch and drop the previous one. Never emits an error: a video
+  /// that cannot be cached, an unknown [duration], and a decoder that gives up
+  /// partway all end the stream normally, leaving the timeline with whatever
+  /// frames arrived.
   ///
   /// [devicePixelRatio] sizes the extracted frames for the screen they land
   /// on; pass `MediaQuery.devicePixelRatioOf(context)`.
@@ -85,11 +86,22 @@ class SubtitleTimelineThumbnailService {
       ),
       thumbsPerSecond: _thumbsPerSecond,
     );
-    await for (final batch in batches) {
-      yield [
-        for (final frame in batch)
-          TimelineFrame(path: frame.path, timestamp: frame.timestamp),
-      ];
+    // The extractor reports a mid-stream native failure as a stream error, so
+    // callers that care can tell a truncated strip from a complete one. This
+    // one cannot: the frames that arrived stay on screen either way, and an
+    // escaping error would file a crash report for a decode failure.
+    try {
+      await for (final batch in batches) {
+        yield [
+          for (final frame in batch)
+            TimelineFrame(path: frame.path, timestamp: frame.timestamp),
+        ];
+      }
+    } catch (e) {
+      Log.warning(
+        'Stopped extracting frames for the subtitle timeline: $e',
+        name: 'SubtitleTimelineThumbnailService',
+      );
     }
   }
 }

@@ -112,6 +112,44 @@ void main() {
       expect(batches, isEmpty, reason: 'the failure never reaches the widget');
     });
 
+    test('a failed extraction keeps the frames that arrived', () async {
+      final service = SubtitleTimelineThumbnailService(
+        downloadVideo:
+            ({required String url, required String cacheKey}) async => video,
+        stripThumbnailStreamFactory:
+            ({
+              required String videoPath,
+              required String clipId,
+              required Duration duration,
+              required Size outputSize,
+              required int thumbsPerSecond,
+              List<Duration>? priorityTimestamps,
+            }) async* {
+              yield [
+                StripThumbnail(
+                  path: '$videoPath.jpg',
+                  timestamp: Duration.zero,
+                ),
+              ];
+              // How the extractor reports a native decode failure part-way
+              // through: the batches already delivered stand, the rest never
+              // arrive.
+              throw StateError('decoder gave up');
+            },
+      );
+
+      final batches = await service
+          .thumbnailsFor(
+            videoUrl: 'https://example.com/video.mp4',
+            videoId: 'v',
+            duration: const Duration(seconds: 6),
+            devicePixelRatio: 2,
+          )
+          .toList();
+
+      expect(batches.single.single.path, '${video.path}.jpg');
+    });
+
     test('an unknown duration skips extraction entirely', () async {
       final service = SubtitleTimelineThumbnailService(
         downloadVideo:

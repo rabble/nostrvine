@@ -19,11 +19,23 @@ Stream<List<TimelineFrame>> _noFrames({
   required double devicePixelRatio,
 }) => const Stream.empty();
 
+/// A loader that gives up part-way, as an injected one is free to do.
+Stream<List<TimelineFrame>> _failingFrames({
+  required String videoUrl,
+  required String videoId,
+  required Duration duration,
+  required double devicePixelRatio,
+}) async* {
+  yield const [TimelineFrame(path: 'frame.jpg', timestamp: Duration.zero)];
+  throw StateError('decoder gave up');
+}
+
 void main() {
   group(SubtitleEditorStage, () {
     Widget pump({
       required List<EditableCue> cues,
       EditableCue? selectedCue,
+      TimelineFrameLoader loadFrames = _noFrames,
     }) => MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
@@ -38,7 +50,7 @@ void main() {
             cues: cues,
             totalDuration: const Duration(seconds: 8),
             selectedCue: selectedCue,
-            loadFrames: _noFrames,
+            loadFrames: loadFrames,
           ),
         ),
       ),
@@ -80,6 +92,23 @@ void main() {
       expect(preview.label, l10n.subtitleEditorPlayPreview);
       expect(preview.flagsCollection.isButton, isTrue);
       semantics.dispose();
+    });
+
+    testWidgets('a filmstrip that gives up leaves the stage standing', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        pump(
+          cues: const [EditableCue(start: 0, end: 1000, text: 'one')],
+          loadFrames: _failingFrames,
+        ),
+      );
+      // Enough pumps for the loader to deliver its batch and then fail; an
+      // escaping error would fail this test rather than reach Crashlytics.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(find.byType(SubtitleCueTimeline), findsOneWidget);
     });
 
     testWidgets('the cue live at the playhead is drawn over the picture', (
