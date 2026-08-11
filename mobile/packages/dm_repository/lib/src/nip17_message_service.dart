@@ -431,11 +431,14 @@ class NIP17MessageService {
       // _publishSelfWrap after the recipient publish confirms delivery.
       // Bounded: the wrap build is 2 remote signer round trips, and no signer
       // interface exposes a per-call timeout — the transport's own bound is
-      // whatever that signer chose (Keycast 30s/op, Amber 300s/op, a bunker
-      // none at all). Without a bound here the chain can outrun the caller's
-      // publish backstop, which then fires AFTER the recipient publish has
-      // already landed and misclassifies a delivered message (#6586). Timing
-      // out before any publish is the honest failure: nothing was sent.
+      // whatever that signer chose. Keycast is 30s/op; Amber's NIP-55 intent
+      // path for `nip44Encrypt` and `signEvent` is human-gated and unbounded; a
+      // bunker can be unbounded too. Without a bound here the chain can outrun
+      // the caller's publish backstop, which then fires AFTER the recipient
+      // publish has already landed and misclassifies a delivered message
+      // (#6586). Timing out before any publish leaves nothing delivered, so the
+      // durable queue can safely keep it retryable.
+      var recipientWrapBuildTimedOut = false;
       final (giftWrapEvent, prebuiltSelfWrap) =
           await _buildBothWraps(
             nostr: nostr,
@@ -443,14 +446,19 @@ class NIP17MessageService {
             recipientPubkey: recipientPubkey,
           ).timeout(
             DmSendBudget.recipientWrapBuild,
-            // Falls into the null-wrap arm below, reusing the existing
-            // build-failure contract rather than adding a second failure shape.
-            onTimeout: () => (null, null),
+            onTimeout: () {
+              recipientWrapBuildTimedOut = true;
+              return (null, null);
+            },
           );
 
       if (giftWrapEvent == null) {
-        return const NIP17SendResult.failure(
-          'Failed to create gift wrap event',
+        return NIP17SendResult.failure(
+          recipientWrapBuildTimedOut
+              ? 'Recipient gift wrap build timed out after '
+                    '${DmSendBudget.recipientWrapBuild.inSeconds}s'
+              : 'Failed to create gift wrap event',
+          retryablePending: recipientWrapBuildTimedOut,
         );
       }
 
@@ -820,7 +828,7 @@ class NIP17MessageService {
         nostr: nostr,
         rumorEvent: rumor,
         receiverPublicKey: _senderPublicKey,
-      );
+      ).timeout(DmSendBudget.selfWrapUncappedBuild, onTimeout: () => null);
       if (selfWrapEvent == null) return false;
       final published = (targetRelays != null && targetRelays.isNotEmpty)
           ? await _nostrService.publishEvent(

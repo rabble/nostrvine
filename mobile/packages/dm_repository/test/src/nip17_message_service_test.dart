@@ -8,7 +8,7 @@ import 'package:dm_repository/dm_repository.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:models/models.dart' show NIP17SendResult;
+import 'package:models/models.dart' show NIP17SendFailure, NIP17SendResult;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/event.dart';
@@ -756,6 +756,37 @@ void main() {
           expect(ok, isFalse);
         },
       );
+
+      test('returns false when the gift wrap build times out', () {
+        bool? ok;
+        fakeAsync((async) {
+          final hangingService = NIP17MessageService(
+            signer: LocalNostrSigner(_testPrivateKey),
+            senderPublicKey: _testPublicKey,
+            nostrService: mockNostrClient,
+            giftWrapBuilder: (_, _, _) => Completer<Event?>().future,
+          );
+
+          unawaited(
+            hangingService
+                .publishSelfApplicationMarker(
+                  content: '{"v":1,"read":{}}',
+                  tags: const [
+                    ['d', 'divine/dm-read/v1'],
+                  ],
+                )
+                .then((value) => ok = value),
+          );
+
+          async
+            ..flushMicrotasks()
+            ..elapse(DmSendBudget.selfWrapUncappedBuild * 2)
+            ..flushMicrotasks();
+        });
+
+        expect(ok, isFalse);
+        verifyNever(() => mockNostrClient.publishEvent(any()));
+      });
     });
 
     group('sendPrivateMessage', () {
@@ -1900,10 +1931,11 @@ void main() {
 
     // #6586. A 1:1 send costs four remote signer round trips, and no signer
     // interface exposes a per-call timeout — Keycast bounds an op at 30s,
-    // Amber's AndroidNostrSigner at 300s, a bunker at nothing. Before these
-    // bounds existed the chain could outrun the caller's publish backstop,
-    // which then fired AFTER the recipient publish had landed and reported a
-    // delivered message as unconfirmed.
+    // Amber's NIP-55 intent path for nip44Encrypt/signEvent is human-gated and
+    // unbounded, and a bunker may be unbounded too. Before these bounds existed
+    // the chain could outrun the caller's publish backstop, which then fired
+    // AFTER the recipient publish had landed and reported a delivered message
+    // as unconfirmed.
     group('wrap-build bounds (#6586)', () {
       late _MockNostrClient client;
 
@@ -1940,12 +1972,15 @@ void main() {
       );
 
       test(
-        'recipient wrap build that outruns its bound fails BEFORE publishing',
+        'recipient wrap build timeout is retryable-pending before publishing',
         () {
           // The load-bearing assertion is the negative one: a build that never
           // completes must not reach the relay. Timing out after the publish is
           // the #6586 defect — the recipient has the message and the sender is
-          // told it is unconfirmed.
+          // told it is unconfirmed. Timing out before publish leaves nothing
+          // delivered, but NIP-55/Amber may still be waiting on a human approval,
+          // so the durable queue keeps the row pending for retry instead of
+          // red.
           NIP17SendResult? result;
           fakeAsync((async) {
             unawaited(
@@ -1969,6 +2004,44 @@ void main() {
 
           expect(result, isNotNull, reason: 'send must resolve, not hang');
           expect(result!.success, isFalse);
+          expect(result!.retryablePending, isTrue);
+          expect(
+            (result! as NIP17SendFailure).error,
+            'Recipient gift wrap build timed out after '
+            '${DmSendBudget.recipientWrapBuild.inSeconds}s',
+          );
+          verifyNever(
+            () => client.publishEventAwaitOk(
+              any(),
+              timeout: any(named: 'timeout'),
+            ),
+          );
+          verifyNever(() => client.publishEvent(any()));
+        },
+      );
+
+      test(
+        'recipient wrap builder returning null remains a hard failure',
+        () async {
+          final result = await serviceWithBuilder((_, _, _) async => null)
+              .sendRumor(
+                rumorEvent: Event(
+                  _testPublicKey,
+                  EventKind.privateDirectMessage,
+                  const [],
+                  'builder returned null',
+                ),
+                recipientPubkey: _recipientPubkey,
+                awaitRecipientOk: true,
+                selfWrapOnSoftUnconfirmed: false,
+              );
+
+          expect(result.success, isFalse);
+          expect(result.retryablePending, isFalse);
+          expect(
+            (result as NIP17SendFailure).error,
+            'Failed to create gift wrap event',
+          );
           verifyNever(
             () => client.publishEventAwaitOk(
               any(),

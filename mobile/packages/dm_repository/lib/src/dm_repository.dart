@@ -171,8 +171,10 @@ const Duration _dmRelayListSignTimeout = Duration(seconds: 10);
 /// retry budget terminalised them into a red bubble. The cure is not a bigger
 /// number — the wrap builds now carry explicit bounds
 /// ([DmSendBudget.recipientWrapBuild], [DmSendBudget.selfWrapBuild]), which is
-/// what stops the *signing chain* outrunning this cap regardless of the
-/// signer's own per-op bound — Amber's `AndroidNostrSigner` allows 300s.
+/// what stops the *signing chain* outrunning this cap even when the signer path
+/// is slower. Amber's NIP-55 intent path for `nip44Encrypt` and `signEvent` is
+/// human-gated and unbounded, so a recipient-build timeout leaves the durable
+/// row pending for retry instead of red-failed.
 ///
 /// That covers the signing chain, not the whole send. Three awaited steps
 /// inside this cap are still unbounded and deliberately NOT in
@@ -3156,10 +3158,11 @@ class DmRepository {
         rumorId: rumor.id,
       );
     } else if (result.retryablePending && outgoingDao != null) {
-      // Soft-unconfirmed: the recipient frame was written but no NIP-20 OK
-      // arrived (and no explicit rejection). Keep the row pending — it
-      // renders as a plain optimistic bubble, never a red failure — and let
-      // the retry sweep re-drive it. A lost OK is not proof of loss.
+      // Soft retry: either the recipient frame was written but no NIP-20 OK
+      // arrived, or the pre-publish wrap build timed out while a human-gated
+      // signer approval may still be pending. Keep the row pending — it renders
+      // as a plain optimistic bubble, never a red failure — and let the retry
+      // sweep re-drive it.
       await _finalizeAfterRecipientUnconfirmed(
         outgoingDao: outgoingDao,
         rumorId: rumor.id,
@@ -3859,9 +3862,10 @@ class DmRepository {
       // refuses every time. This attempt delivered nothing.
       await _finalizeAfterRecipientBlocked(outgoingDao: dao, rumorId: rumorId);
     } else if (result.retryablePending) {
-      // Soft-unconfirmed retry: frame written, no OK yet. Keep the row
-      // pending (plain optimistic bubble, not a red failure) and let the
-      // next sweep re-drive it; only bump the retry count so it eventually
+      // Soft retry: frame written with no OK yet, or a pre-publish wrap build
+      // timeout while a human-gated signer approval may still be pending. Keep
+      // the row pending (plain optimistic bubble, not a red failure) and let
+      // the next sweep re-drive it; only bump the retry count so it eventually
       // exhausts.
       await _finalizeAfterRecipientUnconfirmed(
         outgoingDao: dao,
@@ -4256,11 +4260,12 @@ class DmRepository {
     }
   }
 
-  /// Apply the queue-row transition for a soft, retryable-pending recipient
-  /// publish — the relay frame was written but no NIP-20 `OK` arrived within
-  /// the confirm window (and no explicit rejection). A lost OK is not proof
-  /// of loss, so the row stays `pending` (rendering as a plain optimistic
-  /// bubble, never a red failure) and the retry sweep re-drives it.
+  /// Apply the queue-row transition for a soft, retryable-pending failure: an
+  /// inconclusive recipient publish (frame written, no NIP-20 `OK`, no explicit
+  /// rejection) or a bounded pre-publish wrap build timeout where a human-gated
+  /// signer approval may still be pending. The row stays `pending` (rendering
+  /// as a plain optimistic bubble, never a red failure) and the retry sweep
+  /// re-drives it.
   ///
   /// Only `incrementRetry` runs: it records the attempt timestamp so the
   /// next sweep applies backoff, and counts this attempt toward the retry

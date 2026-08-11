@@ -498,7 +498,7 @@ class OutgoingDmRetryService {
 
           // Min-age guard: if the row was recently enqueued, the
           // originating sendMessage call may still be in flight in this
-          // process (inbox resolution + the 90s publish backstop). Wait
+          // process (inbox resolution + the derived publish backstop). Wait
           // out that window before treating the row as interrupted, or a
           // trigger fired mid-send dispatches a concurrent duplicate
           // publish of the same rumor. Idempotent receiver dedup makes a

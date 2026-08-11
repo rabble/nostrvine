@@ -98,8 +98,11 @@ abstract final class DmSendBudget {
   /// slow-but-succeeding sends into hard failures.
   ///
   /// It bounds the *chain*, not the transport, so it also covers signers whose
-  /// own per-op bound is far looser — Amber's `AndroidNostrSigner` allows 300s
-  /// per op, more than triple [messagePublishTimeout] itself.
+  /// own operation can wait much longer than this method should. On the Amber
+  /// NIP-55 intent path, the `nip44Encrypt` and `signEvent` approval waits are
+  /// human-gated and unbounded; timing out here leaves the recipient publish
+  /// unsent, so durable callers classify the row as retryable-pending rather
+  /// than red-failed.
   static const Duration recipientWrapBuild = Duration(
     seconds: _recipientWrapBuildSeconds,
   );
