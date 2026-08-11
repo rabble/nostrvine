@@ -1390,6 +1390,164 @@ void main() {
         await tempDir.delete(recursive: true);
       });
 
+      test('does not fall back to legacy PUT when a resumable chunk returns '
+          '408 Request Timeout', () async {
+        const testPublicKey = _testPublicKey;
+        final sessionUrl = Uri.parse(
+          'https://upload.divine.video/sessions/up_408',
+        );
+
+        when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthProvider.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer(
+          (_) async => _signedEvent(
+            testPublicKey,
+            24242,
+            const [],
+            'Upload video to Blossom server',
+          ),
+        );
+
+        final tempDir = await Directory.systemTemp.createTemp(
+          'blossom_resumable_408_test_',
+        );
+        final videoFile = File('${tempDir.path}/video.mp4')
+          ..writeAsBytesSync(List<int>.generate(10, (index) => index + 1));
+        final sessionUpdates = <BlossomResumableUploadSession>[];
+
+        when(
+          () => mockDio.head<dynamic>(any(), options: any(named: 'options')),
+        ).thenAnswer((invocation) async {
+          final url = invocation.positionalArguments.first as String;
+          if (url == 'https://media.divine.video/upload') {
+            return Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              headers: Headers.fromMap({
+                DivineUploadHeaders.extensions: [
+                  DivineUploadExtensions.resumableSessions,
+                ],
+              }),
+            );
+          }
+
+          throw StateError('Unexpected HEAD url: $url');
+        });
+
+        when(
+          () => mockDio.post<dynamic>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+          ),
+        ).thenAnswer((invocation) async {
+          final url = invocation.positionalArguments.first as String;
+
+          if (url == 'https://media.divine.video/upload/init') {
+            return Response(
+              requestOptions: RequestOptions(path: '/upload/init'),
+              statusCode: 200,
+              data: {
+                'uploadId': 'up_408',
+                'uploadUrl': sessionUrl.toString(),
+                'chunkSize': 5,
+                'nextOffset': 0,
+                'requiredHeaders': {'Authorization': 'Bearer session-token'},
+              },
+            );
+          }
+
+          throw StateError('Unexpected POST url: $url');
+        });
+
+        var failingChunkAttempts = 0;
+        when(
+          () => mockDio.put<dynamic>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+            onSendProgress: any(named: 'onSendProgress'),
+          ),
+        ).thenAnswer((invocation) async {
+          final url = invocation.positionalArguments.first as String;
+          final options = invocation.namedArguments[#options] as Options;
+
+          if (url == sessionUrl.toString()) {
+            final contentRange = options.headers?['Content-Range'] as String;
+            if (contentRange == 'bytes 0-4/10') {
+              return Response(
+                requestOptions: RequestOptions(path: '/sessions/up_408'),
+                statusCode: 204,
+                headers: Headers.fromMap({
+                  DivineUploadHeaders.uploadOffset: ['5'],
+                }),
+              );
+            }
+            if (contentRange == 'bytes 5-9/10') {
+              failingChunkAttempts++;
+              // A Fastly chunk timeout arrives as a real 408 *response*, not a
+              // thrown DioException: validateStatus admits everything under
+              // 500, so Dio never raises for it.
+              return Response(
+                requestOptions: RequestOptions(path: '/sessions/up_408'),
+                statusCode: 408,
+              );
+            }
+          }
+
+          // The legacy whole-file PUT is the regression under test. Answer it
+          // with the same timeout a slow link would produce rather than
+          // throwing, so the failure surfaces as the verifyNever below instead
+          // of an unrelated StateError.
+          if (url == 'https://media.divine.video/upload') {
+            return Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 408,
+            );
+          }
+
+          throw StateError('Unexpected PUT url: $url');
+        });
+
+        final result = await service.uploadVideo(
+          videoFile: videoFile,
+          nostrPubkey: testPublicKey,
+          title: 'Chunk Timeout Video',
+          description: null,
+          hashtags: null,
+          proofManifestJson: null,
+          onResumableSessionUpdated: sessionUpdates.add,
+        );
+
+        expect(result.success, isFalse);
+
+        // Demoting to the legacy whole-file PUT is strictly worse here: a link
+        // too slow to finish one 5-byte chunk cannot finish the entire file in
+        // a single request. The resumable session must survive instead.
+        verifyNever(
+          () => mockDio.put<dynamic>(
+            'https://media.divine.video/upload',
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+            onSendProgress: any(named: 'onSendProgress'),
+          ),
+        );
+
+        // A 408 is transient — the same request can succeed on retry — so the
+        // chunk gets the same attempt budget as a 5xx or a socket close.
+        expect(failingChunkAttempts, equals(3));
+
+        // Progress up to the failing chunk stays banked for the next resume.
+        expect(sessionUpdates.map((session) => session.nextOffset), [0, 5]);
+
+        await tempDir.delete(recursive: true);
+      });
+
       test(
         'should send PUT request with raw bytes and NIP-98 auth header',
         () async {
