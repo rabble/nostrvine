@@ -281,23 +281,26 @@ class _CueList extends StatelessWidget {
     final videoUrl = video.videoUrl;
     final hasStage =
         state.cues.isNotEmpty && videoUrl != null && videoUrl.isNotEmpty;
+    // With no picture to sit under there is nothing for a sheet to reveal, so
+    // the rows take the whole screen the way they did before the video was on
+    // it. A sheet here would strand the list under half a screen of nothing.
+    if (!hasStage) return _CueBody(state: state);
     return Stack(
       children: [
-        if (hasStage)
-          Positioned.fill(
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: FractionallySizedBox(
-                heightFactor: _stageHeightFactor,
-                child: _Stage(
-                  state: state,
-                  videoUrl: videoUrl,
-                  videoId: video.id,
-                  loadFrames: loadFrames,
-                ),
+        Positioned.fill(
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: FractionallySizedBox(
+              heightFactor: _stageHeightFactor,
+              child: _Stage(
+                state: state,
+                videoUrl: videoUrl,
+                videoId: video.id,
+                loadFrames: loadFrames,
               ),
             ),
           ),
+        ),
         // Lifted by the keyboard inset so the sheet slides over the picture
         // rather than the picture being squeezed out from under it.
         Padding(
@@ -306,6 +309,25 @@ class _CueList extends StatelessWidget {
           ),
           child: _CueSheet(state: state),
         ),
+      ],
+    );
+  }
+}
+
+/// The cue rows and save button filling the screen, with no video above them.
+class _CueBody extends StatelessWidget {
+  const _CueBody({required this.state});
+
+  final SubtitleEditorState state;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Expanded(
+          child: _CueRows(state: state, padding: const EdgeInsets.all(16)),
+        ),
+        _SaveBar(state: state),
       ],
     );
   }
@@ -321,15 +343,21 @@ class _CueSheet extends StatelessWidget {
   final SubtitleEditorState state;
 
   /// Dragged all the way up the sheet still leaves a sliver of picture, so it
-  /// never reads as a screen of its own. It cannot be collapsed much below its
-  /// resting half either: a sliver of sheet is hard to catch and drag back up.
-  /// The default half-open size is what this screen wants and stays implicit.
+  /// never reads as a screen of its own.
   static const _maxSize = 0.95;
-  static const _minSize = 0.4;
+
+  /// The sheet rests flush against the bottom of the stage and cannot be
+  /// collapsed past it. The stage's height is fixed, so a smaller sheet would
+  /// not reveal more picture — only a band of empty background under it.
+  ///
+  /// It is also where the sheet opens, which the matching implicit
+  /// `initialChildSize` default gives us. `snap: true` snaps to the two bounds
+  /// and nothing between them, so a resting size that is not one of them would
+  /// be unreachable after the first drag.
+  static const double _minSize = _CueList._stageHeightFactor;
 
   @override
   Widget build(BuildContext context) {
-    final saving = state.status == SubtitleEditorStatus.saving;
     return DraggableScrollableSheet(
       minChildSize: _minSize,
       maxChildSize: _maxSize,
@@ -354,22 +382,10 @@ class _CueSheet extends StatelessWidget {
                 child: Center(child: VineBottomSheetDragHandle()),
               ),
               Expanded(
-                child: ListView.builder(
-                  controller: scrollController,
+                child: _CueRows(
+                  state: state,
+                  scrollController: scrollController,
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  // One trailing slot for the add action, so authoring a
-                  // caption stays reachable from the bottom of a long list.
-                  itemCount: state.cues.length + 1,
-                  itemBuilder: (context, index) => index == state.cues.length
-                      ? _AddCueButton(enabled: state.canAddCue && !saving)
-                      : _CueRow(
-                          index: index,
-                          cue: state.cues[index],
-                          totalDuration: Duration(
-                            milliseconds: state.timelineDurationMs,
-                          ),
-                          isSelected: state.selectedCueIndex == index,
-                        ),
                 ),
               ),
               _SaveBar(state: state),
@@ -377,6 +393,44 @@ class _CueSheet extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The editable cue rows, with the add action in a trailing slot.
+class _CueRows extends StatelessWidget {
+  const _CueRows({
+    required this.state,
+    required this.padding,
+    this.scrollController,
+  });
+
+  final SubtitleEditorState state;
+  final EdgeInsets padding;
+
+  /// Supplied when the rows live in a draggable sheet, so scrolling past the
+  /// top of the list drags the sheet instead.
+  final ScrollController? scrollController;
+
+  @override
+  Widget build(BuildContext context) {
+    final saving = state.status == SubtitleEditorStatus.saving;
+    return ListView.builder(
+      controller: scrollController,
+      padding: padding,
+      // One trailing slot for the add action, so authoring a caption stays
+      // reachable from the bottom of a long list.
+      itemCount: state.cues.length + 1,
+      itemBuilder: (context, index) => index == state.cues.length
+          ? _AddCueButton(enabled: state.canAddCue && !saving)
+          : _CueRow(
+              index: index,
+              cue: state.cues[index],
+              totalDuration: Duration(
+                milliseconds: state.timelineDurationMs,
+              ),
+              isSelected: state.selectedCueIndex == index,
+            ),
     );
   }
 }
