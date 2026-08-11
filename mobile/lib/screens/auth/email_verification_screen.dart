@@ -463,10 +463,28 @@ class _EmailVerificationScreenState
           listenWhen: (previous, current) =>
               previous.status != current.status ||
               previous.pinStatus != current.pinStatus ||
-              previous.pinErrorCode != current.pinErrorCode,
+              previous.pinErrorCode != current.pinErrorCode ||
+              previous.resendStatus != current.resendStatus,
           listener: (context, state) {
             if (state.status == EmailVerificationStatus.success) {
               _handleSuccess();
+            }
+            // Both messages replace a spinner with text after an async
+            // transition that moves no focus, so a screen reader is otherwise
+            // told nothing on a screen whose only job is explaining the wait.
+            if (state.status == EmailVerificationStatus.pollingTimedOut) {
+              SemanticsService.sendAnnouncement(
+                View.of(context),
+                context.l10n.authVerificationPollingStopped,
+                Directionality.of(context),
+              );
+            }
+            if (state.resendStatus == ResendStatus.unavailable) {
+              SemanticsService.sendAnnouncement(
+                View.of(context),
+                context.l10n.authVerificationResendUnavailable,
+                Directionality.of(context),
+              );
             }
             if (state.pinStatus == PinSubmissionStatus.failure) {
               final message = context.l10n.emailVerificationErrorMessage(
