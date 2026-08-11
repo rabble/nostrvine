@@ -4,14 +4,19 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/screens/settings/settings_screen.dart';
 
 class FeatureFlagScreen extends ConsumerWidget {
   const FeatureFlagScreen({super.key});
+
+  static const routeName = 'feature-flags';
+  static const subpath = 'feature-flags';
+  static const path = '/settings/$subpath';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -26,7 +31,9 @@ class FeatureFlagScreen extends ConsumerWidget {
       appBar: DiVineAppBar(
         title: context.l10n.featureFlagTitle,
         showBackButton: true,
-        onBackPressed: context.pop,
+        // safePop: reachable by path, so the back stack can be empty on a
+        // cold entry and a raw pop would throw GoError.
+        onBackPressed: () => context.safePop(fallback: SettingsScreen.path),
         actions: [
           DiVineAppBarAction(
             icon: SvgIconSource(DivineIconName.arrowCounterClockwise.assetPath),

@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/badges/badge_award_screen.dart';
 import 'package:openvine/screens/badges/badge_detail_screen.dart';
@@ -203,6 +204,11 @@ List<RouteBase> settingsRoutes(Ref ref) {
       path: ContentFiltersScreen.path,
       name: ContentFiltersScreen.routeName,
       builder: (_, _) => const ContentFiltersScreen(),
+    ),
+    GoRoute(
+      path: FeatureFlagScreen.path,
+      name: FeatureFlagScreen.routeName,
+      builder: (_, _) => const FeatureFlagScreen(),
     ),
     GoRoute(
       path: DeveloperOptionsScreen.path,
