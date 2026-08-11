@@ -266,6 +266,8 @@ jobs:
         run: bash scripts/check_raw_dialog_ceiling.sh
       - name: 🎨 Verify no VineTheme.*Font( call omits its color (light-mode ratchet)
         run: bash scripts/check_implicit_font_color_ceiling.sh
+      - name: 🔙 Verify raw back-button pop count does not increase (safePop ratchet)
+        run: bash scripts/check_unsafe_back_pop_ceiling.sh
       - name: 🔐 Verify no profile publish reaches the ungated read provider (#6423)
         run: bash scripts/check_profile_read_write_split.sh
       - name: 🔨 Verify generated files are up-to-date
