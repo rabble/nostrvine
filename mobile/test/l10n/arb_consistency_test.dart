@@ -412,6 +412,7 @@ void main() {
 const _knownUntranslatedDebt = <String>{
   // Email-verification recovery copy (resend unavailable, polling stopped);
   // translation is deferred to the next auth localization pass.
+  'authVerificationResendExpired',
   'authVerificationResendUnavailable',
   'authVerificationPollingStopped',
   // Warning shown when a requested reusable sound fails to publish; translation

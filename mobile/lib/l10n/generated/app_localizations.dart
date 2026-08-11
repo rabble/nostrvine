@@ -5456,6 +5456,12 @@ abstract class AppLocalizations {
   /// **'We couldn\'t resend the email. Try again.'**
   String get authVerificationResendFailed;
 
+  /// Shown beneath the Resend button when the pending signup registration has expired, so resending cannot recover it. Tells the user to restart signup.
+  ///
+  /// In en, this message translates to:
+  /// **'That signup expired. Start again to get a fresh code.'**
+  String get authVerificationResendExpired;
+
   /// Shown beneath the Resend button when the server has no resend endpoint, so retrying cannot help. The button stays tappable; only the resend request is unavailable. Points the user at the PIN in the email they already received.
   ///
   /// In en, this message translates to:

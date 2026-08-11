@@ -273,8 +273,12 @@ enum ResendVerificationError {
   unavailable,
 
   /// The request reached the server and it declined to send (4xx other than
-  /// 404, or a 2xx body reporting `success: false`). Retrying may work.
+  /// 404). Retrying may work.
   declined,
+
+  /// The pending registration has expired. Retrying resend cannot recover it;
+  /// the user must start signup again.
+  expired,
 
   /// Server returned a 5xx.
   server,
@@ -293,15 +297,26 @@ class ResendVerificationResult {
 
   factory ResendVerificationResult.fromJson(Map<String, dynamic> json) {
     final success = json['success'] as bool? ?? false;
+    final message = json['message'] as String?;
     return ResendVerificationResult(
       success: success,
-      message: json['message'] as String?,
-      errorCode: success ? null : ResendVerificationError.declined,
+      message: message,
+      errorCode: success ? null : _errorCodeFromMessage(message),
     );
   }
 
   factory ResendVerificationResult.failure(ResendVerificationError errorCode) =>
       ResendVerificationResult(success: false, errorCode: errorCode);
+
+  static ResendVerificationError _errorCodeFromMessage(String? message) {
+    final normalized = message?.toLowerCase() ?? '';
+    if (normalized.contains('registration') &&
+        normalized.contains('expired') &&
+        normalized.contains('sign up')) {
+      return ResendVerificationError.expired;
+    }
+    return ResendVerificationError.declined;
+  }
 
   final bool success;
   final String? message;

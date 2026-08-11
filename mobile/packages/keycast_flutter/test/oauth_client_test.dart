@@ -292,14 +292,11 @@ void main() {
         final oauth = KeycastOAuth(config: config, httpClient: mockClient);
 
         final escaped = <Object>[];
-        await runZonedGuarded(
-          () async {
-            await oauth.logout();
-            // Let the fire-and-forget POST reject.
-            await Future<void>.delayed(Duration.zero);
-          },
-          (error, _) => escaped.add(error),
-        );
+        await runZonedGuarded(() async {
+          await oauth.logout();
+          // Let the fire-and-forget POST reject.
+          await Future<void>.delayed(Duration.zero);
+        }, (error, _) => escaped.add(error));
 
         expect(
           escaped,
@@ -1230,6 +1227,28 @@ void main() {
 
         expect(result.success, isFalse);
         expect(result.errorCode, ResendVerificationError.unavailable);
+      });
+
+      test('reports an expired registration response as expired', () async {
+        final mockClient = MockClient((request) async {
+          return http.Response(
+            jsonEncode({
+              'success': false,
+              'message': 'This registration has expired. Please sign up again.',
+            }),
+            200,
+          );
+        });
+
+        final oauth = KeycastOAuth(config: config, httpClient: mockClient);
+        final result = await oauth.resendHeadlessVerification('device123');
+
+        expect(result.success, isFalse);
+        expect(
+          result.message,
+          'This registration has expired. Please sign up again.',
+        );
+        expect(result.errorCode, ResendVerificationError.expired);
       });
 
       test('reports a 4xx other than 404 as declined', () async {

@@ -707,12 +707,13 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
         _startResendCooldown();
         return;
       }
-      // A 404 means this server build has no resend route at all, so a retry
-      // can never succeed — say so and point at the PIN. Every other decline
-      // stays retryable.
-      final status = result.errorCode == ResendVerificationError.unavailable
-          ? ResendStatus.unavailable
-          : ResendStatus.failure;
+      // Route-absent and expired-registration failures both need specific
+      // recovery guidance. Every other decline stays retryable.
+      final status = switch (result.errorCode) {
+        ResendVerificationError.unavailable => ResendStatus.unavailable,
+        ResendVerificationError.expired => ResendStatus.expired,
+        _ => ResendStatus.failure,
+      };
       Log.warning(
         'Resend verification failed (${result.errorCode}); status=$status',
         name: 'EmailVerificationCubit',

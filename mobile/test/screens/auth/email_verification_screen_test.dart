@@ -1023,6 +1023,33 @@ void main() {
         },
       );
 
+      testWidgets('an expired registration says to start again', (
+        tester,
+      ) async {
+        when(() => mockCubit.resendVerification()).thenAnswer((_) async {});
+
+        await pumpVerificationScreen(
+          tester,
+          deviceCode: 'test-device-code',
+          verifier: 'test-verifier',
+          email: 'user@example.com',
+          initialState: const EmailVerificationState(
+            status: EmailVerificationStatus.polling,
+            pendingEmail: 'user@example.com',
+            resendStatus: ResendStatus.expired,
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(l10n.authVerificationResendExpired), findsOneWidget);
+        expect(find.text(l10n.authVerificationResendFailed), findsNothing);
+
+        await tester.tap(find.text(l10n.authVerificationResend));
+        await tester.pump();
+
+        verifyNever(() => mockCubit.resendVerification());
+      });
+
       testWidgets('pollingTimedOut keeps PIN entry but drops the spinner', (
         tester,
       ) async {
@@ -1061,6 +1088,28 @@ void main() {
 
         expect(find.text(l10n.authVerificationPollingStopped), findsOneWidget);
       });
+
+      testWidgets(
+        'token-mode polling timeout still explains the stopped poll',
+        (tester) async {
+          await pumpVerificationScreen(
+            tester,
+            token: 'verification-token',
+            initialState: const EmailVerificationState(
+              status: EmailVerificationStatus.pollingTimedOut,
+              pendingEmail: 'user@example.com',
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 10));
+
+          expect(find.text(l10n.authWaitingForVerification), findsNothing);
+          expect(
+            find.text(l10n.authVerificationPollingStopped),
+            findsOneWidget,
+          );
+        },
+      );
     });
 
     group('cold-start restore escape hatch', () {

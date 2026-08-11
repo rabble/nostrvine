@@ -2983,6 +2983,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get authVerificationResendFailed => '邮件重发失败，请重试。';
 
   @override
+  String get authVerificationResendExpired =>
+      'That signup expired. Start again to get a fresh code.';
+
+  @override
   String get authVerificationResendUnavailable =>
       'Resending isn\'t available right now. Use the 6-digit code from the email we already sent you.';
 
