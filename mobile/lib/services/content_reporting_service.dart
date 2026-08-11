@@ -8,6 +8,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
+import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/content_moderation_types.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
@@ -633,12 +634,14 @@ class ContentReportingService {
       description.writeln('Violation Type: ${reason.name}');
       description.writeln();
       description.writeln('Reporter Details:');
-      description.writeln(details);
+      // Per-field, before assembly: redaction spans lines, so sanitizing the
+      // finished blob lets one reporter field erase the ones after it.
+      description.writeln(sanitizeDiagnosticText(details));
 
       if (additionalContext != null) {
         description.writeln();
         description.writeln('Additional Context:');
-        description.writeln(additionalContext);
+        description.writeln(sanitizeDiagnosticText(additionalContext));
       }
 
       description.writeln();

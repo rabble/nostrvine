@@ -1,6 +1,7 @@
 // ABOUTME: Unit tests for ContentReportingService
 // ABOUTME: Tests NIP-56 content reporting including AI-generated content reports
 
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -10,6 +11,7 @@ import 'package:nostr_sdk/event_kind.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/content_moderation_types.dart';
 import 'package:openvine/services/content_reporting_service.dart';
+import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
@@ -544,6 +546,76 @@ void main() {
       expect(result.success, true);
       expect(result.error, isNull);
     });
+
+    test(
+      'a stray brace in details cannot erase the reporter context',
+      () async {
+        // Redaction spans lines, so sanitizing only the assembled ticket let a
+        // credential key with an unclosed brace in `details` consume the
+        // additional-context section printed after it. A moderation ticket that
+        // silently loses the reporter's context is the same failure as a bug
+        // report that arrives empty.
+        const zendeskChannel = MethodChannel('com.openvine/zendesk_support');
+        String? capturedDescription;
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(zendeskChannel, (MethodCall call) async {
+              if (call.method == 'initialize') return true;
+              if (call.method == 'createTicket') {
+                capturedDescription = call.arguments['description'] as String?;
+                return true;
+              }
+              return null;
+            });
+        addTearDown(() {
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockMethodCallHandler(zendeskChannel, null);
+        });
+
+        await ZendeskSupportService.initialize(
+          appId: 'test',
+          clientId: 'test',
+          zendeskUrl: 'https://test.zendesk.com',
+        );
+
+        final reportEvent = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 1984,
+          tags: [
+            ['e', _validEventId('c')],
+            ['p', 'reported_author'],
+          ],
+          content: 'spam',
+        );
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((_) async => reportEvent);
+        when(
+          () => mockNostrService.publishEvent(
+            any(),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
+
+        final _ = await service.reportContent(
+          eventId: _validEventId('c'),
+          authorPubkey: 'reported_author',
+          reason: ContentFilterReason.other,
+          details: 'they posted my password: {and then more',
+          // A closing brace downstream is what an unclosed one reaches for.
+          additionalContext: 'this happened in a reply {twice}',
+        );
+
+        final description = capturedDescription!;
+
+        expect(description, contains('[REDACTED]'));
+        expect(description, contains('this happened in a reply'));
+      },
+    );
 
     test('reportContent() handles broadcast failures gracefully', () async {
       // Arrange
