@@ -5456,7 +5456,7 @@ abstract class AppLocalizations {
   /// **'We couldn\'t resend the email. Try again.'**
   String get authVerificationResendFailed;
 
-  /// Shown beneath the Resend button when the server has no resend endpoint, so retrying cannot help. The button stays tappable — only the resend request is unavailable. Points the user at the PIN in the email they already received.
+  /// Shown beneath the Resend button when the server has no resend endpoint, so retrying cannot help. The button stays tappable; only the resend request is unavailable. Points the user at the PIN in the email they already received.
   ///
   /// In en, this message translates to:
   /// **'Resending isn\'t available right now. Use the 6-digit code from the email we already sent you.'**
