@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/services/video_thumbnail_service.dart';
+import 'package:openvine/models/subtitle_editor/timeline_frame.dart';
 import 'package:openvine/widgets/subtitle_editor/subtitle_cue_timeline.dart';
 import 'package:openvine/widgets/subtitle_editor/subtitle_timeline_thumbnails.dart';
 
@@ -13,7 +13,7 @@ void main() {
   group(SubtitleCueTimeline, () {
     late List<Duration> scrubs;
     late ValueNotifier<Duration> playbackPosition;
-    late ValueNotifier<List<StripThumbnail>> thumbnails;
+    late ValueNotifier<List<TimelineFrame>> thumbnails;
 
     setUp(() {
       scrubs = [];

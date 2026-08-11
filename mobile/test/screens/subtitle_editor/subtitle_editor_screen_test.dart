@@ -10,13 +10,13 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/subtitle_editor/subtitle_editor_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/models/subtitle_editor/timeline_frame.dart';
 import 'package:openvine/providers/subtitle_repository_provider.dart';
 import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/repositories/subtitle_repository.dart';
 import 'package:openvine/screens/subtitle_editor/subtitle_editor_screen.dart';
 import 'package:openvine/services/subtitle_fetcher.dart';
 import 'package:openvine/services/subtitle_service.dart';
-import 'package:openvine/services/subtitle_timeline_thumbnail_service.dart';
 import 'package:openvine/services/video_event_resolver.dart';
 import 'package:openvine/widgets/subtitle_editor/subtitle_editor_stage.dart';
 
@@ -90,12 +90,13 @@ VideoEvent _video({String? videoUrl}) => VideoEvent(
   videoUrl: videoUrl,
 );
 
-/// A thumbnail service that never reaches the network or the frame extractor.
-SubtitleTimelineThumbnailService noThumbnails() =>
-    SubtitleTimelineThumbnailService(
-      downloadVideo: ({required String url, required String cacheKey}) async =>
-          null,
-    );
+/// A loader that never reaches the network or the frame extractor.
+Stream<List<TimelineFrame>> noFrames({
+  required String videoUrl,
+  required String videoId,
+  required Duration duration,
+  required double devicePixelRatio,
+}) => const Stream.empty();
 
 void main() {
   late _MockCubit cubit;
@@ -116,7 +117,7 @@ void main() {
       value: cubit,
       child: SubtitleEditorView(
         video: _video(videoUrl: videoUrl),
-        thumbnailService: noThumbnails(),
+        loadFrames: noFrames,
       ),
     ),
   );

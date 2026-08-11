@@ -5,7 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
-import 'package:openvine/services/video_thumbnail_service.dart';
+import 'package:openvine/models/subtitle_editor/timeline_frame.dart';
 import 'package:openvine/widgets/subtitle_editor/subtitle_timeline_thumbnails.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_rules_indicator.dart';
 
@@ -33,7 +33,7 @@ class SubtitleCueTimeline extends StatefulWidget {
   final ValueListenable<Duration> playbackPosition;
 
   /// Frames extracted for the filmstrip.
-  final ValueListenable<List<StripThumbnail>> thumbnails;
+  final ValueListenable<List<TimelineFrame>> thumbnails;
 
   /// Called with the position the user scrubbed to.
   final ValueChanged<Duration> onScrubbed;

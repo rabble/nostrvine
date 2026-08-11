@@ -8,7 +8,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
-import 'package:openvine/services/video_thumbnail_service.dart';
+import 'package:openvine/models/subtitle_editor/timeline_frame.dart';
 
 /// The video's frames laid out along the timeline axis.
 ///
@@ -25,7 +25,7 @@ class SubtitleTimelineThumbnails extends StatelessWidget {
   });
 
   /// Frames extracted so far, in ascending timestamp order.
-  final ValueListenable<List<StripThumbnail>> thumbnails;
+  final ValueListenable<List<TimelineFrame>> thumbnails;
 
   /// Width of the timeline axis in pixels.
   final double width;
@@ -46,7 +46,7 @@ class SubtitleTimelineThumbnails extends StatelessWidget {
         height: TimelineConstants.thumbnailStripHeight,
         child: ColoredBox(
           color: context.vineColors.surfaceContainer,
-          child: ValueListenableBuilder<List<StripThumbnail>>(
+          child: ValueListenableBuilder<List<TimelineFrame>>(
             valueListenable: thumbnails,
             builder: (context, frames, _) {
               if (frames.isEmpty) return const SizedBox.expand();
@@ -79,8 +79,8 @@ class SubtitleTimelineThumbnails extends StatelessWidget {
   ///
   /// Slots outnumber frames until extraction finishes, so neighbouring slots
   /// legitimately share a frame; the ribbon sharpens as denser batches land.
-  StripThumbnail _frameForSlot(
-    List<StripThumbnail> frames,
+  TimelineFrame _frameForSlot(
+    List<TimelineFrame> frames,
     int slot,
     int slotCount,
   ) {
@@ -100,7 +100,7 @@ class SubtitleTimelineThumbnails extends StatelessWidget {
 class _Frame extends StatelessWidget {
   const _Frame({required this.frame});
 
-  final StripThumbnail frame;
+  final TimelineFrame frame;
 
   @override
   Widget build(BuildContext context) {

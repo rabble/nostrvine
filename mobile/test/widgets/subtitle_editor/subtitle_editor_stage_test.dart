@@ -6,18 +6,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/blocs/subtitle_editor/subtitle_editor_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/services/subtitle_timeline_thumbnail_service.dart';
+import 'package:openvine/models/subtitle_editor/timeline_frame.dart';
 import 'package:openvine/widgets/caption_pill.dart';
 import 'package:openvine/widgets/subtitle_editor/subtitle_cue_timeline.dart';
 import 'package:openvine/widgets/subtitle_editor/subtitle_editor_stage.dart';
 
-/// A service that resolves to no video, so no frames are extracted and the
-/// native decoder is never touched.
-SubtitleTimelineThumbnailService _noThumbnails() =>
-    SubtitleTimelineThumbnailService(
-      downloadVideo: ({required String url, required String cacheKey}) async =>
-          null,
-    );
+/// A loader that yields no frames, so the native decoder is never touched.
+Stream<List<TimelineFrame>> _noFrames({
+  required String videoUrl,
+  required String videoId,
+  required Duration duration,
+  required double devicePixelRatio,
+}) => const Stream.empty();
 
 void main() {
   group(SubtitleEditorStage, () {
@@ -38,7 +38,7 @@ void main() {
             cues: cues,
             totalDuration: const Duration(seconds: 8),
             selectedCue: selectedCue,
-            thumbnailService: _noThumbnails(),
+            loadFrames: _noFrames,
           ),
         ),
       ),

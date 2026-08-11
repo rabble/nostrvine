@@ -11,8 +11,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:openvine/blocs/subtitle_editor/subtitle_editor_cubit.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/services/subtitle_timeline_thumbnail_service.dart';
-import 'package:openvine/services/video_thumbnail_service.dart';
+import 'package:openvine/models/subtitle_editor/timeline_frame.dart';
 import 'package:openvine/widgets/caption_pill.dart';
 import 'package:openvine/widgets/subtitle_editor/subtitle_cue_timeline.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -30,7 +29,7 @@ class SubtitleEditorStage extends StatefulWidget {
     required this.cues,
     required this.totalDuration,
     required this.selectedCue,
-    required this.thumbnailService,
+    required this.loadFrames,
     super.key,
   });
 
@@ -53,7 +52,7 @@ class SubtitleEditorStage extends StatefulWidget {
   final EditableCue? selectedCue;
 
   /// Supplies the timeline's filmstrip.
-  final SubtitleTimelineThumbnailService thumbnailService;
+  final TimelineFrameLoader loadFrames;
 
   @override
   State<SubtitleEditorStage> createState() => _SubtitleEditorStageState();
@@ -62,13 +61,13 @@ class SubtitleEditorStage extends StatefulWidget {
 class _SubtitleEditorStageState extends State<SubtitleEditorStage>
     with SingleTickerProviderStateMixin {
   final ValueNotifier<Duration> _position = ValueNotifier(Duration.zero);
-  final ValueNotifier<List<StripThumbnail>> _thumbnails = ValueNotifier(
+  final ValueNotifier<List<TimelineFrame>> _thumbnails = ValueNotifier(
     const [],
   );
 
   DivineVideoPlayerController? _controller;
   StreamSubscription<DivineVideoPlayerState>? _playerStates;
-  StreamSubscription<List<StripThumbnail>>? _thumbnailBatches;
+  StreamSubscription<List<TimelineFrame>>? _thumbnailBatches;
 
   /// Drives the playhead between position events.
   ///
@@ -107,8 +106,8 @@ class _SubtitleEditorStageState extends State<SubtitleEditorStage>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _thumbnailBatches ??= widget.thumbnailService
-        .thumbnailsFor(
+    _thumbnailBatches ??= widget
+        .loadFrames(
           videoUrl: widget.videoUrl,
           videoId: widget.videoId,
           duration: widget.totalDuration,

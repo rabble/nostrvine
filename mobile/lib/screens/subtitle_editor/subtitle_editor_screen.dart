@@ -13,11 +13,11 @@ import 'package:openvine/blocs/subtitle_editor/subtitle_editor_cubit.dart';
 import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/codec_heavy_surface_guard.dart';
+import 'package:openvine/models/subtitle_editor/timeline_frame.dart';
 import 'package:openvine/providers/subtitle_repository_provider.dart';
 import 'package:openvine/providers/subtitle_timeline_thumbnail_provider.dart';
 import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/router/route_error_screen.dart';
-import 'package:openvine/services/subtitle_timeline_thumbnail_service.dart';
 import 'package:openvine/widgets/captions/caption_cue_row.dart';
 import 'package:openvine/widgets/subtitle_editor/subtitle_editor_stage.dart';
 
@@ -105,16 +105,14 @@ class _SubtitleEditorScreenState extends ConsumerState<SubtitleEditorScreen>
     }
 
     final repository = ref.watch(subtitleRepositoryProvider);
-    final thumbnailService = ref.watch(
-      subtitleTimelineThumbnailServiceProvider,
-    );
+    final loadFrames = ref.watch(subtitleTimelineFrameLoaderProvider);
     return BlocProvider<SubtitleEditorCubit>(
       key: ObjectKey(repository),
       create: (_) =>
           SubtitleEditorCubit(repository: repository, video: video)..load(),
       child: SubtitleEditorView(
         video: video,
-        thumbnailService: thumbnailService,
+        loadFrames: loadFrames,
       ),
     );
   }
@@ -128,7 +126,7 @@ class SubtitleEditorView extends StatelessWidget {
   /// Creates the subtitle editor view.
   const SubtitleEditorView({
     required this.video,
-    required this.thumbnailService,
+    required this.loadFrames,
     super.key,
   });
 
@@ -136,7 +134,7 @@ class SubtitleEditorView extends StatelessWidget {
   final VideoEvent video;
 
   /// Supplies the timeline's filmstrip.
-  final SubtitleTimelineThumbnailService thumbnailService;
+  final TimelineFrameLoader loadFrames;
 
   @override
   Widget build(BuildContext context) {
@@ -203,7 +201,7 @@ class SubtitleEditorView extends StatelessWidget {
           _ => _CueList(
             state: state,
             video: video,
-            thumbnailService: thumbnailService,
+            loadFrames: loadFrames,
           ),
         },
       ),
@@ -267,12 +265,12 @@ class _CueList extends StatelessWidget {
   const _CueList({
     required this.state,
     required this.video,
-    required this.thumbnailService,
+    required this.loadFrames,
   });
 
   final SubtitleEditorState state;
   final VideoEvent video;
-  final SubtitleTimelineThumbnailService thumbnailService;
+  final TimelineFrameLoader loadFrames;
 
   /// Share of the screen the picture and its timeline may take. The sheet
   /// covers the rest, and opens flush against the bottom of the stage.
@@ -295,7 +293,7 @@ class _CueList extends StatelessWidget {
                   state: state,
                   videoUrl: videoUrl,
                   videoId: video.id,
-                  thumbnailService: thumbnailService,
+                  loadFrames: loadFrames,
                 ),
               ),
             ),
@@ -454,13 +452,13 @@ class _Stage extends StatelessWidget {
     required this.state,
     required this.videoUrl,
     required this.videoId,
-    required this.thumbnailService,
+    required this.loadFrames,
   });
 
   final SubtitleEditorState state;
   final String videoUrl;
   final String videoId;
-  final SubtitleTimelineThumbnailService thumbnailService;
+  final TimelineFrameLoader loadFrames;
 
   @override
   Widget build(BuildContext context) {
@@ -474,7 +472,7 @@ class _Stage extends StatelessWidget {
             cues: state.cues,
             totalDuration: Duration(milliseconds: state.timelineDurationMs),
             selectedCue: state.selectedCue,
-            thumbnailService: thumbnailService,
+            loadFrames: loadFrames,
           ),
         ),
         Divider(height: 1, color: context.vineColors.surfaceContainer),

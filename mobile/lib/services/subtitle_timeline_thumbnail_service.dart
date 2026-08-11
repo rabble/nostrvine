@@ -5,6 +5,7 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
+import 'package:openvine/models/subtitle_editor/timeline_frame.dart';
 import 'package:openvine/services/video_editor/clip_thumbnail_manager.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -52,7 +53,7 @@ class SubtitleTimelineThumbnailService {
   ///
   /// [devicePixelRatio] sizes the extracted frames for the screen they land
   /// on; pass `MediaQuery.devicePixelRatioOf(context)`.
-  Stream<List<StripThumbnail>> thumbnailsFor({
+  Stream<List<TimelineFrame>> thumbnailsFor({
     required String videoUrl,
     required String videoId,
     required Duration duration,
@@ -74,7 +75,7 @@ class SubtitleTimelineThumbnailService {
     }
     if (file == null || !file.existsSync()) return;
 
-    yield* _generateStripThumbnails(
+    final batches = _generateStripThumbnails(
       videoPath: file.path,
       clipId: videoId,
       duration: duration,
@@ -84,5 +85,11 @@ class SubtitleTimelineThumbnailService {
       ),
       thumbsPerSecond: _thumbsPerSecond,
     );
+    await for (final batch in batches) {
+      yield [
+        for (final frame in batch)
+          TimelineFrame(path: frame.path, timestamp: frame.timestamp),
+      ];
+    }
   }
 }
