@@ -9476,6 +9476,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => '動画を削除しました';
 
   @override
+  String get fullscreenFeedEmptyMessage => 'ここに再生できる動画はもうありません';
+
+  @override
   String get settingsBadgesTitle => 'バッジ';
 
   @override

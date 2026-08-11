@@ -9503,6 +9503,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => '동영상이 삭제됐어요';
 
   @override
+  String get fullscreenFeedEmptyMessage => '여기에 재생할 영상이 더 없어요';
+
+  @override
   String get settingsBadgesTitle => '배지';
 
   @override

@@ -9681,6 +9681,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'ቪዲዮ ተወግዷል';
 
   @override
+  String get fullscreenFeedEmptyMessage => 'እዚህ የሚጫወት ምንም አልቀረም';
+
+  @override
   String get settingsBadgesTitle => 'ባጆች';
 
   @override

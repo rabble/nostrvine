@@ -17062,6 +17062,12 @@ abstract class AppLocalizations {
   /// **'Video removed'**
   String get fullscreenFeedRemovedMessage;
 
+  /// Empty-state message shown in the fullscreen feed when the feed it is playing has drained after having had videos — for example the viewer unliked the last video in their Liked feed.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing left to play here'**
+  String get fullscreenFeedEmptyMessage;
+
   /// No description provided for @settingsBadgesTitle.
   ///
   /// In en, this message translates to:

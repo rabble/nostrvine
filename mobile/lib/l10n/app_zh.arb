@@ -5944,6 +5944,7 @@
   "videoMetadataClosePreviewSemanticLabel": "关闭视频预览",
   "videoMetadataRemoveSemanticLabel": "移除",
   "fullscreenFeedRemovedMessage": "视频已移除",
+  "fullscreenFeedEmptyMessage": "这里没有可播放的内容了",
   "@fullscreenFeedRemovedMessage": {
     "description": "Empty-state message shown in the fullscreen feed when the last visible video has just been deleted, blocked, or muted and the route cannot be popped back to a parent (e.g. a cold deep-link)."
   },

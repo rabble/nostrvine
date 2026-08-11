@@ -9861,6 +9861,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'Video kaldırıldı';
 
   @override
+  String get fullscreenFeedEmptyMessage =>
+      'Burada oynatılacak başka bir şey yok';
+
+  @override
   String get settingsBadgesTitle => 'Rozetler';
 
   @override

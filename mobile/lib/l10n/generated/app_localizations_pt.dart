@@ -9977,6 +9977,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'Vídeo removido';
 
   @override
+  String get fullscreenFeedEmptyMessage =>
+      'Não há mais nada para reproduzir aqui';
+
+  @override
   String get settingsBadgesTitle => 'Badges';
 
   @override

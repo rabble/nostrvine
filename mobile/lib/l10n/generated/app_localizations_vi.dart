@@ -9906,6 +9906,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'Video đã bị gỡ';
 
   @override
+  String get fullscreenFeedEmptyMessage => 'Không còn gì để phát ở đây';
+
+  @override
   String get settingsBadgesTitle => 'Huy hiệu';
 
   @override

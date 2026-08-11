@@ -9400,6 +9400,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => '视频已移除';
 
   @override
+  String get fullscreenFeedEmptyMessage => '这里没有可播放的内容了';
+
+  @override
   String get settingsBadgesTitle => '徽章';
 
   @override

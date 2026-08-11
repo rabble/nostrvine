@@ -3348,6 +3348,7 @@
     "videoEditorAudioSegmentInstruction": "حدّد مقطع الصوت لفيديوك",
     "videoEditorClipGalleryInstruction": "اضغط للتعديل. اضغط مطولاً واسحب لإعادة الترتيب.",
     "fullscreenFeedRemovedMessage": "تمت إزالة الفيديو",
+    "fullscreenFeedEmptyMessage": "لم يتبقَّ شيء لتشغيله هنا",
     "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
     "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
     "invitesGenerateButtonLabel": "Generate invite",

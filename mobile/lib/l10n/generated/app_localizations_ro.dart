@@ -10111,6 +10111,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'Videoclip eliminat';
 
   @override
+  String get fullscreenFeedEmptyMessage => 'Nu mai e nimic de redat aici';
+
+  @override
   String get settingsBadgesTitle => 'Insigne';
 
   @override

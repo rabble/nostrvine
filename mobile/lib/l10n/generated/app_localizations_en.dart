@@ -9880,6 +9880,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'Video removed';
 
   @override
+  String get fullscreenFeedEmptyMessage => 'Nothing left to play here';
+
+  @override
   String get settingsBadgesTitle => 'Badges';
 
   @override

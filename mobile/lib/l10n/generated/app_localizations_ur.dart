@@ -9905,6 +9905,9 @@ class AppLocalizationsUr extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'ویڈیو ہٹا دی گئی';
 
   @override
+  String get fullscreenFeedEmptyMessage => 'یہاں چلانے کے لیے اب کچھ نہیں بچا';
+
+  @override
   String get settingsBadgesTitle => 'بیجز';
 
   @override

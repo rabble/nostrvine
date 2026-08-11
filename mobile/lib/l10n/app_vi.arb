@@ -5944,6 +5944,7 @@
   "videoMetadataClosePreviewSemanticLabel": "Đóng xem trước video",
   "videoMetadataRemoveSemanticLabel": "Xóa",
   "fullscreenFeedRemovedMessage": "Video đã bị gỡ",
+  "fullscreenFeedEmptyMessage": "Không còn gì để phát ở đây",
   "@fullscreenFeedRemovedMessage": {
     "description": "Empty-state message shown in the fullscreen feed when the last visible video has just been deleted, blocked, or muted and the route cannot be popped back to a parent (e.g. a cold deep-link)."
   },

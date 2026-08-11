@@ -15,6 +15,20 @@ enum FullscreenFeedStatus {
   /// The screen reacts by popping the route — there is nothing to show.
   emptyAfterRemoval,
 
+  /// The source re-emitted an empty list after having supplied videos, so
+  /// the feed has nothing left to play and nothing further is expected.
+  ///
+  /// Distinct from an empty *first* emit, which is a legitimate loading
+  /// state that later resolves (see the `preserves initial index through
+  /// empty-first source emissions` test). Without this status the screen
+  /// cannot tell the two apart and shows a permanent loading spinner —
+  /// which is what unliking the only liked video used to do (#6949).
+  ///
+  /// Unlike [emptyAfterRemoval] this does not pop the route: the source may
+  /// legitimately refill (pagination, a re-like, a blocklist change), and a
+  /// live feed transiently emptying must not yank the user out of it.
+  empty,
+
   /// An error occurred.
   failure,
 }

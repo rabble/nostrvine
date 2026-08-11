@@ -3355,6 +3355,7 @@
     "videoEditorAudioSegmentInstruction": "Videon için ses bölümünü seç",
     "videoEditorClipGalleryInstruction": "Düzenlemek için dokun. Yeniden sıralamak için basılı tutup sürükle.",
     "fullscreenFeedRemovedMessage": "Video kaldırıldı",
+    "fullscreenFeedEmptyMessage": "Burada oynatılacak başka bir şey yok",
     "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
     "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
     "invitesGenerateButtonLabel": "Generate invite",

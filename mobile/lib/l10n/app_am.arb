@@ -4000,6 +4000,7 @@
     "videoMetadataClosePreviewSemanticLabel": "የቪዲዮ ቅድመ እይታን ዝጋ",
     "videoMetadataRemoveSemanticLabel": "አስወግድ",
     "fullscreenFeedRemovedMessage": "ቪዲዮ ተወግዷል",
+    "fullscreenFeedEmptyMessage": "እዚህ የሚጫወት ምንም አልቀረም",
     "@fullscreenFeedRemovedMessage": {
         "description": "Empty-state message shown in the fullscreen feed when the last visible video has just been deleted, blocked, or muted and the route cannot be popped back to a parent (e.g. a cold deep-link)."
     },

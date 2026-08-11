@@ -1,5 +1,26 @@
 appId: co.openvine.app
 ---
+# Wait for the fullscreen feed to resolve before asserting its chrome.
+#
+# The pooled feed renders a branded loading placeholder until its source
+# stream delivers a non-empty list, and against live STAGING that can take a
+# moment. A bare `assertVisible` on the action buttons fails instantly in that
+# window and reports "more_button not found", which reads as a selector bug
+# rather than "the feed had not loaded yet".
+#
+# `fullscreen_feed_loading` is the placeholder's own identifier, so this waits
+# on the real signal instead of racing it.
+- extendedWaitUntil:
+    notVisible:
+      id: fullscreen_feed_loading
+    timeout: 30000
+
+# The feed resolved but has nothing to play — a distinct state from loading
+# since #6949, and never what a playback assertion wants. Asserting it
+# separately turns "the feed drained" into its own failure message.
+- assertNotVisible:
+    id: fullscreen_feed_empty
+
 #Icons to the right
 - assertVisible:
     id: more_button
@@ -11,8 +32,3 @@ appId: co.openvine.app
     id: comments_button
 - assertVisible:
     id: like_button
-
-#Video data
-- assertNotVisible:
-    text: "Loading..."
-    optional: true

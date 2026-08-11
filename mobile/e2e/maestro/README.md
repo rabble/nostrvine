@@ -8,20 +8,34 @@ They are not a replacement for unit or widget tests.
 
 ## What the smoke suite covers today
 
-`suites/smoke.yaml` currently runs the account-management paths that pass end
-to end today: `loginFreshInstall`, its `removeKeys` cleanup, and
-`loginEmailPwd`. The social flows are held back because they cannot pass yet:
+`suites/smoke.yaml` runs the account-management paths — `loginFreshInstall`,
+its `removeKeys` cleanup, and `loginEmailPwd` — plus `likeFlow`. Two social
+flows are still held back:
 
 | Flow | Why it is out | Tracking |
 |---|---|---|
-| `likeFlow` | `videoUnlike` never completes; the liked video does not finish loading against live STAGING content | [#6949](https://github.com/divinevideo/divine-mobile/issues/6949) |
 | `commentFlow` | `env`-vs-`output` bug and a disabled cleanup step | [#6952](https://github.com/divinevideo/divine-mobile/issues/6952) |
 | `searchUserFlow` | needs a rewrite for the current search layout | [#6952](https://github.com/divinevideo/divine-mobile/issues/6952) |
 
-So a green smoke run proves the harness, the build, account creation, cleanup,
-and the sign-in path — not the social flows. Restore each flow in the PR that
-fixes it, and put back the credentials it needs (`SEARCH_USER` for
-`searchUserFlow`) in the same change.
+Restore each flow in the PR that fixes it, and put back the credentials it
+needs (`SEARCH_USER` for `searchUserFlow`) in the same change.
+
+### `likeFlow` was an app bug, not test data
+
+`videoUnlike` used to hang, and the failure was filed as a test-data problem.
+It was not. Unliking the only video in your own Liked feed makes the liked
+grid's bloc re-emit an empty list into the still-open fullscreen route, and
+the fullscreen screen rendered its loading placeholder for *any* empty list —
+no timeout, no empty state, no error. Every action button left the tree, so
+the flow's 15-second wait for the "Like video" label could never succeed.
+Reproduced on device and fixed in
+[#6949](https://github.com/divinevideo/divine-mobile/issues/6949); the feed
+now settles on an explicit drained state carrying
+`fullscreen_feed_empty`, which `assertVideoFeedDrained.yaml` asserts.
+
+The lesson generalises: **before filing a Maestro failure as flaky data,
+check whether the screen is stuck in a state the app has no exit from.**
+A permanent loading placeholder looks exactly like slow live content.
 
 The `e2e-smoke-ios` and `e2e-smoke-android` Codemagic workflows are
 `triggering: events: []`, so nothing runs them automatically. They are manual
@@ -358,14 +372,21 @@ Three traps worth knowing:
 
 ## Environments and test data
 
-The flows run against shared STAGING infrastructure and depend on live
-content: whichever video is newest in the New grid, a specific account
-existing and ranking first in search. They also create a real account per run
-and publish real likes and comments.
+The flows run against shared STAGING infrastructure. What each one actually
+depends on, and how much of that is real:
 
-That is the suite's main source of flakiness and it is not fixable by
-improving selectors. Treat an unexplained failure as possibly-data before
-assuming a regression, and check the screenshot.
+| Dependency | Where | Still a risk? |
+|---|---|---|
+| "whichever video is newest in the New grid" | `videoLike`, `commentVideo` | Yes, but only that it is **playable**. Nothing asserts which video it is. |
+| "the account has exactly one liked video" | `videoUnlike` | No. `loginFreshInstall` creates the account, so it starts at zero likes and `videoLike` adds exactly one. |
+| a specific account existing and ranking first in search | `searchUserFlow` | Yes — and it also taps a hardcoded `point: 50%,32%`, which is the more fragile half. [#6952](https://github.com/divinevideo/divine-mobile/issues/6952) |
+| a real comment left on a stranger's video | `commentFlow` | Yes — its `deleteComment` cleanup is commented out, so every run leaves one behind. [#6952](https://github.com/divinevideo/divine-mobile/issues/6952) |
+
+Accounts and likes are self-owned: each run creates its own account and
+`removeKeys` tears it down, so those are not shared-state coupling.
+
+Treat an unexplained failure as possibly-data *after* ruling out a stuck
+screen, not before — and check the screenshot either way.
 
 `tests/removeKeys.yaml` is the teardown of every smoke flow and is what makes
 runs repeatable: the Nostr key lives in the iOS keychain and survives both

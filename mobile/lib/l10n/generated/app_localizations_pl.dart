@@ -10092,6 +10092,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'Film usunięty';
 
   @override
+  String get fullscreenFeedEmptyMessage => 'Nie ma tu już nic do odtworzenia';
+
+  @override
   String get settingsBadgesTitle => 'Odznaki';
 
   @override

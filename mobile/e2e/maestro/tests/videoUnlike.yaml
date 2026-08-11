@@ -2,13 +2,18 @@ appId: co.openvine.app
 tags:
   - Social
 ---
-#TC to unlike a video,
-# given the user is logged in in the app and only has 1 video liked,
-# validate the like is on for the video on the liked tab unlike it, and empty likes tab on the profile
+#TC to unlike a video.
+#
+# Precondition: the signed-in account has exactly one liked video. This is
+# guaranteed by construction rather than by luck -- likeFlow runs
+# loginFreshInstall, which creates a brand-new account with zero likes, then
+# videoLike adds exactly one. Nothing here depends on what the wider STAGING
+# relay happens to hold.
+#
 #Steps:
 # 1. Open the profile and navigate to the liked_tab: Tab is displayed
-# 2. Tap on 1st video of the liked tab and unlike the video: Validate video is unliked
-# 3. Close the video and Tap on profile, liked tab: Validate tab is loaded and video is not listed
+# 2. Tap the only liked video and unlike it: the feed drains
+# 3. Close the video and re-open the liked tab: the video is gone
 
 # 1. Open the profile and navigate to the liked_tab: Tab is displayed
 - tapOn:
@@ -17,13 +22,18 @@ tags:
 - tapOn:
     id: "liked_tab"
 
-# 2. Tap on 1st video of the liked tab and unlike the video: Validate video is unliked
+# 2. Tap the only liked video and unlike it
 - tapOn:
     id: "liked_video_thumbnail_0"
-- waitForAnimationToEnd
+- runFlow: ../asserts/assertVideoPlayback.yaml
 - tapOn:
     id: like_button
-- runFlow: "../asserts/assertVideoUnliked.yaml"
+
+# Unliking the only liked video empties the feed this route is playing, so
+# the screen settles on its drained state rather than back on the player.
+# This asserts an app-owned outcome, which is why it does not depend on
+# which video the grid happened to hold.
+- runFlow: "../asserts/assertVideoFeedDrained.yaml"
 
 # 3. Close the video and Tap on profile, liked tab: Validate tab is loaded and video is not listed
 # The liked-grid tap opens PooledFullscreenVideoFeedScreen, which has no

@@ -10021,6 +10021,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'Video entfernt';
 
   @override
+  String get fullscreenFeedEmptyMessage =>
+      'Hier gibt es nichts mehr abzuspielen';
+
+  @override
   String get settingsBadgesTitle => 'Abzeichen';
 
   @override
