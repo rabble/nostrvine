@@ -2053,6 +2053,61 @@ void main() {
       );
 
       test(
+        'a send with no retry row leaves the recipient build uncapped',
+        () {
+          // `sendFileMessage` and the bug-report send reach sendRumor through
+          // sendPrivateMessage and do not own an outgoing_dms row. If an Amber
+          // approval takes longer than the send-chain recipient bound,
+          // returning retryablePending gives those callers nowhere to retry
+          // from. Keep this pre-publish build uncapped for that convenience
+          // path.
+          final senderPublicKey = getPublicKey(_testPrivateKey);
+          final slowApproval =
+              DmSendBudget.recipientWrapBuild + const Duration(seconds: 5);
+
+          NIP17SendResult? result;
+          fakeAsync((async) {
+            var builds = 0;
+            final service = NIP17MessageService(
+              signer: LocalNostrSigner(_testPrivateKey),
+              senderPublicKey: senderPublicKey,
+              nostrService: client,
+              giftWrapBuilder: (nostr, rumor, receiverPubkey) {
+                builds++;
+                return Future.delayed(
+                  builds == 1 ? slowApproval : Duration.zero,
+                  () => GiftWrapUtil.getGiftWrapEvent(
+                    nostr,
+                    rumor,
+                    receiverPubkey,
+                  ),
+                );
+              },
+            );
+
+            unawaited(
+              service
+                  .sendPrivateMessage(
+                    recipientPubkey: _recipientPubkey,
+                    content: 'slow recipient approval',
+                    awaitRecipientOk: true,
+                  )
+                  .then((r) => result = r),
+            );
+
+            async
+              ..flushMicrotasks()
+              ..elapse(slowApproval)
+              ..flushMicrotasks();
+          });
+
+          expect(result, isNotNull, reason: 'send must resolve, not time out');
+          expect(result!.success, isTrue);
+          expect(result!.retryablePending, isFalse);
+        },
+      );
+
+      test(
         'self-wrap build that outruns its bound still reports a delivered send',
         () {
           // The recipient wrap is already published and OK-confirmed here, so

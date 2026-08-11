@@ -340,6 +340,13 @@ class NIP17MessageService {
   /// contract: soft-unconfirmed recipient publishes return retryable failure
   /// and the caller owns any fallback behavior.
   ///
+  /// [recipientWrapBuildTimeout] bounds the recipient-wrap build, defaulting to
+  /// [DmSendBudget.recipientWrapBuild] for callers whose durable retry queue
+  /// can keep a pre-publish timeout pending and re-drive it. Passing `null`
+  /// leaves recipient-wrap construction uncapped; only callers with no outer
+  /// cap and no retry row should do that, because a slow human-gated signer
+  /// approval is otherwise indistinguishable from a hung signer.
+  ///
   /// [selfWrapBuildTimeout] bounds the self-wrap build, defaulting to the
   /// tight [DmSendBudget.selfWrapBuild] for callers that protect the full
   /// publish with an outer cap. Durable message sends use
@@ -359,8 +366,10 @@ class NIP17MessageService {
     List<String>? targetRelays,
     bool awaitRecipientOk = false,
     bool selfWrapOnSoftUnconfirmed = true,
+    Duration? recipientWrapBuildTimeout = DmSendBudget.recipientWrapBuild,
     Duration? selfWrapBuildTimeout,
   }) async {
+    final recipientWrapBound = recipientWrapBuildTimeout;
     final selfWrapBound = selfWrapBuildTimeout ?? DmSendBudget.selfWrapBuild;
     try {
       // Send gate (#176): the lowest recipient-delivering primitive, so every
@@ -439,24 +448,29 @@ class NIP17MessageService {
       // (#6586). Timing out before any publish leaves nothing delivered, so the
       // durable queue can safely keep it retryable.
       var recipientWrapBuildTimedOut = false;
-      final (giftWrapEvent, prebuiltSelfWrap) =
-          await _buildBothWraps(
-            nostr: nostr,
-            rumorEvent: rumorEvent,
-            recipientPubkey: recipientPubkey,
-          ).timeout(
-            DmSendBudget.recipientWrapBuild,
-            onTimeout: () {
-              recipientWrapBuildTimedOut = true;
-              return (null, null);
-            },
-          );
+      final recipientWrapBuild = _buildBothWraps(
+        nostr: nostr,
+        rumorEvent: rumorEvent,
+        recipientPubkey: recipientPubkey,
+      );
+      final (
+        giftWrapEvent,
+        prebuiltSelfWrap,
+      ) = await (recipientWrapBound == null
+          ? recipientWrapBuild
+          : recipientWrapBuild.timeout(
+              recipientWrapBound,
+              onTimeout: () {
+                recipientWrapBuildTimedOut = true;
+                return (null, null);
+              },
+            ));
 
       if (giftWrapEvent == null) {
         return NIP17SendResult.failure(
           recipientWrapBuildTimedOut
               ? 'Recipient gift wrap build timed out after '
-                    '${DmSendBudget.recipientWrapBuild.inSeconds}s'
+                    '${recipientWrapBound!.inSeconds}s'
               : 'Failed to create gift wrap event',
           retryablePending: recipientWrapBuildTimedOut,
         );
@@ -876,6 +890,10 @@ class NIP17MessageService {
       targetRelays: targetRelays,
       awaitRecipientOk: awaitRecipientOk,
       selfWrapOnSoftUnconfirmed: selfWrapOnSoftUnconfirmed,
+      // No caller of this method owns an outgoing_dms row, so a bounded
+      // pre-publish Amber approval would return retryablePending with nowhere
+      // to retry from. Preserve the pre-PR uncapped recipient-build contract.
+      recipientWrapBuildTimeout: null,
       // No caller of this method imposes an outer cap, so the tight
       // send-sized bound would protect nothing and could only fail a
       // self-wrap the transport would have completed.
