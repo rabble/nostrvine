@@ -128,6 +128,9 @@ void main() {
         // public payload.
         'json jwt key': '{"jwt":"eyJhbGciOi"}',
         'bare jwt key': 'jwt: eyJhbGciOi',
+        'camel case jwt key': '{"jwtValue":"eyJhbGciOi"}',
+        'pascal case jwt key': 'JwtCredential: eyJhbGciOi',
+        'screaming jwt key': 'JWTValue: eyJhbGciOi',
       };
 
       for (final entry in cases.entries) {
@@ -163,20 +166,62 @@ void main() {
       expect(sanitized, contains('upload failed: connection reset'));
     });
 
-    test('an unclosed brace cannot swallow the rest of the report', () {
-      // The bounded collection branch is what stops `password: {` typed into a
-      // bug report from consuming every log line printed after it. Losing a
-      // couple of lines to over-redaction is the cheap direction; losing the
-      // whole diagnostic body is not.
+    test('an unclosed brace consumes at most the bound, not the report', () {
+      // The filler must contain braces of its own. Real logs are full of them
+      // (`Map.toString`), and without one the bounded branch never engages and
+      // this test passes on the unquoted fallback instead of the property it
+      // names.
+      //
+      // The honest property is not "nothing after the stray brace is lost" -
+      // everything within the bound *is* lost, and in a short report that can
+      // be all of it. It is that the loss stops at 4000 characters instead of
+      // running to the end of a payload that can reach `maxLogSummaryLength`.
+      const line = '[10:00] [INFO] upload failed {code: 500}\n';
       final payload =
           'password: {oops\n'
-          '${'[10:00] [INFO] feed loaded 42 videos\n' * 12}'
-          '[10:12] [ERROR] upload failed: connection reset';
+          '${line * 200}'
+          '[99:99] [ERROR] relay disconnected: connection reset';
 
       final sanitized = sanitizeDiagnosticText(payload);
 
+      expect(payload.length, greaterThan(6000));
       expect(sanitized, contains('[REDACTED]'));
-      expect(sanitized, contains('upload failed: connection reset'));
+      expect(sanitized, contains('relay disconnected: connection reset'));
+      expect(payload.length - sanitized.length, lessThan(4100));
+    });
+
+    test('a collection value larger than the bound is still bounded', () {
+      // Above 4000 characters a secret survives beside the marker. That is the
+      // documented residual, and it is pinned so the bound cannot be lowered
+      // into the range of an ordinary JWT or pretty-printed device dump
+      // without this failing.
+      final withinBound = 'token: {"v":"${'a' * 3000}hunter2"}';
+      final beyondBound = 'token: {"v":"${'a' * 5000}hunter2"}';
+
+      expect(sanitizeDiagnosticText(withinBound), isNot(contains('hunter2')));
+      expect(sanitizeDiagnosticText(beyondBound), contains('hunter2'));
+    });
+
+    test('a long pasted collection value does not scan quadratically', () {
+      // Every `token: {` candidate rescans forward for a closing delimiter.
+      // Unbounded, that is quadratic in the size of a pasted field, and
+      // `bug_report_dialog.dart` puts no maxLength on those fields - so it
+      // runs on the UI thread over text an attacker can influence.
+      //
+      // Quadrupling the input costs ~4x bounded and ~11x unbounded (measured
+      // 133/585ms vs 239/2680ms), so 7x separates them with margin on both
+      // sides rather than pinning a machine-specific duration.
+      int measure(int reps) {
+        final stopwatch = Stopwatch()..start();
+        sanitizeDiagnosticText('token: {x ' * reps);
+        return stopwatch.elapsedMilliseconds;
+      }
+
+      measure(500); // warm up, so the first measured run carries no setup cost
+      final small = measure(2000);
+      final large = measure(8000);
+
+      expect(large, lessThan(small * 7));
     });
 
     test('a long compound key cannot be made to backtrack exponentially', () {
@@ -229,6 +274,7 @@ void main() {
         // a diagnostic that was built to be privacy-safe, and deep links are
         // a common subject of bug reports.
         _deepLinkLogLine,
+        'query_keys=[code, state]',
         // Bare `key` is an ordinary English word. These are real in-repo
         // strings: an l10n error message, a model's toString, and Flutter key
         // events - none of them carry a credential.

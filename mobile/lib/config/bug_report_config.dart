@@ -23,9 +23,20 @@ const _credentialSeparator = r'''["']?\s*(?::=?|=>?)\s*''';
 /// half-redacted with the jwt still beside the marker, and no depth-limited
 /// pattern fixes that for arbitrary nesting. Redacting a sibling field on the
 /// same line is the cheap direction of that trade. The same-line branch is
-/// tried first; the 300-character branch behind it is what catches a
-/// pretty-printed value, and its bound is what keeps a stray `{` from
-/// swallowing the rest of the report.
+/// tried first; the branch behind it also crosses newlines, which is what
+/// catches a pretty-printed value.
+///
+/// Both are bounded at 4000 characters, and the bound does two jobs. It caps
+/// what an unclosed `{` can consume: 4000 characters of surrounding
+/// diagnostics, rather than everything up to `maxLogSummaryLength`. In a short
+/// report that cap is still most of it - the bound limits the damage, it does
+/// not make a stray brace cheap.
+/// It also keeps the scan linear: without it, every `token: {` candidate on a
+/// long line rescans to the end of that line, which is quadratic in the size
+/// of a pasted field. 4000 is chosen to sit above the things being bounded -
+/// a JWT runs 300-800 characters on its own, and `bug_report_service.dart`
+/// pretty-prints device info - because below the bound is where redaction is
+/// whole and above it is where a secret survives beside the marker.
 ///
 /// Both quoted branches require the closing quote and stop at a newline, so an
 /// unbalanced quote (`password: "oops` typed into a bug report) falls through
@@ -33,8 +44,8 @@ const _credentialSeparator = r'''["']?\s*(?::=?|=>?)\s*''';
 /// field printed after it. The optional `bearer`/`basic`/`token` scheme word
 /// keeps `Authorization: Bearer <jwt>` from redacting only the word "Bearer".
 const _credentialValue =
-    r'''(?:\[[^\n]*\]|\[[\s\S]{0,300}\]'''
-    r'''|\{[^\n]*\}|\{[\s\S]{0,300}\}'''
+    r'''(?:\[[^\n]{0,4000}\]|\[[\s\S]{0,4000}\]'''
+    r'''|\{[^\n]{0,4000}\}|\{[\s\S]{0,4000}\}'''
     r'''|"(?:\\.|[^"\\\n])*"'''
     r"""|'(?:''|\\.|[^'\\\n])*'"""
     r'''|["']?(?:(?:bearer|basic|token)\s+)?[^\s"',;}]+)''';
@@ -101,7 +112,7 @@ class BugReportConfig {
     RegExp(
       '(?:(?:authorization|passphrase|passcode|password|passwd|pwd'
       '|token|jwt|secret|api[_-]?key)s?'
-      '|(?<=[_-])(?<!pub[_-])(?<!public[_-])keys?)'
+      '|(?<=[_-])(?<!pub[_-])(?<!public[_-])(?<!query[_-])keys?)'
       '(?:[_-][A-Za-z0-9]+)*'
       '$_credentialSeparator$_credentialValue',
       caseSensitive: false,
@@ -112,7 +123,7 @@ class BugReportConfig {
     // uppercase for the same non-ambiguity reason as above.
     RegExp(
       '(?:[Pp]assphrase|[Pp]asscode|[Pp]assword|[Pp]asswd|[Pp]wd'
-      '|[Tt]oken|[Ss]ecret)s?'
+      '|[Tt]oken|[Jj]wt|JWT|[Ss]ecret)s?'
       '(?:[A-Z][a-z0-9]*)+'
       '$_credentialSeparator$_credentialValue',
     ),

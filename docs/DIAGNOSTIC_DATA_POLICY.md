@@ -57,8 +57,8 @@ submission boundary. These limits are known and accepted:
   a credential-shaped name (`privateKeyHex: <hex>`) is still caught by the
   key-name rule below; a bare hex string on its own is not.
 - Redaction is keyword-based, so it cuts both ways and is deliberately tuned to
-  lose triage value rather than leak. A key containing `token`, `secret`,
-  `password` or `key` has its value redacted even when that value is not a
+  lose triage value rather than leak. A key containing `token`, `jwt`,
+  `secret`, `password` or `key` has its value redacted even when that value is not a
   secret (`token_count: 5`, `cancellationToken: active`, `passwordReset:
   failed`), because no key-only rule separates those from `token_value` or
   `passwordHash`. Two exceptions: every spelling of the public key (`pubkey`,
@@ -76,11 +76,18 @@ submission boundary. These limits are known and accepted:
   value. Quoted values, which is how serialized payloads are written, are
   redacted whole.
 - A bracketed or braced value (`token: {...}`, `apiKey: [...]`) is redacted
-  whole when it closes on the same line, or within 300 characters when it is
-  pretty-printed across lines. A credential object larger than that keeps
-  whatever falls past the bound. The limit exists so an unclosed `{` typed into
-  a report cannot swallow the rest of the diagnostics; the cost is that a very
-  large serialized credential object is only partly redacted.
+  whole, including nested objects and pretty-printed ones spanning lines, up to
+  4000 characters. A credential object larger than that keeps whatever falls
+  past the bound. The limit caps what an unclosed `{` typed into a report can
+  consume - 4000 characters of surrounding diagnostics rather than everything
+  after it - and keeps a long pasted field from making the scan quadratic. The
+  cost is paid twice: a serialized credential object larger than 4000
+  characters is only partly redacted, and a stray brace still costs up to 4000
+  characters of diagnostics around it.
+- Redacting such a value takes the rest of the line with it. Anything printed
+  after a credential key on the same line - including a pubkey - is redacted
+  along with the value, which is why the preservation rule above holds only for
+  a pubkey that is not sharing a line with a credential.
 - Text typed inside the native Zendesk SDK screens is never sanitized. The
   ticket list (`ZendeskSupportService.showTicketListScreen`, reachable from the
   support center) opens the SDK's own UI, where a reply to an existing ticket is
