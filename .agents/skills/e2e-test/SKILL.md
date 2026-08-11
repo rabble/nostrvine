@@ -28,11 +28,20 @@ mise run e2e_test                                              # All auth tests
 mise run e2e_test integration_test/auth/auth_journey_test.dart # Single test
 ```
 
-`e2e_test` brings up the Docker stack, runs patrol, captures a
+`e2e_test` brings up the Docker stack, runs the suite, captures a
 merged docker+logcat+app timeline at `test_reports/*.jsonl`, and
 prints the native test XML path + failure excerpts when the APK
-fails to install. **Never call `patrol test` directly** — you'll
-lose the timeline and the diagnostics.
+fails to install. **For e2e targets, never call `patrol test` or
+`flutter test` directly** — you'll lose the timeline and the diagnostics.
+
+Not every suite is a patrol suite. `profile.sh` recursively greps the
+target for `patrolTest` and dispatches: patrol suites go to
+`patrol test`, plain `integration_test` suites go to
+`flutter test --device-id`. Everything under `integration_test/e2e/`
+is now the plain kind — those four converted off patrol in #7005
+because none of them used the native automator for anything
+load-bearing. The plain path pre-grants `POST_NOTIFICATIONS`, since
+without an automator nothing can dismiss that dialog.
 
 ## Version pair
 
@@ -206,24 +215,32 @@ emulator_wipe` (`emulator.sh --wipe`) is usually the faster fix.
 
 ### Launching the app
 
-`pumpAndSettle` hangs because of persistent polling timers. Use
-`launchAppGuarded` (from `test_setup.dart`) with error suppression
-and a manual pump loop:
+`pumpAndSettle` hangs because of persistent polling timers — the app
+polls email verification every 3s, so the tree never reaches a
+quiescent frame and the call blocks until its 10-minute timeout. Use
+`launchAppGuarded` (from `test_setup.dart`) with error suppression and
+a bounded pump instead of `pumpAndSettle`:
 
 ```dart
 final originalOnError = suppressSetStateErrors();
 final originalErrorBuilder = saveErrorWidgetBuilder();
 launchAppGuarded(app.main);
 
-for (var i = 0; i < 60; i++) {
-  await tester.pump(const Duration(milliseconds: 250));
-  if (find.text('Welcome').evaluate().isNotEmpty) break;
-}
+await pumpUntilSettled(tester, maxSeconds: 3);
 
 restoreErrorWidgetBuilder(originalErrorBuilder);
 restoreErrorHandler(originalOnError);
 drainAsyncErrors(tester);
 ```
+
+When you need to stop as soon as something appears rather than pump a
+fixed budget, use `waitForText` / `waitForWidget` from
+`navigation_helpers.dart` — both poll and return early.
+
+The tell that a suite has this bug: patrol logs
+`PATROL_LOG {"type":"test",…,"status":"start"}` and then **no terminal
+status at all**, while the app keeps logging. It reads like a crash;
+it is a hang.
 
 ### Async publish → relay query
 

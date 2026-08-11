@@ -270,6 +270,8 @@ assert_contains ')" || true' "${SCRIPT_DIR}/profile.sh" \
   "profile runner should tolerate offline patrol --version update-check failures"
 assert_line_before 'PATROL_CLI_VERSION=4.6.1' 'Starting docker log capture' "${SCRIPT_DIR}/profile.sh" \
   "profile runner should activate patrol_cli before profiler log capture starts"
+assert_contains "if grep -rq 'patrolTest' \"\$TEST_PATH\"; then" "${SCRIPT_DIR}/profile.sh" \
+  "profile runner should recurse so directory targets dispatch correctly"
 assert_contains 'PATH="$PUB_CACHE_BIN:$PATH" patrol test' "${SCRIPT_DIR}/profile.sh" \
   "profile runner should invoke patrol from the configured PUB_CACHE"
 assert_contains '--device "$DEVICE"' "${SCRIPT_DIR}/profile.sh" \
@@ -278,6 +280,14 @@ assert_contains '"${PATROL_EXTRA_ARGS[@]+"${PATROL_EXTRA_ARGS[@]}"}"' "${SCRIPT_
   "profile runner should guard the optional patrol args for bash 3.2 (macOS) under set -u"
 assert_not_contains '    "${PATROL_EXTRA_ARGS[@]}" \' "${SCRIPT_DIR}/profile.sh" \
   "profile runner should not expand the optional patrol args unguarded"
+assert_contains 'flutter test "$TEST_PATH"' "${SCRIPT_DIR}/profile.sh" \
+  "profile runner should send plain integration_test suites through flutter test"
+assert_contains '--device-id "$DEVICE"' "${SCRIPT_DIR}/profile.sh" \
+  "profile runner should pass the detected device to flutter test"
+assert_contains 'flutter install --device-id "$DEVICE"' "${SCRIPT_DIR}/profile.sh" \
+  "profile runner should install before pre-granting notification permission"
+assert_line_before 'flutter install --device-id "$DEVICE"' 'android.permission.POST_NOTIFICATIONS' "${SCRIPT_DIR}/profile.sh" \
+  "profile runner should grant notification permission only after the app exists"
 
 cat > "${tmp_dir}/bin/uname" <<'STUB'
 #!/usr/bin/env bash
