@@ -120,6 +120,12 @@ class _FilterChip extends StatelessWidget {
     // visual style; re-selecting the active filter is ignored by the bloc.
     final chip = Semantics(
       selected: selected,
+      // Without this the rename/delete shortcut exists only as a raw long
+      // press, which a screen reader has no way to surface or trigger.
+      onLongPress: onLongPress,
+      onLongPressHint: onLongPress == null
+          ? null
+          : context.l10n.libraryCategoryManageSemanticLabel,
       child: DivineButton(
         label: label,
         type: selected

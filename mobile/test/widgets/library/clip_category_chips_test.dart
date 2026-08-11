@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
@@ -160,6 +161,44 @@ void main() {
       await tester.longPress(find.text(en.libraryFilterArchive));
 
       expect(managed, isEmpty);
+    });
+
+    testWidgets('exposes the manage shortcut as a semantics action', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildWidget(categories: [travel], onManageCategory: (_) {}),
+      );
+
+      final handle = tester.ensureSemantics();
+      // Without the action, rename/delete is reachable only by a raw long
+      // press, which a screen reader can neither announce nor trigger.
+      final node = tester.getSemantics(find.text('Travel'));
+      expect(
+        node.getSemanticsData().hasAction(SemanticsAction.longPress),
+        isTrue,
+      );
+      // `onLongPressHint` lands in SemanticsHintOverrides, which
+      // SemanticsData does not carry — read it off the node.
+      expect(
+        node.hintOverrides?.onLongPressHint,
+        en.libraryCategoryManageSemanticLabel,
+      );
+      handle.dispose();
+    });
+
+    testWidgets('built-in filters carry no manage action', (tester) async {
+      await tester.pumpWidget(
+        buildWidget(categories: [travel], onManageCategory: (_) {}),
+      );
+
+      final handle = tester.ensureSemantics();
+      final node = tester.getSemantics(find.text(en.libraryFilterArchive));
+      expect(
+        node.getSemanticsData().hasAction(SemanticsAction.longPress),
+        isFalse,
+      );
+      handle.dispose();
     });
   });
 }
