@@ -922,8 +922,6 @@ class KeycastOAuth {
       return ResendVerificationResult.failure(
         _resendErrorFor(response.statusCode),
       );
-    } on TimeoutException {
-      return ResendVerificationResult.failure(ResendVerificationError.network);
     } catch (_) {
       return ResendVerificationResult.failure(ResendVerificationError.network);
     }
@@ -962,8 +960,6 @@ class KeycastOAuth {
       return ResendVerificationResult.failure(
         _resendErrorFor(response.statusCode),
       );
-    } on TimeoutException {
-      return ResendVerificationResult.failure(ResendVerificationError.network);
     } catch (_) {
       return ResendVerificationResult.failure(ResendVerificationError.network);
     }
