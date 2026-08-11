@@ -25,8 +25,18 @@ tags:
 # 2. Wait without touching anything: the recorder comes back on its own
 # 3. Validate the session took the clip
 
-# 1. Start. Classic fades its whole top-bar row out while recording, so the
-# close button leaving is what reports that the recording actually started.
+# 1. Start. The readiness wait is load-bearing here in a way it is not in
+# recordClassicClip: this test needs budget left, and a session already holding
+# a clip is exactly where it can have run out. The shutter reports that gate,
+# so a spent budget fails here rather than 15s later on a tap that did nothing.
+- extendedWaitUntil:
+    visible:
+      id: camera_classic_shutter
+      enabled: true
+    timeout: 15000
+
+# Classic fades its whole top-bar row out while recording, so the close button
+# leaving is what reports that the recording actually started.
 - tapOn:
     id: camera_classic_shutter
 - extendedWaitUntil:

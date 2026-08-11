@@ -7,6 +7,16 @@ appId: co.openvine.app
 # recordCaptureClip.yaml — and it stops on the second tap rather than letting
 # the recording run out, which is what classicModeRecordingLimit covers.
 
+# The shutter reports its own readiness — the same gate the tap runs on: a
+# camera that is not up, or a session budget below 30ms. Without this the tap
+# lands on a dead target, does nothing, and the wait below burns its full 15s
+# before failing on a symptom instead of the precondition.
+- extendedWaitUntil:
+    visible:
+      id: camera_classic_shutter
+      enabled: true
+    timeout: 15000
+
 # The preview looks the same in both states, so it is the close button that
 # reports the transition: classic fades its whole top-bar row out while
 # recording.
