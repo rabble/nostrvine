@@ -341,13 +341,21 @@ Classic only:
   `utils/recordCaptureClip.yaml` is not reusable and classic gets its own
   `utils/recordClassicClip.yaml`. Both wait on the close button leaving and
   coming back, because classic fades its whole top-bar row out while recording.
-- **One 6.3s budget for the whole session.** Classic is the only mode that
-  declares `hasRecordingLimit`, so every clip it records comes out of one
-  budget and the bloc refuses to start a recording below 30ms remaining. That
-  is why `recordClassicClip` records for two seconds where the capture util
-  records for three: `classicModeRecordingLimit` still has to be able to start
-  a second recording. Stretch the first one and that test fails on its opening
-  wait, not on the limit.
+- **One 6.3s budget for the whole session, and Maestro's own overhead eats
+  most of it.** Classic is the only mode that declares `hasRecordingLimit`, so
+  every clip comes out of one budget and the bloc refuses to start a recording
+  below 30ms remaining. Maestro dumps the view hierarchy around every command,
+  which on the SM-S942B makes a tap cost 2-3.5s of wall-clock; the two taps in
+  `recordClassicClip` span ~4.1s of the budget on their own. So that util has
+  no accumulate-footage wait where the capture one records for three seconds —
+  a `waitForAnimationToEnd: 2000` there measured 3.7s (the live preview never
+  settles, so it runs its timeout out and then some) and pushed the pair to
+  ~7.9s, past the limit. The first device run failed exactly there, and it cost
+  both shutter tests at once: the recording was ended by the native auto-stop
+  rather than the stop tap, so `classicModeRecordClip` stopped proving what it
+  is named for, and `classicModeRecordingLimit` could not start at all against
+  a spent budget. Anything added between those two taps comes out of the ~2.1s
+  the limit test runs on.
 - **The limit test asserts a fact, not a duration.** It starts a recording,
   never stops it, and waits for the top bar to come back — which only the
   native auto-stop can do. It deliberately does not assert *when*, because the

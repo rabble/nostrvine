@@ -27,17 +27,23 @@ appId: co.openvine.app
       id: camera_close_button
     timeout: 15000
 
-# Let a couple of seconds of footage accumulate — deliberately less than the
-# capture util's three. Classic is the only mode that declares
-# `hasRecordingLimit`, so every clip it records comes out of one 6.3s budget,
-# and classicModeRecordingLimit still needs enough of that budget left to start
-# a second recording at all (the bloc refuses below 30ms remaining).
+# Straight to the stop tap. No accumulate-footage wait, unlike the capture
+# util — classic cannot afford one, and the first device run is what proved it.
 #
-# The live preview never settles, so this waits its timeout out rather than
-# returning early.
-- waitForAnimationToEnd:
-    timeout: 2000
-
+# Classic is the only mode that declares `hasRecordingLimit`, so the whole
+# session shares one 6.3s budget and everything this util spends comes out of
+# what classicModeRecordingLimit has left to work with. On the SM-S942B the two
+# taps alone span ~4.1s of it: Maestro dumps the view hierarchy around every
+# command, so the start tap took 3.5s wall-clock and the stop tap 2.0s. A
+# `waitForAnimationToEnd: 2000` between them measured 3.7s — the live camera
+# preview never settles, so it always runs its timeout out and then some — and
+# pushed the pair to ~7.9s. Past 6.3s the native auto-stop ends the recording
+# first, which cost both tests at once: this one stopped proving tap-to-stop,
+# and the limit test could not start at all against a spent budget.
+#
+# ~4.1s spent leaves ~2.1s, which is enough for the limit test to start a
+# recording and watch it end itself. Anything added here comes out of that
+# margin.
 - tapOn:
     id: camera_classic_shutter
 - runFlow: ../asserts/assertClassicClipRecorded.yaml
