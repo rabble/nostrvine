@@ -182,6 +182,7 @@ class _VideoClipTransformScreenState extends State<VideoClipTransformScreen> {
             initAspectRatio: widget.clip.targetAspectRatio.value,
             style: CropRotateEditorStyle(
               background: context.vineColors.surfaceContainerHigh,
+              cropCornerColor: VineTheme.primary,
             ),
             widgets: CropRotateEditorWidgets(
               appBar: (editorState, rebuildStream) => ReactiveAppbar(
