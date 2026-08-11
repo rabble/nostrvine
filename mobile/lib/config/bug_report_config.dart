@@ -100,7 +100,7 @@ class BugReportConfig {
     // attacker-typed report field.
     RegExp(
       '(?:(?:authorization|passphrase|passcode|password|passwd|pwd'
-      '|token|secret|api[_-]?key)s?'
+      '|token|jwt|secret|api[_-]?key)s?'
       '|(?<=[_-])(?<!pub[_-])(?<!public[_-])keys?)'
       '(?:[_-][A-Za-z0-9]+)*'
       '$_credentialSeparator$_credentialValue',
@@ -124,10 +124,12 @@ class BugReportConfig {
     // not redacted, so the key *name* is the only thing keeping a hex-form
     // private key out of a public ticket. `physical`/`logical` are excluded
     // because Flutter's KeyEvent.toString() prints them and they are never
-    // credentials.
+    // credentials, and `query` because `_describeUriForLogs` logs a deep
+    // link's `queryKeys` precisely to record parameter names *without* their
+    // values - redacting it deletes a diagnostic built to be privacy-safe.
     RegExp(
       '(?<=[A-Za-z])(?<![Pp]ub)(?<![Pp]ublic)'
-      '(?<![Pp]hysical)(?<![Ll]ogical)Keys?'
+      '(?<![Pp]hysical)(?<![Ll]ogical)(?<![Qq]uery)Keys?'
       '(?:[A-Z][a-z0-9]*)*'
       '$_credentialSeparator$_credentialValue',
     ),

@@ -22,6 +22,11 @@ const _secretFragments = [
   'Alice',
 ];
 
+/// A real `DeepLinkService._describeUriForLogs` line.
+const _deepLinkLogLine =
+    'scheme=https, host=divine.video, route=/invite, '
+    'segments=2, queryKeys=[code, state]';
+
 void main() {
   group('sanitizeDiagnosticText', () {
     group('redacts the whole credential value', () {
@@ -118,6 +123,11 @@ void main() {
         'colon separated': 'password: hunter2',
         'equals separated': 'secret=abc123',
         'nip46 bunker secret': 'bunker://relay.example?secret=deadbeef',
+        // `jwt` is how a bearer token is labelled when it is not called a
+        // token, and the policy doc promises bearer tokens never reach a
+        // public payload.
+        'json jwt key': '{"jwt":"eyJhbGciOi"}',
+        'bare jwt key': 'jwt: eyJhbGciOi',
       };
 
       for (final entry in cases.entries) {
@@ -214,6 +224,11 @@ void main() {
         'publicKeys: [npub1abc]',
         'pub_keys: [npub1abc]',
         'physicalKeys: {KeyA}',
+        // `DeepLinkService._describeUriForLogs` logs a deep link's query
+        // parameter *names* with no values, on purpose. Redacting it deletes
+        // a diagnostic that was built to be privacy-safe, and deep links are
+        // a common subject of bug reports.
+        _deepLinkLogLine,
         // Bare `key` is an ordinary English word. These are real in-repo
         // strings: an l10n error message, a model's toString, and Flutter key
         // events - none of them carry a credential.
