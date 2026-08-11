@@ -4972,8 +4972,6 @@
     "videoEditorAudioImportAudio": "Импортирай звук",
     "videoEditorAudioImportFailed": "Импортирането на звук се провали.",
     "videoIconPlaceholderLabel": "Видео",
-    "videoInspiredByAttributionSemanticLabel": "Вдъхновено от {creatorName}. Докосни, за да видиш профила им.",
-    "@videoInspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
     "searchFilterPillSemanticLabel": "Филтър: {filter}",
     "@searchFilterPillSemanticLabel": {"placeholders": {"filter": {"type": "String"}}},
     "searchNoResultsFound": "Няма намерени резултати за „{query}“",

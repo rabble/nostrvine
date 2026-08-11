@@ -7271,11 +7271,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoIconPlaceholderLabel => 'ቪዲዮ';
 
   @override
-  String videoInspiredByAttributionSemanticLabel(String creatorName) {
-    return 'በ$creatorName የተነሳሳ። መገለጫቸውን ለማየት መታ ያድርጉ።';
-  }
-
-  @override
   String get publishErrorNotSignedIn => 'ቪዲዮዎችን ለማተም እባክዎ ይግቡ።';
 
   @override

@@ -855,7 +855,7 @@ void main() {
                 'p',
                 sourceCreator,
                 'wss://source.relay',
-                clipSourceCreditTagMarker,
+                'inspired-by',
               ],
             ],
           );
@@ -889,6 +889,19 @@ void main() {
                 'wss://source.relay',
                 clipSourceCreditTagMarker,
               ]),
+            ),
+          );
+          expect(
+            capturedTags,
+            isNot(
+              contains(
+                equals([
+                  'p',
+                  sourceCreator,
+                  'wss://source.relay',
+                  'inspired-by',
+                ]),
+              ),
             ),
           );
           expect(

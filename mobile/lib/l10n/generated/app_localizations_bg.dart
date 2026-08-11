@@ -7499,11 +7499,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoIconPlaceholderLabel => 'Видео';
 
   @override
-  String videoInspiredByAttributionSemanticLabel(String creatorName) {
-    return 'Вдъхновено от $creatorName. Докосни, за да видиш профила им.';
-  }
-
-  @override
   String get publishErrorNotSignedIn => 'Влез, за да публикуваш видеа.';
 
   @override

@@ -7124,11 +7124,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoIconPlaceholderLabel => '영상';
 
   @override
-  String videoInspiredByAttributionSemanticLabel(String creatorName) {
-    return '$creatorName님에게서 영감을 받았어요. 탭하면 프로필을 볼 수 있어요.';
-  }
-
-  @override
   String get publishErrorNotSignedIn => '영상을 게시하려면 로그인해주세요.';
 
   @override

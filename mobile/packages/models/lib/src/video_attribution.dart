@@ -81,14 +81,6 @@ class ClipSourceCredit {
     this.relayUrl,
   });
 
-  factory ClipSourceCredit.fromJson(Map<String, dynamic> json) {
-    final credit = tryFromJson(json);
-    if (credit == null) {
-      throw const FormatException('ClipSourceCredit JSON missing authorPubkey');
-    }
-    return credit;
-  }
-
   factory ClipSourceCredit.fromAddressableId({
     required String addressableId,
     String? relayUrl,
@@ -110,6 +102,18 @@ class ClipSourceCredit {
       addressableId: _stringOrNull(json['addressableId']),
       relayUrl: _stringOrNull(json['relayUrl']),
     );
+  }
+
+  static List<ClipSourceCredit> listFromJson(Object? raw) {
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map<dynamic, dynamic>>()
+        .map(
+          (credit) =>
+              ClipSourceCredit.tryFromJson(Map<String, dynamic>.from(credit)),
+        )
+        .nonNulls
+        .toList(growable: false);
   }
 
   static String? _stringOrNull(Object? value) => value is String ? value : null;

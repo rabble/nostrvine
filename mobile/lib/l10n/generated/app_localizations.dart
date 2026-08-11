@@ -12890,12 +12890,6 @@ abstract class AppLocalizations {
   /// **'Video'**
   String get videoIconPlaceholderLabel;
 
-  /// No description provided for @videoInspiredByAttributionSemanticLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Inspired by {creatorName}. Tap to view their profile.'**
-  String videoInspiredByAttributionSemanticLabel(String creatorName);
-
   /// No description provided for @publishErrorNotSignedIn.
   ///
   /// In en, this message translates to:

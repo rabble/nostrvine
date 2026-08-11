@@ -4841,8 +4841,6 @@
     "videoEditorAudioImportAudio": "Importă audio",
     "videoEditorAudioImportFailed": "Importul audio a eșuat.",
     "videoIconPlaceholderLabel": "Videoclip",
-    "videoInspiredByAttributionSemanticLabel": "Inspirat de {creatorName}. Atinge ca să-i vezi profilul.",
-    "@videoInspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
     "searchFilterPillSemanticLabel": "Filtru: {filter}",
     "@searchFilterPillSemanticLabel": {"placeholders": {"filter": {"type": "String"}}},
     "searchNoResultsFound": "Niciun rezultat găsit pentru „{query}”",

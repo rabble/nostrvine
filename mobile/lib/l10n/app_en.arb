@@ -4484,8 +4484,6 @@
   "videoEditorAudioImportAudio": "Import audio",
   "videoEditorAudioImportFailed": "Audio import failed.",
   "videoIconPlaceholderLabel": "Video",
-  "videoInspiredByAttributionSemanticLabel": "Inspired by {creatorName}. Tap to view their profile.",
-  "@videoInspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
   "publishErrorNotSignedIn": "Please sign in to publish videos.",
   "publishErrorNoRetry": "No upload to retry.",
   "publishErrorNoInternet": "No internet connection. Check your Wi-Fi or mobile data and try again.",

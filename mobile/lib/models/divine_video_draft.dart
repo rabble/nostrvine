@@ -199,7 +199,9 @@ class DivineVideoDraft {
             )
           : null,
       inspiredByNpub: json['inspiredByNpub'] as String?,
-      clipSourceCredits: _clipSourceCreditsFromJson(json['clipSourceCredits']),
+      clipSourceCredits: ClipSourceCredit.listFromJson(
+        json['clipSourceCredits'],
+      ),
       // New format: full AudioEvent object
       // Old format (selectedAudioEventId/selectedAudioRelay) is ignored -
       // user must re-select sound if loading old draft
@@ -601,16 +603,4 @@ class DivineVideoDraft {
           inspiredByNpub != null ||
           clipSourceCredits.isNotEmpty ||
           expireTime != null);
-
-  static List<ClipSourceCredit> _clipSourceCreditsFromJson(Object? raw) {
-    if (raw is! List) return const [];
-    return raw
-        .whereType<Map>()
-        .map(
-          (credit) =>
-              ClipSourceCredit.tryFromJson(Map<String, dynamic>.from(credit)),
-        )
-        .nonNulls
-        .toList(growable: false);
-  }
 }

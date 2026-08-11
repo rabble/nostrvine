@@ -4246,14 +4246,6 @@
   "videoEditorAudioImportAudio": "Nhập âm thanh",
   "videoEditorAudioImportFailed": "Nhập âm thanh thất bại.",
   "videoIconPlaceholderLabel": "Video",
-  "videoInspiredByAttributionSemanticLabel": "Lấy cảm hứng từ {creatorName}. Chạm để xem hồ sơ của họ.",
-  "@videoInspiredByAttributionSemanticLabel": {
-    "placeholders": {
-      "creatorName": {
-        "type": "String"
-      }
-    }
-  },
   "publishErrorNotSignedIn": "Vui lòng đăng nhập để đăng video.",
   "publishErrorNoRetry": "Không có lần tải lên nào để thử lại.",
   "publishErrorNoInternet": "Không có kết nối internet. Kiểm tra Wi-Fi hoặc dữ liệu di động rồi thử lại.",

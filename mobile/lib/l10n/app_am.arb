@@ -4966,8 +4966,6 @@
     "videoEditorAudioImportAudio": "ኦዲዮ አስመጣ",
     "videoEditorAudioImportFailed": "ኦዲዮ ማስመጣት አልተሳካም።",
     "videoIconPlaceholderLabel": "ቪዲዮ",
-    "videoInspiredByAttributionSemanticLabel": "በ{creatorName} የተነሳሳ። መገለጫቸውን ለማየት መታ ያድርጉ።",
-    "@videoInspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
     "searchFilterPillSemanticLabel": "ማጣሪያ፡ {filter}",
     "@searchFilterPillSemanticLabel": {"placeholders": {"filter": {"type": "String"}}},
     "searchNoResultsFound": "ለ\"{query}\" ምንም ውጤት አልተገኘም",

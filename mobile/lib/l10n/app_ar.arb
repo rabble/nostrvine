@@ -4841,8 +4841,6 @@
     "videoEditorAudioImportAudio": "استيراد صوت",
     "videoEditorAudioImportFailed": "فشل استيراد الصوت.",
     "videoIconPlaceholderLabel": "فيديو",
-    "videoInspiredByAttributionSemanticLabel": "مستوحى من {creatorName}. اضغط لعرض ملفه الشخصي.",
-    "@videoInspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
     "searchFilterPillSemanticLabel": "التصفية: {filter}",
     "@searchFilterPillSemanticLabel": {"placeholders": {"filter": {"type": "String"}}},
     "searchNoResultsFound": "لم يتم العثور على نتائج لـ \"{query}\"",

@@ -4841,8 +4841,6 @@
     "videoEditorAudioImportAudio": "音声をインポート",
     "videoEditorAudioImportFailed": "音声のインポートに失敗したよ。",
     "videoIconPlaceholderLabel": "動画",
-    "videoInspiredByAttributionSemanticLabel": "{creatorName}にインスパイアされたよ。タップするとプロフィールを見れるよ。",
-    "@videoInspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
     "searchFilterPillSemanticLabel": "フィルター: {filter}",
     "@searchFilterPillSemanticLabel": {"placeholders": {"filter": {"type": "String"}}},
     "searchNoResultsFound": "「{query}」の結果は見つからなかったよ",

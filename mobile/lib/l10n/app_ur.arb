@@ -4246,14 +4246,6 @@
   "videoEditorAudioImportAudio": "آڈیو درآمد کریں",
   "videoEditorAudioImportFailed": "آڈیو درآمد ناکام۔",
   "videoIconPlaceholderLabel": "ویڈیو",
-  "videoInspiredByAttributionSemanticLabel": "{creatorName} سے متاثر۔ ان کا پروفائل دیکھنے کے لیے ٹیپ کریں۔",
-  "@videoInspiredByAttributionSemanticLabel": {
-    "placeholders": {
-      "creatorName": {
-        "type": "String"
-      }
-    }
-  },
   "publishErrorNotSignedIn": "ویڈیوز شائع کرنے کے لیے براہ کرم سائن ان کریں۔",
   "publishErrorNoRetry": "دوبارہ کوشش کے لیے کوئی اپلوڈ نہیں۔",
   "publishErrorNoInternet": "کوئی انٹرنیٹ کنکشن نہیں۔ اپنا Wi-Fi یا موبائل ڈیٹا چیک کر کے دوبارہ کوشش کریں۔",

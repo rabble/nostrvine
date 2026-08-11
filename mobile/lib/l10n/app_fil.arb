@@ -3427,8 +3427,6 @@
     "videoEditorAudioImportAudio": "Mag-import ng audio",
     "videoEditorAudioImportFailed": "Nabigo ang pag-import ng audio.",
     "videoIconPlaceholderLabel": "Video",
-    "videoInspiredByAttributionSemanticLabel": "Inspirado ni {creatorName}. I-tap para tingnan ang kanilang profile.",
-    "@videoInspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
     "searchFilterPillSemanticLabel": "Filter: {filter}",
     "@searchFilterPillSemanticLabel": {"placeholders": {"filter": {"type": "String"}}},
     "searchNoResultsFound": "Walang nakitang resulta para sa \"{query}\"",

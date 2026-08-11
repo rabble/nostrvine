@@ -632,21 +632,8 @@ class DivineVideoClip {
       sourceEventId: json['sourceEventId'] as String?,
       sourceAddressableId: json['sourceAddressableId'] as String?,
       sourceRelayHint: json['sourceRelayHint'] as String?,
-      sourceCredits: _sourceCreditsFromJson(json['sourceCredits']),
+      sourceCredits: model.ClipSourceCredit.listFromJson(json['sourceCredits']),
     );
-  }
-
-  static List<model.ClipSourceCredit> _sourceCreditsFromJson(Object? raw) {
-    if (raw is! List) return const [];
-    return raw
-        .whereType<Map>()
-        .map(
-          (credit) => model.ClipSourceCredit.tryFromJson(
-            Map<String, dynamic>.from(credit),
-          ),
-        )
-        .nonNulls
-        .toList(growable: false);
   }
 
   static List<model.ClipSourceCredit> _normalizedSourceCredits({

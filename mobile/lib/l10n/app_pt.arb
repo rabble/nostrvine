@@ -4841,8 +4841,6 @@
     "videoEditorAudioImportAudio": "Importar áudio",
     "videoEditorAudioImportFailed": "Falha ao importar o áudio.",
     "videoIconPlaceholderLabel": "Vídeo",
-    "videoInspiredByAttributionSemanticLabel": "Inspirado por {creatorName}. Toque para ver o perfil dele.",
-    "@videoInspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
     "searchFilterPillSemanticLabel": "Filtro: {filter}",
     "@searchFilterPillSemanticLabel": {"placeholders": {"filter": {"type": "String"}}},
     "searchNoResultsFound": "Nenhum resultado encontrado para \"{query}\"",

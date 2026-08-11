@@ -4841,8 +4841,6 @@
     "videoEditorAudioImportAudio": "Audio importeren",
     "videoEditorAudioImportFailed": "Audio importeren mislukt.",
     "videoIconPlaceholderLabel": "Video",
-    "videoInspiredByAttributionSemanticLabel": "Geïnspireerd door {creatorName}. Tik om hun profiel te bekijken.",
-    "@videoInspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
     "searchFilterPillSemanticLabel": "Filter: {filter}",
     "@searchFilterPillSemanticLabel": {"placeholders": {"filter": {"type": "String"}}},
     "searchNoResultsFound": "Geen resultaten gevonden voor \"{query}\"",

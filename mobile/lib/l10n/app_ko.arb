@@ -4172,8 +4172,6 @@
     "videoEditorAudioImportAudio": "오디오 가져오기",
     "videoEditorAudioImportFailed": "오디오 가져오기에 실패했어요.",
     "videoIconPlaceholderLabel": "영상",
-    "videoInspiredByAttributionSemanticLabel": "{creatorName}님에게서 영감을 받았어요. 탭하면 프로필을 볼 수 있어요.",
-    "@videoInspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
     "searchFilterPillSemanticLabel": "필터: {filter}",
     "@searchFilterPillSemanticLabel": {"placeholders": {"filter": {"type": "String"}}},
     "searchNoResultsFound": "\"{query}\"에 대한 결과가 없어요",

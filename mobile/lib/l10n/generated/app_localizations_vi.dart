@@ -7434,11 +7434,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get videoIconPlaceholderLabel => 'Video';
 
   @override
-  String videoInspiredByAttributionSemanticLabel(String creatorName) {
-    return 'Lấy cảm hứng từ $creatorName. Chạm để xem hồ sơ của họ.';
-  }
-
-  @override
   String get publishErrorNotSignedIn => 'Vui lòng đăng nhập để đăng video.';
 
   @override

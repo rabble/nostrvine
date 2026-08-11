@@ -7063,11 +7063,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoIconPlaceholderLabel => '视频';
 
   @override
-  String videoInspiredByAttributionSemanticLabel(String creatorName) {
-    return '灵感来自 $creatorName。点按查看 TA 的主页。';
-  }
-
-  @override
   String get publishErrorNotSignedIn => '请登录后再发布视频。';
 
   @override

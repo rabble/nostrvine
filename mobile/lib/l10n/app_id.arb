@@ -4841,8 +4841,6 @@
     "videoEditorAudioImportAudio": "Impor audio",
     "videoEditorAudioImportFailed": "Impor audio gagal.",
     "videoIconPlaceholderLabel": "Video",
-    "videoInspiredByAttributionSemanticLabel": "Terinspirasi oleh {creatorName}. Ketuk untuk melihat profil mereka.",
-    "@videoInspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
     "searchFilterPillSemanticLabel": "Filter: {filter}",
     "@searchFilterPillSemanticLabel": {"placeholders": {"filter": {"type": "String"}}},
     "searchNoResultsFound": "Tidak ada hasil untuk \"{query}\"",

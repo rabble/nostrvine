@@ -4246,14 +4246,6 @@
   "videoEditorAudioImportAudio": "Import audio",
   "videoEditorAudioImportFailed": "Import audio gagal.",
   "videoIconPlaceholderLabel": "Video",
-  "videoInspiredByAttributionSemanticLabel": "Diilhamkan oleh {creatorName}. Ketik untuk melihat profil mereka.",
-  "@videoInspiredByAttributionSemanticLabel": {
-    "placeholders": {
-      "creatorName": {
-        "type": "String"
-      }
-    }
-  },
   "publishErrorNotSignedIn": "Sila log masuk untuk menerbitkan video.",
   "publishErrorNoRetry": "Tiada muat naik untuk dicuba semula.",
   "publishErrorNoInternet": "Tiada sambungan internet. Semak Wi-Fi atau data mudah alih anda dan cuba lagi.",

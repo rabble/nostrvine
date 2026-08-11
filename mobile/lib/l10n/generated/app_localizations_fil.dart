@@ -7510,11 +7510,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoIconPlaceholderLabel => 'Video';
 
   @override
-  String videoInspiredByAttributionSemanticLabel(String creatorName) {
-    return 'Inspirado ni $creatorName. I-tap para tingnan ang kanilang profile.';
-  }
-
-  @override
   String get publishErrorNotSignedIn =>
       'Mag-sign in muna para makapag-publish ng video.';
 

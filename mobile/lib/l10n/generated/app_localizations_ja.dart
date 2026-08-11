@@ -7098,11 +7098,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoIconPlaceholderLabel => '動画';
 
   @override
-  String videoInspiredByAttributionSemanticLabel(String creatorName) {
-    return '$creatorNameにインスパイアされたよ。タップするとプロフィールを見れるよ。';
-  }
-
-  @override
   String get publishErrorNotSignedIn => '動画を投稿するにはサインインしてね。';
 
   @override

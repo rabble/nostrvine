@@ -297,7 +297,9 @@ class VideoEvent {
               json['inspiredByVideo'] as Map<String, dynamic>,
             ),
       inspiredByNpub: json['inspiredByNpub'] as String?,
-      clipSourceCredits: _clipSourceCreditsFromJson(json['clipSourceCredits']),
+      clipSourceCredits: ClipSourceCredit.listFromJson(
+        json['clipSourceCredits'],
+      ),
       textTrackRef: textTrackRef,
       textTrackRefs: textTrackRefs.isNotEmpty
           ? textTrackRefs
@@ -772,18 +774,6 @@ class VideoEvent {
       eventKind: event.kind,
       sourceRelay: sourceRelay,
     );
-  }
-
-  static List<ClipSourceCredit> _clipSourceCreditsFromJson(Object? raw) {
-    if (raw is! List) return const [];
-    return raw
-        .whereType<Map<dynamic, dynamic>>()
-        .map(
-          (credit) =>
-              ClipSourceCredit.tryFromJson(Map<String, dynamic>.from(credit)),
-        )
-        .nonNulls
-        .toList(growable: false);
   }
 
   static void _addClipSourceCredit(
