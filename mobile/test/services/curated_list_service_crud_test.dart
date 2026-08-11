@@ -1394,6 +1394,33 @@ void main() {
         expect(published.tags, contains(equals(['title', 'Updated Name'])));
       });
 
+      test('flags a failed rename for backfill retry', () async {
+        final list = await service.createList(name: 'Original Name');
+        expect(list!.nostrEventId, isNotNull);
+
+        reset(mockNostr);
+        when(() => mockNostr.signer).thenReturn(mockSigner);
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+          (invocation) async =>
+              _rejected(invocation.positionalArguments[0] as Event),
+        );
+
+        final result = await service.updateList(
+          listId: list.id,
+          name: 'Updated Name',
+        );
+
+        expect(result, isFalse);
+        final stored = service.getListById(list.id);
+        // The rename is kept locally, but the failed publish must clear the
+        // event id and flag the list so backfill republishes it — otherwise
+        // the edit is stranded on this device and a newer relay copy can
+        // silently overwrite it.
+        expect(stored!.name, 'Updated Name');
+        expect(stored.nostrEventId, isNull);
+        expect(stored.pendingRepublish, isTrue);
+      });
+
       test('returns false for non-existent list', () async {
         final result = await service.updateList(
           listId: 'non_existent_list',

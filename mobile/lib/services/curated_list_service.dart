@@ -615,6 +615,23 @@ class CuratedListService extends ChangeNotifier {
             confirmed: true,
             requireAllRelays: list.isPublic && !updatedList.isPublic,
           )) {
+        // A failed metadata edit (rename, description, tags, order) is
+        // retried by backfill like a failed item edit: clear the event id
+        // and flag it, so the local edit is not stranded on this device and
+        // later lost to a newer relay copy. A failed visibility flip is left
+        // alone — backfill republishes at accepted-by-any, which would defeat
+        // the all-relays bar the flip needs — so it stays at its old
+        // visibility for the user to retry.
+        if (!visibilityChanged) {
+          final currentIndex = _lists.indexWhere((l) => l.id == listId);
+          if (currentIndex != -1) {
+            _lists[currentIndex] = _lists[currentIndex].copyWith(
+              clearNostrEventId: true,
+              pendingRepublish: true,
+            );
+            await _saveLists();
+          }
+        }
         return false;
       }
 
