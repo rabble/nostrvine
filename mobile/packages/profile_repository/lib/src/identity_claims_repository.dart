@@ -391,35 +391,19 @@ class IdentityClaimsRepository {
     return platforms.where((platform) => platform.supported).toList();
   }
 
-  /// Whether this verifier deployment can start [platform]'s OAuth flow.
+  /// Starts [platform]'s OAuth flow and returns the URL to open in a browser.
   ///
-  /// See `VerifierClient.isOAuthConfigured` — a platform with an OAuth route
-  /// still needs its credentials configured server-side.
-  Future<bool> canStartOAuth({
+  /// See `VerifierClient.resolveOAuthLaunchUri` for the contract, including
+  /// which return URLs the service accepts. A null result means this
+  /// deployment has no credentials for the platform and the caller has to
+  /// fall back to the proof post.
+  Future<Uri?> resolveOAuthLaunchUri({
     required String platform,
     required String pubkey,
     required String returnUrl,
     String? handle,
   }) {
-    return _verifierClient.isOAuthConfigured(
-      platform: platform,
-      pubkey: pubkey,
-      returnUrl: returnUrl,
-      handle: handle,
-    );
-  }
-
-  /// Builds the verifier URL that starts [platform]'s OAuth flow.
-  ///
-  /// See `VerifierClient.oauthStartUri` for the contract, including which
-  /// return URLs the service accepts.
-  Uri oauthStartUri({
-    required String platform,
-    required String pubkey,
-    required String returnUrl,
-    String? handle,
-  }) {
-    return _verifierClient.oauthStartUri(
+    return _verifierClient.resolveOAuthLaunchUri(
       platform: platform,
       pubkey: pubkey,
       returnUrl: returnUrl,

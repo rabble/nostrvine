@@ -100,12 +100,12 @@ class VerifierClient {
     ];
   }
 
-  /// Builds the authorization URL that starts the OAuth flow for [platform].
+  /// Builds the verifier URL that starts the OAuth flow for [platform].
   ///
-  /// Purely local — the returned URL is meant to be opened in a browser
-  /// session, not fetched. The verifier redirects to [returnUrl] with
-  /// `oauth_verified`, `platform` and `identity` query parameters on success,
-  /// or `oauth_error` on failure.
+  /// Purely local; fetching it is what actually starts the flow, which
+  /// [resolveOAuthLaunchUri] does exactly once. The verifier then redirects to
+  /// [returnUrl] with `oauth_verified`, `platform` and `identity` query
+  /// parameters on success, or `oauth_error` on failure.
   ///
   /// [returnUrl] must be an origin the verifier allowlists
   /// (`divine-identify-verification-service/src/routes/auth.ts`), otherwise
@@ -145,39 +145,65 @@ class VerifierClient {
     );
   }
 
-  /// Whether the verifier can actually start [platform]'s OAuth flow.
+  /// Starts [platform]'s OAuth flow and returns the URL to open in a browser.
   ///
-  /// A platform having an OAuth route in the code does not mean this
-  /// deployment has its credentials: without them the start endpoint answers
-  /// 503 `{"error":"… OAuth not configured"}` instead of redirecting. Opening
-  /// a browser session on that page strands the user on a JSON error with no
-  /// way back, so callers check first and fall back to the proof post.
+  /// [oauthStartUri] answers with a 302 to the provider's authorization
+  /// endpoint. Resolving that redirect here and launching the session on its
+  /// target — rather than on the start URL again — keeps one tap to one start
+  /// request. A start request is not free: it mints server-side OAuth state,
+  /// spends the deployment's per-IP budget and, for Bluesky, resolves the PDS
+  /// and pushes a PAR to it.
   ///
-  /// Returns true when the verifier could not be reached at all — a probe that
-  /// failed is not evidence the flow is unavailable, and blocking on our own
-  /// pre-flight would be worse than letting the session report the problem.
-  Future<bool> isOAuthConfigured({
+  /// Returns null when this deployment cannot start the flow. A platform
+  /// having an OAuth route in the code does not mean the credentials are
+  /// configured: without them the endpoint answers 503
+  /// `{"error":"… OAuth not configured"}` instead of redirecting, and a
+  /// browser session opened on that page strands the user on a JSON error
+  /// with no way back.
+  ///
+  /// Falls back to the start URL when the verifier could not be reached at
+  /// all — a request that never landed is not evidence the flow is
+  /// unavailable, and the browser session reports the problem better than
+  /// refusing here would.
+  ///
+  /// Throws the same [ArgumentError]s as [oauthStartUri].
+  Future<Uri?> resolveOAuthLaunchUri({
     required String platform,
     required String pubkey,
     required String returnUrl,
     String? handle,
   }) async {
-    final request = http.Request(
-      'GET',
-      oauthStartUri(
-        platform: platform,
-        pubkey: pubkey,
-        returnUrl: returnUrl,
-        handle: handle,
-      ),
-    )..followRedirects = false;
+    final startUri = oauthStartUri(
+      platform: platform,
+      pubkey: pubkey,
+      returnUrl: returnUrl,
+      handle: handle,
+    );
+    final request = http.Request('GET', startUri)..followRedirects = false;
+    final http.StreamedResponse response;
     try {
-      final response = await _httpClient.send(request).timeout(_timeout);
-      await response.stream.drain<void>();
-      return response.statusCode >= 300 && response.statusCode < 400;
+      response = await _httpClient.send(request).timeout(_timeout);
     } on Object {
-      return true;
+      return startUri;
     }
+    try {
+      await response.stream.drain<void>();
+    } on Object {
+      // Only the status line and Location matter; a body that fails to drain
+      // does not change what the redirect said.
+    }
+    if (response.statusCode < 300 || response.statusCode >= 400) return null;
+    final location = response.headers['location'];
+    if (location == null || location.isEmpty) return null;
+    final Uri target;
+    try {
+      target = startUri.resolveUri(Uri.parse(location));
+    } on FormatException {
+      return null;
+    }
+    // The session has to land on the provider, not on whatever scheme a
+    // malformed Location happens to name.
+    return target.scheme == 'https' ? target : null;
   }
 
   /// Reads whether the verifier still holds an OAuth verification for a claim.

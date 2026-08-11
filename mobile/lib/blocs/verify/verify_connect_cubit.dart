@@ -110,11 +110,13 @@ class VerifyConnectCubit extends Cubit<VerifyConnectState> {
     );
 
     // Twitter and YouTube ship an OAuth route the deployment has no
-    // credentials for. Without this check the browser session opens on the
-    // verifier's 503 page and never comes back.
-    final bool available;
+    // credentials for; the start endpoint answers 503 rather than redirecting,
+    // and a browser session opened on that page never comes back. Resolving
+    // the redirect here catches that without asking the verifier to start the
+    // flow twice.
+    final Uri? authorizationUrl;
     try {
-      available = await _repository.canStartOAuth(
+      authorizationUrl = await _repository.resolveOAuthLaunchUri(
         platform: state.platform.key,
         pubkey: _pubkey,
         returnUrl: _oauthReturnUrl,
@@ -124,18 +126,13 @@ class VerifyConnectCubit extends Cubit<VerifyConnectState> {
       addError(error, stackTrace);
       return _fail(VerifyConnectError.oauthFailed);
     }
-    if (!available) return _fail(VerifyConnectError.oauthUnavailable);
+    if (authorizationUrl == null) {
+      return _fail(VerifyConnectError.oauthUnavailable);
+    }
 
     final Uri? callback;
     try {
-      callback = await _launchOAuth(
-        _repository.oauthStartUri(
-          platform: state.platform.key,
-          pubkey: _pubkey,
-          returnUrl: _oauthReturnUrl,
-          handle: state.identity.isEmpty ? null : state.identity,
-        ),
-      );
+      callback = await _launchOAuth(authorizationUrl);
     } on Object catch (error, stackTrace) {
       addError(error, stackTrace);
       return _fail(VerifyConnectError.oauthFailed);

@@ -81,22 +81,14 @@ void main() {
       ).thenAnswer((_) async => _result(verified: true));
       when(() => repository.publishClaim(any())).thenAnswer((_) async => []);
       when(
-        () => repository.canStartOAuth(
+        () => repository.resolveOAuthLaunchUri(
           platform: any(named: 'platform'),
           pubkey: any(named: 'pubkey'),
           returnUrl: any(named: 'returnUrl'),
           handle: any(named: 'handle'),
         ),
-      ).thenAnswer((_) async => true);
-      when(
-        () => repository.oauthStartUri(
-          platform: any(named: 'platform'),
-          pubkey: any(named: 'pubkey'),
-          returnUrl: any(named: 'returnUrl'),
-          handle: any(named: 'handle'),
-        ),
-      ).thenReturn(
-        Uri.parse('https://verifier.divine.video/auth/twitter/start'),
+      ).thenAnswer(
+        (_) async => Uri.parse('https://provider.example/authorize?state=s'),
       );
     });
 
@@ -287,13 +279,13 @@ void main() {
         build: () => build(_twitter),
         setUp: () {
           when(
-            () => repository.canStartOAuth(
+            () => repository.resolveOAuthLaunchUri(
               platform: any(named: 'platform'),
               pubkey: any(named: 'pubkey'),
               returnUrl: any(named: 'returnUrl'),
               handle: any(named: 'handle'),
             ),
-          ).thenAnswer((_) async => false);
+          ).thenAnswer((_) async => null);
         },
         act: (cubit) => cubit.connectWithOAuth(),
         verify: (cubit) {
@@ -307,11 +299,11 @@ void main() {
       );
 
       blocTest<VerifyConnectCubit, VerifyConnectState>(
-        'returns to editing when the OAuth preflight throws',
+        'returns to editing when resolving the OAuth URL throws',
         build: () => build(_twitter),
         setUp: () {
           when(
-            () => repository.canStartOAuth(
+            () => repository.resolveOAuthLaunchUri(
               platform: any(named: 'platform'),
               pubkey: any(named: 'pubkey'),
               returnUrl: any(named: 'returnUrl'),
@@ -412,7 +404,7 @@ void main() {
       );
 
       blocTest<VerifyConnectCubit, VerifyConnectState>(
-        'passes the bluesky handle to the start URL',
+        'passes the bluesky handle to the start URL, and starts once',
         build: () => build(_bluesky),
         setUp: () => callback = Uri.parse(
           '$_returnUrl?oauth_verified=true&platform=bluesky'
@@ -423,14 +415,21 @@ void main() {
           await cubit.connectWithOAuth();
         },
         verify: (_) {
+          // Bluesky's start resolves the PDS and pushes a PAR to it, so the
+          // browser has to open on the resolved provider URL rather than on
+          // the start endpoint a second time.
           verify(
-            () => repository.oauthStartUri(
+            () => repository.resolveOAuthLaunchUri(
               platform: 'bluesky',
               pubkey: _pubkey,
               returnUrl: _returnUrl,
               handle: 'alice.bsky.social',
             ),
           ).called(1);
+          expect(
+            launched,
+            equals([Uri.parse('https://provider.example/authorize?state=s')]),
+          );
         },
       );
 

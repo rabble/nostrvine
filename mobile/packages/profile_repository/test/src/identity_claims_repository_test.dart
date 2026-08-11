@@ -1567,46 +1567,47 @@ void main() {
       });
     });
 
-    group('canStartOAuth', () {
+    group('resolveOAuthLaunchUri', () {
       test('delegates to the verifier client', () async {
         when(
-          () => client.isOAuthConfigured(
+          () => client.resolveOAuthLaunchUri(
             platform: any(named: 'platform'),
             pubkey: any(named: 'pubkey'),
             returnUrl: any(named: 'returnUrl'),
             handle: any(named: 'handle'),
           ),
-        ).thenAnswer((_) async => false);
+        ).thenAnswer(
+          (_) async => Uri.parse('https://x.com/i/oauth2/authorize'),
+        );
 
         expect(
-          await repo.canStartOAuth(
+          await repo.resolveOAuthLaunchUri(
             platform: 'twitter',
             pubkey: _pubkey,
             returnUrl: 'https://divine.video/app/callback',
           ),
-          isFalse,
+          equals(Uri.parse('https://x.com/i/oauth2/authorize')),
         );
       });
-    });
 
-    group('oauthStartUri', () {
-      test('delegates to the verifier client', () {
+      test('passes an unavailable platform through as null', () async {
         when(
-          () => client.oauthStartUri(
+          () => client.resolveOAuthLaunchUri(
             platform: any(named: 'platform'),
             pubkey: any(named: 'pubkey'),
             returnUrl: any(named: 'returnUrl'),
             handle: any(named: 'handle'),
           ),
-        ).thenReturn(Uri.parse('https://verifier.example/auth/twitter/start'));
+        ).thenAnswer((_) async => null);
 
-        final uri = repo.oauthStartUri(
-          platform: 'twitter',
-          pubkey: _pubkey,
-          returnUrl: 'https://divine.video/app/callback',
+        expect(
+          await repo.resolveOAuthLaunchUri(
+            platform: 'twitter',
+            pubkey: _pubkey,
+            returnUrl: 'https://divine.video/app/callback',
+          ),
+          isNull,
         );
-
-        expect(uri.path, equals('/auth/twitter/start'));
       });
     });
 

@@ -22,10 +22,7 @@ void main() {
       test('returns parsed results on 200', () async {
         final mock = MockClient((req) async {
           expect(req.method, equals('POST'));
-          expect(
-            req.url.toString(),
-            equals('https://verifier.example/verify'),
-          );
+          expect(req.url.toString(), equals('https://verifier.example/verify'));
           final body = jsonDecode(req.body) as Map<String, dynamic>;
           expect(body['claims'] as List, hasLength(1));
           return http.Response(
@@ -125,10 +122,7 @@ void main() {
 
       test('strips trailing slash from baseUrl', () async {
         final mock = MockClient((req) async {
-          expect(
-            req.url.toString(),
-            equals('https://verifier.example/verify'),
-          );
+          expect(req.url.toString(), equals('https://verifier.example/verify'));
           return http.Response(
             jsonEncode(<String, dynamic>{'results': <Object?>[]}),
             200,
@@ -322,28 +316,60 @@ void main() {
       });
     });
 
-    group('isOAuthConfigured', () {
-      test('reports configured when the start endpoint redirects', () async {
-        final mock = MockClient((req) async {
-          expect(req.url.path, equals('/auth/twitter/start'));
-          return http.Response('', 302, headers: {'location': 'https://x.com'});
-        });
+    group('resolveOAuthLaunchUri', () {
+      test(
+        'returns the provider URL the start endpoint redirects to',
+        () async {
+          var starts = 0;
+          final mock = MockClient((req) async {
+            starts++;
+            expect(req.url.path, equals('/auth/twitter/start'));
+            return http.Response(
+              '',
+              302,
+              headers: {'location': 'https://x.com/i/oauth2/authorize?state=s'},
+            );
+          });
+          final client = VerifierClient(
+            baseUrl: 'https://verifier.example',
+            httpClient: mock,
+          );
+
+          expect(
+            await client.resolveOAuthLaunchUri(
+              platform: 'twitter',
+              pubkey: _hex,
+              returnUrl: 'https://divine.video/app/callback',
+            ),
+            equals(Uri.parse('https://x.com/i/oauth2/authorize?state=s')),
+          );
+          // Each start mints server-side OAuth state and, for Bluesky, pushes a
+          // PAR to the user's PDS. One tap has to cost exactly one.
+          expect(starts, equals(1));
+        },
+      );
+
+      test('resolves a relative Location against the start URL', () async {
+        final mock = MockClient(
+          (_) async =>
+              http.Response('', 302, headers: {'location': '/auth/retry'}),
+        );
         final client = VerifierClient(
           baseUrl: 'https://verifier.example',
           httpClient: mock,
         );
 
         expect(
-          await client.isOAuthConfigured(
+          await client.resolveOAuthLaunchUri(
             platform: 'twitter',
             pubkey: _hex,
             returnUrl: 'https://divine.video/app/callback',
           ),
-          isTrue,
+          equals(Uri.parse('https://verifier.example/auth/retry')),
         );
       });
 
-      test('reports unconfigured on the service 503', () async {
+      test('reports unavailable on the service 503', () async {
         final mock = MockClient(
           (_) async =>
               http.Response('{"error":"Twitter OAuth not configured"}', 503),
@@ -354,33 +380,76 @@ void main() {
         );
 
         expect(
-          await client.isOAuthConfigured(
+          await client.resolveOAuthLaunchUri(
             platform: 'twitter',
             pubkey: _hex,
             returnUrl: 'https://divine.video/app/callback',
           ),
-          isFalse,
+          isNull,
         );
       });
 
-      test('does not block the flow when the probe itself fails', () async {
-        final mock = MockClient((_) async {
-          throw http.ClientException('offline');
-        });
+      test('reports unavailable on a redirect with no Location', () async {
+        final mock = MockClient((_) async => http.Response('', 302));
         final client = VerifierClient(
           baseUrl: 'https://verifier.example',
           httpClient: mock,
         );
 
         expect(
-          await client.isOAuthConfigured(
+          await client.resolveOAuthLaunchUri(
             platform: 'twitter',
             pubkey: _hex,
             returnUrl: 'https://divine.video/app/callback',
           ),
-          isTrue,
+          isNull,
         );
       });
+
+      test('refuses a Location that is not https', () async {
+        final mock = MockClient(
+          (_) async => http.Response(
+            '',
+            302,
+            headers: {'location': 'javascript:alert(1)'},
+          ),
+        );
+        final client = VerifierClient(
+          baseUrl: 'https://verifier.example',
+          httpClient: mock,
+        );
+
+        expect(
+          await client.resolveOAuthLaunchUri(
+            platform: 'twitter',
+            pubkey: _hex,
+            returnUrl: 'https://divine.video/app/callback',
+          ),
+          isNull,
+        );
+      });
+
+      test(
+        'falls back to the start URL when the request never lands',
+        () async {
+          final mock = MockClient((_) async {
+            throw http.ClientException('offline');
+          });
+          final client = VerifierClient(
+            baseUrl: 'https://verifier.example',
+            httpClient: mock,
+          );
+
+          final uri = await client.resolveOAuthLaunchUri(
+            platform: 'twitter',
+            pubkey: _hex,
+            returnUrl: 'https://divine.video/app/callback',
+          );
+
+          expect(uri?.path, equals('/auth/twitter/start'));
+          expect(uri?.queryParameters['pubkey'], equals(_hex));
+        },
+      );
     });
 
     group('oauthStatus', () {
