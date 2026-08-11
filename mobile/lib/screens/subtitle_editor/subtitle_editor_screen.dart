@@ -110,10 +110,7 @@ class _SubtitleEditorScreenState extends ConsumerState<SubtitleEditorScreen>
       key: ObjectKey(repository),
       create: (_) =>
           SubtitleEditorCubit(repository: repository, video: video)..load(),
-      child: SubtitleEditorView(
-        video: video,
-        loadFrames: loadFrames,
-      ),
+      child: SubtitleEditorView(video: video, loadFrames: loadFrames),
     );
   }
 }
@@ -198,11 +195,7 @@ class SubtitleEditorView extends StatelessWidget {
             message: l10n.subtitleEditorLoadError,
             canWriteOwn: true,
           ),
-          _ => _CueList(
-            state: state,
-            video: video,
-            loadFrames: loadFrames,
-          ),
+          _ => _CueList(state: state, video: video, loadFrames: loadFrames),
         },
       ),
     );
@@ -322,13 +315,16 @@ class _CueBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Expanded(
-          child: _CueRows(state: state, padding: const EdgeInsets.all(16)),
-        ),
-        _SaveBar(state: state),
-      ],
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: Column(
+        children: [
+          Expanded(
+            child: _CueRows(state: state, padding: const EdgeInsets.all(16)),
+          ),
+          _SaveBar(state: state),
+        ],
+      ),
     );
   }
 }
@@ -350,15 +346,17 @@ class _CueSheet extends StatelessWidget {
   /// collapsed past it. The stage's height is fixed, so a smaller sheet would
   /// not reveal more picture — only a band of empty background under it.
   ///
-  /// It is also where the sheet opens, which the matching implicit
-  /// `initialChildSize` default gives us. `snap: true` snaps to the two bounds
-  /// and nothing between them, so a resting size that is not one of them would
-  /// be unreachable after the first drag.
+  /// It is also where the sheet opens. `snap: true` snaps to the two bounds and
+  /// nothing between them, so a resting size that is not one of them would be
+  /// unreachable after the first drag.
   static const double _minSize = _CueList._stageHeightFactor;
+
+  static double get _initialSize => _minSize;
 
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
+      initialChildSize: _initialSize,
       minChildSize: _minSize,
       maxChildSize: _maxSize,
       snap: true,
@@ -426,9 +424,7 @@ class _CueRows extends StatelessWidget {
           : _CueRow(
               index: index,
               cue: state.cues[index],
-              totalDuration: Duration(
-                milliseconds: state.timelineDurationMs,
-              ),
+              totalDuration: Duration(milliseconds: state.timelineDurationMs),
               isSelected: state.selectedCueIndex == index,
             ),
     );
@@ -549,33 +545,37 @@ class _CueRow extends StatelessWidget {
   /// Slider range: the whole video, so cues may freely overlap each other.
   final Duration totalDuration;
 
-  /// Whether this is the cue the timeline is showing trim handles on.
+  /// Whether this is the cue the preview is showing.
   final bool isSelected;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final cubit = context.read<SubtitleEditorCubit>();
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: CaptionCueRow(
-        text: cue.text,
-        start: Duration(milliseconds: cue.start),
-        end: Duration(milliseconds: cue.end),
-        totalDuration: totalDuration,
-        isSelected: isSelected,
-        textFieldLabel: l10n.subtitleEditorCueHint,
-        removeSemanticLabel: l10n.subtitleEditorRemoveCue,
-        onTimingChanged: (start, end) => cubit.updateCueTiming(
-          index,
-          start: start.inMilliseconds,
-          end: end.inMilliseconds,
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () => cubit.selectCue(index),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: CaptionCueRow(
+          text: cue.text,
+          start: Duration(milliseconds: cue.start),
+          end: Duration(milliseconds: cue.end),
+          totalDuration: totalDuration,
+          isSelected: isSelected,
+          textFieldLabel: l10n.subtitleEditorCueHint,
+          removeSemanticLabel: l10n.subtitleEditorRemoveCue,
+          onTimingChanged: (start, end) => cubit.updateCueTiming(
+            index,
+            start: start.inMilliseconds,
+            end: end.inMilliseconds,
+          ),
+          onTextChanged: (value) => cubit.updateCueText(index, value),
+          onRemoved: () => cubit.removeCue(index),
+          // Typing in a row is the clearest statement of which cue the creator
+          // is on, so it drives the preview selection too.
+          onFocused: () => cubit.selectCue(index),
         ),
-        onTextChanged: (value) => cubit.updateCueText(index, value),
-        onRemoved: () => cubit.removeCue(index),
-        // Typing in a row is the clearest statement of which cue the creator
-        // is on, so it drives the timeline's selection too.
-        onFocused: () => cubit.selectCue(index),
       ),
     );
   }

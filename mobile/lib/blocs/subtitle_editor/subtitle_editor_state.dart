@@ -113,8 +113,7 @@ class SubtitleEditorState extends Equatable {
   /// Index into [cues] of the cue the creator is working on, or `null` when
   /// none is selected.
   ///
-  /// Drives which cue the timeline shows trim handles on and which row the
-  /// list highlights.
+  /// Drives which cue the preview seeks to and which row the list highlights.
   final int? selectedCueIndex;
 
   /// Whether [cues] can be published as they stand.

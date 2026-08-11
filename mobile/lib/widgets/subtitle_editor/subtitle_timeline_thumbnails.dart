@@ -84,7 +84,12 @@ class SubtitleTimelineThumbnails extends StatelessWidget {
     int slot,
     int slotCount,
   ) {
-    final targetMs = (slot + 0.5) / slotCount * totalDuration.inMilliseconds;
+    if (width <= 0) return frames.first;
+    final slotCenterPx = math.min(
+      (slot + 0.5) * TimelineConstants.thumbnailWidth,
+      width,
+    );
+    final targetMs = slotCenterPx / width * totalDuration.inMilliseconds;
     var best = frames.first;
     var bestDistance = (best.timestamp.inMilliseconds - targetMs).abs();
     for (final frame in frames.skip(1)) {

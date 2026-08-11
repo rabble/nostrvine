@@ -18,6 +18,7 @@ import 'package:openvine/screens/subtitle_editor/subtitle_editor_screen.dart';
 import 'package:openvine/services/subtitle_fetcher.dart';
 import 'package:openvine/services/subtitle_service.dart';
 import 'package:openvine/services/video_event_resolver.dart';
+import 'package:openvine/widgets/captions/caption_cue_row.dart';
 import 'package:openvine/widgets/subtitle_editor/subtitle_editor_stage.dart';
 
 import '../../helpers/test_helpers.dart';
@@ -55,8 +56,7 @@ Finder cueTextFields(AppLocalizations l10n) => find.byWidgetPredicate(
 
 /// [text] as it appears in the editable cue list.
 ///
-/// Scoped, because a cue's text is also painted on its timeline bar whenever
-/// the video stage is on screen.
+/// Scoped, because the same cue can also appear in the preview's caption pill.
 Finder cueTextInList(String text) =>
     find.descendant(of: find.byType(ListView), matching: find.text(text));
 
@@ -264,10 +264,7 @@ void main() {
     await tester.pumpWidget(pump());
 
     final l10n = lookupAppLocalizations(const Locale('en'));
-    await tester.tap(
-      find.text(l10n.subtitleEditorAddCue),
-      warnIfMissed: false,
-    );
+    await tester.tap(find.text(l10n.subtitleEditorAddCue), warnIfMissed: false);
     verifyNever(cubit.addCue);
   });
 
@@ -326,10 +323,7 @@ void main() {
     // The end thumb sits at 2s of a 4s track, i.e. mid-slider. Dragging it a
     // quarter of the track to the left has to shorten the cue.
     final slider = tester.getRect(find.byType(RangeSlider));
-    await tester.dragFrom(
-      slider.center,
-      Offset(-slider.width / 4, 0),
-    );
+    await tester.dragFrom(slider.center, Offset(-slider.width / 4, 0));
     await tester.pump();
 
     final captured = verify(
@@ -374,6 +368,25 @@ void main() {
     final list = tester.getRect(find.byType(ListView));
     final body = tester.getRect(find.byType(Scaffold));
     expect(list.top - body.top, lessThan(body.height / 4));
+  });
+
+  testWidgets('no-stage rows clear the keyboard inset', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(800, 600);
+    tester.view.viewInsets = const FakeViewPadding(bottom: 260);
+    addTearDown(tester.view.reset);
+    when(() => cubit.state).thenReturn(
+      const SubtitleEditorState(
+        status: SubtitleEditorStatus.ready,
+        cues: [EditableCue(start: 0, end: 1000, text: 'one')],
+      ),
+    );
+    await tester.pumpWidget(pump());
+
+    final saveButton = find.text(
+      lookupAppLocalizations(const Locale('en')).subtitleEditorSave,
+    );
+    expect(tester.getBottomLeft(saveButton).dy, lessThan(600 - 260));
   });
 
   testWidgets('the cue sheet rests on the stage and cannot collapse past it', (
@@ -437,6 +450,31 @@ void main() {
     final l10n = lookupAppLocalizations(const Locale('en'));
     await revealInList(tester, cueTextFields(l10n).last);
     await tester.tap(cueTextFields(l10n).last);
+    await tester.pump();
+
+    verify(() => cubit.selectCue(1)).called(1);
+  });
+
+  testWidgets('tapping a row selects its cue without targeting the field', (
+    tester,
+  ) async {
+    when(() => cubit.state).thenReturn(
+      const SubtitleEditorState(
+        status: SubtitleEditorStatus.ready,
+        videoDurationMs: 4000,
+        cues: [
+          EditableCue(start: 0, end: 1000, text: 'one'),
+          EditableCue(start: 1000, end: 2000, text: 'two'),
+        ],
+      ),
+    );
+    when(() => cubit.selectCue(any())).thenReturn(null);
+    await tester.pumpWidget(pump());
+
+    final row = find.byType(CaptionCueRow).last;
+    await revealInList(tester, row);
+    final topLeft = tester.getTopLeft(row);
+    await tester.tapAt(topLeft + const Offset(8, 8));
     await tester.pump();
 
     verify(() => cubit.selectCue(1)).called(1);

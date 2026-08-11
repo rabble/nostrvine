@@ -2,6 +2,7 @@
 // ABOUTME: player and filmstrip both of them read from.
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart';
@@ -54,6 +55,26 @@ class SubtitleEditorStage extends StatefulWidget {
   /// Supplies the timeline's filmstrip.
   final TimelineFrameLoader loadFrames;
 
+  /// Player reports this close to a pending seek have converged on the target.
+  @visibleForTesting
+  static const seekSettleTolerance = Duration(milliseconds: 120);
+
+  /// Whether a player position [report] may move the subtitle playhead.
+  ///
+  /// Native position reports can arrive after a newer scrub has already pinned
+  /// the UI to its target. While playback is paused and a seek is pending, only
+  /// accept reports that have settled near that target.
+  @visibleForTesting
+  static bool shouldAcceptPlayerReport({
+    required Duration report,
+    required Duration? seekTarget,
+    required bool isPlaying,
+  }) {
+    if (isPlaying || seekTarget == null) return true;
+    final delta = report - seekTarget;
+    return (delta.isNegative ? -delta : delta) <= seekSettleTolerance;
+  }
+
   @override
   State<SubtitleEditorStage> createState() => _SubtitleEditorStageState();
 }
@@ -83,6 +104,7 @@ class _SubtitleEditorStageState extends State<SubtitleEditorStage>
   bool _isPlaying = false;
   bool _failed = false;
   double _aspectRatio = 9 / 16;
+  Duration? _pendingSeekTarget;
 
   @override
   void initState() {
@@ -114,7 +136,7 @@ class _SubtitleEditorStageState extends State<SubtitleEditorStage>
           devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
         )
         .listen(
-          (batch) => _thumbnails.value = batch,
+          _replaceThumbnails,
           // The loader is injected, so its no-error contract cannot be
           // enforced from here. Frames are decoration: keep the ones that
           // arrived rather than letting the failure reach the zone handler.
@@ -140,12 +162,31 @@ class _SubtitleEditorStageState extends State<SubtitleEditorStage>
     _position.value = position;
   }
 
+  void _replaceThumbnails(List<TimelineFrame> batch) {
+    final nextPaths = {for (final frame in batch) frame.path};
+    _deleteFrames([
+      for (final frame in _thumbnails.value)
+        if (!nextPaths.contains(frame.path)) frame,
+    ]);
+    _thumbnails.value = batch;
+  }
+
+  static void _deleteFrames(List<TimelineFrame> frames) {
+    for (final frame in frames) {
+      try {
+        final file = File(frame.path);
+        if (file.existsSync()) file.deleteSync();
+      } catch (_) {}
+    }
+  }
+
   @override
   void dispose() {
     _playhead.dispose();
     unawaited(_playerStates?.cancel());
     unawaited(_thumbnailBatches?.cancel());
     unawaited(_controller?.dispose());
+    _deleteFrames(_thumbnails.value);
     _position.dispose();
     _thumbnails.dispose();
     super.dispose();
@@ -198,7 +239,18 @@ class _SubtitleEditorStageState extends State<SubtitleEditorStage>
   }
 
   void _onPlayerState(DivineVideoPlayerState state) {
-    _anchorPlayhead(state.position);
+    final isPlaying = state.status == PlaybackStatus.playing;
+    final reportAccepted = SubtitleEditorStage.shouldAcceptPlayerReport(
+      report: state.position,
+      seekTarget: _pendingSeekTarget,
+      isPlaying: isPlaying,
+    );
+    if (isPlaying) {
+      _pendingSeekTarget = null;
+    } else if (reportAccepted) {
+      _pendingSeekTarget = null;
+    }
+    if (reportAccepted) _anchorPlayhead(state.position);
     if (state.status == PlaybackStatus.error && !_failed) {
       Log.warning(
         'Video playback failed while captioning: ${state.errorMessage}',
@@ -208,7 +260,6 @@ class _SubtitleEditorStageState extends State<SubtitleEditorStage>
       if (mounted) setState(() => _failed = true);
       return;
     }
-    final isPlaying = state.status == PlaybackStatus.playing;
     final ratio = state.videoHeight > 0
         ? state.videoWidth / state.videoHeight
         : _aspectRatio;
@@ -244,6 +295,7 @@ class _SubtitleEditorStageState extends State<SubtitleEditorStage>
     if (controller == null) return;
     if (_isPlaying) unawaited(controller.pause());
     _anchorPlayhead(position);
+    _pendingSeekTarget = position;
     unawaited(controller.seekTo(position));
   }
 

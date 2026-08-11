@@ -98,9 +98,9 @@ class SubtitleEditorCubit extends Cubit<SubtitleEditorState> {
   /// Marks the cue at [index] as the one being worked on, or clears the
   /// selection when [index] is `null`.
   ///
-  /// The timeline shows trim handles on the selected cue and the list
-  /// highlights its row. Out-of-range indices clear the selection instead of
-  /// pointing the timeline at a cue that is not there.
+  /// The preview seeks to the selected cue and the list highlights its row.
+  /// Out-of-range indices clear the selection instead of pointing the editor at
+  /// a cue that is not there.
   void selectCue(int? index) {
     if (isClosed) return;
     if (index == null || index < 0 || index >= state.cues.length) {

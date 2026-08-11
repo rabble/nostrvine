@@ -1,6 +1,9 @@
 // ABOUTME: Widget tests for SubtitleEditorStage — the video preview and its
 // ABOUTME: cue timeline, wired to a stubbed filmstrip.
 
+import 'dart:async';
+import 'dart:io';
+
 import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -32,6 +35,14 @@ Stream<List<TimelineFrame>> _failingFrames({
 
 void main() {
   group(SubtitleEditorStage, () {
+    late Directory temp;
+
+    setUp(() {
+      temp = Directory.systemTemp.createTempSync('subtitle_stage_frames');
+    });
+
+    tearDown(() => temp.deleteSync(recursive: true));
+
     Widget pump({
       required List<EditableCue> cues,
       EditableCue? selectedCue,
@@ -131,6 +142,61 @@ void main() {
         find.descendant(of: pill, matching: find.text('live now')),
         findsOneWidget,
       );
+    });
+
+    test('rejects stale paused reports while a seek is pending', () {
+      expect(
+        SubtitleEditorStage.shouldAcceptPlayerReport(
+          report: const Duration(seconds: 1),
+          seekTarget: const Duration(seconds: 4),
+          isPlaying: false,
+        ),
+        isFalse,
+      );
+      expect(
+        SubtitleEditorStage.shouldAcceptPlayerReport(
+          report: const Duration(milliseconds: 4075),
+          seekTarget: const Duration(seconds: 4),
+          isPlaying: false,
+        ),
+        isTrue,
+      );
+      expect(
+        SubtitleEditorStage.shouldAcceptPlayerReport(
+          report: const Duration(seconds: 1),
+          seekTarget: const Duration(seconds: 4),
+          isPlaying: true,
+        ),
+        isTrue,
+      );
+    });
+
+    testWidgets('deletes loaded filmstrip files when disposed', (tester) async {
+      final frame = File('${temp.path}/frame.jpg')..writeAsStringSync('frame');
+      final controller = StreamController<List<TimelineFrame>>();
+      addTearDown(controller.close);
+
+      await tester.pumpWidget(
+        pump(
+          cues: const [EditableCue(start: 0, end: 1000, text: 'one')],
+          loadFrames:
+              ({
+                required String videoUrl,
+                required String videoId,
+                required Duration duration,
+                required double devicePixelRatio,
+              }) => controller.stream,
+        ),
+      );
+      controller.add([
+        TimelineFrame(path: frame.path, timestamp: Duration.zero),
+      ]);
+      await tester.pump();
+      expect(frame.existsSync(), isTrue);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+
+      expect(frame.existsSync(), isFalse);
     });
   });
 }

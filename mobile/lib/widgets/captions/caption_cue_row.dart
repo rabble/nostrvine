@@ -59,8 +59,8 @@ class CaptionCueRow extends StatefulWidget {
 
   /// Called when the text field takes focus.
   ///
-  /// Editors that also show the cue somewhere else — a timeline bar, say — use
-  /// this to follow the creator to the cue they are typing in.
+  /// Editors that also show the cue somewhere else use this to follow the
+  /// creator to the cue they are typing in.
   final VoidCallback? onFocused;
 
   /// Whether this is the cue the surrounding editor is focused on.

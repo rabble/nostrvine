@@ -22,9 +22,13 @@ void main() {
 
     test('extracts frames from the cached file', () async {
       final requestedPaths = <String>[];
+      final downloadedUrls = <String>[];
       final service = SubtitleTimelineThumbnailService(
-        downloadVideo:
-            ({required String url, required String cacheKey}) async => video,
+        downloadVideo: ({required String url, required String cacheKey}) async {
+          downloadedUrls.add(url);
+          return video;
+        },
+        resolveVideoUrl: (url) async => 'https://example.com/resolved.mp4',
         stripThumbnailStreamFactory:
             ({
               required String videoPath,
@@ -54,7 +58,38 @@ void main() {
           .toList();
 
       expect(requestedPaths, [video.path]);
+      expect(downloadedUrls, ['https://example.com/resolved.mp4']);
       expect(batches.single.single.path, '${video.path}.jpg');
+    });
+
+    test('unresolved HLS manifests are not cached or extracted', () async {
+      final service = SubtitleTimelineThumbnailService(
+        downloadVideo:
+            ({required String url, required String cacheKey}) async =>
+                fail('HLS manifests must not be cached under the video id'),
+        resolveVideoUrl: (url) async =>
+            'https://media.divine.video/video/hls/master.m3u8',
+        stripThumbnailStreamFactory:
+            ({
+              required String videoPath,
+              required String clipId,
+              required Duration duration,
+              required Size outputSize,
+              required int thumbsPerSecond,
+              List<Duration>? priorityTimestamps,
+            }) => fail('extraction must not start for an HLS manifest'),
+      );
+
+      final batches = await service
+          .thumbnailsFor(
+            videoUrl: 'https://media.divine.video/video/hls/master.m3u8',
+            videoId: 'v',
+            duration: const Duration(seconds: 6),
+            devicePixelRatio: 2,
+          )
+          .toList();
+
+      expect(batches, isEmpty);
     });
 
     test('yields nothing when the video cannot be cached', () async {

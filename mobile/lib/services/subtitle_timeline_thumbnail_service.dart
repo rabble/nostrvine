@@ -15,6 +15,9 @@ import 'package:unified_logger/unified_logger.dart';
 typedef TimelineVideoDownloader =
     Future<File?> Function({required String url, required String cacheKey});
 
+/// Resolves the event URL into a single file that can be cached and decoded.
+typedef TimelineVideoUrlResolver = Future<String?> Function(String? videoUrl);
+
 /// Produces the frames shown under the subtitle editor's timeline.
 ///
 /// The editor works on an already-published video, so unlike the video
@@ -29,13 +32,23 @@ class SubtitleTimelineThumbnailService {
   SubtitleTimelineThumbnailService({
     required TimelineVideoDownloader downloadVideo,
     StripThumbnailStreamFactory? stripThumbnailStreamFactory,
+    TimelineVideoUrlResolver? resolveVideoUrl,
   }) : _downloadVideo = downloadVideo,
+       _resolveVideoUrl = resolveVideoUrl ?? _identityResolver,
        _generateStripThumbnails =
            stripThumbnailStreamFactory ??
            VideoThumbnailService.generateStripThumbnails;
 
   final TimelineVideoDownloader _downloadVideo;
+  final TimelineVideoUrlResolver _resolveVideoUrl;
   final StripThumbnailStreamFactory _generateStripThumbnails;
+
+  static Future<String?> _identityResolver(String? videoUrl) async => videoUrl;
+
+  static bool _isHlsManifestUrl(String url) {
+    final lower = url.toLowerCase();
+    return lower.contains('.m3u8') || lower.contains('/hls/');
+  }
 
   /// Frames per second of video to extract.
   ///
@@ -62,9 +75,25 @@ class SubtitleTimelineThumbnailService {
   }) async* {
     if (duration <= Duration.zero) return;
 
+    final String? resolvedUrl;
+    try {
+      resolvedUrl = await _resolveVideoUrl(videoUrl);
+    } catch (e) {
+      Log.warning(
+        'Could not resolve video for the subtitle timeline: $e',
+        name: 'SubtitleTimelineThumbnailService',
+      );
+      return;
+    }
+    if (resolvedUrl == null ||
+        resolvedUrl.isEmpty ||
+        _isHlsManifestUrl(resolvedUrl)) {
+      return;
+    }
+
     final File? file;
     try {
-      file = await _downloadVideo(url: videoUrl, cacheKey: videoId);
+      file = await _downloadVideo(url: resolvedUrl, cacheKey: videoId);
     } catch (e) {
       // Frames are decoration: a failed fetch leaves the timeline usable, so
       // it is logged rather than surfaced.
