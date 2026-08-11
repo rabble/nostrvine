@@ -867,6 +867,7 @@ void main() {
       'subject',
       'description',
       'steps',
+      'expected',
       'screen',
       'device',
       'errorCounts',
@@ -900,14 +901,20 @@ void main() {
           description: field == 'description' ? poison : 'it just dies',
           reportId: 'test-blast-radius-$field',
           appVersion: '1.0.7+497',
+          // The device case carries a credential-*shaped key* with a
+          // malformed value, not a poisoned ordinary value: the report renders
+          // device info as `- **key:** value`, so only a composed-line pass
+          // sees the key and the value together. A poisoned value alone is
+          // caught by value-only sanitization and pins nothing.
           deviceInfo: {
             'platform': 'ios',
-            'version': field == 'device' ? poison : '18.2',
+            if (field == 'device') 'password': '{oops',
+            'version': '18.2',
           },
           stepsToReproduce: field == 'steps'
               ? poison
               : '1. open the app 2. tap record',
-          expectedBehavior: 'it should upload',
+          expectedBehavior: field == 'expected' ? poison : 'it should upload',
           currentScreen: field == 'screen' ? poison : 'CameraScreen',
           errorCounts: {if (field == 'errorCounts') poison: 3},
           // A closing brace downstream is what an unclosed one reaches for,
@@ -925,9 +932,9 @@ void main() {
         // Everything the poisoned field does not own survives.
         expect(description, contains('App Version: 1.0.7+497'));
         expect(description, contains('ios'));
-        if (field != 'device') {
-          expect(description, contains('18.2'));
-        }
+        // Printed after the device block, so it is the marker a malformed
+        // device value would consume.
+        expect(description, contains('18.2'));
         expect(description, contains('upload failed'));
         expect(description, contains('relay reconnected'));
         if (field != 'steps') {
@@ -936,7 +943,9 @@ void main() {
         if (field != 'screen') {
           expect(description, contains('CameraScreen'));
         }
-        expect(description, contains('it should upload'));
+        if (field != 'expected') {
+          expect(description, contains('it should upload'));
+        }
       });
     }
 
