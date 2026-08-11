@@ -426,6 +426,21 @@ class AppLocalizationsBg extends AppLocalizations {
   String get profileVideosLabel => 'Видеа';
 
   @override
+  String get profileCollabsLabel => 'Съвместни';
+
+  @override
+  String get profileLikedLabel => 'Харесани';
+
+  @override
+  String get profileRepostsLabel => 'Репостове';
+
+  @override
+  String get profileListsLabel => 'Списъци';
+
+  @override
+  String get profileCommentsLabel => 'Коментари';
+
+  @override
   String profileCollaboratorInvitePendingHeadline(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

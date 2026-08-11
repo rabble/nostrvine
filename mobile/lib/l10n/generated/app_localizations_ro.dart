@@ -441,6 +441,21 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileVideosLabel => 'Videoclipuri';
 
   @override
+  String get profileCollabsLabel => 'Colaborări';
+
+  @override
+  String get profileLikedLabel => 'Apreciate';
+
+  @override
+  String get profileRepostsLabel => 'Redistribuiri';
+
+  @override
+  String get profileListsLabel => 'Liste';
+
+  @override
+  String get profileCommentsLabel => 'Comentarii';
+
+  @override
   String profileCollaboratorInvitePendingHeadline(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

@@ -119,7 +119,10 @@ class _ProfileCommentsGridState extends State<ProfileCommentsGrid>
                     if (index >= state.videoReplies.length) {
                       return const SizedBox.shrink();
                     }
-                    return _VideoReplyTile(comment: state.videoReplies[index]);
+                    return _VideoReplyTile(
+                      comment: state.videoReplies[index],
+                      index: index,
+                    );
                   }, childCount: state.videoReplies.length),
                 ),
               ),
@@ -174,35 +177,42 @@ class _SectionHeader extends StatelessWidget {
 
 /// Thumbnail tile for a video reply in the grid.
 class _VideoReplyTile extends StatelessWidget {
-  const _VideoReplyTile({required this.comment});
+  const _VideoReplyTile({required this.comment, required this.index});
 
   final Comment comment;
+  final int index;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () =>
-          context.push(VideoDetailScreen.pathForId(comment.rootEventId)),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(4),
-        child: DecoratedBox(
-          decoration: BoxDecoration(color: context.vineColors.card),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              ProfileTabThumbnail(
-                thumbnailUrl: comment.thumbnailUrl,
-                blurhash: comment.videoBlurhash,
-              ),
-              // Play icon overlay
-              Center(
-                child: DivineIcon(
-                  icon: DivineIconName.playCircle,
-                  color: context.vineColors.primaryText,
-                  size: 32,
+    return Semantics(
+      // The tile renders only a thumbnail and a play glyph, so without this
+      // it is a focusable, tappable node with an empty name (#6951).
+      label: context.l10n.profileVideoThumbnailLabel(index + 1),
+      button: true,
+      child: GestureDetector(
+        onTap: () =>
+            context.push(VideoDetailScreen.pathForId(comment.rootEventId)),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: DecoratedBox(
+            decoration: BoxDecoration(color: context.vineColors.card),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                ProfileTabThumbnail(
+                  thumbnailUrl: comment.thumbnailUrl,
+                  blurhash: comment.videoBlurhash,
                 ),
-              ),
-            ],
+                // Play icon overlay
+                Center(
+                  child: DivineIcon(
+                    icon: DivineIconName.playCircle,
+                    color: context.vineColors.primaryText,
+                    size: 32,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -222,52 +232,60 @@ class _ProfileCommentCard extends StatelessWidget {
       color: context.vineColors.primaryText,
     );
 
-    return GestureDetector(
-      onTap: () =>
-          context.push(VideoDetailScreen.pathForId(comment.rootEventId)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  LinkifiedText(
-                    text: comment.content,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: baseStyle,
-                    linkStyle: baseStyle.copyWith(
-                      color: VineTheme.info,
-                      fontWeight: FontWeight.w600,
+    // No `label:` on purpose. Unlike the thumbnail tiles, this card renders
+    // the comment text, and Semantics(label:) is prepended to the child's
+    // label rather than replacing it — adding one here would make a screen
+    // reader read the comment twice. `button: true` supplies the missing
+    // role; the text supplies the name.
+    return Semantics(
+      button: true,
+      child: GestureDetector(
+        onTap: () =>
+            context.push(VideoDetailScreen.pathForId(comment.rootEventId)),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    LinkifiedText(
+                      text: comment.content,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: baseStyle,
+                      linkStyle: baseStyle.copyWith(
+                        color: VineTheme.info,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      mentionStyle: baseStyle.copyWith(
+                        color: VineTheme.info,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    mentionStyle: baseStyle.copyWith(
-                      color: VineTheme.info,
-                      fontWeight: FontWeight.w600,
+                    const SizedBox(height: 4),
+                    Text(
+                      LocalizedTimeFormatter.formatRelativeVerbose(
+                        context.l10n,
+                        comment.createdAt.millisecondsSinceEpoch ~/ 1000,
+                      ),
+                      style: VineTheme.bodySmallFont(
+                        color: context.vineColors.onSurfaceMuted,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    LocalizedTimeFormatter.formatRelativeVerbose(
-                      context.l10n,
-                      comment.createdAt.millisecondsSinceEpoch ~/ 1000,
-                    ),
-                    style: VineTheme.bodySmallFont(
-                      color: context.vineColors.onSurfaceMuted,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            DivineIcon(
-              icon: DivineIconName.caretRight,
-              color: context.vineColors.onSurfaceMuted,
-              size: 20,
-            ),
-          ],
+              const SizedBox(width: 8),
+              DivineIcon(
+                icon: DivineIconName.caretRight,
+                color: context.vineColors.onSurfaceMuted,
+                size: 20,
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -15,6 +15,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_feed/profile_feed_cubit.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
@@ -207,23 +208,36 @@ void main() {
       bool isLoadingVideos = false,
       MockAuthService? mockAuthService,
       CuratedListService? curatedListService,
+      Locale? locale,
     }) {
+      final grid = MultiBlocProvider(
+        providers: [
+          BlocProvider<MyProfileBloc>.value(value: myProfileBloc),
+          BlocProvider<ProfileFeedCubit>.value(value: profileFeedCubit),
+        ],
+        child: ProfileGridView(
+          key: const ValueKey('profile-grid'),
+          userIdHex: userIdHex,
+          isOwnProfile: isOwnProfile,
+          videos: const [],
+          isLoadingVideos: isLoadingVideos,
+        ),
+      );
+
       return testMaterialApp(
         theme: VineTheme.theme,
         home: Scaffold(
-          body: MultiBlocProvider(
-            providers: [
-              BlocProvider<MyProfileBloc>.value(value: myProfileBloc),
-              BlocProvider<ProfileFeedCubit>.value(value: profileFeedCubit),
-            ],
-            child: ProfileGridView(
-              key: const ValueKey('profile-grid'),
-              userIdHex: userIdHex,
-              isOwnProfile: isOwnProfile,
-              videos: const [],
-              isLoadingVideos: isLoadingVideos,
-            ),
-          ),
+          // testMaterialApp takes no locale, so override it here rather than
+          // widen a helper every other profile test shares.
+          body: locale == null
+              ? grid
+              : Builder(
+                  builder: (context) => Localizations.override(
+                    context: context,
+                    locale: locale,
+                    child: grid,
+                  ),
+                ),
         ),
         mockNostrService: nostrClient,
         mockAuthService: mockAuthService,
@@ -280,23 +294,103 @@ void main() {
         await tester.pumpWidget(buildSubject(isOwnProfile: false));
         await tester.pump();
 
-        expect(find.bySemanticsLabel('videos_tab'), findsOneWidget);
-        expect(find.bySemanticsLabel('collabs_tab'), findsOneWidget);
-        expect(find.bySemanticsLabel('lists_tab'), findsNothing);
-        expect(find.bySemanticsLabel('comments_tab'), findsOneWidget);
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.profileVideosTab),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.profileCollabsTab),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.profileListsTab),
+          findsNothing,
+        );
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.profileCommentsTab),
+          findsOneWidget,
+        );
 
         await tester.pumpWidget(buildSubject(isOwnProfile: true));
         await tester.pump();
 
         expect(tester.takeException(), isNull);
-        expect(find.bySemanticsLabel('videos_tab'), findsOneWidget);
-        expect(find.bySemanticsLabel('collabs_tab'), findsOneWidget);
-        expect(find.bySemanticsLabel('liked_tab'), findsOneWidget);
-        expect(find.bySemanticsLabel('reposted_tab'), findsOneWidget);
-        expect(find.bySemanticsLabel('lists_tab'), findsOneWidget);
-        expect(find.bySemanticsLabel('comments_tab'), findsOneWidget);
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.profileVideosTab),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.profileCollabsTab),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.profileLikedTab),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.profileRepostsTab),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.profileListsTab),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.profileCommentsTab),
+          findsOneWidget,
+        );
       },
     );
+
+    // ProfileTabBar's own test builds its ProfileTab records by hand, so it
+    // cannot see _tabPresentationFor -- the only place a tab kind is mapped to
+    // context.l10n. Without these, reverting one of those labels to its
+    // SemanticIds anchor reintroduces #6951 with the whole
+    // test/widgets/profile suite still green.
+    //
+    // Both locales are pumped through ProfileGridView on purpose: English
+    // alone cannot tell l10n apart from a hardcoded English literal, which is
+    // the other way this mapping regresses. The second locale must differ
+    // from English on every one of the six values -- de shares Videos,
+    // Collabs and Reposts verbatim, so it would leave half the strip
+    // unguarded. ja differs on all six.
+    for (final locale in [const Locale('en'), const Locale('ja')]) {
+      testWidgets(
+        'tabs announce their localized name in ${locale.languageCode}, '
+        'not the test anchor',
+        (tester) async {
+          final handle = tester.ensureSemantics();
+
+          await tester.pumpWidget(
+            buildSubject(isOwnProfile: true, locale: locale),
+          );
+          await tester.pump();
+
+          final l10n = lookupAppLocalizations(locale);
+          final expectations = <String, String>{
+            SemanticIds.profileVideosTab: l10n.profileVideosLabel,
+            SemanticIds.profileCollabsTab: l10n.profileCollabsLabel,
+            SemanticIds.profileLikedTab: l10n.profileLikedLabel,
+            SemanticIds.profileRepostsTab: l10n.profileRepostsLabel,
+            SemanticIds.profileListsTab: l10n.profileListsLabel,
+            SemanticIds.profileCommentsTab: l10n.profileCommentsLabel,
+          };
+
+          for (final entry in expectations.entries) {
+            // Merged data, not SemanticsNode.label: Material puts "Tab N of M"
+            // on the node's own config and merges the icon's label up.
+            final label = tester
+                .getSemantics(find.bySemanticsIdentifier(entry.key))
+                .getSemanticsData()
+                .label;
+            expect(label, contains(entry.value));
+            expect(label, isNot(contains(entry.key)));
+          }
+
+          handle.dispose();
+        },
+      );
+    }
 
     testWidgets(
       'does not restore another viewer identity tab index after auth change',
@@ -340,7 +434,9 @@ void main() {
 
         await tester.pumpWidget(buildSubjectWithContainer(container));
         await tester.pump();
-        await tester.tap(find.bySemanticsLabel('reposted_tab'));
+        await tester.tap(
+          find.bySemanticsIdentifier(SemanticIds.profileRepostsTab),
+        );
         await tester.pumpAndSettle();
         expect(tester.widget<TabBar>(find.byType(TabBar)).controller?.index, 2);
 
@@ -505,7 +601,7 @@ void main() {
       await tester.pump();
 
       // The tab is lazy: it only participates in refresh once viewed.
-      await tester.tap(find.bySemanticsLabel('lists_tab'));
+      await tester.tap(find.bySemanticsIdentifier(SemanticIds.profileListsTab));
       await tester.pumpAndSettle();
 
       final refreshIndicator = tester.widget<RefreshIndicator>(

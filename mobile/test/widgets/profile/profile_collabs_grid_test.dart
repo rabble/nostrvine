@@ -2,6 +2,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -377,6 +378,36 @@ void main() {
           expect(find.text('Header'), findsNothing);
         },
       );
+    });
+
+    group('accessibility', () {
+      testWidgets('tiles announce a localized name and act as buttons', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        final videos = _createTestVideos(count: 3);
+        when(() => mockBloc.state).thenReturn(
+          ProfileCollabVideosState(
+            status: ProfileCollabVideosStatus.success,
+            videos: videos,
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final data = tester
+            .getSemantics(
+              find.bySemanticsLabel(l10n.profileVideoThumbnailLabel(1)),
+            )
+            .getSemanticsData();
+
+        expect(data.flagsCollection.isButton, isTrue);
+        expect(data.hasAction(SemanticsAction.tap), isTrue);
+
+        handle.dispose();
+      });
     });
   });
 }

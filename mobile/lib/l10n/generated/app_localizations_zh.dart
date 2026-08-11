@@ -402,6 +402,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileVideosLabel => '视频';
 
   @override
+  String get profileCollabsLabel => '合作';
+
+  @override
+  String get profileLikedLabel => '已点赞';
+
+  @override
+  String get profileRepostsLabel => '转发';
+
+  @override
+  String get profileListsLabel => '列表';
+
+  @override
+  String get profileCommentsLabel => '评论';
+
+  @override
   String profileCollaboratorInvitePendingHeadline(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

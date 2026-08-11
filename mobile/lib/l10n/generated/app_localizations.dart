@@ -822,6 +822,36 @@ abstract class AppLocalizations {
   /// **'Videos'**
   String get profileVideosLabel;
 
+  /// Accessible name for the Collabs tab on a profile. The tab is icon-only, so this is the only name a screen reader can read. Refers to collaboration videos, not the collaborators themselves.
+  ///
+  /// In en, this message translates to:
+  /// **'Collabs'**
+  String get profileCollabsLabel;
+
+  /// Accessible name for the Liked tab on a profile. The tab is icon-only. Refers to videos this user liked — distinct from profileLikesLabel, which counts likes received.
+  ///
+  /// In en, this message translates to:
+  /// **'Liked'**
+  String get profileLikedLabel;
+
+  /// Accessible name for the Reposts tab on a profile. The tab is icon-only.
+  ///
+  /// In en, this message translates to:
+  /// **'Reposts'**
+  String get profileRepostsLabel;
+
+  /// Accessible name for the Lists tab on the own profile. The tab is icon-only.
+  ///
+  /// In en, this message translates to:
+  /// **'Lists'**
+  String get profileListsLabel;
+
+  /// Accessible name for the Comments tab on a profile. The tab is icon-only.
+  ///
+  /// In en, this message translates to:
+  /// **'Comments'**
+  String get profileCommentsLabel;
+
   /// No description provided for @profileCollaboratorInvitePendingHeadline.
   ///
   /// In en, this message translates to:

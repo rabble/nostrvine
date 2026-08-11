@@ -377,6 +377,21 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileVideosLabel => '영상';
 
   @override
+  String get profileCollabsLabel => '콜라보';
+
+  @override
+  String get profileLikedLabel => '좋아요함';
+
+  @override
+  String get profileRepostsLabel => '리포스트';
+
+  @override
+  String get profileListsLabel => '리스트';
+
+  @override
+  String get profileCommentsLabel => '댓글';
+
+  @override
   String profileCollaboratorInvitePendingHeadline(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
