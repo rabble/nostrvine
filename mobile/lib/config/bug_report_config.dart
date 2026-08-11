@@ -109,11 +109,17 @@ class BugReportConfig {
     // 60-character key would then take tens of seconds to fail to match, on
     // the UI thread, over text that can come from a remote profile or an
     // attacker-typed report field.
+    //
+    // The segment counts are capped for the same reason the collection value
+    // is. Unbounded, a `password_password_password_…` paste costs 18s per
+    // 100KB, measured, because every start position walks the whole run before
+    // failing for want of a separator; capped, the same input is 94ms. No real
+    // credential key has 24 segments.
     RegExp(
       '(?:(?:authorization|passphrase|passcode|password|passwd|pwd'
       '|token|jwt|secret|api[_-]?key)s?'
-      '|(?<=[_-])(?<!pub[_-])(?<!public[_-])(?<!query[_-])keys?)'
-      '(?:[_-][A-Za-z0-9]+)*'
+      '|(?<=[_-])(?<!pub[_-])(?<!public[_-])(?<!(?<![A-Za-z])query[_-])keys?)'
+      '(?:[_-][A-Za-z0-9]+){0,24}'
       '$_credentialSeparator$_credentialValue',
       caseSensitive: false,
     ),
@@ -124,7 +130,7 @@ class BugReportConfig {
     RegExp(
       '(?:[Pp]assphrase|[Pp]asscode|[Pp]assword|[Pp]asswd|[Pp]wd'
       '|[Tt]oken|[Jj]wt|JWT|[Ss]ecret)s?'
-      '(?:[A-Z][a-z0-9]*)+'
+      '(?:[A-Z][a-z0-9]*){1,24}'
       '$_credentialSeparator$_credentialValue',
     ),
     // camelCase `key` (`sessionKey`, `privateKeyHex`, `AESKey`). Kept separate
@@ -138,10 +144,12 @@ class BugReportConfig {
     // credentials, and `query` because `_describeUriForLogs` logs a deep
     // link's `queryKeys` precisely to record parameter names *without* their
     // values - redacting it deletes a diagnostic built to be privacy-safe.
+    // That guard is anchored to the start of the key, so it exempts `queryKeys`
+    // without also exempting `bigQueryKey`.
     RegExp(
       '(?<=[A-Za-z])(?<![Pp]ub)(?<![Pp]ublic)'
-      '(?<![Pp]hysical)(?<![Ll]ogical)(?<![Qq]uery)Keys?'
-      '(?:[A-Z][a-z0-9]*)*'
+      '(?<![Pp]hysical)(?<![Ll]ogical)(?<!(?<![A-Za-z])[Qq]uery)Keys?'
+      '(?:[A-Z][a-z0-9]*){0,24}'
       '$_credentialSeparator$_credentialValue',
     ),
     RegExp(r'\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b', caseSensitive: false),

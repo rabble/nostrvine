@@ -66,6 +66,10 @@ void main() {
         'plural token key': '{"tokens":["eyJabcdefghijk"]}',
         'plural secret key': 'secrets: hunter2',
         'plural api key': 'apiKeys: abc123',
+        // The `query` exemption is anchored, so a key that merely ends in
+        // `query` is still a credential key.
+        'key ending in query': 'bigquery_key=abc123',
+        'camel case key ending in query': 'BigQueryKey: abc123',
         'generic signing key': 'signing_key: abc123',
         'generic encryption key': 'encryption_key=abc123',
         'screaming snake generic key': 'ENCRYPTION_KEY=deadbeef',
@@ -211,10 +215,19 @@ void main() {
       // Quadrupling the input costs ~4x bounded and ~11x unbounded (measured
       // 133/585ms vs 239/2680ms), so 7x separates them with margin on both
       // sides rather than pinning a machine-specific duration.
+      // Min of three per size: a single sample leaves the ratio one GC pause
+      // or scheduler preemption away from crossing the threshold, which under
+      // the merged VGV isolate on a loaded shard is the classic wall-clock
+      // flake shape.
       int measure(int reps) {
-        final stopwatch = Stopwatch()..start();
-        sanitizeDiagnosticText('token: {x ' * reps);
-        return stopwatch.elapsedMilliseconds;
+        var best = 1 << 30;
+        for (var run = 0; run < 3; run++) {
+          final stopwatch = Stopwatch()..start();
+          sanitizeDiagnosticText('token: {x ' * reps);
+          final elapsed = stopwatch.elapsedMilliseconds;
+          if (elapsed < best) best = elapsed;
+        }
+        return best;
       }
 
       measure(500); // warm up, so the first measured run carries no setup cost
@@ -222,6 +235,19 @@ void main() {
       final large = measure(8000);
 
       expect(large, lessThan(small * 7));
+    });
+
+    test('a long compound key run does not scan quadratically', () {
+      // Separate from the exponential case below: this one is linear per
+      // attempt but walks the whole run at every start position, which is
+      // quadratic overall. Measured 18.6s for 100KB of `password_` before the
+      // segment cap, 94ms after - on the UI thread, over a field with no
+      // maxLength.
+      final stopwatch = Stopwatch()..start();
+      sanitizeDiagnosticText('password_' * 11100);
+      stopwatch.stop();
+
+      expect(stopwatch.elapsedMilliseconds, lessThan(2000));
     });
 
     test('a long compound key cannot be made to backtrack exponentially', () {
