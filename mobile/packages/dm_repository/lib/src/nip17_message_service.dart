@@ -339,18 +339,20 @@ class NIP17MessageService {
   /// that also pass `false` are choosing a hard no-self-wrap confirmation
   /// contract: soft-unconfirmed recipient publishes return retryable failure
   /// and the caller owns any fallback behavior.
-  @useResult
-  /// [selfWrapBuildTimeout] bounds the self-wrap build, defaulting to the
-  /// tight [DmSendBudget.selfWrapBuild] because both direct callers
-  /// (`DmRepository._sendRumorWithTimeout`, `DmReactionsRepository`) wrap this
-  /// in an outer cap the tight bound exists to keep the chain under.
   ///
-  /// A caller with NO outer cap must pass [DmSendBudget.selfWrapRecoveryBuild]
+  /// [selfWrapBuildTimeout] bounds the self-wrap build, defaulting to the
+  /// tight [DmSendBudget.selfWrapBuild] for callers that protect the full
+  /// publish with an outer cap. Durable message sends use
+  /// `DmRepository._sendRumorWithTimeout`; reactions keep their existing 15s
+  /// `_publishTimeout`, which can fire before these internal build bounds.
+  ///
+  /// A caller with NO outer cap must pass [DmSendBudget.selfWrapUncappedBuild]
   /// instead — there the tight bound protects no budget and can only fail a
   /// rebuild the transport itself would have completed, permanently losing the
   /// sender's cross-device copy. [sendPrivateMessage] does exactly that, which
   /// is what `DmRepository.sendFileMessage` and the bug-report send reach it
   /// through; neither imposes a cap of its own.
+  @useResult
   Future<NIP17SendResult> sendRumor({
     required Event rumorEvent,
     required String recipientPubkey,
@@ -691,7 +693,7 @@ class NIP17MessageService {
       final published = await _publishSelfWrap(
         nostr: nostr,
         rumorEvent: rumorEvent,
-        wrapBuildTimeout: DmSendBudget.selfWrapRecoveryBuild,
+        wrapBuildTimeout: DmSendBudget.selfWrapUncappedBuild,
       );
       if (!published) {
         return const NIP17SendResult.failure('Self-wrap publish failed');
@@ -743,9 +745,9 @@ class NIP17MessageService {
       // the same thing: inside a send it is the tight
       // [DmSendBudget.selfWrapBuild] that keeps the chain under the backstop,
       // while recovery runs with no outer cap and uses the wider
-      // [DmSendBudget.selfWrapRecoveryBuild] — bounding recovery at the tight
-      // one would fail every rebuild against exactly the slow signer that left
-      // the self-wrap outstanding.
+      // [DmSendBudget.selfWrapUncappedBuild] — bounding recovery at the tight
+      // one would fail rebuilds against the same slow signer that left the
+      // self-wrap outstanding.
       final selfWrapEvent =
           prebuiltSelfWrap ??
           await _buildWrap(
@@ -869,7 +871,7 @@ class NIP17MessageService {
       // No caller of this method imposes an outer cap, so the tight
       // send-sized bound would protect nothing and could only fail a
       // self-wrap the transport would have completed.
-      selfWrapBuildTimeout: DmSendBudget.selfWrapRecoveryBuild,
+      selfWrapBuildTimeout: DmSendBudget.selfWrapUncappedBuild,
     );
   }
 

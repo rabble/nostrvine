@@ -2059,7 +2059,7 @@ void main() {
           final slowRebuild = DmSendBudget.selfWrapBuild * 2;
           expect(
             slowRebuild,
-            lessThan(DmSendBudget.selfWrapRecoveryBuild),
+            lessThan(DmSendBudget.selfWrapUncappedBuild),
             reason: 'the rebuild must sit between the two bounds to test them',
           );
 
@@ -2092,7 +2092,7 @@ void main() {
                   .then((r) => result = r),
             );
 
-            async.elapse(DmSendBudget.selfWrapRecoveryBuild);
+            async.elapse(DmSendBudget.selfWrapUncappedBuild);
           });
 
           expect(result, isNotNull, reason: 'recovery must resolve, not hang');
@@ -2153,7 +2153,7 @@ void main() {
 
             async
               ..flushMicrotasks()
-              ..elapse(DmSendBudget.selfWrapRecoveryBuild)
+              ..elapse(DmSendBudget.selfWrapUncappedBuild)
               ..flushMicrotasks();
           });
 
