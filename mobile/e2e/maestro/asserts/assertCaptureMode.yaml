@@ -36,6 +36,20 @@ appId: co.openvine.app
 - assertNotVisible:
     id: audio_chip
 
+# What stop-motion adds and capture does not render: the two `capturesStills`
+# toggles and the shot budget in that same center slot. Unlike the line above
+# these are not load-bearing for telling the screens apart — the two rails are
+# disjoint, so this file already fails on a stop-motion viewfinder at
+# `camera_timer_button`. They are a leak guard, the mirror of the pair
+# assertStopMotionMode carries: a control starting to render in a mode that
+# does not declare it fails a run rather than passing quietly.
+- assertNotVisible:
+    id: camera_ghost_frame_button
+- assertNotVisible:
+    id: camera_grid_button
+- assertNotVisible:
+    id: camera_stop_motion_budget
+
 # Nothing recorded yet. Both buttons sit inside an AnimatedOpacity, and
 # RenderAnimatedOpacity drops its child from the semantics tree at opacity 0 —
 # so "not visible" here means "no clip in the session", not "scrolled away".

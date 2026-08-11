@@ -31,9 +31,11 @@ abstract class SemanticIds {
   static const String cameraDeleteClipButton = 'camera_delete_clip_button';
   static const String cameraLibraryButton = 'camera_library_button';
 
-  /// Capture-mode control rail, top to bottom. Lip-sync declares the same
-  /// countdown-timer and stabilization support, so it renders this rail
-  /// unchanged and drives it with the same E2E util.
+  /// Capture-mode control rail, top to bottom. Flash, aspect ratio and the
+  /// lens switch are unconditional, so every mode that renders the rail drives
+  /// them with the same three E2E utils. Timer and stabilization are rendered
+  /// only by the modes that declare them — capture and lip-sync, which share
+  /// the rail unchanged and drive all five with `driveCaptureRail`.
   static const String cameraFlashButton = 'camera_flash_button';
   static const String cameraTimerButton = 'camera_timer_button';
   static const String cameraAspectRatioButton = 'camera_aspect_ratio_button';
@@ -59,6 +61,21 @@ abstract class SemanticIds {
 
   /// Confirms the currently selected sound in the sound picker.
   static const String audioSelectionDoneButton = 'audio_selection_done_button';
+
+  /// What stop-motion adds to that rail (both gated on `capturesStills`), plus
+  /// the shot budget it puts in the top bar's center slot. Which viewfinder is
+  /// up is settled by the mode wheel's `selected` state, not by these — the
+  /// rest of the chrome is shared, since stop-motion is the capture stack. The
+  /// E2E asserts pin their absence in the modes that do not declare them, so a
+  /// control leaking across modes fails a run rather than passing quietly.
+  ///
+  /// Classic mode has its own grid and ghost toggles in
+  /// `video_recorder_classic_actions_bottom.dart`. They are deliberately
+  /// untagged: no flow drives them yet, and an identifier nothing asserts on
+  /// drifts silently.
+  static const String cameraGhostFrameButton = 'camera_ghost_frame_button';
+  static const String cameraGridButton = 'camera_grid_button';
+  static const String cameraStopMotionBudget = 'camera_stop_motion_budget';
 
   /// Welcome screen. The fresh-install and returning-user branches show
   /// different buttons, so each action gets its own id rather than being
