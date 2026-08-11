@@ -419,9 +419,15 @@ definitions:
         # The list is ordered, not "newest wins": screen size changes what is
         # visible and tappable, so an E2E run must land on a predictable
         # device or its failures stop being reproducible.
+        # PROBE: select on the (device, runtime) pair, not the name alone.
+        # Selecting by name discards the runtime, and the runtime is what
+        # decides whether Flutter text reaches the XCUITest accessibility
+        # tree. On iOS 26 it does not: build 6a7b94b6 found
+        # id=explore_search_bar but no app text nodes at all, while the
+        # screenshot showed "Search..." plainly rendered.
         DEVICE_UDID=$(xcrun simctl list devices available -j | \
           python3 -c "
-        import json, sys
+        import json, re, sys
         PREFERRED = [
             'iPhone 16 Pro',
             'iPhone 17 Pro',
@@ -429,20 +435,31 @@ definitions:
             'iPhone 17',
             'iPhone 15 Pro',
         ]
+        # Ordered oldest-first: iOS 18 exposes Flutter semantics correctly,
+        # iOS 26 does not. Newest-wins is exactly the bug.
+        PREFERRED_MAJORS = ['18', '17', '26']
         data = json.load(sys.stdin)
-        available = {}
+        avail = []
         for runtime, devices in data['devices'].items():
+            m = re.search(r'iOS-(\\d+)-(\\d+)', runtime)
+            if not m:
+                continue
+            major, minor = m.group(1), m.group(2)
             for d in devices:
                 if d.get('isAvailable'):
-                    available.setdefault(d['name'], d['udid'])
-        for name in PREFERRED:
-            if name in available:
-                sys.stderr.write('Selected simulator: %s\n' % name)
-                print(available[name])
-                sys.exit(0)
-        sys.stderr.write(
-            'None of the preferred simulators are available. Present: %s\n'
-            % ', '.join(sorted(available)))
+                    avail.append((d['name'], major, minor, d['udid']))
+        sys.stderr.write('Available (device, runtime) pairs:\n')
+        for name, major, minor, _ in sorted(avail):
+            sys.stderr.write('  %s @ iOS %s.%s\n' % (name, major, minor))
+        for major in PREFERRED_MAJORS:
+            for name in PREFERRED:
+                for n, mj, mn, udid in avail:
+                    if n == name and mj == major:
+                        sys.stderr.write(
+                            'Selected simulator: %s @ iOS %s.%s\n' % (n, mj, mn))
+                        print(udid)
+                        sys.exit(0)
+        sys.stderr.write('No preferred (device, runtime) pair available.\n')
         sys.exit(1)
         ")
         xcrun simctl boot "$DEVICE_UDID" || true
