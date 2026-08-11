@@ -138,7 +138,7 @@ jobs:
         run: |
           # Hard architecture guard for #4338: the broad 800-line file-size
           # check remains advisory, but oversized service-layer god-files are
-          # frozen so extraction gains cannot be silently clawed back.
+          # frozen at their recorded ceilings until a shrink is relocked.
           bash scripts/check_service_god_file_ceiling.sh
       - name: 🧱 Verify test/unit does not re-accrete (test-structure ratchet)
         run: |

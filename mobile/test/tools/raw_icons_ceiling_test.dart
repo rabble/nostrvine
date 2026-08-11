@@ -148,14 +148,14 @@ void main() {
       writeIcons('uses.dart', 3);
       run(update: true);
 
-      // The real raw_icons baseline isn't committed yet, so diff the temp
-      // baseline against an already-committed baseline-format file (file_sizes)
-      // to exercise the anti-bypass ADDED path. 'lib/uses.dart' is absent from
-      // that base, so it must be flagged as added.
+      // Diff the temp baseline against a committed fixture baseline to exercise
+      // the anti-bypass ADDED path. 'lib/uses.dart' is absent from that base,
+      // so it must be flagged as added.
       final res = run(
         allowNoBase: false,
         baseRef: 'HEAD',
-        baseRepoPath: 'mobile/scripts/baseline/file_sizes.txt',
+        baseRepoPath:
+            'mobile/test/tools/fixtures/service_god_file_base_sizes.txt',
       );
       expect(res.exitCode, 1);
       expect(res.stdout, contains('ADDED a file or RAISED a ceiling'));

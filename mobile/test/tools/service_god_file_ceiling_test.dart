@@ -110,6 +110,8 @@ void main() {
       final res = run();
       expect(res.exitCode, 1);
       expect(res.stdout, contains('no longer emitted'));
+      expect(res.stdout, contains('removed, renamed, or dropped below'));
+      expect(res.stdout, contains('UPDATE_BASELINE alone cannot approve'));
     });
 
     test('passes when a service shrinks but remains oversized', () {
