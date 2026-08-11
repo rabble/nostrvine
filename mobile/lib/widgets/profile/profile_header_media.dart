@@ -10,6 +10,14 @@ part of 'profile_header_widget.dart';
 ///
 /// A product call, not a technical one — the single value to change if the
 /// bar sits wrong.
+///
+/// Deliberately higher than `publicLoopCountFloor` in
+/// `widgets/video_feed_item/video_card_meta.dart`, which hides small counts on
+/// feed cards. A profile headline is a summary of a whole creator and carries
+/// more weight than a number beside one video, so it earns a higher bar. The
+/// two are independent product calls, not a value that drifted — do not
+/// collapse them into one constant without deciding that both surfaces want
+/// the same number.
 const int profileLoopsVisibilityFloor = 10000;
 
 /// Hero tag for the avatar ↔ lightbox shared-element flight, scoped to the
@@ -221,10 +229,17 @@ class _BannerImage extends StatelessWidget {
 /// Stats row displaying Followers, Following, Likes, and Loops with dividers.
 ///
 /// Shows a skeleton for up to [_ProfileStatsRowState._skeletonTimeout] while
-/// stats are being fetched. After the timeout the row keeps all four columns
+/// stats are being fetched. After the timeout the row keeps its columns
 /// visible but renders a `—` placeholder for each count, rather than
 /// shimmering indefinitely or collapsing the row (which would shift the
 /// surrounding profile layout).
+///
+/// One shift is unavoidable and accepted: whether Loops is shown depends on
+/// the count, which is not known until stats load. A visitor to a profile
+/// under [profileLoopsVisibilityFloor] therefore sees four skeleton columns
+/// resolve to three. Reserving the slot only for owners would move that shift
+/// onto popular profiles instead of removing it, so the loading state stays
+/// uniform and the settle is where the column count changes.
 class _ProfileStatsRow extends StatefulWidget {
   const _ProfileStatsRow({
     required this.userIdHex,
