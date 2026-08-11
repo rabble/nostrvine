@@ -24,11 +24,13 @@ jobs:
       app: ${{ steps.scope.outputs.app }}
       native: ${{ steps.scope.outputs.native }}
     steps:
-      # No checkout: the changed-file list comes from the REST API. A
-      # `fetch-depth: 0` clone cost ~23s of this workflow's critical path
-      # (every other job `needs: changes`) to produce a list the API already
-      # has. The merge-queue path uses the compare endpoint for the same
-      # reason.
+      # Fetch only the test-backed detector. The changed-file list itself still
+      # comes from the REST API, avoiding a full-history checkout on the
+      # workflow's critical path (every other job `needs: changes`).
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: mobile/scripts/ci/detect_mobile_ci_scope.sh
+          sparse-checkout-cone-mode: false
       - name: Detect whether app CI is required
         id: scope
         env:
@@ -36,99 +38,7 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           QUEUE_BASE_SHA: ${{ github.event.merge_group.base_sha }}
           QUEUE_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
-        run: |
-          fall_open() {
-            echo "app=true" >> "$GITHUB_OUTPUT"
-            echo "native=true" >> "$GITHUB_OUTPUT"
-            echo "$1"
-            exit 0
-          }
-
-          case "${GITHUB_EVENT_NAME}" in
-            pull_request)
-              # The files endpoint caps at 3000 entries. A PR that large is not
-              # a scoped change, so fall open to the full matrix rather than
-              # under-running CI on a truncated list.
-              changed_total=$(gh api "/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.changed_files')
-              if [ "$changed_total" -gt 3000 ]; then
-                fall_open "PR touches $changed_total files (> 3000 API cap); running full app CI."
-              fi
-
-              gh api --method GET --paginate -F per_page=100 "/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" \
-                --jq '.[].filename' > /tmp/mobile-ci-changed-files.txt
-              ;;
-            merge_group)
-              # The queue head is a speculative merge of main plus every PR
-              # ahead of this one in the batch, so this diff is exactly what
-              # the queue is about to land.
-              gh api --method GET --paginate -F per_page=100 \
-                "/repos/${GITHUB_REPOSITORY}/compare/${QUEUE_BASE_SHA}...${QUEUE_HEAD_SHA}" \
-                --jq '.files[]?.filename' > /tmp/mobile-ci-changed-files.txt
-              # The compare endpoint only includes up to 300 changed files for
-              # the whole comparison. A queue entry always carries at least one
-              # changed file, so an empty or capped list means the API answer is
-              # unusable, not that the batch is empty. Fall open rather than
-              # skip the last gate before main.
-              file_count=$(wc -l < /tmp/mobile-ci-changed-files.txt)
-              if [ "$file_count" -eq 0 ] || [ "$file_count" -ge 300 ]; then
-                fall_open "Merge group returned $file_count files (empty or at the 300-file compare API cap); running full app CI."
-              fi
-              ;;
-            *)
-              fall_open "Non-PR event; running full app CI."
-              ;;
-          esac
-
-          echo "Changed files:"
-          cat /tmp/mobile-ci-changed-files.txt
-
-          app=false
-          native=false
-          while IFS= read -r path; do
-            case "$path" in
-              .github/ci-timing-budgets.json)
-                app=true
-                ;;
-              .github/workflows/*)
-                app=true
-                native=true
-                ;;
-              *.md|docs/*|brand-guidelines/*|mobile/docs/*)
-                # Docs-only changes do not need the full app test matrix.
-                ;;
-              mobile/lib/*|mobile/test/*|mobile/integration_test/*|mobile/scripts/*)
-                app=true
-                ;;
-              mobile/android/*|mobile/ios/*|mobile/macos/*|mobile/web/*|mobile/assets/*|mobile/fonts/*|mobile/overrides/*|mobile/l10n/*)
-                app=true
-                ;;
-              mobile/pubspec.yaml|mobile/pubspec.lock|mobile/dart_test.yaml|mobile/analysis_options.yaml|mobile/build.yaml|mobile/l10n.yaml)
-                app=true
-                ;;
-              mobile/*)
-                app=true
-                ;;
-            esac
-            # The transport-security guard reads one Android XML plus three
-            # Info.plists and nothing else, so its verdict cannot change
-            # unless a native config or the guard itself changed. Matched at
-            # directory level (a superset of the guard's inputs) so the gate
-            # can't silently drift when the guard gains a fourth plist.
-            case "$path" in
-              mobile/android/*|mobile/ios/*|mobile/macos/*|mobile/scripts/check_native_transport_security.sh|mobile/scripts/check_ios_shipping_versions.sh)
-                native=true
-                ;;
-            esac
-          done < /tmp/mobile-ci-changed-files.txt
-
-          echo "app=$app" >> "$GITHUB_OUTPUT"
-          echo "native=$native" >> "$GITHUB_OUTPUT"
-          if [ "$app" = "true" ]; then
-            echo "App CI required."
-          else
-            echo "Package-only/docs-only change; app CI jobs may be skipped."
-          fi
-          echo "Native transport-security inputs changed: $native"
+        run: bash mobile/scripts/ci/detect_mobile_ci_scope.sh
 
   codex-config:
     name: Codex Configuration
