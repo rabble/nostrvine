@@ -329,6 +329,42 @@ void main() {
       },
     );
 
+    testWidgets('tabs announce their localized name, not the test anchor', (
+      tester,
+    ) async {
+      // ProfileTabBar's own test builds its ProfileTab records by hand, so it
+      // cannot see _tabPresentationFor -- the only place a tab kind is mapped
+      // to context.l10n. Without this, reverting one of those labels back to
+      // its SemanticIds anchor reintroduces #6951 with the whole
+      // test/widgets/profile suite still green.
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(buildSubject(isOwnProfile: true));
+      await tester.pump();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final expectations = <String, String>{
+        SemanticIds.profileVideosTab: l10n.profileVideosLabel,
+        SemanticIds.profileCollabsTab: l10n.profileCollabsLabel,
+        SemanticIds.profileLikedTab: l10n.profileLikedLabel,
+        SemanticIds.profileRepostsTab: l10n.profileRepostsLabel,
+        SemanticIds.profileListsTab: l10n.profileListsLabel,
+        SemanticIds.profileCommentsTab: l10n.profileCommentsLabel,
+      };
+
+      for (final entry in expectations.entries) {
+        // Merged data, not SemanticsNode.label: Material puts "Tab N of M" on
+        // the node's own config and merges the icon's label up.
+        final label = tester
+            .getSemantics(find.bySemanticsIdentifier(entry.key))
+            .getSemanticsData()
+            .label;
+        expect(label, contains(entry.value));
+        expect(label, isNot(contains(entry.key)));
+      }
+
+      handle.dispose();
+    });
+
     testWidgets(
       'does not restore another viewer identity tab index after auth change',
       (tester) async {
