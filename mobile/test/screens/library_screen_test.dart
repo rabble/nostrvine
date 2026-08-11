@@ -316,10 +316,15 @@ void main() {
 
         expect(clipsBloc.state.didAutoOpenSelectionMode, isFalse);
 
+        clipsBloc.add(ClipsLibraryToggleSelection(clip));
+        await tester.pumpAndSettle();
+        expect(clipsBloc.state.selectedClipIds, contains(clip.id));
+
         await tester.tap(find.text(en.libraryTabDrafts));
         await tester.pumpAndSettle();
 
         expect(clipsBloc.state.isLibrarySelectionMode, isFalse);
+        expect(clipsBloc.state.selectedClipIds, isEmpty);
       });
     });
 

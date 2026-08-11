@@ -6646,6 +6646,13 @@ class AppLocalizationsFil extends AppLocalizations {
   String get libraryOpenDraftEndsRecordingCancel => 'Keep recording';
 
   @override
+  String get libraryPostDraftEndsRecordingMessage =>
+      'Posting this draft ends the video you\'re working on. Your clips stay in your library.';
+
+  @override
+  String get libraryPostDraftEndsRecordingConfirm => 'Post draft';
+
+  @override
   String get libraryDeleteDraftTitle => 'Burahin ang Draft';
 
   @override

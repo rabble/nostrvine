@@ -208,6 +208,18 @@ class DraftsTab extends ConsumerWidget {
       name: 'DraftsTab',
       category: LogCategory.video,
     );
+
+    if (draft.id != VideoEditorConstants.autoSaveId &&
+        !await _confirmEndingRecording(
+          context,
+          ref,
+          subtitle: context.l10n.libraryPostDraftEndsRecordingMessage,
+          primaryButtonText: context.l10n.libraryPostDraftEndsRecordingConfirm,
+        )) {
+      return;
+    }
+    if (!context.mounted) return;
+
     await ref.read(videoPublishProvider.notifier).publishVideo(context, draft);
 
     // Reload so a published draft leaves the list. BackgroundPublishBloc owns
@@ -229,23 +241,14 @@ class DraftsTab extends ConsumerWidget {
       category: LogCategory.video,
     );
 
-    // Opening a draft resets the clip manager, so an unfinished recording
-    // session ends here. The recorder reads its clips straight from that
-    // provider and never reloads them, so without this the session would
-    // vanish silently — and the library the recorder opens hides the autosave
-    // draft, leaving no way back to it.
-    if (ref.read(clipManagerProvider).hasClips) {
-      final confirmed = await VineBottomSheetPrompt.show<bool>(
-        context: context,
-        sticker: .alert,
-        title: context.l10n.libraryOpenDraftEndsRecordingTitle,
-        subtitle: context.l10n.libraryOpenDraftEndsRecordingMessage,
-        primaryButtonText: context.l10n.libraryOpenDraftEndsRecordingConfirm,
-        secondaryButtonText: context.l10n.libraryOpenDraftEndsRecordingCancel,
-        onPrimaryPressed: () => Navigator.of(context).pop(true),
-        onSecondaryPressed: () => Navigator.of(context).pop(false),
-      );
-      if (confirmed != true || !context.mounted) return;
+    if (draft.id != VideoEditorConstants.autoSaveId &&
+        !await _confirmEndingRecording(
+          context,
+          ref,
+          subtitle: context.l10n.libraryOpenDraftEndsRecordingMessage,
+          primaryButtonText: context.l10n.libraryOpenDraftEndsRecordingConfirm,
+        )) {
+      return;
     }
 
     await ref
@@ -267,6 +270,29 @@ class DraftsTab extends ConsumerWidget {
     if (context.mounted) {
       context.read<DraftsLibraryBloc>().add(const DraftsLibraryLoadRequested());
     }
+  }
+
+  /// Opening or posting another draft resets the clip manager, so the recorder
+  /// session underneath this library cannot be restored after the transition.
+  Future<bool> _confirmEndingRecording(
+    BuildContext context,
+    WidgetRef ref, {
+    required String subtitle,
+    required String primaryButtonText,
+  }) async {
+    if (!ref.read(clipManagerProvider).hasClips) return true;
+
+    final confirmed = await VineBottomSheetPrompt.show<bool>(
+      context: context,
+      sticker: .alert,
+      title: context.l10n.libraryOpenDraftEndsRecordingTitle,
+      subtitle: subtitle,
+      primaryButtonText: primaryButtonText,
+      secondaryButtonText: context.l10n.libraryOpenDraftEndsRecordingCancel,
+      onPrimaryPressed: () => Navigator.of(context).pop(true),
+      onSecondaryPressed: () => Navigator.of(context).pop(false),
+    );
+    return confirmed == true && context.mounted;
   }
 
   Future<void> _deleteDraft(

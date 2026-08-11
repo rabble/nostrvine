@@ -408,6 +408,8 @@ const _knownUntranslatedDebt = <String>{
   'libraryOpenDraftEndsRecordingMessage',
   'libraryOpenDraftEndsRecordingConfirm',
   'libraryOpenDraftEndsRecordingCancel',
+  'libraryPostDraftEndsRecordingMessage',
+  'libraryPostDraftEndsRecordingConfirm',
   // Warning shown when a requested reusable sound fails to publish; translation
   // is deferred to the next sound-library localization pass.
   'publishAudioReuseDegradedWarning',

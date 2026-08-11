@@ -11450,6 +11450,18 @@ abstract class AppLocalizations {
   /// **'Keep recording'**
   String get libraryOpenDraftEndsRecordingCancel;
 
+  /// Explains that posting another saved draft discards the in-progress recording session, while preserving the recorded clips in the clip library.
+  ///
+  /// In en, this message translates to:
+  /// **'Posting this draft ends the video you\'re working on. Your clips stay in your library.'**
+  String get libraryPostDraftEndsRecordingMessage;
+
+  /// Confirm button that posts a saved draft and ends the current recording session.
+  ///
+  /// In en, this message translates to:
+  /// **'Post draft'**
+  String get libraryPostDraftEndsRecordingConfirm;
+
   /// No description provided for @libraryDeleteDraftTitle.
   ///
   /// In en, this message translates to:

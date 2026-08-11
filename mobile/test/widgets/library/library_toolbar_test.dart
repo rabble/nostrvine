@@ -102,6 +102,27 @@ void main() {
           find.bySemanticsLabel(en.libraryCloseSemanticLabel),
           findsOneWidget,
         );
+        expect(iconButton(DivineIconName.caretLeft), findsOneWidget);
+        expect(iconButton(DivineIconName.x), findsNothing);
+      });
+
+      testWidgets('shows back icon for a preserved selection on Drafts', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(
+            isLibrarySelectionMode: true,
+            canExitSelectionMode: false,
+            isClipsTabActive: false,
+          ),
+        );
+
+        expect(iconButton(DivineIconName.caretLeft), findsOneWidget);
+        expect(iconButton(DivineIconName.x), findsNothing);
+        expect(
+          find.bySemanticsLabel(en.libraryCloseSemanticLabel),
+          findsOneWidget,
+        );
       });
 
       testWidgets('hides clip actions when clips tab is inactive', (

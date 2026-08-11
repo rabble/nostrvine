@@ -15,13 +15,18 @@ import 'package:openvine/l10n/generated/app_localizations_en.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
+import 'package:openvine/models/video_publish/video_publish_provider_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/video_publish_provider.dart';
+import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/widgets/library/drafts_tab.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 // Override lives in riverpod's misc barrel; flutter_riverpod does not
 // re-export the type name even though it accepts List<Override>.
 import 'package:riverpod/misc.dart' show Override;
+
+import '../../helpers/go_router.dart';
 
 class _MockDraftsLibraryBloc
     extends MockBloc<DraftsLibraryEvent, DraftsLibraryState>
@@ -38,6 +43,30 @@ class _StubClipManagerNotifier extends ClipManagerNotifier {
   ClipManagerState build() => ClipManagerState(clips: _clips);
 }
 
+class _FakeVideoPublishNotifier extends VideoPublishNotifier {
+  int clearAllCalls = 0;
+  int publishVideoCalls = 0;
+
+  @override
+  VideoPublishProviderState build() => const VideoPublishProviderState();
+
+  @override
+  Future<void> clearAll({bool keepAutosavedDraft = false}) async {
+    clearAllCalls++;
+    await ref
+        .read(clipManagerProvider.notifier)
+        .clearAll(keepAutosavedDraft: keepAutosavedDraft);
+  }
+
+  @override
+  Future<void> publishVideo(
+    BuildContext context,
+    DivineVideoDraft draft,
+  ) async {
+    publishVideoCalls++;
+  }
+}
+
 DivineVideoClip _createTestClip([String id = 'clip_1']) => DivineVideoClip(
   id: id,
   video: EditorVideo.file('/tmp/test.mp4'),
@@ -52,6 +81,8 @@ void main() {
 
   group(DraftsTab, () {
     late _MockDraftsLibraryBloc mockBloc;
+    late MockGoRouter mockGoRouter;
+    late _FakeVideoPublishNotifier fakeVideoPublishNotifier;
 
     DivineVideoDraft createDraft({
       String? id,
@@ -79,6 +110,11 @@ void main() {
 
     setUp(() {
       mockBloc = _MockDraftsLibraryBloc();
+      mockGoRouter = MockGoRouter();
+      fakeVideoPublishNotifier = _FakeVideoPublishNotifier();
+      when(
+        () => mockGoRouter.push<Object?>(any(), extra: any(named: 'extra')),
+      ).thenAnswer((_) async => null);
     });
 
     Widget buildWidget({
@@ -86,20 +122,31 @@ void main() {
       List<Override> overrides = const [],
     }) {
       return ProviderScope(
-        overrides: overrides,
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          theme: VineTheme.theme,
-          home: Scaffold(
-            body: BlocProvider<DraftsLibraryBloc>.value(
-              value: mockBloc,
-              child: DraftsTab(showRecordButton: isSelectionMode),
+        overrides: [
+          videoPublishProvider.overrideWith(() => fakeVideoPublishNotifier),
+          ...overrides,
+        ],
+        child: MockGoRouterProvider(
+          goRouter: mockGoRouter,
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: VineTheme.theme,
+            home: Scaffold(
+              body: BlocProvider<DraftsLibraryBloc>.value(
+                value: mockBloc,
+                child: DraftsTab(showRecordButton: isSelectionMode),
+              ),
             ),
           ),
         ),
       );
     }
+
+    ClipManagerState clipManagerState(WidgetTester tester) =>
+        ProviderScope.containerOf(
+          tester.element(find.byType(DraftsTab)),
+        ).read(clipManagerProvider);
 
     group('renders', () {
       testWidgets('loading indicator when initial state', (tester) async {
@@ -276,6 +323,153 @@ void main() {
 
         expect(find.text(en.libraryOpenDraftEndsRecordingTitle), findsNothing);
         expect(find.byType(DraftListTile), findsOneWidget);
+        expect(clipManagerState(tester).hasClips, isTrue);
+        expect(fakeVideoPublishNotifier.clearAllCalls, isZero);
+        verifyNever(
+          () => mockGoRouter.push<Object?>(any(), extra: any(named: 'extra')),
+        );
+      });
+
+      testWidgets('opens the draft after the confirmation is accepted', (
+        tester,
+      ) async {
+        when(
+          () => mockBloc.state,
+        ).thenReturn(DraftsLibraryLoaded(drafts: [createDraft(id: 'draft1')]));
+
+        await tester.pumpWidget(
+          buildWidget(
+            overrides: [
+              clipManagerProvider.overrideWith(
+                () => _StubClipManagerNotifier([_createTestClip()]),
+              ),
+            ],
+          ),
+        );
+        await tester.tap(find.byType(DraftListTile));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text(en.libraryOpenDraftEndsRecordingConfirm));
+        await tester.pumpAndSettle();
+
+        expect(clipManagerState(tester).hasClips, isFalse);
+        expect(fakeVideoPublishNotifier.clearAllCalls, equals(2));
+        verify(
+          () => mockGoRouter.push<Object?>(
+            '${VideoEditorScreen.path}/draft1',
+            extra: {'fromLibrary': true},
+          ),
+        ).called(1);
+      });
+
+      testWidgets('opens without prompting when there is no recording', (
+        tester,
+      ) async {
+        when(
+          () => mockBloc.state,
+        ).thenReturn(DraftsLibraryLoaded(drafts: [createDraft(id: 'draft1')]));
+
+        await tester.pumpWidget(buildWidget());
+        await tester.tap(find.byType(DraftListTile));
+        await tester.pumpAndSettle();
+
+        expect(find.text(en.libraryOpenDraftEndsRecordingTitle), findsNothing);
+        expect(fakeVideoPublishNotifier.clearAllCalls, equals(2));
+        verify(
+          () => mockGoRouter.push<Object?>(
+            '${VideoEditorScreen.path}/draft1',
+            extra: {'fromLibrary': true},
+          ),
+        ).called(1);
+      });
+
+      testWidgets('resumes the active autosave without warning', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          DraftsLibraryLoaded(
+            drafts: [createDraft(id: VideoEditorConstants.autoSaveId)],
+          ),
+        );
+
+        await tester.pumpWidget(
+          buildWidget(
+            overrides: [
+              clipManagerProvider.overrideWith(
+                () => _StubClipManagerNotifier([_createTestClip()]),
+              ),
+            ],
+          ),
+        );
+        await tester.tap(find.byType(DraftListTile));
+        await tester.pumpAndSettle();
+
+        expect(find.text(en.libraryOpenDraftEndsRecordingTitle), findsNothing);
+        verify(
+          () => mockGoRouter.push<Object?>(
+            '${VideoEditorScreen.path}/${VideoEditorConstants.autoSaveId}',
+            extra: {'fromLibrary': true},
+          ),
+        ).called(1);
+      });
+
+      testWidgets('confirms before posting another draft ends the recording', (
+        tester,
+      ) async {
+        when(
+          () => mockBloc.state,
+        ).thenReturn(DraftsLibraryLoaded(drafts: [createDraft(id: 'draft1')]));
+
+        await tester.pumpWidget(
+          buildWidget(
+            overrides: [
+              clipManagerProvider.overrideWith(
+                () => _StubClipManagerNotifier([_createTestClip()]),
+              ),
+            ],
+          ),
+        );
+        await tester.tap(find.byType(IconButton));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(en.libraryDraftActionPost));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(en.libraryPostDraftEndsRecordingMessage),
+          findsOneWidget,
+        );
+        expect(fakeVideoPublishNotifier.publishVideoCalls, isZero);
+
+        await tester.tap(find.text(en.libraryOpenDraftEndsRecordingCancel));
+        await tester.pumpAndSettle();
+
+        expect(clipManagerState(tester).hasClips, isTrue);
+        expect(fakeVideoPublishNotifier.publishVideoCalls, isZero);
+      });
+
+      testWidgets('posts another draft after confirmation', (tester) async {
+        when(
+          () => mockBloc.state,
+        ).thenReturn(DraftsLibraryLoaded(drafts: [createDraft(id: 'draft1')]));
+
+        await tester.pumpWidget(
+          buildWidget(
+            overrides: [
+              clipManagerProvider.overrideWith(
+                () => _StubClipManagerNotifier([_createTestClip()]),
+              ),
+            ],
+          ),
+        );
+        await tester.tap(find.byType(IconButton));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(en.libraryDraftActionPost));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text(en.libraryPostDraftEndsRecordingConfirm));
+        await tester.pumpAndSettle();
+
+        expect(fakeVideoPublishNotifier.publishVideoCalls, equals(1));
       });
     });
 
