@@ -11434,6 +11434,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get libraryArchiveAction => 'アーカイブ';
 
   @override
+  String get libraryUnarchiveAction => 'アーカイブ解除';
+
+  @override
   String get libraryMoveSelectedClipsTooltip => '選択したクリップを移動';
 
   @override

@@ -11292,6 +11292,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get libraryArchiveAction => '归档';
 
   @override
+  String get libraryUnarchiveAction => '取消归档';
+
+  @override
   String get libraryMoveSelectedClipsTooltip => '移动所选片段';
 
   @override

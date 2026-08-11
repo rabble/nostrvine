@@ -11836,6 +11836,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get libraryArchiveAction => 'أرشفة';
 
   @override
+  String get libraryUnarchiveAction => 'إلغاء الأرشفة';
+
+  @override
   String get libraryMoveSelectedClipsTooltip => 'نقل المقاطع المحددة';
 
   @override

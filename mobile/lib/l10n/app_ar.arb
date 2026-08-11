@@ -5142,6 +5142,7 @@
   "libraryCategoryMoveNone": "بدون فئة",
   "libraryCategoryMoveNewCategory": "فئة جديدة",
   "libraryArchiveAction": "أرشفة",
+  "libraryUnarchiveAction": "إلغاء الأرشفة",
   "libraryMoveSelectedClipsTooltip": "نقل المقاطع المحددة",
   "libraryCategoryEmptyTitle": "لا شيء هنا بعد",
   "libraryCategoryEmptySubtitle": "اختر بعض المقاطع وانقلها إلى هذه الفئة.",

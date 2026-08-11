@@ -11892,6 +11892,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get libraryArchiveAction => 'Archive';
 
   @override
+  String get libraryUnarchiveAction => 'Unarchive';
+
+  @override
   String get libraryMoveSelectedClipsTooltip => 'Move selected clips';
 
   @override

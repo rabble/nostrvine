@@ -6978,6 +6978,7 @@
   "libraryCategoryMoveNone": "Không có danh mục",
   "libraryCategoryMoveNewCategory": "Danh mục mới",
   "libraryArchiveAction": "Lưu trữ",
+  "libraryUnarchiveAction": "Bỏ lưu trữ",
   "libraryMoveSelectedClipsTooltip": "Chuyển các clip đã chọn",
   "libraryCategoryEmptyTitle": "Chưa có gì ở đây",
   "libraryCategoryEmptySubtitle": "Chọn vài clip rồi chuyển vào danh mục này.",

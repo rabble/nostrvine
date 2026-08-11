@@ -12004,6 +12004,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get libraryArchiveAction => 'Arquivar';
 
   @override
+  String get libraryUnarchiveAction => 'Desarquivar';
+
+  @override
   String get libraryMoveSelectedClipsTooltip => 'Mover os clipes selecionados';
 
   @override

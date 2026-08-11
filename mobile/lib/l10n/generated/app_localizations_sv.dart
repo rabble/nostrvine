@@ -11924,6 +11924,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get libraryArchiveAction => 'Arkivera';
 
   @override
+  String get libraryUnarchiveAction => 'Avarkivera';
+
+  @override
   String get libraryMoveSelectedClipsTooltip => 'Flytta valda klipp';
 
   @override

@@ -12146,6 +12146,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get libraryArchiveAction => 'Arhivează';
 
   @override
+  String get libraryUnarchiveAction => 'Dezarhivează';
+
+  @override
   String get libraryMoveSelectedClipsTooltip => 'Mută clipurile selectate';
 
   @override

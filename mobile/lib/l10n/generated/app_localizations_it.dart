@@ -12042,6 +12042,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get libraryArchiveAction => 'Archivia';
 
   @override
+  String get libraryUnarchiveAction => 'Rimuovi dall’archivio';
+
+  @override
   String get libraryMoveSelectedClipsTooltip => 'Sposta i clip selezionati';
 
   @override

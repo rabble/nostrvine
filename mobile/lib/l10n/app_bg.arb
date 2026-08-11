@@ -5273,6 +5273,7 @@
   "libraryCategoryMoveNone": "Без категория",
   "libraryCategoryMoveNewCategory": "Нова категория",
   "libraryArchiveAction": "Архивирай",
+  "libraryUnarchiveAction": "Извади от архива",
   "libraryMoveSelectedClipsTooltip": "Преместване на избраните клипове",
   "libraryCategoryEmptyTitle": "Тук още няма нищо",
   "libraryCategoryEmptySubtitle": "Избери няколко клипа и ги премести в тази категория.",

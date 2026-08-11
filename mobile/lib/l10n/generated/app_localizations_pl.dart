@@ -12134,6 +12134,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get libraryArchiveAction => 'Archiwizuj';
 
   @override
+  String get libraryUnarchiveAction => 'Przywróć z archiwum';
+
+  @override
   String get libraryMoveSelectedClipsTooltip => 'Przenieś wybrane klipy';
 
   @override

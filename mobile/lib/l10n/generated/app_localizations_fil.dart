@@ -12050,6 +12050,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get libraryArchiveAction => 'I-archive';
 
   @override
+  String get libraryUnarchiveAction => 'I-unarchive';
+
+  @override
   String get libraryMoveSelectedClipsTooltip => 'Ilipat ang mga napiling clip';
 
   @override

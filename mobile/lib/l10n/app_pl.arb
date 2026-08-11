@@ -5142,6 +5142,7 @@
   "libraryCategoryMoveNone": "Bez kategorii",
   "libraryCategoryMoveNewCategory": "Nowa kategoria",
   "libraryArchiveAction": "Archiwizuj",
+  "libraryUnarchiveAction": "Przywróć z archiwum",
   "libraryMoveSelectedClipsTooltip": "Przenieś wybrane klipy",
   "libraryCategoryEmptyTitle": "Jeszcze nic tu nie ma",
   "libraryCategoryEmptySubtitle": "Wybierz kilka klipów i przenieś je do tej kategorii.",

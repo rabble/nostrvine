@@ -20398,6 +20398,12 @@ abstract class AppLocalizations {
   /// **'Archive'**
   String get libraryArchiveAction;
 
+  /// No description provided for @libraryUnarchiveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Unarchive'**
+  String get libraryUnarchiveAction;
+
   /// No description provided for @libraryMoveSelectedClipsTooltip.
   ///
   /// In en, this message translates to:

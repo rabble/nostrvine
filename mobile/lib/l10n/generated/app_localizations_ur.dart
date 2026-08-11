@@ -11927,6 +11927,9 @@ class AppLocalizationsUr extends AppLocalizations {
   String get libraryArchiveAction => 'آرکائیو کریں';
 
   @override
+  String get libraryUnarchiveAction => 'آرکائیو سے نکالیں';
+
+  @override
   String get libraryMoveSelectedClipsTooltip => 'منتخب کلپس منتقل کریں';
 
   @override

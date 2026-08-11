@@ -4473,6 +4473,7 @@
   "libraryCategoryMoveNone": "카테고리 없음",
   "libraryCategoryMoveNewCategory": "새 카테고리",
   "libraryArchiveAction": "보관",
+  "libraryUnarchiveAction": "보관 취소",
   "libraryMoveSelectedClipsTooltip": "선택한 클립 이동",
   "libraryCategoryEmptyTitle": "아직 아무것도 없어요",
   "libraryCategoryEmptySubtitle": "클립 몇 개를 골라 이 카테고리로 옮겨 보세요.",

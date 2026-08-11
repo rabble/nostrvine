@@ -6978,6 +6978,7 @@
   "libraryCategoryMoveNone": "Tiada kategori",
   "libraryCategoryMoveNewCategory": "Kategori baharu",
   "libraryArchiveAction": "Arkibkan",
+  "libraryUnarchiveAction": "Nyaharkib",
   "libraryMoveSelectedClipsTooltip": "Alih klip yang dipilih",
   "libraryCategoryEmptyTitle": "Belum ada apa-apa di sini",
   "libraryCategoryEmptySubtitle": "Pilih beberapa klip dan alihkannya ke kategori ini.",

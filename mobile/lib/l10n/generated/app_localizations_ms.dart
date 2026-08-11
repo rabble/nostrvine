@@ -11988,6 +11988,9 @@ class AppLocalizationsMs extends AppLocalizations {
   String get libraryArchiveAction => 'Arkibkan';
 
   @override
+  String get libraryUnarchiveAction => 'Nyaharkib';
+
+  @override
   String get libraryMoveSelectedClipsTooltip => 'Alih klip yang dipilih';
 
   @override

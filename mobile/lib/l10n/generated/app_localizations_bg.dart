@@ -12035,6 +12035,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get libraryArchiveAction => 'Архивирай';
 
   @override
+  String get libraryUnarchiveAction => 'Извади от архива';
+
+  @override
   String get libraryMoveSelectedClipsTooltip =>
       'Преместване на избраните клипове';
 

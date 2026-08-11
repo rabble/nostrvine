@@ -35,8 +35,22 @@ final class ClipCategoryMoveToArchive extends ClipCategoryMoveChoice {
   const ClipCategoryMoveToArchive();
 }
 
+/// Bring archived clips back into the library's default view.
+final class ClipCategoryMoveToUnarchive extends ClipCategoryMoveChoice {
+  const ClipCategoryMoveToUnarchive();
+}
+
 /// What the user picked in the category management sheet.
 enum ClipCategoryManageChoice { rename, delete }
+
+/// Which archive action the move sheet offers for the current selection.
+enum ClipCategoryArchiveOption {
+  /// The selection is in the working set and can be archived out of it.
+  archive,
+
+  /// The selection is already archived and can be brought back.
+  unarchive,
+}
 
 /// Bottom sheets backing the library's category management.
 ///
@@ -100,19 +114,26 @@ abstract final class ClipCategoryActions {
     if (clipIds.isEmpty) return;
 
     final state = bloc.state;
+    final selected = [
+      for (final clip in state.clips)
+        if (clipIds.contains(clip.id)) clip,
+    ];
     // Offer the current category as preselected only when the whole
     // selection already shares one; a mixed selection has no current value.
-    final currentCategoryIds = {
-      for (final clip in state.clips)
-        if (clipIds.contains(clip.id)) clip.categoryId,
-    };
+    final currentCategoryIds = {for (final clip in selected) clip.categoryId};
+    // Archiving an already-archived clip is a no-op, and the Archive view is
+    // otherwise a dead end — there is no other way back out of it.
+    final archiveOption =
+        selected.isNotEmpty && selected.every((c) => c.archivedAt != null)
+        ? ClipCategoryArchiveOption.unarchive
+        : ClipCategoryArchiveOption.archive;
     final choice = await showMoveSheet(
       context: context,
       categories: state.categories,
       currentCategoryId: currentCategoryIds.length == 1
           ? currentCategoryIds.first
           : null,
-      showArchiveOption: !state.isShowingTrash,
+      archiveOption: archiveOption,
     );
     if (choice == null || !context.mounted) return;
 
@@ -122,6 +143,10 @@ abstract final class ClipCategoryActions {
       case ClipCategoryMoveToArchive():
         bloc.add(
           ClipsLibraryClipsArchiveChanged(clipIds: clipIds, archived: true),
+        );
+      case ClipCategoryMoveToUnarchive():
+        bloc.add(
+          ClipsLibraryClipsArchiveChanged(clipIds: clipIds, archived: false),
         );
       case ClipCategoryMoveToNone():
         bloc.add(
@@ -142,15 +167,20 @@ abstract final class ClipCategoryActions {
   static const _noneValue = '__no_category__';
   static const _newValue = '__new_category__';
   static const _archiveValue = '__archive__';
+  static const _unarchiveValue = '__unarchive__';
 
   /// Asks where to file the selected clips.
+  ///
+  /// [archiveOption] decides which of the two archive actions the sheet
+  /// offers; a selection that is already archived gets the way back out
+  /// rather than a no-op re-archive.
   ///
   /// Returns null when the sheet is dismissed without a choice.
   static Future<ClipCategoryMoveChoice?> showMoveSheet({
     required BuildContext context,
     required List<ClipCategory> categories,
     String? currentCategoryId,
-    bool showArchiveOption = true,
+    ClipCategoryArchiveOption archiveOption = ClipCategoryArchiveOption.archive,
   }) async {
     final l10n = context.l10n;
     final selected = await VineBottomSheetSelectionMenu.show(
@@ -177,12 +207,20 @@ abstract final class ClipCategoryActions {
           value: _newValue,
           leadingIcon: DivineIconName.plus,
         ),
-        if (showArchiveOption)
-          VineBottomSheetSelectionOptionData(
-            label: l10n.libraryArchiveAction,
-            value: _archiveValue,
-            leadingIcon: DivineIconName.stackSimple,
-          ),
+        switch (archiveOption) {
+          ClipCategoryArchiveOption.archive =>
+            VineBottomSheetSelectionOptionData(
+              label: l10n.libraryArchiveAction,
+              value: _archiveValue,
+              leadingIcon: DivineIconName.stackSimple,
+            ),
+          ClipCategoryArchiveOption.unarchive =>
+            VineBottomSheetSelectionOptionData(
+              label: l10n.libraryUnarchiveAction,
+              value: _unarchiveValue,
+              leadingIcon: DivineIconName.stackSimple,
+            ),
+        },
       ],
     );
 
@@ -191,6 +229,7 @@ abstract final class ClipCategoryActions {
       _noneValue => const ClipCategoryMoveToNone(),
       _newValue => const ClipCategoryMoveToNew(),
       _archiveValue => const ClipCategoryMoveToArchive(),
+      _unarchiveValue => const ClipCategoryMoveToUnarchive(),
       final String id => ClipCategoryMoveToExisting(id),
     };
   }

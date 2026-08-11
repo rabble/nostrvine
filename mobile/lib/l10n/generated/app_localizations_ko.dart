@@ -11460,6 +11460,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get libraryArchiveAction => '보관';
 
   @override
+  String get libraryUnarchiveAction => '보관 취소';
+
+  @override
   String get libraryMoveSelectedClipsTooltip => '선택한 클립 이동';
 
   @override

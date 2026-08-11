@@ -12079,6 +12079,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get libraryArchiveAction => 'Archiver';
 
   @override
+  String get libraryUnarchiveAction => 'Désarchiver';
+
+  @override
   String get libraryMoveSelectedClipsTooltip =>
       'Déplacer les clips sélectionnés';
 

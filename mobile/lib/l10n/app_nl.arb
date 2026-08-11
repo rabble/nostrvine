@@ -5142,6 +5142,7 @@
   "libraryCategoryMoveNone": "Geen categorie",
   "libraryCategoryMoveNewCategory": "Nieuwe categorie",
   "libraryArchiveAction": "Archiveren",
+  "libraryUnarchiveAction": "Uit archief halen",
   "libraryMoveSelectedClipsTooltip": "Geselecteerde clips verplaatsen",
   "libraryCategoryEmptyTitle": "Hier staat nog niets",
   "libraryCategoryEmptySubtitle": "Selecteer een paar clips en verplaats ze naar deze categorie.",

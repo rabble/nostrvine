@@ -5142,6 +5142,7 @@
   "libraryCategoryMoveNone": "Fără categorie",
   "libraryCategoryMoveNewCategory": "Categorie nouă",
   "libraryArchiveAction": "Arhivează",
+  "libraryUnarchiveAction": "Dezarhivează",
   "libraryMoveSelectedClipsTooltip": "Mută clipurile selectate",
   "libraryCategoryEmptyTitle": "Încă nu e nimic aici",
   "libraryCategoryEmptySubtitle": "Alege câteva clipuri și mută-le în această categorie.",

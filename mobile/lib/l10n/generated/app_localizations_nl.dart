@@ -11980,6 +11980,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get libraryArchiveAction => 'Archiveren';
 
   @override
+  String get libraryUnarchiveAction => 'Uit archief halen';
+
+  @override
   String get libraryMoveSelectedClipsTooltip =>
       'Geselecteerde clips verplaatsen';
 

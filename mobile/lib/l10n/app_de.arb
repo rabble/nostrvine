@@ -5142,6 +5142,7 @@
   "libraryCategoryMoveNone": "Keine Kategorie",
   "libraryCategoryMoveNewCategory": "Neue Kategorie",
   "libraryArchiveAction": "Archivieren",
+  "libraryUnarchiveAction": "Aus Archiv holen",
   "libraryMoveSelectedClipsTooltip": "Ausgewählte Clips verschieben",
   "libraryCategoryEmptyTitle": "Hier ist noch nichts",
   "libraryCategoryEmptySubtitle": "Wähl ein paar Clips aus und verschieb sie in diese Kategorie.",

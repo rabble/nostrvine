@@ -5142,6 +5142,7 @@
   "libraryCategoryMoveNone": "カテゴリなし",
   "libraryCategoryMoveNewCategory": "新しいカテゴリ",
   "libraryArchiveAction": "アーカイブ",
+  "libraryUnarchiveAction": "アーカイブ解除",
   "libraryMoveSelectedClipsTooltip": "選択したクリップを移動",
   "libraryCategoryEmptyTitle": "ここにはまだ何もありません",
   "libraryCategoryEmptySubtitle": "クリップをいくつか選んで、このカテゴリに移動しましょう。",

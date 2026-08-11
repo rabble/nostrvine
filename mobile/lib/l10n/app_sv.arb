@@ -5142,6 +5142,7 @@
   "libraryCategoryMoveNone": "Ingen kategori",
   "libraryCategoryMoveNewCategory": "Ny kategori",
   "libraryArchiveAction": "Arkivera",
+  "libraryUnarchiveAction": "Avarkivera",
   "libraryMoveSelectedClipsTooltip": "Flytta valda klipp",
   "libraryCategoryEmptyTitle": "Inget här än",
   "libraryCategoryEmptySubtitle": "Välj några klipp och flytta dem till den här kategorin.",

@@ -11661,6 +11661,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get libraryArchiveAction => 'መዝገብ ውስጥ አስቀምጥ';
 
   @override
+  String get libraryUnarchiveAction => 'ከመዝገብ አውጣ';
+
+  @override
   String get libraryMoveSelectedClipsTooltip => 'የተመረጡ ክሊፖችን አንቀሳቅስ';
 
   @override

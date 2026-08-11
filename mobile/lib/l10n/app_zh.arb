@@ -6978,6 +6978,7 @@
   "libraryCategoryMoveNone": "无分类",
   "libraryCategoryMoveNewCategory": "新建分类",
   "libraryArchiveAction": "归档",
+  "libraryUnarchiveAction": "取消归档",
   "libraryMoveSelectedClipsTooltip": "移动所选片段",
   "libraryCategoryEmptyTitle": "这里还没有内容",
   "libraryCategoryEmptySubtitle": "选几个片段，把它们移到这个分类里。",

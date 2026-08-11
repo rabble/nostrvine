@@ -11878,6 +11878,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get libraryArchiveAction => 'Arşivle';
 
   @override
+  String get libraryUnarchiveAction => 'Arşivden çıkar';
+
+  @override
   String get libraryMoveSelectedClipsTooltip => 'Seçili klipleri taşı';
 
   @override

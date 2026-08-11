@@ -5142,6 +5142,7 @@
   "libraryCategoryMoveNone": "Kategorisiz",
   "libraryCategoryMoveNewCategory": "Yeni kategori",
   "libraryArchiveAction": "Arşivle",
+  "libraryUnarchiveAction": "Arşivden çıkar",
   "libraryMoveSelectedClipsTooltip": "Seçili klipleri taşı",
   "libraryCategoryEmptyTitle": "Burada henüz bir şey yok",
   "libraryCategoryEmptySubtitle": "Birkaç klip seç ve bu kategoriye taşı.",

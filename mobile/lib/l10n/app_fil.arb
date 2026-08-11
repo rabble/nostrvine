@@ -3728,6 +3728,7 @@
   "libraryCategoryMoveNone": "Walang kategorya",
   "libraryCategoryMoveNewCategory": "Bagong kategorya",
   "libraryArchiveAction": "I-archive",
+  "libraryUnarchiveAction": "I-unarchive",
   "libraryMoveSelectedClipsTooltip": "Ilipat ang mga napiling clip",
   "libraryCategoryEmptyTitle": "Wala pa rito",
   "libraryCategoryEmptySubtitle": "Pumili ng ilang clip at ilipat sila sa kategoryang ito.",

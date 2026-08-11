@@ -11933,6 +11933,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get libraryArchiveAction => 'Lưu trữ';
 
   @override
+  String get libraryUnarchiveAction => 'Bỏ lưu trữ';
+
+  @override
   String get libraryMoveSelectedClipsTooltip => 'Chuyển các clip đã chọn';
 
   @override

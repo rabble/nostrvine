@@ -11881,6 +11881,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get libraryArchiveAction => 'Arsipkan';
 
   @override
+  String get libraryUnarchiveAction => 'Batalkan arsip';
+
+  @override
   String get libraryMoveSelectedClipsTooltip => 'Pindahkan klip terpilih';
 
   @override

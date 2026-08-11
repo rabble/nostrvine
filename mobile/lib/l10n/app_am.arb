@@ -5267,6 +5267,7 @@
   "libraryCategoryMoveNone": "ምድብ የለም",
   "libraryCategoryMoveNewCategory": "አዲስ ምድብ",
   "libraryArchiveAction": "መዝገብ ውስጥ አስቀምጥ",
+  "libraryUnarchiveAction": "ከመዝገብ አውጣ",
   "libraryMoveSelectedClipsTooltip": "የተመረጡ ክሊፖችን አንቀሳቅስ",
   "libraryCategoryEmptyTitle": "እዚህ እስካሁን ምንም የለም",
   "libraryCategoryEmptySubtitle": "ጥቂት ክሊፖችን ይምረጡና ወደዚህ ምድብ ያንቀሳቅሱ።",

@@ -116,4 +116,70 @@ void main() {
       expect(result, isNull);
     });
   });
+
+  group('$ClipCategoryActions.showMoveSheet', () {
+    late ClipCategoryMoveChoice? choice;
+
+    setUp(() => choice = null);
+
+    Widget buildHost({required ClipCategoryArchiveOption archiveOption}) {
+      return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: VineTheme.theme,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => Center(
+              child: TextButton(
+                onPressed: () async {
+                  choice = await ClipCategoryActions.showMoveSheet(
+                    context: context,
+                    categories: const [],
+                    archiveOption: archiveOption,
+                  );
+                },
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('offers Archive for a selection in the working set', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildHost(archiveOption: ClipCategoryArchiveOption.archive),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(en.libraryArchiveAction), findsOneWidget);
+      expect(find.text(en.libraryUnarchiveAction), findsNothing);
+
+      await tester.tap(find.text(en.libraryArchiveAction));
+      await tester.pumpAndSettle();
+
+      expect(choice, isA<ClipCategoryMoveToArchive>());
+    });
+
+    testWidgets('offers Unarchive for an already archived selection', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildHost(archiveOption: ClipCategoryArchiveOption.unarchive),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(en.libraryUnarchiveAction), findsOneWidget);
+      expect(find.text(en.libraryArchiveAction), findsNothing);
+
+      await tester.tap(find.text(en.libraryUnarchiveAction));
+      await tester.pumpAndSettle();
+
+      expect(choice, isA<ClipCategoryMoveToUnarchive>());
+    });
+  });
 }
