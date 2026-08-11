@@ -2,7 +2,10 @@
 // ABOUTME: Covers NIP-17 gift wrap creation, encryption, publishing,
 // ABOUTME: self-wrap fallback, and error handling paths.
 
+import 'dart:async';
+
 import 'package:dm_repository/dm_repository.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show NIP17SendResult;
@@ -11,6 +14,7 @@ import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/nip59/gift_wrap_util.dart';
+import 'package:nostr_sdk/nostr.dart';
 import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:nostr_sdk/signer/isolate_decrypt_signer.dart';
 import 'package:nostr_sdk/signer/local_nostr_signer.dart';
@@ -1892,6 +1896,152 @@ void main() {
           expect(result.success, isTrue);
         },
       );
+    });
+
+    // #6586. A 1:1 send costs four remote signer round trips, and no signer
+    // interface exposes a per-call timeout — Keycast bounds an op at 30s,
+    // Amber's AndroidNostrSigner at 300s, a bunker at nothing. Before these
+    // bounds existed the chain could outrun the caller's publish backstop,
+    // which then fired AFTER the recipient publish had landed and reported a
+    // delivered message as unconfirmed.
+    group('wrap-build bounds (#6586)', () {
+      late _MockNostrClient client;
+
+      setUp(() {
+        client = _MockNostrClient();
+        when(
+          () => client.publishEventAwaitOk(
+            any(),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer(
+          (_) async => const PublishOutcome(
+            eventId: 'gift-wrap-id',
+            acceptedBy: ['wss://relay.example.com'],
+            rejectedBy: {},
+            noResponseFrom: [],
+          ),
+        );
+        when(() => client.publishEvent(any())).thenAnswer(
+          (inv) async =>
+              PublishSuccess(event: inv.positionalArguments[0] as Event),
+        );
+      });
+
+      // `GiftWrapBuilder` is hidden from the package barrel, so spell the
+      // signature out rather than reaching into `src/`.
+      NIP17MessageService serviceWithBuilder(
+        Future<Event?> Function(Nostr, Event, String) builder,
+      ) => NIP17MessageService(
+        signer: LocalNostrSigner(_testPrivateKey),
+        senderPublicKey: _testPublicKey,
+        nostrService: client,
+        giftWrapBuilder: builder,
+      );
+
+      test(
+        'recipient wrap build that outruns its bound fails BEFORE publishing',
+        () {
+          // The load-bearing assertion is the negative one: a build that never
+          // completes must not reach the relay. Timing out after the publish is
+          // the #6586 defect — the recipient has the message and the sender is
+          // told it is unconfirmed.
+          NIP17SendResult? result;
+          fakeAsync((async) {
+            unawaited(
+              serviceWithBuilder((_, _, _) => Completer<Event?>().future)
+                  .sendRumor(
+                    rumorEvent: Event(
+                      _testPublicKey,
+                      EventKind.privateDirectMessage,
+                      const [],
+                      'hangs while wrapping',
+                    ),
+                    recipientPubkey: _recipientPubkey,
+                    awaitRecipientOk: true,
+                    selfWrapOnSoftUnconfirmed: false,
+                  )
+                  .then((r) => result = r),
+            );
+
+            async.elapse(DmSendBudget.recipientWrapBuild * 2);
+          });
+
+          expect(result, isNotNull, reason: 'send must resolve, not hang');
+          expect(result!.success, isFalse);
+          verifyNever(
+            () => client.publishEventAwaitOk(
+              any(),
+              timeout: any(named: 'timeout'),
+            ),
+          );
+          verifyNever(() => client.publishEvent(any()));
+        },
+      );
+
+      test(
+        'self-wrap build that outruns its bound still reports a delivered send',
+        () {
+          // The recipient wrap is already published and OK-confirmed here, so
+          // the send DID happen. A slow self-wrap must degrade to partial
+          // delivery (recoverSelfWrap picks it up, #4124), never to a failure —
+          // reporting failure here is what parked delivered messages as
+          // soft-unconfirmed until the retry budget turned them red.
+          var builds = 0;
+          NIP17SendResult? result;
+          fakeAsync((async) {
+            unawaited(
+              serviceWithBuilder((nostr, rumor, receiverPubkey) {
+                    builds++;
+                    // First call = recipient wrap: succeed. Second = self:
+                    // hang.
+                    return builds == 1
+                        ? GiftWrapUtil.getGiftWrapEvent(
+                            nostr,
+                            rumor,
+                            receiverPubkey,
+                          )
+                        : Completer<Event?>().future;
+                  })
+                  .sendRumor(
+                    rumorEvent: Event(
+                      _testPublicKey,
+                      EventKind.privateDirectMessage,
+                      const [],
+                      'self-wrap hangs',
+                    ),
+                    recipientPubkey: _recipientPubkey,
+                    awaitRecipientOk: true,
+                    selfWrapOnSoftUnconfirmed: false,
+                  )
+                  .then((r) => result = r),
+            );
+
+            async.elapse(DmSendBudget.selfWrapBuild * 2);
+          });
+
+          expect(result, isNotNull, reason: 'send must resolve, not hang');
+          expect(
+            result!.success,
+            isTrue,
+            reason: 'the recipient wrap was published and OK-confirmed',
+          );
+          expect(
+            result!.selfWrapPublished,
+            isFalse,
+            reason: 'partial delivery, recoverable via recoverSelfWrap',
+          );
+        },
+      );
+
+      test('the self-wrap bound is tighter than the recipient bound', () {
+        // Encodes the asymmetry the bounds exist for: a slow recipient wrap
+        // costs a delivery, a slow self-wrap costs a recovery step.
+        expect(
+          DmSendBudget.selfWrapBuild,
+          lessThan(DmSendBudget.recipientWrapBuild),
+        );
+      });
     });
   });
 }
