@@ -21,7 +21,6 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
-import 'package:openvine/screens/library_trash_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/widgets/library/library.dart';
@@ -290,33 +289,25 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
     );
   }
 
-  /// Deliberately imperative: [ClipsLibraryBloc] is created inside
-  /// [LibraryScreen.build] under a ValueKey over Riverpod deps and seeded with
-  /// the current `preSelectedIds` / `disabledClipIds`. A sibling GoRoute sits
-  /// outside that provider scope, and a child GoRoute stacks as a separate
-  /// page rather than nesting inside the parent's subtree, so neither can see
-  /// the bloc. Routing this needs a ShellRoute or a bloc hoist — tracked
-  /// separately, see #6481.
-  Future<void> _openTrash(
+  Future<void> _confirmEmptyTrash(
     BuildContext context,
-    ClipsLibraryBloc clipsBloc,
-  ) async {
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        builder: (_) => BlocProvider<ClipsLibraryBloc>.value(
-          value: clipsBloc,
-          child: const LibraryTrashScreen(),
-        ),
-      ),
+    ClipsLibraryBloc clipsBloc, {
+    required int trashedCount,
+  }) async {
+    final confirmed = await VineBottomSheetPrompt.show<bool>(
+      context: context,
+      sticker: .alert,
+      title: context.l10n.libraryTrashEmptyConfirmTitle,
+      subtitle: context.l10n.libraryTrashEmptyConfirmMessage(trashedCount),
+      additionalText: context.l10n.libraryDeleteClipsWarning,
+      primaryButtonText: context.l10n.libraryDeleteConfirm,
+      secondaryButtonText: context.l10n.commonCancel,
+      onPrimaryPressed: () => Navigator.of(context).pop(true),
+      onSecondaryPressed: () => Navigator.of(context).pop(false),
     );
-    // Refresh active clips when returning so any restores show up.
-    if (!context.mounted) return;
-    clipsBloc.add(
-      ClipsLibraryLoadRequested(
-        preSelectedIds: clipsBloc.state.preSelectedIds,
-        disabledClipIds: clipsBloc.state.disabledClipIds,
-      ),
-    );
+
+    if (confirmed != true) return;
+    clipsBloc.add(const ClipsLibraryEmptyTrash());
   }
 
   /// Value of the sort-menu row that leads to the grid size options.
@@ -551,6 +542,55 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
         ),
         BlocListener<ClipsLibraryBloc, ClipsLibraryState>(
           listenWhen: (prev, curr) =>
+              curr.lastOrganizeResult != null &&
+              prev.lastOrganizeResult != curr.lastOrganizeResult,
+          listener: (context, state) {
+            final result = state.lastOrganizeResult;
+            if (result == null) return;
+            final count = result.clipIds.length;
+            final messenger = ScaffoldMessenger.of(context);
+
+            final label = switch (result.action) {
+              ClipsLibraryOrganizeAction.movedToCategory =>
+                context.l10n.libraryClipsMovedToCategory(
+                  count,
+                  result.categoryName ?? '',
+                ),
+              ClipsLibraryOrganizeAction.removedFromCategory =>
+                context.l10n.libraryClipsRemovedFromCategory(count),
+              ClipsLibraryOrganizeAction.archived =>
+                context.l10n.libraryClipsArchived(count),
+              ClipsLibraryOrganizeAction.unarchived =>
+                context.l10n.libraryClipsUnarchived(count),
+            };
+
+            // Archiving is the one action that makes clips disappear from
+            // the view the user is looking at, so it gets the undo.
+            final canUndo =
+                result.action == ClipsLibraryOrganizeAction.archived;
+            _showSnackBar(
+              context,
+              label: label,
+              actionLabel: canUndo
+                  ? context.l10n.libraryClipsDeletedUndoLabel
+                  : null,
+              onActionPressed: canUndo
+                  ? () {
+                      messenger.hideCurrentSnackBar();
+                      if (clipsBloc.isClosed) return;
+                      clipsBloc.add(
+                        ClipsLibraryClipsArchiveChanged(
+                          clipIds: result.clipIds,
+                          archived: false,
+                        ),
+                      );
+                    }
+                  : null,
+            );
+          },
+        ),
+        BlocListener<ClipsLibraryBloc, ClipsLibraryState>(
+          listenWhen: (prev, curr) =>
               curr.lastDeletedCount != null &&
               prev.lastDeletedCount != curr.lastDeletedCount,
           listener: (context, state) {
@@ -583,6 +623,7 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
       child: BlocBuilder<ClipsLibraryBloc, ClipsLibraryState>(
         builder: (context, clipsState) {
           final isClipsTabActive = _isClipsTabActive;
+          final activeCategory = clipsState.activeCategory;
           final isLibrarySelectionMode = clipsState.isLibrarySelectionMode;
           final selectionLockedToCloseOnly = _isSelectionModeLockedToCloseOnly(
             clipsState,
@@ -639,7 +680,30 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
                             onEnterSelectionMode: () => clipsBloc.add(
                               const ClipsLibraryEnterSelectionMode(),
                             ),
-                            onOpenTrash: () => _openTrash(context, clipsBloc),
+                            isTrashFilterActive: clipsState.isShowingTrash,
+                            onEmptyTrash: clipsState.trashedClips.isEmpty
+                                ? null
+                                : () => _confirmEmptyTrash(
+                                    context,
+                                    clipsBloc,
+                                    trashedCount:
+                                        clipsState.trashedClips.length,
+                                  ),
+                            onManageActiveCategory: activeCategory == null
+                                ? null
+                                : () => ClipCategoryActions.runManageFlow(
+                                    context: context,
+                                    bloc: clipsBloc,
+                                    category: activeCategory,
+                                  ),
+                            onMoveSelectedClips:
+                                clipsState.selectedClipIds.isNotEmpty
+                                ? () => ClipCategoryActions.runMoveFlow(
+                                    context: context,
+                                    bloc: clipsBloc,
+                                    clipIds: clipsState.selectedClipIds,
+                                  )
+                                : null,
                             onDeleteSelectedClips:
                                 clipsState.selectedClipIds.isNotEmpty
                                 ? () => _softDeleteSelectedClips(clipsBloc)
@@ -1034,6 +1098,7 @@ class _TabBodyState extends State<_TabBody> {
                 targetAspectRatio: widget.targetAspectRatio,
                 showRecordButton: false,
                 backgroundColor: widget.backgroundColor,
+                showCategoryManagement: true,
               ),
               _LibraryTab.sounds => const SoundsTab(),
             },

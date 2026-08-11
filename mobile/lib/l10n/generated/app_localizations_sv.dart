@@ -11864,4 +11864,123 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get generalSettingsSectionIdentity => 'Identitet';
+
+  @override
+  String get libraryFilterAll => 'Alla';
+
+  @override
+  String get libraryFilterArchive => 'Arkiv';
+
+  @override
+  String get libraryFilterDeleted => 'Borttagna';
+
+  @override
+  String get libraryCategoryNewChipLabel => 'Ny';
+
+  @override
+  String get libraryCategoryCreateSemanticLabel => 'Skapa en kategori';
+
+  @override
+  String get libraryCategoryCreateTitle => 'Ny kategori';
+
+  @override
+  String get libraryCategoryCreateAction => 'Skapa';
+
+  @override
+  String get libraryCategoryRenameTitle => 'Byt namn på kategorin';
+
+  @override
+  String get libraryCategoryRenameAction => 'Byt namn';
+
+  @override
+  String get libraryCategoryDeleteAction => 'Ta bort kategorin';
+
+  @override
+  String get libraryCategoryNameLabel => 'Kategorins namn';
+
+  @override
+  String libraryCategoryDeleteConfirmTitle(String name) {
+    return 'Ta bort ”$name”?';
+  }
+
+  @override
+  String get libraryCategoryDeleteConfirmMessage =>
+      'Dina klipp blir kvar. De flyttas bara tillbaka till Alla.';
+
+  @override
+  String get libraryCategoryManageSemanticLabel =>
+      'Byt namn på eller ta bort den här kategorin';
+
+  @override
+  String get libraryCategoryMoveTitle => 'Flytta till';
+
+  @override
+  String get libraryCategoryMoveNone => 'Ingen kategori';
+
+  @override
+  String get libraryCategoryMoveNewCategory => 'Ny kategori';
+
+  @override
+  String get libraryArchiveAction => 'Arkivera';
+
+  @override
+  String get libraryMoveSelectedClipsTooltip => 'Flytta valda klipp';
+
+  @override
+  String get libraryCategoryEmptyTitle => 'Inget här än';
+
+  @override
+  String get libraryCategoryEmptySubtitle =>
+      'Välj några klipp och flytta dem till den här kategorin.';
+
+  @override
+  String get libraryArchiveEmptyTitle => 'Inget arkiverat';
+
+  @override
+  String get libraryArchiveEmptySubtitle =>
+      'Arkiverade klipp väntar här, utanför ditt vanliga bibliotek.';
+
+  @override
+  String libraryClipsMovedToCategory(int count, String name) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klipp flyttade till $name',
+      one: '1 klipp flyttat till $name',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsRemovedFromCategory(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klipp borta från sin kategori',
+      one: '1 klipp borta från sin kategori',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsArchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klipp arkiverade',
+      one: '1 klipp arkiverat',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsUnarchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klipp tillbaka i biblioteket',
+      one: '1 klipp tillbaka i biblioteket',
+    );
+    return '$_temp0';
+  }
 }

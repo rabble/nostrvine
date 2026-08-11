@@ -25,7 +25,10 @@ void main() {
       VoidCallback? onLeadingPressed,
       VoidCallback? onOpenSortMenu,
       VoidCallback? onEnterSelectionMode,
-      VoidCallback? onOpenTrash,
+      bool isTrashFilterActive = false,
+      VoidCallback? onEmptyTrash,
+      VoidCallback? onManageActiveCategory,
+      VoidCallback? onMoveSelectedClips,
       VoidCallback? onDeleteSelectedClips,
     }) {
       return MaterialApp(
@@ -40,7 +43,10 @@ void main() {
             onLeadingPressed: onLeadingPressed ?? () {},
             onOpenSortMenu: onOpenSortMenu ?? () {},
             onEnterSelectionMode: onEnterSelectionMode ?? () {},
-            onOpenTrash: onOpenTrash ?? () {},
+            isTrashFilterActive: isTrashFilterActive,
+            onEmptyTrash: onEmptyTrash,
+            onManageActiveCategory: onManageActiveCategory,
+            onMoveSelectedClips: onMoveSelectedClips,
             onDeleteSelectedClips: onDeleteSelectedClips,
           ),
         ),
@@ -143,23 +149,100 @@ void main() {
         expect(find.text(en.librarySelect), findsOneWidget);
         expect(iconButton(DivineIconName.funnelSimple), findsOneWidget);
         expect(
-          find.bySemanticsLabel(en.libraryOpenTrashSemanticLabel),
+          find.bySemanticsLabel(displayOptionsLabel),
           findsOneWidget,
         );
-        expect(find.bySemanticsLabel(displayOptionsLabel), findsOneWidget);
         expect(
           find.bySemanticsLabel(en.librarySelectClipsSemanticLabel),
           findsOneWidget,
         );
       });
 
-      testWidgets('swaps Select for delete in selection mode', (tester) async {
+      testWidgets('swaps Select for move and delete in selection mode', (
+        tester,
+      ) async {
         await tester.pumpWidget(buildWidget(isLibrarySelectionMode: true));
 
         expect(find.text(en.librarySelect), findsNothing);
         expect(
+          find.bySemanticsLabel(en.libraryMoveSelectedClipsTooltip),
+          findsOneWidget,
+        );
+        expect(
           find.bySemanticsLabel(en.libraryDeleteSelectedClipsTooltip),
           findsOneWidget,
+        );
+      });
+
+      testWidgets('offers only Empty trash while the trash filter is on', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(isTrashFilterActive: true, onEmptyTrash: () {}),
+        );
+
+        expect(find.text(en.libraryTrashEmptyAllLabel), findsOneWidget);
+        expect(find.text(en.librarySelect), findsNothing);
+        expect(iconButton(DivineIconName.funnelSimple), findsNothing);
+      });
+
+      testWidgets('hides Empty trash when the bin is empty', (tester) async {
+        await tester.pumpWidget(buildWidget(isTrashFilterActive: true));
+
+        expect(find.text(en.libraryTrashEmptyAllLabel), findsNothing);
+      });
+
+      testWidgets('shows the manage action only for a category filter', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget());
+        expect(iconButton(DivineIconName.pencilSimple), findsNothing);
+
+        await tester.pumpWidget(
+          buildWidget(onManageActiveCategory: () {}),
+        );
+        expect(
+          find.bySemanticsLabel(en.libraryCategoryManageSemanticLabel),
+          findsOneWidget,
+        );
+      });
+    });
+
+    group('layout', () {
+      testWidgets('keeps the same height across every action set', (
+        tester,
+      ) async {
+        // The toolbar sits above the clip grid, so any height change shifts
+        // the content under it. Switching to the trash filter swaps the whole
+        // action set, which must not move the grid.
+        final heights = <String, double>{};
+        final cases = <String, Widget>{
+          'browse': buildWidget(),
+          'selection': buildWidget(
+            isLibrarySelectionMode: true,
+            onMoveSelectedClips: () {},
+            onDeleteSelectedClips: () {},
+          ),
+          'category active': buildWidget(onManageActiveCategory: () {}),
+          'trash with items': buildWidget(
+            isTrashFilterActive: true,
+            onEmptyTrash: () {},
+          ),
+          'trash empty': buildWidget(isTrashFilterActive: true),
+          'drafts tab': buildWidget(isClipsTabActive: false),
+        };
+
+        for (final entry in cases.entries) {
+          await tester.pumpWidget(entry.value);
+          heights[entry.key] = tester
+              .getSize(find.byType(LibraryToolbar))
+              .height;
+        }
+
+        expect(
+          heights.values.toSet(),
+          hasLength(1),
+          reason: 'toolbar height varies by action set: $heights',
         );
       });
     });
@@ -197,11 +280,29 @@ void main() {
         expect(pressed, isTrue);
       });
 
-      testWidgets('trash button triggers onOpenTrash', (tester) async {
+      testWidgets('Empty trash button triggers onEmptyTrash', (tester) async {
         var pressed = false;
-        await tester.pumpWidget(buildWidget(onOpenTrash: () => pressed = true));
+        await tester.pumpWidget(
+          buildWidget(
+            isTrashFilterActive: true,
+            onEmptyTrash: () => pressed = true,
+          ),
+        );
 
-        await tester.tap(iconButton(DivineIconName.trash));
+        await tester.tap(find.text(en.libraryTrashEmptyAllLabel));
+        expect(pressed, isTrue);
+      });
+
+      testWidgets('move button triggers onMoveSelectedClips', (tester) async {
+        var pressed = false;
+        await tester.pumpWidget(
+          buildWidget(
+            isLibrarySelectionMode: true,
+            onMoveSelectedClips: () => pressed = true,
+          ),
+        );
+
+        await tester.tap(iconButton(DivineIconName.folderOpen));
         expect(pressed, isTrue);
       });
 

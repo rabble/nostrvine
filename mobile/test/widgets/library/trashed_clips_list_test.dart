@@ -1,5 +1,5 @@
-// ABOUTME: Tests for LibraryTrashScreen destructive actions and countdown copy
-// ABOUTME: Verifies restore/hard-delete/empty-trash wiring and empty state UI
+// ABOUTME: Tests for the Deleted filter's trashed-clip list
+// ABOUTME: Verifies restore/hard-delete wiring, countdown copy, and empty state
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
@@ -11,8 +11,8 @@ import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/l10n/generated/app_localizations_en.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/screens/library_trash_screen.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
+import 'package:openvine/widgets/library/trashed_clips_list.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 class _MockClipsLibraryBloc
@@ -22,7 +22,7 @@ class _MockClipsLibraryBloc
 void main() {
   final en = AppLocalizationsEn();
 
-  group(LibraryTrashScreen, () {
+  group(TrashedClipsList, () {
     late _MockClipsLibraryBloc mockBloc;
 
     final trashedClip = DivineVideoClip(
@@ -46,29 +46,29 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         theme: VineTheme.theme,
-        home: BlocProvider<ClipsLibraryBloc>.value(
-          value: mockBloc,
-          child: const LibraryTrashScreen(),
+        home: Scaffold(
+          body: BlocProvider<ClipsLibraryBloc>.value(
+            value: mockBloc,
+            child: const TrashedClipsList(),
+          ),
         ),
       );
     }
 
-    testWidgets('loads trash, shows countdown, and restores a clip', (
+    testWidgets('shows the purge countdown and restores a clip', (
       tester,
     ) async {
       await tester.pumpWidget(
         buildWidget(
           ClipsLibraryState(
             status: ClipsLibraryStatus.trashLoaded,
+            filter: const ClipLibraryTrashFilter(),
             trashedClips: [trashedClip],
           ),
         ),
       );
       await tester.pump();
 
-      verify(
-        () => mockBloc.add(const ClipsLibraryTrashLoadRequested()),
-      ).called(1);
       expect(find.text(en.libraryTrashAutoDeletes(2)), findsOneWidget);
 
       await tester.tap(find.text(en.libraryTrashRestoreLabel));
@@ -79,13 +79,12 @@ void main() {
       ).called(1);
     });
 
-    testWidgets('confirms hard delete and empty trash before dispatching', (
-      tester,
-    ) async {
+    testWidgets('confirms before hard-deleting a clip', (tester) async {
       await tester.pumpWidget(
         buildWidget(
           ClipsLibraryState(
             status: ClipsLibraryStatus.trashLoaded,
+            filter: const ClipLibraryTrashFilter(),
             trashedClips: [trashedClip],
           ),
         ),
@@ -104,32 +103,21 @@ void main() {
       verify(
         () => mockBloc.add(ClipsLibraryHardDeleteClip(trashedClip)),
       ).called(1);
-
-      await tester.tap(find.text(en.libraryTrashEmptyAllLabel));
-      await tester.pumpAndSettle();
-
-      expect(find.text(en.libraryTrashEmptyConfirmTitle), findsOneWidget);
-      verifyNever(() => mockBloc.add(const ClipsLibraryEmptyTrash()));
-
-      await tester.tap(find.text(en.libraryDeleteConfirm));
-      await tester.pumpAndSettle();
-
-      verify(() => mockBloc.add(const ClipsLibraryEmptyTrash())).called(1);
     });
 
-    testWidgets('shows empty state and hides empty-trash action', (
-      tester,
-    ) async {
+    testWidgets('shows the empty state when the bin is empty', (tester) async {
       await tester.pumpWidget(
         buildWidget(
-          const ClipsLibraryState(status: ClipsLibraryStatus.trashLoaded),
+          const ClipsLibraryState(
+            status: ClipsLibraryStatus.trashLoaded,
+            filter: ClipLibraryTrashFilter(),
+          ),
         ),
       );
       await tester.pump();
 
       expect(find.byType(EmptyLibraryState), findsOneWidget);
       expect(find.text(en.libraryTrashEmptyTitle), findsOneWidget);
-      expect(find.text(en.libraryTrashEmptyAllLabel), findsNothing);
     });
   });
 }

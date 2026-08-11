@@ -11982,4 +11982,123 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get generalSettingsSectionIdentity => 'Identità';
+
+  @override
+  String get libraryFilterAll => 'Tutti';
+
+  @override
+  String get libraryFilterArchive => 'Archivio';
+
+  @override
+  String get libraryFilterDeleted => 'Eliminati';
+
+  @override
+  String get libraryCategoryNewChipLabel => 'Nuova';
+
+  @override
+  String get libraryCategoryCreateSemanticLabel => 'Crea una categoria';
+
+  @override
+  String get libraryCategoryCreateTitle => 'Nuova categoria';
+
+  @override
+  String get libraryCategoryCreateAction => 'Crea';
+
+  @override
+  String get libraryCategoryRenameTitle => 'Rinomina categoria';
+
+  @override
+  String get libraryCategoryRenameAction => 'Rinomina';
+
+  @override
+  String get libraryCategoryDeleteAction => 'Elimina categoria';
+
+  @override
+  String get libraryCategoryNameLabel => 'Nome della categoria';
+
+  @override
+  String libraryCategoryDeleteConfirmTitle(String name) {
+    return 'Eliminare «$name»?';
+  }
+
+  @override
+  String get libraryCategoryDeleteConfirmMessage =>
+      'I tuoi clip restano. Tornano semplicemente in Tutti.';
+
+  @override
+  String get libraryCategoryManageSemanticLabel =>
+      'Rinomina o elimina questa categoria';
+
+  @override
+  String get libraryCategoryMoveTitle => 'Sposta in';
+
+  @override
+  String get libraryCategoryMoveNone => 'Nessuna categoria';
+
+  @override
+  String get libraryCategoryMoveNewCategory => 'Nuova categoria';
+
+  @override
+  String get libraryArchiveAction => 'Archivia';
+
+  @override
+  String get libraryMoveSelectedClipsTooltip => 'Sposta i clip selezionati';
+
+  @override
+  String get libraryCategoryEmptyTitle => 'Qui non c\'è ancora niente';
+
+  @override
+  String get libraryCategoryEmptySubtitle =>
+      'Seleziona qualche clip e spostalo in questa categoria.';
+
+  @override
+  String get libraryArchiveEmptyTitle => 'Niente in archivio';
+
+  @override
+  String get libraryArchiveEmptySubtitle =>
+      'I clip archiviati aspettano qui, fuori dalla libreria principale.';
+
+  @override
+  String libraryClipsMovedToCategory(int count, String name) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clip spostati in $name',
+      one: '1 clip spostato in $name',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsRemovedFromCategory(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clip rimossi dalla loro categoria',
+      one: '1 clip rimosso dalla sua categoria',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsArchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clip archiviati',
+      one: '1 clip archiviato',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsUnarchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clip di nuovo nella libreria',
+      one: '1 clip di nuovo nella libreria',
+    );
+    return '$_temp0';
+  }
 }

@@ -808,6 +808,7 @@ void main() {
           final libraryService = ClipLibraryService(
             clipsDao: database.clipsDao,
             draftsDao: database.draftsDao,
+            clipCategoriesDao: database.clipCategoriesDao,
           );
 
           await libraryService.saveClip(clip);

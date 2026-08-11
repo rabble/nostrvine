@@ -11375,4 +11375,117 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get generalSettingsSectionIdentity => 'アイデンティティ';
+
+  @override
+  String get libraryFilterAll => 'すべて';
+
+  @override
+  String get libraryFilterArchive => 'アーカイブ';
+
+  @override
+  String get libraryFilterDeleted => '削除済み';
+
+  @override
+  String get libraryCategoryNewChipLabel => '新規';
+
+  @override
+  String get libraryCategoryCreateSemanticLabel => 'カテゴリを作成';
+
+  @override
+  String get libraryCategoryCreateTitle => '新しいカテゴリ';
+
+  @override
+  String get libraryCategoryCreateAction => '作成';
+
+  @override
+  String get libraryCategoryRenameTitle => 'カテゴリ名を変更';
+
+  @override
+  String get libraryCategoryRenameAction => '名前を変更';
+
+  @override
+  String get libraryCategoryDeleteAction => 'カテゴリを削除';
+
+  @override
+  String get libraryCategoryNameLabel => 'カテゴリ名';
+
+  @override
+  String libraryCategoryDeleteConfirmTitle(String name) {
+    return '「$name」を削除しますか？';
+  }
+
+  @override
+  String get libraryCategoryDeleteConfirmMessage =>
+      'クリップはそのまま残ります。「すべて」に戻るだけです。';
+
+  @override
+  String get libraryCategoryManageSemanticLabel => 'このカテゴリの名前を変更または削除';
+
+  @override
+  String get libraryCategoryMoveTitle => '移動先';
+
+  @override
+  String get libraryCategoryMoveNone => 'カテゴリなし';
+
+  @override
+  String get libraryCategoryMoveNewCategory => '新しいカテゴリ';
+
+  @override
+  String get libraryArchiveAction => 'アーカイブ';
+
+  @override
+  String get libraryMoveSelectedClipsTooltip => '選択したクリップを移動';
+
+  @override
+  String get libraryCategoryEmptyTitle => 'ここにはまだ何もありません';
+
+  @override
+  String get libraryCategoryEmptySubtitle => 'クリップをいくつか選んで、このカテゴリに移動しましょう。';
+
+  @override
+  String get libraryArchiveEmptyTitle => 'アーカイブはまだありません';
+
+  @override
+  String get libraryArchiveEmptySubtitle =>
+      'アーカイブしたクリップは、メインのライブラリから離れてここで待機します。';
+
+  @override
+  String libraryClipsMovedToCategory(int count, String name) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count件のクリップを$nameに移動しました',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsRemovedFromCategory(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count件のクリップをカテゴリから外しました',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsArchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count件のクリップをアーカイブしました',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsUnarchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count件のクリップをライブラリに戻しました',
+    );
+    return '$_temp0';
+  }
 }

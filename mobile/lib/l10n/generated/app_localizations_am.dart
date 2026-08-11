@@ -11602,4 +11602,121 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get generalSettingsSectionIdentity => 'ማንነት';
+
+  @override
+  String get libraryFilterAll => 'ሁሉም';
+
+  @override
+  String get libraryFilterArchive => 'መዝገብ';
+
+  @override
+  String get libraryFilterDeleted => 'የተሰረዙ';
+
+  @override
+  String get libraryCategoryNewChipLabel => 'አዲስ';
+
+  @override
+  String get libraryCategoryCreateSemanticLabel => 'ምድብ ይፍጠሩ';
+
+  @override
+  String get libraryCategoryCreateTitle => 'አዲስ ምድብ';
+
+  @override
+  String get libraryCategoryCreateAction => 'ፍጠር';
+
+  @override
+  String get libraryCategoryRenameTitle => 'የምድቡን ስም ቀይር';
+
+  @override
+  String get libraryCategoryRenameAction => 'ስም ቀይር';
+
+  @override
+  String get libraryCategoryDeleteAction => 'ምድብ ሰርዝ';
+
+  @override
+  String get libraryCategoryNameLabel => 'የምድብ ስም';
+
+  @override
+  String libraryCategoryDeleteConfirmTitle(String name) {
+    return '“$name”ን ይሰረዝ?';
+  }
+
+  @override
+  String get libraryCategoryDeleteConfirmMessage =>
+      'ክሊፖችዎ እንደነበሩ ይቆያሉ። ወደ “ሁሉም” ብቻ ይመለሳሉ።';
+
+  @override
+  String get libraryCategoryManageSemanticLabel => 'ይህን ምድብ ስም ይቀይሩ ወይም ይሰርዙ';
+
+  @override
+  String get libraryCategoryMoveTitle => 'ወደዚህ አንቀሳቅስ';
+
+  @override
+  String get libraryCategoryMoveNone => 'ምድብ የለም';
+
+  @override
+  String get libraryCategoryMoveNewCategory => 'አዲስ ምድብ';
+
+  @override
+  String get libraryArchiveAction => 'መዝገብ ውስጥ አስቀምጥ';
+
+  @override
+  String get libraryMoveSelectedClipsTooltip => 'የተመረጡ ክሊፖችን አንቀሳቅስ';
+
+  @override
+  String get libraryCategoryEmptyTitle => 'እዚህ እስካሁን ምንም የለም';
+
+  @override
+  String get libraryCategoryEmptySubtitle => 'ጥቂት ክሊፖችን ይምረጡና ወደዚህ ምድብ ያንቀሳቅሱ።';
+
+  @override
+  String get libraryArchiveEmptyTitle => 'በመዝገብ ውስጥ ምንም የለም';
+
+  @override
+  String get libraryArchiveEmptySubtitle =>
+      'በመዝገብ የተቀመጡ ክሊፖች ከዋናው ቤተ-መጻሕፍትዎ ተለይተው እዚህ ይጠብቃሉ።';
+
+  @override
+  String libraryClipsMovedToCategory(int count, String name) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ክሊፖች ወደ $name ተንቀሳቅሰዋል',
+      one: '1 ክሊፕ ወደ $name ተንቀሳቅሷል',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsRemovedFromCategory(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ክሊፖች ከምድባቸው ወጥተዋል',
+      one: '1 ክሊፕ ከምድቡ ወጥቷል',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsArchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ክሊፖች በመዝገብ ተቀምጠዋል',
+      one: '1 ክሊፕ በመዝገብ ተቀምጧል',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsUnarchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ክሊፖች ወደ ቤተ-መጻሕፍትዎ ተመልሰዋል',
+      one: '1 ክሊፕ ወደ ቤተ-መጻሕፍትዎ ተመልሷል',
+    );
+    return '$_temp0';
+  }
 }

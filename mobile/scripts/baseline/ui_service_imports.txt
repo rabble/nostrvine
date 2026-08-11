@@ -22,7 +22,6 @@ lib/screens/inbox/message_requests/request_preview_view.dart
 lib/screens/inbox/widgets/conversation_tile.dart
 lib/screens/key_import_screen.dart
 lib/screens/library_screen.dart
-lib/screens/library_trash_screen.dart
 lib/screens/relay_diagnostic_screen.dart
 lib/screens/relay_settings_screen.dart
 lib/screens/search_results/widgets/search_user_tile.dart

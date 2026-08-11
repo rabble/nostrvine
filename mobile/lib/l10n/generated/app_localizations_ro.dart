@@ -12086,4 +12086,127 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get generalSettingsSectionIdentity => 'Identitate';
+
+  @override
+  String get libraryFilterAll => 'Toate';
+
+  @override
+  String get libraryFilterArchive => 'Arhivă';
+
+  @override
+  String get libraryFilterDeleted => 'Șterse';
+
+  @override
+  String get libraryCategoryNewChipLabel => 'Nouă';
+
+  @override
+  String get libraryCategoryCreateSemanticLabel => 'Creează o categorie';
+
+  @override
+  String get libraryCategoryCreateTitle => 'Categorie nouă';
+
+  @override
+  String get libraryCategoryCreateAction => 'Creează';
+
+  @override
+  String get libraryCategoryRenameTitle => 'Redenumește categoria';
+
+  @override
+  String get libraryCategoryRenameAction => 'Redenumește';
+
+  @override
+  String get libraryCategoryDeleteAction => 'Șterge categoria';
+
+  @override
+  String get libraryCategoryNameLabel => 'Numele categoriei';
+
+  @override
+  String libraryCategoryDeleteConfirmTitle(String name) {
+    return 'Ștergi „$name”?';
+  }
+
+  @override
+  String get libraryCategoryDeleteConfirmMessage =>
+      'Clipurile tale rămân. Se întorc doar în Toate.';
+
+  @override
+  String get libraryCategoryManageSemanticLabel =>
+      'Redenumește sau șterge această categorie';
+
+  @override
+  String get libraryCategoryMoveTitle => 'Mută în';
+
+  @override
+  String get libraryCategoryMoveNone => 'Fără categorie';
+
+  @override
+  String get libraryCategoryMoveNewCategory => 'Categorie nouă';
+
+  @override
+  String get libraryArchiveAction => 'Arhivează';
+
+  @override
+  String get libraryMoveSelectedClipsTooltip => 'Mută clipurile selectate';
+
+  @override
+  String get libraryCategoryEmptyTitle => 'Încă nu e nimic aici';
+
+  @override
+  String get libraryCategoryEmptySubtitle =>
+      'Alege câteva clipuri și mută-le în această categorie.';
+
+  @override
+  String get libraryArchiveEmptyTitle => 'Nimic arhivat';
+
+  @override
+  String get libraryArchiveEmptySubtitle =>
+      'Clipurile arhivate așteaptă aici, în afara bibliotecii principale.';
+
+  @override
+  String libraryClipsMovedToCategory(int count, String name) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de clipuri mutate în $name',
+      few: '$count clipuri mutate în $name',
+      one: '1 clip mutat în $name',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsRemovedFromCategory(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de clipuri scoase din categorie',
+      few: '$count clipuri scoase din categorie',
+      one: '1 clip scos din categorie',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsArchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de clipuri arhivate',
+      few: '$count clipuri arhivate',
+      one: '1 clip arhivat',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsUnarchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de clipuri înapoi în bibliotecă',
+      few: '$count clipuri înapoi în bibliotecă',
+      one: '1 clip înapoi în bibliotecă',
+    );
+    return '$_temp0';
+  }
 }

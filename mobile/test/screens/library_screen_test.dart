@@ -119,6 +119,9 @@ void main() {
         () => mockClipLibraryService.getAllClips(),
       ).thenAnswer((_) async => []);
       when(
+        () => mockClipLibraryService.getCategories(),
+      ).thenAnswer((_) async => []);
+      when(
         () => mockDraftStorageService.getAllDrafts(),
       ).thenAnswer((_) async => []);
     });

@@ -30,6 +30,7 @@ void main() {
       service = ClipLibraryService(
         clipsDao: database.clipsDao,
         draftsDao: database.draftsDao,
+        clipCategoriesDao: database.clipCategoriesDao,
       );
     });
 
@@ -483,11 +484,13 @@ void main() {
           final serviceA = ClipLibraryService(
             clipsDao: database.clipsDao,
             draftsDao: database.draftsDao,
+            clipCategoriesDao: database.clipCategoriesDao,
             ownerPubkey: pubkeyA,
           );
           final serviceB = ClipLibraryService(
             clipsDao: database.clipsDao,
             draftsDao: database.draftsDao,
+            clipCategoriesDao: database.clipCategoriesDao,
             ownerPubkey: pubkeyB,
           );
 
@@ -861,6 +864,120 @@ void main() {
           expect(frame1.existsSync(), isFalse);
         },
       );
+    });
+
+    group('categories', () {
+      DivineVideoClip libraryClip(String id) => DivineVideoClip(
+        id: id,
+        video: EditorVideo.file('/tmp/$id.mp4'),
+        duration: const Duration(seconds: 2),
+        recordedAt: DateTime(2026, 3, 5),
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
+      );
+
+      test('createCategory appends after the existing ones', () async {
+        final first = await service.createCategory('Travel');
+        final second = await service.createCategory('Food');
+
+        expect(first?.orderIndex, 0);
+        expect(second?.orderIndex, 1);
+        expect(
+          (await service.getCategories()).map((c) => c.name),
+          ['Travel', 'Food'],
+        );
+      });
+
+      test('createCategory trims the name', () async {
+        final created = await service.createCategory('  Travel  ');
+
+        expect(created?.name, 'Travel');
+      });
+
+      test('createCategory rejects a blank name', () async {
+        expect(await service.createCategory('   '), isNull);
+        expect(await service.getCategories(), isEmpty);
+      });
+
+      test('renameCategory rejects a blank name', () async {
+        final created = await service.createCategory('Travel');
+
+        final renamed = await service.renameCategory(
+          id: created!.id,
+          rawName: '  ',
+        );
+
+        expect(renamed, isFalse);
+        expect((await service.getCategories()).single.name, 'Travel');
+      });
+
+      test('setClipCategory files a clip and getAllClips reports it', () async {
+        final category = await service.createCategory('Travel');
+        await service.saveClip(libraryClip('clip_1'));
+
+        await service.setClipCategory(
+          clipId: 'clip_1',
+          categoryId: category!.id,
+        );
+
+        expect((await service.getAllClips()).single.categoryId, category.id);
+      });
+
+      test('deleteCategory keeps the clip and unfiles it', () async {
+        final category = await service.createCategory('Travel');
+        await service.saveClip(libraryClip('clip_1'));
+        await service.setClipCategory(
+          clipId: 'clip_1',
+          categoryId: category!.id,
+        );
+
+        final deleted = await service.deleteCategory(category.id);
+
+        expect(deleted, isTrue);
+        final clips = await service.getAllClips();
+        expect(clips.single.id, 'clip_1');
+        expect(clips.single.categoryId, isNull);
+      });
+
+      test('setClipArchived marks and clears the clip', () async {
+        await service.saveClip(libraryClip('clip_1'));
+
+        await service.setClipArchived(clipId: 'clip_1', archived: true);
+        expect((await service.getAllClips()).single.archivedAt, isNotNull);
+
+        await service.setClipArchived(clipId: 'clip_1', archived: false);
+        expect((await service.getAllClips()).single.archivedAt, isNull);
+      });
+
+      test(
+        'saveClip does not unfile or unarchive an already organized clip',
+        () async {
+          final category = await service.createCategory('Travel');
+          final clip = libraryClip('clip_1');
+          await service.saveClip(clip);
+          await service.setClipCategory(
+            clipId: 'clip_1',
+            categoryId: category!.id,
+          );
+          await service.setClipArchived(clipId: 'clip_1', archived: true);
+
+          // Mirrors background asset recovery re-saving the clip.
+          await service.saveClip(clip.copyWith(thumbnailPath: '/tmp/t.jpg'));
+
+          final reloaded = (await service.getAllClips()).single;
+          expect(reloaded.categoryId, category.id);
+          expect(reloaded.archivedAt, isNotNull);
+        },
+      );
+
+      test('archiving keeps the clip out of the trash', () async {
+        await service.saveClip(libraryClip('clip_1'));
+
+        await service.setClipArchived(clipId: 'clip_1', archived: true);
+
+        expect(await service.getTrashedClips(), isEmpty);
+        expect(await service.getAllClips(), hasLength(1));
+      });
     });
   });
 

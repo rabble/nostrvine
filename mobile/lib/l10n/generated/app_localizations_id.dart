@@ -11821,4 +11821,119 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get generalSettingsSectionIdentity => 'Identitas';
+
+  @override
+  String get libraryFilterAll => 'Semua';
+
+  @override
+  String get libraryFilterArchive => 'Arsip';
+
+  @override
+  String get libraryFilterDeleted => 'Dihapus';
+
+  @override
+  String get libraryCategoryNewChipLabel => 'Baru';
+
+  @override
+  String get libraryCategoryCreateSemanticLabel => 'Buat kategori';
+
+  @override
+  String get libraryCategoryCreateTitle => 'Kategori baru';
+
+  @override
+  String get libraryCategoryCreateAction => 'Buat';
+
+  @override
+  String get libraryCategoryRenameTitle => 'Ganti nama kategori';
+
+  @override
+  String get libraryCategoryRenameAction => 'Ganti nama';
+
+  @override
+  String get libraryCategoryDeleteAction => 'Hapus kategori';
+
+  @override
+  String get libraryCategoryNameLabel => 'Nama kategori';
+
+  @override
+  String libraryCategoryDeleteConfirmTitle(String name) {
+    return 'Hapus “$name”?';
+  }
+
+  @override
+  String get libraryCategoryDeleteConfirmMessage =>
+      'Klipmu tetap ada. Semuanya hanya kembali ke Semua.';
+
+  @override
+  String get libraryCategoryManageSemanticLabel =>
+      'Ganti nama atau hapus kategori ini';
+
+  @override
+  String get libraryCategoryMoveTitle => 'Pindahkan ke';
+
+  @override
+  String get libraryCategoryMoveNone => 'Tanpa kategori';
+
+  @override
+  String get libraryCategoryMoveNewCategory => 'Kategori baru';
+
+  @override
+  String get libraryArchiveAction => 'Arsipkan';
+
+  @override
+  String get libraryMoveSelectedClipsTooltip => 'Pindahkan klip terpilih';
+
+  @override
+  String get libraryCategoryEmptyTitle => 'Belum ada apa-apa di sini';
+
+  @override
+  String get libraryCategoryEmptySubtitle =>
+      'Pilih beberapa klip dan pindahkan ke kategori ini.';
+
+  @override
+  String get libraryArchiveEmptyTitle => 'Belum ada arsip';
+
+  @override
+  String get libraryArchiveEmptySubtitle =>
+      'Klip yang diarsipkan menunggu di sini, terpisah dari pustaka utamamu.';
+
+  @override
+  String libraryClipsMovedToCategory(int count, String name) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klip dipindahkan ke $name',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsRemovedFromCategory(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klip dikeluarkan dari kategorinya',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsArchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klip diarsipkan',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsUnarchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klip kembali ke pustakamu',
+    );
+    return '$_temp0';
+  }
 }

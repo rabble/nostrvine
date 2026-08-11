@@ -3,6 +3,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
+import 'package:openvine/models/clip_category.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -228,6 +229,9 @@ void main() {
         const GallerySaveResultSuccess(successCount: 1, failureCount: 0),
         1,
         const <String>{},
+        const <ClipCategory>[],
+        const ClipLibraryAllFilter(),
+        null,
       ]);
     });
   });

@@ -1,130 +1,61 @@
-// ABOUTME: Trash bin screen for soft-deleted clips with restore + purge actions
-// ABOUTME: Loads trashed clips on entry and lets the user restore or delete now.
+// ABOUTME: List of soft-deleted clips with restore and delete-now actions.
+// ABOUTME: Backs the clip library's Deleted filter.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
+import 'package:openvine/constants/clip_library_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
 import 'package:openvine/widgets/video_clip/video_clip_thumbnail_card.dart';
 
-/// Screen showing clips that have been soft-deleted and are awaiting
-/// 30-day auto-purge. The user can [Restore] a clip back to the
-/// library or [Delete now] to skip the retention window.
-class LibraryTrashScreen extends StatefulWidget {
-  const LibraryTrashScreen({super.key});
+/// Clips that have been soft-deleted and are awaiting the 30-day auto-purge.
+///
+/// The user can restore a clip back to the library or delete it now to skip
+/// the retention window. Reads [ClipsLibraryState.trashedClips]; the Deleted
+/// filter loads them.
+class TrashedClipsList extends StatelessWidget {
+  const TrashedClipsList({this.scrollController, super.key});
 
-  @override
-  State<LibraryTrashScreen> createState() => _LibraryTrashScreenState();
-}
-
-class _LibraryTrashScreenState extends State<LibraryTrashScreen> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      context.read<ClipsLibraryBloc>().add(
-        const ClipsLibraryTrashLoadRequested(),
-      );
-    });
-  }
+  /// Optional scroll controller, e.g. from a parent bottom sheet.
+  final ScrollController? scrollController;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.vineColors.surface,
-      appBar: DiVineAppBar(
-        title: context.l10n.libraryTrashTitle,
-        backgroundColor: context.vineColors.surface,
-        surfaceTintColor: VineTheme.transparent,
-        shape: Border(
-          bottom: BorderSide(color: context.vineColors.outlineDisabled),
-        ),
-        showBackButton: true,
-        onBackPressed: () => Navigator.of(context).maybePop(),
-        customActions: const [_EmptyTrashAction()],
-      ),
-      body: SafeArea(
-        child: BlocBuilder<ClipsLibraryBloc, ClipsLibraryState>(
-          buildWhen: (prev, curr) =>
-              prev.trashedClips != curr.trashedClips ||
-              prev.status != curr.status,
-          builder: (context, state) {
-            if (state.status == ClipsLibraryStatus.trashLoading &&
-                state.trashedClips.isEmpty) {
-              return const Center(child: BrandedLoadingIndicator(size: 60));
-            }
-            if (state.trashedClips.isEmpty) {
-              return EmptyLibraryState(
-                icon: DivineIconName.trash,
-                title: context.l10n.libraryTrashEmptyTitle,
-                subtitle: context.l10n.libraryTrashEmptySubtitle,
-                showRecordButton: false,
-              );
-            }
-            return ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              itemCount: state.trashedClips.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 8),
-              itemBuilder: (context, index) =>
-                  _TrashedClipTile(clip: state.trashedClips[index]),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyTrashAction extends StatelessWidget {
-  const _EmptyTrashAction();
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocSelector<ClipsLibraryBloc, ClipsLibraryState, int>(
-      selector: (state) => state.trashedClips.length,
-      builder: (context, trashedCount) {
-        final hasTrashed = trashedCount > 0;
-        if (!hasTrashed) return const SizedBox.shrink();
-        return Padding(
-          padding: const EdgeInsets.only(right: 16),
-          child: Center(
-            child: DivineButton(
-              size: DivineButtonSize.small,
-              type: DivineButtonType.secondary,
-              label: context.l10n.libraryTrashEmptyAllLabel,
-              onPressed: () =>
-                  _confirmEmptyTrash(context, trashedCount: trashedCount),
-            ),
+    return BlocBuilder<ClipsLibraryBloc, ClipsLibraryState>(
+      buildWhen: (prev, curr) =>
+          prev.trashedClips != curr.trashedClips || prev.status != curr.status,
+      builder: (context, state) {
+        if (state.status == ClipsLibraryStatus.trashLoading &&
+            state.trashedClips.isEmpty) {
+          return const Center(child: BrandedLoadingIndicator(size: 60));
+        }
+        if (state.trashedClips.isEmpty) {
+          return EmptyLibraryState(
+            icon: DivineIconName.trash,
+            title: context.l10n.libraryTrashEmptyTitle,
+            subtitle: context.l10n.libraryTrashEmptySubtitle,
+            showRecordButton: false,
+          );
+        }
+        return ListView.separated(
+          controller: scrollController,
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 8,
+            bottom: MediaQuery.viewPaddingOf(context).bottom + 8,
           ),
+          itemCount: state.trashedClips.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 8),
+          itemBuilder: (context, index) =>
+              _TrashedClipTile(clip: state.trashedClips[index]),
         );
       },
     );
-  }
-
-  Future<void> _confirmEmptyTrash(
-    BuildContext context, {
-    required int trashedCount,
-  }) async {
-    final confirmed = await VineBottomSheetPrompt.show<bool>(
-      context: context,
-      sticker: .alert,
-      title: context.l10n.libraryTrashEmptyConfirmTitle,
-      subtitle: context.l10n.libraryTrashEmptyConfirmMessage(trashedCount),
-      additionalText: context.l10n.libraryDeleteClipsWarning,
-      primaryButtonText: context.l10n.libraryDeleteConfirm,
-      secondaryButtonText: context.l10n.commonCancel,
-      onPrimaryPressed: () => Navigator.of(context).pop(true),
-      onSecondaryPressed: () => Navigator.of(context).pop(false),
-    );
-
-    if (confirmed != true || !context.mounted) return;
-    context.read<ClipsLibraryBloc>().add(const ClipsLibraryEmptyTrash());
   }
 }
 
@@ -211,7 +142,7 @@ class _TrashedClipTile extends StatelessWidget {
     final deletedAt = clip.deletedAt;
     assert(deletedAt != null, 'Trashed clip must have deletedAt');
     if (deletedAt == null) return 0;
-    final cutoff = deletedAt.add(ClipLibraryService.trashRetention);
+    final cutoff = deletedAt.add(ClipLibraryConstants.trashRetention);
     final remaining = cutoff.difference(DateTime.now());
     if (remaining <= Duration.zero) return 0;
     return (remaining.inSeconds / Duration.secondsPerDay).ceil();

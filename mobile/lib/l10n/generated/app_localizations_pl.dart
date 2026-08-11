@@ -12074,4 +12074,131 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get generalSettingsSectionIdentity => 'Tożsamość';
+
+  @override
+  String get libraryFilterAll => 'Wszystkie';
+
+  @override
+  String get libraryFilterArchive => 'Archiwum';
+
+  @override
+  String get libraryFilterDeleted => 'Usunięte';
+
+  @override
+  String get libraryCategoryNewChipLabel => 'Nowa';
+
+  @override
+  String get libraryCategoryCreateSemanticLabel => 'Utwórz kategorię';
+
+  @override
+  String get libraryCategoryCreateTitle => 'Nowa kategoria';
+
+  @override
+  String get libraryCategoryCreateAction => 'Utwórz';
+
+  @override
+  String get libraryCategoryRenameTitle => 'Zmień nazwę kategorii';
+
+  @override
+  String get libraryCategoryRenameAction => 'Zmień nazwę';
+
+  @override
+  String get libraryCategoryDeleteAction => 'Usuń kategorię';
+
+  @override
+  String get libraryCategoryNameLabel => 'Nazwa kategorii';
+
+  @override
+  String libraryCategoryDeleteConfirmTitle(String name) {
+    return 'Usunąć „$name”?';
+  }
+
+  @override
+  String get libraryCategoryDeleteConfirmMessage =>
+      'Twoje klipy zostają. Wracają tylko do Wszystkich.';
+
+  @override
+  String get libraryCategoryManageSemanticLabel =>
+      'Zmień nazwę lub usuń tę kategorię';
+
+  @override
+  String get libraryCategoryMoveTitle => 'Przenieś do';
+
+  @override
+  String get libraryCategoryMoveNone => 'Bez kategorii';
+
+  @override
+  String get libraryCategoryMoveNewCategory => 'Nowa kategoria';
+
+  @override
+  String get libraryArchiveAction => 'Archiwizuj';
+
+  @override
+  String get libraryMoveSelectedClipsTooltip => 'Przenieś wybrane klipy';
+
+  @override
+  String get libraryCategoryEmptyTitle => 'Jeszcze nic tu nie ma';
+
+  @override
+  String get libraryCategoryEmptySubtitle =>
+      'Wybierz kilka klipów i przenieś je do tej kategorii.';
+
+  @override
+  String get libraryArchiveEmptyTitle => 'Nic w archiwum';
+
+  @override
+  String get libraryArchiveEmptySubtitle =>
+      'Zarchiwizowane klipy czekają tutaj, poza główną biblioteką.';
+
+  @override
+  String libraryClipsMovedToCategory(int count, String name) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Przeniesiono $count klipów do $name',
+      many: 'Przeniesiono $count klipów do $name',
+      few: 'Przeniesiono $count klipy do $name',
+      one: 'Przeniesiono 1 klip do $name',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsRemovedFromCategory(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Usunięto $count klipów z kategorii',
+      many: 'Usunięto $count klipów z kategorii',
+      few: 'Usunięto $count klipy z kategorii',
+      one: 'Usunięto 1 klip z kategorii',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsArchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Zarchiwizowano $count klipów',
+      many: 'Zarchiwizowano $count klipów',
+      few: 'Zarchiwizowano $count klipy',
+      one: 'Zarchiwizowano 1 klip',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsUnarchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klipów wróciło do biblioteki',
+      many: '$count klipów wróciło do biblioteki',
+      few: '$count klipy wróciły do biblioteki',
+      one: '1 klip wrócił do biblioteki',
+    );
+    return '$_temp0';
+  }
 }

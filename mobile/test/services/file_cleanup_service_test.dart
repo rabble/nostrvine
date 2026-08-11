@@ -218,6 +218,7 @@ void main() {
         libraryService = ClipLibraryService(
           clipsDao: database.clipsDao,
           draftsDao: database.draftsDao,
+          clipCategoriesDao: database.clipCategoriesDao,
         );
         tempDir = Directory.systemTemp.createTempSync('divine_sm_cleanup');
       });
@@ -301,6 +302,7 @@ void main() {
         libraryService = ClipLibraryService(
           clipsDao: database.clipsDao,
           draftsDao: database.draftsDao,
+          clipCategoriesDao: database.clipCategoriesDao,
         );
         tempDir = Directory.systemTemp.createTempSync('divine_rev_cleanup');
       });

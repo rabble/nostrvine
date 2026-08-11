@@ -20289,6 +20289,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Identity'**
   String get generalSettingsSectionIdentity;
+
+  /// Clip library filter chip showing every clip that is neither archived nor deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get libraryFilterAll;
+
+  /// No description provided for @libraryFilterArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get libraryFilterArchive;
+
+  /// No description provided for @libraryFilterDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted'**
+  String get libraryFilterDeleted;
+
+  /// Label of the chip that creates a new clip-library category. Kept to one short word so the chip row stays scannable.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get libraryCategoryNewChipLabel;
+
+  /// No description provided for @libraryCategoryCreateSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a category'**
+  String get libraryCategoryCreateSemanticLabel;
+
+  /// No description provided for @libraryCategoryCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New category'**
+  String get libraryCategoryCreateTitle;
+
+  /// No description provided for @libraryCategoryCreateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get libraryCategoryCreateAction;
+
+  /// No description provided for @libraryCategoryRenameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename category'**
+  String get libraryCategoryRenameTitle;
+
+  /// No description provided for @libraryCategoryRenameAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get libraryCategoryRenameAction;
+
+  /// No description provided for @libraryCategoryDeleteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete category'**
+  String get libraryCategoryDeleteAction;
+
+  /// No description provided for @libraryCategoryNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Category name'**
+  String get libraryCategoryNameLabel;
+
+  /// No description provided for @libraryCategoryDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete “{name}”?'**
+  String libraryCategoryDeleteConfirmTitle(String name);
+
+  /// No description provided for @libraryCategoryDeleteConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your clips stay put. They just move back to All.'**
+  String get libraryCategoryDeleteConfirmMessage;
+
+  /// No description provided for @libraryCategoryManageSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename or delete this category'**
+  String get libraryCategoryManageSemanticLabel;
+
+  /// No description provided for @libraryCategoryMoveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to'**
+  String get libraryCategoryMoveTitle;
+
+  /// No description provided for @libraryCategoryMoveNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No category'**
+  String get libraryCategoryMoveNone;
+
+  /// No description provided for @libraryCategoryMoveNewCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'New category'**
+  String get libraryCategoryMoveNewCategory;
+
+  /// No description provided for @libraryArchiveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get libraryArchiveAction;
+
+  /// No description provided for @libraryMoveSelectedClipsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Move selected clips'**
+  String get libraryMoveSelectedClipsTooltip;
+
+  /// No description provided for @libraryCategoryEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing filed here yet'**
+  String get libraryCategoryEmptyTitle;
+
+  /// No description provided for @libraryCategoryEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a few clips and move them into this category.'**
+  String get libraryCategoryEmptySubtitle;
+
+  /// No description provided for @libraryArchiveEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing archived'**
+  String get libraryArchiveEmptyTitle;
+
+  /// No description provided for @libraryArchiveEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived clips wait here, out of the way of your main library.'**
+  String get libraryArchiveEmptySubtitle;
+
+  /// No description provided for @libraryClipsMovedToCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 clip moved to {name}} other{{count} clips moved to {name}}}'**
+  String libraryClipsMovedToCategory(int count, String name);
+
+  /// No description provided for @libraryClipsRemovedFromCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 clip removed from its category} other{{count} clips removed from their category}}'**
+  String libraryClipsRemovedFromCategory(int count);
+
+  /// No description provided for @libraryClipsArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 clip archived} other{{count} clips archived}}'**
+  String libraryClipsArchived(int count);
+
+  /// No description provided for @libraryClipsUnarchived.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 clip back in your library} other{{count} clips back in your library}}'**
+  String libraryClipsUnarchived(int count);
 }
 
 class _AppLocalizationsDelegate

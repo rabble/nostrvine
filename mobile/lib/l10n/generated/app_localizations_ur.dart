@@ -11867,4 +11867,123 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get generalSettingsSectionIdentity => 'شناخت';
+
+  @override
+  String get libraryFilterAll => 'سب';
+
+  @override
+  String get libraryFilterArchive => 'آرکائیو';
+
+  @override
+  String get libraryFilterDeleted => 'حذف شدہ';
+
+  @override
+  String get libraryCategoryNewChipLabel => 'نئی';
+
+  @override
+  String get libraryCategoryCreateSemanticLabel => 'زمرہ بنائیں';
+
+  @override
+  String get libraryCategoryCreateTitle => 'نیا زمرہ';
+
+  @override
+  String get libraryCategoryCreateAction => 'بنائیں';
+
+  @override
+  String get libraryCategoryRenameTitle => 'زمرے کا نام بدلیں';
+
+  @override
+  String get libraryCategoryRenameAction => 'نام بدلیں';
+
+  @override
+  String get libraryCategoryDeleteAction => 'زمرہ حذف کریں';
+
+  @override
+  String get libraryCategoryNameLabel => 'زمرے کا نام';
+
+  @override
+  String libraryCategoryDeleteConfirmTitle(String name) {
+    return '\"$name\" حذف کریں؟';
+  }
+
+  @override
+  String get libraryCategoryDeleteConfirmMessage =>
+      'آپ کی کلپس رہیں گی، وہ صرف \"سب\" میں واپس چلی جائیں گی۔';
+
+  @override
+  String get libraryCategoryManageSemanticLabel =>
+      'اس زمرے کا نام بدلیں یا اسے حذف کریں';
+
+  @override
+  String get libraryCategoryMoveTitle => 'منتقل کریں بطرف';
+
+  @override
+  String get libraryCategoryMoveNone => 'کوئی زمرہ نہیں';
+
+  @override
+  String get libraryCategoryMoveNewCategory => 'نیا زمرہ';
+
+  @override
+  String get libraryArchiveAction => 'آرکائیو کریں';
+
+  @override
+  String get libraryMoveSelectedClipsTooltip => 'منتخب کلپس منتقل کریں';
+
+  @override
+  String get libraryCategoryEmptyTitle => 'یہاں ابھی کچھ نہیں';
+
+  @override
+  String get libraryCategoryEmptySubtitle =>
+      'کچھ کلپس منتخب کریں اور انہیں اس زمرے میں منتقل کریں۔';
+
+  @override
+  String get libraryArchiveEmptyTitle => 'آرکائیو میں کچھ نہیں';
+
+  @override
+  String get libraryArchiveEmptySubtitle =>
+      'آرکائیو کی گئی کلپس یہاں رہتی ہیں، آپ کی مرکزی لائبریری سے الگ۔';
+
+  @override
+  String libraryClipsMovedToCategory(int count, String name) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count کلپس $name میں منتقل ہو گئیں',
+      one: '1 کلپ $name میں منتقل ہو گئی',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsRemovedFromCategory(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count کلپس اپنے زمرے سے نکال دی گئیں',
+      one: '1 کلپ اپنے زمرے سے نکال دی گئی',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsArchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count کلپس آرکائیو ہو گئیں',
+      one: '1 کلپ آرکائیو ہو گئی',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsUnarchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count کلپس لائبریری میں واپس آ گئیں',
+      one: '1 کلپ لائبریری میں واپس آ گئی',
+    );
+    return '$_temp0';
+  }
 }

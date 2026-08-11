@@ -9,6 +9,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
+import 'package:openvine/models/clip_category.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/services/clip_library_service.dart';
@@ -74,6 +75,11 @@ void main() {
       when(() => mockClipLibraryService.recoverMissingAssets(any())).thenAnswer(
         (inv) async => inv.positionalArguments.first as List<DivineVideoClip>,
       );
+      // Every load also pulls the user's categories; tests that care stub
+      // their own list over this default.
+      when(
+        () => mockClipLibraryService.getCategories(),
+      ).thenAnswer((_) async => <ClipCategory>[]);
     });
 
     tearDown(() {
@@ -1317,6 +1323,274 @@ void main() {
         expect(bloc.state.selectedClips, [clip2, clip1]);
         bloc.close();
       });
+    });
+
+    group('library filters', () {
+      DivineVideoClip organizedClip(
+        String id, {
+        String? categoryId,
+        DateTime? archivedAt,
+      }) => DivineVideoClip(
+        id: id,
+        video: EditorVideo.file('/path/$id.mp4'),
+        duration: const Duration(seconds: 2),
+        recordedAt: DateTime(2026, 3, 5),
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
+        categoryId: categoryId,
+        archivedAt: archivedAt,
+      );
+
+      final travel = ClipCategory(
+        id: 'cat-travel',
+        name: 'Travel',
+        createdAt: DateTime(2026, 3, 5),
+      );
+
+      final active = organizedClip('active');
+      final filed = organizedClip('filed', categoryId: travel.id);
+      final archived = organizedClip(
+        'archived',
+        archivedAt: DateTime(2026, 3, 6),
+      );
+
+      void stubLoad() {
+        when(
+          () => mockClipLibraryService.getAllClips(),
+        ).thenAnswer((_) async => [active, filed, archived]);
+        when(
+          () => mockClipLibraryService.getCategories(),
+        ).thenAnswer((_) async => [travel]);
+      }
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'All hides archived clips and load carries the categories',
+        setUp: stubLoad,
+        build: createBloc,
+        act: (bloc) => bloc.add(const ClipsLibraryLoadRequested()),
+        verify: (bloc) {
+          expect(bloc.state.categories, [travel]);
+          expect(
+            bloc.state.sortedClips.map((c) => c.id),
+            unorderedEquals(['active', 'filed']),
+          );
+        },
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'Archive shows only archived clips',
+        setUp: stubLoad,
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const ClipsLibraryLoadRequested());
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(
+            const ClipsLibraryFilterChanged(ClipLibraryArchiveFilter()),
+          );
+        },
+        verify: (bloc) {
+          expect(bloc.state.sortedClips.map((c) => c.id), ['archived']);
+        },
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'a category shows only its own, unarchived clips',
+        setUp: stubLoad,
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const ClipsLibraryLoadRequested());
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(
+            ClipsLibraryFilterChanged(ClipLibraryCategoryFilter(travel.id)),
+          );
+        },
+        verify: (bloc) {
+          expect(bloc.state.sortedClips.map((c) => c.id), ['filed']);
+          expect(bloc.state.activeCategory, travel);
+        },
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'the Deleted filter loads the trash bin',
+        setUp: () {
+          stubLoad();
+          when(
+            () => mockClipLibraryService.getTrashedClips(),
+          ).thenAnswer((_) async => [organizedClip('trashed')]);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const ClipsLibraryFilterChanged(ClipLibraryTrashFilter()),
+        ),
+        verify: (bloc) {
+          expect(bloc.state.isShowingTrash, isTrue);
+          expect(bloc.state.trashedClips.map((c) => c.id), ['trashed']);
+          // Trashed clips are held separately; the grid list stays empty.
+          expect(bloc.state.sortedClips, isEmpty);
+        },
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'entering the trash drops a selection made on active clips',
+        setUp: () {
+          stubLoad();
+          when(
+            () => mockClipLibraryService.getTrashedClips(),
+          ).thenAnswer((_) async => []);
+        },
+        build: createBloc,
+        seed: () => ClipsLibraryState(
+          status: ClipsLibraryStatus.loaded,
+          clips: [active],
+          sortedClips: [active],
+          selectedClipIds: const {'active'},
+        ),
+        act: (bloc) => bloc.add(
+          const ClipsLibraryFilterChanged(ClipLibraryTrashFilter()),
+        ),
+        verify: (bloc) => expect(bloc.state.selectedClipIds, isEmpty),
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'switching between active filters keeps the selection',
+        setUp: stubLoad,
+        build: createBloc,
+        seed: () => ClipsLibraryState(
+          status: ClipsLibraryStatus.loaded,
+          clips: [active, filed],
+          sortedClips: [active, filed],
+          selectedClipIds: const {'active'},
+        ),
+        act: (bloc) => bloc.add(
+          ClipsLibraryFilterChanged(ClipLibraryCategoryFilter(travel.id)),
+        ),
+        verify: (bloc) => expect(bloc.state.selectedClipIds, {'active'}),
+      );
+    });
+
+    group('category management', () {
+      final travel = ClipCategory(
+        id: 'cat-travel',
+        name: 'Travel',
+        createdAt: DateTime(2026, 3, 5),
+      );
+
+      setUp(() {
+        when(
+          () => mockClipLibraryService.getAllClips(),
+        ).thenAnswer((_) async => []);
+      });
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'ClipsLibraryCategoryCreated files the given clips into the new one',
+        setUp: () {
+          when(
+            () => mockClipLibraryService.createCategory('Travel'),
+          ).thenAnswer((_) async => travel);
+          when(
+            () => mockClipLibraryService.getCategories(),
+          ).thenAnswer((_) async => [travel]);
+          when(
+            () => mockClipLibraryService.setClipCategory(
+              clipId: any(named: 'clipId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async {});
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const ClipsLibraryCategoryCreated('Travel', clipIds: {'clip1'}),
+        ),
+        verify: (bloc) {
+          verify(
+            () => mockClipLibraryService.setClipCategory(
+              clipId: 'clip1',
+              categoryId: travel.id,
+            ),
+          ).called(1);
+          expect(bloc.state.categories, [travel]);
+          expect(
+            bloc.state.lastOrganizeResult,
+            const ClipsLibraryOrganizeResult(
+              action: ClipsLibraryOrganizeAction.movedToCategory,
+              clipIds: {'clip1'},
+              categoryName: 'Travel',
+            ),
+          );
+        },
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'a blank category name is rejected without touching the library',
+        setUp: () {
+          when(
+            () => mockClipLibraryService.createCategory('   '),
+          ).thenAnswer((_) async => null);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ClipsLibraryCategoryCreated('   ')),
+        expect: () => const <ClipsLibraryState>[],
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'deleting the active category falls back to All',
+        setUp: () {
+          when(
+            () => mockClipLibraryService.deleteCategory(travel.id),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockClipLibraryService.getCategories(),
+          ).thenAnswer((_) async => []);
+        },
+        build: createBloc,
+        seed: () => ClipsLibraryState(
+          status: ClipsLibraryStatus.loaded,
+          categories: [travel],
+          filter: ClipLibraryCategoryFilter(travel.id),
+        ),
+        act: (bloc) => bloc.add(ClipsLibraryCategoryDeleted(travel.id)),
+        verify: (bloc) {
+          expect(bloc.state.filter, const ClipLibraryAllFilter());
+          expect(bloc.state.categories, isEmpty);
+        },
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'archiving reports the clips so the UI can offer an undo',
+        setUp: () {
+          when(
+            () => mockClipLibraryService.setClipArchived(
+              clipId: any(named: 'clipId'),
+              archived: any(named: 'archived'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockClipLibraryService.getCategories(),
+          ).thenAnswer((_) async => []);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const ClipsLibraryClipsArchiveChanged(
+            clipIds: {'clip1', 'clip2'},
+            archived: true,
+          ),
+        ),
+        verify: (bloc) {
+          verify(
+            () => mockClipLibraryService.setClipArchived(
+              clipId: 'clip1',
+              archived: true,
+            ),
+          ).called(1);
+          expect(
+            bloc.state.lastOrganizeResult,
+            const ClipsLibraryOrganizeResult(
+              action: ClipsLibraryOrganizeAction.archived,
+              clipIds: {'clip1', 'clip2'},
+            ),
+          );
+        },
+      );
     });
   });
 }

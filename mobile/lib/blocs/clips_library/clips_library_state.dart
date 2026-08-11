@@ -96,6 +96,76 @@ enum LibraryClipTypeFilter {
   };
 }
 
+/// Which slice of the clip library the grid shows.
+///
+/// All, Archive, and Deleted are built in and always available; the
+/// remaining filters are the user's own [ClipCategory] rows. A clip is in
+/// exactly one of these at a time — archiving or trashing takes it out of
+/// both All and its category.
+sealed class ClipLibraryFilter extends Equatable {
+  const ClipLibraryFilter();
+
+  @override
+  List<Object?> get props => [];
+}
+
+/// Every clip that is neither archived nor trashed. The library's default.
+final class ClipLibraryAllFilter extends ClipLibraryFilter {
+  const ClipLibraryAllFilter();
+}
+
+/// Clips the user archived out of the default view.
+final class ClipLibraryArchiveFilter extends ClipLibraryFilter {
+  const ClipLibraryArchiveFilter();
+}
+
+/// Soft-deleted clips awaiting the 30-day purge.
+final class ClipLibraryTrashFilter extends ClipLibraryFilter {
+  const ClipLibraryTrashFilter();
+}
+
+/// Clips filed under one of the user's own categories.
+final class ClipLibraryCategoryFilter extends ClipLibraryFilter {
+  const ClipLibraryCategoryFilter(this.categoryId);
+
+  /// The [ClipCategory.id] this filter shows.
+  final String categoryId;
+
+  @override
+  List<Object?> get props => [categoryId];
+}
+
+/// What the last clip-organization action did, for the confirmation
+/// snackbar. Carries the affected ids so the UI can offer an undo.
+enum ClipsLibraryOrganizeAction {
+  movedToCategory,
+  removedFromCategory,
+  archived,
+  unarchived,
+}
+
+/// Outcome of the last move-to-category or archive action.
+final class ClipsLibraryOrganizeResult extends Equatable {
+  const ClipsLibraryOrganizeResult({
+    required this.action,
+    required this.clipIds,
+    this.categoryName,
+  });
+
+  /// What happened to the clips.
+  final ClipsLibraryOrganizeAction action;
+
+  /// The clips it happened to. Also the undo target.
+  final Set<String> clipIds;
+
+  /// Name of the target category when clips were moved into one. The
+  /// user's own text, never a localized message.
+  final String? categoryName;
+
+  @override
+  List<Object?> get props => [action, clipIds, categoryName];
+}
+
 /// Operation status for clips library actions.
 enum ClipsLibraryStatus {
   /// Initial state, no operation in progress.
@@ -182,6 +252,9 @@ final class ClipsLibraryState extends Equatable {
     this.lastGallerySaveResult,
     this.lastDeletedCount,
     this.lastDeletedClipIds = const {},
+    this.categories = const [],
+    this.filter = const ClipLibraryAllFilter(),
+    this.lastOrganizeResult,
   });
 
   /// Current operation status.
@@ -240,6 +313,31 @@ final class ClipsLibraryState extends Equatable {
   /// snackbar Undo action to restore them within the soft-delete window.
   final Set<String> lastDeletedClipIds;
 
+  /// The user's own categories, in chip-row order.
+  final List<ClipCategory> categories;
+
+  /// Which slice of the library [sortedClips] shows. Not persisted — the
+  /// library opens on [ClipLibraryAllFilter] every time.
+  final ClipLibraryFilter filter;
+
+  /// Result of the last move-to-category or archive action (for UI
+  /// feedback), or `null` when there is nothing to report.
+  final ClipsLibraryOrganizeResult? lastOrganizeResult;
+
+  /// The category the [filter] is showing, or `null` for the built-in
+  /// filters and for a category that no longer exists.
+  ClipCategory? get activeCategory {
+    final current = filter;
+    if (current is! ClipLibraryCategoryFilter) return null;
+    for (final category in categories) {
+      if (category.id == current.categoryId) return category;
+    }
+    return null;
+  }
+
+  /// Whether the grid is showing the trash bin rather than active clips.
+  bool get isShowingTrash => filter is ClipLibraryTrashFilter;
+
   /// Whether clips are currently loading.
   bool get isLoading => status == ClipsLibraryStatus.loading;
 
@@ -285,6 +383,10 @@ final class ClipsLibraryState extends Equatable {
     GallerySaveResult? lastGallerySaveResult,
     int? lastDeletedCount,
     Set<String>? lastDeletedClipIds,
+    List<ClipCategory>? categories,
+    ClipLibraryFilter? filter,
+    ClipsLibraryOrganizeResult? lastOrganizeResult,
+    bool clearOrganizeResult = false,
     bool clearGallerySaveResult = false,
     bool clearDeletedCount = false,
     bool clearDeletedClipIds = false,
@@ -313,6 +415,11 @@ final class ClipsLibraryState extends Equatable {
       lastDeletedClipIds: clearDeletedClipIds
           ? const {}
           : (lastDeletedClipIds ?? this.lastDeletedClipIds),
+      categories: categories ?? this.categories,
+      filter: filter ?? this.filter,
+      lastOrganizeResult: clearOrganizeResult
+          ? null
+          : (lastOrganizeResult ?? this.lastOrganizeResult),
     );
   }
 
@@ -333,5 +440,8 @@ final class ClipsLibraryState extends Equatable {
     lastGallerySaveResult,
     lastDeletedCount,
     lastDeletedClipIds,
+    categories,
+    filter,
+    lastOrganizeResult,
   ];
 }

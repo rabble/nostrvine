@@ -11818,4 +11818,123 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get generalSettingsSectionIdentity => 'Kimlik';
+
+  @override
+  String get libraryFilterAll => 'Tümü';
+
+  @override
+  String get libraryFilterArchive => 'Arşiv';
+
+  @override
+  String get libraryFilterDeleted => 'Silinenler';
+
+  @override
+  String get libraryCategoryNewChipLabel => 'Yeni';
+
+  @override
+  String get libraryCategoryCreateSemanticLabel => 'Kategori oluştur';
+
+  @override
+  String get libraryCategoryCreateTitle => 'Yeni kategori';
+
+  @override
+  String get libraryCategoryCreateAction => 'Oluştur';
+
+  @override
+  String get libraryCategoryRenameTitle => 'Kategoriyi yeniden adlandır';
+
+  @override
+  String get libraryCategoryRenameAction => 'Yeniden adlandır';
+
+  @override
+  String get libraryCategoryDeleteAction => 'Kategoriyi sil';
+
+  @override
+  String get libraryCategoryNameLabel => 'Kategori adı';
+
+  @override
+  String libraryCategoryDeleteConfirmTitle(String name) {
+    return '“$name” silinsin mi?';
+  }
+
+  @override
+  String get libraryCategoryDeleteConfirmMessage =>
+      'Klipler yerinde kalır, sadece Tümü\'ne geri döner.';
+
+  @override
+  String get libraryCategoryManageSemanticLabel =>
+      'Bu kategoriyi yeniden adlandır veya sil';
+
+  @override
+  String get libraryCategoryMoveTitle => 'Şuraya taşı';
+
+  @override
+  String get libraryCategoryMoveNone => 'Kategorisiz';
+
+  @override
+  String get libraryCategoryMoveNewCategory => 'Yeni kategori';
+
+  @override
+  String get libraryArchiveAction => 'Arşivle';
+
+  @override
+  String get libraryMoveSelectedClipsTooltip => 'Seçili klipleri taşı';
+
+  @override
+  String get libraryCategoryEmptyTitle => 'Burada henüz bir şey yok';
+
+  @override
+  String get libraryCategoryEmptySubtitle =>
+      'Birkaç klip seç ve bu kategoriye taşı.';
+
+  @override
+  String get libraryArchiveEmptyTitle => 'Arşivde bir şey yok';
+
+  @override
+  String get libraryArchiveEmptySubtitle =>
+      'Arşivlenen klipler ana kitaplığının dışında burada bekler.';
+
+  @override
+  String libraryClipsMovedToCategory(int count, String name) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klip $name kategorisine taşındı',
+      one: '1 klip $name kategorisine taşındı',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsRemovedFromCategory(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klip kategorisinden çıkarıldı',
+      one: '1 klip kategorisinden çıkarıldı',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsArchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klip arşivlendi',
+      one: '1 klip arşivlendi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsUnarchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klip kitaplığına geri döndü',
+      one: '1 klip kitaplığına geri döndü',
+    );
+    return '$_temp0';
+  }
 }

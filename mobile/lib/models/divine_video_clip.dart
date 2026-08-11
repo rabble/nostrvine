@@ -40,6 +40,8 @@ class DivineVideoClip {
     this.reversedVideoPath,
     this.proofManifestJson,
     this.deletedAt,
+    this.categoryId,
+    this.archivedAt,
     this.transition,
     this.chromaKey,
     this.chromaKeySourcePath,
@@ -142,6 +144,17 @@ class DivineVideoClip {
   /// active clips. Sourced from the Drift `clips.deleted_at` column and
   /// only populated when the clip is loaded via the trash-bin path.
   final DateTime? deletedAt;
+
+  /// Id of the user-created library category this clip is filed under, or
+  /// `null` when it is uncategorized. Sourced from the Drift
+  /// `clips.category_id` column, not from the JSON payload, so the column
+  /// stays the single source of truth.
+  final String? categoryId;
+
+  /// When this clip was archived out of the library's default view, or
+  /// `null` while it is active. Sourced from the Drift `clips.archived_at`
+  /// column.
+  final DateTime? archivedAt;
 
   /// How this clip transitions into the **next** clip on the timeline
   /// (dissolve, fade-to-black, slide, …), or `null` for a hard cut.
@@ -384,6 +397,10 @@ class DivineVideoClip {
     String? proofManifestJson,
     bool clearProofManifestJson = false,
     DateTime? deletedAt,
+    String? categoryId,
+    bool clearCategoryId = false,
+    DateTime? archivedAt,
+    bool clearArchivedAt = false,
     ClipTransition? transition,
     bool clearTransition = false,
     ClipChromaKey? chromaKey,
@@ -442,6 +459,8 @@ class DivineVideoClip {
           ? null
           : (proofManifestJson ?? this.proofManifestJson),
       deletedAt: deletedAt ?? this.deletedAt,
+      categoryId: clearCategoryId ? null : (categoryId ?? this.categoryId),
+      archivedAt: clearArchivedAt ? null : (archivedAt ?? this.archivedAt),
       transition: clearTransition ? null : (transition ?? this.transition),
       chromaKey: isNewLogicalClip || clearChromaKey
           ? null

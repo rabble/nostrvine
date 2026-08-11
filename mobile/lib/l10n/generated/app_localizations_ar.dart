@@ -11776,4 +11776,123 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get generalSettingsSectionIdentity => 'الهوية';
+
+  @override
+  String get libraryFilterAll => 'الكل';
+
+  @override
+  String get libraryFilterArchive => 'الأرشيف';
+
+  @override
+  String get libraryFilterDeleted => 'المحذوفة';
+
+  @override
+  String get libraryCategoryNewChipLabel => 'جديدة';
+
+  @override
+  String get libraryCategoryCreateSemanticLabel => 'إنشاء فئة';
+
+  @override
+  String get libraryCategoryCreateTitle => 'فئة جديدة';
+
+  @override
+  String get libraryCategoryCreateAction => 'إنشاء';
+
+  @override
+  String get libraryCategoryRenameTitle => 'إعادة تسمية الفئة';
+
+  @override
+  String get libraryCategoryRenameAction => 'إعادة التسمية';
+
+  @override
+  String get libraryCategoryDeleteAction => 'حذف الفئة';
+
+  @override
+  String get libraryCategoryNameLabel => 'اسم الفئة';
+
+  @override
+  String libraryCategoryDeleteConfirmTitle(String name) {
+    return 'حذف \"$name\"؟';
+  }
+
+  @override
+  String get libraryCategoryDeleteConfirmMessage =>
+      'مقاطعك تبقى كما هي، وتعود فقط إلى \"الكل\".';
+
+  @override
+  String get libraryCategoryManageSemanticLabel =>
+      'إعادة تسمية هذه الفئة أو حذفها';
+
+  @override
+  String get libraryCategoryMoveTitle => 'النقل إلى';
+
+  @override
+  String get libraryCategoryMoveNone => 'بدون فئة';
+
+  @override
+  String get libraryCategoryMoveNewCategory => 'فئة جديدة';
+
+  @override
+  String get libraryArchiveAction => 'أرشفة';
+
+  @override
+  String get libraryMoveSelectedClipsTooltip => 'نقل المقاطع المحددة';
+
+  @override
+  String get libraryCategoryEmptyTitle => 'لا شيء هنا بعد';
+
+  @override
+  String get libraryCategoryEmptySubtitle =>
+      'اختر بعض المقاطع وانقلها إلى هذه الفئة.';
+
+  @override
+  String get libraryArchiveEmptyTitle => 'لا يوجد شيء في الأرشيف';
+
+  @override
+  String get libraryArchiveEmptySubtitle =>
+      'المقاطع المؤرشفة تنتظر هنا، بعيدًا عن مكتبتك الأساسية.';
+
+  @override
+  String libraryClipsMovedToCategory(int count, String name) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'تم نقل $count مقاطع إلى $name',
+      one: 'تم نقل مقطع واحد إلى $name',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsRemovedFromCategory(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'تمت إزالة $count مقاطع من فئتها',
+      one: 'تمت إزالة مقطع واحد من فئته',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsArchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'تمت أرشفة $count مقاطع',
+      one: 'تمت أرشفة مقطع واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsUnarchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'عادت $count مقاطع إلى مكتبتك',
+      one: 'عاد مقطع واحد إلى مكتبتك',
+    );
+    return '$_temp0';
+  }
 }

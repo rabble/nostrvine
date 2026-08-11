@@ -11873,4 +11873,119 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get generalSettingsSectionIdentity => 'Danh tính';
+
+  @override
+  String get libraryFilterAll => 'Tất cả';
+
+  @override
+  String get libraryFilterArchive => 'Lưu trữ';
+
+  @override
+  String get libraryFilterDeleted => 'Đã xoá';
+
+  @override
+  String get libraryCategoryNewChipLabel => 'Mới';
+
+  @override
+  String get libraryCategoryCreateSemanticLabel => 'Tạo danh mục';
+
+  @override
+  String get libraryCategoryCreateTitle => 'Danh mục mới';
+
+  @override
+  String get libraryCategoryCreateAction => 'Tạo';
+
+  @override
+  String get libraryCategoryRenameTitle => 'Đổi tên danh mục';
+
+  @override
+  String get libraryCategoryRenameAction => 'Đổi tên';
+
+  @override
+  String get libraryCategoryDeleteAction => 'Xoá danh mục';
+
+  @override
+  String get libraryCategoryNameLabel => 'Tên danh mục';
+
+  @override
+  String libraryCategoryDeleteConfirmTitle(String name) {
+    return 'Xoá “$name”?';
+  }
+
+  @override
+  String get libraryCategoryDeleteConfirmMessage =>
+      'Các clip vẫn còn đó. Chúng chỉ quay lại mục Tất cả.';
+
+  @override
+  String get libraryCategoryManageSemanticLabel =>
+      'Đổi tên hoặc xoá danh mục này';
+
+  @override
+  String get libraryCategoryMoveTitle => 'Chuyển tới';
+
+  @override
+  String get libraryCategoryMoveNone => 'Không có danh mục';
+
+  @override
+  String get libraryCategoryMoveNewCategory => 'Danh mục mới';
+
+  @override
+  String get libraryArchiveAction => 'Lưu trữ';
+
+  @override
+  String get libraryMoveSelectedClipsTooltip => 'Chuyển các clip đã chọn';
+
+  @override
+  String get libraryCategoryEmptyTitle => 'Chưa có gì ở đây';
+
+  @override
+  String get libraryCategoryEmptySubtitle =>
+      'Chọn vài clip rồi chuyển vào danh mục này.';
+
+  @override
+  String get libraryArchiveEmptyTitle => 'Chưa lưu trữ gì';
+
+  @override
+  String get libraryArchiveEmptySubtitle =>
+      'Clip đã lưu trữ nằm chờ ở đây, tách khỏi thư viện chính của bạn.';
+
+  @override
+  String libraryClipsMovedToCategory(int count, String name) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Đã chuyển $count clip tới $name',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsRemovedFromCategory(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Đã đưa $count clip ra khỏi danh mục',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsArchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Đã lưu trữ $count clip',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsUnarchived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clip đã trở lại thư viện',
+    );
+    return '$_temp0';
+  }
 }
