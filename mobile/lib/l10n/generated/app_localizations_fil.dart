@@ -6316,6 +6316,13 @@ class AppLocalizationsFil extends AppLocalizations {
   String get discoverListsLoading => 'Naghahanap ng mga public list...';
 
   @override
+  String get discoverListsRelayTimeout =>
+      'Hindi nagbalik ng mga list ang relay sa oras. Subukan ulit.';
+
+  @override
+  String get discoverListsServiceUnavailable => 'Hindi available ang serbisyo.';
+
+  @override
   String get discoverListsEmptyTitle => 'Walang nakitang public list';
 
   @override

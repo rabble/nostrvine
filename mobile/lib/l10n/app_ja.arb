@@ -3739,6 +3739,8 @@
         }
     },
     "discoverListsLoading": "公開リストを探してるよ...",
+    "discoverListsRelayTimeout": "リレーが時間内にリストを返さなかったよ。もう一度試してね。",
+    "discoverListsServiceUnavailable": "サービスを利用できません。",
     "discoverListsEmptyTitle": "公開リストが見つからなかった",
     "discoverListsEmptySubtitle": "あとでまたチェックしてみてね",
     "discoverListsByAuthorPrefix": "作成者:",

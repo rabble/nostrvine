@@ -6289,6 +6289,13 @@ class AppLocalizationsMs extends AppLocalizations {
   String get discoverListsLoading => 'Menemui senarai awam...';
 
   @override
+  String get discoverListsRelayTimeout =>
+      'Relay tidak memulangkan senarai tepat pada masanya. Cuba lagi.';
+
+  @override
+  String get discoverListsServiceUnavailable => 'Perkhidmatan tidak tersedia.';
+
+  @override
   String get discoverListsEmptyTitle => 'Tiada senarai awam ditemui';
 
   @override

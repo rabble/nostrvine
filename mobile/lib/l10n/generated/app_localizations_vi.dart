@@ -6248,6 +6248,13 @@ class AppLocalizationsVi extends AppLocalizations {
   String get discoverListsLoading => 'Đang khám phá danh sách công khai...';
 
   @override
+  String get discoverListsRelayTimeout =>
+      'Relay không trả về danh sách kịp lúc. Thử lại nhé.';
+
+  @override
+  String get discoverListsServiceUnavailable => 'Dịch vụ không khả dụng.';
+
+  @override
   String get discoverListsEmptyTitle =>
       'Không tìm thấy danh sách công khai nào';
 

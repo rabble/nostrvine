@@ -6205,6 +6205,13 @@ class AppLocalizationsId extends AppLocalizations {
   String get discoverListsLoading => 'Mencari daftar publik...';
 
   @override
+  String get discoverListsRelayTimeout =>
+      'Relay tidak mengembalikan daftar tepat waktu. Coba lagi.';
+
+  @override
+  String get discoverListsServiceUnavailable => 'Layanan tidak tersedia.';
+
+  @override
   String get discoverListsEmptyTitle => 'Tidak ada daftar publik';
 
   @override

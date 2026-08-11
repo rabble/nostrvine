@@ -6319,6 +6319,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get discoverListsLoading => 'Öffentliche Listen werden entdeckt...';
 
   @override
+  String get discoverListsRelayTimeout =>
+      'Das Relay hat nicht rechtzeitig Listen geliefert. Versuch es nochmal.';
+
+  @override
+  String get discoverListsServiceUnavailable => 'Dienst nicht verfügbar.';
+
+  @override
   String get discoverListsEmptyTitle => 'Keine öffentlichen Listen gefunden';
 
   @override

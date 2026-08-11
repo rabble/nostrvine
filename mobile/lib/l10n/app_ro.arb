@@ -3739,6 +3739,8 @@
         }
     },
     "discoverListsLoading": "Se descoperă liste publice...",
+    "discoverListsRelayTimeout": "Releul nu a returnat liste la timp. Încearcă din nou.",
+    "discoverListsServiceUnavailable": "Serviciul nu este disponibil.",
     "discoverListsEmptyTitle": "Nicio listă publică găsită",
     "discoverListsEmptySubtitle": "Revino mai târziu pentru liste noi",
     "discoverListsByAuthorPrefix": "de",

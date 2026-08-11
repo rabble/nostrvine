@@ -3642,6 +3642,8 @@
     }
   },
   "discoverListsLoading": "正在发现公开列表...",
+  "discoverListsRelayTimeout": "中继没有及时返回列表。再试一次。",
+  "discoverListsServiceUnavailable": "服务不可用。",
   "discoverListsEmptyTitle": "没有找到公开列表",
   "discoverListsEmptySubtitle": "过会儿再来看看新列表",
   "discoverListsByAuthorPrefix": "来自",

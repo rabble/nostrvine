@@ -6193,6 +6193,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get discoverListsLoading => 'جاري اكتشاف القوائم العامة...';
 
   @override
+  String get discoverListsRelayTimeout =>
+      'لم يُرجع الريلاي القوائم في الوقت المناسب. حاول مرة أخرى.';
+
+  @override
+  String get discoverListsServiceUnavailable => 'الخدمة غير متاحة.';
+
+  @override
   String get discoverListsEmptyTitle => 'لم يتم العثور على قوائم عامة';
 
   @override

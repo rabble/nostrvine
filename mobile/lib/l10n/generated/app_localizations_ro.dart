@@ -6396,6 +6396,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get discoverListsLoading => 'Se descoperă liste publice...';
 
   @override
+  String get discoverListsRelayTimeout =>
+      'Releul nu a returnat liste la timp. Încearcă din nou.';
+
+  @override
+  String get discoverListsServiceUnavailable => 'Serviciul nu este disponibil.';
+
+  @override
   String get discoverListsEmptyTitle => 'Nicio listă publică găsită';
 
   @override

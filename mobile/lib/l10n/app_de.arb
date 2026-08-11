@@ -3739,6 +3739,8 @@
         }
     },
     "discoverListsLoading": "Öffentliche Listen werden entdeckt...",
+    "discoverListsRelayTimeout": "Das Relay hat nicht rechtzeitig Listen geliefert. Versuch es nochmal.",
+    "discoverListsServiceUnavailable": "Dienst nicht verfügbar.",
     "discoverListsEmptyTitle": "Keine öffentlichen Listen gefunden",
     "discoverListsEmptySubtitle": "Schau später nochmal nach neuen Listen",
     "discoverListsByAuthorPrefix": "von",

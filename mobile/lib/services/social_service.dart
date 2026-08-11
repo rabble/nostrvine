@@ -4,8 +4,6 @@
 // ABOUTME: Note: NIP-18 reposts are handled by RepostsRepository
 // ABOUTME: Note: NIP-51 kind 30000 people lists are handled by PeopleListsRepository
 
-import 'dart:async';
-
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/constants/nip71_migration.dart';
@@ -32,40 +30,14 @@ class SocialService {
     );
 
     try {
-      final completer = Completer<int>();
-      var videoCount = 0;
-
-      // Subscribe to user's video events using NIP-71 compliant kinds
-      final subscription = _nostrService.subscribe([
+      final events = await _nostrService.queryEvents([
         Filter(
           authors: [pubkey],
           kinds:
               NIP71VideoKinds.getAllVideoKinds(), // NIP-71 video kinds: 22, 21, 34236, 34235
         ),
       ]);
-
-      subscription.listen(
-        (event) {
-          videoCount++;
-        },
-        onDone: () {
-          if (!completer.isCompleted) {
-            completer.complete(videoCount);
-          }
-        },
-        onError: (error) {
-          Log.error(
-            'Error fetching video count: $error',
-            name: 'SocialService',
-            category: LogCategory.system,
-          );
-          if (!completer.isCompleted) {
-            completer.complete(0);
-          }
-        },
-      );
-
-      final result = await completer.future;
+      final result = events.length;
       Log.debug(
         '📱 Video count fetched: $result',
         name: 'SocialService',

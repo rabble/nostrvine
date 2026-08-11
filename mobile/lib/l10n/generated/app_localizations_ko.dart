@@ -5989,6 +5989,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get discoverListsLoading => '공개 리스트를 찾는 중...';
 
   @override
+  String get discoverListsRelayTimeout => '릴레이가 제때 리스트를 주지 않았어요. 다시 시도해 주세요.';
+
+  @override
+  String get discoverListsServiceUnavailable => '서비스를 사용할 수 없어요.';
+
+  @override
   String get discoverListsEmptyTitle => '공개 리스트를 찾지 못했어요';
 
   @override

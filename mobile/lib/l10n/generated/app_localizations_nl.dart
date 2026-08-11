@@ -6269,6 +6269,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get discoverListsLoading => 'Publieke lijsten worden ontdekt...';
 
   @override
+  String get discoverListsRelayTimeout =>
+      'De relay leverde niet op tijd lijsten. Probeer het opnieuw.';
+
+  @override
+  String get discoverListsServiceUnavailable => 'Service niet beschikbaar.';
+
+  @override
   String get discoverListsEmptyTitle => 'Geen publieke lijsten gevonden';
 
   @override

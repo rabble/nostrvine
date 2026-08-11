@@ -6298,6 +6298,13 @@ class AppLocalizationsBg extends AppLocalizations {
   String get discoverListsLoading => 'Откриваме публични списъци...';
 
   @override
+  String get discoverListsRelayTimeout =>
+      'Релето не върна списъци навреме. Опитай пак.';
+
+  @override
+  String get discoverListsServiceUnavailable => 'Услугата не е налична.';
+
+  @override
   String get discoverListsEmptyTitle => 'Не са намерени публични списъци';
 
   @override
