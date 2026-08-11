@@ -1,0 +1,46 @@
+appId: co.openvine.app
+tags:
+  - recorder
+---
+#TC to delete recorded classic clips,
+# given the session holds the two clips classicModeRecordClip and
+# classicModeRecordingLimit recorded,
+# validate delete drops one clip per tap and the recorder returns to its empty
+# state.
+#
+# This is also the teardown for the classic flow. Clips are written to the clip
+# library as they are recorded, so anything left behind survives the run and
+# the next one would start against a non-empty session and fail
+# assertClassicMode.
+#Steps:
+# 1. Tap delete: one clip goes, the session chrome stays live
+# 2. Tap delete again: the last clip goes and the empty state is restored
+
+# 1. Delete the second clip. There is no confirmation dialog — the delete is a
+# soft-delete with a 5-second Undo snackbar, so the clip leaves the session on
+# the tap. The snackbar floats at the bottom; classic's delete button sits
+# above the preview, so the second tap below is not covered by it.
+#
+# The assertion is that next is *still* enabled and delete *still* rendered:
+# both are gated on `hasClips`, so this is what proves the session held two
+# clips and that the tap removed exactly one of them.
+- tapOn:
+    id: camera_delete_clip_button
+# Wait the fade out before asserting. The delete button leaves over a 220ms
+# AnimatedOpacity, so an assertVisible landing mid-fade would pass on a session
+# that just went empty — exactly the failure this step exists to catch.
+# `waitForAnimationToEnd` runs its timeout out here, because the live camera
+# preview never stops changing.
+- waitForAnimationToEnd:
+    timeout: 1000
+- runFlow: ../asserts/assertClassicClipRecorded.yaml
+
+# 2. Delete the last one. Delete drops back out of the semantics tree and next
+# goes disabled once the session is empty.
+- tapOn:
+    id: camera_delete_clip_button
+- extendedWaitUntil:
+    notVisible:
+      id: camera_delete_clip_button
+    timeout: 15000
+- runFlow: ../asserts/assertClassicMode.yaml

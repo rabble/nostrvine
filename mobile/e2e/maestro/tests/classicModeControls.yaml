@@ -1,0 +1,97 @@
+appId: co.openvine.app
+tags:
+  - recorder
+---
+#TC to drive the classic action row,
+# given the recorder is open on an idle classic viewfinder with no clips,
+# validate each control actually changes recorder state, and leave every one
+# of them back on its default.
+#
+# Classic renders three controls where capture renders five and stop-motion
+# five: a lens switch, the grid toggle and the ghost toggle. There is no flash
+# control (classic has no rail at all), no aspect ratio (classic is square by
+# definition — `defaultAspectRatio` is the only mode that returns it), and
+# neither of the declared-only pair.
+#
+# The lens switch is the same control every other mode drives, announcing the
+# same `value`, so it runs the shared ../utils/driveLensControl.yaml. Grid and
+# ghost carry a Semantics `toggled` flag rather than a `value`, which Flutter
+# maps to the accessibility node's checked state, so they are driven with
+# `checked:` — see the note on that selector in e2e/maestro/README.md.
+#
+# Preconditions beyond an open viewfinder:
+# - **Real camera hardware**, for the lens switch. See classicModeRecordClip.
+# - **A grid that starts on.** The grid preference persists
+#   (`camera_grid_lines_enabled`) and defaults to on for grid-supporting modes,
+#   so step 2 reads it as on. Run from the top this is safe —
+#   loginFreshInstall's clearState wipes the key.
+# - **An empty session.** Not for the controls themselves — none of the three
+#   is gated on clips, unlike capture's aspect-ratio control — but for the mode
+#   assert this closes on, which pins next disabled and delete absent.
+#Steps:
+# 1. Camera: Back -> Front -> Back
+# 2. Grid: on -> off -> on
+# 3. Ghost frame: off -> on -> off
+
+# 1. Lens switch.
+- runFlow: ../utils/driveLensControl.yaml
+
+# 2. Grid overlay.
+- assertVisible:
+    id: camera_grid_button
+    checked: true
+- tapOn:
+    id: camera_grid_button
+- extendedWaitUntil:
+    visible:
+      id: camera_grid_button
+      checked: false
+    timeout: 10000
+- tapOn:
+    id: camera_grid_button
+- extendedWaitUntil:
+    visible:
+      id: camera_grid_button
+      checked: true
+    timeout: 10000
+
+# 3. Ghost frame (onion-skin), deliberately last. Not persisted, so it always
+# starts off — but each tap raises a 4-second confirmation snackbar that floats
+# at the bottom of the screen, and classic's controls are a horizontal row
+# rather than stop-motion's vertical rail. The row sits above the mode wheel
+# and clear of the banner, but running the other two controls first means a
+# mistake there fails on this control alone instead of taking the rest with it.
+- assertVisible:
+    id: camera_ghost_frame_button
+    checked: false
+- tapOn:
+    id: camera_ghost_frame_button
+- extendedWaitUntil:
+    visible:
+      id: camera_ghost_frame_button
+      checked: true
+    timeout: 10000
+# Restore. Leaving it on is not just untidy: the overlay draws the previous
+# clip's last frame over the live preview, which makes a failure screenshot
+# from any later test much harder to read.
+- tapOn:
+    id: camera_ghost_frame_button
+- extendedWaitUntil:
+    visible:
+      id: camera_ghost_frame_button
+      checked: false
+    timeout: 10000
+
+# Let the banner go before handing over to the shutter tests — it floats over
+# the bottom of the screen, and classic's shutter is the preview above it, but
+# a banner still up during a recording lands in every failure screenshot.
+#
+# `waitForAnimationToEnd` runs its timeout out rather than returning early: it
+# waits for the screen to stop changing and the live camera preview never
+# does, which makes it the deterministic wait this needs.
+- waitForAnimationToEnd:
+    timeout: 4500
+
+# Everything back to default, so the tests after this one start where they
+# expect to.
+- runFlow: ../asserts/assertClassicMode.yaml

@@ -1,0 +1,46 @@
+appId: co.openvine.app
+tags:
+  - recorder
+---
+#TC for classic mode's recording limit,
+# given the recorder is open on a classic viewfinder that already holds the
+# clip classicModeRecordClip recorded,
+# validate a recording started here stops on its own when the session's
+# remaining budget runs out, without a second tap.
+#
+# This is the behaviour classic alone declares. `hasRecordingLimit` is true
+# only for this mode, and it is what makes the recorder hand the native camera
+# a `maxDuration` — the session's remaining share of the 6.3s total. Capture
+# and lip-sync pass none and record until the user stops them; the editor
+# trims afterwards.
+#
+# Deliberately does not assert *how long* the recording ran. The budget left
+# here is whatever classicModeRecordClip did not spend, which depends on how
+# quickly the device started and finalized that clip, so the assertion is that
+# the recording ended without a second tap — not that it ended at a number.
+#
+# Needs real camera hardware, like every recording test.
+#Steps:
+# 1. Tap the preview once: recording starts
+# 2. Wait without touching anything: the recorder comes back on its own
+# 3. Validate the session took the clip
+
+# 1. Start. Classic fades its whole top-bar row out while recording, so the
+# close button leaving is what reports that the recording actually started.
+- tapOn:
+    id: camera_classic_shutter
+- extendedWaitUntil:
+    notVisible:
+      id: camera_close_button
+    timeout: 15000
+
+# 2. No second tap. The close button coming back is the auto-stop: nothing else
+# in this mode restores the top bar. The timeout covers a full 6.3s budget plus
+# finalization, so it holds even if step 1 of the flow recorded almost nothing.
+- extendedWaitUntil:
+    visible:
+      id: camera_close_button
+    timeout: 20000
+
+# 3. And the recording became a clip rather than being discarded at the limit.
+- runFlow: ../asserts/assertClassicClipRecorded.yaml

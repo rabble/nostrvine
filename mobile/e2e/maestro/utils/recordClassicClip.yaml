@@ -1,0 +1,33 @@
+appId: co.openvine.app
+---
+#Utility: given the recorder is on a ready classic viewfinder with tap-to-toggle
+#recording enabled, record one clip and leave it in the session.
+#
+# Classic's shutter is the square preview, not a button, so this cannot reuse
+# recordCaptureClip.yaml — and it stops on the second tap rather than letting
+# the recording run out, which is what classicModeRecordingLimit covers.
+
+# The preview looks the same in both states, so it is the close button that
+# reports the transition: classic fades its whole top-bar row out while
+# recording.
+- tapOn:
+    id: camera_classic_shutter
+- extendedWaitUntil:
+    notVisible:
+      id: camera_close_button
+    timeout: 15000
+
+# Let a couple of seconds of footage accumulate — deliberately less than the
+# capture util's three. Classic is the only mode that declares
+# `hasRecordingLimit`, so every clip it records comes out of one 6.3s budget,
+# and classicModeRecordingLimit still needs enough of that budget left to start
+# a second recording at all (the bloc refuses below 30ms remaining).
+#
+# The live preview never settles, so this waits its timeout out rather than
+# returning early.
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- tapOn:
+    id: camera_classic_shutter
+- runFlow: ../asserts/assertClassicClipRecorded.yaml

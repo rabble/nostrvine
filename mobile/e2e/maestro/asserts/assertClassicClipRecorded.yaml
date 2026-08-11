@@ -1,0 +1,26 @@
+appId: co.openvine.app
+---
+# The classic session holds at least one clip: the top bar's continue button
+# goes live and the row above the preview reveals delete-last-clip.
+#
+# The capture stack's equivalent waits on `camera_next_button` becoming
+# *visible*. Classic's next never leaves the semantics tree — it is mounted and
+# disabled while the session is empty — so the state change to wait on here is
+# `enabled`, not visibility. Waiting on visibility would pass instantly against
+# an empty session and prove nothing.
+#
+# The wait covers the gap between the stop and the recorder finalizing the
+# file; on a cold camera the first clip can take a moment to land.
+- extendedWaitUntil:
+    visible:
+      id: camera_next_button
+      enabled: true
+    timeout: 15000
+- assertVisible:
+    id: camera_delete_clip_button
+
+# Back on the idle viewfinder. Classic fades its whole top-bar row out while
+# recording, so the close button being here is what proves the recording
+# actually stopped rather than still running behind the assertion above.
+- assertVisible:
+    id: camera_close_button

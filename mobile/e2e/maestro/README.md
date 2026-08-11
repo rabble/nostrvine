@@ -43,15 +43,16 @@ dispatches, and GitHub CI does not cover this lane at all.
 
 ## The recorder flows
 
-Three of the recorder's five modes are covered, one flow each:
+Four of the recorder's five modes are covered, one flow each:
 
 | Flow | Mode | Covers |
 |---|---|---|
 | `flows/captureModeFlow.yaml` | capture | open, drive the control rail, record a clip, delete it, close |
 | `flows/lipSyncModeFlow.yaml` | lip-sync | open, drive the control rail, prove the shutter refuses without a sound and records with one, delete the clip, close |
 | `flows/stopMotionModeFlow.yaml` | stop-motion | open, drive the control rail, shoot two stills, undo them, close |
+| `flows/classicModeFlow.yaml` | classic | open, drive the action row, record a clip off the preview, prove a second recording stops itself at the duration limit, delete both, close |
 
-Classic and upload are not covered yet.
+Upload is not covered yet.
 
 The gate is lip-sync's own behaviour and it takes **both** shutter tests to
 cover it. `lipSyncModeAudioGate` proves the shutter refuses with no sound
@@ -66,14 +67,24 @@ picker's **Divine** tab, whose entries come from
 is the relay-backed one, and it is the live-content dependency this file names
 elsewhere as the suite's main source of flakiness — no flow goes near it.
 
-Every file in all three flows has been run green on a Galaxy SM-S942B. The
-lip-sync and stop-motion tests were driven test-by-test against an
-already-signed-in app rather than through their flow end to end, because the
-device runs a German system locale and `loginFreshInstall`'s `clearState` drops
-the per-app English override mid-run (see step 0b). The login and `removeKeys`
-bookends of both flows are the same ones `captureModeFlow` already runs.
+Every file in the capture, lip-sync and stop-motion flows has been run green on
+a Galaxy SM-S942B. The lip-sync and stop-motion tests were driven test-by-test
+against an already-signed-in app rather than through their flow end to end,
+because the device runs a German system locale and `loginFreshInstall`'s
+`clearState` drops the per-app English override mid-run (see step 0b). The login
+and `removeKeys` bookends of both flows are the same ones `captureModeFlow`
+already runs.
 
-None of them is in **`smoke.yaml`**, and all three are deliberately off the iOS
+**`classicModeFlow` has not been run on hardware yet.** It was written against
+the classic stack's widget tree and its selectors are pinned at the widget level
+(`video_recorder_classic_*_test.dart` each assert their E2E anchors), but no
+part of it has been executed on a device. Treat a first failure there as a
+possible flow bug, not automatically an app regression — the two selector calls
+most worth checking first are `classicModeRecordingLimit`'s reliance on the
+native auto-stop reaching the Flutter side, and whether the ghost-frame
+snackbar in `classicModeControls` covers the action row it sits above.
+
+None of them is in **`smoke.yaml`**, and all four are deliberately off the iOS
 lane:
 
 - **They need real camera hardware.** Without a camera the bloc never reports
@@ -92,6 +103,7 @@ Run one against a booted Android emulator or a connected device:
 maestro --device <serial> test e2e/maestro/flows/captureModeFlow.yaml
 maestro --device <serial> test e2e/maestro/flows/lipSyncModeFlow.yaml
 maestro --device <serial> test e2e/maestro/flows/stopMotionModeFlow.yaml
+maestro --device <serial> test e2e/maestro/flows/classicModeFlow.yaml
 ```
 
 ### Reading state off an icon-only control
@@ -105,14 +117,21 @@ recorder selectors:
 - **A selector may combine `id` with `text`**, and here it must: "Off" is the
   value of the flash control *and* the timer control — and, once its sheet is
   open, of the stabilization menu's own first row.
-- **`selected: true` is readable too**, which is what `assertCaptureMode`,
-  `assertLipSyncMode` and `assertStopMotionMode` use to prove the right mode is
-  armed. The mode wheel renders an entry for every mode in every mode, so a
-  bare `id: camera_mode_capture` would pass on the Upload tab just as happily.
+- **`selected: true` is readable too**, which is what all four `assert…Mode`
+  files use to prove the right mode is armed. The mode wheel renders an entry
+  for every mode in every mode, so a bare `id: camera_mode_capture` would pass
+  on the Upload tab just as happily.
+- **`enabled:` is readable, and sometimes it is the only signal.**
+  `driveCaptureRail` uses it as a *guard* on hardware-dependent controls, but
+  `assertClassicMode` and `assertClassicClipRecorded` assert on it directly:
+  classic's next button stays mounted and goes disabled on an empty session
+  rather than fading out of the tree, so `enabled` is the only thing that moves
+  when a clip lands.
 - **`checked:` is how an on/off control reads.** The ghost-frame and grid
   toggles carry a Semantics `toggled` flag rather than a `value`, and Flutter
   maps that to the accessibility node's checked state, so
-  `stopMotionModeControls` drives them with `checked: true` / `checked: false`.
+  `stopMotionModeControls` and `classicModeControls` drive them with
+  `checked: true` / `checked: false`.
   **Maestro does not print the flag in its run log** — the line reads
   `Assert that id: camera_ghost_frame_button is visible`, exactly as it would
   if the flag had been dropped, unlike `text:` and `enabled:` which both show
@@ -120,22 +139,26 @@ recorder selectors:
   its off state fails on device. Don't "fix" a `checked:` selector because the
   log looks bare; prove it with a deliberately-wrong assertion instead.
 
-### What the three viewfinders share, and what tells them apart
+### What the four viewfinders share, and what tells them apart
 
-All three *are* the capture stack: same close, next, delete, library button and
-record button. Only the top bar's center slot and the control rail differ.
+Three of them *are* the capture stack: same close, next, delete, library button
+and record button. Between those three, only the top bar's center slot and the
+control rail differ. Classic is the odd one out — its own stack, its own top
+bar, its own action rows, and no record button at all.
 
-| | capture | lip-sync | stop-motion |
-|---|---|---|---|
-| `audio_chip` (center slot) | — | ✅ | — |
-| `camera_stop_motion_budget` (center slot) | — | — | ✅ |
-| `camera_flash_button` | ✅ | ✅ | ✅ |
-| `camera_aspect_ratio_button` | ✅ | ✅ | ✅ |
-| `camera_switch_camera_button` | ✅ | ✅ | ✅ |
-| `camera_timer_button` | ✅ | ✅ | — |
-| `camera_stabilization_button` | ✅ | ✅ | — |
-| `camera_ghost_frame_button` | — | — | ✅ |
-| `camera_grid_button` | — | — | ✅ |
+| | capture | lip-sync | stop-motion | classic |
+|---|---|---|---|---|
+| `camera_record_button` | ✅ | ✅ | ✅ | — |
+| `camera_classic_shutter` (the preview) | — | — | — | ✅ |
+| `audio_chip` (center slot) | — | ✅ | — | — |
+| `camera_stop_motion_budget` (center slot) | — | — | ✅ | — |
+| `camera_flash_button` | ✅ | ✅ | ✅ | — |
+| `camera_aspect_ratio_button` | ✅ | ✅ | ✅ | — |
+| `camera_switch_camera_button` | ✅ | ✅ | ✅ | ✅ |
+| `camera_timer_button` | ✅ | ✅ | — | — |
+| `camera_stabilization_button` | ✅ | ✅ | — | — |
+| `camera_ghost_frame_button` | — | — | ✅ | ✅ |
+| `camera_grid_button` | — | — | ✅ | ✅ |
 
 Lip-sync and capture are the subset trap. Their rails are identical, so assert
 only what each mode renders and `assertCaptureMode` passes on the Lip Sync tab,
@@ -157,14 +180,34 @@ control starts rendering in a mode that does not declare it, which nothing else
 in the suite would catch. `video_recorder_capture_actions_test.dart` pins the
 same split at the widget level.
 
-Because flash, aspect ratio and the lens switch are unconditional, all three
-modes *drive* them with the same three files — `utils/driveAspectRatioControl`,
-`utils/driveLensControl`, `utils/driveFlashControl`. Capture and lip-sync wrap
-those in `utils/driveCaptureRail.yaml`, which adds the timer and stabilization
-controls they alone render; `stopMotionModeControls` calls the three directly
-and adds ghost frame and grid. Each mode's `…Controls` test is a rail sequence
-plus its own mode assert. A mode with yet another set composes the per-control
-utils in its own order rather than skipping parts of someone else's.
+Because flash, aspect ratio and the lens switch are unconditional *on that
+rail*, the three capture-stack modes drive them with the same three files —
+`utils/driveAspectRatioControl`, `utils/driveLensControl`,
+`utils/driveFlashControl`. Capture and lip-sync wrap those in
+`utils/driveCaptureRail.yaml`, which adds the timer and stabilization controls
+they alone render; `stopMotionModeControls` calls the three directly and adds
+ghost frame and grid. Each mode's `…Controls` test is a rail sequence plus its
+own mode assert. A mode with yet another set composes the per-control utils in
+its own order rather than skipping parts of someone else's — `classicModeControls`
+is the worked example of that, running only `driveLensControl` before its own
+grid and ghost blocks.
+
+Classic is the case none of the above covers, because it is a different stack
+rather than the same one with a different rail. Two consequences for its
+selectors:
+
+- **It has no record button.** The square preview is the shutter, wrapped in
+  its own `Semantics` node carrying `camera_classic_shutter`. It keeps that
+  identifier in both recording states while its *label* flips between "tap to
+  start" and "tap to stop", which is what makes it a usable anchor.
+- **Next is disabled, not hidden.** The capture stack fades next and delete out
+  of the semantics tree when the session is empty; classic's top bar keeps next
+  mounted and passes `onPressed: null`. So `assertClassicMode` reads an empty
+  session off `enabled: false` there, and `assertClassicClipRecorded` waits on
+  `enabled: true` rather than on visibility — a visibility wait would pass
+  instantly and prove nothing. Delete does still drop out of the tree, so it is
+  asserted the usual way. `video_recorder_classic_top_bar_test.dart` pins both
+  halves of that contract.
 
 ### Things the flows depend on that are easy to break by accident
 
@@ -187,14 +230,14 @@ Shared:
   somewhere: `camera_last_used_recorder_mode` (absent ⇒ Capture),
   `camera_last_used_lens` (absent ⇒ back, which the rail asserts first),
   `camera_last_used_stabilization` and `camera_grid_lines_enabled` (absent ⇒
-  on, which `stopMotionModeControls` asserts first). Run from the top this is
-  handled — `loginFreshInstall`'s `clearState` wipes all four — but a
-  standalone run inherits whatever the last session left. A phone whose last
-  session used the front lens fails the rail on its first `.*Back camera.*`,
-  and the three flows leave the mode key on different values, so a
-  `captureModeFlow` run straight after a lip-sync or stop-motion one, skipping
-  the login step, opens on the wrong mode. When iterating standalone, either
-  reset the keys or start from a flow that clears state.
+  on, which `stopMotionModeControls` and `classicModeControls` both assert
+  first). Run from the top this is handled — `loginFreshInstall`'s `clearState`
+  wipes all four — but a standalone run inherits whatever the last session left.
+  A phone whose last session used the front lens fails the rail on its first
+  `.*Back camera.*`, and the four flows leave the mode key on different values,
+  so a `captureModeFlow` run straight after a lip-sync, stop-motion or classic
+  one, skipping the login step, opens on the wrong mode. When iterating
+  standalone, either reset the keys or start from a flow that clears state.
 - **An empty session when the rail is driven.** The aspect-ratio control is
   disabled once the session holds a clip, because clips of mixed ratios cannot
   share an editor timeline. `captureModeControls` therefore runs before the
@@ -202,7 +245,10 @@ Shared:
   records. Stop-motion stills are not clips until the assemble, so its rail
   stays live mid-session — but `stopMotionModeControls` closes on its mode
   assert, which pins next and undo absent, so it needs the empty session
-  anyway and the flow keeps the same order.
+  anyway and the flow keeps the same order. Classic renders no aspect-ratio
+  control at all (it is square by definition), so nothing there is gated on
+  clips either — but `classicModeControls` closes on the same kind of mode
+  assert and keeps the same order for the same reason.
 
 Capture only:
 
@@ -277,13 +323,47 @@ Stop-motion only:
   silently removes it. Verified the other way round on device: shoot once, undo
   once, and that assertion goes red.
 
+Classic only:
+
+- **Reaching the mode at all.** Classic is the last entry on the wheel, three
+  places from Capture — further than any other mode has to travel on a lazy
+  `ListView` that only builds entries near the armed one. `openClassicMode`
+  therefore hops one entry at a time, and guards the hops on Classic not
+  already being on screen: on a rerun the recorder opens straight on Classic
+  (selecting a mode persists it), and from there Stop Motion is two entries
+  away and may not be built at all.
+- **The shutter is the preview.** There is no `camera_record_button` here, so
+  `utils/recordCaptureClip.yaml` is not reusable and classic gets its own
+  `utils/recordClassicClip.yaml`. Both wait on the close button leaving and
+  coming back, because classic fades its whole top-bar row out while recording.
+- **One 6.3s budget for the whole session.** Classic is the only mode that
+  declares `hasRecordingLimit`, so every clip it records comes out of one
+  budget and the bloc refuses to start a recording below 30ms remaining. That
+  is why `recordClassicClip` records for two seconds where the capture util
+  records for three: `classicModeRecordingLimit` still has to be able to start
+  a second recording. Stretch the first one and that test fails on its opening
+  wait, not on the limit.
+- **The limit test asserts a fact, not a duration.** It starts a recording,
+  never stops it, and waits for the top bar to come back — which only the
+  native auto-stop can do. It deliberately does not assert *when*, because the
+  budget left depends on what the previous test spent.
+- **The ghost-frame snackbar, over a horizontal row.** Each toggle raises the
+  same 4-second banner stop-motion has, but classic's controls are a row above
+  the mode wheel rather than a vertical rail on the right. The banner sits
+  below that row, so the two taps that restore the toggle are not covered —
+  but `classicModeControls` still drives ghost *last*, so if that turns out to
+  be wrong on some screen size the failure lands on that control alone rather
+  than taking the lens and grid blocks with it.
+
 Account creation is a precondition, not part of what is tested. The recorder
 route itself is public (`appRouterRedirect` exempts it), but the only way in is
 the feed's camera button and the feed is not public.
 
 The stop-motion assemble step — "next", which collects the stills into a clip
 and opens the editor — is out of scope on purpose: it leaves the recorder, and
-the editor has no coverage to hand off to yet.
+the editor has no coverage to hand off to yet. So is classic's "next", which
+skips the editor entirely (classic is the one mode declaring no
+`hasVideoEditor`) and pushes the metadata screen with a render already started.
 
 ---
 

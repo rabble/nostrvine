@@ -1,0 +1,26 @@
+appId: co.openvine.app
+tags:
+  - recorder
+---
+#TC to record a clip in classic mode,
+# given the recorder is open on an idle classic viewfinder,
+# validate tap-to-start / tap-to-stop on the preview produces a clip in the
+# session.
+#
+# Classic has no record button: the square preview *is* the shutter, wrapped in
+# its own Semantics node. That is the one structural difference from capture
+# mode's recording path — everything after the tap is the same clip manager.
+#
+# Needs real camera hardware. Without it the bloc never reports
+# `isCameraInitialized`, the shutter stays disabled, and the first tap does
+# nothing — so this cannot pass on the iOS Simulator. Run it on an Android
+# emulator (which has a virtual scene camera) or on a device.
+#
+# Tap-to-toggle is the default; hold-to-record is opt-in
+# (`HoldToRecordPreferenceService` defaults to false). A run against a device
+# where a previous session enabled it will hang on the first assertion.
+#Steps:
+# 1. Tap the preview: recording starts and the top-bar chrome fades out
+# 2. Tap it again: recording stops and the session holds one clip
+
+- runFlow: ../utils/recordClassicClip.yaml
