@@ -422,8 +422,8 @@ const _knownUntranslatedDebt = <String>{
   // Relay-confirmation failure copy for account deletion; translation is
   // deferred to the next account-management localization pass.
   'deleteAccountRelayConfirmationFailed',
-  // Support form character-cap helper; translation is deferred to the next
-  // support-flow localization pass.
+  // Support form character-cap helper; translation is deferred to the
+  // support-flow localization pass tracked by #7100.
   'supportFieldLimitReached',
   // Warning shown when a requested reusable sound fails to publish; translation
   // is deferred to the next sound-library localization pass.
