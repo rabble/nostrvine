@@ -1,6 +1,8 @@
 // ABOUTME: Tests the verify dashboard cubit — loading links with verdicts,
 // ABOUTME: degrading when the verifier is down, and unlinking.
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -212,6 +214,30 @@ void main() {
           verify(() => repository.claimsWithVerdicts(any())).called(1);
         },
       );
+
+      test(
+        'returns quietly when closed before the claim read completes',
+        () async {
+          final claims = Completer<IdentityClaimStatus>();
+          when(
+            () => repository.claimsWithVerdicts(any()),
+          ).thenAnswer((_) => claims.future);
+          final cubit = build();
+
+          final load = cubit.load();
+          await Future<void>.delayed(Duration.zero);
+          await cubit.close();
+          claims.complete(
+            const IdentityClaimStatus(
+              claims: [_github],
+              verifiedKeys: {'github:octocat'},
+              verifierReachable: true,
+            ),
+          );
+
+          await load;
+        },
+      );
     });
 
     group('claimLinked', () {
@@ -357,6 +383,25 @@ void main() {
           verify(() => repository.removeClaim(any())).called(1);
         },
       );
+
+      test('returns quietly when closed before the unlink completes', () async {
+        final removed = Completer<List<List<String>>>();
+        when(() => repository.removeClaim(any())).thenAnswer(
+          (_) => removed.future,
+        );
+        final cubit = build();
+        addTearDown(() async {
+          if (!cubit.isClosed) await cubit.close();
+        });
+        await cubit.load();
+
+        final remove = cubit.removeClaim(_twitter);
+        await Future<void>.delayed(Duration.zero);
+        await cubit.close();
+        removed.complete(const []);
+
+        await remove;
+      });
     });
 
     test('reports an unreachable verifier instead of "not verified"', () async {

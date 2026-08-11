@@ -78,9 +78,11 @@ class VerifyConnectCubit extends Cubit<VerifyConnectState> {
     try {
       result = await _repository.verifyClaim(claim);
     } on Object catch (error, stackTrace) {
+      if (isClosed) return;
       addError(error, stackTrace);
       return _fail(VerifyConnectError.verifierUnreachable);
     }
+    if (isClosed) return;
 
     if (!result.verified) {
       // The verifier's reason is specific ("author does not match", "npub not
@@ -122,9 +124,11 @@ class VerifyConnectCubit extends Cubit<VerifyConnectState> {
         handle: state.identity.isEmpty ? null : state.identity,
       );
     } on Object catch (error, stackTrace) {
+      if (isClosed) return;
       addError(error, stackTrace);
       return _fail(VerifyConnectError.oauthFailed);
     }
+    if (isClosed) return;
     if (authorizationUrl == null) {
       return _fail(VerifyConnectError.oauthUnavailable);
     }
@@ -133,9 +137,11 @@ class VerifyConnectCubit extends Cubit<VerifyConnectState> {
     try {
       callback = await _launchOAuth(authorizationUrl);
     } on Object catch (error, stackTrace) {
+      if (isClosed) return;
       addError(error, stackTrace);
       return _fail(VerifyConnectError.oauthFailed);
     }
+    if (isClosed) return;
 
     if (callback == null) {
       emit(state.copyWith(status: VerifyConnectStatus.editing));
@@ -171,6 +177,7 @@ class VerifyConnectCubit extends Cubit<VerifyConnectState> {
     emit(state.copyWith(status: VerifyConnectStatus.publishing));
     try {
       await _repository.publishClaim(claim);
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: VerifyConnectStatus.linked,
@@ -179,6 +186,7 @@ class VerifyConnectCubit extends Cubit<VerifyConnectState> {
         ),
       );
     } on Object catch (error, stackTrace) {
+      if (isClosed) return;
       addError(error, stackTrace);
       _fail(
         error is IdentityClaimReadException
@@ -189,6 +197,7 @@ class VerifyConnectCubit extends Cubit<VerifyConnectState> {
   }
 
   void _fail(VerifyConnectError error) {
+    if (isClosed) return;
     emit(
       state.copyWith(
         status: VerifyConnectStatus.editing,

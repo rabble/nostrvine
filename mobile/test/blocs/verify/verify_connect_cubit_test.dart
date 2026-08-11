@@ -1,6 +1,8 @@
 // ABOUTME: Tests linking one platform — proof post and OAuth — and that a
 // ABOUTME: claim is published only once the verifier has confirmed it.
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart' hide VerificationResult;
@@ -271,6 +273,44 @@ void main() {
           verify(() => repository.verifyClaim(any())).called(1);
         },
       );
+
+      test(
+        'returns quietly when closed before verification completes',
+        () async {
+          final verified = Completer<VerificationResult>();
+          when(() => repository.verifyClaim(any())).thenAnswer(
+            (_) => verified.future,
+          );
+          final cubit = build(_github)
+            ..identityChanged('octocat')
+            ..proofChanged('https://gist.github.com/octocat/abc');
+
+          final submit = cubit.submitProof();
+          await Future<void>.delayed(Duration.zero);
+          await cubit.close();
+          verified.complete(_result(verified: true));
+
+          await submit;
+          verifyNever(() => repository.publishClaim(any()));
+        },
+      );
+
+      test('returns quietly when closed before publishing completes', () async {
+        final published = Completer<List<List<String>>>();
+        when(() => repository.publishClaim(any())).thenAnswer(
+          (_) => published.future,
+        );
+        final cubit = build(_github)
+          ..identityChanged('octocat')
+          ..proofChanged('https://gist.github.com/octocat/abc');
+
+        final submit = cubit.submitProof();
+        await Future<void>.delayed(Duration.zero);
+        await cubit.close();
+        published.complete(const []);
+
+        await submit;
+      });
     });
 
     group('connectWithOAuth', () {
@@ -447,6 +487,28 @@ void main() {
         },
         errors: () => [isA<FormatException>()],
       );
+
+      test('returns quietly when closed before the browser returns', () async {
+        final browser = Completer<Uri?>();
+        final cubit = VerifyConnectCubit(
+          repository: repository,
+          pubkey: _pubkey,
+          platform: _twitter,
+          oauthReturnUrl: _returnUrl,
+          launchOAuth: (uri) {
+            launched.add(uri);
+            return browser.future;
+          },
+        );
+
+        final connect = cubit.connectWithOAuth();
+        await Future<void>.delayed(Duration.zero);
+        await cubit.close();
+        browser.complete(callback);
+
+        await connect;
+        verifyNever(() => repository.publishClaim(any()));
+      });
     });
 
     group('needsIdentityInput', () {

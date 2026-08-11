@@ -34,12 +34,15 @@ class VerifyCubit extends Cubit<VerifyState> {
     try {
       platforms = await _repository.supportedPlatforms();
     } on Object catch (error, stackTrace) {
+      if (isClosed) return;
       addError(error, stackTrace);
       platforms = state.platforms;
     }
+    if (isClosed) return;
 
     try {
       final claims = await _repository.claimsWithVerdicts(_pubkey);
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: VerifyStatus.ready,
@@ -50,6 +53,7 @@ class VerifyCubit extends Cubit<VerifyState> {
         ),
       );
     } on Object catch (error, stackTrace) {
+      if (isClosed) return;
       addError(error, stackTrace);
       emit(
         state.copyWith(
@@ -96,6 +100,7 @@ class VerifyCubit extends Cubit<VerifyState> {
 
     try {
       await _repository.removeClaim(claim);
+      if (isClosed) return;
       emit(
         state.copyWith(
           claims: [
@@ -107,6 +112,7 @@ class VerifyCubit extends Cubit<VerifyState> {
         ),
       );
     } on Object catch (error, stackTrace) {
+      if (isClosed) return;
       addError(error, stackTrace);
       emit(
         state.copyWith(
