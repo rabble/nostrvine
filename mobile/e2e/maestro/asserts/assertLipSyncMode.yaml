@@ -1,12 +1,17 @@
 appId: co.openvine.app
 ---
-# Capture mode, idle: the viewfinder chrome is up and no clip is recorded yet.
+# Lip-sync mode, idle: the viewfinder chrome and sound picker are up, and no
+# clip is recorded yet.
+#
+# Lip-sync renders the capture stack with the same control rail, so the sound
+# picker below is the *only* element that separates this screen from capture
+# mode's. assertCaptureMode asserts its absence for the same reason.
 
-# Mode wheel with Capture armed. `selected` is load-bearing: the wheel renders
+# Mode wheel with Lip Sync armed. `selected` is load-bearing: the wheel renders
 # an entry for every mode in every mode, so a bare id assertion here passes
-# just as happily on the Upload tab.
+# just as happily on the Capture tab.
 - assertVisible:
-    id: camera_mode_capture
+    id: camera_mode_lipSync
     selected: true
 - assertVisible:
     id: camera_record_button
@@ -15,10 +20,12 @@ appId: co.openvine.app
 - assertVisible:
     id: camera_library_button
 
-# Control rail, top to bottom. Timer and stabilization are rendered only by
-# the modes that declare `supportsCountdownTimer` / `supportsVideoStabilization`
-# (capture and lip-sync), so this set is also what separates capture mode from
-# classic and stop-motion.
+# The sound picker, in the top-bar slot capture mode leaves empty.
+- assertVisible:
+    id: audio_chip
+
+# Control rail, top to bottom — identical to capture mode's, driven by the
+# same ../utils/driveCaptureRail.yaml.
 - assertVisible:
     id: camera_flash_button
 - assertVisible:
@@ -29,12 +36,6 @@ appId: co.openvine.app
     id: camera_switch_camera_button
 - assertVisible:
     id: camera_stabilization_button
-
-# Lip-sync renders this exact rail, and differs only by the sound picker it
-# puts in the top bar's center slot — which capture mode leaves empty. Without
-# this line every assertion in this file passes on the Lip Sync tab too.
-- assertNotVisible:
-    id: audio_chip
 
 # Nothing recorded yet. Both buttons sit inside an AnimatedOpacity, and
 # RenderAnimatedOpacity drops its child from the semantics tree at opacity 0 —

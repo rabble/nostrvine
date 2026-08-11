@@ -13,6 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/saved_sounds/saved_sounds_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/saved_sound.dart';
 import 'package:openvine/providers/auth_providers.dart';
@@ -164,6 +165,23 @@ void main() {
     });
 
     group('Search', () {
+      testWidgets('exposes the E2E identifier on the search field', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildWidget(trendingSoundsAsync: AsyncValue.data(testSounds)),
+        );
+        await tester.pumpAndSettle();
+
+        final node = tester.getSemantics(
+          find.bySemanticsIdentifier(SemanticIds.audioSearchField),
+        );
+        expect(node.flagsCollection.isTextField, isTrue);
+
+        handle.dispose();
+      });
+
       testWidgets('filters featured sounds on featured tab', (tester) async {
         await tester.pumpWidget(
           buildWidget(trendingSoundsAsync: AsyncValue.data(testSounds)),
@@ -396,9 +414,7 @@ void main() {
           () => audioService.seek(Duration.zero),
         ).thenAnswer(completeImmediately);
         when(audioService.stop).thenAnswer(waitForStop);
-        when(
-          () => audioService.loadAudio(sound.url!),
-        ).thenAnswer(loadDuration);
+        when(() => audioService.loadAudio(sound.url!)).thenAnswer(loadDuration);
         when(audioService.play).thenAnswer(completeImmediately);
         when(audioService.pause).thenAnswer(completeImmediately);
         when(audioService.dispose).thenAnswer(completeImmediately);
@@ -429,68 +445,63 @@ void main() {
     });
 
     group('Lifecycle', () {
-      testWidgets(
-        'does not setState after the sheet is disposed mid-preview',
-        (tester) async {
-          final audioService = _MockAudioPlaybackService();
-          final playCompleter = Completer<void>();
-          final sound = _createTestAudioEvent(title: 'Pending Preview');
-          Future<void> immediate(Invocation _) => Future<void>.value();
-          Future<Duration> loadDuration(Invocation _) =>
-              Future.value(const Duration(seconds: 5));
-          Future<void> blockOnPlay(Invocation _) => playCompleter.future;
+      testWidgets('does not setState after the sheet is disposed mid-preview', (
+        tester,
+      ) async {
+        final audioService = _MockAudioPlaybackService();
+        final playCompleter = Completer<void>();
+        final sound = _createTestAudioEvent(title: 'Pending Preview');
+        Future<void> immediate(Invocation _) => Future<void>.value();
+        Future<Duration> loadDuration(Invocation _) =>
+            Future.value(const Duration(seconds: 5));
+        Future<void> blockOnPlay(Invocation _) => playCompleter.future;
 
-          when(() => audioService.isPlaying).thenReturn(false);
-          when(
-            () => audioService.playingStream,
-          ).thenAnswer((_) => const Stream<bool>.empty());
-          when(
-            () => audioService.durationStream,
-          ).thenAnswer((_) => const Stream<Duration?>.empty());
-          when(
-            () => audioService.positionStream,
-          ).thenAnswer((_) => const Stream<Duration>.empty());
-          when(() => audioService.duration).thenReturn(null);
-          when(
-            () => audioService.seek(Duration.zero),
-          ).thenAnswer(immediate);
-          when(audioService.stop).thenAnswer(immediate);
-          when(
-            () => audioService.loadAudio(sound.url!),
-          ).thenAnswer(loadDuration);
-          // Blocks for the whole "playback" so the preview future is still
-          // pending when the sheet is torn down.
-          when(audioService.play).thenAnswer(blockOnPlay);
-          when(audioService.pause).thenAnswer(immediate);
-          when(audioService.dispose).thenAnswer(immediate);
+        when(() => audioService.isPlaying).thenReturn(false);
+        when(
+          () => audioService.playingStream,
+        ).thenAnswer((_) => const Stream<bool>.empty());
+        when(
+          () => audioService.durationStream,
+        ).thenAnswer((_) => const Stream<Duration?>.empty());
+        when(
+          () => audioService.positionStream,
+        ).thenAnswer((_) => const Stream<Duration>.empty());
+        when(() => audioService.duration).thenReturn(null);
+        when(() => audioService.seek(Duration.zero)).thenAnswer(immediate);
+        when(audioService.stop).thenAnswer(immediate);
+        when(() => audioService.loadAudio(sound.url!)).thenAnswer(loadDuration);
+        // Blocks for the whole "playback" so the preview future is still
+        // pending when the sheet is torn down.
+        when(audioService.play).thenAnswer(blockOnPlay);
+        when(audioService.pause).thenAnswer(immediate);
+        when(audioService.dispose).thenAnswer(immediate);
 
-          await tester.pumpWidget(
-            buildWidget(
-              trendingSoundsAsync: AsyncValue.data([sound]),
-              audioService: audioService,
-            ),
-          );
-          await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          buildWidget(
+            trendingSoundsAsync: AsyncValue.data([sound]),
+            audioService: audioService,
+          ),
+        );
+        await tester.pumpAndSettle();
 
-          final l10n = lookupAppLocalizations(const Locale('en'));
-          await tester.tap(find.text(l10n.videoEditorAudioCategoryCommunity));
-          await tester.pumpAndSettle();
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.videoEditorAudioCategoryCommunity));
+        await tester.pumpAndSettle();
 
-          // Start the preview; the handler now sits awaiting play().
-          await tester.tap(find.text('Pending Preview'));
-          await tester.pumpAndSettle();
+        // Start the preview; the handler now sits awaiting play().
+        await tester.tap(find.text('Pending Preview'));
+        await tester.pumpAndSettle();
 
-          // Tear the sheet down while play() is still pending.
-          await tester.pumpWidget(const SizedBox.shrink());
+        // Tear the sheet down while play() is still pending.
+        await tester.pumpWidget(const SizedBox.shrink());
 
-          // Resolve the preview after disposal: the finally path awaits
-          // pause() then a mounted-guarded setState that must be skipped.
-          playCompleter.complete();
-          await tester.pumpAndSettle();
+        // Resolve the preview after disposal: the finally path awaits
+        // pause() then a mounted-guarded setState that must be skipped.
+        playCompleter.complete();
+        await tester.pumpAndSettle();
 
-          expect(tester.takeException(), isNull);
-        },
-      );
+        expect(tester.takeException(), isNull);
+      });
     });
 
     group('Empty state', () {

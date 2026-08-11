@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_list_tile.dart';
 
@@ -41,6 +42,7 @@ void main() {
       required AudioEvent audio,
       bool isSelected = false,
       bool isPlaying = false,
+      String? semanticIdentifier,
     }) {
       return MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -50,11 +52,54 @@ void main() {
             audio: audio,
             isSelected: isSelected,
             isPlaying: isPlaying,
+            semanticIdentifier: semanticIdentifier,
             onTap: () => tapped = true,
           ),
         ),
       );
     }
+
+    group('semantics', () {
+      // The lip-sync E2E flow picks a sound by tapping the first tile of a
+      // search result (e2e/maestro/tests/lipSyncModeRecordClip.yaml). Every
+      // other test here matches on rendered text and would stay green with the
+      // anchor dropped.
+      testWidgets('exposes the E2E identifier it is given', (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildWidget(
+            audio: _createTestAudioEvent(title: 'Anthem'),
+            semanticIdentifier: SemanticIds.audioSoundTile(3),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.audioSoundTile(3)),
+          findsOneWidget,
+        );
+
+        handle.dispose();
+      });
+
+      // The editor's audio row reuses this tile without an anchor, so an
+      // identifier that defaulted to something non-null would collide with the
+      // indexed ones the picker hands out.
+      testWidgets('carries no identifier when none is given', (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildWidget(audio: _createTestAudioEvent(title: 'Anthem')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.audioSoundTile(0)),
+          findsNothing,
+        );
+
+        handle.dispose();
+      });
+    });
 
     group('Rendering', () {
       testWidgets('renders sound title', (tester) async {
