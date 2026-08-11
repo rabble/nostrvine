@@ -173,6 +173,10 @@ class RelayPool {
   /// replaceable event republished from a partial answer deletes whatever only
   /// the silent relay held. Those callers ask for full settlement instead and
   /// take a timeout as the answer when a relay will not give one.
+  ///
+  /// The same reasoning bounds the other end: a query these callers made must
+  /// have been answered by at least one relay before it can complete, so a
+  /// fan-out no relay even accepted is a timeout rather than an empty answer.
   final Set<String> _queriesRequiringFullSettlement = {};
 
   /// When each one-shot query's REQ fan-out started, so an abandoned query can
@@ -797,6 +801,18 @@ class RelayPool {
         }
         return;
       }
+    }
+
+    // Nothing is pending — but for a full-settlement caller that only means
+    // the query is finished if some relay actually answered it. When every
+    // `relayDoQuery` send failed, no relay ever saved the query, so this sweep
+    // finds nothing outstanding and would hand back an empty box no relay
+    // contributed to. A caller about to replace what it read cannot tell that
+    // apart from "every relay says there is nothing", so let it run out to its
+    // own timeout instead.
+    if (_queriesRequiringFullSettlement.contains(subId) &&
+        !_queryAnswered.contains(subId)) {
+      return;
     }
 
     _completeQuery(subId, callback);
@@ -1694,7 +1710,8 @@ class RelayPool {
   /// caller than no answer — see [_queriesRequiringFullSettlement]. The query
   /// then completes only once every relay that can still answer has, so a relay
   /// that stays connected and never sends a terminal frame runs the caller out
-  /// to its own timeout instead of being skipped past.
+  /// to its own timeout instead of being skipped past — as does a fan-out no
+  /// relay accepted at all.
   Future<String> query(
     List<Map<String, dynamic>> filters,
     Function(Event) onEvent, {

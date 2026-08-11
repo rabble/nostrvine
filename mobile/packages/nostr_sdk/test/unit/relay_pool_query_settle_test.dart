@@ -699,6 +699,71 @@ void main() {
         },
       );
 
+      // Short: this query is never going to be answered, so the test pays it
+      // in full. Nothing races it, so it cannot flake short.
+      const unacceptedTimeout = Duration(milliseconds: 400);
+
+      test(
+        'reports a query no relay accepted as a timeout, not an empty answer',
+        () async {
+          final nostr = _newNostr();
+          final unreachable = _SilentRelay('wss://send-fails.example')
+            ..sendSucceeds = false;
+          expect(await nostr.relayPool.add(unreachable), isTrue);
+
+          final pending = nostr.queryEventsDetailed(
+            [
+              {
+                'kinds': [10003],
+              },
+            ],
+            timeout: unacceptedTimeout,
+            requireAllRelaysSettled: true,
+          );
+
+          final result = await pending;
+
+          expect(result.events, isEmpty);
+          expect(
+            result.timedOut,
+            isTrue,
+            reason:
+                'no relay took the REQ, so nothing was pending for the '
+                'post-fan-out sweep to wait on and it completed the query '
+                'with no relay having answered at all — an empty box that '
+                'reads exactly like "every relay says there is nothing"',
+          );
+        },
+      );
+
+      test(
+        'a query no relay accepted still completes at once without the flag',
+        () async {
+          final nostr = _newNostr();
+          final unreachable = _SilentRelay('wss://send-fails.example')
+            ..sendSucceeds = false;
+          expect(await nostr.relayPool.add(unreachable), isTrue);
+
+          final stopwatch = Stopwatch()..start();
+          final result = await nostr.queryEventsDetailed([
+            {
+              'kinds': [1],
+            },
+          ], timeout: timeout);
+          stopwatch.stop();
+
+          expect(result.timedOut, isFalse);
+          expect(
+            stopwatch.elapsed,
+            lessThan(timeout),
+            reason:
+                'a display read is content to be told what the reachable '
+                'relays hold; only a caller about to replace what it read '
+                'pays the timeout for the difference',
+          );
+        },
+      );
+
       test('still completes promptly once every relay answers', () async {
         final nostr = _newNostr();
         final first = _SilentRelay('wss://first.example');
