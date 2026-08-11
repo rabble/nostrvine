@@ -963,7 +963,10 @@ class ZendeskSupportService {
       final sortedErrors = errorCounts.entries.toList()
         ..sort((a, b) => b.value.compareTo(a.value));
       for (final entry in sortedErrors.take(10)) {
-        buffer.writeln('- ${entry.key}: ${entry.value} occurrences');
+        buffer.writeln(
+          '- ${sanitizeDiagnosticText(entry.key)}: '
+          '${entry.value} occurrences',
+        );
       }
     }
     if (logsSummary != null && logsSummary.isNotEmpty) {
@@ -1145,19 +1148,22 @@ class ZendeskSupportService {
     // Lead with subject so Zendesk SDK ticket list preview is recognizable
     // (SDK shows first line of description body, not the subject field)
     final effectiveSubject = subject.isNotEmpty ? subject : 'Feature Request';
+    // Per-field, before assembly, for the same reason as the bug report
+    // builder: redaction spans lines, so sanitizing the finished blob lets one
+    // typed field erase the ones printed after it.
     final buffer = StringBuffer();
-    buffer.writeln(effectiveSubject);
+    buffer.writeln(sanitizeDiagnosticText(effectiveSubject));
     buffer.writeln();
-    buffer.writeln(description);
+    buffer.writeln(sanitizeDiagnosticText(description));
     if (usefulness != null && usefulness.isNotEmpty) {
       buffer.writeln();
       buffer.writeln('### How would this be useful for you?');
-      buffer.writeln(usefulness);
+      buffer.writeln(sanitizeDiagnosticText(usefulness));
     }
     if (whenToUse != null && whenToUse.isNotEmpty) {
       buffer.writeln();
       buffer.writeln('### When would you use this?');
-      buffer.writeln(whenToUse);
+      buffer.writeln(sanitizeDiagnosticText(whenToUse));
     }
     final effectivePubkey = userPubkey ?? _userNpub;
     if (effectivePubkey != null) {

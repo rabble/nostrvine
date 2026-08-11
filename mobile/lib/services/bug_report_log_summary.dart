@@ -33,8 +33,13 @@ String? buildLogsSummary(List<LogEntry> logs) {
     // Sanitize per entry, before truncation. Redaction can consume a bounded
     // run of text around what it matches, so doing it here caps that run at
     // one log entry instead of letting it reach across the assembled report.
-    // Before truncation, so a value running past the entry limit is still
-    // redacted whole rather than half-cut and then matched.
+    //
+    // Before truncation, so a value running past the entry limit is redacted
+    // whole rather than half-cut and then matched. That order costs something
+    // too: a stray `{` early in a long entry can now consume up to the
+    // collection bound *inside* that entry, where truncating first would have
+    // capped the entry at 500 characters before the closing delimiter was
+    // reachable. Losing part of one entry beats losing the entries after it.
     var line = sanitizeDiagnosticText(merged[i].toFormattedString());
     if (line.length > BugReportConfig.maxLogEntryLength) {
       line =

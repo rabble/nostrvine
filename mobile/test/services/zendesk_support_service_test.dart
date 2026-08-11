@@ -1023,6 +1023,50 @@ void main() {
     });
   });
 
+  group('ZendeskSupportService.createFeatureRequest field isolation', () {
+    tearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null);
+    });
+
+    test('a stray brace in one field cannot erase the others', () async {
+      // Same failure as the bug report builder: redaction spans lines, so a
+      // credential key with an unclosed brace in `description` consumed the
+      // usefulness and when-to-use fields printed after it.
+      String? capturedDescription;
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (MethodCall call) async {
+            if (call.method == 'initialize') return true;
+            if (call.method == 'createTicket') {
+              capturedDescription = call.arguments['description'] as String?;
+              return true;
+            }
+            return null;
+          });
+
+      await ZendeskSupportService.initialize(
+        appId: 'test',
+        clientId: 'test',
+        zendeskUrl: 'https://test.zendesk.com',
+      );
+
+      await ZendeskSupportService.createFeatureRequest(
+        subject: 'Let me pin a vine',
+        description: 'my password: {weird symbols and it died',
+        // A closing brace downstream is what an unclosed one reaches for.
+        usefulness: 'I would use it daily {every morning}',
+        whenToUse: 'when I open the app',
+      );
+
+      final description = capturedDescription!;
+
+      expect(description, contains('[REDACTED]'));
+      expect(description, contains('I would use it daily'));
+      expect(description, contains('when I open the app'));
+    });
+  });
+
   group('ZendeskSupportService REST API', () {
     test('isRestApiAvailable returns false when token not configured', () {
       // ZendeskConfig uses String.fromEnvironment which defaults to ''

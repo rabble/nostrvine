@@ -243,6 +243,10 @@ void main() {
       // quadratic overall. Measured 18.6s for 100KB of `password_` before the
       // segment cap, 94ms after - on the UI thread, over a field with no
       // maxLength.
+      // The ceiling is a smoke threshold, not a budget: 94ms here against
+      // 2000, because the failure it guards is three orders of magnitude away.
+      // Do not tighten it toward the observed number - unlike the ratio-based
+      // sibling test above, this one is machine-dependent.
       final stopwatch = Stopwatch()..start();
       sanitizeDiagnosticText('password_' * 11100);
       stopwatch.stop();
