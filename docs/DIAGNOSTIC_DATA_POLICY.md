@@ -84,10 +84,13 @@ submission boundary. These limits are known and accepted:
   cost is paid twice: a serialized credential object larger than 4000
   characters is only partly redacted, and a stray brace still costs up to 4000
   characters of diagnostics around it.
-- Redacting such a value takes the rest of the line with it. Anything printed
-  after a credential key on the same line - including a pubkey - is redacted
-  along with the value, which is why the preservation rule above holds only for
-  a pubkey that is not sharing a line with a credential.
+- Redacting such a value consumes what follows it, up to the bound, across
+  lines. Anything printed after a credential key - including a pubkey - can be
+  redacted along with the value, so the preservation rule above holds only for
+  a pubkey that is not within the bound of a credential key.
+  Each contributed field is sanitized before the report is assembled, and each
+  log entry before the summary is built, so that loss stays inside the field or
+  entry that caused it rather than reaching the rest of the ticket.
 - Text typed inside the native Zendesk SDK screens is never sanitized. The
   ticket list (`ZendeskSupportService.showTicketListScreen`, reachable from the
   support center) opens the SDK's own UI, where a reply to an existing ticket is

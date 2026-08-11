@@ -916,30 +916,42 @@ class ZendeskSupportService {
     final effectiveSubject = subject.isNotEmpty
         ? subject
         : 'Bug Report: $reportId';
+    // Every contributed value is sanitized here, before assembly, rather than
+    // once over the finished description. Redaction consumes a bounded run of
+    // text around what it matches, so sanitizing the assembled blob lets an
+    // unbalanced `{` in one typed field erase the fields printed after it -
+    // device info, pubkey, logs - and the ticket arrives empty with nothing
+    // saying why. Per-field keeps that blast radius inside the field that
+    // caused it. `createTicket` sanitizes the assembled result again as
+    // defense in depth; the pass is idempotent.
     final buffer = StringBuffer();
-    buffer.writeln(effectiveSubject);
+    buffer.writeln(sanitizeDiagnosticText(effectiveSubject));
     buffer.writeln();
-    buffer.writeln(description);
+    buffer.writeln(sanitizeDiagnosticText(description));
     buffer.writeln();
-    buffer.writeln('App Version: $appVersion');
+    buffer.writeln('App Version: ${sanitizeDiagnosticText(appVersion)}');
     buffer.writeln();
     if (stepsToReproduce != null && stepsToReproduce.isNotEmpty) {
       buffer.writeln('### Steps to Reproduce');
-      buffer.writeln(stepsToReproduce);
+      buffer.writeln(sanitizeDiagnosticText(stepsToReproduce));
       buffer.writeln();
     }
     if (expectedBehavior != null && expectedBehavior.isNotEmpty) {
       buffer.writeln('### Expected Behavior');
-      buffer.writeln(expectedBehavior);
+      buffer.writeln(sanitizeDiagnosticText(expectedBehavior));
       buffer.writeln();
     }
     buffer.writeln('### Device Information');
     deviceInfo.forEach((key, value) {
-      buffer.writeln('- **$key:** $value');
+      buffer.writeln(
+        '- **$key:** ${sanitizeDiagnosticText(value.toString())}',
+      );
     });
     if (currentScreen != null) {
       buffer.writeln();
-      buffer.writeln('**Current Screen:** $currentScreen');
+      buffer.writeln(
+        '**Current Screen:** ${sanitizeDiagnosticText(currentScreen)}',
+      );
     }
     final effectivePubkey = userPubkey ?? _userNpub;
     if (effectivePubkey != null) {

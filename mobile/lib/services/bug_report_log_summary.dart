@@ -30,7 +30,12 @@ String? buildLogsSummary(List<LogEntry> logs) {
 
   final buffer = StringBuffer();
   for (var i = 0; i < merged.length; i++) {
-    var line = merged[i].toFormattedString();
+    // Sanitize per entry, before truncation. Redaction can consume a bounded
+    // run of text around what it matches, so doing it here caps that run at
+    // one log entry instead of letting it reach across the assembled report.
+    // Before truncation, so a value running past the entry limit is still
+    // redacted whole rather than half-cut and then matched.
+    var line = sanitizeDiagnosticText(merged[i].toFormattedString());
     if (line.length > BugReportConfig.maxLogEntryLength) {
       line =
           '${line.substring(0, BugReportConfig.maxLogEntryLength)}... [truncated]';

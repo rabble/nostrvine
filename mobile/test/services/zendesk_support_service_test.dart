@@ -803,6 +803,62 @@ void main() {
       expect(capturedSubject, isNot(startsWith('fix: fix:')));
     });
 
+    test('a stray brace in one field cannot empty the whole report', () async {
+      // `my password: {weird symbols` is how someone describes a login bug,
+      // not an attack. Sanitizing the assembled description let the unclosed
+      // brace consume everything printed after it - app version, device info,
+      // pubkey, every log line - and support received a ticket with no
+      // diagnostics and nothing saying why. Sanitizing each field before
+      // assembly keeps the loss inside the field that caused it.
+      String? capturedDescription;
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (MethodCall call) async {
+            if (call.method == 'initialize') return true;
+            if (call.method == 'createTicket') {
+              capturedDescription = call.arguments['description'] as String?;
+              return true;
+            }
+            return null;
+          });
+
+      await ZendeskSupportService.initialize(
+        appId: 'test',
+        clientId: 'test',
+        zendeskUrl: 'https://test.zendesk.com',
+      );
+
+      await ZendeskSupportService.createStructuredBugReport(
+        subject: 'App crashes on upload',
+        description: 'my password: {weird symbols and it died',
+        reportId: 'test-blast-radius-001',
+        appVersion: '1.0.7+497',
+        deviceInfo: {'platform': 'ios', 'version': '18.2'},
+        stepsToReproduce: '1. open the app 2. tap record',
+        expectedBehavior: 'it should upload',
+        currentScreen: 'CameraScreen',
+        // A closing brace downstream is what an unclosed one reaches for, and
+        // real logs are full of them (`Map.toString`). Without one here the
+        // collection branch never engages and this test would pass on the
+        // unquoted fallback instead of the property it names.
+        logsSummary:
+            '[10:00] [ERROR] upload failed {code: 500}\n'
+            '[10:01] [INFO] relay reconnected',
+      );
+
+      final description = capturedDescription!;
+
+      expect(description, contains('[REDACTED]'));
+      // Everything after the offending field survives.
+      expect(description, contains('App Version: 1.0.7+497'));
+      expect(description, contains('1. open the app 2. tap record'));
+      expect(description, contains('it should upload'));
+      expect(description, contains('ios'));
+      expect(description, contains('CameraScreen'));
+      expect(description, contains('upload failed'));
+      expect(description, contains('relay reconnected'));
+    });
+
     test('falls back to REST API when SDK not initialized', () async {
       // Reset _initialized by calling initialize with a handler that fails
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
