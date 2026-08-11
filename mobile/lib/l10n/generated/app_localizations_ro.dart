@@ -10101,23 +10101,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get badgesTitle => 'Insigne';
 
   @override
-  String get badgesIntroTitle => 'Înțelege traseul insignelor tale';
-
-  @override
-  String get badgesIntroBody =>
-      'Vezi premiile cu insigne care ți-au fost trimise, alege ce să fixezi pe profilul tău Nostr și verifică dacă oamenii au acceptat insignele pe care le-ai emis.';
-
-  @override
-  String get badgesOpenApp => 'Deschide aplicația de insigne';
-
-  @override
   String get badgesLoadError => 'N-am putut încărca insignele';
 
   @override
   String get badgesUpdateError => 'N-am putut actualiza insigna';
-
-  @override
-  String get badgesAwardedSectionTitle => 'Acordate ție';
 
   @override
   String get badgesAwardedEmptyTitle => 'Încă niciun premiu cu insignă';
@@ -10142,9 +10129,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get badgesActionReject => 'Respinge';
 
   @override
-  String get badgesIssuedSectionTitle => 'Emise de tine';
-
-  @override
   String get badgesIssuedEmptyTitle => 'Încă nicio insignă emisă';
 
   @override
@@ -10162,31 +10146,221 @@ class AppLocalizationsRo extends AppLocalizations {
   String get badgesRecipientWaitingStatus => 'Se așteaptă destinatarul';
 
   @override
-  String get profileBadgeAwardedBy => 'Awarded by';
+  String badgesHiddenSectionTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Ascunse ($count)',
+      one: 'Ascunsă (1)',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get profileBadgeRecipients => 'Recipients';
+  String get badgesActionRestore => 'Restaurează';
+
+  @override
+  String get badgesHiddenSnackbar => 'Insignă ascunsă';
+
+  @override
+  String get badgesHiddenSnackbarUndo => 'Anulează';
+
+  @override
+  String get badgesTabAwarded => 'Primite';
+
+  @override
+  String get badgesTabCreated => 'Create';
+
+  @override
+  String get badgesTabIssued => 'Acordate';
+
+  @override
+  String get badgesCreateAction => 'Insignă nouă';
+
+  @override
+  String get badgesCreatedEmptyTitle => 'Nicio insignă creată încă';
+
+  @override
+  String get badgesCreatedEmptySubtitle =>
+      'Creează una și dă-i-o cuiva care o merită.';
+
+  @override
+  String badgesCreatedAwardSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Acordată la $count persoane',
+      one: 'Acordată unei persoane',
+      zero: 'Încă neacordată',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeEditorCreateTitle => 'Insignă nouă';
+
+  @override
+  String get badgeEditorEditTitle => 'Editează insigna';
+
+  @override
+  String get badgeEditorNameLabel => 'Nume';
+
+  @override
+  String get badgeEditorNameHint => 'Fură scena';
+
+  @override
+  String get badgeEditorIdentifierLabel => 'Identificator';
+
+  @override
+  String get badgeEditorIdentifierHelp =>
+      'Face parte din adresa insignei, deci rămâne fix după ce insigna există.';
+
+  @override
+  String get badgeEditorIdentifierTaken =>
+      'Ai deja o insignă cu acest identificator. Editeaz-o pe aceea — publicarea aici ar înlocui-o.';
+
+  @override
+  String get badgeEditorIdentifierRequired =>
+      'Fiecare insignă are nevoie de un identificator — scrie-l tu dacă numele nu l-a completat.';
+
+  @override
+  String get badgeEditorDescriptionLabel => 'Descriere';
+
+  @override
+  String get badgeEditorDescriptionHint =>
+      'Pentru cine fură scena cu un singur loop.';
+
+  @override
+  String get badgeEditorArtworkLabel => 'Grafică';
+
+  @override
+  String get badgeEditorArtworkAdd => 'Adaugă grafică';
+
+  @override
+  String get badgeEditorArtworkReplace => 'Înlocuiește';
+
+  @override
+  String get badgeEditorArtworkError => 'Imaginea nu a putut fi încărcată';
+
+  @override
+  String get badgeEditorArtworkRequired =>
+      'Fiecare insignă are nevoie de o grafică.';
+
+  @override
+  String get badgeEditorArtworkRemove => 'Elimină grafica';
+
+  @override
+  String get badgeEditorArtworkSheetTitle => 'Grafica insignei';
+
+  @override
+  String get badgeDetailDeleteAction => 'Șterge insigna';
+
+  @override
+  String get badgeDetailDeleteTitle => 'Ștergi această insignă?';
+
+  @override
+  String get badgeDetailDeleteBody =>
+      'Asta cere releelor să renunțe la insignă și la toate acordările făcute de tine. Releele pot refuza, iar cine a fixat-o o păstrează pe profil până o scoate singur.';
+
+  @override
+  String get badgeDetailDeleteConfirm => 'Șterge';
+
+  @override
+  String get badgeEditorSaveAction => 'Publică insigna';
+
+  @override
+  String get badgeEditorSaveError => 'Insigna nu a putut fi publicată';
+
+  @override
+  String get badgeEditorLoadError => 'Această insignă nu a putut fi încărcată';
+
+  @override
+  String get badgeDetailTitle => 'Insignă';
+
+  @override
+  String get badgeDetailMadeBy => 'Creată de';
+
+  @override
+  String get badgeDetailRecipientsTitle => 'Acordată';
+
+  @override
+  String get badgeDetailNoRecipients => 'Încă nu o are nimeni.';
+
+  @override
+  String get badgeDetailAwardAction => 'Acordă această insignă';
+
+  @override
+  String get badgeDetailEditAction => 'Editează insigna';
+
+  @override
+  String get badgeDetailShareAction => 'Distribuie';
+
+  @override
+  String badgeDetailShareMessage(String link) {
+    return 'Vezi insigna asta pe Divine: $link';
+  }
+
+  @override
+  String get badgeDetailLoadError => 'Această insignă nu a putut fi încărcată';
+
+  @override
+  String get badgeDetailMissing => 'Nu găsim insigna pe niciun releu.';
+
+  @override
+  String get badgeDetailActionError => 'Nu a mers';
+
+  @override
+  String get badgeAwardTitle => 'Acordă insigna';
+
+  @override
+  String get badgeAwardPickAction => 'Alege persoane';
+
+  @override
+  String get badgeAwardManualLabel => 'Sau lipește chei';
+
+  @override
+  String get badgeAwardManualHint => 'npub1…, npub1…';
+
+  @override
+  String get badgeAwardEmptyHint => 'Alege cel puțin o persoană.';
+
+  @override
+  String badgeAwardSubmitAction(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Acordă la $count persoane',
+      one: 'Acordă unei persoane',
+      zero: 'Acordă insigna',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get profileBadgeAwardedBy => 'Acordată de';
+
+  @override
+  String get profileBadgeRecipients => 'Destinatari';
 
   @override
   String profileBadgeMoreRecipients(int count) {
-    return '+$count more';
+    return '+încă $count';
   }
 
   @override
   String profileBadgeSemanticLabel(String name) {
-    return '$name badge';
+    return 'Insigna $name';
   }
 
   @override
-  String get profileBadgeFallbackSemanticLabel => 'Badge';
+  String get profileBadgeFallbackSemanticLabel => 'Insignă';
 
   @override
   String get profileBadgeFooterBody =>
       'Insignele sunt mici recompense pe care oricine le poate crea pe Nostr. Dăruiește una unui prieten, unui creator sau cuiva care ți-a făcut ziua mai bună.';
 
   @override
-  String get profileBadgeFooterLink =>
-      'Creează-ți propria insignă pe badges.divine.video';
+  String get profileBadgeFooterLink => 'Fă-ți propria insignă';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';

@@ -10,6 +10,7 @@ class DivineTextField extends StatelessWidget {
     this.labelText,
     this.hintText,
     this.helperText,
+    this.helperMaxLines,
     this.minLines,
     this.maxLines,
     this.maxLength,
@@ -74,6 +75,13 @@ class DivineTextField extends StatelessWidget {
 
   /// Persistent note rendered below the field, e.g. "Required".
   final String? helperText;
+
+  /// How many lines [helperText] may wrap onto before it is ellipsized.
+  ///
+  /// Defaults to Flutter's single line. Raise it for a note that does not
+  /// survive being cut in half, and remember the same string is longer in
+  /// most locales than in English.
+  final int? helperMaxLines;
 
   /// Minimum number of lines to display.
   final int? minLines;
@@ -234,6 +242,7 @@ class DivineTextField extends StatelessWidget {
         labelText: labelText,
         hintText: hintText,
         helperText: helperText,
+        helperMaxLines: helperMaxLines,
         suffixIcon: suffixIcon,
         prefixText: prefixText,
         suffixText: suffixText,

@@ -9391,23 +9391,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get badgesTitle => '徽章';
 
   @override
-  String get badgesIntroTitle => '了解你的徽章足迹';
-
-  @override
-  String get badgesIntroBody =>
-      '查看别人颁给你的徽章，选择要挂在 Nostr 资料上的徽章，并看看你发出的徽章有没有被接受。';
-
-  @override
-  String get badgesOpenApp => '打开徽章应用';
-
-  @override
   String get badgesLoadError => '徽章加载失败';
 
   @override
   String get badgesUpdateError => '徽章更新失败';
-
-  @override
-  String get badgesAwardedSectionTitle => '颁给你的';
 
   @override
   String get badgesAwardedEmptyTitle => '还没有徽章';
@@ -9431,9 +9418,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get badgesActionReject => '拒绝';
 
   @override
-  String get badgesIssuedSectionTitle => '你发出的';
-
-  @override
   String get badgesIssuedEmptyTitle => '还没有发出徽章';
 
   @override
@@ -9447,6 +9431,189 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get badgesRecipientWaitingStatus => '等待对方接受';
+
+  @override
+  String badgesHiddenSectionTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '已隐藏（$count）',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgesActionRestore => '恢复';
+
+  @override
+  String get badgesHiddenSnackbar => '已隐藏徽章';
+
+  @override
+  String get badgesHiddenSnackbarUndo => '撤销';
+
+  @override
+  String get badgesTabAwarded => '收到的';
+
+  @override
+  String get badgesTabCreated => '创建的';
+
+  @override
+  String get badgesTabIssued => '发出的';
+
+  @override
+  String get badgesCreateAction => '新徽章';
+
+  @override
+  String get badgesCreatedEmptyTitle => '还没做过徽章';
+
+  @override
+  String get badgesCreatedEmptySubtitle => '做一个，送给值得的人。';
+
+  @override
+  String badgesCreatedAwardSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '已颁发给 $count 人',
+      zero: '还没颁发',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeEditorCreateTitle => '新徽章';
+
+  @override
+  String get badgeEditorEditTitle => '编辑徽章';
+
+  @override
+  String get badgeEditorNameLabel => '名称';
+
+  @override
+  String get badgeEditorNameHint => '抢镜王';
+
+  @override
+  String get badgeEditorIdentifierLabel => '标识符';
+
+  @override
+  String get badgeEditorIdentifierHelp => '它是徽章地址的一部分，徽章创建后就不能再改。';
+
+  @override
+  String get badgeEditorIdentifierTaken =>
+      '你已经有使用这个标识符的徽章了。请去编辑那一个——在这里发布会把它替换掉。';
+
+  @override
+  String get badgeEditorIdentifierRequired => '每个徽章都需要一个标识符——名称没填上的话，自己输入一个。';
+
+  @override
+  String get badgeEditorDescriptionLabel => '描述';
+
+  @override
+  String get badgeEditorDescriptionHint => '献给用一段循环就抢走全场的人。';
+
+  @override
+  String get badgeEditorArtworkLabel => '图案';
+
+  @override
+  String get badgeEditorArtworkAdd => '添加图案';
+
+  @override
+  String get badgeEditorArtworkReplace => '替换';
+
+  @override
+  String get badgeEditorArtworkError => '这张图片上传失败';
+
+  @override
+  String get badgeEditorArtworkRequired => '每个徽章都需要图案。';
+
+  @override
+  String get badgeEditorArtworkRemove => '移除图案';
+
+  @override
+  String get badgeEditorArtworkSheetTitle => '徽章图案';
+
+  @override
+  String get badgeDetailDeleteAction => '删除徽章';
+
+  @override
+  String get badgeDetailDeleteTitle => '删除这个徽章？';
+
+  @override
+  String get badgeDetailDeleteBody =>
+      '这会请求中继删除该徽章以及你颁发过的所有记录。中继可以拒绝，已把它固定在资料页的人也会一直保留，直到自己移除。';
+
+  @override
+  String get badgeDetailDeleteConfirm => '删除';
+
+  @override
+  String get badgeEditorSaveAction => '发布徽章';
+
+  @override
+  String get badgeEditorSaveError => '徽章发布失败';
+
+  @override
+  String get badgeEditorLoadError => '无法加载这个徽章';
+
+  @override
+  String get badgeDetailTitle => '徽章';
+
+  @override
+  String get badgeDetailMadeBy => '创建者';
+
+  @override
+  String get badgeDetailRecipientsTitle => '已颁发给';
+
+  @override
+  String get badgeDetailNoRecipients => '还没有人拿到。';
+
+  @override
+  String get badgeDetailAwardAction => '颁发这个徽章';
+
+  @override
+  String get badgeDetailEditAction => '编辑徽章';
+
+  @override
+  String get badgeDetailShareAction => '分享';
+
+  @override
+  String badgeDetailShareMessage(String link) {
+    return '来看看 Divine 上的这个徽章：$link';
+  }
+
+  @override
+  String get badgeDetailLoadError => '无法加载这个徽章';
+
+  @override
+  String get badgeDetailMissing => '我们在任何中继上都找不到这个徽章。';
+
+  @override
+  String get badgeDetailActionError => '这次没成功';
+
+  @override
+  String get badgeAwardTitle => '颁发徽章';
+
+  @override
+  String get badgeAwardPickAction => '选择用户';
+
+  @override
+  String get badgeAwardManualLabel => '或粘贴密钥';
+
+  @override
+  String get badgeAwardManualHint => 'npub1…, npub1…';
+
+  @override
+  String get badgeAwardEmptyHint => '至少选一个人。';
+
+  @override
+  String badgeAwardSubmitAction(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '颁发给 $count 人',
+      zero: '颁发徽章',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get profileBadgeAwardedBy => '颁发者';
@@ -9472,7 +9639,7 @@ class AppLocalizationsZh extends AppLocalizations {
       '徽章是任何人都可以在 Nostr 上制作的小奖励。送一个给朋友、创作者,或那个让你今天很开心的人。';
 
   @override
-  String get profileBadgeFooterLink => '在 badges.divine.video 制作你自己的徽章';
+  String get profileBadgeFooterLink => '做一个自己的徽章';
 
   @override
   String get minorAccountReviewWelcomePageTitle => '家庭指南';

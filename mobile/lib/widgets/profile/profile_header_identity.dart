@@ -560,8 +560,8 @@ class _ProfileBadgeDetailsSheet extends StatelessWidget {
                 label: l10n.profileBadgeFooterLink,
                 type: DivineButtonType.secondary,
                 size: DivineButtonSize.small,
-                leadingIcon: DivineIconName.arrowUpRight,
-                onPressed: () => _openBadgesAppFromBadgeSheet(context),
+                leadingIcon: DivineIconName.plus,
+                onPressed: () => _openBadgeEditorFromBadgeSheet(context),
               ),
             ],
           ),
@@ -599,10 +599,15 @@ void _openProfileFromBadgeSheet(BuildContext context, String pubkey) {
   router.push(path);
 }
 
-void _openBadgesAppFromBadgeSheet(BuildContext context) {
+void _openBadgeEditorFromBadgeSheet(BuildContext context) {
   final router = GoRouter.of(context);
   Navigator.of(context).pop();
-  router.push(NostrAppSandboxScreen.pathForAppId(divineBadgesNostrApp.slug));
+  // Seat the dashboard under the editor. The editor pops itself once the
+  // badge is published, and landing back on someone's profile reads as if
+  // nothing happened — the new badge is on the dashboard.
+  router
+    ..push(BadgesScreen.path)
+    ..push(BadgeEditorScreen.createPath);
 }
 
 class _VerifiedAccountsBlock extends StatelessWidget {

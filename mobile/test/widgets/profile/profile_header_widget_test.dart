@@ -15,7 +15,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
-import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
@@ -31,7 +30,8 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
+import 'package:openvine/screens/badges/badge_editor_screen.dart';
+import 'package:openvine/screens/badges/badges_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/og_viner_cache_service.dart';
@@ -605,7 +605,9 @@ void main() {
       expect(find.text(l10n.commonClose), findsOneWidget);
     });
 
-    testWidgets('badge detail sheet links into the badges app', (tester) async {
+    testWidgets('badge detail sheet opens the in-app badge editor', (
+      tester,
+    ) async {
       final testProfile = createTestProfile(displayName: 'Badged User');
       final mockGoRouter = MockGoRouter();
       when(
@@ -657,11 +659,12 @@ void main() {
       await tester.tap(link);
       await tester.pumpAndSettle();
 
-      verify(
-        () => mockGoRouter.push<Object?>(
-          NostrAppSandboxScreen.pathForAppId(divineBadgesNostrApp.slug),
-        ),
-      ).called(1);
+      // Order matters: the dashboard has to sit under the editor, so that
+      // publishing pops onto the badge list rather than back to the profile.
+      verifyInOrder([
+        () => mockGoRouter.push<Object?>(BadgesScreen.path),
+        () => mockGoRouter.push<Object?>(BadgeEditorScreen.createPath),
+      ]);
     });
 
     testWidgets('caps accepted badge recipients in detail sheet', (

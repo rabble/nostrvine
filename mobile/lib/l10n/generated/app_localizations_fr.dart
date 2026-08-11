@@ -10036,23 +10036,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get badgesTitle => 'Insignes';
 
   @override
-  String get badgesIntroTitle => 'Comprends ton parcours de badges';
-
-  @override
-  String get badgesIntroBody =>
-      'Vois les récompenses de badges qu\'on t\'a envoyées, choisis ce que tu veux épingler sur ton profil Nostr, et vérifie si les gens ont accepté les badges que tu as délivrés.';
-
-  @override
-  String get badgesOpenApp => 'Ouvrir l\'app de badges';
-
-  @override
   String get badgesLoadError => 'Impossible de charger les badges';
 
   @override
   String get badgesUpdateError => 'Impossible de mettre à jour le badge';
-
-  @override
-  String get badgesAwardedSectionTitle => 'Décernés à toi';
 
   @override
   String get badgesAwardedEmptyTitle =>
@@ -10078,9 +10065,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get badgesActionReject => 'Refuser';
 
   @override
-  String get badgesIssuedSectionTitle => 'Délivrés par toi';
-
-  @override
   String get badgesIssuedEmptyTitle => 'Aucun badge délivré pour l\'instant';
 
   @override
@@ -10098,19 +10082,210 @@ class AppLocalizationsFr extends AppLocalizations {
   String get badgesRecipientWaitingStatus => 'En attente du destinataire';
 
   @override
-  String get profileBadgeAwardedBy => 'Awarded by';
+  String badgesHiddenSectionTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Masqués ($count)',
+      one: 'Masqué (1)',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get profileBadgeRecipients => 'Recipients';
+  String get badgesActionRestore => 'Restaurer';
+
+  @override
+  String get badgesHiddenSnackbar => 'Badge masqué';
+
+  @override
+  String get badgesHiddenSnackbarUndo => 'Annuler';
+
+  @override
+  String get badgesTabAwarded => 'Reçus';
+
+  @override
+  String get badgesTabCreated => 'Créés';
+
+  @override
+  String get badgesTabIssued => 'Décernés';
+
+  @override
+  String get badgesCreateAction => 'Nouveau badge';
+
+  @override
+  String get badgesCreatedEmptyTitle => 'Aucun badge créé';
+
+  @override
+  String get badgesCreatedEmptySubtitle =>
+      'Crées-en un et offre-le à quelqu\'un qui le mérite.';
+
+  @override
+  String badgesCreatedAwardSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Décerné à $count personnes',
+      one: 'Décerné à 1 personne',
+      zero: 'Pas encore décerné',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeEditorCreateTitle => 'Nouveau badge';
+
+  @override
+  String get badgeEditorEditTitle => 'Modifier le badge';
+
+  @override
+  String get badgeEditorNameLabel => 'Nom';
+
+  @override
+  String get badgeEditorNameHint => 'Voleur de scène';
+
+  @override
+  String get badgeEditorIdentifierLabel => 'Identifiant';
+
+  @override
+  String get badgeEditorIdentifierHelp =>
+      'Il fait partie de l\'adresse du badge : il ne bouge plus une fois le badge créé.';
+
+  @override
+  String get badgeEditorIdentifierTaken =>
+      'Tu as déjà un badge avec cet identifiant. Modifie plutôt celui-là : publier ici le remplacerait.';
+
+  @override
+  String get badgeEditorIdentifierRequired =>
+      'Chaque badge a besoin d\'un identifiant : saisis-en un si le nom ne l\'a pas rempli.';
+
+  @override
+  String get badgeEditorDescriptionLabel => 'Description';
+
+  @override
+  String get badgeEditorDescriptionHint =>
+      'Pour celle ou celui qui vole la vedette en une seule boucle.';
+
+  @override
+  String get badgeEditorArtworkLabel => 'Visuel';
+
+  @override
+  String get badgeEditorArtworkAdd => 'Ajouter un visuel';
+
+  @override
+  String get badgeEditorArtworkReplace => 'Remplacer';
+
+  @override
+  String get badgeEditorArtworkError => 'Impossible d\'envoyer cette image';
+
+  @override
+  String get badgeEditorArtworkRequired =>
+      'Chaque badge a besoin d\'un visuel.';
+
+  @override
+  String get badgeEditorArtworkRemove => 'Retirer le visuel';
+
+  @override
+  String get badgeEditorArtworkSheetTitle => 'Visuel du badge';
+
+  @override
+  String get badgeDetailDeleteAction => 'Supprimer le badge';
+
+  @override
+  String get badgeDetailDeleteTitle => 'Supprimer ce badge ?';
+
+  @override
+  String get badgeDetailDeleteBody =>
+      'Cela demande aux relais de retirer le badge et toutes les attributions que tu as faites. Les relais peuvent refuser, et celles et ceux qui l\'ont épinglé le gardent sur leur profil jusqu\'à ce qu\'ils l\'enlèvent.';
+
+  @override
+  String get badgeDetailDeleteConfirm => 'Supprimer';
+
+  @override
+  String get badgeEditorSaveAction => 'Publier le badge';
+
+  @override
+  String get badgeEditorSaveError => 'Impossible de publier le badge';
+
+  @override
+  String get badgeEditorLoadError => 'Impossible de charger ce badge';
+
+  @override
+  String get badgeDetailTitle => 'Badge';
+
+  @override
+  String get badgeDetailMadeBy => 'Créé par';
+
+  @override
+  String get badgeDetailRecipientsTitle => 'Décerné à';
+
+  @override
+  String get badgeDetailNoRecipients => 'Personne ne l\'a encore.';
+
+  @override
+  String get badgeDetailAwardAction => 'Décerner ce badge';
+
+  @override
+  String get badgeDetailEditAction => 'Modifier le badge';
+
+  @override
+  String get badgeDetailShareAction => 'Partager';
+
+  @override
+  String badgeDetailShareMessage(String link) {
+    return 'Regarde ce badge sur Divine : $link';
+  }
+
+  @override
+  String get badgeDetailLoadError => 'Impossible de charger ce badge';
+
+  @override
+  String get badgeDetailMissing => 'Ce badge est introuvable sur les relais.';
+
+  @override
+  String get badgeDetailActionError => 'Ça n\'a pas marché';
+
+  @override
+  String get badgeAwardTitle => 'Décerner un badge';
+
+  @override
+  String get badgeAwardPickAction => 'Choisir des personnes';
+
+  @override
+  String get badgeAwardManualLabel => 'Ou colle des clés';
+
+  @override
+  String get badgeAwardManualHint => 'npub1…, npub1…';
+
+  @override
+  String get badgeAwardEmptyHint => 'Choisis au moins une personne.';
+
+  @override
+  String badgeAwardSubmitAction(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Décerner à $count personnes',
+      one: 'Décerner à 1 personne',
+      zero: 'Décerner le badge',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get profileBadgeAwardedBy => 'Décerné par';
+
+  @override
+  String get profileBadgeRecipients => 'Destinataires';
 
   @override
   String profileBadgeMoreRecipients(int count) {
-    return '+$count more';
+    return '+$count autres';
   }
 
   @override
   String profileBadgeSemanticLabel(String name) {
-    return '$name badge';
+    return 'Badge $name';
   }
 
   @override
@@ -10121,7 +10296,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Les badges sont de petites récompenses que n\'importe qui peut créer sur Nostr. Offres-en un à un ami, à un créateur ou à quelqu\'un qui a illuminé ta journée.';
 
   @override
-  String get profileBadgeFooterLink => 'Crée le tien sur badges.divine.video';
+  String get profileBadgeFooterLink => 'Crée ton propre badge';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';

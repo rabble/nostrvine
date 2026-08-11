@@ -11,6 +11,10 @@ import 'package:openvine/screens/feed/video_feed_page.dart';
 @visibleForTesting
 final String defaultSafePopFallback = VideoFeedPage.pathForIndex(0);
 
+/// Marks "no result was asked for", so [safePop] can forward a caller's
+/// `null` result without turning a plain `pop()` into `pop(null)`.
+const Object _unset = Object();
+
 /// Adds [safePop] to [BuildContext] for crash-safe back navigation.
 extension SafePopExtension on BuildContext {
   /// Pops the current route if possible, otherwise navigates to [fallback].
@@ -23,11 +27,19 @@ extension SafePopExtension on BuildContext {
   /// from AppBar back buttons and similar affordances degrades gracefully
   /// to [fallback] (or [defaultSafePopFallback] when omitted) instead of
   /// crashing.
-  void safePop({String? fallback}) {
-    if (canPop()) {
+  ///
+  /// [result] is handed to whoever awaited the pushed route. It is dropped
+  /// when there is nothing to pop, since the awaiting caller does not exist
+  /// on a deep-linked stack either.
+  void safePop({Object? result = _unset, String? fallback}) {
+    if (!canPop()) {
+      go(fallback ?? defaultSafePopFallback);
+      return;
+    }
+    if (identical(result, _unset)) {
       pop();
     } else {
-      go(fallback ?? defaultSafePopFallback);
+      pop(result);
     }
   }
 }

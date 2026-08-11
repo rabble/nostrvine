@@ -9851,23 +9851,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get badgesTitle => 'Rozetler';
 
   @override
-  String get badgesIntroTitle => 'Rozet izini anla';
-
-  @override
-  String get badgesIntroBody =>
-      'Sana gönderilen rozet ödüllerini gör, Nostr profiline ne sabitleyeceğini seç ve verdiğin rozetlerin kabul edilip edilmediğini kontrol et.';
-
-  @override
-  String get badgesOpenApp => 'Rozetler uygulamasını aç';
-
-  @override
   String get badgesLoadError => 'Rozetler yüklenemedi';
 
   @override
   String get badgesUpdateError => 'Rozet güncellenemedi';
-
-  @override
-  String get badgesAwardedSectionTitle => 'Sana verilenler';
 
   @override
   String get badgesAwardedEmptyTitle => 'Henüz rozet ödülü yok';
@@ -9892,9 +9879,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get badgesActionReject => 'Reddet';
 
   @override
-  String get badgesIssuedSectionTitle => 'Senin verdiklerin';
-
-  @override
   String get badgesIssuedEmptyTitle => 'Henüz verilmiş rozet yok';
 
   @override
@@ -9911,31 +9895,220 @@ class AppLocalizationsTr extends AppLocalizations {
   String get badgesRecipientWaitingStatus => 'Alıcı bekleniyor';
 
   @override
-  String get profileBadgeAwardedBy => 'Awarded by';
+  String badgesHiddenSectionTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Gizli ($count)',
+      one: 'Gizli (1)',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get profileBadgeRecipients => 'Recipients';
+  String get badgesActionRestore => 'Geri getir';
+
+  @override
+  String get badgesHiddenSnackbar => 'Rozet gizlendi';
+
+  @override
+  String get badgesHiddenSnackbarUndo => 'Geri al';
+
+  @override
+  String get badgesTabAwarded => 'Alınan';
+
+  @override
+  String get badgesTabCreated => 'Oluşturulan';
+
+  @override
+  String get badgesTabIssued => 'Verilen';
+
+  @override
+  String get badgesCreateAction => 'Yeni rozet';
+
+  @override
+  String get badgesCreatedEmptyTitle => 'Henüz rozet yapmadın';
+
+  @override
+  String get badgesCreatedEmptySubtitle =>
+      'Bir tane yap ve hak eden birine ver.';
+
+  @override
+  String badgesCreatedAwardSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count kişiye verildi',
+      one: '1 kişiye verildi',
+      zero: 'Henüz verilmedi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeEditorCreateTitle => 'Yeni rozet';
+
+  @override
+  String get badgeEditorEditTitle => 'Rozeti düzenle';
+
+  @override
+  String get badgeEditorNameLabel => 'Ad';
+
+  @override
+  String get badgeEditorNameHint => 'Sahne Hırsızı';
+
+  @override
+  String get badgeEditorIdentifierLabel => 'Tanımlayıcı';
+
+  @override
+  String get badgeEditorIdentifierHelp =>
+      'Rozetin adresinin bir parçası, o yüzden rozet oluştuktan sonra değişmez.';
+
+  @override
+  String get badgeEditorIdentifierTaken =>
+      'Bu tanımlayıcıyla zaten bir rozetin var. Onu düzenle — burada yayınlamak onun yerine geçer.';
+
+  @override
+  String get badgeEditorIdentifierRequired =>
+      'Her rozetin bir tanımlayıcısı olmalı — ad doldurmadıysa kendin yaz.';
+
+  @override
+  String get badgeEditorDescriptionLabel => 'Açıklama';
+
+  @override
+  String get badgeEditorDescriptionHint =>
+      'Tek bir loop\'la sahneyi çalan kişi için.';
+
+  @override
+  String get badgeEditorArtworkLabel => 'Görsel';
+
+  @override
+  String get badgeEditorArtworkAdd => 'Görsel ekle';
+
+  @override
+  String get badgeEditorArtworkReplace => 'Değiştir';
+
+  @override
+  String get badgeEditorArtworkError => 'Bu görsel yüklenemedi';
+
+  @override
+  String get badgeEditorArtworkRequired => 'Her rozetin bir görseli olmalı.';
+
+  @override
+  String get badgeEditorArtworkRemove => 'Görseli kaldır';
+
+  @override
+  String get badgeEditorArtworkSheetTitle => 'Rozet görseli';
+
+  @override
+  String get badgeDetailDeleteAction => 'Rozeti sil';
+
+  @override
+  String get badgeDetailDeleteTitle => 'Bu rozet silinsin mi?';
+
+  @override
+  String get badgeDetailDeleteBody =>
+      'Bu, relaylerden rozeti ve senin verdiğin tüm ödülleri kaldırmalarını ister. Relayler reddedebilir, rozeti profiline sabitleyenler ise kendileri kaldırana kadar tutmaya devam eder.';
+
+  @override
+  String get badgeDetailDeleteConfirm => 'Sil';
+
+  @override
+  String get badgeEditorSaveAction => 'Rozeti yayınla';
+
+  @override
+  String get badgeEditorSaveError => 'Rozet yayınlanamadı';
+
+  @override
+  String get badgeEditorLoadError => 'Bu rozet yüklenemedi';
+
+  @override
+  String get badgeDetailTitle => 'Rozet';
+
+  @override
+  String get badgeDetailMadeBy => 'Yapan';
+
+  @override
+  String get badgeDetailRecipientsTitle => 'Verildiği kişiler';
+
+  @override
+  String get badgeDetailNoRecipients => 'Bu rozet henüz kimsede yok.';
+
+  @override
+  String get badgeDetailAwardAction => 'Bu rozeti ver';
+
+  @override
+  String get badgeDetailEditAction => 'Rozeti düzenle';
+
+  @override
+  String get badgeDetailShareAction => 'Paylaş';
+
+  @override
+  String badgeDetailShareMessage(String link) {
+    return 'Divine\'da bu rozete bak: $link';
+  }
+
+  @override
+  String get badgeDetailLoadError => 'Bu rozet yüklenemedi';
+
+  @override
+  String get badgeDetailMissing => 'Bu rozeti hiçbir relayde bulamadık.';
+
+  @override
+  String get badgeDetailActionError => 'Bu işlem gerçekleşmedi';
+
+  @override
+  String get badgeAwardTitle => 'Rozet ver';
+
+  @override
+  String get badgeAwardPickAction => 'Kişi seç';
+
+  @override
+  String get badgeAwardManualLabel => 'Ya da anahtar yapıştır';
+
+  @override
+  String get badgeAwardManualHint => 'npub1…, npub1…';
+
+  @override
+  String get badgeAwardEmptyHint => 'En az bir kişi seç.';
+
+  @override
+  String badgeAwardSubmitAction(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count kişiye ver',
+      one: '1 kişiye ver',
+      zero: 'Rozeti ver',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get profileBadgeAwardedBy => 'Veren';
+
+  @override
+  String get profileBadgeRecipients => 'Alanlar';
 
   @override
   String profileBadgeMoreRecipients(int count) {
-    return '+$count more';
+    return '+$count kişi daha';
   }
 
   @override
   String profileBadgeSemanticLabel(String name) {
-    return '$name badge';
+    return '$name rozeti';
   }
 
   @override
-  String get profileBadgeFallbackSemanticLabel => 'Badge';
+  String get profileBadgeFallbackSemanticLabel => 'Rozet';
 
   @override
   String get profileBadgeFooterBody =>
       'Rozetler, Nostr\'da herkesin oluşturabileceği küçük ödüllerdir. Bir arkadaşına, bir içerik üreticisine ya da gününü güzelleştiren birine ver.';
 
   @override
-  String get profileBadgeFooterLink =>
-      'Kendi rozetini badges.divine.video\'da oluştur';
+  String get profileBadgeFooterLink => 'Kendi rozetini yap';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';

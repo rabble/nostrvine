@@ -9896,23 +9896,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get badgesTitle => 'Huy hiệu';
 
   @override
-  String get badgesIntroTitle => 'Hiểu hành trình huy hiệu của bạn';
-
-  @override
-  String get badgesIntroBody =>
-      'Xem các huy hiệu được gửi cho bạn, chọn huy hiệu để ghim lên hồ sơ Nostr, và kiểm tra xem người khác có chấp nhận huy hiệu bạn phát không.';
-
-  @override
-  String get badgesOpenApp => 'Mở ứng dụng huy hiệu';
-
-  @override
   String get badgesLoadError => 'Không tải được huy hiệu';
 
   @override
   String get badgesUpdateError => 'Không cập nhật được huy hiệu';
-
-  @override
-  String get badgesAwardedSectionTitle => 'Được trao cho bạn';
 
   @override
   String get badgesAwardedEmptyTitle => 'Chưa có huy hiệu nào';
@@ -9937,9 +9924,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get badgesActionReject => 'Từ chối';
 
   @override
-  String get badgesIssuedSectionTitle => 'Do bạn phát';
-
-  @override
   String get badgesIssuedEmptyTitle => 'Chưa phát huy hiệu nào';
 
   @override
@@ -9955,6 +9939,197 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get badgesRecipientWaitingStatus => 'Đang chờ người nhận';
+
+  @override
+  String badgesHiddenSectionTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Đã ẩn ($count)',
+      one: 'Đã ẩn (1)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgesActionRestore => 'Khôi phục';
+
+  @override
+  String get badgesHiddenSnackbar => 'Đã ẩn huy hiệu';
+
+  @override
+  String get badgesHiddenSnackbarUndo => 'Hoàn tác';
+
+  @override
+  String get badgesTabAwarded => 'Đã nhận';
+
+  @override
+  String get badgesTabCreated => 'Đã tạo';
+
+  @override
+  String get badgesTabIssued => 'Đã trao';
+
+  @override
+  String get badgesCreateAction => 'Huy hiệu mới';
+
+  @override
+  String get badgesCreatedEmptyTitle => 'Bạn chưa tạo huy hiệu nào';
+
+  @override
+  String get badgesCreatedEmptySubtitle =>
+      'Tạo một cái và trao cho người xứng đáng.';
+
+  @override
+  String badgesCreatedAwardSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Đã trao cho $count người',
+      one: 'Đã trao cho 1 người',
+      zero: 'Chưa trao cho ai',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeEditorCreateTitle => 'Huy hiệu mới';
+
+  @override
+  String get badgeEditorEditTitle => 'Sửa huy hiệu';
+
+  @override
+  String get badgeEditorNameLabel => 'Tên';
+
+  @override
+  String get badgeEditorNameHint => 'Kẻ cướp spotlight';
+
+  @override
+  String get badgeEditorIdentifierLabel => 'Định danh';
+
+  @override
+  String get badgeEditorIdentifierHelp =>
+      'Đây là một phần địa chỉ của huy hiệu, nên nó cố định sau khi huy hiệu được tạo.';
+
+  @override
+  String get badgeEditorIdentifierTaken =>
+      'Bạn đã có một huy hiệu với định danh này. Hãy sửa cái đó — đăng ở đây sẽ thay thế nó.';
+
+  @override
+  String get badgeEditorIdentifierRequired =>
+      'Mỗi huy hiệu cần một định danh — hãy tự nhập nếu tên không điền giúp.';
+
+  @override
+  String get badgeEditorDescriptionLabel => 'Mô tả';
+
+  @override
+  String get badgeEditorDescriptionHint =>
+      'Dành cho người cướp spotlight chỉ với một vòng lặp.';
+
+  @override
+  String get badgeEditorArtworkLabel => 'Hình ảnh';
+
+  @override
+  String get badgeEditorArtworkAdd => 'Thêm hình';
+
+  @override
+  String get badgeEditorArtworkReplace => 'Thay hình';
+
+  @override
+  String get badgeEditorArtworkError => 'Không tải lên được hình đó';
+
+  @override
+  String get badgeEditorArtworkRequired => 'Mỗi huy hiệu đều cần một hình ảnh.';
+
+  @override
+  String get badgeEditorArtworkRemove => 'Gỡ hình ảnh';
+
+  @override
+  String get badgeEditorArtworkSheetTitle => 'Hình ảnh huy hiệu';
+
+  @override
+  String get badgeDetailDeleteAction => 'Xoá huy hiệu';
+
+  @override
+  String get badgeDetailDeleteTitle => 'Xoá huy hiệu này?';
+
+  @override
+  String get badgeDetailDeleteBody =>
+      'Thao tác này yêu cầu các relay bỏ huy hiệu và mọi lần trao mà bạn đã thực hiện. Relay có thể từ chối, và ai đã ghim nó vẫn giữ trên hồ sơ cho đến khi tự gỡ.';
+
+  @override
+  String get badgeDetailDeleteConfirm => 'Xoá';
+
+  @override
+  String get badgeEditorSaveAction => 'Đăng huy hiệu';
+
+  @override
+  String get badgeEditorSaveError => 'Không đăng được huy hiệu';
+
+  @override
+  String get badgeEditorLoadError => 'Không tải được huy hiệu này';
+
+  @override
+  String get badgeDetailTitle => 'Huy hiệu';
+
+  @override
+  String get badgeDetailMadeBy => 'Người tạo';
+
+  @override
+  String get badgeDetailRecipientsTitle => 'Đã trao cho';
+
+  @override
+  String get badgeDetailNoRecipients => 'Chưa ai có huy hiệu này.';
+
+  @override
+  String get badgeDetailAwardAction => 'Trao huy hiệu này';
+
+  @override
+  String get badgeDetailEditAction => 'Sửa huy hiệu';
+
+  @override
+  String get badgeDetailShareAction => 'Chia sẻ';
+
+  @override
+  String badgeDetailShareMessage(String link) {
+    return 'Xem huy hiệu này trên Divine: $link';
+  }
+
+  @override
+  String get badgeDetailLoadError => 'Không tải được huy hiệu này';
+
+  @override
+  String get badgeDetailMissing =>
+      'Chúng tôi không tìm thấy huy hiệu này trên relay nào.';
+
+  @override
+  String get badgeDetailActionError => 'Thao tác không thành công';
+
+  @override
+  String get badgeAwardTitle => 'Trao huy hiệu';
+
+  @override
+  String get badgeAwardPickAction => 'Chọn người';
+
+  @override
+  String get badgeAwardManualLabel => 'Hoặc dán khoá';
+
+  @override
+  String get badgeAwardManualHint => 'npub1…, npub1…';
+
+  @override
+  String get badgeAwardEmptyHint => 'Chọn ít nhất một người.';
+
+  @override
+  String badgeAwardSubmitAction(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Trao cho $count người',
+      one: 'Trao cho 1 người',
+      zero: 'Trao huy hiệu',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get profileBadgeAwardedBy => 'Trao bởi';
@@ -9980,8 +10155,7 @@ class AppLocalizationsVi extends AppLocalizations {
       'Huy hiệu là những phần thưởng nhỏ mà bất kỳ ai cũng có thể tạo trên Nostr. Tặng một huy hiệu cho bạn bè, nhà sáng tạo, hoặc người đã làm bừng sáng ngày của bạn.';
 
   @override
-  String get profileBadgeFooterLink =>
-      'Tạo huy hiệu của riêng bạn tại badges.divine.video';
+  String get profileBadgeFooterLink => 'Tạo huy hiệu của riêng bạn';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Hướng dẫn gia đình';

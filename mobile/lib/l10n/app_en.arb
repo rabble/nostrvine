@@ -6070,12 +6070,8 @@
   "settingsBadgesTitle": "Badges",
   "settingsBadgesSubtitle": "Accept awards and check issued badge status.",
   "badgesTitle": "Badges",
-  "badgesIntroTitle": "Understand your badge trail",
-  "badgesIntroBody": "See badge awards sent to you, choose what to pin to your Nostr profile, and check whether people accepted badges you issued.",
-  "badgesOpenApp": "Open badges app",
   "badgesLoadError": "Could not load badges",
   "badgesUpdateError": "Could not update badge",
-  "badgesAwardedSectionTitle": "Awarded to you",
   "badgesAwardedEmptyTitle": "No badge awards yet",
   "badgesAwardedEmptySubtitle": "When someone awards you a Nostr badge, it will land here.",
   "badgesStatusAccepted": "Accepted",
@@ -6083,12 +6079,95 @@
   "badgesActionRemove": "Remove",
   "badgesActionAccept": "Accept",
   "badgesActionReject": "Reject",
-  "badgesIssuedSectionTitle": "Issued by you",
   "badgesIssuedEmptyTitle": "No issued badges yet",
   "badgesIssuedEmptySubtitle": "Badges you issue will show acceptance status here.",
   "badgesIssuedNoRecipients": "No recipients found for this award.",
   "badgesRecipientAcceptedStatus": "Accepted by recipient",
   "badgesRecipientWaitingStatus": "Waiting for recipient",
+  "badgesHiddenSectionTitle": "{count, plural, =1{Hidden (1)} other{Hidden ({count})}}",
+  "@badgesHiddenSectionTitle": {
+    "description": "Header of the collapsible section listing badge awards the user dismissed.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "badgesActionRestore": "Restore",
+  "badgesHiddenSnackbar": "Badge hidden",
+  "badgesHiddenSnackbarUndo": "Undo",
+  "badgesTabAwarded": "Awarded",
+  "badgesTabCreated": "Created",
+  "badgesTabIssued": "Issued",
+  "badgesCreateAction": "New badge",
+  "badgesCreatedEmptyTitle": "No badges made yet",
+  "badgesCreatedEmptySubtitle": "Make one and hand it to someone who earned it.",
+  "badgesCreatedAwardSummary": "{count, plural, =0{Not awarded yet} =1{Awarded to 1 person} other{Awarded to {count} people}}",
+  "@badgesCreatedAwardSummary": {
+    "description": "Summary line under a badge the user created, counting the distinct people who received it.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "badgeEditorCreateTitle": "New badge",
+  "badgeEditorEditTitle": "Edit badge",
+  "badgeEditorNameLabel": "Name",
+  "badgeEditorNameHint": "Scene Stealer",
+  "badgeEditorIdentifierLabel": "Identifier",
+  "badgeEditorIdentifierHelp": "Part of the badge's address, so it stays put once the badge exists.",
+  "badgeEditorIdentifierTaken": "You already have a badge with this identifier. Edit that one instead — publishing here would replace it.",
+  "badgeEditorIdentifierRequired": "Every badge needs an identifier — type one if the name did not fill it in.",
+  "badgeEditorDescriptionLabel": "Description",
+  "badgeEditorDescriptionHint": "For the one who steals the scroll with a single loop.",
+  "badgeEditorArtworkLabel": "Artwork",
+  "badgeEditorArtworkAdd": "Add artwork",
+  "badgeEditorArtworkReplace": "Replace",
+  "badgeEditorArtworkError": "Could not upload that image",
+  "badgeEditorArtworkRequired": "Every badge needs artwork.",
+  "badgeEditorArtworkRemove": "Remove artwork",
+  "badgeEditorArtworkSheetTitle": "Badge artwork",
+  "badgeDetailDeleteAction": "Delete badge",
+  "badgeDetailDeleteTitle": "Delete this badge?",
+  "badgeDetailDeleteBody": "This asks relays to drop the badge and every award you handed out for it. Relays can refuse, and anyone who pinned it keeps it on their profile until they remove it.",
+  "badgeDetailDeleteConfirm": "Delete",
+  "badgeEditorSaveAction": "Publish badge",
+  "badgeEditorSaveError": "Could not publish the badge",
+  "badgeEditorLoadError": "Could not load this badge",
+  "badgeDetailTitle": "Badge",
+  "badgeDetailMadeBy": "Made by",
+  "badgeDetailRecipientsTitle": "Awarded to",
+  "badgeDetailNoRecipients": "Nobody has this one yet.",
+  "badgeDetailAwardAction": "Award this badge",
+  "badgeDetailEditAction": "Edit badge",
+  "badgeDetailShareAction": "Share",
+  "badgeDetailShareMessage": "Check out this badge on Divine: {link}",
+  "@badgeDetailShareMessage": {
+    "description": "Body of the share sheet when sharing a badge. The link is an naddr reference.",
+    "placeholders": {
+      "link": {
+        "type": "String"
+      }
+    }
+  },
+  "badgeDetailLoadError": "Could not load this badge",
+  "badgeDetailMissing": "We could not find this badge on any relay.",
+  "badgeDetailActionError": "That did not go through",
+  "badgeAwardTitle": "Award badge",
+  "badgeAwardPickAction": "Pick people",
+  "badgeAwardManualLabel": "Or paste keys",
+  "badgeAwardManualHint": "npub1…, npub1…",
+  "badgeAwardEmptyHint": "Pick at least one person.",
+  "badgeAwardSubmitAction": "{count, plural, =0{Award badge} =1{Award to 1 person} other{Award to {count} people}}",
+  "@badgeAwardSubmitAction": {
+    "description": "Confirm button on the award badge screen, counting the selected recipients.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "profileBadgeAwardedBy": "Awarded by",
   "profileBadgeRecipients": "Recipients",
   "profileBadgeMoreRecipients": "+{count} more",
@@ -6114,9 +6193,9 @@
   "@profileBadgeFooterBody": {
     "description": "Short explainer at the bottom of the profile badge detail sheet, inviting people to create their own badges."
   },
-  "profileBadgeFooterLink": "Make your own at badges.divine.video",
+  "profileBadgeFooterLink": "Make your own badge",
   "@profileBadgeFooterLink": {
-    "description": "Link label in the profile badge detail sheet that opens the Divine Badges app (badges.divine.video)."
+    "description": "Button label in the profile badge detail sheet that opens the in-app badge editor."
   },
   "minorAccountReviewWelcomePageTitle": "Family guide",
   "minorAccountReviewWelcomeCta": "Not 16 yet? That's OK. Here's what you can do.",

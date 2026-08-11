@@ -1,12 +1,16 @@
 // ABOUTME: Settings-cluster routes (settings, apps-adjacent settings, diagnostics, dev)
 // ABOUTME: Split from app_router.dart (#4508)
 
+import 'package:badge_repository/badge_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/badges/badge_award_screen.dart';
+import 'package:openvine/screens/badges/badge_detail_screen.dart';
+import 'package:openvine/screens/badges/badge_editor_screen.dart';
 import 'package:openvine/screens/badges/badges_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
@@ -45,6 +49,35 @@ List<RouteBase> settingsRoutes(Ref ref) {
       path: BadgesScreen.path,
       name: BadgesScreen.routeName,
       builder: (_, _) => const BadgesScreen(),
+    ),
+    GoRoute(
+      path: BadgeEditorScreen.createPath,
+      name: BadgeEditorScreen.createRouteName,
+      builder: (_, _) => const BadgeEditorScreen(),
+    ),
+    GoRoute(
+      path: BadgeDetailScreen.path,
+      name: BadgeDetailScreen.routeName,
+      builder: (_, state) => _badgeRouteScreen(
+        state,
+        (coordinate) => BadgeDetailScreen(coordinate: coordinate),
+      ),
+    ),
+    GoRoute(
+      path: BadgeEditorScreen.editPath,
+      name: BadgeEditorScreen.editRouteName,
+      builder: (_, state) => _badgeRouteScreen(
+        state,
+        (coordinate) => BadgeEditorScreen(coordinate: coordinate),
+      ),
+    ),
+    GoRoute(
+      path: BadgeAwardScreen.path,
+      name: BadgeAwardScreen.routeName,
+      builder: (_, state) => _badgeRouteScreen(
+        state,
+        (coordinate) => BadgeAwardScreen(coordinate: coordinate),
+      ),
     ),
     GoRoute(
       path: InvitesScreen.path,
@@ -189,6 +222,22 @@ List<RouteBase> settingsRoutes(Ref ref) {
       ),
     ),
   ];
+}
+
+/// Builds a badge route's screen from its `naddr` path parameter.
+///
+/// A reference that does not decode to a badge definition coordinate — a
+/// truncated share link, or an `naddr` for another kind — falls back to the
+/// badge dashboard rather than rendering an empty screen.
+Widget _badgeRouteScreen(
+  GoRouterState state,
+  Widget Function(BadgeCoordinate coordinate) builder,
+) {
+  final coordinate = BadgeCoordinate.tryParse(
+    state.pathParameters['naddr'] ?? '',
+  );
+  if (coordinate == null) return const BadgesScreen();
+  return builder(coordinate);
 }
 
 String? monetizationLinksRedirectIfDisabled(Ref ref) {
