@@ -19,6 +19,7 @@ class DivineSearchBar extends StatelessWidget {
     this.suffixIcon,
     this.onChanged,
     this.onSubmitted,
+    this.semanticIdentifier,
   });
 
   /// Controls the text being edited.
@@ -48,6 +49,12 @@ class DivineSearchBar extends StatelessWidget {
   /// Called when the user submits the text.
   final ValueChanged<String>? onSubmitted;
 
+  /// Optional `Semantics(identifier:)` anchor for UI tests.
+  ///
+  /// The field's own text and hint stay unchanged; this only adds a stable
+  /// handle so tests do not have to match translated placeholder copy.
+  final String? semanticIdentifier;
+
   void _handleSubmitted(BuildContext context, String value) {
     // Search should behave like a committed action: forward the query first,
     // then dismiss the keyboard so results remain visible.
@@ -58,7 +65,8 @@ class DivineSearchBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.vineColors;
-    return ConstrainedBox(
+    final identifier = semanticIdentifier;
+    final field = ConstrainedBox(
       constraints: const BoxConstraints(minHeight: 48),
       child: Material(
         color: Colors.transparent,
@@ -96,6 +104,9 @@ class DivineSearchBar extends StatelessWidget {
         ),
       ),
     );
+
+    if (identifier == null) return field;
+    return Semantics(identifier: identifier, child: field);
   }
 }
 

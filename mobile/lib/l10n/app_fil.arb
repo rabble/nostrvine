@@ -2829,8 +2829,6 @@
     "commentsInputHintEdit": "Edit comment...",
     "commentsEmptyTitle": "No comments yet",
     "commentsEmptySubtitle": "Get the party started!",
-    "commentsHeaderTitle": "Comments",
-    "commentsHeaderCloseLabel": "Close comments",
     "reportReasonCsam": "Sekswal na Pang-aabuso sa Bata",
     "reportReasonCsamSubtitle": "Content na naglalarawan ng sekswal na pang-aabuso sa mga menor de edad",
     "minorAccountReviewUnder13EmailSubject": "Under-13 account review for case {caseId}",

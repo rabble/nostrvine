@@ -5,13 +5,21 @@ import 'package:openvine/screens/search_results/widgets/section_header.dart';
 
 void main() {
   group(SectionHeader, () {
-    Widget buildSubject({required String title, VoidCallback? onTap}) {
+    Widget buildSubject({
+      required String title,
+      VoidCallback? onTap,
+      String? semanticIdentifier,
+    }) {
       return MaterialApp(
         home: Scaffold(
           body: CustomScrollView(
             slivers: [
               SliverToBoxAdapter(
-                child: SectionHeader(title: title, onTap: onTap),
+                child: SectionHeader(
+                  title: title,
+                  onTap: onTap,
+                  semanticIdentifier: semanticIdentifier,
+                ),
               ),
             ],
           ),
@@ -23,6 +31,29 @@ void main() {
       await tester.pumpWidget(buildSubject(title: 'People'));
 
       expect(find.text('People'), findsOneWidget);
+    });
+
+    testWidgets('exposes semanticIdentifier when supplied', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          title: 'People',
+          semanticIdentifier: 'search_section_header_people',
+        ),
+      );
+
+      expect(
+        find.bySemanticsIdentifier('search_section_header_people'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('carries no identifier by default', (tester) async {
+      await tester.pumpWidget(buildSubject(title: 'People'));
+
+      expect(
+        find.bySemanticsIdentifier('search_section_header_people'),
+        findsNothing,
+      );
     });
 
     testWidgets('renders hairline borders above and below', (tester) async {

@@ -8402,12 +8402,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get commentsEmptySubtitle => 'Mulakan parti!';
 
   @override
-  String get commentsHeaderTitle => 'Komen';
-
-  @override
-  String get commentsHeaderCloseLabel => 'Tutup komen';
-
-  @override
   String get draftUntitled => 'Tanpa tajuk';
 
   @override

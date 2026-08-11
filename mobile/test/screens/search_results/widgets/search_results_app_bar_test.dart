@@ -9,6 +9,7 @@ import 'package:openvine/blocs/list_search/list_search_bloc.dart';
 import 'package:openvine/blocs/search_results_filter/search_results_filter.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/screens/explore/explore_screen.dart';
 import 'package:openvine/screens/search_results/widgets/search_filter_pill.dart';
 import 'package:openvine/screens/search_results/widgets/search_results_app_bar.dart';
@@ -106,6 +107,22 @@ void main() {
       await tester.pump();
 
       expect(find.text('test'), findsOneWidget);
+    });
+
+    testWidgets('anchors the field and the back button for UI tests', (
+      tester,
+    ) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pump();
+
+      expect(
+        find.bySemanticsIdentifier(SemanticIds.searchField),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsIdentifier(SemanticIds.searchBackButton),
+        findsOneWidget,
+      );
     });
 
     testWidgets(

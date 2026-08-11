@@ -9,16 +9,16 @@ They are not a replacement for unit or widget tests.
 ## What the smoke suite covers today
 
 `suites/smoke.yaml` runs the account-management paths — `loginFreshInstall`,
-its `removeKeys` cleanup, and `loginEmailPwd` — plus `likeFlow`. Two social
-flows are still held back:
+its `removeKeys` cleanup, and `loginEmailPwd` — plus all three social flows:
+`likeFlow`, `commentFlow` (post a comment, delete it) and `searchUserFlow`
+(find an account, open its profile, come back).
 
-| Flow | Why it is out | Tracking |
-|---|---|---|
-| `commentFlow` | `env`-vs-`output` bug and a disabled cleanup step | [#6952](https://github.com/divinevideo/divine-mobile/issues/6952) |
-| `searchUserFlow` | needs a rewrite for the current search layout | [#6952](https://github.com/divinevideo/divine-mobile/issues/6952) |
-
-Restore each flow in the PR that fixes it, and put back the credentials it
-needs (`SEARCH_USER` for `searchUserFlow`) in the same change.
+Nothing is held back any more. The last two were restored by
+[#6952](https://github.com/divinevideo/divine-mobile/issues/6952) —
+`commentFlow` had an `env`-vs-`output` bug and a disabled cleanup step, and
+`searchUserFlow` needed a rewrite for the current search layout. Their
+credentials (`SEARCH_USER` for `searchUserFlow`) must be present on the
+runners.
 
 ### `likeFlow` was an app bug, not test data
 
@@ -285,7 +285,7 @@ Codemagic group.
 | Variable | Used by |
 |---|---|
 | `USER_EMAIL`, `USER_PWD` | `flows/loginEmailPwd.yaml` |
-| `SEARCH_USER` | `flows/searchUserFlow.yaml` — `fullRegression` only |
+| `SEARCH_USER` | `flows/searchUserFlow.yaml` — an account that ranks in People results for its own name |
 | `USER_KEYS`, `SEARCH_USER_ID`, `VIDEO_USER`, `VIDEO_DESCRIPTION`, `VIDEO_DATA`, `EXISTING_USERNAME` | `suites/fullRegression.yaml` |
 
 Every entry point guards its own variables with `assertTrue`. A missing `-e`
@@ -297,11 +297,11 @@ that guard the suite would run against garbage and fail somewhere unrelated.
 ```bash
 # The smoke suite, as CI runs it
 maestro test \
-  -e USER_EMAIL=... -e USER_PWD=... \
+  -e USER_EMAIL=... -e USER_PWD=... -e SEARCH_USER=... \
   e2e/maestro/suites/smoke.yaml
 
 # Or via the iOS helper, which boots a simulator and installs for you
-MAESTRO_USER_EMAIL=... MAESTRO_USER_PWD=... \
+MAESTRO_USER_EMAIL=... MAESTRO_USER_PWD=... MAESTRO_SEARCH_USER=... \
   bash e2e/maestro/scripts/ui_smoke_ios.sh
 ```
 
@@ -352,7 +352,7 @@ from. Identifiers are snake_case and defined in
 If the element you need has no identifier, add one — that is a smaller change
 than the assertion you would otherwise write, and it survives translation.
 
-Three traps worth knowing:
+Four traps worth knowing:
 
 - **Opacity 0 is invisible to Maestro, `IgnorePointer` is not.**
   `RenderOpacity`/`RenderAnimatedOpacity` drop their child from the semantics
@@ -367,6 +367,12 @@ Three traps worth knowing:
   which varies with feature flags and with whose profile you are on.
 - **`env` is read-only inside `evalScript`.** Write to `output.*` and read it
   back as `${output.NAME}`; `${NAME}` still resolves to the `env` default.
+  An empty default is worse than a wrong one: an empty pattern matches an
+  empty-text node, so the assertion passes and proves nothing.
+- **Matching is whole-label, case-insensitive, and `.` crosses newlines.**
+  A row that merges several `Text`s exposes one label
+  (`"Now\n • \nYou\nGreat vine"`), so `assertVisible: Great vine` fails
+  where `text: ".*Great vine"` passes. Measured on Maestro 2.1.0.
 
 ---
 
@@ -387,6 +393,12 @@ Accounts and likes are self-owned: each run creates its own account and
 
 Treat an unexplained failure as possibly-data *after* ruling out a stuck
 screen, not before — and check the screenshot either way.
+
+`commentFlow` deletes the comment it posts, but that only cleans the
+poster's view: measured on 2026-08-10, the app publishes a valid kind 5,
+the STAGING relay stores it, and the relay keeps serving the deleted
+kind 1111 to everyone else. Each run therefore still leaves a visible
+comment on whichever video is first in the New grid.
 
 `tests/removeKeys.yaml` is the teardown of every smoke flow and is what makes
 runs repeatable: the Nostr key lives in the iOS keychain and survives both

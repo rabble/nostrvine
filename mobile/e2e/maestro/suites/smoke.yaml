@@ -1,21 +1,18 @@
 appId: co.openvine.app
 name: Divine Smoke regression test
 ---
-# Only the flows that pass end to end today. The rest are held back so a
-# dispatched run proves the harness works instead of re-reporting breakage
-# we already track:
+# Every social flow is back in, so a dispatched run exercises the whole
+# suite rather than re-reporting breakage we already track.
 #
-#   commentFlow     env-vs-output bug plus a disabled cleanup step (#6952)
-#   searchUserFlow  needs a rewrite for the current search layout (#6952)
+#   likeFlow        restored by #6949: `videoUnlike` was never failing on
+#                   test data, it was failing on two fullscreen-feed bugs
+#                   that both surfaced as a permanent loading placeholder
+#   commentFlow     restored by #6952: env-vs-output bug plus a disabled
+#                   cleanup step
+#   searchUserFlow  restored by #6952: rewritten for the current search
+#                   layout
 #
-# Put each one back in the PR that fixes it, and restore the credentials it
-# needs to the runners at the same time.
-#
-# likeFlow is back in as of #6949: its `videoUnlike` step was not failing on
-# test data at all, it was failing on two app bugs in the fullscreen feed
-# that both surfaced as a permanent loading placeholder. Every account it
-# touches is created by the run itself, so the like it publishes and the
-# "exactly one liked video" precondition do not depend on shared state.
+# Each one needs its credentials present on the runners.
 
 # Account management tests
 - runFlow: ../tests/loginFreshInstall.yaml
@@ -24,3 +21,5 @@ name: Divine Smoke regression test
 
 # Social tests
 - runFlow: ../flows/likeFlow.yaml
+- runFlow: ../flows/commentFlow.yaml
+- runFlow: ../flows/searchUserFlow.yaml

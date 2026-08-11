@@ -8354,12 +8354,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get commentsEmptySubtitle => 'پارٹی شروع کریں!';
 
   @override
-  String get commentsHeaderTitle => 'تبصرے';
-
-  @override
-  String get commentsHeaderCloseLabel => 'تبصرے بند کریں';
-
-  @override
   String get draftUntitled => 'بلا عنوان';
 
   @override
