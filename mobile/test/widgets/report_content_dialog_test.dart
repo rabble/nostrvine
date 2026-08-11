@@ -14,6 +14,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/event.dart' as nostr;
+import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/l10n/content_filter_reason_localizations.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -837,6 +838,40 @@ void main() {
           additionalTags: any(named: 'additionalTags'),
         ),
       ).called(1);
+    });
+
+    testWidgets('caps and reports a truncated paste in details', (
+      tester,
+    ) async {
+      // The details field feeds the same main-isolate sanitizer as the other
+      // two support forms, so it carries the same cap - and the same duty to
+      // say when the cap dropped part of a paste.
+      await setLargeSurface(tester);
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Open Report'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.reportReasonOther));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.supportFieldLimitReached), findsNothing);
+
+      await tester.enterText(
+        find.byType(TextField),
+        'a' * (BugReportConfig.maxFreeTextFieldLength + 500),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widget<TextField>(find.byType(TextField))
+            .controller!
+            .text
+            .length,
+        BugReportConfig.maxFreeTextFieldLength,
+      );
+      expect(find.text(l10n.supportFieldLimitReached), findsOneWidget);
     });
 
     testWidgets('DM content redacts a credential typed into details', (

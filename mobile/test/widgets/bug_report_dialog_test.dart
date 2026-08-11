@@ -141,6 +141,25 @@ void main() {
       }
     });
 
+    testWidgets('says so when a paste hit the cap', (tester) async {
+      // The formatter drops the tail of a long paste, and that tail can be the
+      // exception the user meant to report - attachments are images only and
+      // the log summary carries in-app logs, not the pasted text. Silence
+      // would look like acceptance.
+      await openFlow(tester);
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.supportFieldLimitReached), findsNothing);
+
+      await tester.enterText(
+        find.byType(DivineTextField).at(1),
+        'a' * (BugReportConfig.maxFreeTextFieldLength + 500),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.supportFieldLimitReached), findsOneWidget);
+    });
+
     BugReportData testReportData() {
       return BugReportData(
         reportId: 'test-123',

@@ -271,9 +271,12 @@ class ContentReportingService {
         eventId: eventId,
         authorPubkey: authorPubkey,
         reason: reason,
-        details: details,
+        // The redacted copy, not the raw one. Nothing reads this history
+        // today, so keeping the raw text buys nothing and leaves a secret
+        // sitting in storage for whoever surfaces, exports or replays it.
+        details: safeDetails,
         createdAt: DateTime.now(),
-        additionalContext: additionalContext,
+        additionalContext: safeAdditionalContext,
         tags: hashtags,
       );
 

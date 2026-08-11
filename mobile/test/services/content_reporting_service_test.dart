@@ -597,10 +597,14 @@ void main() {
       expect(capturedContent, isNot(contains('hunter2')));
       expect(capturedContent, isNot(contains('abc123')));
       expect(capturedContent, isNot(contains('SECRETKEY123')));
-      expect(
-        capturedTags!.expand((tag) => tag).join(' '),
-        isNot(contains('SECRETKEY123')),
-      );
+      // Redacting is not the same as deleting. Without these, dropping the
+      // reporter's context entirely would satisfy the assertions above and
+      // moderation would silently lose what the report was about.
+      expect(capturedContent, contains('they posted my'));
+      expect(capturedContent, contains('also my'));
+      final altTag = capturedTags!.firstWhere((tag) => tag.first == 'alt');
+      expect(altTag.last, contains('also my'));
+      expect(altTag.last, contains('[REDACTED]'));
     });
 
     test(
