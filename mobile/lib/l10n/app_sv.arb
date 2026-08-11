@@ -3355,6 +3355,7 @@
     "navSearch": "Sök",
     "navSearchTooltip": "Sök",
     "fullscreenFeedRemovedMessage": "Video borttagen",
+    "fullscreenFeedEmptyMessage": "Det finns inget mer att spela upp här",
     "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
     "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
     "invitesGenerateButtonLabel": "Generate invite",
@@ -4235,8 +4236,6 @@
     "commentsInputHintEdit": "Edit comment...",
     "commentsEmptyTitle": "No comments yet",
     "commentsEmptySubtitle": "Get the party started!",
-    "commentsHeaderTitle": "Comments",
-    "commentsHeaderCloseLabel": "Close comments",
     "reportReasonCsam": "Sexuella övergrepp mot barn",
     "reportReasonCsamSubtitle": "Innehåll som skildrar sexuella övergrepp mot minderåriga",
     "minorAccountReviewWelcomePageTitle": "Family guide",
@@ -5028,5 +5027,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "Tillämpa ändringar i {tool}",
   "videoEditorRemoveAudioSemanticLabel": "Ta bort ljud",
   "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}",
+  "inboxFilterBlocked": "Blockerade",
+  "inboxBlockedEmptyTitle": "Inga blockerade chattar",
+  "inboxBlockedEmptySubtitle": "Konton du blockerar visas här.",
+  "inboxBlockedNoMessages": "Inga meddelanden",
+  "dmBlockedThreadTitle": "Du blockerade det här kontot",
+  "dmBlockedThreadBody": "Meddelandena stannar kvar så att du kan läsa dem eller ta en skärmbild. Häv blockeringen för att svara."
 }

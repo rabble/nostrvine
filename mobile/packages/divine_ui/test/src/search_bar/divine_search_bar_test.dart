@@ -14,6 +14,7 @@ void main() {
       Widget? suffixIcon,
       ValueChanged<String>? onChanged,
       ValueChanged<String>? onSubmitted,
+      String? semanticIdentifier,
     }) {
       return MaterialApp(
         theme: VineTheme.theme,
@@ -28,6 +29,7 @@ void main() {
             suffixIcon: suffixIcon,
             onChanged: onChanged,
             onSubmitted: onSubmitted,
+            semanticIdentifier: semanticIdentifier,
           ),
         ),
       );
@@ -37,6 +39,25 @@ void main() {
       await tester.pumpWidget(buildTestWidget());
 
       expect(find.text('Find something cool...'), findsOneWidget);
+    });
+
+    testWidgets('exposes semanticIdentifier without hiding the hint', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildTestWidget(hintText: 'Search...', semanticIdentifier: 'search_x'),
+      );
+
+      expect(find.bySemanticsIdentifier('search_x'), findsOneWidget);
+      expect(find.text('Search...'), findsOneWidget);
+    });
+
+    testWidgets('adds no semantics node when semanticIdentifier is null', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildTestWidget());
+
+      expect(find.bySemanticsIdentifier('search_x'), findsNothing);
     });
 
     testWidgets('renders with custom hint text', (tester) async {

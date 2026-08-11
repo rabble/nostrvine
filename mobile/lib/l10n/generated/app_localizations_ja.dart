@@ -5606,6 +5606,25 @@ class AppLocalizationsJa extends AppLocalizations {
   String get inboxFilterUnread => '未読';
 
   @override
+  String get dmBlockedThreadTitle => 'このアカウントをブロックしました';
+
+  @override
+  String get dmBlockedThreadBody =>
+      'メッセージはここに残るので、読んだりスクリーンショットを撮ったりできます。返信するにはブロックを解除してください。';
+
+  @override
+  String get inboxFilterBlocked => 'ブロック済み';
+
+  @override
+  String get inboxBlockedEmptyTitle => 'ブロックしたチャットはありません';
+
+  @override
+  String get inboxBlockedEmptySubtitle => 'ブロックしたアカウントがここに表示されます。';
+
+  @override
+  String get inboxBlockedNoMessages => 'メッセージなし';
+
+  @override
   String get inboxUnreadEmptyTitle => 'すべて既読です';
 
   @override
@@ -7976,12 +7995,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get commentsEmptySubtitle => 'Get the party started!';
 
   @override
-  String get commentsHeaderTitle => 'Comments';
-
-  @override
-  String get commentsHeaderCloseLabel => 'Close comments';
-
-  @override
   String get draftUntitled => '無題';
 
   @override
@@ -9455,6 +9468,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get fullscreenFeedRemovedMessage => '動画を削除しました';
+
+  @override
+  String get fullscreenFeedEmptyMessage => 'ここに再生できる動画はもうありません';
 
   @override
   String get settingsBadgesTitle => 'バッジ';

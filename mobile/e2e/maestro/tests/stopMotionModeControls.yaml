@@ -1,0 +1,104 @@
+appId: co.openvine.app
+tags:
+  - recorder
+---
+#TC to drive the stop-motion control rail,
+# given the recorder is open on an idle stop-motion viewfinder with no stills,
+# validate each control actually changes recorder state, and leave every one
+# of them back on its default.
+#
+# Three of the five controls here — aspect ratio, lens and flash — are the
+# unconditional ones every rail renders, so they are the same per-control utils
+# driveCaptureRail sequences, in the same order. What is local to this file is
+# the pair capture mode does not render: the ghost-frame and grid toggles.
+#
+# Those two carry a Semantics `toggled` flag rather than a `value`, which
+# Flutter maps to the accessibility node's checked state, so they are driven
+# with `checked:` rather than `text:`. That selector is new to this suite — if
+# it turns out not to resolve, the fallback is the ghost toggle's confirmation
+# snackbar, which is copy and only works on an English UI.
+#
+# Preconditions beyond an open viewfinder:
+# - **Real camera hardware**, for the lens switch. See
+#   stopMotionModeCaptureFrame.
+# - **A grid that starts on.** The grid preference persists
+#   (`camera_grid_lines_enabled`) and defaults to on for grid-supporting modes,
+#   so step 2 reads it as on. Run from the top this is safe —
+#   loginFreshInstall's clearState wipes the key.
+# - **An empty session.** The rail itself does not need one, unlike capture
+#   mode's: the aspect-ratio control is disabled by clips, and stop-motion
+#   stills do not become a clip until the assemble on "next". The mode assert
+#   this closes on does, though — it pins next and undo absent — so the flow
+#   still runs this before the shutter tests.
+#Steps:
+# 1. Ghost frame: off -> on -> off
+# 2. Grid: on -> off -> on
+# 3. Aspect ratio: Vertical -> Square -> Vertical
+# 4. Camera: Back -> Front -> Back
+# 5. Flash (if present): Off -> On -> Auto -> Off
+
+# 1. Ghost frame (onion-skin). Not persisted, so it always starts off.
+- assertVisible:
+    id: camera_ghost_frame_button
+    checked: false
+- tapOn:
+    id: camera_ghost_frame_button
+- extendedWaitUntil:
+    visible:
+      id: camera_ghost_frame_button
+      checked: true
+    timeout: 10000
+# Restore. Leaving it on is not just untidy: the overlay draws the previous
+# still over the live preview, which makes a failure screenshot from any later
+# test much harder to read.
+- tapOn:
+    id: camera_ghost_frame_button
+- extendedWaitUntil:
+    visible:
+      id: camera_ghost_frame_button
+      checked: false
+    timeout: 10000
+
+# 2. Grid overlay.
+- assertVisible:
+    id: camera_grid_button
+    checked: true
+- tapOn:
+    id: camera_grid_button
+- extendedWaitUntil:
+    visible:
+      id: camera_grid_button
+      checked: false
+    timeout: 10000
+- tapOn:
+    id: camera_grid_button
+- extendedWaitUntil:
+    visible:
+      id: camera_grid_button
+      checked: true
+    timeout: 10000
+
+# 3. Aspect ratio flips between two states.
+- runFlow: ../utils/driveAspectRatioControl.yaml
+
+# 4. Lens switch.
+- runFlow: ../utils/driveLensControl.yaml
+
+# 5. Flash, if the active lens has a unit.
+- runFlow: ../utils/driveFlashControl.yaml
+
+# The ghost-frame toggle raises a 4-second confirmation snackbar per tap, and
+# it floats over the bottom of the screen — the record and undo buttons
+# included. Steps 2-5 usually outlast it, but not reliably: with flash skipped
+# and a quick lens rebind they can come in under four seconds, and then the
+# banner is still up when the next test taps the shutter.
+#
+# `waitForAnimationToEnd` runs its timeout out rather than returning early: it
+# waits for the screen to stop changing and the live camera preview never
+# does, which makes it the deterministic wait this needs.
+- waitForAnimationToEnd:
+    timeout: 4500
+
+# Everything back to default, so the tests after this one start where they
+# expect to.
+- runFlow: ../asserts/assertStopMotionMode.yaml

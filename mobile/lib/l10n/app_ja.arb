@@ -3348,6 +3348,7 @@
     "videoEditorAudioSegmentInstruction": "動画に使うオーディオ範囲を選択",
     "videoEditorClipGalleryInstruction": "タップして編集。長押ししてドラッグで並べ替え。",
     "fullscreenFeedRemovedMessage": "動画を削除しました",
+    "fullscreenFeedEmptyMessage": "ここに再生できる動画はもうありません",
     "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
     "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
     "invitesGenerateButtonLabel": "Generate invite",
@@ -4235,8 +4236,6 @@
     "commentsInputHintEdit": "Edit comment...",
     "commentsEmptyTitle": "No comments yet",
     "commentsEmptySubtitle": "Get the party started!",
-    "commentsHeaderTitle": "Comments",
-    "commentsHeaderCloseLabel": "Close comments",
     "reportReasonCsam": "児童性的虐待",
     "reportReasonCsamSubtitle": "未成年者への性的虐待を描写したコンテンツ",
     "minorAccountReviewWelcomePageTitle": "Family guide",
@@ -5028,5 +5027,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "{tool}での変更を適用",
   "videoEditorRemoveAudioSemanticLabel": "音声を削除",
   "rgbColorSemanticLabel": "RGB {red}、{green}、{blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}、{color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}、{color}",
+  "inboxFilterBlocked": "ブロック済み",
+  "inboxBlockedEmptyTitle": "ブロックしたチャットはありません",
+  "inboxBlockedEmptySubtitle": "ブロックしたアカウントがここに表示されます。",
+  "inboxBlockedNoMessages": "メッセージなし",
+  "dmBlockedThreadTitle": "このアカウントをブロックしました",
+  "dmBlockedThreadBody": "メッセージはここに残るので、読んだりスクリーンショットを撮ったりできます。返信するにはブロックを解除してください。"
 }

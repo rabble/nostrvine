@@ -5922,6 +5922,26 @@ class AppLocalizationsEs extends AppLocalizations {
   String get inboxFilterUnread => 'No leídos';
 
   @override
+  String get dmBlockedThreadTitle => 'Bloqueaste esta cuenta';
+
+  @override
+  String get dmBlockedThreadBody =>
+      'Los mensajes se quedan aquí para que puedas leerlos o capturarlos. Desbloquea para responder.';
+
+  @override
+  String get inboxFilterBlocked => 'Bloqueados';
+
+  @override
+  String get inboxBlockedEmptyTitle => 'No hay chats bloqueados';
+
+  @override
+  String get inboxBlockedEmptySubtitle =>
+      'Las cuentas que bloquees aparecerán aquí.';
+
+  @override
+  String get inboxBlockedNoMessages => 'Sin mensajes';
+
+  @override
   String get inboxUnreadEmptyTitle => 'Estás al día';
 
   @override
@@ -8406,12 +8426,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get commentsEmptySubtitle => 'Get the party started!';
 
   @override
-  String get commentsHeaderTitle => 'Comments';
-
-  @override
-  String get commentsHeaderCloseLabel => 'Close comments';
-
-  @override
   String get draftUntitled => 'Sin título';
 
   @override
@@ -9983,6 +9997,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get fullscreenFeedRemovedMessage => 'Video eliminado';
+
+  @override
+  String get fullscreenFeedEmptyMessage =>
+      'Aquí ya no queda nada que reproducir';
 
   @override
   String get settingsBadgesTitle => 'Insignias';

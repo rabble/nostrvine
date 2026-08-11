@@ -165,7 +165,16 @@ class RiverpodFeedRepository implements FeedRepository {
     return _bridges.putIfAbsent(feed, () {
       final bridge = _GlobalFeedBridge();
       void onState(AsyncValue<VideoFeedState> next) {
-        final feedState = next.asData?.value;
+        // `value`, not `asData?.value`: a dependency-driven reload emits
+        // AsyncLoading *carrying the previous value*, for which `asData` is
+        // null. The tabs keep rendering tappable tiles through that window
+        // (`hasValue && value != null` — see NewVideosTab.build), so dropping
+        // it here left the bridge with no value at all. A tap landing in that
+        // window created an unseeded BehaviorSubject, which replays nothing,
+        // so the fullscreen feed sat on its loading placeholder until the
+        // reload finished instead of showing the list the grid was already
+        // showing. Matching the tabs' own predicate closes the window. #6949
+        final feedState = next.value;
         if (feedState == null) return;
         bridge.update(
           videos: feedState.videos,

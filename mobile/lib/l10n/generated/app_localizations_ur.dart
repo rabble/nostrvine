@@ -5880,6 +5880,26 @@ class AppLocalizationsUr extends AppLocalizations {
   String get inboxFilterUnread => 'غیر پڑھی ہوئی';
 
   @override
+  String get dmBlockedThreadTitle => 'آپ نے یہ اکاؤنٹ مسدود کیا ہے';
+
+  @override
+  String get dmBlockedThreadBody =>
+      'پیغامات یہیں رہتے ہیں تاکہ آپ انہیں پڑھ سکیں یا اسکرین شاٹ لے سکیں۔ جواب دینے کے لیے بلاک ہٹائیں۔';
+
+  @override
+  String get inboxFilterBlocked => 'مسدود';
+
+  @override
+  String get inboxBlockedEmptyTitle => 'کوئی مسدود چیٹ نہیں';
+
+  @override
+  String get inboxBlockedEmptySubtitle =>
+      'آپ جن اکاؤنٹس کو مسدود کرتے ہیں وہ یہاں دکھائی دیتے ہیں۔';
+
+  @override
+  String get inboxBlockedNoMessages => 'کوئی پیغام نہیں';
+
+  @override
   String get inboxUnreadEmptyTitle => 'آپ سب پڑھ چکے ہیں';
 
   @override
@@ -8334,12 +8354,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get commentsEmptySubtitle => 'پارٹی شروع کریں!';
 
   @override
-  String get commentsHeaderTitle => 'تبصرے';
-
-  @override
-  String get commentsHeaderCloseLabel => 'تبصرے بند کریں';
-
-  @override
   String get draftUntitled => 'بلا عنوان';
 
   @override
@@ -9883,6 +9897,9 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get fullscreenFeedRemovedMessage => 'ویڈیو ہٹا دی گئی';
+
+  @override
+  String get fullscreenFeedEmptyMessage => 'یہاں چلانے کے لیے اب کچھ نہیں بچا';
 
   @override
   String get settingsBadgesTitle => 'بیجز';

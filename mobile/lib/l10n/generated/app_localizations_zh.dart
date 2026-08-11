@@ -5584,6 +5584,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get inboxFilterUnread => '未读';
 
   @override
+  String get dmBlockedThreadTitle => '你已屏蔽此账号';
+
+  @override
+  String get dmBlockedThreadBody => '消息会保留在这里，方便你查看或截图。解除屏蔽后即可回复。';
+
+  @override
+  String get inboxFilterBlocked => '已屏蔽';
+
+  @override
+  String get inboxBlockedEmptyTitle => '没有已屏蔽的聊天';
+
+  @override
+  String get inboxBlockedEmptySubtitle => '你屏蔽的账号会显示在这里。';
+
+  @override
+  String get inboxBlockedNoMessages => '暂无消息';
+
+  @override
   String get inboxUnreadEmptyTitle => '都看完啦';
 
   @override
@@ -7922,12 +7940,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get commentsEmptySubtitle => '来开个头吧！';
 
   @override
-  String get commentsHeaderTitle => '评论';
-
-  @override
-  String get commentsHeaderCloseLabel => '关闭评论';
-
-  @override
   String get draftUntitled => '未命名';
 
   @override
@@ -9380,6 +9392,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get fullscreenFeedRemovedMessage => '视频已移除';
+
+  @override
+  String get fullscreenFeedEmptyMessage => '这里没有可播放的内容了';
 
   @override
   String get settingsBadgesTitle => '徽章';

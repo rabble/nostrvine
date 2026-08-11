@@ -5005,14 +5005,6 @@
   "@commentsEmptySubtitle": {
     "description": "Empty state encouragement shown below the no-comments title, prompting the viewer to post the first comment."
   },
-  "commentsHeaderTitle": "تبصرے",
-  "@commentsHeaderTitle": {
-    "description": "Title at the top of the comments draggable sheet."
-  },
-  "commentsHeaderCloseLabel": "تبصرے بند کریں",
-  "@commentsHeaderCloseLabel": {
-    "description": "Accessibility label for the close button on the comments sheet header."
-  },
   "draftUntitled": "بلا عنوان",
   "contentWarningNone": "کوئی نہیں",
   "textBackgroundNone": "کوئی نہیں",
@@ -5944,6 +5936,7 @@
   "videoMetadataClosePreviewSemanticLabel": "ویڈیو پیش منظر بند کریں",
   "videoMetadataRemoveSemanticLabel": "ہٹائیں",
   "fullscreenFeedRemovedMessage": "ویڈیو ہٹا دی گئی",
+  "fullscreenFeedEmptyMessage": "یہاں چلانے کے لیے اب کچھ نہیں بچا",
   "@fullscreenFeedRemovedMessage": {
     "description": "Empty-state message shown in the fullscreen feed when the last visible video has just been deleted, blocked, or muted and the route cannot be popped back to a parent (e.g. a cold deep-link)."
   },
@@ -6867,5 +6860,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "{tool} میں تبدیلیاں لاگو کریں",
   "videoEditorRemoveAudioSemanticLabel": "آڈیو ہٹائیں",
   "rgbColorSemanticLabel": "RGB {red}، {green}، {blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}، {color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}، {color}",
+  "inboxFilterBlocked": "مسدود",
+  "inboxBlockedEmptyTitle": "کوئی مسدود چیٹ نہیں",
+  "inboxBlockedEmptySubtitle": "آپ جن اکاؤنٹس کو مسدود کرتے ہیں وہ یہاں دکھائی دیتے ہیں۔",
+  "inboxBlockedNoMessages": "کوئی پیغام نہیں",
+  "dmBlockedThreadTitle": "آپ نے یہ اکاؤنٹ مسدود کیا ہے",
+  "dmBlockedThreadBody": "پیغامات یہیں رہتے ہیں تاکہ آپ انہیں پڑھ سکیں یا اسکرین شاٹ لے سکیں۔ جواب دینے کے لیے بلاک ہٹائیں۔"
 }

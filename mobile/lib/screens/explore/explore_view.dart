@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/explore_tabs/explore_tabs_cubit.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -208,6 +209,7 @@ class _ExploreViewState extends ConsumerState<ExploreView>
                 hintText: context.l10n.exploreSearchHint,
                 readOnly: true,
                 onTap: _openSearchPage,
+                semanticIdentifier: SemanticIds.exploreSearchBar,
               ),
             ),
           ),

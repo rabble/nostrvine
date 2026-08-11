@@ -8,20 +8,34 @@ They are not a replacement for unit or widget tests.
 
 ## What the smoke suite covers today
 
-`suites/smoke.yaml` currently runs the account-management paths that pass end
-to end today: `loginFreshInstall`, its `removeKeys` cleanup, and
-`loginEmailPwd`. The social flows are held back because they cannot pass yet:
+`suites/smoke.yaml` runs the account-management paths — `loginFreshInstall`,
+its `removeKeys` cleanup, and `loginEmailPwd` — plus all three social flows:
+`likeFlow`, `commentFlow` (post a comment, delete it) and `searchUserFlow`
+(find an account, open its profile, come back).
 
-| Flow | Why it is out | Tracking |
-|---|---|---|
-| `likeFlow` | `videoUnlike` never completes; the liked video does not finish loading against live STAGING content | [#6949](https://github.com/divinevideo/divine-mobile/issues/6949) |
-| `commentFlow` | `env`-vs-`output` bug and a disabled cleanup step | [#6952](https://github.com/divinevideo/divine-mobile/issues/6952) |
-| `searchUserFlow` | needs a rewrite for the current search layout | [#6952](https://github.com/divinevideo/divine-mobile/issues/6952) |
+Nothing is held back any more. The last two were restored by
+[#6952](https://github.com/divinevideo/divine-mobile/issues/6952) —
+`commentFlow` had an `env`-vs-`output` bug and a disabled cleanup step, and
+`searchUserFlow` needed a rewrite for the current search layout. Their
+credentials (`SEARCH_USER` for `searchUserFlow`) must be present on the
+runners.
 
-So a green smoke run proves the harness, the build, account creation, cleanup,
-and the sign-in path — not the social flows. Restore each flow in the PR that
-fixes it, and put back the credentials it needs (`SEARCH_USER` for
-`searchUserFlow`) in the same change.
+### `likeFlow` was an app bug, not test data
+
+`videoUnlike` used to hang, and the failure was filed as a test-data problem.
+It was not. Unliking the only video in your own Liked feed makes the liked
+grid's bloc re-emit an empty list into the still-open fullscreen route, and
+the fullscreen screen rendered its loading placeholder for *any* empty list —
+no timeout, no empty state, no error. Every action button left the tree, so
+the flow's 15-second wait for the "Like video" label could never succeed.
+Reproduced on device and fixed in
+[#6949](https://github.com/divinevideo/divine-mobile/issues/6949); the feed
+now settles on an explicit drained state carrying
+`fullscreen_feed_empty`, which `assertVideoFeedDrained.yaml` asserts.
+
+The lesson generalises: **before filing a Maestro failure as flaky data,
+check whether the screen is stuck in a state the app has no exit from.**
+A permanent loading placeholder looks exactly like slow live content.
 
 The `e2e-smoke-ios` and `e2e-smoke-android` Codemagic workflows are
 `triggering: events: []`, so nothing runs them automatically. They are manual
@@ -29,14 +43,15 @@ dispatches, and GitHub CI does not cover this lane at all.
 
 ## The recorder flows
 
-Two of the recorder's five modes are covered, one flow each:
+Three of the recorder's five modes are covered, one flow each:
 
 | Flow | Mode | Covers |
 |---|---|---|
 | `flows/captureModeFlow.yaml` | capture | open, drive the control rail, record a clip, delete it, close |
 | `flows/lipSyncModeFlow.yaml` | lip-sync | open, drive the control rail, prove the shutter refuses without a sound and records with one, delete the clip, close |
+| `flows/stopMotionModeFlow.yaml` | stop-motion | open, drive the control rail, shoot two stills, undo them, close |
 
-Classic, stop-motion and upload are not covered yet.
+Classic and upload are not covered yet.
 
 The gate is lip-sync's own behaviour and it takes **both** shutter tests to
 cover it. `lipSyncModeAudioGate` proves the shutter refuses with no sound
@@ -51,20 +66,21 @@ picker's **Divine** tab, whose entries come from
 is the relay-backed one, and it is the live-content dependency this file names
 elsewhere as the suite's main source of flakiness — no flow goes near it.
 
-Every file in both flows has been run green on a Galaxy SM-S942B. The lip-sync
-tests were driven test-by-test against an already-signed-in app rather than
-through `lipSyncModeFlow.yaml` end to end, because the device runs a German
-system locale and `loginFreshInstall`'s `clearState` drops the per-app English
-override mid-run (see step 0b). The login and `removeKeys` bookends of that
-flow are the same ones `captureModeFlow` already runs.
+Every file in all three flows has been run green on a Galaxy SM-S942B. The
+lip-sync and stop-motion tests were driven test-by-test against an
+already-signed-in app rather than through their flow end to end, because the
+device runs a German system locale and `loginFreshInstall`'s `clearState` drops
+the per-app English override mid-run (see step 0b). The login and `removeKeys`
+bookends of both flows are the same ones `captureModeFlow` already runs.
 
-Neither is in **`smoke.yaml`**, and both are deliberately off the iOS lane:
+None of them is in **`smoke.yaml`**, and all three are deliberately off the iOS
+lane:
 
 - **They need real camera hardware.** Without a camera the bloc never reports
   `isCameraInitialized`, the record button stays disabled, and the recording
-  test hangs on its first wait. The lens switch in the shared rail needs one
-  too. The iOS Simulator has no camera at all; an Android emulator's virtual
-  scene camera is enough, and a device is best.
+  and shutter tests hang on their first wait. The lens switch in the shared
+  rail needs one too. The iOS Simulator has no camera at all; an Android
+  emulator's virtual scene camera is enough, and a device is best.
 - **The `…Open` tests alone** — the chrome assertions — do pass without a
   camera, because the viewfinder falls back to a placeholder and every control
   still renders. So does `lipSyncModeAudioGate`: the blocked shutter is
@@ -75,43 +91,80 @@ Run one against a booted Android emulator or a connected device:
 ```bash
 maestro --device <serial> test e2e/maestro/flows/captureModeFlow.yaml
 maestro --device <serial> test e2e/maestro/flows/lipSyncModeFlow.yaml
+maestro --device <serial> test e2e/maestro/flows/stopMotionModeFlow.yaml
 ```
 
 ### Reading state off an icon-only control
 
-`utils/driveCaptureRail.yaml` asserts the icon-only rail controls by their
-Semantics `value` (`.*Square.*`, `.*3 seconds.*`, `.*Front camera.*`). That
-works: Flutter folds `value` into the Android content description, and Maestro
-matches against it — confirmed on device. Two things follow, both worth
-knowing before writing more recorder selectors:
+The cycling rail controls are asserted by their Semantics `value`
+(`.*Square.*`, `.*3 seconds.*`, `.*Front camera.*`). That works: Flutter folds
+`value` into the Android content description, and Maestro matches against it —
+confirmed on device. Three things follow, all worth knowing before writing more
+recorder selectors:
 
 - **A selector may combine `id` with `text`**, and here it must: "Off" is the
   value of the flash control *and* the timer control — and, once its sheet is
   open, of the stabilization menu's own first row.
-- **`selected: true` is readable too**, which is what `assertCaptureMode` and
-  `assertLipSyncMode` use to prove the right mode is armed. The mode wheel
-  renders an entry for every mode in every mode, so a bare
-  `id: camera_mode_capture` would pass on the Upload tab just as happily.
+- **`selected: true` is readable too**, which is what `assertCaptureMode`,
+  `assertLipSyncMode` and `assertStopMotionMode` use to prove the right mode is
+  armed. The mode wheel renders an entry for every mode in every mode, so a
+  bare `id: camera_mode_capture` would pass on the Upload tab just as happily.
+- **`checked:` is how an on/off control reads.** The ghost-frame and grid
+  toggles carry a Semantics `toggled` flag rather than a `value`, and Flutter
+  maps that to the accessibility node's checked state, so
+  `stopMotionModeControls` drives them with `checked: true` / `checked: false`.
+  **Maestro does not print the flag in its run log** — the line reads
+  `Assert that id: camera_ghost_frame_button is visible`, exactly as it would
+  if the flag had been dropped, unlike `text:` and `enabled:` which both show
+  up. It is genuinely applied: asserting `checked: true` against the toggle in
+  its off state fails on device. Don't "fix" a `checked:` selector because the
+  log looks bare; prove it with a deliberately-wrong assertion instead.
 
-### What the two viewfinders share, and what tells them apart
+### What the three viewfinders share, and what tells them apart
 
-Lip-sync *is* the capture stack: same close, next, delete, library button,
-record button, and the same five rail controls in the same order, because it
-declares the same countdown-timer and stabilization support. The **only**
-element that differs is the sound picker it puts in the top bar's center slot,
-which capture mode leaves empty.
+All three *are* the capture stack: same close, next, delete, library button and
+record button. Only the top bar's center slot and the control rail differ.
 
-That makes the two asserts a subset trap. Assert only what each mode renders
-and `assertCaptureMode` passes on the Lip Sync tab, because everything it
-checks is there. So it asserts `audio_chip` *absent*, and that one line is what
-keeps it honest. `video_editor_audio_chip_test.dart` pins the anchor itself at
-the widget level.
+| | capture | lip-sync | stop-motion |
+|---|---|---|---|
+| `audio_chip` (center slot) | — | ✅ | — |
+| `camera_stop_motion_budget` (center slot) | — | — | ✅ |
+| `camera_flash_button` | ✅ | ✅ | ✅ |
+| `camera_aspect_ratio_button` | ✅ | ✅ | ✅ |
+| `camera_switch_camera_button` | ✅ | ✅ | ✅ |
+| `camera_timer_button` | ✅ | ✅ | — |
+| `camera_stabilization_button` | ✅ | ✅ | — |
+| `camera_ghost_frame_button` | — | — | ✅ |
+| `camera_grid_button` | — | — | ✅ |
 
-Because the rail is shared, both modes also *drive* it with the same file —
-`utils/driveCaptureRail.yaml`. Each mode's `…Controls` test is that util plus
-its own mode assert. Modes that render a different set (stop-motion adds a
-ghost-frame and grid toggle and drops timer and stabilization) will want their
-own sequence rather than this one with parts skipped.
+Lip-sync and capture are the subset trap. Their rails are identical, so assert
+only what each mode renders and `assertCaptureMode` passes on the Lip Sync tab,
+because everything it checks is there. It asserts `audio_chip` *absent*, and
+that one line is what keeps it honest. `video_editor_audio_chip_test.dart` pins
+the anchor itself at the widget level.
+
+Stop-motion is not that case, and its `assertNotVisible` block is there for a
+different reason. Its rail and capture's are **disjoint**, not nested — capture
+has timer and stabilization, stop-motion has ghost frame and grid — so each
+assert already fails on the other's viewfinder on the rail alone. What settles
+which viewfinder is up before either gets that far is the mode wheel's
+`selected` state, asserted on the first line of all three files.
+
+So the pairs those two asserts carry — `assertStopMotionMode` pinning timer and
+stabilization absent, `assertCaptureMode` pinning ghost frame, grid and the
+budget absent — are **leak guards**, not mode separators: they fail when a
+control starts rendering in a mode that does not declare it, which nothing else
+in the suite would catch. `video_recorder_capture_actions_test.dart` pins the
+same split at the widget level.
+
+Because flash, aspect ratio and the lens switch are unconditional, all three
+modes *drive* them with the same three files — `utils/driveAspectRatioControl`,
+`utils/driveLensControl`, `utils/driveFlashControl`. Capture and lip-sync wrap
+those in `utils/driveCaptureRail.yaml`, which adds the timer and stabilization
+controls they alone render; `stopMotionModeControls` calls the three directly
+and adds ghost frame and grid. Each mode's `…Controls` test is a rail sequence
+plus its own mode assert. A mode with yet another set composes the per-control
+utils in its own order rather than skipping parts of someone else's.
 
 ### Things the flows depend on that are easy to break by accident
 
@@ -122,29 +175,34 @@ Shared:
   whose buttons are OS-localized copy. Note the relaunch deliberately does
   *not* clear state: on Android `pm clear` wipes the encrypted preferences the
   Nostr key lives in and would sign the account back out mid-flow.
-- **Hardware for two of the five rail controls.** Flash and stabilization are
-  driven behind an `enabled: true` guard, because both are disabled outright
-  when the active lens has no flash unit or reports a single stabilization
-  mode. Where the feature is missing the block prints `SKIPPED` rather than
-  failing — check the run output before reading a green run as full rail
-  coverage. Both were exercised for real on the SM-S942B's back lens.
-- **Everything the recorder persists, which is more than the mode.** Three
-  preferences survive a run and each is asserted as a default somewhere:
-  `camera_last_used_recorder_mode` (absent ⇒ Capture), `camera_last_used_lens`
-  (absent ⇒ back, which the rail asserts first) and
-  `camera_last_used_stabilization`. Run from the top this is handled —
-  `loginFreshInstall`'s `clearState` wipes all three — but a standalone run
-  inherits whatever the last session left. A phone whose last session used the
-  front lens fails the rail on its first `.*Back camera.*`, and the two flows
-  leave the mode key on different values, so a `captureModeFlow` run straight
-  after a lip-sync one, skipping the login step, opens on the wrong mode. When
-  iterating standalone, either reset the keys or start from a flow that clears
-  state.
+- **Hardware for the guarded rail controls.** Flash (all three modes) and
+  stabilization (capture and lip-sync) are driven behind an `enabled: true`
+  guard, because both are disabled outright when the active lens has no flash
+  unit or reports a single stabilization mode. Where the feature is missing the
+  block prints `SKIPPED` rather than failing — check the run output before
+  reading a green run as full rail coverage. Both were exercised for real on
+  the SM-S942B's back lens.
+- **Everything the recorder persists, which is more than the mode.** Four
+  preferences survive a run and every one of them is asserted as a default
+  somewhere: `camera_last_used_recorder_mode` (absent ⇒ Capture),
+  `camera_last_used_lens` (absent ⇒ back, which the rail asserts first),
+  `camera_last_used_stabilization` and `camera_grid_lines_enabled` (absent ⇒
+  on, which `stopMotionModeControls` asserts first). Run from the top this is
+  handled — `loginFreshInstall`'s `clearState` wipes all four — but a
+  standalone run inherits whatever the last session left. A phone whose last
+  session used the front lens fails the rail on its first `.*Back camera.*`,
+  and the three flows leave the mode key on different values, so a
+  `captureModeFlow` run straight after a lip-sync or stop-motion one, skipping
+  the login step, opens on the wrong mode. When iterating standalone, either
+  reset the keys or start from a flow that clears state.
 - **An empty session when the rail is driven.** The aspect-ratio control is
   disabled once the session holds a clip, because clips of mixed ratios cannot
   share an editor timeline. `captureModeControls` therefore runs before the
   recording tests; lip-sync gets this for free, since nothing in that flow
-  records.
+  records. Stop-motion stills are not clips until the assemble, so its rail
+  stays live mid-session — but `stopMotionModeControls` closes on its mode
+  assert, which pins next and undo absent, so it needs the empty session
+  anyway and the flow keeps the same order.
 
 Capture only:
 
@@ -157,6 +215,8 @@ Capture only:
 - **Tap-to-toggle recording.** `HoldToRecordPreferenceService` defaults to
   false. On a device where a previous session turned hold-to-record on, the
   first tap does nothing and `captureModeRecordClip` fails on its wait.
+  Stop-motion is immune: the record button disables long-press outright for any
+  mode that captures stills.
 
 Lip-sync only:
 
@@ -195,9 +255,35 @@ Lip-sync only:
   needed: the snackbar proves the gate *fired*, the still-visible
   `camera_close_button` proves no recording started behind it.
 
+Stop-motion only:
+
+- **Reaching the mode at all.** `openStopMotionMode` selects rather than
+  asserts, for the same reason `openLipSyncMode` does. It taps the entry
+  directly instead of hopping: Stop Motion sits next to Capture, so the lazy
+  `ListView` has it built in both states this flow can arrive in. From Classic
+  or Upload it would not be, same trap as everywhere else on this wheel.
+- **The ghost-frame snackbar.** Each toggle raises a 4-second confirmation
+  banner that floats over the bottom of the screen — the record and undo
+  buttons included — so the controls test waits it out before handing over to
+  the shutter test.
+- **Undo leaving nothing behind.** Stills are written to the clip library as
+  they are shot (the session is upserted on every frame, not on the assemble),
+  so `stopMotionModeUndoFrame` is load-bearing teardown: undoing the last still
+  is what drops the session's library row again.
+- **Two stills, not one.** `stopMotionModeCaptureFrame` shoots twice and
+  `stopMotionModeUndoFrame` undoes twice, with the first undo asserting the
+  chrome is *still* up. That pairing is the only evidence the session
+  accumulates rather than overwriting — shortening either test to one tap
+  silently removes it. Verified the other way round on device: shoot once, undo
+  once, and that assertion goes red.
+
 Account creation is a precondition, not part of what is tested. The recorder
 route itself is public (`appRouterRedirect` exempts it), but the only way in is
 the feed's camera button and the feed is not public.
+
+The stop-motion assemble step — "next", which collects the stills into a clip
+and opens the editor — is out of scope on purpose: it leaves the recorder, and
+the editor has no coverage to hand off to yet.
 
 ---
 
@@ -271,7 +357,7 @@ Codemagic group.
 | Variable | Used by |
 |---|---|
 | `USER_EMAIL`, `USER_PWD` | `flows/loginEmailPwd.yaml` |
-| `SEARCH_USER` | `flows/searchUserFlow.yaml` — `fullRegression` only |
+| `SEARCH_USER` | `flows/searchUserFlow.yaml` — an account that ranks in People results for its own name |
 | `USER_KEYS`, `SEARCH_USER_ID`, `VIDEO_USER`, `VIDEO_DESCRIPTION`, `VIDEO_DATA`, `EXISTING_USERNAME` | `suites/fullRegression.yaml` |
 
 Every entry point guards its own variables with `assertTrue`. A missing `-e`
@@ -283,11 +369,11 @@ that guard the suite would run against garbage and fail somewhere unrelated.
 ```bash
 # The smoke suite, as CI runs it
 maestro test \
-  -e USER_EMAIL=... -e USER_PWD=... \
+  -e USER_EMAIL=... -e USER_PWD=... -e SEARCH_USER=... \
   e2e/maestro/suites/smoke.yaml
 
 # Or via the iOS helper, which boots a simulator and installs for you
-MAESTRO_USER_EMAIL=... MAESTRO_USER_PWD=... \
+MAESTRO_USER_EMAIL=... MAESTRO_USER_PWD=... MAESTRO_SEARCH_USER=... \
   bash e2e/maestro/scripts/ui_smoke_ios.sh
 ```
 
@@ -338,7 +424,7 @@ from. Identifiers are snake_case and defined in
 If the element you need has no identifier, add one — that is a smaller change
 than the assertion you would otherwise write, and it survives translation.
 
-Three traps worth knowing:
+Four traps worth knowing:
 
 - **Opacity 0 is invisible to Maestro, `IgnorePointer` is not.**
   `RenderOpacity`/`RenderAnimatedOpacity` drop their child from the semantics
@@ -353,19 +439,38 @@ Three traps worth knowing:
   which varies with feature flags and with whose profile you are on.
 - **`env` is read-only inside `evalScript`.** Write to `output.*` and read it
   back as `${output.NAME}`; `${NAME}` still resolves to the `env` default.
+  An empty default is worse than a wrong one: an empty pattern matches an
+  empty-text node, so the assertion passes and proves nothing.
+- **Matching is whole-label, case-insensitive, and `.` crosses newlines.**
+  A row that merges several `Text`s exposes one label
+  (`"Now\n • \nYou\nGreat vine"`), so `assertVisible: Great vine` fails
+  where `text: ".*Great vine"` passes. Measured on Maestro 2.1.0.
 
 ---
 
 ## Environments and test data
 
-The flows run against shared STAGING infrastructure and depend on live
-content: whichever video is newest in the New grid, a specific account
-existing and ranking first in search. They also create a real account per run
-and publish real likes and comments.
+The flows run against shared STAGING infrastructure. What each one actually
+depends on, and how much of that is real:
 
-That is the suite's main source of flakiness and it is not fixable by
-improving selectors. Treat an unexplained failure as possibly-data before
-assuming a regression, and check the screenshot.
+| Dependency | Where | Still a risk? |
+|---|---|---|
+| "whichever video is newest in the New grid" | `videoLike`, `commentVideo` | Yes, but only that it is **playable**. Nothing asserts which video it is. |
+| "the account has exactly one liked video" | `videoUnlike` | No. `loginFreshInstall` creates the account, so it starts at zero likes and `videoLike` adds exactly one. |
+| a specific account existing and ranking first in search | `searchUserFlow` | Yes — and it also taps a hardcoded `point: 50%,32%`, which is the more fragile half. [#6952](https://github.com/divinevideo/divine-mobile/issues/6952) |
+| a real comment left on a stranger's video | `commentFlow` | Yes — its `deleteComment` cleanup is commented out, so every run leaves one behind. [#6952](https://github.com/divinevideo/divine-mobile/issues/6952) |
+
+Accounts and likes are self-owned: each run creates its own account and
+`removeKeys` tears it down, so those are not shared-state coupling.
+
+Treat an unexplained failure as possibly-data *after* ruling out a stuck
+screen, not before — and check the screenshot either way.
+
+`commentFlow` deletes the comment it posts, but that only cleans the
+poster's view: measured on 2026-08-10, the app publishes a valid kind 5,
+the STAGING relay stores it, and the relay keeps serving the deleted
+kind 1111 to everyone else. Each run therefore still leaves a visible
+comment on whichever video is first in the New grid.
 
 `tests/removeKeys.yaml` is the teardown of every smoke flow and is what makes
 runs repeatable: the Nostr key lives in the iOS keychain and survives both

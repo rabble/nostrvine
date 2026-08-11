@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
@@ -35,6 +36,15 @@ void main() {
       rawData: const <String, dynamic>{},
       createdAt: DateTime(2024),
       eventId: 'event1',
+    );
+
+    final secondProfile = UserProfile(
+      pubkey:
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      name: 'Second User',
+      rawData: const <String, dynamic>{},
+      createdAt: DateTime(2024),
+      eventId: 'event2',
     );
 
     setUp(() {
@@ -100,6 +110,41 @@ void main() {
         expect(find.byType(SectionHeader), findsOneWidget);
         expect(
           find.text(AppLocalizationsEn().searchPeopleSectionHeader),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('anchors the header and each row for UI tests', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          UserSearchState(
+            status: UserSearchStatus.success,
+            query: 'test',
+            results: [testProfile, secondProfile],
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject());
+
+        expect(
+          find.bySemanticsIdentifier(
+            SemanticIds.searchSectionHeader('people'),
+          ),
+          findsOneWidget,
+        );
+        // Ordinal anchors let a flow tap "the first result" without knowing
+        // a pubkey up front; the pubkey-keyed anchor stays for targeted taps.
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.searchUserTileAt(0)),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.searchUserTileAt(1)),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsIdentifier('search_user_tile_${testProfile.pubkey}'),
           findsOneWidget,
         );
       });

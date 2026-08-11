@@ -5825,6 +5825,25 @@ class AppLocalizationsAr extends AppLocalizations {
   String get inboxFilterUnread => 'غير المقروءة';
 
   @override
+  String get dmBlockedThreadTitle => 'لقد حظرت هذا الحساب';
+
+  @override
+  String get dmBlockedThreadBody =>
+      'تبقى الرسائل هنا لتتمكن من قراءتها أو التقاط صورة لها. ألغِ الحظر للرد.';
+
+  @override
+  String get inboxFilterBlocked => 'محظور';
+
+  @override
+  String get inboxBlockedEmptyTitle => 'لا توجد محادثات محظورة';
+
+  @override
+  String get inboxBlockedEmptySubtitle => 'تظهر هنا الحسابات التي تحظرها.';
+
+  @override
+  String get inboxBlockedNoMessages => 'لا توجد رسائل';
+
+  @override
   String get inboxUnreadEmptyTitle => 'أنت على اطلاع بكل شيء';
 
   @override
@@ -8271,12 +8290,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get commentsEmptySubtitle => 'Get the party started!';
 
   @override
-  String get commentsHeaderTitle => 'Comments';
-
-  @override
-  String get commentsHeaderCloseLabel => 'Close comments';
-
-  @override
   String get draftUntitled => 'بدون عنوان';
 
   @override
@@ -9807,6 +9820,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get fullscreenFeedRemovedMessage => 'تمت إزالة الفيديو';
+
+  @override
+  String get fullscreenFeedEmptyMessage => 'لم يتبقَّ شيء لتشغيله هنا';
 
   @override
   String get settingsBadgesTitle => 'الشارات';

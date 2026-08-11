@@ -5005,14 +5005,6 @@
   "@commentsEmptySubtitle": {
     "description": "Empty state encouragement shown below the no-comments title, prompting the viewer to post the first comment."
   },
-  "commentsHeaderTitle": "Bình luận",
-  "@commentsHeaderTitle": {
-    "description": "Title at the top of the comments draggable sheet."
-  },
-  "commentsHeaderCloseLabel": "Đóng bình luận",
-  "@commentsHeaderCloseLabel": {
-    "description": "Accessibility label for the close button on the comments sheet header."
-  },
   "draftUntitled": "Chưa đặt tên",
   "contentWarningNone": "Không có",
   "textBackgroundNone": "Không có",
@@ -5944,6 +5936,7 @@
   "videoMetadataClosePreviewSemanticLabel": "Đóng xem trước video",
   "videoMetadataRemoveSemanticLabel": "Xóa",
   "fullscreenFeedRemovedMessage": "Video đã bị gỡ",
+  "fullscreenFeedEmptyMessage": "Không còn gì để phát ở đây",
   "@fullscreenFeedRemovedMessage": {
     "description": "Empty-state message shown in the fullscreen feed when the last visible video has just been deleted, blocked, or muted and the route cannot be popped back to a parent (e.g. a cold deep-link)."
   },
@@ -6867,5 +6860,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "Áp dụng thay đổi trong {tool}",
   "videoEditorRemoveAudioSemanticLabel": "Xóa âm thanh",
   "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}",
+  "inboxFilterBlocked": "Đã chặn",
+  "inboxBlockedEmptyTitle": "Không có cuộc trò chuyện bị chặn",
+  "inboxBlockedEmptySubtitle": "Các tài khoản bạn chặn sẽ xuất hiện ở đây.",
+  "inboxBlockedNoMessages": "Không có tin nhắn",
+  "dmBlockedThreadTitle": "Bạn đã chặn tài khoản này",
+  "dmBlockedThreadBody": "Tin nhắn vẫn ở đây để bạn có thể đọc hoặc chụp màn hình. Bỏ chặn để trả lời."
 }

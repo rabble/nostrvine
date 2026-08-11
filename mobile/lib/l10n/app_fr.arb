@@ -3355,6 +3355,7 @@
     "navSearch": "Recherche",
     "navSearchTooltip": "Rechercher",
     "fullscreenFeedRemovedMessage": "Vidéo supprimée",
+    "fullscreenFeedEmptyMessage": "Il n’y a plus rien à lire ici",
     "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
     "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
     "invitesGenerateButtonLabel": "Generate invite",
@@ -4235,8 +4236,6 @@
     "commentsInputHintEdit": "Edit comment...",
     "commentsEmptyTitle": "No comments yet",
     "commentsEmptySubtitle": "Get the party started!",
-    "commentsHeaderTitle": "Comments",
-    "commentsHeaderCloseLabel": "Close comments",
     "reportReasonCsam": "Abus sexuels sur mineurs",
     "reportReasonCsamSubtitle": "Contenu représentant des abus sexuels sur mineurs",
     "minorAccountReviewWelcomePageTitle": "Family guide",
@@ -5028,5 +5027,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "Appliquer les modifications dans {tool}",
   "videoEditorRemoveAudioSemanticLabel": "Supprimer l’audio",
   "rgbColorSemanticLabel": "RVB {red}, {green}, {blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}",
+  "inboxFilterBlocked": "Bloqués",
+  "inboxBlockedEmptyTitle": "Aucune conversation bloquée",
+  "inboxBlockedEmptySubtitle": "Les comptes que vous bloquez apparaissent ici.",
+  "inboxBlockedNoMessages": "Aucun message",
+  "dmBlockedThreadTitle": "Vous avez bloqué ce compte",
+  "dmBlockedThreadBody": "Les messages restent ici pour que vous puissiez les lire ou les capturer. Débloquez pour répondre."
 }

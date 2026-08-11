@@ -13,6 +13,7 @@ import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/popular_videos_tab.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 import '../helpers/test_provider_overrides.dart';
@@ -36,6 +37,16 @@ void main() {
     setUpAll(() {
       registerFallbackValue(PopularVideosVariant.native);
     });
+
+    // The grid paints thumbnails through VineCachedImage, which resolves
+    // against the process-global openVineImageCache. That lookup answers off a
+    // real file read and then arms a 10s cleanup timer inside the fake-async
+    // zone; the wall-clock wait in the slow-load test is exactly what gives the
+    // read time to land mid-test, and the pending timer fails the test on the
+    // widget-tree teardown assert. Stub the cache (#5158 seam) so no real
+    // cache-manager work runs here at all.
+    setUp(() => debugImageCacheOverride = createMockMediaCacheManager());
+    tearDown(() => debugImageCacheOverride = null);
 
     setUp(() {
       videosRepository = _MockVideosRepository();

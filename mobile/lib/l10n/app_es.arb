@@ -3363,6 +3363,7 @@
     "navSearch": "Buscar",
     "navSearchTooltip": "Buscar",
     "fullscreenFeedRemovedMessage": "Video eliminado",
+    "fullscreenFeedEmptyMessage": "Aquí ya no queda nada que reproducir",
     "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
     "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
     "invitesGenerateButtonLabel": "Generate invite",
@@ -4235,8 +4236,6 @@
     "commentsInputHintEdit": "Edit comment...",
     "commentsEmptyTitle": "No comments yet",
     "commentsEmptySubtitle": "Get the party started!",
-    "commentsHeaderTitle": "Comments",
-    "commentsHeaderCloseLabel": "Close comments",
     "reportReasonCsam": "Abuso sexual infantil",
     "reportReasonCsamSubtitle": "Contenido que muestra abuso sexual de menores",
     "minorAccountReviewWelcomePageTitle": "Family guide",
@@ -5028,5 +5027,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "Aplicar cambios en {tool}",
   "videoEditorRemoveAudioSemanticLabel": "Eliminar audio",
   "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}",
+  "inboxFilterBlocked": "Bloqueados",
+  "inboxBlockedEmptyTitle": "No hay chats bloqueados",
+  "inboxBlockedEmptySubtitle": "Las cuentas que bloquees aparecerán aquí.",
+  "inboxBlockedNoMessages": "Sin mensajes",
+  "dmBlockedThreadTitle": "Bloqueaste esta cuenta",
+  "dmBlockedThreadBody": "Los mensajes se quedan aquí para que puedas leerlos o capturarlos. Desbloquea para responder."
 }

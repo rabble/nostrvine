@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -228,6 +229,29 @@ void main() {
           ),
         ),
       );
+    });
+
+    // The budget is the one piece of chrome capture mode does not render, so
+    // e2e/maestro/asserts/assertStopMotionMode.yaml uses it to prove the top
+    // bar's center slot is the stop-motion one. Every other test here reads
+    // the widget directly and would stay green with the anchor dropped.
+    testWidgets('exposes the E2E identifier, carrying the count', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(buildWidget(capturedFrames: 5));
+
+      final node = tester.getSemantics(
+        find.bySemanticsIdentifier(SemanticIds.cameraStopMotionBudget),
+      );
+      expect(
+        node.label,
+        l10n.videoRecorderStopMotionShotsLeft(
+          StopMotionFrameOps.maxCaptureFrames - 5,
+        ),
+      );
+
+      handle.dispose();
     });
 
     testWidgets('offers nothing once the composition fills the maximum', (

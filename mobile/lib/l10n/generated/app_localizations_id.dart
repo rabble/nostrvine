@@ -5838,6 +5838,26 @@ class AppLocalizationsId extends AppLocalizations {
   String get inboxFilterUnread => 'Belum dibaca';
 
   @override
+  String get dmBlockedThreadTitle => 'Kamu memblokir akun ini';
+
+  @override
+  String get dmBlockedThreadBody =>
+      'Pesan tetap ada di sini agar kamu bisa membacanya atau membuat tangkapan layar. Buka blokir untuk membalas.';
+
+  @override
+  String get inboxFilterBlocked => 'Diblokir';
+
+  @override
+  String get inboxBlockedEmptyTitle => 'Tidak ada obrolan yang diblokir';
+
+  @override
+  String get inboxBlockedEmptySubtitle =>
+      'Akun yang kamu blokir muncul di sini.';
+
+  @override
+  String get inboxBlockedNoMessages => 'Tidak ada pesan';
+
+  @override
   String get inboxUnreadEmptyTitle => 'Semua sudah kamu baca';
 
   @override
@@ -8289,12 +8309,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get commentsEmptySubtitle => 'Get the party started!';
 
   @override
-  String get commentsHeaderTitle => 'Comments';
-
-  @override
-  String get commentsHeaderCloseLabel => 'Close comments';
-
-  @override
   String get draftUntitled => 'Tanpa judul';
 
   @override
@@ -9840,6 +9854,10 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get fullscreenFeedRemovedMessage => 'Video dihapus';
+
+  @override
+  String get fullscreenFeedEmptyMessage =>
+      'Tidak ada lagi yang bisa diputar di sini';
 
   @override
   String get settingsBadgesTitle => 'Badge';

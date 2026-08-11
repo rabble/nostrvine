@@ -4,6 +4,14 @@ appId: co.openvine.app
 #control rail (capture and lip-sync), drive every control and leave each one
 #back on its default.
 #
+# Three of the five controls are unconditional and are shared with every other
+# mode that renders a rail, so they live in their own utils and this file
+# sequences them. Timer and stabilization are rendered only by the modes that
+# declare `supportsCountdownTimer` / `supportsVideoStabilization`, so they stay
+# here. A mode with a different set composes the per-control utils in its own
+# order rather than calling this one with parts skipped —
+# `tests/stopMotionModeControls.yaml` is the worked example.
+#
 # The assertions read each control's Semantics `value`, which Flutter folds
 # into the Android content description / iOS accessibilityValue. That is the
 # only readable evidence a tap landed: the controls are icon-only, and what
@@ -34,23 +42,7 @@ appId: co.openvine.app
 # 5. Stabilization (if supported): Off -> some other mode -> Off
 
 # 1. Aspect ratio flips between two states.
-- assertVisible:
-    id: camera_aspect_ratio_button
-    text: ".*Vertical.*"
-- tapOn:
-    id: camera_aspect_ratio_button
-- extendedWaitUntil:
-    visible:
-      id: camera_aspect_ratio_button
-      text: ".*Square.*"
-    timeout: 10000
-- tapOn:
-    id: camera_aspect_ratio_button
-- extendedWaitUntil:
-    visible:
-      id: camera_aspect_ratio_button
-      text: ".*Vertical.*"
-    timeout: 10000
+- runFlow: driveAspectRatioControl.yaml
 
 # 2. Timer cycles through three states and wraps.
 - assertVisible:
@@ -80,62 +72,14 @@ appId: co.openvine.app
       text: ".*Off.*"
     timeout: 10000
 
-# 3. Lens switch. Slower than the other two — the native camera rebinds and
-# the preview remounts on a fresh texture — so it gets a longer wait.
-- assertVisible:
-    id: camera_switch_camera_button
-    text: ".*Back camera.*"
-- tapOn:
-    id: camera_switch_camera_button
-- extendedWaitUntil:
-    visible:
-      id: camera_switch_camera_button
-      text: ".*Front camera.*"
-    timeout: 20000
-- tapOn:
-    id: camera_switch_camera_button
-- extendedWaitUntil:
-    visible:
-      id: camera_switch_camera_button
-      text: ".*Back camera.*"
-    timeout: 20000
+# 3. Lens switch.
+- runFlow: driveLensControl.yaml
 
-# 4. Flash. Guarded: the control is disabled when the active lens reports no
-# flash unit (`hasFlash`) — true of most emulators, and of the front lens on
-# many phones.
-- runFlow:
-    when:
-      visible:
-        id: camera_flash_button
-        enabled: true
-    commands:
-      - assertVisible:
-          id: camera_flash_button
-          text: ".*Off.*"
-      - tapOn:
-          id: camera_flash_button
-      - extendedWaitUntil:
-          visible:
-            id: camera_flash_button
-            text: ".*On.*"
-          timeout: 10000
-      - tapOn:
-          id: camera_flash_button
-      - extendedWaitUntil:
-          visible:
-            id: camera_flash_button
-            text: ".*Auto.*"
-          timeout: 10000
-      - tapOn:
-          id: camera_flash_button
-      - extendedWaitUntil:
-          visible:
-            id: camera_flash_button
-            text: ".*Off.*"
-          timeout: 10000
+# 4. Flash, if the active lens has a unit.
+- runFlow: driveFlashControl.yaml
 
-# 5. Stabilization. Same guard, and when it passes the sheet is guaranteed to
-# offer a non-off mode: the native side only reports
+# 5. Stabilization. Same guard as flash, and when it passes the sheet is
+# guaranteed to offer a non-off mode: the native side only reports
 # `isVideoStabilizationSupported` when its mode list has more than one entry.
 # Which non-off modes exist is per-device (Android derives them from the
 # camera's CONTROL_AVAILABLE_VIDEO_STABILIZATION_MODES), hence the alternation

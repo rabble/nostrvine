@@ -6,14 +6,24 @@ import 'package:flutter/material.dart';
 /// Used in the "All" search results view to separate People, Tags,
 /// Lists, and Videos sections.
 class SectionHeader extends StatelessWidget {
-  const SectionHeader({required this.title, super.key, this.onTap});
+  const SectionHeader({
+    required this.title,
+    super.key,
+    this.onTap,
+    this.semanticIdentifier,
+  });
 
   final String title;
   final VoidCallback? onTap;
 
+  /// Stable UI-test anchor, so flows do not have to match translated
+  /// section titles.
+  final String? semanticIdentifier;
+
   @override
   Widget build(BuildContext context) {
     return Semantics(
+      identifier: semanticIdentifier,
       header: true,
       label: title,
       button: onTap != null,

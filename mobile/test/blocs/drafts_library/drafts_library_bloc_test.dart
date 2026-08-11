@@ -126,6 +126,43 @@ void main() {
       );
 
       blocTest<DraftsLibraryBloc, DraftsLibraryState>(
+        'drops the autosave draft with clips when includeAutosaveDraft is off',
+        setUp: () {
+          when(() => mockDraftStorageService.getAllDrafts()).thenAnswer(
+            (_) async => [
+              createDraft(id: 'draft1'),
+              createDraft(
+                id: VideoEditorConstants.autoSaveId,
+                clips: [
+                  DivineVideoClip(
+                    id: 'clip1',
+                    video: EditorVideo.file('/path/to/video.mp4'),
+                    duration: const Duration(seconds: 5),
+                    recordedAt: DateTime(2026),
+                    targetAspectRatio: AspectRatio.vertical,
+                    originalAspectRatio: 9 / 16,
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
+        build: () => DraftsLibraryBloc(
+          draftStorageService: mockDraftStorageService,
+          includeAutosaveDraft: false,
+        ),
+        act: (bloc) => bloc.add(const DraftsLibraryLoadRequested()),
+        expect: () => [
+          const DraftsLibraryLoading(),
+          isA<DraftsLibraryLoaded>().having(
+            (s) => s.drafts.map((d) => d.id),
+            'draft ids',
+            ['draft1'],
+          ),
+        ],
+      );
+
+      blocTest<DraftsLibraryBloc, DraftsLibraryState>(
         'filters out published drafts',
         setUp: () {
           when(() => mockDraftStorageService.getAllDrafts()).thenAnswer(

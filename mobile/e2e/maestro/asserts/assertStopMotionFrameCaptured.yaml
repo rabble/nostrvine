@@ -1,0 +1,28 @@
+appId: co.openvine.app
+---
+# The stop-motion session holds at least one still: the top bar reveals its
+# assemble-and-continue button and the shutter row reveals undo-last-still.
+#
+# Both are gated on `stopMotionFrameCount > 0` through an AnimatedOpacity,
+# which drops its child from the semantics tree at opacity 0. Their presence is
+# therefore the assertion that the shutter actually produced a still — the
+# budget's count moves too, but its exact value is a function of the maximum
+# clip length and the output frame rate, which is not what this is testing.
+#
+# The wait covers the native capture, which takes hundreds of milliseconds and
+# longer on a cold camera.
+- extendedWaitUntil:
+    visible:
+      id: camera_next_button
+    timeout: 15000
+- assertVisible:
+    id: camera_delete_clip_button
+
+# Still on the idle viewfinder. Stop-motion never enters the recording state,
+# so unlike capture mode the top bar keeps its close/next row rather than
+# swapping in the recording-progress bar. A tap that started a video recording
+# instead of taking a still would fail here.
+- assertVisible:
+    id: camera_close_button
+- assertVisible:
+    id: camera_stop_motion_budget

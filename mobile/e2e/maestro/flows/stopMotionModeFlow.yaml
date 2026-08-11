@@ -1,0 +1,49 @@
+appId: co.openvine.app
+---
+#Stop-motion journey: create an account, open the recorder on stop-motion,
+#drive its control rail, shoot two stills, undo them again, and sign the device
+#back out.
+#
+# Account creation is a precondition, not part of what is under test. The
+# recorder route itself is public — appRouterRedirect exempts it — but the only
+# way into it is the feed's camera button, and the feed is not public: an
+# unauthenticated launch redirects to Welcome.
+#
+# Requires real camera hardware for stopMotionModeCaptureFrame; see that file.
+#
+# The assemble step — "next", which collects the stills into a clip and opens
+# the editor — is deliberately out of scope. It leaves the recorder for the
+# editor, and the editor has no E2E coverage to hand off to yet.
+
+- runFlow: ../tests/loginFreshInstall.yaml
+
+# Relaunch with camera and microphone pre-granted. Otherwise the first camera
+# tap raises the native OS permission dialog, whose buttons are OS-localized
+# copy that no selector should depend on.
+#
+# Deliberately no clearState: on Android `pm clear` wipes the encrypted
+# preferences the Nostr key lives in, which would sign the account straight
+# back out. (The iOS keychain survives it — the platforms disagree here, so
+# the flow takes the option that works on both.)
+- launchApp:
+    permissions:
+      all: allow
+- extendedWaitUntil:
+    visible:
+      id: camera_button
+    timeout: 60000
+
+- runFlow: ../tests/stopMotionModeOpen.yaml
+
+# Selecting a mode persists it, so this second open finds Stop Motion already
+# armed rather than Capture. openStopMotionMode taps the entry either way.
+- runFlow: ../utils/openStopMotionMode.yaml
+- runFlow: ../tests/stopMotionModeControls.yaml
+- runFlow: ../tests/stopMotionModeCaptureFrame.yaml
+- runFlow: ../tests/stopMotionModeUndoFrame.yaml
+
+# Leave the recorder before teardown: removeKeys drives Settings from the
+# profile tab, which the full-screen recorder covers.
+- tapOn:
+    id: camera_close_button
+- runFlow: ../tests/removeKeys.yaml

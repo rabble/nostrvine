@@ -3425,6 +3425,30 @@
   "@inboxFilterUnread": {
     "description": "Filter chip label showing only unread conversations in the Messages inbox."
   },
+  "dmBlockedThreadTitle": "You blocked this account",
+  "@dmBlockedThreadTitle": {
+    "description": "Title of the notice that replaces the message composer in a conversation with an account the viewer has blocked."
+  },
+  "dmBlockedThreadBody": "Messages stay here so you can read or screenshot them. Unblock to reply.",
+  "@dmBlockedThreadBody": {
+    "description": "Body of the notice replacing the composer in a blocked conversation. Explains that history is preserved and names unblocking as the way to reply again."
+  },
+  "inboxFilterBlocked": "Blocked",
+  "@inboxFilterBlocked": {
+    "description": "Filter chip label showing conversations with accounts the viewer has blocked. Only rendered once the viewer has blocked someone."
+  },
+  "inboxBlockedEmptyTitle": "No blocked chats",
+  "@inboxBlockedEmptyTitle": {
+    "description": "Shown in place of the conversation list when the Blocked filter is on and a search query matches none of the blocked chats."
+  },
+  "inboxBlockedEmptySubtitle": "Accounts you block show up here.",
+  "@inboxBlockedEmptySubtitle": {
+    "description": "Subtitle under inboxBlockedEmptyTitle explaining what the Blocked filter collects."
+  },
+  "inboxBlockedNoMessages": "No messages",
+  "@inboxBlockedNoMessages": {
+    "description": "Preview text on a Blocked row for an account the viewer blocked but never exchanged messages with. The row is not tappable."
+  },
   "inboxUnreadEmptyTitle": "You're all caught up",
   "@inboxUnreadEmptyTitle": {
     "description": "Shown in place of the conversation list when the Unread filter is on and every conversation has been read."
@@ -5081,14 +5105,6 @@
   "@commentsEmptySubtitle": {
     "description": "Empty state encouragement shown below the no-comments title, prompting the viewer to post the first comment."
   },
-  "commentsHeaderTitle": "Comments",
-  "@commentsHeaderTitle": {
-    "description": "Title at the top of the comments draggable sheet."
-  },
-  "commentsHeaderCloseLabel": "Close comments",
-  "@commentsHeaderCloseLabel": {
-    "description": "Accessibility label for the close button on the comments sheet header."
-  },
   "draftUntitled": "Untitled",
   "contentWarningNone": "None",
   "textBackgroundNone": "None",
@@ -6066,6 +6082,10 @@
   "fullscreenFeedRemovedMessage": "Video removed",
   "@fullscreenFeedRemovedMessage": {
     "description": "Empty-state message shown in the fullscreen feed when the last visible video has just been deleted, blocked, or muted and the route cannot be popped back to a parent (e.g. a cold deep-link)."
+  },
+  "fullscreenFeedEmptyMessage": "Nothing left to play here",
+  "@fullscreenFeedEmptyMessage": {
+    "description": "Empty-state message shown in the fullscreen feed when the feed it is playing has drained after having had videos — for example the viewer unliked the last video in their Liked feed."
   },
   "settingsBadgesTitle": "Badges",
   "settingsBadgesSubtitle": "Accept awards and check issued badge status.",

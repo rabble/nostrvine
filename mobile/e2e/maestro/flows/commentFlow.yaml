@@ -2,33 +2,18 @@ appId: co.openvine.app
 ---
 - runFlow: ../tests/loginFreshInstall.yaml
 - runFlow: ../tests/commentVideo.yaml
-# Back button on iOS devices
-- runFlow:
-    when:
-      visible: |-
-        Go back
-        Back
-    commands:
-      - assertVisible: |-
-          Go back
-          Back
-      - tapOn: |-
-          Go back
-          Back
 
-# Back button on Android devices
-- runFlow:
-    when:
-      visible: Go back
-    commands:
-      - assertVisible: Go back
-      - tapOn: Go back
+# Cleanup runs before the back navigation, not after: deleteComment reopens
+# the comments sheet from the player and needs the video still on screen.
+- runFlow: ../tests/deleteComment.yaml
 
-#- runFlow: ../tests/deleteComment.yaml
-#- runFlow:
-#    file: ../tests/deleteComment.yaml
-#    env:
-#      FULL_COMMENT: ${FULL_COMMENT}
+# Leave the player. DiVineAppBar's back control is addressed by identifier;
+# its label ("Go back") is copy that has already moved once.
+- tapOn:
+    id: back_button
+- assertVisible:
+    id: video_thumbnail_0
+
 - runFlow: ../tests/removeKeys.yaml
 #Tear down
 - killApp

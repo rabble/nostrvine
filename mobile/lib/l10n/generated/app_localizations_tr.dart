@@ -5841,6 +5841,26 @@ class AppLocalizationsTr extends AppLocalizations {
   String get inboxFilterUnread => 'Okunmamış';
 
   @override
+  String get dmBlockedThreadTitle => 'Bu hesabı engelledin';
+
+  @override
+  String get dmBlockedThreadBody =>
+      'Mesajlar burada kalır, böylece okuyabilir veya ekran görüntüsü alabilirsin. Yanıtlamak için engeli kaldır.';
+
+  @override
+  String get inboxFilterBlocked => 'Engellenenler';
+
+  @override
+  String get inboxBlockedEmptyTitle => 'Engellenmiş sohbet yok';
+
+  @override
+  String get inboxBlockedEmptySubtitle =>
+      'Engellediğin hesaplar burada görünür.';
+
+  @override
+  String get inboxBlockedNoMessages => 'Mesaj yok';
+
+  @override
   String get inboxUnreadEmptyTitle => 'Her şeyi okudun';
 
   @override
@@ -8289,12 +8309,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get commentsEmptySubtitle => 'Get the party started!';
 
   @override
-  String get commentsHeaderTitle => 'Comments';
-
-  @override
-  String get commentsHeaderCloseLabel => 'Close comments';
-
-  @override
   String get draftUntitled => 'Başlıksız';
 
   @override
@@ -9839,6 +9853,10 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get fullscreenFeedRemovedMessage => 'Video kaldırıldı';
+
+  @override
+  String get fullscreenFeedEmptyMessage =>
+      'Burada oynatılacak başka bir şey yok';
 
   @override
   String get settingsBadgesTitle => 'Rozetler';

@@ -5920,6 +5920,26 @@ class AppLocalizationsMs extends AppLocalizations {
   String get inboxFilterUnread => 'Belum dibaca';
 
   @override
+  String get dmBlockedThreadTitle => 'Anda menyekat akaun ini';
+
+  @override
+  String get dmBlockedThreadBody =>
+      'Mesej kekal di sini supaya anda boleh membacanya atau mengambil tangkap layar. Nyahsekat untuk membalas.';
+
+  @override
+  String get inboxFilterBlocked => 'Disekat';
+
+  @override
+  String get inboxBlockedEmptyTitle => 'Tiada sembang disekat';
+
+  @override
+  String get inboxBlockedEmptySubtitle =>
+      'Akaun yang anda sekat akan muncul di sini.';
+
+  @override
+  String get inboxBlockedNoMessages => 'Tiada mesej';
+
+  @override
   String get inboxUnreadEmptyTitle => 'Anda sudah baca semuanya';
 
   @override
@@ -8382,12 +8402,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get commentsEmptySubtitle => 'Mulakan parti!';
 
   @override
-  String get commentsHeaderTitle => 'Komen';
-
-  @override
-  String get commentsHeaderCloseLabel => 'Tutup komen';
-
-  @override
   String get draftUntitled => 'Tanpa tajuk';
 
   @override
@@ -9938,6 +9952,10 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get fullscreenFeedRemovedMessage => 'Video dialih keluar';
+
+  @override
+  String get fullscreenFeedEmptyMessage =>
+      'Tiada apa-apa lagi untuk dimainkan di sini';
 
   @override
   String get settingsBadgesTitle => 'Lencana';

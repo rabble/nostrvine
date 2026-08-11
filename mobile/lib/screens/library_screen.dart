@@ -25,7 +25,18 @@ import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/widgets/library/library.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-enum LibraryTabsMode { allTabs, clipsOnly }
+/// Which tabs the library shows.
+enum LibraryTabsMode {
+  /// Drafts, Clips and Sounds — the standalone library.
+  allTabs,
+
+  /// Drafts and Clips. Opened from the recorder, where a saved sound is not
+  /// something the current session can pick up.
+  withoutSounds,
+}
+
+/// A tab the library can show, in bar order.
+enum _LibraryTab { drafts, clips, sounds }
 
 class LibraryScreen extends ConsumerWidget {
   /// Route name for drafts path.
@@ -40,10 +51,10 @@ class LibraryScreen extends ConsumerWidget {
   /// Path for clips route.
   static const clipsPath = '/clips';
 
-  /// Route name for clips-only path.
+  /// Route name for the recorder's library (drafts + clips, no sounds).
   static const clipsOnlyRouteName = 'clipsOnly';
 
-  /// Path for clips-only route.
+  /// Path for the recorder's library (drafts + clips, no sounds).
   static const clipsOnlyPath = '/clips-only';
 
   /// Route name for sounds path.
@@ -58,6 +69,7 @@ class LibraryScreen extends ConsumerWidget {
     this.selectionMode = false,
     this.tabsMode = LibraryTabsMode.allTabs,
     this.clipTypeFilter = LibraryClipTypeFilter.all,
+    this.includeAutosaveDraft = true,
     this.editorClips = const [],
     this.scrollController,
   });
@@ -83,6 +95,10 @@ class LibraryScreen extends ConsumerWidget {
   /// entry-point to the current mode's type (stop-motion vs normal video);
   /// [LibraryClipTypeFilter.all] for the standalone library.
   final LibraryClipTypeFilter clipTypeFilter;
+
+  /// Whether the drafts tab lists the in-progress autosave draft. Off for the
+  /// recorder entry-point, which opens on top of the session writing it.
+  final bool includeAutosaveDraft;
 
   /// Current editor clips, used to calculate remaining duration and
   /// target aspect ratio in selection mode.
@@ -127,10 +143,11 @@ class LibraryScreen extends ConsumerWidget {
           },
         ),
         BlocProvider<DraftsLibraryBloc>(
-          key: ValueKey(draftStorageService),
-          create: (_) =>
-              DraftsLibraryBloc(draftStorageService: draftStorageService)
-                ..add(const DraftsLibraryLoadRequested()),
+          key: ValueKey((draftStorageService, includeAutosaveDraft)),
+          create: (_) => DraftsLibraryBloc(
+            draftStorageService: draftStorageService,
+            includeAutosaveDraft: includeAutosaveDraft,
+          )..add(const DraftsLibraryLoadRequested()),
         ),
       ],
       child: _LibraryView(
@@ -167,18 +184,36 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
     with TickerProviderStateMixin, ReducedMotionTabControllerMixin {
   late int _activeTabIndex;
 
-  @override
-  int get tabCount => _isClipsOnlyMode ? 1 : 3;
+  /// Tabs of the current mode, in bar order.
+  ///
+  /// Selection mode renders inside a sheet that only adds clips, so it drops
+  /// the bar entirely; the other modes differ only in the Sounds tab.
+  List<_LibraryTab> get _tabs {
+    if (widget.selectionMode) return const [_LibraryTab.clips];
+    return switch (widget.tabsMode) {
+      LibraryTabsMode.allTabs => const [
+        _LibraryTab.drafts,
+        _LibraryTab.clips,
+        _LibraryTab.sounds,
+      ],
+      LibraryTabsMode.withoutSounds => const [
+        _LibraryTab.drafts,
+        _LibraryTab.clips,
+      ],
+    };
+  }
 
   @override
-  int get initialTabIndex =>
-      _isClipsOnlyMode ? 0 : widget.initialTabIndex.clamp(0, 2);
+  int get tabCount => _tabs.length;
 
-  bool get _isClipsOnlyMode =>
-      widget.selectionMode || widget.tabsMode == LibraryTabsMode.clipsOnly;
+  @override
+  int get initialTabIndex => widget.initialTabIndex.clamp(0, tabCount - 1);
+
+  bool get _isClipsTabActive =>
+      _tabs[_activeTabIndex.clamp(0, _tabs.length - 1)] == _LibraryTab.clips;
 
   bool get _shouldAutoOpenSelectionMode =>
-      !widget.selectionMode && widget.tabsMode == LibraryTabsMode.clipsOnly;
+      !widget.selectionMode && widget.tabsMode == LibraryTabsMode.withoutSounds;
 
   bool _isSelectionEnabled(ClipsLibraryState state) =>
       widget.selectionMode || state.isLibrarySelectionMode;
@@ -224,11 +259,13 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
 
     final clipsBloc = context.read<ClipsLibraryBloc>();
     final clipsState = clipsBloc.state;
-    final isClipsTabActive = _isClipsOnlyMode || tabController.index == 1;
+    // Leaving the Clips tab drops a selection the user opened themselves. An
+    // auto-opened one mirrors the recorder session that sent us here, so
+    // clearing it on a peek at Drafts would lose that session's clips.
     if (!widget.selectionMode &&
-        !_isClipsOnlyMode &&
         clipsState.isLibrarySelectionMode &&
-        !isClipsTabActive) {
+        !_isSelectionModeLockedToCloseOnly(clipsState) &&
+        !_isClipsTabActive) {
       clipsBloc.add(const ClipsLibraryExitSelectionMode());
     }
   }
@@ -474,7 +511,7 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
       ],
       child: BlocBuilder<ClipsLibraryBloc, ClipsLibraryState>(
         builder: (context, clipsState) {
-          final isClipsTabActive = _isClipsOnlyMode || _activeTabIndex == 1;
+          final isClipsTabActive = _isClipsTabActive;
           final isLibrarySelectionMode = clipsState.isLibrarySelectionMode;
           final selectionLockedToCloseOnly = _isSelectionModeLockedToCloseOnly(
             clipsState,
@@ -538,7 +575,7 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
                           ),
                         Expanded(
                           child: _LibraryContent(
-                            isClipsOnlyMode: _isClipsOnlyMode,
+                            tabs: _tabs,
                             tabController: tabController,
                             selectionMode: widget.selectionMode,
                             scrollController: widget.scrollController,
@@ -556,9 +593,7 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
                           visible:
                               !widget.selectionMode &&
                               selectionEnabled &&
-                              (_activeTabIndex == 1 ||
-                                  widget.tabsMode ==
-                                      LibraryTabsMode.clipsOnly) &&
+                              isClipsTabActive &&
                               clipsState.selectedClipIds.isNotEmpty,
                           onPressed: () => _createVideoFromSelected(
                             context,
@@ -605,7 +640,7 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
 
 class _LibraryContent extends StatelessWidget {
   const _LibraryContent({
-    required this.isClipsOnlyMode,
+    required this.tabs,
     required this.tabController,
     required this.selectionMode,
     required this.sortedClips,
@@ -615,7 +650,7 @@ class _LibraryContent extends StatelessWidget {
     this.targetAspectRatio,
   });
 
-  final bool isClipsOnlyMode;
+  final List<_LibraryTab> tabs;
   final TabController tabController;
   final bool selectionMode;
   final List<DivineVideoClip> sortedClips;
@@ -629,8 +664,8 @@ class _LibraryContent extends StatelessWidget {
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (!isClipsOnlyMode) const SizedBox(height: 12),
-        if (!isClipsOnlyMode)
+        if (!selectionMode) const SizedBox(height: 12),
+        if (!selectionMode)
           TabBar(
             controller: tabController,
             isScrollable: true,
@@ -650,12 +685,17 @@ class _LibraryContent extends StatelessWidget {
               color: context.vineColors.onSurfaceMuted,
             ),
             tabs: [
-              Tab(text: context.l10n.libraryTabDrafts),
-              Tab(text: context.l10n.libraryTabClips),
-              Tab(text: context.l10n.soundsTitle),
+              for (final tab in tabs)
+                Tab(
+                  text: switch (tab) {
+                    _LibraryTab.drafts => context.l10n.libraryTabDrafts,
+                    _LibraryTab.clips => context.l10n.libraryTabClips,
+                    _LibraryTab.sounds => context.l10n.soundsTitle,
+                  },
+                ),
             ],
           ),
-        if (!isClipsOnlyMode) const SizedBox(height: 2),
+        if (!selectionMode) const SizedBox(height: 2),
         Expanded(
           child: selectionMode
               ? _SelectionBody(
@@ -666,7 +706,7 @@ class _LibraryContent extends StatelessWidget {
               : _TabBody(
                   clips: sortedClips,
                   selectionEnabled: selectionEnabled,
-                  isClipsOnlyMode: isClipsOnlyMode,
+                  tabs: tabs,
                   tabController: tabController,
                   targetAspectRatio: targetAspectRatio,
                 ),
@@ -817,40 +857,34 @@ class _SelectionBody extends StatelessWidget {
 class _TabBody extends StatelessWidget {
   const _TabBody({
     required this.tabController,
-    required this.isClipsOnlyMode,
+    required this.tabs,
     required this.clips,
     required this.selectionEnabled,
     this.targetAspectRatio,
   });
 
   final TabController tabController;
-  final bool isClipsOnlyMode;
+  final List<_LibraryTab> tabs;
   final List<DivineVideoClip> clips;
   final bool selectionEnabled;
   final double? targetAspectRatio;
 
   @override
   Widget build(BuildContext context) {
-    if (isClipsOnlyMode) {
-      return ClipsTab(
-        clips: clips,
-        selectionEnabled: selectionEnabled,
-        targetAspectRatio: targetAspectRatio,
-        showRecordButton: false,
-      );
-    }
-
     return TabBarView(
       controller: tabController,
       children: [
-        const DraftsTab(showRecordButton: false),
-        ClipsTab(
-          clips: clips,
-          selectionEnabled: selectionEnabled,
-          targetAspectRatio: targetAspectRatio,
-          showRecordButton: false,
-        ),
-        const SoundsTab(),
+        for (final tab in tabs)
+          switch (tab) {
+            _LibraryTab.drafts => const DraftsTab(showRecordButton: false),
+            _LibraryTab.clips => ClipsTab(
+              clips: clips,
+              selectionEnabled: selectionEnabled,
+              targetAspectRatio: targetAspectRatio,
+              showRecordButton: false,
+            ),
+            _LibraryTab.sounds => const SoundsTab(),
+          },
       ],
     );
   }

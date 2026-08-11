@@ -2187,6 +2187,7 @@
     "videoMetadataClosePreviewSemanticLabel": "Isara ang video preview",
     "videoMetadataRemoveSemanticLabel": "Alisin",
     "fullscreenFeedRemovedMessage": "Naalis ang video",
+    "fullscreenFeedEmptyMessage": "Wala nang matutugtog dito",
     "appsPermissionsEmptySubtitle": "Lalabas dito ang mga approved integration kapag may na-remember kang access approval.",
     "appsPermissionsEmptyTitle": "Walang naka-save na integration permission",
     "appsPermissionsRevoke": "I-revoke",
@@ -2828,8 +2829,6 @@
     "commentsInputHintEdit": "Edit comment...",
     "commentsEmptyTitle": "No comments yet",
     "commentsEmptySubtitle": "Get the party started!",
-    "commentsHeaderTitle": "Comments",
-    "commentsHeaderCloseLabel": "Close comments",
     "reportReasonCsam": "Sekswal na Pang-aabuso sa Bata",
     "reportReasonCsamSubtitle": "Content na naglalarawan ng sekswal na pang-aabuso sa mga menor de edad",
     "minorAccountReviewUnder13EmailSubject": "Under-13 account review for case {caseId}",
@@ -3614,5 +3613,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "Ilapat ang mga pagbabago sa {tool}",
   "videoEditorRemoveAudioSemanticLabel": "Alisin ang audio",
   "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}",
+  "inboxFilterBlocked": "Naka-block",
+  "inboxBlockedEmptyTitle": "Walang naka-block na chat",
+  "inboxBlockedEmptySubtitle": "Lumalabas dito ang mga account na bina-block mo.",
+  "inboxBlockedNoMessages": "Walang mensahe",
+  "dmBlockedThreadTitle": "Na-block mo ang account na ito",
+  "dmBlockedThreadBody": "Nananatili rito ang mga mensahe para mabasa o ma-screenshot mo. Mag-unblock para makasagot."
 }

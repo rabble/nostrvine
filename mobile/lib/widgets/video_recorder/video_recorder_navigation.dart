@@ -5,6 +5,7 @@
 
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,6 +24,7 @@ import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/utils/await_push_transition.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Closes the video recorder.
 ///
@@ -109,8 +111,8 @@ Future<void> openVideoEditorFromRecorder(
   bloc.add(const VideoRecorderInitializeRequested());
 }
 
-/// Navigates to the clips-only library, releasing the camera during the
-/// transition and re-initializing it on return.
+/// Navigates to the library's drafts and clips tabs, releasing the camera
+/// during the transition and re-initializing it on return.
 Future<void> openRecorderLibrary(BuildContext context, WidgetRef ref) async {
   if (!await _ensureAuthenticatedForRecorderExit(context, ref)) return;
   if (!context.mounted) return;
@@ -144,6 +146,94 @@ Future<void> openRecorderLibrary(BuildContext context, WidgetRef ref) async {
   await navigation;
   if (!context.mounted || bloc.isClosed) return;
   bloc.add(const VideoRecorderInitializeRequested());
+
+  // Opening a draft from the library's Drafts tab resets the clip manager the
+  // recorder shares with the editor. The session survives as its autosave, so
+  // offer it back here — the recorder stays mounted throughout, so its own
+  // check never re-runs and the session would otherwise only resurface on the
+  // next app start.
+  await offerAutosavedSession(context, ref, openEditorOnRestore: false);
+}
+
+/// Offers the autosaved session back when the recorder is holding no clips.
+///
+/// The autosave draft is the app's recovery point for unfinished work: the
+/// editor refuses to close on one without a decision, and opening the camera
+/// on a fresh start asks the same question. Any other point where the clip
+/// manager empties under a mounted recorder has to ask too, or the session
+/// silently waits for the next launch.
+///
+/// [openEditorOnRestore] continues into the editor once the clips are back,
+/// which is what opening the camera wants. A caller the user reached by
+/// navigating back to the recorder leaves them there instead.
+Future<void> offerAutosavedSession(
+  BuildContext context,
+  WidgetRef ref, {
+  required bool openEditorOnRestore,
+}) async {
+  if (!ref.read(videoEditorProvider).isAutosavedDraft) return;
+  if (ref.read(clipManagerProvider).hasClips) return;
+
+  final draft = await ref.read(draftStorageServiceProvider).getAutosaveDraft();
+  if (!context.mounted) return;
+  if (draft == null) {
+    Log.debug(
+      '📹 No valid autosaved draft found',
+      name: 'VideoRecorderNavigation',
+      category: LogCategory.video,
+    );
+    return;
+  }
+
+  Log.info(
+    '📹 Found valid autosaved draft',
+    name: 'VideoRecorderNavigation',
+    category: LogCategory.video,
+  );
+
+  await VineBottomSheetPrompt.show(
+    context: context,
+    sticker: .videoClapBoard,
+    title: context.l10n.videoRecorderAutosaveFoundTitle,
+    subtitle: context.l10n.videoRecorderAutosaveFoundSubtitle,
+    primaryButtonText: context.l10n.videoRecorderAutosaveContinueButton,
+    onPrimaryPressed: () async {
+      final restoreSuccessful = await ref
+          .read(videoEditorProvider.notifier)
+          .restoreDraft();
+
+      if (!context.mounted) return;
+      context.pop();
+
+      if (!restoreSuccessful) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          DivineSnackbarContainer.snackBar(
+            context.l10n.videoRecorderAutosaveRestoreFailure,
+            error: true,
+          ),
+        );
+        return;
+      }
+
+      // Match the restored clips' aspect ratio so the user can't mix ratios on
+      // subsequent recordings. The legacy restoreDraft set this on the recorder
+      // directly; with the bloc the View owns the cross-feature dispatch.
+      final clips = ref.read(clipManagerProvider).clips;
+      if (clips.isNotEmpty) {
+        context.read<VideoRecorderBloc>().add(
+          VideoRecorderAspectRatioSet(clips.first.targetAspectRatio),
+        );
+      }
+
+      if (!openEditorOnRestore) return;
+      await openVideoEditorFromRecorder(context, ref);
+    },
+    secondaryButtonText: context.l10n.videoRecorderAutosaveDiscardButton,
+    onSecondaryPressed: () {
+      ref.read(videoEditorProvider.notifier).removeAutosavedDraft();
+      context.pop();
+    },
+  );
 }
 
 Future<void> _pauseCameraForNavigation(VideoRecorderBloc bloc) {
