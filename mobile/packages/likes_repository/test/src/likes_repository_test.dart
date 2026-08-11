@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
@@ -5279,6 +5280,52 @@ void main() {
           expect(
             {...aFilters[0].a!, ...aFilters[1].a!},
             hasLength(600),
+            reason: 'chunks partition every coordinate without overlap',
+          );
+        },
+      );
+
+      test(
+        'chunks the coordinate query by bytes when d tags are oversized',
+        () async {
+          // An event id is fixed at 64 chars, so the 500-value count cap
+          // byte-bounds the `#e` legs on its own. A coordinate is not fixed:
+          // nothing validates `d` tag length, so the `#a` legs need the byte
+          // budget too. 300 coordinates of ~1KB each is ~300KB of values —
+          // far past the frame cap while nowhere near the count cap.
+          final eventIds = [for (var i = 0; i < 300; i++) 'vote_target_$i'];
+          final oversizedDTag = 'd' * 1024;
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => <Event>[]);
+
+          repository = createRepository(withLocalStorage: false);
+          await repository.getVoteCounts(
+            eventIds,
+            addressableIds: {
+              for (final id in eventIds)
+                id: '34236:$testAuthorPubkey:$oversizedDTag$id',
+            },
+          );
+
+          final aFilters =
+              verify(() => mockNostrClient.queryEvents(captureAny())).captured
+                  .cast<List<Filter>>()
+                  .map((filters) => filters.single)
+                  .where((f) => f.a != null)
+                  .toList();
+
+          expect(aFilters.length, greaterThan(1));
+          for (final filter in aFilters) {
+            final chunkBytes = filter.a!.fold<int>(
+              0,
+              (sum, value) => sum + utf8.encode(value).length,
+            );
+            expect(chunkBytes, lessThanOrEqualTo(128 * 1024));
+          }
+          expect(
+            {for (final f in aFilters) ...f.a!},
+            hasLength(300),
             reason: 'chunks partition every coordinate without overlap',
           );
         },

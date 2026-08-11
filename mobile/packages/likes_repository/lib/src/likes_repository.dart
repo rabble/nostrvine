@@ -5,7 +5,7 @@
 // ABOUTME: Supports offline queuing via callback injection.
 
 import 'dart:async';
-import 'dart:math';
+import 'dart:convert';
 
 import 'package:likes_repository/src/blocked_liker_filter.dart';
 import 'package:likes_repository/src/exceptions.dart';
@@ -34,9 +34,19 @@ const _downvoteContent = '-';
 /// (512KB). An oversized frame errors the socket and `queryEvents` fails
 /// open — silently counting deleted likes, or returning no reactions at all.
 /// 500 ids is ~34KB, well under 512KB and the advertised `max_event_tags`
-/// of 2000. A `kind:pubkey:dtag` coordinate costs more per entry than a bare
-/// id, but 500 of them still lands far inside the cap. See #5751.
+/// of 2000. See #5751.
 const _reqEidChunkSize = 500;
+
+/// Max cumulative UTF-8 bytes of tag values per `#e` or `#a` REQ filter.
+///
+/// The count cap only byte-bounds fixed-width values like event ids. A
+/// `kind:pubkey:dtag` coordinate is typically ~135 bytes, but nothing
+/// validates `d` tag length, so 500 coordinates minted by another client
+/// can still blow past `max_message_length`. 128KB of values keeps 4x
+/// headroom under the 512KB cap and never splits a typical batch. A single
+/// value over the budget still ships, alone — that REQ cannot be made any
+/// smaller.
+const int _reqTagValueChunkBytes = 128 * 1024;
 
 /// Callback to check if the device is currently online
 typedef IsOnlineCallback = bool Function();
@@ -1961,8 +1971,9 @@ class LikesRepository {
     );
   }
 
-  /// Runs [buildFilter] over [values] in chunks of [_reqEidChunkSize], so no
-  /// single REQ frame can exceed the relay's message cap.
+  /// Runs [buildFilter] over [values] in chunks capped at [_reqEidChunkSize]
+  /// values and [_reqTagValueChunkBytes] bytes, so no single REQ frame can
+  /// exceed the relay's message cap.
   ///
   /// Deduplicates by event id once there is more than one chunk. Each chunk
   /// is its own `queryEvents` call with its own dedup box, so an event that
@@ -1988,10 +1999,25 @@ class LikesRepository {
   }
 
   List<List<String>> _chunkStrings(List<String> values, int chunkSize) {
-    return [
-      for (var i = 0; i < values.length; i += chunkSize)
-        values.sublist(i, min(i + chunkSize, values.length)),
-    ];
+    final chunks = <List<String>>[];
+    var chunk = <String>[];
+    var chunkBytes = 0;
+    for (final value in values) {
+      final valueBytes = utf8.encode(value).length;
+      final closesChunk =
+          chunk.length >= chunkSize ||
+          (chunk.isNotEmpty &&
+              chunkBytes + valueBytes > _reqTagValueChunkBytes);
+      if (closesChunk) {
+        chunks.add(chunk);
+        chunk = <String>[];
+        chunkBytes = 0;
+      }
+      chunk.add(value);
+      chunkBytes += valueBytes;
+    }
+    if (chunk.isNotEmpty) chunks.add(chunk);
+    return chunks;
   }
 
   Set<String> _reactionTargetEventIds(
