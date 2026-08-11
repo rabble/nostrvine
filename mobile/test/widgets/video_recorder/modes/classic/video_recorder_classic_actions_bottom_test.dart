@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_state.dart';
@@ -157,6 +158,31 @@ void main() {
           find.bySemanticsLabel(l10n.videoRecorderToggleGhostFrameLabel),
         );
         expect(node.flagsCollection.isToggled, Tristate.isFalse);
+
+        handle.dispose();
+      });
+
+      // The Maestro classic flow drives this row by identifier
+      // (e2e/maestro/tests/classicModeControls.yaml). Dropping one is
+      // invisible to every other test here — the labels and toggled flags
+      // above would still be correct — and only surfaces on a manual E2E run,
+      // since that lane is not part of CI.
+      testWidgets('exposes an E2E identifier on every action', (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
+
+        for (final identifier in const [
+          SemanticIds.cameraSwitchCameraButton,
+          SemanticIds.cameraGridButton,
+          SemanticIds.cameraGhostFrameButton,
+        ]) {
+          expect(
+            find.bySemanticsIdentifier(identifier),
+            findsOneWidget,
+            reason: 'missing E2E anchor: $identifier',
+          );
+        }
 
         handle.dispose();
       });

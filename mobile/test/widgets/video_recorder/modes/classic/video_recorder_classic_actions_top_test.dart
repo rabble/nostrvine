@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -70,6 +71,41 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(DivineIconButton), findsOneWidget);
+      });
+
+      // The Maestro classic flow taps this button by identifier
+      // (e2e/maestro/tests/classicModeDeleteClip.yaml). Dropping it only
+      // surfaces on a manual E2E run, since that lane is not part of CI.
+      //
+      // Needs a clip: with an empty session the row is at opacity 0, and
+      // RenderAnimatedOpacity drops its child from the semantics tree there —
+      // which is exactly what assertClassicMode reads as "nothing recorded".
+      testWidgets('exposes an E2E identifier on the delete button', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildWidget(
+            clips: [
+              DivineVideoClip(
+                id: 'clip1',
+                video: EditorVideo.file('/test/clip1.mp4'),
+                duration: const Duration(seconds: 2),
+                recordedAt: DateTime.now(),
+                targetAspectRatio: .square,
+                originalAspectRatio: 1,
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.cameraDeleteClipButton),
+          findsOneWidget,
+        );
+
+        handle.dispose();
       });
     });
 

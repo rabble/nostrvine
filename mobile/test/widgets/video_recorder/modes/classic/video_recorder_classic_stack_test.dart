@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -182,6 +183,36 @@ void main() {
           ),
           findsNothing,
         );
+      });
+
+      // Classic has no record button — the preview is the shutter — so the
+      // Maestro flow taps it by this identifier
+      // (e2e/maestro/utils/recordClassicClip.yaml). The label assertions above
+      // move with the recording state; the anchor must not, or the E2E flow
+      // loses its only way to start a classic recording. That only surfaces on
+      // a manual run, since the Maestro lane is not part of CI.
+      testWidgets('exposes a stable E2E anchor on the shutter in both states', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.cameraClassicShutter),
+          findsOneWidget,
+        );
+
+        await tester.pumpWidget(
+          buildWidget(recordingState: VideoRecorderState.recording),
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.cameraClassicShutter),
+          findsOneWidget,
+        );
+
+        handle.dispose();
       });
     });
 
