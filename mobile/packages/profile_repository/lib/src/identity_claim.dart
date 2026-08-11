@@ -9,4 +9,5 @@ export 'package:verifier_client/verifier_client.dart'
         VerifierClient,
         VerifierClientException,
         VerifierNetworkException,
+        VerifierPlatform,
         VerifierTimeoutException;

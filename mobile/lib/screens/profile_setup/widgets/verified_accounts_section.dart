@@ -1,10 +1,11 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
-import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/profile_setup/widgets/profile_setup_rows.dart';
+import 'package:openvine/screens/verify/verify_screen.dart';
 import 'package:openvine/widgets/profile/verified_accounts_row.dart';
 import 'package:profile_repository/profile_repository.dart';
 
@@ -37,7 +38,7 @@ class VerifiedAccountsSection extends StatelessWidget {
   }
 }
 
-/// The entry point into the verifier, drawn as one of the form's cards.
+/// The entry point into the verify flow, drawn as one of the form's cards.
 ///
 /// Same surface, radius and height as the fields above it, with the brand
 /// accent on the affordance — a row that reads as part of the form rather than
@@ -54,12 +55,19 @@ class _GetVerifiedTile extends StatelessWidget {
         ProfileSelectRow(
           label: l10n.profileEditGetVerifiedCta,
           trailingColor: VineTheme.primary,
-          onTap: () => context.read<ProfileEditorBloc>().add(
-            const VerifierLaunchRequested(),
-          ),
+          onTap: () => _openVerify(context),
         ),
         ProfileFieldSupportingText(l10n.profileEditGetVerifiedSubtitle),
       ],
     );
+  }
+
+  Future<void> _openVerify(BuildContext context) async {
+    final myProfileBloc = context.read<MyProfileBloc>();
+    await context.pushNamed(VerifyPage.routeName);
+    if (myProfileBloc.isClosed) return;
+    // The chip row above renders from MyProfileBloc, so a link added or
+    // removed in the flow only shows up here after a re-read.
+    myProfileBloc.add(const MyProfileFetchRequested());
   }
 }

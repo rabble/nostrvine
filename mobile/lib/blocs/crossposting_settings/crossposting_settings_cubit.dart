@@ -7,7 +7,7 @@ import 'dart:math';
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:openvine/features/crossposting/crossposting_callback.dart';
+import 'package:openvine/features/oauth/app_oauth_callback.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/repositories/crossposting_repository.dart';
 import 'package:openvine/services/crossposting_api_client.dart';
@@ -42,9 +42,9 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
        super(CrosspostingSettingsState());
 
   static final Uri callbackBaseUrl = Uri(
-    scheme: crosspostingOAuthCallbackScheme,
-    host: crosspostingOAuthCallbackHost,
-    path: crosspostingOAuthCallbackPath,
+    scheme: appOAuthCallbackScheme,
+    host: appOAuthCallbackHost,
+    path: appOAuthCallbackPath,
   );
 
   final CrosspostingRepository _repository;

@@ -11516,4 +11516,202 @@ class AppLocalizationsNl extends AppLocalizations {
   ) {
     return '$picker, $color';
   }
+
+  @override
+  String get verifyTitle => 'Geverifieerde accounts';
+
+  @override
+  String get verifySignedOutMessage => 'Log in om je accounts te koppelen.';
+
+  @override
+  String get verifyIntro =>
+      'Koppel accounts die je al hebt, zodat iedereen ziet dat jij het echt bent.';
+
+  @override
+  String get verifyLoadFailed => 'Je koppelingen konden niet worden geladen.';
+
+  @override
+  String get verifyRetry => 'Opnieuw proberen';
+
+  @override
+  String get verifyLinkedSectionTitle => 'Gekoppeld';
+
+  @override
+  String get verifyVerifierUnreachable =>
+      'De verifier was niet bereikbaar, dus alles staat op ongecontroleerd.';
+
+  @override
+  String get verifyAddSectionTitle => 'Account toevoegen';
+
+  @override
+  String get verifyAllPlatformsLinked =>
+      'Je hebt alles gekoppeld wat we ondersteunen.';
+
+  @override
+  String get verifyStatusVerified => 'Geverifieerd';
+
+  @override
+  String get verifyStatusUnverified => 'Niet geverifieerd';
+
+  @override
+  String verifyUnlinkSemanticLabel(String platform, String identity) {
+    return '$platform-account $identity ontkoppelen';
+  }
+
+  @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return '$platform ontkoppelen?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity wordt niet meer op je profiel getoond. Je kunt het later opnieuw koppelen, maar dan moet je opnieuw inloggen of een nieuw bewijs posten.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'Ontkoppelen';
+
+  @override
+  String verifyLinkSemanticLabel(String platform) {
+    return 'Je $platform-account koppelen';
+  }
+
+  @override
+  String get verifyOneTapBadge => 'Eén tik';
+
+  @override
+  String verifyConnectOauthExplainer(String platform) {
+    return 'Log in bij $platform, de rest doen wij. Er wordt niets gepost.';
+  }
+
+  @override
+  String verifyConnectOauthCta(String platform) {
+    return 'Doorgaan met $platform';
+  }
+
+  @override
+  String get verifyConnectProofTitle => 'Of post een bewijs';
+
+  @override
+  String get verifyConnectProofExplainer =>
+      'Post je npub op je account en plak daarna de link naar die post.';
+
+  @override
+  String get verifyNpubLabel => 'Je npub';
+
+  @override
+  String get verifyCopyNpubSemanticLabel => 'Je npub kopiëren';
+
+  @override
+  String get verifyNpubCopied => 'npub gekopieerd';
+
+  @override
+  String get verifyIdentityLabel => 'Accountnaam';
+
+  @override
+  String get verifyProofLabel => 'Link naar je post';
+
+  @override
+  String get verifyConnectProofCta => 'Controleren en koppelen';
+
+  @override
+  String get verifyErrorProofRejected =>
+      'We konden je npub niet vinden in die post.';
+
+  @override
+  String get verifyErrorVerifierUnreachable =>
+      'Verifier niet bereikbaar. Probeer het zo nog eens.';
+
+  @override
+  String get verifyErrorOauthFailed =>
+      'Dat ging niet door. Probeer het nog eens.';
+
+  @override
+  String get verifyErrorHandleRequired => 'Vul eerst je handle in.';
+
+  @override
+  String get verifyErrorPublishFailed =>
+      'Geverifieerd, maar geen enkele relay nam de update aan. Probeer het nog eens.';
+
+  @override
+  String get verifyErrorOauthUnavailable =>
+      'Inloggen met één tik is hier nog niet ingesteld. Gebruik het bewijs hieronder.';
+
+  @override
+  String get verifyConnectProofExplainerGithub =>
+      'Maak een openbare gist met je npub in het eerste bestand en plak de gist-link.';
+
+  @override
+  String get verifyConnectProofExplainerDiscord =>
+      'Post je npub in een Discord-kanaal dat onze bot kan lezen en plak de berichtlink. Een serveruitnodiging bewijst niets.';
+
+  @override
+  String get verifyConnectProofExplainerTwitter =>
+      'Tweet je npub vanaf dat account en plak de link naar de tweet.';
+
+  @override
+  String get verifyConnectProofExplainerMastodon =>
+      'Post je npub vanaf dat account en plak de link. De accountnaam heeft de instantie nodig — mastodon.social/@alice, niet alleen alice.';
+
+  @override
+  String get verifyConnectProofExplainerTelegram =>
+      'Het kanaal wordt gekoppeld, niet je Telegram-account. Het heeft eerst een openbare link nodig (Telegram maakt nieuwe kanalen privé). Post je npub daar en plak de berichtlink.';
+
+  @override
+  String get verifyConnectProofExplainerBluesky =>
+      'Hierboven ingelogd? Dan hoeft er niets meer. Zo niet, post je npub en plak de link naar die post.';
+
+  @override
+  String get verifyConnectProofExplainerTiktok =>
+      'Zet je npub in een videobijschrift en plak de link naar die video.';
+
+  @override
+  String get verifyConnectProofExplainerYoutube =>
+      'Zet je npub in een videobeschrijving en plak de link naar die video.';
+
+  @override
+  String verifyLinkedConfirmation(String platform) {
+    return '$platform is gekoppeld.';
+  }
+
+  @override
+  String get verifyErrorTelegramNotPublic =>
+      'Dat is een privékanaal of een uitnodiging. Geef het kanaal een openbare link en plak dan de berichtlink.';
+
+  @override
+  String get verifyErrorRemoveFailed =>
+      'Ontkoppelen lukte niet. Probeer het nog eens.';
+
+  @override
+  String get verifyErrorLinksUnreadable =>
+      'We konden je huidige koppelingen niet lezen, dus er is niets gewijzigd. Controleer je verbinding en probeer het nog eens.';
+
+  @override
+  String get verifyChannelLabel => 'Kanaalnaam';
+
+  @override
+  String get verifyHowItWorksTitle => 'Hoe werkt het?';
+
+  @override
+  String get verifyHowItWorksIntro =>
+      'Zie het als een handdruk tussen twee accounts:';
+
+  @override
+  String get verifyHowItWorksYourSide =>
+      'Je Divine-profiel zegt: “Ik ben @alice op Twitter.”';
+
+  @override
+  String get verifyHowItWorksOtherSide =>
+      'Je Twitter-account bevestigt: “Ja, dat Divine-profiel is van mij.”';
+
+  @override
+  String get verifyHowItWorksBothSides =>
+      'We checken beide kanten. Komt het overeen, dan ben je geverifieerd. Namaken kan niet: je naam en foto zijn te kopiëren, posten vanaf je echte account niet.';
+
+  @override
+  String get verifyHowItWorksOwnership =>
+      'De koppelingen staan op je eigen Nostr-identiteit, dus je haalt ze hier weg wanneer je wilt.';
+
+  @override
+  String get generalSettingsSectionIdentity => 'Identiteit';
 }

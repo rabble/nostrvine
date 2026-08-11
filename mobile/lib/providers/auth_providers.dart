@@ -434,14 +434,24 @@ VerifierClient verifierClient(Ref ref) {
 }
 
 /// Provider for [IdentityClaimsRepository] composing the verifier client
-/// with NIP-39 i tag parsing and the persistent verdict cache (#3936).
+/// with NIP-39 i tag parsing, the persistent verdict cache (#3936) and the
+/// kind-10011 write path behind the in-app verify flow.
+///
+/// The write dependencies are wired unconditionally even though most
+/// consumers only render someone else's chips: the signer scopes every write
+/// to the current user, so a read-only consumer holding this instance cannot
+/// write with it. Consumers already re-key their blocs on this repository's
+/// identity, which is what keeps a post-auth-flip client from being captured.
 @Riverpod(keepAlive: true)
 IdentityClaimsRepository identityClaimsRepository(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+  final database = ref.watch(databaseProvider);
   return IdentityClaimsRepository(
     verifierClient: ref.watch(verifierClientProvider),
-    identityVerificationsDao: ref
-        .watch(databaseProvider)
-        .identityVerificationsDao,
+    identityVerificationsDao: database.identityVerificationsDao,
+    nostrClient: ref.watch(nostrServiceProvider),
+    signEvent: authService.createAndSignEvent,
+    identityEventsDao: database.identityEventsDao,
   );
 }
 

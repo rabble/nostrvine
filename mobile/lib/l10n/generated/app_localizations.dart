@@ -19689,6 +19689,324 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{picker}, {color}'**
   String videoEditorColorPickerSwatchSemanticLabel(String picker, String color);
+
+  /// Title of the screen listing the accounts a user has linked to their Nostr identity (NIP-39).
+  ///
+  /// In en, this message translates to:
+  /// **'Verified accounts'**
+  String get verifyTitle;
+
+  /// Shown on the verify screen when no identity is signed in yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to link your accounts.'**
+  String get verifySignedOutMessage;
+
+  /// Intro line above the list of linked accounts, explaining what linking is for.
+  ///
+  /// In en, this message translates to:
+  /// **'Link accounts you already have, so people can tell it\'s really you.'**
+  String get verifyIntro;
+
+  /// Shown when the linked accounts could not be read from relays.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your links.'**
+  String get verifyLoadFailed;
+
+  /// Button that retries loading the linked accounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get verifyRetry;
+
+  /// Section header above the accounts that are already linked.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked'**
+  String get verifyLinkedSectionTitle;
+
+  /// Caption shown when the verification service could not be reached, so linked accounts cannot be shown as verified or not.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach the verifier, so these show as unchecked.'**
+  String get verifyVerifierUnreachable;
+
+  /// Section header above the platforms that can still be linked.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an account'**
+  String get verifyAddSectionTitle;
+
+  /// Shown in place of the platform list when every supported platform is already linked.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve linked everything we support.'**
+  String get verifyAllPlatformsLinked;
+
+  /// Pill on a linked account the verification service confirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified'**
+  String get verifyStatusVerified;
+
+  /// Pill on a linked account the verification service did not confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Not verified'**
+  String get verifyStatusUnverified;
+
+  /// Screen reader label for the button that removes a linked account.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlink {platform} account {identity}'**
+  String verifyUnlinkSemanticLabel(String platform, String identity);
+
+  /// Title of the sheet confirming an account unlink. {platform} is the platform's display name.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlink {platform}?'**
+  String verifyUnlinkConfirmTitle(String platform);
+
+  /// Body of the sheet confirming an account unlink. {identity} is the handle being unlinked.
+  ///
+  /// In en, this message translates to:
+  /// **'{identity} stops showing on your profile. You can link it again later, but you will have to sign in or post a new proof.'**
+  String verifyUnlinkConfirmSubtitle(String identity);
+
+  /// Destructive confirm button on the sheet confirming an account unlink.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlink'**
+  String get verifyUnlinkConfirmCta;
+
+  /// Screen reader label for a row that opens the flow for linking one platform.
+  ///
+  /// In en, this message translates to:
+  /// **'Link your {platform} account'**
+  String verifyLinkSemanticLabel(String platform);
+
+  /// Small marker on platforms that can be linked by signing in, without posting a proof.
+  ///
+  /// In en, this message translates to:
+  /// **'One tap'**
+  String get verifyOneTapBadge;
+
+  /// Explains the sign-in route for linking a platform. Reassures that nothing is posted to the account.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to {platform} and we\'ll handle the rest. Nothing gets posted.'**
+  String verifyConnectOauthExplainer(String platform);
+
+  /// Button that opens the platform's sign-in page to link the account.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with {platform}'**
+  String verifyConnectOauthCta(String platform);
+
+  /// Section header above the proof-post form. Reads as an alternative when a sign-in route is also offered.
+  ///
+  /// In en, this message translates to:
+  /// **'Or post a proof'**
+  String get verifyConnectProofTitle;
+
+  /// Explains the proof-post route: publish your npub on the platform, then paste the link to that post.
+  ///
+  /// In en, this message translates to:
+  /// **'Post your npub on your account, then paste the link to that post.'**
+  String get verifyConnectProofExplainer;
+
+  /// Caption above the user's own npub, shown so it can be copied into a proof post.
+  ///
+  /// In en, this message translates to:
+  /// **'Your npub'**
+  String get verifyNpubLabel;
+
+  /// Screen reader label for the button that copies the user's npub.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy your npub'**
+  String get verifyCopyNpubSemanticLabel;
+
+  /// Confirmation shown after the npub was copied to the clipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'npub copied'**
+  String get verifyNpubCopied;
+
+  /// Label of the field asking for the account name or handle on the platform being linked.
+  ///
+  /// In en, this message translates to:
+  /// **'Account name'**
+  String get verifyIdentityLabel;
+
+  /// Label of the field asking for the URL of the proof post.
+  ///
+  /// In en, this message translates to:
+  /// **'Link to your post'**
+  String get verifyProofLabel;
+
+  /// Button that verifies the proof post and, if it checks out, publishes the link.
+  ///
+  /// In en, this message translates to:
+  /// **'Check and link'**
+  String get verifyConnectProofCta;
+
+  /// Error shown when the verification service could not find the user's npub in the linked post.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t find your npub in that post.'**
+  String get verifyErrorProofRejected;
+
+  /// Error shown when the verification service could not be reached.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach the verifier. Try again in a moment.'**
+  String get verifyErrorVerifierUnreachable;
+
+  /// Error shown when the platform sign-in ended without a usable confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t go through. Give it another go.'**
+  String get verifyErrorOauthFailed;
+
+  /// Error shown when Bluesky sign-in is started without a handle, which it needs to find the user's server.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your handle first.'**
+  String get verifyErrorHandleRequired;
+
+  /// Error shown when the account verified but no relay accepted the identity event carrying the link.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified, but no relay took the update. Try again.'**
+  String get verifyErrorPublishFailed;
+
+  /// Error shown when the platform's one-tap sign-in has no credentials configured on the verification service, so only the proof-post route works.
+  ///
+  /// In en, this message translates to:
+  /// **'One-tap sign-in isn\'t set up for this one yet. Use the proof post below.'**
+  String get verifyErrorOauthUnavailable;
+
+  /// GitHub-specific proof instructions. GitHub proof must be a public gist, and the service reads only the gist's first file.
+  ///
+  /// In en, this message translates to:
+  /// **'Make a public gist with your npub in the first file, then paste the gist link.'**
+  String get verifyConnectProofExplainerGithub;
+
+  /// Discord-specific proof instructions. The proof is a message link from a channel the Divine bot can read; server invites are rejected because they cannot prove account ownership.
+  ///
+  /// In en, this message translates to:
+  /// **'Post your npub in a Discord channel our bot can read, then paste the message link. A server invite proves nothing.'**
+  String get verifyConnectProofExplainerDiscord;
+
+  /// Twitter/X proof instructions. The verifier reads the tweet and looks for the npub in its text.
+  ///
+  /// In en, this message translates to:
+  /// **'Tweet your npub from that account, then paste the link to the tweet.'**
+  String get verifyConnectProofExplainerTwitter;
+
+  /// Mastodon proof instructions. Also warns that the account name must carry the instance, because the verifier needs it to find the server.
+  ///
+  /// In en, this message translates to:
+  /// **'Post your npub from that account, then paste the link. The account name needs its instance — mastodon.social/@alice, not just alice.'**
+  String get verifyConnectProofExplainerMastodon;
+
+  /// Telegram proof instructions. Verification reads a public channel message, so a private chat cannot work.
+  ///
+  /// In en, this message translates to:
+  /// **'The channel gets linked, not your Telegram account. It needs a public link first (Telegram makes new ones private). Post your npub there and paste the message link.'**
+  String get verifyConnectProofExplainerTelegram;
+
+  /// Bluesky proof instructions. Signing in writes an identity record, so the proof post is only needed when the user did not sign in.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in above? Nothing else needed. Otherwise post your npub and paste the link to that post.'**
+  String get verifyConnectProofExplainerBluesky;
+
+  /// TikTok proof instructions. The verifier reads the video caption, not the profile bio.
+  ///
+  /// In en, this message translates to:
+  /// **'Put your npub in a video caption, then paste the link to that video.'**
+  String get verifyConnectProofExplainerTiktok;
+
+  /// YouTube proof instructions. The verifier reads the video description, not the channel about page.
+  ///
+  /// In en, this message translates to:
+  /// **'Put your npub in a video description, then paste the link to that video.'**
+  String get verifyConnectProofExplainerYoutube;
+
+  /// Confirmation shown on the verify screen right after an account was linked and published. {platform} is the platform's display name.
+  ///
+  /// In en, this message translates to:
+  /// **'{platform} is linked.'**
+  String verifyLinkedConfirmation(String platform);
+
+  /// Error shown when the pasted Telegram link is a private channel message (t.me/c/...) or an invite link, neither of which the verification service can read. New Telegram channels are private until the user gives them a public link.
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s a private channel or an invite. Give the channel a public link, then paste the message link.'**
+  String get verifyErrorTelegramNotPublic;
+
+  /// Error shown when unlinking an account did not reach any relay, so the account is still linked.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t unlink that. Try again.'**
+  String get verifyErrorRemoveFailed;
+
+  /// Error shown when the accounts already linked could not be read from relays. Writing anyway would have replaced them with an incomplete list, so nothing was changed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read your current links, so nothing was changed. Check your connection and try again.'**
+  String get verifyErrorLinksUnreadable;
+
+  /// Label of the account field for platforms where the thing being linked is a channel rather than a personal account: Telegram and YouTube verify the channel that published the proof, not the user's own handle.
+  ///
+  /// In en, this message translates to:
+  /// **'Channel name'**
+  String get verifyChannelLabel;
+
+  /// Title of the explainer sheet, and the label of the link that opens it. Phrased as the question a user would ask.
+  ///
+  /// In en, this message translates to:
+  /// **'How does it work?'**
+  String get verifyHowItWorksTitle;
+
+  /// Opening line of the explainer, introducing the handshake metaphor used on verify.divine.video.
+  ///
+  /// In en, this message translates to:
+  /// **'Think of it as a handshake between two accounts:'**
+  String get verifyHowItWorksIntro;
+
+  /// First half of the handshake: what the user's Divine profile claims. The quoted example uses a placeholder handle, not a real one.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Divine profile says: “I\'m @alice on Twitter.”'**
+  String get verifyHowItWorksYourSide;
+
+  /// Second half of the handshake: what the external account confirms.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Twitter account confirms: “Yes, that Divine profile is mine.”'**
+  String get verifyHowItWorksOtherSide;
+
+  /// Explains that both sides are checked and why an impersonator cannot fake it.
+  ///
+  /// In en, this message translates to:
+  /// **'We check both sides. If they match, you\'re verified. Nobody can fake it — someone can copy your name and photo, but they can\'t post from your real account.'**
+  String get verifyHowItWorksBothSides;
+
+  /// Notes that the links live on the user's own Nostr identity and can be removed again.
+  ///
+  /// In en, this message translates to:
+  /// **'The links live on your own Nostr identity, so you can remove any of them here whenever you want.'**
+  String get verifyHowItWorksOwnership;
+
+  /// Section header in General settings above the entry that opens the verified-accounts screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity'**
+  String get generalSettingsSectionIdentity;
 }
 
 class _AppLocalizationsDelegate

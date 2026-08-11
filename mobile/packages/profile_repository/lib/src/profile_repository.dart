@@ -14,6 +14,7 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show Event, Filter;
 import 'package:profile_repository/profile_repository.dart';
+import 'package:profile_repository/src/identity_event_selection.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 // TODO(e2e): Add divine-name-server to local_stack Docker dependencies
@@ -452,7 +453,7 @@ class ProfileRepository implements ProfileReader {
     final dao = _identityEventsDao;
     final live = await _fetchIdentityEvent(pubkey);
     if (live != null) {
-      final iTags = _identityTagsOf(live.tags);
+      final iTags = identityTagsOf(live.tags);
       await _cacheIdentityTags(pubkey, iTags, identityEventKind);
       return iTags;
     }
@@ -474,7 +475,7 @@ class ProfileRepository implements ProfileReader {
       }
     }
 
-    final kind0ITags = _identityTagsOf(kind0Tags);
+    final kind0ITags = identityTagsOf(kind0Tags);
     // When the cached row could not be read, skip the fallback write — a
     // blind upsert here could downgrade a valid but unreadable-this-tick
     // kind-10011 row to a kind-0 source.
@@ -517,20 +518,9 @@ class ProfileRepository implements ProfileReader {
         ],
         useCache: false,
       );
-      final identityEvents = events
-          .where((e) => e.kind == identityEventKind)
-          .toList();
-      if (identityEvents.isEmpty) return null;
-      // Relays do not guarantee newest-first ordering, so pick the newest
-      // event by created_at. On a same-second tie, NIP-01 breaks by lowest
-      // event id, so same-second events resolve to one deterministic winner
-      // regardless of relay return order.
-      return identityEvents.reduce((a, b) {
-        if (a.createdAt != b.createdAt) {
-          return b.createdAt > a.createdAt ? b : a;
-        }
-        return b.id.compareTo(a.id) < 0 ? b : a;
-      });
+      return newestIdentityEvent(
+        events.where((e) => e.kind == identityEventKind).toList(),
+      );
     } on Exception catch (e) {
       Log.warning(
         'Kind-$identityEventKind fetch failed for $pubkey: $e',
@@ -538,14 +528,6 @@ class ProfileRepository implements ProfileReader {
       );
       return null;
     }
-  }
-
-  /// Filters [tags] down to structurally valid NIP-39 `i` tags.
-  static List<List<String>> _identityTagsOf(List<List<String>> tags) {
-    return [
-      for (final tag in tags)
-        if (tag.length >= 3 && tag[0] == 'i') tag,
-    ];
   }
 
   /// Decodes a stored `i` tag list; `null` when the JSON is malformed or

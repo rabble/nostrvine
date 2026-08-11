@@ -11618,4 +11618,200 @@ class AppLocalizationsFr extends AppLocalizations {
   ) {
     return '$picker, $color';
   }
+
+  @override
+  String get verifyTitle => 'Comptes vérifiés';
+
+  @override
+  String get verifySignedOutMessage => 'Connecte-toi pour lier tes comptes.';
+
+  @override
+  String get verifyIntro =>
+      'Lie les comptes que tu as déjà, comme ça tout le monde sait que c\'est bien toi.';
+
+  @override
+  String get verifyLoadFailed => 'Impossible de charger tes liens.';
+
+  @override
+  String get verifyRetry => 'Réessayer';
+
+  @override
+  String get verifyLinkedSectionTitle => 'Liés';
+
+  @override
+  String get verifyVerifierUnreachable =>
+      'Le vérificateur était injoignable, donc tout s\'affiche comme non vérifié.';
+
+  @override
+  String get verifyAddSectionTitle => 'Ajouter un compte';
+
+  @override
+  String get verifyAllPlatformsLinked =>
+      'Tu as lié tout ce qu\'on prend en charge.';
+
+  @override
+  String get verifyStatusVerified => 'Vérifié';
+
+  @override
+  String get verifyStatusUnverified => 'Non vérifié';
+
+  @override
+  String verifyUnlinkSemanticLabel(String platform, String identity) {
+    return 'Délier le compte $platform $identity';
+  }
+
+  @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return 'Délier $platform ?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity n\'apparaîtra plus sur ton profil. Tu pourras le relier plus tard, mais il faudra te reconnecter ou publier une nouvelle preuve.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'Délier';
+
+  @override
+  String verifyLinkSemanticLabel(String platform) {
+    return 'Lier ton compte $platform';
+  }
+
+  @override
+  String get verifyOneTapBadge => 'Un tap';
+
+  @override
+  String verifyConnectOauthExplainer(String platform) {
+    return 'Connecte-toi à $platform, on s\'occupe du reste. Rien n\'est publié.';
+  }
+
+  @override
+  String verifyConnectOauthCta(String platform) {
+    return 'Continuer avec $platform';
+  }
+
+  @override
+  String get verifyConnectProofTitle => 'Ou publie une preuve';
+
+  @override
+  String get verifyConnectProofExplainer =>
+      'Publie ton npub sur ton compte, puis colle le lien vers ce post.';
+
+  @override
+  String get verifyNpubLabel => 'Ton npub';
+
+  @override
+  String get verifyCopyNpubSemanticLabel => 'Copier ton npub';
+
+  @override
+  String get verifyNpubCopied => 'npub copié';
+
+  @override
+  String get verifyIdentityLabel => 'Nom du compte';
+
+  @override
+  String get verifyProofLabel => 'Lien vers ton post';
+
+  @override
+  String get verifyConnectProofCta => 'Vérifier et lier';
+
+  @override
+  String get verifyErrorProofRejected =>
+      'On n\'a pas trouvé ton npub dans ce post.';
+
+  @override
+  String get verifyErrorVerifierUnreachable =>
+      'Vérificateur injoignable. Réessaie dans un instant.';
+
+  @override
+  String get verifyErrorOauthFailed => 'Ça n\'a pas marché. Retente le coup.';
+
+  @override
+  String get verifyErrorHandleRequired => 'Saisis d\'abord ton identifiant.';
+
+  @override
+  String get verifyErrorPublishFailed =>
+      'Vérifié, mais aucun relais n\'a accepté la mise à jour. Réessaie.';
+
+  @override
+  String get verifyErrorOauthUnavailable =>
+      'La connexion en un tap n\'est pas encore configurée pour celui-ci. Utilise la preuve ci-dessous.';
+
+  @override
+  String get verifyConnectProofExplainerGithub =>
+      'Crée un gist public avec ton npub dans le premier fichier, puis colle le lien du gist.';
+
+  @override
+  String get verifyConnectProofExplainerDiscord =>
+      'Publie ton npub dans un salon Discord que notre bot peut lire, puis colle le lien du message. Une invitation de serveur ne prouve rien.';
+
+  @override
+  String get verifyConnectProofExplainerTwitter =>
+      'Tweete ton npub depuis ce compte, puis colle le lien du tweet.';
+
+  @override
+  String get verifyConnectProofExplainerMastodon =>
+      'Publie ton npub depuis ce compte, puis colle le lien. Le nom du compte doit inclure l\'instance — mastodon.social/@alice, pas juste alice.';
+
+  @override
+  String get verifyConnectProofExplainerTelegram =>
+      'C\'est le canal qui est lié, pas ton compte Telegram. Il lui faut d\'abord un lien public (Telegram crée les nouveaux en privé). Publie ton npub et colle le lien du message.';
+
+  @override
+  String get verifyConnectProofExplainerBluesky =>
+      'Connecté ci-dessus ? Rien d\'autre à faire. Sinon publie ton npub et colle le lien de ce post.';
+
+  @override
+  String get verifyConnectProofExplainerTiktok =>
+      'Mets ton npub dans la légende d\'une vidéo, puis colle le lien de cette vidéo.';
+
+  @override
+  String get verifyConnectProofExplainerYoutube =>
+      'Mets ton npub dans la description d\'une vidéo, puis colle le lien de cette vidéo.';
+
+  @override
+  String verifyLinkedConfirmation(String platform) {
+    return '$platform est lié.';
+  }
+
+  @override
+  String get verifyErrorTelegramNotPublic =>
+      'C\'est un canal privé ou une invitation. Donne un lien public au canal, puis colle le lien du message.';
+
+  @override
+  String get verifyErrorRemoveFailed => 'Impossible de délier. Réessaie.';
+
+  @override
+  String get verifyErrorLinksUnreadable =>
+      'On n\'a pas pu lire tes liens actuels, donc rien n\'a été modifié. Vérifie ta connexion et réessaie.';
+
+  @override
+  String get verifyChannelLabel => 'Nom du canal';
+
+  @override
+  String get verifyHowItWorksTitle => 'Comment ça marche ?';
+
+  @override
+  String get verifyHowItWorksIntro =>
+      'Vois ça comme une poignée de main entre deux comptes :';
+
+  @override
+  String get verifyHowItWorksYourSide =>
+      'Ton profil Divine dit : « Je suis @alice sur Twitter. »';
+
+  @override
+  String get verifyHowItWorksOtherSide =>
+      'Ton compte Twitter confirme : « Oui, ce profil Divine est le mien. »';
+
+  @override
+  String get verifyHowItWorksBothSides =>
+      'On vérifie les deux côtés. Si ça correspond, tu es vérifié. Impossible à falsifier : on peut copier ton nom et ta photo, pas publier depuis ton vrai compte.';
+
+  @override
+  String get verifyHowItWorksOwnership =>
+      'Les liens vivent sur ta propre identité Nostr, tu peux donc les retirer ici quand tu veux.';
+
+  @override
+  String get generalSettingsSectionIdentity => 'Identité';
 }

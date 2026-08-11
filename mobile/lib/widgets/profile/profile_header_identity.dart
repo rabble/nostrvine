@@ -92,10 +92,10 @@ class _ProfileNameAndBio extends StatelessWidget {
                       )
                     : null,
               ),
-              _VerifiedAccountsBlock(isOwnProfile: isOwnProfile),
             ],
           ),
         ),
+        _VerifiedAccountsBlock(isOwnProfile: isOwnProfile),
       ],
     );
   }
@@ -625,7 +625,11 @@ class _VerifiedAccountsBlock extends StatelessWidget {
           ? null
           : Padding(
               padding: const EdgeInsets.only(top: 12),
-              child: VerifiedAccountsRow(claims: claims),
+              child: VerifiedAccountsRow(
+                claims: claims,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                center: true,
+              ),
             ),
     );
   }

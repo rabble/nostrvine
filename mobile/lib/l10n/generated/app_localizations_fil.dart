@@ -11589,4 +11589,201 @@ class AppLocalizationsFil extends AppLocalizations {
   ) {
     return '$picker, $color';
   }
+
+  @override
+  String get verifyTitle => 'Mga verified na account';
+
+  @override
+  String get verifySignedOutMessage =>
+      'Mag-sign in para i-link ang mga account mo.';
+
+  @override
+  String get verifyIntro =>
+      'I-link ang mga account na meron ka na, para alam nilang ikaw talaga \'to.';
+
+  @override
+  String get verifyLoadFailed => 'Hindi ma-load ang mga link mo.';
+
+  @override
+  String get verifyRetry => 'Subukan ulit';
+
+  @override
+  String get verifyLinkedSectionTitle => 'Naka-link';
+
+  @override
+  String get verifyVerifierUnreachable =>
+      'Hindi maabot ang verifier, kaya lahat ay lumalabas na hindi pa na-check.';
+
+  @override
+  String get verifyAddSectionTitle => 'Magdagdag ng account';
+
+  @override
+  String get verifyAllPlatformsLinked =>
+      'Na-link mo na lahat ng suportado namin.';
+
+  @override
+  String get verifyStatusVerified => 'Verified';
+
+  @override
+  String get verifyStatusUnverified => 'Hindi verified';
+
+  @override
+  String verifyUnlinkSemanticLabel(String platform, String identity) {
+    return 'I-unlink ang $platform account na $identity';
+  }
+
+  @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return 'I-unlink ang $platform?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return 'Hindi na lalabas ang $identity sa profile mo. Puwede mo \'tong i-link ulit mamaya, pero kailangan mong mag-sign in o mag-post ng bagong proof.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'I-unlink';
+
+  @override
+  String verifyLinkSemanticLabel(String platform) {
+    return 'I-link ang $platform account mo';
+  }
+
+  @override
+  String get verifyOneTapBadge => 'Isang tap';
+
+  @override
+  String verifyConnectOauthExplainer(String platform) {
+    return 'Mag-sign in sa $platform, kami na bahala sa iba. Walang ipo-post.';
+  }
+
+  @override
+  String verifyConnectOauthCta(String platform) {
+    return 'Magpatuloy gamit ang $platform';
+  }
+
+  @override
+  String get verifyConnectProofTitle => 'O mag-post ng patunay';
+
+  @override
+  String get verifyConnectProofExplainer =>
+      'I-post ang npub mo sa account mo, tapos i-paste ang link ng post na \'yon.';
+
+  @override
+  String get verifyNpubLabel => 'Ang npub mo';
+
+  @override
+  String get verifyCopyNpubSemanticLabel => 'Kopyahin ang npub mo';
+
+  @override
+  String get verifyNpubCopied => 'Nakopya ang npub';
+
+  @override
+  String get verifyIdentityLabel => 'Pangalan ng account';
+
+  @override
+  String get verifyProofLabel => 'Link ng post mo';
+
+  @override
+  String get verifyConnectProofCta => 'I-check at i-link';
+
+  @override
+  String get verifyErrorProofRejected =>
+      'Hindi namin nakita ang npub mo sa post na \'yon.';
+
+  @override
+  String get verifyErrorVerifierUnreachable =>
+      'Hindi maabot ang verifier. Subukan ulit mamaya.';
+
+  @override
+  String get verifyErrorOauthFailed => 'Hindi natuloy. Subukan ulit.';
+
+  @override
+  String get verifyErrorHandleRequired => 'Ilagay muna ang handle mo.';
+
+  @override
+  String get verifyErrorPublishFailed =>
+      'Verified, pero walang relay na tumanggap ng update. Subukan ulit.';
+
+  @override
+  String get verifyErrorOauthUnavailable =>
+      'Hindi pa naka-set up ang one-tap sign-in dito. Gamitin ang patunay sa ibaba.';
+
+  @override
+  String get verifyConnectProofExplainerGithub =>
+      'Gumawa ng public gist na nasa unang file ang npub mo, tapos i-paste ang gist link.';
+
+  @override
+  String get verifyConnectProofExplainerDiscord =>
+      'I-post ang npub mo sa Discord channel na kayang basahin ng bot namin, tapos i-paste ang message link. Walang pinapatunayan ang server invite.';
+
+  @override
+  String get verifyConnectProofExplainerTwitter =>
+      'I-tweet ang npub mo mula sa account na \'yon, tapos i-paste ang link ng tweet.';
+
+  @override
+  String get verifyConnectProofExplainerMastodon =>
+      'I-post ang npub mo mula sa account na \'yon, tapos i-paste ang link. Kailangan may instance ang pangalan ng account — mastodon.social/@alice, hindi lang alice.';
+
+  @override
+  String get verifyConnectProofExplainerTelegram =>
+      'Ang channel ang nali-link, hindi ang Telegram account mo. Kailangan muna nitong may public link (private ang bago sa Telegram). I-post ang npub mo doon at i-paste ang message link.';
+
+  @override
+  String get verifyConnectProofExplainerBluesky =>
+      'Naka-sign in ka na sa taas? Wala nang kailangan. Kung hindi, i-post ang npub mo at i-paste ang link ng post.';
+
+  @override
+  String get verifyConnectProofExplainerTiktok =>
+      'Ilagay ang npub mo sa caption ng video, tapos i-paste ang link ng video.';
+
+  @override
+  String get verifyConnectProofExplainerYoutube =>
+      'Ilagay ang npub mo sa description ng video, tapos i-paste ang link ng video.';
+
+  @override
+  String verifyLinkedConfirmation(String platform) {
+    return 'Naka-link na ang $platform.';
+  }
+
+  @override
+  String get verifyErrorTelegramNotPublic =>
+      'Private channel \'yan o invite. Bigyan mo ng public link ang channel, tapos i-paste ang message link.';
+
+  @override
+  String get verifyErrorRemoveFailed => 'Hindi na-unlink. Subukan ulit.';
+
+  @override
+  String get verifyErrorLinksUnreadable =>
+      'Hindi namin nabasa ang kasalukuyang mga link mo, kaya walang binago. I-check ang koneksyon mo at subukan ulit.';
+
+  @override
+  String get verifyChannelLabel => 'Pangalan ng channel';
+
+  @override
+  String get verifyHowItWorksTitle => 'Paano ito gumagana?';
+
+  @override
+  String get verifyHowItWorksIntro =>
+      'Isipin mo itong parang pagkakamayan ng dalawang account:';
+
+  @override
+  String get verifyHowItWorksYourSide =>
+      'Sabi ng Divine profile mo: “Ako si @alice sa Twitter.”';
+
+  @override
+  String get verifyHowItWorksOtherSide =>
+      'Kinukumpirma ng Twitter account mo: “Oo, akin ang Divine profile na \'yan.”';
+
+  @override
+  String get verifyHowItWorksBothSides =>
+      'Chine-check namin ang dalawang panig. Kung tugma, verified ka na. Walang makakapeke — makokopya ang pangalan at litrato mo, pero hindi sila makakapag-post mula sa totoong account mo.';
+
+  @override
+  String get verifyHowItWorksOwnership =>
+      'Nasa sarili mong Nostr identity ang mga link, kaya matatanggal mo sila dito anumang oras.';
+
+  @override
+  String get generalSettingsSectionIdentity => 'Pagkakakilanlan';
 }

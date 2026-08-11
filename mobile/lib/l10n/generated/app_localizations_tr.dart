@@ -11422,4 +11422,198 @@ class AppLocalizationsTr extends AppLocalizations {
   ) {
     return '$picker, $color';
   }
+
+  @override
+  String get verifyTitle => 'Doğrulanmış hesaplar';
+
+  @override
+  String get verifySignedOutMessage => 'Hesaplarını bağlamak için giriş yap.';
+
+  @override
+  String get verifyIntro =>
+      'Zaten sahip olduğun hesapları bağla ki gerçekten sen olduğun anlaşılsın.';
+
+  @override
+  String get verifyLoadFailed => 'Bağlantıların yüklenemedi.';
+
+  @override
+  String get verifyRetry => 'Tekrar dene';
+
+  @override
+  String get verifyLinkedSectionTitle => 'Bağlı';
+
+  @override
+  String get verifyVerifierUnreachable =>
+      'Doğrulayıcıya ulaşılamadı, bu yüzden hepsi kontrol edilmemiş görünüyor.';
+
+  @override
+  String get verifyAddSectionTitle => 'Hesap ekle';
+
+  @override
+  String get verifyAllPlatformsLinked => 'Desteklediğimiz her şeyi bağladın.';
+
+  @override
+  String get verifyStatusVerified => 'Doğrulandı';
+
+  @override
+  String get verifyStatusUnverified => 'Doğrulanmadı';
+
+  @override
+  String verifyUnlinkSemanticLabel(String platform, String identity) {
+    return '$platform hesabı $identity bağlantısını kaldır';
+  }
+
+  @override
+  String verifyUnlinkConfirmTitle(String platform) {
+    return '$platform bağlantısı kaldırılsın mı?';
+  }
+
+  @override
+  String verifyUnlinkConfirmSubtitle(String identity) {
+    return '$identity artık profilinde görünmeyecek. Daha sonra tekrar bağlayabilirsin ama yeniden giriş yapman ya da yeni bir kanıt paylaşman gerekecek.';
+  }
+
+  @override
+  String get verifyUnlinkConfirmCta => 'Bağlantıyı kaldır';
+
+  @override
+  String verifyLinkSemanticLabel(String platform) {
+    return '$platform hesabını bağla';
+  }
+
+  @override
+  String get verifyOneTapBadge => 'Tek dokunuş';
+
+  @override
+  String verifyConnectOauthExplainer(String platform) {
+    return '$platform hesabına giriş yap, gerisini biz hallederiz. Hiçbir şey paylaşılmaz.';
+  }
+
+  @override
+  String verifyConnectOauthCta(String platform) {
+    return '$platform ile devam et';
+  }
+
+  @override
+  String get verifyConnectProofTitle => 'Ya da bir kanıt paylaş';
+
+  @override
+  String get verifyConnectProofExplainer =>
+      'npub\'ını hesabında paylaş, sonra o gönderinin bağlantısını yapıştır.';
+
+  @override
+  String get verifyNpubLabel => 'npub\'ın';
+
+  @override
+  String get verifyCopyNpubSemanticLabel => 'npub\'ını kopyala';
+
+  @override
+  String get verifyNpubCopied => 'npub kopyalandı';
+
+  @override
+  String get verifyIdentityLabel => 'Hesap adı';
+
+  @override
+  String get verifyProofLabel => 'Gönderinin bağlantısı';
+
+  @override
+  String get verifyConnectProofCta => 'Kontrol et ve bağla';
+
+  @override
+  String get verifyErrorProofRejected => 'O gönderide npub\'ını bulamadık.';
+
+  @override
+  String get verifyErrorVerifierUnreachable =>
+      'Doğrulayıcıya ulaşılamadı. Birazdan tekrar dene.';
+
+  @override
+  String get verifyErrorOauthFailed => 'Olmadı. Bir daha dene.';
+
+  @override
+  String get verifyErrorHandleRequired => 'Önce kullanıcı adını gir.';
+
+  @override
+  String get verifyErrorPublishFailed =>
+      'Doğrulandı ama hiçbir röle güncellemeyi kabul etmedi. Tekrar dene.';
+
+  @override
+  String get verifyErrorOauthUnavailable =>
+      'Tek dokunuşla giriş bunun için henüz ayarlı değil. Aşağıdaki kanıtı kullan.';
+
+  @override
+  String get verifyConnectProofExplainerGithub =>
+      'npub\'ın ilk dosyada olacak şekilde herkese açık bir gist oluştur ve gist bağlantısını yapıştır.';
+
+  @override
+  String get verifyConnectProofExplainerDiscord =>
+      'npub\'ını botumuzun okuyabildiği bir Discord kanalında paylaş ve mesaj bağlantısını yapıştır. Sunucu daveti hiçbir şeyi kanıtlamaz.';
+
+  @override
+  String get verifyConnectProofExplainerTwitter =>
+      'npub\'ını o hesaptan tweetle ve tweetin bağlantısını yapıştır.';
+
+  @override
+  String get verifyConnectProofExplainerMastodon =>
+      'npub\'ını o hesaptan paylaş ve bağlantıyı yapıştır. Hesap adı sunucuyu da içermeli — mastodon.social/@alice, sadece alice değil.';
+
+  @override
+  String get verifyConnectProofExplainerTelegram =>
+      'Bağlanan kanal, Telegram hesabın değil. Önce herkese açık bir bağlantısı olmalı (Telegram yenileri özel oluşturur). npub\'ını orada paylaş ve mesaj bağlantısını yapıştır.';
+
+  @override
+  String get verifyConnectProofExplainerBluesky =>
+      'Yukarıdan giriş yaptın mı? Başka bir şey gerekmiyor. Yoksa npub\'ını paylaş ve gönderinin bağlantısını yapıştır.';
+
+  @override
+  String get verifyConnectProofExplainerTiktok =>
+      'npub\'ını bir video açıklamasına yaz ve o videonun bağlantısını yapıştır.';
+
+  @override
+  String get verifyConnectProofExplainerYoutube =>
+      'npub\'ını bir video açıklamasına yaz ve o videonun bağlantısını yapıştır.';
+
+  @override
+  String verifyLinkedConfirmation(String platform) {
+    return '$platform bağlandı.';
+  }
+
+  @override
+  String get verifyErrorTelegramNotPublic =>
+      'O özel bir kanal ya da davet. Kanala herkese açık bir bağlantı ver, sonra mesaj bağlantısını yapıştır.';
+
+  @override
+  String get verifyErrorRemoveFailed => 'Bağlantı kaldırılamadı. Tekrar dene.';
+
+  @override
+  String get verifyErrorLinksUnreadable =>
+      'Mevcut bağlantılarını okuyamadık, bu yüzden hiçbir şey değişmedi. Bağlantını kontrol edip tekrar dene.';
+
+  @override
+  String get verifyChannelLabel => 'Kanal adı';
+
+  @override
+  String get verifyHowItWorksTitle => 'Bu nasıl çalışıyor?';
+
+  @override
+  String get verifyHowItWorksIntro =>
+      'Bunu iki hesap arasındaki bir el sıkışma gibi düşün:';
+
+  @override
+  String get verifyHowItWorksYourSide =>
+      'Divine profilin diyor ki: “Twitter\'da @alice benim.”';
+
+  @override
+  String get verifyHowItWorksOtherSide =>
+      'Twitter hesabın onaylıyor: “Evet, o Divine profili bana ait.”';
+
+  @override
+  String get verifyHowItWorksBothSides =>
+      'İki tarafı da kontrol ediyoruz. Uyuşuyorsa doğrulanmış olursun. Taklit edilemez — adını ve fotoğrafını kopyalayabilirler, gerçek hesabından paylaşamazlar.';
+
+  @override
+  String get verifyHowItWorksOwnership =>
+      'Bağlantılar kendi Nostr kimliğinde duruyor, yani buradan istediğin zaman kaldırabilirsin.';
+
+  @override
+  String get generalSettingsSectionIdentity => 'Kimlik';
 }
