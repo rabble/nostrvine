@@ -1499,6 +1499,62 @@ void main() {
         expect(mockNostr.lastRequireAllRelaysSettled, isTrue);
       });
 
+      test(
+        'reports a closed query pool as inconclusive for a full-settlement '
+        'caller',
+        () async {
+          // Same dispose race as the pooled-path test above: park at the cache
+          // await, dispose so the pool closes, then resume into the pre-query
+          // guard. The websocket leg is skipped there, so nothing asked the
+          // relays anything — and an answer nobody was asked for must not
+          // reach a caller that is about to replace what it read.
+          final mockDbClient = _MockAppDbClient();
+          final mockDatabase = _MockAppDatabase();
+          final dao = _MockNostrEventsDao();
+          when(() => mockDbClient.database).thenReturn(mockDatabase);
+          when(() => mockDatabase.nostrEventsDao).thenReturn(dao);
+
+          final cacheGate = Completer<List<Event>>();
+          when(
+            () => dao.getEventsByFilter(any()),
+          ).thenAnswer((_) => cacheGate.future);
+          when(() => mockNostr.unsubscribe(any())).thenReturn(null);
+
+          final clientWithCache = NostrClient.forTesting(
+            nostr: mockNostr,
+            relayManager: mockRelayManager,
+            dbClient: mockDbClient,
+          );
+
+          final pending = clientWithCache.queryEventsDetailed(
+            [textNoteFilter()],
+            requireAllRelaysSettled: true,
+          );
+          await pumpEventQueue();
+          verify(() => dao.getEventsByFilter(any())).called(1);
+
+          await clientWithCache.dispose();
+          cacheGate.complete(const []);
+
+          final result = await pending;
+
+          expect(result.events, isEmpty);
+          expect(
+            result.noRelays,
+            isFalse,
+            reason: 'relays are connected, so nothing else flags this answer',
+          );
+          expect(
+            result.timedOut,
+            isTrue,
+            reason:
+                'the skipped websocket leg otherwise reads as "the relays '
+                'answered and hold nothing", which is what lets the next '
+                'publish replace a kind 10003 it never read',
+          );
+        },
+      );
+
       test('propagates the relay timeout alongside partial events', () async {
         final events = [_createTestEvent()];
         stubWebSocketEvents(events);

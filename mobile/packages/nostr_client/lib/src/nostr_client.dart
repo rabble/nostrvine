@@ -832,8 +832,12 @@ class NostrClient {
   /// `timedOut: false`. Set [requireAllRelaysSettled] when that distinction
   /// is load-bearing — a caller about to replace what it read cannot act on a
   /// partial answer — and an incomplete answer arrives as `timedOut: true`
-  /// instead. Note this only bounds the WebSocket leg; cached rows are merged
-  /// in either way.
+  /// instead. That covers the answers nobody gave as well as the partial ones:
+  /// a fan-out no relay accepted, and a query skipped because the client is
+  /// being disposed, both report `timedOut: true` rather than an empty answer
+  /// (a client with no reachable relay at all reports `noRelays` instead).
+  /// Note this only bounds the WebSocket leg; cached rows are merged in either
+  /// way.
   Future<({List<Event> events, bool timedOut, bool noRelays})>
   queryEventsDetailed(
     List<Filter> filters, {
@@ -918,7 +922,14 @@ class NostrClient {
     // race rather than narrowing it. See #5952.
     final ({List<Event> events, bool timedOut}) websocketResult;
     if (_queryPool.isClosed) {
-      websocketResult = (events: <Event>[], timedOut: false);
+      // Nothing was asked of the relays here, which is a different thing from
+      // their having nothing. A display read is content to fall back on cache;
+      // a full-settlement caller is about to replace what it read, so it gets
+      // the same inconclusive answer a relay that never settled would give.
+      websocketResult = (
+        events: <Event>[],
+        timedOut: requireAllRelaysSettled,
+      );
     } else {
       websocketResult = useQueryPool
           ? await _queryPool.withResource(runWebSocketQuery)
