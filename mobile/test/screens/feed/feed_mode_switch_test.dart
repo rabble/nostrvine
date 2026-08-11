@@ -10,23 +10,31 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
+import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/screens/feed/feed_immersive_cubit.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
-import 'package:openvine/screens/feed/feed_settings_menu.dart';
 import 'package:openvine/widgets/video_feed_item/feed_immersive_chrome.dart';
+
+import '../../helpers/test_provider_overrides.dart';
 
 class _MockVideoFeedBloc extends MockBloc<VideoFeedEvent, VideoFeedBlocState>
     implements VideoFeedBloc {}
 
+class _MockVideoVolumeCubit extends MockCubit<VideoVolumeState>
+    implements VideoVolumeCubit {}
+
 void main() {
   group(FeedModeSwitch, () {
     late _MockVideoFeedBloc mockBloc;
+    late _MockVideoVolumeCubit mockVolumeCubit;
     late AppLocalizations l10n;
 
     setUp(() {
       mockBloc = _MockVideoFeedBloc();
+      mockVolumeCubit = _MockVideoVolumeCubit();
+      when(() => mockVolumeCubit.state).thenReturn(const VideoVolumeState());
     });
 
     setUpAll(() {
@@ -38,18 +46,26 @@ void main() {
 
     tearDown(() {
       mockBloc.close();
+      mockVolumeCubit.close();
     });
 
-    Widget createTestWidget() {
+    // ignore: strict_raw_type
+    Widget createTestWidget({List overrides = const []}) {
       return ProviderScope(
+        overrides: overrides.cast(),
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: Stack(
               children: [
-                BlocProvider<VideoFeedBloc>.value(
-                  value: mockBloc,
+                MultiBlocProvider(
+                  providers: [
+                    BlocProvider<VideoFeedBloc>.value(value: mockBloc),
+                    BlocProvider<VideoVolumeCubit>.value(
+                      value: mockVolumeCubit,
+                    ),
+                  ],
                   child: const FeedModeSwitch(),
                 ),
               ],
@@ -128,7 +144,7 @@ void main() {
     });
 
     group('Feed Settings', () {
-      testWidgets('passes only the active video id to the trailing settings menu', (
+      testWidgets('does not show owner actions in the feed settings popover', (
         tester,
       ) async {
         final firstVideo = video(
@@ -144,19 +160,20 @@ void main() {
             currentIndex: 1,
           ),
         );
+        final mockAuth = createMockAuthService();
+        when(() => mockAuth.currentPublicKeyHex).thenReturn(activeVideo.pubkey);
 
-        await tester.pumpWidget(createTestWidget());
+        await tester.pumpWidget(
+          createTestWidget(
+            overrides: getStandardTestOverrides(mockAuthService: mockAuth),
+          ),
+        );
 
-        expect(
-          tester.widget<FeedSettingsMenu>(find.byType(FeedSettingsMenu)).video,
-          isNull,
-        );
-        expect(
-          tester
-              .widget<FeedSettingsMenu>(find.byType(FeedSettingsMenu))
-              .videoId,
-          activeVideo.id,
-        );
+        await tester.tap(find.bySemanticsLabel(l10n.videoSettingsMenuOpen));
+        await tester.pump();
+
+        expect(find.text(l10n.shareMenuEditVideo), findsNothing);
+        expect(find.text(l10n.shareMenuDeleteVideo), findsNothing);
       });
     });
 

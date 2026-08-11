@@ -42,6 +42,9 @@ final ProviderFamily<bool, String> subtitleVisibilityForVideoProvider = Provider
 
 class SubtitleVisibilityOverrideNotifier
     extends Notifier<SubtitleVisibilityOverride?> {
+  final Map<Object, String> _activeVideoByOwner = <Object, String>{};
+  final Map<String, int> _activeOwnerCountsByVideo = <String, int>{};
+
   @override
   SubtitleVisibilityOverride? build() => null;
 
@@ -58,20 +61,53 @@ class SubtitleVisibilityOverrideNotifier
     setForVideo(videoId, !currentlyVisible);
   }
 
-  void clearIfVideo(String videoId) {
+  void syncOwnerToVideo(Object owner, String videoId) {
     if (!ref.mounted) return;
-    if (state?.videoId == videoId) {
+    final previousVideoId = _activeVideoByOwner[owner];
+    if (previousVideoId == videoId) return;
+
+    if (previousVideoId != null) {
+      _removeOwner(previousVideoId);
+    }
+    _activeVideoByOwner[owner] = videoId;
+    _activeOwnerCountsByVideo[videoId] =
+        (_activeOwnerCountsByVideo[videoId] ?? 0) + 1;
+
+    _clearUnownedOverrideUnlessVideo(videoId);
+  }
+
+  void clearOwner(Object owner) {
+    if (!ref.mounted) return;
+    final previousVideoId = _activeVideoByOwner.remove(owner);
+    if (previousVideoId == null) return;
+
+    _removeOwner(previousVideoId);
+    if (state?.videoId == previousVideoId &&
+        !_hasActiveOwner(previousVideoId)) {
       state = null;
     }
   }
 
-  void clearUnlessVideo(String videoId) {
-    if (!ref.mounted) return;
+  void _removeOwner(String videoId) {
+    final count = _activeOwnerCountsByVideo[videoId];
+    if (count == null) return;
+    if (count <= 1) {
+      _activeOwnerCountsByVideo.remove(videoId);
+    } else {
+      _activeOwnerCountsByVideo[videoId] = count - 1;
+    }
+  }
+
+  void _clearUnownedOverrideUnlessVideo(String videoId) {
     final current = state;
-    if (current != null && current.videoId != videoId) {
+    if (current == null || current.videoId == videoId) return;
+    if (!_hasActiveOwner(current.videoId)) {
       state = null;
     }
   }
+
+  bool _hasActiveOwner(String videoId) =>
+      (_activeOwnerCountsByVideo[videoId] ?? 0) > 0;
 }
 
 /// Fetches subtitle cues for a video, using ordered fallback.

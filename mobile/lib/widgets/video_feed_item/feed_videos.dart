@@ -139,6 +139,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
   /// playback — a warned video must stay paused until revealed.
   final Set<String> _revealedContentWarningVideoIds = <String>{};
   String? _activeSubtitleVideoId;
+  final Object _subtitleVisibilityOwner = Object();
   late final SubtitleVisibilityOverrideNotifier _subtitleVisibilityOverrides;
 
   @override
@@ -152,26 +153,34 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
   void _syncScopedSubtitleVisibility(String videoId, {bool defer = false}) {
     if (_activeSubtitleVideoId == videoId) return;
     _activeSubtitleVideoId = videoId;
+    // didUpdateWidget/dispose may run while Riverpod is building dependents, so
+    // those callers defer Notifier mutation until the current build unwinds.
     if (defer) {
       scheduleMicrotask(
-        () => _subtitleVisibilityOverrides.clearUnlessVideo(videoId),
+        () => _subtitleVisibilityOverrides.syncOwnerToVideo(
+          _subtitleVisibilityOwner,
+          videoId,
+        ),
       );
       return;
     }
-    _subtitleVisibilityOverrides.clearUnlessVideo(videoId);
+    _subtitleVisibilityOverrides.syncOwnerToVideo(
+      _subtitleVisibilityOwner,
+      videoId,
+    );
   }
 
   void _clearOwnedScopedSubtitleVisibility({bool defer = false}) {
-    final videoId = _activeSubtitleVideoId;
     _activeSubtitleVideoId = null;
-    if (videoId == null) return;
+    // didUpdateWidget/dispose may run while Riverpod is building dependents, so
+    // those callers defer Notifier mutation until the current build unwinds.
     if (defer) {
       scheduleMicrotask(
-        () => _subtitleVisibilityOverrides.clearIfVideo(videoId),
+        () => _subtitleVisibilityOverrides.clearOwner(_subtitleVisibilityOwner),
       );
       return;
     }
-    _subtitleVisibilityOverrides.clearIfVideo(videoId);
+    _subtitleVisibilityOverrides.clearOwner(_subtitleVisibilityOwner);
   }
 
   /// Warn labels for [video] merging creator/trusted labels with any
@@ -248,11 +257,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
   @override
   void didUpdateWidget(covariant FeedVideos oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!widget.isActive) {
-      // Overlays, pushed routes, and tab switches make the feed temporarily
-      // inactive. Keep a same-video override through those pauses; the next
-      // active-video sync or dispose path owns clearing it.
-    } else {
+    if (widget.isActive) {
       final currentIndex =
           _feedKey.currentState?.currentIndex ?? widget.currentIndex;
       if (currentIndex >= 0 && currentIndex < widget.videos.length) {
@@ -264,6 +269,9 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
         _clearOwnedScopedSubtitleVisibility(defer: true);
       }
     }
+    // Overlays, pushed routes, and tab switches make the feed temporarily
+    // inactive. Keep a same-video override through those pauses; the next
+    // active-video sync or dispose path owns clearing it.
     // When pagination settles (hasMore / isLoadingMore changed), flush any
     // pending auto-advance that was waiting on more content.
     if (widget.hasMore != oldWidget.hasMore ||

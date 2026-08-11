@@ -127,19 +127,20 @@ void main() {
       expect(prefs.getBool('subtitle_visibility_enabled'), isNull);
     });
 
-    test('clears overrides when the active video changes or exits', () {
+    test('clears overrides when the owning feed changes video or exits', () {
       final notifier = container.read(
         subtitleVisibilityOverrideProvider.notifier,
       );
+      final owner = Object();
 
+      notifier.syncOwnerToVideo(owner, videoA);
       notifier.setForVideo(videoA, false);
-      notifier.clearUnlessVideo(videoA);
       expect(
         container.read(subtitleVisibilityForVideoProvider(videoA)),
         isFalse,
       );
 
-      notifier.clearUnlessVideo(videoB);
+      notifier.syncOwnerToVideo(owner, videoB);
       expect(container.read(subtitleVisibilityOverrideProvider), isNull);
       expect(
         container.read(subtitleVisibilityForVideoProvider(videoA)),
@@ -147,12 +148,34 @@ void main() {
       );
 
       notifier.setForVideo(videoB, false);
-      notifier.clear();
+      notifier.clearOwner(owner);
       expect(container.read(subtitleVisibilityOverrideProvider), isNull);
       expect(
         container.read(subtitleVisibilityForVideoProvider(videoB)),
         isTrue,
       );
+    });
+
+    test('keeps a same-video override while another feed owner is active', () {
+      final notifier = container.read(
+        subtitleVisibilityOverrideProvider.notifier,
+      );
+      final homeOwner = Object();
+      final fullscreenOwner = Object();
+
+      notifier.syncOwnerToVideo(homeOwner, videoA);
+      notifier.setForVideo(videoA, false);
+      notifier.syncOwnerToVideo(fullscreenOwner, videoA);
+
+      notifier.clearOwner(fullscreenOwner);
+
+      expect(container.read(subtitleVisibilityOverrideProvider), (
+        videoId: videoA,
+        visible: false,
+      ));
+
+      notifier.clearOwner(homeOwner);
+      expect(container.read(subtitleVisibilityOverrideProvider), isNull);
     });
   });
 }

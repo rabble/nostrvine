@@ -1674,6 +1674,75 @@ void main() {
       expect(container.read(subtitleVisibilityOverrideProvider), isNull);
     });
 
+    testWidgets('clears scoped captions when rebuilt active on another video', (
+      tester,
+    ) async {
+      final firstVideo = _makeVideo();
+      final secondVideo = _makeVideo(
+        id: 'b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234a1',
+      );
+      final mockPlaybackCubit = _MockVideoPlaybackStatusCubit()
+        ..stub(PlaybackStatus.ready, firstVideo.id);
+      final mockAutoAdvanceCubit = _MockFeedAutoAdvanceCubit()
+        ..stub(const FeedAutoAdvanceState());
+      final mockVolumeCubit = _MockVideoVolumeCubit()..stub();
+      final immersiveCubit = FeedImmersiveCubit();
+      addTearDown(immersiveCubit.close);
+      final container = ProviderContainer(
+        overrides: _buildOverrides().cast(),
+      );
+      addTearDown(container.dispose);
+
+      Future<void> pumpHarness({
+        required List<VideoEvent> videos,
+        required bool isActive,
+      }) async {
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: MultiBlocProvider(
+                providers: [
+                  BlocProvider<FeedAutoAdvanceCubit>.value(
+                    value: mockAutoAdvanceCubit,
+                  ),
+                  BlocProvider<VideoPlaybackStatusCubit>.value(
+                    value: mockPlaybackCubit,
+                  ),
+                  BlocProvider<VideoVolumeCubit>.value(value: mockVolumeCubit),
+                  BlocProvider<FeedImmersiveCubit>.value(value: immersiveCubit),
+                ],
+                child: Scaffold(
+                  body: FeedVideos(
+                    videos: videos,
+                    onNearEnd: () {},
+                    isActive: isActive,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump(const Duration(seconds: 3));
+      }
+
+      await pumpHarness(videos: [firstVideo], isActive: false);
+      container
+          .read(subtitleVisibilityOverrideProvider.notifier)
+          .setForVideo(firstVideo.id, false);
+      expect(container.read(subtitleVisibilityOverrideProvider), (
+        videoId: firstVideo.id,
+        visible: false,
+      ));
+
+      await pumpHarness(videos: [secondVideo], isActive: true);
+      await tester.pump();
+
+      expect(container.read(subtitleVisibilityOverrideProvider), isNull);
+    });
+
     testWidgets('preserves scoped captions across route push and pop', (
       tester,
     ) async {
@@ -1729,6 +1798,27 @@ void main() {
         videoId: otherVideoId,
         visible: false,
       ));
+    });
+
+    testWidgets("dispose clears the feed's own scoped captions", (
+      tester,
+    ) async {
+      final video = _makeVideo();
+      final container = await _pumpFeedVideos(tester, videos: [video]);
+      await tester.pump();
+
+      tester
+          .widget<InfiniteVideoFeed>(find.byType(InfiniteVideoFeed))
+          .onActiveVideoChanged
+          ?.call(video, 0);
+      container
+          .read(subtitleVisibilityOverrideProvider.notifier)
+          .setForVideo(video.id, false);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+
+      expect(container.read(subtitleVisibilityOverrideProvider), isNull);
     });
 
     testWidgets(
