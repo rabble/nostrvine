@@ -63,6 +63,29 @@ void main() {
         throwsFormatException,
       );
     });
+
+    test('keeps the OAuth code and state out of the rejection', () {
+      // Carried over from the crossposting parser this replaced. The rejection
+      // is logged with the whole callback in scope, so the exception must not
+      // carry the grant back into a log line.
+      const secretCode = 'oauth-code-super-secret';
+      const secretState = 'oauth-state-super-secret';
+      FormatException? caught;
+
+      try {
+        parseAppOAuthCallback(
+          'https://divine.video:443/app/callback'
+          '?code=$secretCode&state=$secretState',
+        );
+      } on FormatException catch (error) {
+        caught = error;
+      }
+
+      expect(caught, isNotNull);
+      expect(caught?.source, isNull);
+      expect(caught.toString(), isNot(contains(secretCode)));
+      expect(caught.toString(), isNot(contains(secretState)));
+    });
   });
 
   group('launchAppOAuth', () {
