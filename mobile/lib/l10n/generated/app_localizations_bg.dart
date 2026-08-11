@@ -10968,10 +10968,14 @@ class AppLocalizationsBg extends AppLocalizations {
   String get subtitleEditorRemoveCue => 'Премахни този ред';
 
   @override
-  String get subtitleEditorStartLabel => 'Начало';
+  String get subtitleEditorPreviewUnavailable =>
+      'Видеото не може да се пусне в момента, но пак можеш да оправиш субтитрите.';
 
   @override
-  String get subtitleEditorEndLabel => 'Край';
+  String get subtitleEditorPlayPreview => 'Пусни видеото';
+
+  @override
+  String get subtitleEditorPausePreview => 'Спри видеото';
 
   @override
   String get subtitleEditorInvalidHint =>

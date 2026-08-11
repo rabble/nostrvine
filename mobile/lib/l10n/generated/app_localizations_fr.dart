@@ -11012,10 +11012,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get subtitleEditorRemoveCue => 'Supprimer cette ligne';
 
   @override
-  String get subtitleEditorStartLabel => 'Début';
+  String get subtitleEditorPreviewUnavailable =>
+      'La vidéo ne peut pas être lue pour l\'instant, mais tu peux quand même corriger les sous-titres.';
 
   @override
-  String get subtitleEditorEndLabel => 'Fin';
+  String get subtitleEditorPlayPreview => 'Lire la vidéo';
+
+  @override
+  String get subtitleEditorPausePreview => 'Mettre la vidéo en pause';
 
   @override
   String get subtitleEditorInvalidHint =>

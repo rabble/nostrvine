@@ -10983,10 +10983,14 @@ class AppLocalizationsFil extends AppLocalizations {
   String get subtitleEditorRemoveCue => 'Alisin ang linyang ito';
 
   @override
-  String get subtitleEditorStartLabel => 'Simula';
+  String get subtitleEditorPreviewUnavailable =>
+      'Hindi ma-play ang video ngayon, pero pwede mo pa ring ayusin ang mga caption.';
 
   @override
-  String get subtitleEditorEndLabel => 'Katapusan';
+  String get subtitleEditorPlayPreview => 'I-play ang video';
+
+  @override
+  String get subtitleEditorPausePreview => 'I-pause ang video';
 
   @override
   String get subtitleEditorInvalidHint =>

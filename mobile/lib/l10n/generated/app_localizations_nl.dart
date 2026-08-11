@@ -10912,10 +10912,14 @@ class AppLocalizationsNl extends AppLocalizations {
   String get subtitleEditorRemoveCue => 'Deze regel verwijderen';
 
   @override
-  String get subtitleEditorStartLabel => 'Start';
+  String get subtitleEditorPreviewUnavailable =>
+      'De video kan nu niet worden afgespeeld, maar je kunt de ondertitels nog steeds aanpassen.';
 
   @override
-  String get subtitleEditorEndLabel => 'Einde';
+  String get subtitleEditorPlayPreview => 'Video afspelen';
+
+  @override
+  String get subtitleEditorPausePreview => 'Video pauzeren';
 
   @override
   String get subtitleEditorInvalidHint =>

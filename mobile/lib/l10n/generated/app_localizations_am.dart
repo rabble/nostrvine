@@ -10628,10 +10628,14 @@ class AppLocalizationsAm extends AppLocalizations {
   String get subtitleEditorRemoveCue => 'ይህን መስመር ያስወግዱ';
 
   @override
-  String get subtitleEditorStartLabel => 'መጀመሪያ';
+  String get subtitleEditorPreviewUnavailable =>
+      'ቪዲዮው አሁን ሊጫወት አልቻለም፣ ግን አሁንም መግለጫ ጽሑፎቹን ማስተካከል ይችላሉ።';
 
   @override
-  String get subtitleEditorEndLabel => 'መጨረሻ';
+  String get subtitleEditorPlayPreview => 'ቪዲዮውን ያጫውቱ';
+
+  @override
+  String get subtitleEditorPausePreview => 'ቪዲዮውን ያቁሙ';
 
   @override
   String get subtitleEditorInvalidHint =>

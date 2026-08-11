@@ -10823,10 +10823,14 @@ class AppLocalizationsId extends AppLocalizations {
   String get subtitleEditorRemoveCue => 'Hapus baris ini';
 
   @override
-  String get subtitleEditorStartLabel => 'Mulai';
+  String get subtitleEditorPreviewUnavailable =>
+      'Video tidak bisa diputar sekarang, tapi kamu tetap bisa memperbaiki takarirnya.';
 
   @override
-  String get subtitleEditorEndLabel => 'Selesai';
+  String get subtitleEditorPlayPreview => 'Putar video';
+
+  @override
+  String get subtitleEditorPausePreview => 'Jeda video';
 
   @override
   String get subtitleEditorInvalidHint =>

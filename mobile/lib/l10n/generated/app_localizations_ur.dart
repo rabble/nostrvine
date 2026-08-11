@@ -10863,10 +10863,14 @@ class AppLocalizationsUr extends AppLocalizations {
   String get subtitleEditorRemoveCue => 'یہ لائن ہٹائیں';
 
   @override
-  String get subtitleEditorStartLabel => 'شروع';
+  String get subtitleEditorPreviewUnavailable =>
+      'ویڈیو ابھی نہیں چل سکتی، لیکن آپ پھر بھی کیپشنز درست کر سکتے ہیں۔';
 
   @override
-  String get subtitleEditorEndLabel => 'اختتام';
+  String get subtitleEditorPlayPreview => 'ویڈیو چلائیں';
+
+  @override
+  String get subtitleEditorPausePreview => 'ویڈیو روکیں';
 
   @override
   String get subtitleEditorInvalidHint =>

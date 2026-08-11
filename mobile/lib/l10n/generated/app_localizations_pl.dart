@@ -11055,10 +11055,14 @@ class AppLocalizationsPl extends AppLocalizations {
   String get subtitleEditorRemoveCue => 'Usuń tę linijkę';
 
   @override
-  String get subtitleEditorStartLabel => 'Początek';
+  String get subtitleEditorPreviewUnavailable =>
+      'Filmu nie da się teraz odtworzyć, ale napisy nadal możesz poprawić.';
 
   @override
-  String get subtitleEditorEndLabel => 'Koniec';
+  String get subtitleEditorPlayPreview => 'Odtwórz film';
+
+  @override
+  String get subtitleEditorPausePreview => 'Wstrzymaj film';
 
   @override
   String get subtitleEditorInvalidHint =>
