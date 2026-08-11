@@ -9,8 +9,10 @@ tags:
 #
 # Three of the five controls here — aspect ratio, lens and flash — are the
 # unconditional ones every rail renders, so they are the same per-control utils
-# driveCaptureRail sequences, in the same order. What is local to this file is
-# the pair capture mode does not render: the ghost-frame and grid toggles.
+# driveCaptureRail sequences, in the same order. The pair capture mode does not
+# render — the ghost-frame and grid toggles — are the two classic also renders,
+# so they are per-control utils too. What is local to this file is only the
+# order they run in.
 #
 # Those two carry a Semantics `toggled` flag rather than a `value`, which
 # Flutter maps to the accessibility node's checked state, so they are driven
@@ -37,46 +39,13 @@ tags:
 # 4. Camera: Back -> Front -> Back
 # 5. Flash (if present): Off -> On -> Auto -> Off
 
-# 1. Ghost frame (onion-skin). Not persisted, so it always starts off.
-- assertVisible:
-    id: camera_ghost_frame_button
-    checked: false
-- tapOn:
-    id: camera_ghost_frame_button
-- extendedWaitUntil:
-    visible:
-      id: camera_ghost_frame_button
-      checked: true
-    timeout: 10000
-# Restore. Leaving it on is not just untidy: the overlay draws the previous
-# still over the live preview, which makes a failure screenshot from any later
-# test much harder to read.
-- tapOn:
-    id: camera_ghost_frame_button
-- extendedWaitUntil:
-    visible:
-      id: camera_ghost_frame_button
-      checked: false
-    timeout: 10000
+# 1. Ghost frame (onion-skin). Driven first here, unlike classic: this rail is
+# vertical and on the right, so the confirmation snackbar floating at the
+# bottom does not sit over it, and steps 2-5 double as the wait it out.
+- runFlow: ../utils/driveGhostFrameControl.yaml
 
 # 2. Grid overlay.
-- assertVisible:
-    id: camera_grid_button
-    checked: true
-- tapOn:
-    id: camera_grid_button
-- extendedWaitUntil:
-    visible:
-      id: camera_grid_button
-      checked: false
-    timeout: 10000
-- tapOn:
-    id: camera_grid_button
-- extendedWaitUntil:
-    visible:
-      id: camera_grid_button
-      checked: true
-    timeout: 10000
+- runFlow: ../utils/driveGridControl.yaml
 
 # 3. Aspect ratio flips between two states.
 - runFlow: ../utils/driveAspectRatioControl.yaml

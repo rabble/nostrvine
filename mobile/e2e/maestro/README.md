@@ -188,12 +188,13 @@ rail*, the three capture-stack modes drive them with the same three files —
 `utils/driveAspectRatioControl`, `utils/driveLensControl`,
 `utils/driveFlashControl`. Capture and lip-sync wrap those in
 `utils/driveCaptureRail.yaml`, which adds the timer and stabilization controls
-they alone render; `stopMotionModeControls` calls the three directly and adds
-ghost frame and grid. Each mode's `…Controls` test is a rail sequence plus its
-own mode assert. A mode with yet another set composes the per-control utils in
-its own order rather than skipping parts of someone else's — `classicModeControls`
-is the worked example of that, running only `driveLensControl` before its own
-grid and ghost blocks.
+they alone render. The two `supportGridLines` / ghost toggles are shared by
+stop-motion and classic, so they are per-control utils on the same rule —
+`utils/driveGridControl`, `utils/driveGhostFrameControl`. Each mode's
+`…Controls` test is a sequence of those utils plus its own mode assert, and
+what it owns is the **order**, not the sequences. `classicModeControls` is the
+worked example: the same three utils stop-motion runs, in the order classic's
+horizontal action row needs them — ghost last, then the banner wait.
 
 Classic is the case none of the above covers, because it is a different stack
 rather than the same one with a different rail. Two consequences for its

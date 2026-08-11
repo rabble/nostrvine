@@ -13,11 +13,13 @@ tags:
 # definition — the only mode whose `defaultAspectRatio` returns square), and
 # neither of the declared-only pair.
 #
-# The lens switch is the same control every other mode drives, announcing the
-# same `value`, so it runs the shared ../utils/driveLensControl.yaml. Grid and
-# ghost carry a Semantics `toggled` flag rather than a `value`, which Flutter
-# maps to the accessibility node's checked state, so they are driven with
-# `checked:` — see the note on that selector in e2e/maestro/README.md.
+# All three are shared per-control utils: the lens switch with every mode that
+# renders a rail, grid and ghost with stop-motion, the other mode that declares
+# them. So what this file actually owns is the order — see step 3 — not the
+# sequences themselves. Grid and ghost carry a Semantics `toggled` flag rather
+# than a `value`, which Flutter maps to the accessibility node's checked state,
+# so they are driven with `checked:` — see the note on that selector in
+# e2e/maestro/README.md.
 #
 # Preconditions beyond an open viewfinder:
 # - **Real camera hardware**, for the lens switch. See classicModeRecordClip.
@@ -37,50 +39,15 @@ tags:
 - runFlow: ../utils/driveLensControl.yaml
 
 # 2. Grid overlay.
-- assertVisible:
-    id: camera_grid_button
-    checked: true
-- tapOn:
-    id: camera_grid_button
-- extendedWaitUntil:
-    visible:
-      id: camera_grid_button
-      checked: false
-    timeout: 10000
-- tapOn:
-    id: camera_grid_button
-- extendedWaitUntil:
-    visible:
-      id: camera_grid_button
-      checked: true
-    timeout: 10000
+- runFlow: ../utils/driveGridControl.yaml
 
-# 3. Ghost frame (onion-skin), deliberately last. Not persisted, so it always
-# starts off — but each tap raises a 4-second confirmation snackbar that floats
-# at the bottom of the screen, and classic's controls are a horizontal row
-# rather than stop-motion's vertical rail. The row sits above the mode wheel
-# and clear of the banner, but running the other two controls first means a
-# mistake there fails on this control alone instead of taking the rest with it.
-- assertVisible:
-    id: camera_ghost_frame_button
-    checked: false
-- tapOn:
-    id: camera_ghost_frame_button
-- extendedWaitUntil:
-    visible:
-      id: camera_ghost_frame_button
-      checked: true
-    timeout: 10000
-# Restore. Leaving it on is not just untidy: the overlay draws the previous
-# clip's last frame over the live preview, which makes a failure screenshot
-# from any later test much harder to read.
-- tapOn:
-    id: camera_ghost_frame_button
-- extendedWaitUntil:
-    visible:
-      id: camera_ghost_frame_button
-      checked: false
-    timeout: 10000
+# 3. Ghost frame (onion-skin), deliberately last. Each tap raises a 4-second
+# confirmation snackbar that floats at the bottom of the screen, and classic's
+# controls are a horizontal row rather than stop-motion's vertical rail. The
+# row sits above the mode wheel and clear of the banner, but running the other
+# two controls first means a mistake there fails on this control alone instead
+# of taking the rest with it.
+- runFlow: ../utils/driveGhostFrameControl.yaml
 
 # Let the banner go before handing over to the shutter tests — it floats over
 # the bottom of the screen, and classic's shutter is the preview above it, but
