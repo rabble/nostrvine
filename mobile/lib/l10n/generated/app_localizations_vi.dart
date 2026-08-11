@@ -10112,30 +10112,30 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get badgeDetailBlockClaimantsAction => 'Block badge claimants';
+  String get badgeDetailBlockClaimantsAction => 'Chặn những người gắn huy hiệu';
 
   @override
-  String get badgeDetailBlockClaimantsTitle => 'Block badge claimants';
+  String get badgeDetailBlockClaimantsTitle => 'Chặn những người gắn huy hiệu';
 
   @override
   String get badgeDetailBlockClaimantsLoadError =>
-      'Could not load claimants for this badge';
+      'Không tải được những người gắn huy hiệu này';
 
   @override
   String get badgeDetailBlockClaimantsEmptyTitle =>
-      'No one claims this badge right now';
+      'Hiện chưa ai gắn huy hiệu này';
 
   @override
   String get badgeDetailBlockClaimantsEmptyBody =>
-      'We did not find any current claimants to block.';
+      'Chúng tôi không tìm thấy ai để chặn lúc này.';
 
   @override
   String badgeDetailBlockClaimantsHeading(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Block $count claimants?',
-      one: 'Block 1 claimant?',
+      other: 'Chặn $count tài khoản?',
+      one: 'Chặn 1 tài khoản?',
     );
     return '$_temp0';
   }
@@ -10146,9 +10146,9 @@ class AppLocalizationsVi extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'This blocks the $count accounts currently claiming this badge. Their posts will leave your feeds, and they will not be notified.',
+          'Thao tác này chặn $count tài khoản đang gắn huy hiệu này. Bài đăng của họ sẽ không xuất hiện trong bảng tin của bạn và họ sẽ không được thông báo.',
       one:
-          'This blocks the account currently claiming this badge. Their posts will leave your feeds, and they will not be notified.',
+          'Thao tác này chặn tài khoản đang gắn huy hiệu này. Bài đăng của họ sẽ không xuất hiện trong bảng tin của bạn và họ sẽ không được thông báo.',
     );
     return '$_temp0';
   }
@@ -10158,18 +10158,19 @@ class AppLocalizationsVi extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Block $count accounts',
-      one: 'Block 1 account',
+      other: 'Chặn $count tài khoản',
+      one: 'Chặn 1 tài khoản',
     );
     return '$_temp0';
   }
 
   @override
-  String get badgeDetailBlockClaimantsSuccess => 'Badge claimants blocked';
+  String get badgeDetailBlockClaimantsSuccess =>
+      'Đã chặn những người gắn huy hiệu';
 
   @override
   String get badgeDetailBlockClaimantsFailure =>
-      'Could not block badge claimants';
+      'Không chặn được những người gắn huy hiệu';
 
   @override
   String get badgeDetailLoadError => 'Không tải được huy hiệu này';

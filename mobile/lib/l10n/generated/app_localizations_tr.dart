@@ -10067,30 +10067,30 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get badgeDetailBlockClaimantsAction => 'Rozeti sahiplenenleri engelle';
+  String get badgeDetailBlockClaimantsAction => 'Rozeti taşıyanları engelle';
 
   @override
-  String get badgeDetailBlockClaimantsTitle => 'Rozeti sahiplenenleri engelle';
+  String get badgeDetailBlockClaimantsTitle => 'Rozeti taşıyanları engelle';
 
   @override
   String get badgeDetailBlockClaimantsLoadError =>
-      'Bu rozeti sahiplenenler yuklenemedi';
+      'Bu rozeti taşıyanlar yüklenemedi';
 
   @override
   String get badgeDetailBlockClaimantsEmptyTitle =>
-      'Su anda bu rozeti sahiplenen yok';
+      'Şu anda bu rozeti taşıyan yok';
 
   @override
   String get badgeDetailBlockClaimantsEmptyBody =>
-      'Engellenecek guncel sahiplenen bulamadik.';
+      'Şu anda engellenecek kimse bulamadık.';
 
   @override
   String badgeDetailBlockClaimantsHeading(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count kisi engellensin mi?',
-      one: '1 kisi engellensin mi?',
+      other: '$count hesap engellensin mi?',
+      one: '1 hesap engellensin mi?',
     );
     return '$_temp0';
   }
@@ -10101,9 +10101,9 @@ class AppLocalizationsTr extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'Bu, rozeti su anda sahiplenen $count hesabi engeller. Gonderileri akislarindan cikar ve bildirim almazlar.',
+          'Bu, şu anda bu rozeti taşıyan $count hesabı engeller. Gönderileri akışında görünmez ve bu değişiklik hakkında bilgilendirilmezler.',
       one:
-          'Bu, rozeti su anda sahiplenen hesabi engeller. Gonderileri akislarindan cikar ve bildirim almaz.',
+          'Bu, şu anda bu rozeti taşıyan hesabı engeller. Gönderileri akışında görünmez ve bu değişiklik hakkında bilgilendirilmez.',
     );
     return '$_temp0';
   }
@@ -10113,19 +10113,18 @@ class AppLocalizationsTr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count hesabi engelle',
-      one: '1 hesabi engelle',
+      other: '$count hesabı engelle',
+      one: '1 hesabı engelle',
     );
     return '$_temp0';
   }
 
   @override
-  String get badgeDetailBlockClaimantsSuccess =>
-      'Rozet sahiplenenleri engellendi';
+  String get badgeDetailBlockClaimantsSuccess => 'Rozeti taşıyanlar engellendi';
 
   @override
   String get badgeDetailBlockClaimantsFailure =>
-      'Rozet sahiplenenleri engellenemedi';
+      'Rozeti taşıyanlar engellenemedi';
 
   @override
   String get badgeDetailLoadError => 'Bu rozet yüklenemedi';

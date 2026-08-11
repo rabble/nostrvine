@@ -10158,30 +10158,32 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get badgeDetailBlockClaimantsAction => 'Badge-claimers blokkeren';
+  String get badgeDetailBlockClaimantsAction =>
+      'Iedereen met deze badge blokkeren';
 
   @override
-  String get badgeDetailBlockClaimantsTitle => 'Badge-claimers blokkeren';
+  String get badgeDetailBlockClaimantsTitle =>
+      'Iedereen met deze badge blokkeren';
 
   @override
   String get badgeDetailBlockClaimantsLoadError =>
-      'Kan claimers voor deze badge niet laden';
+      'Kan niet laden wie deze badge heeft';
 
   @override
   String get badgeDetailBlockClaimantsEmptyTitle =>
-      'Niemand claimt deze badge nu';
+      'Niemand heeft deze badge op dit moment';
 
   @override
   String get badgeDetailBlockClaimantsEmptyBody =>
-      'We hebben geen huidige claimers gevonden om te blokkeren.';
+      'We vonden nu niemand om te blokkeren.';
 
   @override
   String badgeDetailBlockClaimantsHeading(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count claimers blokkeren?',
-      one: '1 claimer blokkeren?',
+      other: '$count accounts blokkeren?',
+      one: '1 account blokkeren?',
     );
     return '$_temp0';
   }
@@ -10192,9 +10194,9 @@ class AppLocalizationsNl extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'Dit blokkeert de $count accounts die deze badge nu claimen. Hun posts verdwijnen uit je feeds en ze krijgen geen melding.',
+          'Dit blokkeert de $count accounts die deze badge nu hebben. Hun posts verschijnen niet meer in jouw feeds en ze krijgen hiervan geen melding.',
       one:
-          'Dit blokkeert het account dat deze badge nu claimt. Hun posts verdwijnen uit je feeds en ze krijgen geen melding.',
+          'Dit blokkeert het account dat deze badge nu heeft. Hun posts verschijnen niet meer in jouw feeds en ze krijgen hiervan geen melding.',
     );
     return '$_temp0';
   }
@@ -10211,11 +10213,12 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get badgeDetailBlockClaimantsSuccess => 'Badge-claimers geblokkeerd';
+  String get badgeDetailBlockClaimantsSuccess =>
+      'Accounts met de badge geblokkeerd';
 
   @override
   String get badgeDetailBlockClaimantsFailure =>
-      'Kan badge-claimers niet blokkeren';
+      'Kan de accounts met deze badge niet blokkeren';
 
   @override
   String get badgeDetailLoadError => 'Deze badge kon niet worden geladen';

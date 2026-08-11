@@ -10218,22 +10218,22 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get badgeDetailBlockClaimantsAction => 'Blocca chi rivendica il badge';
+  String get badgeDetailBlockClaimantsAction => 'Blocca chi ha questo badge';
 
   @override
-  String get badgeDetailBlockClaimantsTitle => 'Blocca chi rivendica il badge';
+  String get badgeDetailBlockClaimantsTitle => 'Blocca chi ha questo badge';
 
   @override
   String get badgeDetailBlockClaimantsLoadError =>
-      'Impossibile caricare chi rivendica questo badge';
+      'Impossibile caricare chi ha questo badge';
 
   @override
   String get badgeDetailBlockClaimantsEmptyTitle =>
-      'Nessuno rivendica questo badge adesso';
+      'Ora nessuno ha questo badge';
 
   @override
   String get badgeDetailBlockClaimantsEmptyBody =>
-      'Non abbiamo trovato claim attuali da bloccare.';
+      'Non abbiamo trovato nessuno da bloccare al momento.';
 
   @override
   String badgeDetailBlockClaimantsHeading(int count) {
@@ -10252,9 +10252,9 @@ class AppLocalizationsIt extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'Questo blocca i $count account che rivendicano questo badge ora. I loro post usciranno dai tuoi feed e non riceveranno avvisi.',
+          'Questo blocca i $count account che ora tengono questo badge sul profilo. I loro post non appariranno nei tuoi feed e non verranno avvisati.',
       one:
-          'Questo blocca l account che rivendica questo badge ora. I suoi post usciranno dai tuoi feed e non ricevera avvisi.',
+          'Questo blocca l\'account che ora tiene questo badge sul profilo. I suoi post non appariranno nei tuoi feed e non verrà avvisato.',
     );
     return '$_temp0';
   }
@@ -10271,11 +10271,12 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get badgeDetailBlockClaimantsSuccess => 'Account bloccati';
+  String get badgeDetailBlockClaimantsSuccess =>
+      'Account con il badge bloccati';
 
   @override
   String get badgeDetailBlockClaimantsFailure =>
-      'Impossibile bloccare questi account';
+      'Impossibile bloccare chi ha il badge';
 
   @override
   String get badgeDetailLoadError =>

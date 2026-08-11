@@ -10110,30 +10110,30 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String get badgeDetailBlockClaimantsAction => 'Block badge claimants';
+  String get badgeDetailBlockClaimantsAction => 'بیج رکھنے والوں کو بلاک کریں';
 
   @override
-  String get badgeDetailBlockClaimantsTitle => 'Block badge claimants';
+  String get badgeDetailBlockClaimantsTitle => 'بیج رکھنے والوں کو بلاک کریں';
 
   @override
   String get badgeDetailBlockClaimantsLoadError =>
-      'Could not load claimants for this badge';
+      'اس بیج کو رکھنے والوں کو لوڈ نہیں کیا جا سکا';
 
   @override
   String get badgeDetailBlockClaimantsEmptyTitle =>
-      'No one claims this badge right now';
+      'ابھی کوئی یہ بیج نہیں رکھتا';
 
   @override
   String get badgeDetailBlockClaimantsEmptyBody =>
-      'We did not find any current claimants to block.';
+      'ہمیں فی الحال بلاک کرنے کے لیے کوئی نہیں ملا۔';
 
   @override
   String badgeDetailBlockClaimantsHeading(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Block $count claimants?',
-      one: 'Block 1 claimant?',
+      other: '$count اکاؤنٹس بلاک کریں؟',
+      one: '1 اکاؤنٹ بلاک کریں؟',
     );
     return '$_temp0';
   }
@@ -10144,9 +10144,9 @@ class AppLocalizationsUr extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'This blocks the $count accounts currently claiming this badge. Their posts will leave your feeds, and they will not be notified.',
+          'اس سے وہ $count اکاؤنٹس بلاک ہو جائیں گے جو ابھی یہ بیج رکھتے ہیں۔ ان کی پوسٹیں آپ کے فیڈز میں نظر نہیں آئیں گی اور انہیں اطلاع نہیں دی جائے گی۔',
       one:
-          'This blocks the account currently claiming this badge. Their posts will leave your feeds, and they will not be notified.',
+          'اس سے وہ اکاؤنٹ بلاک ہو جائے گا جو ابھی یہ بیج رکھتا ہے۔ ان کی پوسٹیں آپ کے فیڈز میں نظر نہیں آئیں گی اور انہیں اطلاع نہیں دی جائے گی۔',
     );
     return '$_temp0';
   }
@@ -10156,18 +10156,19 @@ class AppLocalizationsUr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Block $count accounts',
-      one: 'Block 1 account',
+      other: '$count اکاؤنٹس بلاک کریں',
+      one: '1 اکاؤنٹ بلاک کریں',
     );
     return '$_temp0';
   }
 
   @override
-  String get badgeDetailBlockClaimantsSuccess => 'Badge claimants blocked';
+  String get badgeDetailBlockClaimantsSuccess =>
+      'بیج رکھنے والے بلاک کر دیے گئے';
 
   @override
   String get badgeDetailBlockClaimantsFailure =>
-      'Could not block badge claimants';
+      'بیج رکھنے والوں کو بلاک نہیں کیا جا سکا';
 
   @override
   String get badgeDetailLoadError => 'یہ بیج لوڈ نہیں ہو سکا';

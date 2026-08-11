@@ -10167,30 +10167,30 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String get badgeDetailBlockClaimantsAction => 'Block badge claimants';
+  String get badgeDetailBlockClaimantsAction => 'Sekat pemegang lencana';
 
   @override
-  String get badgeDetailBlockClaimantsTitle => 'Block badge claimants';
+  String get badgeDetailBlockClaimantsTitle => 'Sekat pemegang lencana';
 
   @override
   String get badgeDetailBlockClaimantsLoadError =>
-      'Could not load claimants for this badge';
+      'Tidak dapat memuatkan pemegang lencana ini';
 
   @override
   String get badgeDetailBlockClaimantsEmptyTitle =>
-      'No one claims this badge right now';
+      'Tiada sesiapa memegang lencana ini sekarang';
 
   @override
   String get badgeDetailBlockClaimantsEmptyBody =>
-      'We did not find any current claimants to block.';
+      'Kami tidak menemui sesiapa untuk disekat buat masa ini.';
 
   @override
   String badgeDetailBlockClaimantsHeading(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Block $count claimants?',
-      one: 'Block 1 claimant?',
+      other: 'Sekat $count akaun?',
+      one: 'Sekat 1 akaun?',
     );
     return '$_temp0';
   }
@@ -10201,9 +10201,9 @@ class AppLocalizationsMs extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'This blocks the $count accounts currently claiming this badge. Their posts will leave your feeds, and they will not be notified.',
+          'Ini menyekat $count akaun yang sedang memegang lencana ini. Siaran mereka tidak akan muncul dalam suapan anda dan mereka tidak akan diberitahu.',
       one:
-          'This blocks the account currently claiming this badge. Their posts will leave your feeds, and they will not be notified.',
+          'Ini menyekat akaun yang sedang memegang lencana ini. Siaran mereka tidak akan muncul dalam suapan anda dan mereka tidak akan diberitahu.',
     );
     return '$_temp0';
   }
@@ -10213,18 +10213,18 @@ class AppLocalizationsMs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Block $count accounts',
-      one: 'Block 1 account',
+      other: 'Sekat $count akaun',
+      one: 'Sekat 1 akaun',
     );
     return '$_temp0';
   }
 
   @override
-  String get badgeDetailBlockClaimantsSuccess => 'Badge claimants blocked';
+  String get badgeDetailBlockClaimantsSuccess => 'Pemegang lencana disekat';
 
   @override
   String get badgeDetailBlockClaimantsFailure =>
-      'Could not block badge claimants';
+      'Tidak dapat menyekat pemegang lencana';
 
   @override
   String get badgeDetailLoadError => 'Lencana ini gagal dimuatkan';

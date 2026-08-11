@@ -10213,30 +10213,31 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get badgeDetailBlockClaimantsAction =>
-      'Bloquear reclamantes del distintivo';
+      'Bloquear a quienes llevan la insignia';
 
   @override
-  String get badgeDetailBlockClaimantsTitle => 'Bloquear reclamantes';
+  String get badgeDetailBlockClaimantsTitle =>
+      'Bloquear a quienes llevan la insignia';
 
   @override
   String get badgeDetailBlockClaimantsLoadError =>
-      'No pudimos cargar quienes reclaman este distintivo';
+      'No pudimos cargar a quienes llevan esta insignia';
 
   @override
   String get badgeDetailBlockClaimantsEmptyTitle =>
-      'Nadie reclama este distintivo ahora mismo';
+      'Ahora mismo nadie lleva esta insignia';
 
   @override
   String get badgeDetailBlockClaimantsEmptyBody =>
-      'No encontramos reclamantes actuales para bloquear.';
+      'No encontramos a nadie a quien bloquear ahora mismo.';
 
   @override
   String badgeDetailBlockClaimantsHeading(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Bloquear a $count reclamantes?',
-      one: 'Bloquear a 1 reclamante?',
+      other: '¿Bloquear $count cuentas?',
+      one: '¿Bloquear 1 cuenta?',
     );
     return '$_temp0';
   }
@@ -10247,9 +10248,9 @@ class AppLocalizationsEs extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'Esto bloquea las $count cuentas que reclaman este distintivo ahora. Sus publicaciones saldran de tus feeds y no recibiran aviso.',
+          'Esto bloquea las $count cuentas que llevan esta insignia ahora mismo. Sus publicaciones no van a aparecer en tus feeds y no les vamos a avisar.',
       one:
-          'Esto bloquea la cuenta que reclama este distintivo ahora. Sus publicaciones saldran de tus feeds y no recibira aviso.',
+          'Esto bloquea la cuenta que lleva esta insignia ahora mismo. Sus publicaciones no van a aparecer en tus feeds y no le vamos a avisar.',
     );
     return '$_temp0';
   }
@@ -10266,11 +10267,12 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get badgeDetailBlockClaimantsSuccess => 'Reclamantes bloqueados';
+  String get badgeDetailBlockClaimantsSuccess =>
+      'Cuentas con la insignia bloqueadas';
 
   @override
   String get badgeDetailBlockClaimantsFailure =>
-      'No pudimos bloquear a los reclamantes';
+      'No pudimos bloquear a quienes llevan la insignia';
 
   @override
   String get badgeDetailLoadError => 'No se pudo cargar esta insignia';

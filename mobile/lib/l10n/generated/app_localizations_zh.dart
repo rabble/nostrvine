@@ -9596,30 +9596,27 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get badgeDetailBlockClaimantsAction => 'Block badge claimants';
+  String get badgeDetailBlockClaimantsAction => '屏蔽佩戴该徽章的人';
 
   @override
-  String get badgeDetailBlockClaimantsTitle => 'Block badge claimants';
+  String get badgeDetailBlockClaimantsTitle => '屏蔽佩戴该徽章的人';
 
   @override
-  String get badgeDetailBlockClaimantsLoadError =>
-      'Could not load claimants for this badge';
+  String get badgeDetailBlockClaimantsLoadError => '无法加载佩戴该徽章的人';
 
   @override
-  String get badgeDetailBlockClaimantsEmptyTitle =>
-      'No one claims this badge right now';
+  String get badgeDetailBlockClaimantsEmptyTitle => '目前没有人佩戴这个徽章';
 
   @override
-  String get badgeDetailBlockClaimantsEmptyBody =>
-      'We did not find any current claimants to block.';
+  String get badgeDetailBlockClaimantsEmptyBody => '我们没有找到可以屏蔽的人。';
 
   @override
   String badgeDetailBlockClaimantsHeading(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Block $count claimants?',
-      one: 'Block 1 claimant?',
+      other: '屏蔽 $count 个账号？',
+      one: '屏蔽 1 个账号？',
     );
     return '$_temp0';
   }
@@ -9629,10 +9626,8 @@ class AppLocalizationsZh extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other:
-          'This blocks the $count accounts currently claiming this badge. Their posts will leave your feeds, and they will not be notified.',
-      one:
-          'This blocks the account currently claiming this badge. Their posts will leave your feeds, and they will not be notified.',
+      other: '这会屏蔽目前佩戴该徽章的 $count 个账号。对方的帖子不会出现在你的信息流中，也不会收到此操作的通知。',
+      one: '这会屏蔽目前佩戴该徽章的账号。对方的帖子不会出现在你的信息流中，也不会收到此操作的通知。',
     );
     return '$_temp0';
   }
@@ -9642,18 +9637,17 @@ class AppLocalizationsZh extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Block $count accounts',
-      one: 'Block 1 account',
+      other: '屏蔽 $count 个账号',
+      one: '屏蔽 1 个账号',
     );
     return '$_temp0';
   }
 
   @override
-  String get badgeDetailBlockClaimantsSuccess => 'Badge claimants blocked';
+  String get badgeDetailBlockClaimantsSuccess => '已屏蔽佩戴该徽章的人';
 
   @override
-  String get badgeDetailBlockClaimantsFailure =>
-      'Could not block badge claimants';
+  String get badgeDetailBlockClaimantsFailure => '无法屏蔽佩戴该徽章的人';
 
   @override
   String get badgeDetailLoadError => '无法加载这个徽章';

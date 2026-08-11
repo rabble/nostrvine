@@ -10183,23 +10183,22 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get badgeDetailBlockClaimantsAction =>
-      'Bloquear quem reivindica o selo';
+  String get badgeDetailBlockClaimantsAction => 'Bloquear quem usa o selo';
 
   @override
-  String get badgeDetailBlockClaimantsTitle => 'Bloquear reivindicantes';
+  String get badgeDetailBlockClaimantsTitle => 'Bloquear quem usa o selo';
 
   @override
   String get badgeDetailBlockClaimantsLoadError =>
-      'Nao foi possivel carregar quem reivindica este selo';
+      'Não foi possível carregar quem usa este selo';
 
   @override
   String get badgeDetailBlockClaimantsEmptyTitle =>
-      'Ninguem reivindica este selo agora';
+      'Ninguém está usando este selo agora';
 
   @override
   String get badgeDetailBlockClaimantsEmptyBody =>
-      'Nao encontramos reivindicantes atuais para bloquear.';
+      'Não encontramos ninguém para bloquear agora.';
 
   @override
   String badgeDetailBlockClaimantsHeading(int count) {
@@ -10218,9 +10217,9 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'Isto bloqueia as $count contas que reivindicam este selo agora. As publicacoes delas sairao dos seus feeds, e elas nao serao avisadas.',
+          'Isso bloqueia as $count contas que estão usando este selo agora. Os posts delas não vão aparecer no seu feed e elas não serão notificadas.',
       one:
-          'Isto bloqueia a conta que reivindica este selo agora. As publicacoes dela sairao dos seus feeds, e ela nao sera avisada.',
+          'Isso bloqueia a conta que está usando este selo agora. Os posts dessa pessoa não vão aparecer no seu feed e ela não será notificada.',
     );
     return '$_temp0';
   }
@@ -10237,11 +10236,11 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get badgeDetailBlockClaimantsSuccess => 'Reivindicantes bloqueados';
+  String get badgeDetailBlockClaimantsSuccess => 'Contas com o selo bloqueadas';
 
   @override
   String get badgeDetailBlockClaimantsFailure =>
-      'Nao foi possivel bloquear os reivindicantes';
+      'Não foi possível bloquear quem usa o selo';
 
   @override
   String get badgeDetailLoadError => 'Não foi possível carregar este selo';

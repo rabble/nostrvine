@@ -10228,30 +10228,30 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get badgeDetailBlockClaimantsAction => 'Badge-Claimants blockieren';
+  String get badgeDetailBlockClaimantsAction => 'Badge-Träger blockieren';
 
   @override
-  String get badgeDetailBlockClaimantsTitle => 'Badge-Claimants blockieren';
+  String get badgeDetailBlockClaimantsTitle => 'Badge-Träger blockieren';
 
   @override
   String get badgeDetailBlockClaimantsLoadError =>
-      'Claimants fuer dieses Badge konnten nicht geladen werden';
+      'Wir konnten die Träger dieses Badges nicht laden';
 
   @override
   String get badgeDetailBlockClaimantsEmptyTitle =>
-      'Gerade beansprucht niemand dieses Badge';
+      'Gerade trägt niemand dieses Badge';
 
   @override
   String get badgeDetailBlockClaimantsEmptyBody =>
-      'Wir haben keine aktuellen Claimants gefunden, die blockiert werden koennen.';
+      'Wir haben gerade niemanden zum Blockieren gefunden.';
 
   @override
   String badgeDetailBlockClaimantsHeading(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count Claimants blockieren?',
-      one: '1 Claimant blockieren?',
+      other: '$count Konten blockieren?',
+      one: '1 Konto blockieren?',
     );
     return '$_temp0';
   }
@@ -10262,9 +10262,9 @@ class AppLocalizationsDe extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'Das blockiert die $count Konten, die dieses Badge gerade beanspruchen. Ihre Beitraege verschwinden aus deinen Feeds, und sie werden nicht benachrichtigt.',
+          'Das blockiert die $count Konten, die dieses Badge gerade tragen. Ihre Beiträge tauchen nicht mehr in deinen Feeds auf, und sie werden nicht informiert.',
       one:
-          'Das blockiert das Konto, das dieses Badge gerade beansprucht. Seine Beitraege verschwinden aus deinen Feeds, und es wird nicht benachrichtigt.',
+          'Das blockiert das Konto, das dieses Badge gerade trägt. Seine Beiträge tauchen nicht mehr in deinen Feeds auf, und es wird nicht informiert.',
     );
     return '$_temp0';
   }
@@ -10281,11 +10281,11 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get badgeDetailBlockClaimantsSuccess => 'Badge-Claimants blockiert';
+  String get badgeDetailBlockClaimantsSuccess => 'Badge-Träger blockiert';
 
   @override
   String get badgeDetailBlockClaimantsFailure =>
-      'Badge-Claimants konnten nicht blockiert werden';
+      'Wir konnten die Badge-Träger nicht blockieren';
 
   @override
   String get badgeDetailLoadError => 'Dieses Badge konnte nicht geladen werden';

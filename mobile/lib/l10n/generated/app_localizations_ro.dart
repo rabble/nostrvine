@@ -10318,30 +10318,30 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get badgeDetailBlockClaimantsAction =>
-      'Blocheaza revendicarile insignei';
+  String get badgeDetailBlockClaimantsAction => 'Blochează cine poartă insigna';
 
   @override
-  String get badgeDetailBlockClaimantsTitle => 'Blocheaza revendicarile';
+  String get badgeDetailBlockClaimantsTitle => 'Blochează cine poartă insigna';
 
   @override
   String get badgeDetailBlockClaimantsLoadError =>
-      'Nu am putut incarca persoanele care revendica aceasta insigna';
+      'Nu am putut încărca cine poartă această insignă';
 
   @override
   String get badgeDetailBlockClaimantsEmptyTitle =>
-      'Nimeni nu revendica aceasta insigna acum';
+      'Nimeni nu poartă această insignă acum';
 
   @override
   String get badgeDetailBlockClaimantsEmptyBody =>
-      'Nu am gasit revendicari curente de blocat.';
+      'Nu am găsit pe nimeni de blocat acum.';
 
   @override
   String badgeDetailBlockClaimantsHeading(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Blochezi $count conturi?',
+      other: 'Blochezi $count de conturi?',
+      few: 'Blochezi $count conturi?',
       one: 'Blochezi 1 cont?',
     );
     return '$_temp0';
@@ -10353,9 +10353,11 @@ class AppLocalizationsRo extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'Asta blocheaza cele $count conturi care revendica acum insigna. Postarile lor vor iesi din feedurile tale si nu vor fi anuntate.',
+          'Asta blochează cele $count de conturi care poartă acum această insignă. Postările lor nu vor mai apărea în feedurile tale și nu vor fi notificate.',
+      few:
+          'Asta blochează cele $count conturi care poartă acum această insignă. Postările lor nu vor mai apărea în feedurile tale și nu vor fi notificate.',
       one:
-          'Asta blocheaza contul care revendica acum insigna. Postarile lui vor iesi din feedurile tale si nu va fi anuntat.',
+          'Asta blochează contul care poartă acum această insignă. Postările lui nu vor mai apărea în feedurile tale și nu va fi notificat.',
     );
     return '$_temp0';
   }
@@ -10365,18 +10367,20 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Blocheaza $count conturi',
-      one: 'Blocheaza 1 cont',
+      other: 'Blochează $count de conturi',
+      few: 'Blochează $count conturi',
+      one: 'Blochează 1 cont',
     );
     return '$_temp0';
   }
 
   @override
-  String get badgeDetailBlockClaimantsSuccess => 'Revendicari blocate';
+  String get badgeDetailBlockClaimantsSuccess =>
+      'Am blocat cine poartă insigna';
 
   @override
   String get badgeDetailBlockClaimantsFailure =>
-      'Nu am putut bloca revendicarile';
+      'Nu am putut bloca cine poartă insigna';
 
   @override
   String get badgeDetailLoadError => 'Această insignă nu a putut fi încărcată';

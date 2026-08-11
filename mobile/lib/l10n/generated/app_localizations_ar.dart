@@ -10031,22 +10031,21 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get badgeDetailBlockClaimantsAction => 'حظر مطالبين الشارة';
+  String get badgeDetailBlockClaimantsAction => 'حظر من يضعون الشارة';
 
   @override
-  String get badgeDetailBlockClaimantsTitle => 'حظر مطالبين الشارة';
+  String get badgeDetailBlockClaimantsTitle => 'حظر من يضعون الشارة';
 
   @override
   String get badgeDetailBlockClaimantsLoadError =>
-      'تعذر تحميل من يطالبون بهذه الشارة';
+      'تعذّر تحميل من يضعون هذه الشارة';
 
   @override
   String get badgeDetailBlockClaimantsEmptyTitle =>
-      'لا احد يطالب بهذه الشارة الان';
+      'لا أحد يضع هذه الشارة الآن';
 
   @override
-  String get badgeDetailBlockClaimantsEmptyBody =>
-      'لم نجد مطالبين حاليين لحظرهم.';
+  String get badgeDetailBlockClaimantsEmptyBody => 'لم نجد أحدًا لحظره الآن.';
 
   @override
   String badgeDetailBlockClaimantsHeading(int count) {
@@ -10065,9 +10064,9 @@ class AppLocalizationsAr extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'سيتم حظر $count حسابات تطالب بهذه الشارة الان. ستختفي منشوراتهم من خلاصاتك ولن يتم اخطارهم.',
+          'ستُحظر $count حسابات تضع هذه الشارة الآن. لن تظهر منشوراتها في تغذياتك ولن يتم إبلاغها.',
       one:
-          'سيتم حظر الحساب الذي يطالب بهذه الشارة الان. ستختفي منشوراته من خلاصاتك ولن يتم اخطاره.',
+          'سيُحظر الحساب الذي يضع هذه الشارة الآن. لن تظهر منشوراته في تغذياتك ولن يتم إبلاغه.',
     );
     return '$_temp0';
   }
@@ -10084,10 +10083,10 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get badgeDetailBlockClaimantsSuccess => 'تم حظر مطالبين الشارة';
+  String get badgeDetailBlockClaimantsSuccess => 'تم حظر من يضعون الشارة';
 
   @override
-  String get badgeDetailBlockClaimantsFailure => 'تعذر حظر مطالبين الشارة';
+  String get badgeDetailBlockClaimantsFailure => 'تعذّر حظر من يضعون الشارة';
 
   @override
   String get badgeDetailLoadError => 'تعذّر تحميل هذه الشارة';
