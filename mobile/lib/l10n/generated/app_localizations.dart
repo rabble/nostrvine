@@ -11426,42 +11426,6 @@ abstract class AppLocalizations {
   /// **'{title} (copy {number})'**
   String libraryDraftCopyTitle(String title, int number);
 
-  /// Title of the sheet shown when opening or posting another draft would end an unfinished recording session.
-  ///
-  /// In en, this message translates to:
-  /// **'Leave this recording?'**
-  String get libraryOpenDraftEndsRecordingTitle;
-
-  /// Explains that opening a draft discards the in-progress recording session, and that the recorded clips themselves are kept in the clip library.
-  ///
-  /// In en, this message translates to:
-  /// **'Opening a draft ends the video you\'re working on. Your clips stay in your library.'**
-  String get libraryOpenDraftEndsRecordingMessage;
-
-  /// Confirm button that opens the draft and ends the current recording session.
-  ///
-  /// In en, this message translates to:
-  /// **'Open draft'**
-  String get libraryOpenDraftEndsRecordingConfirm;
-
-  /// Cancel button that dismisses the sheet and keeps the current recording session.
-  ///
-  /// In en, this message translates to:
-  /// **'Keep recording'**
-  String get libraryOpenDraftEndsRecordingCancel;
-
-  /// Explains that posting another saved draft discards the in-progress recording session, while preserving the recorded clips in the clip library.
-  ///
-  /// In en, this message translates to:
-  /// **'Posting this draft ends the video you\'re working on. Your clips stay in your library.'**
-  String get libraryPostDraftEndsRecordingMessage;
-
-  /// Confirm button that posts a saved draft and ends the current recording session.
-  ///
-  /// In en, this message translates to:
-  /// **'Post draft'**
-  String get libraryPostDraftEndsRecordingConfirm;
-
   /// No description provided for @libraryDeleteDraftTitle.
   ///
   /// In en, this message translates to:

@@ -4064,30 +4064,6 @@
       }
     }
   },
-  "libraryOpenDraftEndsRecordingTitle": "Leave this recording?",
-  "@libraryOpenDraftEndsRecordingTitle": {
-    "description": "Title of the sheet shown when opening or posting another draft would end an unfinished recording session."
-  },
-  "libraryOpenDraftEndsRecordingMessage": "Opening a draft ends the video you're working on. Your clips stay in your library.",
-  "@libraryOpenDraftEndsRecordingMessage": {
-    "description": "Explains that opening a draft discards the in-progress recording session, and that the recorded clips themselves are kept in the clip library."
-  },
-  "libraryOpenDraftEndsRecordingConfirm": "Open draft",
-  "@libraryOpenDraftEndsRecordingConfirm": {
-    "description": "Confirm button that opens the draft and ends the current recording session."
-  },
-  "libraryOpenDraftEndsRecordingCancel": "Keep recording",
-  "@libraryOpenDraftEndsRecordingCancel": {
-    "description": "Cancel button that dismisses the sheet and keeps the current recording session."
-  },
-  "libraryPostDraftEndsRecordingMessage": "Posting this draft ends the video you're working on. Your clips stay in your library.",
-  "@libraryPostDraftEndsRecordingMessage": {
-    "description": "Explains that posting another saved draft discards the in-progress recording session, while preserving the recorded clips in the clip library."
-  },
-  "libraryPostDraftEndsRecordingConfirm": "Post draft",
-  "@libraryPostDraftEndsRecordingConfirm": {
-    "description": "Confirm button that posts a saved draft and ends the current recording session."
-  },
   "libraryDeleteDraftTitle": "Delete Draft",
   "libraryDeleteDraftMessage": "Are you sure you want to delete \"{title}\"?",
   "@libraryDeleteDraftMessage": {

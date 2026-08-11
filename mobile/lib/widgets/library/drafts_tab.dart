@@ -12,7 +12,6 @@ import 'package:openvine/blocs/drafts_library/drafts_library_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_draft.dart';
-import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/utils/draft_copy_naming.dart';
@@ -208,18 +207,6 @@ class DraftsTab extends ConsumerWidget {
       name: 'DraftsTab',
       category: LogCategory.video,
     );
-
-    if (draft.id != VideoEditorConstants.autoSaveId &&
-        !await _confirmEndingRecording(
-          context,
-          ref,
-          subtitle: context.l10n.libraryPostDraftEndsRecordingMessage,
-          primaryButtonText: context.l10n.libraryPostDraftEndsRecordingConfirm,
-        )) {
-      return;
-    }
-    if (!context.mounted) return;
-
     await ref.read(videoPublishProvider.notifier).publishVideo(context, draft);
 
     // Reload so a published draft leaves the list. BackgroundPublishBloc owns
@@ -241,16 +228,6 @@ class DraftsTab extends ConsumerWidget {
       category: LogCategory.video,
     );
 
-    if (draft.id != VideoEditorConstants.autoSaveId &&
-        !await _confirmEndingRecording(
-          context,
-          ref,
-          subtitle: context.l10n.libraryOpenDraftEndsRecordingMessage,
-          primaryButtonText: context.l10n.libraryOpenDraftEndsRecordingConfirm,
-        )) {
-      return;
-    }
-
     await ref
         .read(videoPublishProvider.notifier)
         .clearAll(keepAutosavedDraft: true);
@@ -270,29 +247,6 @@ class DraftsTab extends ConsumerWidget {
     if (context.mounted) {
       context.read<DraftsLibraryBloc>().add(const DraftsLibraryLoadRequested());
     }
-  }
-
-  /// Opening or posting another draft resets the clip manager, so the recorder
-  /// session underneath this library cannot be restored after the transition.
-  Future<bool> _confirmEndingRecording(
-    BuildContext context,
-    WidgetRef ref, {
-    required String subtitle,
-    required String primaryButtonText,
-  }) async {
-    if (!ref.read(clipManagerProvider).hasClips) return true;
-
-    final confirmed = await VineBottomSheetPrompt.show<bool>(
-      context: context,
-      sticker: .alert,
-      title: context.l10n.libraryOpenDraftEndsRecordingTitle,
-      subtitle: subtitle,
-      primaryButtonText: primaryButtonText,
-      secondaryButtonText: context.l10n.libraryOpenDraftEndsRecordingCancel,
-      onPrimaryPressed: () => Navigator.of(context).pop(true),
-      onSecondaryPressed: () => Navigator.of(context).pop(false),
-    );
-    return confirmed == true && context.mounted;
   }
 
   Future<void> _deleteDraft(
