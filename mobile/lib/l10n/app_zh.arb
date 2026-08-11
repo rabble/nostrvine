@@ -1280,7 +1280,6 @@
   "nostrSettingsMediaServersSubtitle": "配置 Blossom 上传服务器",
   "settingsDeveloperOptions": "开发者选项",
   "settingsDeveloperOptionsSubtitle": "环境切换和调试设置",
-  "nostrSettingsExperimentalFeaturesSubtitle": "开关一些可能会抽风的功能。",
   "nostrSettingsKeyManagement": "密钥管理",
   "nostrSettingsKeyManagementSubtitle": "导出、备份和恢复你的 Nostr 密钥",
   "nostrSettingsClientAttribution": "客户端署名",

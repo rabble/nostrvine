@@ -1280,7 +1280,6 @@
   "nostrSettingsMediaServersSubtitle": "Cấu hình máy chủ tải lên Blossom",
   "settingsDeveloperOptions": "Tùy chọn nhà phát triển",
   "settingsDeveloperOptionsSubtitle": "Chuyển môi trường và cài đặt gỡ lỗi",
-  "nostrSettingsExperimentalFeaturesSubtitle": "Bật/tắt các cờ tính năng có thể hơi \"khựng\".",
   "nostrSettingsKeyManagement": "Quản lý khóa",
   "nostrSettingsKeyManagementSubtitle": "Xuất, sao lưu và khôi phục khóa Nostr của bạn",
   "nostrSettingsClientAttribution": "Ghi nhận ứng dụng",

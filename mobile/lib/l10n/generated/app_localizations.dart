@@ -3958,12 +3958,6 @@ abstract class AppLocalizations {
   /// **'Environment switcher and debug settings'**
   String get settingsDeveloperOptionsSubtitle;
 
-  /// No description provided for @nostrSettingsExperimentalFeaturesSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Toggle feature flags that may hiccup.'**
-  String get nostrSettingsExperimentalFeaturesSubtitle;
-
   /// No description provided for @nostrSettingsKeyManagement.
   ///
   /// In en, this message translates to:

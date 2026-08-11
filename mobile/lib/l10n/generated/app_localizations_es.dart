@@ -2298,10 +2298,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Selector de entorno y ajustes de depuración';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Activá flags de funciones que pueden fallar.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Gestión de claves';
 
   @override

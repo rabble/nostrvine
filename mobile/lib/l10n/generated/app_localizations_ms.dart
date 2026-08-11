@@ -2288,10 +2288,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Penukar persekitaran dan tetapan nyahpepijat';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Togol bendera ciri yang mungkin tersandung.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Pengurusan Kunci';
 
   @override

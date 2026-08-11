@@ -1280,7 +1280,6 @@
   "nostrSettingsMediaServersSubtitle": "Konfigurasikan pelayan muat naik Blossom",
   "settingsDeveloperOptions": "Pilihan Pembangun",
   "settingsDeveloperOptionsSubtitle": "Penukar persekitaran dan tetapan nyahpepijat",
-  "nostrSettingsExperimentalFeaturesSubtitle": "Togol bendera ciri yang mungkin tersandung.",
   "nostrSettingsKeyManagement": "Pengurusan Kunci",
   "nostrSettingsKeyManagementSubtitle": "Eksport, sandar dan pulihkan kunci Nostr anda",
   "nostrSettingsClientAttribution": "Atribusi Klien",

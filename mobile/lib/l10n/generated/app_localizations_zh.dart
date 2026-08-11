@@ -2165,9 +2165,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsDeveloperOptionsSubtitle => '环境切换和调试设置';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle => '开关一些可能会抽风的功能。';
-
-  @override
   String get nostrSettingsKeyManagement => '密钥管理';
 
   @override

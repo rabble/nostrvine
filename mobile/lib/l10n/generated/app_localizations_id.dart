@@ -2233,10 +2233,6 @@ class AppLocalizationsId extends AppLocalizations {
       'Pengubah environment dan pengaturan debug';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Aktifkan fitur eksperimen yang mungkin bermasalah.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Manajemen Kunci';
 
   @override

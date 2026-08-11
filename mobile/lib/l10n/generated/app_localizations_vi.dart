@@ -2281,10 +2281,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Chuyển môi trường và cài đặt gỡ lỗi';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Bật/tắt các cờ tính năng có thể hơi \"khựng\".';
-
-  @override
   String get nostrSettingsKeyManagement => 'Quản lý khóa';
 
   @override

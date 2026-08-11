@@ -3636,7 +3636,6 @@
     "nostrSettingsMediaServersSubtitle": "Blossom-Upload-Server konfigurieren",
     "settingsDeveloperOptions": "Entwickleroptionen",
     "settingsDeveloperOptionsSubtitle": "Umgebungswechsler und Debug-Einstellungen",
-    "nostrSettingsExperimentalFeaturesSubtitle": "Feature-Flags an- und ausschalten — kann holpern.",
     "nostrSettingsKeyManagement": "Schlüsselverwaltung",
     "nostrSettingsKeyManagementSubtitle": "Deine Nostr-Schlüssel exportieren, sichern und wiederherstellen",
     "nostrSettingsClientAttribution": "Client-Zuordnung",

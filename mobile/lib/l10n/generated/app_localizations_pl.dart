@@ -2319,10 +2319,6 @@ class AppLocalizationsPl extends AppLocalizations {
       'Przełącznik środowiska i ustawienia debugowania';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Włączaj flagi funkcji, które mogą czkać.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Zarządzanie kluczami';
 
   @override

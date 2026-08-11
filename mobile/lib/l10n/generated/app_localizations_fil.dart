@@ -2309,10 +2309,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Environment switcher at debug settings';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'I-toggle ang mga feature flag na maaaring magka-hiccup.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Key Management';
 
   @override

@@ -3767,7 +3767,6 @@
     "nostrSettingsMediaServersSubtitle": "Настрой Blossom сървъри за качване",
     "settingsDeveloperOptions": "Опции за разработчици",
     "settingsDeveloperOptionsSubtitle": "Превключвател на средата и настройки за дебъг",
-    "nostrSettingsExperimentalFeaturesSubtitle": "Превключвай функции, които може да се държат странно.",
     "nostrSettingsKeyManagement": "Управление на ключове",
     "nostrSettingsKeyManagementSubtitle": "Експортирай, архивирай и възстановявай Nostr ключовете си",
     "nostrSettingsClientAttribution": "Атрибуция на клиента",

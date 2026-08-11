@@ -3636,7 +3636,6 @@
     "nostrSettingsMediaServersSubtitle": "Konfigurera Blossom-uppladdningsservrar",
     "settingsDeveloperOptions": "Utvecklaralternativ",
     "settingsDeveloperOptionsSubtitle": "Miljöväxlare och felsökningsinställningar",
-    "nostrSettingsExperimentalFeaturesSubtitle": "Slå på funktioner som kan hicka.",
     "nostrSettingsKeyManagement": "Nyckelhantering",
     "nostrSettingsKeyManagementSubtitle": "Exportera, säkerhetskopiera och återställ dina Nostr-nycklar",
     "nostrSettingsClientAttribution": "Klientattribuering",

@@ -2302,10 +2302,6 @@ class AppLocalizationsIt extends AppLocalizations {
       'Selettore ambiente e impostazioni di debug';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Attiva feature flag che potrebbero fare i capricci.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Gestione chiavi';
 
   @override

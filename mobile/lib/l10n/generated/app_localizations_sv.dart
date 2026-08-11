@@ -2267,10 +2267,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Miljöväxlare och felsökningsinställningar';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Slå på funktioner som kan hicka.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Nyckelhantering';
 
   @override
