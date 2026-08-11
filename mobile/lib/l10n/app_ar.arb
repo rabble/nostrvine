@@ -3348,6 +3348,7 @@
     "videoEditorAudioSegmentInstruction": "حدّد مقطع الصوت لفيديوك",
     "videoEditorClipGalleryInstruction": "اضغط للتعديل. اضغط مطولاً واسحب لإعادة الترتيب.",
     "fullscreenFeedRemovedMessage": "تمت إزالة الفيديو",
+    "fullscreenFeedEmptyMessage": "لم يتبقَّ شيء لتشغيله هنا",
     "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
     "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
     "invitesGenerateButtonLabel": "Generate invite",
@@ -5028,5 +5029,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "تطبيق التغييرات في {tool}",
   "videoEditorRemoveAudioSemanticLabel": "إزالة الصوت",
   "rgbColorSemanticLabel": "RGB {red}، {green}، {blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}، {color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}، {color}",
+  "inboxFilterBlocked": "محظور",
+  "inboxBlockedEmptyTitle": "لا توجد محادثات محظورة",
+  "inboxBlockedEmptySubtitle": "تظهر هنا الحسابات التي تحظرها.",
+  "inboxBlockedNoMessages": "لا توجد رسائل",
+  "dmBlockedThreadTitle": "لقد حظرت هذا الحساب",
+  "dmBlockedThreadBody": "تبقى الرسائل هنا لتتمكن من قراءتها أو التقاط صورة لها. ألغِ الحظر للرد."
 }

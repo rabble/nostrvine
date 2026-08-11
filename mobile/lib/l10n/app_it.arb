@@ -3355,6 +3355,7 @@
     "navSearch": "Cerca",
     "navSearchTooltip": "Cerca",
     "fullscreenFeedRemovedMessage": "Video rimosso",
+    "fullscreenFeedEmptyMessage": "Qui non c’è più niente da riprodurre",
     "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
     "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
     "invitesGenerateButtonLabel": "Generate invite",
@@ -5028,5 +5029,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "Applica le modifiche in {tool}",
   "videoEditorRemoveAudioSemanticLabel": "Rimuovi audio",
   "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}",
+  "inboxFilterBlocked": "Bloccati",
+  "inboxBlockedEmptyTitle": "Nessuna chat bloccata",
+  "inboxBlockedEmptySubtitle": "Gli account che blocchi compaiono qui.",
+  "inboxBlockedNoMessages": "Nessun messaggio",
+  "dmBlockedThreadTitle": "Hai bloccato questo account",
+  "dmBlockedThreadBody": "I messaggi restano qui così puoi leggerli o farne uno screenshot. Sblocca per rispondere."
 }

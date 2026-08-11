@@ -284,8 +284,31 @@ class FullscreenFeedBloc
 
         final indexResolution = _nextIndexForVideos(videos);
 
+        // An empty list means one of several very different things, and the
+        // screen renders its loading placeholder for every status that is not
+        // terminal, so reporting `ready` for all of them stranded it on a
+        // spinner. See #6949.
+        final FullscreenFeedStatus nextStatus;
+        if (videos.isNotEmpty) {
+          nextStatus = FullscreenFeedStatus.ready;
+        } else if (state.status == FullscreenFeedStatus.empty ||
+            state.status == FullscreenFeedStatus.emptyAfterRemoval) {
+          // Already terminal-empty. A repeat empty emit must not downgrade
+          // it — that would put the screen back on the placeholder, and for
+          // `emptyAfterRemoval` it would also lose the pop signal.
+          nextStatus = state.status;
+        } else if (state.videos.isNotEmpty) {
+          // The feed drained: it had videos and now has none (the viewer
+          // unliked their last liked video, a filter dropped the remainder).
+          nextStatus = FullscreenFeedStatus.empty;
+        } else {
+          // No video has arrived yet — a live source warming up, whose next
+          // emit resolves it. This one stays a loading state.
+          nextStatus = FullscreenFeedStatus.ready;
+        }
+
         return state.copyWith(
-          status: FullscreenFeedStatus.ready,
+          status: nextStatus,
           videos: videos,
           currentIndex: indexResolution.index,
           isLoadingMore: false,
@@ -304,6 +327,17 @@ class FullscreenFeedBloc
         return state;
       },
     );
+
+    // The source stream completed. Single-emit sources — a static video list,
+    // the hashtag snapshot (`Stream.fromFuture`) — cannot deliver anything
+    // else, so an empty list here is terminal rather than a warm-up. Without
+    // this the screen holds its loading placeholder forever. Live sources
+    // only complete when the route is going away, which `isDone` covers.
+    if (!emit.isDone &&
+        state.videos.isEmpty &&
+        state.status != FullscreenFeedStatus.emptyAfterRemoval) {
+      emit(state.copyWith(status: FullscreenFeedStatus.empty));
+    }
   }
 
   ({int index, bool initialTargetResolved}) _nextIndexForVideos(

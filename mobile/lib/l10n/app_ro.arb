@@ -3355,6 +3355,7 @@
     "navSearch": "Caută",
     "navSearchTooltip": "Caută",
     "fullscreenFeedRemovedMessage": "Videoclip eliminat",
+    "fullscreenFeedEmptyMessage": "Nu mai e nimic de redat aici",
     "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
     "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
     "invitesGenerateButtonLabel": "Generate invite",
@@ -5028,5 +5029,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "Aplică modificările din {tool}",
   "videoEditorRemoveAudioSemanticLabel": "Elimină sunetul",
   "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}",
+  "inboxFilterBlocked": "Blocate",
+  "inboxBlockedEmptyTitle": "Nicio conversație blocată",
+  "inboxBlockedEmptySubtitle": "Conturile pe care le blochezi apar aici.",
+  "inboxBlockedNoMessages": "Niciun mesaj",
+  "dmBlockedThreadTitle": "Ai blocat acest cont",
+  "dmBlockedThreadBody": "Mesajele rămân aici ca să le poți citi sau captura. Deblochează pentru a răspunde."
 }

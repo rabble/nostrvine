@@ -5944,6 +5944,7 @@
   "videoMetadataClosePreviewSemanticLabel": "关闭视频预览",
   "videoMetadataRemoveSemanticLabel": "移除",
   "fullscreenFeedRemovedMessage": "视频已移除",
+  "fullscreenFeedEmptyMessage": "这里没有可播放的内容了",
   "@fullscreenFeedRemovedMessage": {
     "description": "Empty-state message shown in the fullscreen feed when the last visible video has just been deleted, blocked, or muted and the route cannot be popped back to a parent (e.g. a cold deep-link)."
   },
@@ -6867,5 +6868,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "应用在{tool}中的更改",
   "videoEditorRemoveAudioSemanticLabel": "移除音频",
   "rgbColorSemanticLabel": "RGB {red}、{green}、{blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}、{color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}、{color}",
+  "inboxFilterBlocked": "已屏蔽",
+  "inboxBlockedEmptyTitle": "没有已屏蔽的聊天",
+  "inboxBlockedEmptySubtitle": "你屏蔽的账号会显示在这里。",
+  "inboxBlockedNoMessages": "暂无消息",
+  "dmBlockedThreadTitle": "你已屏蔽此账号",
+  "dmBlockedThreadBody": "消息会保留在这里，方便你查看或截图。解除屏蔽后即可回复。"
 }

@@ -3355,6 +3355,7 @@
     "navSearch": "Zoeken",
     "navSearchTooltip": "Zoeken",
     "fullscreenFeedRemovedMessage": "Video verwijderd",
+    "fullscreenFeedEmptyMessage": "Hier is niets meer om af te spelen",
     "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
     "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
     "invitesGenerateButtonLabel": "Generate invite",
@@ -5028,5 +5029,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "Wijzigingen in {tool} toepassen",
   "videoEditorRemoveAudioSemanticLabel": "Audio verwijderen",
   "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}",
+  "inboxFilterBlocked": "Geblokkeerd",
+  "inboxBlockedEmptyTitle": "Geen geblokkeerde chats",
+  "inboxBlockedEmptySubtitle": "Accounts die je blokkeert verschijnen hier.",
+  "inboxBlockedNoMessages": "Geen berichten",
+  "dmBlockedThreadTitle": "Je hebt dit account geblokkeerd",
+  "dmBlockedThreadBody": "Berichten blijven hier staan zodat je ze kunt lezen of er een screenshot van kunt maken. Deblokkeer om te reageren."
 }

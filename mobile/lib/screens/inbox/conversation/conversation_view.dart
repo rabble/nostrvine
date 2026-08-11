@@ -138,9 +138,16 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
     // set and re-passing it to every ReactionsRow — on any block/unblock/mute
     // change while the thread is open.
     ref.watch(blocklistVersionProvider);
-    final blockedReactors = ref
-        .read(contentBlocklistRepositoryProvider)
-        .feedHiddenPubkeys;
+    final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
+    final blockedReactors = blocklistRepository.feedHiddenPubkeys;
+
+    // A thread reached from the Blocked chip is readable but not writable:
+    // the block stays in force, so the composer and the reaction affordance
+    // both go. Reading and screenshotting is the point (#7025); replying
+    // would undo the block the viewer deliberately set. Rebuilds off the
+    // `blocklistVersionProvider` watch above, so unblocking from the kebab
+    // brings the composer straight back.
+    final isBlockedByUs = blocklistRepository.isBlocked(_otherPubkey);
 
     // Resolve other participant's profile for the app bar + empty state
     final otherPubkey = _otherPubkey;
@@ -255,7 +262,10 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                                   participantPubkeys: widget.participantPubkeys,
                                   blockedPubkeys: blockedReactors,
                                   displayName: displayName,
-                                  reactionsEnabled: !isRetiredModerationThread,
+                                  reactionsEnabled:
+                                      !isRetiredModerationThread &&
+                                      !isBlockedByUs,
+                                  sendRecoveryEnabled: !isBlockedByUs,
                                   imageUrl: isDeleted ? null : profile?.picture,
                                   nip05: isDeleted
                                       ? null
@@ -279,6 +289,8 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                 ),
                 if (isRetiredModerationThread)
                   _ClosedThreadNotice(currentPubkey: currentPubkey)
+                else if (isBlockedByUs)
+                  const _BlockedThreadNotice()
                 else
                   _SendBar(participantPubkeys: widget.participantPubkeys),
               ],
@@ -506,6 +518,56 @@ class _ClosedThreadNotice extends StatelessWidget {
   }
 }
 
+/// Takes the composer's place in a thread with an account the viewer blocked
+/// (#7025).
+///
+/// The thread is reachable from the inbox's Blocked chip so the viewer can
+/// read — and screenshot — what was already sent to them without lifting the
+/// block, which would re-expose them to the person they blocked. The block is
+/// still in force, so there is nothing to compose with.
+///
+/// Replaces [MessageInputBar] rather than disabling it, for the same reason
+/// [_ClosedThreadNotice] does: the input has no disabled state, and a
+/// focusable text field reads as "maybe this works".
+///
+/// Carries no action of its own — unblocking is in the app bar's more-sheet,
+/// and that is the deliberate route back to replying.
+class _BlockedThreadNotice extends StatelessWidget {
+  const _BlockedThreadNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
+    // Matches the composer's slot geometry so the layout does not shift.
+    return Container(
+      color: context.vineColors.surface,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: 8,
+          children: [
+            Text(
+              l10n.dmBlockedThreadTitle,
+              style: VineTheme.titleSmallFont(
+                color: context.vineColors.primaryText,
+              ),
+            ),
+            Text(
+              l10n.dmBlockedThreadBody,
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// Selects status and messages from the bloc and switches between loading,
 /// error, empty, and message-list states.
 class _ConversationContent extends StatelessWidget {
@@ -516,6 +578,7 @@ class _ConversationContent extends StatelessWidget {
     required this.blockedPubkeys,
     required this.displayName,
     required this.reactionsEnabled,
+    required this.sendRecoveryEnabled,
     this.imageUrl,
     this.nip05,
     this.onViewProfile,
@@ -529,6 +592,9 @@ class _ConversationContent extends StatelessWidget {
   final Set<String> blockedPubkeys;
   final String displayName;
   final bool reactionsEnabled;
+
+  /// Whether tapping a failed own bubble may offer to resend it.
+  final bool sendRecoveryEnabled;
   final String? imageUrl;
   final String? nip05;
   final VoidCallback? onViewProfile;
@@ -575,6 +641,7 @@ class _ConversationContent extends StatelessWidget {
                     blockedPubkeys: blockedPubkeys,
                     senderDisplayName: displayName,
                     reactionsEnabled: reactionsEnabled,
+                    sendRecoveryEnabled: sendRecoveryEnabled,
                   ),
         };
       },
@@ -620,6 +687,7 @@ class _MessageList extends StatelessWidget {
     required this.blockedPubkeys,
     required this.senderDisplayName,
     required this.reactionsEnabled,
+    required this.sendRecoveryEnabled,
   });
 
   final List<DmMessage> messages;
@@ -630,6 +698,23 @@ class _MessageList extends StatelessWidget {
   final Set<String> blockedPubkeys;
   final String senderDisplayName;
   final bool reactionsEnabled;
+
+  /// Whether tapping a failed own bubble may offer to resend it (#7025).
+  ///
+  /// False in a thread with an account the viewer blocked. Removing the
+  /// composer is not enough on its own: a message that hard-failed before the
+  /// block is still on screen as a red bubble, and its tap opens a recovery
+  /// sheet whose primary action republishes the rumor — delivering a DM to the
+  /// account the viewer blocked, from the one screen built to make that
+  /// impossible. The bubble stays rendered; only the affordance goes, so the
+  /// evidence is intact and nothing is force-deleted. Unblocking restores the
+  /// sheet along with the composer.
+  ///
+  /// This closes the user-initiated path only. TODO(#7047): Decide whether a
+  /// block cancels queued outgoing sends; the reconnect sweep still re-drives
+  /// a failed row that is under `maxRetries`
+  /// (`OutgoingDmsDao.getRetryableForOwner`).
+  final bool sendRecoveryEnabled;
 
   Future<void> _onMessageLongPress(
     BuildContext context,
@@ -869,7 +954,12 @@ class _MessageList extends StatelessWidget {
                 _onMessageLongPress(context, message, isSent, status),
             // A single tap on a failed own bubble opens the resend/stop-trying
             // recovery bottom sheet; every other bubble keeps its default tap.
-            onTap: isSent && status == DmDeliveryStatus.failed
+            // Withheld in a blocked thread, where resending would publish to
+            // the blocked account (see [sendRecoveryEnabled]).
+            onTap:
+                sendRecoveryEnabled &&
+                    isSent &&
+                    status == DmDeliveryStatus.failed
                 ? () => _onFailedMessageTap(context, message)
                 : null,
             // Double-tap-to-like, hidden on failed own sends to mirror the

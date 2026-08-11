@@ -3355,6 +3355,7 @@
     "videoEditorAudioSegmentInstruction": "Pilih segmen audio untuk videomu",
     "videoEditorClipGalleryInstruction": "Ketuk untuk mengedit. Tekan lama dan seret untuk mengurutkan ulang.",
     "fullscreenFeedRemovedMessage": "Video dihapus",
+    "fullscreenFeedEmptyMessage": "Tidak ada lagi yang bisa diputar di sini",
     "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
     "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
     "invitesGenerateButtonLabel": "Generate invite",
@@ -5028,5 +5029,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "Terapkan perubahan di {tool}",
   "videoEditorRemoveAudioSemanticLabel": "Hapus audio",
   "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}",
+  "inboxFilterBlocked": "Diblokir",
+  "inboxBlockedEmptyTitle": "Tidak ada obrolan yang diblokir",
+  "inboxBlockedEmptySubtitle": "Akun yang kamu blokir muncul di sini.",
+  "inboxBlockedNoMessages": "Tidak ada pesan",
+  "dmBlockedThreadTitle": "Kamu memblokir akun ini",
+  "dmBlockedThreadBody": "Pesan tetap ada di sini agar kamu bisa membacanya atau membuat tangkapan layar. Buka blokir untuk membalas."
 }

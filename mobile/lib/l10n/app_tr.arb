@@ -3355,6 +3355,7 @@
     "videoEditorAudioSegmentInstruction": "Videon için ses bölümünü seç",
     "videoEditorClipGalleryInstruction": "Düzenlemek için dokun. Yeniden sıralamak için basılı tutup sürükle.",
     "fullscreenFeedRemovedMessage": "Video kaldırıldı",
+    "fullscreenFeedEmptyMessage": "Burada oynatılacak başka bir şey yok",
     "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
     "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
     "invitesGenerateButtonLabel": "Generate invite",
@@ -5028,5 +5029,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "{tool} içindeki değişiklikleri uygula",
   "videoEditorRemoveAudioSemanticLabel": "Sesi kaldır",
   "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}",
+  "inboxFilterBlocked": "Engellenenler",
+  "inboxBlockedEmptyTitle": "Engellenmiş sohbet yok",
+  "inboxBlockedEmptySubtitle": "Engellediğin hesaplar burada görünür.",
+  "inboxBlockedNoMessages": "Mesaj yok",
+  "dmBlockedThreadTitle": "Bu hesabı engelledin",
+  "dmBlockedThreadBody": "Mesajlar burada kalır, böylece okuyabilir veya ekran görüntüsü alabilirsin. Yanıtlamak için engeli kaldır."
 }

@@ -2686,6 +2686,7 @@
     "videoEditorAudioSegmentInstruction": "동영상에 사용할 오디오 구간을 선택하세요",
     "videoEditorClipGalleryInstruction": "탭해서 편집하세요. 길게 누르고 드래그해 순서를 바꾸세요.",
     "fullscreenFeedRemovedMessage": "동영상이 삭제됐어요",
+    "fullscreenFeedEmptyMessage": "여기에 재생할 영상이 더 없어요",
     "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
     "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
     "invitesGenerateButtonLabel": "Generate invite",
@@ -4359,5 +4360,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "{tool}의 변경 사항 적용",
   "videoEditorRemoveAudioSemanticLabel": "오디오 제거",
   "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}",
+  "inboxFilterBlocked": "차단됨",
+  "inboxBlockedEmptyTitle": "차단된 대화가 없습니다",
+  "inboxBlockedEmptySubtitle": "차단한 계정이 여기에 표시됩니다.",
+  "inboxBlockedNoMessages": "메시지 없음",
+  "dmBlockedThreadTitle": "이 계정을 차단했습니다",
+  "dmBlockedThreadBody": "메시지는 여기에 남아 있어 읽거나 스크린샷을 찍을 수 있습니다. 답장하려면 차단을 해제하세요."
 }

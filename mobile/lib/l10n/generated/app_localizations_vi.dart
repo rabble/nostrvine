@@ -5880,6 +5880,26 @@ class AppLocalizationsVi extends AppLocalizations {
   String get inboxFilterUnread => 'Chưa đọc';
 
   @override
+  String get dmBlockedThreadTitle => 'Bạn đã chặn tài khoản này';
+
+  @override
+  String get dmBlockedThreadBody =>
+      'Tin nhắn vẫn ở đây để bạn có thể đọc hoặc chụp màn hình. Bỏ chặn để trả lời.';
+
+  @override
+  String get inboxFilterBlocked => 'Đã chặn';
+
+  @override
+  String get inboxBlockedEmptyTitle => 'Không có cuộc trò chuyện bị chặn';
+
+  @override
+  String get inboxBlockedEmptySubtitle =>
+      'Các tài khoản bạn chặn sẽ xuất hiện ở đây.';
+
+  @override
+  String get inboxBlockedNoMessages => 'Không có tin nhắn';
+
+  @override
   String get inboxUnreadEmptyTitle => 'Bạn đã đọc hết rồi';
 
   @override
@@ -9884,6 +9904,9 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get fullscreenFeedRemovedMessage => 'Video đã bị gỡ';
+
+  @override
+  String get fullscreenFeedEmptyMessage => 'Không còn gì để phát ở đây';
 
   @override
   String get settingsBadgesTitle => 'Huy hiệu';

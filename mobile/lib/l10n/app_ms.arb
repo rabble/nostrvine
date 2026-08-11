@@ -5944,6 +5944,7 @@
   "videoMetadataClosePreviewSemanticLabel": "Tutup pratonton video",
   "videoMetadataRemoveSemanticLabel": "Alih Keluar",
   "fullscreenFeedRemovedMessage": "Video dialih keluar",
+  "fullscreenFeedEmptyMessage": "Tiada apa-apa lagi untuk dimainkan di sini",
   "@fullscreenFeedRemovedMessage": {
     "description": "Empty-state message shown in the fullscreen feed when the last visible video has just been deleted, blocked, or muted and the route cannot be popped back to a parent (e.g. a cold deep-link)."
   },
@@ -6867,5 +6868,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "Gunakan perubahan dalam {tool}",
   "videoEditorRemoveAudioSemanticLabel": "Alih keluar audio",
   "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}",
+  "inboxFilterBlocked": "Disekat",
+  "inboxBlockedEmptyTitle": "Tiada sembang disekat",
+  "inboxBlockedEmptySubtitle": "Akaun yang anda sekat akan muncul di sini.",
+  "inboxBlockedNoMessages": "Tiada mesej",
+  "dmBlockedThreadTitle": "Anda menyekat akaun ini",
+  "dmBlockedThreadBody": "Mesej kekal di sini supaya anda boleh membacanya atau mengambil tangkap layar. Nyahsekat untuk membalas."
 }

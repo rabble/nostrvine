@@ -3355,6 +3355,7 @@
     "navSearch": "Pesquisar",
     "navSearchTooltip": "Pesquisar",
     "fullscreenFeedRemovedMessage": "Vídeo removido",
+    "fullscreenFeedEmptyMessage": "Não há mais nada para reproduzir aqui",
     "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
     "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
     "invitesGenerateButtonLabel": "Generate invite",
@@ -5028,5 +5029,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "Aplicar alterações em {tool}",
   "videoEditorRemoveAudioSemanticLabel": "Remover áudio",
   "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}",
+  "inboxFilterBlocked": "Bloqueados",
+  "inboxBlockedEmptyTitle": "Nenhuma conversa bloqueada",
+  "inboxBlockedEmptySubtitle": "As contas que você bloquear aparecem aqui.",
+  "inboxBlockedNoMessages": "Sem mensagens",
+  "dmBlockedThreadTitle": "Você bloqueou esta conta",
+  "dmBlockedThreadBody": "As mensagens ficam aqui para você ler ou capturar a tela. Desbloqueie para responder."
 }

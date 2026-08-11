@@ -3355,6 +3355,7 @@
     "navSearch": "Szukaj",
     "navSearchTooltip": "Szukaj",
     "fullscreenFeedRemovedMessage": "Film usunięty",
+    "fullscreenFeedEmptyMessage": "Nie ma tu już nic do odtworzenia",
     "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
     "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
     "invitesGenerateButtonLabel": "Generate invite",
@@ -5028,5 +5029,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "Zastosuj zmiany w {tool}",
   "videoEditorRemoveAudioSemanticLabel": "Usuń dźwięk",
   "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}",
+  "inboxFilterBlocked": "Zablokowane",
+  "inboxBlockedEmptyTitle": "Brak zablokowanych czatów",
+  "inboxBlockedEmptySubtitle": "Konta, które zablokujesz, pojawią się tutaj.",
+  "inboxBlockedNoMessages": "Brak wiadomości",
+  "dmBlockedThreadTitle": "Zablokowano to konto",
+  "dmBlockedThreadBody": "Wiadomości pozostają tutaj, żebyś mógł je przeczytać lub zrobić zrzut ekranu. Odblokuj, aby odpowiedzieć."
 }

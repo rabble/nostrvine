@@ -4000,6 +4000,7 @@
     "videoMetadataClosePreviewSemanticLabel": "የቪዲዮ ቅድመ እይታን ዝጋ",
     "videoMetadataRemoveSemanticLabel": "አስወግድ",
     "fullscreenFeedRemovedMessage": "ቪዲዮ ተወግዷል",
+    "fullscreenFeedEmptyMessage": "እዚህ የሚጫወት ምንም አልቀረም",
     "@fullscreenFeedRemovedMessage": {
         "description": "Empty-state message shown in the fullscreen feed when the last visible video has just been deleted, blocked, or muted and the route cannot be popped back to a parent (e.g. a cold deep-link)."
     },
@@ -5153,5 +5154,11 @@
   "videoEditorApplyToolChangesSemanticLabel": "በ{tool} ውስጥ የተደረጉ ለውጦችን ተግብር",
   "videoEditorRemoveAudioSemanticLabel": "ኦዲዮን አስወግድ",
   "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
-  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}"
+  "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}",
+  "inboxFilterBlocked": "የታገዱ",
+  "inboxBlockedEmptyTitle": "የታገዱ ውይይቶች የሉም",
+  "inboxBlockedEmptySubtitle": "የሚያግዷቸው መለያዎች እዚህ ይታያሉ።",
+  "inboxBlockedNoMessages": "መልእክቶች የሉም",
+  "dmBlockedThreadTitle": "ይህን መለያ አግደዋል",
+  "dmBlockedThreadBody": "መልእክቶቹ እዚህ ይቆያሉ፣ ስለዚህ ማንበብ ወይም ቅጽበታዊ ገጽ እይታ ማንሳት ይችላሉ። ለመመለስ እገዳውን ያንሱ።"
 }

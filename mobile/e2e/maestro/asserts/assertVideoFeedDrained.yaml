@@ -1,0 +1,16 @@
+appId: co.openvine.app
+---
+# The fullscreen feed had videos and now has none.
+#
+# Reached by unliking the last video in your own Liked feed: the liked grid's
+# bloc re-emits an empty list into the still-open fullscreen route. Before
+# #6949 that rendered the loading placeholder forever, so a flow waiting on
+# any playback chrome timed out with a misleading message.
+#
+# Keyed on the identifier rather than the copy so it survives translation.
+- extendedWaitUntil:
+    visible:
+      id: fullscreen_feed_empty
+    timeout: 15000
+- assertNotVisible:
+    id: like_button

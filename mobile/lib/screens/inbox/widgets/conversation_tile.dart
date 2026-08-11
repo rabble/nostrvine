@@ -36,7 +36,12 @@ class ConversationTile extends ConsumerWidget {
 
   final DmConversation conversation;
   final String currentUserPubkey;
-  final VoidCallback onTap;
+
+  /// Opens the thread, or null for a row with no thread to open — a blocked
+  /// account the viewer never exchanged messages with. A null handler also
+  /// drops the row's `button` semantics, so assistive tech stops promising an
+  /// action that is not there.
+  final VoidCallback? onTap;
   final VoidCallback? onLongPress;
 
   /// When true, applies the semantic `containerLow` background tint to
@@ -101,8 +106,10 @@ class ConversationTile extends ConsumerWidget {
             ? context.l10n.dmRetiredThreadClosedTitle
             : null);
 
+    final openThread = onTap;
+
     return Semantics(
-      button: true,
+      button: openThread != null,
       // Unread state is conveyed to sighted users by the red dot + emphasized
       // preview; mirror it for assistive tech by prefixing the unread status
       // to the row label (same pattern as the notification rows).
@@ -116,14 +123,16 @@ class ConversationTile extends ConsumerWidget {
           ? null
           : context.l10n.inboxConversationTileLongPressHint,
       child: GestureDetector(
-        onTap: () {
-          Log.debug(
-            '🎯 ConversationTile tapped: ${conversation.id}',
-            name: 'ConversationTile',
-            category: LogCategory.ui,
-          );
-          onTap();
-        },
+        onTap: openThread == null
+            ? null
+            : () {
+                Log.debug(
+                  '🎯 ConversationTile tapped: ${conversation.id}',
+                  name: 'ConversationTile',
+                  category: LogCategory.ui,
+                );
+                openThread();
+              },
         onLongPress: onLongPress,
         behavior: HitTestBehavior.opaque,
         child: DecoratedBox(
