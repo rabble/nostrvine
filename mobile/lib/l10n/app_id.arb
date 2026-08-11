@@ -205,6 +205,11 @@
     "profileFollowersLabel": "Pengikut",
     "profileFollowingStatLabel": "Mengikuti",
     "profileVideosLabel": "Video",
+    "profileCollabsLabel": "Kolaborasi",
+    "profileLikedLabel": "Disukai",
+    "profileRepostsLabel": "Repost",
+    "profileListsLabel": "Daftar",
+    "profileCommentsLabel": "Komentar",
     "profileFollowerCountUsers": "{count} pengguna",
     "@profileFollowerCountUsers": {
         "placeholders": {

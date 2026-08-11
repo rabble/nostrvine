@@ -205,6 +205,11 @@
     "profileFollowersLabel": "المتابِعون",
     "profileFollowingStatLabel": "يتابِع",
     "profileVideosLabel": "الفيديوهات",
+    "profileCollabsLabel": "التعاونات",
+    "profileLikedLabel": "أعجبني",
+    "profileRepostsLabel": "إعادات النشر",
+    "profileListsLabel": "القوائم",
+    "profileCommentsLabel": "التعليقات",
     "profileFollowerCountUsers": "{count} مستخدم",
     "@profileFollowerCountUsers": {
         "placeholders": {

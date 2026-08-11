@@ -15,8 +15,10 @@ import 'package:openvine/blocs/profile_comments/profile_comments_bloc.dart';
 import 'package:openvine/blocs/profile_feed/profile_feed_cubit.dart';
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
 import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/reduced_motion_tab_controller_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -411,27 +413,38 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     }
   }
 
-  /// The tab-bar label/icon for a given tab [kind].
-  ({String label, DivineIconName icon}) _tabPresentationFor(
-    ProfileTabKind kind,
-  ) {
+  /// The tab-bar anchor, localized name and icon for a given tab [kind].
+  ProfileTab _tabPresentationFor(ProfileTabKind kind) {
+    final l10n = context.l10n;
     return switch (kind) {
-      ProfileTabKind.videos => (label: 'videos_tab', icon: DivineIconName.play),
+      ProfileTabKind.videos => (
+        semanticId: SemanticIds.profileVideosTab,
+        label: l10n.profileVideosLabel,
+        icon: DivineIconName.play,
+      ),
       ProfileTabKind.collabs => (
-        label: 'collabs_tab',
+        semanticId: SemanticIds.profileCollabsTab,
+        label: l10n.profileCollabsLabel,
         icon: DivineIconName.users,
       ),
-      ProfileTabKind.liked => (label: 'liked_tab', icon: DivineIconName.heart),
+      ProfileTabKind.liked => (
+        semanticId: SemanticIds.profileLikedTab,
+        label: l10n.profileLikedLabel,
+        icon: DivineIconName.heart,
+      ),
       ProfileTabKind.reposts => (
-        label: 'reposted_tab',
+        semanticId: SemanticIds.profileRepostsTab,
+        label: l10n.profileRepostsLabel,
         icon: DivineIconName.repeat,
       ),
       ProfileTabKind.lists => (
-        label: 'lists_tab',
+        semanticId: SemanticIds.profileListsTab,
+        label: l10n.profileListsLabel,
         icon: DivineIconName.playlist,
       ),
       ProfileTabKind.comments => (
-        label: 'comments_tab',
+        semanticId: SemanticIds.profileCommentsTab,
+        label: l10n.profileCommentsLabel,
         icon: DivineIconName.chatCircle,
       ),
     };

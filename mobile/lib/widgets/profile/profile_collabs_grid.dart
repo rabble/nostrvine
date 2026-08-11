@@ -194,15 +194,21 @@ class _CollabGridTile extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: onTap,
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(4),
-      child: DecoratedBox(
-        decoration: BoxDecoration(color: context.vineColors.card),
-        child: ProfileTabThumbnail(
-          thumbnailUrl: videoEvent.thumbnailUrl,
-          blurhash: videoEvent.blurhash,
+  Widget build(BuildContext context) => Semantics(
+    // The tile renders only a thumbnail, so without this it is a focusable,
+    // tappable node with an empty accessible name (#6951).
+    label: context.l10n.profileVideoThumbnailLabel(index + 1),
+    button: true,
+    child: GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: DecoratedBox(
+          decoration: BoxDecoration(color: context.vineColors.card),
+          child: ProfileTabThumbnail(
+            thumbnailUrl: videoEvent.thumbnailUrl,
+            blurhash: videoEvent.blurhash,
+          ),
         ),
       ),
     ),

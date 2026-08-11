@@ -213,6 +213,11 @@
     "profileFollowersLabel": "Последователи",
     "profileFollowingStatLabel": "Следва",
     "profileVideosLabel": "Видеа",
+    "profileCollabsLabel": "Съвместни",
+    "profileLikedLabel": "Харесани",
+    "profileRepostsLabel": "Репостове",
+    "profileListsLabel": "Списъци",
+    "profileCommentsLabel": "Коментари",
     "profileFollowerCountUsers": "{count} потребители",
     "@profileFollowerCountUsers": {
         "placeholders": {

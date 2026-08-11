@@ -205,6 +205,11 @@
     "profileFollowersLabel": "Obserwujących",
     "profileFollowingStatLabel": "Obserwowanych",
     "profileVideosLabel": "Filmy",
+    "profileCollabsLabel": "Współprace",
+    "profileLikedLabel": "Polubione",
+    "profileRepostsLabel": "Reposty",
+    "profileListsLabel": "Listy",
+    "profileCommentsLabel": "Komentarze",
     "profileFollowerCountUsers": "{count, plural, one{1 użytkownik} few{{count} użytkowników} many{{count} użytkowników} other{{count} użytkownika}}",
     "@profileFollowerCountUsers": {
         "placeholders": {
