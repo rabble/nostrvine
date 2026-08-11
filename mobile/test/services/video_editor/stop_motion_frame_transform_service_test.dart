@@ -21,10 +21,6 @@ class _FakePathProviderPlatform extends Fake
   Future<String?> getApplicationDocumentsPath() async => documentsPath;
 }
 
-// Permanent: swaps the global PathProviderPlatform.instance singleton, which
-// the VGV optimizer's shared-process bundling cannot isolate. Same pattern as
-// the clip transform service test.
-@Tags(['skip_very_good_optimization'])
 void main() {
   late Directory tempDir;
   late String documentsPath;

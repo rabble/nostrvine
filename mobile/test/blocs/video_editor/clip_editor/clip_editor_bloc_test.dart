@@ -308,9 +308,12 @@ void main() {
       CleanupFlattenedClipFn? cleanupFlattenedClip,
       CleanupChromaKeyFilesFn? cleanupChromaKeyFiles,
       SaveClipToLibraryFn? saveClipToLibrary,
+      WriteStopMotionFrameFn? writeStopMotionFrame,
+      void Function()? onFinalClipInvalidated,
     }) {
       return ClipEditorBloc(
-        onFinalClipInvalidated: () {},
+        onFinalClipInvalidated: onFinalClipInvalidated ?? () {},
+        writeStopMotionFrame: writeStopMotionFrame,
         audioExtractionService: audioExtractionService,
         splitClip: splitClip,
         reverseClip: reverseClip,
@@ -2592,6 +2595,140 @@ void main() {
         build: buildBloc,
         seed: () => ClipEditorState(clips: [_createClip()]),
         act: (bloc) => bloc.add(const ClipEditorChromaKeyRemoved('clip-1')),
+        expect: () => <ClipEditorState>[],
+      );
+    });
+
+    group('ClipEditorStopMotionFrameTransformed', () {
+      final bytes = Uint8List.fromList([1, 2, 3]);
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'repoints only the edited still, keeping its hold and the others',
+        build: () => buildBloc(
+          writeStopMotionFrame: (_) async => 'transformed.jpg',
+        ),
+        seed: () => ClipEditorState(clips: [_createStopMotionClip()]),
+        act: (bloc) => bloc.add(
+          ClipEditorStopMotionFrameTransformed(
+            clipId: 'sm',
+            frameIndex: 1,
+            imageBytes: bytes,
+          ),
+        ),
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.clips.first.stopMotionFrames,
+            'frames',
+            [
+              isA<StopMotionClipFrame>().having(
+                (f) => f.path,
+                'path',
+                'sm-0.jpg',
+              ),
+              isA<StopMotionClipFrame>()
+                  .having((f) => f.path, 'path', 'transformed.jpg')
+                  .having(
+                    (f) => f.duration,
+                    'hold',
+                    StopMotionFrameOps.framesPerImageToDuration(1),
+                  ),
+              isA<StopMotionClipFrame>().having(
+                (f) => f.path,
+                'path',
+                'sm-2.jpg',
+              ),
+            ],
+          ),
+        ],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'leaves the composition length alone — only the pixels changed',
+        build: () => buildBloc(
+          writeStopMotionFrame: (_) async => 'transformed.jpg',
+        ),
+        seed: () => ClipEditorState(clips: [_createStopMotionClip()]),
+        act: (bloc) => bloc.add(
+          ClipEditorStopMotionFrameTransformed(
+            clipId: 'sm',
+            frameIndex: 0,
+            imageBytes: bytes,
+          ),
+        ),
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.clips.first.duration,
+            'duration',
+            _createStopMotionClip().duration,
+          ),
+        ],
+      );
+
+      test('writes the change to editor history so undo can reach the old '
+          'still', () async {
+        var invalidated = 0;
+        final bloc = buildBloc(
+          writeStopMotionFrame: (_) async => 'transformed.jpg',
+          onFinalClipInvalidated: () => invalidated++,
+        )..emit(ClipEditorState(clips: [_createStopMotionClip()]));
+
+        bloc.add(
+          ClipEditorStopMotionFrameTransformed(
+            clipId: 'sm',
+            frameIndex: 0,
+            imageBytes: bytes,
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(invalidated, 1);
+        await bloc.close();
+      });
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'reports a failure instead of repointing when the write throws',
+        build: () => buildBloc(
+          writeStopMotionFrame: (_) async =>
+              throw const FileSystemException('disk full'),
+        ),
+        seed: () => ClipEditorState(clips: [_createStopMotionClip()]),
+        act: (bloc) => bloc.add(
+          ClipEditorStopMotionFrameTransformed(
+            clipId: 'sm',
+            frameIndex: 0,
+            imageBytes: bytes,
+          ),
+        ),
+        errors: () => [isA<FileSystemException>()],
+        expect: () => [
+          isA<ClipEditorState>()
+              .having(
+                (s) => s.lastTransformResult,
+                'result',
+                isA<ClipTransformFrameFailure>(),
+              )
+              .having(
+                (s) => s.clips.first.stopMotionFrames!.first.path,
+                'untouched still',
+                'sm-0.jpg',
+              ),
+        ],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'ignores an out-of-range still without writing anything',
+        build: () => buildBloc(
+          writeStopMotionFrame: (_) async =>
+              throw StateError('must not be called'),
+        ),
+        seed: () => ClipEditorState(clips: [_createStopMotionClip()]),
+        act: (bloc) => bloc.add(
+          ClipEditorStopMotionFrameTransformed(
+            clipId: 'sm',
+            frameIndex: 9,
+            imageBytes: bytes,
+          ),
+        ),
         expect: () => <ClipEditorState>[],
       );
     });

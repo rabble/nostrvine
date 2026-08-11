@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
@@ -13,6 +14,7 @@ import 'package:openvine/models/video_editor/editor_overlay_snapshot.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
 import 'package:openvine/services/video_editor/chroma_key_bake_service.dart';
+import 'package:openvine/services/video_editor/stop_motion_frame_transform_service.dart';
 import 'package:openvine/services/video_editor/video_editor_clip_library_save_service.dart';
 import 'package:openvine/services/video_editor/video_editor_merge_service.dart';
 import 'package:openvine/services/video_editor/video_editor_reverse_service.dart';
@@ -48,6 +50,11 @@ typedef ReverseClipFn =
       required DivineVideoClip sourceClip,
       required String renderId,
     });
+
+/// Function signature matching
+/// [StopMotionFrameTransformService.writeTransformedFrame], injectable so tests
+/// can persist a still without touching the file system.
+typedef WriteStopMotionFrameFn = Future<String> Function(Uint8List bytes);
 
 /// Function signature matching [VideoEditorTransformService.transformClip],
 /// used as an injectable seam so tests can swap in a pure-Dart fake.
@@ -124,6 +131,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     SplitClipFn? splitClip,
     ReverseClipFn? reverseClip,
     TransformClipFn? transformClip,
+    WriteStopMotionFrameFn? writeStopMotionFrame,
     ChromaKeyBakeFn? bakeChromaKey,
     MergeClipsFn? mergeClips,
     FlattenClipForLibraryFn? flattenClipForLibrary,
@@ -135,6 +143,9 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
        _reverseClip = reverseClip ?? VideoEditorReverseService.reverseClip,
        _transformClip =
            transformClip ?? VideoEditorTransformService.transformClip,
+       _writeStopMotionFrame =
+           writeStopMotionFrame ??
+           StopMotionFrameTransformService.writeTransformedFrame,
        _bakeChromaKey = bakeChromaKey ?? ChromaKeyBakeService.bakeClip,
        _mergeClips = mergeClips ?? VideoEditorMergeService.mergeClips,
        _flattenClipForLibrary =
@@ -203,6 +214,10 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     );
 
     // Transform (crop / rotate / flip)
+    on<ClipEditorStopMotionFrameTransformed>(
+      _onStopMotionFrameTransformed,
+      transformer: sequential(),
+    );
     on<ClipEditorClipTransformRequested>(
       _onClipTransformRequested,
       transformer: droppable(),
@@ -237,6 +252,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
   final SplitClipFn _splitClip;
   final ReverseClipFn _reverseClip;
   final TransformClipFn _transformClip;
+  final WriteStopMotionFrameFn _writeStopMotionFrame;
   final ChromaKeyBakeFn _bakeChromaKey;
   final MergeClipsFn _mergeClips;
   final FlattenClipForLibraryFn _flattenClipForLibrary;
@@ -1534,6 +1550,66 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       );
       addError(e, stackTrace);
     }
+  }
+
+  /// Persists the crop / rotate / flip the image editor rasterized for one
+  /// stop-motion still and points that still at the new file.
+  ///
+  /// Always a new file, never an overwrite of the source: editor undo history
+  /// keeps pointing at the previous path, and duplicated stills share one file,
+  /// so rewriting in place would silently transform every copy and make undo a
+  /// no-op. Only the frame's path changes — its hold belongs to the slot in the
+  /// sequence, not to the pixels — so the composition's length is untouched and
+  /// no marker or audio window has to move.
+  Future<void> _onStopMotionFrameTransformed(
+    ClipEditorStopMotionFrameTransformed event,
+    Emitter<ClipEditorState> emit,
+  ) async {
+    final index = state.clips.indexWhere((c) => c.id == event.clipId);
+    if (index == -1) return;
+    final frames = state.clips[index].stopMotionFrames;
+    if (frames == null ||
+        event.frameIndex < 0 ||
+        event.frameIndex >= frames.length) {
+      return;
+    }
+
+    final String path;
+    try {
+      path = await _writeStopMotionFrame(event.imageBytes);
+    } catch (e, stackTrace) {
+      addError(e, stackTrace);
+      Log.error(
+        '❌ Failed to save transformed still for ${event.clipId}: $e',
+        name: 'ClipEditorBloc',
+        category: LogCategory.video,
+      );
+      emit(state.copyWith(lastTransformResult: ClipTransformFrameFailure()));
+      return;
+    }
+
+    // Re-resolve across the write: the sequence can have been edited while the
+    // bytes were being written, so a stale index would repoint the wrong still.
+    final currentClips = state.clips;
+    final currentIndex = currentClips.indexWhere((c) => c.id == event.clipId);
+    if (currentIndex == -1) return;
+    final currentFrames = currentClips[currentIndex].stopMotionFrames;
+    if (currentFrames == null || event.frameIndex >= currentFrames.length) {
+      return;
+    }
+
+    final updatedClip = StopMotionFrameOps.clipWithFrames(
+      currentClips[currentIndex],
+      StopMotionFrameOps.setFramePath(currentFrames, event.frameIndex, path),
+    );
+    final newClips = List<DivineVideoClip>.of(currentClips)
+      ..[currentIndex] = updatedClip;
+
+    emit(state.copyWith(clips: List.unmodifiable(newClips)));
+
+    // Writes the new clip list into editor history, so undo restores the still
+    // that was there before — the same hook every other clip render uses.
+    onFinalClipInvalidated.call();
   }
 
   Future<void> _onClipTransformRequested(
