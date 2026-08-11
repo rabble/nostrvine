@@ -526,10 +526,10 @@ void main() {
         handle.dispose();
       });
 
-      // assertCaptureMode and assertStopMotionMode tell the two viewfinders
-      // apart by the controls each one leaves out. An id leaking into the
-      // wrong mode makes both asserts pass on either screen, and every other
-      // test here would stay green.
+      // assertCaptureMode and assertStopMotionMode each pin the other mode's
+      // controls absent, so a control that starts rendering in the wrong mode
+      // fails an E2E run rather than passing quietly. Nothing else here would
+      // catch it — every other test in this file asserts presence.
       testWidgets('keeps the stop-motion controls out of capture mode', (
         tester,
       ) async {

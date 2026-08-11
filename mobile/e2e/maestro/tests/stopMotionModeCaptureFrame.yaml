@@ -14,8 +14,8 @@ tags:
 #
 # Hold-to-record does not apply here: the record button disables long-press
 # whenever the mode captures stills, so the `HoldToRecordPreferenceService`
-# preference captureModeRecordClip has to warn about cannot affect this one
-# either way.
+# preference that captureModeRecordClip has to warn about cannot affect this
+# one either way.
 #Steps:
 # 1. Tap the shutter: a still lands in the session
 # 2. Tap it again: the session takes a second still

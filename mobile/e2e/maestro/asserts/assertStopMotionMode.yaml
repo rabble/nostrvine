@@ -4,8 +4,9 @@ appId: co.openvine.app
 # yet.
 #
 # Stop-motion renders the capture stack, so most of this is the same chrome
-# assertCaptureMode pins. What separates the two screens is the control rail —
-# see the two blocks below.
+# assertCaptureMode pins. The mode wheel's `selected` state below is what
+# settles which viewfinder is up; the rail blocks pin what this mode does and
+# does not render.
 
 # Mode wheel with Stop Motion armed. `selected` is load-bearing: the wheel
 # renders an entry for every mode in every mode, so a bare id assertion here
@@ -41,9 +42,12 @@ appId: co.openvine.app
     id: camera_switch_camera_button
 
 # And the two capture mode has that this mode does not: stop-motion declares
-# neither `supportsCountdownTimer` nor `supportsVideoStabilization`. Without
-# this pair, assertCaptureMode's rail set is a subset of this one and both
-# asserts would pass on either screen.
+# neither `supportsCountdownTimer` nor `supportsVideoStabilization`. This pair
+# is a leak guard, not what separates the two screens — the mode wheel above
+# already does that, and the two rails are disjoint rather than nested, so
+# assertCaptureMode fails here on `camera_timer_button` regardless. What it
+# catches is a control starting to render in a mode that does not declare it,
+# which nothing else in the suite would.
 - assertNotVisible:
     id: camera_timer_button
 - assertNotVisible:
