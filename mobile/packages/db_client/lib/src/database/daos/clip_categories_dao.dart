@@ -114,9 +114,11 @@ class ClipCategoriesDao extends DatabaseAccessor<AppDatabase>
       final owned = await (select(
         clipCategories,
       )..where((t) => t.ownerPubkey.equals(userPubkey))).get();
-      for (final category in owned) {
-        await (update(clips)..where((t) => t.categoryId.equals(category.id)))
-            .write(const ClipsCompanion(categoryId: Value(null)));
+      if (owned.isNotEmpty) {
+        final ownedIds = [for (final category in owned) category.id];
+        await (update(clips)..where((t) => t.categoryId.isIn(ownedIds))).write(
+          const ClipsCompanion(categoryId: Value(null)),
+        );
       }
       return (delete(
         clipCategories,
