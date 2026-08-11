@@ -99,7 +99,6 @@ profileSetupDisplayNameLabel	e2e/maestro/asserts/assertEditYourProfile.yaml
 profileSetupEditProfileTitle	e2e/maestro/asserts/assertEditYourProfile.yaml
 profileSetupEditProfileTitle	e2e/maestro/tests/profileNavigation.yaml
 profileSetupPublicKeyLabel	e2e/maestro/asserts/assertEditProfileModal.yaml
-profileSetupPublicKeyLabel	e2e/maestro/asserts/assertEditProfileModal.yaml
 profileSetupUsernameLabel	e2e/maestro/asserts/assertEditProfileModal.yaml
 profileSetupUsernameLabel	e2e/maestro/asserts/assertEditYourProfile.yaml
 profileSetupUsernameTakenIndicator	e2e/maestro/asserts/assertUserTaken.yaml
