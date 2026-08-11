@@ -126,22 +126,18 @@ class VerifyConnectView extends StatelessWidget {
     final error = state.error;
     if (error == null) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      DivineSnackbarContainer.snackBar(
-        switch (error) {
-          VerifyConnectError.proofRejected => l10n.verifyErrorProofRejected,
-          VerifyConnectError.verifierUnreachable =>
-            l10n.verifyErrorVerifierUnreachable,
-          VerifyConnectError.oauthFailed => l10n.verifyErrorOauthFailed,
-          VerifyConnectError.oauthUnavailable =>
-            l10n.verifyErrorOauthUnavailable,
-          VerifyConnectError.telegramNotPublic =>
-            l10n.verifyErrorTelegramNotPublic,
-          VerifyConnectError.handleRequired => l10n.verifyErrorHandleRequired,
-          VerifyConnectError.publishFailed => l10n.verifyErrorPublishFailed,
-          VerifyConnectError.linksUnreadable => l10n.verifyErrorLinksUnreadable,
-        },
-        error: true,
-      ),
+      DivineSnackbarContainer.snackBar(switch (error) {
+        VerifyConnectError.proofRejected => l10n.verifyErrorProofRejected,
+        VerifyConnectError.verifierUnreachable =>
+          l10n.verifyErrorVerifierUnreachable,
+        VerifyConnectError.oauthFailed => l10n.verifyErrorOauthFailed,
+        VerifyConnectError.oauthUnavailable => l10n.verifyErrorOauthUnavailable,
+        VerifyConnectError.telegramNotPublic =>
+          l10n.verifyErrorTelegramNotPublic,
+        VerifyConnectError.handleRequired => l10n.verifyErrorHandleRequired,
+        VerifyConnectError.publishFailed => l10n.verifyErrorPublishFailed,
+        VerifyConnectError.linksUnreadable => l10n.verifyErrorLinksUnreadable,
+      }, error: true),
     );
   }
 }
@@ -192,7 +188,16 @@ class _ConnectForm extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           if (state.platform.key == 'bluesky') ...[
-            _IdentityField(state: state),
+            // Same key as the copy in the proof block below: this field moves
+            // between the two when appOAuthSupportProvider resolves, and the
+            // key is what carries the typed handle across the move. It has to
+            // sit on the child the list matches, not on the DivineTextField
+            // inside — keying the inner field leaves this element to be
+            // rebuilt by position, which loses the text anyway.
+            _IdentityField(
+              key: const ValueKey('verify-identity-field'),
+              state: state,
+            ),
             const SizedBox(height: 12),
           ],
           DivineButton(
@@ -219,10 +224,19 @@ class _ConnectForm extends StatelessWidget {
         // the OAuth block above is already asking for it.
         if (state.needsIdentityInput &&
             !(showOAuth && state.platform.key == 'bluesky')) ...[
-          _IdentityField(state: state),
+          _IdentityField(
+            key: const ValueKey('verify-identity-field'),
+            state: state,
+          ),
           const SizedBox(height: 12),
         ],
+        // Keyed because the account field above is inserted and removed as the
+        // typed proof starts and stops parsing. Without a key the list matches
+        // these children by position, so the shift hands this slot to a
+        // different widget, the field is rebuilt from scratch, and the text and
+        // the keyboard go with it.
         DivineTextField(
+          key: const ValueKey('verify-proof-field'),
           labelText: l10n.verifyProofLabel,
           hintText: verifyProofHint(state.platform.key),
           filled: true,
@@ -252,7 +266,7 @@ class _ConnectForm extends StatelessWidget {
 }
 
 class _IdentityField extends StatelessWidget {
-  const _IdentityField({required this.state});
+  const _IdentityField({required this.state, super.key});
 
   final VerifyConnectState state;
 
