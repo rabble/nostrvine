@@ -10058,7 +10058,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String profileBadgeMoreRecipients(int count) {
-    return '+$count آخرون';
+    return '+$count آخرين';
   }
 
   @override

@@ -3996,7 +3996,7 @@
     "badgeAwardSubmitAction": "{count, plural, =0{امنح الشارة} =1{امنحها لشخص واحد} other{امنحها لـ {count} أشخاص}}",
     "profileBadgeAwardedBy": "من منحها",
     "profileBadgeRecipients": "المستلمون",
-    "profileBadgeMoreRecipients": "+{count} آخرون",
+    "profileBadgeMoreRecipients": "+{count} آخرين",
     "profileBadgeSemanticLabel": "شارة {name}",
     "profileBadgeFallbackSemanticLabel": "شارة",
     "profileBadgeFooterBody": "الشارات جوائز صغيرة يمكن لأي شخص إنشاؤها على Nostr. امنح واحدة لصديق أو لصانع محتوى أو لشخص أسعد يومك.",

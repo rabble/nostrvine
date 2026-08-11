@@ -369,7 +369,15 @@ void main() {
       for (final file in arbFiles) {
         final arb = _readArb(file);
 
-        for (final key in _profileBadgeSheetKeys) {
+        final profileBadgeSheetKeys = {
+          ..._profileBadgeSheetKeys,
+          if (!_profileBadgeFallbackSemanticLabelEnglishLocales.any(
+            file.path.endsWith,
+          ))
+            'profileBadgeFallbackSemanticLabel',
+        };
+
+        for (final key in profileBadgeSheetKeys) {
           final value = arb[key];
 
           expect(
@@ -439,9 +447,6 @@ const _knownUntranslatedDebt = <String>{
   'videoMetadataC2paMissingNoteServiceUnavailable',
 };
 
-// profileBadgeFallbackSemanticLabel is deliberately absent: "Badge" is the
-// word several of these locales actually use, so matching English there is a
-// translation, not a gap.
 const _profileBadgeSheetKeys = <String>{
   'profileBadgeAwardedBy',
   'profileBadgeRecipients',
@@ -449,6 +454,16 @@ const _profileBadgeSheetKeys = <String>{
   'profileBadgeSemanticLabel',
   'profileBadgeFooterBody',
   'profileBadgeFooterLink',
+};
+
+// "Badge" is the word these languages actually use, so matching English here
+// is a translation rather than a gap. Every other locale localizes the noun.
+const _profileBadgeFallbackSemanticLabelEnglishLocales = <String>{
+  'app_de.arb',
+  'app_fil.arb',
+  'app_fr.arb',
+  'app_it.arb',
+  'app_nl.arb',
 };
 
 const _signatureVerificationKeys = <String>{
