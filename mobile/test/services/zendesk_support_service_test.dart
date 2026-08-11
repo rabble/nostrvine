@@ -871,6 +871,7 @@ void main() {
       'screen',
       'device',
       'errorCounts',
+      'appVersion',
     ];
 
     for (final field in fieldsUnderTest) {
@@ -900,7 +901,11 @@ void main() {
           subject: field == 'subject' ? poison : 'App crashes on upload',
           description: field == 'description' ? poison : 'it just dies',
           reportId: 'test-blast-radius-$field',
-          appVersion: '1.0.7+497',
+          // `appVersion` is machine-generated, so this case pins the
+          // invariant that every assembled field is contained, not a reachable
+          // leak - it is the field that would silently break containment if
+          // someone later routed user text through it.
+          appVersion: field == 'appVersion' ? poison : '1.0.7+497',
           // The device case carries a credential-*shaped key* with a
           // malformed value, not a poisoned ordinary value: the report renders
           // device info as `- **key:** value`, so only a composed-line pass
@@ -927,10 +932,11 @@ void main() {
         );
 
         final description = capturedDescription!;
-
         expect(description, contains('[REDACTED]'));
         // Everything the poisoned field does not own survives.
-        expect(description, contains('App Version: 1.0.7+497'));
+        if (field != 'appVersion') {
+          expect(description, contains('App Version: 1.0.7+497'));
+        }
         expect(description, contains('ios'));
         // Printed after the device block, so it is the marker a malformed
         // device value would consume.
@@ -1119,45 +1125,58 @@ void main() {
           .setMockMethodCallHandler(channel, null);
     });
 
-    test('a stray brace in one field cannot erase the others', () async {
-      // Same failure as the bug report builder: redaction spans lines, so a
-      // credential key with an unclosed brace in `description` consumed the
-      // usefulness and when-to-use fields printed after it.
-      String? capturedDescription;
+    // Same containment property as the bug report builder, and the same
+    // reason it needs one case per field: the assembled-blob pass in
+    // `createTicket` masks a plain secret, so only the stray-brace shape shows
+    // whether a given field's own pass does anything.
+    const featureFields = ['subject', 'description', 'usefulness', 'whenToUse'];
 
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(channel, (MethodCall call) async {
-            if (call.method == 'initialize') return true;
-            if (call.method == 'createTicket') {
-              capturedDescription = call.arguments['description'] as String?;
-              return true;
-            }
-            return null;
-          });
+    for (final field in featureFields) {
+      test('a stray brace in $field cannot erase the others', () async {
+        const poison = 'my password: {weird symbols and it died';
+        String? capturedDescription;
 
-      await ZendeskSupportService.initialize(
-        appId: 'test',
-        clientId: 'test',
-        zendeskUrl: 'https://test.zendesk.com',
-      );
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (MethodCall call) async {
+              if (call.method == 'initialize') return true;
+              if (call.method == 'createTicket') {
+                capturedDescription = call.arguments['description'] as String?;
+                return true;
+              }
+              return null;
+            });
 
-      await ZendeskSupportService.createFeatureRequest(
-        subject: 'Let me pin a vine',
-        // The stray brace sits in `usefulness`, the second-to-last field, so
-        // the assertion covers the fields sanitized after it as well. With it
-        // in `description` the last two fields were never pinned.
-        description: 'it would help a lot',
-        usefulness: 'my password: {weird symbols and it died',
-        // A closing brace downstream is what an unclosed one reaches for.
-        whenToUse: 'when I open the app {every morning}',
-      );
+        await ZendeskSupportService.initialize(
+          appId: 'test',
+          clientId: 'test',
+          zendeskUrl: 'https://test.zendesk.com',
+        );
 
-      final description = capturedDescription!;
+        await ZendeskSupportService.createFeatureRequest(
+          subject: field == 'subject' ? poison : 'Let me pin a vine',
+          description: field == 'description' ? poison : 'it would help a lot',
+          usefulness: field == 'usefulness'
+              ? poison
+              : 'I would use it daily {every morning}',
+          whenToUse: field == 'whenToUse'
+              ? poison
+              : 'when I open the app {every morning}',
+        );
 
-      expect(description, contains('[REDACTED]'));
-      expect(description, contains('it would help a lot'));
-      expect(description, contains('when I open the app'));
-    });
+        final description = capturedDescription!;
+
+        expect(description, contains('[REDACTED]'));
+        if (field != 'description') {
+          expect(description, contains('it would help a lot'));
+        }
+        if (field != 'usefulness') {
+          expect(description, contains('I would use it daily'));
+        }
+        if (field != 'whenToUse') {
+          expect(description, contains('when I open the app'));
+        }
+      });
+    }
   });
 
   group('ZendeskSupportService REST API', () {
