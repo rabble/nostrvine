@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dart';
@@ -57,6 +58,7 @@ class VideoRecorderCaptureActions extends ConsumerWidget {
                 _IconButton(
                   icon: state.flashMode.icon,
                   label: l10n.videoRecorderToggleFlashLabel,
+                  identifier: SemanticIds.cameraFlashButton,
                   value: _flashModeValue(l10n, state.flashMode),
                   onTap: state.hasFlash
                       ? () => context.read<VideoRecorderBloc>().add(
@@ -68,6 +70,7 @@ class VideoRecorderCaptureActions extends ConsumerWidget {
                   _IconButton(
                     icon: state.timer.icon,
                     label: l10n.videoRecorderCycleTimerLabel,
+                    identifier: SemanticIds.cameraTimerButton,
                     value: _timerDurationValue(l10n, state.timer),
                     onTap: () => context.read<VideoRecorderBloc>().add(
                       const VideoRecorderTimerCycled(),
@@ -78,6 +81,7 @@ class VideoRecorderCaptureActions extends ConsumerWidget {
                   _IconButton(
                     icon: .gridNine,
                     label: l10n.videoRecorderToggleGridLabel,
+                    identifier: SemanticIds.cameraGridButton,
                     toggled: state.showGridLines,
                     onTap: () => context.read<VideoRecorderBloc>().add(
                       const VideoRecorderGridLinesToggled(),
@@ -88,6 +92,7 @@ class VideoRecorderCaptureActions extends ConsumerWidget {
                       ? .cropSquare
                       : .cropPortrait,
                   label: l10n.videoRecorderToggleAspectRatioLabel,
+                  identifier: SemanticIds.cameraAspectRatioButton,
                   value: _aspectRatioValue(l10n, state.aspectRatio),
                   onTap: !hasClips
                       ? () => context.read<VideoRecorderBloc>().add(
@@ -98,6 +103,7 @@ class VideoRecorderCaptureActions extends ConsumerWidget {
                 _IconButton(
                   icon: .arrowsClockwise,
                   label: l10n.videoRecorderSwitchCameraLabel,
+                  identifier: SemanticIds.cameraSwitchCameraButton,
                   value: state.isFrontCamera
                       ? l10n.videoRecorderCameraValueFront
                       : l10n.videoRecorderCameraValueBack,
@@ -130,6 +136,7 @@ class _GhostFrameButton extends StatelessWidget {
     return _IconButton(
       icon: .ghost,
       label: context.l10n.videoRecorderToggleGhostFrameLabel,
+      identifier: SemanticIds.cameraGhostFrameButton,
       toggled: isVisible,
       onTap: () {
         final willEnable = !isVisible;
@@ -168,6 +175,7 @@ class _StabilizationButton extends StatelessWidget {
     return _IconButton(
       icon: .sparkle,
       label: context.l10n.videoRecorderStabilizationLabel,
+      identifier: SemanticIds.cameraStabilizationButton,
       value: _stabilizationModeLabel(context.l10n, mode),
       onTap: isSupported ? () => _showStabilizationMenu(context) : null,
     );
@@ -251,6 +259,7 @@ class _IconButton extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.identifier,
     this.value,
     this.toggled,
   });
@@ -258,6 +267,10 @@ class _IconButton extends StatelessWidget {
   final String label;
   final DivineIconName icon;
   final VoidCallback? onTap;
+
+  /// Stable `Semantics(identifier:)` anchor for E2E tests. Never announced,
+  /// so it carries no meaning for a screen-reader user — that is [label].
+  final String? identifier;
 
   /// Current setting of a control that cycles through more than two states,
   /// announced after [label] (e.g. the active flash mode).
@@ -270,6 +283,7 @@ class _IconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
+      identifier: identifier,
       button: true,
       enabled: onTap != null,
       label: label,

@@ -822,6 +822,36 @@ abstract class AppLocalizations {
   /// **'Videos'**
   String get profileVideosLabel;
 
+  /// Accessible name for the Collabs tab on a profile. The tab is icon-only, so this is the only name a screen reader can read. Refers to collaboration videos, not the collaborators themselves.
+  ///
+  /// In en, this message translates to:
+  /// **'Collabs'**
+  String get profileCollabsLabel;
+
+  /// Accessible name for the Liked tab on a profile. The tab is icon-only. Refers to videos this user liked — distinct from profileLikesLabel, which counts likes received.
+  ///
+  /// In en, this message translates to:
+  /// **'Liked'**
+  String get profileLikedLabel;
+
+  /// Accessible name for the Reposts tab on a profile. The tab is icon-only.
+  ///
+  /// In en, this message translates to:
+  /// **'Reposts'**
+  String get profileRepostsLabel;
+
+  /// Accessible name for the Lists tab on the own profile. The tab is icon-only.
+  ///
+  /// In en, this message translates to:
+  /// **'Lists'**
+  String get profileListsLabel;
+
+  /// Accessible name for the Comments tab on a profile. The tab is icon-only.
+  ///
+  /// In en, this message translates to:
+  /// **'Comments'**
+  String get profileCommentsLabel;
+
   /// No description provided for @profileCollaboratorInvitePendingHeadline.
   ///
   /// In en, this message translates to:
@@ -10262,6 +10292,42 @@ abstract class AppLocalizations {
   /// **'Unread'**
   String get inboxFilterUnread;
 
+  /// Title of the notice that replaces the message composer in a conversation with an account the viewer has blocked.
+  ///
+  /// In en, this message translates to:
+  /// **'You blocked this account'**
+  String get dmBlockedThreadTitle;
+
+  /// Body of the notice replacing the composer in a blocked conversation. Explains that history is preserved and names unblocking as the way to reply again.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages stay here so you can read or screenshot them. Unblock to reply.'**
+  String get dmBlockedThreadBody;
+
+  /// Filter chip label showing conversations with accounts the viewer has blocked. Only rendered once the viewer has blocked someone.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked'**
+  String get inboxFilterBlocked;
+
+  /// Shown in place of the conversation list when the Blocked filter is on and a search query matches none of the blocked chats.
+  ///
+  /// In en, this message translates to:
+  /// **'No blocked chats'**
+  String get inboxBlockedEmptyTitle;
+
+  /// Subtitle under inboxBlockedEmptyTitle explaining what the Blocked filter collects.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts you block show up here.'**
+  String get inboxBlockedEmptySubtitle;
+
+  /// Preview text on a Blocked row for an account the viewer blocked but never exchanged messages with. The row is not tappable.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages'**
+  String get inboxBlockedNoMessages;
+
   /// Shown in place of the conversation list when the Unread filter is on and every conversation has been read.
   ///
   /// In en, this message translates to:
@@ -12695,12 +12761,6 @@ abstract class AppLocalizations {
   /// **'Liked Videos'**
   String get likedVideosTitle;
 
-  /// No description provided for @ogVinerBadgeSemanticLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'OG Viner'**
-  String get ogVinerBadgeSemanticLabel;
-
   /// No description provided for @uploadFailureSheetRetryingSnackbar.
   ///
   /// In en, this message translates to:
@@ -13003,6 +13063,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'OG Viner'**
   String get ogVinerBadgeLabel;
+
+  /// Body copy explaining that the OG Viner profile badge identifies original Vine archive participation, not account verification.
+  ///
+  /// In en, this message translates to:
+  /// **'This person posted an original Vine that Divine found in the archive. It is not an account verification badge.'**
+  String get profileBadgeOgVinerBody;
+
+  /// Title for the dialog explaining the special profile checkmark badge.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile checkmark'**
+  String get profileBadgeCheckmarkTitle;
+
+  /// Body copy explaining that the special profile checkmark is a Divine-specific profile marker, not NIP-05, verified-account links, or OG Viner status.
+  ///
+  /// In en, this message translates to:
+  /// **'This account is on Divine\'s profile checkmark list. It is separate from NIP-05, verified account links, and OG Viner status.'**
+  String get profileBadgeCheckmarkBody;
 
   /// No description provided for @shareVideoInListsCount.
   ///
@@ -14309,18 +14387,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Get the party started!'**
   String get commentsEmptySubtitle;
-
-  /// Title at the top of the comments draggable sheet.
-  ///
-  /// In en, this message translates to:
-  /// **'Comments'**
-  String get commentsHeaderTitle;
-
-  /// Accessibility label for the close button on the comments sheet header.
-  ///
-  /// In en, this message translates to:
-  /// **'Close comments'**
-  String get commentsHeaderCloseLabel;
 
   /// No description provided for @draftUntitled.
   ///
@@ -16984,6 +17050,12 @@ abstract class AppLocalizations {
   /// **'Video removed'**
   String get fullscreenFeedRemovedMessage;
 
+  /// Empty-state message shown in the fullscreen feed when the feed it is playing has drained after having had videos — for example the viewer unliked the last video in their Liked feed.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing left to play here'**
+  String get fullscreenFeedEmptyMessage;
+
   /// No description provided for @settingsBadgesTitle.
   ///
   /// In en, this message translates to:
@@ -17002,24 +17074,6 @@ abstract class AppLocalizations {
   /// **'Badges'**
   String get badgesTitle;
 
-  /// No description provided for @badgesIntroTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Understand your badge trail'**
-  String get badgesIntroTitle;
-
-  /// No description provided for @badgesIntroBody.
-  ///
-  /// In en, this message translates to:
-  /// **'See badge awards sent to you, choose what to pin to your Nostr profile, and check whether people accepted badges you issued.'**
-  String get badgesIntroBody;
-
-  /// No description provided for @badgesOpenApp.
-  ///
-  /// In en, this message translates to:
-  /// **'Open badges app'**
-  String get badgesOpenApp;
-
   /// No description provided for @badgesLoadError.
   ///
   /// In en, this message translates to:
@@ -17031,12 +17085,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not update badge'**
   String get badgesUpdateError;
-
-  /// No description provided for @badgesAwardedSectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Awarded to you'**
-  String get badgesAwardedSectionTitle;
 
   /// No description provided for @badgesAwardedEmptyTitle.
   ///
@@ -17080,12 +17128,6 @@ abstract class AppLocalizations {
   /// **'Reject'**
   String get badgesActionReject;
 
-  /// No description provided for @badgesIssuedSectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Issued by you'**
-  String get badgesIssuedSectionTitle;
-
   /// No description provided for @badgesIssuedEmptyTitle.
   ///
   /// In en, this message translates to:
@@ -17115,6 +17157,318 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Waiting for recipient'**
   String get badgesRecipientWaitingStatus;
+
+  /// Header of the collapsible section listing badge awards the user dismissed.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Hidden (1)} other{Hidden ({count})}}'**
+  String badgesHiddenSectionTitle(int count);
+
+  /// No description provided for @badgesActionRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get badgesActionRestore;
+
+  /// No description provided for @badgesHiddenSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Badge hidden'**
+  String get badgesHiddenSnackbar;
+
+  /// No description provided for @badgesHiddenSnackbarUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get badgesHiddenSnackbarUndo;
+
+  /// No description provided for @badgesTabAwarded.
+  ///
+  /// In en, this message translates to:
+  /// **'Awarded'**
+  String get badgesTabAwarded;
+
+  /// No description provided for @badgesTabCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Created'**
+  String get badgesTabCreated;
+
+  /// No description provided for @badgesTabIssued.
+  ///
+  /// In en, this message translates to:
+  /// **'Issued'**
+  String get badgesTabIssued;
+
+  /// No description provided for @badgesCreateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'New badge'**
+  String get badgesCreateAction;
+
+  /// No description provided for @badgesCreatedEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No badges made yet'**
+  String get badgesCreatedEmptyTitle;
+
+  /// No description provided for @badgesCreatedEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Make one and hand it to someone who earned it.'**
+  String get badgesCreatedEmptySubtitle;
+
+  /// Summary line under a badge the user created, counting the distinct people who received it.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Not awarded yet} =1{Awarded to 1 person} other{Awarded to {count} people}}'**
+  String badgesCreatedAwardSummary(int count);
+
+  /// No description provided for @badgeEditorCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New badge'**
+  String get badgeEditorCreateTitle;
+
+  /// No description provided for @badgeEditorEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit badge'**
+  String get badgeEditorEditTitle;
+
+  /// No description provided for @badgeEditorNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get badgeEditorNameLabel;
+
+  /// No description provided for @badgeEditorNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Scene Stealer'**
+  String get badgeEditorNameHint;
+
+  /// No description provided for @badgeEditorIdentifierLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Identifier'**
+  String get badgeEditorIdentifierLabel;
+
+  /// No description provided for @badgeEditorIdentifierHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Part of the badge\'s address, so it stays put once the badge exists.'**
+  String get badgeEditorIdentifierHelp;
+
+  /// No description provided for @badgeEditorIdentifierTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'You already have a badge with this identifier. Edit that one instead — publishing here would replace it.'**
+  String get badgeEditorIdentifierTaken;
+
+  /// No description provided for @badgeEditorIdentifierRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Every badge needs an identifier — type one if the name did not fill it in.'**
+  String get badgeEditorIdentifierRequired;
+
+  /// No description provided for @badgeEditorDescriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get badgeEditorDescriptionLabel;
+
+  /// No description provided for @badgeEditorDescriptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'For the one who steals the scroll with a single loop.'**
+  String get badgeEditorDescriptionHint;
+
+  /// No description provided for @badgeEditorArtworkLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Artwork'**
+  String get badgeEditorArtworkLabel;
+
+  /// No description provided for @badgeEditorArtworkAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add artwork'**
+  String get badgeEditorArtworkAdd;
+
+  /// No description provided for @badgeEditorArtworkReplace.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace'**
+  String get badgeEditorArtworkReplace;
+
+  /// No description provided for @badgeEditorArtworkError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not upload that image'**
+  String get badgeEditorArtworkError;
+
+  /// No description provided for @badgeEditorArtworkRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Every badge needs artwork.'**
+  String get badgeEditorArtworkRequired;
+
+  /// No description provided for @badgeEditorArtworkRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove artwork'**
+  String get badgeEditorArtworkRemove;
+
+  /// No description provided for @badgeEditorArtworkSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Badge artwork'**
+  String get badgeEditorArtworkSheetTitle;
+
+  /// No description provided for @badgeDetailDeleteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete badge'**
+  String get badgeDetailDeleteAction;
+
+  /// No description provided for @badgeDetailDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this badge?'**
+  String get badgeDetailDeleteTitle;
+
+  /// No description provided for @badgeDetailDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This asks relays to drop the badge and every award you handed out for it. Relays can refuse, and anyone who pinned it keeps it on their profile until they remove it.'**
+  String get badgeDetailDeleteBody;
+
+  /// No description provided for @badgeDetailDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get badgeDetailDeleteConfirm;
+
+  /// No description provided for @badgeEditorSaveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish badge'**
+  String get badgeEditorSaveAction;
+
+  /// No description provided for @badgeEditorSaveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not publish the badge'**
+  String get badgeEditorSaveError;
+
+  /// No description provided for @badgeEditorLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load this badge'**
+  String get badgeEditorLoadError;
+
+  /// No description provided for @badgeDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Badge'**
+  String get badgeDetailTitle;
+
+  /// No description provided for @badgeDetailMadeBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Made by'**
+  String get badgeDetailMadeBy;
+
+  /// No description provided for @badgeDetailRecipientsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Awarded to'**
+  String get badgeDetailRecipientsTitle;
+
+  /// No description provided for @badgeDetailNoRecipients.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody has this one yet.'**
+  String get badgeDetailNoRecipients;
+
+  /// No description provided for @badgeDetailAwardAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Award this badge'**
+  String get badgeDetailAwardAction;
+
+  /// No description provided for @badgeDetailEditAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit badge'**
+  String get badgeDetailEditAction;
+
+  /// No description provided for @badgeDetailShareAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get badgeDetailShareAction;
+
+  /// Body of the share sheet when sharing a badge. The link is an naddr reference.
+  ///
+  /// In en, this message translates to:
+  /// **'Check out this badge on Divine: {link}'**
+  String badgeDetailShareMessage(String link);
+
+  /// No description provided for @badgeDetailLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load this badge'**
+  String get badgeDetailLoadError;
+
+  /// No description provided for @badgeDetailMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not find this badge on any relay.'**
+  String get badgeDetailMissing;
+
+  /// No description provided for @badgeDetailActionError.
+  ///
+  /// In en, this message translates to:
+  /// **'That did not go through'**
+  String get badgeDetailActionError;
+
+  /// No description provided for @badgeAwardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Award badge'**
+  String get badgeAwardTitle;
+
+  /// No description provided for @badgeAwardPickAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick people'**
+  String get badgeAwardPickAction;
+
+  /// No description provided for @badgeAwardManualLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Or paste keys'**
+  String get badgeAwardManualLabel;
+
+  /// No description provided for @badgeAwardManualHint.
+  ///
+  /// In en, this message translates to:
+  /// **'npub1…, npub1…'**
+  String get badgeAwardManualHint;
+
+  /// No description provided for @badgeAwardEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick at least one person.'**
+  String get badgeAwardEmptyHint;
+
+  /// Confirm button on the award badge screen, counting the selected recipients.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Award badge} =1{Award to 1 person} other{Award to {count} people}}'**
+  String badgeAwardSubmitAction(int count);
 
   /// No description provided for @profileBadgeAwardedBy.
   ///
@@ -17152,10 +17506,10 @@ abstract class AppLocalizations {
   /// **'Badges are little awards anyone can make on Nostr. Give one to a friend, a creator, or someone who made your day.'**
   String get profileBadgeFooterBody;
 
-  /// Link label in the profile badge detail sheet that opens the Divine Badges app (badges.divine.video).
+  /// Button label in the profile badge detail sheet that opens the in-app badge editor.
   ///
   /// In en, this message translates to:
-  /// **'Make your own at badges.divine.video'**
+  /// **'Make your own badge'**
   String get profileBadgeFooterLink;
 
   /// No description provided for @minorAccountReviewWelcomePageTitle.
@@ -18273,6 +18627,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Subtitles are still being generated. Check back in a moment.'**
   String get subtitleEditorProcessing;
+
+  /// No description provided for @subtitleEditorNoSpeech.
+  ///
+  /// In en, this message translates to:
+  /// **'No speech was detected in this video, so there\'s nothing to caption.'**
+  String get subtitleEditorNoSpeech;
+
+  /// No description provided for @subtitleEditorWriteOwn.
+  ///
+  /// In en, this message translates to:
+  /// **'Write them yourself'**
+  String get subtitleEditorWriteOwn;
+
+  /// No description provided for @subtitleEditorAddCue.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a line'**
+  String get subtitleEditorAddCue;
+
+  /// No description provided for @subtitleEditorRemoveCue.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this line'**
+  String get subtitleEditorRemoveCue;
+
+  /// No description provided for @subtitleEditorStartLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get subtitleEditorStartLabel;
+
+  /// No description provided for @subtitleEditorEndLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get subtitleEditorEndLabel;
+
+  /// No description provided for @subtitleEditorInvalidHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Every line needs text and an end after its start.'**
+  String get subtitleEditorInvalidHint;
 
   /// No description provided for @subtitleEditorLoadError.
   ///

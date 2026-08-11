@@ -89,12 +89,19 @@ class _CommentInputState extends State<CommentInput> {
   void initState() {
     super.initState();
     _hasText = widget.controller.text.trim().isNotEmpty;
+    widget.controller.addListener(_syncHasText);
     _attachFocusNode(widget.focusNode);
   }
 
   @override
   void didUpdateWidget(CommentInput oldWidget) {
     super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_syncHasText);
+      widget.controller.addListener(_syncHasText);
+      _syncHasText();
+    }
 
     if (oldWidget.focusNode != widget.focusNode) {
       _detachFocusNode();
@@ -104,8 +111,23 @@ class _CommentInputState extends State<CommentInput> {
 
   @override
   void dispose() {
+    widget.controller.removeListener(_syncHasText);
     _detachFocusNode();
     super.dispose();
+  }
+
+  // TextField.onChanged does not fire for programmatic controller writes, and
+  // the comments sheet clears the composer that way after a post. Tracking the
+  // controller directly keeps the trailing slot honest: without it the send
+  // button stays parked over an empty field and the video-reply button never
+  // comes back.
+  void _syncHasText() {
+    if (!mounted) return;
+    final hasText = widget.controller.text.trim().isNotEmpty;
+    if (hasText == _hasText) return;
+    setState(() {
+      _hasText = hasText;
+    });
   }
 
   void _attachFocusNode(FocusNode? focusNode) {
@@ -127,14 +149,8 @@ class _CommentInputState extends State<CommentInput> {
   }
 
   void _handleTextChanged(String text) {
-    final hasText = text.trim().isNotEmpty;
-    if (hasText != _hasText) {
-      setState(() {
-        _hasText = hasText;
-      });
-    }
-
-    // Detect @mention query
+    // `_hasText` is kept in step by the controller listener; this handler
+    // only owns the mention query and the outward callback.
     _detectMentionQuery(text);
 
     widget.onChanged?.call(text);

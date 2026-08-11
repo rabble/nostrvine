@@ -423,6 +423,21 @@ class AppLocalizationsUr extends AppLocalizations {
   String get profileVideosLabel => 'ویڈیوز';
 
   @override
+  String get profileCollabsLabel => 'اشتراکات';
+
+  @override
+  String get profileLikedLabel => 'پسندیدہ';
+
+  @override
+  String get profileRepostsLabel => 'ریپوسٹس';
+
+  @override
+  String get profileListsLabel => 'فہرستیں';
+
+  @override
+  String get profileCommentsLabel => 'تبصرے';
+
+  @override
   String profileCollaboratorInvitePendingHeadline(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -5865,6 +5880,26 @@ class AppLocalizationsUr extends AppLocalizations {
   String get inboxFilterUnread => 'غیر پڑھی ہوئی';
 
   @override
+  String get dmBlockedThreadTitle => 'آپ نے یہ اکاؤنٹ مسدود کیا ہے';
+
+  @override
+  String get dmBlockedThreadBody =>
+      'پیغامات یہیں رہتے ہیں تاکہ آپ انہیں پڑھ سکیں یا اسکرین شاٹ لے سکیں۔ جواب دینے کے لیے بلاک ہٹائیں۔';
+
+  @override
+  String get inboxFilterBlocked => 'مسدود';
+
+  @override
+  String get inboxBlockedEmptyTitle => 'کوئی مسدود چیٹ نہیں';
+
+  @override
+  String get inboxBlockedEmptySubtitle =>
+      'آپ جن اکاؤنٹس کو مسدود کرتے ہیں وہ یہاں دکھائی دیتے ہیں۔';
+
+  @override
+  String get inboxBlockedNoMessages => 'کوئی پیغام نہیں';
+
+  @override
   String get inboxUnreadEmptyTitle => 'آپ سب پڑھ چکے ہیں';
 
   @override
@@ -7312,9 +7347,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get likedVideosTitle => 'پسندیدہ ویڈیوز';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar =>
       'اپلوڈ دوبارہ کوشش ہو رہی ہے…';
 
@@ -7520,6 +7552,17 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      'اس شخص نے ایک اصل Vine پوسٹ کیا تھا جو Divine کو آرکائیو میں ملا۔ یہ اکاؤنٹ کی تصدیق کا بیج نہیں ہے۔';
+
+  @override
+  String get profileBadgeCheckmarkTitle => 'پروفائل چیک مارک';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      'یہ اکاؤنٹ Divine کی پروفائل چیک مارک فہرست میں ہے۔ یہ NIP-05، تصدیق شدہ اکاؤنٹ لنکس اور OG Viner اسٹیٹس سے الگ ہے۔';
 
   @override
   String shareVideoInListsCount(int count) {
@@ -8309,12 +8352,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get commentsEmptySubtitle => 'پارٹی شروع کریں!';
-
-  @override
-  String get commentsHeaderTitle => 'تبصرے';
-
-  @override
-  String get commentsHeaderCloseLabel => 'تبصرے بند کریں';
 
   @override
   String get draftUntitled => 'بلا عنوان';
@@ -9862,6 +9899,9 @@ class AppLocalizationsUr extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'ویڈیو ہٹا دی گئی';
 
   @override
+  String get fullscreenFeedEmptyMessage => 'یہاں چلانے کے لیے اب کچھ نہیں بچا';
+
+  @override
   String get settingsBadgesTitle => 'بیجز';
 
   @override
@@ -9872,23 +9912,10 @@ class AppLocalizationsUr extends AppLocalizations {
   String get badgesTitle => 'بیجز';
 
   @override
-  String get badgesIntroTitle => 'اپنے بیجز کا سفر سمجھیں';
-
-  @override
-  String get badgesIntroBody =>
-      'آپ کو بھیجے گئے بیج ایوارڈز دیکھیں، منتخب کریں کہ اپنے Nostr پروفائل پر کیا پن کرنا ہے، اور چیک کریں کہ لوگوں نے آپ کے جاری کردہ بیجز قبول کیے یا نہیں۔';
-
-  @override
-  String get badgesOpenApp => 'بیجز ایپ کھولیں';
-
-  @override
   String get badgesLoadError => 'بیجز لوڈ نہیں ہو سکے';
 
   @override
   String get badgesUpdateError => 'بیج اپڈیٹ نہیں ہو سکا';
-
-  @override
-  String get badgesAwardedSectionTitle => 'آپ کو دیے گئے';
 
   @override
   String get badgesAwardedEmptyTitle => 'ابھی کوئی بیج ایوارڈ نہیں';
@@ -9913,9 +9940,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get badgesActionReject => 'انکار کریں';
 
   @override
-  String get badgesIssuedSectionTitle => 'آپ کے جاری کردہ';
-
-  @override
   String get badgesIssuedEmptyTitle => 'ابھی کوئی جاری شدہ بیج نہیں';
 
   @override
@@ -9931,6 +9955,195 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get badgesRecipientWaitingStatus => 'وصول کنندہ کا انتظار ہے';
+
+  @override
+  String badgesHiddenSectionTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'پوشیدہ ($count)',
+      one: 'پوشیدہ (1)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgesActionRestore => 'بحال کریں';
+
+  @override
+  String get badgesHiddenSnackbar => 'بیج چھپا دیا گیا';
+
+  @override
+  String get badgesHiddenSnackbarUndo => 'واپس کریں';
+
+  @override
+  String get badgesTabAwarded => 'موصول';
+
+  @override
+  String get badgesTabCreated => 'بنائے گئے';
+
+  @override
+  String get badgesTabIssued => 'دیے گئے';
+
+  @override
+  String get badgesCreateAction => 'نیا بیج';
+
+  @override
+  String get badgesCreatedEmptyTitle => 'ابھی کوئی بیج نہیں بنایا';
+
+  @override
+  String get badgesCreatedEmptySubtitle => 'ایک بنائیں اور کسی حق دار کو دیں۔';
+
+  @override
+  String badgesCreatedAwardSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count افراد کو دیا',
+      one: '1 شخص کو دیا',
+      zero: 'ابھی کسی کو نہیں دیا',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeEditorCreateTitle => 'نیا بیج';
+
+  @override
+  String get badgeEditorEditTitle => 'بیج میں ترمیم';
+
+  @override
+  String get badgeEditorNameLabel => 'نام';
+
+  @override
+  String get badgeEditorNameHint => 'منظر چرانے والا';
+
+  @override
+  String get badgeEditorIdentifierLabel => 'شناخت کنندہ';
+
+  @override
+  String get badgeEditorIdentifierHelp =>
+      'یہ بیج کے پتے کا حصہ ہے، اس لیے بیج بننے کے بعد یہ تبدیل نہیں ہوتا۔';
+
+  @override
+  String get badgeEditorIdentifierTaken =>
+      'اس شناخت کنندہ کے ساتھ آپ کے پاس پہلے ہی ایک بیج ہے۔ اسی میں ترمیم کریں — یہاں شائع کرنے سے وہ بدل جائے گا۔';
+
+  @override
+  String get badgeEditorIdentifierRequired =>
+      'ہر بیج کو ایک شناخت کنندہ چاہیے — اگر نام سے نہ بھرا ہو تو خود لکھیں۔';
+
+  @override
+  String get badgeEditorDescriptionLabel => 'تفصیل';
+
+  @override
+  String get badgeEditorDescriptionHint =>
+      'اُس کے لیے جو ایک ہی لوپ سے سب کی توجہ چرا لے۔';
+
+  @override
+  String get badgeEditorArtworkLabel => 'تصویر';
+
+  @override
+  String get badgeEditorArtworkAdd => 'تصویر شامل کریں';
+
+  @override
+  String get badgeEditorArtworkReplace => 'بدلیں';
+
+  @override
+  String get badgeEditorArtworkError => 'یہ تصویر اپ لوڈ نہیں ہو سکی';
+
+  @override
+  String get badgeEditorArtworkRequired => 'ہر بیج کے لیے تصویر ضروری ہے۔';
+
+  @override
+  String get badgeEditorArtworkRemove => 'تصویر ہٹائیں';
+
+  @override
+  String get badgeEditorArtworkSheetTitle => 'بیج کی تصویر';
+
+  @override
+  String get badgeDetailDeleteAction => 'بیج حذف کریں';
+
+  @override
+  String get badgeDetailDeleteTitle => 'کیا یہ بیج حذف کر دیں؟';
+
+  @override
+  String get badgeDetailDeleteBody =>
+      'یہ ریلے سے کہتا ہے کہ بیج اور آپ کے دیے گئے تمام ایوارڈ ہٹا دیں۔ ریلے انکار کر سکتے ہیں، اور جس نے اسے پروفائل پر لگایا ہے وہ خود ہٹانے تک رکھے گا۔';
+
+  @override
+  String get badgeDetailDeleteConfirm => 'حذف کریں';
+
+  @override
+  String get badgeEditorSaveAction => 'بیج شائع کریں';
+
+  @override
+  String get badgeEditorSaveError => 'بیج شائع نہیں ہو سکا';
+
+  @override
+  String get badgeEditorLoadError => 'یہ بیج لوڈ نہیں ہو سکا';
+
+  @override
+  String get badgeDetailTitle => 'بیج';
+
+  @override
+  String get badgeDetailMadeBy => 'بنانے والا';
+
+  @override
+  String get badgeDetailRecipientsTitle => 'دیا گیا';
+
+  @override
+  String get badgeDetailNoRecipients => 'ابھی کسی کے پاس نہیں ہے۔';
+
+  @override
+  String get badgeDetailAwardAction => 'یہ بیج دیں';
+
+  @override
+  String get badgeDetailEditAction => 'بیج میں ترمیم';
+
+  @override
+  String get badgeDetailShareAction => 'شیئر کریں';
+
+  @override
+  String badgeDetailShareMessage(String link) {
+    return 'Divine پر یہ بیج دیکھیں: $link';
+  }
+
+  @override
+  String get badgeDetailLoadError => 'یہ بیج لوڈ نہیں ہو سکا';
+
+  @override
+  String get badgeDetailMissing => 'ہمیں یہ بیج کسی ریلے پر نہیں ملا۔';
+
+  @override
+  String get badgeDetailActionError => 'یہ کام نہیں ہو سکا';
+
+  @override
+  String get badgeAwardTitle => 'بیج دیں';
+
+  @override
+  String get badgeAwardPickAction => 'لوگ منتخب کریں';
+
+  @override
+  String get badgeAwardManualLabel => 'یا کلیدیں پیسٹ کریں';
+
+  @override
+  String get badgeAwardManualHint => 'npub1…, npub1…';
+
+  @override
+  String get badgeAwardEmptyHint => 'کم از کم ایک شخص منتخب کریں۔';
+
+  @override
+  String badgeAwardSubmitAction(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count افراد کو دیں',
+      one: '1 شخص کو دیں',
+      zero: 'بیج دیں',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get profileBadgeAwardedBy => 'دینے والا';
@@ -9956,7 +10169,7 @@ class AppLocalizationsUr extends AppLocalizations {
       'بیجز چھوٹے انعامات ہیں جو کوئی بھی Nostr پر بنا سکتا ہے۔ کسی دوست، تخلیق کار، یا اس شخص کو دیں جس نے آپ کا دن بنا دیا۔';
 
   @override
-  String get profileBadgeFooterLink => 'badges.divine.video پر اپنا بیج بنائیں';
+  String get profileBadgeFooterLink => 'اپنا بیج بنائیں';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'خاندانی رہنما';
@@ -10635,6 +10848,29 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get subtitleEditorProcessing =>
       'سب ٹائٹلز ابھی بن رہے ہیں۔ تھوڑی دیر میں دیکھیں۔';
+
+  @override
+  String get subtitleEditorNoSpeech =>
+      'اس ویڈیو میں کوئی گفتگو نہیں ملی، اس لیے سب ٹائٹل بنانے کے لیے کچھ نہیں ہے۔';
+
+  @override
+  String get subtitleEditorWriteOwn => 'خود لکھیں';
+
+  @override
+  String get subtitleEditorAddCue => 'ایک لائن شامل کریں';
+
+  @override
+  String get subtitleEditorRemoveCue => 'یہ لائن ہٹائیں';
+
+  @override
+  String get subtitleEditorStartLabel => 'شروع';
+
+  @override
+  String get subtitleEditorEndLabel => 'اختتام';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'ہر لائن میں متن اور شروع کے بعد اختتام ہونا چاہیے۔';
 
   @override
   String get subtitleEditorLoadError =>

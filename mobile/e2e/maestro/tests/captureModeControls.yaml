@@ -1,0 +1,28 @@
+appId: co.openvine.app
+tags:
+  - recorder
+---
+#TC to drive the capture-mode control rail,
+# given the recorder is open on an idle capture viewfinder with no clips,
+# validate each control actually changes recorder state, and leave every one
+# of them back on its default.
+#
+# The rail itself lives in ../utils/driveCaptureRail.yaml, because lip-sync
+# renders exactly the same five controls with the same behaviour. Everything
+# about *how* they are asserted — reading the Semantics `value`, pinning `id`
+# alongside `text`, the `enabled` guards on flash and stabilization — is
+# documented there.
+#
+# Two preconditions beyond an open viewfinder:
+# - **No clips.** The aspect-ratio control is disabled once the session holds
+#   one, because clips of mixed ratios cannot share an editor timeline.
+# - **Real camera hardware**, for the lens switch. See captureModeRecordClip.
+#Steps:
+# 1. Drive every rail control and restore it
+# 2. Validate the idle capture viewfinder is unchanged
+
+- runFlow: ../utils/driveCaptureRail.yaml
+
+# Everything back to default, so the tests after this one start where they
+# expect to.
+- runFlow: ../asserts/assertCaptureMode.yaml

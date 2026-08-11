@@ -11,6 +11,7 @@ environment:
   sdk: ^3.11.0
 
 dependencies:
+  meta: ^1.17.0
   nostr_client:
     path: ../nostr_client
   nostr_sdk:

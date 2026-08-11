@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
@@ -945,6 +946,177 @@ void main() {
     });
 
     group('unlikeEvent', () {
+      test(
+        'retracts a reaction whose publish is still in flight (#7001)',
+        () async {
+          // The placeholder id means "the confirmed swap has not run yet",
+          // NOT "the reaction never reached a relay" — likeEvent only swaps
+          // it after sendLike returns, and RelayPool.send reports success as
+          // soon as one socket takes the frame. Unliking inside that window
+          // must still publish the Kind 5, or the reaction stays live and
+          // counted forever while local state says "not liked", so the next
+          // tap publishes a second one.
+          final publishGate = Completer<Event>();
+          final reactionA = MockEvent();
+          when(() => reactionA.id).thenReturn('reaction_a');
+          when(
+            () => mockNostrClient.sendLike(
+              any(),
+              content: any(named: 'content'),
+              addressableId: any(named: 'addressableId'),
+              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenAnswer((_) => publishGate.future);
+          when(
+            () => mockNostrClient.deleteEvent(any()),
+          ).thenAnswer((_) async => MockEvent());
+
+          repository = createRepository();
+          final inFlightLike = repository.likeEvent(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+          );
+          await Future<void>.delayed(Duration.zero);
+
+          // The user taps again before the relay round-trip resolves.
+          await repository.unlikeEvent(testEventId);
+
+          // The relay had already stored it.
+          publishGate.complete(reactionA);
+          await inFlightLike;
+
+          verify(() => mockNostrClient.deleteEvent('reaction_a')).called(1);
+          expect(
+            await repository.isLiked(testEventId),
+            isFalse,
+            reason: 'the confirmed swap must not resurrect an unliked record',
+          );
+        },
+      );
+      test(
+        'does not retract a later like for a stale pending placeholder',
+        () async {
+          when(
+            () => mockLocalStorage.getAllLikeRecords(),
+          ).thenAnswer(
+            (_) async => [
+              createLikeRecord(
+                reactionEventId: 'pending_like_$testEventId',
+              ),
+            ],
+          );
+          when(
+            () => mockLocalStorage.deleteLikeRecord(testEventId),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockLocalStorage.saveLikeRecord(any()),
+          ).thenAnswer((_) async {});
+
+          final reactionB = MockEvent();
+          when(() => reactionB.id).thenReturn('reaction_b');
+          when(
+            () => mockNostrClient.sendLike(
+              any(),
+              content: any(named: 'content'),
+              addressableId: any(named: 'addressableId'),
+              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenAnswer((_) async => reactionB);
+
+          repository = createRepository(
+            isOnline: () => true,
+            queueOfflineAction:
+                ({
+                  required isLike,
+                  required eventId,
+                  required authorPubkey,
+                  addressableId,
+                  targetKind,
+                }) async {},
+          );
+          await repository.isLiked(testEventId); // Initialize stale placeholder
+
+          await repository.unlikeEvent(testEventId);
+          expect(await repository.isLiked(testEventId), isFalse);
+
+          await repository.likeEvent(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+          );
+
+          verifyNever(() => mockNostrClient.deleteEvent(any()));
+          expect(await repository.isLiked(testEventId), isTrue);
+        },
+      );
+      test(
+        'queues retry and restores count when mid-publish retraction fails',
+        () async {
+          when(
+            () => mockNostrClient.countEvents(any()),
+          ).thenAnswer((_) async => const CountResult(count: 10));
+          when(
+            () => mockLocalStorage.saveLikeRecord(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockLocalStorage.deleteLikeRecord(testEventId),
+          ).thenAnswer((_) async => true);
+
+          final publishGate = Completer<Event>();
+          final reactionA = MockEvent();
+          when(() => reactionA.id).thenReturn('reaction_a');
+          when(
+            () => mockNostrClient.sendLike(
+              any(),
+              content: any(named: 'content'),
+              addressableId: any(named: 'addressableId'),
+              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenAnswer((_) => publishGate.future);
+          when(
+            () => mockNostrClient.deleteEvent('reaction_a'),
+          ).thenAnswer((_) async => null);
+
+          bool? queuedIsLike;
+          String? queuedEventId;
+          repository = createRepository(
+            isOnline: () => true,
+            queueOfflineAction:
+                ({
+                  required isLike,
+                  required eventId,
+                  required authorPubkey,
+                  addressableId,
+                  targetKind,
+                }) async {
+                  queuedIsLike = isLike;
+                  queuedEventId = eventId;
+                },
+          );
+          expect(await repository.getLikeCount(testEventId), equals(10));
+
+          final inFlightLike = repository.likeEvent(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+          );
+          await Future<void>.delayed(Duration.zero);
+          expect(await repository.getLikeCount(testEventId), equals(11));
+
+          await repository.unlikeEvent(testEventId);
+          expect(await repository.getLikeCount(testEventId), equals(10));
+
+          publishGate.complete(reactionA);
+          await inFlightLike;
+
+          verify(() => mockNostrClient.deleteEvent('reaction_a')).called(1);
+          expect(queuedIsLike, isFalse);
+          expect(queuedEventId, equals(testEventId));
+          expect(await repository.isLiked(testEventId), isTrue);
+          expect(await repository.getLikeCount(testEventId), equals(11));
+        },
+      );
       test('publishes deletion and removes record', () async {
         when(
           () => mockLocalStorage.getAllLikeRecords(),
@@ -1680,6 +1852,56 @@ void main() {
       );
 
       test(
+        'chunks the cold-cache deletion probe so no REQ exceeds the frame '
+        'limit',
+        () async {
+          // 600 live relay downvotes on one target force the Kind 5 probe
+          // into 2 `#e` chunks (500 + 100) — this was the last query leg in
+          // the file still building its filter unchunked.
+          repository = createRepository(withLocalStorage: false);
+          final reactions = [
+            for (var i = 0; i < 600; i++)
+              createMockReaction(
+                id: 'downvote_$i',
+                targetEventId: testEventId,
+                content: '-',
+              ),
+          ];
+          mockQueryEventsSequence([reactions, <Event>[], <Event>[]]);
+          when(
+            () => mockNostrClient.deleteEvent(any()),
+          ).thenAnswer((_) async => MockEvent());
+
+          await repository.removeDownvote(testEventId);
+
+          final deletionFilters =
+              verify(() => mockNostrClient.queryEvents(captureAny())).captured
+                  .cast<List<Filter>>()
+                  .map((filters) => filters.single)
+                  .where(
+                    (f) => f.kinds?.contains(EventKind.eventDeletion) ?? false,
+                  )
+                  .toList();
+
+          expect(deletionFilters, hasLength(2));
+          expect(deletionFilters[0].e, hasLength(500));
+          expect(deletionFilters[1].e, hasLength(100));
+          for (final filter in deletionFilters) {
+            expect(
+              filter.authors,
+              equals([testUserPubkey]),
+              reason: 'probe stays scoped to own deletions in every chunk',
+            );
+          }
+          expect(
+            {...deletionFilters[0].e!, ...deletionFilters[1].e!},
+            hasLength(600),
+            reason: 'chunks partition every candidate id without overlap',
+          );
+        },
+      );
+
+      test(
         'does not delete a relay downvote that was already deleted (#6124)',
         () async {
           repository = createRepository(withLocalStorage: false);
@@ -2273,6 +2495,117 @@ void main() {
         ]);
 
         expect(result, {eventId1: 2, eventId2: 1, eventId3: 0});
+      });
+
+      test(
+        'chunks the reaction query so no REQ exceeds the frame limit',
+        () async {
+          // 600 target ids must split into 2 `#e` chunks (500 + 100). A single
+          // filter with all of them approaches the relay's
+          // max_message_length, and an oversized frame errors the socket —
+          // queryEvents then fails open and every count reads 0 (#5751).
+          final eventIds = [for (var i = 0; i < 600; i++) 'event_id_$i'];
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => <Event>[]);
+
+          repository = createRepository();
+          await repository.getLikeCounts(eventIds);
+
+          final filters =
+              verify(() => mockNostrClient.queryEvents(captureAny())).captured
+                  .cast<List<Filter>>()
+                  .map((filters) => filters.single)
+                  .toList();
+
+          expect(filters, hasLength(2));
+          expect(filters[0].e, hasLength(500));
+          expect(filters[1].e, hasLength(100));
+          expect(
+            {...filters[0].e!, ...filters[1].e!},
+            hasLength(600),
+            reason: 'chunks partition every id without overlap',
+          );
+        },
+      );
+
+      test(
+        'chunks the reaction query on the addressable path too',
+        () async {
+          // The addressable branch resolves through a different call site, so
+          // it needs its own guard against an oversized `#e` frame.
+          final eventIds = [for (var i = 0; i < 600; i++) 'event_id_$i'];
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => <Event>[]);
+
+          repository = createRepository();
+          await repository.getLikeCounts(
+            eventIds,
+            addressableIds: {
+              for (final id in eventIds) id: '34236:author_pubkey:$id',
+            },
+          );
+
+          final reactionFilters =
+              verify(() => mockNostrClient.queryEvents(captureAny())).captured
+                  .cast<List<Filter>>()
+                  .map((filters) => filters.single)
+                  .where(
+                    (f) => f.kinds?.contains(EventKind.reaction) ?? false,
+                  )
+                  .toList();
+          final reactionEFilters = reactionFilters
+              .where((filter) => filter.e != null)
+              .toList();
+          final reactionAFilters = reactionFilters
+              .where((filter) => filter.a != null)
+              .toList();
+
+          expect(reactionEFilters, hasLength(2));
+          for (final filter in reactionEFilters) {
+            expect(filter.e!.length, lessThanOrEqualTo(500));
+          }
+          expect(
+            {for (final f in reactionEFilters) ...f.e!},
+            hasLength(600),
+            reason: 'chunks partition every id without overlap',
+          );
+          expect(reactionAFilters, hasLength(2));
+          for (final filter in reactionAFilters) {
+            expect(filter.a!.length, lessThanOrEqualTo(500));
+          }
+          expect(
+            {for (final f in reactionAFilters) ...f.a!},
+            hasLength(600),
+            reason: 'chunks partition every coordinate without overlap',
+          );
+        },
+      );
+
+      test('counts a reaction spanning two chunks once', () async {
+        // Each chunk is its own queryEvents call with its own dedup box, so a
+        // reaction that e-tags a target in chunk 0 and one in chunk 1 comes
+        // back from both. The count loop adds per e-tag occurrence, so
+        // without a dedup across chunks both targets score 2.
+        final eventIds = [for (var i = 0; i < 600; i++) 'event_id_$i'];
+        final reaction = createMockReaction(
+          id: 'reaction_spanning_chunks',
+          targetEventId: 'event_id_0',
+          tags: [
+            ['e', 'event_id_0'],
+            ['e', 'event_id_500'],
+          ],
+        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [reaction]);
+
+        repository = createRepository();
+        final counts = await repository.getLikeCounts(eventIds);
+
+        expect(counts['event_id_0'], 1);
+        expect(counts['event_id_500'], 1);
       });
 
       test('handles events with non-list or empty tags', () async {
@@ -4878,6 +5211,122 @@ void main() {
           expect(
             captured[2].single.kinds,
             equals([EventKind.eventDeletion]),
+          );
+        },
+      );
+
+      test(
+        'chunks the vote-target reaction query so no REQ exceeds the frame '
+        'limit',
+        () async {
+          // The vote path is a third unbounded Kind 7 `#e` filter, bounded
+          // today only by the comment page size — the same incidental bound
+          // the like path already stopped relying on.
+          final eventIds = [for (var i = 0; i < 600; i++) 'vote_target_$i'];
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => <Event>[]);
+
+          repository = createRepository(withLocalStorage: false);
+          await repository.getVoteCounts(eventIds);
+
+          final eFilters =
+              verify(() => mockNostrClient.queryEvents(captureAny())).captured
+                  .cast<List<Filter>>()
+                  .map((filters) => filters.single)
+                  .where((f) => f.e != null)
+                  .toList();
+
+          expect(eFilters, hasLength(2));
+          expect(eFilters[0].e, hasLength(500));
+          expect(eFilters[1].e, hasLength(100));
+          expect(
+            {...eFilters[0].e!, ...eFilters[1].e!},
+            hasLength(600),
+            reason: 'chunks partition every id without overlap',
+          );
+        },
+      );
+
+      test(
+        'chunks the vote-target coordinate query too',
+        () async {
+          // A `kind:pubkey:dtag` coordinate is longer than a bare id, so the
+          // `#a` leg reaches the frame cap sooner than the `#e` leg it runs
+          // beside.
+          final eventIds = [for (var i = 0; i < 600; i++) 'vote_target_$i'];
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => <Event>[]);
+
+          repository = createRepository(withLocalStorage: false);
+          await repository.getVoteCounts(
+            eventIds,
+            addressableIds: {
+              for (final id in eventIds) id: '34236:$testAuthorPubkey:$id',
+            },
+          );
+
+          final aFilters =
+              verify(() => mockNostrClient.queryEvents(captureAny())).captured
+                  .cast<List<Filter>>()
+                  .map((filters) => filters.single)
+                  .where((f) => f.a != null)
+                  .toList();
+
+          expect(aFilters, hasLength(2));
+          expect(aFilters[0].a, hasLength(500));
+          expect(aFilters[1].a, hasLength(100));
+          expect(
+            {...aFilters[0].a!, ...aFilters[1].a!},
+            hasLength(600),
+            reason: 'chunks partition every coordinate without overlap',
+          );
+        },
+      );
+
+      test(
+        'chunks the coordinate query by bytes when d tags are oversized',
+        () async {
+          // An event id is fixed at 64 chars, so the 500-value count cap
+          // byte-bounds the `#e` legs on its own. A coordinate is not fixed:
+          // nothing validates `d` tag length, so the `#a` legs need the byte
+          // budget too. 300 coordinates of ~1KB each is ~300KB of values —
+          // far past the frame cap while nowhere near the count cap.
+          final eventIds = [for (var i = 0; i < 300; i++) 'vote_target_$i'];
+          final oversizedDTag = 'd' * 1024;
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => <Event>[]);
+
+          repository = createRepository(withLocalStorage: false);
+          await repository.getVoteCounts(
+            eventIds,
+            addressableIds: {
+              for (final id in eventIds)
+                id: '34236:$testAuthorPubkey:$oversizedDTag$id',
+            },
+          );
+
+          final aFilters =
+              verify(() => mockNostrClient.queryEvents(captureAny())).captured
+                  .cast<List<Filter>>()
+                  .map((filters) => filters.single)
+                  .where((f) => f.a != null)
+                  .toList();
+
+          expect(aFilters.length, greaterThan(1));
+          for (final filter in aFilters) {
+            final chunkBytes = filter.a!.fold<int>(
+              0,
+              (sum, value) => sum + utf8.encode(value).length,
+            );
+            expect(chunkBytes, lessThanOrEqualTo(128 * 1024));
+          }
+          expect(
+            {for (final f in aFilters) ...f.a!},
+            hasLength(300),
+            reason: 'chunks partition every coordinate without overlap',
           );
         },
       );

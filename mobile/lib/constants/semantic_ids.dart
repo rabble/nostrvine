@@ -22,6 +22,61 @@ abstract class SemanticIds {
   static String cameraMode(String mode) => 'camera_mode_$mode';
   static const String cameraRecordButton = 'camera_record_button';
 
+  /// Recorder chrome. Close, next and delete-clip come from the capture
+  /// stack, which capture, stop-motion and lip-sync all render; the library
+  /// button lives in the bottom bar, which every mode renders. Every label
+  /// behind these is localized, so the E2E capture flow drives them by id.
+  static const String cameraCloseButton = 'camera_close_button';
+  static const String cameraNextButton = 'camera_next_button';
+  static const String cameraDeleteClipButton = 'camera_delete_clip_button';
+  static const String cameraLibraryButton = 'camera_library_button';
+
+  /// Capture-mode control rail, top to bottom. Flash, aspect ratio and the
+  /// lens switch are unconditional, so every mode that renders the rail drives
+  /// them with the same three E2E utils. Timer and stabilization are rendered
+  /// only by the modes that declare them — capture and lip-sync, which share
+  /// the rail unchanged and drive all five with `driveCaptureRail`.
+  static const String cameraFlashButton = 'camera_flash_button';
+  static const String cameraTimerButton = 'camera_timer_button';
+  static const String cameraAspectRatioButton = 'camera_aspect_ratio_button';
+  static const String cameraSwitchCameraButton = 'camera_switch_camera_button';
+  static const String cameraStabilizationButton = 'camera_stabilization_button';
+
+  /// Sound picker on [VideoEditorAudioChip]. Lip-sync puts it in the top-bar
+  /// slot capture mode leaves empty, and because the two render an identical
+  /// control rail it is the *only* thing separating those viewfinders — so
+  /// `assertCaptureMode` asserts its absence.
+  ///
+  /// The chip is shared with the editor's audio-timing screen, which is a
+  /// different route, so the id stays unambiguous on any one screen.
+  static const String audioChip = 'audio_chip';
+
+  /// Search field in the sound picker the chip opens.
+  static const String audioSearchField = 'audio_search_field';
+
+  /// Sound picker result tile. Tiles are indexed because the list is a search
+  /// result: the E2E narrows it to one entry and takes index 0, rather than
+  /// depending on the manifest's order.
+  static String audioSoundTile(int index) => 'audio_sound_tile_$index';
+
+  /// Confirms the currently selected sound in the sound picker.
+  static const String audioSelectionDoneButton = 'audio_selection_done_button';
+
+  /// What stop-motion adds to that rail (both gated on `capturesStills`), plus
+  /// the shot budget it puts in the top bar's center slot. Which viewfinder is
+  /// up is settled by the mode wheel's `selected` state, not by these — the
+  /// rest of the chrome is shared, since stop-motion is the capture stack. The
+  /// E2E asserts pin their absence in the modes that do not declare them, so a
+  /// control leaking across modes fails a run rather than passing quietly.
+  ///
+  /// Classic mode has its own grid and ghost toggles in
+  /// `video_recorder_classic_actions_bottom.dart`. They are deliberately
+  /// untagged: no flow drives them yet, and an identifier nothing asserts on
+  /// drifts silently.
+  static const String cameraGhostFrameButton = 'camera_ghost_frame_button';
+  static const String cameraGridButton = 'camera_grid_button';
+  static const String cameraStopMotionBudget = 'camera_stop_motion_budget';
+
   /// Welcome screen. The fresh-install and returning-user branches show
   /// different buttons, so each action gets its own id rather than being
   /// disambiguated by position.
@@ -41,6 +96,26 @@ abstract class SemanticIds {
   static const String settingsNostrRow = 'nostr_settings_tile';
   static const String settingsRemoveKeysRow = 'remove_keys_tile';
 
+  /// Search. The results screen has no tabs and its rows are keyed by
+  /// pubkey, so E2E flows need an ordinal handle plus anchors for the
+  /// chrome — otherwise they fall back to matching translated copy or
+  /// tapping fixed screen coordinates.
+  static const String exploreSearchBar = 'explore_search_bar';
+  static const String searchField = 'search_field';
+  static const String searchBackButton = 'search_back_button';
+  static const String searchFilterPill = 'search_filter_pill';
+
+  static String searchSectionHeader(String section) =>
+      'search_section_header_$section';
+
+  /// Ordinal handle for a People result row, alongside the pubkey-keyed
+  /// `search_user_tile_<pubkey>` that the row itself carries.
+  static String searchUserTileAt(int index) => 'search_user_tile_$index';
+
+  /// Comments sheet title. Doubles as the drag anchor: the sheet has no
+  /// close button, so dismissing it means dragging the header down.
+  static const String commentsSheetTitle = 'comments_sheet_title';
+
   static const String profileStatsRow = 'profile_stats_row';
 
   /// Opens Settings from the own-profile header. This is the only entry
@@ -49,6 +124,22 @@ abstract class SemanticIds {
   static const String profileSettingsButton = 'settings_button';
   static const String profileBackButton = 'profile_back_button';
   static const String profileMoreButton = 'profile_more_button';
+
+  /// Profile content tabs. The bar is icon-only and its tab count varies by
+  /// profile (6 on the own profile, 5 on another user's), so tests address a
+  /// tab by identifier rather than by position or by the compound
+  /// "Tab N of M" label Material generates.
+  static const String profileVideosTab = 'videos_tab';
+  static const String profileCollabsTab = 'collabs_tab';
+  static const String profileLikedTab = 'liked_tab';
+  static const String profileRepostsTab = 'reposted_tab';
+  static const String profileListsTab = 'lists_tab';
+  static const String profileCommentsTab = 'comments_tab';
+
+  static String likedVideoThumbnail(int index) =>
+      'liked_video_thumbnail_$index';
+  static String savedVideoThumbnail(int index) =>
+      'saved_video_thumbnail_$index';
 
   static String listCard(int index) => 'list_card_$index';
 
@@ -62,4 +153,10 @@ abstract class SemanticIds {
   static const String editorTimeline = 'editor_timeline';
 
   static const String videoDetailLoading = 'video_detail_loading';
+
+  /// Fullscreen pooled feed placeholders. Both states used to be the same
+  /// unlabelled spinner, so an E2E run could not tell "still loading" from
+  /// "this feed has nothing left" and simply timed out (#6949).
+  static const String fullscreenFeedLoading = 'fullscreen_feed_loading';
+  static const String fullscreenFeedEmpty = 'fullscreen_feed_empty';
 }

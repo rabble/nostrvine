@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/search_results_filter/search_results_filter.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/search_results/widgets/search_filter_pill.dart';
 import 'package:videos_repository/videos_repository.dart';
@@ -56,6 +57,16 @@ void main() {
       await tester.pumpWidget(buildSubject());
 
       expect(find.text('All'), findsOneWidget);
+    });
+
+    testWidgets('anchors the pill for UI tests', (tester) async {
+      when(() => mockCubit.state).thenReturn(SearchResultsFilter.all);
+      await tester.pumpWidget(buildSubject());
+
+      expect(
+        find.bySemanticsIdentifier(SemanticIds.searchFilterPill),
+        findsOneWidget,
+      );
     });
 
     testWidgets('renders "People" label when filter is people', (tester) async {

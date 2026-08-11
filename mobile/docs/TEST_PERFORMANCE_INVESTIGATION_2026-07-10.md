@@ -498,6 +498,14 @@ cd ../local_stack
 docker compose down
 ```
 
+> **Superseded (2026-08-10).** The command above no longer works as
+> written: `flutter test integration_test/…` requires an explicit device
+> and one invocation per file, and the app needs
+> `--dart-define=DEFAULT_ENV=LOCAL` or it runs against production. Use
+> `mise run e2e_test <path>`, which brings up the stack, passes the
+> defines, and captures the merged timeline. Kept here as a record of
+> what the lane looked like at the time of this investigation.
+
 This specialized lane should not block every edit, but it needs scheduled or
 change-triggered execution so zero workflow history does not become permanent
 coverage debt.

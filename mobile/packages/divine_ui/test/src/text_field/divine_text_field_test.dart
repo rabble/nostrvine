@@ -534,6 +534,52 @@ void main() {
         expect(find.text('Required'), findsOneWidget);
         expect(find.text('Brief summary of the issue'), findsOneWidget);
       });
+
+      testWidgets('lets a long helper wrap onto helperMaxLines', (
+        tester,
+      ) async {
+        const helper =
+            'Part of the badge address, so it stays put once it exists.';
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: VineTheme.theme,
+            home: const Scaffold(
+              body: SizedBox(
+                width: 220,
+                child: DivineTextField(
+                  labelText: 'Identifier',
+                  helperText: helper,
+                  helperMaxLines: 2,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final decoration = tester
+            .widget<TextField>(find.byType(TextField))
+            .decoration!;
+        expect(decoration.helperMaxLines, equals(2));
+        expect(find.text(helper), findsOneWidget);
+      });
+
+      testWidgets('leaves helperMaxLines unset by default', (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: VineTheme.theme,
+            home: const Scaffold(
+              body: DivineTextField(helperText: 'Required'),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final decoration = tester
+            .widget<TextField>(find.byType(TextField))
+            .decoration!;
+        expect(decoration.helperMaxLines, isNull);
+      });
     });
 
     group('affixes', () {

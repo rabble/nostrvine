@@ -426,6 +426,21 @@ class AppLocalizationsBg extends AppLocalizations {
   String get profileVideosLabel => 'Видеа';
 
   @override
+  String get profileCollabsLabel => 'Съвместни';
+
+  @override
+  String get profileLikedLabel => 'Харесани';
+
+  @override
+  String get profileRepostsLabel => 'Репостове';
+
+  @override
+  String get profileListsLabel => 'Списъци';
+
+  @override
+  String get profileCommentsLabel => 'Коментари';
+
+  @override
   String profileCollaboratorInvitePendingHeadline(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -5914,6 +5929,26 @@ class AppLocalizationsBg extends AppLocalizations {
   String get inboxFilterUnread => 'Непрочетени';
 
   @override
+  String get dmBlockedThreadTitle => 'Блокирахте този акаунт';
+
+  @override
+  String get dmBlockedThreadBody =>
+      'Съобщенията остават тук, за да можете да ги прочетете или да направите екранна снимка. Отблокирайте, за да отговорите.';
+
+  @override
+  String get inboxFilterBlocked => 'Блокирани';
+
+  @override
+  String get inboxBlockedEmptyTitle => 'Няма блокирани чатове';
+
+  @override
+  String get inboxBlockedEmptySubtitle =>
+      'Акаунтите, които блокирате, се показват тук.';
+
+  @override
+  String get inboxBlockedNoMessages => 'Няма съобщения';
+
+  @override
   String get inboxUnreadEmptyTitle => 'В крак си с всичко';
 
   @override
@@ -7385,9 +7420,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get likedVideosTitle => 'Харесани видеа';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar => 'Повторно качване…';
 
   @override
@@ -7590,6 +7622,17 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      'Този човек е публикувал оригинален Vine, който Divine намери в архива. Това не е значка за потвърден профил.';
+
+  @override
+  String get profileBadgeCheckmarkTitle => 'Отметка на профила';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      'Този профил е в списъка с отметки на профил на Divine. Това е различно от NIP-05, потвърдените връзки към профила и статуса OG Viner.';
 
   @override
   String shareVideoInListsCount(int count) {
@@ -8382,12 +8425,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get commentsEmptySubtitle => 'Get the party started!';
-
-  @override
-  String get commentsHeaderTitle => 'Comments';
-
-  @override
-  String get commentsHeaderCloseLabel => 'Close comments';
 
   @override
   String get draftUntitled => 'Без заглавие';
@@ -9961,6 +9998,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'Видеото е премахнато';
 
   @override
+  String get fullscreenFeedEmptyMessage => 'Тук няма какво повече да се пусне';
+
+  @override
   String get settingsBadgesTitle => 'Значки';
 
   @override
@@ -9971,23 +10011,10 @@ class AppLocalizationsBg extends AppLocalizations {
   String get badgesTitle => 'Значки';
 
   @override
-  String get badgesIntroTitle => 'Разбери следата от значките си';
-
-  @override
-  String get badgesIntroBody =>
-      'Виж наградените ти значки в Nostr, избери кои да закачиш на профила си и провери дали хората са приели значките, които си издал.';
-
-  @override
-  String get badgesOpenApp => 'Отвори приложението за значки';
-
-  @override
   String get badgesLoadError => 'Значките не се заредиха';
 
   @override
   String get badgesUpdateError => 'Значката не се актуализира';
-
-  @override
-  String get badgesAwardedSectionTitle => 'Наградени на теб';
 
   @override
   String get badgesAwardedEmptyTitle => 'Все още няма наградени значки';
@@ -10012,9 +10039,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get badgesActionReject => 'Отхвърли';
 
   @override
-  String get badgesIssuedSectionTitle => 'Издадени от теб';
-
-  @override
   String get badgesIssuedEmptyTitle => 'Все още няма издадени значки';
 
   @override
@@ -10032,30 +10056,221 @@ class AppLocalizationsBg extends AppLocalizations {
   String get badgesRecipientWaitingStatus => 'Очаква получателя';
 
   @override
-  String get profileBadgeAwardedBy => 'Awarded by';
+  String badgesHiddenSectionTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Скрити ($count)',
+      one: 'Скрит (1)',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get profileBadgeRecipients => 'Recipients';
+  String get badgesActionRestore => 'Възстанови';
+
+  @override
+  String get badgesHiddenSnackbar => 'Знакът е скрит';
+
+  @override
+  String get badgesHiddenSnackbarUndo => 'Отмени';
+
+  @override
+  String get badgesTabAwarded => 'Получени';
+
+  @override
+  String get badgesTabCreated => 'Създадени';
+
+  @override
+  String get badgesTabIssued => 'Раздадени';
+
+  @override
+  String get badgesCreateAction => 'Нов знак';
+
+  @override
+  String get badgesCreatedEmptyTitle => 'Още нямаш създадени знаци';
+
+  @override
+  String get badgesCreatedEmptySubtitle =>
+      'Направи един и го дай на някого, който си го заслужава.';
+
+  @override
+  String badgesCreatedAwardSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Раздаден на $count души',
+      one: 'Раздаден на 1 човек',
+      zero: 'Още не е раздаден',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeEditorCreateTitle => 'Нов знак';
+
+  @override
+  String get badgeEditorEditTitle => 'Редактиране на знак';
+
+  @override
+  String get badgeEditorNameLabel => 'Име';
+
+  @override
+  String get badgeEditorNameHint => 'Крадец на сцената';
+
+  @override
+  String get badgeEditorIdentifierLabel => 'Идентификатор';
+
+  @override
+  String get badgeEditorIdentifierHelp =>
+      'Част е от адреса на знака, затова остава непроменен, щом знакът вече съществува.';
+
+  @override
+  String get badgeEditorIdentifierTaken =>
+      'Вече имаш знак с този идентификатор. Редактирай онзи — публикуването тук би го заместило.';
+
+  @override
+  String get badgeEditorIdentifierRequired =>
+      'Всеки знак се нуждае от идентификатор — напиши го сам, ако името не го е попълнило.';
+
+  @override
+  String get badgeEditorDescriptionLabel => 'Описание';
+
+  @override
+  String get badgeEditorDescriptionHint =>
+      'За този, който открадва сцената с един-единствен луп.';
+
+  @override
+  String get badgeEditorArtworkLabel => 'Изображение';
+
+  @override
+  String get badgeEditorArtworkAdd => 'Добави изображение';
+
+  @override
+  String get badgeEditorArtworkReplace => 'Замени';
+
+  @override
+  String get badgeEditorArtworkError => 'Изображението не можа да се качи';
+
+  @override
+  String get badgeEditorArtworkRequired =>
+      'Всеки знак се нуждае от изображение.';
+
+  @override
+  String get badgeEditorArtworkRemove => 'Премахни изображението';
+
+  @override
+  String get badgeEditorArtworkSheetTitle => 'Изображение на знака';
+
+  @override
+  String get badgeDetailDeleteAction => 'Изтрий знака';
+
+  @override
+  String get badgeDetailDeleteTitle => 'Да изтрием ли този знак?';
+
+  @override
+  String get badgeDetailDeleteBody =>
+      'Това моли релетата да премахнат знака и всички раздавания, които си направил. Релетата може да откажат, а който го е закачил, го запазва в профила си, докато сам не го махне.';
+
+  @override
+  String get badgeDetailDeleteConfirm => 'Изтрий';
+
+  @override
+  String get badgeEditorSaveAction => 'Публикувай знака';
+
+  @override
+  String get badgeEditorSaveError => 'Знакът не можа да се публикува';
+
+  @override
+  String get badgeEditorLoadError => 'Този знак не можа да се зареди';
+
+  @override
+  String get badgeDetailTitle => 'Знак';
+
+  @override
+  String get badgeDetailMadeBy => 'Създаден от';
+
+  @override
+  String get badgeDetailRecipientsTitle => 'Раздаден на';
+
+  @override
+  String get badgeDetailNoRecipients => 'Още никой няма този знак.';
+
+  @override
+  String get badgeDetailAwardAction => 'Раздай този знак';
+
+  @override
+  String get badgeDetailEditAction => 'Редактиране на знак';
+
+  @override
+  String get badgeDetailShareAction => 'Сподели';
+
+  @override
+  String badgeDetailShareMessage(String link) {
+    return 'Виж този знак в Divine: $link';
+  }
+
+  @override
+  String get badgeDetailLoadError => 'Този знак не можа да се зареди';
+
+  @override
+  String get badgeDetailMissing => 'Не намираме този знак в нито едно реле.';
+
+  @override
+  String get badgeDetailActionError => 'Не се получи';
+
+  @override
+  String get badgeAwardTitle => 'Раздаване на знак';
+
+  @override
+  String get badgeAwardPickAction => 'Избери хора';
+
+  @override
+  String get badgeAwardManualLabel => 'Или постави ключове';
+
+  @override
+  String get badgeAwardManualHint => 'npub1…, npub1…';
+
+  @override
+  String get badgeAwardEmptyHint => 'Избери поне един човек.';
+
+  @override
+  String badgeAwardSubmitAction(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Раздай на $count души',
+      one: 'Раздай на 1 човек',
+      zero: 'Раздай знак',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get profileBadgeAwardedBy => 'Раздаден от';
+
+  @override
+  String get profileBadgeRecipients => 'Получатели';
 
   @override
   String profileBadgeMoreRecipients(int count) {
-    return '+$count more';
+    return '+още $count';
   }
 
   @override
   String profileBadgeSemanticLabel(String name) {
-    return '$name badge';
+    return 'Знак $name';
   }
 
   @override
-  String get profileBadgeFallbackSemanticLabel => 'Badge';
+  String get profileBadgeFallbackSemanticLabel => 'Знак';
 
   @override
   String get profileBadgeFooterBody =>
       'Значките са малки награди, които всеки може да създаде в Nostr. Подари една на приятел, на творец или на някой, който ти е разведрил деня.';
 
   @override
-  String get profileBadgeFooterLink => 'Създай своя на badges.divine.video';
+  String get profileBadgeFooterLink => 'Направи си свой знак';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';
@@ -10738,6 +10953,29 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get subtitleEditorProcessing =>
       'Субтитрите все още се генерират. Върни се след малко.';
+
+  @override
+  String get subtitleEditorNoSpeech =>
+      'В това видео не е открита реч, така че няма какво да се субтитрира.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'Напиши ги сам';
+
+  @override
+  String get subtitleEditorAddCue => 'Добави ред';
+
+  @override
+  String get subtitleEditorRemoveCue => 'Премахни този ред';
+
+  @override
+  String get subtitleEditorStartLabel => 'Начало';
+
+  @override
+  String get subtitleEditorEndLabel => 'Край';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'Всеки ред се нуждае от текст и край след началото си.';
 
   @override
   String get subtitleEditorLoadError =>

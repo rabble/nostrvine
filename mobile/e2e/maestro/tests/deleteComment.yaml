@@ -1,38 +1,53 @@
 appId: co.openvine.app
 ---
-#TC to comment a video and delete the comment just posted,
-# given the user is logged in in the app, and with the just commented video opened,
-# delete the comment in video
+# Known limitation: this proves the comment leaves the poster's screen, not
+# that it leaves the relay. Measured against STAGING on 2026-08-10: the app
+# publishes a valid kind 5, the relay stores it, and the relay keeps serving
+# the deleted kind 1111 anyway. So a smoke run still leaves its comment
+# behind for everyone else. Tracked separately -- do not read a green run as
+# proof of cleanup.
+#
+#TC to delete the comment just posted,
+# given the user is logged in with the commented video still open,
+# delete the comment and leave the player on screen.
 #Steps:
-# 1. Open the comments of the video: Comments modal is displayed and the just posted comment is there
-# 2. Long press on *You: The Options modal is displayed
-# 3. Tap on "Delete": Comments modal closed and the comment is not present
-# 4. Close the comments modal and browse back
+# 1. Reopen the comments: Validate the sheet and that your comment is there
+# 2. Long press your comment: Validate the options sheet
+# 3. Delete: Validate the comment is gone
+# 4. Drag the sheet away: Validate the playback screen is back
 
-# 1. Open the comments of the video: Comments modal is displayed and the just posted comment is there
+# 1. Reopen the comments.
 - tapOn:
     id: comments_button
 - runFlow: "../asserts/assertCommentsModal.yaml"
 - assertVisible:
     text: ".*•.*You.*"
 
-# 2. Long press on *You: The Options modal is displayed
+# 2. Long press your comment.
 - longPressOn:
     text: ".*•.*You.*"
 - runFlow: "../asserts/assertCommentsOptions.yaml"
 
-# 3. Tap on "Delete": Comments modal closed and the comment is not present
+# 3. Delete.
+#
+# There is no confirmation dialog: picking Delete dispatches the delete and
+# closes the options sheet in one step. The old flow tapped a "Delete
+# comment" confirmation afterwards and failed with "Element not found" --
+# that control had already served as the option itself.
 - tapOn:
     id: delete_comment_option
-- tapOn: Delete comment
-
 - runFlow: "../asserts/assertCommentsModal.yaml"
-- assertNotVisible:
-    text: ".*•.*You"
+- extendedWaitUntil:
+    notVisible:
+      text: ".*•.*You.*"
+    timeout: 30000
 
-# 4. Close the comments modal and browse back
+# 4. Drag the sheet away. The grid tap opens PooledFullscreenVideoFeedScreen,
+# which has no "Close video player" control -- that label belongs to
+# VideoDetailScreen, a different route. Leaving the player is the caller's
+# job (see flows/commentFlow.yaml, which taps back_button).
 - swipe:
     from:
-      text: "\\d+\\sComments?" # Matches one or more digits followed by " Comment" or " Comments"
+      id: comments_sheet_title
     direction: DOWN
-- tapOn: Close video player
+- runFlow: ../asserts/assertVideoPlayback.yaml

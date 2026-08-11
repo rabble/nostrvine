@@ -4,13 +4,22 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/widgets/profile/unavailable_profile_actions.dart';
 
 /// Screen shown when viewing a blocked or unavailable user's profile.
 class BlockedUserScreen extends StatelessWidget {
-  const BlockedUserScreen({required this.onBack, super.key});
+  const BlockedUserScreen({
+    required this.onBack,
+    required this.userIdHex,
+    super.key,
+  });
 
   /// Callback when back button is pressed.
   final VoidCallback onBack;
+
+  /// Hex pubkey of the account this screen stands in for, so reporting and
+  /// unfollowing stay reachable even though the profile does not render.
+  final String userIdHex;
 
   @override
   Widget build(BuildContext context) {
@@ -21,6 +30,7 @@ class BlockedUserScreen extends StatelessWidget {
         showBackButton: true,
         onBackPressed: onBack,
         backgroundMode: DiVineAppBarBackgroundMode.transparent,
+        customActions: [UnavailableProfileActions(userIdHex: userIdHex)],
       ),
       body: Center(
         child: Text(

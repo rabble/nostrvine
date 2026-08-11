@@ -54,14 +54,30 @@ class BadgesCubit extends Cubit<BadgesState> {
     );
   }
 
+  /// Restores a locally hidden award.
+  Future<void> unhideAward(BadgeAwardViewData award) {
+    return _runAction(
+      BadgeActionStatus.hiding,
+      () => _repository.unhideAward(award.awardEventId),
+    );
+  }
+
   Future<void> _loadDashboard() async {
     try {
       final dashboard = await _repository.loadDashboard();
       emit(
         state.copyWith(
           status: BadgesStatus.loaded,
+          // Clears a previous action's outcome, the way the catch below
+          // already does. Leaving it set outlived a pull to refresh. An
+          // in-flight action keeps its status: it still gates the buttons.
+          actionStatus: state.hasSettledAction
+              ? BadgeActionStatus.idle
+              : state.actionStatus,
           awarded: dashboard.awarded,
           issued: dashboard.issued,
+          created: dashboard.created,
+          hidden: dashboard.hidden,
         ),
       );
     } catch (error, stackTrace) {
@@ -94,6 +110,8 @@ class BadgesCubit extends Cubit<BadgesState> {
           actionStatus: BadgeActionStatus.completed,
           awarded: dashboard.awarded,
           issued: dashboard.issued,
+          created: dashboard.created,
+          hidden: dashboard.hidden,
         ),
       );
     } catch (error, stackTrace) {

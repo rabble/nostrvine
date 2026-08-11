@@ -408,6 +408,21 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profileVideosLabel => 'الفيديوهات';
 
   @override
+  String get profileCollabsLabel => 'التعاونات';
+
+  @override
+  String get profileLikedLabel => 'أعجبني';
+
+  @override
+  String get profileRepostsLabel => 'إعادات النشر';
+
+  @override
+  String get profileListsLabel => 'القوائم';
+
+  @override
+  String get profileCommentsLabel => 'التعليقات';
+
+  @override
   String profileCollaboratorInvitePendingHeadline(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -5810,6 +5825,25 @@ class AppLocalizationsAr extends AppLocalizations {
   String get inboxFilterUnread => 'غير المقروءة';
 
   @override
+  String get dmBlockedThreadTitle => 'لقد حظرت هذا الحساب';
+
+  @override
+  String get dmBlockedThreadBody =>
+      'تبقى الرسائل هنا لتتمكن من قراءتها أو التقاط صورة لها. ألغِ الحظر للرد.';
+
+  @override
+  String get inboxFilterBlocked => 'محظور';
+
+  @override
+  String get inboxBlockedEmptyTitle => 'لا توجد محادثات محظورة';
+
+  @override
+  String get inboxBlockedEmptySubtitle => 'تظهر هنا الحسابات التي تحظرها.';
+
+  @override
+  String get inboxBlockedNoMessages => 'لا توجد رسائل';
+
+  @override
   String get inboxUnreadEmptyTitle => 'أنت على اطلاع بكل شيء';
 
   @override
@@ -7257,9 +7291,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get likedVideosTitle => 'الفيديوهات المعجب بها';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar => 'جارٍ إعادة محاولة الرفع…';
 
   @override
@@ -7460,6 +7491,17 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      'نشر هذا الشخص مقطع Vine أصليًا عثرت عليه Divine في الأرشيف. هذه ليست شارة توثيق حساب.';
+
+  @override
+  String get profileBadgeCheckmarkTitle => 'علامة الملف الشخصي';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      'هذا الحساب مدرج في قائمة علامات الملف الشخصي لدى Divine. وهي منفصلة عن NIP-05 وروابط الحسابات الموثّقة وحالة OG Viner.';
 
   @override
   String shareVideoInListsCount(int count) {
@@ -8246,12 +8288,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get commentsEmptySubtitle => 'Get the party started!';
-
-  @override
-  String get commentsHeaderTitle => 'Comments';
-
-  @override
-  String get commentsHeaderCloseLabel => 'Close comments';
 
   @override
   String get draftUntitled => 'بدون عنوان';
@@ -9786,6 +9822,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'تمت إزالة الفيديو';
 
   @override
+  String get fullscreenFeedEmptyMessage => 'لم يتبقَّ شيء لتشغيله هنا';
+
+  @override
   String get settingsBadgesTitle => 'الشارات';
 
   @override
@@ -9796,23 +9835,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get badgesTitle => 'الشارات';
 
   @override
-  String get badgesIntroTitle => 'افهم سجلّ شاراتك';
-
-  @override
-  String get badgesIntroBody =>
-      'اطّلع على جوائز الشارات المرسلة إليك، اختر ما تثبّته على ملفك الشخصي على Nostr، وتحقّق ممّا إذا كان الناس قد قبلوا الشارات التي منحتها.';
-
-  @override
-  String get badgesOpenApp => 'فتح تطبيق الشارات';
-
-  @override
   String get badgesLoadError => 'تعذّر تحميل الشارات';
 
   @override
   String get badgesUpdateError => 'تعذّر تحديث الشارة';
-
-  @override
-  String get badgesAwardedSectionTitle => 'ممنوحة لك';
 
   @override
   String get badgesAwardedEmptyTitle => 'لا جوائز شارات بعد';
@@ -9837,9 +9863,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get badgesActionReject => 'رفض';
 
   @override
-  String get badgesIssuedSectionTitle => 'ممنوحة منك';
-
-  @override
   String get badgesIssuedEmptyTitle => 'لا شارات ممنوحة بعد';
 
   @override
@@ -9856,30 +9879,218 @@ class AppLocalizationsAr extends AppLocalizations {
   String get badgesRecipientWaitingStatus => 'بانتظار المستلم';
 
   @override
-  String get profileBadgeAwardedBy => 'Awarded by';
+  String badgesHiddenSectionTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'مخفية ($count)',
+      one: 'مخفية (1)',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get profileBadgeRecipients => 'Recipients';
+  String get badgesActionRestore => 'استعادة';
+
+  @override
+  String get badgesHiddenSnackbar => 'تم إخفاء الشارة';
+
+  @override
+  String get badgesHiddenSnackbarUndo => 'تراجع';
+
+  @override
+  String get badgesTabAwarded => 'المستلمة';
+
+  @override
+  String get badgesTabCreated => 'التي أنشأتها';
+
+  @override
+  String get badgesTabIssued => 'التي منحتها';
+
+  @override
+  String get badgesCreateAction => 'شارة جديدة';
+
+  @override
+  String get badgesCreatedEmptyTitle => 'لم تصنع أي شارة بعد';
+
+  @override
+  String get badgesCreatedEmptySubtitle => 'اصنع واحدة وامنحها لمن يستحقها.';
+
+  @override
+  String badgesCreatedAwardSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'مُنحت لـ $count أشخاص',
+      one: 'مُنحت لشخص واحد',
+      zero: 'لم تُمنح بعد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeEditorCreateTitle => 'شارة جديدة';
+
+  @override
+  String get badgeEditorEditTitle => 'تعديل الشارة';
+
+  @override
+  String get badgeEditorNameLabel => 'الاسم';
+
+  @override
+  String get badgeEditorNameHint => 'خاطف الأضواء';
+
+  @override
+  String get badgeEditorIdentifierLabel => 'المعرّف';
+
+  @override
+  String get badgeEditorIdentifierHelp =>
+      'هو جزء من عنوان الشارة، لذلك لا يتغير بعد إنشائها.';
+
+  @override
+  String get badgeEditorIdentifierTaken =>
+      'لديك بالفعل شارة بهذا المعرّف. عدّل تلك الشارة — فالنشر هنا سيحل محلها.';
+
+  @override
+  String get badgeEditorIdentifierRequired =>
+      'كل شارة تحتاج معرّفًا — اكتب واحدًا إن لم يملأه الاسم.';
+
+  @override
+  String get badgeEditorDescriptionLabel => 'الوصف';
+
+  @override
+  String get badgeEditorDescriptionHint => 'لمن يخطف الأنظار بمقطع واحد فقط.';
+
+  @override
+  String get badgeEditorArtworkLabel => 'الصورة';
+
+  @override
+  String get badgeEditorArtworkAdd => 'إضافة صورة';
+
+  @override
+  String get badgeEditorArtworkReplace => 'استبدال';
+
+  @override
+  String get badgeEditorArtworkError => 'تعذّر رفع هذه الصورة';
+
+  @override
+  String get badgeEditorArtworkRequired => 'كل شارة تحتاج إلى صورة.';
+
+  @override
+  String get badgeEditorArtworkRemove => 'إزالة الصورة';
+
+  @override
+  String get badgeEditorArtworkSheetTitle => 'صورة الشارة';
+
+  @override
+  String get badgeDetailDeleteAction => 'حذف الشارة';
+
+  @override
+  String get badgeDetailDeleteTitle => 'هل تحذف هذه الشارة؟';
+
+  @override
+  String get badgeDetailDeleteBody =>
+      'يطلب هذا من المُرحِّلات إسقاط الشارة وكل ما منحته منها. يمكن للمُرحِّلات أن ترفض، ومن ثبّتها على ملفه يحتفظ بها حتى يزيلها بنفسه.';
+
+  @override
+  String get badgeDetailDeleteConfirm => 'حذف';
+
+  @override
+  String get badgeEditorSaveAction => 'نشر الشارة';
+
+  @override
+  String get badgeEditorSaveError => 'تعذّر نشر الشارة';
+
+  @override
+  String get badgeEditorLoadError => 'تعذّر تحميل هذه الشارة';
+
+  @override
+  String get badgeDetailTitle => 'شارة';
+
+  @override
+  String get badgeDetailMadeBy => 'من صنعها';
+
+  @override
+  String get badgeDetailRecipientsTitle => 'مُنحت لـ';
+
+  @override
+  String get badgeDetailNoRecipients => 'لا أحد يملكها بعد.';
+
+  @override
+  String get badgeDetailAwardAction => 'امنح هذه الشارة';
+
+  @override
+  String get badgeDetailEditAction => 'تعديل الشارة';
+
+  @override
+  String get badgeDetailShareAction => 'مشاركة';
+
+  @override
+  String badgeDetailShareMessage(String link) {
+    return 'شاهد هذه الشارة على Divine: $link';
+  }
+
+  @override
+  String get badgeDetailLoadError => 'تعذّر تحميل هذه الشارة';
+
+  @override
+  String get badgeDetailMissing => 'لم نجد هذه الشارة على أي مُرحِّل.';
+
+  @override
+  String get badgeDetailActionError => 'لم تنجح العملية';
+
+  @override
+  String get badgeAwardTitle => 'منح شارة';
+
+  @override
+  String get badgeAwardPickAction => 'اختر أشخاصًا';
+
+  @override
+  String get badgeAwardManualLabel => 'أو الصق المفاتيح';
+
+  @override
+  String get badgeAwardManualHint => 'npub1…, npub1…';
+
+  @override
+  String get badgeAwardEmptyHint => 'اختر شخصًا واحدًا على الأقل.';
+
+  @override
+  String badgeAwardSubmitAction(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'امنحها لـ $count أشخاص',
+      one: 'امنحها لشخص واحد',
+      zero: 'امنح الشارة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get profileBadgeAwardedBy => 'من منحها';
+
+  @override
+  String get profileBadgeRecipients => 'المستلمون';
 
   @override
   String profileBadgeMoreRecipients(int count) {
-    return '+$count more';
+    return '+$count آخرين';
   }
 
   @override
   String profileBadgeSemanticLabel(String name) {
-    return '$name badge';
+    return 'شارة $name';
   }
 
   @override
-  String get profileBadgeFallbackSemanticLabel => 'Badge';
+  String get profileBadgeFallbackSemanticLabel => 'شارة';
 
   @override
   String get profileBadgeFooterBody =>
       'الشارات جوائز صغيرة يمكن لأي شخص إنشاؤها على Nostr. امنح واحدة لصديق أو لصانع محتوى أو لشخص أسعد يومك.';
 
   @override
-  String get profileBadgeFooterLink => 'أنشئ شارتك على badges.divine.video';
+  String get profileBadgeFooterLink => 'أنشئ شارتك الخاصة';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';
@@ -10556,6 +10767,29 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get subtitleEditorProcessing =>
       'ما زالت الترجمات قيد الإنشاء. عُد بعد لحظة.';
+
+  @override
+  String get subtitleEditorNoSpeech =>
+      'لم يتم رصد أي كلام في هذا الفيديو، لذا لا يوجد ما يمكن كتابته كترجمة.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'اكتبها بنفسك';
+
+  @override
+  String get subtitleEditorAddCue => 'أضف سطرًا';
+
+  @override
+  String get subtitleEditorRemoveCue => 'احذف هذا السطر';
+
+  @override
+  String get subtitleEditorStartLabel => 'البداية';
+
+  @override
+  String get subtitleEditorEndLabel => 'النهاية';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'كل سطر يحتاج نصًا ونهاية بعد بدايته.';
 
   @override
   String get subtitleEditorLoadError => 'تعذّر تحميل الترجمات. حاول مرّة أخرى.';

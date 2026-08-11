@@ -16,29 +16,31 @@ class OgVinerBadge extends StatelessWidget {
     return Semantics(
       label: context.l10n.ogVinerBadgeLabel,
       container: true,
-      child: Container(
-        margin: const EdgeInsetsDirectional.only(start: 4),
-        width: dimension,
-        height: dimension,
-        alignment: Alignment.center,
-        decoration: const BoxDecoration(
-          color: VineTheme.primary,
-          shape: BoxShape.circle,
-        ),
-        // The glyph is a logo mark sized off the circle, not readable text:
-        // `dimension` already carries the text scale, so scaling the font
-        // again would square the factor. `FittedBox` stays as a guard
-        // against font-fallback metrics overflowing the circle.
-        child: FittedBox(
-          child: Text(
-            'V',
-            textAlign: TextAlign.center,
-            textScaler: TextScaler.noScaling,
-            style: TextStyle(
-              color: VineTheme.onPrimary,
-              fontFamily: 'Pacifico',
-              fontSize: dimension * 0.85,
-              height: 1,
+      child: ExcludeSemantics(
+        child: Container(
+          margin: const EdgeInsetsDirectional.only(start: 4),
+          width: dimension,
+          height: dimension,
+          alignment: Alignment.center,
+          decoration: const BoxDecoration(
+            color: VineTheme.primary,
+            shape: BoxShape.circle,
+          ),
+          // The glyph is a logo mark sized off the circle, not readable text:
+          // `dimension` already carries the text scale, so scaling the font
+          // again would square the factor. `FittedBox` stays as a guard
+          // against font-fallback metrics overflowing the circle.
+          child: FittedBox(
+            child: Text(
+              'V',
+              textAlign: TextAlign.center,
+              textScaler: TextScaler.noScaling,
+              style: TextStyle(
+                color: VineTheme.onPrimary,
+                fontFamily: 'Pacifico',
+                fontSize: dimension * 0.85,
+                height: 1,
+              ),
             ),
           ),
         ),

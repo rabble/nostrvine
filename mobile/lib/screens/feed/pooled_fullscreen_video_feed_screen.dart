@@ -18,6 +18,7 @@ import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
 import 'package:openvine/blocs/inline_comment_composer/inline_comment_composer_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -722,6 +723,34 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                 );
               }
 
+              // The feed drained after having had videos, so no further
+              // emit is coming. Rendering the loading placeholder here left
+              // the route stuck on a spinner with no video, no action
+              // buttons and no explanation — see #6949.
+              if (state.status == FullscreenFeedStatus.empty) {
+                return Scaffold(
+                  backgroundColor: context.vineColors.background,
+                  appBar: DiVineAppBar(
+                    title: widget.contextTitle ?? '',
+                    showBackButton: true,
+                    onBackPressed: () => _handleBack(context),
+                    backgroundMode: DiVineAppBarBackgroundMode.transparent,
+                    forceMaterialTransparency: true,
+                  ),
+                  body: Center(
+                    child: Semantics(
+                      identifier: SemanticIds.fullscreenFeedEmpty,
+                      child: Text(
+                        context.l10n.fullscreenFeedEmptyMessage,
+                        style: VineTheme.bodyMediumFont(
+                          color: context.vineColors.primaryText,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }
+
               if (state.status == FullscreenFeedStatus.initial ||
                   !state.hasVideos) {
                 return Scaffold(
@@ -733,7 +762,12 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                     backgroundMode: DiVineAppBarBackgroundMode.transparent,
                     forceMaterialTransparency: true,
                   ),
-                  body: const Center(child: BrandedLoadingIndicator(size: 60)),
+                  body: Semantics(
+                    identifier: SemanticIds.fullscreenFeedLoading,
+                    child: const Center(
+                      child: BrandedLoadingIndicator(size: 60),
+                    ),
+                  ),
                 );
               }
 

@@ -19,6 +19,7 @@ class UserName extends ConsumerWidget {
     this.selectable = false,
     this.anonymousName,
     this.neverGenerateName = false,
+    this.showProfileBadges = true,
   });
 
   /// Create a UserName widget from a pubkey.
@@ -43,6 +44,7 @@ class UserName extends ConsumerWidget {
     String? anonymousName,
     TextOverflow? overflow,
     bool neverGenerateName = false,
+    bool showProfileBadges = true,
   }) => UserName._(
     pubkey: pubkey,
     embeddedName: embeddedName,
@@ -53,6 +55,7 @@ class UserName extends ConsumerWidget {
     selectable: selectable,
     anonymousName: anonymousName,
     neverGenerateName: neverGenerateName,
+    showProfileBadges: showProfileBadges,
   );
 
   factory UserName.fromUserProfile(
@@ -64,6 +67,7 @@ class UserName extends ConsumerWidget {
     String? anonymousName,
     TextOverflow? overflow,
     bool neverGenerateName = false,
+    bool showProfileBadges = true,
   }) => UserName._(
     userProfile: userProfile,
     key: key,
@@ -73,6 +77,7 @@ class UserName extends ConsumerWidget {
     selectable: selectable,
     anonymousName: anonymousName,
     neverGenerateName: neverGenerateName,
+    showProfileBadges: showProfileBadges,
   );
 
   final String? pubkey;
@@ -92,6 +97,12 @@ class UserName extends ConsumerWidget {
   /// See [UserName.fromPubKey]'s doc for why. Applies to a resolved profile
   /// with an empty name as well as to the unresolved case.
   final bool neverGenerateName;
+
+  /// Whether compact profile badges should render beside the display name.
+  ///
+  /// Profile headers pass false because they render full-size explanation
+  /// controls beside the name instead of the tiny inline indicators.
+  final bool showProfileBadges;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -145,11 +156,13 @@ class UserName extends ConsumerWidget {
           fontSize: 10,
           fontWeight: FontWeight.w400,
         );
-    final isOgViner = ref.watch(
-      ogVinerCacheServiceProvider.select(
-        (service) => service.isOgViner(effectivePubkey),
-      ),
-    );
+    final isOgViner =
+        showProfileBadges &&
+        ref.watch(
+          ogVinerCacheServiceProvider.select(
+            (service) => service.isOgViner(effectivePubkey),
+          ),
+        );
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -169,7 +182,8 @@ class UserName extends ConsumerWidget {
                   overflow: overflow ?? TextOverflow.ellipsis,
                 ),
         ),
-        if (shouldShowSpecialProfileCheckmark(resolvedProfile))
+        if (showProfileBadges &&
+            shouldShowSpecialProfileCheckmark(resolvedProfile))
           const SpecialProfileCheckmark(),
         if (isOgViner) const OgVinerBadge(),
       ],

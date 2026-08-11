@@ -1,0 +1,121 @@
+appId: co.openvine.app
+---
+#Utility: given a ready viewfinder in a mode that renders the full capture
+#control rail (capture and lip-sync), drive every control and leave each one
+#back on its default.
+#
+# Three of the five controls are unconditional and are shared with every other
+# mode that renders a rail, so they live in their own utils and this file
+# sequences them. Timer and stabilization are rendered only by the modes that
+# declare `supportsCountdownTimer` / `supportsVideoStabilization`, so they stay
+# here. A mode with a different set composes the per-control utils in its own
+# order rather than calling this one with parts skipped —
+# `tests/stopMotionModeControls.yaml` is the worked example.
+#
+# The assertions read each control's Semantics `value`, which Flutter folds
+# into the Android content description / iOS accessibilityValue. That is the
+# only readable evidence a tap landed: the controls are icon-only, and what
+# they change — flash mode, sensor crop, active lens — is invisible to a UI
+# driver. Selectors pin `id` as well as `text` because "Off" is the value of
+# both the flash and the timer control.
+#
+# Two preconditions beyond an open viewfinder, both of which the calling test
+# is responsible for:
+# - **No clips.** The aspect-ratio control is disabled once the session holds
+#   one, because clips of mixed ratios cannot share an editor timeline.
+# - **Real camera hardware**, for the lens switch.
+#
+# Flash and stabilization are driven behind an `enabled` guard, because both
+# are disabled outright on hardware that lacks the feature — no flash unit on
+# the active lens, or a camera that reports a single stabilization mode. An
+# unguarded tap-and-assert there would go green or red on the phone rather
+# than on the code. A guarded block prints "SKIPPED" in the run output, so a
+# skipped control is visible rather than silently counted as covered.
+#
+# Leaves no mode assertion behind — the caller adds its own, because this rail
+# is shared and the surrounding chrome is not.
+#Steps:
+# 1. Aspect ratio: Vertical -> Square -> Vertical
+# 2. Timer: Off -> 3 seconds -> 10 seconds -> Off
+# 3. Camera: Back -> Front -> Back
+# 4. Flash (if present): Off -> On -> Auto -> Off
+# 5. Stabilization (if supported): Off -> some other mode -> Off
+
+# 1. Aspect ratio flips between two states.
+- runFlow: driveAspectRatioControl.yaml
+
+# 2. Timer cycles through three states and wraps.
+- assertVisible:
+    id: camera_timer_button
+    text: ".*Off.*"
+- tapOn:
+    id: camera_timer_button
+- extendedWaitUntil:
+    visible:
+      id: camera_timer_button
+      text: ".*3 seconds.*"
+    timeout: 10000
+- tapOn:
+    id: camera_timer_button
+- extendedWaitUntil:
+    visible:
+      id: camera_timer_button
+      text: ".*10 seconds.*"
+    timeout: 10000
+# The wrap back to Off is not just symmetry: a timer left armed puts a
+# countdown in front of every recording later in the flow.
+- tapOn:
+    id: camera_timer_button
+- extendedWaitUntil:
+    visible:
+      id: camera_timer_button
+      text: ".*Off.*"
+    timeout: 10000
+
+# 3. Lens switch.
+- runFlow: driveLensControl.yaml
+
+# 4. Flash, if the active lens has a unit.
+- runFlow: driveFlashControl.yaml
+
+# 5. Stabilization. Same guard as flash, and when it passes the sheet is
+# guaranteed to offer a non-off mode: the native side only reports
+# `isVideoStabilizationSupported` when its mode list has more than one entry.
+# Which non-off modes exist is per-device (Android derives them from the
+# camera's CONTROL_AVAILABLE_VIDEO_STABILIZATION_MODES), hence the alternation
+# rather than a fixed label.
+- runFlow:
+    when:
+      visible:
+        id: camera_stabilization_button
+        enabled: true
+    commands:
+      - assertVisible:
+          id: camera_stabilization_button
+          text: ".*Off.*"
+      - tapOn:
+          id: camera_stabilization_button
+      # The sheet is a modal route, so its barrier blocks the semantics of the
+      # rail underneath and these labels are unambiguous while it is open.
+      - extendedWaitUntil:
+          visible: ".*(Standard|Cinematic|Preview Optimized|Low Latency|Auto).*"
+          timeout: 10000
+      - tapOn: ".*(Standard|Cinematic|Preview Optimized|Low Latency|Auto).*"
+      - extendedWaitUntil:
+          notVisible:
+            id: camera_stabilization_button
+            text: ".*Off.*"
+          timeout: 10000
+      # Restore. The bare ".*Off.*" leans on the barrier blocking the rail
+      # underneath (ModalBarrier wraps itself in BlockSemantics) — it is not
+      # independently safe. The stabilization button no longer reads "Off"
+      # here, but the flash and timer controls both do, and picking the timer
+      # would arm the countdown that step 2 exists to clear.
+      - tapOn:
+          id: camera_stabilization_button
+      - tapOn: ".*Off.*"
+      - extendedWaitUntil:
+          visible:
+            id: camera_stabilization_button
+            text: ".*Off.*"
+          timeout: 10000

@@ -422,6 +422,21 @@ class AppLocalizationsMs extends AppLocalizations {
   String get profileVideosLabel => 'Video';
 
   @override
+  String get profileCollabsLabel => 'Kolaborasi';
+
+  @override
+  String get profileLikedLabel => 'Disukai';
+
+  @override
+  String get profileRepostsLabel => 'Siaran Semula';
+
+  @override
+  String get profileListsLabel => 'Senarai';
+
+  @override
+  String get profileCommentsLabel => 'Komen';
+
+  @override
   String profileCollaboratorInvitePendingHeadline(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -5905,6 +5920,26 @@ class AppLocalizationsMs extends AppLocalizations {
   String get inboxFilterUnread => 'Belum dibaca';
 
   @override
+  String get dmBlockedThreadTitle => 'Anda menyekat akaun ini';
+
+  @override
+  String get dmBlockedThreadBody =>
+      'Mesej kekal di sini supaya anda boleh membacanya atau mengambil tangkap layar. Nyahsekat untuk membalas.';
+
+  @override
+  String get inboxFilterBlocked => 'Disekat';
+
+  @override
+  String get inboxBlockedEmptyTitle => 'Tiada sembang disekat';
+
+  @override
+  String get inboxBlockedEmptySubtitle =>
+      'Akaun yang anda sekat akan muncul di sini.';
+
+  @override
+  String get inboxBlockedNoMessages => 'Tiada mesej';
+
+  @override
   String get inboxUnreadEmptyTitle => 'Anda sudah baca semuanya';
 
   @override
@@ -7361,9 +7396,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get likedVideosTitle => 'Video Disukai';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar => 'Mencuba semula muat naik…';
 
   @override
@@ -7566,6 +7598,17 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      'Orang ini pernah menyiarkan Vine asli yang ditemui Divine dalam arkib. Ini bukan lencana pengesahan akaun.';
+
+  @override
+  String get profileBadgeCheckmarkTitle => 'Tanda semak profil';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      'Akaun ini ada dalam senarai tanda semak profil Divine. Ia berasingan daripada NIP-05, pautan akaun disahkan dan status OG Viner.';
 
   @override
   String shareVideoInListsCount(int count) {
@@ -8357,12 +8400,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get commentsEmptySubtitle => 'Mulakan parti!';
-
-  @override
-  String get commentsHeaderTitle => 'Komen';
-
-  @override
-  String get commentsHeaderCloseLabel => 'Tutup komen';
 
   @override
   String get draftUntitled => 'Tanpa tajuk';
@@ -9917,6 +9954,10 @@ class AppLocalizationsMs extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'Video dialih keluar';
 
   @override
+  String get fullscreenFeedEmptyMessage =>
+      'Tiada apa-apa lagi untuk dimainkan di sini';
+
+  @override
   String get settingsBadgesTitle => 'Lencana';
 
   @override
@@ -9927,23 +9968,10 @@ class AppLocalizationsMs extends AppLocalizations {
   String get badgesTitle => 'Lencana';
 
   @override
-  String get badgesIntroTitle => 'Fahami jejak lencana anda';
-
-  @override
-  String get badgesIntroBody =>
-      'Lihat anugerah lencana yang dihantar kepada anda, pilih apa untuk disematkan ke profil Nostr anda, dan semak sama ada orang menerima lencana yang anda keluarkan.';
-
-  @override
-  String get badgesOpenApp => 'Buka apl lencana';
-
-  @override
   String get badgesLoadError => 'Tidak dapat memuatkan lencana';
 
   @override
   String get badgesUpdateError => 'Tidak dapat mengemas kini lencana';
-
-  @override
-  String get badgesAwardedSectionTitle => 'Dianugerahkan kepada anda';
 
   @override
   String get badgesAwardedEmptyTitle => 'Belum ada anugerah lencana';
@@ -9968,9 +9996,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get badgesActionReject => 'Tolak';
 
   @override
-  String get badgesIssuedSectionTitle => 'Dikeluarkan oleh anda';
-
-  @override
   String get badgesIssuedEmptyTitle => 'Belum ada lencana dikeluarkan';
 
   @override
@@ -9986,6 +10011,197 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get badgesRecipientWaitingStatus => 'Menunggu penerima';
+
+  @override
+  String badgesHiddenSectionTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Disembunyikan ($count)',
+      one: 'Disembunyikan (1)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgesActionRestore => 'Pulihkan';
+
+  @override
+  String get badgesHiddenSnackbar => 'Lencana disembunyikan';
+
+  @override
+  String get badgesHiddenSnackbarUndo => 'Buat asal';
+
+  @override
+  String get badgesTabAwarded => 'Diterima';
+
+  @override
+  String get badgesTabCreated => 'Dicipta';
+
+  @override
+  String get badgesTabIssued => 'Diberikan';
+
+  @override
+  String get badgesCreateAction => 'Lencana baharu';
+
+  @override
+  String get badgesCreatedEmptyTitle => 'Belum ada lencana ciptaan anda';
+
+  @override
+  String get badgesCreatedEmptySubtitle =>
+      'Cipta satu dan berikan kepada orang yang layak.';
+
+  @override
+  String badgesCreatedAwardSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Diberikan kepada $count orang',
+      one: 'Diberikan kepada 1 orang',
+      zero: 'Belum diberikan',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeEditorCreateTitle => 'Lencana baharu';
+
+  @override
+  String get badgeEditorEditTitle => 'Edit lencana';
+
+  @override
+  String get badgeEditorNameLabel => 'Nama';
+
+  @override
+  String get badgeEditorNameHint => 'Pencuri Tumpuan';
+
+  @override
+  String get badgeEditorIdentifierLabel => 'Pengecam';
+
+  @override
+  String get badgeEditorIdentifierHelp =>
+      'Sebahagian daripada alamat lencana, jadi ia kekal selepas lencana wujud.';
+
+  @override
+  String get badgeEditorIdentifierTaken =>
+      'Anda sudah ada lencana dengan pengecam ini. Edit yang itu — menerbitkan di sini akan menggantikannya.';
+
+  @override
+  String get badgeEditorIdentifierRequired =>
+      'Setiap lencana perlukan pengecam — taip sendiri kalau nama tidak mengisinya.';
+
+  @override
+  String get badgeEditorDescriptionLabel => 'Penerangan';
+
+  @override
+  String get badgeEditorDescriptionHint =>
+      'Untuk sesiapa yang mencuri tumpuan dengan satu loop sahaja.';
+
+  @override
+  String get badgeEditorArtworkLabel => 'Grafik';
+
+  @override
+  String get badgeEditorArtworkAdd => 'Tambah grafik';
+
+  @override
+  String get badgeEditorArtworkReplace => 'Ganti';
+
+  @override
+  String get badgeEditorArtworkError => 'Imej itu gagal dimuat naik';
+
+  @override
+  String get badgeEditorArtworkRequired => 'Setiap lencana perlukan grafik.';
+
+  @override
+  String get badgeEditorArtworkRemove => 'Buang grafik';
+
+  @override
+  String get badgeEditorArtworkSheetTitle => 'Grafik lencana';
+
+  @override
+  String get badgeDetailDeleteAction => 'Padam lencana';
+
+  @override
+  String get badgeDetailDeleteTitle => 'Padam lencana ini?';
+
+  @override
+  String get badgeDetailDeleteBody =>
+      'Ini meminta geganti membuang lencana dan semua pemberian yang anda buat. Geganti boleh menolak, dan sesiapa yang menyematkannya akan mengekalkannya pada profil sehingga mereka membuangnya.';
+
+  @override
+  String get badgeDetailDeleteConfirm => 'Padam';
+
+  @override
+  String get badgeEditorSaveAction => 'Terbitkan lencana';
+
+  @override
+  String get badgeEditorSaveError => 'Lencana gagal diterbitkan';
+
+  @override
+  String get badgeEditorLoadError => 'Lencana ini gagal dimuatkan';
+
+  @override
+  String get badgeDetailTitle => 'Lencana';
+
+  @override
+  String get badgeDetailMadeBy => 'Dicipta oleh';
+
+  @override
+  String get badgeDetailRecipientsTitle => 'Diberikan kepada';
+
+  @override
+  String get badgeDetailNoRecipients => 'Belum ada sesiapa memilikinya.';
+
+  @override
+  String get badgeDetailAwardAction => 'Berikan lencana ini';
+
+  @override
+  String get badgeDetailEditAction => 'Edit lencana';
+
+  @override
+  String get badgeDetailShareAction => 'Kongsi';
+
+  @override
+  String badgeDetailShareMessage(String link) {
+    return 'Tengok lencana ini di Divine: $link';
+  }
+
+  @override
+  String get badgeDetailLoadError => 'Lencana ini gagal dimuatkan';
+
+  @override
+  String get badgeDetailMissing =>
+      'Kami tidak jumpa lencana ini pada mana-mana geganti.';
+
+  @override
+  String get badgeDetailActionError => 'Itu tidak menjadi';
+
+  @override
+  String get badgeAwardTitle => 'Berikan lencana';
+
+  @override
+  String get badgeAwardPickAction => 'Pilih orang';
+
+  @override
+  String get badgeAwardManualLabel => 'Atau tampal kunci';
+
+  @override
+  String get badgeAwardManualHint => 'npub1…, npub1…';
+
+  @override
+  String get badgeAwardEmptyHint => 'Pilih sekurang-kurangnya seorang.';
+
+  @override
+  String badgeAwardSubmitAction(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Berikan kepada $count orang',
+      one: 'Berikan kepada 1 orang',
+      zero: 'Berikan lencana',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get profileBadgeAwardedBy => 'Dianugerahkan oleh';
@@ -10011,8 +10227,7 @@ class AppLocalizationsMs extends AppLocalizations {
       'Lencana ialah anugerah kecil yang sesiapa sahaja boleh buat di Nostr. Berikan satu kepada rakan, pencipta, atau seseorang yang menceriakan hari anda.';
 
   @override
-  String get profileBadgeFooterLink =>
-      'Buat lencana anda sendiri di badges.divine.video';
+  String get profileBadgeFooterLink => 'Cipta lencana anda sendiri';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Panduan keluarga';
@@ -10694,6 +10909,29 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get subtitleEditorProcessing =>
       'Sarikata masih sedang dijana. Semak semula sebentar nanti.';
+
+  @override
+  String get subtitleEditorNoSpeech =>
+      'Tiada pertuturan dikesan dalam video ini, jadi tiada apa-apa untuk disarikatakan.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'Tulis sendiri';
+
+  @override
+  String get subtitleEditorAddCue => 'Tambah baris';
+
+  @override
+  String get subtitleEditorRemoveCue => 'Buang baris ini';
+
+  @override
+  String get subtitleEditorStartLabel => 'Mula';
+
+  @override
+  String get subtitleEditorEndLabel => 'Tamat';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'Setiap baris perlukan teks dan masa tamat selepas masa mula.';
 
   @override
   String get subtitleEditorLoadError =>

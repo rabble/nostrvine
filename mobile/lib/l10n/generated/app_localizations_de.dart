@@ -426,6 +426,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileVideosLabel => 'Videos';
 
   @override
+  String get profileCollabsLabel => 'Collabs';
+
+  @override
+  String get profileLikedLabel => 'Gefällt mir';
+
+  @override
+  String get profileRepostsLabel => 'Reposts';
+
+  @override
+  String get profileListsLabel => 'Listen';
+
+  @override
+  String get profileCommentsLabel => 'Kommentare';
+
+  @override
   String profileCollaboratorInvitePendingHeadline(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -5929,6 +5944,26 @@ class AppLocalizationsDe extends AppLocalizations {
   String get inboxFilterUnread => 'Ungelesen';
 
   @override
+  String get dmBlockedThreadTitle => 'Du hast dieses Konto blockiert';
+
+  @override
+  String get dmBlockedThreadBody =>
+      'Nachrichten bleiben hier, damit du sie lesen oder einen Screenshot machen kannst. Hebe die Blockierung auf, um zu antworten.';
+
+  @override
+  String get inboxFilterBlocked => 'Blockiert';
+
+  @override
+  String get inboxBlockedEmptyTitle => 'Keine blockierten Chats';
+
+  @override
+  String get inboxBlockedEmptySubtitle =>
+      'Konten, die du blockierst, erscheinen hier.';
+
+  @override
+  String get inboxBlockedNoMessages => 'Keine Nachrichten';
+
+  @override
   String get inboxUnreadEmptyTitle => 'Du bist auf dem Laufenden';
 
   @override
@@ -7399,9 +7434,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get likedVideosTitle => 'Gelikte Videos';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar => 'Upload wird wiederholt …';
 
   @override
@@ -7607,6 +7639,17 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      'Diese Person hat ein Original-Vine gepostet, das Divine im Archiv gefunden hat. Das ist kein Verifizierungs-Badge fürs Konto.';
+
+  @override
+  String get profileBadgeCheckmarkTitle => 'Profil-Häkchen';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      'Dieses Konto steht auf Divines Liste für Profil-Häkchen. Das ist unabhängig von NIP-05, verifizierten Konto-Links und dem OG-Viner-Status.';
 
   @override
   String shareVideoInListsCount(int count) {
@@ -8403,12 +8446,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get commentsEmptySubtitle => 'Get the party started!';
-
-  @override
-  String get commentsHeaderTitle => 'Comments';
-
-  @override
-  String get commentsHeaderCloseLabel => 'Close comments';
 
   @override
   String get draftUntitled => 'Ohne Titel';
@@ -9978,6 +10015,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'Video entfernt';
 
   @override
+  String get fullscreenFeedEmptyMessage =>
+      'Hier gibt es nichts mehr abzuspielen';
+
+  @override
   String get settingsBadgesTitle => 'Abzeichen';
 
   @override
@@ -9988,23 +10029,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get badgesTitle => 'Abzeichen';
 
   @override
-  String get badgesIntroTitle => 'Versteh deine Badge-Spur';
-
-  @override
-  String get badgesIntroBody =>
-      'Sieh dir Badge-Auszeichnungen an, die dir geschickt wurden, wähl, was du an dein Nostr-Profil pinnst, und prüf, ob Leute Badges angenommen haben, die du vergeben hast.';
-
-  @override
-  String get badgesOpenApp => 'Badge-App öffnen';
-
-  @override
   String get badgesLoadError => 'Badges konnten nicht geladen werden';
 
   @override
   String get badgesUpdateError => 'Badge konnte nicht aktualisiert werden';
-
-  @override
-  String get badgesAwardedSectionTitle => 'An dich vergeben';
 
   @override
   String get badgesAwardedEmptyTitle => 'Noch keine Badge-Auszeichnungen';
@@ -10029,9 +10057,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get badgesActionReject => 'Ablehnen';
 
   @override
-  String get badgesIssuedSectionTitle => 'Von dir vergeben';
-
-  @override
   String get badgesIssuedEmptyTitle => 'Noch keine vergebenen Badges';
 
   @override
@@ -10049,19 +10074,209 @@ class AppLocalizationsDe extends AppLocalizations {
   String get badgesRecipientWaitingStatus => 'Wartet auf Empfänger';
 
   @override
-  String get profileBadgeAwardedBy => 'Awarded by';
+  String badgesHiddenSectionTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Ausgeblendet ($count)',
+      one: 'Ausgeblendet (1)',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get profileBadgeRecipients => 'Recipients';
+  String get badgesActionRestore => 'Wiederherstellen';
+
+  @override
+  String get badgesHiddenSnackbar => 'Badge ausgeblendet';
+
+  @override
+  String get badgesHiddenSnackbarUndo => 'Rückgängig';
+
+  @override
+  String get badgesTabAwarded => 'Erhalten';
+
+  @override
+  String get badgesTabCreated => 'Erstellt';
+
+  @override
+  String get badgesTabIssued => 'Vergeben';
+
+  @override
+  String get badgesCreateAction => 'Neues Badge';
+
+  @override
+  String get badgesCreatedEmptyTitle => 'Noch keine Badges gemacht';
+
+  @override
+  String get badgesCreatedEmptySubtitle =>
+      'Mach eins und gib es jemandem, der es verdient hat.';
+
+  @override
+  String badgesCreatedAwardSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'An $count Personen vergeben',
+      one: 'An 1 Person vergeben',
+      zero: 'Noch nicht vergeben',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeEditorCreateTitle => 'Neues Badge';
+
+  @override
+  String get badgeEditorEditTitle => 'Badge bearbeiten';
+
+  @override
+  String get badgeEditorNameLabel => 'Name';
+
+  @override
+  String get badgeEditorNameHint => 'Szenendieb';
+
+  @override
+  String get badgeEditorIdentifierLabel => 'Kennung';
+
+  @override
+  String get badgeEditorIdentifierHelp =>
+      'Teil der Badge-Adresse — sie bleibt fest, sobald das Badge existiert.';
+
+  @override
+  String get badgeEditorIdentifierTaken =>
+      'Du hast schon ein Badge mit dieser Kennung. Bearbeite lieber jenes — hier zu veröffentlichen würde es ersetzen.';
+
+  @override
+  String get badgeEditorIdentifierRequired =>
+      'Jedes Badge braucht eine Kennung — tipp eine ein, wenn der Name sie nicht gefüllt hat.';
+
+  @override
+  String get badgeEditorDescriptionLabel => 'Beschreibung';
+
+  @override
+  String get badgeEditorDescriptionHint =>
+      'Für alle, die mit einem einzigen Loop die Show stehlen.';
+
+  @override
+  String get badgeEditorArtworkLabel => 'Artwork';
+
+  @override
+  String get badgeEditorArtworkAdd => 'Artwork hinzufügen';
+
+  @override
+  String get badgeEditorArtworkReplace => 'Ersetzen';
+
+  @override
+  String get badgeEditorArtworkError => 'Bild konnte nicht hochgeladen werden';
+
+  @override
+  String get badgeEditorArtworkRequired => 'Jedes Badge braucht ein Artwork.';
+
+  @override
+  String get badgeEditorArtworkRemove => 'Artwork entfernen';
+
+  @override
+  String get badgeEditorArtworkSheetTitle => 'Badge-Artwork';
+
+  @override
+  String get badgeDetailDeleteAction => 'Badge löschen';
+
+  @override
+  String get badgeDetailDeleteTitle => 'Dieses Badge löschen?';
+
+  @override
+  String get badgeDetailDeleteBody =>
+      'Damit bitten wir die Relays, das Badge und alle Auszeichnungen dafür zu entfernen. Relays können das ablehnen, und wer es angepinnt hat, behält es im Profil, bis er es selbst entfernt.';
+
+  @override
+  String get badgeDetailDeleteConfirm => 'Löschen';
+
+  @override
+  String get badgeEditorSaveAction => 'Badge veröffentlichen';
+
+  @override
+  String get badgeEditorSaveError => 'Badge konnte nicht veröffentlicht werden';
+
+  @override
+  String get badgeEditorLoadError => 'Dieses Badge konnte nicht geladen werden';
+
+  @override
+  String get badgeDetailTitle => 'Badge';
+
+  @override
+  String get badgeDetailMadeBy => 'Gemacht von';
+
+  @override
+  String get badgeDetailRecipientsTitle => 'Vergeben an';
+
+  @override
+  String get badgeDetailNoRecipients => 'Das hat noch niemand.';
+
+  @override
+  String get badgeDetailAwardAction => 'Badge vergeben';
+
+  @override
+  String get badgeDetailEditAction => 'Badge bearbeiten';
+
+  @override
+  String get badgeDetailShareAction => 'Teilen';
+
+  @override
+  String badgeDetailShareMessage(String link) {
+    return 'Schau dir dieses Badge auf Divine an: $link';
+  }
+
+  @override
+  String get badgeDetailLoadError => 'Dieses Badge konnte nicht geladen werden';
+
+  @override
+  String get badgeDetailMissing => 'Wir finden dieses Badge auf keinem Relay.';
+
+  @override
+  String get badgeDetailActionError => 'Das hat nicht geklappt';
+
+  @override
+  String get badgeAwardTitle => 'Badge vergeben';
+
+  @override
+  String get badgeAwardPickAction => 'Leute auswählen';
+
+  @override
+  String get badgeAwardManualLabel => 'Oder Schlüssel einfügen';
+
+  @override
+  String get badgeAwardManualHint => 'npub1…, npub1…';
+
+  @override
+  String get badgeAwardEmptyHint => 'Wähl mindestens eine Person aus.';
+
+  @override
+  String badgeAwardSubmitAction(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'An $count Personen vergeben',
+      one: 'An 1 Person vergeben',
+      zero: 'Badge vergeben',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get profileBadgeAwardedBy => 'Vergeben von';
+
+  @override
+  String get profileBadgeRecipients => 'Empfänger';
 
   @override
   String profileBadgeMoreRecipients(int count) {
-    return '+$count more';
+    return '+$count weitere';
   }
 
   @override
   String profileBadgeSemanticLabel(String name) {
-    return '$name badge';
+    return 'Badge $name';
   }
 
   @override
@@ -10072,8 +10287,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Badges sind kleine Auszeichnungen, die jeder auf Nostr erstellen kann. Verschenk eins an eine Freundin, einen Creator oder jemanden, der dir den Tag gerettet hat.';
 
   @override
-  String get profileBadgeFooterLink =>
-      'Mach dein eigenes auf badges.divine.video';
+  String get profileBadgeFooterLink => 'Mach dein eigenes Badge';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';
@@ -10755,6 +10969,29 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get subtitleEditorProcessing =>
       'Untertitel werden noch erstellt. Schau gleich noch mal vorbei.';
+
+  @override
+  String get subtitleEditorNoSpeech =>
+      'In diesem Video wurde keine Sprache erkannt – es gibt nichts zu untertiteln.';
+
+  @override
+  String get subtitleEditorWriteOwn => 'Selbst schreiben';
+
+  @override
+  String get subtitleEditorAddCue => 'Zeile hinzufügen';
+
+  @override
+  String get subtitleEditorRemoveCue => 'Diese Zeile entfernen';
+
+  @override
+  String get subtitleEditorStartLabel => 'Start';
+
+  @override
+  String get subtitleEditorEndLabel => 'Ende';
+
+  @override
+  String get subtitleEditorInvalidHint =>
+      'Jede Zeile braucht Text und ein Ende nach dem Start.';
 
   @override
   String get subtitleEditorLoadError =>

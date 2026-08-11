@@ -35,6 +35,17 @@ tags:
     visible:
       id: "home_tab"
     timeout: 30000
-- tapOn:
-    id: "explore_tab"
+
+# The Explore switch races the post-signup warm-up: a tap that lands while
+# the shell is still settling is swallowed and the app stays on Home, which
+# then burns the whole 30 s wait inside assertExploreNew. Widening that
+# timeout does not help — the wait is not what failed, the tap is. Retrying
+# the tap against a screen-specific anchor is what makes it deterministic.
+- retry:
+    maxRetries: 3
+    commands:
+      - tapOn:
+          id: "explore_tab"
+      - assertVisible:
+          id: "explore_search_bar"
 - runFlow: ../asserts/assertExploreNew.yaml

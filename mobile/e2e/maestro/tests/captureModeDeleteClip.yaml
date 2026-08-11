@@ -1,0 +1,18 @@
+appId: co.openvine.app
+tags:
+  - recorder
+---
+#TC to delete the last recorded clip,
+# given the capture session holds at least one clip,
+# validate the delete button drops it and the recorder returns to its empty
+# state.
+#
+# This is also the teardown for the recorder flow. A clip left behind is
+# written to the clip library and survives the run, so the next one would
+# start with a non-empty session and fail assertCaptureMode.
+#Steps:
+# 1. Tap delete last clip
+# 2. Validate the empty capture state is restored
+
+- runFlow: ../utils/deleteLastRecorderClip.yaml
+- runFlow: ../asserts/assertCaptureMode.yaml

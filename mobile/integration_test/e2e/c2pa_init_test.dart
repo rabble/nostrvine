@@ -1,21 +1,27 @@
 // ABOUTME: E2E test verifying C2PA signer initializes without crashing
 // ABOUTME: Catches StrongBox fallback bug (issue #2019) where StrongBoxSigner
 // ABOUTME: was used with a software-backed key on devices without StrongBox
-// ABOUTME: Requires: local Docker stack running (mise run local_up)
+// ABOUTME: Requires: NO Docker stack, and an Android device. c2pa_flutter
+// ABOUTME: ships no desktop implementation, and on the iOS simulator the
+// ABOUTME: cert is never produced, so the assertion below fails there.
 
+@Tags(['service'])
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
 import 'package:openvine/main.dart' as app;
 import 'package:path_provider/path_provider.dart';
-import 'package:patrol/patrol.dart';
 
 import '../helpers/test_setup.dart';
 
 void main() {
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
   group('C2PA Signer Initialization', () {
-    patrolTest('C2PA hardware signer creates cert file on emulator', ($) async {
-      final tester = $.tester;
+    testWidgets('C2PA hardware signer creates cert file on emulator', (
+      tester,
+    ) async {
       final originalOnError = suppressSetStateErrors();
       addTearDown(() => restoreErrorHandler(originalOnError));
       final originalErrorBuilder = saveErrorWidgetBuilder();
@@ -29,9 +35,11 @@ void main() {
         certFile.deleteSync();
       }
 
-      // Launch the app — C2PA init runs async on Dispatchers.IO at startup
+      // Launch the app — C2PA init runs async on Dispatchers.IO at startup.
+      // pumpAndSettle never returns here: the app runs persistent polling
+      // timers, so the tree never reaches a quiescent frame.
       launchAppGuarded(app.main);
-      await tester.pumpAndSettle(const Duration(seconds: 3));
+      await pumpUntilSettled(tester, maxSeconds: 3);
 
       // Wait for C2PA init to complete (certificate enrollment + signing)
       // Poll for cert file (C2PA init runs async, may take a few seconds)

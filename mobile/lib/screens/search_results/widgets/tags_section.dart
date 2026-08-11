@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
@@ -48,6 +49,7 @@ class TagsSection extends StatelessWidget {
             child: SectionHeader(
               title: context.l10n.searchTagsSectionHeader,
               onTap: onSeeAll,
+              semanticIdentifier: SemanticIds.searchSectionHeader('tags'),
             ),
           ),
         _TagsContent(showAll: showAll),

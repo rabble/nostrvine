@@ -16,7 +16,7 @@ set -euo pipefail
 #   cd mobile && flutter build ios --simulator --dart-define=DEFAULT_ENV=STAGING --dart-define=GH_ACTIONS_PR_PREVIEW=true
 #
 # Credentials are not committed. Supply them, as CI does:
-#   MAESTRO_USER_EMAIL=... MAESTRO_USER_PWD=... \
+#   MAESTRO_USER_EMAIL=... MAESTRO_USER_PWD=... MAESTRO_SEARCH_USER=... \
 #     bash e2e/maestro/scripts/ui_smoke_ios.sh
 # ------------------------------------------------------------
 
@@ -61,7 +61,9 @@ export PATH="${PATH}:${HOME}/.maestro/bin"
 info "Validating prerequisites..."
 require_cmd xcrun "Install Xcode + Command Line Tools."
 require_cmd plutil "plutil should exist on macOS."
-require_cmd "${MAESTRO_CLI}" "Install Maestro: brew install maestro"
+# Not 'brew install maestro' -- that name now resolves to an unrelated cask
+# ("Maestro, AI agent command center", ~680 MB) which ships no CLI at all.
+require_cmd "${MAESTRO_CLI}" 'Install Maestro: curl -fsSL "https://get.maestro.mobile.dev" | bash'
 [[ -f "${SUITE_PATH}" ]] || fail "Suite not found: ${SUITE_PATH}"
 [[ -d "${APP_PATH}" ]] || fail "Runner.app not found at: ${APP_PATH}
 
@@ -69,7 +71,7 @@ Fix:
   cd ${MOBILE_DIR} && flutter build ios --simulator --dart-define=DEFAULT_ENV=STAGING --dart-define=GH_ACTIONS_PR_PREVIEW=true"
 [[ -f "${APP_INFO_PLIST}" ]] || fail "Info.plist not found at: ${APP_INFO_PLIST}"
 
-for required in MAESTRO_USER_EMAIL MAESTRO_USER_PWD; do
+for required in MAESTRO_USER_EMAIL MAESTRO_USER_PWD MAESTRO_SEARCH_USER; do
   [[ -n "${!required:-}" ]] || fail "Missing ${required}. The suite reads credentials from the environment; they are not committed."
 done
 ok "Prerequisites look good"
@@ -238,6 +240,7 @@ info "Command: ${MAESTRO_CLI} --device ${SIM_UDID} test ${SUITE_PATH}"
 "${MAESTRO_CLI}" --device "${SIM_UDID}" test \
   -e USER_EMAIL="${MAESTRO_USER_EMAIL}" \
   -e USER_PWD="${MAESTRO_USER_PWD}" \
+  -e SEARCH_USER="${MAESTRO_SEARCH_USER}" \
   "${SUITE_PATH}"
 
 ok "Maestro smoke suite completed successfully 🎉"

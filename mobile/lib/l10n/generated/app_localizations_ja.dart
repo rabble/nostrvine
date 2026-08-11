@@ -376,6 +376,21 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileVideosLabel => '動画';
 
   @override
+  String get profileCollabsLabel => 'コラボ';
+
+  @override
+  String get profileLikedLabel => 'いいね済み';
+
+  @override
+  String get profileRepostsLabel => 'リポスト';
+
+  @override
+  String get profileListsLabel => 'リスト';
+
+  @override
+  String get profileCommentsLabel => 'コメント';
+
+  @override
   String profileCollaboratorInvitePendingHeadline(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -5591,6 +5606,25 @@ class AppLocalizationsJa extends AppLocalizations {
   String get inboxFilterUnread => '未読';
 
   @override
+  String get dmBlockedThreadTitle => 'このアカウントをブロックしました';
+
+  @override
+  String get dmBlockedThreadBody =>
+      'メッセージはここに残るので、読んだりスクリーンショットを撮ったりできます。返信するにはブロックを解除してください。';
+
+  @override
+  String get inboxFilterBlocked => 'ブロック済み';
+
+  @override
+  String get inboxBlockedEmptyTitle => 'ブロックしたチャットはありません';
+
+  @override
+  String get inboxBlockedEmptySubtitle => 'ブロックしたアカウントがここに表示されます。';
+
+  @override
+  String get inboxBlockedNoMessages => 'メッセージなし';
+
+  @override
   String get inboxUnreadEmptyTitle => 'すべて既読です';
 
   @override
@@ -6984,9 +7018,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get likedVideosTitle => 'いいねした動画';
 
   @override
-  String get ogVinerBadgeSemanticLabel => 'OG Viner';
-
-  @override
   String get uploadFailureSheetRetryingSnackbar => 'アップロードを再試行中…';
 
   @override
@@ -7182,6 +7213,17 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String get profileBadgeOgVinerBody =>
+      'この人はオリジナルの Vine を投稿していて、Divine がアーカイブで見つけたよ。アカウントの認証バッジではないので注意。';
+
+  @override
+  String get profileBadgeCheckmarkTitle => 'プロフィールのチェックマーク';
+
+  @override
+  String get profileBadgeCheckmarkBody =>
+      'このアカウントは Divine のプロフィールチェックマークのリストに入ってる。NIP-05、認証済みアカウントのリンク、OG Viner ステータスとは別物だよ。';
 
   @override
   String shareVideoInListsCount(int count) {
@@ -7951,12 +7993,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get commentsEmptySubtitle => 'Get the party started!';
-
-  @override
-  String get commentsHeaderTitle => 'Comments';
-
-  @override
-  String get commentsHeaderCloseLabel => 'Close comments';
 
   @override
   String get draftUntitled => '無題';
@@ -9434,6 +9470,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => '動画を削除しました';
 
   @override
+  String get fullscreenFeedEmptyMessage => 'ここに再生できる動画はもうありません';
+
+  @override
   String get settingsBadgesTitle => 'バッジ';
 
   @override
@@ -9443,23 +9482,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get badgesTitle => 'バッジ';
 
   @override
-  String get badgesIntroTitle => 'あなたのバッジ履歴をチェック';
-
-  @override
-  String get badgesIntroBody =>
-      'あなたに送られたバッジを見て、Nostr プロフィールにピンするものを選んだり、自分が発行したバッジが受け取られたか確認できるよ。';
-
-  @override
-  String get badgesOpenApp => 'バッジアプリを開く';
-
-  @override
   String get badgesLoadError => 'バッジの読み込みに失敗';
 
   @override
   String get badgesUpdateError => 'バッジの更新に失敗';
-
-  @override
-  String get badgesAwardedSectionTitle => 'あなたへの受賞';
 
   @override
   String get badgesAwardedEmptyTitle => 'バッジの受賞はまだないよ';
@@ -9483,9 +9509,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get badgesActionReject => '拒否';
 
   @override
-  String get badgesIssuedSectionTitle => 'あなたが発行したバッジ';
-
-  @override
   String get badgesIssuedEmptyTitle => '発行したバッジはまだないよ';
 
   @override
@@ -9501,30 +9524,214 @@ class AppLocalizationsJa extends AppLocalizations {
   String get badgesRecipientWaitingStatus => '受信者の承認待ち';
 
   @override
-  String get profileBadgeAwardedBy => 'Awarded by';
+  String badgesHiddenSectionTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '非表示（$count）',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get profileBadgeRecipients => 'Recipients';
+  String get badgesActionRestore => '元に戻す';
+
+  @override
+  String get badgesHiddenSnackbar => 'バッジを非表示にしました';
+
+  @override
+  String get badgesHiddenSnackbarUndo => '取り消す';
+
+  @override
+  String get badgesTabAwarded => 'もらった';
+
+  @override
+  String get badgesTabCreated => 'つくった';
+
+  @override
+  String get badgesTabIssued => '贈った';
+
+  @override
+  String get badgesCreateAction => 'バッジを作る';
+
+  @override
+  String get badgesCreatedEmptyTitle => 'まだバッジを作っていません';
+
+  @override
+  String get badgesCreatedEmptySubtitle => 'ひとつ作って、ふさわしい人に贈りましょう。';
+
+  @override
+  String badgesCreatedAwardSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count人に贈りました',
+      zero: 'まだ誰にも贈っていません',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get badgeEditorCreateTitle => 'バッジを作る';
+
+  @override
+  String get badgeEditorEditTitle => 'バッジを編集';
+
+  @override
+  String get badgeEditorNameLabel => '名前';
+
+  @override
+  String get badgeEditorNameHint => 'シーンを奪う人';
+
+  @override
+  String get badgeEditorIdentifierLabel => '識別子';
+
+  @override
+  String get badgeEditorIdentifierHelp => 'バッジのアドレスの一部なので、作成後は変更できません。';
+
+  @override
+  String get badgeEditorIdentifierTaken =>
+      'この識別子のバッジはすでにあります。ここで公開すると置き換わるので、そちらを編集してください。';
+
+  @override
+  String get badgeEditorIdentifierRequired =>
+      'バッジには識別子が必要です。名前から入らなかったときは自分で入力してください。';
+
+  @override
+  String get badgeEditorDescriptionLabel => '説明';
+
+  @override
+  String get badgeEditorDescriptionHint => 'たった1本のループで場をさらった人へ。';
+
+  @override
+  String get badgeEditorArtworkLabel => '画像';
+
+  @override
+  String get badgeEditorArtworkAdd => '画像を追加';
+
+  @override
+  String get badgeEditorArtworkReplace => '差し替え';
+
+  @override
+  String get badgeEditorArtworkError => 'その画像をアップロードできませんでした';
+
+  @override
+  String get badgeEditorArtworkRequired => 'バッジには必ず画像が必要です。';
+
+  @override
+  String get badgeEditorArtworkRemove => '画像を削除';
+
+  @override
+  String get badgeEditorArtworkSheetTitle => 'バッジの画像';
+
+  @override
+  String get badgeDetailDeleteAction => 'バッジを削除';
+
+  @override
+  String get badgeDetailDeleteTitle => 'このバッジを削除しますか？';
+
+  @override
+  String get badgeDetailDeleteBody =>
+      'リレーにバッジと、あなたが贈ったすべての授与の削除を依頼します。リレーは拒否できますし、プロフィールに固定した人は自分で外すまで表示されたままです。';
+
+  @override
+  String get badgeDetailDeleteConfirm => '削除';
+
+  @override
+  String get badgeEditorSaveAction => 'バッジを公開';
+
+  @override
+  String get badgeEditorSaveError => 'バッジを公開できませんでした';
+
+  @override
+  String get badgeEditorLoadError => 'このバッジを読み込めませんでした';
+
+  @override
+  String get badgeDetailTitle => 'バッジ';
+
+  @override
+  String get badgeDetailMadeBy => '作った人';
+
+  @override
+  String get badgeDetailRecipientsTitle => '贈った相手';
+
+  @override
+  String get badgeDetailNoRecipients => 'まだ誰も持っていません。';
+
+  @override
+  String get badgeDetailAwardAction => 'このバッジを贈る';
+
+  @override
+  String get badgeDetailEditAction => 'バッジを編集';
+
+  @override
+  String get badgeDetailShareAction => 'シェア';
+
+  @override
+  String badgeDetailShareMessage(String link) {
+    return 'Divine でこのバッジを見てみて: $link';
+  }
+
+  @override
+  String get badgeDetailLoadError => 'このバッジを読み込めませんでした';
+
+  @override
+  String get badgeDetailMissing => 'どのリレーにもこのバッジが見つかりません。';
+
+  @override
+  String get badgeDetailActionError => 'うまくいきませんでした';
+
+  @override
+  String get badgeAwardTitle => 'バッジを贈る';
+
+  @override
+  String get badgeAwardPickAction => '人を選ぶ';
+
+  @override
+  String get badgeAwardManualLabel => 'または鍵を貼り付け';
+
+  @override
+  String get badgeAwardManualHint => 'npub1…, npub1…';
+
+  @override
+  String get badgeAwardEmptyHint => '少なくとも1人を選んでください。';
+
+  @override
+  String badgeAwardSubmitAction(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count人に贈る',
+      zero: 'バッジを贈る',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get profileBadgeAwardedBy => '贈った人';
+
+  @override
+  String get profileBadgeRecipients => '受け取った人';
 
   @override
   String profileBadgeMoreRecipients(int count) {
-    return '+$count more';
+    return '他 $count 人';
   }
 
   @override
   String profileBadgeSemanticLabel(String name) {
-    return '$name badge';
+    return '$name バッジ';
   }
 
   @override
-  String get profileBadgeFallbackSemanticLabel => 'Badge';
+  String get profileBadgeFallbackSemanticLabel => 'バッジ';
 
   @override
   String get profileBadgeFooterBody =>
       'バッジは Nostr で誰でも作れる小さな賞。友だちやクリエイター、今日をいい日にしてくれた人に贈ってみて。';
 
   @override
-  String get profileBadgeFooterLink => 'badges.divine.video で自分のバッジを作る';
+  String get profileBadgeFooterLink => '自分のバッジを作る';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';
@@ -10193,6 +10400,27 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get subtitleEditorProcessing => '字幕はまだ生成中だよ。少し待ってからもう一回見てね。';
+
+  @override
+  String get subtitleEditorNoSpeech => 'この動画からは話し声が見つからなかったよ。字幕にするものがないみたい。';
+
+  @override
+  String get subtitleEditorWriteOwn => '自分で書く';
+
+  @override
+  String get subtitleEditorAddCue => '行を追加';
+
+  @override
+  String get subtitleEditorRemoveCue => 'この行を削除';
+
+  @override
+  String get subtitleEditorStartLabel => '開始';
+
+  @override
+  String get subtitleEditorEndLabel => '終了';
+
+  @override
+  String get subtitleEditorInvalidHint => 'どの行にもテキストと、開始より後の終了時間が必要だよ。';
 
   @override
   String get subtitleEditorLoadError => '字幕を読み込めなかったよ。もう一回試してね。';

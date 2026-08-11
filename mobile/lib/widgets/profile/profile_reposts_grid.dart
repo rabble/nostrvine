@@ -154,48 +154,54 @@ class _RepostGridTile extends ConsumerWidget {
   final String userIdHex;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => GestureDetector(
-    onTap: () {
-      Log.info(
-        '🎯 ProfileRepostsGrid TAP: gridIndex=$index, '
-        'videoId=${videoEvent.id}',
-        category: LogCategory.video,
-      );
+  Widget build(BuildContext context, WidgetRef ref) => Semantics(
+    // The tile renders only a thumbnail, so without this it is a focusable,
+    // tappable node with an empty accessible name (#6951).
+    label: context.l10n.profileVideoThumbnailLabel(index + 1),
+    button: true,
+    child: GestureDetector(
+      onTap: () {
+        Log.info(
+          '🎯 ProfileRepostsGrid TAP: gridIndex=$index, '
+          'videoId=${videoEvent.id}',
+          category: LogCategory.video,
+        );
 
-      final bloc = context.read<ProfileRepostedVideosBloc>();
-      context.push(
-        PooledFullscreenVideoFeedScreen.pathForVideoId(videoEvent.id),
-        extra: PooledFullscreenVideoFeedArgs(
-          source: RepostsViewSource(userIdHex),
-          feedRepository: StreamFeedRepository(
-            videos: bloc.stream
-                .map((state) => state.videos)
-                .startWith(allVideos),
-            hasMore: bloc.stream
-                .map((state) => state.hasMoreContent)
-                .startWith(bloc.state.hasMoreContent),
-            onLoadMore: () async =>
-                bloc.add(const ProfileRepostedVideosLoadMoreRequested()),
+        final bloc = context.read<ProfileRepostedVideosBloc>();
+        context.push(
+          PooledFullscreenVideoFeedScreen.pathForVideoId(videoEvent.id),
+          extra: PooledFullscreenVideoFeedArgs(
+            source: RepostsViewSource(userIdHex),
+            feedRepository: StreamFeedRepository(
+              videos: bloc.stream
+                  .map((state) => state.videos)
+                  .startWith(allVideos),
+              hasMore: bloc.stream
+                  .map((state) => state.hasMoreContent)
+                  .startWith(bloc.state.hasMoreContent),
+              onLoadMore: () async =>
+                  bloc.add(const ProfileRepostedVideosLoadMoreRequested()),
+            ),
+            initialIndex: index,
+            initialVideoId: videoEvent.id,
+            trafficSource: ViewTrafficSource.profile,
           ),
-          initialIndex: index,
-          initialVideoId: videoEvent.id,
-          trafficSource: ViewTrafficSource.profile,
-        ),
-      );
+        );
 
-      Log.info(
-        '✅ ProfileRepostsGrid: Called pushVideoFeed with StaticFeedSource at '
-        'index $index',
-        category: LogCategory.video,
-      );
-    },
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(4),
-      child: DecoratedBox(
-        decoration: BoxDecoration(color: context.vineColors.card),
-        child: ProfileTabThumbnail(
-          thumbnailUrl: videoEvent.thumbnailUrl,
-          blurhash: videoEvent.blurhash,
+        Log.info(
+          '✅ ProfileRepostsGrid: Called pushVideoFeed with StaticFeedSource '
+          'at index $index',
+          category: LogCategory.video,
+        );
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: DecoratedBox(
+          decoration: BoxDecoration(color: context.vineColors.card),
+          child: ProfileTabThumbnail(
+            thumbnailUrl: videoEvent.thumbnailUrl,
+            blurhash: videoEvent.blurhash,
+          ),
         ),
       ),
     ),
