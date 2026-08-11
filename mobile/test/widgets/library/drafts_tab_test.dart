@@ -12,15 +12,31 @@ import 'package:openvine/blocs/drafts_library/drafts_library_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/l10n/generated/app_localizations_en.dart';
+import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
+import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/widgets/library/drafts_tab.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+// Override lives in riverpod's misc barrel; flutter_riverpod does not
+// re-export the type name even though it accepts List<Override>.
+import 'package:riverpod/misc.dart' show Override;
 
 class _MockDraftsLibraryBloc
     extends MockBloc<DraftsLibraryEvent, DraftsLibraryState>
     implements DraftsLibraryBloc {}
+
+/// Seeds a recording session without touching the notifier's real
+/// persistence dependencies.
+class _StubClipManagerNotifier extends ClipManagerNotifier {
+  _StubClipManagerNotifier(this._clips);
+
+  final List<DivineVideoClip> _clips;
+
+  @override
+  ClipManagerState build() => ClipManagerState(clips: _clips);
+}
 
 DivineVideoClip _createTestClip([String id = 'clip_1']) => DivineVideoClip(
   id: id,
@@ -65,8 +81,12 @@ void main() {
       mockBloc = _MockDraftsLibraryBloc();
     });
 
-    Widget buildWidget({bool isSelectionMode = true}) {
+    Widget buildWidget({
+      bool isSelectionMode = true,
+      List<Override> overrides = const [],
+    }) {
       return ProviderScope(
+        overrides: overrides,
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
@@ -195,6 +215,67 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text(en.libraryDraftActionPost), findsOneWidget);
+      });
+    });
+
+    group('open action', () {
+      // The recorder opens this list on top of a live session, and opening a
+      // draft resets the clip manager the recorder reads from. Without a
+      // confirmation the session disappears with no warning and no way back —
+      // the recorder's library hides the autosave draft.
+      testWidgets('confirms before an open would end a recording session', (
+        tester,
+      ) async {
+        when(
+          () => mockBloc.state,
+        ).thenReturn(DraftsLibraryLoaded(drafts: [createDraft(id: 'draft1')]));
+
+        await tester.pumpWidget(
+          buildWidget(
+            overrides: [
+              clipManagerProvider.overrideWith(
+                () => _StubClipManagerNotifier([_createTestClip()]),
+              ),
+            ],
+          ),
+        );
+        await tester.tap(find.byType(DraftListTile));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(en.libraryOpenDraftEndsRecordingTitle),
+          findsOneWidget,
+        );
+        expect(
+          find.text(en.libraryOpenDraftEndsRecordingMessage),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('keeps the recording when the confirmation is declined', (
+        tester,
+      ) async {
+        when(
+          () => mockBloc.state,
+        ).thenReturn(DraftsLibraryLoaded(drafts: [createDraft(id: 'draft1')]));
+
+        await tester.pumpWidget(
+          buildWidget(
+            overrides: [
+              clipManagerProvider.overrideWith(
+                () => _StubClipManagerNotifier([_createTestClip()]),
+              ),
+            ],
+          ),
+        );
+        await tester.tap(find.byType(DraftListTile));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text(en.libraryOpenDraftEndsRecordingCancel));
+        await tester.pumpAndSettle();
+
+        expect(find.text(en.libraryOpenDraftEndsRecordingTitle), findsNothing);
+        expect(find.byType(DraftListTile), findsOneWidget);
       });
     });
 

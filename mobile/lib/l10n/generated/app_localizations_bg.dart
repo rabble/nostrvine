@@ -6619,6 +6619,19 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
+  String get libraryOpenDraftEndsRecordingTitle => 'Leave this recording?';
+
+  @override
+  String get libraryOpenDraftEndsRecordingMessage =>
+      'Opening a draft ends the video you\'re working on. Your clips stay in your library.';
+
+  @override
+  String get libraryOpenDraftEndsRecordingConfirm => 'Open draft';
+
+  @override
+  String get libraryOpenDraftEndsRecordingCancel => 'Keep recording';
+
+  @override
   String get libraryDeleteDraftTitle => 'Изтрий чернова';
 
   @override

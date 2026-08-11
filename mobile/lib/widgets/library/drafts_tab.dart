@@ -12,6 +12,7 @@ import 'package:openvine/blocs/drafts_library/drafts_library_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_draft.dart';
+import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/utils/draft_copy_naming.dart';
@@ -227,6 +228,25 @@ class DraftsTab extends ConsumerWidget {
       name: 'DraftsTab',
       category: LogCategory.video,
     );
+
+    // Opening a draft resets the clip manager, so an unfinished recording
+    // session ends here. The recorder reads its clips straight from that
+    // provider and never reloads them, so without this the session would
+    // vanish silently — and the library the recorder opens hides the autosave
+    // draft, leaving no way back to it.
+    if (ref.read(clipManagerProvider).hasClips) {
+      final confirmed = await VineBottomSheetPrompt.show<bool>(
+        context: context,
+        sticker: .alert,
+        title: context.l10n.libraryOpenDraftEndsRecordingTitle,
+        subtitle: context.l10n.libraryOpenDraftEndsRecordingMessage,
+        primaryButtonText: context.l10n.libraryOpenDraftEndsRecordingConfirm,
+        secondaryButtonText: context.l10n.libraryOpenDraftEndsRecordingCancel,
+        onPrimaryPressed: () => Navigator.of(context).pop(true),
+        onSecondaryPressed: () => Navigator.of(context).pop(false),
+      );
+      if (confirmed != true || !context.mounted) return;
+    }
 
     await ref
         .read(videoPublishProvider.notifier)

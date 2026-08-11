@@ -402,6 +402,12 @@ void main() {
 
 // Add keys here only when a translation pass is intentionally deferred.
 const _knownUntranslatedDebt = <String>{
+  // Confirmation shown before opening a draft ends an unfinished recording
+  // session; translation is deferred to the next library localization pass.
+  'libraryOpenDraftEndsRecordingTitle',
+  'libraryOpenDraftEndsRecordingMessage',
+  'libraryOpenDraftEndsRecordingConfirm',
+  'libraryOpenDraftEndsRecordingCancel',
   // Warning shown when a requested reusable sound fails to publish; translation
   // is deferred to the next sound-library localization pass.
   'publishAudioReuseDegradedWarning',
