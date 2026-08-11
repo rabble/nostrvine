@@ -4,7 +4,6 @@
 export 'package:verifier_client/verifier_client.dart'
     show
         IdentityClaim,
-        OAuthVerificationStatus,
         VerificationResult,
         VerifierApiException,
         VerifierClient,

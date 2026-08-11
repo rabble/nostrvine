@@ -214,19 +214,11 @@ class _VerifyContent extends StatelessWidget {
               ),
             ),
           for (final claim in claims)
-            VerifyClaimRow(
+            _linkedClaimRow(
               claim: claim,
-              isVerified: verifiedKeys.contains(
-                '${claim.platform.toLowerCase()}:'
-                '${claim.identity.toLowerCase()}',
-              ),
-              isRemoving:
-                  removingKey ==
-                  '${claim.platform.toLowerCase()}:'
-                      '${claim.identity.toLowerCase()}',
-              onRemove: removingKey != null
-                  ? null
-                  : () => _confirmRemove(context, claim),
+              verifiedKeys: verifiedKeys,
+              removingKey: removingKey,
+              onRemove: () => _confirmRemove(context, claim),
             ),
           const SizedBox(height: 24),
         ],
@@ -243,6 +235,21 @@ class _VerifyContent extends StatelessWidget {
               onTap: () => _openConnect(context, platform),
             ),
       ],
+    );
+  }
+
+  Widget _linkedClaimRow({
+    required IdentityClaim claim,
+    required Set<String> verifiedKeys,
+    required String? removingKey,
+    required VoidCallback onRemove,
+  }) {
+    final key = VerifyState.keyOf(claim);
+    return VerifyClaimRow(
+      claim: claim,
+      isVerified: verifiedKeys.contains(key),
+      isRemoving: removingKey == key,
+      onRemove: removingKey != null ? null : onRemove,
     );
   }
 

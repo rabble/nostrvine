@@ -452,66 +452,6 @@ void main() {
       );
     });
 
-    group('oauthStatus', () {
-      test('parses a verified status', () async {
-        final mock = MockClient((req) async {
-          expect(req.method, equals('GET'));
-          expect(req.url.path, equals('/auth/twitter/status'));
-          expect(req.url.queryParameters['pubkey'], equals(_hex));
-          expect(req.url.queryParameters['identity'], equals('jack'));
-          return http.Response(
-            jsonEncode({
-              'platform': 'twitter',
-              'identity': 'jack',
-              'verified': true,
-              'checked_at': 42,
-            }),
-            200,
-          );
-        });
-        final client = VerifierClient(
-          baseUrl: 'https://verifier.example',
-          httpClient: mock,
-        );
-
-        final status = await client.oauthStatus(
-          platform: 'twitter',
-          pubkey: _hex,
-          identity: 'jack',
-        );
-
-        expect(status.verified, isTrue);
-        expect(status.checkedAt, equals(42));
-      });
-
-      test('parses an unverified status without checked_at', () async {
-        final mock = MockClient(
-          (_) async => http.Response(
-            jsonEncode({
-              'platform': 'twitter',
-              'identity': 'jack',
-              'verified': false,
-              'method': null,
-            }),
-            200,
-          ),
-        );
-        final client = VerifierClient(
-          baseUrl: 'https://verifier.example',
-          httpClient: mock,
-        );
-
-        final status = await client.oauthStatus(
-          platform: 'twitter',
-          pubkey: _hex,
-          identity: 'jack',
-        );
-
-        expect(status.verified, isFalse);
-        expect(status.checkedAt, isNull);
-      });
-    });
-
     group('revokeOAuth', () {
       test('posts the claim and the NIP-98 event', () async {
         var called = false;

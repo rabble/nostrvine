@@ -8,25 +8,10 @@ import 'package:openvine/repositories/crossposting_repository.dart';
 import 'package:openvine/services/auth_service.dart' show AuthState;
 import 'package:openvine/services/crossposting_api_client.dart';
 
-/// Whether [systemVersion] (e.g. "17.4.1") meets the iOS OAuth floor.
-///
-/// Alias of [iosVersionSupportsAppOAuth] — the floor is a property of the
-/// shared callback, not of crossposting.
-const bool Function(String) iosVersionSupportsCrosspostingOAuth =
-    iosVersionSupportsAppOAuth;
-
-/// Whether the current platform can deliver the HTTPS OAuth callback the
-/// crossposting connect flow depends on.
-///
-/// Alias of [appOAuthSupportProvider]; see it for the iOS 17.4 rationale.
-final FutureProvider<bool> crosspostingOAuthSupportProvider =
-    appOAuthSupportProvider;
-
 final crosspostingEligibleProvider = Provider<bool>((ref) {
   // Hidden entirely while the platform's OAuth callback path is unknown or
   // unreliable (iOS < 17.4) — offering the flow there fails mid-session.
-  final oauthSupported =
-      ref.watch(crosspostingOAuthSupportProvider).value ?? false;
+  final oauthSupported = ref.watch(appOAuthSupportProvider).value ?? false;
   if (!oauthSupported) return false;
   final authState = ref.watch(currentAuthStateProvider);
   final authService = ref.watch(authServiceProvider);

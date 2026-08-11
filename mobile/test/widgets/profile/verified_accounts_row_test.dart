@@ -19,9 +19,7 @@ Widget _wrap(Widget child) => MaterialApp(
 void main() {
   group(VerifiedAccountsRow, () {
     testWidgets('renders no chips when claims is empty', (tester) async {
-      await tester.pumpWidget(
-        _wrap(const VerifiedAccountsRow(claims: [])),
-      );
+      await tester.pumpWidget(_wrap(const VerifiedAccountsRow(claims: [])));
       await tester.pump();
       expect(find.byType(VerifiedAccountChip), findsNothing);
     });
@@ -49,6 +47,68 @@ void main() {
       );
       await tester.pump();
       expect(find.byType(VerifiedAccountChip), findsNWidgets(2));
+    });
+
+    testWidgets('does not add inset or centering unless requested', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          const SizedBox(
+            width: 320,
+            child: VerifiedAccountsRow(
+              claims: [
+                IdentityClaim(
+                  pubkey: _hex64,
+                  platform: 'github',
+                  identity: 'octocat',
+                  proof: 'abc',
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final rowLeft = tester.getTopLeft(find.byType(VerifiedAccountsRow)).dx;
+      final chipLeft = tester.getTopLeft(find.byType(VerifiedAccountChip)).dx;
+      expect(chipLeft, rowLeft);
+    });
+
+    testWidgets('can center and inset the profile-header row', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const SizedBox(
+            width: 320,
+            child: VerifiedAccountsRow(
+              claims: [
+                IdentityClaim(
+                  pubkey: _hex64,
+                  platform: 'github',
+                  identity: 'octocat',
+                  proof: 'abc',
+                ),
+              ],
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              center: true,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final scroll = tester.widget<SingleChildScrollView>(
+        find.byType(SingleChildScrollView),
+      );
+      expect(scroll.padding, const EdgeInsets.symmetric(horizontal: 16));
+      expect(
+        find.ancestor(
+          of: find.byType(SingleChildScrollView),
+          matching: find.byType(Center),
+        ),
+        findsWidgets,
+      );
     });
   });
 }

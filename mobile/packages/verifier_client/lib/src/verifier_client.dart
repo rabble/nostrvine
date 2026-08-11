@@ -9,7 +9,6 @@ import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 import 'package:verifier_client/src/exceptions.dart';
 import 'package:verifier_client/src/models/identity_claim.dart';
-import 'package:verifier_client/src/models/oauth_verification_status.dart';
 import 'package:verifier_client/src/models/verification_result.dart';
 import 'package:verifier_client/src/models/verifier_platform.dart';
 
@@ -204,21 +203,6 @@ class VerifierClient {
     // The session has to land on the provider, not on whatever scheme a
     // malformed Location happens to name.
     return target.scheme == 'https' ? target : null;
-  }
-
-  /// Reads whether the verifier still holds an OAuth verification for a claim.
-  ///
-  /// Throws the same exceptions as [verifyBatch].
-  Future<OAuthVerificationStatus> oauthStatus({
-    required String platform,
-    required String pubkey,
-    required String identity,
-  }) async {
-    final json = await _get(
-      '/auth/$platform/status',
-      query: {'pubkey': pubkey, 'identity': identity},
-    );
-    return OAuthVerificationStatus.fromJson(json);
   }
 
   /// Drops the verifier's cached OAuth verification for a claim.

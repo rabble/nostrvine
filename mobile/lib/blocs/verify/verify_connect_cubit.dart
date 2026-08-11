@@ -7,6 +7,7 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:openvine/blocs/verify/verify_proof_input.dart';
 import 'package:profile_repository/profile_repository.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'verify_connect_state.dart';
 
@@ -86,12 +87,10 @@ class VerifyConnectCubit extends Cubit<VerifyConnectState> {
       // found") but free-form English, so it guides triage rather than the
       // user. Dropping it entirely leaves a rejection with no way to tell
       // which of the two happened.
-      addError(
-        StateError(
-          'Verifier rejected ${claim.platform}:${claim.identity} — '
-          '${result.error ?? 'no reason given'}',
-        ),
-        StackTrace.current,
+      Log.warning(
+        'Verifier rejected ${claim.platform}:${claim.identity}: '
+        '${result.error ?? 'no reason given'}',
+        name: 'VerifyConnectCubit',
       );
       return _fail(VerifyConnectError.proofRejected);
     }
@@ -150,12 +149,10 @@ class VerifyConnectCubit extends Cubit<VerifyConnectState> {
     if (params['oauth_verified'] != 'true' || identity.isEmpty) {
       // The verifier's reason is free-form and not fit to show, but without it
       // in the log a provider-side refusal is undiagnosable.
-      addError(
-        StateError(
-          'Verifier OAuth refused ${state.platform.key}: '
-          '${params['oauth_error'] ?? 'no reason given'}',
-        ),
-        StackTrace.current,
+      Log.warning(
+        'Verifier OAuth refused ${state.platform.key}: '
+        '${params['oauth_error'] ?? 'no reason given'}',
+        name: 'VerifyConnectCubit',
       );
       return _fail(VerifyConnectError.oauthFailed);
     }

@@ -1254,27 +1254,6 @@ void main() {
       });
     }
 
-    group('currentClaims', () {
-      test('parses every claim on the identity event', () async {
-        stubIdentityEvents([
-          _event(
-            id: _eventId(10),
-            kind: 10011,
-            tags: [
-              ['i', 'github:octocat', 'abc'],
-              ['i', 'twitter:jack', 'oauth'],
-            ],
-          ),
-        ]);
-
-        final claims = await repo.currentClaims(_pubkey);
-
-        expect(claims, hasLength(2));
-        expect(claims.first.platform, equals('github'));
-        expect(claims.last.identity, equals('jack'));
-      });
-    });
-
     group('claimsWithVerdicts', () {
       setUp(() {
         stubIdentityEvents([
@@ -1393,7 +1372,14 @@ void main() {
       );
 
       test('does not reconnect when the pool is already up', () async {
-        await repo.currentClaims(_pubkey);
+        await repo.publishClaim(
+          const IdentityClaim(
+            pubkey: _pubkey,
+            platform: 'github',
+            identity: 'octocat',
+            proof: 'abc',
+          ),
+        );
 
         verifyNever(() => nostrClient.retryDisconnectedRelays());
       });
@@ -1437,10 +1423,14 @@ void main() {
             sourceKind: 10011,
           ),
         );
+        when(
+          () => client.verifyBatch(any()),
+        ).thenThrow(const VerifierNetworkException('offline'));
 
-        final claims = await repo.currentClaims(_pubkey);
+        final status = await repo.claimsWithVerdicts(_pubkey);
 
-        expect(claims.single.platform, equals('github'));
+        expect(status.claims.single.platform, equals('github'));
+        expect(status.verifierReachable, isFalse);
       });
     });
 
@@ -1527,9 +1517,17 @@ void main() {
       test('shows the last known links instead of an empty list', () async {
         // A list that empties itself on a relay hiccup reads as "my links are
         // gone", which is worse than showing a slightly stale set.
-        final claims = await repo.currentClaims(_pubkey);
+        when(
+          () => client.verifyBatch(any()),
+        ).thenThrow(const VerifierNetworkException('offline'));
 
-        expect(claims.map((c) => c.platform), equals(['github', 'telegram']));
+        final status = await repo.claimsWithVerdicts(_pubkey);
+
+        expect(
+          status.claims.map((c) => c.platform),
+          equals(['github', 'telegram']),
+        );
+        expect(status.verifierReachable, isFalse);
       });
 
       test('still refuses to write over them', () async {
@@ -2274,10 +2272,7 @@ void main() {
           expect(tags.map((t) => t[1]), isNot(contains('github:octocat')));
           expect(
             tags.map((t) => t[1]),
-            containsAll(<String>[
-              'bluesky:alice.bsky.social',
-              'telegram:chan',
-            ]),
+            containsAll(<String>['bluesky:alice.bsky.social', 'telegram:chan']),
           );
         },
       );

@@ -321,23 +321,6 @@ class IdentityClaimsRepository {
     return outcome.verified;
   }
 
-  /// Reads the claims currently on [pubkey]'s identity event, verified or
-  /// not.
-  ///
-  /// The rendering paths deliberately surface only verified claims; the
-  /// manage-your-links surface needs the unverified ones too, since a claim
-  /// that stopped verifying is exactly the one a user came to fix.
-  ///
-  /// Throws [StateError] if the repository was built without write
-  /// dependencies — this reads through the same uncached relay query the
-  /// write path builds on.
-  Future<List<IdentityClaim>> currentClaims(String pubkey) async {
-    return parseClaims(
-      pubkey,
-      await _currentIdentityTags(pubkey, forWrite: false),
-    );
-  }
-
   /// Reads [pubkey]'s claims together with the verifier's verdict on each.
   ///
   /// A verifier that cannot be reached is not a failure here: the links are

@@ -364,20 +364,19 @@ void main() {
       );
 
       blocTest<VerifyConnectCubit, VerifyConnectState>(
-        'logs the provider reason a refusal came back with',
+        'keeps an expected provider refusal out of Bloc errors',
         build: () => build(_twitter),
         setUp: () => callback = Uri.parse(
           '$_returnUrl?oauth_error=Verification%20failed',
         ),
         act: (cubit) => cubit.connectWithOAuth(),
-        // Free-form and not fit to show, but undiagnosable if it is dropped.
-        errors: () => [
-          isA<StateError>().having(
-            (e) => e.message,
-            'message',
-            allOf(contains('twitter'), contains('Verification failed')),
-          ),
-        ],
+        verify: (cubit) {
+          expect(cubit.state.error, equals(VerifyConnectError.oauthFailed));
+        },
+        // Free-form verifier refusals are expected domain outcomes. They are
+        // warning logs, not Bloc errors, so they cannot be misclassified as
+        // reportable StateErrors by DivineBlocObserver.
+        errors: () => const [],
       );
 
       blocTest<VerifyConnectCubit, VerifyConnectState>(
