@@ -5,23 +5,38 @@
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:unified_logger/unified_logger.dart';
+
+/// User-facing class of an account deletion failure.
+enum DeleteAccountFailureReason {
+  notAuthenticated,
+  noPubkey,
+  signingFailed,
+  vanishNotConfirmed,
+  accountChanged,
+  unexpected,
+}
 
 /// Result of account deletion operation
 class DeleteAccountResult {
   const DeleteAccountResult({
     required this.success,
-    this.error,
+    this.failureReason,
+    this.diagnosticError,
     this.deleteEventId,
     this.deletedEventsCount = 0,
-    this.accountChanged = false,
     this.contentQueryFailed = false,
     this.contentDeletionIncomplete = false,
   });
 
   final bool success;
-  final String? error;
+  final DeleteAccountFailureReason? failureReason;
+
+  /// Diagnostic detail for logs/tests only. UI must localize [failureReason].
+  final String? diagnosticError;
+
   final String? deleteEventId;
 
   /// Number of events a relay actually confirmed (`OK true`) a kind-5 deletion
@@ -40,11 +55,6 @@ class DeleteAccountResult {
   /// deletion request.
   final bool contentDeletionIncomplete;
 
-  /// True when the deletion aborted because the signed-in account no longer
-  /// matches the account the user confirmed. Lets the UI localize the outcome
-  /// rather than surfacing the raw abort string.
-  final bool accountChanged;
-
   static DeleteAccountResult createSuccess(
     String deleteEventId, {
     int deletedEventsCount = 0,
@@ -59,12 +69,12 @@ class DeleteAccountResult {
   );
 
   static DeleteAccountResult failure(
-    String error, {
-    bool accountChanged = false,
+    DeleteAccountFailureReason reason, {
+    String? diagnosticError,
   }) => DeleteAccountResult(
     success: false,
-    error: error,
-    accountChanged: accountChanged,
+    failureReason: reason,
+    diagnosticError: diagnosticError,
   );
 }
 
@@ -77,16 +87,37 @@ class AccountChangedDuringDeletion implements Exception {
   String toString() => 'AccountChangedDuringDeletion';
 }
 
+class _VanishPublishConfig {
+  const _VanishPublishConfig({
+    required this.maxAttempts,
+    required this.timeout,
+    required this.retryDelays,
+  }) : assert(maxAttempts > 0);
+
+  final int maxAttempts;
+  final Duration timeout;
+  final List<Duration> retryDelays;
+}
+
 /// Service for deleting user's entire Nostr account via NIP-62
 class AccountDeletionService {
   AccountDeletionService({
     required NostrClient nostrService,
     required AuthService authService,
+    Future<void> Function(Duration duration)? retryDelay,
   }) : _nostrService = nostrService,
-       _authService = authService;
+       _authService = authService,
+       _retryDelay = retryDelay ?? Future<void>.delayed;
 
   final NostrClient _nostrService;
   final AuthService _authService;
+  final Future<void> Function(Duration duration) _retryDelay;
+
+  static const _vanishPublish = _VanishPublishConfig(
+    maxAttempts: 3,
+    timeout: Duration(seconds: 30),
+    retryDelays: [Duration(seconds: 2), Duration(seconds: 5)],
+  );
 
   /// Kinds this flow's own deletion machinery produces, excluded from the sweep.
   ///
@@ -123,17 +154,23 @@ class AccountDeletionService {
   }) async {
     try {
       if (!_authService.isAuthenticated) {
-        return DeleteAccountResult.failure('Not authenticated');
+        return DeleteAccountResult.failure(
+          DeleteAccountFailureReason.notAuthenticated,
+          diagnosticError: 'Not authenticated',
+        );
       }
 
       final pubkey = _authService.currentPublicKeyHex;
       if (pubkey == null || pubkey.isEmpty) {
-        return DeleteAccountResult.failure('No pubkey available');
+        return DeleteAccountResult.failure(
+          DeleteAccountFailureReason.noPubkey,
+          diagnosticError: 'No pubkey available',
+        );
       }
       if (expectedPubkey != null && pubkey != expectedPubkey) {
         return DeleteAccountResult.failure(
-          'Signed-in account changed; deletion aborted',
-          accountChanged: true,
+          DeleteAccountFailureReason.accountChanged,
+          diagnosticError: 'Signed-in account changed; deletion aborted',
         );
       }
 
@@ -178,7 +215,10 @@ class AccountDeletionService {
       );
 
       if (event == null) {
-        return DeleteAccountResult.failure('Failed to create deletion event');
+        return DeleteAccountResult.failure(
+          DeleteAccountFailureReason.signingFailed,
+          diagnosticError: 'Failed to create deletion event',
+        );
       }
 
       // Final guard immediately before the network-wide kind-62 publish.
@@ -186,9 +226,12 @@ class AccountDeletionService {
       // Await the relay `OK` rather than the socket write: this event is
       // irreversible and legally framed, so "a WebSocket accepted the frame" is
       // not good enough evidence to report deletion to the user.
-      final outcome = await _nostrService.publishEventAwaitOk(event);
+      final outcome = await _publishVanishWithRetry(
+        event,
+        expectedPubkey: expectedPubkey,
+      );
 
-      if (outcome.failed) {
+      if (outcome.failed && !_isAlreadyVanishedOutcome(outcome)) {
         Log.error(
           'NIP-62 deletion request not confirmed by any relay: '
           '${outcome.summary}',
@@ -196,12 +239,17 @@ class AccountDeletionService {
           category: LogCategory.system,
         );
         return DeleteAccountResult.failure(
-          'Failed to publish deletion request to relays',
+          DeleteAccountFailureReason.vanishNotConfirmed,
+          diagnosticError: outcome.summary,
         );
       }
 
       Log.info(
-        'NIP-62 deletion request confirmed by relay(s): ${outcome.acceptedBy}',
+        outcome.confirmed
+            ? 'NIP-62 deletion request confirmed by relay(s): '
+                  '${outcome.acceptedBy}'
+            : 'NIP-62 deletion already accepted by relay(s): '
+                  '${outcome.rejectedBy}',
         name: 'AccountDeletionService',
         category: LogCategory.system,
       );
@@ -220,8 +268,8 @@ class AccountDeletionService {
         category: LogCategory.auth,
       );
       return DeleteAccountResult.failure(
-        'Signed-in account changed; deletion aborted',
-        accountChanged: true,
+        DeleteAccountFailureReason.accountChanged,
+        diagnosticError: 'Signed-in account changed; deletion aborted',
       );
     } catch (e) {
       Log.error(
@@ -229,8 +277,55 @@ class AccountDeletionService {
         name: 'AccountDeletionService',
         category: LogCategory.system,
       );
-      return DeleteAccountResult.failure('Account deletion failed: $e');
+      return DeleteAccountResult.failure(
+        DeleteAccountFailureReason.unexpected,
+        diagnosticError: e.toString(),
+      );
     }
+  }
+
+  Future<PublishOutcome> _publishVanishWithRetry(
+    Event event, {
+    String? expectedPubkey,
+  }) async {
+    PublishOutcome? lastOutcome;
+
+    for (var attempt = 1; attempt <= _vanishPublish.maxAttempts; attempt++) {
+      final outcome = await _nostrService.publishEventAwaitOk(
+        event,
+        timeout: _vanishPublish.timeout,
+      );
+
+      if (outcome.confirmed || _isAlreadyVanishedOutcome(outcome)) {
+        return outcome;
+      }
+
+      lastOutcome = outcome;
+      if (attempt == _vanishPublish.maxAttempts) {
+        break;
+      }
+
+      Log.warning(
+        'NIP-62 deletion request not confirmed on attempt $attempt/'
+        '${_vanishPublish.maxAttempts}: ${outcome.summary}',
+        name: 'AccountDeletionService',
+        category: LogCategory.system,
+      );
+      await _retryDelay(_vanishPublish.retryDelays[attempt - 1]);
+      _assertSignerMatches(expectedPubkey);
+    }
+
+    return lastOutcome!;
+  }
+
+  static bool _isAlreadyVanishedOutcome(PublishOutcome outcome) =>
+      outcome.rejectedBy.values.any(_isAlreadyVanishedReason);
+
+  static bool _isAlreadyVanishedReason(String reason) {
+    final normalized = reason.toLowerCase();
+    return normalized.startsWith('duplicate:') ||
+        normalized.contains('already vanished') ||
+        normalized.contains('already have this event');
   }
 
   /// The value of an event's first `d` tag, or `null` when it has none.

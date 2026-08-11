@@ -4773,6 +4773,8 @@
     "deleteAccountConfirmationHintUsername": "Typ je gebruikersnaam",
     "@deleteAccountConfirmationHintUsername": {"description": "Hint text in the delete-confirmation field when the user must type their username."},
     "deleteAccountContentDeletionFailed": "Inhoud verwijderen van relays mislukt",
+  "deleteAccountRelayConfirmationFailed": "We couldn't confirm account deletion with a relay. Check your connection and try again.",
+  "@deleteAccountRelayConfirmationFailed": {"description": "Error shown when the NIP-62 account deletion request could not be confirmed by any relay after bounded retries; account deletion could not proceed to server cleanup or sign-out."},
     "deleteAccountDeleteAllContentButton": "Alle inhoud verwijderen",
     "deleteAccountDeletionIncomplete": "We konden je account niet volledig verwijderen. Probeer het opnieuw.",
     "@deleteAccountDeletionIncomplete": {"description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."},

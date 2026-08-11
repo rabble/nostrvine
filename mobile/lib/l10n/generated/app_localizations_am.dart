@@ -7077,6 +7077,10 @@ class AppLocalizationsAm extends AppLocalizations {
       'ይዘትን ከማስተላለፊያዎች መሰረዝ አልተሳካም';
 
   @override
+  String get deleteAccountRelayConfirmationFailed =>
+      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
+
+  @override
   String get deleteAccountDeleteAllContentButton => 'ሁሉንም ይዘት ሰርዝ';
 
   @override

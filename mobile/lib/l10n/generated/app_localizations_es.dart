@@ -7295,6 +7295,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudo eliminar el contenido de los relays';
 
   @override
+  String get deleteAccountRelayConfirmationFailed =>
+      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
+
+  @override
   String get deleteAccountDeleteAllContentButton =>
       'Eliminar todo el contenido';
 

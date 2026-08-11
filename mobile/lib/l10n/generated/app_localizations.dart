@@ -12557,6 +12557,12 @@ abstract class AppLocalizations {
   /// **'Failed to delete content from relays'**
   String get deleteAccountContentDeletionFailed;
 
+  /// Error shown when the NIP-62 account deletion request could not be confirmed by any relay after bounded retries; account deletion could not proceed to server cleanup or sign-out.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t confirm account deletion with a relay. Check your connection and try again.'**
+  String get deleteAccountRelayConfirmationFailed;
+
   /// No description provided for @deleteAccountDeleteAllContentButton.
   ///
   /// In en, this message translates to:

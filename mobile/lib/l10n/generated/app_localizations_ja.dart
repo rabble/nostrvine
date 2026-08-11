@@ -6907,6 +6907,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get deleteAccountContentDeletionFailed => 'リレーからのコンテンツ削除に失敗したよ';
 
   @override
+  String get deleteAccountRelayConfirmationFailed =>
+      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
+
+  @override
   String get deleteAccountDeleteAllContentButton => 'すべてのコンテンツを削除';
 
   @override

@@ -7301,6 +7301,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Неуспешно изтриване на съдържание от релетата';
 
   @override
+  String get deleteAccountRelayConfirmationFailed =>
+      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
+
+  @override
   String get deleteAccountDeleteAllContentButton => 'Изтрий цялото съдържание';
 
   @override

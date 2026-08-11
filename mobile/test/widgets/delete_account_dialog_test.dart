@@ -605,6 +605,61 @@ void main() {
   });
 
   group('executeAccountDeletion', () {
+    testWidgets(
+      'localizes relay confirmation failure without surfacing raw service text',
+      (tester) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        when(
+          authService.checkAccountDeletionReadiness,
+        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+        when(
+          () => deletionService.deleteAccount(
+            onProgress: any(named: 'onProgress'),
+            expectedPubkey: any(named: 'expectedPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => DeleteAccountResult.failure(
+            DeleteAccountFailureReason.vanishNotConfirmed,
+            diagnosticError: 'Failed to publish deletion request to relays',
+          ),
+        );
+
+        late BuildContext capturedContext;
+        await tester.pumpWidget(
+          _wrapWithRouter(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const Scaffold(body: SizedBox.shrink());
+              },
+            ),
+          ),
+        );
+
+        await executeAccountDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = _englishL10n();
+        expect(
+          find.text(l10n.deleteAccountRelayConfirmationFailed),
+          findsOneWidget,
+        );
+        expect(
+          find.text('Failed to publish deletion request to relays'),
+          findsNothing,
+        );
+        expect(
+          find.text(l10n.deleteAccountContentDeletionFailed),
+          findsNothing,
+        );
+      },
+    );
+
     testWidgets('shows failure when local data cleanup fails after sign-out', (
       tester,
     ) async {
@@ -889,7 +944,12 @@ void main() {
           () => deletionService.deleteAccount(
             onProgress: any(named: 'onProgress'),
           ),
-        ).thenAnswer((_) async => DeleteAccountResult.failure('relay down'));
+        ).thenAnswer(
+          (_) async => DeleteAccountResult.failure(
+            DeleteAccountFailureReason.vanishNotConfirmed,
+            diagnosticError: 'relay down',
+          ),
+        );
 
         late BuildContext capturedContext;
         await tester.pumpWidget(
@@ -1489,8 +1549,8 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => DeleteAccountResult.failure(
-            'Signed-in account changed; deletion aborted',
-            accountChanged: true,
+            DeleteAccountFailureReason.accountChanged,
+            diagnosticError: 'Signed-in account changed; deletion aborted',
           ),
         );
 

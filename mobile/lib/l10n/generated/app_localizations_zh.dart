@@ -6877,6 +6877,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get deleteAccountContentDeletionFailed => '从中继删除内容失败';
 
   @override
+  String get deleteAccountRelayConfirmationFailed =>
+      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
+
+  @override
   String get deleteAccountDeleteAllContentButton => '删除所有内容';
 
   @override

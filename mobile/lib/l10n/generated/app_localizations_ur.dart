@@ -7228,6 +7228,10 @@ class AppLocalizationsUr extends AppLocalizations {
       'ریلے سے مواد حذف نہیں ہو سکا';
 
   @override
+  String get deleteAccountRelayConfirmationFailed =>
+      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
+
+  @override
   String get deleteAccountDeleteAllContentButton => 'تمام مواد حذف کریں';
 
   @override

@@ -7238,6 +7238,10 @@ class AppLocalizationsVi extends AppLocalizations {
       'Không xóa được nội dung khỏi các relay';
 
   @override
+  String get deleteAccountRelayConfirmationFailed =>
+      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
+
+  @override
   String get deleteAccountDeleteAllContentButton => 'Xóa tất cả nội dung';
 
   @override

@@ -7222,6 +7222,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Kunde inte ta bort innehåll från relerna';
 
   @override
+  String get deleteAccountRelayConfirmationFailed =>
+      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
+
+  @override
   String get deleteAccountDeleteAllContentButton => 'Ta bort allt innehåll';
 
   @override

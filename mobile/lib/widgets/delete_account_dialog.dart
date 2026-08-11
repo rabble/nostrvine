@@ -502,6 +502,8 @@ Future<void> executeAccountDeletion({
   final accountChangedText = context.l10n.deleteAccountAccountChanged;
   final burnUsernameFailedText = context.l10n.deleteAccountBurnUsernameFailed;
   final deletionIncompleteText = context.l10n.deleteAccountDeletionIncomplete;
+  final relayConfirmationFailedText =
+      context.l10n.deleteAccountRelayConfirmationFailed;
   final handleLabel = ownedUsername != null
       ? '@${ownedUsername.name}.divine.video'
       : null;
@@ -752,9 +754,14 @@ Future<void> executeAccountDeletion({
       if (context.mounted) {
         final text = (burnCommitted && burnReleasedText != null)
             ? burnReleasedText
-            : result.accountChanged
-            ? accountChangedText
-            : (result.error ?? context.l10n.deleteAccountContentDeletionFailed);
+            : _deleteAccountFailureText(
+                result.failureReason,
+                accountChangedText: accountChangedText,
+                relayConfirmationFailedText: relayConfirmationFailedText,
+                reauthRequiredText: context.l10n.deleteAccountReauthRequired,
+                genericFailureText:
+                    context.l10n.deleteAccountContentDeletionFailed,
+              );
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(DivineSnackbarContainer.snackBar(text, error: true));
@@ -767,6 +774,25 @@ Future<void> executeAccountDeletion({
     // Ensure the progress sheet is dismissed even if an exception occurred.
     dismissProgressSheet();
   }
+}
+
+String _deleteAccountFailureText(
+  DeleteAccountFailureReason? reason, {
+  required String accountChangedText,
+  required String relayConfirmationFailedText,
+  required String reauthRequiredText,
+  required String genericFailureText,
+}) {
+  return switch (reason) {
+    DeleteAccountFailureReason.accountChanged => accountChangedText,
+    DeleteAccountFailureReason.vanishNotConfirmed =>
+      relayConfirmationFailedText,
+    DeleteAccountFailureReason.notAuthenticated => reauthRequiredText,
+    DeleteAccountFailureReason.noPubkey ||
+    DeleteAccountFailureReason.signingFailed ||
+    DeleteAccountFailureReason.unexpected ||
+    null => genericFailureText,
+  };
 }
 
 /// Cubit for managing account deletion progress state.

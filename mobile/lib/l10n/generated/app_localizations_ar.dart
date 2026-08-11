@@ -7175,6 +7175,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'فشل حذف المحتوى من المحوّلات';
 
   @override
+  String get deleteAccountRelayConfirmationFailed =>
+      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
+
+  @override
   String get deleteAccountDeleteAllContentButton => 'حذف كل المحتوى';
 
   @override

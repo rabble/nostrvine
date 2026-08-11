@@ -7311,6 +7311,10 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi nabura ang content mula sa mga relay';
 
   @override
+  String get deleteAccountRelayConfirmationFailed =>
+      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
+
+  @override
   String get deleteAccountDeleteAllContentButton => 'Burahin Lahat ng Content';
 
   @override

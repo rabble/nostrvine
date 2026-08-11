@@ -7258,6 +7258,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Inhoud verwijderen van relays mislukt';
 
   @override
+  String get deleteAccountRelayConfirmationFailed =>
+      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
+
+  @override
   String get deleteAccountDeleteAllContentButton => 'Alle inhoud verwijderen';
 
   @override

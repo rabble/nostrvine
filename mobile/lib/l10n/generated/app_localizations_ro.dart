@@ -7395,6 +7395,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu am putut șterge conținutul de pe relay-uri';
 
   @override
+  String get deleteAccountRelayConfirmationFailed =>
+      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
+
+  @override
   String get deleteAccountDeleteAllContentButton => 'Șterge tot conținutul';
 
   @override

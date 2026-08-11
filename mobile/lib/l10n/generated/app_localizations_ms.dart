@@ -7277,6 +7277,10 @@ class AppLocalizationsMs extends AppLocalizations {
       'Gagal memadam kandungan daripada relay';
 
   @override
+  String get deleteAccountRelayConfirmationFailed =>
+      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
+
+  @override
   String get deleteAccountDeleteAllContentButton => 'Padam Semua Kandungan';
 
   @override

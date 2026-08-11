@@ -4169,6 +4169,8 @@
     "description": "Hint text in the delete-confirmation field when the user must type their username."
   },
   "deleteAccountContentDeletionFailed": "Không xóa được nội dung khỏi các relay",
+  "deleteAccountRelayConfirmationFailed": "We couldn't confirm account deletion with a relay. Check your connection and try again.",
+  "@deleteAccountRelayConfirmationFailed": {"description": "Error shown when the NIP-62 account deletion request could not be confirmed by any relay after bounded retries; account deletion could not proceed to server cleanup or sign-out."},
   "deleteAccountDeleteAllContentButton": "Xóa tất cả nội dung",
   "deleteAccountDeletionIncomplete": "Bọn mình chưa xóa xong tài khoản của bạn. Thử lại nhé.",
   "@deleteAccountDeletionIncomplete": {

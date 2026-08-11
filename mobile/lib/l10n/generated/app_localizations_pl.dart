@@ -7393,6 +7393,10 @@ class AppLocalizationsPl extends AppLocalizations {
       'Nie udało się usunąć treści z przekaźników';
 
   @override
+  String get deleteAccountRelayConfirmationFailed =>
+      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
+
+  @override
   String get deleteAccountDeleteAllContentButton => 'Usuń wszystkie treści';
 
   @override
