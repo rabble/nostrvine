@@ -1851,6 +1851,56 @@ void main() {
       );
 
       test(
+        'chunks the cold-cache deletion probe so no REQ exceeds the frame '
+        'limit',
+        () async {
+          // 600 live relay downvotes on one target force the Kind 5 probe
+          // into 2 `#e` chunks (500 + 100) — this was the last query leg in
+          // the file still building its filter unchunked.
+          repository = createRepository(withLocalStorage: false);
+          final reactions = [
+            for (var i = 0; i < 600; i++)
+              createMockReaction(
+                id: 'downvote_$i',
+                targetEventId: testEventId,
+                content: '-',
+              ),
+          ];
+          mockQueryEventsSequence([reactions, <Event>[], <Event>[]]);
+          when(
+            () => mockNostrClient.deleteEvent(any()),
+          ).thenAnswer((_) async => MockEvent());
+
+          await repository.removeDownvote(testEventId);
+
+          final deletionFilters =
+              verify(() => mockNostrClient.queryEvents(captureAny())).captured
+                  .cast<List<Filter>>()
+                  .map((filters) => filters.single)
+                  .where(
+                    (f) => f.kinds?.contains(EventKind.eventDeletion) ?? false,
+                  )
+                  .toList();
+
+          expect(deletionFilters, hasLength(2));
+          expect(deletionFilters[0].e, hasLength(500));
+          expect(deletionFilters[1].e, hasLength(100));
+          for (final filter in deletionFilters) {
+            expect(
+              filter.authors,
+              equals([testUserPubkey]),
+              reason: 'probe stays scoped to own deletions in every chunk',
+            );
+          }
+          expect(
+            {...deletionFilters[0].e!, ...deletionFilters[1].e!},
+            hasLength(600),
+            reason: 'chunks partition every candidate id without overlap',
+          );
+        },
+      );
+
+      test(
         'does not delete a relay downvote that was already deleted (#6124)',
         () async {
           repository = createRepository(withLocalStorage: false);

@@ -2432,13 +2432,14 @@ class LikesRepository {
     final candidates = candidatesById.values.toList();
     if (candidates.isEmpty) return null;
 
-    final deletions = await _nostrClient.queryEvents([
-      Filter(
+    final deletions = await _queryChunked(
+      candidates.map((event) => event.id).toList(),
+      (chunk) => Filter(
         kinds: const [EventKind.eventDeletion],
         authors: [pubkey],
-        e: candidates.map((event) => event.id).toList(),
+        e: chunk,
       ),
-    ]);
+    );
 
     final deletedIds = <String>{};
     for (final deletion in deletions) {
