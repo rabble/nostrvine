@@ -943,9 +943,11 @@ class ZendeskSupportService {
     }
     buffer.writeln('### Device Information');
     deviceInfo.forEach((key, value) {
-      buffer.writeln(
-        '- **$key:** ${sanitizeDiagnosticText(value.toString())}',
-      );
+      // The composed line, not the value alone: the rules match a credential
+      // *key* next to its value, so sanitizing `$value` by itself hands them a
+      // bare string with no key attached and `sessionKey: <secret>` survives.
+      // One line is still a tight enough unit to bound the blast radius.
+      buffer.writeln(sanitizeDiagnosticText('- **$key:** $value'));
     });
     if (currentScreen != null) {
       buffer.writeln();
@@ -964,8 +966,7 @@ class ZendeskSupportService {
         ..sort((a, b) => b.value.compareTo(a.value));
       for (final entry in sortedErrors.take(10)) {
         buffer.writeln(
-          '- ${sanitizeDiagnosticText(entry.key)}: '
-          '${entry.value} occurrences',
+          sanitizeDiagnosticText('- ${entry.key}: ${entry.value} occurrences'),
         );
       }
     }

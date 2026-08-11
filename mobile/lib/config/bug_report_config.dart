@@ -6,7 +6,12 @@ import 'package:unified_logger/unified_logger.dart';
 /// Separator between a credential key and its value: `:`, `:=`, `=` or `=>`,
 /// with an optional quote before it. Requiring one is what keeps the prose
 /// "password reset failed" intact - a bare space is not evidence of a secret.
-const _credentialSeparator = r'''["']?\s*(?::=?|=>?)\s*''';
+///
+/// Markdown emphasis around the key is consumed with the separator. The bug
+/// report renders device info as `- **sessionKey:** <value>`, and without this
+/// the value branch matches the `**` and reports success while the secret sits
+/// one character further along.
+const _credentialSeparator = r'''\**["']?\s*(?::=?|=>?)\**\s*''';
 
 /// A credential value.
 ///
