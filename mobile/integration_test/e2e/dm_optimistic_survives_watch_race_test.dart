@@ -86,13 +86,13 @@ void main() {
           'Complete your registration',
         );
         expect(leftVerify, isTrue);
-        await pumpUntilSettled(tester);
 
         // The app requests POST_NOTIFICATIONS right after authentication. A
         // native dialog blocks Flutter interaction and a plain
         // integration_test cannot tap it, so the runner pre-grants the
-        // permission (see local_stack/profile.sh).
-        await pumpUntilSettled(tester);
+        // permission (see local_stack/profile.sh). Allow a doubled settle
+        // window for the grant to land before interacting again.
+        await pumpUntilSettled(tester, maxSeconds: 10);
 
         // Verify we landed on the main app shell (bottom nav present).
         final hasBottomNav = find
