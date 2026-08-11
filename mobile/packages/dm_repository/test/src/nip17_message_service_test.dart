@@ -2042,6 +2042,64 @@ void main() {
           lessThan(DmSendBudget.recipientWrapBuild),
         );
       });
+
+      test(
+        'a self-wrap rebuild too slow for the send bound still recovers '
+        'out of band',
+        () {
+          // The tight in-send bound buys headroom under the publish backstop.
+          // Recovery has no backstop to protect, so bounding it the same way
+          // would only fail rebuilds the signer would have completed — and the
+          // rebuild is the same two round trips that left the self-wrap
+          // outstanding, so it would fail against exactly the slow signer this
+          // arm exists for, every attempt, until the row exhausted its retry
+          // budget with the cross-device copy permanently missing.
+          final senderPublicKey = getPublicKey(_testPrivateKey);
+          // Past the in-send bound, well inside the recovery bound.
+          final slowRebuild = DmSendBudget.selfWrapBuild * 2;
+          expect(
+            slowRebuild,
+            lessThan(DmSendBudget.selfWrapRecoveryBuild),
+            reason: 'the rebuild must sit between the two bounds to test them',
+          );
+
+          NIP17SendResult? result;
+          fakeAsync((async) {
+            final service = NIP17MessageService(
+              signer: LocalNostrSigner(_testPrivateKey),
+              // Derived from the signer: the self-wrap ECDH keys on it, and
+              // the synthetic _testPublicKey is not a valid secp256k1 point.
+              senderPublicKey: senderPublicKey,
+              nostrService: client,
+              giftWrapBuilder: (nostr, rumor, receiverPubkey) => Future.delayed(
+                slowRebuild,
+                () => GiftWrapUtil.getGiftWrapEvent(
+                  nostr,
+                  rumor,
+                  receiverPubkey,
+                ),
+              ),
+            );
+
+            unawaited(
+              service
+                  .publishSelfWrap(
+                    rumorEvent: service.buildRumor(
+                      recipientPubkey: _recipientPubkey,
+                      content: 'slow self-wrap rebuild',
+                    ),
+                  )
+                  .then((r) => result = r),
+            );
+
+            async.elapse(DmSendBudget.selfWrapRecoveryBuild);
+          });
+
+          expect(result, isNotNull, reason: 'recovery must resolve, not hang');
+          expect(result!.success, isTrue);
+          expect(result!.selfWrapPublished, isTrue);
+        },
+      );
     });
   });
 }

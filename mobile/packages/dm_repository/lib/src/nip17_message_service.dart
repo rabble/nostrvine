@@ -504,6 +504,7 @@ class NIP17MessageService {
             await _publishSelfWrap(
               nostr: nostr,
               rumorEvent: rumorEvent,
+              wrapBuildTimeout: DmSendBudget.selfWrapBuild,
               prebuiltSelfWrap: prebuiltSelfWrap,
             );
 
@@ -580,6 +581,7 @@ class NIP17MessageService {
       final selfWrapPublished = await _publishSelfWrap(
         nostr: nostr,
         rumorEvent: rumorEvent,
+        wrapBuildTimeout: DmSendBudget.selfWrapBuild,
         prebuiltSelfWrap: prebuiltSelfWrap,
       );
 
@@ -676,6 +678,7 @@ class NIP17MessageService {
       final published = await _publishSelfWrap(
         nostr: nostr,
         rumorEvent: rumorEvent,
+        wrapBuildTimeout: DmSendBudget.selfWrapRecoveryBuild,
       );
       if (!published) {
         return const NIP17SendResult.failure('Self-wrap publish failed');
@@ -712,24 +715,31 @@ class NIP17MessageService {
   Future<bool> _publishSelfWrap({
     required Nostr nostr,
     required Event rumorEvent,
+    required Duration wrapBuildTimeout,
     Event? prebuiltSelfWrap,
   }) async {
     try {
-      // Bounded, and deliberately tighter than the recipient wrap build: the
-      // recipient already has the message by the time this runs, so a missing
-      // self-wrap costs a recovery step, not a delivery. Letting these 2 remote
-      // round trips run unbounded is what pushed a delivered send past the
-      // caller's backstop and got it misclassified as unconfirmed (#6586).
-      // Timing out returns false, which the caller reports as
-      // `selfWrapPublished: false` — the durable row survives and the retry
-      // sweep's recoverSelfWrap arm finishes it out of band (#4124).
+      // Bounded: letting these 2 remote round trips run unbounded is what
+      // pushed a delivered send past the caller's backstop and got it
+      // misclassified as unconfirmed (#6586). Timing out returns false, which
+      // the caller reports as `selfWrapPublished: false` — the durable row
+      // survives and the retry sweep's recoverSelfWrap arm finishes it out of
+      // band (#4124).
+      //
+      // The bound is the caller's, because the two callers are not paying for
+      // the same thing: inside a send it is the tight
+      // [DmSendBudget.selfWrapBuild] that keeps the chain under the backstop,
+      // while recovery runs with no outer cap and uses the wider
+      // [DmSendBudget.selfWrapRecoveryBuild] — bounding recovery at the tight
+      // one would fail every rebuild against exactly the slow signer that left
+      // the self-wrap outstanding.
       final selfWrapEvent =
           prebuiltSelfWrap ??
           await _buildWrap(
             nostr: nostr,
             rumorEvent: rumorEvent,
             receiverPublicKey: _senderPublicKey,
-          ).timeout(DmSendBudget.selfWrapBuild, onTimeout: () => null);
+          ).timeout(wrapBuildTimeout, onTimeout: () => null);
       if (selfWrapEvent == null) {
         Log.warning(
           'Self-wrap creation returned null — the sender will not see '

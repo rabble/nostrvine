@@ -90,8 +90,34 @@ abstract final class DmSendBudget {
   /// the recipient-sized budget here to avoid a *recovery step* would be the
   /// wrong trade — it would push the send past the backstop and misclassify a
   /// delivered message as unconfirmed, which is the #6586 failure itself.
+  ///
+  /// Applies only inside a send. The out-of-band rebuild is bounded by
+  /// [selfWrapRecoveryBuild], which is sized differently for the reason
+  /// documented there.
   static const Duration selfWrapBuild = Duration(
     seconds: _selfWrapBuildSeconds,
+  );
+
+  /// Hard bound on rebuilding the self-addressed gift wrap on the out-of-band
+  /// recovery path (`NIP17MessageService.publishSelfWrap`, driven by
+  /// `DmRepository.recoverSelfWrap`).
+  ///
+  /// Sized like [recipientWrapBuild], not like [selfWrapBuild]. The tightness
+  /// of [selfWrapBuild] buys headroom inside [messagePublishTimeout]; recovery
+  /// runs on its own with no outer cap to protect, so there a tight bound can
+  /// only fail a build the transport itself would have completed.
+  ///
+  /// The rebuild is the same two round trips, so at [selfWrapBuild] it could
+  /// never finish against a signer running near its own 30s-per-op bound —
+  /// which is precisely the signer that leaves a self-wrap outstanding in the
+  /// first place. Recovery would then fail every attempt and the row would
+  /// exhaust its retry budget into a permanently missing self-wrap, losing the
+  /// cross-device copy this recovery arm exists to save.
+  ///
+  /// Deliberately NOT part of [chainWorstCase]: recovery runs outside the send
+  /// that budget bounds.
+  static const Duration selfWrapRecoveryBuild = Duration(
+    seconds: _recipientWrapBuildSeconds,
   );
 
   /// Hard bound on publishing the self-addressed gift wrap.
