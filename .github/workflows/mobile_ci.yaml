@@ -6,6 +6,7 @@ on:
   pull_request:
     branches: [main]
   merge_group:
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
@@ -63,13 +64,14 @@ jobs:
               gh api --method GET --paginate -F per_page=100 \
                 "/repos/${GITHUB_REPOSITORY}/compare/${QUEUE_BASE_SHA}...${QUEUE_HEAD_SHA}" \
                 --jq '.files[]?.filename' > /tmp/mobile-ci-changed-files.txt
-              # A queue entry always carries at least one changed file, so an
-              # empty or capped list means the API answer is unusable, not that
-              # the batch is empty. Fall open rather than skip the last gate
-              # before main.
+              # The compare endpoint only includes up to 300 changed files for
+              # the whole comparison. A queue entry always carries at least one
+              # changed file, so an empty or capped list means the API answer is
+              # unusable, not that the batch is empty. Fall open rather than
+              # skip the last gate before main.
               file_count=$(wc -l < /tmp/mobile-ci-changed-files.txt)
-              if [ "$file_count" -eq 0 ] || [ "$file_count" -ge 3000 ]; then
-                fall_open "Merge group returned $file_count files (empty or > 3000 API cap); running full app CI."
+              if [ "$file_count" -eq 0 ] || [ "$file_count" -ge 300 ]; then
+                fall_open "Merge group returned $file_count files (empty or at the 300-file compare API cap); running full app CI."
               fi
               ;;
             *)
