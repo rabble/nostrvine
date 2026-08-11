@@ -258,6 +258,26 @@ void main() {
       expect(stopwatch.elapsedMilliseconds, lessThan(2000));
     });
 
+    test('a long email-shaped run does not scan quadratically', () {
+      // The email pattern used to have unbounded local-part and domain
+      // quantifiers. Boundary-heavy text inside the allowed character class
+      // (`.`, `-`, `_`) made every candidate rescan the rest of the run before
+      // failing, which hit pasted paths, ids, and base64-like strings.
+      //
+      // The ceiling is a smoke threshold, not a performance budget. Bounded
+      // runs are single-digit milliseconds here; the unbounded pattern takes
+      // seconds at this input size.
+      var best = 1 << 30;
+      for (var run = 0; run < 3; run++) {
+        final stopwatch = Stopwatch()..start();
+        sanitizeDiagnosticText('a.b-c_' * 8000);
+        final elapsed = stopwatch.elapsedMilliseconds;
+        if (elapsed < best) best = elapsed;
+      }
+
+      expect(best, lessThan(1000));
+    });
+
     test('a long compound key cannot be made to backtrack exponentially', () {
       // An ambiguous segment class (`(?:[_-]\w+)*`, where `\w` also matches
       // `_`) parses the same key 2^n ways and explores all of them before

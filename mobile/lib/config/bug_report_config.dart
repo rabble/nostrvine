@@ -84,9 +84,8 @@ class BugReportConfig {
   /// Sanitization is linear in the size of the field but with a large
   /// constant: every credential-key candidate scans up to the collection
   /// bound. Unbounded, a pasted 1MB field costs ~7.7s on the main isolate,
-  /// past Android's ANR threshold. At this cap the same worst case is under
-  /// 100ms per field, and 10000 characters is far more than a typed
-  /// description or repro steps.
+  /// past Android's ANR threshold. This cap keeps a pasted field bounded and
+  /// 10000 characters is far more than a typed description or repro steps.
   static const int maxFreeTextFieldLength = 10000;
 
   /// Max total characters for the log summary sent to Zendesk.
@@ -175,7 +174,10 @@ class BugReportConfig {
       '(?:[A-Z][a-z0-9]*){0,24}'
       '$_credentialSeparator$_credentialValue',
     ),
-    RegExp(r'\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b', caseSensitive: false),
+    RegExp(
+      r'\b[A-Z0-9._%+-]{1,64}@[A-Z0-9.-]{1,255}\.[A-Z]{2,24}\b',
+      caseSensitive: false,
+    ),
   ];
 
   /// Log levels to include in bug reports (all by default)
