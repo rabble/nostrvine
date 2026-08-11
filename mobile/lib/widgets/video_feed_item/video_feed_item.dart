@@ -18,6 +18,7 @@ import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/og_viner_cache_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/router/routes/route_extras.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
@@ -445,14 +446,12 @@ class VideoOverlayActions extends ConsumerWidget {
                             final list = curatedListService?.getListById(
                               listId,
                             );
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (context) => CuratedListFeedScreen(
-                                  listId: listId,
-                                  listName: listName,
-                                  videoIds: list?.videoEventIds,
-                                  authorPubkey: list?.pubkey,
-                                ),
+                            context.push(
+                              CuratedListFeedScreen.pathForId(listId),
+                              extra: CuratedListRouteExtra(
+                                listName: listName,
+                                videoIds: list?.videoEventIds,
+                                authorPubkey: list?.pubkey,
                               ),
                             );
                           },
