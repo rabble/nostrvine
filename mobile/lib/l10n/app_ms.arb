@@ -218,6 +218,11 @@
   "profileFollowersLabel": "Pengikut",
   "profileFollowingStatLabel": "Mengikuti",
   "profileVideosLabel": "Video",
+  "profileCollabsLabel": "Kolaborasi",
+  "profileLikedLabel": "Disukai",
+  "profileRepostsLabel": "Siaran Semula",
+  "profileListsLabel": "Senarai",
+  "profileCommentsLabel": "Komen",
   "profileCollaboratorInvitePendingHeadline": "{count, plural, =1{1 jemputan kolaborator masih perlu dihantar} other{{count} jemputan kolaborator masih perlu dihantar}}",
   "@profileCollaboratorInvitePendingHeadline": {
     "placeholders": {

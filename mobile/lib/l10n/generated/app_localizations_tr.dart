@@ -393,6 +393,21 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileVideosLabel => 'Videolar';
 
   @override
+  String get profileCollabsLabel => 'İşbirlikleri';
+
+  @override
+  String get profileLikedLabel => 'Beğenilenler';
+
+  @override
+  String get profileRepostsLabel => 'Yeniden Paylaşımlar';
+
+  @override
+  String get profileListsLabel => 'Listeler';
+
+  @override
+  String get profileCommentsLabel => 'Yorumlar';
+
+  @override
   String profileCollaboratorInvitePendingHeadline(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/video_editor_audio_chip.dart';
 
@@ -83,6 +84,45 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(InkWell), findsOneWidget);
+      });
+    });
+
+    group('semantics', () {
+      // The chip is the only thing separating the lip-sync viewfinder from
+      // capture mode's, so e2e/maestro/asserts/assertLipSyncMode.yaml asserts
+      // it by identifier and assertCaptureMode asserts its absence. Every
+      // other test here matches on rendered text and would stay green with the
+      // anchor dropped.
+      testWidgets('exposes the E2E identifier as a button', (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
+
+        final node = tester.getSemantics(
+          find.bySemanticsIdentifier(SemanticIds.audioChip),
+        );
+        expect(node.flagsCollection.isButton, isTrue);
+
+        handle.dispose();
+      });
+
+      testWidgets('keeps announcing the selected sound', (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildWidget(selectedSound: _createTestAudioEvent(title: 'Anthem')),
+        );
+        await tester.pumpAndSettle();
+
+        // The identifier sits above the label rather than replacing it, so
+        // the title a screen reader announces has to survive the wrapper.
+        expect(
+          tester
+              .getSemantics(find.bySemanticsIdentifier(SemanticIds.audioChip))
+              .label,
+          contains('Anthem'),
+        );
+
+        handle.dispose();
       });
     });
 

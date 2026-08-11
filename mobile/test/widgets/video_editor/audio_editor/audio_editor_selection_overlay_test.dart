@@ -1,10 +1,13 @@
 // ABOUTME: Tests for AudioEditorSelectionOverlay widget
 // ABOUTME: Validates rendering of audio metadata, play/pause toggle, and done.
 
+import 'dart:ui' show Tristate;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_editor_selection_overlay.dart';
@@ -70,6 +73,45 @@ void main() {
         ),
       );
     }
+
+    group('semantics', () {
+      // The lip-sync E2E flow confirms its sound with this button
+      // (e2e/maestro/tests/lipSyncModeRecordClip.yaml). The label assertions
+      // elsewhere in this file stay green when the identifier is dropped.
+      testWidgets('exposes the E2E identifier on the done button', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(buildWidget(audio: _createTestAudio()));
+        await tester.pump();
+
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.audioSelectionDoneButton),
+          findsOneWidget,
+        );
+
+        handle.dispose();
+      });
+
+      // The E2E waits for this button to become enabled before tapping it,
+      // because the preview is still loading right after the tile tap.
+      testWidgets('reports the done button as disabled while loading', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildWidget(audio: _createTestAudio(), isLoading: true),
+        );
+        await tester.pump();
+
+        final node = tester.getSemantics(
+          find.bySemanticsIdentifier(SemanticIds.audioSelectionDoneButton),
+        );
+        expect(node.flagsCollection.isEnabled, Tristate.isFalse);
+
+        handle.dispose();
+      });
+    });
 
     group('Rendering', () {
       testWidgets('renders audio title', (tester) async {

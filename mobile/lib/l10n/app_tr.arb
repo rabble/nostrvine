@@ -205,6 +205,11 @@
     "profileFollowersLabel": "Takipçiler",
     "profileFollowingStatLabel": "Takip edilen",
     "profileVideosLabel": "Videolar",
+    "profileCollabsLabel": "İşbirlikleri",
+    "profileLikedLabel": "Beğenilenler",
+    "profileRepostsLabel": "Yeniden Paylaşımlar",
+    "profileListsLabel": "Listeler",
+    "profileCommentsLabel": "Yorumlar",
     "profileFollowerCountUsers": "{count} kullanıcı",
     "@profileFollowerCountUsers": {
         "placeholders": {

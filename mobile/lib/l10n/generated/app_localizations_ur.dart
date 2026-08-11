@@ -423,6 +423,21 @@ class AppLocalizationsUr extends AppLocalizations {
   String get profileVideosLabel => 'ویڈیوز';
 
   @override
+  String get profileCollabsLabel => 'اشتراکات';
+
+  @override
+  String get profileLikedLabel => 'پسندیدہ';
+
+  @override
+  String get profileRepostsLabel => 'ریپوسٹس';
+
+  @override
+  String get profileListsLabel => 'فہرستیں';
+
+  @override
+  String get profileCommentsLabel => 'تبصرے';
+
+  @override
   String profileCollaboratorInvitePendingHeadline(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

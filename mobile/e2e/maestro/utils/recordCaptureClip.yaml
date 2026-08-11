@@ -1,0 +1,26 @@
+appId: co.openvine.app
+---
+#Utility: given the recorder is on a mode that renders the capture stack with
+#tap-to-toggle recording enabled, record one clip and leave it in the session.
+#
+# Used by capture and lip-sync: the viewfinder chrome and recording transition
+# are the same once lip-sync has a sound selected.
+
+# The record button looks near-identical in both states, so it is the close
+# button that reports the transition: while recording, the top bar swaps its
+# close/next row out for the recording-progress bar entirely.
+- tapOn:
+    id: camera_record_button
+- extendedWaitUntil:
+    notVisible:
+      id: camera_close_button
+    timeout: 15000
+
+# Let a couple of seconds of footage accumulate. The progress bar/live preview
+# never settles, so this waits the timeout out instead of returning early.
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- tapOn:
+    id: camera_record_button
+- runFlow: ../asserts/assertCaptureClipRecorded.yaml

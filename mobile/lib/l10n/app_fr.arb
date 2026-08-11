@@ -205,6 +205,11 @@
     "profileFollowersLabel": "Abonnés",
     "profileFollowingStatLabel": "Abonnements",
     "profileVideosLabel": "Vidéos",
+    "profileCollabsLabel": "Collabs",
+    "profileLikedLabel": "J'aime",
+    "profileRepostsLabel": "Reposts",
+    "profileListsLabel": "Listes",
+    "profileCommentsLabel": "Commentaires",
     "profileFollowerCountUsers": "{count} utilisateurs",
     "@profileFollowerCountUsers": {
         "placeholders": {

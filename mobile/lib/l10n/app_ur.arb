@@ -218,6 +218,11 @@
   "profileFollowersLabel": "فالوورز",
   "profileFollowingStatLabel": "فالوئنگ",
   "profileVideosLabel": "ویڈیوز",
+  "profileCollabsLabel": "اشتراکات",
+  "profileLikedLabel": "پسندیدہ",
+  "profileRepostsLabel": "ریپوسٹس",
+  "profileListsLabel": "فہرستیں",
+  "profileCommentsLabel": "تبصرے",
   "profileCollaboratorInvitePendingHeadline": "{count, plural, =1{1 شریک کار دعوت ابھی بھیجنا باقی ہے} other{{count} شریک کار دعوتیں ابھی بھیجنی باقی ہیں}}",
   "@profileCollaboratorInvitePendingHeadline": {
     "placeholders": {

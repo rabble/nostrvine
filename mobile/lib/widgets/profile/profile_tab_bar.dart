@@ -3,11 +3,17 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/widgets/profile/profile_cache_load_indicator.dart';
 
+/// How one profile tab is presented.
+///
+/// [semanticId] is the stable, snake_case test anchor; [label] is the
+/// localized name. Keeping them as separate fields is what stops the anchor
+/// from being announced as the accessible name (#6951).
+typedef ProfileTab = ({String semanticId, String label, DivineIconName icon});
+
 /// Sticky tab bar rendering the profile's [tabs] (5 on other profiles, 6 on
-/// the own profile, which also shows Collabs).
+/// the own profile, which also shows Lists). See `profileTabKinds`.
 class ProfileTabBar extends StatefulWidget {
   const ProfileTabBar({
     required this.controller,
@@ -20,7 +26,14 @@ class ProfileTabBar extends StatefulWidget {
 
   final TabController controller;
   final ScrollController? scrollController;
-  final List<({String label, DivineIconName icon})> tabs;
+
+  /// One entry per tab.
+  ///
+  /// [ProfileTab.semanticId] is the stable test anchor and [ProfileTab.label]
+  /// is the localized name a screen reader reads. They are separate fields on
+  /// purpose: the bar is icon-only, so collapsing them means the anchor
+  /// becomes the accessible name (#6951).
+  final List<ProfileTab> tabs;
   final GlobalKey headerKey;
 
   /// Whether to show the sticky cache-revalidation bar under the tabs.
@@ -110,9 +123,21 @@ class _ProfileTabBarState extends State<ProfileTabBar> {
           indicatorWeight: 4,
           indicatorSize: TabBarIndicatorSize.tab,
           dividerColor: VineTheme.transparent,
+          // Material's default 16 leaves each icon only `width / tabs - 32`
+          // to grow into. On the own profile (6 tabs) that is 28dp at 360dp
+          // wide — exactly the unscaled size, so the icons never actually
+          // scale. 8 fits the 1.3x cap down to a 320dp screen.
+          //
+          // Tabs are equal-width and the icon is centred, so neither icon
+          // position nor indicator extent moves. Icon *size* at 1.0x is
+          // unchanged from 360dp up, but below that the default padding was
+          // already squashing the glyph — 21.3dp at 320dp — and it now
+          // renders at its nominal 28dp.
+          labelPadding: const EdgeInsets.symmetric(horizontal: 8),
           tabs: [
             for (var i = 0; i < widget.tabs.length; i++)
               _ProfileTab(
+                semanticId: widget.tabs[i].semanticId,
                 label: widget.tabs[i].label,
                 icon: widget.tabs[i].icon,
                 isSelected: widget.controller.index == i,
@@ -127,11 +152,13 @@ class _ProfileTabBarState extends State<ProfileTabBar> {
 /// Single icon tab for [ProfileTabBar].
 class _ProfileTab extends StatelessWidget {
   const _ProfileTab({
+    required this.semanticId,
     required this.label,
     required this.icon,
     required this.isSelected,
   });
 
+  final String semanticId;
   final String label;
   final DivineIconName icon;
   final bool isSelected;
@@ -140,28 +167,17 @@ class _ProfileTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tab(
       icon: Semantics(
-        // `label` here is a snake_case test anchor ('liked_tab', ...), so it
-        // is also passed as the identifier -- that is what E2E should match
-        // on, and it removes the need for "Tab N of M" selectors that
-        // encode a tab count which now varies by profile.
-        //
-        // It stays as the label too, which means VoiceOver announces
-        // "liked_tab". That is a pre-existing defect and it is not fixed
-        // here: only Videos has a localized name (profileVideosLabel), so
-        // doing it properly means new ARB keys across 22 locales. Tracked
-        // separately.
-        identifier: label,
+        // The tab renders no visible text, so this label is the only
+        // accessible name. Material merges it with its own "Tab N of M",
+        // giving "Tab 3 of 6, Liked".
+        identifier: semanticId,
         label: label,
-        child: SvgPicture.asset(
-          icon.assetPath,
-          width: 28,
-          height: 28,
-          colorFilter: ColorFilter.mode(
-            isSelected
-                ? context.vineColors.primaryText
-                : context.vineColors.onSurfaceMuted,
-            BlendMode.srcIn,
-          ),
+        child: DivineIcon(
+          icon: icon,
+          size: 28,
+          color: isSelected
+              ? context.vineColors.primaryText
+              : context.vineColors.onSurfaceMuted,
         ),
       ),
     );

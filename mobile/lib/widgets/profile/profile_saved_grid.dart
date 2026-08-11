@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/profile_saved_videos/profile_saved_videos_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
@@ -156,8 +157,9 @@ class _SavedGridTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => Semantics(
-    identifier: 'saved_video_thumbnail_$index',
-    label: 'saved_video_thumbnail_$index',
+    identifier: SemanticIds.savedVideoThumbnail(index),
+    label: context.l10n.profileVideoThumbnailLabel(index + 1),
+    button: true,
     child: GestureDetector(
       onTap: () {
         Log.info(

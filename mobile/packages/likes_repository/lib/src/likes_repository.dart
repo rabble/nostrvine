@@ -5,7 +5,7 @@
 // ABOUTME: Supports offline queuing via callback injection.
 
 import 'dart:async';
-import 'dart:math';
+import 'dart:convert';
 
 import 'package:likes_repository/src/blocked_liker_filter.dart';
 import 'package:likes_repository/src/exceptions.dart';
@@ -27,17 +27,26 @@ const _likeContent = '+';
 /// NIP-25 reaction content for a downvote.
 const _downvoteContent = '-';
 
-/// Max number of reaction ids per Kind 5 deletion REQ.
+/// Max number of tag values per `#e` or `#a` REQ filter.
 ///
-/// The resolver scopes the deletion query to the reaction ids it fetched,
-/// which can approach the relay's per-REQ cap (~5000) on a very
-/// high-engagement video. A single `#e` filter with that many 64-char ids
-/// (~67 bytes each in JSON) would build a REQ frame near/over the relay's
-/// `max_message_length` (512KB); an oversized frame errors the socket and
-/// `queryEvents` fails open, silently counting deleted likes. Chunking keeps
-/// every frame small (500 ids ~= 34KB, well under 512KB and the advertised
-/// `max_event_tags` of 2000). See #5751.
-const _deletionReqEidChunkSize = 500;
+/// A 64-char id costs ~67 bytes in JSON, so a single `#e` filter with enough
+/// of them builds a REQ frame near/over the relay's `max_message_length`
+/// (512KB). An oversized frame errors the socket and `queryEvents` fails
+/// open — silently counting deleted likes, or returning no reactions at all.
+/// 500 ids is ~34KB, well under 512KB and the advertised `max_event_tags`
+/// of 2000. See #5751.
+const _reqEidChunkSize = 500;
+
+/// Max cumulative UTF-8 bytes of tag values per `#e` or `#a` REQ filter.
+///
+/// The count cap only byte-bounds fixed-width values like event ids. A
+/// `kind:pubkey:dtag` coordinate is typically ~135 bytes, but nothing
+/// validates `d` tag length, so 500 coordinates minted by another client
+/// can still blow past `max_message_length`. 128KB of values keeps 4x
+/// headroom under the 512KB cap and never splits a typical batch. A single
+/// value over the budget still ships, alone — that REQ cannot be made any
+/// smaller.
+const int _reqTagValueChunkBytes = 128 * 1024;
 
 /// Callback to check if the device is currently online
 typedef IsOnlineCallback = bool Function();
@@ -1148,12 +1157,9 @@ class LikesRepository {
       return counts;
     }
 
-    // Query relays for count of Kind 7 reactions on uncached events
-    final filterByE = Filter(kinds: const [EventKind.reaction], e: uncachedIds);
-
     // NIP-45 COUNT with multiple event IDs returns total count, not per-event
     // So we need to fall back to querying events and counting client-side
-    final eventsByE = await _nostrClient.queryEvents([filterByE]);
+    final eventsByE = await _queryReactionsByEventIds(uncachedIds);
 
     // Count reactions per target event from e-tag query
     final uncachedIdSet = uncachedIds.toSet();
@@ -1327,18 +1333,16 @@ class LikesRepository {
     required Map<String, String> eventIdByCoordinate,
     List<String>? authors,
   }) async {
-    final eEventsFuture = _nostrClient.queryEvents([
-      Filter(kinds: const [EventKind.reaction], authors: authors, e: eventIds),
-    ]);
-    final aEventsFuture = eventIdByCoordinate.isEmpty
-        ? Future<List<Event>>.value(const <Event>[])
-        : _nostrClient.queryEvents([
-            Filter(
-              kinds: const [EventKind.reaction],
-              authors: authors,
-              a: eventIdByCoordinate.keys.toList(),
-            ),
-          ]);
+    final eEventsFuture = _queryChunked(
+      eventIds,
+      (chunk) =>
+          Filter(kinds: const [EventKind.reaction], authors: authors, e: chunk),
+    );
+    final aEventsFuture = _queryChunked(
+      eventIdByCoordinate.keys.toList(),
+      (chunk) =>
+          Filter(kinds: const [EventKind.reaction], authors: authors, a: chunk),
+    );
     final results = await Future.wait([eEventsFuture, aEventsFuture]);
 
     final eventsById = <String, Event>{};
@@ -1875,16 +1879,11 @@ class LikesRepository {
         if (entry.value.isNotEmpty) entry.value: entry.key,
     };
 
-    final filterByE = Filter(kinds: const [EventKind.reaction], e: eventIds);
-    final eEventsFuture = _nostrClient.queryEvents([filterByE]);
-    final aEventsFuture = aTagToEventId.isEmpty
-        ? Future<List<Event>>.value(const <Event>[])
-        : _nostrClient.queryEvents([
-            Filter(
-              kinds: const [EventKind.reaction],
-              a: aTagToEventId.keys.toList(),
-            ),
-          ]);
+    final eEventsFuture = _queryReactionsByEventIds(eventIds);
+    final aEventsFuture = _queryChunked(
+      aTagToEventId.keys.toList(),
+      (chunk) => Filter(kinds: const [EventKind.reaction], a: chunk),
+    );
     final queryResults = await Future.wait([eEventsFuture, aEventsFuture]);
 
     final reactionsByTarget = {
@@ -1936,34 +1935,89 @@ class LikesRepository {
     final reactionIds = reactionsById.keys.toList();
     if (reactionIds.isEmpty) return const {};
 
-    final chunkedDeletions = await Future.wait([
-      for (var i = 0; i < reactionIds.length; i += _deletionReqEidChunkSize)
-        _nostrClient.queryEvents([
-          Filter(
-            kinds: const [EventKind.eventDeletion],
-            e: reactionIds.sublist(
-              i,
-              min(i + _deletionReqEidChunkSize, reactionIds.length),
-            ),
-          ),
-        ]),
-    ]);
+    final deletions = await _queryEventsByEIds(
+      reactionIds,
+      kind: EventKind.eventDeletion,
+    );
 
     final deleted = <String>{};
-    for (final chunk in chunkedDeletions) {
-      for (final deletion in chunk) {
-        for (final tag in deletion.tags) {
-          if (tag.length > 1 && tag[0] == 'e') {
-            final targetId = tag[1];
-            final target = reactionsById[targetId];
-            if (target != null && target.pubkey == deletion.pubkey) {
-              deleted.add(targetId);
-            }
+    for (final deletion in deletions) {
+      for (final tag in deletion.tags) {
+        if (tag.length > 1 && tag[0] == 'e') {
+          final targetId = tag[1];
+          final target = reactionsById[targetId];
+          if (target != null && target.pubkey == deletion.pubkey) {
+            deleted.add(targetId);
           }
         }
       }
     }
     return deleted;
+  }
+
+  /// Kind 7 reactions targeting any of [eventIds] via `#e`.
+  Future<List<Event>> _queryReactionsByEventIds(List<String> eventIds) {
+    return _queryEventsByEIds(eventIds, kind: EventKind.reaction);
+  }
+
+  /// Events of [kind] targeting any of [eventIds] via `#e`.
+  Future<List<Event>> _queryEventsByEIds(
+    List<String> eventIds, {
+    required int kind,
+  }) {
+    return _queryChunked(
+      eventIds,
+      (chunk) => Filter(kinds: [kind], e: chunk),
+    );
+  }
+
+  /// Runs [buildFilter] over [values] in chunks capped at [_reqEidChunkSize]
+  /// values and [_reqTagValueChunkBytes] bytes, so no single REQ frame can
+  /// exceed the relay's message cap.
+  ///
+  /// Deduplicates by event id once there is more than one chunk. Each chunk
+  /// is its own `queryEvents` call with its own dedup box, so an event that
+  /// tags targets in two different chunks comes back from both — and
+  /// [getLikeCounts] counts per e-tag occurrence, so a raw concatenation
+  /// would score that reaction twice. A single chunk is already deduped by
+  /// the client.
+  Future<List<Event>> _queryChunked(
+    List<String> values,
+    Filter Function(List<String> chunk) buildFilter,
+  ) async {
+    if (values.isEmpty) return const <Event>[];
+
+    final results = await Future.wait([
+      for (final chunk in _chunkStrings(values, _reqEidChunkSize))
+        _nostrClient.queryEvents([buildFilter(chunk)]),
+    ]);
+    if (results.length == 1) return results.first;
+    return {
+      for (final chunk in results)
+        for (final event in chunk) event.id: event,
+    }.values.toList();
+  }
+
+  List<List<String>> _chunkStrings(List<String> values, int chunkSize) {
+    final chunks = <List<String>>[];
+    var chunk = <String>[];
+    var chunkBytes = 0;
+    for (final value in values) {
+      final valueBytes = utf8.encode(value).length;
+      final closesChunk =
+          chunk.length >= chunkSize ||
+          (chunk.isNotEmpty &&
+              chunkBytes + valueBytes > _reqTagValueChunkBytes);
+      if (closesChunk) {
+        chunks.add(chunk);
+        chunk = <String>[];
+        chunkBytes = 0;
+      }
+      chunk.add(value);
+      chunkBytes += valueBytes;
+    }
+    if (chunk.isNotEmpty) chunks.add(chunk);
+    return chunks;
   }
 
   Set<String> _reactionTargetEventIds(
@@ -2404,13 +2458,14 @@ class LikesRepository {
     final candidates = candidatesById.values.toList();
     if (candidates.isEmpty) return null;
 
-    final deletions = await _nostrClient.queryEvents([
-      Filter(
+    final deletions = await _queryChunked(
+      candidates.map((event) => event.id).toList(),
+      (chunk) => Filter(
         kinds: const [EventKind.eventDeletion],
         authors: [pubkey],
-        e: candidates.map((event) => event.id).toList(),
+        e: chunk,
       ),
-    ]);
+    );
 
     final deletedIds = <String>{};
     for (final deletion in deletions) {

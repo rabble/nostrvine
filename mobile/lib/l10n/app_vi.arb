@@ -218,6 +218,11 @@
   "profileFollowersLabel": "Người theo dõi",
   "profileFollowingStatLabel": "Đang theo dõi",
   "profileVideosLabel": "Video",
+  "profileCollabsLabel": "Cộng tác",
+  "profileLikedLabel": "Đã thích",
+  "profileRepostsLabel": "Lượt đăng lại",
+  "profileListsLabel": "Danh sách",
+  "profileCommentsLabel": "Bình luận",
   "profileCollaboratorInvitePendingHeadline": "{count, plural, =1{Vẫn còn 1 lời mời cộng tác chưa gửi được} other{Vẫn còn {count} lời mời cộng tác chưa gửi được}}",
   "@profileCollaboratorInvitePendingHeadline": {
     "placeholders": {

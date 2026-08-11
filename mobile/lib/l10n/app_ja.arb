@@ -205,6 +205,11 @@
     "profileFollowersLabel": "フォロワー",
     "profileFollowingStatLabel": "フォロー中",
     "profileVideosLabel": "動画",
+    "profileCollabsLabel": "コラボ",
+    "profileLikedLabel": "いいね済み",
+    "profileRepostsLabel": "リポスト",
+    "profileListsLabel": "リスト",
+    "profileCommentsLabel": "コメント",
     "profileFollowerCountUsers": "{count}人",
     "@profileFollowerCountUsers": {
         "placeholders": {

@@ -2,6 +2,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -450,6 +451,66 @@ void main() {
 
         // Header should have scrolled off screen (clipped from tree)
         expect(find.text('Header'), findsNothing);
+      });
+    });
+
+    group('accessibility', () {
+      testWidgets('video reply tiles announce a name and act as buttons', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        when(() => mockBloc.state).thenReturn(
+          ProfileCommentsState(
+            status: ProfileCommentsStatus.success,
+            videoReplies: [_createVideoComment(id: 'v1')],
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final data = tester
+            .getSemantics(
+              find.bySemanticsLabel(l10n.profileVideoThumbnailLabel(1)),
+            )
+            .getSemanticsData();
+
+        expect(data.flagsCollection.isButton, isTrue);
+        expect(data.hasAction(SemanticsAction.tap), isTrue);
+
+        handle.dispose();
+      });
+
+      testWidgets('comment cards are buttons and read their text once', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        when(() => mockBloc.state).thenReturn(
+          ProfileCommentsState(
+            status: ProfileCommentsStatus.success,
+            textComments: [_createTextComment(id: 't1')],
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        final data = tester
+            .getSemantics(find.text('Text comment t1'))
+            .getSemanticsData();
+
+        // The card carries no explicit label on purpose: Semantics(label:) is
+        // prepended to the child's label rather than replacing it, so one
+        // would make a screen reader read the comment twice.
+        expect(data.flagsCollection.isButton, isTrue);
+        expect(
+          'Text comment t1'.allMatches(data.label).length,
+          1,
+          reason: 'comment text must be announced once, not duplicated',
+        );
+
+        handle.dispose();
       });
     });
   });

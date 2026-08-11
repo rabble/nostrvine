@@ -229,6 +229,26 @@
   "profileFollowersLabel": "Followers",
   "profileFollowingStatLabel": "Following",
   "profileVideosLabel": "Videos",
+  "profileCollabsLabel": "Collabs",
+  "@profileCollabsLabel": {
+    "description": "Accessible name for the Collabs tab on a profile. The tab is icon-only, so this is the only name a screen reader can read. Refers to collaboration videos, not the collaborators themselves."
+  },
+  "profileLikedLabel": "Liked",
+  "@profileLikedLabel": {
+    "description": "Accessible name for the Liked tab on a profile. The tab is icon-only. Refers to videos this user liked — distinct from profileLikesLabel, which counts likes received."
+  },
+  "profileRepostsLabel": "Reposts",
+  "@profileRepostsLabel": {
+    "description": "Accessible name for the Reposts tab on a profile. The tab is icon-only."
+  },
+  "profileListsLabel": "Lists",
+  "@profileListsLabel": {
+    "description": "Accessible name for the Lists tab on the own profile. The tab is icon-only."
+  },
+  "profileCommentsLabel": "Comments",
+  "@profileCommentsLabel": {
+    "description": "Accessible name for the Comments tab on a profile. The tab is icon-only."
+  },
   "profileCollaboratorInvitePendingHeadline": "{count, plural, =1{1 collaborator invite still needs to send} other{{count} collaborator invites still need to send}}",
   "@profileCollaboratorInvitePendingHeadline": {
     "placeholders": {

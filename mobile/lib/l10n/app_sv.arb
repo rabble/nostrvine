@@ -205,6 +205,11 @@
     "profileFollowersLabel": "Följare",
     "profileFollowingStatLabel": "Följer",
     "profileVideosLabel": "Videor",
+    "profileCollabsLabel": "Samarbeten",
+    "profileLikedLabel": "Gillade",
+    "profileRepostsLabel": "Återpubliceringar",
+    "profileListsLabel": "Listor",
+    "profileCommentsLabel": "Kommentarer",
     "profileFollowerCountUsers": "{count} användare",
     "@profileFollowerCountUsers": {
         "placeholders": {

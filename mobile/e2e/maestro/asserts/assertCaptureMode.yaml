@@ -30,6 +30,12 @@ appId: co.openvine.app
 - assertVisible:
     id: camera_stabilization_button
 
+# Lip-sync renders this exact rail, and differs only by the sound picker it
+# puts in the top bar's center slot — which capture mode leaves empty. Without
+# this line every assertion in this file passes on the Lip Sync tab too.
+- assertNotVisible:
+    id: audio_chip
+
 # Nothing recorded yet. Both buttons sit inside an AnimatedOpacity, and
 # RenderAnimatedOpacity drops its child from the semantics tree at opacity 0 —
 # so "not visible" here means "no clip in the session", not "scrolled away".

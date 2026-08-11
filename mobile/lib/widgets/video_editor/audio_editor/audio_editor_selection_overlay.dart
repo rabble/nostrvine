@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -89,6 +90,7 @@ class AudioEditorSelectionOverlay extends StatelessWidget {
               size: .small,
               icon: .caretRight,
               semanticLabel: context.l10n.videoEditorDoneSemanticLabel,
+              semanticIdentifier: SemanticIds.audioSelectionDoneButton,
               onPressed: isLoading ? null : onTapDone,
             ),
           ],

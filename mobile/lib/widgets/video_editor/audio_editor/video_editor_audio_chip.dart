@@ -1,6 +1,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart' show AudioEvent;
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/constants/text_scale_limits.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -95,61 +96,68 @@ class VideoEditorAudioChip extends StatelessWidget {
         type: .transparency,
         child: MediaQuery.withClampedTextScaling(
           maxScaleFactor: chipLabelTextScaleLimit,
-          child: InkWell(
-            onTap: () => _selectAudio(context),
-            borderRadius: .circular(16),
-            child: Container(
-              constraints: const BoxConstraints(minHeight: 40),
-              padding: const .fromLTRB(16, 8, 8, 8),
-              decoration: ShapeDecoration(
-                color: VineTheme.scrim15,
-                shape: RoundedRectangleBorder(borderRadius: .circular(16)),
-              ),
-              child: Row(
-                mainAxisSize: .min,
-                mainAxisAlignment: .center,
-                children: [
-                  const _AudioBars(),
-                  Flexible(
-                    child: Padding(
-                      padding: const .symmetric(horizontal: 8),
-                      child: hasSelectedSound
-                          ? Text.rich(
-                              TextSpan(
-                                style: VineTheme.labelLargeFont(
+          child: Semantics(
+            identifier: SemanticIds.audioChip,
+            // The chip is an InkWell around a Row, so nothing here reported as
+            // a button before. The label stays with the text inside, which is
+            // what already carries the sound's title.
+            button: true,
+            child: InkWell(
+              onTap: () => _selectAudio(context),
+              borderRadius: .circular(16),
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 40),
+                padding: const .fromLTRB(16, 8, 8, 8),
+                decoration: ShapeDecoration(
+                  color: VineTheme.scrim15,
+                  shape: RoundedRectangleBorder(borderRadius: .circular(16)),
+                ),
+                child: Row(
+                  mainAxisSize: .min,
+                  mainAxisAlignment: .center,
+                  children: [
+                    const _AudioBars(),
+                    Flexible(
+                      child: Padding(
+                        padding: const .symmetric(horizontal: 8),
+                        child: hasSelectedSound
+                            ? Text.rich(
+                                TextSpan(
+                                  style: VineTheme.labelLargeFont(
+                                    color: VineTheme.whiteText,
+                                  ),
+                                  children: [
+                                    TextSpan(
+                                      text:
+                                          selectedSound?.title ??
+                                          context.l10n.videoEditorAudioUntitled,
+                                    ),
+                                    if (selectedSound?.source != null) ...[
+                                      const TextSpan(text: ' ∙ '),
+                                      TextSpan(
+                                        text: selectedSound!.source,
+                                        style: VineTheme.bodyMediumFont(
+                                          color: VineTheme.whiteText,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                textAlign: .center,
+                                maxLines: 1,
+                                overflow: .ellipsis,
+                              )
+                            : Text(
+                                context.l10n.videoEditorAudioAddAudio,
+                                textAlign: .center,
+                                style: VineTheme.titleMediumFont(
                                   color: VineTheme.whiteText,
                                 ),
-                                children: [
-                                  TextSpan(
-                                    text:
-                                        selectedSound?.title ??
-                                        context.l10n.videoEditorAudioUntitled,
-                                  ),
-                                  if (selectedSound?.source != null) ...[
-                                    const TextSpan(text: ' ∙ '),
-                                    TextSpan(
-                                      text: selectedSound!.source,
-                                      style: VineTheme.bodyMediumFont(
-                                        color: VineTheme.whiteText,
-                                      ),
-                                    ),
-                                  ],
-                                ],
                               ),
-                              textAlign: .center,
-                              maxLines: 1,
-                              overflow: .ellipsis,
-                            )
-                          : Text(
-                              context.l10n.videoEditorAudioAddAudio,
-                              textAlign: .center,
-                              style: VineTheme.titleMediumFont(
-                                color: VineTheme.whiteText,
-                              ),
-                            ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

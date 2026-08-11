@@ -205,6 +205,11 @@
     "profileFollowersLabel": "Urmăritori",
     "profileFollowingStatLabel": "Urmăriți",
     "profileVideosLabel": "Videoclipuri",
+    "profileCollabsLabel": "Colaborări",
+    "profileLikedLabel": "Apreciate",
+    "profileRepostsLabel": "Redistribuiri",
+    "profileListsLabel": "Liste",
+    "profileCommentsLabel": "Comentarii",
     "profileFollowerCountUsers": "{count, plural, one{1 utilizator} few{{count} utilizatori} other{{count} de utilizatori}}",
     "@profileFollowerCountUsers": {
         "placeholders": {
