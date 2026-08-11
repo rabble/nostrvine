@@ -4,6 +4,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:openvine/blocs/bug_report/bug_report_cubit.dart';
@@ -133,7 +134,11 @@ class _BugReportView extends StatelessWidget {
                       const SupportPublicSubmissionNotice(),
                       DivineTextField(
                         controller: fields.subject,
-                        maxLength: BugReportConfig.maxSubjectLength,
+                        inputFormatters: [
+                          LengthLimitingTextInputFormatter(
+                            BugReportConfig.maxSubjectLength,
+                          ),
+                        ],
                         labelText: l10n.supportSubjectRequiredLabel,
                         hintText: l10n.bugReportSubjectHint,
                         helperText: l10n.supportRequiredHelper,
@@ -145,7 +150,11 @@ class _BugReportView extends StatelessWidget {
                       ),
                       DivineTextField(
                         controller: fields.description,
-                        maxLength: BugReportConfig.maxFreeTextFieldLength,
+                        inputFormatters: [
+                          LengthLimitingTextInputFormatter(
+                            BugReportConfig.maxFreeTextFieldLength,
+                          ),
+                        ],
                         focusNode: fields.descriptionFocus,
                         labelText: l10n.bugReportDescriptionRequiredLabel,
                         hintText: l10n.bugReportDescriptionHint,
@@ -158,7 +167,11 @@ class _BugReportView extends StatelessWidget {
                       ),
                       DivineTextField(
                         controller: fields.steps,
-                        maxLength: BugReportConfig.maxFreeTextFieldLength,
+                        inputFormatters: [
+                          LengthLimitingTextInputFormatter(
+                            BugReportConfig.maxFreeTextFieldLength,
+                          ),
+                        ],
                         labelText: l10n.bugReportStepsLabel,
                         hintText: l10n.bugReportStepsHint,
                         enabled: !isSubmitting,
@@ -169,7 +182,11 @@ class _BugReportView extends StatelessWidget {
                       ),
                       DivineTextField(
                         controller: fields.expected,
-                        maxLength: BugReportConfig.maxFreeTextFieldLength,
+                        inputFormatters: [
+                          LengthLimitingTextInputFormatter(
+                            BugReportConfig.maxFreeTextFieldLength,
+                          ),
+                        ],
                         labelText: l10n.bugReportExpectedBehaviorLabel,
                         hintText: l10n.bugReportExpectedBehaviorHint,
                         enabled: !isSubmitting,

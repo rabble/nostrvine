@@ -109,24 +109,36 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('caps a pasted free-text field', (tester) async {
+    testWidgets('caps every pasted free-text field', (tester) async {
       // Sanitization is linear in field size but with a large constant, so an
-      // uncapped paste can freeze submission on the main isolate. The cap is
-      // far above any typed description.
+      // uncapped paste can freeze submission on the main isolate. Every field
+      // is asserted: a version of this test that checked only the description
+      // passed with the cap removed from the other three.
+      //
+      // The cap is an input formatter rather than `maxLength` so the form does
+      // not grow four Material character counters in non-VineTheme styling.
+      // The tradeoff is that truncation is silent.
       await openFlow(tester);
 
-      final descriptionField = find.byType(DivineTextField).at(1);
-      await tester.enterText(
-        descriptionField,
-        'a' * (BugReportConfig.maxFreeTextFieldLength + 500),
-      );
-      await tester.pump();
+      const overflow = 500;
+      final expectedCaps = <int, int>{
+        0: BugReportConfig.maxSubjectLength,
+        1: BugReportConfig.maxFreeTextFieldLength,
+        2: BugReportConfig.maxFreeTextFieldLength,
+        3: BugReportConfig.maxFreeTextFieldLength,
+      };
 
-      final widget = tester.widget<DivineTextField>(descriptionField);
-      expect(
-        widget.controller!.text.length,
-        BugReportConfig.maxFreeTextFieldLength,
-      );
+      for (final entry in expectedCaps.entries) {
+        final field = find.byType(DivineTextField).at(entry.key);
+        await tester.enterText(field, 'a' * (entry.value + overflow));
+        await tester.pump();
+
+        expect(
+          tester.widget<DivineTextField>(field).controller!.text.length,
+          entry.value,
+          reason: 'field ${entry.key} is not capped',
+        );
+      }
     });
 
     BugReportData testReportData() {

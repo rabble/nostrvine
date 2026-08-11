@@ -4,9 +4,11 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/feature_request/feature_request_cubit.dart';
 import 'package:openvine/blocs/feature_request/feature_request_state.dart';
+import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
@@ -111,6 +113,11 @@ class _FeatureRequestView extends StatelessWidget {
                       const SupportPublicSubmissionNotice(),
                       DivineTextField(
                         controller: fields.subject,
+                        inputFormatters: [
+                          LengthLimitingTextInputFormatter(
+                            BugReportConfig.maxSubjectLength,
+                          ),
+                        ],
                         labelText: l10n.supportSubjectRequiredLabel,
                         hintText: l10n.featureRequestSubjectHint,
                         helperText: l10n.supportRequiredHelper,
@@ -122,6 +129,11 @@ class _FeatureRequestView extends StatelessWidget {
                       ),
                       DivineTextField(
                         controller: fields.description,
+                        inputFormatters: [
+                          LengthLimitingTextInputFormatter(
+                            BugReportConfig.maxFreeTextFieldLength,
+                          ),
+                        ],
                         focusNode: fields.descriptionFocus,
                         labelText: l10n.featureRequestDescriptionRequiredLabel,
                         hintText: l10n.featureRequestDescriptionHint,
@@ -134,6 +146,11 @@ class _FeatureRequestView extends StatelessWidget {
                       ),
                       DivineTextField(
                         controller: fields.usefulness,
+                        inputFormatters: [
+                          LengthLimitingTextInputFormatter(
+                            BugReportConfig.maxFreeTextFieldLength,
+                          ),
+                        ],
                         labelText: l10n.featureRequestUsefulnessLabel,
                         hintText: l10n.featureRequestUsefulnessHint,
                         enabled: !isSubmitting,
@@ -144,6 +161,11 @@ class _FeatureRequestView extends StatelessWidget {
                       ),
                       DivineTextField(
                         controller: fields.whenToUse,
+                        inputFormatters: [
+                          LengthLimitingTextInputFormatter(
+                            BugReportConfig.maxFreeTextFieldLength,
+                          ),
+                        ],
                         labelText: l10n.featureRequestWhenLabel,
                         hintText: l10n.featureRequestWhenHint,
                         enabled: !isSubmitting,

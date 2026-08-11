@@ -1053,16 +1053,19 @@ void main() {
 
       await ZendeskSupportService.createFeatureRequest(
         subject: 'Let me pin a vine',
-        description: 'my password: {weird symbols and it died',
+        // The stray brace sits in `usefulness`, the second-to-last field, so
+        // the assertion covers the fields sanitized after it as well. With it
+        // in `description` the last two fields were never pinned.
+        description: 'it would help a lot',
+        usefulness: 'my password: {weird symbols and it died',
         // A closing brace downstream is what an unclosed one reaches for.
-        usefulness: 'I would use it daily {every morning}',
-        whenToUse: 'when I open the app',
+        whenToUse: 'when I open the app {every morning}',
       );
 
       final description = capturedDescription!;
 
       expect(description, contains('[REDACTED]'));
-      expect(description, contains('I would use it daily'));
+      expect(description, contains('it would help a lot'));
       expect(description, contains('when I open the app'));
     });
   });
