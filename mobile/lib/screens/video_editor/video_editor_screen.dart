@@ -448,8 +448,8 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
     final newClips = await VineBottomSheet.show<List<DivineVideoClip>>(
       context: context,
       maxChildSize: 1,
-      initialChildSize: 1,
-      minChildSize: 0.9,
+      initialChildSize: 0.9,
+      minChildSize: 0.5,
       buildScrollBody: (scrollController) => LibraryScreen(
         initialTabIndex: 1,
         selectionMode: true,
