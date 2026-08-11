@@ -1023,7 +1023,7 @@ class _PostAnalyticsDetailScreenState
         if (resolved == null) {
           return _PostAnalyticsDetailPlaceholder(
             child: Text(
-              context.l10n.analyticsNoVideosYet,
+              context.l10n.analyticsUnableToLoad,
               textAlign: TextAlign.center,
               style: VineTheme.bodyMediumFont(
                 color: context.vineColors.mutedText,
