@@ -12,6 +12,7 @@ import 'package:models/models.dart' as models;
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/l10n/generated/app_localizations_en.dart';
+import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
@@ -34,6 +35,17 @@ class _MockGallerySaveService extends Mock implements GallerySaveService {}
 class _MockClipLibraryService extends Mock implements ClipLibraryService {}
 
 class _MockDraftStorageService extends Mock implements DraftStorageService {}
+
+/// Stands in for the recorder session that opened the library, whose clips
+/// become the pre-selected set.
+class _StubClipManagerNotifier extends ClipManagerNotifier {
+  _StubClipManagerNotifier(this._clips);
+
+  final List<DivineVideoClip> _clips;
+
+  @override
+  ClipManagerState build() => ClipManagerState(clips: _clips);
+}
 
 void main() {
   final en = AppLocalizationsEn();
@@ -68,6 +80,7 @@ void main() {
       int initialTabIndex = 0,
       LibraryTabsMode tabsMode = LibraryTabsMode.allTabs,
       List<DivineVideoClip> editorClips = const [],
+      List<DivineVideoClip> sessionClips = const [],
     }) {
       return ProviderScope(
         overrides: [
@@ -77,7 +90,12 @@ void main() {
           draftStorageServiceProvider.overrideWithValue(
             mockDraftStorageService,
           ),
-          clipManagerProvider.overrideWith(ClipManagerNotifier.new),
+          if (sessionClips.isEmpty)
+            clipManagerProvider.overrideWith(ClipManagerNotifier.new)
+          else
+            clipManagerProvider.overrideWith(
+              () => _StubClipManagerNotifier(sessionClips),
+            ),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -215,6 +233,93 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(DraftsTab), findsOneWidget);
+      });
+    });
+
+    group('selection across tab changes', () {
+      DivineVideoClip sessionClip() => DivineVideoClip(
+        id: 'session-clip',
+        video: EditorVideo.file('/test/session.mp4'),
+        duration: const Duration(seconds: 2),
+        recordedAt: DateTime(2026),
+        targetAspectRatio: models.AspectRatio.vertical,
+        originalAspectRatio: 9 / 16,
+      );
+
+      ClipsLibraryBloc clipsBlocOf(WidgetTester tester) =>
+          BlocProvider.of<ClipsLibraryBloc>(
+            tester.element(find.byType(ClipsTab)),
+          );
+
+      // The auto-opened selection mirrors the recorder session that opened the
+      // library. Clearing it on a peek at Drafts would drop that session's
+      // clips, so it has to survive the tab change.
+      testWidgets('keeps an auto-opened selection when peeking at $DraftsTab', (
+        tester,
+      ) async {
+        final clip = sessionClip();
+        when(
+          () => mockClipLibraryService.getAllClips(),
+        ).thenAnswer((_) async => [clip]);
+        when(
+          () => mockClipLibraryService.recoverMissingAssets(any()),
+        ).thenAnswer(
+          (invocation) async =>
+              invocation.positionalArguments.single as List<DivineVideoClip>,
+        );
+
+        await tester.pumpWidget(
+          buildWidget(
+            initialTabIndex: 1,
+            tabsMode: LibraryTabsMode.withoutSounds,
+            sessionClips: [clip],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final clipsBloc = clipsBlocOf(tester);
+        expect(clipsBloc.state.didAutoOpenSelectionMode, isTrue);
+
+        await tester.tap(find.text(en.libraryTabDrafts));
+        await tester.pumpAndSettle();
+
+        final state = clipsBloc.state;
+        expect(state.isLibrarySelectionMode, isTrue);
+        expect(state.selectedClipIds, contains(clip.id));
+      });
+
+      testWidgets('clears a user-opened selection on a tab change', (
+        tester,
+      ) async {
+        final clip = sessionClip();
+        when(
+          () => mockClipLibraryService.getAllClips(),
+        ).thenAnswer((_) async => [clip]);
+        when(
+          () => mockClipLibraryService.recoverMissingAssets(any()),
+        ).thenAnswer(
+          (invocation) async =>
+              invocation.positionalArguments.single as List<DivineVideoClip>,
+        );
+
+        await tester.pumpWidget(
+          buildWidget(
+            initialTabIndex: 1,
+            tabsMode: LibraryTabsMode.withoutSounds,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final clipsBloc = clipsBlocOf(tester)
+          ..add(const ClipsLibraryEnterSelectionMode());
+        await tester.pumpAndSettle();
+
+        expect(clipsBloc.state.didAutoOpenSelectionMode, isFalse);
+
+        await tester.tap(find.text(en.libraryTabDrafts));
+        await tester.pumpAndSettle();
+
+        expect(clipsBloc.state.isLibrarySelectionMode, isFalse);
       });
     });
 
