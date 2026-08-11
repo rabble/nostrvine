@@ -6396,6 +6396,9 @@ class AppLocalizationsPl extends AppLocalizations {
       'Relay nie zwrócił list na czas. Spróbuj ponownie.';
 
   @override
+  String get discoverListsServiceUnavailable => 'Usługa niedostępna.';
+
+  @override
   String get discoverListsEmptyTitle => 'Nie znaleziono publicznych list';
 
   @override

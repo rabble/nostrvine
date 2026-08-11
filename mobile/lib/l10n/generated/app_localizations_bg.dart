@@ -6302,6 +6302,9 @@ class AppLocalizationsBg extends AppLocalizations {
       'Релето не върна списъци навреме. Опитай пак.';
 
   @override
+  String get discoverListsServiceUnavailable => 'Услугата не е налична.';
+
+  @override
   String get discoverListsEmptyTitle => 'Не са намерени публични списъци';
 
   @override

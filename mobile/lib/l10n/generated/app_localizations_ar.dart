@@ -6197,6 +6197,9 @@ class AppLocalizationsAr extends AppLocalizations {
       'لم يُرجع الريلاي القوائم في الوقت المناسب. حاول مرة أخرى.';
 
   @override
+  String get discoverListsServiceUnavailable => 'الخدمة غير متاحة.';
+
+  @override
   String get discoverListsEmptyTitle => 'لم يتم العثور على قوائم عامة';
 
   @override

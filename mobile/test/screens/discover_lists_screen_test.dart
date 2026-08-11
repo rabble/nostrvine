@@ -233,7 +233,12 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       final l10n = lookupAppLocalizations(const Locale('en'));
-      final controller = StreamController<List<CuratedList>>();
+      var refreshStreamCanceled = false;
+      final controller = StreamController<List<CuratedList>>(
+        onCancel: () {
+          refreshStreamCanceled = true;
+        },
+      );
       addTearDown(controller.close);
 
       when(
@@ -258,6 +263,7 @@ void main() {
       expect(find.text('List list_0'), findsOneWidget);
       expect(find.text(l10n.discoverListsFailedToLoad), findsNothing);
       expect(find.text(l10n.discoverListsRelayTimeout), findsNothing);
+      expect(refreshStreamCanceled, isTrue);
     });
   });
 }

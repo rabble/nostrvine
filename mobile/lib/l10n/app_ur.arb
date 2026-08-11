@@ -3643,6 +3643,7 @@
   },
   "discoverListsLoading": "عوامی فہرستیں دریافت ہو رہی ہیں...",
   "discoverListsRelayTimeout": "ریلے نے وقت پر فہرستیں واپس نہیں کیں۔ دوبارہ کوشش کریں۔",
+  "discoverListsServiceUnavailable": "سروس دستیاب نہیں ہے۔",
   "discoverListsEmptyTitle": "کوئی عوامی فہرست نہیں ملی",
   "discoverListsEmptySubtitle": "نئی فہرستوں کے لیے بعد میں دیکھیں",
   "discoverListsByAuthorPrefix": "از",

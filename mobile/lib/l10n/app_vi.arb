@@ -3643,6 +3643,7 @@
   },
   "discoverListsLoading": "Đang khám phá danh sách công khai...",
   "discoverListsRelayTimeout": "Relay không trả về danh sách kịp lúc. Thử lại nhé.",
+  "discoverListsServiceUnavailable": "Dịch vụ không khả dụng.",
   "discoverListsEmptyTitle": "Không tìm thấy danh sách công khai nào",
   "discoverListsEmptySubtitle": "Quay lại sau để xem danh sách mới nhé",
   "discoverListsByAuthorPrefix": "bởi",

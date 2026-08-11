@@ -3740,6 +3740,7 @@
     },
     "discoverListsLoading": "Publieke lijsten worden ontdekt...",
     "discoverListsRelayTimeout": "De relay leverde niet op tijd lijsten. Probeer het opnieuw.",
+    "discoverListsServiceUnavailable": "Service niet beschikbaar.",
     "discoverListsEmptyTitle": "Geen publieke lijsten gevonden",
     "discoverListsEmptySubtitle": "Kom later terug voor nieuwe lijsten",
     "discoverListsByAuthorPrefix": "door",

@@ -2908,6 +2908,7 @@
     },
     "discoverListsLoading": "የህዝብ ዝርዝሮችን በመፈለግ ላይ...",
     "discoverListsRelayTimeout": "ሪሌው በጊዜው ዝርዝሮችን አልመለሰም። እንደገና ሞክር።",
+    "discoverListsServiceUnavailable": "አገልግሎቱ አይገኝም።",
     "discoverListsEmptyTitle": "ምንም የህዝብ ዝርዝሮች አልተገኙም",
     "discoverListsEmptySubtitle": "ለአዳዲስ ዝርዝሮች ቆይተው ይመልከቱ",
     "discoverListsByAuthorPrefix": "በ",

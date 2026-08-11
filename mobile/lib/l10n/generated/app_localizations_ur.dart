@@ -6251,6 +6251,9 @@ class AppLocalizationsUr extends AppLocalizations {
       'ریلے نے وقت پر فہرستیں واپس نہیں کیں۔ دوبارہ کوشش کریں۔';
 
   @override
+  String get discoverListsServiceUnavailable => 'سروس دستیاب نہیں ہے۔';
+
+  @override
   String get discoverListsEmptyTitle => 'کوئی عوامی فہرست نہیں ملی';
 
   @override

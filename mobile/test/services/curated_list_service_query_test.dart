@@ -1,6 +1,9 @@
 // ABOUTME: Unit tests for CuratedListService query operations
 // ABOUTME: Tests searching, filtering, and retrieving lists
 
+import 'dart:async';
+
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' hide LogCategory;
@@ -347,6 +350,44 @@ void main() {
         // Assert
         expect(lists, isEmpty);
       });
+
+      test(
+        'cancels relay subscription when containing-video query times out',
+        () {
+          fakeAsync((async) {
+            const targetVideoId = 'orphan_video_id_123456789abcdef';
+            var streamCanceled = false;
+            final controller = StreamController<Event>(
+              onCancel: () {
+                streamCanceled = true;
+              },
+            );
+
+            when(
+              () => mockNostr.subscribe(any()),
+            ).thenAnswer((_) => controller.stream);
+
+            List<CuratedList>? lists;
+            unawaited(
+              service.fetchPublicListsContainingVideo(targetVideoId).then((
+                result,
+              ) {
+                lists = result;
+              }),
+            );
+
+            async
+              ..flushMicrotasks()
+              ..elapse(const Duration(seconds: 11))
+              ..flushMicrotasks()
+              ..flushMicrotasks()
+              ..flushMicrotasks();
+
+            expect(lists, isEmpty);
+            expect(streamCanceled, isTrue);
+          });
+        },
+      );
 
       test('returns stream for progressive loading', () async {
         const targetVideoId = 'target_video_123456789abcdef';

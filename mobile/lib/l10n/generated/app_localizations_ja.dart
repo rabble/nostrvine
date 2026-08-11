@@ -5971,6 +5971,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get discoverListsRelayTimeout => 'リレーが時間内にリストを返さなかったよ。もう一度試してね。';
 
   @override
+  String get discoverListsServiceUnavailable => 'サービスを利用できません。';
+
+  @override
   String get discoverListsEmptyTitle => '公開リストが見つからなかった';
 
   @override

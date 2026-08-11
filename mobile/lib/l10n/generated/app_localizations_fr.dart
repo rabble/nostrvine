@@ -6322,6 +6322,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Le relais n\'a pas renvoyé de listes à temps. Réessaie.';
 
   @override
+  String get discoverListsServiceUnavailable => 'Service indisponible.';
+
+  @override
   String get discoverListsEmptyTitle => 'Aucune liste publique trouvée';
 
   @override

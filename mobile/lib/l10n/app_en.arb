@@ -3900,6 +3900,7 @@
   },
   "discoverListsLoading": "Discovering public lists...",
   "discoverListsRelayTimeout": "The relay did not return lists in time. Try again.",
+  "discoverListsServiceUnavailable": "Service not available.",
   "discoverListsEmptyTitle": "No public lists found",
   "discoverListsEmptySubtitle": "Check back later for new lists",
   "discoverListsByAuthorPrefix": "by",

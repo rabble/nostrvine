@@ -10910,6 +10910,12 @@ abstract class AppLocalizations {
   /// **'The relay did not return lists in time. Try again.'**
   String get discoverListsRelayTimeout;
 
+  /// No description provided for @discoverListsServiceUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Service not available.'**
+  String get discoverListsServiceUnavailable;
+
   /// No description provided for @discoverListsEmptyTitle.
   ///
   /// In en, this message translates to:

@@ -3871,6 +3871,7 @@
     },
     "discoverListsLoading": "Откриваме публични списъци...",
     "discoverListsRelayTimeout": "Релето не върна списъци навреме. Опитай пак.",
+    "discoverListsServiceUnavailable": "Услугата не е налична.",
     "discoverListsEmptyTitle": "Не са намерени публични списъци",
     "discoverListsEmptySubtitle": "Върни се по-късно за нови списъци",
     "discoverListsByAuthorPrefix": "от",

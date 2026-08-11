@@ -618,9 +618,6 @@ class NostrClient {
   /// Number of active subscriptions
   int get activeSubscriptionCount => _subscriptionStreams.length;
 
-  /// Map of subscription IDs to their filter hashes (for diagnostics)
-  final Map<String, String> _subscriptionFilters = {};
-
   /// Map of active subscriptions
   final Map<String, StreamController<Event>> _subscriptionStreams = {};
 
@@ -1121,7 +1118,9 @@ class NostrClient {
   ///
   /// Returns a broadcast stream of events. Anonymous subscriptions receive a
   /// fresh relay subscription every call so bounded query screens can
-  /// re-enter safely after a previous listener was canceled.
+  /// re-enter safely after a previous listener was canceled. The returned
+  /// stream is closed when its last listener cancels; call [subscribe] again
+  /// instead of retaining and re-listening to the old stream.
   Stream<Event> subscribe(
     List<Filter> filters, {
     String? subscriptionId,
@@ -1158,8 +1157,10 @@ class NostrClient {
       if (!_subscriptionStreams.containsKey(effectiveId)) return;
       _nostr.unsubscribe(effectiveId);
       _subscriptionStreams.remove(effectiveId);
-      _subscriptionFilters.remove(effectiveId);
       statisticsObserver?.onSubscriptionClosed(effectiveId);
+      if (!controller.isClosed) {
+        unawaited(controller.close());
+      }
     }
 
     // Create new stream controller
@@ -1167,7 +1168,6 @@ class NostrClient {
       onCancel: cleanupSubscription,
     );
     _subscriptionStreams[id] = controller;
-    _subscriptionFilters[id] = filterHash;
 
     // Convert filters to JSON format expected by nostr_sdk
     final filtersJson = filters.map((f) => f.toJson()).toList();
@@ -1207,7 +1207,6 @@ class NostrClient {
     if (effectiveId != id) {
       _subscriptionStreams.remove(id);
       _subscriptionStreams[effectiveId] = controller;
-      _subscriptionFilters[effectiveId] = filterHash;
     }
 
     statisticsObserver?.onSubscriptionStarted(effectiveId);
@@ -1222,7 +1221,6 @@ class NostrClient {
     if (controller != null && !controller.isClosed) {
       await controller.close();
     }
-    _subscriptionFilters.remove(subscriptionId);
     statisticsObserver?.onSubscriptionClosed(subscriptionId);
   }
 
@@ -1757,7 +1755,6 @@ class NostrClient {
     _nostr.close();
     _verifyWorker?.close();
     _verifyWorker = null;
-    _subscriptionFilters.clear();
     _isDisposed = true;
   }
 

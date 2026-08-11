@@ -6287,6 +6287,9 @@ class AppLocalizationsPt extends AppLocalizations {
       'O relay não devolveu listas a tempo. Tente de novo.';
 
   @override
+  String get discoverListsServiceUnavailable => 'Serviço indisponível.';
+
+  @override
   String get discoverListsEmptyTitle => 'Nenhuma lista pública encontrada';
 
   @override

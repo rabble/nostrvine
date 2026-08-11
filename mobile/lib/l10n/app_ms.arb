@@ -3643,6 +3643,7 @@
   },
   "discoverListsLoading": "Menemui senarai awam...",
   "discoverListsRelayTimeout": "Relay tidak memulangkan senarai tepat pada masanya. Cuba lagi.",
+  "discoverListsServiceUnavailable": "Perkhidmatan tidak tersedia.",
   "discoverListsEmptyTitle": "Tiada senarai awam ditemui",
   "discoverListsEmptySubtitle": "Semak semula nanti untuk senarai baharu",
   "discoverListsByAuthorPrefix": "oleh",

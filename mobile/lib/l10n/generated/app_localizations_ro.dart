@@ -6400,6 +6400,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Releul nu a returnat liste la timp. Încearcă din nou.';
 
   @override
+  String get discoverListsServiceUnavailable => 'Serviciul nu este disponibil.';
+
+  @override
   String get discoverListsEmptyTitle => 'Nicio listă publică găsită';
 
   @override

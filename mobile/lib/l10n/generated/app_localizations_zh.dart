@@ -5945,6 +5945,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get discoverListsRelayTimeout => '中继没有及时返回列表。再试一次。';
 
   @override
+  String get discoverListsServiceUnavailable => '服务不可用。';
+
+  @override
   String get discoverListsEmptyTitle => '没有找到公开列表';
 
   @override

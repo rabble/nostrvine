@@ -6242,6 +6242,9 @@ class AppLocalizationsSv extends AppLocalizations {
       'Relayen returnerade inga listor i tid. Försök igen.';
 
   @override
+  String get discoverListsServiceUnavailable => 'Tjänsten är inte tillgänglig.';
+
+  @override
   String get discoverListsEmptyTitle => 'Inga publika listor hittades';
 
   @override

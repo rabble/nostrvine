@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -65,6 +66,43 @@ void main() {
         expect(curatedListService.lists.length, 0);
       },
     );
+
+    test('cancels relay subscription when user-list sync times out', () {
+      fakeAsync((async) {
+        when(() => mockAuthService.isAuthenticated).thenReturn(true);
+        when(() => mockAuthService.currentPublicKeyHex).thenReturn(
+          '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        );
+
+        var streamCanceled = false;
+        final streamController = StreamController<Event>(
+          onCancel: () {
+            streamCanceled = true;
+          },
+        );
+
+        when(
+          () => mockNostrService.subscribe(any()),
+        ).thenAnswer((_) => streamController.stream);
+
+        var completed = false;
+        unawaited(
+          curatedListService.fetchUserListsFromRelays().then((_) {
+            completed = true;
+          }),
+        );
+
+        async
+          ..flushMicrotasks()
+          ..elapse(const Duration(seconds: 11))
+          ..flushMicrotasks()
+          ..flushMicrotasks()
+          ..flushMicrotasks();
+
+        expect(completed, isTrue);
+        expect(streamCanceled, isTrue);
+      });
+    });
 
     // TODO(any): Fix and re-enable this test
     //test(

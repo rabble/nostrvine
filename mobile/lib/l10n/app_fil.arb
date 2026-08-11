@@ -2267,6 +2267,7 @@
     "discoverListsFailedToLoadWithError": "Hindi na-load ang mga listahan: {error}",
     "discoverListsLoading": "Naghahanap ng mga public list...",
     "discoverListsRelayTimeout": "Hindi nagbalik ng mga list ang relay sa oras. Subukan ulit.",
+    "discoverListsServiceUnavailable": "Hindi available ang serbisyo.",
     "discoverListsTitle": "Tuklasin ang mga Listahan",
     "featureRequestDescriptionHint": "I-describe ang feature na gusto mo",
     "featureRequestDescriptionRequiredLabel": "Ano ang gusto mo? *",

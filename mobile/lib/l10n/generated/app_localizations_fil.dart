@@ -6320,6 +6320,9 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi nagbalik ng mga list ang relay sa oras. Subukan ulit.';
 
   @override
+  String get discoverListsServiceUnavailable => 'Hindi available ang serbisyo.';
+
+  @override
   String get discoverListsEmptyTitle => 'Walang nakitang public list';
 
   @override

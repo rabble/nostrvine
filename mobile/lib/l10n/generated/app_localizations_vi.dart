@@ -6252,6 +6252,9 @@ class AppLocalizationsVi extends AppLocalizations {
       'Relay không trả về danh sách kịp lúc. Thử lại nhé.';
 
   @override
+  String get discoverListsServiceUnavailable => 'Dịch vụ không khả dụng.';
+
+  @override
   String get discoverListsEmptyTitle =>
       'Không tìm thấy danh sách công khai nào';
 

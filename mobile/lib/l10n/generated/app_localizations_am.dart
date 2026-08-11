@@ -6117,6 +6117,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get discoverListsRelayTimeout => 'ሪሌው በጊዜው ዝርዝሮችን አልመለሰም። እንደገና ሞክር።';
 
   @override
+  String get discoverListsServiceUnavailable => 'አገልግሎቱ አይገኝም።';
+
+  @override
   String get discoverListsEmptyTitle => 'ምንም የህዝብ ዝርዝሮች አልተገኙም';
 
   @override

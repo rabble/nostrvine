@@ -3740,6 +3740,7 @@
     },
     "discoverListsLoading": "جاري اكتشاف القوائم العامة...",
     "discoverListsRelayTimeout": "لم يُرجع الريلاي القوائم في الوقت المناسب. حاول مرة أخرى.",
+    "discoverListsServiceUnavailable": "الخدمة غير متاحة.",
     "discoverListsEmptyTitle": "لم يتم العثور على قوائم عامة",
     "discoverListsEmptySubtitle": "عاود التحقق لاحقًا لرؤية قوائم جديدة",
     "discoverListsByAuthorPrefix": "بقلم",

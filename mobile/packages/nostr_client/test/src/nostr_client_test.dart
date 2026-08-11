@@ -2115,6 +2115,35 @@ void main() {
         },
       );
 
+      test('closes anonymous stream after last listener cancels', () async {
+        final filters = [
+          Filter(kinds: [EventKind.textNote], limit: 10),
+        ];
+
+        when(
+          () => mockNostr.subscribe(
+            any(),
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
+          ),
+        ).thenAnswer(
+          (invocation) => invocation.namedArguments[#id] as String,
+        );
+        when(() => mockNostr.unsubscribe(any())).thenReturn(null);
+
+        final stream = client.subscribe(filters);
+        final subscription = stream.listen((_) {});
+
+        await subscription.cancel();
+
+        await expectLater(stream, emitsDone);
+      });
+
       test('uses custom subscription ID when provided', () {
         final filters = [
           Filter(kinds: [EventKind.textNote], limit: 10),

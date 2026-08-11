@@ -37,7 +37,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
   String? _errorMessage;
   StreamSubscription<List<CuratedList>>? _subscription;
   final _scrollController = ScrollController();
-  Timer? _initialLoadTimeoutTimer;
+  Timer? _streamTimeoutTimer;
 
   // Debounce timer for batching rapid stream updates
   Timer? _updateDebounceTimer;
@@ -50,7 +50,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
   int _autoPaginationAttempts = 0;
   static const int _maxAutoPaginationAttempts = 5;
   static const int _minListsBeforeAutoPaginate = 10;
-  static const Duration _initialLoadTimeout = Duration(seconds: 8);
+  static const Duration _streamTimeout = Duration(seconds: 8);
 
   @override
   ScrollController get paginationScrollController => _scrollController;
@@ -78,7 +78,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
 
   @override
   void dispose() {
-    _initialLoadTimeoutTimer?.cancel();
+    _streamTimeoutTimer?.cancel();
     _updateDebounceTimer?.cancel();
     _subscription?.cancel();
     disposePagination();
@@ -114,35 +114,36 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
       if (service == null) {
         provider.setLoading(false);
         setState(() {
-          _errorMessage = 'Service not available';
+          _isRefreshing = false;
+          _errorMessage = context.l10n.discoverListsServiceUnavailable;
         });
         return;
       }
 
       // Stream results - UI updates with debouncing to handle rapid events
       await _subscription?.cancel();
-      _initialLoadTimeoutTimer?.cancel();
+      _streamTimeoutTimer?.cancel();
       var hasReceivedStreamUpdate = false;
       // Only guard the empty screen. The error view replaces the list
       // entirely, so arming this during a refresh would wipe lists the user
       // is already reading whenever a relay answers slowly.
-      if (!hadExistingLists) {
-        _initialLoadTimeoutTimer = Timer(_initialLoadTimeout, () {
-          if (!mounted || hasReceivedStreamUpdate) return;
+      _streamTimeoutTimer = Timer(_streamTimeout, () {
+        if (!mounted || hasReceivedStreamUpdate) return;
 
-          unawaited(_subscription?.cancel());
-          _subscription = null;
-          provider.setLoading(false);
-          setState(() {
-            _isRefreshing = false;
+        unawaited(_subscription?.cancel());
+        _subscription = null;
+        provider.setLoading(false);
+        setState(() {
+          _isRefreshing = false;
+          if (!hadExistingLists) {
             _errorMessage = context.l10n.discoverListsRelayTimeout;
-          });
+          }
         });
-      }
+      });
       _subscription = service.streamPublicListsFromRelays().listen(
         (lists) {
           hasReceivedStreamUpdate = true;
-          _initialLoadTimeoutTimer?.cancel();
+          _streamTimeoutTimer?.cancel();
           if (mounted) {
             // Track oldest timestamp for pagination
             for (final list in lists) {
@@ -214,7 +215,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
           }
         },
         onError: (error) {
-          _initialLoadTimeoutTimer?.cancel();
+          _streamTimeoutTimer?.cancel();
           if (mounted) {
             provider.setLoading(false);
             setState(() {
@@ -226,7 +227,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
           }
         },
         onDone: () {
-          _initialLoadTimeoutTimer?.cancel();
+          _streamTimeoutTimer?.cancel();
           if (mounted && !hasReceivedStreamUpdate) {
             provider.setLoading(false);
             setState(() {
@@ -236,7 +237,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
         },
       );
     } catch (e) {
-      _initialLoadTimeoutTimer?.cancel();
+      _streamTimeoutTimer?.cancel();
       if (mounted) {
         ref.read(discoveredListsProvider.notifier).setLoading(false);
         setState(() {

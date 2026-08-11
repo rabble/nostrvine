@@ -6212,6 +6212,9 @@ class AppLocalizationsTr extends AppLocalizations {
       'Relay listeleri zamanında döndürmedi. Tekrar dene.';
 
   @override
+  String get discoverListsServiceUnavailable => 'Hizmet kullanılamıyor.';
+
+  @override
   String get discoverListsEmptyTitle => 'Herkese açık liste bulunamadı';
 
   @override
