@@ -10,7 +10,7 @@ tags:
 # Classic renders three controls where capture renders five and stop-motion
 # five: a lens switch, the grid toggle and the ghost toggle. There is no flash
 # control (classic has no rail at all), no aspect ratio (classic is square by
-# definition — `defaultAspectRatio` is the only mode that returns it), and
+# definition — the only mode whose `defaultAspectRatio` returns square), and
 # neither of the declared-only pair.
 #
 # The lens switch is the same control every other mode drives, announcing the

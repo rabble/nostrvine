@@ -221,8 +221,9 @@ Shared:
   whose buttons are OS-localized copy. Note the relaunch deliberately does
   *not* clear state: on Android `pm clear` wipes the encrypted preferences the
   Nostr key lives in and would sign the account back out mid-flow.
-- **Hardware for the guarded rail controls.** Flash (all three modes) and
-  stabilization (capture and lip-sync) are driven behind an `enabled: true`
+- **Hardware for the guarded rail controls.** Flash (the three capture-stack
+  modes — classic renders no rail at all) and stabilization (capture and
+  lip-sync) are driven behind an `enabled: true`
   guard, because both are disabled outright when the active lens has no flash
   unit or reports a single stabilization mode. Where the feature is missing the
   block prints `SKIPPED` rather than failing — check the run output before
