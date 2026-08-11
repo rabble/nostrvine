@@ -28,11 +28,14 @@ void main() {
         // pumpAndSettle never returns here: the app runs persistent polling
         // timers, so the tree never reaches a quiescent frame.
         launchAppGuarded(app.main);
-        await pumpUntilSettled(tester, maxSeconds: 3);
-
-        // Verify app is running
-        final materialAppFinder = find.byType(MaterialApp);
-        expect(materialAppFinder, findsOneWidget, reason: 'App should start');
+        // Poll rather than pump a fixed budget: first launch on a cold
+        // device takes well over three seconds to mount MaterialApp.
+        final appStarted = await waitForWidget(
+          tester,
+          find.byType(MaterialApp),
+          maxSeconds: 30,
+        );
+        expect(appStarted, isTrue, reason: 'App should start');
 
         // Welcome screen uses passive terms — tap "Create a new Divine
         // account" to proceed (no checkboxes in current UI)

@@ -58,9 +58,16 @@ void main() {
         // ── Phase 2: Register sender + verify email ──
         logPhase('── Phase 2: Register sender + verify email ──');
         // pumpAndSettle never returns here: the app runs persistent polling
-        // timers, so the tree never reaches a quiescent frame.
+        // timers, so the tree never reaches a quiescent frame. Poll for the
+        // app instead of pumping a fixed budget — a cold launch takes well
+        // over three seconds to mount MaterialApp.
         launchAppGuarded(app.main);
-        await pumpUntilSettled(tester, maxSeconds: 3);
+        final appStarted = await waitForWidget(
+          tester,
+          find.byType(MaterialApp),
+          maxSeconds: 30,
+        );
+        expect(appStarted, isTrue, reason: 'App should start');
 
         await navigateToCreateAccount(tester);
         await registerNewUser(tester, senderEmail, senderPassword);
