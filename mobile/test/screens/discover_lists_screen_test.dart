@@ -224,5 +224,40 @@ void main() {
       expect(find.text(l10n.discoverListsRelayTimeout), findsOneWidget);
       expect(find.text(l10n.commonRetry), findsOneWidget);
     });
+    testWidgets('refresh that never emits keeps the lists already on screen', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final controller = StreamController<List<CuratedList>>();
+      addTearDown(controller.close);
+
+      when(
+        () => mockService.streamPublicListsFromRelays(),
+      ).thenAnswer((_) => controller.stream);
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('List list_0'), findsOneWidget);
+
+      // Pull to refresh against a relay that never answers.
+      await tester.fling(find.text('List list_0'), const Offset(0, 400), 1000);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump(const Duration(seconds: 9));
+      await tester.pump();
+
+      // The initial-load timeout must not fire here: replacing a populated
+      // screen with the error view would lose content the user was reading.
+      expect(find.text('List list_0'), findsOneWidget);
+      expect(find.text(l10n.discoverListsFailedToLoad), findsNothing);
+      expect(find.text(l10n.discoverListsRelayTimeout), findsNothing);
+    });
   });
 }

@@ -123,17 +123,22 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
       await _subscription?.cancel();
       _initialLoadTimeoutTimer?.cancel();
       var hasReceivedStreamUpdate = false;
-      _initialLoadTimeoutTimer = Timer(_initialLoadTimeout, () {
-        if (!mounted || hasReceivedStreamUpdate) return;
+      // Only guard the empty screen. The error view replaces the list
+      // entirely, so arming this during a refresh would wipe lists the user
+      // is already reading whenever a relay answers slowly.
+      if (!hadExistingLists) {
+        _initialLoadTimeoutTimer = Timer(_initialLoadTimeout, () {
+          if (!mounted || hasReceivedStreamUpdate) return;
 
-        unawaited(_subscription?.cancel());
-        _subscription = null;
-        provider.setLoading(false);
-        setState(() {
-          _isRefreshing = false;
-          _errorMessage = context.l10n.discoverListsRelayTimeout;
+          unawaited(_subscription?.cancel());
+          _subscription = null;
+          provider.setLoading(false);
+          setState(() {
+            _isRefreshing = false;
+            _errorMessage = context.l10n.discoverListsRelayTimeout;
+          });
         });
-      });
+      }
       _subscription = service.streamPublicListsFromRelays().listen(
         (lists) {
           hasReceivedStreamUpdate = true;
