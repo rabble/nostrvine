@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_editor/transform/transform_editor_configs.dart';
 import 'package:pro_image_editor/pro_image_editor.dart'
-    show ProImageEditorConfigs;
+    show OutputFormat, ProImageEditorConfigs;
 
 void main() {
   group(transformEditorConfigs, () {
@@ -48,6 +48,17 @@ void main() {
 
       expect(configs.cropRotateEditor.initAspectRatio, 9 / 16);
       expect(configs.cropRotateEditor.enableKeepAspectRatioOnRotate, isTrue);
+    });
+
+    testWidgets('encodes JPEG, the extension the frame is written under', (
+      tester,
+    ) async {
+      // `StopMotionFrameTransformService` names its output `.jpg`. Nothing
+      // else makes that true, so a package default flipping to PNG would put
+      // PNG bytes behind a `.jpg` name without a single test going red.
+      await build(tester);
+
+      expect(configs.imageGeneration.outputFormat, OutputFormat.jpg);
     });
   });
 }

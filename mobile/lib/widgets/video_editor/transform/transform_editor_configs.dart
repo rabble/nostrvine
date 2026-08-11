@@ -52,6 +52,11 @@ ProImageEditorConfigs transformEditorConfigs(
 }) {
   return ProImageEditorConfigs(
     heroTag: transformEditorHeroTag,
+    // `imageGeneration` is left at the package default, whose `outputFormat`
+    // is JPEG — the format `StopMotionFrameTransformService` names its file
+    // after. Setting it here trips `avoid_redundant_argument_values`, so the
+    // configs test pins it instead; a package bump that flips the default
+    // fails there rather than silently putting PNG bytes behind a `.jpg`.
     cropRotateEditor: CropRotateEditorConfigs(
       enableKeepAspectRatioOnRotate: true,
       initAspectRatio: initAspectRatio,

@@ -25,13 +25,23 @@ class StopMotionFrameTransformService {
   /// Always a *new* file, never an overwrite of the source still: editor undo
   /// history keeps pointing at the original path, and duplicated stills share
   /// one file, so rewriting in place would silently transform every copy and
-  /// make undo a no-op. The superseded file is intentionally left on disk for
-  /// the same reason the clip transform leaves its input behind; the draft
-  /// orphan sweep reclaims it once no clip references it.
+  /// make undo a no-op.
+  ///
+  /// The superseded still is left on disk, and nothing reclaims it: undo can
+  /// still reach it for the rest of the session, and once the draft stops
+  /// referencing it no sweep enumerates it either — `FileCleanupService` only
+  /// sees paths handed to it explicitly, and `StorageManagementService` scans
+  /// for `.mp4` temp renders only. That is the same leak the clip transform
+  /// already has for its input file, so both are tracked together in #7077
+  /// rather than solved for one of them here.
   ///
   /// Frames persist as a documents-relative basename (`StopMotionClipFrame`
   /// stores only the file name), so the documents directory is the only place
   /// the file may live.
+  ///
+  /// The `.jpg` name is only honest because `transformEditorConfigs` runs the
+  /// editor on an `outputFormat` of JPEG; its test pins that so this name
+  /// cannot start lying after a package bump.
   ///
   /// Throws [FileSystemException] when the write fails; callers surface that
   /// rather than committing a frame that points at nothing.
