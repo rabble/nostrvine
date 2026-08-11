@@ -45,17 +45,20 @@ void main() {
 
     test('migrates v2 profile statistic follower timestamps to v3', () async {
       final schema = await verifier.schemaAt(2);
-      final db = AppDatabase(schema.newConnection());
-      final cachedAt = DateTime(2026).millisecondsSinceEpoch ~/ 1000;
+      final cachedAt =
+          DateTime.now()
+              .subtract(const Duration(hours: 10))
+              .millisecondsSinceEpoch ~/
+          1000;
 
-      await db.customStatement(
+      schema.rawDatabase.execute(
         'INSERT INTO profile_statistics '
         '(pubkey, video_count, follower_count, following_count, total_views, '
         'total_likes, cached_at) '
         'VALUES (?, NULL, ?, ?, NULL, NULL, ?)',
         ['withcounts', 12, 7, cachedAt],
       );
-      await db.customStatement(
+      schema.rawDatabase.execute(
         'INSERT INTO profile_statistics '
         '(pubkey, video_count, follower_count, following_count, total_views, '
         'total_likes, cached_at) '
@@ -63,6 +66,7 @@ void main() {
         ['withoutcounts', cachedAt],
       );
 
+      final db = AppDatabase(schema.newConnection());
       await verifier.migrateAndValidate(db, 3);
 
       final rows = await db
@@ -80,8 +84,8 @@ void main() {
         cachedAt,
       );
       expect(
-        byPubkey['withoutcounts']!.read<int?>('follower_counts_updated_at'),
-        isNull,
+        byPubkey.containsKey('withoutcounts'),
+        isFalse,
       );
       await db.close();
     });

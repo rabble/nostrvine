@@ -150,7 +150,7 @@ class AppDatabase extends _$AppDatabase {
         await _addColumnIfMissing(
           'profile_statistics',
           'follower_counts_updated_at',
-          'INTEGER',
+          'INTEGER NULL',
         );
         await _backfillFollowerCountTimestamps();
       }
@@ -174,7 +174,7 @@ class AppDatabase extends _$AppDatabase {
     await _addColumnIfMissing(
       'profile_statistics',
       'follower_counts_updated_at',
-      'INTEGER',
+      'INTEGER NULL',
     );
     await _backfillFollowerCountTimestamps();
   }

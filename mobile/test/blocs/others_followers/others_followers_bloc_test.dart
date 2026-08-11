@@ -526,6 +526,35 @@ void main() {
       );
 
       blocTest<OthersFollowersBloc, OthersFollowersState>(
+        'keeps the visible count steady when removing a blocked follower',
+        setUp: () {
+          when(
+            () => mockBlocklistRepository.isBlocked(validPubkey('blocked')),
+          ).thenReturn(true);
+        },
+        build: createBloc,
+        seed: () => OthersFollowersState(
+          status: OthersFollowersStatus.success,
+          followersPubkeys: [validPubkey('existing')],
+          rawFollowersPubkeys: [
+            validPubkey('existing'),
+            validPubkey('blocked'),
+          ],
+          authoritativeFollowerCount: 500,
+          targetPubkey: validPubkey('target'),
+        ),
+        act: (bloc) => bloc.add(
+          OthersFollowersDecrementRequested(validPubkey('blocked')),
+        ),
+        verify: (bloc) {
+          expect(bloc.state.authoritativeFollowerCount, equals(499));
+          expect(bloc.state.rawFollowersPubkeys, [validPubkey('existing')]);
+          expect(bloc.state.followersPubkeys, [validPubkey('existing')]);
+          expect(bloc.state.followerCount, equals(499));
+        },
+      );
+
+      blocTest<OthersFollowersBloc, OthersFollowersState>(
         'removes last follower leaving empty list with zero count',
         build: createBloc,
         seed: () => OthersFollowersState(
@@ -543,6 +572,42 @@ void main() {
             targetPubkey: validPubkey('target'),
           ),
         ],
+      );
+    });
+
+    group('OthersFollowersBlocklistChanged', () {
+      blocTest<OthersFollowersBloc, OthersFollowersState>(
+        'subtracts newly hidden known followers from the visible count',
+        setUp: () {
+          when(
+            () => mockBlocklistRepository.isBlocked(validPubkey('hidden')),
+          ).thenReturn(true);
+        },
+        build: createBloc,
+        seed: () => OthersFollowersState(
+          status: OthersFollowersStatus.success,
+          followersPubkeys: [validPubkey('visible'), validPubkey('hidden')],
+          rawFollowersPubkeys: [validPubkey('visible'), validPubkey('hidden')],
+          authoritativeFollowerCount: 500,
+          targetPubkey: validPubkey('target'),
+        ),
+        act: (bloc) => bloc.add(const OthersFollowersBlocklistChanged()),
+        verify: (bloc) {
+          expect(bloc.state.authoritativeFollowerCount, equals(500));
+          expect(bloc.state.rawFollowersPubkeys, [
+            validPubkey('visible'),
+            validPubkey('hidden'),
+          ]);
+          expect(bloc.state.followersPubkeys, [validPubkey('visible')]);
+          expect(bloc.state.followerCount, equals(499));
+        },
+      );
+
+      blocTest<OthersFollowersBloc, OthersFollowersState>(
+        'does nothing when not in success state',
+        build: createBloc,
+        act: (bloc) => bloc.add(const OthersFollowersBlocklistChanged()),
+        expect: () => <OthersFollowersState>[],
       );
     });
   });

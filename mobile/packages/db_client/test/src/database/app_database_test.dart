@@ -306,7 +306,7 @@ void main() {
         expect(fetched.selfWrapStatus, OutgoingWrapStatus.pending);
       });
 
-      test('upgrade path — legacy v1 database migrates to v2', () async {
+      test('upgrade path — legacy v1 database migrates to v3', () async {
         // The generated `migration_test.dart` cannot cover this: both
         // `drift_schema_v1.json` and `drift_schema_v2.json` are dumps of the
         // same declared table set, so `schemaAt(1)` already hands back a

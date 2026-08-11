@@ -2685,7 +2685,7 @@ final class Schema3 extends i0.VersionedSchema {
     ),
     alias: null,
   );
-  late final Shape3 profileStatistics = Shape3(
+  late final Shape26 profileStatistics = Shape26(
     source: i0.VersionedTable(
       entityName: 'profile_statistics',
       withoutRowId: false,
@@ -2699,6 +2699,7 @@ final class Schema3 extends i0.VersionedSchema {
         _column_34,
         _column_35,
         _column_36,
+        _column_170,
       ],
       attachedDatabase: database,
     ),
@@ -3095,13 +3096,13 @@ final class Schema3 extends i0.VersionedSchema {
     ),
     alias: null,
   );
-  late final Shape26 identityEvents = Shape26(
+  late final Shape27 identityEvents = Shape27(
     source: i0.VersionedTable(
       entityName: 'identity_events',
       withoutRowId: false,
       isStrict: false,
       tableConstraints: ['PRIMARY KEY(pubkey)'],
-      columns: [_column_1, _column_163, _column_164, _column_170, _column_171],
+      columns: [_column_1, _column_163, _column_164, _column_171, _column_172],
       attachedDatabase: database,
     ),
     alias: null,
@@ -3145,6 +3146,35 @@ class Shape26 extends i0.VersionedTable {
   Shape26({required super.source, required super.alias}) : super.aliased();
   i1.GeneratedColumn<String> get pubkey =>
       columnsByName['pubkey']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get videoCount =>
+      columnsByName['video_count']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<int> get followerCount =>
+      columnsByName['follower_count']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<int> get followingCount =>
+      columnsByName['following_count']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<int> get totalViews =>
+      columnsByName['total_views']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<int> get totalLikes =>
+      columnsByName['total_likes']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<int> get cachedAt =>
+      columnsByName['cached_at']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<int> get followerCountsUpdatedAt =>
+      columnsByName['follower_counts_updated_at']! as i1.GeneratedColumn<int>;
+}
+
+i1.GeneratedColumn<int> _column_170(String aliasedName) =>
+    i1.GeneratedColumn<int>(
+      'follower_counts_updated_at',
+      aliasedName,
+      true,
+      type: i1.DriftSqlType.int,
+      $customConstraints: 'NULL',
+    );
+
+class Shape27 extends i0.VersionedTable {
+  Shape27({required super.source, required super.alias}) : super.aliased();
+  i1.GeneratedColumn<String> get pubkey =>
+      columnsByName['pubkey']! as i1.GeneratedColumn<String>;
   i1.GeneratedColumn<String> get tagsJson =>
       columnsByName['tags_json']! as i1.GeneratedColumn<String>;
   i1.GeneratedColumn<int> get sourceKind =>
@@ -3155,7 +3185,7 @@ class Shape26 extends i0.VersionedTable {
       columnsByName['source_event_id']! as i1.GeneratedColumn<String>;
 }
 
-i1.GeneratedColumn<int> _column_170(String aliasedName) =>
+i1.GeneratedColumn<int> _column_171(String aliasedName) =>
     i1.GeneratedColumn<int>(
       'source_created_at',
       aliasedName,
@@ -3163,7 +3193,7 @@ i1.GeneratedColumn<int> _column_170(String aliasedName) =>
       type: i1.DriftSqlType.int,
       $customConstraints: 'NULL',
     );
-i1.GeneratedColumn<String> _column_171(String aliasedName) =>
+i1.GeneratedColumn<String> _column_172(String aliasedName) =>
     i1.GeneratedColumn<String>(
       'source_event_id',
       aliasedName,

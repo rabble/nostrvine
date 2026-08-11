@@ -479,6 +479,16 @@
             "default_dart": null,
             "default_client_dart": null,
             "dsl_features": []
+          },
+          {
+            "name": "follower_counts_updated_at",
+            "getter_name": "followerCountsUpdatedAt",
+            "moor_type": "dateTime",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
           }
         ],
         "is_virtual": false,
@@ -3068,7 +3078,7 @@
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"profile_statistics\" (\"pubkey\" TEXT NOT NULL, \"video_count\" INTEGER NULL, \"follower_count\" INTEGER NULL, \"following_count\" INTEGER NULL, \"total_views\" INTEGER NULL, \"total_likes\" INTEGER NULL, \"cached_at\" INTEGER NOT NULL, PRIMARY KEY (\"pubkey\"));"
+          "sql": "CREATE TABLE IF NOT EXISTS \"profile_statistics\" (\"pubkey\" TEXT NOT NULL, \"video_count\" INTEGER NULL, \"follower_count\" INTEGER NULL, \"following_count\" INTEGER NULL, \"total_views\" INTEGER NULL, \"total_likes\" INTEGER NULL, \"cached_at\" INTEGER NOT NULL, \"follower_counts_updated_at\" INTEGER NULL, PRIMARY KEY (\"pubkey\"));"
         }
       ]
     },
