@@ -2100,6 +2100,74 @@ void main() {
           expect(result!.selfWrapPublished, isTrue);
         },
       );
+
+      test(
+        'a send with no outer cap also gets the wider rebuild bound',
+        () {
+          // `sendFileMessage` and the bug-report send reach sendRumor via
+          // sendPrivateMessage and impose NO outer cap, so the tight
+          // send-sized bound would fail a self-wrap the transport itself
+          // would have completed — permanently losing the sender's
+          // cross-device copy, since neither is queued for recoverSelfWrap.
+          // Only DmRepository's capped path opts into `selfWrapBuild`.
+          final senderPublicKey = getPublicKey(_testPrivateKey);
+          final slowRebuild =
+              DmSendBudget.selfWrapBuild + const Duration(seconds: 5);
+
+          NIP17SendResult? result;
+          fakeAsync((async) {
+            var builds = 0;
+            final service = NIP17MessageService(
+              signer: LocalNostrSigner(_testPrivateKey),
+              senderPublicKey: senderPublicKey,
+              nostrService: client,
+              giftWrapBuilder: (nostr, rumor, receiverPubkey) {
+                builds++;
+                // Recipient wrap is prompt; only the self-wrap rebuild is slow.
+                return builds == 1
+                    ? GiftWrapUtil.getGiftWrapEvent(
+                        nostr,
+                        rumor,
+                        receiverPubkey,
+                      )
+                    : Future.delayed(
+                        slowRebuild,
+                        () => GiftWrapUtil.getGiftWrapEvent(
+                          nostr,
+                          rumor,
+                          receiverPubkey,
+                        ),
+                      );
+              },
+            );
+
+            unawaited(
+              service
+                  .sendPrivateMessage(
+                    recipientPubkey: _recipientPubkey,
+                    content: 'uncapped caller',
+                    awaitRecipientOk: true,
+                  )
+                  .then((r) => result = r),
+            );
+
+            async
+              ..flushMicrotasks()
+              ..elapse(DmSendBudget.selfWrapRecoveryBuild)
+              ..flushMicrotasks();
+          });
+
+          expect(result, isNotNull, reason: 'send must resolve, not hang');
+          expect(result!.success, isTrue);
+          expect(
+            result!.selfWrapPublished,
+            isTrue,
+            reason:
+                'a rebuild slower than selfWrapBuild must still land when '
+                'the caller imposes no cap of its own',
+          );
+        },
+      );
     });
   });
 }

@@ -340,13 +340,26 @@ class NIP17MessageService {
   /// contract: soft-unconfirmed recipient publishes return retryable failure
   /// and the caller owns any fallback behavior.
   @useResult
+  /// [selfWrapBuildTimeout] bounds the self-wrap build, defaulting to the
+  /// tight [DmSendBudget.selfWrapBuild] because both direct callers
+  /// (`DmRepository._sendRumorWithTimeout`, `DmReactionsRepository`) wrap this
+  /// in an outer cap the tight bound exists to keep the chain under.
+  ///
+  /// A caller with NO outer cap must pass [DmSendBudget.selfWrapRecoveryBuild]
+  /// instead — there the tight bound protects no budget and can only fail a
+  /// rebuild the transport itself would have completed, permanently losing the
+  /// sender's cross-device copy. [sendPrivateMessage] does exactly that, which
+  /// is what `DmRepository.sendFileMessage` and the bug-report send reach it
+  /// through; neither imposes a cap of its own.
   Future<NIP17SendResult> sendRumor({
     required Event rumorEvent,
     required String recipientPubkey,
     List<String>? targetRelays,
     bool awaitRecipientOk = false,
     bool selfWrapOnSoftUnconfirmed = true,
+    Duration? selfWrapBuildTimeout,
   }) async {
+    final selfWrapBound = selfWrapBuildTimeout ?? DmSendBudget.selfWrapBuild;
     try {
       // Send gate (#176): the lowest recipient-delivering primitive, so every
       // publisher — direct send, group fan-out, drain replay, reactions,
@@ -504,7 +517,7 @@ class NIP17MessageService {
             await _publishSelfWrap(
               nostr: nostr,
               rumorEvent: rumorEvent,
-              wrapBuildTimeout: DmSendBudget.selfWrapBuild,
+              wrapBuildTimeout: selfWrapBound,
               prebuiltSelfWrap: prebuiltSelfWrap,
             );
 
@@ -581,7 +594,7 @@ class NIP17MessageService {
       final selfWrapPublished = await _publishSelfWrap(
         nostr: nostr,
         rumorEvent: rumorEvent,
-        wrapBuildTimeout: DmSendBudget.selfWrapBuild,
+        wrapBuildTimeout: selfWrapBound,
         prebuiltSelfWrap: prebuiltSelfWrap,
       );
 
@@ -853,6 +866,10 @@ class NIP17MessageService {
       targetRelays: targetRelays,
       awaitRecipientOk: awaitRecipientOk,
       selfWrapOnSoftUnconfirmed: selfWrapOnSoftUnconfirmed,
+      // No caller of this method imposes an outer cap, so the tight
+      // send-sized bound would protect nothing and could only fail a
+      // self-wrap the transport would have completed.
+      selfWrapBuildTimeout: DmSendBudget.selfWrapRecoveryBuild,
     );
   }
 
