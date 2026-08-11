@@ -547,6 +547,47 @@ void main() {
       expect(result.error, isNull);
     });
 
+    test('keeps only the redacted copy in local history', () async {
+      // Nothing reads this history today, which is exactly why the raw copy
+      // should not sit there waiting for the first feature that surfaces,
+      // exports or replays it.
+      final reportEvent = createTestEvent(
+        pubkey: testPublicKey,
+        kind: 1984,
+        tags: [
+          ['e', _validEventId('e')],
+          ['p', 'reported_author'],
+        ],
+        content: 'spam',
+      );
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => reportEvent);
+      when(
+        () => mockNostrService.publishEvent(
+          any(),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
+
+      final _ = await service.reportContent(
+        eventId: _validEventId('e'),
+        authorPubkey: 'reported_author',
+        reason: ContentFilterReason.other,
+        details: 'they posted my password: hunter2',
+        additionalContext: 'and my api_key=SECRETKEY123',
+      );
+
+      final stored = service.reportHistory.last;
+      expect(stored.details, contains('[REDACTED]'));
+      expect(stored.details, isNot(contains('hunter2')));
+      expect(stored.additionalContext, isNot(contains('SECRETKEY123')));
+    });
+
     test('never publishes a credential in the kind 1984 event', () async {
       // The NIP-56 event goes to public relays: world-readable, permanent and
       // unretractable, so it is a worse destination for a pasted secret than

@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
@@ -158,6 +159,93 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.supportFieldLimitReached), findsOneWidget);
+    });
+
+    testWidgets('counts emoji the way the cap does', (tester) async {
+      // The limiter counts grapheme clusters; `String.length` counts UTF-16
+      // code units. A notice driven by the second unit fires at half capacity
+      // on an emoji-heavy field and claims text was dropped when none was.
+      await openFlow(tester);
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final subject = find.byType(DivineTextField).first;
+
+      // Two code units each, so this is 200 code units but only 100 graphemes
+      // - half the subject cap.
+      await tester.enterText(subject, '😀' * 100);
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widget<DivineTextField>(subject)
+            .controller!
+            .text
+            .characters
+            .length,
+        100,
+        reason: 'the limiter should have accepted all 100 graphemes',
+      );
+      expect(find.text(l10n.supportFieldLimitReached), findsNothing);
+    });
+
+    testWidgets('stays quiet at the cap until something is dropped', (
+      tester,
+    ) async {
+      // Reaching the limit exactly is not the same as losing text, and the
+      // notice says text was lost.
+      await openFlow(tester);
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final subject = find.byType(DivineTextField).first;
+
+      await tester.enterText(subject, 'a' * BugReportConfig.maxSubjectLength);
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.supportFieldLimitReached), findsNothing);
+
+      await tester.enterText(
+        subject,
+        'a' * (BugReportConfig.maxSubjectLength + 1),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.supportFieldLimitReached), findsOneWidget);
+    });
+
+    testWidgets('announces the truncation to screen readers', (tester) async {
+      // The notice sits beside the field rather than inside its decoration, so
+      // it is outside the field's semantics node - without an announcement a
+      // screen reader user pastes and hears nothing.
+      final announcements = <String>[];
+      tester.binding.defaultBinaryMessenger
+          .setMockDecodedMessageHandler<Object?>(SystemChannels.accessibility, (
+            message,
+          ) async {
+            final data = message! as Map<Object?, Object?>;
+            if (data['type'] == 'announce') {
+              final payload = data['data']! as Map<Object?, Object?>;
+              announcements.add(payload['message']! as String);
+            }
+            return null;
+          });
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger
+            .setMockDecodedMessageHandler<Object?>(
+              SystemChannels.accessibility,
+              null,
+            ),
+      );
+
+      await openFlow(tester);
+
+      await tester.enterText(
+        find.byType(DivineTextField).at(1),
+        'a' * (BugReportConfig.maxFreeTextFieldLength + 500),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(announcements, contains(l10n.supportFieldLimitReached));
     });
 
     BugReportData testReportData() {

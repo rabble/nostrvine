@@ -803,19 +803,19 @@ void main() {
       expect(capturedSubject, isNot(startsWith('fix: fix:')));
     });
 
-    test('a stray brace in one field cannot empty the whole report', () async {
-      // `my password: {weird symbols` is how someone describes a login bug,
-      // not an attack. Sanitizing the assembled description let the unclosed
-      // brace consume everything printed after it - app version, device info,
-      // pubkey, every log line - and support received a ticket with no
-      // diagnostics and nothing saying why. Sanitizing each field before
-      // assembly keeps the loss inside the field that caused it.
+    test('redacts a credential in every assembled field', () async {
+      // Each field is sanitized separately, so each needs its own evidence: a
+      // mutation sweep found that subject, steps, device info, current screen
+      // and the error summary were all unpinned while only the description
+      // half of the assembly was covered.
       String? capturedDescription;
+      String? capturedSubject;
 
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (MethodCall call) async {
             if (call.method == 'initialize') return true;
             if (call.method == 'createTicket') {
+              capturedSubject = call.arguments['subject'] as String?;
               capturedDescription = call.arguments['description'] as String?;
               return true;
             }
@@ -829,35 +829,116 @@ void main() {
       );
 
       await ZendeskSupportService.createStructuredBugReport(
-        subject: 'App crashes on upload',
-        description: 'my password: {weird symbols and it died',
-        reportId: 'test-blast-radius-001',
+        subject: 'crash when password: SUBJECTSECRET',
+        description: 'it broke, token: DESCRIPTIONSECRET',
+        reportId: 'test-every-field-001',
         appVersion: '1.0.7+497',
-        deviceInfo: {'platform': 'ios', 'version': '18.2'},
-        stepsToReproduce: '1. open the app 2. tap record',
-        expectedBehavior: 'it should upload',
-        currentScreen: 'CameraScreen',
-        // A closing brace downstream is what an unclosed one reaches for, and
-        // real logs are full of them (`Map.toString`). Without one here the
-        // collection branch never engages and this test would pass on the
-        // unquoted fallback instead of the property it names.
-        logsSummary:
-            '[10:00] [ERROR] upload failed {code: 500}\n'
-            '[10:01] [INFO] relay reconnected',
+        deviceInfo: {'platform': 'ios', 'sessionKey': 'DEVICESECRET'},
+        stepsToReproduce: '1. paste api_key=STEPSSECRET',
+        expectedBehavior: 'no secret=EXPECTEDSECRET in the ticket',
+        currentScreen: 'CameraScreen?secret=SCREENSECRET',
+        errorCounts: {'upload:password=COUNTSSECRET': 3},
+        logsSummary: '[10:00] [ERROR] jwt: LOGSSECRET',
       );
 
-      final description = capturedDescription!;
+      final payload = '$capturedSubject\n$capturedDescription';
 
-      expect(description, contains('[REDACTED]'));
-      // Everything after the offending field survives.
-      expect(description, contains('App Version: 1.0.7+497'));
-      expect(description, contains('1. open the app 2. tap record'));
-      expect(description, contains('it should upload'));
-      expect(description, contains('ios'));
-      expect(description, contains('CameraScreen'));
-      expect(description, contains('upload failed'));
-      expect(description, contains('relay reconnected'));
+      for (final secret in [
+        'SUBJECTSECRET',
+        'DESCRIPTIONSECRET',
+        'DEVICESECRET',
+        'STEPSSECRET',
+        'EXPECTEDSECRET',
+        'SCREENSECRET',
+        'COUNTSSECRET',
+        'LOGSSECRET',
+      ]) {
+        expect(payload, isNot(contains(secret)), reason: 'leaked $secret');
+      }
     });
+
+    // Each contributed field is sanitized separately, and the containment that
+    // buys is per field: a stray brace in any one of them must not reach the
+    // fields printed after it. The assembled-blob pass in `createTicket` masks
+    // a plain secret, so only this shape shows whether a given field's own
+    // pass is doing anything - a mutation sweep found subject, steps and
+    // current screen unpinned while only the description was covered.
+    const fieldsUnderTest = [
+      'subject',
+      'description',
+      'steps',
+      'screen',
+      'device',
+      'errorCounts',
+    ];
+
+    for (final field in fieldsUnderTest) {
+      test('a stray brace in $field cannot empty the whole report', () async {
+        // `my password: {weird symbols` is how someone describes a login bug,
+        // not an attack, and the field has no length limit below the cap.
+        const poison = 'my password: {weird symbols and it died';
+        String? capturedDescription;
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (MethodCall call) async {
+              if (call.method == 'initialize') return true;
+              if (call.method == 'createTicket') {
+                capturedDescription = call.arguments['description'] as String?;
+                return true;
+              }
+              return null;
+            });
+
+        await ZendeskSupportService.initialize(
+          appId: 'test',
+          clientId: 'test',
+          zendeskUrl: 'https://test.zendesk.com',
+        );
+
+        await ZendeskSupportService.createStructuredBugReport(
+          subject: field == 'subject' ? poison : 'App crashes on upload',
+          description: field == 'description' ? poison : 'it just dies',
+          reportId: 'test-blast-radius-$field',
+          appVersion: '1.0.7+497',
+          deviceInfo: {
+            'platform': 'ios',
+            'version': field == 'device' ? poison : '18.2',
+          },
+          stepsToReproduce: field == 'steps'
+              ? poison
+              : '1. open the app 2. tap record',
+          expectedBehavior: 'it should upload',
+          currentScreen: field == 'screen' ? poison : 'CameraScreen',
+          errorCounts: {if (field == 'errorCounts') poison: 3},
+          // A closing brace downstream is what an unclosed one reaches for,
+          // and real logs are full of them (`Map.toString`). Without one the
+          // collection branch never engages and this passes on the unquoted
+          // fallback instead of the property it names.
+          logsSummary:
+              '[10:00] [ERROR] upload failed {code: 500}\n'
+              '[10:01] [INFO] relay reconnected',
+        );
+
+        final description = capturedDescription!;
+
+        expect(description, contains('[REDACTED]'));
+        // Everything the poisoned field does not own survives.
+        expect(description, contains('App Version: 1.0.7+497'));
+        expect(description, contains('ios'));
+        if (field != 'device') {
+          expect(description, contains('18.2'));
+        }
+        expect(description, contains('upload failed'));
+        expect(description, contains('relay reconnected'));
+        if (field != 'steps') {
+          expect(description, contains('1. open the app 2. tap record'));
+        }
+        if (field != 'screen') {
+          expect(description, contains('CameraScreen'));
+        }
+        expect(description, contains('it should upload'));
+      });
+    }
 
     test('falls back to REST API when SDK not initialized', () async {
       // Reset _initialized by calling initialize with a handler that fails

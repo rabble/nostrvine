@@ -127,6 +127,10 @@ void main() {
         'colon separated': 'password: hunter2',
         'equals separated': 'secret=abc123',
         'nip46 bunker secret': 'bunker://relay.example?secret=deadbeef',
+        // The bug report renders device info as markdown, and the emphasis
+        // markers sit between the key and the value.
+        'markdown emphasised key': '- **sessionKey:** abc123',
+        'markdown emphasised password': '**password:** hunter2',
         // `jwt` is how a bearer token is labelled when it is not called a
         // token, and the policy doc promises bearer tokens never reach a
         // public payload.
@@ -295,6 +299,8 @@ void main() {
         // repo (`pubkeys` alone appears ~900 times); the `s` on the key rules
         // must not reach past the public-key guards.
         'pubkeys: [npub1abc]',
+        '- **platform:** ios',
+        '**User Pubkey:** npub1abc',
         'participantPubkeys: [npub1abc]',
         'publicKeys: [npub1abc]',
         'pub_keys: [npub1abc]',
