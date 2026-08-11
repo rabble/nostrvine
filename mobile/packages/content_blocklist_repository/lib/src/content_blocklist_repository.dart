@@ -890,7 +890,8 @@ class ContentBlocklistRepository {
       if (_runtimeBlocklist.add(pubkey)) {
         newlyBlocked.add(pubkey);
       }
-      if (_severedFollowers.add(pubkey)) {
+      if (!_severedFollowers.contains(pubkey) &&
+          !newlySeveredFollowers.contains(pubkey)) {
         newlySeveredFollowers.add(pubkey);
       }
     }
@@ -922,6 +923,7 @@ class ContentBlocklistRepository {
     // Track as severed follower so they stay hidden from our followers
     // list even after unblocking (until they explicitly re-follow).
     if (newlySeveredFollowers.isNotEmpty) {
+      _severedFollowers.addAll(newlySeveredFollowers);
       await _saveSeveredFollowers();
     }
   }
