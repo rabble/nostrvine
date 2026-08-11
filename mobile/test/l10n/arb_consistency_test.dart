@@ -410,9 +410,10 @@ void main() {
 
 // Add keys here only when a translation pass is intentionally deferred.
 const _knownUntranslatedDebt = <String>{
-  // Email-verification resend-unavailable copy; translation is deferred to
-  // the next auth localization pass.
+  // Email-verification recovery copy (resend unavailable, polling stopped);
+  // translation is deferred to the next auth localization pass.
   'authVerificationResendUnavailable',
+  'authVerificationPollingStopped',
   // Warning shown when a requested reusable sound fails to publish; translation
   // is deferred to the next sound-library localization pass.
   'publishAudioReuseDegradedWarning',

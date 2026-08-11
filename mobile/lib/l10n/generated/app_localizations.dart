@@ -5462,6 +5462,12 @@ abstract class AppLocalizations {
   /// **'Resending isn\'t available right now. Use the 6-digit code from the email we already sent you.'**
   String get authVerificationResendUnavailable;
 
+  /// Shown on the email-verification screen after the 15-minute polling window elapses, explaining why the waiting spinner disappeared and what to do instead.
+  ///
+  /// In en, this message translates to:
+  /// **'We stopped checking for you. Enter the 6-digit code from your email to finish signing in.'**
+  String get authVerificationPollingStopped;
+
   /// No description provided for @authWelcomeToDivine.
   ///
   /// In en, this message translates to:

@@ -1072,6 +1072,26 @@ void main() {
         expect(find.text(l10n.authVerificationPinPrompt), findsOneWidget);
         expect(find.text(l10n.authWaitingForVerification), findsNothing);
       });
+
+      // Without this the spinner just vanishes at the 15-minute mark and the
+      // screen looks identical to one that is still working.
+      testWidgets('pollingTimedOut explains why the spinner disappeared', (
+        tester,
+      ) async {
+        await pumpVerificationScreen(
+          tester,
+          deviceCode: 'test-device-code',
+          verifier: 'test-verifier',
+          email: 'user@example.com',
+          initialState: const EmailVerificationState(
+            status: EmailVerificationStatus.pollingTimedOut,
+            pendingEmail: 'user@example.com',
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(l10n.authVerificationPollingStopped), findsOneWidget);
+      });
     });
 
     group('cold-start restore escape hatch', () {

@@ -807,6 +807,14 @@ class _PollingContent extends StatelessWidget {
                         if (isActivelyPolling)
                           _StatusButton(
                             label: context.l10n.authWaitingForVerification,
+                          )
+                        else if (isPollingMode)
+                          Text(
+                            context.l10n.authVerificationPollingStopped,
+                            style: VineTheme.bodySmallFont(
+                              color: context.vineColors.secondaryText,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
                         if (isPollingMode) ...[
                           const SizedBox(height: 20),
