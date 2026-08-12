@@ -30,12 +30,14 @@ void main() {
     DateTime? createdAt,
     DateTime? lastAttemptAt,
     String? lastError,
+    String? videoAddressableDTag,
   }) {
     return PendingViewEvent(
       id: id,
       videoId: videoId,
       videoPubkey: authorPubkey,
       videoVineId: 'vine-$id',
+      videoAddressableDTag: videoAddressableDTag ?? 'd-tag-$id',
       userPubkey: userPubkey,
       watchDurationMs: 2500,
       totalDurationMs: 6000,
@@ -84,6 +86,7 @@ void main() {
         expect(fetched.videoId, videoIdA);
         expect(fetched.videoPubkey, authorPubkey);
         expect(fetched.videoVineId, 'vine-view-a');
+        expect(fetched.videoAddressableDTag, 'd-tag-view-a');
         expect(fetched.userPubkey, userA);
         expect(fetched.watchDurationMs, 2500);
         expect(fetched.totalDurationMs, 6000);
