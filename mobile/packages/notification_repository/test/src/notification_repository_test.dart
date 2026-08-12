@@ -8,6 +8,8 @@ import 'package:db_client/db_client.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:nostr_sdk/nip19/nip19.dart';
+import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:notification_repository/notification_repository.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:test/test.dart';
@@ -27,6 +29,9 @@ void main() {
   const userPubkey = 'user1234567890abcdef';
   const stableCursorId =
       '1122334411223344112233441122334411223344112233441122334411223344';
+  const validPubkey =
+      '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+  final validNpub = Nip19.encodePubKey(validPubkey);
 
   NotificationRepository buildRepository({
     BlockedNotificationFilter? blockFilter,
@@ -2268,7 +2273,7 @@ void main() {
       });
 
       test('likeComment truncates a long liked comment body', () async {
-        final body = 'a' * 120;
+        final body = 'a' * 200;
         stubNotifications([
           makeNotification(
             targetCommentId: 'comment_event_xyz',
@@ -2280,7 +2285,7 @@ void main() {
 
         final page = await repository.getNotifications();
         final item = page.items.single as ActorNotification;
-        expect(item.commentText, equals('${'a' * 50}...'));
+        expect(item.commentText, equals('${'a' * 120}...'));
       });
 
       test(
@@ -3104,9 +3109,9 @@ void main() {
       );
 
       test(
-        'truncates a long comment on $VideoNotification (50 chars + ellipsis)',
+        'truncates a long comment on $VideoNotification (120 chars + ellipsis)',
         () async {
-          final longComment = 'A' * 60;
+          final longComment = 'A' * 200;
           stubNotifications([
             makeNotification(
               notificationType: 'comment',
@@ -3118,22 +3123,21 @@ void main() {
 
           final page = await repository.getNotifications();
           final item = page.items.single as VideoNotification;
-          // Reuses _truncateComment: caps at 50 chars and appends "..."
+          // Reuses _truncateComment: caps at 120 chars and appends "..."
           // so the row never tries to render an unbounded comment body.
-          expect(item.commentText, equals('${'A' * 50}...'));
+          expect(item.commentText, equals('${'A' * 120}...'));
         },
       );
 
       test(
-        'keeps a bounded leading bech32 npub intact when it spans the cut',
+        'keeps a valid bech32 npub intact',
         () async {
           // Regression: a reply whose content begins with a raw npub longer
           // than the 50-char preview cap must keep the token intact so the
           // row widget can decode it to a display name. Slicing it
           // mid-bech32 destroyed the checksum and the row fell back to
           // rendering a raw "npub1..." fragment verbatim.
-          const npub =
-              'npub180cvv07tjdrrgpa9jzd0cdkej42kwsaxq9rz7gvdpjx6nz004f9uulstw6';
+          final npub = validNpub;
           stubNotifications([
             makeNotification(
               notificationType: 'comment',
@@ -3152,9 +3156,8 @@ void main() {
       test(
         'keeps a bech32 npub after leading whitespace or punctuation',
         () async {
-          const npub =
-              'npub180cvv07tjdrrgpa9jzd0cdkej42kwsaxq9rz7gvdpjx6nz004f9uulstw6';
-          const content = ' @$npub';
+          final npub = validNpub;
+          final content = ' @$npub';
           stubNotifications([
             makeNotification(
               notificationType: 'comment',
@@ -3170,16 +3173,60 @@ void main() {
         },
       );
 
+      test("keeps the mention in #6763's reported example", () async {
+        // The issue's own example. It no longer straddles the cap at 120, so
+        // this guards the cap; the straddle POLICY is guarded separately
+        // below. Previously this rendered as 'Reply to...' — the mention,
+        // the only meaningful part of the preview, was deleted.
+        const npub =
+            'npub180cvv07tjdrrgpa9jzd0cdkej42kwsaxq9rz7gvdpjx6nz004f9uulstw6';
+        const content = 'Reply to $npub more';
+        stubNotifications([
+          makeNotification(
+            notificationType: 'comment',
+            sourceKind: 1,
+            content: content,
+          ),
+        ]);
+        stubProfiles({});
+
+        final page = await repository.getNotifications();
+        final item = page.items.single as VideoNotification;
+        expect(item.commentText, equals(content));
+        expect(item.commentText, contains(npub));
+      });
+
+      test('keeps the mention in the production #6763 comment', () async {
+        // Real comment from api.divine.video, event
+        // 65e5c466b0c722ce3eccfe11fe65d07dbc7f42d1e3e21f2f1148a238772bbc32.
+        // 82 code units, so it now survives whole; it used to render as
+        // 'The big guy....' with the mention deleted.
+        const npub =
+            'npub1m9d23lqwl78y3z2jf9dcqeyer5nlh9hdsef0ztx7m3dyaz'
+            '66u4qq4stysk';
+        const content = 'The big guy. nostr:$npub';
+        stubNotifications([
+          makeNotification(
+            notificationType: 'comment',
+            sourceKind: 1,
+            content: content,
+          ),
+        ]);
+        stubProfiles({});
+
+        final page = await repository.getNotifications();
+        final item = page.items.single as VideoNotification;
+        expect(item.commentText, equals(content));
+      });
+
       test(
-        'omits a bech32 reference straddling the cut instead of splitting it',
+        'keeps a mid-sentence mention straddling the cap, not just the limit',
         () async {
-          // 'Reply to ' (9 chars) + npub (63) + ' more' straddles the
-          // 50-char limit: the npub starts at index 9 and ends at 72. The
-          // cut pulls back to the token's start so the preview shows only
-          // the leading text, never a sliced npub fragment.
-          const npub =
-              'npub180cvv07tjdrrgpa9jzd0cdkej42kwsaxq9rz7gvdpjx6nz004f9uulstw6';
-          const content = 'Reply to $npub more';
+          // Guards the straddle POLICY, not the cap number: 100 chars of
+          // lead-in push the npub past the 120-char cap, so the token is only
+          // preserved because a straddling reference is now kept whole.
+          final npub = validNpub;
+          final content = '${'word ' * 20}$npub tail';
           stubNotifications([
             makeNotification(
               notificationType: 'comment',
@@ -3191,13 +3238,152 @@ void main() {
 
           final page = await repository.getNotifications();
           final item = page.items.single as VideoNotification;
-          expect(item.commentText, equals('Reply to...'));
-          expect(item.commentText, isNot(contains('npub1')));
+          expect(item.commentText, contains(npub));
+          expect(item.commentText, endsWith('...'));
+        },
+      );
+
+      test('keeps a 64-hex reference straddling the cap', () async {
+        // The lead-in pushes the hex past the 120-char cap so the straddle
+        // branch is actually exercised — a shorter string would return early
+        // from _truncateComment and pass without testing anything.
+        const hex =
+            'a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90';
+        final content = '${'word ' * 20}$hex tail';
+        stubNotifications([
+          makeNotification(
+            notificationType: 'comment',
+            sourceKind: 1,
+            content: content,
+          ),
+        ]);
+        stubProfiles({});
+
+        final page = await repository.getNotifications();
+        final item = page.items.single as VideoNotification;
+        expect(item.commentText, contains(hex));
+        expect(item.commentText, endsWith('...'));
+      });
+
+      test('never splits a surrogate pair at the cut', () async {
+        // The cap counts UTF-16 code units, so a naive cut lands between the
+        // halves of an astral emoji and strands a lone high surrogate.
+        final content = '${'b' * 119}\u{1F600} and a good deal more text here';
+        stubNotifications([
+          makeNotification(
+            notificationType: 'comment',
+            sourceKind: 1,
+            content: content,
+          ),
+        ]);
+        stubProfiles({});
+
+        final page = await repository.getNotifications();
+        final item = page.items.single as VideoNotification;
+        final units = item.commentText!.codeUnits;
+        for (var i = 0; i < units.length; i++) {
+          final unit = units[i];
+          final isHigh = unit >= 0xD800 && unit <= 0xDBFF;
+          final isLow = unit >= 0xDC00 && unit <= 0xDFFF;
+          if (isHigh) {
+            expect(
+              i + 1 < units.length &&
+                  units[i + 1] >= 0xDC00 &&
+                  units[i + 1] <= 0xDFFF,
+              isTrue,
+              reason: 'unpaired high surrogate at $i',
+            );
+          } else if (isLow) {
+            expect(
+              i > 0 && units[i - 1] >= 0xD800 && units[i - 1] <= 0xDBFF,
+              isTrue,
+              reason: 'unpaired low surrogate at $i',
+            );
+          }
+        }
+      });
+
+      test(
+        'uses the plain cap for a leading unbounded token-shaped run',
+        () async {
+          final content = 'nprofile1${'q' * 180} tail';
+          stubNotifications([
+            makeNotification(
+              notificationType: 'comment',
+              sourceKind: 1,
+              content: content,
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as VideoNotification;
+          expect(item.commentText, equals('${content.substring(0, 120)}...'));
         },
       );
 
       test(
-        'does not preserve unbounded leading token-shaped content',
+        'keeps a straddling nostr:-prefixed profile reference with relay hints',
+        () async {
+          final nprofile = NIP19Tlv.encodeNprofile(
+            Nprofile(
+              pubkey: validPubkey,
+              relays: const ['wss://relay.damus.io'],
+            ),
+          );
+          expect(nprofile.length, greaterThan(90));
+          final content = '${'word ' * 20}nostr:$nprofile tail';
+          stubNotifications([
+            makeNotification(
+              notificationType: 'comment',
+              sourceKind: 1,
+              content: content,
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as VideoNotification;
+          expect(item.commentText, contains(nprofile));
+          expect(item.commentText, contains('nostr:'));
+          expect(item.commentText, endsWith('...'));
+        },
+      );
+
+      test(
+        'keeps a leading naddr that the quote UI renders as a video label',
+        () async {
+          final naddr = NIP19Tlv.encodeNaddr(
+            Naddr(
+              id: 'stable-video-reference',
+              author:
+                  'abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+                  '0123456789',
+              kind: 34236,
+              relays: const ['wss://relay.divine.video'],
+            ),
+          );
+          expect(naddr.length, greaterThan(120));
+          final content = 'nostr:$naddr tail';
+          stubNotifications([
+            makeNotification(
+              notificationType: 'comment',
+              sourceKind: 1,
+              content: content,
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as VideoNotification;
+          expect(item.commentText, contains(naddr));
+          expect(item.commentText, isNot(equals('...')));
+          expect(item.commentText, endsWith('...'));
+        },
+      );
+
+      test(
+        'caps unbounded leading token-shaped content',
         () async {
           final content = 'npub1${'a' * 5000}';
           stubNotifications([
@@ -3211,15 +3397,15 @@ void main() {
 
           final page = await repository.getNotifications();
           final item = page.items.single as VideoNotification;
-          expect(item.commentText, equals('...'));
-          expect(item.commentText!.length, lessThanOrEqualTo(53));
+          expect(item.commentText, equals('${content.substring(0, 120)}...'));
+          expect(item.commentText!.length, lessThanOrEqualTo(123));
         },
       );
 
       test(
         'does not treat embedded alphanumeric bech32-looking text as a token',
         () async {
-          final content = 'prefixnpub1${'a' * 60}';
+          final content = 'prefixnpub1${'a' * 130}';
           stubNotifications([
             makeNotification(
               notificationType: 'comment',
@@ -3231,19 +3417,18 @@ void main() {
 
           final page = await repository.getNotifications();
           final item = page.items.single as VideoNotification;
-          expect(item.commentText, equals('${content.substring(0, 50)}...'));
+          // No token boundary here, so the plain cap applies.
+          expect(item.commentText, equals('${content.substring(0, 120)}...'));
         },
       );
 
       test('keeps a bounded leading 64-hex reference intact', () async {
         // LinkifiedTextSpanBuilder decodes a bare 64-char hex pubkey / event
-        // id the same way it decodes bech32. A hex reference is always
-        // longer than the 50-char cap, so before it was protected the cut
-        // sliced it every time and the row rendered raw hex.
+        // id the same way it decodes bech32, so the cut must never slice one.
         const hex64 =
             'a1b2c3d4e5f60718293a4b5c6d7e8f90'
             'a1b2c3d4e5f60718293a4b5c6d7e8f90';
-        const content = '$hex64 and some trailing words';
+        final content = '$hex64 ${'and some trailing words ' * 4}';
         stubNotifications([
           makeNotification(
             notificationType: 'comment',
@@ -3255,16 +3440,20 @@ void main() {
 
         final page = await repository.getNotifications();
         final item = page.items.single as VideoNotification;
-        expect(item.commentText, equals('$hex64...'));
+        expect(item.commentText, contains(hex64));
+        expect(item.commentText, endsWith('...'));
       });
 
       test(
-        'omits a 64-hex reference straddling the cut instead of splitting it',
+        'keeps a non-Latin lead-in mention that straddles the cut',
         () async {
-          const hex64 =
-              'a1b2c3d4e5f60718293a4b5c6d7e8f90'
-              'a1b2c3d4e5f60718293a4b5c6d7e8f90';
-          const content = 'Reply to $hex64 more';
+          // #6763 asks for Latin and non-Latin lead-in so the fix cannot
+          // silently regress to being locale-sensitive. Lead-in is long
+          // enough that the npub straddles the 120-char cap (not only
+          // fits under it).
+          final npub = validNpub;
+          const cyrillic = 'Привет всем друзьям сегодня';
+          final content = '$cyrillic ${'слово ' * 14}nostr:$npub tail';
           stubNotifications([
             makeNotification(
               notificationType: 'comment',
@@ -3276,47 +3465,23 @@ void main() {
 
           final page = await repository.getNotifications();
           final item = page.items.single as VideoNotification;
-          expect(item.commentText, equals('Reply to...'));
-          expect(item.commentText, isNot(contains(hex64.substring(0, 16))));
+          expect(content.length, greaterThan(120));
+          expect(item.commentText, contains(npub));
+          expect(item.commentText, startsWith(cyrillic));
+          expect(item.commentText, endsWith('...'));
         },
       );
 
-      test('applies the preview cap to non-Latin lead-in text', () async {
-        // The leading-token allowance is bounded at four times the cap, and
-        // is only meant to fire when nothing but whitespace or punctuation
-        // precedes the token. Testing only ASCII letters classified every
-        // non-Latin script as punctuation, so Cyrillic / CJK / accented
-        // lead-ins silently got a 200-char preview of remote-controlled
-        // content while the Latin equivalent got 50.
-        const npub =
-            'npub180cvv07tjdrrgpa9jzd0cdkej42kwsaxq9rz7gvdpjx6nz004f9uulstw6';
-        const cyrillic = 'Привет всем друзьям сегодня';
-        const content = '$cyrillic nostr:$npub и ещё немного текста';
-        stubNotifications([
-          makeNotification(
-            notificationType: 'comment',
-            sourceKind: 1,
-            content: content,
-          ),
-        ]);
-        stubProfiles({});
-
-        final page = await repository.getNotifications();
-        final item = page.items.single as VideoNotification;
-        expect(item.commentText, equals('$cyrillic...'));
-        expect(item.commentText!.length, lessThanOrEqualTo(53));
-        expect(item.commentText, isNot(contains('npub1')));
-      });
-
       test(
-        'still treats punctuation-only lead-in as leading for a bech32 token',
+        'keeps a punctuation-prefixed profile reference that straddles the cut',
         () async {
-          // Guards the other side of the non-Latin fix: real punctuation and
-          // whitespace must keep qualifying as "leading", including
-          // non-ASCII punctuation such as guillemets and an em dash.
-          const npub =
-              'npub180cvv07tjdrrgpa9jzd0cdkej42kwsaxq9rz7gvdpjx6nz004f9uulstw6';
-          const content = '«— » $npub';
+          final nprofile = NIP19Tlv.encodeNprofile(
+            Nprofile(
+              pubkey: validPubkey,
+              relays: const ['wss://relay.divine.video'],
+            ),
+          );
+          final content = '«— » ${'— ' * 45}nostr:$nprofile tail';
           stubNotifications([
             makeNotification(
               notificationType: 'comment',
@@ -3328,7 +3493,9 @@ void main() {
 
           final page = await repository.getNotifications();
           final item = page.items.single as VideoNotification;
-          expect(item.commentText, equals(content));
+          expect(content.length, greaterThan(120));
+          expect(item.commentText, contains(nprofile));
+          expect(item.commentText, endsWith('...'));
         },
       );
 
@@ -3355,10 +3522,7 @@ void main() {
 
         final page = await repository.getNotifications();
         final item = page.items.single as VideoNotification;
-        expect(
-          item.commentText,
-          equals('Look at this https://blossom.divine.video/a1b2c3d4...'),
-        );
+        expect(item.commentText, equals('${content.substring(0, 120)}...'));
       });
 
       test('leaves a bech32 token inside a URL to the plain cut', () async {
@@ -3366,7 +3530,9 @@ void main() {
         // so the npub in its path is not a reference either.
         const npub =
             'npub180cvv07tjdrrgpa9jzd0cdkej42kwsaxq9rz7gvdpjx6nz004f9uulstw6';
-        const content = 'Follow https://divine.video/$npub please';
+        const content =
+            'Follow https://divine.video/$npub please '
+            'and then keep reading well past the preview cap';
         stubNotifications([
           makeNotification(
             notificationType: 'comment',
@@ -3378,7 +3544,7 @@ void main() {
 
         final page = await repository.getNotifications();
         final item = page.items.single as VideoNotification;
-        expect(item.commentText, equals('${content.substring(0, 50)}...'));
+        expect(item.commentText, equals('${content.substring(0, 120)}...'));
         expect(
           item.commentText,
           startsWith('Follow https://divine.video/npub1'),
@@ -3390,7 +3556,9 @@ void main() {
         const hex64 =
             'a1b2c3d4e5f60718293a4b5c6d7e8f90'
             'a1b2c3d4e5f60718293a4b5c6d7e8f90';
-        const content = 'nice one #$hex64 keep going with more words here';
+        const content =
+            'nice one #$hex64 keep going with more words here '
+            'so the plain cut is actually exercised';
         stubNotifications([
           makeNotification(
             notificationType: 'comment',
@@ -3404,7 +3572,7 @@ void main() {
         final item = page.items.single as VideoNotification;
         expect(
           item.commentText,
-          equals('nice one #a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4...'),
+          equals('${content.substring(0, 120).trimRight()}...'),
         );
       });
 

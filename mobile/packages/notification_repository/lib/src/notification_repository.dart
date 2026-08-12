@@ -10,6 +10,8 @@ import 'package:db_client/db_client.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:meta/meta.dart';
 import 'package:models/models.dart';
+import 'package:nostr_sdk/nip19/nip19.dart';
+import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:notification_repository/src/blocked_notification_filter.dart';
 import 'package:notification_repository/src/notification_page.dart';
 import 'package:profile_repository/profile_repository.dart';
@@ -35,7 +37,26 @@ typedef AuthHeadersProvider =
     });
 
 /// Maximum length for comment preview text before truncation.
-const _maxCommentLength = 50;
+///
+/// Sized just above the widest measured two-line capacity of
+/// `NotificationCommentQuote` — 112 Latin code units at 440pt, 99 at 393pt,
+/// 76 at 320pt — so the cap never truncates text the row could otherwise have
+/// shown. The row clamps itself with `maxLines: 2` + ellipsis, so this bound
+/// exists only to keep remote-controlled content finite, not for layout.
+const _maxCommentLength = 120;
+
+/// Longest raw reference that may be kept whole when it straddles the cap.
+///
+/// `NotificationCommentQuote` renders valid profile references as `@label`
+/// and video/event references as the localized "View video" label, so the
+/// source token can be longer than its visible text. This bound keeps
+/// remote-controlled source content finite while still admitting normal
+/// `nprofile`/`nevent`/`naddr` references with relay hints.
+const _maxKeptResolvedReferenceLength = 512;
+
+/// If an unbounded reference starts before this point, use the plain cap
+/// instead of returning an empty quote body such as `...`.
+const _minPreviewBeforeDroppingReference = 12;
 
 /// Maximum number of actor avatars shown in a grouped notification.
 const _maxGroupActors = 3;
@@ -82,15 +103,6 @@ const _bech32ReferenceGroup = 3;
 
 /// [_uiTokenPattern] group holding a bare 64-char hex pubkey / event id.
 const _hexReferenceGroup = 4;
-
-/// Any letter or digit in any script.
-///
-/// The preview's "is this token the leading content?" test must treat
-/// Cyrillic, CJK, and accented text as content. Testing only ASCII
-/// `[0-9A-Za-z]` classified every non-Latin script as punctuation, which let
-/// a straddling token qualify as leading and silently raised the preview cap
-/// from [_maxCommentLength] to four times that for most locales.
-final RegExp _letterOrDigitPattern = RegExp(r'[\p{L}\p{N}]', unicode: true);
 
 /// Retry policy for the first-page notifications fetch.
 ///
@@ -2476,19 +2488,18 @@ class NotificationRepository {
 
   static bool _isEventId(String id) => _parseAddressableId(id) == null;
 
-  /// Truncates comment text to [_maxCommentLength] characters, except for
-  /// bounded leading Nostr references that the UI can resolve.
+  /// Truncates comment text to [_maxCommentLength] characters, keeping any
+  /// Nostr reference that straddles the cut intact.
   ///
   /// Only applies to the kinds that render a quote: comment, reply, and
   /// likeComment. Pair it with [_commentQuoteSource], which picks the text
   /// each kind should quote.
   ///
-  /// The cut avoids splitting a Nostr reference the UI can decode — bech32
+  /// The cut never splits a Nostr reference the UI can decode — bech32
   /// (`npub1...`, `nprofile1...`, `note1...`, `nevent1...`, `naddr1...`) or a
-  /// bare 64-char hex pubkey / event id — mid-token. A sliced token can no
-  /// longer be decoded, so the row widget falls back to rendering the raw
-  /// string verbatim instead of resolving it. Keeping a bounded leading token
-  /// intact lets the UI linkifier resolve it to `@<name>`.
+  /// bare 64-char hex pubkey / event id. A sliced token can no longer be
+  /// decoded, so the row widget falls back to rendering the raw string
+  /// verbatim instead of resolving it.
   static String? _truncateComment(String? content, NotificationKind kind) {
     if (content == null) return null;
     if (kind != NotificationKind.comment &&
@@ -2498,7 +2509,10 @@ class NotificationRepository {
     }
     if (content.length <= _maxCommentLength) return content;
 
-    final cut = _referenceAwareCut(content, _maxCommentLength);
+    final cut = _surrogateSafeCut(
+      content,
+      _referenceAwareCut(content, _maxCommentLength),
+    );
     if (cut >= content.length) return content;
     return '${content.substring(0, cut).trimRight()}...';
   }
@@ -2506,17 +2520,19 @@ class NotificationRepository {
   /// Returns a bounded cut index that does not split a decodable Nostr
   /// reference — bech32 or bare 64-char hex.
   ///
-  /// If a reference straddles [limit], the cut is pulled back to the
-  /// reference's start so the token is omitted from the preview rather than
-  /// split. If the content before that token is only whitespace or
-  /// punctuation, and keeping the full token stays within the preview bound,
-  /// the token's end is returned so the UI can resolve it.
+  /// A reference that straddles [limit] is kept whole when the notification
+  /// quote UI renders it as bounded display text: a decoded profile label, a
+  /// video label, or a 64-char hex reference. Dropping those instead deleted
+  /// mid-sentence mentions outright (#6763).
+  ///
+  /// A token-shaped run that would render raw is omitted rather than split
+  /// (#6346), unless it starts too early to leave a useful preview; in that
+  /// case the plain cap is clearer than a bare `...`.
   ///
   /// A token the UI resolves as a URL or hashtag is skipped even when a
   /// bech32 or hex run sits inside it — the UI does not link that run, so
   /// pulling the cut back to it only shortens the preview.
   static int _referenceAwareCut(String content, int limit) {
-    final maxReferencePreviewLength = limit * 4;
     for (final match in _uiTokenPattern.allMatches(content)) {
       if (match.start >= limit) break;
       final isReference =
@@ -2525,19 +2541,51 @@ class NotificationRepository {
       if (!isReference) continue;
       // The `break` above already guarantees `match.start < limit`, so
       // ending after it is exactly the straddling case.
-      final straddlesLimit = match.end > limit;
-      if (!straddlesLimit) continue;
-      final canKeepLeadingToken =
-          match.end <= maxReferencePreviewLength &&
-          _hasOnlyWhitespaceOrPunctuationBefore(content, match.start);
-      if (canKeepLeadingToken) return match.end;
-      return match.start;
+      if (match.end <= limit) continue;
+      if (_referenceRendersAsBoundedLabel(match)) return match.end;
+      return match.start < _minPreviewBeforeDroppingReference
+          ? limit
+          : match.start;
     }
     return limit;
   }
 
-  static bool _hasOnlyWhitespaceOrPunctuationBefore(String content, int end) =>
-      !_letterOrDigitPattern.hasMatch(content.substring(0, end));
+  static bool _referenceRendersAsBoundedLabel(RegExpMatch match) {
+    final hexReference = match.group(_hexReferenceGroup);
+    if (hexReference != null) return true;
+
+    final bech32Reference = match.group(_bech32ReferenceGroup);
+    if (bech32Reference == null ||
+        bech32Reference.length > _maxKeptResolvedReferenceLength) {
+      return false;
+    }
+
+    final lower = bech32Reference.toLowerCase();
+    if (lower.startsWith('npub1')) {
+      return Nip19.decode(bech32Reference).length == 64;
+    }
+
+    if (lower.startsWith('nprofile1')) {
+      final pubkey = NIP19Tlv.decodeNprofile(bech32Reference)?.pubkey;
+      return pubkey != null && pubkey.length == 64;
+    }
+
+    return lower.startsWith('note1') ||
+        lower.startsWith('nevent1') ||
+        lower.startsWith('naddr1');
+  }
+
+  /// Moves [cut] back one code unit when it would split a surrogate pair.
+  ///
+  /// [_maxCommentLength] counts UTF-16 code units, so a cut can land between
+  /// the halves of an astral character (emoji). The lone high surrogate left
+  /// behind renders as U+FFFD once the span builder sanitizes it.
+  static int _surrogateSafeCut(String content, int cut) {
+    if (cut <= 0 || cut >= content.length) return cut;
+    final previous = content.codeUnitAt(cut - 1);
+    final isHighSurrogate = previous >= 0xD800 && previous <= 0xDBFF;
+    return isHighSurrogate ? cut - 1 : cut;
+  }
 }
 
 @immutable
