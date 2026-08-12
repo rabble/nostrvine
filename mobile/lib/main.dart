@@ -671,9 +671,17 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
     optional: true,
   );
 
+  // Critical phase: traces started before this completes are dropped on the
+  // floor — `startTrace` early-returns and `startOperationTrace` hands back a
+  // no-op handle. In `deferred` that silently cost every cold-start
+  // measurement, including the `feed_load_homeFeed` and `feed_load_discovery`
+  // traces, which mount while the later phases are still working through their
+  // queue (#7118). Cost here is a single platform round-trip that runs in
+  // parallel with the disk-backed services above, so it does not extend the
+  // phase.
   coordinator.registerService(
     name: 'PerformanceMonitoring',
-    phase: StartupPhase.deferred,
+    phase: StartupPhase.critical,
     initialize: () async {
       await _runTimedStartupTask(
         phaseName: 'performance_monitoring',
