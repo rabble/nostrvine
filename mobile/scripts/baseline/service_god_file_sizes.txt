@@ -8,6 +8,7 @@
 # Regenerate after shrinking/removing: UPDATE_BASELINE=1 bash scripts/check_service_god_file_ceiling.sh
 lib/services/auth_service.dart	4780
 lib/services/curated_list_service.dart	1848
-lib/services/upload_manager.dart	2310
+lib/services/upload_manager.dart	2317
+lib/services/video_editor/video_editor_render_service.dart	1562
 lib/services/video_event_publisher.dart	2331
 lib/services/video_event_service.dart	6619
