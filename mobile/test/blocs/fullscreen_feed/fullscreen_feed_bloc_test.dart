@@ -115,9 +115,10 @@ void main() {
 
     ConfirmVideoUnavailable confirmerReturning(
       bool result, {
-      void Function(String? videoUrl, String? explicitSha256)? onCall,
+      void Function(String videoId, String? videoUrl, String? explicitSha256)?
+      onCall,
     }) => ({required videoId, required videoUrl, explicitSha256}) async {
-      onCall?.call(videoUrl, explicitSha256);
+      onCall?.call(videoId, videoUrl, explicitSha256);
       return result;
     };
 
@@ -1922,11 +1923,12 @@ void main() {
       );
 
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
-        'passes video URL and explicit sha256 to confirmation',
+        'passes video id, URL and explicit sha256 to confirmation',
         build: () => createBloc(
           confirmVideoUnavailable: confirmerReturning(
             true,
-            onCall: expectAsync2((videoUrl, explicitSha256) {
+            onCall: expectAsync3((videoId, videoUrl, explicitSha256) {
+              expect(videoId, equals('video1'));
               expect(videoUrl, equals('https://example.com/video_video1.mp4'));
               expect(explicitSha256, equals('a' * 64));
             }),

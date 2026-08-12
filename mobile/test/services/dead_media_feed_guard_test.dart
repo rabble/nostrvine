@@ -128,6 +128,31 @@ void main() {
       );
 
       test(
+        'stays recoverable when the API check throws and media cannot confirm',
+        () async {
+          const url = 'https://media.divine.video/live';
+          final apiFailingGuard = DeadMediaFeedGuard(
+            brokenVideoTracker: tracker,
+            moderationStatusService: moderationStatusService,
+            availabilityChecker: checker,
+            eventMissingChecker: (_) async => throw Exception('timeout'),
+          );
+          when(
+            () => checker.isConfirmedMissing(url),
+          ).thenAnswer((_) async => false);
+
+          final result = await apiFailingGuard.confirmAndMarkMissing(
+            videoId: 'v1',
+            videoUrl: url,
+            explicitSha256: 'a' * 64,
+          );
+
+          expect(result, isFalse);
+          verifyNever(() => tracker.markVideoBroken(any(), any()));
+        },
+      );
+
+      test(
         'returns false and does NOT mark broken when the media is reachable / non-404',
         () async {
           when(
