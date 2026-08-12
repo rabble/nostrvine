@@ -40,7 +40,11 @@
              Consequence, and the reason this is the right trade here: runtime
              re-enabling is impossible while this is set. To collect
              performance data from a local build - e.g. to verify new
-             instrumentation - comment this block out for that run. -->
+             instrumentation - comment this block out for that run AND flip
+             `PerformanceMonitoringService.collectionEnabled` to `true`.
+             Commenting this out alone does nothing: that gate re-asserts
+             `false` on every launch and the SDK persists it, so resolution
+             just falls through to the cache it wrote. -->
         <meta-data
             android:name="firebase_performance_collection_deactivated"
             android:value="true" />
