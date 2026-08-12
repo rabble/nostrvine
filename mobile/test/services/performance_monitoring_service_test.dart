@@ -19,6 +19,17 @@ void main() {
       expect(true, true);
     });
 
+    test('isEnabled stays false while Firebase is unavailable', () async {
+      // The flag gates the instrumented HTTP client (#7122): it must only
+      // turn true once Firebase Performance actually came up, never merely
+      // because initialize() was called and swallowed a failure.
+      expect(service.isEnabled, isFalse);
+
+      await service.initialize();
+
+      expect(service.isEnabled, isFalse);
+    });
+
     test('should handle trace start and stop without error', () async {
       await service.initialize();
 

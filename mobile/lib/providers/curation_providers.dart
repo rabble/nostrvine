@@ -9,6 +9,7 @@ import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/feed_refresh_helpers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/repository_providers.dart';
+import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/state/curation_state.dart';
 import 'package:openvine/utils/relay_url_utils.dart';
@@ -26,7 +27,11 @@ FunnelcakeApiClient funnelcakeApiClient(Ref ref) {
     configuredRelays: nostrService.configuredRelays,
     fallbackBaseUrl: environmentConfig.apiBaseUrl,
   );
-  return FunnelcakeApiClient(baseUrl: baseUrl);
+  // Injecting the client makes the API client a non-owner, so the close that
+  // its own dispose() would have done has to happen here instead.
+  final httpClient = ref.watch(instrumentedHttpClientFactoryProvider)();
+  ref.onDispose(httpClient.close);
+  return FunnelcakeApiClient(baseUrl: baseUrl, httpClient: httpClient);
 }
 
 /// Single source of truth for Funnelcake REST API availability.

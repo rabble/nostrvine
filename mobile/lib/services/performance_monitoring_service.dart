@@ -138,6 +138,13 @@ class PerformanceMonitoringService implements PerformanceTraceMonitor {
   late final FirebasePerformance _performance;
   bool _initialized = false;
 
+  /// Whether [initialize] has completed and Firebase Performance is usable.
+  ///
+  /// Sampled per operation by consumers built before startup finishes — an
+  /// instrumented HTTP client is constructed with the provider graph, well
+  /// before [initialize] resolves.
+  bool get isEnabled => _initialized;
+
   /// Active traces for custom performance tracking
   final Map<String, Trace> _activeTraces = {};
 
@@ -321,15 +328,6 @@ class PerformanceMonitoringService implements PerformanceTraceMonitor {
         name: 'PerformanceMonitoring',
       );
     }
-  }
-
-  /// Create an HTTP metric for tracking network performance
-  Future<HttpMetric> newHttpMetric(String url, HttpMethod httpMethod) async {
-    if (!_initialized) {
-      throw StateError('Performance monitoring not initialized');
-    }
-
-    return _performance.newHttpMetric(url, httpMethod);
   }
 
   /// Convenience method to track an async operation with automatic start/stop

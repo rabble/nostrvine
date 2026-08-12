@@ -4,6 +4,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/subtitle_fetcher.dart';
 import 'package:openvine/services/subtitle_service.dart';
@@ -14,7 +15,7 @@ part 'subtitle_providers.g.dart';
 const _subtitleVisibilityPreferenceKey = 'subtitle_visibility_enabled';
 
 final subtitleHttpClientProvider = Provider<http.Client>((ref) {
-  final client = http.Client();
+  final client = ref.watch(instrumentedHttpClientFactoryProvider)();
   ref.onDispose(client.close);
   return client;
 });
