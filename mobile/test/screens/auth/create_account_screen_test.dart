@@ -2,6 +2,8 @@
 // ABOUTME: Verifies form rendering, submit interaction,
 // ABOUTME: and skip button behavior
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -664,6 +666,84 @@ void main() {
             scope: 'policy:full',
           ),
         ).called(1);
+      });
+
+      // A duplicate register mints a second pending row with its own token,
+      // killing the first email's link and orphaning the first keypair.
+      // Measured in prod on 2026-08-10 (two registers 2.9s apart, one signup).
+      testWidgets('double-tapping create account registers only once', (
+        tester,
+      ) async {
+        final registered = Completer<(HeadlessRegisterResult, String)>();
+        when(
+          () => mockOAuth.headlessRegister(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+            scope: any(named: 'scope'),
+          ),
+        ).thenAnswer((_) => registered.future);
+
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        await tester.enterText(
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Email'),
+            matching: find.byType(TextField),
+          ),
+          'test@example.com',
+        );
+        await tester.enterText(
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Password'),
+            matching: find.byType(TextField),
+          ),
+          'SecurePass123!',
+        );
+        await tester.enterText(
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Confirm password'),
+            matching: find.byType(TextField),
+          ),
+          'SecurePass123!',
+        );
+
+        final button = find.widgetWithText(DivineButton, 'Create account');
+        await tester.tap(button);
+        // No pump between the taps: the request is still in flight, which is
+        // exactly when an impatient second tap lands.
+        await tester.tap(button, warnIfMissed: false);
+        await tester.pump();
+
+        // The button must show it is busy. Without this the cubit guard alone
+        // still swallows the second call, so a regression to an always-enabled
+        // button would go unnoticed here.
+        expect(
+          find.descendant(
+            of: find.byType(DivineButton),
+            matching: find.byType(CircularProgressIndicator),
+          ),
+          findsOneWidget,
+        );
+
+        verify(
+          () => mockOAuth.headlessRegister(
+            email: 'test@example.com',
+            password: 'SecurePass123!',
+            scope: 'policy:full',
+          ),
+        ).called(1);
+
+        registered.complete((
+          HeadlessRegisterResult(
+            success: true,
+            pubkey: 'test-pubkey',
+            verificationRequired: false,
+            email: 'test@example.com',
+          ),
+          'test-verifier',
+        ));
+        await tester.pumpAndSettle();
       });
     });
   });

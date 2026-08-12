@@ -3133,6 +3133,18 @@ class AppLocalizationsUr extends AppLocalizations {
       'ہم ای میل دوبارہ نہیں بھیج سکے۔ دوبارہ کوشش کریں۔';
 
   @override
+  String get authVerificationResendExpired =>
+      'That signup expired. Start again to get a fresh code.';
+
+  @override
+  String get authVerificationResendUnavailable =>
+      'Resending isn\'t available right now. Use the 6-digit code from the email we already sent you.';
+
+  @override
+  String get authVerificationPollingStopped =>
+      'We stopped checking for you. Enter the 6-digit code from your email to finish signing in.';
+
+  @override
   String get authWelcomeToDivine => 'Divine میں خوش آمدید!';
 
   @override

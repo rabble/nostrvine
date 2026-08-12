@@ -19,8 +19,6 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
-import 'package:openvine/features/feature_flags/models/feature_flag.dart';
-import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/email_verification_error_l10n.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -459,103 +457,149 @@ class _EmailVerificationScreenState
       backgroundColor: context.vineColors.background,
       resizeToAvoidBottomInset: false,
       body: SafeArea(
-        child: BlocConsumer<EmailVerificationCubit, EmailVerificationState>(
-          listenWhen: (previous, current) =>
-              previous.status != current.status ||
-              previous.pinStatus != current.pinStatus ||
-              previous.pinErrorCode != current.pinErrorCode,
-          listener: (context, state) {
-            if (state.status == EmailVerificationStatus.success) {
-              _handleSuccess();
-            }
-            if (state.pinStatus == PinSubmissionStatus.failure) {
-              final message = context.l10n.emailVerificationErrorMessage(
-                state.pinErrorCode ?? EmailVerificationError.pinFailed,
-              );
-              SemanticsService.sendAnnouncement(
+        // Each listener is edge-triggered on its own field. One listener over
+        // the union of fields re-fires every announcement that happens to be
+        // true whenever any single field moves, so a resend after polling had
+        // already stopped would repeat "we stopped checking" and interrupt
+        // itself.
+        child: MultiBlocListener(
+          listeners: [
+            BlocListener<EmailVerificationCubit, EmailVerificationState>(
+              listenWhen: (previous, current) =>
+                  previous.status != current.status &&
+                  current.status == EmailVerificationStatus.success,
+              listener: (context, state) => _handleSuccess(),
+            ),
+            BlocListener<EmailVerificationCubit, EmailVerificationState>(
+              listenWhen: (previous, current) =>
+                  previous.status != current.status &&
+                  current.status == EmailVerificationStatus.pollingTimedOut,
+              listener: (context, state) => SemanticsService.sendAnnouncement(
                 View.of(context),
-                message,
+                context.l10n.authVerificationPollingStopped,
                 Directionality.of(context),
-              );
-            }
-          },
-          builder: (context, state) {
-            final pinFallbackEnabled = ref.watch(
-              isFeatureEnabledProvider(
-                FeatureFlag.emailVerificationPinFallback,
               ),
-            );
-            final showCloseButton =
-                state.status != EmailVerificationStatus.success;
-            return Column(
-              children: [
-                // Close button (hidden on success)
-                if (showCloseButton)
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: _CloseButton(
-                        onPressed:
-                            state.status == EmailVerificationStatus.failure
-                            ? _handleStartOver
-                            : _handleCancel,
+            ),
+            BlocListener<EmailVerificationCubit, EmailVerificationState>(
+              listenWhen: (previous, current) =>
+                  previous.resendStatus != current.resendStatus &&
+                  current.resendStatus == ResendStatus.unavailable,
+              listener: (context, state) => SemanticsService.sendAnnouncement(
+                View.of(context),
+                context.l10n.authVerificationResendUnavailable,
+                Directionality.of(context),
+              ),
+            ),
+            BlocListener<EmailVerificationCubit, EmailVerificationState>(
+              listenWhen: (previous, current) =>
+                  previous.resendStatus != current.resendStatus &&
+                  current.resendStatus == ResendStatus.failure,
+              listener: (context, state) => SemanticsService.sendAnnouncement(
+                View.of(context),
+                context.l10n.authVerificationResendFailed,
+                Directionality.of(context),
+              ),
+            ),
+            BlocListener<EmailVerificationCubit, EmailVerificationState>(
+              listenWhen: (previous, current) =>
+                  previous.resendStatus != current.resendStatus &&
+                  current.resendStatus == ResendStatus.expired,
+              listener: (context, state) => SemanticsService.sendAnnouncement(
+                View.of(context),
+                context.l10n.authVerificationResendExpired,
+                Directionality.of(context),
+              ),
+            ),
+            BlocListener<EmailVerificationCubit, EmailVerificationState>(
+              listenWhen: (previous, current) =>
+                  (previous.pinStatus != current.pinStatus ||
+                      previous.pinErrorCode != current.pinErrorCode) &&
+                  current.pinStatus == PinSubmissionStatus.failure,
+              listener: (context, state) => SemanticsService.sendAnnouncement(
+                View.of(context),
+                context.l10n.emailVerificationErrorMessage(
+                  state.pinErrorCode ?? EmailVerificationError.pinFailed,
+                ),
+                Directionality.of(context),
+              ),
+            ),
+          ],
+          child: BlocBuilder<EmailVerificationCubit, EmailVerificationState>(
+            builder: (context, state) {
+              final showCloseButton =
+                  state.status != EmailVerificationStatus.success;
+              final startsOver =
+                  state.status == EmailVerificationStatus.failure;
+              return Column(
+                children: [
+                  // Close button (hidden on success)
+                  if (showCloseButton)
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: _CloseButton(
+                          onPressed: startsOver
+                              ? _handleStartOver
+                              : _handleCancel,
+                          label: startsOver
+                              ? context.l10n.authStartOver
+                              : context.l10n.commonClose,
+                        ),
                       ),
-                    ),
-                  )
-                else
-                  const SizedBox(height: 76),
+                    )
+                  else
+                    const SizedBox(height: 76),
 
-                // Main content
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: switch (state.status) {
-                      EmailVerificationStatus.initial => _PollingContent(
-                        email: null,
-                        isPollingMode: widget.isPollingMode || !_isTokenMode,
-                        showPinFallback: pinFallbackEnabled,
-                      ),
-                      EmailVerificationStatus.polling => _PollingContent(
-                        email: state.pendingEmail,
-                        isPollingMode: widget.isPollingMode || !_isTokenMode,
-                        showPinFallback: pinFallbackEnabled,
-                      ),
-                      EmailVerificationStatus.pollingTimedOut =>
-                        _PollingContent(
+                  // Main content
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: switch (state.status) {
+                        EmailVerificationStatus.initial => _PollingContent(
+                          email: null,
+                          isPollingMode: widget.isPollingMode || !_isTokenMode,
+                        ),
+                        EmailVerificationStatus.polling => _PollingContent(
                           email: state.pendingEmail,
                           isPollingMode: widget.isPollingMode || !_isTokenMode,
-                          showPinFallback: pinFallbackEnabled,
-                          isActivelyPolling: false,
                         ),
-                      EmailVerificationStatus.success =>
-                        const _SuccessContent(),
-                      EmailVerificationStatus.failure => _ErrorContent(
-                        errorCode: state.errorCode,
-                        onStartOver: _handleStartOver,
-                        onSignInInstead:
-                            state.errorCode ==
-                                EmailVerificationError.emailAlreadyRegistered
-                            ? () => _handleSignInRecovery(
-                                state.pendingEmail,
-                                state.errorCode!,
-                              )
-                            : null,
-                        onReturnToInviteGate:
-                            state.showInviteGateRecovery &&
-                                state.inviteRecoveryCode != null
-                            ? () => _handleInviteRecovery(
-                                state.inviteRecoveryCode!,
-                                state.errorCode,
-                              )
-                            : null,
-                      ),
-                    },
+                        EmailVerificationStatus.pollingTimedOut =>
+                          _PollingContent(
+                            email: state.pendingEmail,
+                            isPollingMode:
+                                widget.isPollingMode || !_isTokenMode,
+                            isActivelyPolling: false,
+                          ),
+                        EmailVerificationStatus.success =>
+                          const _SuccessContent(),
+                        EmailVerificationStatus.failure => _ErrorContent(
+                          errorCode: state.errorCode,
+                          onStartOver: _handleStartOver,
+                          onSignInInstead:
+                              state.errorCode ==
+                                  EmailVerificationError.emailAlreadyRegistered
+                              ? () => _handleSignInRecovery(
+                                  state.pendingEmail,
+                                  state.errorCode!,
+                                )
+                              : null,
+                          onReturnToInviteGate:
+                              state.showInviteGateRecovery &&
+                                  state.inviteRecoveryCode != null
+                              ? () => _handleInviteRecovery(
+                                  state.inviteRecoveryCode!,
+                                  state.errorCode,
+                                )
+                              : null,
+                        ),
+                      },
+                    ),
                   ),
-                ),
-              ],
-            );
-          },
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -564,25 +608,34 @@ class _EmailVerificationScreenState
 
 /// Close button (X) for the verification screen.
 class _CloseButton extends StatelessWidget {
-  const _CloseButton({required this.onPressed});
+  const _CloseButton({required this.onPressed, required this.label});
 
   final VoidCallback onPressed;
 
+  /// Names the action, which differs by state: this is the only exit from the
+  /// polling screen, and the expired-resend copy tells the user to start again
+  /// without an icon-only X being able to say so.
+  final String label;
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: context.vineColors.surfaceContainer,
-          shape: BoxShape.circle,
-        ),
-        child: const DivineIcon(
-          icon: DivineIconName.x,
-          color: VineTheme.vineGreenLight,
-          size: 20,
+    return Semantics(
+      button: true,
+      label: label,
+      child: GestureDetector(
+        onTap: onPressed,
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: context.vineColors.surfaceContainer,
+            shape: BoxShape.circle,
+          ),
+          child: const DivineIcon(
+            icon: DivineIconName.x,
+            color: VineTheme.vineGreenLight,
+            size: 20,
+          ),
         ),
       ),
     );
@@ -638,13 +691,11 @@ class _PollingContent extends StatelessWidget {
   const _PollingContent({
     required this.email,
     required this.isPollingMode,
-    required this.showPinFallback,
     this.isActivelyPolling = true,
   });
 
   final String? email;
   final bool isPollingMode;
-  final bool showPinFallback;
 
   /// Whether the poll loop is still running. When the 15-minute window
   /// elapses this becomes false: the spinner is dropped but PIN entry / resend
@@ -800,13 +851,21 @@ class _PollingContent extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 32, bottom: 32),
                     child: Column(
                       children: [
-                        if (isPollingMode && showPinFallback) ...[
+                        if (isPollingMode) ...[
                           const _PinEntrySection(),
                           const SizedBox(height: 20),
                         ],
                         if (isActivelyPolling)
                           _StatusButton(
                             label: context.l10n.authWaitingForVerification,
+                          )
+                        else
+                          Text(
+                            context.l10n.authVerificationPollingStopped,
+                            style: VineTheme.bodySmallFont(
+                              color: context.vineColors.secondaryText,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
                         if (isPollingMode) ...[
                           const SizedBox(height: 20),
@@ -941,9 +1000,14 @@ class _ResendRow extends StatelessWidget {
     final cooldownSeconds = context.select(
       (EmailVerificationCubit c) => c.state.resendCooldownSeconds,
     );
+    // `unavailable` stays tappable: the only cause is a server build without
+    // the resend-pin route, so a session spanning that deploy should be able
+    // to tap again and have it work. A repeat tap before then just re-shows
+    // the same message.
     final disabled =
         resendStatus == ResendStatus.sending ||
-        resendStatus == ResendStatus.cooldown;
+        resendStatus == ResendStatus.cooldown ||
+        resendStatus == ResendStatus.expired;
     final label = resendStatus == ResendStatus.cooldown
         ? l10n.authVerificationResendCooldown(_formatCooldown(cooldownSeconds))
         : l10n.authVerificationResend;
@@ -998,6 +1062,22 @@ class _ResendRow extends StatelessWidget {
           Text(
             l10n.authVerificationResendFailed,
             style: VineTheme.bodySmallFont(color: VineTheme.error),
+            textAlign: TextAlign.center,
+          ),
+        ] else if (resendStatus == ResendStatus.expired) ...[
+          const SizedBox(height: 4),
+          Text(
+            l10n.authVerificationResendExpired,
+            style: VineTheme.bodySmallFont(color: VineTheme.error),
+            textAlign: TextAlign.center,
+          ),
+        ] else if (resendStatus == ResendStatus.unavailable) ...[
+          const SizedBox(height: 4),
+          Text(
+            l10n.authVerificationResendUnavailable,
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.secondaryText,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
