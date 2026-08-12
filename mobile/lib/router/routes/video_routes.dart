@@ -192,9 +192,8 @@ List<RouteBase> videoRoutes() {
       ),
       builder: buildPooledFullscreenFeed,
     ),
-    // Engagement lists for own videos: who liked / reposted this video.
-    // Reached when the video owner taps the Like or Repost button on
-    // their own video.
+    // Engagement lists: who liked / reposted this video.
+    // Reached from feed action buttons and grouped notification avatar stacks.
     GoRoute(
       path: '/video/:eventId/likers',
       name: VideoEngagementListScreen.likersRouteName,

@@ -26,6 +26,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
+import 'package:openvine/screens/video_engagement/video_engagement_list_screen.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -63,6 +64,8 @@ Future<void> _pumpView(WidgetTester tester, NotificationFeedBloc bloc) async {
 typedef _RoutedViewResult = ({
   List<PooledFullscreenVideoFeedArgs> videoArgs,
   List<({String videoId, VideoDetailRouteExtra? extra})> videoDetailRoutes,
+  List<({String routeName, String eventId, String? addressableId})>
+  engagementRoutes,
   List<String> profileNpubs,
 });
 
@@ -77,6 +80,8 @@ Future<_RoutedViewResult> _pumpRoutedViewFull(
   final capturedVideoArgs = <PooledFullscreenVideoFeedArgs>[];
   final capturedVideoDetailRoutes =
       <({String videoId, VideoDetailRouteExtra? extra})>[];
+  final capturedEngagementRoutes =
+      <({String routeName, String eventId, String? addressableId})>[];
   final capturedProfileNpubs = <String>[];
   final router = GoRouter(
     initialLocation: '/',
@@ -98,6 +103,30 @@ Future<_RoutedViewResult> _pumpRoutedViewFull(
           capturedVideoDetailRoutes.add((
             videoId: state.pathParameters['id']!,
             extra: state.extra as VideoDetailRouteExtra?,
+          ));
+          return const Scaffold(body: SizedBox.shrink());
+        },
+      ),
+      GoRoute(
+        path: '/video/:eventId/likers',
+        name: VideoEngagementListScreen.likersRouteName,
+        builder: (context, state) {
+          capturedEngagementRoutes.add((
+            routeName: VideoEngagementListScreen.likersRouteName,
+            eventId: state.pathParameters['eventId']!,
+            addressableId: state.uri.queryParameters['a'],
+          ));
+          return const Scaffold(body: SizedBox.shrink());
+        },
+      ),
+      GoRoute(
+        path: '/video/:eventId/reposters',
+        name: VideoEngagementListScreen.repostersRouteName,
+        builder: (context, state) {
+          capturedEngagementRoutes.add((
+            routeName: VideoEngagementListScreen.repostersRouteName,
+            eventId: state.pathParameters['eventId']!,
+            addressableId: state.uri.queryParameters['a'],
           ));
           return const Scaffold(body: SizedBox.shrink());
         },
@@ -136,6 +165,7 @@ Future<_RoutedViewResult> _pumpRoutedViewFull(
   return (
     videoArgs: capturedVideoArgs,
     videoDetailRoutes: capturedVideoDetailRoutes,
+    engagementRoutes: capturedEngagementRoutes,
     profileNpubs: capturedProfileNpubs,
   );
 }
@@ -1330,6 +1360,171 @@ void main() {
           expect(result.profileNpubs.single, startsWith('npub'));
         },
       );
+    });
+
+    group('avatar stack routing', () {
+      testWidgets('grouped like avatar stack opens the likers list', (
+        tester,
+      ) async {
+        final videoService = _MockVideoEventService();
+        final nostrClient = _MockNostrClient();
+        final videosRepository = _MockVideosRepository();
+        const addressableId =
+            '34236:'
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+            ':grouped-like';
+
+        when(() => mockBloc.state).thenReturn(
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [
+              VideoNotification(
+                id: 'grouped-like',
+                type: NotificationKind.like,
+                videoEventId: 'grouped_like_video_event',
+                videoAddressableId: addressableId,
+                actors: const [
+                  ActorInfo(pubkey: 'liker_1', displayName: 'Alice'),
+                  ActorInfo(pubkey: 'liker_2', displayName: 'Bob'),
+                  ActorInfo(pubkey: 'liker_3', displayName: 'Charlie'),
+                ],
+                totalCount: 4,
+                timestamp: DateTime(2026),
+              ),
+            ],
+          ),
+        );
+
+        final result = await _pumpRoutedViewFull(
+          tester,
+          mockBloc,
+          videoEventService: videoService,
+          nostrClient: nostrClient,
+          videosRepository: videosRepository,
+        );
+
+        await tester.tap(
+          find.bySemanticsLabel(_l10n.notificationsViewProfilesSemanticLabel),
+        );
+        await tester.pumpAndSettle();
+
+        expect(result.videoArgs, isEmpty);
+        expect(result.videoDetailRoutes, isEmpty);
+        expect(result.profileNpubs, isEmpty);
+        expect(result.engagementRoutes, hasLength(1));
+        expect(
+          result.engagementRoutes.single.routeName,
+          VideoEngagementListScreen.likersRouteName,
+        );
+        expect(
+          result.engagementRoutes.single.eventId,
+          'grouped_like_video_event',
+        );
+        expect(result.engagementRoutes.single.addressableId, addressableId);
+      });
+
+      testWidgets('grouped repost avatar stack opens the reposters list', (
+        tester,
+      ) async {
+        final videoService = _MockVideoEventService();
+        final nostrClient = _MockNostrClient();
+        final videosRepository = _MockVideosRepository();
+        const addressableId =
+            '34236:'
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+            ':grouped-repost';
+
+        when(() => mockBloc.state).thenReturn(
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [
+              VideoNotification(
+                id: 'grouped-repost',
+                type: NotificationKind.repost,
+                videoEventId: 'grouped_repost_video_event',
+                videoAddressableId: addressableId,
+                actors: const [
+                  ActorInfo(pubkey: 'reposter_1', displayName: 'Alice'),
+                  ActorInfo(pubkey: 'reposter_2', displayName: 'Bob'),
+                ],
+                totalCount: 2,
+                timestamp: DateTime(2026),
+              ),
+            ],
+          ),
+        );
+
+        final result = await _pumpRoutedViewFull(
+          tester,
+          mockBloc,
+          videoEventService: videoService,
+          nostrClient: nostrClient,
+          videosRepository: videosRepository,
+        );
+
+        await tester.tap(
+          find.bySemanticsLabel(_l10n.notificationsViewProfilesSemanticLabel),
+        );
+        await tester.pumpAndSettle();
+
+        expect(result.videoArgs, isEmpty);
+        expect(result.videoDetailRoutes, isEmpty);
+        expect(result.profileNpubs, isEmpty);
+        expect(result.engagementRoutes, hasLength(1));
+        expect(
+          result.engagementRoutes.single.routeName,
+          VideoEngagementListScreen.repostersRouteName,
+        );
+        expect(
+          result.engagementRoutes.single.eventId,
+          'grouped_repost_video_event',
+        );
+        expect(result.engagementRoutes.single.addressableId, addressableId);
+      });
+
+      testWidgets('single like avatar stack still opens the actor profile', (
+        tester,
+      ) async {
+        final videoService = _MockVideoEventService();
+        final nostrClient = _MockNostrClient();
+        final videosRepository = _MockVideosRepository();
+        final likerPubkey = 'a' * 64;
+
+        when(() => mockBloc.state).thenReturn(
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [
+              VideoNotification(
+                id: 'single-like',
+                type: NotificationKind.like,
+                videoEventId: 'single_like_video_event',
+                actors: [ActorInfo(pubkey: likerPubkey, displayName: 'Alice')],
+                totalCount: 1,
+                timestamp: DateTime(2026),
+              ),
+            ],
+          ),
+        );
+
+        final result = await _pumpRoutedViewFull(
+          tester,
+          mockBloc,
+          videoEventService: videoService,
+          nostrClient: nostrClient,
+          videosRepository: videosRepository,
+        );
+
+        await tester.tap(
+          find.bySemanticsLabel(_l10n.notificationsViewProfilesSemanticLabel),
+        );
+        await tester.pumpAndSettle();
+
+        expect(result.videoArgs, isEmpty);
+        expect(result.videoDetailRoutes, isEmpty);
+        expect(result.engagementRoutes, isEmpty);
+        expect(result.profileNpubs, hasLength(1));
+        expect(result.profileNpubs.single, startsWith('npub'));
+      });
     });
 
     group('date headers', () {
