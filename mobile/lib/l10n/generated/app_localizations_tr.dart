@@ -4299,6 +4299,25 @@ class AppLocalizationsTr extends AppLocalizations {
   String get soundsRemoveSavedSound => 'Sesi kaldır';
 
   @override
+  String get savedSoundSaveAction => 'Kaydet';
+
+  @override
+  String get savedSoundPausePreviewAction => 'Önizlemeyi duraklat';
+
+  @override
+  String get savedSoundResumePreviewAction => 'Önizlemeye devam et';
+
+  @override
+  String get savedSoundDetailsSheetTitle => 'Ses ayrıntıları';
+
+  @override
+  String get savedSoundRemoveConfirmTitle => 'Bu ses kaldırılsın mı?';
+
+  @override
+  String get savedSoundRemoveConfirmMessage =>
+      'Kitaplığından kaybolur, ama onu kullanan herhangi bir videodan tekrar kaydedebilirsin.';
+
+  @override
   String get soundsRemovedFromLibrary => 'Seslerden kaldırıldı';
 
   @override

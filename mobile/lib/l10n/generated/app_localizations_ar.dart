@@ -4293,6 +4293,25 @@ class AppLocalizationsAr extends AppLocalizations {
   String get soundsRemoveSavedSound => 'إزالة الصوت';
 
   @override
+  String get savedSoundSaveAction => 'حفظ';
+
+  @override
+  String get savedSoundPausePreviewAction => 'إيقاف المعاينة مؤقتًا';
+
+  @override
+  String get savedSoundResumePreviewAction => 'استئناف المعاينة';
+
+  @override
+  String get savedSoundDetailsSheetTitle => 'تفاصيل الصوت';
+
+  @override
+  String get savedSoundRemoveConfirmTitle => 'هل تريد إزالة هذا الصوت؟';
+
+  @override
+  String get savedSoundRemoveConfirmMessage =>
+      'سيختفي من مكتبتك، لكن يمكنك حفظه مرة أخرى من أي فيديو يستخدمه.';
+
+  @override
   String get soundsRemovedFromLibrary => 'أُزيل من الأصوات';
 
   @override

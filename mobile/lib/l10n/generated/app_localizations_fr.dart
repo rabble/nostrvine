@@ -4394,6 +4394,25 @@ class AppLocalizationsFr extends AppLocalizations {
   String get soundsRemoveSavedSound => 'Supprimer le son';
 
   @override
+  String get savedSoundSaveAction => 'Enregistrer';
+
+  @override
+  String get savedSoundPausePreviewAction => 'Mettre l\'aperçu en pause';
+
+  @override
+  String get savedSoundResumePreviewAction => 'Reprendre l\'aperçu';
+
+  @override
+  String get savedSoundDetailsSheetTitle => 'Détails du son';
+
+  @override
+  String get savedSoundRemoveConfirmTitle => 'Retirer ce son ?';
+
+  @override
+  String get savedSoundRemoveConfirmMessage =>
+      'Il disparaîtra de ta bibliothèque, mais tu peux le réenregistrer depuis n\'importe quelle vidéo qui l\'utilise.';
+
+  @override
   String get soundsRemovedFromLibrary => 'Supprimé de Sons';
 
   @override

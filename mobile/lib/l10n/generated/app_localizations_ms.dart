@@ -4364,6 +4364,25 @@ class AppLocalizationsMs extends AppLocalizations {
   String get soundsRemoveSavedSound => 'Alih keluar bunyi';
 
   @override
+  String get savedSoundSaveAction => 'Simpan';
+
+  @override
+  String get savedSoundPausePreviewAction => 'Jeda pratonton';
+
+  @override
+  String get savedSoundResumePreviewAction => 'Sambung pratonton';
+
+  @override
+  String get savedSoundDetailsSheetTitle => 'Butiran bunyi';
+
+  @override
+  String get savedSoundRemoveConfirmTitle => 'Alih keluar bunyi ini?';
+
+  @override
+  String get savedSoundRemoveConfirmMessage =>
+      'Ia hilang daripada pustaka anda, tetapi anda boleh menyimpannya semula daripada mana-mana video yang menggunakannya.';
+
+  @override
   String get soundsRemovedFromLibrary => 'Dialih keluar daripada Bunyi';
 
   @override

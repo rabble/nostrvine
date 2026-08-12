@@ -4361,6 +4361,25 @@ class AppLocalizationsPt extends AppLocalizations {
   String get soundsRemoveSavedSound => 'Remover som';
 
   @override
+  String get savedSoundSaveAction => 'Salvar';
+
+  @override
+  String get savedSoundPausePreviewAction => 'Pausar prévia';
+
+  @override
+  String get savedSoundResumePreviewAction => 'Retomar prévia';
+
+  @override
+  String get savedSoundDetailsSheetTitle => 'Detalhes do som';
+
+  @override
+  String get savedSoundRemoveConfirmTitle => 'Remover este som?';
+
+  @override
+  String get savedSoundRemoveConfirmMessage =>
+      'Ele sai da sua biblioteca, mas você pode salvá-lo de novo em qualquer vídeo que o use.';
+
+  @override
   String get soundsRemovedFromLibrary => 'Removido de Sons';
 
   @override

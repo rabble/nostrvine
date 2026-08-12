@@ -4380,6 +4380,25 @@ class AppLocalizationsBg extends AppLocalizations {
   String get soundsRemoveSavedSound => 'Премахни звука';
 
   @override
+  String get savedSoundSaveAction => 'Запази';
+
+  @override
+  String get savedSoundPausePreviewAction => 'Пауза на визуализацията';
+
+  @override
+  String get savedSoundResumePreviewAction => 'Продължи визуализацията';
+
+  @override
+  String get savedSoundDetailsSheetTitle => 'Детайли за звука';
+
+  @override
+  String get savedSoundRemoveConfirmTitle => 'Да премахнем ли този звук?';
+
+  @override
+  String get savedSoundRemoveConfirmMessage =>
+      'Изчезва от библиотеката ти, но можеш да го запазиш отново от всяко видео, което го използва.';
+
+  @override
   String get soundsRemovedFromLibrary => 'Премахнат от Звуци';
 
   @override

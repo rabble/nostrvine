@@ -4293,6 +4293,25 @@ class AppLocalizationsId extends AppLocalizations {
   String get soundsRemoveSavedSound => 'Hapus suara';
 
   @override
+  String get savedSoundSaveAction => 'Simpan';
+
+  @override
+  String get savedSoundPausePreviewAction => 'Jeda pratinjau';
+
+  @override
+  String get savedSoundResumePreviewAction => 'Lanjutkan pratinjau';
+
+  @override
+  String get savedSoundDetailsSheetTitle => 'Detail suara';
+
+  @override
+  String get savedSoundRemoveConfirmTitle => 'Hapus suara ini?';
+
+  @override
+  String get savedSoundRemoveConfirmMessage =>
+      'Suara ini hilang dari pustakamu, tapi kamu bisa menyimpannya lagi dari video mana pun yang memakainya.';
+
+  @override
   String get soundsRemovedFromLibrary => 'Dihapus dari Suara';
 
   @override

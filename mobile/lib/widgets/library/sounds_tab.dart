@@ -1,6 +1,8 @@
 // ABOUTME: Sounds tab for the Library screen.
 // ABOUTME: Shows reusable sounds the user has explicitly saved.
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -39,13 +41,46 @@ class SoundsTab extends ConsumerStatefulWidget {
 class _SoundsTabState extends ConsumerState<SoundsTab> {
   final TextEditingController _searchController = TextEditingController();
   String? _previewingSoundId;
-  String? _editingSoundId;
+
+  /// Whether the preview named by [_previewingSoundId] is paused.
+  ///
+  /// A paused preview keeps its card and its waveform fill — it is still the
+  /// active preview, just not advancing.
+  bool _previewPaused = false;
+
+  /// Playback position of the running preview as a 0–1 fraction, so the
+  /// previewing card can fill its waveform as the sound plays.
+  Stream<double>? _previewProgress;
+
+  /// Last fraction observed on [_previewProgress].
+  ///
+  /// Seeded into the card so a list rebuild or off-screen remount does not
+  /// flash the waveform back to empty while a preview is still active
+  /// (including while paused, when the position stream is quiet).
+  double _previewProgressValue = 0;
+
+  /// Bumped whenever a new preview load starts or the preview is stopped, so
+  /// an in-flight `loadAudio` / `play` from a superseded tap cannot clobber
+  /// the active card state.
+  int _previewSession = 0;
+
+  /// Bumped when a running `play()` is intentionally interrupted (pause,
+  /// stop, or a newer play). The `_playToEnd` that owned the interrupted
+  /// `play()` must not treat that resolution as "the sound ended".
+  int _playEpoch = 0;
+
+  /// Serializes `loadAudio` calls on the shared player. Session checks alone
+  /// protect card state; without this gate two overlapping loads can still
+  /// interleave `setAudioSource` on [AudioPlaybackService].
+  Future<void>? _previewLoadGate;
 
   /// Cached reference to audio service for safe disposal.
   AudioPlaybackService? _audioService;
 
   @override
   void dispose() {
+    _previewSession++;
+    _playEpoch++;
     if (_previewingSoundId != null && _audioService != null) {
       _audioService!.stop();
     }
@@ -57,15 +92,22 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
     context.read<SavedSoundsBloc>().add(SavedSoundsQueryChanged(query));
   }
 
+  void _clearPreviewState() {
+    setState(() {
+      _previewingSoundId = null;
+      _previewPaused = false;
+      _previewProgress = null;
+      _previewProgressValue = 0;
+    });
+  }
+
   Future<void> _stopPreview() async {
+    _previewSession++;
+    _playEpoch++;
     if (_previewingSoundId != null) {
       _audioService ??= ref.read(audioPlaybackServiceProvider);
       await _audioService!.stop();
-      if (mounted) {
-        setState(() {
-          _previewingSoundId = null;
-        });
-      }
+      if (mounted) _clearPreviewState();
     }
   }
 
@@ -74,18 +116,81 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
     final audioService = _audioService!;
 
     if (_previewingSoundId == sound.id) {
-      await _stopPreview();
+      await _togglePreviewPause(audioService, sound.id);
       return;
     }
 
     if (sound.url == null || sound.url!.isEmpty) return;
 
+    final session = ++_previewSession;
+    _playEpoch++;
+    final priorLoad = _previewLoadGate;
+    final loadDone = Completer<void>();
+    _previewLoadGate = loadDone.future;
+
     try {
+      if (priorLoad != null) await priorLoad;
+      if (!mounted || session != _previewSession) return;
+
       await audioService.stop();
-      await audioService.loadAudio(sound.url!);
-      if (mounted) {
-        setState(() => _previewingSoundId = sound.id);
+      if (!mounted || session != _previewSession) return;
+
+      final total = await audioService.loadAudio(sound.url!);
+      if (!mounted || session != _previewSession) return;
+      setState(() {
+        _previewingSoundId = sound.id;
+        _previewPaused = false;
+        _previewProgressValue = 0;
+        _previewProgress = _progressFor(audioService, total, session);
+      });
+    } catch (e) {
+      Log.error(
+        'Failed to preview sound: $e',
+        name: 'SoundsTab',
+        category: LogCategory.video,
+      );
+      if (mounted && session == _previewSession) _clearPreviewState();
+      return;
+    } finally {
+      if (!loadDone.isCompleted) loadDone.complete();
+      if (identical(_previewLoadGate, loadDone.future)) {
+        _previewLoadGate = null;
       }
+    }
+    await _playToEnd(audioService, sound.id, session);
+  }
+
+  /// Pauses the running preview, or resumes it where it left off.
+  Future<void> _togglePreviewPause(
+    AudioPlaybackService audioService,
+    String soundId,
+  ) async {
+    if (_previewPaused) {
+      final session = _previewSession;
+      setState(() => _previewPaused = false);
+      await _playToEnd(audioService, soundId, session);
+      return;
+    }
+    // Flipped before the await: pausing resolves the pending `play()`.
+    // Bump [_playEpoch] so that resolving `_playToEnd` cannot clear state
+    // if a resume starts before this pause await finishes.
+    setState(() => _previewPaused = true);
+    _playEpoch++;
+    await audioService.pause();
+  }
+
+  /// Plays until the sound ends, then hands the card back to its idle state.
+  ///
+  /// `play()` also resolves when the preview is paused, and when another
+  /// sound stopped this one and now owns the preview state. Neither is an
+  /// ending, so both leave the state alone.
+  Future<void> _playToEnd(
+    AudioPlaybackService audioService,
+    String soundId,
+    int session,
+  ) async {
+    final playEpoch = ++_playEpoch;
+    try {
       await audioService.play();
     } catch (e) {
       Log.error(
@@ -93,19 +198,48 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
         name: 'SoundsTab',
         category: LogCategory.video,
       );
-    } finally {
-      if (mounted) {
-        setState(() => _previewingSoundId = null);
-      }
     }
+    if (mounted &&
+        session == _previewSession &&
+        playEpoch == _playEpoch &&
+        _previewingSoundId == soundId &&
+        !_previewPaused) {
+      _clearPreviewState();
+    }
+  }
+
+  Stream<double> _progressFor(
+    AudioPlaybackService service,
+    Duration? total,
+    int session,
+  ) {
+    final totalMs = total?.inMilliseconds ?? 0;
+    if (totalMs <= 0) return const Stream<double>.empty();
+    return service.positionStream.map((position) {
+      final value = (position.inMilliseconds / totalMs).clamp(0.0, 1.0);
+      if (session == _previewSession) {
+        _previewProgressValue = value;
+      }
+      return value;
+    });
   }
 
   Future<void> _onRemoveTap(SavedSound sound) async {
     await _stopPreview();
     if (!mounted) return;
-    if (_editingSoundId == sound.id) {
-      setState(() => _editingSoundId = null);
-    }
+
+    final confirmed = await VineBottomSheetPrompt.show<bool>(
+      context: context,
+      sticker: .alert,
+      title: context.l10n.savedSoundRemoveConfirmTitle,
+      subtitle: context.l10n.savedSoundRemoveConfirmMessage,
+      primaryButtonText: context.l10n.soundsRemoveSavedSound,
+      primaryButtonType: DivineButtonType.error,
+      onPrimaryPressed: () => Navigator.of(context).pop(true),
+      secondaryButtonText: context.l10n.commonCancel,
+      onSecondaryPressed: () => Navigator.of(context).pop(false),
+    );
+    if (confirmed != true || !mounted) return;
 
     var removed = true;
     try {
@@ -136,16 +270,14 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
             AudioSelectionBottomSheet.show(context));
     if (selectedSound == null || !mounted) return;
 
+    final bloc = context.read<SavedSoundsBloc>();
     SavedSoundSaveResult? result;
     try {
-      result = await context.read<SavedSoundsBloc>().saveSound(selectedSound);
+      result = await bloc.saveSound(selectedSound);
     } catch (_) {
       result = null;
     }
     if (!mounted) return;
-    if (result != null) {
-      setState(() => _editingSoundId = selectedSound.id);
-    }
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -158,6 +290,25 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
         duration: const Duration(seconds: 2),
       ),
     );
+
+    if (result == null) return;
+    final saved = bloc.state.sounds.where(
+      (record) => record.id == selectedSound.id,
+    );
+    if (saved.isEmpty) return;
+    await _onEditTap(saved.first);
+  }
+
+  Future<void> _onOpenDetails(SavedSound sound) async {
+    await _stopPreview();
+    if (!mounted) return;
+    context.push(SoundDetailScreen.pathForId(sound.audio.id));
+  }
+
+  Future<void> _onEditTap(SavedSound sound) async {
+    await _stopPreview();
+    if (!mounted) return;
+    await SavedSoundDetailsEditor.show(context, sound: sound);
   }
 
   @override
@@ -168,103 +319,166 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
       _ => null,
     };
     final locked = availability is SoundSyncVaultLocked;
-    final column = Column(
-      children: [
-        _SearchInput(
-          controller: _searchController,
-          onChanged: _onSearchChanged,
+    // Everything is a sliver in one scroll view rather than a fixed header
+    // above an `Expanded` list: the search field scrolls away with the
+    // results, so an open keyboard no longer squeezes the list into the
+    // sliver of height left below the header.
+    final scrollView = CustomScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      slivers: [
+        SliverFloatingHeader(
+          child: _SearchInput(
+            controller: _searchController,
+            onChanged: _onSearchChanged,
+          ),
         ),
         if (kDebugMode && !kIsWeb)
-          _DebugAudioPickerLauncher(onTap: _onAddAudioTap),
+          SliverToBoxAdapter(
+            child: _DebugAudioPickerLauncher(onTap: _onAddAudioTap),
+          ),
         if (locked)
-          const _SyncLockedBanner()
+          const SliverToBoxAdapter(child: _SyncLockedBanner())
         else if (syncRepository != null)
-          const _SyncStatusBanner(),
-        Expanded(child: _buildContent()),
+          const SliverToBoxAdapter(child: _SyncStatusBanner()),
+        _SoundsContent(
+          playingSoundId: _previewingSoundId,
+          playingPaused: _previewPaused,
+          playingProgress: _previewProgress,
+          playingProgressValue: _previewProgressValue,
+          onPreview: (sound) => _onPreviewTap(sound.audio),
+          onOpenDetails: _onOpenDetails,
+          onEdit: _onEditTap,
+          onRemove: _onRemoveTap,
+        ),
+        const SliverBottomSafeArea(),
       ],
     );
-    if (syncRepository == null) return column;
+    if (syncRepository == null) return scrollView;
     return BlocProvider<SoundSyncCubit>(
       key: ValueKey(syncRepository),
       create: (_) => SoundSyncCubit(repository: syncRepository)..syncNow(),
-      child: column,
+      child: scrollView,
     );
   }
+}
 
-  Widget _buildContent() {
+/// Sliver body of the tab: the saved-sound list, or a placeholder that fills
+/// whatever viewport is left when there is nothing to show.
+class _SoundsContent extends StatelessWidget {
+  const _SoundsContent({
+    required this.playingSoundId,
+    required this.playingPaused,
+    required this.playingProgress,
+    required this.playingProgressValue,
+    required this.onPreview,
+    required this.onOpenDetails,
+    required this.onEdit,
+    required this.onRemove,
+  });
+
+  final String? playingSoundId;
+  final bool playingPaused;
+  final Stream<double>? playingProgress;
+  final double playingProgressValue;
+  final ValueChanged<SavedSound> onPreview;
+  final ValueChanged<SavedSound> onOpenDetails;
+  final ValueChanged<SavedSound> onEdit;
+  final ValueChanged<SavedSound> onRemove;
+
+  @override
+  Widget build(BuildContext context) {
     return BlocBuilder<SavedSoundsBloc, SavedSoundsState>(
       builder: (context, state) {
-        if (state.sounds.isEmpty) return _buildEmptyState();
-        if (state.visibleSounds.isEmpty) return _buildNoResultsState();
+        if (state.sounds.isEmpty) return const _EmptyState();
+        if (state.visibleSounds.isEmpty) return const _NoResultsState();
 
         return _SavedSoundsSection(
           state: state,
-          editingSoundId: _editingSoundId,
-          onPreview: (sound) => _onPreviewTap(sound.audio),
-          onOpenDetails: (sound) async {
-            await _stopPreview();
-            if (!context.mounted) return;
-            context.push(SoundDetailScreen.pathForId(sound.audio.id));
-          },
-          onEdit: (sound) {
-            setState(() {
-              _editingSoundId = _editingSoundId == sound.id ? null : sound.id;
-            });
-          },
-          onRemove: _onRemoveTap,
+          playingSoundId: playingSoundId,
+          playingPaused: playingPaused,
+          playingProgress: playingProgress,
+          playingProgressValue: playingProgressValue,
+          onPreview: onPreview,
+          onOpenDetails: onOpenDetails,
+          onEdit: onEdit,
+          onRemove: onRemove,
         );
       },
     );
   }
+}
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.music_off, size: 64, color: context.vineColors.mutedText),
-          const SizedBox(height: 16),
-          Text(
-            context.l10n.soundsSavedEmptyTitle,
-            style: TextStyle(
-              color: context.vineColors.primaryText,
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverFillRemaining(
+      hasScrollBody: false,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.music_off,
+              size: 64,
+              color: context.vineColors.mutedText,
             ),
-          ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
-              context.l10n.soundsSavedEmptyDescription,
+            const SizedBox(height: 16),
+            Text(
+              context.l10n.soundsSavedEmptyTitle,
               style: TextStyle(
-                color: context.vineColors.onSurfaceMuted,
-                fontSize: 14,
+                color: context.vineColors.primaryText,
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
               ),
-              textAlign: TextAlign.center,
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                context.l10n.soundsSavedEmptyDescription,
+                style: TextStyle(
+                  color: context.vineColors.onSurfaceMuted,
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
+}
 
-  Widget _buildNoResultsState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.search_off, size: 64, color: context.vineColors.mutedText),
-          const SizedBox(height: 16),
-          Text(
-            context.l10n.soundsNoSoundsFound,
-            style: TextStyle(
-              color: context.vineColors.primaryText,
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
+class _NoResultsState extends StatelessWidget {
+  const _NoResultsState();
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverFillRemaining(
+      hasScrollBody: false,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search_off,
+              size: 64,
+              color: context.vineColors.mutedText,
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            Text(
+              context.l10n.soundsNoSoundsFound,
+              style: TextStyle(
+                color: context.vineColors.primaryText,
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -381,10 +595,15 @@ class _SearchInput extends StatelessWidget {
   }
 }
 
+/// Saved-sound list as a [SliverMainAxisGroup] so its header, filters, and
+/// cards scroll as one with the search field above them.
 class _SavedSoundsSection extends StatelessWidget {
   const _SavedSoundsSection({
     required this.state,
-    required this.editingSoundId,
+    required this.playingSoundId,
+    required this.playingPaused,
+    required this.playingProgress,
+    required this.playingProgressValue,
     required this.onPreview,
     required this.onOpenDetails,
     required this.onEdit,
@@ -392,7 +611,10 @@ class _SavedSoundsSection extends StatelessWidget {
   });
 
   final SavedSoundsState state;
-  final String? editingSoundId;
+  final String? playingSoundId;
+  final bool playingPaused;
+  final Stream<double>? playingProgress;
+  final double playingProgressValue;
   final ValueChanged<SavedSound> onPreview;
   final ValueChanged<SavedSound> onOpenDetails;
   final ValueChanged<SavedSound> onEdit;
@@ -404,84 +626,123 @@ class _SavedSoundsSection extends StatelessWidget {
     final hashtags =
         state.sounds.expand((sound) => sound.personalHashtags).toSet().toList()
           ..sort();
-    return ListView(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              const DivineIcon(
-                icon: DivineIconName.musicNote,
-                color: VineTheme.vineGreen,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                context.l10n.soundsSavedLibraryTitle,
-                style: TextStyle(
-                  color: context.vineColors.primaryText,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+    return SliverMainAxisGroup(
+      slivers: [
+        SliverToBoxAdapter(child: _SectionHeader(count: state.sounds.length)),
+        if (hashtags.isNotEmpty)
+          SliverToBoxAdapter(
+            child: _HashtagFilters(
+              hashtags: hashtags,
+              selectedHashtag: state.selectedHashtag,
+            ),
+          ),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          sliver: SliverList.builder(
+            itemCount: sounds.length,
+            itemBuilder: (context, index) {
+              final sound = sounds[index];
+              final isPreviewing = playingSoundId == sound.id;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: SavedSoundCard(
+                  sound: sound,
+                  isPlaying: isPreviewing && !playingPaused,
+                  progress: isPreviewing ? playingProgress : null,
+                  progressValue: isPreviewing ? playingProgressValue : 0,
+                  onTap: () => onOpenDetails(sound),
+                  onPreview: () => onPreview(sound),
+                  onEdit: () => onEdit(sound),
+                  onRemove: () => onRemove(sound),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '(${state.sounds.length})',
-                style: TextStyle(
-                  color: context.vineColors.onSurfaceMuted,
-                  fontSize: 14,
-                ),
-              ),
-            ],
+              );
+            },
           ),
         ),
-        if (hashtags.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final hashtag in hashtags)
-                  Semantics(
-                    label: state.selectedHashtag == hashtag
-                        ? context.l10n.savedSoundClearHashtagFilter
-                        : '#$hashtag',
-                    child: FilterChip(
-                      key: Key('saved_sound_filter_$hashtag'),
-                      label: Text('#$hashtag'),
-                      selected: state.selectedHashtag == hashtag,
-                      onSelected: (selected) {
-                        context.read<SavedSoundsBloc>().add(
-                          SavedSoundsHashtagSelected(selected ? hashtag : null),
-                        );
-                      },
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        for (final sound in sounds)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Column(
-                children: [
-                  SavedSoundCard(
-                    sound: sound,
-                    onTap: () => onOpenDetails(sound),
-                    onPreview: () => onPreview(sound),
-                    onEdit: () => onEdit(sound),
-                    onRemove: () => onRemove(sound),
-                  ),
-                  if (editingSoundId == sound.id)
-                    SavedSoundDetailsEditor(sound: sound),
-                ],
-              ),
-            ),
-          ),
       ],
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          const DivineIcon(
+            icon: DivineIconName.musicNote,
+            color: VineTheme.vineGreen,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            context.l10n.soundsSavedLibraryTitle,
+            style: TextStyle(
+              color: context.vineColors.primaryText,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '($count)',
+            style: TextStyle(
+              color: context.vineColors.onSurfaceMuted,
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HashtagFilters extends StatelessWidget {
+  const _HashtagFilters({
+    required this.hashtags,
+    required this.selectedHashtag,
+  });
+
+  final List<String> hashtags;
+  final String? selectedHashtag;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        // Inset lives on the scroll view, not around it, so the chips run to
+        // the screen edge instead of stopping short of it.
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          spacing: 8,
+          children: [
+            for (final hashtag in hashtags)
+              Semantics(
+                label: selectedHashtag == hashtag
+                    ? context.l10n.savedSoundClearHashtagFilter
+                    : '#$hashtag',
+                child: FilterChip(
+                  key: Key('saved_sound_filter_$hashtag'),
+                  label: Text('#$hashtag'),
+                  selected: selectedHashtag == hashtag,
+                  onSelected: (selected) {
+                    context.read<SavedSoundsBloc>().add(
+                      SavedSoundsHashtagSelected(selected ? hashtag : null),
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

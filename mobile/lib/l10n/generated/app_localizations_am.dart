@@ -4244,6 +4244,25 @@ class AppLocalizationsAm extends AppLocalizations {
   String get soundsRemoveSavedSound => 'ድምፁን አስወግድ';
 
   @override
+  String get savedSoundSaveAction => 'አስቀምጥ';
+
+  @override
+  String get savedSoundPausePreviewAction => 'ቅድመ ዕይታን አቁም';
+
+  @override
+  String get savedSoundResumePreviewAction => 'ቅድመ ዕይታን ቀጥል';
+
+  @override
+  String get savedSoundDetailsSheetTitle => 'የድምፅ ዝርዝሮች';
+
+  @override
+  String get savedSoundRemoveConfirmTitle => 'ይህን ድምፅ ላስወግድ?';
+
+  @override
+  String get savedSoundRemoveConfirmMessage =>
+      'ከቤተ መጻሕፍትህ ይጠፋል፣ ግን እሱን ከሚጠቀም ማንኛውም ቪዲዮ እንደገና ማስቀመጥ ትችላለህ።';
+
+  @override
   String get soundsRemovedFromLibrary => 'ከድምፆች ተወገደ';
 
   @override

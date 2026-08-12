@@ -4110,6 +4110,25 @@ class AppLocalizationsJa extends AppLocalizations {
   String get soundsRemoveSavedSound => 'サウンドを削除';
 
   @override
+  String get savedSoundSaveAction => '保存';
+
+  @override
+  String get savedSoundPausePreviewAction => 'プレビューを一時停止';
+
+  @override
+  String get savedSoundResumePreviewAction => 'プレビューを再開';
+
+  @override
+  String get savedSoundDetailsSheetTitle => 'サウンドの詳細';
+
+  @override
+  String get savedSoundRemoveConfirmTitle => 'このサウンドを削除しますか？';
+
+  @override
+  String get savedSoundRemoveConfirmMessage =>
+      'ライブラリから消えますが、このサウンドを使っている動画からいつでも保存し直せます。';
+
+  @override
   String get soundsRemovedFromLibrary => 'サウンドから削除しました';
 
   @override

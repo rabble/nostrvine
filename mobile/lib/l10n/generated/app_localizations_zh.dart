@@ -4103,6 +4103,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get soundsRemoveSavedSound => '移除声音';
 
   @override
+  String get savedSoundSaveAction => '保存';
+
+  @override
+  String get savedSoundPausePreviewAction => '暂停试听';
+
+  @override
+  String get savedSoundResumePreviewAction => '继续试听';
+
+  @override
+  String get savedSoundDetailsSheetTitle => '声音详情';
+
+  @override
+  String get savedSoundRemoveConfirmTitle => '要移除这个声音吗？';
+
+  @override
+  String get savedSoundRemoveConfirmMessage => '它会从你的音库中消失，但你可以从任何用到它的视频里重新保存。';
+
+  @override
   String get soundsRemovedFromLibrary => '已从声音库移除';
 
   @override

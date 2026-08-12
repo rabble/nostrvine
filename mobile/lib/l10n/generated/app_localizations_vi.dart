@@ -4336,6 +4336,25 @@ class AppLocalizationsVi extends AppLocalizations {
   String get soundsRemoveSavedSound => 'Xóa âm thanh';
 
   @override
+  String get savedSoundSaveAction => 'Lưu';
+
+  @override
+  String get savedSoundPausePreviewAction => 'Tạm dừng nghe thử';
+
+  @override
+  String get savedSoundResumePreviewAction => 'Tiếp tục nghe thử';
+
+  @override
+  String get savedSoundDetailsSheetTitle => 'Chi tiết âm thanh';
+
+  @override
+  String get savedSoundRemoveConfirmTitle => 'Xóa âm thanh này?';
+
+  @override
+  String get savedSoundRemoveConfirmMessage =>
+      'Nó biến mất khỏi thư viện của bạn, nhưng bạn có thể lưu lại từ bất kỳ video nào dùng nó.';
+
+  @override
   String get soundsRemovedFromLibrary => 'Đã xóa khỏi Âm thanh';
 
   @override

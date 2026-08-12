@@ -65,7 +65,11 @@ Future<(SavedSoundsBloc, SavedSoundsService)> _bloc({
   return (bloc, service);
 }
 
-Widget _app(SavedSoundsBloc bloc, {ThemeData? theme}) => MaterialApp(
+Widget _app(
+  SavedSoundsBloc bloc, {
+  ThemeData? theme,
+  SavedSoundDetailsEditorController? controller,
+}) => MaterialApp(
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
   theme: theme ?? ThemeData.dark(),
@@ -74,7 +78,7 @@ Widget _app(SavedSoundsBloc bloc, {ThemeData? theme}) => MaterialApp(
     backgroundColor: theme?.extension<VineThemeColors>()?.surface,
     body: BlocProvider.value(
       value: bloc,
-      child: SavedSoundDetailsEditor(sound: _record()),
+      child: SavedSoundDetailsEditor(sound: _record(), controller: controller),
     ),
   ),
 );
@@ -111,6 +115,76 @@ void main() {
     await tester.pump();
 
     expect(service.loadSavedSounds().single.personalLabel, 'Field recording');
+  });
+
+  testWidgets('controller saves without waiting out the debounce', (
+    tester,
+  ) async {
+    final (bloc, service) = await _bloc();
+    final controller = SavedSoundDetailsEditorController();
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await bloc.close();
+    });
+    await tester.pumpWidget(_app(bloc, controller: controller));
+
+    await tester.enterText(
+      find.byKey(const Key('saved_sound_label_field')),
+      'Saved on tap',
+    );
+    controller.save();
+    await tester.pump();
+
+    expect(service.loadSavedSounds().single.personalLabel, 'Saved on tap');
+  });
+
+  testWidgets('saving keeps a hashtag typed without a delimiter', (
+    tester,
+  ) async {
+    final (bloc, service) = await _bloc();
+    final controller = SavedSoundDetailsEditorController();
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await bloc.close();
+    });
+    await tester.pumpWidget(_app(bloc, controller: controller));
+
+    // No comma, space, or Done key — only the sheet's Save button.
+    await tester.enterText(
+      find.byKey(const Key('saved_sound_hashtag_field')),
+      '#Chill',
+    );
+    controller.save();
+    await tester.pump();
+
+    expect(service.loadSavedSounds().single.personalHashtags, [
+      'rain',
+      'chill',
+    ]);
+    expect(find.text('#chill'), findsOneWidget);
+  });
+
+  testWidgets('disposing keeps a hashtag typed without a delimiter', (
+    tester,
+  ) async {
+    final (bloc, service) = await _bloc();
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await bloc.close();
+    });
+    await tester.pumpWidget(_app(bloc));
+
+    await tester.enterText(
+      find.byKey(const Key('saved_sound_hashtag_field')),
+      '#Chill',
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+
+    expect(service.loadSavedSounds().single.personalHashtags, [
+      'rain',
+      'chill',
+    ]);
   });
 
   testWidgets('commits normalized unique hashtags on delimiters', (
@@ -156,7 +230,7 @@ void main() {
     expect(service.loadSavedSounds().single.personalHashtags, isEmpty);
   });
 
-  testWidgets('disposing cancels a pending autosave', (tester) async {
+  testWidgets('disposing flushes a pending autosave', (tester) async {
     final (bloc, service) = await _bloc();
     addTearDown(() async {
       await tester.pumpWidget(const SizedBox.shrink());
@@ -165,13 +239,19 @@ void main() {
     await tester.pumpWidget(_app(bloc));
     await tester.enterText(
       find.byKey(const Key('saved_sound_label_field')),
-      'Do not persist',
+      'Typed then dismissed',
     );
 
+    // The editor now lives in a bottom sheet, where dragging it away mid-word
+    // is a normal way to finish — dropping the debounced edit would read as
+    // the app losing what the user typed.
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(seconds: 1));
 
-    expect(service.loadSavedSounds().single.personalLabel, 'Morning loop');
+    expect(
+      service.loadSavedSounds().single.personalLabel,
+      'Typed then dismissed',
+    );
   });
 
   testWidgets('failed persistence keeps text and offers retry', (tester) async {

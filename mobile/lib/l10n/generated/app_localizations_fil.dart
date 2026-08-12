@@ -4393,6 +4393,25 @@ class AppLocalizationsFil extends AppLocalizations {
   String get soundsRemoveSavedSound => 'Alisin ang sound';
 
   @override
+  String get savedSoundSaveAction => 'I-save';
+
+  @override
+  String get savedSoundPausePreviewAction => 'I-pause ang preview';
+
+  @override
+  String get savedSoundResumePreviewAction => 'Ipagpatuloy ang preview';
+
+  @override
+  String get savedSoundDetailsSheetTitle => 'Mga detalye ng sound';
+
+  @override
+  String get savedSoundRemoveConfirmTitle => 'Alisin ang sound na ito?';
+
+  @override
+  String get savedSoundRemoveConfirmMessage =>
+      'Mawawala ito sa library mo, pero puwede mo itong i-save ulit mula sa kahit anong video na gumagamit nito.';
+
+  @override
   String get soundsRemovedFromLibrary => 'Naalis sa Sounds';
 
   @override
