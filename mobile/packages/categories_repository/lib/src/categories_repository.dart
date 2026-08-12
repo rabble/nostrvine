@@ -4,6 +4,7 @@
 import 'dart:convert';
 
 import 'package:cache_sync/cache_sync.dart';
+import 'package:categories_repository/src/discovery_category_policy.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart';
 
@@ -71,7 +72,7 @@ class CategoriesRepository {
 
     final categories = (await _funnelcakeApiClient.getCategories(
       limit: 100,
-    )).where((c) => c.name.isNotEmpty && c.videoCount > 0).toList();
+    )).where(_isBrowsableCategory).toList();
 
     final indexedCategories = categories.indexed.toList()
       ..sort((left, right) {
@@ -112,12 +113,19 @@ class CategoriesRepository {
   }
 
   /// Returns a filtered page of videos for [category].
+  ///
+  /// Denied discovery categories return an empty terminal page without
+  /// touching Funnelcake.
   Future<CategoryVideosPage> getVideosForCategory({
     required String category,
     int? before,
     String sort = 'trending',
     String? platform,
   }) async {
+    if (DiscoveryCategoryPolicy.isDenied(category)) {
+      return const CategoryVideosPage(videos: [], hasMore: false);
+    }
+
     final videoStats = await _funnelcakeApiClient.getVideosByCategory(
       category: category,
       before: before,
@@ -143,6 +151,10 @@ class CategoriesRepository {
     String? category,
     int limit = 50,
   }) async {
+    if (category != null && DiscoveryCategoryPolicy.isDenied(category)) {
+      return const [];
+    }
+
     final response = await _funnelcakeApiClient.getRecommendations(
       pubkey: pubkey,
       category: category,
@@ -155,6 +167,12 @@ class CategoriesRepository {
     final blockFilter = _blockFilter;
     if (blockFilter == null) return videos;
     return videos.where((video) => !blockFilter(video.pubkey)).toList();
+  }
+
+  bool _isBrowsableCategory(VideoCategory category) {
+    return category.name.isNotEmpty &&
+        category.videoCount > 0 &&
+        !DiscoveryCategoryPolicy.isDenied(category.name);
   }
 
   /// Removes videos whose [VideoEvent.feedDedupKey] has already been seen,
@@ -176,6 +194,7 @@ class CategoriesRepository {
     final decoded = jsonDecode(payload) as List<dynamic>;
     return decoded
         .map((item) => VideoCategory.fromJson(item as Map<String, dynamic>))
+        .where((category) => !DiscoveryCategoryPolicy.isDenied(category.name))
         .toList(growable: false);
   }
 

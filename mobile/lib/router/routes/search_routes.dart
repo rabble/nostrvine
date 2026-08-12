@@ -1,6 +1,7 @@
 // ABOUTME: Discovery routes (hashtag feed, unified search results, category gallery)
 // ABOUTME: Split from app_router.dart (#4508)
 
+import 'package:categories_repository/categories_repository.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show VideoCategory;
 import 'package:openvine/l10n/l10n.dart';
@@ -65,7 +66,8 @@ List<RouteBase> searchRoutes() {
             extraAs<VideoCategory>(st.extra) ??
             VideoCategory(name: categoryName ?? '', videoCount: 0);
 
-        if (category.name.isEmpty) {
+        if (category.name.isEmpty ||
+            DiscoveryCategoryPolicy.isDenied(category.name)) {
           return RouteErrorScreen(message: ctx.l10n.routeInvalidCategory);
         }
 

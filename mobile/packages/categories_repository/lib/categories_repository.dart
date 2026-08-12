@@ -3,3 +3,4 @@ library;
 
 export 'package:cache_sync/cache_sync.dart' show CacheResult;
 export 'src/categories_repository.dart';
+export 'src/discovery_category_policy.dart';
