@@ -50,6 +50,7 @@ class _FakeTransport implements BlossomBackgroundTransport {
     required Map<String, String> headers,
     required String filePath,
   }) async {
+    if (throwOnEnqueue) throw StateError('transport rejected the hand-off');
     enqueuedTaskIds.add(taskId);
     void emit() {
       if (_controller.isClosed) return;
@@ -95,10 +96,17 @@ class _FakeTransport implements BlossomBackgroundTransport {
     cancelledTaskIds.add(taskId);
   }
 
+  /// Terminal event the OS finished while the app was dead, handed back on
+  /// the next launch instead of re-uploading. `null` means nothing buffered.
+  BlossomBackgroundTransferEvent? bufferedTerminalEvent;
+
+  /// Makes [enqueue] throw, modelling a transport that rejects the hand-off.
+  bool throwOnEnqueue = false;
+
   @override
   Future<BlossomBackgroundTransferEvent?> takeBufferedTerminalEvent(
     String taskId,
-  ) async => null;
+  ) async => bufferedTerminalEvent;
 }
 
 /// A performance monitor whose [startOperationTrace] throws on the first call
@@ -523,6 +531,168 @@ void main() {
         expect(upload.attributes['outcome'], 'error:network');
       },
     );
+
+    test('a user cancellation is not tagged as an error', () async {
+      final monitor = _RecordingPerformanceMonitor();
+      final transport = _FakeTransport(outcome: _FakeOutcome.cancelled);
+      final service = BlossomUploadService(
+        authProvider: auth,
+        dio: dio,
+        defaultServerUrl: _testServer,
+        backgroundTransport: transport,
+        performanceMonitor: monitor,
+      );
+
+      final result = await service.uploadVideoWithResume(
+        videoFile: videoFile,
+        nostrPubkey: _testPublicKey,
+        taskId: 'task-cancel',
+        title: 'cancelled',
+        description: null,
+        hashtags: null,
+        proofManifestJson: null,
+      );
+
+      expect(result.success, isFalse);
+      // A cancel is terminal but deliberate. Folding it into `error:*` would
+      // inflate the error rate with user intent.
+      expect(monitor.named(enqueueTraceName)!.attributes['outcome'], 'success');
+      // The cancel is terminal, so no fallback leg runs and no second trace
+      // is opened.
+      expect(monitor.traces.map((t) => t.name), equals([enqueueTraceName]));
+    });
+
+    test(
+      'a claimed buffered transfer is tagged as reused, not enqueued',
+      () async {
+        final monitor = _RecordingPerformanceMonitor();
+        final transport = _FakeTransport()
+          ..bufferedTerminalEvent = const BlossomBackgroundTransferEvent(
+            taskId: 'task-buffered',
+            status: BlossomBackgroundTransferStatus.completed,
+            progress: 1,
+            httpStatusCode: 200,
+            responseBody:
+                '{"url":"https://media.divine.video/buffered",'
+                '"fallbackUrl":"https://media.divine.video/buffered"}',
+          );
+        final service = BlossomUploadService(
+          authProvider: auth,
+          dio: dio,
+          defaultServerUrl: _testServer,
+          backgroundTransport: transport,
+          performanceMonitor: monitor,
+        );
+
+        final result = await service.uploadVideoWithResume(
+          videoFile: videoFile,
+          nostrPubkey: _testPublicKey,
+          taskId: 'task-buffered',
+          title: 'reclaimed after relaunch',
+          description: null,
+          hashtags: null,
+          proofManifestJson: null,
+        );
+
+        expect(result.success, isTrue);
+        // No hand-off happened — the OS finished it while the app was dead.
+        // Reporting it as a fast enqueue would understate the real
+        // distribution.
+        expect(
+          monitor.named(enqueueTraceName)!.attributes['outcome'],
+          'reused',
+        );
+        expect(transport.enqueuedTaskIds, isEmpty);
+      },
+    );
+
+    test(
+      'a transport that rejects the hand-off is tagged as a failure',
+      () async {
+        final monitor = _RecordingPerformanceMonitor();
+        final transport = _FakeTransport()..throwOnEnqueue = true;
+        final service = BlossomUploadService(
+          authProvider: auth,
+          dio: dio,
+          defaultServerUrl: _testServer,
+          backgroundTransport: transport,
+          performanceMonitor: monitor,
+        );
+
+        stubResumableControlPlane(uploadId: 'up_throw');
+        when(
+          () => dio.put<dynamic>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+            onSendProgress: any(named: 'onSendProgress'),
+          ),
+        ).thenAnswer((invocation) async {
+          final options = invocation.namedArguments[#options] as Options;
+          final contentRange = options.headers?['Content-Range'] as String;
+          final nextOffset = switch (contentRange) {
+            'bytes 0-3/8' => '4',
+            'bytes 4-7/8' => '8',
+            _ => throw StateError('Unexpected range: $contentRange'),
+          };
+          return Response(
+            requestOptions: RequestOptions(path: '/sessions/up_throw'),
+            statusCode: 204,
+            headers: Headers.fromMap({
+              DivineUploadHeaders.uploadOffset: [nextOffset],
+            }),
+          );
+        });
+
+        final result = await service.uploadVideoWithResume(
+          videoFile: videoFile,
+          nostrPubkey: _testPublicKey,
+          taskId: 'task-enqueue-throws',
+          title: 'hand-off rejected',
+          description: null,
+          hashtags: null,
+          proofManifestJson: null,
+        );
+
+        expect(result.success, isTrue, reason: 'the fallback leg carries it');
+
+        // The throw is caught and converted to a result, so this is a
+        // returned failure with an unclassifiable reason — not `error:threw`,
+        // which is reserved for an operation that produced no result at all.
+        expect(
+          monitor.named(enqueueTraceName)!.attributes['outcome'],
+          'error:unknown',
+        );
+        expect(monitor.named(enqueueTraceName)!.stopped, isTrue);
+      },
+    );
+
+    test('an unauthenticated in-process upload opens no trace', () async {
+      when(() => auth.isAuthenticated).thenReturn(false);
+
+      final monitor = _RecordingPerformanceMonitor();
+      final service = BlossomUploadService(
+        authProvider: auth,
+        dio: dio,
+        defaultServerUrl: _testServer,
+        performanceMonitor: monitor,
+      );
+
+      final result = await service.uploadVideo(
+        videoFile: videoFile,
+        nostrPubkey: _testPublicKey,
+        title: 'signed out',
+        description: null,
+        hashtags: null,
+        proofManifestJson: null,
+      );
+
+      expect(result.failureReason, BlossomUploadFailureReason.auth);
+      // An attempt that never reaches the network has no transfer duration to
+      // report; timing it would only add near-zero samples to the
+      // distribution for the work itself.
+      expect(monitor.traces, isEmpty);
+    });
 
     test(
       'when a resumable session already exists, skips the OS PUT and resumes',

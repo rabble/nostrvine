@@ -638,6 +638,13 @@ class BlossomUploadService {
   /// Attribute value for an upload that reached its terminal success state.
   static const String _outcomeSuccess = 'success';
 
+  /// Attribute value for an upload the user deliberately stopped.
+  ///
+  /// Kept apart from the `error:*` values rather than folded in: a cancel is
+  /// terminal but not a failure, and grouping it with timeouts would inflate
+  /// the error rate with user intent.
+  static const String _outcomeCancelled = 'cancelled';
+
   /// Attribute value for a trace whose operation threw instead of returning a
   /// result. Distinct from a returned failure, which carries its own reason.
   static const String _outcomeThrew = 'error:threw';
@@ -912,20 +919,6 @@ class BlossomUploadService {
   ///     [BlossomUploadFailureReason.unknown].
   ///
   /// Anything else falls through to [BlossomUploadFailureReason.unknown].
-  /// Maps an upload result onto the trace's `outcome` attribute value.
-  ///
-  /// A null [result] means the operation threw instead of returning, which is
-  /// otherwise indistinguishable from a returned failure. Failure values are
-  /// `error:<reason>`, so the attribute's cardinality is bounded by
-  /// [BlossomUploadFailureReason]; an unclassified failure reports `unknown`,
-  /// matching how callers are told to treat a null reason.
-  static String _traceOutcome(BlossomUploadResult? result) {
-    if (result == null) return _outcomeThrew;
-    if (result.success) return _outcomeSuccess;
-    final reason = result.failureReason ?? BlossomUploadFailureReason.unknown;
-    return 'error:${reason.name}';
-  }
-
   static BlossomUploadFailureReason _classifyUploadException(Object error) {
     if (error is DioException) {
       return BlossomUploadFailureReason.fromDioException(error);
@@ -936,6 +929,25 @@ class BlossomUploadService {
           BlossomUploadFailureReason.unknown;
     }
     return BlossomUploadFailureReason.unknown;
+  }
+
+  /// Maps an upload result onto the trace's `outcome` attribute value.
+  ///
+  /// A null [result] means the operation threw instead of returning, which is
+  /// otherwise indistinguishable from a returned failure. A user cancellation
+  /// reports [_outcomeCancelled] rather than an `error:*` value — it is
+  /// terminal but not a failure. Every other failure is `error:<reason>`, so
+  /// the attribute's cardinality stays bounded by
+  /// [BlossomUploadFailureReason]; an unclassified failure reports `unknown`,
+  /// matching how callers are told to treat a null reason.
+  static String _traceOutcome(BlossomUploadResult? result) {
+    if (result == null) return _outcomeThrew;
+    if (result.success) return _outcomeSuccess;
+    final reason = result.failureReason ?? BlossomUploadFailureReason.unknown;
+    if (reason == BlossomUploadFailureReason.cancelled) {
+      return _outcomeCancelled;
+    }
+    return 'error:${reason.name}';
   }
 
   /// Whether a [BlossomUploadResult] failure is transient and worth retrying.
