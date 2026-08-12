@@ -90,9 +90,10 @@ const defaultNameServerBaseUrl = 'https://names.divine.video';
 const defaultKeycastNip05Url =
     'https://login.divine.video/.well-known/nostr.json';
 
-/// Normalizes an injected endpoint so path composition cannot double the
-/// separator. `'$base/name'` on a base ending in `/` yields `//name`, which
-/// the name server routes to a 404 rather than the intended handler.
+/// Normalizes an injected endpoint so composition cannot leave a stray
+/// separator. `'$base/name'` on a base ending in `/` yields `//name`, and
+/// `'$url?name='` yields `nostr.json/?name=`; both are paths the origin
+/// routes to a 404 rather than the intended handler.
 String _stripTrailingSlash(String url) =>
     url.endsWith('/') ? url.substring(0, url.length - 1) : url;
 
