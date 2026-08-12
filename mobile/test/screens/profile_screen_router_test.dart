@@ -95,7 +95,7 @@ void main() {
 
     // Verify second video shown
     expect(find.text('Profile 1/3'), findsOneWidget);
-    // TODO(any): Fix and re-enable this test
+    // TODO(#7160): Fix and re-enable this test.
   }, skip: true);
 
   testWidgets('PROFILE: Empty state shows when no videos', (tester) async {
@@ -115,7 +115,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('No posts yet'), findsOneWidget);
-    // TODO(any): Fix and re-enable this test
+    // TODO(#7160): Fix and re-enable this test.
   }, skip: true);
 
   testWidgets('PROFILE: Lifecycle pause → activeVideoId becomes null', (
@@ -139,7 +139,7 @@ void main() {
 
     // When backgrounded, active video should be null
     expect(c.read(activeVideoIdProvider), isNull);
-    // TODO(any): Fix and re-enable this test
+    // TODO(#7160): Fix and re-enable this test.
   }, skip: true);
 
   // A divine:///profile/<npub> or https://divine.video/profile/<npub> deep
