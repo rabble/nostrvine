@@ -7269,8 +7269,8 @@ class AppLocalizationsBg extends AppLocalizations {
       'Смени акаунта, затова нищо не беше изтрито. Отвори отново изтриването за акаунта, който искаш да премахнеш.';
 
   @override
-  String get deleteAccountAccountChangedAfterVanish =>
-      'Your deletion request was accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+  String get deleteAccountAccountChangedAfterDeletion =>
+      'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
 
   @override
   String get deleteAccountBurnUsernameFailed =>

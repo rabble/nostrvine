@@ -7361,8 +7361,8 @@ class AppLocalizationsPl extends AppLocalizations {
       'Przełączono konto, więc nic nie zostało usunięte. Otwórz ponownie usuwanie dla konta, które chcesz usunąć.';
 
   @override
-  String get deleteAccountAccountChangedAfterVanish =>
-      'Your deletion request was accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+  String get deleteAccountAccountChangedAfterDeletion =>
+      'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
 
   @override
   String get deleteAccountBurnUsernameFailed =>

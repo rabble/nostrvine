@@ -7227,8 +7227,8 @@ class AppLocalizationsNl extends AppLocalizations {
       'Je bent van account gewisseld, dus er is niets verwijderd. Open de verwijdering opnieuw voor het account dat je wilt verwijderen.';
 
   @override
-  String get deleteAccountAccountChangedAfterVanish =>
-      'Your deletion request was accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+  String get deleteAccountAccountChangedAfterDeletion =>
+      'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
 
   @override
   String get deleteAccountBurnUsernameFailed =>

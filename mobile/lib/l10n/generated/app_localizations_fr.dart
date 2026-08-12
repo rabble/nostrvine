@@ -7289,8 +7289,8 @@ class AppLocalizationsFr extends AppLocalizations {
       'Tu as changé de compte, donc rien n\'a été supprimé. Rouvre la suppression pour le compte que tu veux retirer.';
 
   @override
-  String get deleteAccountAccountChangedAfterVanish =>
-      'Your deletion request was accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+  String get deleteAccountAccountChangedAfterDeletion =>
+      'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
 
   @override
   String get deleteAccountBurnUsernameFailed =>

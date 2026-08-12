@@ -416,9 +416,9 @@ const _knownUntranslatedDebt = <String>{
   'authVerificationResendExpired',
   'authVerificationResendUnavailable',
   'authVerificationPollingStopped',
-  // Partial account-deletion copy after a confirmed vanish; translation is
-  // deferred to the next account-management localization pass.
-  'deleteAccountAccountChangedAfterVanish',
+  // Partial account-deletion copy after a confirmed deletion request;
+  // translation is deferred to the next account-management localization pass.
+  'deleteAccountAccountChangedAfterDeletion',
   // Relay-confirmation failure copy for account deletion; translation is
   // deferred to the next account-management localization pass.
   'deleteAccountRelayConfirmationFailed',

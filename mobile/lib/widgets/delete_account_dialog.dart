@@ -500,8 +500,8 @@ Future<void> executeAccountDeletion({
   final localDataDeletionFailedText =
       context.l10n.deleteAccountLocalDataDeletionFailed;
   final accountChangedText = context.l10n.deleteAccountAccountChanged;
-  final accountChangedAfterVanishText =
-      context.l10n.deleteAccountAccountChangedAfterVanish;
+  final accountChangedAfterDeletionText =
+      context.l10n.deleteAccountAccountChangedAfterDeletion;
   final burnUsernameFailedText = context.l10n.deleteAccountBurnUsernameFailed;
   final deletionIncompleteText = context.l10n.deleteAccountDeletionIncomplete;
   final relayConfirmationFailedText =
@@ -759,7 +759,8 @@ Future<void> executeAccountDeletion({
             : _deleteAccountFailureText(
                 result.failureReason,
                 accountChangedText: accountChangedText,
-                accountChangedAfterVanishText: accountChangedAfterVanishText,
+                accountChangedAfterDeletionText:
+                    accountChangedAfterDeletionText,
                 relayConfirmationFailedText: relayConfirmationFailedText,
                 reauthRequiredText: context.l10n.deleteAccountReauthRequired,
                 genericFailureText:
@@ -782,15 +783,15 @@ Future<void> executeAccountDeletion({
 String _deleteAccountFailureText(
   DeleteAccountFailureReason? reason, {
   required String accountChangedText,
-  required String accountChangedAfterVanishText,
+  required String accountChangedAfterDeletionText,
   required String relayConfirmationFailedText,
   required String reauthRequiredText,
   required String genericFailureText,
 }) {
   return switch (reason) {
     DeleteAccountFailureReason.accountChanged => accountChangedText,
-    DeleteAccountFailureReason.accountChangedAfterVanish =>
-      accountChangedAfterVanishText,
+    DeleteAccountFailureReason.accountChangedAfterDeletion =>
+      accountChangedAfterDeletionText,
     DeleteAccountFailureReason.vanishNotConfirmed =>
       relayConfirmationFailedText,
     DeleteAccountFailureReason.notAuthenticated => reauthRequiredText,

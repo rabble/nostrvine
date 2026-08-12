@@ -1238,6 +1238,65 @@ void main() {
 
     group('expectedPubkey binding', () {
       test(
+        'reports partial deletion when account changes during confirmed kind 5',
+        () async {
+          var current = testPublicKey;
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenAnswer((_) => current);
+          when(() => mockNostrService.queryEvents(any())).thenAnswer(
+            (_) async => [
+              createTestEvent(
+                pubkey: testPublicKey,
+                kind: 1,
+                tags: const [],
+                content: 'note',
+              ),
+            ],
+          );
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async => createTestEvent(
+              pubkey: testPublicKey,
+              kind: 5,
+              tags: const [],
+              content: 'deletion',
+            ),
+          );
+          when(
+            () => mockNostrService.publishEventAwaitOk(any()),
+          ).thenAnswer((_) async {
+            current = 'a_different_pubkey_than_confirmed';
+            return _confirmed;
+          });
+
+          final result = await service.deleteAccount(
+            expectedPubkey: testPublicKey,
+          );
+
+          expect(result.success, isFalse);
+          expect(
+            result.failureReason,
+            DeleteAccountFailureReason.accountChangedAfterDeletion,
+          );
+          verify(
+            () => mockNostrService.publishEventAwaitOk(any()),
+          ).called(1);
+          verifyNever(
+            () => mockNostrService.publishEventAwaitOk(
+              any(),
+              timeout: any(named: 'timeout'),
+            ),
+          );
+        },
+      );
+
+      test(
         'aborts when the account changes while awaiting vanish confirmation',
         () async {
           var current = testPublicKey;
@@ -1277,7 +1336,7 @@ void main() {
           expect(result.success, isFalse);
           expect(
             result.failureReason,
-            DeleteAccountFailureReason.accountChangedAfterVanish,
+            DeleteAccountFailureReason.accountChangedAfterDeletion,
           );
         },
       );

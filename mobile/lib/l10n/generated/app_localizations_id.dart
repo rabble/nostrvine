@@ -7158,8 +7158,8 @@ class AppLocalizationsId extends AppLocalizations {
       'Kamu beralih akun, jadi tidak ada yang dihapus. Buka lagi penghapusan untuk akun yang ingin kamu hapus.';
 
   @override
-  String get deleteAccountAccountChangedAfterVanish =>
-      'Your deletion request was accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+  String get deleteAccountAccountChangedAfterDeletion =>
+      'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
 
   @override
   String get deleteAccountBurnUsernameFailed =>

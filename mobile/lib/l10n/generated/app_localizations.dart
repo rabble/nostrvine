@@ -12509,11 +12509,11 @@ abstract class AppLocalizations {
   /// **'You switched accounts, so nothing was deleted. Reopen delete for the account you want to remove.'**
   String get deleteAccountAccountChanged;
 
-  /// Error shown when a relay accepted the NIP-62 account deletion request but the signed-in account changed before server and local cleanup could finish.
+  /// Error shown when a relay accepted at least one account or content deletion request but the signed-in account changed before cleanup could finish.
   ///
   /// In en, this message translates to:
-  /// **'Your deletion request was accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.'**
-  String get deleteAccountAccountChangedAfterVanish;
+  /// **'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.'**
+  String get deleteAccountAccountChangedAfterDeletion;
 
   /// Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted.
   ///

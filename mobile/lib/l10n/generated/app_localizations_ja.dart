@@ -6878,8 +6878,8 @@ class AppLocalizationsJa extends AppLocalizations {
       'アカウントが切り替わったから、何も削除されていないよ。削除したいアカウントで削除画面を開き直してね。';
 
   @override
-  String get deleteAccountAccountChangedAfterVanish =>
-      'Your deletion request was accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+  String get deleteAccountAccountChangedAfterDeletion =>
+      'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
 
   @override
   String get deleteAccountBurnUsernameFailed =>

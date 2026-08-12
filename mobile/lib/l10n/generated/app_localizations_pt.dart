@@ -7249,8 +7249,8 @@ class AppLocalizationsPt extends AppLocalizations {
       'Você trocou de conta, então nada foi excluído. Abra a exclusão de novo para a conta que você quer remover.';
 
   @override
-  String get deleteAccountAccountChangedAfterVanish =>
-      'Your deletion request was accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+  String get deleteAccountAccountChangedAfterDeletion =>
+      'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
 
   @override
   String get deleteAccountBurnUsernameFailed =>

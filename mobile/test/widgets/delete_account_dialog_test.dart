@@ -1600,7 +1600,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => DeleteAccountResult.failure(
-            DeleteAccountFailureReason.accountChangedAfterVanish,
+            DeleteAccountFailureReason.accountChangedAfterDeletion,
             diagnosticError:
                 'Signed-in account changed after vanish confirmation',
           ),
@@ -1628,7 +1628,7 @@ void main() {
 
         final l10n = lookupAppLocalizations(const Locale('en'));
         expect(
-          find.text(l10n.deleteAccountAccountChangedAfterVanish),
+          find.text(l10n.deleteAccountAccountChangedAfterDeletion),
           findsOneWidget,
         );
         expect(

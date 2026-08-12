@@ -7280,8 +7280,8 @@ class AppLocalizationsFil extends AppLocalizations {
       'Nagpalit ka ng account, kaya walang na-delete. Buksan ulit ang pag-delete para sa account na gusto mong alisin.';
 
   @override
-  String get deleteAccountAccountChangedAfterVanish =>
-      'Your deletion request was accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+  String get deleteAccountAccountChangedAfterDeletion =>
+      'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
 
   @override
   String get deleteAccountBurnUsernameFailed =>

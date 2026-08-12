@@ -7246,8 +7246,8 @@ class AppLocalizationsMs extends AppLocalizations {
       'Anda menukar akaun, jadi tiada apa yang dipadam. Buka semula pemadaman untuk akaun yang mahu anda alih keluar.';
 
   @override
-  String get deleteAccountAccountChangedAfterVanish =>
-      'Your deletion request was accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+  String get deleteAccountAccountChangedAfterDeletion =>
+      'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
 
   @override
   String get deleteAccountBurnUsernameFailed =>

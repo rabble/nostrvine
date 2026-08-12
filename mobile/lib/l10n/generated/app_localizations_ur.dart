@@ -7197,8 +7197,8 @@ class AppLocalizationsUr extends AppLocalizations {
       'آپ نے اکاؤنٹ تبدیل کر لیا، اس لیے کچھ حذف نہیں ہوا۔ جس اکاؤنٹ کو ہٹانا چاہتے ہیں اس کے لیے حذف کا آپشن دوبارہ کھولیں۔';
 
   @override
-  String get deleteAccountAccountChangedAfterVanish =>
-      'Your deletion request was accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+  String get deleteAccountAccountChangedAfterDeletion =>
+      'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
 
   @override
   String get deleteAccountBurnUsernameFailed =>

@@ -16,7 +16,7 @@ enum DeleteAccountFailureReason {
   signingFailed,
   vanishNotConfirmed,
   accountChanged,
-  accountChangedAfterVanish,
+  accountChangedAfterDeletion,
   unexpected,
 }
 
@@ -88,14 +88,14 @@ class AccountChangedDuringDeletion implements Exception {
   String toString() => 'AccountChangedDuringDeletion';
 }
 
-/// Thrown when the signed-in account changes after a relay confirms the vanish
-/// request. The network deletion may have landed, but account-bound cleanup
-/// must stop before it can target the newly signed-in account.
-class AccountChangedAfterVanish implements Exception {
-  const AccountChangedAfterVanish();
+/// Thrown when the signed-in account changes after a relay confirms any
+/// deletion request. Network deletion has begun, but account-bound cleanup must
+/// stop before it can target the newly signed-in account.
+class AccountChangedAfterDeletion implements Exception {
+  const AccountChangedAfterDeletion();
 
   @override
-  String toString() => 'AccountChangedAfterVanish';
+  String toString() => 'AccountChangedAfterDeletion';
 }
 
 class _VanishPublishConfig {
@@ -146,7 +146,7 @@ class AccountDeletionService {
 
   /// Aborts (via [AccountChangedDuringDeletion]) if [expectedPubkey] is set and
   /// no longer matches the live signer. Called immediately before every
-  /// destructive sign/publish and after awaiting the final vanish outcome so a
+  /// destructive sign/publish and after each awaited deletion outcome so a
   /// mid-flight account switch can't continue cleanup for a different account.
   void _assertSignerMatches(String? expectedPubkey) {
     if (expectedPubkey != null &&
@@ -163,6 +163,7 @@ class AccountDeletionService {
     void Function(int current, int total)? onProgress,
     String? expectedPubkey,
   }) async {
+    var deletedCount = 0;
     try {
       if (!_authService.isAuthenticated) {
         return DeleteAccountResult.failure(
@@ -204,7 +205,6 @@ class AccountDeletionService {
         category: LogCategory.system,
       );
 
-      int deletedCount = 0;
       if (allUserEvents.isNotEmpty) {
         deletedCount = await _publishDeletionEventsForAll(
           allUserEvents,
@@ -272,17 +272,17 @@ class AccountDeletionService {
         contentDeletionIncomplete:
             allUserEvents.isNotEmpty && deletedCount < allUserEvents.length,
       );
-    } on AccountChangedAfterVanish {
+    } on AccountChangedAfterDeletion {
       Log.warning(
-        'Deletion cleanup aborted: signed-in account changed after the '
-        'vanish request was confirmed',
+        'Deletion cleanup aborted: signed-in account changed after a '
+        'deletion request was confirmed',
         name: 'AccountDeletionService',
         category: LogCategory.auth,
       );
       return DeleteAccountResult.failure(
-        DeleteAccountFailureReason.accountChangedAfterVanish,
+        DeleteAccountFailureReason.accountChangedAfterDeletion,
         diagnosticError:
-            'Signed-in account changed after vanish confirmation; '
+            'Signed-in account changed after deletion confirmation; '
             'account-bound cleanup stopped',
       );
     } on AccountChangedDuringDeletion {
@@ -292,8 +292,13 @@ class AccountDeletionService {
         category: LogCategory.auth,
       );
       return DeleteAccountResult.failure(
-        DeleteAccountFailureReason.accountChanged,
-        diagnosticError: 'Signed-in account changed; deletion aborted',
+        deletedCount > 0
+            ? DeleteAccountFailureReason.accountChangedAfterDeletion
+            : DeleteAccountFailureReason.accountChanged,
+        diagnosticError: deletedCount > 0
+            ? 'Signed-in account changed after deletion confirmation; '
+                  'account-bound cleanup stopped'
+            : 'Signed-in account changed; deletion aborted',
       );
     } catch (e) {
       Log.error(
@@ -323,7 +328,7 @@ class AccountDeletionService {
         _assertSignerMatches(expectedPubkey);
       } on AccountChangedDuringDeletion {
         if (outcome.confirmed || _isAlreadyVanishedOutcome(outcome)) {
-          throw const AccountChangedAfterVanish();
+          throw const AccountChangedAfterDeletion();
         }
         rethrow;
       }
@@ -451,15 +456,31 @@ class AccountDeletionService {
       final kind = entry.key;
       final kindEvents = entry.value;
 
-      final deleteEvent = await _createBatchDeleteEvent(
-        events: kindEvents,
-        kind: kind,
-        reason: reason,
-        expectedPubkey: expectedPubkey,
-      );
+      Event? deleteEvent;
+      try {
+        deleteEvent = await _createBatchDeleteEvent(
+          events: kindEvents,
+          kind: kind,
+          reason: reason,
+          expectedPubkey: expectedPubkey,
+        );
+      } on AccountChangedDuringDeletion {
+        if (successCount > 0) {
+          throw const AccountChangedAfterDeletion();
+        }
+        rethrow;
+      }
 
       if (deleteEvent != null) {
         final outcome = await _nostrService.publishEventAwaitOk(deleteEvent);
+        try {
+          _assertSignerMatches(expectedPubkey);
+        } on AccountChangedDuringDeletion {
+          if (outcome.confirmed || successCount > 0) {
+            throw const AccountChangedAfterDeletion();
+          }
+          rethrow;
+        }
         if (outcome.confirmed) {
           successCount += kindEvents.length;
           Log.debug(
