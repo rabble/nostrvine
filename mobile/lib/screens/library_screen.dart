@@ -317,10 +317,16 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
     );
   }
 
+  /// Value of the sort-menu row that leads to the grid size options.
+  ///
+  /// Not a [ClipSort], so it can never collide with a sort key.
+  static const _gridSizeMenuValue = 'grid-size';
+
   Future<void> _openSortMenu(
     BuildContext context,
     ClipsLibraryBloc clipsBloc,
     ClipSort currentSort,
+    int currentColumns,
   ) async {
     final selected = await VineBottomSheetSelectionMenu.show(
       context: context,
@@ -356,13 +362,59 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
           value: ClipSort.verticalFirst.persistenceKey,
           leadingIcon: .cropPortrait,
         ),
+        // Sort order and grid density are both "how this grid is shown", so
+        // they share the one toolbar affordance. A button of its own would
+        // have to fit a row that already collapses its title to nothing.
+        VineBottomSheetSelectionOptionData(
+          label: context.l10n.libraryGridSizeLabel,
+          value: _gridSizeMenuValue,
+          leadingIcon: .gridNine,
+        ),
       ],
     );
 
     if (selected == null) return;
+    if (selected == _gridSizeMenuValue) {
+      if (!context.mounted) return;
+      await _openGridSizeMenu(context, clipsBloc, currentColumns);
+      return;
+    }
     clipsBloc.add(
       ClipsLibrarySortChanged(ClipSort.fromPersistenceKey(selected)),
     );
+  }
+
+  /// The way to the column count that does not need a pinch.
+  ///
+  /// Pinching the grid is the primary gesture, but assistive technology
+  /// cannot perform it, and the count is a persisted preference rather than a
+  /// transient view state — without this it would be one a screen-reader user
+  /// could never set.
+  Future<void> _openGridSizeMenu(
+    BuildContext context,
+    ClipsLibraryBloc clipsBloc,
+    int currentColumns,
+  ) async {
+    final selected = await VineBottomSheetSelectionMenu.show(
+      context: context,
+      selectedValue: '$currentColumns',
+      options: [
+        for (
+          var columns = ClipGridColumns.min;
+          columns <= ClipGridColumns.max;
+          columns++
+        )
+          VineBottomSheetSelectionOptionData(
+            label: context.l10n.libraryGridSizeColumns(columns),
+            value: '$columns',
+            leadingIcon: .gridNine,
+          ),
+      ],
+    );
+
+    final columns = int.tryParse(selected ?? '');
+    if (columns == null) return;
+    clipsBloc.add(ClipsLibraryGridColumnsChanged(columns));
   }
 
   Future<void> _createVideoFromSelected(
@@ -570,6 +622,7 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
                               context,
                               clipsBloc,
                               clipsState.clipSort,
+                              clipsState.gridColumnCount,
                             ),
                             onEnterSelectionMode: () => clipsBloc.add(
                               const ClipsLibraryEnterSelectionMode(),

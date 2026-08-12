@@ -2550,6 +2550,8 @@
     "libraryOpenTrashSemanticLabel": "Otwórz ostatnio usunięte klipy",
     "librarySortClipsSemanticLabel": "Sortuj klipy",
     "librarySelectClipsSemanticLabel": "Wybierz klipy",
+    "libraryGridSizeLabel": "Rozmiar siatki",
+    "libraryGridSizeColumns": "{count, plural, one{1 kolumna} few{{count} kolumny} many{{count} kolumn} other{{count} kolumny}}",
     "librarySelect": "Wybierz",
     "librarySortNewestCreation": "Najnowsze utworzone",
     "librarySortOldestCreation": "Najstarsze utworzone",

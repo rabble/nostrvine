@@ -3730,6 +3730,8 @@
   "libraryOpenTrashSemanticLabel": "حال ہی میں حذف شدہ کلپس کھولیں",
   "librarySortClipsSemanticLabel": "کلپس ترتیب دیں",
   "librarySelectClipsSemanticLabel": "کلپس منتخب کریں",
+  "libraryGridSizeLabel": "گرڈ کا سائز",
+  "libraryGridSizeColumns": "{count, plural, one{1 کالم} other{{count} کالم}}",
   "librarySelect": "منتخب کریں",
   "librarySortNewestCreation": "تازہ ترین تخلیق",
   "librarySortOldestCreation": "قدیم ترین تخلیق",

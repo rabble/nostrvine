@@ -203,6 +203,35 @@ void main() {
         expect(tabBarView().physics, isNull);
       });
 
+      // Pinching the grid is the primary way to the column count, but it is a
+      // gesture assistive technology cannot perform — and the count is a
+      // persisted preference, not transient view state. Without the toolbar
+      // route to it, a screen-reader user could never set it.
+      testWidgets('changes the grid size from the menu without a pinch', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget(initialTabIndex: 1));
+        await tester.pumpAndSettle();
+
+        await tester.tap(
+          find.bySemanticsLabel(en.librarySortClipsSemanticLabel),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(en.libraryGridSizeLabel));
+        await tester.pumpAndSettle();
+
+        expect(find.text(en.libraryGridSizeColumns(2)), findsOneWidget);
+        expect(find.text(en.libraryGridSizeColumns(5)), findsOneWidget);
+
+        await tester.tap(find.text(en.libraryGridSizeColumns(2)));
+        await tester.pumpAndSettle();
+
+        expect(
+          sharedPreferences.getInt(ClipGridColumns.prefsKey),
+          equals(2),
+        );
+      });
+
       testWidgets('$ClipSelectionFooter in selection mode', (tester) async {
         await tester.pumpWidget(buildWidget(selectionMode: true));
         await tester.pump();

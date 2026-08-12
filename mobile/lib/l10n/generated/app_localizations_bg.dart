@@ -6496,6 +6496,20 @@ class AppLocalizationsBg extends AppLocalizations {
   String get librarySelectClipsSemanticLabel => 'Избери клипове';
 
   @override
+  String get libraryGridSizeLabel => 'Размер на мрежата';
+
+  @override
+  String libraryGridSizeColumns(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count колони',
+      one: '1 колона',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get librarySelect => 'Избери';
 
   @override

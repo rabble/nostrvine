@@ -6447,6 +6447,19 @@ class AppLocalizationsVi extends AppLocalizations {
   String get librarySelectClipsSemanticLabel => 'Chọn clip';
 
   @override
+  String get libraryGridSizeLabel => 'Kích thước lưới';
+
+  @override
+  String libraryGridSizeColumns(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count cột',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get librarySelect => 'Chọn';
 
   @override

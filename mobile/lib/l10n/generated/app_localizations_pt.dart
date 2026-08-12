@@ -6482,6 +6482,20 @@ class AppLocalizationsPt extends AppLocalizations {
   String get librarySelectClipsSemanticLabel => 'Selecionar clipes';
 
   @override
+  String get libraryGridSizeLabel => 'Tamanho da grade';
+
+  @override
+  String libraryGridSizeColumns(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count colunas',
+      one: '1 coluna',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get librarySelect => 'Selecionar';
 
   @override

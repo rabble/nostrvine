@@ -6445,6 +6445,20 @@ class AppLocalizationsUr extends AppLocalizations {
   String get librarySelectClipsSemanticLabel => 'کلپس منتخب کریں';
 
   @override
+  String get libraryGridSizeLabel => 'گرڈ کا سائز';
+
+  @override
+  String libraryGridSizeColumns(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count کالم',
+      one: '1 کالم',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get librarySelect => 'منتخب کریں';
 
   @override

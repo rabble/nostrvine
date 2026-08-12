@@ -3730,6 +3730,8 @@
   "libraryOpenTrashSemanticLabel": "打开最近删除的片段",
   "librarySortClipsSemanticLabel": "对片段排序",
   "librarySelectClipsSemanticLabel": "选择片段",
+  "libraryGridSizeLabel": "网格大小",
+  "libraryGridSizeColumns": "{count, plural, other{{count}列}}",
   "librarySelect": "选择",
   "librarySortNewestCreation": "最新创建",
   "librarySortOldestCreation": "最早创建",

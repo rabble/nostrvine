@@ -2550,6 +2550,8 @@
     "libraryOpenTrashSemanticLabel": "Deschide clipurile șterse recent",
     "librarySortClipsSemanticLabel": "Sortează clipurile",
     "librarySelectClipsSemanticLabel": "Selectează clipuri",
+    "libraryGridSizeLabel": "Dimensiunea grilei",
+    "libraryGridSizeColumns": "{count, plural, one{1 coloană} few{{count} coloane} other{{count} de coloane}}",
     "librarySelect": "Selectează",
     "librarySortNewestCreation": "Cele mai noi create",
     "librarySortOldestCreation": "Cele mai vechi create",

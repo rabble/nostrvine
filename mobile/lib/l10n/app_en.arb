@@ -4018,6 +4018,19 @@
   "@librarySelectClipsSemanticLabel": {
     "description": "Accessibility label for the library toolbar button that enters clip-selection mode."
   },
+  "libraryGridSizeLabel": "Grid size",
+  "@libraryGridSizeLabel": {
+    "description": "Row in the library sort menu that opens the clip grid size options. The same choice can be made by pinching the grid, which assistive technology cannot perform."
+  },
+  "libraryGridSizeColumns": "{count, plural, =1{1 column} other{{count} columns}}",
+  "@libraryGridSizeColumns": {
+    "description": "Option in the library grid size menu, naming how many columns of clips the grid shows. The range is 2 to 5, so the singular case never appears in practice, but it is spelled out so the string stays correct if the range ever widens.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "librarySelect": "Select",
   "librarySortNewestCreation": "Newest Creation",
   "librarySortOldestCreation": "Oldest Creation",

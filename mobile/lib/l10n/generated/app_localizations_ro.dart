@@ -6596,6 +6596,21 @@ class AppLocalizationsRo extends AppLocalizations {
   String get librarySelectClipsSemanticLabel => 'Selectează clipuri';
 
   @override
+  String get libraryGridSizeLabel => 'Dimensiunea grilei';
+
+  @override
+  String libraryGridSizeColumns(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de coloane',
+      few: '$count coloane',
+      one: '1 coloană',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get librarySelect => 'Selectează';
 
   @override

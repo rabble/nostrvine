@@ -1880,6 +1880,8 @@
     "libraryOpenTrashSemanticLabel": "최근 삭제한 클립 열기",
     "librarySortClipsSemanticLabel": "클립 정렬",
     "librarySelectClipsSemanticLabel": "클립 선택",
+    "libraryGridSizeLabel": "그리드 크기",
+    "libraryGridSizeColumns": "{count, plural, other{{count}열}}",
     "librarySelect": "선택",
     "librarySortNewestCreation": "최신 생성순",
     "librarySortOldestCreation": "오래된 생성순",

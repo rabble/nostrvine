@@ -11276,6 +11276,18 @@ abstract class AppLocalizations {
   /// **'Select clips'**
   String get librarySelectClipsSemanticLabel;
 
+  /// Row in the library sort menu that opens the clip grid size options. The same choice can be made by pinching the grid, which assistive technology cannot perform.
+  ///
+  /// In en, this message translates to:
+  /// **'Grid size'**
+  String get libraryGridSizeLabel;
+
+  /// Option in the library grid size menu, naming how many columns of clips the grid shows. The range is 2 to 5, so the singular case never appears in practice, but it is spelled out so the string stays correct if the range ever widens.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 column} other{{count} columns}}'**
+  String libraryGridSizeColumns(int count);
+
   /// No description provided for @librarySelect.
   ///
   /// In en, this message translates to:

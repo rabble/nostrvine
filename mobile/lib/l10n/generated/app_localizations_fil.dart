@@ -6517,6 +6517,20 @@ class AppLocalizationsFil extends AppLocalizations {
   String get librarySelectClipsSemanticLabel => 'Pumili ng mga clip';
 
   @override
+  String get libraryGridSizeLabel => 'Laki ng grid';
+
+  @override
+  String libraryGridSizeColumns(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count na hanay',
+      one: '1 hanay',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get librarySelect => 'Piliin';
 
   @override

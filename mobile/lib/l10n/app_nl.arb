@@ -2550,6 +2550,8 @@
     "libraryOpenTrashSemanticLabel": "Onlangs verwijderde clips openen",
     "librarySortClipsSemanticLabel": "Clips sorteren",
     "librarySelectClipsSemanticLabel": "Clips selecteren",
+    "libraryGridSizeLabel": "Rastergrootte",
+    "libraryGridSizeColumns": "{count, plural, one{1 kolom} other{{count} kolommen}}",
     "librarySelect": "Selecteren",
     "librarySortNewestCreation": "Nieuwst aangemaakt",
     "librarySortOldestCreation": "Oudst aangemaakt",

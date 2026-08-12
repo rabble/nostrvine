@@ -6183,6 +6183,19 @@ class AppLocalizationsKo extends AppLocalizations {
   String get librarySelectClipsSemanticLabel => '클립 선택';
 
   @override
+  String get libraryGridSizeLabel => '그리드 크기';
+
+  @override
+  String libraryGridSizeColumns(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count열',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get librarySelect => '선택';
 
   @override
