@@ -62,7 +62,7 @@ class ForYouFeed extends _$ForYouFeed {
             name: 'ForYouFeedProvider',
             category: LogCategory.video,
           );
-          return existing;
+          return existing.copyWith(videos: _filterVideos(existing.videos));
         }
       }
       Log.info(
@@ -325,6 +325,13 @@ class ForYouFeed extends _$ForYouFeed {
         preserveExistingOnError: true,
         sessionSeed: generateRecommendationSessionSeed(),
       ),
+    );
+  }
+
+  List<VideoEvent> _filterVideos(List<VideoEvent> videos) {
+    final videoEventService = ref.read(videoEventServiceProvider);
+    return videoEventService.filterVideoList(
+      videos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
     );
   }
 }

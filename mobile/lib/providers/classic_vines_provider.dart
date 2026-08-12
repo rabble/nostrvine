@@ -57,7 +57,12 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
       if (state.hasValue && state.value != null) {
         final existing = state.value!;
         if (existing.videos.isNotEmpty) {
-          return existing;
+          return existing.copyWith(
+            videos: _filterRepositoryVideos(
+              existing.videos,
+              ref.read(videoEventServiceProvider),
+            ),
+          );
         }
       }
       return const VideoFeedState(videos: [], hasMoreContent: false);

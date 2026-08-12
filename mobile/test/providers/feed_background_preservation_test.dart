@@ -170,6 +170,52 @@ void main() {
         );
       });
 
+      test('re-filters preserved videos when appReady is false', () async {
+        final container = createContainer(appReady: true);
+        addTearDown(container.dispose);
+
+        await container.read(funnelcakeAvailableProvider.future);
+        final initialState = await container.read(
+          classicVinesFeedProvider.future,
+        );
+        expect(initialState.videos, hasLength(5));
+
+        when(() => mockVideoEventService.filterVideoList(any())).thenAnswer((
+          inv,
+        ) {
+          final videos = List<VideoEvent>.from(
+            inv.positionalArguments.first as List,
+          );
+          return videos.where((video) => video.id != testVideos[1].id).toList();
+        });
+
+        container.updateOverrides([
+          appReadyProvider.overrideWithValue(false),
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+          funnelcakeApiClientProvider.overrideWithValue(mockFunnelcakeClient),
+          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+          contentBlocklistRepositoryProvider.overrideWithValue(
+            mockBlocklistRepository,
+          ),
+          funnelcakeAvailableProvider.overrideWith(
+            _TestFunnelcakeUnavailable.new,
+          ),
+        ]);
+
+        await container.read(funnelcakeAvailableProvider.future);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        final afterBackgroundState = await container.read(
+          classicVinesFeedProvider.future,
+        );
+        expect(
+          afterBackgroundState.videos.map((v) => v.id),
+          isNot(contains(testVideos[1].id)),
+        );
+        expect(afterBackgroundState.videos, hasLength(4));
+      });
+
       test('reloads fresh data when appReady returns to true', () async {
         final container = createContainer(appReady: true);
         addTearDown(container.dispose);
