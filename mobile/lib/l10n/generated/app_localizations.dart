@@ -11336,7 +11336,7 @@ abstract class AppLocalizations {
   /// **'Grid size'**
   String get libraryGridSizeLabel;
 
-  /// Option in the library grid size menu, naming how many columns of clips the grid shows. The range is 2 to 5, so the singular case never appears in practice, but it is spelled out so the string stays correct if the range ever widens.
+  /// Option in the library grid size menu, naming how many columns of clips the grid shows. The range is 2 to 5. English never selects the singular arm in that range, but other locales do — Filipino selects `one` at 2, 3 and 5 — so every arm must interpolate {count} rather than spell out a digit.
   ///
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 column} other{{count} columns}}'**
