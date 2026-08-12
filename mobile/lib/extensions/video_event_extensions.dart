@@ -169,10 +169,7 @@ extension VideoEventAppExtensions on VideoEvent {
   /// - A developer format override (Developer Options) forces that server
   ///   format on any Divine video for A/B testing, ahead of every heuristic
   ///   below.
-  /// - Classic Vine originals use the raw blob directly (/{hash}) because the
-  ///   source is already 480p or lower — transcoded variants are upscales at
-  ///   best and may not exist, causing needless 404s.
-  /// - All other Divine videos default to progressive MP4 720p (faststart,
+  /// - All Divine videos default to progressive MP4 720p (faststart,
   ///   moov at front) for fastest startup with short videos (1 request, no
   ///   manifest overhead) — it is 3-8x smaller than the raw blob. This covers
   ///   raw-only uploads too: their `imeta` lists only the raw blob because it
@@ -209,15 +206,19 @@ extension VideoEventAppExtensions on VideoEvent {
           videoUrl;
     }
 
-    // Classic Vine originals are 480p or lower — serve the raw blob directly.
-    // Transcoded 720p variants are pointless upscales and may not exist.
-    if (isOriginalVine) return '$_divineMediaBase/$hash';
-
     // Production default: progressive MP4 720p (faststart). Fastest startup
     // (1 request, moov at front), correct colors on all platforms, and 3-8x
     // smaller than the raw blob. Raw-only uploads take this path too; the
     // runtime fallback chain drops to the raw blob if the 720p.mp4 is not
     // transcoded yet.
+    //
+    // Classic Vine originals take this path as well. They must never be sent
+    // to the extensionless raw blob: iOS AVURLAsset picks its container parser
+    // from the URL path extension and ignores the Content-Type header, so
+    // `/{hash}` fails to parse with AVFoundation -11828/-11829 "Cannot Open"
+    // and never plays. The transcoder caps at the source resolution,
+    // so the "720p" variant of a 480x480 Vine is still 480x480 — smaller than
+    // the raw blob, not an upscale.
     return '$_divineMediaBase/$hash/720p.mp4';
   }
 
