@@ -2239,10 +2239,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Ortam değiştirici ve hata ayıklama ayarları';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Aksaklık çıkarabilecek özellik bayraklarını aç/kapat.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Anahtar Yönetimi';
 
   @override
@@ -3755,13 +3751,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'Sonra izlemek için kaydet';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Yer İmi Setine Ekle';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle =>
-      'Koleksiyonlar halinde düzenle';
-
-  @override
   String get shareMenuFollowSets => 'Takip Setleri';
 
   @override
@@ -4139,9 +4128,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get shareMenuUnknown => 'Bilinmeyen';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'Yer İmi Seti Oluştur';
-
-  @override
   String get shareMenuSetName => 'Set Adı';
 
   @override
@@ -4155,14 +4141,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Yeni bir yer imi koleksiyonu başlat';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Henüz yer imi seti yok. İlk setini oluştur!';
-
-  @override
   String get shareMenuError => 'Hata';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets => 'Yer imi setleri yüklenemedi';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
@@ -9275,6 +9254,18 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get videoEditorTransformNoLocalFile =>
       'Dönüştürülemiyor: klip yerel olarak mevcut değil.';
+
+  @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Seçili kareyi kırp, döndür veya çevir';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'Bir saniye, kareni dönüştürüyoruz';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Kare dönüştürülemedi. Lütfen tekrar dene.';
 
   @override
   String get videoEditorTransformRotateLabel => 'Döndür';

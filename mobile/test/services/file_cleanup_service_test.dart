@@ -290,5 +290,91 @@ void main() {
         },
       );
     });
+
+    group('reverse caches', () {
+      late AppDatabase database;
+      late ClipLibraryService libraryService;
+      late Directory tempDir;
+
+      setUp(() {
+        database = AppDatabase.test(NativeDatabase.memory());
+        libraryService = ClipLibraryService(
+          clipsDao: database.clipsDao,
+          draftsDao: database.draftsDao,
+        );
+        tempDir = Directory.systemTemp.createTempSync('divine_rev_cleanup');
+      });
+
+      tearDown(() async {
+        await database.close();
+        if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
+      });
+
+      test('deletes the reverse caches of a deleted clip', () async {
+        // Reading [DivineVideoClip.ownedFilePaths] widened this delete to the
+        // cached forward/reversed renders. They were previously enumerated
+        // nowhere, so removing a reversed clip leaked both files.
+        File write(String name) =>
+            File(p.join(tempDir.path, name))..writeAsBytesSync(const [1, 2, 3]);
+
+        final video = write('clip_rev.mp4');
+        final forward = write('clip_rev_forward.mp4');
+        final reversed = write('clip_rev_reversed.mp4');
+        final clip = DivineVideoClip(
+          id: 'clip_rev',
+          video: EditorVideo.file(video.path),
+          duration: const Duration(seconds: 3),
+          recordedAt: DateTime(2024),
+          targetAspectRatio: model.AspectRatio.vertical,
+          originalAspectRatio: 9 / 16,
+          forwardVideoPath: forward.path,
+          reversedVideoPath: reversed.path,
+        );
+
+        await FileCleanupService.deleteRecordingClipFiles(
+          clip,
+          draftsDao: database.draftsDao,
+          clipsDao: database.clipsDao,
+        );
+
+        expect(forward.existsSync(), isFalse);
+        expect(reversed.existsSync(), isFalse);
+        expect(video.existsSync(), isFalse);
+      });
+
+      test('keeps a reverse cache another clip still points at', () async {
+        // The reference check reads the JSON blob, which carries
+        // `forwardVideoPath` — a duplicated clip shares the cache and must
+        // keep it.
+        File write(String name) =>
+            File(p.join(tempDir.path, name))..writeAsBytesSync(const [1, 2, 3]);
+
+        final shared = write('shared_forward.mp4');
+        DivineVideoClip clipWithShare(String id, String videoName) =>
+            DivineVideoClip(
+              id: id,
+              video: EditorVideo.file(write(videoName).path),
+              duration: const Duration(seconds: 3),
+              recordedAt: DateTime(2024),
+              targetAspectRatio: model.AspectRatio.vertical,
+              originalAspectRatio: 9 / 16,
+              forwardVideoPath: shared.path,
+            );
+
+        await libraryService.saveClip(clipWithShare('keeper', 'keeper.mp4'));
+
+        await FileCleanupService.deleteRecordingClipFiles(
+          clipWithShare('goner', 'goner.mp4'),
+          draftsDao: database.draftsDao,
+          clipsDao: database.clipsDao,
+        );
+
+        expect(
+          shared.existsSync(),
+          isTrue,
+          reason: 'the surviving library clip still points at this cache',
+        );
+      });
+    });
   });
 }

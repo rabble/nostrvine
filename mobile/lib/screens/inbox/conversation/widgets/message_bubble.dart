@@ -22,7 +22,6 @@ import 'package:openvine/screens/inbox/conversation/dm_video_target.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/video_link_preview_cubit.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
-import 'package:openvine/utils/divine_video_url.dart';
 import 'package:openvine/utils/external_link_launcher.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_support.dart';
@@ -199,11 +198,15 @@ class MessageBubble extends StatelessWidget {
           .toList();
       personalMessage = beforeLines.isEmpty ? null : beforeLines.join('\n');
     } else if (videoTarget != null) {
+      // Identity came from the citation rather than a URL in the body, so the
+      // body is not the share template — it is only what the sender typed.
+      // Strip the machine-readable `nostr:` line we append on the wire, but
+      // NOT the quoted-title line: with no template to strip a title from,
+      // that filter would swallow a comment the sender wrapped in quotes.
       final lines = safeMessage
           .split('\n')
           .map((line) => line.trim())
           .where((line) => line.isNotEmpty)
-          .where((line) => !_quotedTitleRegex.hasMatch(line))
           .where((line) => !_nostrRefLineRegex.hasMatch(line))
           .toList();
       personalMessage = lines.isEmpty ? null : lines.join('\n');

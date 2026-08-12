@@ -4,12 +4,19 @@ This document describes how to manage database migrations for the `db_client` pa
 
 ## Current Schema Version
 
-**Version: 2** (see `app_database.dart`).
+**Version: 3** (see `app_database.dart`).
 
 Version 2 is the legacy-normalization baseline. Earlier releases kept Drift's
 user-version at 1 while startup repair SQL added tables, columns, indexes, and
 backfills in `beforeOpen`. The v1 -> v2 migration is intentionally idempotent so
 any shipped v1 database shape can be brought to the current schema.
+
+Version 3 adds `identity_events.source_created_at` and
+`identity_events.source_event_id` (#7081), so a cached kind-10011 identity
+event can be recognised as newer than the one a later relay read returns. The
+v2 -> v3 step rebuilds the table from its current definition, which lands on
+the same shape whether v1 normalization created the legacy three-column table
+or the current one.
 
 Going forward, schema changes must be versioned Drift migrations. Do not add new
 tables, columns, indexes, or schema backfills to `beforeOpen`; that hook is only
@@ -27,14 +34,16 @@ db_client/
 ├── drift_schemas/
 │   └── app_database/
 │       ├── drift_schema_v1.json
-│       └── drift_schema_v2.json
+│       ├── drift_schema_v2.json
+│       └── drift_schema_v3.json
 ├── test/drift/
 │   └── app_database/
 │       ├── migration_test.dart
 │       └── generated/
 │           ├── schema.dart
 │           ├── schema_v1.dart
-│           └── schema_v2.dart
+│           ├── schema_v2.dart
+│           └── schema_v3.dart
 └── build.yaml                  # Drift build configuration
 ```
 

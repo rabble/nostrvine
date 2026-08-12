@@ -777,7 +777,10 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(900, 2000));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(buildSubject());
+      final mockGoRouter = MockGoRouter();
+      when(() => mockGoRouter.push(any())).thenAnswer((_) async => null);
+
+      await tester.pumpWidget(buildSubject(goRouter: mockGoRouter));
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.settingsLegal), findsOneWidget);
@@ -786,7 +789,7 @@ void main() {
       await tester.tap(find.text(l10n.settingsExperimentalFeatures));
       await tester.pumpAndSettle();
 
-      expect(find.byType(FeatureFlagScreen), findsOneWidget);
+      verify(() => mockGoRouter.push(FeatureFlagScreen.path)).called(1);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
@@ -798,7 +801,12 @@ void main() {
         await tester.binding.setSurfaceSize(const Size(900, 2000));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        await tester.pumpWidget(buildSubject(developerMode: true));
+        final mockGoRouter = MockGoRouter();
+        when(() => mockGoRouter.push(any())).thenAnswer((_) async => null);
+
+        await tester.pumpWidget(
+          buildSubject(goRouter: mockGoRouter, developerMode: true),
+        );
         await tester.pumpAndSettle();
 
         expect(find.text(l10n.settingsExperimentalFeatures), findsOneWidget);
@@ -806,7 +814,7 @@ void main() {
         await tester.tap(find.text(l10n.settingsExperimentalFeatures));
         await tester.pumpAndSettle();
 
-        expect(find.byType(FeatureFlagScreen), findsOneWidget);
+        verify(() => mockGoRouter.push(FeatureFlagScreen.path)).called(1);
 
         await tester.pumpWidget(const SizedBox());
         await tester.pump();

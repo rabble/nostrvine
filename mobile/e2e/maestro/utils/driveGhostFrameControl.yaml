@@ -1,0 +1,40 @@
+appId: co.openvine.app
+---
+#Utility: toggle the ghost-frame (onion-skin) overlay on and back off, leaving
+#it on its default. Rendered by both modes that draw the previous frame over
+#the live preview — stop-motion on the capture rail, classic in its own action
+#row.
+#
+# Not persisted, so it always starts off. Restoring it is not just tidiness:
+# the overlay draws the previous still (stop-motion) or the last clip's final
+# frame (classic) over the live preview, which makes a failure screenshot from
+# any later test much harder to read.
+#
+# The control carries a Semantics `toggled` flag rather than a `value`, which
+# Flutter maps to the accessibility node's checked state, so it is driven with
+# `checked:` rather than `text:`. **Maestro does not print the flag in its run
+# log** — see the note on that selector in e2e/maestro/README.md before
+# "fixing" a line here because the log looks bare.
+#
+# Each tap raises a 4-second confirmation snackbar floating over the bottom of
+# the screen. This util does not wait it out — where that banner lands relative
+# to the controls differs per mode, so the caller owns both the ordering and
+# the wait.
+
+- assertVisible:
+    id: camera_ghost_frame_button
+    checked: false
+- tapOn:
+    id: camera_ghost_frame_button
+- extendedWaitUntil:
+    visible:
+      id: camera_ghost_frame_button
+      checked: true
+    timeout: 10000
+- tapOn:
+    id: camera_ghost_frame_button
+- extendedWaitUntil:
+    visible:
+      id: camera_ghost_frame_button
+      checked: false
+    timeout: 10000

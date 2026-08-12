@@ -1,5 +1,5 @@
 // ABOUTME: Stats row for the metadata expanded sheet.
-// ABOUTME: Shows Loops, Likes, Comments, Reposts with vertical dividers.
+// ABOUTME: Shows Likes, Comments, Reposts, Loops with vertical dividers.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -16,7 +16,11 @@ import 'package:openvine/utils/string_utils.dart';
 /// combined totals (archival Vine + live Divine); classic Vines additionally
 /// get a per-source breakdown underneath.
 ///
-/// Layout matches Figma node `I11251:226991;9113:176278`:
+/// Loops sits last rather than first. Video cards hide small public counts
+/// because they discourage viewing, so this sheet is where the number stays
+/// reachable — present, but not leading the row.
+///
+/// Layout follows Figma node `I11251:226991;9113:176278`:
 /// four stat columns separated by vertical dividers.
 class MetadataStatsRow extends StatelessWidget {
   const MetadataStatsRow({required this.video, super.key});
@@ -63,14 +67,6 @@ class MetadataStatsRow extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           _StatColumn(
-                            count: video.totalLoops,
-                            label: context.l10n.metadataLoopsLabel(
-                              video.totalLoops,
-                            ),
-                            isLoading: false,
-                          ),
-                          const _VerticalDivider(),
-                          _StatColumn(
                             count: state.likeCount,
                             label: context.l10n.metadataLikesLabel,
                             isLoading: isLoading,
@@ -86,6 +82,17 @@ class MetadataStatsRow extends StatelessWidget {
                             count: state.repostCount,
                             label: context.l10n.metadataRepostsLabel,
                             isLoading: isLoading,
+                          ),
+                          const _VerticalDivider(),
+                          // Loops trails the interaction stats: the count
+                          // stays available to anyone who wants it without
+                          // leading the row.
+                          _StatColumn(
+                            count: video.totalLoops,
+                            label: context.l10n.metadataLoopsLabel(
+                              video.totalLoops,
+                            ),
+                            isLoading: false,
                           ),
                         ],
                       ),

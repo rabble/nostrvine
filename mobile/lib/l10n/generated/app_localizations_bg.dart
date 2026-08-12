@@ -2312,10 +2312,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Превключвател на средата и настройки за дебъг';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Превключвай функции, които може да се държат странно.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Управление на ключове';
 
   @override
@@ -3835,12 +3831,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'Запази за по-късен преглед';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Добави към набора с отметки';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'Организирай в колекции';
-
-  @override
   String get shareMenuFollowSets => 'Списъци с хора';
 
   @override
@@ -4219,9 +4209,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get shareMenuUnknown => 'Неизвестен';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'Създай набор с отметки';
-
-  @override
   String get shareMenuSetName => 'Задай име';
 
   @override
@@ -4235,15 +4222,7 @@ class AppLocalizationsBg extends AppLocalizations {
       'Започни нова колекция от отметки';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Още няма набори с отметки. Създай първия си.';
-
-  @override
   String get shareMenuError => 'Грешка';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Неуспешно зареждане на набори от отметки';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
@@ -9405,6 +9384,18 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get videoEditorTransformNoLocalFile =>
       'Преобразуването е невъзможно: клипът не е наличен локално.';
+
+  @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Изрязване, завъртане или обръщане на избрания кадър';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'Само момент, преобразуваме кадъра ти';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Кадърът не можа да бъде преобразуван. Опитай отново.';
 
   @override
   String get videoEditorTransformRotateLabel => 'Завъртане';

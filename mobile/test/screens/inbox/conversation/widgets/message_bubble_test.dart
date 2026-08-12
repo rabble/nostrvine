@@ -908,6 +908,65 @@ void main() {
         ).called(greaterThanOrEqualTo(1));
       });
 
+      // divine-web put the share only in tags and allowed an empty draft, so
+      // before #6224 this bubble rendered with no card — and mid-group, with
+      // no text and no timestamp either, i.e. completely blank.
+      testWidgets(
+        'renders a legacy divine-web share that carries no content at all',
+        (tester) async {
+          when(
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+              'abc123',
+              fallbackRouteIds: any(named: 'fallbackRouteIds'),
+            ),
+          ).thenAnswer((_) async => testVideo);
+
+          await tester.pumpWidget(
+            buildWithVideoMessage(
+              message: '',
+              sharedVideoRef: const DmSharedVideoRef(
+                coordinateOrId: '34236:$_testHexPubkey:abc123',
+                videoKind: DmSharedVideoKind.addressableShortVideo,
+                authorPubkey: _testHexPubkey,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byType(VideoThumbnailWidget), findsOneWidget);
+          expect(find.text('My Cool Video'), findsOneWidget);
+        },
+      );
+
+      // A legacy share's body is not the share template — it is only what the
+      // sender typed. Stripping the template's quoted-title line here would
+      // swallow a comment the sender happened to wrap in quotes.
+      testWidgets('keeps a quoted comment on a citation-only share', (
+        tester,
+      ) async {
+        when(
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            'abc123',
+            fallbackRouteIds: any(named: 'fallbackRouteIds'),
+          ),
+        ).thenAnswer((_) async => testVideo);
+
+        await tester.pumpWidget(
+          buildWithVideoMessage(
+            message: '"nice one"',
+            sharedVideoRef: const DmSharedVideoRef(
+              coordinateOrId: '34236:$_testHexPubkey:abc123',
+              videoKind: DmSharedVideoKind.addressableShortVideo,
+              authorPubkey: _testHexPubkey,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(VideoThumbnailWidget), findsOneWidget);
+        expect(find.text('"nice one"'), findsOneWidget);
+      });
+
       testWidgets('renders the shared-video bubble on a neutral dark frame', (
         tester,
       ) async {

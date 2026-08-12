@@ -2267,10 +2267,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Miljöväxlare och felsökningsinställningar';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Slå på funktioner som kan hicka.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Nyckelhantering';
 
   @override
@@ -3781,12 +3777,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'Spara för senare visning';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Lägg till i bokmärkessamling';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'Organisera i samlingar';
-
-  @override
   String get shareMenuFollowSets => 'Följsamlingar';
 
   @override
@@ -4168,9 +4158,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get shareMenuUnknown => 'Okänd';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'Skapa bokmärkessamling';
-
-  @override
   String get shareMenuSetName => 'Samlingsnamn';
 
   @override
@@ -4184,15 +4171,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Starta en ny bokmärkessamling';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Inga bokmärkessamlingar än. Skapa din första!';
-
-  @override
   String get shareMenuError => 'Fel';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Kunde inte läsa in bokmärkessamlingar';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
@@ -9319,6 +9298,18 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get videoEditorTransformNoLocalFile =>
       'Kan inte transformera: klippet är inte tillgängligt lokalt.';
+
+  @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Beskär, rotera eller spegelvänd markerad bildruta';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'Ett ögonblick, vi transformerar din bildruta';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Det gick inte att transformera bildrutan. Försök igen.';
 
   @override
   String get videoEditorTransformRotateLabel => 'Rotera';

@@ -14,17 +14,28 @@ class IdentityEventsDao extends DatabaseAccessor<AppDatabase>
   /// Upserts the identity-claims source for [pubkey].
   ///
   /// [tagsJson] is the JSON-encoded `i` tag list and [sourceKind] the event
-  /// kind the tags came from (10011 or 0).
+  /// kind the tags came from (10011 or 0). [sourceCreatedAt] and
+  /// [sourceEventId] identify the kind-10011 event the tags came from and are
+  /// always written, including as null, so the coordinates can never describe
+  /// a set of tags they did not come with.
+  ///
+  /// Callers decide whether a write is allowed at all: this row is a mirror of
+  /// a replaceable event, so it must not be moved backwards by a relay read
+  /// that is behind (#7081).
   Future<void> upsertEvent({
     required String pubkey,
     required String tagsJson,
     required int sourceKind,
+    int? sourceCreatedAt,
+    String? sourceEventId,
   }) {
     return into(identityEvents).insertOnConflictUpdate(
       IdentityEventsCompanion.insert(
         pubkey: pubkey,
         tagsJson: tagsJson,
         sourceKind: sourceKind,
+        sourceCreatedAt: Value(sourceCreatedAt),
+        sourceEventId: Value(sourceEventId),
       ),
     );
   }

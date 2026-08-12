@@ -233,6 +233,55 @@ void main() {
     });
   });
 
+  group('setFramePath', () {
+    test('points the still at the transformed image, keeping its hold', () {
+      final frames = [
+        framesOf([2])[0].copyWith(holdOverridden: true),
+        ...framesOf([1, 1]).sublist(1),
+      ];
+
+      final result = StopMotionFrameOps.setFramePath(frames, 0, 'cropped.jpg');
+
+      expect(result[0].path, 'cropped.jpg');
+      expect(result[0].duration, hold(2));
+      expect(result[0].holdOverridden, isTrue);
+      expect(result.sublist(1), frames.sublist(1));
+    });
+
+    test('leaves the other stills alone, duplicates included', () {
+      final duplicated = [
+        const StopMotionClipFrame(
+          path: 'shared.jpg',
+          duration: Duration(milliseconds: 100),
+        ),
+        const StopMotionClipFrame(
+          path: 'shared.jpg',
+          duration: Duration(milliseconds: 100),
+        ),
+      ];
+
+      final result = StopMotionFrameOps.setFramePath(duplicated, 1, 'new.jpg');
+
+      expect(result.map((f) => f.path), ['shared.jpg', 'new.jpg']);
+    });
+
+    test('returns the list unchanged for an out-of-range index', () {
+      final frames = framesOf([1, 1]);
+      expect(
+        StopMotionFrameOps.setFramePath(frames, 5, 'cropped.jpg'),
+        same(frames),
+      );
+    });
+
+    test('returns the list unchanged when the path did not change', () {
+      final frames = framesOf([1, 1]);
+      expect(
+        StopMotionFrameOps.setFramePath(frames, 0, 'f0.jpg'),
+        same(frames),
+      );
+    });
+  });
+
   group('reorderFrame', () {
     test('moves a frame forward', () {
       final result = StopMotionFrameOps.reorderFrame(framesOf([1, 1, 1]), 0, 2);

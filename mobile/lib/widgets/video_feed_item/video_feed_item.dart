@@ -13,10 +13,12 @@ import 'package:openvine/constants/text_scale_limits.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/localized_time_formatter.dart';
 // For isVideoActiveProvider (router-driven)
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/og_viner_cache_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/router/routes/route_extras.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
@@ -34,6 +36,7 @@ import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/inspired_by_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
+import 'package:openvine/widgets/video_feed_item/video_card_meta.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:openvine/widgets/video_reply_parent_link.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -144,6 +147,19 @@ class VideoOverlayActions extends ConsumerWidget {
     final video = this.video;
     final previewData = this.previewData;
     final authorPubkey = previewData?.pubkey ?? video!.pubkey;
+    final showPostDate = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.videoCardPostDate),
+    );
+    // Watched purely for its invalidation. AuthService is not a ChangeNotifier
+    // and authServiceProvider hands back a stable singleton, so watching it
+    // (with or without select) never rebuilds on sign-in or account switch —
+    // a card mounted while signed out would keep hiding its owner's counts.
+    ref.watch(currentAuthStateProvider);
+    final currentUserPubkey = ref.read(authServiceProvider).currentPublicKeyHex;
+    final isOwnVideo =
+        video != null &&
+        currentUserPubkey != null &&
+        currentUserPubkey == video.pubkey;
     final trimmedTitle = previewData != null
         ? UserProfile.sanitizeDisplayName(previewData.title).trim()
         : video?.displayTitle?.trim();
@@ -390,20 +406,11 @@ class VideoOverlayActions extends ConsumerWidget {
                                       if (isOgViner) const OgVinerBadge(),
                                     ],
                                   ),
-                                  Text(
-                                    context.l10n.videoFeedLoopCountLine(
-                                      StringUtils.formatCompactNumber(
-                                        video?.totalLoops ?? 0,
-                                      ),
-                                      video?.totalLoops ?? 0,
-                                    ),
-                                    style: const TextStyle(
-                                      fontFamily: 'Inter',
-                                      fontSize: 14,
-                                      height: 20 / 14,
-                                      // Sits on the video next to the
-                                      // white author name.
-                                      color: VineTheme.onSurfaceVariant,
+                                  _VideoCardMetaLine(
+                                    meta: resolveVideoCardMeta(
+                                      video: video,
+                                      isOwnVideo: isOwnVideo,
+                                      showPostDate: showPostDate,
                                     ),
                                   ),
                                 ],
@@ -439,14 +446,12 @@ class VideoOverlayActions extends ConsumerWidget {
                             final list = curatedListService?.getListById(
                               listId,
                             );
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (context) => CuratedListFeedScreen(
-                                  listId: listId,
-                                  listName: listName,
-                                  videoIds: list?.videoEventIds,
-                                  authorPubkey: list?.pubkey,
-                                ),
+                            context.push(
+                              CuratedListFeedScreen.pathForId(listId),
+                              extra: CuratedListRouteExtra(
+                                listName: listName,
+                                videoIds: list?.videoEventIds,
+                                authorPubkey: list?.pubkey,
                               ),
                             );
                           },
@@ -604,6 +609,49 @@ class VideoOverlayActions extends ConsumerWidget {
   ) async {
     await context.showVideoPausingDialog<void>(
       builder: (context) => _ContentWarningDetailsSheet(labels: labels),
+    );
+  }
+}
+
+/// The line under a video card's author name: post date, loop count, or both.
+///
+/// Renders nothing when neither is available, rather than an empty row.
+class _VideoCardMetaLine extends StatelessWidget {
+  const _VideoCardMetaLine({required this.meta});
+
+  final VideoCardMeta meta;
+
+  @override
+  Widget build(BuildContext context) {
+    if (meta.isEmpty) return const SizedBox.shrink();
+
+    final l10n = context.l10n;
+    final loopCount = meta.loopCount;
+    final timestamp = meta.timestamp;
+
+    final parts = <String>[
+      if (timestamp != null)
+        LocalizedTimeFormatter.formatPostAge(
+          l10n,
+          timestamp,
+          locale: Localizations.localeOf(context).toString(),
+        ),
+      if (loopCount != null)
+        l10n.videoFeedLoopCountLine(
+          StringUtils.formatCompactNumber(loopCount),
+          loopCount,
+        ),
+    ];
+
+    return Text(
+      parts.join(' · '),
+      style: const TextStyle(
+        fontFamily: 'Inter',
+        fontSize: 14,
+        height: 20 / 14,
+        // Sits on the video next to the white author name.
+        color: VineTheme.onSurfaceVariant,
+      ),
     );
   }
 }

@@ -1280,7 +1280,6 @@
   "nostrSettingsMediaServersSubtitle": "Konfigurasikan pelayan muat naik Blossom",
   "settingsDeveloperOptions": "Pilihan Pembangun",
   "settingsDeveloperOptionsSubtitle": "Penukar persekitaran dan tetapan nyahpepijat",
-  "nostrSettingsExperimentalFeaturesSubtitle": "Togol bendera ciri yang mungkin tersandung.",
   "nostrSettingsKeyManagement": "Pengurusan Kunci",
   "nostrSettingsKeyManagementSubtitle": "Eksport, sandar dan pulihkan kunci Nostr anda",
   "nostrSettingsClientAttribution": "Atribusi Klien",
@@ -2081,8 +2080,6 @@
   "shareMenuBookmarks": "Penanda Buku",
   "shareMenuAddToBookmarks": "Tambah ke Penanda Buku",
   "shareMenuAddToBookmarksSubtitle": "Simpan untuk tontonan kemudian",
-  "shareMenuAddToBookmarkSet": "Tambah ke Set Penanda Buku",
-  "shareMenuAddToBookmarkSetSubtitle": "Susun dalam koleksi",
   "shareMenuFollowSets": "Senarai Orang",
   "shareMenuCreateFollowSet": "Cipta Set Ikutan",
   "shareMenuCreateFollowSetSubtitle": "Mulakan koleksi baharu dengan pencipta ini",
@@ -2309,14 +2306,11 @@
   "shareMenuAddInspirationCredit": "Tambah kredit inspirasi",
   "shareMenuCreatorCannotBeReferenced": "Pencipta ini tidak boleh dirujuk.",
   "shareMenuUnknown": "Tidak diketahui",
-  "shareMenuCreateBookmarkSet": "Cipta Set Penanda Buku",
   "shareMenuSetName": "Nama Set",
   "shareMenuSetNameHint": "cth. Kegemaran, Tonton Nanti, dsb.",
   "shareMenuCreateNewSet": "Cipta Set Baharu",
   "shareMenuStartNewBookmarkCollection": "Mulakan koleksi penanda buku baharu",
-  "shareMenuNoBookmarkSets": "Belum ada set penanda buku. Cipta yang pertama!",
   "shareMenuError": "Ralat",
-  "shareMenuFailedToLoadBookmarkSets": "Gagal memuatkan set penanda buku",
   "shareMenuCreatedSetAndAddedVideo": "\"{name}\" dicipta dan video ditambah",
   "@shareMenuCreatedSetAndAddedVideo": {
     "placeholders": {
@@ -5486,6 +5480,18 @@
   "videoEditorTransformNoLocalFile": "Tidak dapat mengubah bentuk: klip tidak tersedia secara setempat.",
   "@videoEditorTransformNoLocalFile": {
     "description": "Snackbar message shown when a transform is requested for a clip that has no locally available file."
+  },
+  "videoEditorTransformSelectedFrameSemanticLabel": "Pangkas, putar atau balikkan bingkai dipilih",
+  "@videoEditorTransformSelectedFrameSemanticLabel": {
+    "description": "Accessibility label for the Transform button in the stop-motion frame controls."
+  },
+  "videoEditorTransformFrameProgressLabel": "Sekejap, kami sedang mengubah bingkai anda",
+  "@videoEditorTransformFrameProgressLabel": {
+    "description": "Status text shown while a stop-motion frame is being rendered with the applied crop/rotate transform."
+  },
+  "videoEditorTransformFrameFailed": "Bingkai tidak dapat diubah. Sila cuba lagi.",
+  "@videoEditorTransformFrameFailed": {
+    "description": "Snackbar message shown when saving a transformed stop-motion frame fails."
   },
   "videoEditorTransformRotateLabel": "Putar",
   "@videoEditorTransformRotateLabel": {

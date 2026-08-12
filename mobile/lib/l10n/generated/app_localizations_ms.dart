@@ -2288,10 +2288,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Penukar persekitaran dan tetapan nyahpepijat';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Togol bendera ciri yang mungkin tersandung.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Pengurusan Kunci';
 
   @override
@@ -3816,12 +3812,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Simpan untuk tontonan kemudian';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Tambah ke Set Penanda Buku';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'Susun dalam koleksi';
-
-  @override
   String get shareMenuFollowSets => 'Senarai Orang';
 
   @override
@@ -4202,9 +4192,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get shareMenuUnknown => 'Tidak diketahui';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'Cipta Set Penanda Buku';
-
-  @override
   String get shareMenuSetName => 'Nama Set';
 
   @override
@@ -4218,15 +4205,7 @@ class AppLocalizationsMs extends AppLocalizations {
       'Mulakan koleksi penanda buku baharu';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Belum ada set penanda buku. Cipta yang pertama!';
-
-  @override
   String get shareMenuError => 'Ralat';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Gagal memuatkan set penanda buku';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
@@ -9374,6 +9353,18 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get videoEditorTransformNoLocalFile =>
       'Tidak dapat mengubah bentuk: klip tidak tersedia secara setempat.';
+
+  @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Pangkas, putar atau balikkan bingkai dipilih';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'Sekejap, kami sedang mengubah bingkai anda';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Bingkai tidak dapat diubah. Sila cuba lagi.';
 
   @override
   String get videoEditorTransformRotateLabel => 'Putar';

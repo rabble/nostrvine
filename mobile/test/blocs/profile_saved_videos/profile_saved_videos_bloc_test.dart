@@ -69,6 +69,12 @@ void main() {
       mockVideosRepository = _MockVideosRepository();
       cacheDao = _InMemoryCacheDao();
       await CacheSync.init(dao: cacheDao);
+
+      // The bloc reconciles with the relay before reading the list; tests that
+      // care about the relay-sourced path override this.
+      when(
+        () => mockBookmarkService.syncGlobalBookmarks(),
+      ).thenAnswer((_) async => true);
     });
 
     ProfileSavedVideosBloc createBloc({
@@ -191,6 +197,40 @@ void main() {
           );
         },
       );
+
+      test('shows bookmarks that only exist on the relay', () async {
+        // #6627: on a fresh install the SharedPreferences cache is empty, so
+        // without the reconcile the tab renders nothing even though the user's
+        // kind-10003 list is on the relay.
+        when(() => mockBookmarkService.globalBookmarks).thenReturn(const []);
+        when(() => mockBookmarkService.syncGlobalBookmarks()).thenAnswer((
+          _,
+        ) async {
+          when(() => mockBookmarkService.globalBookmarks).thenReturn(const [
+            BookmarkItem(type: 'e', id: 'video-1'),
+          ]);
+          return true;
+        });
+        when(
+          () => mockVideosRepository.getVideosByIds(
+            any(),
+            cacheResults: any(named: 'cacheResults'),
+          ),
+        ).thenAnswer((_) async => [createTestVideo('video-1')]);
+
+        final bloc = createBloc();
+        addTearDown(bloc.close);
+        bloc.add(const ProfileSavedVideosSyncRequested());
+
+        final settled = await bloc.stream
+            .firstWhere(
+              (state) => state.status == ProfileSavedVideosStatus.success,
+            )
+            .timeout(const Duration(seconds: 1));
+
+        expect(settled.savedEventIds, equals(['video-1']));
+        expect(settled.videos.map((video) => video.id), equals(['video-1']));
+      });
 
       test('a sync arriving during the snapshot write still runs', () async {
         when(() => mockBookmarkService.globalBookmarks).thenReturn(const []);

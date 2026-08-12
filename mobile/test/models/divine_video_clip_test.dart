@@ -358,4 +358,54 @@ void main() {
       );
     });
   });
+
+  group('DivineVideoClip.ownedFilePaths', () {
+    test('yields every file reference a clip can carry', () {
+      // Pins the full set, because this getter is what four cleanup paths diff
+      // against to decide a file is unreachable. A reference dropped from here
+      // stops being protected: the file is queued for deletion while a clip is
+      // still playing it.
+      final populated = clip('/videos/clip.mp4').copyWith(
+        forwardVideoPath: '/videos/forward.mp4',
+        reversedVideoPath: '/videos/reversed.mp4',
+        stopMotionFrames: const [
+          StopMotionClipFrame(
+            path: '/stills/frame-0.jpg',
+            duration: Duration(milliseconds: 83),
+          ),
+        ],
+        thumbnailPath: '/thumbs/clip.jpg',
+        ghostFramePath: '/ghosts/clip.png',
+        chromaKeySourcePath: '/videos/pre-key.mp4',
+        chromaKey: ClipChromaKey(
+          key: editor.ChromaKey(
+            backgroundImage: editor.EditorLayerImage.file(
+              '/backdrops/beach.jpg',
+            ),
+          ),
+        ),
+      );
+
+      expect(populated.ownedFilePaths.nonNulls, <String>[
+        '/videos/clip.mp4',
+        '/videos/forward.mp4',
+        '/videos/reversed.mp4',
+        '/stills/frame-0.jpg',
+        '/thumbs/clip.jpg',
+        '/ghosts/clip.png',
+        '/videos/pre-key.mp4',
+        '/backdrops/beach.jpg',
+      ]);
+    });
+
+    test('yields the stills of a frames-only stop-motion clip', () {
+      expect(
+        stopMotionClip([
+          '/stills/a.jpg',
+          '/stills/b.jpg',
+        ]).ownedFilePaths.nonNulls,
+        <String>['/stills/a.jpg', '/stills/b.jpg'],
+      );
+    });
+  });
 }

@@ -34,7 +34,7 @@ class VideoMetadataContentWarningSelector extends ConsumerWidget {
       context: context,
       maxChildSize: 1,
       initialChildSize: 0.9,
-      minChildSize: 0.7,
+      minChildSize: VineTheme.bottomSheetDismissFloor,
       showHeader: false,
       showDragHandle: false,
       buildScrollBody: (scrollController) => _ContentWarningMultiSelect(

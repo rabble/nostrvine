@@ -1329,11 +1329,12 @@ void main() {
       tester,
     ) async {
       final testProfile = createTestProfile(displayName: 'Counted User');
+      // Above profileLoopsVisibilityFloor so a visitor still sees Loops.
       const profileStats = ProfileStats(
         pubkey: testUserHex,
         videoCount: 42,
         totalLikes: 100,
-        totalViews: 5000,
+        totalViews: 50000,
       );
 
       await tester.pumpWidget(
@@ -1348,6 +1349,80 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Likes'), findsOneWidget);
+      expect(find.text('Loops'), findsOneWidget);
+    });
+
+    testWidgets('hides Loops from a visitor when the total is small', (
+      tester,
+    ) async {
+      final testProfile = createTestProfile(displayName: 'New Creator');
+      const profileStats = ProfileStats(
+        pubkey: testUserHex,
+        videoCount: 2,
+        totalLikes: 3,
+        totalViews: 7,
+      );
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: false,
+          suppliedProfile: testProfile,
+          profileStats: profileStats,
+          videoCount: 2,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The rest of the row still renders; only the discouraging headline
+      // number is withheld.
+      expect(find.text('Loops'), findsNothing);
+      expect(find.text('Likes'), findsOneWidget);
+    });
+
+    testWidgets('shows an owner their own small Loops total', (tester) async {
+      final testProfile = createTestProfile(displayName: 'New Creator');
+      const profileStats = ProfileStats(
+        pubkey: testUserHex,
+        videoCount: 2,
+        totalLikes: 3,
+        totalViews: 7,
+      );
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: true,
+          suppliedProfile: testProfile,
+          profileStats: profileStats,
+          videoCount: 2,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Loops'), findsOneWidget);
+    });
+
+    testWidgets('shows a visitor a total exactly at the floor', (tester) async {
+      final testProfile = createTestProfile(displayName: 'Counted User');
+      const profileStats = ProfileStats(
+        pubkey: testUserHex,
+        videoCount: 42,
+        totalLikes: 100,
+        totalViews: profileLoopsVisibilityFloor,
+      );
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: false,
+          suppliedProfile: testProfile,
+          profileStats: profileStats,
+          videoCount: 3,
+        ),
+      );
+      await tester.pumpAndSettle();
+
       expect(find.text('Loops'), findsOneWidget);
     });
 

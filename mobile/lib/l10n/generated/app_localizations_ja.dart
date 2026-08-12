@@ -2144,10 +2144,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsDeveloperOptionsSubtitle => '環境スイッチャーとデバッグ設定';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'バグるかもしれない機能フラグを切り替える。';
-
-  @override
   String get nostrSettingsKeyManagement => '鍵の管理';
 
   @override
@@ -3588,12 +3584,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'あとで見るために保存';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'ブックマークセットに追加';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'コレクションに整理';
-
-  @override
   String get shareMenuFollowSets => 'フォローセット';
 
   @override
@@ -3954,9 +3944,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareMenuUnknown => '不明';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'ブックマークセットを作る';
-
-  @override
   String get shareMenuSetName => 'セット名';
 
   @override
@@ -3969,13 +3956,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareMenuStartNewBookmarkCollection => '新しいブックマークコレクションを始めよう';
 
   @override
-  String get shareMenuNoBookmarkSets => 'ブックマークセットはまだないよ。最初のセットを作ろう！';
-
-  @override
   String get shareMenuError => 'エラー';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets => 'ブックマークセットの読み込みがうまくいかなかった';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
@@ -8922,6 +8903,16 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get videoEditorTransformNoLocalFile => '変形できません：クリップがローカルに利用できません。';
+
+  @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      '選択したフレームをトリミング、回転、反転';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel => '少々お待ちください。フレームを変換しています';
+
+  @override
+  String get videoEditorTransformFrameFailed => 'フレームを変換できませんでした。もう一度お試しください。';
 
   @override
   String get videoEditorTransformRotateLabel => '回転';

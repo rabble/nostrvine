@@ -63,8 +63,15 @@ class StopMotionRenderService {
   /// When [taskId] is set, the native encoder emits its progress under that
   /// id via [ProVideoEditor.progressStreamById].
   ///
-  /// Returns the output file path, or null if rendering failed or was
-  /// cancelled. The native render path needs a device build to exercise.
+  /// Returns the output file path, or null if rendering failed.
+  ///
+  /// Throws [RenderCanceledException] when the native assembly is cancelled
+  /// (user cancel or lifecycle teardown via [NativeRenderTaskRegistry]).
+  /// Callers that only need a null-on-failure contract should catch that and
+  /// map it; the final-export path must keep cancel distinct from a failed
+  /// assembly so telemetry does not tag it `stop_motion_assembly`.
+  ///
+  /// The native render path needs a device build to exercise.
   static Future<String?> assemble({
     required List<StopMotionClipFrame> frames,
     required model.AspectRatio aspectRatio,
@@ -110,6 +117,9 @@ class StopMotionRenderService {
   /// Returns `null` only when the render fails, so callers (publish, gallery
   /// save) can surface a failure instead of proceeding with a clip that has no
   /// playable video.
+  ///
+  /// Throws [RenderCanceledException] when assembly is cancelled — see
+  /// [assemble].
   static Future<DivineVideoClip?> materialize(
     DivineVideoClip clip, {
     String? taskId,
@@ -293,7 +303,10 @@ class StopMotionRenderService {
         category: LogCategory.video,
       );
       await _deletePartialOutput(outputPath);
-      return null;
+      // Keep cancel distinct from a failed assembly: collapsing both to null
+      // made the final-export path tag detach mid-assembly as
+      // `stop_motion_assembly` / `failed` instead of `canceled` / `incomplete`.
+      rethrow;
     } catch (e, stack) {
       Log.error(
         '❌ Stop-motion assembly failed: $e',

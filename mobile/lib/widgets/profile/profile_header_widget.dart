@@ -420,6 +420,7 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: _ProfileStatsRow(
               userIdHex: widget.userIdHex,
+              isOwnProfile: widget.isOwnProfile,
               profileStats: widget.profileStats,
             ),
           ),

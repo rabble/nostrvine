@@ -442,6 +442,12 @@ class ProfileRepository implements ProfileReader {
   /// source; otherwise the caller-provided kind-0 [kind0Tags] are used and
   /// cached so cold starts can render claims for pre-migration profiles.
   ///
+  /// A live event that is an older revision than the cached row loses to it:
+  /// kind 10011 is replaceable, so a relay serving a superseded event is
+  /// behind rather than authoritative. Letting it overwrite the row would
+  /// both flip the rendered chips back and erase what the write path checks
+  /// a publish base against (#7081).
+  ///
   /// Never throws — relay failures fall through the consult order, and
   /// cache reads/writes are best-effort so a local persistence failure
   /// never discards tags already in hand.
@@ -453,8 +459,16 @@ class ProfileRepository implements ProfileReader {
     final dao = _identityEventsDao;
     final live = await _fetchIdentityEvent(pubkey);
     if (live != null) {
+      final superseding = await _cachedTagsSuperseding(pubkey, live);
+      if (superseding != null) return superseding;
       final iTags = identityTagsOf(live.tags);
-      await _cacheIdentityTags(pubkey, iTags, identityEventKind);
+      await _cacheIdentityTags(
+        pubkey,
+        iTags,
+        identityEventKind,
+        sourceCreatedAt: live.createdAt,
+        sourceEventId: live.id,
+      );
       return iTags;
     }
 
@@ -485,19 +499,75 @@ class ProfileRepository implements ProfileReader {
     return kind0ITags;
   }
 
+  /// The cached `i` tags when the row mirrors an identity event that
+  /// supersedes [live], or null when [live] is the one to keep.
+  ///
+  /// Null is also the answer when the row carries no source event — a kind-0
+  /// fallback row, or one written before those columns existed. There is
+  /// nothing to compare against there, and a live kind-10011 event is the
+  /// better source in both cases.
+  Future<List<List<String>>?> _cachedTagsSuperseding(
+    String pubkey,
+    Event live,
+  ) async {
+    final dao = _identityEventsDao;
+    if (dao == null) return null;
+    try {
+      final row = await dao.getEvent(pubkey);
+      final cachedCreatedAt = row?.sourceCreatedAt;
+      final cachedId = row?.sourceEventId;
+      if (row == null || cachedCreatedAt == null || cachedId == null) {
+        return null;
+      }
+      if (compareIdentityEvents(
+            createdAt: live.createdAt,
+            id: live.id,
+            otherCreatedAt: cachedCreatedAt,
+            otherId: cachedId,
+          ) >=
+          0) {
+        return null;
+      }
+      final cachedTags = _decodeIdentityTags(row.tagsJson);
+      if (cachedTags == null) return null;
+      Log.warning(
+        'Kind-$identityEventKind read for $pubkey (created_at '
+        '${live.createdAt}) is superseded by the cached event (created_at '
+        '$cachedCreatedAt); keeping the cached claims',
+        name: 'ProfileRepository',
+      );
+      return cachedTags;
+    } on Exception catch (e) {
+      Log.warning(
+        'Identity-tags cache read failed for $pubkey: $e',
+        name: 'ProfileRepository',
+      );
+      return null;
+    }
+  }
+
   /// Best-effort persistence of the identity-claims source cache — a
   /// failed write is logged and swallowed so [freshIdentityTags] can
   /// still return the tags it already fetched.
+  ///
+  /// [sourceCreatedAt] and [sourceEventId] identify the kind-10011 event
+  /// [iTags] came from; the kind-0 fallback passes neither, which clears any
+  /// coordinates left on the row so they cannot outlive the tags they
+  /// described.
   Future<void> _cacheIdentityTags(
     String pubkey,
     List<List<String>> iTags,
-    int sourceKind,
-  ) async {
+    int sourceKind, {
+    int? sourceCreatedAt,
+    String? sourceEventId,
+  }) async {
     try {
       await _identityEventsDao?.upsertEvent(
         pubkey: pubkey,
         tagsJson: jsonEncode(iTags),
         sourceKind: sourceKind,
+        sourceCreatedAt: sourceCreatedAt,
+        sourceEventId: sourceEventId,
       );
     } on Exception catch (e) {
       Log.warning(

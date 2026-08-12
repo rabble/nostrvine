@@ -653,5 +653,187 @@ void main() {
       final result = await pending;
       expect(result.timedOut, isFalse);
     });
+
+    group('requireAllRelaysSettled', () {
+      // Long enough that the settle window would have completed the query
+      // well before it, so a timeout here can only mean the window was
+      // genuinely not armed.
+      const timeout = Duration(seconds: 2);
+
+      test(
+        'reports a mute relay as a timeout instead of an empty answer',
+        () async {
+          final nostr = _newNostr();
+          final answering = _SilentRelay('wss://answers.example');
+          final mute = _SilentRelay('wss://never-eoses.example');
+          expect(await nostr.relayPool.add(answering), isTrue);
+          expect(await nostr.relayPool.add(mute), isTrue);
+
+          final pending = nostr.queryEventsDetailed(
+            [
+              {
+                'kinds': [10003],
+              },
+            ],
+            timeout: timeout,
+            requireAllRelaysSettled: true,
+          );
+
+          final subId = await answering.awaitPendingQuery();
+          await mute.awaitPendingQuery();
+          // The one relay that answers has nothing; the relay that might hold
+          // the list stays connected and never sends a terminal frame.
+          await answering.deliver(['EOSE', subId]);
+
+          final result = await pending;
+
+          expect(result.events, isEmpty);
+          expect(
+            result.timedOut,
+            isTrue,
+            reason:
+                'default settling would have reported this same empty box as a '
+                'complete answer, which a caller about to republish a '
+                'replaceable event would act on and truncate the list',
+          );
+        },
+      );
+
+      // Short: this query is never going to be answered, so the test pays it
+      // in full. Nothing races it, so it cannot flake short.
+      const unacceptedTimeout = Duration(milliseconds: 400);
+
+      test(
+        'reports a query no relay accepted as a timeout, not an empty answer',
+        () async {
+          final nostr = _newNostr();
+          final unreachable = _SilentRelay('wss://send-fails.example')
+            ..sendSucceeds = false;
+          expect(await nostr.relayPool.add(unreachable), isTrue);
+
+          final pending = nostr.queryEventsDetailed(
+            [
+              {
+                'kinds': [10003],
+              },
+            ],
+            timeout: unacceptedTimeout,
+            requireAllRelaysSettled: true,
+          );
+
+          final result = await pending;
+
+          expect(result.events, isEmpty);
+          expect(
+            result.timedOut,
+            isTrue,
+            reason:
+                'no relay took the REQ, so nothing was pending for the '
+                'post-fan-out sweep to wait on and it completed the query '
+                'with no relay having answered at all — an empty box that '
+                'reads exactly like "every relay says there is nothing"',
+          );
+        },
+      );
+
+      test(
+        'reports a relay CLOSED refusal as a timeout, not an empty answer',
+        () async {
+          final nostr = _newNostr();
+          final refusing = _SilentRelay('wss://refuses-req.example');
+          expect(await nostr.relayPool.add(refusing), isTrue);
+
+          final pending = nostr.queryEventsDetailed(
+            [
+              {
+                'kinds': [10003],
+              },
+            ],
+            timeout: unacceptedTimeout,
+            requireAllRelaysSettled: true,
+          );
+
+          final subId = await refusing.awaitPendingQuery();
+          await refusing.deliver([
+            'CLOSED',
+            subId,
+            'error: too many concurrent REQs',
+          ]);
+
+          final result = await pending;
+
+          expect(result.events, isEmpty);
+          expect(
+            result.timedOut,
+            isTrue,
+            reason:
+                'a relay refusal is not a data-bearing answer, so a '
+                'replaceable-event caller must treat it as inconclusive',
+          );
+        },
+      );
+
+      test(
+        'a query no relay accepted still completes at once without the flag',
+        () async {
+          final nostr = _newNostr();
+          final unreachable = _SilentRelay('wss://send-fails.example')
+            ..sendSucceeds = false;
+          expect(await nostr.relayPool.add(unreachable), isTrue);
+
+          final stopwatch = Stopwatch()..start();
+          final result = await nostr.queryEventsDetailed([
+            {
+              'kinds': [1],
+            },
+          ], timeout: timeout);
+          stopwatch.stop();
+
+          expect(result.timedOut, isFalse);
+          expect(
+            stopwatch.elapsed,
+            lessThan(timeout),
+            reason:
+                'a display read is content to be told what the reachable '
+                'relays hold; only a caller about to replace what it read '
+                'pays the timeout for the difference',
+          );
+        },
+      );
+
+      test('still completes promptly once every relay answers', () async {
+        final nostr = _newNostr();
+        final first = _SilentRelay('wss://first.example');
+        final second = _SilentRelay('wss://second.example');
+        expect(await nostr.relayPool.add(first), isTrue);
+        expect(await nostr.relayPool.add(second), isTrue);
+
+        final stopwatch = Stopwatch()..start();
+        final pending = nostr.queryEventsDetailed(
+          [
+            {
+              'kinds': [10003],
+            },
+          ],
+          timeout: timeout,
+          requireAllRelaysSettled: true,
+        );
+
+        final firstSubId = await first.awaitPendingQuery();
+        final secondSubId = await second.awaitPendingQuery();
+        await first.deliver(['EOSE', firstSubId]);
+        await second.deliver(['EOSE', secondSubId]);
+
+        final result = await pending;
+        stopwatch.stop();
+
+        expect(result.timedOut, isFalse);
+        expect(
+          stopwatch.elapsed,
+          lessThan(timeout),
+          reason: 'full settlement is reached, so nothing has to be waited out',
+        );
+      });
+    });
   });
 }

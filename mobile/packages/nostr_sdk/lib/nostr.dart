@@ -321,6 +321,8 @@ class Nostr {
     _pool.unsubscribe(id);
   }
 
+  /// Set [requireAllRelaysSettled] when an incomplete answer must be reported
+  /// as [timedOut] rather than as a result — see [RelayPool.query].
   Future<({List<Event> events, bool timedOut})> queryEventsDetailed(
     List<Map<String, dynamic>> filters, {
     String? id,
@@ -328,6 +330,7 @@ class Nostr {
     List<int> relayTypes = RelayType.all,
     bool sendAfterAuth = false,
     Duration timeout = const Duration(seconds: 5),
+    bool requireAllRelaysSettled = false,
   }) async {
     final eventBox = EventMemBox(sortAfterAdd: false);
     final completer = Completer<void>();
@@ -350,6 +353,7 @@ class Nostr {
         tempRelays: tempRelays,
         relayTypes: relayTypes,
         sendAfterAuth: sendAfterAuth,
+        requireAllRelaysSettled: requireAllRelaysSettled,
         (event) {
           eventBox.add(event);
         },
@@ -418,6 +422,7 @@ class Nostr {
     List<String>? targetRelays,
     List<int> relayTypes = RelayType.all,
     bool sendAfterAuth = false,
+    bool requireAllRelaysSettled = false,
   }) async {
     return await _pool.query(
       filters,
@@ -428,6 +433,7 @@ class Nostr {
       targetRelays: targetRelays,
       relayTypes: relayTypes,
       sendAfterAuth: sendAfterAuth,
+      requireAllRelaysSettled: requireAllRelaysSettled,
     );
   }
 

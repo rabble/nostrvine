@@ -1,3 +1,5 @@
+import 'dart:ui' show Tristate;
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -5,9 +7,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -16,6 +21,7 @@ import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_cla
 import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_stack.dart';
 import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_top_bar.dart';
 import 'package:openvine/widgets/video_recorder/preview/video_recorder_camera_preview.dart';
+import 'package:pro_video_editor/core/models/video/editor_video_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockVideoRecorderBloc
@@ -43,12 +49,19 @@ void main() {
     Widget buildWidget({
       VideoRecorderState recordingState = VideoRecorderState.idle,
       List<DivineVideoClip>? clips,
+      bool isCameraInitialized = true,
+      bool canRecord = true,
     }) {
       when(() => recorderBloc.state).thenReturn(
         VideoRecorderBlocState(
           recordingState: recordingState,
-          isCameraInitialized: true,
-          canRecord: true,
+          isCameraInitialized: isCameraInitialized,
+          canRecord: canRecord,
+          // The state default is `capture`, and this stack only ever renders
+          // in classic. It matters for more than tidiness: `hasRecordingLimit`
+          // is true only here, and it is what puts the session budget into the
+          // shutter's enabled gate.
+          recorderMode: VideoRecorderMode.classic,
         ),
       );
 
@@ -183,6 +196,123 @@ void main() {
           findsNothing,
         );
       });
+
+      // Classic has no record button — the preview is the shutter — so the
+      // Maestro flow taps it by this identifier
+      // (e2e/maestro/utils/recordClassicClip.yaml). The label assertions above
+      // move with the recording state; the anchor must not, or the E2E flow
+      // loses its only way to start a classic recording. That only surfaces on
+      // a manual run, since the Maestro lane is not part of CI.
+      testWidgets('exposes a stable E2E anchor on the shutter in both states', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.cameraClassicShutter),
+          findsOneWidget,
+        );
+
+        await tester.pumpWidget(
+          buildWidget(recordingState: VideoRecorderState.recording),
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.bySemanticsIdentifier(SemanticIds.cameraClassicShutter),
+          findsOneWidget,
+        );
+
+        handle.dispose();
+      });
+
+      // The anchor is stable across recording states, but the node's enabled
+      // flag is not meant to be: it carries the same gate the gesture detector
+      // runs on, so a screen reader stops offering a button that does nothing
+      // and assertClassicMode can tell a live viewfinder from a dead one. The
+      // capture stack's record button has always reported this.
+      //
+      // One pump per state: the bloc is a mock and does not emit, so
+      // re-pumping over a live tree leaves `context.select` on the value it
+      // already read.
+      testWidgets('reports the shutter enabled once the camera is ready', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
+
+        final node = tester.getSemantics(
+          find.bySemanticsIdentifier(SemanticIds.cameraClassicShutter),
+        );
+        expect(node.flagsCollection.isEnabled, Tristate.isTrue);
+
+        handle.dispose();
+      });
+
+      testWidgets('reports the shutter disabled before the camera is ready', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(buildWidget(isCameraInitialized: false));
+        await tester.pumpAndSettle();
+
+        final node = tester.getSemantics(
+          find.bySemanticsIdentifier(SemanticIds.cameraClassicShutter),
+        );
+        expect(node.flagsCollection.isEnabled, Tristate.isFalse);
+
+        handle.dispose();
+      });
+
+      testWidgets(
+        'reports the shutter disabled when the camera cannot record',
+        (tester) async {
+          final handle = tester.ensureSemantics();
+          await tester.pumpWidget(buildWidget(canRecord: false));
+          await tester.pumpAndSettle();
+
+          final node = tester.getSemantics(
+            find.bySemanticsIdentifier(SemanticIds.cameraClassicShutter),
+          );
+          expect(node.flagsCollection.isEnabled, Tristate.isFalse);
+
+          handle.dispose();
+        },
+      );
+
+      // The third arm of the gate, and the only one specific to this mode:
+      // classic is the sole `hasRecordingLimit` mode, so a session that has
+      // spent the 6.3s budget cannot start another recording. This is the case
+      // classicModeRecordingLimit's readiness wait exists to fail fast on.
+      testWidgets('reports the shutter disabled once the budget is spent', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildWidget(
+            clips: [
+              DivineVideoClip(
+                id: 'clip1',
+                video: EditorVideo.file('/test/clip1.mp4'),
+                duration: VideoEditorConstants.maxDuration,
+                recordedAt: DateTime.now(),
+                targetAspectRatio: .square,
+                originalAspectRatio: 1,
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final node = tester.getSemantics(
+          find.bySemanticsIdentifier(SemanticIds.cameraClassicShutter),
+        );
+        expect(node.flagsCollection.isEnabled, Tristate.isFalse);
+
+        handle.dispose();
+      });
     });
 
     group('long press', () {
@@ -199,9 +329,7 @@ void main() {
         await tester.pumpAndSettle();
 
         verify(
-          () => recorderBloc.add(
-            const VideoRecorderRecordingStartRequested(),
-          ),
+          () => recorderBloc.add(const VideoRecorderRecordingStartRequested()),
         ).called(1);
       });
 
@@ -220,9 +348,7 @@ void main() {
         await tester.pumpAndSettle();
 
         verify(
-          () => recorderBloc.add(
-            const VideoRecorderRecordingStopRequested(),
-          ),
+          () => recorderBloc.add(const VideoRecorderRecordingStopRequested()),
         ).called(1);
       });
     });
@@ -231,38 +357,33 @@ void main() {
     // long-touch on the preview shutter while a tap-started recording is
     // in progress must NOT call stopRecording on release.
     group('phantom click regression (issue #4409)', () {
-      testWidgets(
-        'long-press release does not stop a tap-started recording',
-        (tester) async {
-          await tester.pumpWidget(
-            buildWidget(recordingState: VideoRecorderState.recording),
-          );
-          await tester.pumpAndSettle();
+      testWidgets('long-press release does not stop a tap-started recording', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(recordingState: VideoRecorderState.recording),
+        );
+        await tester.pumpAndSettle();
 
-          final gesture = await tester.startGesture(
-            tester.getCenter(
-              find.ancestor(
-                of: find.byType(VideoRecorderCameraPreview),
-                matching: find.byType(GestureDetector),
-              ),
+        final gesture = await tester.startGesture(
+          tester.getCenter(
+            find.ancestor(
+              of: find.byType(VideoRecorderCameraPreview),
+              matching: find.byType(GestureDetector),
             ),
-          );
-          await tester.pump(const Duration(seconds: 1));
-          await gesture.up();
-          await tester.pumpAndSettle();
+          ),
+        );
+        await tester.pump(const Duration(seconds: 1));
+        await gesture.up();
+        await tester.pumpAndSettle();
 
-          verifyNever(
-            () => recorderBloc.add(
-              const VideoRecorderRecordingStopRequested(),
-            ),
-          );
-          verifyNever(
-            () => recorderBloc.add(
-              const VideoRecorderRecordingStartRequested(),
-            ),
-          );
-        },
-      );
+        verifyNever(
+          () => recorderBloc.add(const VideoRecorderRecordingStopRequested()),
+        );
+        verifyNever(
+          () => recorderBloc.add(const VideoRecorderRecordingStartRequested()),
+        );
+      });
     });
   });
 }

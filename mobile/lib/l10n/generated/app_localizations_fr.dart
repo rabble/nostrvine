@@ -2308,10 +2308,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Sélecteur d\'environnement et réglages de débogage';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Active des feature flags qui peuvent avoir des ratés.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Gestion des clés';
 
   @override
@@ -3840,12 +3836,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'Garder pour plus tard';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Ajouter à un ensemble de favoris';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'Organiser en collections';
-
-  @override
   String get shareMenuFollowSets => 'Ensembles d\'abonnements';
 
   @override
@@ -4231,9 +4221,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get shareMenuUnknown => 'Inconnu';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'Créer un ensemble de favoris';
-
-  @override
   String get shareMenuSetName => 'Nom de l\'ensemble';
 
   @override
@@ -4247,15 +4234,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Démarrer une nouvelle collection de favoris';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Pas encore d\'ensembles de favoris. Crée ton premier !';
-
-  @override
   String get shareMenuError => 'Erreur';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Échec du chargement des ensembles de favoris';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
@@ -9450,6 +9429,18 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get videoEditorTransformNoLocalFile =>
       'Transformation impossible : le clip n\'est pas disponible localement.';
+
+  @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Rogner, faire pivoter ou retourner l\'image sélectionnée';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'Un instant, on transforme ton image';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Impossible de transformer l\'image. Réessaie.';
 
   @override
   String get videoEditorTransformRotateLabel => 'Pivoter';

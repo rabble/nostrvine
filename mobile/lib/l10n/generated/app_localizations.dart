@@ -3958,12 +3958,6 @@ abstract class AppLocalizations {
   /// **'Environment switcher and debug settings'**
   String get settingsDeveloperOptionsSubtitle;
 
-  /// No description provided for @nostrSettingsExperimentalFeaturesSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Toggle feature flags that may hiccup.'**
-  String get nostrSettingsExperimentalFeaturesSubtitle;
-
   /// No description provided for @nostrSettingsKeyManagement.
   ///
   /// In en, this message translates to:
@@ -6596,18 +6590,6 @@ abstract class AppLocalizations {
   /// **'Save for later viewing'**
   String get shareMenuAddToBookmarksSubtitle;
 
-  /// No description provided for @shareMenuAddToBookmarkSet.
-  ///
-  /// In en, this message translates to:
-  /// **'Add to Bookmark Set'**
-  String get shareMenuAddToBookmarkSet;
-
-  /// No description provided for @shareMenuAddToBookmarkSetSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Organize in collections'**
-  String get shareMenuAddToBookmarkSetSubtitle;
-
   /// No description provided for @shareMenuFollowSets.
   ///
   /// In en, this message translates to:
@@ -7232,12 +7214,6 @@ abstract class AppLocalizations {
   /// **'Unknown'**
   String get shareMenuUnknown;
 
-  /// No description provided for @shareMenuCreateBookmarkSet.
-  ///
-  /// In en, this message translates to:
-  /// **'Create Bookmark Set'**
-  String get shareMenuCreateBookmarkSet;
-
   /// No description provided for @shareMenuSetName.
   ///
   /// In en, this message translates to:
@@ -7262,23 +7238,11 @@ abstract class AppLocalizations {
   /// **'Start a new bookmark collection'**
   String get shareMenuStartNewBookmarkCollection;
 
-  /// No description provided for @shareMenuNoBookmarkSets.
-  ///
-  /// In en, this message translates to:
-  /// **'No bookmark sets yet. Create your first one!'**
-  String get shareMenuNoBookmarkSets;
-
   /// No description provided for @shareMenuError.
   ///
   /// In en, this message translates to:
   /// **'Error'**
   String get shareMenuError;
-
-  /// No description provided for @shareMenuFailedToLoadBookmarkSets.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to load bookmark sets'**
-  String get shareMenuFailedToLoadBookmarkSets;
 
   /// No description provided for @shareMenuCreatedSetAndAddedVideo.
   ///
@@ -16073,6 +16037,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cannot transform: clip is not locally available.'**
   String get videoEditorTransformNoLocalFile;
+
+  /// Accessibility label for the Transform button in the stop-motion frame controls.
+  ///
+  /// In en, this message translates to:
+  /// **'Crop, rotate, or flip selected frame'**
+  String get videoEditorTransformSelectedFrameSemanticLabel;
+
+  /// Status text shown while a stop-motion frame is being rendered with the applied crop/rotate transform.
+  ///
+  /// In en, this message translates to:
+  /// **'One moment, we\'re transforming your frame'**
+  String get videoEditorTransformFrameProgressLabel;
+
+  /// Snackbar message shown when saving a transformed stop-motion frame fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not transform frame. Please try again.'**
+  String get videoEditorTransformFrameFailed;
 
   /// Label for the rotate action button in the clip transform editor.
   ///

@@ -5,16 +5,16 @@ import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:models/models.dart' hide LogCategory;
+import 'package:models/models.dart';
+import 'package:openvine/blocs/report/report_submission_cubit.dart';
 import 'package:openvine/l10n/content_filter_reason_localizations.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/content_moderation_types.dart';
-import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/widgets/report_content_confirmation.dart';
-import 'package:unified_logger/unified_logger.dart';
 
 /// Shows a [VineBottomSheet] for reporting content or a user.
 ///
@@ -31,7 +31,7 @@ import 'package:unified_logger/unified_logger.dart';
 ///   userPubkey: pubkey,
 /// );
 /// ```
-class ReportContentDialog extends ConsumerStatefulWidget {
+class ReportContentDialog extends ConsumerWidget {
   ReportContentDialog({
     super.key,
     this.video,
@@ -69,8 +69,8 @@ class ReportContentDialog extends ConsumerStatefulWidget {
   /// Pubkey of the user being reported.
   ///
   /// When non-null, the report targets the user (no specific event) and
-  /// the dialog routes through [ContentReportingService.reportUser]
-  /// instead of [ContentReportingService.reportContent].
+  /// [ReportSubmissionCubit] routes it through
+  /// `ContentReportingService.reportUser` instead of `reportContent`.
   final String? userPubkey;
 
   /// Header used in the moderation DM (e.g. "Content Report", "DM
@@ -107,7 +107,7 @@ class ReportContentDialog extends ConsumerStatefulWidget {
         .showVideoPausingVineBottomSheet<void>(
           initialChildSize: 0.85,
           maxChildSize: 0.95,
-          minChildSize: 0.5,
+          minChildSize: VineTheme.bottomSheetDismissFloor,
           draggableController: controller,
           buildScrollBody: (scrollController) => ReportContentDialog(
             video: video,
@@ -131,7 +131,7 @@ class ReportContentDialog extends ConsumerStatefulWidget {
         .showVideoPausingVineBottomSheet<void>(
           initialChildSize: 0.85,
           maxChildSize: 0.95,
-          minChildSize: 0.5,
+          minChildSize: VineTheme.bottomSheetDismissFloor,
           draggableController: controller,
           buildScrollBody: (scrollController) => ReportContentDialog(
             eventId: messageId,
@@ -148,7 +148,7 @@ class ReportContentDialog extends ConsumerStatefulWidget {
   /// Shows the bottom sheet for reporting a user account (e.g. for
   /// harassment, impersonation, or underage account claims).
   ///
-  /// Routes submission through [ContentReportingService.reportUser], which
+  /// Routes submission through `ContentReportingService.reportUser`, which
   /// emits a NIP-56 report with the synthetic `user_<pubkey>` event id.
   static Future<void> showForUser(
     BuildContext context, {
@@ -159,7 +159,7 @@ class ReportContentDialog extends ConsumerStatefulWidget {
         .showVideoPausingVineBottomSheet<void>(
           initialChildSize: 0.85,
           maxChildSize: 0.95,
-          minChildSize: 0.5,
+          minChildSize: VineTheme.bottomSheetDismissFloor,
           draggableController: controller,
           buildScrollBody: (scrollController) => ReportContentDialog(
             userPubkey: userPubkey,
@@ -172,84 +172,89 @@ class ReportContentDialog extends ConsumerStatefulWidget {
         .whenComplete(controller.dispose);
   }
 
+  /// What this report targets, derived from the mutually exclusive
+  /// constructor shapes the `show*` factories use.
+  ReportTarget get _target {
+    final userPubkey = this.userPubkey;
+    return ReportTarget(
+      eventId: userPubkey != null ? 'user_$userPubkey' : (eventId ?? video!.id),
+      authorPubkey: userPubkey ?? authorPubkey ?? video!.pubkey,
+      userPubkey: userPubkey,
+      sourceRelay: video?.sourceRelay,
+      sha256: video?.sha256,
+      videoUrl: video?.videoUrl,
+      moderationKindLabel: moderationKindLabel,
+      moderationEventLabel: moderationEventLabel,
+    );
+  }
+
   @override
-  ConsumerState<ReportContentDialog> createState() =>
-      _ReportContentDialogState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    return BlocProvider<ReportSubmissionCubit>(
+      create: (_) => ReportSubmissionCubit(
+        // Account-scoped dependencies are resolved late rather than watched
+        // here. The primary report service is read per submit so account
+        // switches and Nostr client rebuilds use the current signer; the
+        // moderation DM's transport is read inside the cubit's dispatch, where
+        // a throw stays a DM-only failure instead of breaking the sheet.
+        resolveContentReportingService: () =>
+            ref.read(contentReportingServiceProvider.future),
+        resolveModerationDmTransport: () => (
+          repository: ref.read(dmRepositoryProvider),
+          pubkey: ref
+              .read(moderationLabelServiceProvider)
+              .divineModerationPubkeyHex,
+        ),
+        target: _target,
+      ),
+      child: _ReportContentView(
+        isFromShareMenu: isFromShareMenu,
+        draggableController: draggableController,
+        scrollController: scrollController,
+      ),
+    );
+  }
 }
 
-/// What this dialog has established about its moderation DM, across every
-/// submit it makes.
-///
-/// The DM is the report itself, so a second copy is a second report to
-/// triage (#6610). Only [pending] may dispatch; the other two are terminal.
-enum _ModerationDmOutcome {
-  /// Nothing sent yet, or a send failed and left a row to re-drive.
-  pending,
+/// The report form and its confirmation. Owns form state only — the
+/// submission itself lives in [ReportSubmissionCubit].
+class _ReportContentView extends StatefulWidget {
+  const _ReportContentView({
+    required this.isFromShareMenu,
+    this.draggableController,
+    this.scrollController,
+  });
 
-  /// The team demonstrably has it: no send, no caveat.
-  delivered,
+  final bool isFromShareMenu;
+  final DraggableScrollableController? draggableController;
+  final ScrollController? scrollController;
 
-  /// A parked row went unreachable. `recoverFullSend` raises `ArgumentError`
-  /// both when the row is gone (the sweep may have delivered it, or the user
-  /// deleted it) and when it belongs to another account, so delivery can be
-  /// neither confirmed nor retried — there is no row left to re-drive, and
-  /// minting a fresh one would be the #6610 duplicate. Keeps the caveat.
-  unverifiable,
+  @override
+  State<_ReportContentView> createState() => _ReportContentViewState();
 }
 
-class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
+class _ReportContentViewState extends State<_ReportContentView> {
   ContentFilterReason? _selectedReason;
   final TextEditingController _detailsController = TextEditingController();
   final FocusNode _detailsFocusNode = FocusNode();
   final GlobalKey _detailsFieldKey = GlobalKey();
   final GlobalKey _otherCardKey = GlobalKey();
   final ScrollController _fallbackScrollController = ScrollController();
-  bool _isSubmitting = false;
-  bool _submitted = false;
-  bool _moderationDmFailed = false;
 
-  /// The `outgoing_dms` row an earlier undelivered submit parked for the
-  /// retry sweep, if one is still outstanding.
-  ///
-  /// Not UI state. A later submit re-drives *this* row rather than calling
-  /// `sendMessage` again: a second call mints a fresh rumor and a second
-  /// durable row, so the sweep would deliver one copy and the retry another
-  /// (#6610). Cleared once the row is consumed.
-  String? _queuedModerationDmId;
-
-  /// What this dialog knows about the moderation DM so far.
-  ///
-  /// A resubmit deliberately re-publishes the kind-1984 and files a second
-  /// ticket, but must not send a second identical DM to a team that already
-  /// has one — or mint a fresh one to replace a row it can no longer reach.
-  _ModerationDmOutcome _moderationDmOutcome = _ModerationDmOutcome.pending;
-
-  /// The in-flight send, so a submit that lands while an earlier one is
-  /// still awaiting a relay joins it instead of starting a second send
-  /// before the first has parked its row.
-  Future<bool>? _moderationDmInFlight;
-
+  /// The inline error under the form. Widget-local: it is already-localized
+  /// display text, which is exactly what must not live in cubit state.
   String? _errorMessage;
+
   bool _scrollWhenKeyboardOpens = false;
   double _previousViewInsetsBottom = 0;
-
-  bool get _isUserReport => widget.userPubkey != null;
 
   ScrollController get _scrollController =>
       widget.scrollController ?? _fallbackScrollController;
 
   /// Submission needs a reason; "Other" additionally needs details, but that
   /// stays a tap-time inline error so the reason for the block is explained.
-  bool get _canSubmit => _selectedReason != null && !_isSubmitting;
-
-  String get _eventId {
-    final userPubkey = widget.userPubkey;
-    if (userPubkey != null) return 'user_$userPubkey';
-    return widget.eventId ?? widget.video!.id;
-  }
-
-  String get _authorPubkey =>
-      widget.userPubkey ?? widget.authorPubkey ?? widget.video!.pubkey;
+  bool _canSubmit(bool isSubmitting) =>
+      _selectedReason != null && !isSubmitting;
 
   @override
   void didChangeDependencies() {
@@ -299,6 +304,12 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final status = context.select(
+      (ReportSubmissionCubit cubit) => cubit.state.status,
+    );
+    final submitted = status == ReportSubmissionStatus.submitted;
+    final isSubmitting = status == ReportSubmissionStatus.submitting;
+
     // One scroll view across both states so the sheet's scroll controller
     // stays attached to a single position when the form is swapped for the
     // confirmation — the actions ride in the pinned footer instead.
@@ -308,10 +319,8 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
           child: SingleChildScrollView(
             controller: _scrollController,
             padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 16),
-            child: _submitted
-                ? ReportConfirmationBody(
-                    moderationDmFailed: _moderationDmFailed,
-                  )
+            child: submitted
+                ? const _ConfirmationBody()
                 : _ReportFormBody(
                     selectedReason: _selectedReason,
                     onReasonSelected: _onReasonSelected,
@@ -331,7 +340,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
           includeSafeArea: true,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-            child: _submitted
+            child: submitted
                 ? ReportConfirmationActions(
                     isFromShareMenu: widget.isFromShareMenu,
                   )
@@ -345,8 +354,10 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
                       DivineButton(
                         label: context.l10n.reportSubmit,
                         expanded: true,
-                        onPressed: _canSubmit ? _handleSubmitReport : null,
-                        isLoading: _isSubmitting,
+                        onPressed: _canSubmit(isSubmitting)
+                            ? _handleSubmitReport
+                            : null,
+                        isLoading: isSubmitting,
                       ),
                     ],
                   ),
@@ -362,7 +373,8 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   }
 
   void _handleSubmitReport() {
-    if (_isSubmitting) return;
+    final cubit = context.read<ReportSubmissionCubit>();
+    if (cubit.state.isSubmitting) return;
     if (_selectedReason == ContentFilterReason.other &&
         _detailsController.text.trim().isEmpty) {
       setState(() {
@@ -370,253 +382,56 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
       });
       return;
     }
-    _submitReport();
+    unawaited(_submitReport(cubit));
   }
 
-  Future<void> _submitReport() async {
-    if (_selectedReason == null) return;
+  Future<void> _submitReport(ReportSubmissionCubit cubit) async {
+    final reason = _selectedReason;
+    if (reason == null) return;
 
-    setState(() {
-      _isSubmitting = true;
-      _errorMessage = null;
-    });
-    final selectedReasonTitle = context.l10n.reportReasonTitle(
-      _selectedReason!,
+    // One reason serves this whole submit, captured before the first await
+    // and handed to the cubit. The kind-1984 publish and the moderation DM
+    // are a relay round trip apart, and nothing freezes the selection in
+    // between — the reason cards stay tappable while the submit is in flight.
+    // Re-reading the selection on the far side let the two channels label the
+    // same report differently, which is the divergence these tags exist to
+    // prevent.
+    setState(() => _errorMessage = null);
+    final l10n = context.l10n;
+    final selectedReasonTitle = l10n.reportReasonTitle(reason);
+    final detailsText = _detailsController.text.trim();
+    final details = detailsText.isEmpty ? selectedReasonTitle : detailsText;
+
+    final failureDetail = await cubit.submit(
+      reason: reason,
+      reasonTitle: selectedReasonTitle,
+      details: details,
     );
+    if (!mounted) return;
 
-    try {
-      final reportService = await ref.read(
-        contentReportingServiceProvider.future,
-      );
-      final details = _detailsController.text.trim().isEmpty
-          ? selectedReasonTitle
-          : _detailsController.text.trim();
-      final result = _isUserReport
-          ? await reportService.reportUser(
-              userPubkey: widget.userPubkey!,
-              reason: _selectedReason!,
-              details: details,
-            )
-          : await reportService.reportContent(
-              eventId: _eventId,
-              authorPubkey: _authorPubkey,
-              reason: _selectedReason!,
-              details: details,
-              sourceRelay: widget.video?.sourceRelay,
-            );
-
-      if (mounted) {
-        if (result.success && result.delivery == ReportDelivery.localOnly) {
-          // Nothing left the device — every channel refused, which usually
-          // means no connectivity. The confirmation screen would be false in
-          // four places at once (its title, the review promise, the green
-          // check, and any DM caveat), so don't show it: surface the failure
-          // and leave Submit live so retrying is one tap.
-          //
-          // Still hand the report to the moderation DM. `sendMessage` writes
-          // a durable `outgoing_dms` row before any I/O and marks it failed
-          // when the publish can't go out, which is precisely what
-          // `OutgoingDmRetryService`'s second sweep arm replays once
-          // connectivity returns. It is the only report channel with a
-          // retry — the kind-1984 publish and the Zendesk ticket are both
-          // fire-and-forget — so skipping it here would make an offline
-          // report deliver less often than before this fix.
-          //
-          // Not awaited: the user already knows the submit failed, and must
-          // not sit through a doomed relay round-trip to be told.
-          // `_sendModerationDm` coalesces onto whatever this dialog already
-          // has outstanding, so a repeat tap re-drives the parked row
-          // instead of stacking a second one for the sweep (#6610).
-          unawaited(_sendModerationDm());
-          setState(() {
-            _errorMessage = context.l10n.reportNotSent;
-          });
-        } else if (result.success) {
-          final moderationDmFailed = await _sendModerationDm();
-
-          if (mounted) {
-            setState(() {
-              _submitted = true;
-              _moderationDmFailed = moderationDmFailed;
-            });
-            final controller = widget.draggableController;
-            if (controller != null && controller.isAttached) {
-              controller.animateTo(
-                0.65,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOut,
-              );
-            }
-          }
-        } else {
-          setState(() {
-            _errorMessage = context.l10n.reportFailed(result.error ?? '');
-          });
-        }
-      }
-    } catch (e) {
-      Log.error(
-        'Failed to submit report: $e',
-        name: 'ReportContentDialog',
-        category: LogCategory.ui,
-      );
-
-      if (mounted) {
-        setState(() => _errorMessage = context.l10n.reportFailed(e));
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-      }
-    }
-  }
-
-  /// Sends the report to the moderation team's DM inbox (TC-025/026),
-  /// exactly once across every submit this dialog makes.
-  ///
-  /// Returns whether it failed to reach them, which drives the
-  /// `reportModerationDmDelayed` caveat on the confirmation screen.
-  ///
-  /// Four things can already be true when a submit reaches here, and each
-  /// has to coalesce rather than send again (#6610) — the DM is the report
-  /// itself, so a second copy is a second report to triage:
-  ///
-  /// - the team already received it: nothing to do.
-  /// - a parked row went unreachable: nothing left to drive, and a fresh
-  ///   send would be that second copy. Keep the caveat and stop.
-  /// - a send is still in flight: join it and report its outcome.
-  /// - an earlier submit parked a queue row: re-drive that row, in
-  ///   [_dispatchModerationDm].
-  Future<bool> _sendModerationDm() => switch (_moderationDmOutcome) {
-    _ModerationDmOutcome.delivered => Future.value(false),
-    _ModerationDmOutcome.unverifiable => Future.value(true),
-    _ModerationDmOutcome.pending =>
-      _moderationDmInFlight ??= _dispatchModerationDm().whenComplete(
-        () => _moderationDmInFlight = null,
-      ),
-  };
-
-  /// Drives one moderation-DM attempt: a fresh send, or a re-drive of the
-  /// row a previous undelivered submit parked.
-  ///
-  /// The whole body sits under the catch, preflight reads included: the
-  /// undelivered path fires this unawaited, so a `ref.read` on a disposed
-  /// dialog would otherwise land in the zone handler with nobody to catch it.
-  Future<bool> _dispatchModerationDm() async {
-    try {
-      final dmRepo = ref.read(dmRepositoryProvider);
-      final labelService = ref.read(moderationLabelServiceProvider);
-      final moderationPubkey = labelService.divineModerationPubkeyHex;
-      final content = _formatReportDm(
-        reason: _selectedReason!,
-        eventId: _eventId,
-        details: _detailsController.text.trim(),
-      );
-
-      final parked = _queuedModerationDmId;
-
-      final NIP17SendResult dmResult;
-      if (parked == null) {
-        dmResult = await dmRepo.sendMessage(
-          recipientPubkey: moderationPubkey,
-          content: content,
-          // Moderation reports carry user identity + reported content;
-          // never let them degrade to a metadata-leaking NIP-04
-          // plaintext duplicate. NIP-17 gift wrap only.
-          skipNip04Fallback: true,
-        );
-      } else {
-        try {
-          // Re-drive the parked row instead of minting a second one. This
-          // joins an in-flight sweep replay for the same rumor rather than
-          // publishing alongside it, and `resetRetryBudget` re-arms a row
-          // the sweep may have already spent — an explicit resubmit is the
-          // signal to hand it back a fresh budget, so coalescing here can
-          // never turn a duplicated report into a dropped one.
-          dmResult = await dmRepo.recoverFullSend(
-            rumorId: parked,
-            resetRetryBudget: true,
-          );
-          // ignore: avoid_catching_errors
-        } on ArgumentError {
-          // Ambiguous. `recoverFullSend` throws the same type when the row is
-          // gone (possibly delivered by the sweep, possibly deleted by the
-          // user) and when the row belongs to another account. Coalescing still
-          // must not mint a second report DM, but it also must not claim the
-          // team has this copy when the repository could not prove that — so
-          // this dialog stops sending and keeps the caveat.
-          _queuedModerationDmId = null;
-          _moderationDmOutcome = _ModerationDmOutcome.unverifiable;
-          return true;
-        }
-      }
-      // sendMessage signals non-delivery by RETURNING a failure, not
-      // by throwing, so the catch below cannot see it. Switch over the
-      // sealed type rather than reading `.success` so a new variant
-      // becomes a compile error here instead of a silent success.
-      final failed = switch (dmResult) {
-        // Includes selfWrapPublished: false — the team received the
-        // report; only the sender's own cross-device copy is missing.
-        NIP17SendSuccess() => false,
-        // blocked, retryablePending, and hard failures alike.
-        NIP17SendFailure() => true,
+    final status = cubit.state.status;
+    setState(() {
+      _errorMessage = switch (status) {
+        // Nothing left the device, so the confirmation would be false in four
+        // places at once. Surface the failure and leave Submit live.
+        ReportSubmissionStatus.notSent => l10n.reportNotSent,
+        ReportSubmissionStatus.failure => l10n.reportFailed(
+          failureDetail ?? '',
+        ),
+        _ => null,
       };
-      _moderationDmOutcome = failed
-          ? _ModerationDmOutcome.pending
-          : _ModerationDmOutcome.delivered;
-      _queuedModerationDmId = switch (dmResult) {
-        // The row was consumed by the delivery.
-        NIP17SendSuccess() => null,
-        // A block is terminal: the send gate drops the row and re-driving
-        // would only re-hit the same policy.
-        NIP17SendFailure(blocked: true) => null,
-        // A hard failure and a soft-unconfirmed both leave the row for the
-        // sweep. `sendMessage` reports the row it just parked; a re-drive
-        // reports nothing new and keeps the row it was given.
-        NIP17SendFailure(:final queuedRumorId) => queuedRumorId ?? parked,
-      };
-      if (dmResult case final NIP17SendFailure failure) {
-        Log.warning(
-          'Moderation DM not delivered '
-          '(recipient=$moderationPubkey, '
-          'blocked=${failure.blocked}, '
-          'retryablePending=${failure.retryablePending}): '
-          '${failure.error}',
-          name: 'ReportContentDialog',
-          category: LogCategory.system,
+    });
+
+    if (status == ReportSubmissionStatus.submitted) {
+      final controller = widget.draggableController;
+      if (controller != null && controller.isAttached) {
+        controller.animateTo(
+          0.65,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
         );
       }
-      return failed;
-    } catch (e) {
-      // On the delivered path the report already reached the team through
-      // another channel; the moderation DM is a secondary notification.
-      // Don't fail the flow, but surface the outcome instead of swallowing
-      // it so the user isn't told the team was reached when it wasn't.
-      // Reachable for pre-flight throws only (uninitialized repository,
-      // invalid recipient) — never for a delivery outcome, which arrives
-      // as a returned value above.
-      Log.warning(
-        'Failed to send moderation DM: $e',
-        name: 'ReportContentDialog',
-        category: LogCategory.system,
-      );
-      return true;
     }
-  }
-
-  String _formatReportDm({
-    required ContentFilterReason reason,
-    required String eventId,
-    required String details,
-  }) {
-    final buffer = StringBuffer()
-      ..writeln(widget.moderationKindLabel)
-      ..writeln('Reason: ${context.l10n.reportReasonTitle(reason)}')
-      ..writeln('${widget.moderationEventLabel}: $eventId');
-    if (details.isNotEmpty) {
-      buffer.writeln('Details: $details');
-    }
-    return buffer.toString().trimRight();
   }
 
   @override
@@ -625,6 +440,20 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
     _detailsFocusNode.dispose();
     _fallbackScrollController.dispose();
     super.dispose();
+  }
+}
+
+/// The post-submit confirmation, carrying the caveat when the moderation team
+/// could not be reached directly.
+class _ConfirmationBody extends StatelessWidget {
+  const _ConfirmationBody();
+
+  @override
+  Widget build(BuildContext context) {
+    final moderationDmFailed = context.select(
+      (ReportSubmissionCubit cubit) => cubit.state.moderationDmFailed,
+    );
+    return ReportConfirmationBody(moderationDmFailed: moderationDmFailed);
   }
 }
 

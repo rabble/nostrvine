@@ -558,7 +558,10 @@ void main() {
               taskId,
             }) async {
               renderCalls++;
-              return null; // stop the publish here; the render is the assertion
+              // Stop the publish here; the render call is the assertion.
+              throw const VideoRenderFailedException(
+                VideoRenderFailureReason.nativeRender,
+              );
             };
 
         final context = tester.element(find.byType(SizedBox));
@@ -583,7 +586,9 @@ void main() {
               required editorStateHistory,
               parameters,
               taskId,
-            }) async => null;
+            }) async => throw const VideoRenderFailedException(
+              VideoRenderFailureReason.nativeRender,
+            );
 
         final context = tester.element(find.byType(SizedBox));
         await container
@@ -615,7 +620,9 @@ void main() {
               required editorStateHistory,
               parameters,
               taskId,
-            }) async => null;
+            }) async => throw const VideoRenderFailedException(
+              VideoRenderFailureReason.stopMotionAssembly,
+            );
 
         final context = tester.element(find.byType(SizedBox));
         await container
@@ -666,7 +673,9 @@ void main() {
               taskId,
             }) async {
               renderCalls++;
-              return null;
+              throw const VideoRenderFailedException(
+                VideoRenderFailureReason.nativeRender,
+              );
             };
 
         final context = tester.element(find.byType(SizedBox));

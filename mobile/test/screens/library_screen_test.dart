@@ -14,6 +14,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/l10n/generated/app_localizations_en.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -35,6 +36,28 @@ class _MockGallerySaveService extends Mock implements GallerySaveService {}
 class _MockClipLibraryService extends Mock implements ClipLibraryService {}
 
 class _MockDraftStorageService extends Mock implements DraftStorageService {}
+
+DivineVideoDraft _createTestDraft() => DivineVideoDraft(
+  id: 'draft-1',
+  clips: [
+    DivineVideoClip(
+      id: 'draft-clip-1',
+      video: EditorVideo.file('/test/draft.mp4'),
+      duration: const Duration(seconds: 6),
+      recordedAt: DateTime(2026),
+      targetAspectRatio: models.AspectRatio.vertical,
+      originalAspectRatio: 9 / 16,
+    ),
+  ],
+  title: 'Test Draft',
+  description: '',
+  hashtags: const {},
+  selectedApproach: 'default',
+  createdAt: DateTime(2026),
+  lastModified: DateTime(2026),
+  publishStatus: PublishStatus.draft,
+  publishAttempts: 0,
+);
 
 /// Stands in for the recorder session that opened the library, whose clips
 /// become the pre-selected set.
@@ -129,6 +152,22 @@ void main() {
         expect(find.byType(DraftsTab), findsOneWidget);
       });
 
+      // The library shell paints its own surface behind the tabs. If that
+      // surface is not itself a Material, ListTile ink splashes land on the
+      // Material below it and are painted over — Flutter reports this as
+      // "ListTile background color or ink splashes may be invisible".
+      testWidgets('draft rows keep a visible ink surface', (tester) async {
+        when(
+          () => mockDraftStorageService.getAllDrafts(),
+        ).thenAnswer((_) async => [_createTestDraft()]);
+
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
+
+        expect(find.byType(DraftListTile), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+
       testWidgets('$ClipsTab initially when initialTabIndex is 1', (
         tester,
       ) async {
@@ -164,9 +203,7 @@ void main() {
     group('tab navigation', () {
       testWidgets(
         'shows drafts and clips but no sounds in withoutSounds mode',
-        (
-          tester,
-        ) async {
+        (tester) async {
           await tester.pumpWidget(
             buildWidget(
               initialTabIndex: 1,

@@ -100,7 +100,7 @@ class AudioEditorSelectionOverlay extends StatelessWidget {
   }
 }
 
-class _AudioPlaybackProgressButton extends StatelessWidget {
+class _AudioPlaybackProgressButton extends StatefulWidget {
   const _AudioPlaybackProgressButton({
     required this.audioService,
     required this.onPressed,
@@ -111,35 +111,88 @@ class _AudioPlaybackProgressButton extends StatelessWidget {
   final VoidCallback onPressed;
   final bool isLoading;
 
+  @override
+  State<_AudioPlaybackProgressButton> createState() =>
+      _AudioPlaybackProgressButtonState();
+}
+
+class _AudioPlaybackProgressButtonState
+    extends State<_AudioPlaybackProgressButton> {
   static const double _buttonVisualSize = 42;
   static const double _buttonBorderRadius = 16;
+
+  /// Last rendered progress, never rewound while playback continues.
+  ///
+  /// just_audio advances the position from the moment `play()` is requested,
+  /// but the platform only starts rendering audio a moment later and then
+  /// reports the true — smaller — position. Painting that correction rewinds
+  /// the ring, so the last value is held until playback catches up. A position
+  /// back at the start (pause, restart, another sound) resets it.
+  double _progress = 0;
+
+  // The player rebuilds these stream views on every access, so they are bound
+  // once instead of per build to avoid resubscribing on each rebuild.
+  late Stream<bool> _playingStream;
+  late Stream<Duration?> _durationStream;
+  late Stream<Duration> _positionStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _bindStreams();
+  }
+
+  @override
+  void didUpdateWidget(covariant _AudioPlaybackProgressButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.audioService != widget.audioService) {
+      _progress = 0;
+      _bindStreams();
+    }
+  }
+
+  void _bindStreams() {
+    _playingStream = widget.audioService.playingStream;
+    _durationStream = widget.audioService.durationStream;
+    _positionStream = widget.audioService.positionStream;
+  }
+
+  double _resolveProgress(Duration? duration, Duration? position) {
+    final durationMs = duration?.inMilliseconds ?? 0;
+    final positionMs = position?.inMilliseconds ?? 0;
+    final next = durationMs <= 0 || positionMs <= 0
+        ? 0.0
+        : (positionMs / durationMs).clamp(0.0, 1.0);
+
+    if (next == 0 || next > _progress) {
+      _progress = next;
+    }
+    return _progress;
+  }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedSwitcher(
       duration: VineTheme.defaultAnimationDuration,
-      child: isLoading
+      child: widget.isLoading
           ? const BrandedLoadingIndicator(size: _buttonVisualSize)
           : StreamBuilder<bool>(
-              stream: audioService.playingStream,
-              initialData: audioService.isPlaying,
+              stream: _playingStream,
+              initialData: widget.audioService.isPlaying,
               builder: (context, playingSnapshot) {
                 final isPlaying = playingSnapshot.data ?? false;
                 return StreamBuilder<Duration?>(
-                  stream: audioService.durationStream,
-                  initialData: audioService.duration,
+                  stream: _durationStream,
+                  initialData: widget.audioService.duration,
                   builder: (context, durationSnapshot) {
                     return StreamBuilder<Duration>(
-                      stream: audioService.positionStream,
+                      stream: _positionStream,
                       initialData: Duration.zero,
                       builder: (context, positionSnapshot) {
-                        final durationMs =
-                            durationSnapshot.data?.inMilliseconds ?? 0;
-                        final positionMs =
-                            positionSnapshot.data?.inMilliseconds ?? 0;
-                        final progress = durationMs <= 0
-                            ? 0.0
-                            : (positionMs / durationMs).clamp(0.0, 1.0);
+                        final progress = _resolveProgress(
+                          durationSnapshot.data,
+                          positionSnapshot.data,
+                        );
 
                         return SizedBox.square(
                           dimension: _buttonVisualSize,
@@ -159,7 +212,7 @@ class _AudioPlaybackProgressButton extends StatelessWidget {
                                     : context
                                           .l10n
                                           .videoEditorAudioPlayPreviewSemanticLabel,
-                                onPressed: onPressed,
+                                onPressed: widget.onPressed,
                               ),
                             ),
                           ),

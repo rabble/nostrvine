@@ -2254,9 +2254,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'مبدّل البيئة وإعدادات التصحيح';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle => 'تعديلات قد تتعثّر.';
-
-  @override
   String get nostrSettingsKeyManagement => 'إدارة المفاتيح';
 
   @override
@@ -3751,12 +3748,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'حفظ للمشاهدة لاحقًا';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'إضافة إلى مجموعة إشارات';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'نظّم في مجموعات';
-
-  @override
   String get shareMenuFollowSets => 'مجموعات المتابعة';
 
   @override
@@ -4134,9 +4125,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareMenuUnknown => 'غير معروف';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'إنشاء مجموعة إشارات';
-
-  @override
   String get shareMenuSetName => 'اسم المجموعة';
 
   @override
@@ -4149,14 +4137,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareMenuStartNewBookmarkCollection => 'ابدأ مجموعة إشارات جديدة';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'لا توجد مجموعات إشارات بعد. أنشئ أول واحدة!';
-
-  @override
   String get shareMenuError => 'خطأ';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets => 'فشل تحميل مجموعات الإشارات';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
@@ -9256,6 +9237,18 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get videoEditorTransformNoLocalFile =>
       'لا يمكن التحويل: المقطع غير متوفر محليًا.';
+
+  @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'قص الإطار المحدد أو تدويره أو قلبه';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'لحظة واحدة، نحن نحوّل إطارك';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'تعذّر تحويل الإطار. يرجى المحاولة مرة أخرى.';
 
   @override
   String get videoEditorTransformRotateLabel => 'تدوير';

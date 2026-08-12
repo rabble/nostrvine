@@ -2231,10 +2231,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get settingsDeveloperOptionsSubtitle => 'የአካባቢ መቀየሪያ እና የማረሚያ ቅንብሮች';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'ሊያደናቅፉ የሚችሉ የባህሪ ባንዲራዎችን ቀይር።';
-
-  @override
   String get nostrSettingsKeyManagement => 'የቁልፍ አስተዳደር';
 
   @override
@@ -3715,12 +3711,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'በኋላ ለማየት ያስቀምጡ';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'ወደ ዕልባት ስብስብ ያክሉ';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'በክምችቶች ውስጥ ያደራጁ';
-
-  @override
   String get shareMenuFollowSets => 'የሰዎች ዝርዝሮች';
 
   @override
@@ -4087,9 +4077,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get shareMenuUnknown => 'ያልታወቀ';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'የዕልባት ስብስብ ይፍጠሩ';
-
-  @override
   String get shareMenuSetName => 'ስም አዘጋጅ';
 
   @override
@@ -4102,14 +4089,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get shareMenuStartNewBookmarkCollection => 'አዲስ የዕልባት ስብስብ ጀምር';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'እስካሁን ምንም ዕልባት አልተዘጋጀም። የመጀመሪያዎን ይፍጠሩ!';
-
-  @override
   String get shareMenuError => 'ስህተት';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets => 'የዕልባቶች ስብስቦችን መጫን አልተሳካም።';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
@@ -9120,6 +9100,18 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoEditorTransformNoLocalFile => 'መለወጥ አይቻልም፦ ክሊፑ በአካባቢው አይገኝም።';
+
+  @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'የተመረጠውን ፍሬም ቁረጥ፣ አሽከርክር ወይም ገልብጥ';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'ትንሽ ይቆዩ፣ ፍሬምዎን እየለወጥን ነው';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'ፍሬሙን መለወጥ አልተቻለም። እባክዎ እንደገና ይሞክሩ።';
 
   @override
   String get videoEditorTransformRotateLabel => 'አሽከርክር';

@@ -25,6 +25,95 @@ void main() {
     registerFallbackValue(_FakeEvent());
   });
 
+  // Outside the ContentReportingService group on purpose: these tags are a
+  // pure function of the reason and the blob hash, so the test needs none of
+  // that group's mocks, keys, or SharedPreferences setup.
+  group('ContentReportingService.moderationDmTags', () {
+    test('emits the L, l and report_type rows in the frozen order', () {
+      // aiGenerated is the reason the whole change exists for: NIP-56
+      // collapses it to 'other' while the NIP-32 label stays granular, so a
+      // swapped or collapsed value cannot pass this assertion.
+      expect(
+        ContentReportingService.moderationDmTags(
+          reason: ContentFilterReason.aiGenerated,
+        ),
+        equals([
+          ['L', 'social.nos.ontology'],
+          ['l', 'NS-aiGenerated', 'social.nos.ontology'],
+          ['report_type', 'other'],
+        ]),
+      );
+    });
+
+    test('appends sha256 as the last tag when a blob hash is present', () {
+      final tags = ContentReportingService.moderationDmTags(
+        reason: ContentFilterReason.spam,
+        sha256: 'a' * 64,
+      );
+
+      expect(tags, hasLength(4));
+      expect(tags.last, equals(['sha256', 'a' * 64]));
+    });
+
+    for (final (label, sha256) in [
+      ('null', null),
+      ('empty', ''),
+      ('whitespace only', '   '),
+      ('too short', 'a' * 63),
+      ('too long', 'a' * 65),
+      ('not hex', 'g' * 64),
+    ]) {
+      test('omits sha256 when the hash is $label', () {
+        expect(
+          ContentReportingService.moderationDmTags(
+            reason: ContentFilterReason.spam,
+            sha256: sha256,
+          ).where((tag) => tag.first == 'sha256'),
+          isEmpty,
+          reason:
+              'user_reports.sha256 is NOT NULL server-side; a malformed tag '
+              'would let a bad report through instead of degrading cleanly to '
+              'no report row',
+        );
+      });
+    }
+
+    test('normalizes a valid hash the publishing client wrote oddly', () {
+      // VideoEvent.sha256 is the imeta `x` tag verbatim, unvalidated. A padded
+      // hash is a real hash that fails the backend's anchored check, silently
+      // filing no report at all. Case is canonicalised for the same reason a
+      // key should be canonical, not because the backend needs it to be.
+      expect(
+        ContentReportingService.moderationDmTags(
+          reason: ContentFilterReason.spam,
+          sha256: '  ${'AB' * 32}  ',
+        ).last,
+        equals(['sha256', 'ab' * 32]),
+      );
+    });
+
+    test('falls back to the Blossom URL when the explicit hash is absent', () {
+      expect(
+        ContentReportingService.moderationDmTags(
+          reason: ContentFilterReason.spam,
+          videoUrl: 'https://blossom.example/${'b' * 64}.mp4',
+        ).last,
+        equals(['sha256', 'b' * 64]),
+      );
+    });
+
+    test('prefers the explicit hash over the Blossom URL fallback', () {
+      expect(
+        ContentReportingService.moderationDmTags(
+          reason: ContentFilterReason.spam,
+          sha256: 'a' * 64,
+          videoUrl: 'https://blossom.example/${'b' * 64}.mp4',
+        ).last,
+        equals(['sha256', 'a' * 64]),
+      );
+    });
+  });
+
   group('ContentReportingService', () {
     late _MockNostrClient mockNostrService;
     late _MockAuthService mockAuthService;
@@ -398,6 +487,21 @@ void main() {
           expectedNip32Labels[reason]!,
           'social.nos.ontology',
         ], reason: 'Missing or incorrect l tag for ${reason.name}');
+
+        // Both report channels must label a reason identically, or the
+        // backend resolves one report to two types depending on which
+        // channel it ingested first (#6593). Compared against the tags this
+        // kind-1984 event actually carried, so it fails if either channel
+        // stops sharing the pair.
+        expect(
+          ContentReportingService.moderationDmTags(
+            reason: reason,
+          ).take(2).toList(),
+          equals([lNamespaceTags.single, lTags.single]),
+          reason:
+              'Moderation DM and kind-1984 report disagree on the NIP-32 '
+              'label for ${reason.name}',
+        );
       }
     });
 

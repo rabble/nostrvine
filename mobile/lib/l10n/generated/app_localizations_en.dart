@@ -2272,10 +2272,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Environment switcher and debug settings';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Toggle feature flags that may hiccup.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Key Management';
 
   @override
@@ -3784,12 +3780,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'Save for later viewing';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Add to Bookmark Set';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'Organize in collections';
-
-  @override
   String get shareMenuFollowSets => 'People Lists';
 
   @override
@@ -4169,9 +4159,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareMenuUnknown => 'Unknown';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'Create Bookmark Set';
-
-  @override
   String get shareMenuSetName => 'Set Name';
 
   @override
@@ -4185,15 +4172,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Start a new bookmark collection';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'No bookmark sets yet. Create your first one!';
-
-  @override
   String get shareMenuError => 'Error';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Failed to load bookmark sets';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
@@ -9301,6 +9280,18 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get videoEditorTransformNoLocalFile =>
       'Cannot transform: clip is not locally available.';
+
+  @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Crop, rotate, or flip selected frame';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'One moment, we\'re transforming your frame';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Could not transform frame. Please try again.';
 
   @override
   String get videoEditorTransformRotateLabel => 'Rotate';

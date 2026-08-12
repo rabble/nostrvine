@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/features/creator_analytics/creator_analytics_repository.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
@@ -67,11 +68,10 @@ class _CreatorAnalyticsScreenState
     );
   }
 
-  void _openPostAnalytics(_VideoPerformance performance) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => _PostAnalyticsDetailScreen(performance: performance),
-      ),
+  void _openPostAnalytics(VideoPerformance performance) {
+    context.push(
+      PostAnalyticsDetailScreen.pathForId(performance.video.id),
+      extra: performance,
     );
   }
 
@@ -700,7 +700,7 @@ class _PerformanceHighlights extends StatelessWidget {
   });
 
   final _CreatorAnalyticsSummary summary;
-  final ValueChanged<_VideoPerformance> onTapPerformance;
+  final ValueChanged<VideoPerformance> onTapPerformance;
 
   @override
   Widget build(BuildContext context) {
@@ -820,7 +820,7 @@ class _TopVideosList extends StatelessWidget {
   const _TopVideosList({required this.summary, required this.onTapPerformance});
 
   final _CreatorAnalyticsSummary summary;
-  final ValueChanged<_VideoPerformance> onTapPerformance;
+  final ValueChanged<VideoPerformance> onTapPerformance;
 
   @override
   Widget build(BuildContext context) {
@@ -885,7 +885,7 @@ class _TopVideoRow extends StatelessWidget {
   });
 
   final int rank;
-  final _VideoPerformance performance;
+  final VideoPerformance performance;
   final VoidCallback onTap;
 
   @override
@@ -951,10 +951,120 @@ class _TopVideoRow extends StatelessWidget {
   }
 }
 
-class _PostAnalyticsDetailScreen extends StatelessWidget {
-  const _PostAnalyticsDetailScreen({required this.performance});
+/// Per-post analytics, addressable at `/creator-analytics/:videoId`.
+///
+/// The dashboard hands the already-built [VideoPerformance] over in `extra` so
+/// the tap stays instant. Arriving without it — a cold entry after an account
+/// swap, or any future `router.go` — refetches the creator's analytics and
+/// rebuilds the same object from the matching [VideoEvent]; every field of
+/// [VideoPerformance] derives from that one event.
+class PostAnalyticsDetailScreen extends ConsumerStatefulWidget {
+  const PostAnalyticsDetailScreen({
+    required this.videoId,
+    this.performance,
+    super.key,
+  });
 
-  final _VideoPerformance performance;
+  static const routeName = 'creator-analytics-post';
+  static const subpath = ':videoId';
+  static const path = '${CreatorAnalyticsScreen.path}/$subpath';
+
+  static String pathForId(String videoId) =>
+      '${CreatorAnalyticsScreen.path}/$videoId';
+
+  final String videoId;
+  final VideoPerformance? performance;
+
+  @override
+  ConsumerState<PostAnalyticsDetailScreen> createState() =>
+      _PostAnalyticsDetailScreenState();
+}
+
+class _PostAnalyticsDetailScreenState
+    extends ConsumerState<PostAnalyticsDetailScreen> {
+  Future<VideoPerformance?>? _resolved;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.performance == null) {
+      _resolved = _resolvePerformance();
+    }
+  }
+
+  Future<VideoPerformance?> _resolvePerformance() async {
+    final pubkey = ref.read(authServiceProvider).currentPublicKeyHex;
+    if (pubkey == null || pubkey.isEmpty) return null;
+
+    final repository = ref.read(creatorAnalyticsRepositoryProvider);
+    final snapshot = await repository.fetchCreatorAnalytics(pubkey);
+    for (final video in snapshot.videos) {
+      if (video.id == widget.videoId) return VideoPerformance.fromVideo(video);
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final performance = widget.performance;
+    if (performance != null) {
+      return _PostAnalyticsDetailView(performance: performance);
+    }
+
+    return FutureBuilder<VideoPerformance?>(
+      future: _resolved,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const _PostAnalyticsDetailPlaceholder(
+            child: BrandedLoadingIndicator(),
+          );
+        }
+        final resolved = snapshot.data;
+        if (resolved == null) {
+          return _PostAnalyticsDetailPlaceholder(
+            child: Text(
+              context.l10n.analyticsUnableToLoad,
+              textAlign: TextAlign.center,
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.mutedText,
+              ),
+            ),
+          );
+        }
+        return _PostAnalyticsDetailView(performance: resolved);
+      },
+    );
+  }
+}
+
+/// Chrome shared by the loading and not-found states of a cold entry, so the
+/// back button exists before the post is resolved.
+class _PostAnalyticsDetailPlaceholder extends StatelessWidget {
+  const _PostAnalyticsDetailPlaceholder({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: context.vineColors.background,
+      appBar: DiVineAppBar(
+        title: context.l10n.analyticsPostAnalytics,
+        showBackButton: true,
+        onBackPressed: () =>
+            context.safePop(fallback: CreatorAnalyticsScreen.path),
+      ),
+      body: Center(
+        child: Padding(padding: const EdgeInsets.all(24), child: child),
+      ),
+    );
+  }
+}
+
+class _PostAnalyticsDetailView extends StatelessWidget {
+  const _PostAnalyticsDetailView({required this.performance});
+
+  final VideoPerformance performance;
 
   @override
   Widget build(BuildContext context) {
@@ -972,7 +1082,10 @@ class _PostAnalyticsDetailScreen extends StatelessWidget {
       appBar: DiVineAppBar(
         title: context.l10n.analyticsPostAnalytics,
         showBackButton: true,
-        onBackPressed: () => Navigator.of(context).pop(),
+        // safePop: this screen has a registered path, so the back stack
+        // can be empty on a cold entry and a raw pop would throw GoError.
+        onBackPressed: () =>
+            context.safePop(fallback: CreatorAnalyticsScreen.path),
       ),
       body: Align(
         alignment: Alignment.topCenter,
@@ -1275,11 +1388,11 @@ class _CreatorAnalyticsSummary {
   final int totalInteractions;
   final double? engagementRate;
   final double averageInteractionsPerVideo;
-  final List<_VideoPerformance> topVideos;
+  final List<VideoPerformance> topVideos;
   final List<_DailyInteractionPoint> dailyInteractions;
-  final _VideoPerformance? mostViewed;
-  final _VideoPerformance? mostDiscussed;
-  final _VideoPerformance? mostReposted;
+  final VideoPerformance? mostViewed;
+  final VideoPerformance? mostDiscussed;
+  final VideoPerformance? mostReposted;
 
   static _CreatorAnalyticsSummary build({
     required _CreatorAnalyticsData data,
@@ -1295,7 +1408,7 @@ class _CreatorAnalyticsSummary {
       return !_videoTimestamp(video).isBefore(start);
     }).toList();
 
-    final performance = videos.map(_VideoPerformance.fromVideo).toList()
+    final performance = videos.map(VideoPerformance.fromVideo).toList()
       ..sort((a, b) {
         final interactionCompare = b.interactions.compareTo(a.interactions);
         if (interactionCompare != 0) return interactionCompare;
@@ -1327,7 +1440,7 @@ class _CreatorAnalyticsSummary {
         ? 0.0
         : interactions / performance.length;
 
-    _VideoPerformance? byMetric(int Function(_VideoPerformance video) metric) {
+    VideoPerformance? byMetric(int Function(VideoPerformance video) metric) {
       if (performance.isEmpty) return null;
       var best = performance.first;
       for (final video in performance.skip(1)) {
@@ -1338,8 +1451,8 @@ class _CreatorAnalyticsSummary {
       return best;
     }
 
-    _VideoPerformance? byNullableMetric(
-      int? Function(_VideoPerformance video) metric,
+    VideoPerformance? byNullableMetric(
+      int? Function(VideoPerformance video) metric,
     ) {
       final withMetric = performance.where((video) => metric(video) != null);
       if (withMetric.isEmpty) return null;
@@ -1405,7 +1518,7 @@ class _CreatorAnalyticsSummary {
       if (day.isBefore(startDay)) continue;
       final key = _dayKey(day);
       byDay[key] =
-          (byDay[key] ?? 0) + _VideoPerformance.fromVideo(video).interactions;
+          (byDay[key] ?? 0) + VideoPerformance.fromVideo(video).interactions;
     }
 
     return List.generate(barDays, (index) {
@@ -1418,8 +1531,8 @@ class _CreatorAnalyticsSummary {
   }
 }
 
-class _VideoPerformance {
-  const _VideoPerformance({
+class VideoPerformance {
+  const VideoPerformance({
     required this.video,
     required this.views,
     required this.likes,
@@ -1430,7 +1543,7 @@ class _VideoPerformance {
     required this.displayTitle,
   });
 
-  factory _VideoPerformance.fromVideo(VideoEvent video) {
+  factory VideoPerformance.fromVideo(VideoEvent video) {
     final likes = liveLikeCountSeed(video) ?? 0;
     final comments = liveCommentCountSeed(video) ?? 0;
     final reposts = liveRepostCountSeed(video) ?? 0;
@@ -1443,7 +1556,7 @@ class _VideoPerformance {
         ? video.title!.trim()
         : video.id;
 
-    return _VideoPerformance(
+    return VideoPerformance(
       video: video,
       views: views,
       likes: likes,

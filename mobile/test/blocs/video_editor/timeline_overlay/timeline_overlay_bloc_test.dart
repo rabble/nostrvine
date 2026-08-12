@@ -2,6 +2,8 @@
 // ABOUTME: Covers update, move, trim, select, drag, trim, collapse,
 // ABOUTME: and state helpers for the current event/state API.
 
+import 'dart:typed_data';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -45,6 +47,22 @@ AudioEvent _audioEvent({
     startTime: start,
     endTime: end,
     anchorClipId: anchorClipId,
+  );
+}
+
+/// A sound whose own duration never resolved, left-trimmed by two seconds.
+final AudioEvent _durationlessTrack = _audioEvent(
+  id: 'sound-1',
+  start: const Duration(seconds: 1),
+  end: const Duration(seconds: 4),
+).copyWith(startOffset: const Duration(seconds: 2));
+
+TimelineOverlayItemsUpdate _soundUpdate(AudioEvent track) {
+  return TimelineOverlayItemsUpdate(
+    layers: const <Layer>[],
+    filters: const <FilterState>[],
+    audioTracks: [track],
+    totalVideoDuration: const Duration(seconds: 12),
   );
 }
 
@@ -639,6 +657,118 @@ void main() {
             totalVideoDuration: const Duration(seconds: 12),
           ),
         ),
+        expect: () => [
+          isA<TimelineOverlayState>()
+              .having(
+                (s) => s.items.first.sourceDuration,
+                'sourceDuration',
+                isNull,
+              )
+              .having(
+                (s) => s.items.first.maxDuration,
+                'maxDuration',
+                VideoEditorConstants.maxDuration,
+              ),
+        ],
+      );
+
+      // The waveform extractor reads the whole source, so the duration it
+      // measures is the basis the painter maps samples to time against.
+      // Without it a duration-less sound draws the entire file squeezed into
+      // its visible bar.
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'adopts the measured source duration when the track has none',
+        build: TimelineOverlayBloc.new,
+        act: (bloc) => bloc
+          ..add(_soundUpdate(_durationlessTrack))
+          ..add(
+            TimelineOverlayWaveformLoaded(
+              itemId: 'sound-1',
+              leftChannel: Float32List(4),
+              sourceDuration: const Duration(seconds: 30),
+            ),
+          ),
+        skip: 1,
+        expect: () => [
+          isA<TimelineOverlayState>()
+              .having(
+                (s) => s.items.first.sourceDuration,
+                'sourceDuration',
+                const Duration(seconds: 30),
+              )
+              .having(
+                (s) => s.items.first.maxDuration,
+                'maxDuration',
+                const Duration(seconds: 28), // 30s source - 2s offset
+              ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'keeps the measured basis when the item is rebuilt',
+        build: TimelineOverlayBloc.new,
+        act: (bloc) => bloc
+          ..add(_soundUpdate(_durationlessTrack))
+          ..add(
+            TimelineOverlayWaveformLoaded(
+              itemId: 'sound-1',
+              leftChannel: Float32List(4),
+              sourceDuration: const Duration(seconds: 30),
+            ),
+          )
+          ..add(_soundUpdate(_durationlessTrack)),
+        // The rebuild emits nothing precisely because the basis survived it —
+        // dropping it would rebuild the item with a null sourceDuration and
+        // the maxDuration fallback, which is a different state.
+        skip: 2,
+        expect: () => <TimelineOverlayState>[],
+        verify: (bloc) => expect(
+          bloc.state.items.first.sourceDuration,
+          const Duration(seconds: 30),
+        ),
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'keeps the track duration when the measurement disagrees',
+        build: TimelineOverlayBloc.new,
+        act: (bloc) => bloc
+          ..add(_soundUpdate(_durationlessTrack.copyWith(duration: 8)))
+          ..add(
+            TimelineOverlayWaveformLoaded(
+              itemId: 'sound-1',
+              leftChannel: Float32List(4),
+              sourceDuration: const Duration(seconds: 30),
+            ),
+          ),
+        skip: 1,
+        expect: () => [
+          isA<TimelineOverlayState>()
+              .having(
+                (s) => s.items.first.sourceDuration,
+                'sourceDuration',
+                const Duration(seconds: 8),
+              )
+              .having(
+                (s) => s.items.first.maxDuration,
+                'maxDuration',
+                const Duration(seconds: 6), // 8s source - 2s offset
+              ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'ignores a non-positive measured duration',
+        build: TimelineOverlayBloc.new,
+        act: (bloc) => bloc
+          ..add(_soundUpdate(_durationlessTrack))
+          ..add(
+            TimelineOverlayWaveformLoaded(
+              itemId: 'sound-1',
+              leftChannel: Float32List(4),
+              sourceDuration: Duration.zero,
+            ),
+          ),
+        skip: 1,
         expect: () => [
           isA<TimelineOverlayState>()
               .having(

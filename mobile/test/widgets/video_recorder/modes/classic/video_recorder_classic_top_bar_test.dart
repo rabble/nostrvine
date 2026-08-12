@@ -1,3 +1,5 @@
+import 'dart:ui' show Tristate;
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -121,6 +124,82 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(Stack), findsWidgets);
+      });
+    });
+
+    group('E2E anchors', () {
+      // The Maestro classic flow drives this bar by identifier
+      // (e2e/maestro/asserts/assertClassicMode.yaml). Dropping one is
+      // invisible to the label assertions above and only surfaces on a manual
+      // E2E run, since that lane is not part of CI.
+      testWidgets('exposes an E2E identifier on close and next', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
+
+        for (final identifier in [
+          SemanticIds.cameraCloseButton,
+          SemanticIds.cameraNextButton,
+        ]) {
+          expect(
+            find.bySemanticsIdentifier(identifier),
+            findsOneWidget,
+            reason: 'missing E2E anchor: $identifier',
+          );
+        }
+
+        handle.dispose();
+      });
+
+      // assertClassicMode reads an empty session off `enabled: false` on next
+      // rather than off its absence, because unlike the capture stack classic
+      // keeps the button mounted and disables it. Wrapping it in an
+      // AnimatedOpacity later would drop it from the semantics tree and break
+      // that assert in a lane CI does not run.
+      testWidgets(
+        'keeps next mounted and disabled while the session is empty',
+        (
+          tester,
+        ) async {
+          final handle = tester.ensureSemantics();
+          await tester.pumpWidget(buildWidget());
+          await tester.pumpAndSettle();
+
+          final node = tester.getSemantics(
+            find.bySemanticsIdentifier(SemanticIds.cameraNextButton),
+          );
+          expect(node.flagsCollection.isEnabled, Tristate.isFalse);
+
+          handle.dispose();
+        },
+      );
+
+      testWidgets('enables next once the session holds a clip', (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildWidget(
+            clips: [
+              DivineVideoClip(
+                id: 'clip1',
+                video: EditorVideo.file('/test/clip1.mp4'),
+                duration: const Duration(seconds: 3),
+                recordedAt: DateTime.now(),
+                targetAspectRatio: .square,
+                originalAspectRatio: 1,
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final node = tester.getSemantics(
+          find.bySemanticsIdentifier(SemanticIds.cameraNextButton),
+        );
+        expect(node.flagsCollection.isEnabled, Tristate.isTrue);
+
+        handle.dispose();
       });
     });
 

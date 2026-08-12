@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/badges/badge_award_screen.dart';
 import 'package:openvine/screens/badges/badge_detail_screen.dart';
@@ -32,6 +33,7 @@ import 'package:openvine/screens/settings/monetization_links_settings_screen.dar
 import 'package:openvine/screens/settings/nip05_settings_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
+import 'package:openvine/screens/settings/signature_verification_policy_screen.dart';
 import 'package:openvine/screens/settings/storage/storage_management_page.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/screens/settings/supporter_screen.dart';
@@ -44,6 +46,13 @@ List<RouteBase> settingsRoutes(Ref ref) {
       path: SettingsScreen.path,
       name: SettingsScreen.routeName,
       builder: (_, _) => const SettingsScreen(),
+      routes: [
+        GoRoute(
+          path: FeatureFlagScreen.subpath,
+          name: FeatureFlagScreen.routeName,
+          builder: (_, _) => const FeatureFlagScreen(),
+        ),
+      ],
     ),
     GoRoute(
       path: BadgesScreen.path,
@@ -166,6 +175,11 @@ List<RouteBase> settingsRoutes(Ref ref) {
           path: Nip05SettingsScreen.subpath,
           name: Nip05SettingsScreen.routeName,
           builder: (_, _) => const Nip05SettingsScreen(),
+        ),
+        GoRoute(
+          path: SignatureVerificationPolicyScreen.subpath,
+          name: SignatureVerificationPolicyScreen.routeName,
+          builder: (_, _) => const SignatureVerificationPolicyScreen(),
         ),
       ],
     ),

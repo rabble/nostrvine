@@ -2319,10 +2319,6 @@ class AppLocalizationsPl extends AppLocalizations {
       'Przełącznik środowiska i ustawienia debugowania';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Włączaj flagi funkcji, które mogą czkać.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Zarządzanie kluczami';
 
   @override
@@ -3880,12 +3876,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'Zapisz na później';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Dodaj do zestawu zakładek';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'Zorganizuj w kolekcjach';
-
-  @override
   String get shareMenuFollowSets => 'Zestawy obserwowanych';
 
   @override
@@ -4280,9 +4270,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get shareMenuUnknown => 'Nieznany';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'Utwórz zestaw zakładek';
-
-  @override
   String get shareMenuSetName => 'Nazwa zestawu';
 
   @override
@@ -4296,15 +4283,7 @@ class AppLocalizationsPl extends AppLocalizations {
       'Zacznij nową kolekcję zakładek';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Brak zestawów zakładek. Utwórz swój pierwszy!';
-
-  @override
   String get shareMenuError => 'Błąd';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Nie udało się wczytać zestawów zakładek';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
@@ -9504,6 +9483,18 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get videoEditorTransformNoLocalFile =>
       'Nie można przekształcić: klip nie jest dostępny lokalnie.';
+
+  @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Przytnij, obróć lub odbij zaznaczoną klatkę';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'Chwileczkę, przekształcamy twoją klatkę';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Nie udało się przekształcić klatki. Spróbuj ponownie.';
 
   @override
   String get videoEditorTransformRotateLabel => 'Obróć';

@@ -5,10 +5,10 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/monetization_links_settings/monetization_links_settings_cubit.dart';
 import 'package:openvine/blocs/monetization_links_settings/monetization_links_settings_state.dart';
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/features/monetization/monetization_analytics.dart';
 import 'package:openvine/features/monetization/monetization_storefront_policy.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -16,6 +16,7 @@ import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/settings/settings_screen.dart';
 
 class MonetizationLinksSettingsScreen extends ConsumerWidget {
   static const routeName = 'monetization-links-settings';
@@ -135,7 +136,9 @@ class _MonetizationLinksSettingsViewState
             ? context.l10n.monetizationTipsSettingsTitle
             : context.l10n.monetizationSettingsTitle,
         showBackButton: true,
-        onBackPressed: context.pop,
+        // safePop: this screen has a registered path, so the back stack
+        // can be empty on a cold entry and a raw pop would throw GoError.
+        onBackPressed: () => context.safePop(fallback: SettingsScreen.path),
       ),
       backgroundColor: context.vineColors.surface,
       body: Align(

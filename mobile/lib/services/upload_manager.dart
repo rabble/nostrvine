@@ -459,7 +459,14 @@ class UploadManager implements BackgroundAwareService {
         <({DivineVideoClip source, DivineVideoClip materialized})>[];
     Future<DivineVideoClip> materializedSource(DivineVideoClip clip) async {
       if (!clip.isStopMotion) return clip;
-      final materialized = await StopMotionRenderService.materialize(clip);
+      final DivineVideoClip? materialized;
+      try {
+        materialized = await StopMotionRenderService.materialize(clip);
+      } on RenderCanceledException {
+        throw StateError(
+          'Stop-motion assembly cancelled for clip ${clip.id} — nothing to upload',
+        );
+      }
       if (materialized == null) {
         throw StateError(
           'Stop-motion assembly failed for clip ${clip.id} — nothing to upload',

@@ -499,6 +499,47 @@ void main() {
       );
     }
 
+    testWidgets('offers Transform for the selected still', (tester) async {
+      when(() => bloc.state).thenReturn(
+        ClipEditorState(
+          clips: [stopMotionClip('clip-1')],
+          selectedFrameIndex: 0,
+        ),
+      );
+
+      await tester.pumpWidget(build());
+
+      final controls = tester.widget<VideoEditorTimelineControls>(
+        find.byType(VideoEditorTimelineControls),
+      );
+      expect(controls.onTransform, isNotNull);
+      // A still is not a clip, so the button must not announce itself as one.
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(
+        controls.transformSemanticLabel,
+        l10n.videoEditorTransformSelectedFrameSemanticLabel,
+      );
+      expect(
+        find.bySemanticsLabel(
+          l10n.videoEditorTransformSelectedFrameSemanticLabel,
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('hides Transform when no still is selected', (tester) async {
+      when(
+        () => bloc.state,
+      ).thenReturn(ClipEditorState(clips: [stopMotionClip('clip-1')]));
+
+      await tester.pumpWidget(build());
+
+      final controls = tester.widget<VideoEditorTimelineControls>(
+        find.byType(VideoEditorTimelineControls),
+      );
+      expect(controls.onTransform, isNull);
+    });
+
     testWidgets('Select button starts multi-select with multiple clips', (
       tester,
     ) async {

@@ -1,5 +1,6 @@
 // ABOUTME: Regex + helpers for extracting divine.video URLs from text.
-// ABOUTME: Shared by the conversation bubble and the long-press handler.
+// ABOUTME: Shared by the conversation bubble, the long-press handler, and the
+// ABOUTME: DM shared-video citation parser.
 
 /// Detects the canonical share-link shape
 /// (`https://divine.video/video/<id>`).

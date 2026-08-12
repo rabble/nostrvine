@@ -2309,10 +2309,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Environment switcher at debug settings';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'I-toggle ang mga feature flag na maaaring magka-hiccup.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Key Management';
 
   @override
@@ -3843,12 +3839,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'I-save para mapanood mamaya';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Idagdag sa Bookmark Set';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'Ayusin sa mga koleksyon';
-
-  @override
   String get shareMenuFollowSets => 'Mga Listahan ng Tao';
 
   @override
@@ -4231,9 +4221,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get shareMenuUnknown => 'Hindi alam';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'Gumawa ng Bookmark Set';
-
-  @override
   String get shareMenuSetName => 'Pangalan ng Set';
 
   @override
@@ -4247,15 +4234,7 @@ class AppLocalizationsFil extends AppLocalizations {
       'Magsimula ng bagong koleksyon ng bookmark';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Wala pang bookmark sets. Gumawa ng una mo!';
-
-  @override
   String get shareMenuError => 'Error';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Hindi na-load ang mga bookmark set';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
@@ -9430,6 +9409,18 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get videoEditorTransformNoLocalFile =>
       'Hindi ma-transform: hindi available nang lokal ang clip.';
+
+  @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'I-crop, i-rotate, o i-flip ang napiling frame';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'Sandali lang, tina-transform namin ang frame mo';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Hindi ma-transform ang frame. Subukan ulit.';
 
   @override
   String get videoEditorTransformRotateLabel => 'I-rotate';

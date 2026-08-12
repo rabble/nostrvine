@@ -61,13 +61,13 @@ sealed class NIP17SendResult {
 
   /// Build a failure result.
   ///
-  /// [retryablePending] marks a "soft" failure where the recipient wrap frame
-  /// was written to the relay but no NIP-20 `OK` arrived within the window
-  /// (and no relay explicitly rejected it) — the send is *unconfirmed*, not
-  /// proven-failed. A lost/late `OK` on a flaky relay is indistinguishable from
-  /// actual delivery, so reaction callers keep such a send in a retryable
-  /// pending state rather than flipping it to a hard failure. Defaults to
-  /// `false` (a confirmed rejection or error).
+  /// [retryablePending] marks a "soft" failure where the send should remain
+  /// pending and be retried rather than turning into a hard failure. The usual
+  /// case is a recipient wrap frame written to the relay with no NIP-20 `OK`
+  /// within the window (and no explicit rejection): the send is *unconfirmed*,
+  /// not proven-failed. It can also represent a bounded pre-publish crypto
+  /// build timeout, such as a human-gated NIP-55 signer approval that has not
+  /// returned yet. Defaults to `false` (a confirmed rejection or error).
   ///
   /// [queuedRumorId] is the durable `outgoing_dms` row the send left behind
   /// for the retry sweep — see [NIP17SendResult.queuedRumorId].
@@ -91,11 +91,10 @@ sealed class NIP17SendResult {
   /// error. Blocked sends are not retriable. Always `false` for success.
   bool get blocked => false;
 
-  /// Whether a failure is an *unconfirmed* recipient publish (frame written,
-  /// no relay `OK` within the window, no explicit rejection) rather than a
-  /// confirmed rejection/error. Always `false` on success and on hard
-  /// failures. Reaction callers keep a `retryablePending` send in a pending,
-  /// sweep-retryable state instead of marking it failed.
+  /// Whether a failure should stay in a pending, sweep-retryable state instead
+  /// of being marked failed. Covers inconclusive recipient publishes
+  /// (frame written, no relay `OK`, no explicit rejection) and bounded
+  /// pre-publish crypto build timeouts where retry is still the honest outcome.
   bool get retryablePending => false;
 
   /// The `outgoing_dms` row this send left parked for the retry sweep, when

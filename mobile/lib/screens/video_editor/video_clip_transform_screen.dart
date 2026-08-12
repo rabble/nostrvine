@@ -10,6 +10,8 @@ import 'package:flutter/material.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/video_editor/transform/transform_editor_chrome.dart';
+import 'package:openvine/widgets/video_editor/transform/transform_editor_configs.dart';
 // Hide `VideoClip`: divine_video_player defines the player's clip type, which
 // is the one this screen drives.
 import 'package:pro_image_editor/pro_image_editor.dart' hide VideoClip;
@@ -176,40 +178,13 @@ class _VideoClipTransformScreenState extends State<VideoClipTransformScreen> {
         // Required so the editor builds the resolution-sized background that
         // gives the crop area its dimensions and renders the live video.
         convertToUint8List: true,
-        configs: ProImageEditorConfigs(
-          cropRotateEditor: CropRotateEditorConfigs(
-            enableKeepAspectRatioOnRotate: true,
-            initAspectRatio: widget.clip.targetAspectRatio.value,
-            style: CropRotateEditorStyle(
-              background: context.vineColors.surfaceContainerHigh,
-              cropCornerColor: VineTheme.primary,
-            ),
-            widgets: CropRotateEditorWidgets(
-              appBar: (editorState, rebuildStream) => ReactiveAppbar(
-                stream: rebuildStream,
-                builder: (_) => _TransformAppBar(editorState: editorState),
-              ),
-              bottomBar: (editorState, rebuildStream) => ReactiveWidget(
-                stream: rebuildStream,
-                builder: (_) => _TransformBottomBar(
-                  editorState: editorState,
-                  playerController: playerController,
-                ),
-              ),
-            ),
-          ),
-          dialogConfigs: DialogConfigs(
-            widgets: DialogWidgets(
-              loadingDialog: (message, configs) => const SizedBox.shrink(),
-            ),
-          ),
-          // Replace the editor's brief internal spinner (shown while it decodes
-          // the resolution-sized background) with the branded indicator.
-          progressIndicatorConfigs: const ProgressIndicatorConfigs(
-            widgets: ProgressIndicatorWidgets(
-              circularProgressIndicator: BrandedLoadingIndicator(size: 48),
-            ),
-          ),
+        configs: transformEditorConfigs(
+          context,
+          initAspectRatio: widget.clip.targetAspectRatio.value,
+          bottomBarLeading: _PlayPauseAction(controller: playerController),
+          // No overlay: nothing is rasterized here. Done only reads the crop
+          // parameters back out and hands the render to the bloc, which puts
+          // its own progress UI over the timeline.
         ),
         callbacks: ProImageEditorCallbacks(
           onCompleteWithParameters: (params) async {
@@ -218,103 +193,6 @@ class _VideoClipTransformScreenState extends State<VideoClipTransformScreen> {
           // Fires for both Done (after parameters are captured) and Cancel
           // (with no captured result) — the single pop site for the route.
           onCloseEditor: (_) => _close(),
-        ),
-      ),
-    );
-  }
-}
-
-/// Top bar with a back (cancel) and done (apply) button.
-class _TransformAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const _TransformAppBar({required this.editorState});
-
-  final CropRotateEditorState editorState;
-
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      bottom: false,
-      child: SizedBox(
-        height: kToolbarHeight,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              DivineIconButton(
-                icon: .arrowLeft,
-                type: .secondary,
-                size: .small,
-                semanticLabel:
-                    context.l10n.videoEditorTransformCancelSemanticLabel,
-                onPressed: editorState.close,
-              ),
-              DivineIconButton(
-                icon: .check,
-                size: .small,
-                semanticLabel:
-                    context.l10n.videoEditorTransformApplySemanticLabel,
-                onPressed: editorState.done,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Bottom bar with play/pause plus the rotate, flip and reset actions.
-class _TransformBottomBar extends StatelessWidget {
-  const _TransformBottomBar({
-    required this.editorState,
-    required this.playerController,
-  });
-
-  final CropRotateEditorState editorState;
-  final DivineVideoPlayerController playerController;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: context.vineColors.surfaceContainerHigh,
-        boxShadow: const [
-          BoxShadow(
-            color: VineTheme.shadow25,
-            blurRadius: 8,
-            offset: Offset(0, -4),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _PlayPauseAction(controller: playerController),
-              _BottomAction(
-                icon: .arrowArcLeft,
-                label: context.l10n.videoEditorTransformRotateLabel,
-                onPressed: editorState.rotate,
-              ),
-              _BottomAction(
-                icon: .cameraRotate,
-                label: context.l10n.videoEditorTransformFlipLabel,
-                onPressed: editorState.flip,
-              ),
-              _BottomAction(
-                icon: .arrowsCounterClockwise,
-                label: context.l10n.videoEditorTransformResetLabel,
-                onPressed: editorState.reset,
-              ),
-            ],
-          ),
         ),
       ),
     );
@@ -335,7 +213,7 @@ class _PlayPauseAction extends StatelessWidget {
       initialData: controller.state,
       builder: (context, snapshot) {
         final isPlaying = snapshot.data?.isPlaying ?? false;
-        return _BottomAction(
+        return TransformEditorAction(
           icon: isPlaying ? .pause : .play,
           label: isPlaying
               ? context.l10n.videoEditorTransformPauseLabel
@@ -343,43 +221,6 @@ class _PlayPauseAction extends StatelessWidget {
           onPressed: () => isPlaying ? controller.pause() : controller.play(),
         );
       },
-    );
-  }
-}
-
-class _BottomAction extends StatelessWidget {
-  const _BottomAction({
-    required this.icon,
-    required this.label,
-    required this.onPressed,
-  });
-
-  final DivineIconName icon;
-  final String label;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      spacing: 8,
-      children: [
-        DivineIconButton(
-          icon: icon,
-          semanticLabel: label,
-          onPressed: onPressed,
-          type: .secondary,
-          size: .small,
-        ),
-        ExcludeSemantics(
-          child: Text(
-            label,
-            style: VineTheme.bodySmallFont(
-              color: context.vineColors.primaryText,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

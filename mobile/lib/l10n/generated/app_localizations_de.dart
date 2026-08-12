@@ -2298,10 +2298,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Umgebungswechsler und Debug-Einstellungen';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Feature-Flags an- und ausschalten — kann holpern.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Schlüsselverwaltung';
 
   @override
@@ -3830,12 +3826,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'Für später speichern';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Zu Lesezeichen-Set hinzufügen';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'In Sammlungen organisieren';
-
-  @override
   String get shareMenuFollowSets => 'Follow-Sets';
 
   @override
@@ -4219,9 +4209,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get shareMenuUnknown => 'Unbekannt';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'Lesezeichen-Set erstellen';
-
-  @override
   String get shareMenuSetName => 'Set-Name';
 
   @override
@@ -4235,15 +4222,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Eine neue Lesezeichen-Sammlung starten';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Noch keine Lesezeichen-Sets. Erstelle dein erstes!';
-
-  @override
   String get shareMenuError => 'Fehler';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Lesezeichen-Sets konnten nicht geladen werden';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {
@@ -9429,6 +9408,18 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get videoEditorTransformNoLocalFile =>
       'Transformieren nicht möglich: Clip ist nicht lokal verfügbar.';
+
+  @override
+  String get videoEditorTransformSelectedFrameSemanticLabel =>
+      'Ausgewähltes Frame zuschneiden, drehen oder spiegeln';
+
+  @override
+  String get videoEditorTransformFrameProgressLabel =>
+      'Einen Moment, wir transformieren dein Frame';
+
+  @override
+  String get videoEditorTransformFrameFailed =>
+      'Frame konnte nicht transformiert werden. Bitte versuche es erneut.';
 
   @override
   String get videoEditorTransformRotateLabel => 'Drehen';

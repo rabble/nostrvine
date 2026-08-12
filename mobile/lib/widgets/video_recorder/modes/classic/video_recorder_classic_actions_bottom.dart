@@ -2,6 +2,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
 
 class VideoRecorderClassicActionsBottom extends StatelessWidget {
@@ -35,6 +36,7 @@ class VideoRecorderClassicActionsBottom extends StatelessWidget {
           DivineIconButton(
             icon: .arrowsCounterClockwise,
             semanticLabel: l10n.videoRecorderSwitchCameraLabel,
+            semanticIdentifier: SemanticIds.cameraSwitchCameraButton,
             semanticValue: state.isFrontCamera
                 ? l10n.videoRecorderCameraValueFront
                 : l10n.videoRecorderCameraValueBack,
@@ -47,6 +49,7 @@ class VideoRecorderClassicActionsBottom extends StatelessWidget {
           DivineIconButton(
             icon: .gridNine,
             semanticLabel: l10n.videoRecorderToggleGridLabel,
+            semanticIdentifier: SemanticIds.cameraGridButton,
             semanticToggled: state.showGridLines,
             size: .small,
             type: .ghostSecondary,
@@ -57,6 +60,7 @@ class VideoRecorderClassicActionsBottom extends StatelessWidget {
           DivineIconButton(
             icon: .ghost,
             semanticLabel: l10n.videoRecorderToggleGhostFrameLabel,
+            semanticIdentifier: SemanticIds.cameraGhostFrameButton,
             semanticToggled: state.showLastClipOverlay,
             size: .small,
             type: .ghostSecondary,

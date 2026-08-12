@@ -1280,7 +1280,6 @@
   "nostrSettingsMediaServersSubtitle": "Cấu hình máy chủ tải lên Blossom",
   "settingsDeveloperOptions": "Tùy chọn nhà phát triển",
   "settingsDeveloperOptionsSubtitle": "Chuyển môi trường và cài đặt gỡ lỗi",
-  "nostrSettingsExperimentalFeaturesSubtitle": "Bật/tắt các cờ tính năng có thể hơi \"khựng\".",
   "nostrSettingsKeyManagement": "Quản lý khóa",
   "nostrSettingsKeyManagementSubtitle": "Xuất, sao lưu và khôi phục khóa Nostr của bạn",
   "nostrSettingsClientAttribution": "Ghi nhận ứng dụng",
@@ -2081,8 +2080,6 @@
   "shareMenuBookmarks": "Dấu trang",
   "shareMenuAddToBookmarks": "Thêm vào dấu trang",
   "shareMenuAddToBookmarksSubtitle": "Lưu để xem sau",
-  "shareMenuAddToBookmarkSet": "Thêm vào bộ dấu trang",
-  "shareMenuAddToBookmarkSetSubtitle": "Sắp xếp theo bộ sưu tập",
   "shareMenuFollowSets": "Danh sách người",
   "shareMenuCreateFollowSet": "Tạo nhóm theo dõi",
   "shareMenuCreateFollowSetSubtitle": "Bắt đầu bộ sưu tập mới với nhà sáng tạo này",
@@ -2309,14 +2306,11 @@
   "shareMenuAddInspirationCredit": "Thêm ghi nhận cảm hứng",
   "shareMenuCreatorCannotBeReferenced": "Không thể tham chiếu nhà sáng tạo này.",
   "shareMenuUnknown": "Không xác định",
-  "shareMenuCreateBookmarkSet": "Tạo bộ dấu trang",
   "shareMenuSetName": "Tên bộ",
   "shareMenuSetNameHint": "VD: Yêu thích, Xem sau...",
   "shareMenuCreateNewSet": "Tạo bộ mới",
   "shareMenuStartNewBookmarkCollection": "Bắt đầu bộ sưu tập dấu trang mới",
-  "shareMenuNoBookmarkSets": "Chưa có bộ dấu trang nào. Tạo bộ đầu tiên của bạn!",
   "shareMenuError": "Lỗi",
-  "shareMenuFailedToLoadBookmarkSets": "Không tải được bộ dấu trang",
   "shareMenuCreatedSetAndAddedVideo": "Đã tạo \"{name}\" và thêm video",
   "@shareMenuCreatedSetAndAddedVideo": {
     "placeholders": {
@@ -5486,6 +5480,18 @@
   "videoEditorTransformNoLocalFile": "Không thể biến đổi: clip không có sẵn trên máy.",
   "@videoEditorTransformNoLocalFile": {
     "description": "Snackbar message shown when a transform is requested for a clip that has no locally available file."
+  },
+  "videoEditorTransformSelectedFrameSemanticLabel": "Cắt, xoay hoặc lật khung hình đã chọn",
+  "@videoEditorTransformSelectedFrameSemanticLabel": {
+    "description": "Accessibility label for the Transform button in the stop-motion frame controls."
+  },
+  "videoEditorTransformFrameProgressLabel": "Chờ chút, chúng tôi đang biến đổi khung hình của bạn",
+  "@videoEditorTransformFrameProgressLabel": {
+    "description": "Status text shown while a stop-motion frame is being rendered with the applied crop/rotate transform."
+  },
+  "videoEditorTransformFrameFailed": "Không thể biến đổi khung hình. Vui lòng thử lại.",
+  "@videoEditorTransformFrameFailed": {
+    "description": "Snackbar message shown when saving a transformed stop-motion frame fails."
   },
   "videoEditorTransformRotateLabel": "Xoay",
   "@videoEditorTransformRotateLabel": {

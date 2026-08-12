@@ -63,10 +63,7 @@ class MyWidget extends ConsumerWidget {
 import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
 
 // Navigate to feature flag settings
-Navigator.push(
-  context,
-  MaterialPageRoute(builder: (_) => const FeatureFlagScreen()),
-);
+context.push(FeatureFlagScreen.path);
 ```
 
 ## Build Configuration
