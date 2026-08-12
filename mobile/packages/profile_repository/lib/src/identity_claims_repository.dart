@@ -16,11 +16,17 @@ import 'package:verifier_client/verifier_client.dart';
 ///
 /// Returns null when the signer refuses or is unavailable. Mirrors the
 /// `AuthService.createAndSignEvent` shape the app wires in.
+///
+/// [createdAt] overrides the signer's own clock. Replaceable kinds need it:
+/// the event has to supersede the one it replaces, and a device that
+/// publishes twice inside the same second would otherwise sign a tie that
+/// NIP-01 can resolve against it.
 typedef IdentityEventSigner =
     Future<Event?> Function({
       required int kind,
       required String content,
       required List<List<String>> tags,
+      int? createdAt,
     });
 
 /// The claims already on the identity event could not be read, so a write
@@ -123,15 +129,28 @@ class _PublishedIdentityTags {
 }
 
 class _IdentityEventBase {
-  const _IdentityEventBase({required this.tags, required this.content});
+  const _IdentityEventBase({
+    required this.tags,
+    required this.content,
+    this.source,
+  });
 
   final List<List<String>> tags;
   final String content;
+
+  /// Coordinates of the kind-10011 event these tags were read off.
+  ///
+  /// Null on every other branch — the kind-0 fallback, the snapshot, and the
+  /// empty base — where no identity event came back to supersede.
+  final _IdentitySource? source;
 }
 
 /// Coordinates of the identity event a set of tags came from, ordered by
 /// [compareIdentityEvents].
 typedef _IdentitySource = ({int createdAt, String id});
+
+/// Wall-clock seconds, the unit Nostr `created_at` is expressed in.
+int _nowSeconds() => DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
 /// Composes [VerifierClient] with NIP-39 `i` tag parsing off identity
 /// events (kind 10011, with kind-0 tags as the legacy fallback) and a
@@ -271,8 +290,7 @@ class IdentityClaimsRepository {
     final verified = claims
         .where((c) => snapshot.contains(_tupleOf(c)))
         .toList();
-    final nowSeconds = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    final isFresh = nowSeconds < row.checkedAtFloor + verifiedTtl.inSeconds;
+    final isFresh = _nowSeconds() < row.checkedAtFloor + verifiedTtl.inSeconds;
     return CachedVerifiedClaims(claims: verified, isFresh: isFresh);
   }
 
@@ -426,6 +444,7 @@ class IdentityClaimsRepository {
     return _publishIdentityEvent(
       claim.pubkey,
       content: base.content,
+      after: base.source,
       tags: [
         for (final tag in base.tags)
           if (_tagIdentityKeyOrNull(tag) != key) tag,
@@ -460,6 +479,7 @@ class IdentityClaimsRepository {
     final published = await _publishIdentityEvent(
       claim.pubkey,
       content: base.content,
+      after: base.source,
       tags: next,
     );
     (_lastRemovedKeys[claim.pubkey] ??= <String>{}).add(key);
@@ -571,8 +591,9 @@ class IdentityClaimsRepository {
         identityEventId: identityEvent.id,
       );
       // The merge drops its record once the relay catches up, so an entry
-      // that survives it is strictly newer than what came back and is the
-      // event the merged tags actually describe.
+      // that survives it is strictly newer than what came back — and the
+      // merged tags carry at least what it published, so stamping the
+      // snapshot with its coordinates never claims more than the row holds.
       final pending = _lastPublishedTags[pubkey];
       final source = (
         createdAt: pending?.createdAt ?? identityEvent.createdAt,
@@ -585,7 +606,11 @@ class IdentityClaimsRepository {
       );
       if (forWrite) await _refuseIfSnapshotIsNewer(pubkey, source);
       await _cacheIdentityTags(pubkey, identityTagsOf(tags), source: source);
-      return _IdentityEventBase(tags: tags, content: identityEvent.content);
+      return _IdentityEventBase(
+        tags: tags,
+        content: identityEvent.content,
+        source: source,
+      );
     }
 
     final legacyEvent = await _newestEventOfKind(client, pubkey, 0);
@@ -790,16 +815,35 @@ class IdentityClaimsRepository {
     return newestIdentityEvent(events.where((e) => e.kind == kind).toList());
   }
 
+  /// Signs and publishes a kind-10011 event carrying [tags].
+  ///
+  /// [after] is the event this one replaces. Kind 10011 is replaceable, so the
+  /// new event has to supersede it under NIP-01 ordering — and `created_at` is
+  /// in whole seconds, so a second write inside the same second would
+  /// otherwise sign a tie, which NIP-01 breaks by lowest id and therefore
+  /// resolves against this event half the time. A relay that keeps the older
+  /// one drops the write silently; a relay that keeps the newer one leaves
+  /// the snapshot mirroring an event this device now reads as stale, which
+  /// [_refuseIfSnapshotIsNewer] then refuses forever. Dating the event one
+  /// second past what it replaces removes the tie instead of picking a side
+  /// (#7081).
   Future<List<List<String>>> _publishIdentityEvent(
     String pubkey, {
     required List<List<String>> tags,
     required String content,
+    required _IdentitySource? after,
   }) async {
     final deps = _writeDeps();
+    // The base is the newest event that came back; when none did, the
+    // snapshot still carries the newest coordinates this device has seen.
+    final replaced = after ?? await _cachedIdentitySource(pubkey);
     final event = await deps.sign(
       kind: identityEventKind,
       content: content,
       tags: tags,
+      createdAt: replaced == null
+          ? null
+          : max(_nowSeconds(), replaced.createdAt + 1),
     );
     if (event == null) {
       throw const IdentityClaimPublishException(
