@@ -208,6 +208,22 @@ definitions:
           --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN \
           --dart-define=SUPPORTERS_API_BASE_URL=$SUPPORTERS_API_BASE_URL \
           --dart-define=FF_DIVINE_SUPPORTERS=$FF_DIVINE_SUPPORTERS
+    - &confirm_patch
+      name: Confirm patch to production
+      script: |
+        # Runs first so a mis-clicked workflow fails in seconds rather than
+        # after pod install / Gradle setup.
+        if [ "${{ inputs.CONFIRM_PATCH }}" != "YES" ]; then
+          echo "Refusing to patch: CONFIRM_PATCH is '${{ inputs.CONFIRM_PATCH }}', expected YES."
+          echo
+          echo "A patch reaches every install of release ${{ inputs.RELEASE_VERSION }}"
+          echo "within about one app launch, including App Store and Play"
+          echo "production users. There is no store review and no rollback window."
+          echo
+          echo "Re-run with CONFIRM_PATCH=YES if that is what you intend."
+          exit 1
+        fi
+        echo "Patching release ${{ inputs.RELEASE_VERSION }} with DEFAULT_ENV=${{ inputs.DEFAULT_ENV }}."
     - &patch_android
       name: Patch Android (Shorebird)
       script: |
@@ -814,6 +830,15 @@ workflows:
     max_build_duration: 60
     instance_type: mac_mini_m2
     inputs:
+      CONFIRM_PATCH:
+        description: >-
+          Must be YES to proceed. Guards against a mis-clicked workflow — a
+          patch ships to production users with no review and no rollback.
+        type: choice
+        default: "NO"
+        options:
+          - "NO"
+          - "YES"
       RELEASE_VERSION:
         description: >-
           Release to patch, exactly as Shorebird lists it, including the build
@@ -855,6 +880,7 @@ workflows:
     triggering:
       events: []
     scripts:
+      - *confirm_patch
       - *check_signing_endpoint
       - *check_supporters_config
       - *check_ios_extension_signing_contract
@@ -872,6 +898,15 @@ workflows:
     max_build_duration: 60
     instance_type: mac_mini_m4
     inputs:
+      CONFIRM_PATCH:
+        description: >-
+          Must be YES to proceed. Guards against a mis-clicked workflow — a
+          patch ships to production users with no review and no rollback.
+        type: choice
+        default: "NO"
+        options:
+          - "NO"
+          - "YES"
       RELEASE_VERSION:
         description: >-
           Release to patch, exactly as Shorebird lists it, including the build
@@ -907,6 +942,7 @@ workflows:
     triggering:
       events: []
     scripts:
+      - *confirm_patch
       - *check_signing_endpoint
       - *check_supporters_config
       - *setup_local_properties
