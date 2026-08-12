@@ -280,6 +280,30 @@ void main() {
       );
     });
 
+    test('rejects an `r` tag that merely embeds a divine.video URL', () {
+      expect(
+        DmSharedVideoCitation.parse(
+          webShareTags(url: 'https://elsewhere.example/?next=$shareUrl'),
+        ),
+        isNull,
+      );
+    });
+
+    test('accepts a share URL carrying an unescaped d-tag', () {
+      // divine-web interpolated the `d` tag into the path with no
+      // percent-encoding, so a relay-supplied d-tag puts characters the URL
+      // grammar would otherwise end on straight into the `r` value.
+      const dottedTag = 'my.vine.2024';
+      final ref = DmSharedVideoCitation.parse(
+        webShareTags(
+          coordinate: '34236:$author:$dottedTag',
+          url: 'https://divine.video/video/$dottedTag',
+        ),
+      )!;
+
+      expect(ref.dTag, equals(dottedTag));
+    });
+
     test('rejects a coordinate whose author is not 64-hex', () {
       // divine-web built the coordinate from unvalidated URL query params.
       expect(

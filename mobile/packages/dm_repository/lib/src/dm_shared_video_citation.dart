@@ -189,11 +189,18 @@ class DmSharedVideoCitation {
         tag[1] == CollaboratorInviteTags.markerValue,
   );
 
-  /// Whether [tags] carry an `r` tag holding a canonical divine.video URL.
+  /// Whether [tags] carry an `r` tag that *starts with* a divine.video share
+  /// URL.
+  ///
+  /// Anchored at the start so a URL merely embedded in some other string
+  /// (`https://elsewhere.example/?next=<share url>`) cannot satisfy the gate.
+  /// Not anchored at the end: divine-web interpolated the video's `d` tag into
+  /// the path without percent-encoding, so a legitimate share can carry a
+  /// trailing `.`, `?`, `#`, or `/` that a full-string match would reject.
   static bool _hasDivineVideoUrlTag(List<List<String>> tags) => tags.any(
     (tag) =>
         tag.length >= 2 &&
         tag[0] == 'r' &&
-        divineVideoUrlRegex.hasMatch(tag[1]),
+        divineVideoUrlRegex.matchAsPrefix(tag[1]) != null,
   );
 }
