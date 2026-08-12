@@ -1,5 +1,8 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/utils/divine_video_url.dart';
+// ABOUTME: Tests for the canonical divine.video share-URL regexes.
+// ABOUTME: Covers casing, trailing punctuation, query strings, and id shapes.
+
+import 'package:models/models.dart';
+import 'package:test/test.dart';
 
 void main() {
   group('divineVideoUrlLineRegex', () {

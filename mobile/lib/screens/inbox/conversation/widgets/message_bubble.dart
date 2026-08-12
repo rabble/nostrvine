@@ -22,7 +22,6 @@ import 'package:openvine/screens/inbox/conversation/dm_video_target.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/video_link_preview_cubit.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
-import 'package:openvine/utils/divine_video_url.dart';
 import 'package:openvine/utils/external_link_launcher.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_support.dart';

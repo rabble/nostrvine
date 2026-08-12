@@ -12,7 +12,6 @@ import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/widgets/moderation_identity.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
-import 'package:openvine/utils/divine_video_url.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:unified_logger/unified_logger.dart';
