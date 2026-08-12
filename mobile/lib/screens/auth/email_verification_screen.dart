@@ -528,6 +528,8 @@ class _EmailVerificationScreenState
             builder: (context, state) {
               final showCloseButton =
                   state.status != EmailVerificationStatus.success;
+              final startsOver =
+                  state.status == EmailVerificationStatus.failure;
               return Column(
                 children: [
                   // Close button (hidden on success)
@@ -537,10 +539,12 @@ class _EmailVerificationScreenState
                       child: Align(
                         alignment: AlignmentDirectional.centerStart,
                         child: _CloseButton(
-                          onPressed:
-                              state.status == EmailVerificationStatus.failure
+                          onPressed: startsOver
                               ? _handleStartOver
                               : _handleCancel,
+                          label: startsOver
+                              ? context.l10n.authStartOver
+                              : context.l10n.commonClose,
                         ),
                       ),
                     )
@@ -604,25 +608,34 @@ class _EmailVerificationScreenState
 
 /// Close button (X) for the verification screen.
 class _CloseButton extends StatelessWidget {
-  const _CloseButton({required this.onPressed});
+  const _CloseButton({required this.onPressed, required this.label});
 
   final VoidCallback onPressed;
 
+  /// Names the action, which differs by state: this is the only exit from the
+  /// polling screen, and the expired-resend copy tells the user to start again
+  /// without an icon-only X being able to say so.
+  final String label;
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: context.vineColors.surfaceContainer,
-          shape: BoxShape.circle,
-        ),
-        child: const DivineIcon(
-          icon: DivineIconName.x,
-          color: VineTheme.vineGreenLight,
-          size: 20,
+    return Semantics(
+      button: true,
+      label: label,
+      child: GestureDetector(
+        onTap: onPressed,
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: context.vineColors.surfaceContainer,
+            shape: BoxShape.circle,
+          ),
+          child: const DivineIcon(
+            icon: DivineIconName.x,
+            color: VineTheme.vineGreenLight,
+            size: 20,
+          ),
         ),
       ),
     );

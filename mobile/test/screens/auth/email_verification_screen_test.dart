@@ -1481,5 +1481,167 @@ void main() {
         );
       });
     }
+
+    // Guards the edge trigger specifically: widening listenWhen to a union of
+    // fields would re-announce the failure every time any unrelated field
+    // moved while resendStatus stayed put. That regression already happened
+    // once on this branch.
+    testWidgets('does not repeat the failure announcement while the status '
+        'stays failure', (tester) async {
+      final announced = <String>[];
+      tester.binding.defaultBinaryMessenger
+          .setMockDecodedMessageHandler<Object?>(
+            SystemChannels.accessibility,
+            (Object? message) async {
+              if (message is Map) {
+                final data = message['data'];
+                if (data is Map && data['message'] is String) {
+                  announced.add(data['message'] as String);
+                }
+              }
+              return null;
+            },
+          );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger
+            .setMockDecodedMessageHandler<Object?>(
+              SystemChannels.accessibility,
+              null,
+            ),
+      );
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      await pumpVerificationScreen(
+        tester,
+        deviceCode: 'device-code',
+        verifier: 'verifier',
+        email: 'someone@example.test',
+        stateStream: Stream<EmailVerificationState>.fromIterable(const [
+          EmailVerificationState(
+            status: EmailVerificationStatus.pollingTimedOut,
+            resendStatus: ResendStatus.sending,
+          ),
+          EmailVerificationState(
+            status: EmailVerificationStatus.pollingTimedOut,
+            resendStatus: ResendStatus.failure,
+          ),
+          EmailVerificationState(
+            status: EmailVerificationStatus.pollingTimedOut,
+            resendStatus: ResendStatus.failure,
+            resendCooldownSeconds: 42,
+          ),
+          EmailVerificationState(
+            status: EmailVerificationStatus.pollingTimedOut,
+            resendStatus: ResendStatus.failure,
+            resendCooldownSeconds: 41,
+          ),
+        ]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        announced.where((m) => m == l10n.authVerificationResendFailed),
+        hasLength(1),
+        reason:
+            'the resend listeners must be edge-triggered on resendStatus '
+            'alone, not on any field of the state',
+      );
+    });
+  });
+
+  group('close affordance', () {
+    // The only exit from the polling screen, and the expired-resend copy tells
+    // the user to start again without an icon-only X being able to say which
+    // control does that.
+    testWidgets('names the close action for assistive tech', (tester) async {
+      final handle = tester.ensureSemantics();
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      await pumpVerificationScreen(
+        tester,
+        deviceCode: 'device-code',
+        verifier: 'verifier',
+        email: 'someone@example.test',
+        initialState: const EmailVerificationState(
+          status: EmailVerificationStatus.polling,
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        find.ancestor(
+          of: _divineIcon(DivineIconName.x),
+          matching: find.bySemanticsLabel(l10n.commonClose),
+        ),
+        findsOneWidget,
+        reason:
+            'the X is a bare GestureDetector; without a Semantics wrapper a '
+            'screen reader reaches an unlabeled tap target',
+      );
+      handle.dispose();
+    });
+
+    testWidgets('names it Start over once verification has failed', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      await pumpVerificationScreen(
+        tester,
+        deviceCode: 'device-code',
+        verifier: 'verifier',
+        email: 'someone@example.test',
+        initialState: const EmailVerificationState(
+          status: EmailVerificationStatus.failure,
+          errorCode: EmailVerificationError.pinFailed,
+        ),
+      );
+      await tester.pump();
+
+      // Scoped to the X: the failure screen also renders a labelled "Start
+      // over" button, so an unscoped finder passes with the icon unlabeled.
+      expect(
+        find.ancestor(
+          of: _divineIcon(DivineIconName.x),
+          matching: find.bySemanticsLabel(l10n.authStartOver),
+        ),
+        findsOneWidget,
+      );
+      handle.dispose();
+    });
+  });
+
+  group('token mode', () {
+    // Reachable via token + persisted record: the screen latches token mode,
+    // then `_initTokenModeWithPersistenceCheck` calls `startPolling`, arming
+    // the 15-minute timeout. The URL carries no deviceCode, so `isPollingMode`
+    // is false and the timed-out screen used to render nothing at all.
+    testWidgets('explains why polling stopped in token mode', (tester) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      when(() => mockPendingVerification.load()).thenAnswer(
+        (_) async => PendingVerification(
+          deviceCode: 'persisted-device-code',
+          verifier: 'persisted-verifier',
+          email: 'someone@example.test',
+          createdAt: DateTime.utc(2026),
+        ),
+      );
+
+      await pumpVerificationScreen(
+        tester,
+        token: 'verification-token',
+        stateStream: Stream<EmailVerificationState>.fromIterable(const [
+          EmailVerificationState(status: EmailVerificationStatus.polling),
+          EmailVerificationState(
+            status: EmailVerificationStatus.pollingTimedOut,
+          ),
+        ]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.authVerificationPollingStopped), findsOneWidget);
+    });
   });
 }
