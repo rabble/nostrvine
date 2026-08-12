@@ -3327,6 +3327,32 @@ void main() {
       );
 
       test(
+        'keeps a straddling nostr:-prefixed bech32 near the decode cap',
+        () async {
+          // The UI strips `nostr:` before Nip19.decode. An 85-char bech32 is
+          // still decodable; counting the scheme in the keep-length check
+          // would make the full match 91 and drop a still-valid reference.
+          final bech32 = 'nprofile1${'q' * 76}';
+          expect(bech32.length, 85);
+          final content = '${'word ' * 20}nostr:$bech32 tail';
+          stubNotifications([
+            makeNotification(
+              notificationType: 'comment',
+              sourceKind: 1,
+              content: content,
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as VideoNotification;
+          expect(item.commentText, contains(bech32));
+          expect(item.commentText, contains('nostr:'));
+          expect(item.commentText, endsWith('...'));
+        },
+      );
+
+      test(
         'does not preserve unbounded leading token-shaped content',
         () async {
           final content = 'npub1${'a' * 5000}';

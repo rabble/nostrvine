@@ -2535,7 +2535,15 @@ class NotificationRepository {
       // The `break` above already guarantees `match.start < limit`, so
       // ending after it is exactly the straddling case.
       if (match.end <= limit) continue;
-      return (match.end - match.start) <= _maxKeptReferenceLength
+      // Measure the decodable payload only. The optional `nostr:` scheme is
+      // stripped before Nip19.decode in the UI, so counting it here would
+      // drop a still-decodable 85–90 char bech32 that merely carries the
+      // NIP-21 prefix.
+      final referenceLength =
+          match.group(_bech32ReferenceGroup)?.length ??
+          match.group(_hexReferenceGroup)?.length ??
+          (match.end - match.start);
+      return referenceLength <= _maxKeptReferenceLength
           ? match.end
           : match.start;
     }
