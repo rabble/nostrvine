@@ -25,6 +25,7 @@ import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/widgets/library/clips_tab.dart';
 import 'package:openvine/widgets/library/drafts_tab.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
+import 'package:openvine/widgets/library/pinch_zoom_grid.dart';
 import 'package:openvine/widgets/video_clip/video_clip_thumbnail_card.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -175,6 +176,31 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(ClipsTab), findsOneWidget);
+      });
+
+      // A pinch on the clips grid and a tab swipe compete for the same
+      // pointers, and the swipe reads a two-finger spread as a horizontal
+      // drag. Without this the tabs slide away instead of the grid zooming.
+      testWidgets('suspends the tab swipe while the clips grid is pinched', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget(initialTabIndex: 1));
+        await tester.pumpAndSettle();
+
+        TabBarView tabBarView() =>
+            tester.widget<TabBarView>(find.byType(TabBarView));
+        expect(tabBarView().physics, isNull);
+
+        final grid = tester.element(find.byType(ClipsTab));
+        const PinchZoomNotification(active: true).dispatch(grid);
+        await tester.pump();
+
+        expect(tabBarView().physics, isA<NeverScrollableScrollPhysics>());
+
+        const PinchZoomNotification(active: false).dispatch(grid);
+        await tester.pump();
+
+        expect(tabBarView().physics, isNull);
       });
 
       testWidgets('$ClipSelectionFooter in selection mode', (tester) async {

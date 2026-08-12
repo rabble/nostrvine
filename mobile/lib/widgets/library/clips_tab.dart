@@ -10,6 +10,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
+import 'package:openvine/widgets/library/pinch_zoom_grid.dart';
 import 'package:openvine/widgets/video_clip/video_clip_preview.dart';
 import 'package:openvine/widgets/video_clip/video_clip_thumbnail_card.dart';
 
@@ -21,6 +22,7 @@ class ClipsTab extends StatelessWidget {
   /// Creates a clips tab.
   const ClipsTab({
     required this.showRecordButton,
+    required this.backgroundColor,
     this.selectionEnabled = true,
     this.clips,
     this.targetAspectRatio,
@@ -37,6 +39,10 @@ class ClipsTab extends StatelessWidget {
 
   /// Whether in selection mode (adding to existing project).
   final bool showRecordButton;
+
+  /// Surface this tab sits on. The zoomable grid paints it behind each of the
+  /// two layouts it crossfades between — see [PinchZoomGrid.backgroundColor].
+  final Color backgroundColor;
 
   /// Target aspect ratio for filtering compatible clips.
   final double? targetAspectRatio;
@@ -116,6 +122,8 @@ class ClipsTab extends StatelessWidget {
 
         return _MasonryLayout(
           clips: visibleClips,
+          columnCount: state.gridColumnCount,
+          backgroundColor: backgroundColor,
           selectedClipIds: state.selectedClipIds,
           showSelectionIndicator: selectionEnabled,
           disabledClipIds: state.disabledClipIds,
@@ -222,6 +230,8 @@ class ClipSelectionFooter extends StatelessWidget {
 class _MasonryLayout extends StatelessWidget {
   const _MasonryLayout({
     required this.clips,
+    required this.columnCount,
+    required this.backgroundColor,
     required this.selectedClipIds,
     required this.showSelectionIndicator,
     required this.onTapClip,
@@ -234,6 +244,8 @@ class _MasonryLayout extends StatelessWidget {
   });
 
   final List<DivineVideoClip> clips;
+  final int columnCount;
+  final Color backgroundColor;
   final Set<String> selectedClipIds;
   final bool showSelectionIndicator;
   final Set<String> disabledClipIds;
@@ -248,43 +260,51 @@ class _MasonryLayout extends StatelessWidget {
   /// with normal video clips.
   final bool? selectedIsStopMotion;
 
-  static const _columnCount = 3;
-
   @override
   Widget build(BuildContext context) {
     final selectionIndexById = <String, int>{
       for (var i = 0; i < selectedClipIds.length; i++)
         selectedClipIds.elementAt(i): i + 1,
     };
-    return MasonryGridView.count(
-      controller: scrollController,
-      padding: .only(
-        top: topPadding,
-        bottom: MediaQuery.viewPaddingOf(context).bottom,
+    return PinchZoomGrid(
+      columnCount: columnCount,
+      minColumnCount: ClipGridColumns.min,
+      maxColumnCount: ClipGridColumns.max,
+      backgroundColor: backgroundColor,
+      scrollController: scrollController,
+      onColumnCountChanged: (columns) => context.read<ClipsLibraryBloc>().add(
+        ClipsLibraryGridColumnsChanged(columns),
       ),
-      crossAxisCount: _columnCount,
-      mainAxisSpacing: 4,
-      crossAxisSpacing: 4,
-      cacheExtent: MediaQuery.sizeOf(context).height * 2,
-      itemCount: clips.length,
-      itemBuilder: (context, index) {
-        final clip = clips[index];
-        final selectionIndex = selectionIndexById[clip.id] ?? -1;
+      builder: (context, columns, controller) => MasonryGridView.count(
+        controller: controller,
+        padding: .only(
+          top: topPadding,
+          bottom: MediaQuery.viewPaddingOf(context).bottom,
+        ),
+        crossAxisCount: columns,
+        mainAxisSpacing: 4,
+        crossAxisSpacing: 4,
+        cacheExtent: MediaQuery.sizeOf(context).height * 2,
+        itemCount: clips.length,
+        itemBuilder: (context, index) {
+          final clip = clips[index];
+          final selectionIndex = selectionIndexById[clip.id] ?? -1;
 
-        return VideoClipThumbnailCard(
-          clip: clip,
-          selectionIndex: selectionIndex,
-          showSelectionIndicator: showSelectionIndicator,
-          disabled:
-              disabledClipIds.contains(clip.id) ||
-              (targetAspectRatio != null &&
-                  targetAspectRatio != clip.targetAspectRatio.value) ||
-              (selectedIsStopMotion != null &&
-                  clip.isStopMotion != selectedIsStopMotion),
-          onTap: () => onTapClip(clip),
-          onLongPress: () => onLongPressClip(clip),
-        );
-      },
+          return VideoClipThumbnailCard(
+            clip: clip,
+            selectionIndex: selectionIndex,
+            showSelectionIndicator: showSelectionIndicator,
+            disabled:
+                disabledClipIds.contains(clip.id) ||
+                (targetAspectRatio != null &&
+                    targetAspectRatio != clip.targetAspectRatio.value) ||
+                (selectedIsStopMotion != null &&
+                    clip.isStopMotion != selectedIsStopMotion),
+            onTap: () => onTapClip(clip),
+            onLongPress: () => onLongPressClip(clip),
+          );
+        },
+      ),
     );
   }
 }

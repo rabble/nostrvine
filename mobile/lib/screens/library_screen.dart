@@ -854,6 +854,9 @@ class _SelectionBody extends StatelessWidget {
           child: ClipsTab(
             targetAspectRatio: targetAspectRatio,
             showRecordButton: true,
+            // Selection mode renders straight onto the bottom sheet's own
+            // surface; the library shell below is not in the tree here.
+            backgroundColor: context.vineColors.surface,
             scrollController: scrollController,
             gridTopPadding: 8,
           ),
@@ -864,7 +867,7 @@ class _SelectionBody extends StatelessWidget {
   }
 }
 
-class _TabBody extends StatelessWidget {
+class _TabBody extends StatefulWidget {
   const _TabBody({
     required this.tabController,
     required this.tabs,
@@ -880,22 +883,45 @@ class _TabBody extends StatelessWidget {
   final double? targetAspectRatio;
 
   @override
+  State<_TabBody> createState() => _TabBodyState();
+}
+
+class _TabBodyState extends State<_TabBody> {
+  /// Whether the clips grid is being pinched right now.
+  ///
+  /// A pinch and a page swipe compete for the same pointers, and the swipe
+  /// reads a two-finger spread as a horizontal drag. Suspending it for the
+  /// duration of the pinch keeps the tabs still while the grid zooms.
+  bool _isPinching = false;
+
+  @override
   Widget build(BuildContext context) {
-    return TabBarView(
-      controller: tabController,
-      children: [
-        for (final tab in tabs)
-          switch (tab) {
-            _LibraryTab.drafts => const DraftsTab(showRecordButton: false),
-            _LibraryTab.clips => ClipsTab(
-              clips: clips,
-              selectionEnabled: selectionEnabled,
-              targetAspectRatio: targetAspectRatio,
-              showRecordButton: false,
-            ),
-            _LibraryTab.sounds => const SoundsTab(),
-          },
-      ],
+    return NotificationListener<PinchZoomNotification>(
+      onNotification: (notification) {
+        if (notification.active != _isPinching) {
+          setState(() => _isPinching = notification.active);
+        }
+        return false;
+      },
+      child: TabBarView(
+        controller: widget.tabController,
+        physics: _isPinching ? const NeverScrollableScrollPhysics() : null,
+        children: [
+          for (final tab in widget.tabs)
+            switch (tab) {
+              _LibraryTab.drafts => const DraftsTab(showRecordButton: false),
+              _LibraryTab.clips => ClipsTab(
+                clips: widget.clips,
+                selectionEnabled: widget.selectionEnabled,
+                targetAspectRatio: widget.targetAspectRatio,
+                showRecordButton: false,
+                // Matches the shell _LibraryContent paints behind the tabs.
+                backgroundColor: context.vineColors.surfaceContainerHigh,
+              ),
+              _LibraryTab.sounds => const SoundsTab(),
+            },
+        ],
+      ),
     );
   }
 }

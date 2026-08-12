@@ -5,4 +5,5 @@ export 'clips_tab.dart';
 export 'drafts_tab.dart';
 export 'empty_library_state.dart';
 export 'library_toolbar.dart';
+export 'pinch_zoom_grid.dart';
 export 'sounds_tab.dart';

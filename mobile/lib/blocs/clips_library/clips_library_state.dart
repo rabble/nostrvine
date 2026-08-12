@@ -40,6 +40,24 @@ enum ClipSort {
   }
 }
 
+/// Column-count bounds for the pinch-zoomable clips grid.
+abstract class ClipGridColumns {
+  /// Fewest columns — the most zoomed-in step, with the largest thumbnails.
+  static const min = 2;
+
+  /// Most columns — the most zoomed-out step, with the smallest thumbnails.
+  static const max = 5;
+
+  /// Column count before the user has pinched the grid.
+  static const initial = 3;
+
+  /// SharedPreferences key for the persisted column count.
+  static const prefsKey = 'library_clip_grid_columns';
+
+  /// Clamps [value] into the supported range.
+  static int clamp(int value) => value.clamp(min, max);
+}
+
 /// Which clip types the library shows.
 ///
 /// Opened from the recorder, the library is scoped to the type that matches
@@ -158,6 +176,7 @@ final class ClipsLibraryState extends Equatable {
     this.preSelectedIds = const {},
     this.selectedDuration = Duration.zero,
     this.clipSort = ClipSort.newestCreation,
+    this.gridColumnCount = ClipGridColumns.initial,
     this.isLibrarySelectionMode = false,
     this.didAutoOpenSelectionMode = false,
     this.lastGallerySaveResult,
@@ -195,6 +214,11 @@ final class ClipsLibraryState extends Equatable {
   /// Active sort order for [sortedClips]. Persisted via
   /// [SharedPreferences] using [ClipSort.persistenceKey].
   final ClipSort clipSort;
+
+  /// How many columns the clips grid renders. Changed by pinch-to-zoom on
+  /// the grid and persisted via [SharedPreferences] under
+  /// [ClipGridColumns.prefsKey].
+  final int gridColumnCount;
 
   /// Whether the library UI is currently in multi-select mode (the
   /// non-`selectionMode` screen entry-point can toggle this on/off).
@@ -255,6 +279,7 @@ final class ClipsLibraryState extends Equatable {
     Set<String>? preSelectedIds,
     Duration? selectedDuration,
     ClipSort? clipSort,
+    int? gridColumnCount,
     bool? isLibrarySelectionMode,
     bool? didAutoOpenSelectionMode,
     GallerySaveResult? lastGallerySaveResult,
@@ -274,6 +299,7 @@ final class ClipsLibraryState extends Equatable {
       preSelectedIds: preSelectedIds ?? this.preSelectedIds,
       selectedDuration: selectedDuration ?? this.selectedDuration,
       clipSort: clipSort ?? this.clipSort,
+      gridColumnCount: gridColumnCount ?? this.gridColumnCount,
       isLibrarySelectionMode:
           isLibrarySelectionMode ?? this.isLibrarySelectionMode,
       didAutoOpenSelectionMode:
@@ -301,6 +327,7 @@ final class ClipsLibraryState extends Equatable {
     preSelectedIds,
     selectedDuration,
     clipSort,
+    gridColumnCount,
     isLibrarySelectionMode,
     didAutoOpenSelectionMode,
     lastGallerySaveResult,
