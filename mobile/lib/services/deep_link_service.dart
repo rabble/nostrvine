@@ -179,7 +179,14 @@ class DeepLinkService {
       // The signer opens this scheme to bring our app back to foreground
       // after the user approves the connection. We emit signerCallback so
       // listeners can trigger relay reconnection for the nostrconnect session.
-      if (uri.scheme == 'divine') {
+      //
+      // Match the callback the app actually mints — `divine://nostrconnect`
+      // (see NostrConnectCoordinator) — plus the bare scheme shapes
+      // (`divine:`, `divine://`, `divine:///`), which carry no route intent
+      // and should still foreground the app. Matching on scheme alone made
+      // every divine:// URL a signer callback and bounced it to /welcome
+      // (#6733).
+      if (isDivineSignerCallbackUri(uri)) {
         Log.info(
           'Received NIP-46 signer callback: ${redactUriStringForLogs(url)}',
           name: 'DeepLinkService',

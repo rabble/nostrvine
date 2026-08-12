@@ -378,6 +378,50 @@ void main() {
           equals('wss://localrelay.link:28443'),
         );
       });
+
+      test('parses a bare nostrconnect callback with no query', () {
+        final result = DeepLinkService.parseDeepLink('divine://nostrconnect');
+
+        expect(result.type, equals(DeepLinkType.signerCallback));
+        expect(result.signerCallbackRelay, isNull);
+      });
+
+      test('parses a nostrconnect callback with a trailing slash', () {
+        final result = DeepLinkService.parseDeepLink('divine://nostrconnect/');
+
+        expect(result.type, equals(DeepLinkType.signerCallback));
+      });
+
+      // A signer that returns only the scheme still needs to foreground the
+      // app, and these shapes carry no route intent.
+      for (final url in <String>['divine:', 'divine://', 'divine:///']) {
+        test('treats the bare shape $url as a signer callback', () {
+          expect(
+            DeepLinkService.parseDeepLink(url).type,
+            equals(DeepLinkType.signerCallback),
+          );
+        });
+      }
+
+      // Regression guard for #6733: matching on scheme alone classified every
+      // divine:// URL as a signer callback, which bounced app routes to
+      // /welcome and let any third party trigger the callback side effects.
+      for (final url in <String>[
+        'divine:///video/abc123',
+        'divine://video/abc123',
+        'divine:///saved-videos',
+        'divine:///profile/npub1abc123def456',
+        'divine:///settings',
+        'divine:///developer-options',
+        'divine://quick-action/camera',
+      ]) {
+        test('does not classify $url as a signer callback', () {
+          expect(
+            DeepLinkService.parseDeepLink(url).type,
+            isNot(equals(DeepLinkType.signerCallback)),
+          );
+        });
+      }
     });
 
     group('Unknown URL Patterns', () {
