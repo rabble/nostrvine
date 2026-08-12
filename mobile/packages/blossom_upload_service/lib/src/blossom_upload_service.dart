@@ -34,6 +34,40 @@ void _logUploadPhase(String phase, Duration elapsed, {String? detail}) {
   );
 }
 
+/// Name of the performance trace covering a video upload.
+const _uploadTraceName = 'video_upload';
+
+/// Attribute tagging how the traced upload ended, so the console can keep
+/// failed, cancelled and handed-off uploads out of the duration distribution.
+const _outcomeAttribute = 'outcome';
+
+/// The upload reached the server and the blob is addressable.
+const _outcomeSuccess = 'success';
+
+/// The user stopped the upload. Terminal but not a failure, so it is kept
+/// apart from `error:*` rather than folded into it.
+const _outcomeCancelled = 'cancelled';
+
+/// The file was handed to the OS background transport and the traced,
+/// in-process work is done. The transfer itself completes later, outside this
+/// trace, so its duration says nothing about upload throughput.
+const _outcomeEnqueued = 'enqueued';
+
+/// Something escaped the upload without producing a result.
+const _outcomeThrew = 'threw';
+
+/// Value for [_outcomeAttribute] describing how [result] ended.
+///
+/// Mirrors the `video_publish` convention: `success`, or `error:<reason>`
+/// keyed on [BlossomUploadFailureReason], with a user cancellation broken out
+/// as its own value.
+String _uploadOutcome(BlossomUploadResult result) {
+  if (result.success) return _outcomeSuccess;
+  final reason = result.failureReason;
+  if (reason == BlossomUploadFailureReason.cancelled) return _outcomeCancelled;
+  return 'error:${(reason ?? BlossomUploadFailureReason.unknown).name}';
+}
+
 bool _hasTransientDioSignal(DioException error) {
   final statusCode = error.response?.statusCode;
   if (statusCode != null && statusCode >= 500) return true;
@@ -1922,8 +1956,48 @@ class BlossomUploadService {
     void Function(double)? onProgress,
   }) async {
     // Start performance trace for video upload
-    await _performanceMonitor.startTrace('video_upload');
+    await _performanceMonitor.startTrace(_uploadTraceName);
 
+    try {
+      final result = await _uploadVideoTraced(
+        videoFile: videoFile,
+        nostrPubkey: nostrPubkey,
+        title: title,
+        proofManifestJson: proofManifestJson,
+        description: description,
+        hashtags: hashtags,
+        resumableSession: resumableSession,
+        onResumableSessionUpdated: onResumableSessionUpdated,
+        onProgress: onProgress,
+      );
+      _performanceMonitor.putAttribute(
+        _uploadTraceName,
+        _outcomeAttribute,
+        _uploadOutcome(result),
+      );
+      return result;
+    } finally {
+      // Stop performance trace
+      await _performanceMonitor.stopTrace(_uploadTraceName);
+    }
+  }
+
+  /// Body of [uploadVideo], run inside its `video_upload` trace.
+  ///
+  /// Split out so the outcome can be tagged from the single returned result
+  /// instead of at each of the method's exits.
+  Future<BlossomUploadResult> _uploadVideoTraced({
+    required File videoFile,
+    required String nostrPubkey,
+    required String title,
+    required String? proofManifestJson,
+    required String? description,
+    required List<String>? hashtags,
+    required BlossomResumableUploadSession? resumableSession,
+    required void Function(BlossomResumableUploadSession)?
+    onResumableSessionUpdated,
+    required void Function(double)? onProgress,
+  }) async {
     try {
       // Check authentication before attempting any uploads
       if (!authProvider.isAuthenticated) {
@@ -1957,7 +2031,7 @@ class BlossomUploadService {
 
       // Add file size metric to performance trace
       _performanceMonitor.setMetric(
-        'video_upload',
+        _uploadTraceName,
         'file_size_bytes',
         fileSize,
       );
@@ -2145,9 +2219,6 @@ class BlossomUploadService {
         errorMessage: 'Blossom upload failed: $e',
         failureReason: _classifyUploadException(e),
       );
-    } finally {
-      // Stop performance trace
-      await _performanceMonitor.stopTrace('video_upload');
     }
   }
 
@@ -2189,13 +2260,21 @@ class BlossomUploadService {
     }
 
     var traceRunning = false;
+    // Overwritten before every exit that produces a result; the initial value
+    // covers a throw on the way to one (hashing, server discovery, signing).
+    var traceOutcome = _outcomeThrew;
     Future<void> stopTraceOnce() async {
       if (!traceRunning) return;
       traceRunning = false;
-      await _performanceMonitor.stopTrace('video_upload');
+      _performanceMonitor.putAttribute(
+        _uploadTraceName,
+        _outcomeAttribute,
+        traceOutcome,
+      );
+      await _performanceMonitor.stopTrace(_uploadTraceName);
     }
 
-    await _performanceMonitor.startTrace('video_upload');
+    await _performanceMonitor.startTrace(_uploadTraceName);
     traceRunning = true;
     try {
       onProgress?.call(0.1);
@@ -2203,7 +2282,7 @@ class BlossomUploadService {
       final fileSize = hashResult.size;
       final fileHash = hashResult.hash;
       _performanceMonitor.setMetric(
-        'video_upload',
+        _uploadTraceName,
         'file_size_bytes',
         fileSize,
       );
@@ -2225,6 +2304,7 @@ class BlossomUploadService {
         );
         if (result.success) {
           onProgress?.call(1);
+          traceOutcome = _outcomeSuccess;
           return result;
         }
       }
@@ -2239,11 +2319,13 @@ class BlossomUploadService {
         authTtl: _backgroundAuthTtl,
       );
       if (authHeader == null) {
-        return const BlossomUploadResult(
+        const result = BlossomUploadResult(
           success: false,
           errorMessage: 'Failed to create Blossom authentication',
           failureReason: BlossomUploadFailureReason.authUnavailable,
         );
+        traceOutcome = _uploadOutcome(result);
+        return result;
       }
 
       final headers = <String, dynamic>{
@@ -2259,6 +2341,9 @@ class BlossomUploadService {
       );
 
       final completer = Completer<BlossomUploadResult>();
+      // Mirrors what the completer holds, readable synchronously so the trace
+      // can be tagged with a terminal outcome that landed before hand-off ends.
+      BlossomUploadResult? settledResult;
       final sub = transport.events
           .where((event) => event.taskId == taskId)
           .listen((event) {
@@ -2273,6 +2358,7 @@ class BlossomUploadService {
               serverUrl: serverUrl,
             );
             if (result.success) onProgress?.call(1);
+            settledResult = result;
             completer.complete(result);
           });
 
@@ -2288,21 +2374,32 @@ class BlossomUploadService {
             headers: stringHeaders,
             filePath: videoFile.path,
           );
+          // A transfer that already reached a terminal state during hand-off
+          // (a fast failure, or a cancel that raced it) really was covered by
+          // this trace, so report what happened. Anything still in flight
+          // outlives the trace and `enqueued` is all it can truthfully claim.
+          final settled = settledResult;
+          traceOutcome = settled == null
+              ? _outcomeEnqueued
+              : _uploadOutcome(settled);
         } on Object catch (e) {
+          final failure = BlossomUploadResult(
+            success: false,
+            errorMessage: 'Failed to enqueue background upload: $e',
+            failureReason: _classifyUploadException(e),
+          );
+          traceOutcome = _uploadOutcome(failure);
           if (!completer.isCompleted) {
-            completer.complete(
-              BlossomUploadResult(
-                success: false,
-                errorMessage: 'Failed to enqueue background upload: $e',
-                failureReason: _classifyUploadException(e),
-              ),
-            );
+            completer.complete(failure);
           }
         }
 
         // Setup + enqueue are the only in-process work; stop the trace here so
         // it doesn't span the OS-owned transfer wait (which can include a long
-        // app suspension and would otherwise pollute the perf metric).
+        // app suspension and would otherwise pollute the perf metric). The
+        // transfer's own terminal outcome lands after this point, so a handed-
+        // off upload is tagged `enqueued` rather than claiming a success it
+        // cannot yet know about.
         await stopTraceOnce();
         return await completer.future.timeout(
           timeout,

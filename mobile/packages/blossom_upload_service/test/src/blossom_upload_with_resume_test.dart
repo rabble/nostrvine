@@ -123,6 +123,9 @@ class _ThrowingPerformanceMonitor implements BlossomPerformanceMonitor {
 
   @override
   void setMetric(String traceName, String metricName, int value) {}
+
+  @override
+  void putAttribute(String traceName, String attribute, String value) {}
 }
 
 const _testServer = 'https://media.divine.video';
@@ -649,45 +652,42 @@ void main() {
       },
     );
 
-    test(
-      'resumableTimeout does NOT bound the OS-first leg',
-      () async {
-        // The OS PUT succeeds only after a delay that far exceeds the tiny
-        // resumableTimeout. If a regression wrapped the OS leg in
-        // `.timeout(resumableTimeout)`, that timeout would fire first and this
-        // upload would fail / fall through to the resumable path. Because the
-        // OS leg is deliberately unbounded by resumableTimeout, the delayed OS
-        // success is returned and the resumable control plane is never touched.
-        final transport = _FakeTransport(
-          completionDelay: const Duration(milliseconds: 150),
-        );
-        final service = BlossomUploadService(
-          authProvider: auth,
-          dio: dio,
-          defaultServerUrl: _testServer,
-          backgroundTransport: transport,
-        );
+    test('resumableTimeout does NOT bound the OS-first leg', () async {
+      // The OS PUT succeeds only after a delay that far exceeds the tiny
+      // resumableTimeout. If a regression wrapped the OS leg in
+      // `.timeout(resumableTimeout)`, that timeout would fire first and this
+      // upload would fail / fall through to the resumable path. Because the
+      // OS leg is deliberately unbounded by resumableTimeout, the delayed OS
+      // success is returned and the resumable control plane is never touched.
+      final transport = _FakeTransport(
+        completionDelay: const Duration(milliseconds: 150),
+      );
+      final service = BlossomUploadService(
+        authProvider: auth,
+        dio: dio,
+        defaultServerUrl: _testServer,
+        backgroundTransport: transport,
+      );
 
-        final result = await service.uploadVideoWithResume(
-          videoFile: videoFile,
-          nostrPubkey: _testPublicKey,
-          taskId: 'task-os-slow',
-          title: 'slow OS success under short resumable timeout',
-          description: null,
-          hashtags: null,
-          proofManifestJson: null,
-          resumableTimeout: const Duration(milliseconds: 5),
-        );
+      final result = await service.uploadVideoWithResume(
+        videoFile: videoFile,
+        nostrPubkey: _testPublicKey,
+        taskId: 'task-os-slow',
+        title: 'slow OS success under short resumable timeout',
+        description: null,
+        hashtags: null,
+        proofManifestJson: null,
+        resumableTimeout: const Duration(milliseconds: 5),
+      );
 
-        expect(result.success, isTrue);
-        expect(transport.enqueuedTaskIds, equals(['task-os-slow']));
-        // Resumable leg never reached: the OS leg outlived resumableTimeout and
-        // still won, proving resumableTimeout did not cut it.
-        verifyNever(
-          () => dio.head<dynamic>(any(), options: any(named: 'options')),
-        );
-      },
-    );
+      expect(result.success, isTrue);
+      expect(transport.enqueuedTaskIds, equals(['task-os-slow']));
+      // Resumable leg never reached: the OS leg outlived resumableTimeout and
+      // still won, proving resumableTimeout did not cut it.
+      verifyNever(
+        () => dio.head<dynamic>(any(), options: any(named: 'options')),
+      );
+    });
 
     test(
       'resumableTimeout bounds the in-process resumable leg when reached',
@@ -715,9 +715,7 @@ void main() {
             options: any(named: 'options'),
             onSendProgress: any(named: 'onSendProgress'),
           ),
-        ).thenAnswer(
-          (_) => Completer<Response<dynamic>>().future,
-        );
+        ).thenAnswer((_) => Completer<Response<dynamic>>().future);
 
         await expectLater(
           service.uploadVideoWithResume(

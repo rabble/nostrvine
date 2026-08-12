@@ -173,6 +173,10 @@ class _FirebasePerformanceAdapter implements BlossomPerformanceMonitor {
   @override
   void setMetric(String traceName, String metricName, int value) =>
       _monitor.setMetric(traceName, metricName, value);
+
+  @override
+  void putAttribute(String traceName, String attribute, String value) =>
+      _monitor.putAttribute(traceName, attribute, value);
 }
 
 /// Blossom BUD-01 authentication service for age-restricted content

@@ -14,6 +14,13 @@ abstract class BlossomPerformanceMonitor {
 
   /// Set a metric value on an active trace.
   void setMetric(String traceName, String metricName, int value);
+
+  /// Set an attribute on an active trace, so the APM console can slice the
+  /// duration distribution by it.
+  ///
+  /// Call before [stopTrace] — an attribute set after the trace is reported
+  /// is dropped.
+  void putAttribute(String traceName, String attribute, String value);
 }
 
 /// A no-op implementation that silently discards all performance calls.
@@ -29,4 +36,7 @@ class NoOpPerformanceMonitor implements BlossomPerformanceMonitor {
 
   @override
   void setMetric(String traceName, String metricName, int value) {}
+
+  @override
+  void putAttribute(String traceName, String attribute, String value) {}
 }
