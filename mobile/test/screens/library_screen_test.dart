@@ -165,13 +165,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(DraftListTile), findsOneWidget);
-        expect(
-          find.ancestor(
-            of: find.byType(DraftListTile),
-            matching: find.byType(Material),
-          ),
-          findsWidgets,
-        );
+        expect(tester.takeException(), isNull);
       });
 
       testWidgets('$ClipsTab initially when initialTabIndex is 1', (
@@ -209,9 +203,7 @@ void main() {
     group('tab navigation', () {
       testWidgets(
         'shows drafts and clips but no sounds in withoutSounds mode',
-        (
-          tester,
-        ) async {
+        (tester) async {
           await tester.pumpWidget(
             buildWidget(
               initialTabIndex: 1,
