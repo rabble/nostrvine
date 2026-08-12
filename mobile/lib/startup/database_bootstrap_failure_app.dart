@@ -113,7 +113,12 @@ class DatabaseBootstrapFailureApp extends StatelessWidget {
   final StackTrace stack;
   final VoidCallback onCloseApp;
 
-  /// Backs up and clears the local database so the next launch rebuilds it.
+  /// Clears the local database so the next launch rebuilds it.
+  ///
+  /// Receives the diagnosis so the caller can pick the file disposition: a
+  /// reset backs the database up by default, but a plaintext-shaped
+  /// [DatabaseBootstrapDiagnosis.databaseUnreadable] file is deleted outright
+  /// rather than preserved as plaintext at rest.
   ///
   /// `null` hides the affordance. Even when provided it is only offered for
   /// diagnoses where the database is already unusable — see

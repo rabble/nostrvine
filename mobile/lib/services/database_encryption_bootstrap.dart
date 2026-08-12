@@ -469,6 +469,10 @@ bool shouldRepairLocalDatabaseCacheAfterBootstrapError(Object error) {
 /// is stale: the backup this call leaves behind is encrypted under that key, so
 /// deleting it makes the backup permanently unreadable — while a retained key
 /// opens a fresh database just as well as a rotated one.
+///
+/// [deleteDatabase] overrides that backup step. Callers that have proved the
+/// file is plaintext-shaped pass [deleteSharedDatabase] via
+/// [resetUnreadablePlaintextDatabaseCache], which leaves no backup at all.
 Future<void> resetEncryptedDatabaseCache({
   required FlutterSecureStorage secureStorage,
   bool deleteCipherKey = true,
