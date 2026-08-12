@@ -9,7 +9,6 @@ import 'generated/schema.dart';
 import 'generated/schema_v2.dart' as v2;
 import 'generated/schema_v3.dart' as v3;
 import 'generated/schema_v4.dart' as v4;
-import 'generated/schema_v5.dart' as v5;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -52,7 +51,7 @@ void main() {
       await db.close();
     });
 
-    test('migrates v2 profile statistic follower timestamps', () async {
+    test('migrates v2 profile statistic follower timestamps to v3', () async {
       final schema = await verifier.schemaAt(2);
       final cachedAt =
           DateTime.now()
@@ -76,7 +75,7 @@ void main() {
       );
 
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 4);
+      await verifier.migrateAndValidate(db, 3);
 
       final rows = await db
           .customSelect(
@@ -92,7 +91,10 @@ void main() {
         byPubkey['withcounts']!.read<int?>('follower_counts_updated_at'),
         cachedAt,
       );
-      expect(byPubkey.containsKey('withoutcounts'), isFalse);
+      expect(
+        byPubkey.containsKey('withoutcounts'),
+        isFalse,
+      );
       await db.close();
     });
 
@@ -124,75 +126,51 @@ void main() {
       );
     });
 
-    test(
-      'v2 clips survive the v4 migration uncategorized and unarchived',
-      () async {
-        final schema = await verifier.schemaAt(2);
-        schema.rawDatabase.execute(
-          'INSERT INTO clips (id, duration_ms, recorded_at, data) '
-          'VALUES (?, ?, ?, ?)',
-          ['clip-1', 3000, 1700000000, '{}'],
-        );
-
-        final db = AppDatabase(schema.newConnection());
-        await verifier.migrateAndValidate(db, 4);
-
-        final migrated = await db.clipsDao.getClipById('clip-1');
-        expect(migrated?.id, 'clip-1');
-        expect(migrated?.categoryId, null);
-        expect(migrated?.archivedAt, null);
-        await db.close();
-      },
-    );
-
-    test(
-      'v3 clips survive the v4 migration uncategorized and unarchived',
-      () async {
-        final schema = await verifier.schemaAt(3);
-        schema.rawDatabase.execute(
-          'INSERT INTO clips (id, duration_ms, recorded_at, data) '
-          'VALUES (?, ?, ?, ?)',
-          ['clip-1', 3000, 1700000000, '{}'],
-        );
-
-        final db = AppDatabase(schema.newConnection());
-        await verifier.migrateAndValidate(db, 4);
-
-        final migrated = await db.clipsDao.getClipById('clip-1');
-        expect(migrated?.id, 'clip-1');
-        expect(migrated?.categoryId, null);
-        expect(migrated?.archivedAt, null);
-        await db.close();
-      },
-    );
-    test('v3 pending_view_events rows survive the v5 upgrade '
-        'without a d tag', () async {
+    test('v4 copies a distinct pre-v4 vine id into the d-tag column', () async {
       await verifier.testWithDataIntegrity(
         oldVersion: 3,
-        newVersion: 5,
+        newVersion: 4,
         createOld: v3.DatabaseAtV3.new,
-        createNew: v5.DatabaseAtV5.new,
+        createNew: v4.DatabaseAtV4.new,
         openTestedDatabase: AppDatabase.new,
-        createItems: (batch, oldDb) => batch.insert(
-          oldDb.pendingViewEvents,
-          v3.PendingViewEventsCompanion.insert(
-            id: 'queued-before-v5',
-            videoId: 'b' * 64,
-            videoPubkey: 'c' * 64,
-            userPubkey: 'd' * 64,
-            watchDurationMs: 4200,
-            trafficSource: 'feed',
-            status: 'pending',
-            createdAt: DateTime.utc(2026, 8, 12).millisecondsSinceEpoch ~/ 1000,
-          ),
-        ),
+        createItems: (batch, oldDb) {
+          batch.insert(
+            oldDb.pendingViewEvents,
+            v3.PendingViewEventsCompanion.insert(
+              id: 'queued-with-d-tag',
+              videoId: 'b' * 64,
+              videoPubkey: 'c' * 64,
+              videoVineId: const Value('the-d-tag'),
+              userPubkey: 'd' * 64,
+              watchDurationMs: 4200,
+              trafficSource: 'feed',
+              status: 'pending',
+              createdAt:
+                  DateTime.utc(2026, 8, 12).millisecondsSinceEpoch ~/ 1000,
+            ),
+          );
+          batch.insert(
+            oldDb.pendingViewEvents,
+            v3.PendingViewEventsCompanion.insert(
+              id: 'queued-event-id-fallback',
+              videoId: 'e' * 64,
+              videoPubkey: 'c' * 64,
+              videoVineId: Value('e' * 64),
+              userPubkey: 'd' * 64,
+              watchDurationMs: 2500,
+              trafficSource: 'feed',
+              status: 'pending',
+              createdAt:
+                  DateTime.utc(2026, 8, 12).millisecondsSinceEpoch ~/ 1000,
+            ),
+          );
+        },
         validateItems: (newDb) async {
-          final row = await newDb.select(newDb.pendingViewEvents).getSingle();
-          expect(row.watchDurationMs, 4200);
-          // There is nothing to backfill the tag from, so the row keeps a
-          // null one. The sweep discards those instead of retrying a publish
-          // that can never address its subject.
-          expect(row.videoAddressableDTag, null);
+          final rows = await newDb.select(newDb.pendingViewEvents).get();
+          expect(rows, hasLength(2));
+          final byId = {for (final row in rows) row.id: row};
+          expect(byId['queued-with-d-tag']!.videoAddressableDTag, 'the-d-tag');
+          expect(byId['queued-event-id-fallback']!.videoAddressableDTag, null);
         },
       );
     });

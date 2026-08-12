@@ -100,8 +100,8 @@ class ViewEventRetryService {
           continue;
         }
 
-        final addressableDTag = _addressableDTagFor(row);
-        if (addressableDTag == null) {
+        final addressableDTag = row.videoAddressableDTag;
+        if (addressableDTag == null || addressableDTag.isEmpty) {
           await _dao.deleteById(row.id);
           continue;
         }
@@ -152,17 +152,4 @@ class ViewEventRetryService {
       addressableDTag: addressableDTag,
     );
   }
-}
-
-String? _addressableDTagFor(PendingViewEvent row) {
-  final stored = row.videoAddressableDTag;
-  if (stored != null && stored.isNotEmpty) return stored;
-
-  // Before schema v4, parsed `d` tags were persisted only as vineId. Do not
-  // reuse the event-id fallback that VideoEvent assigns when `d` is absent.
-  final vineId = row.videoVineId;
-  if (vineId != null && vineId.isNotEmpty && vineId != row.videoId) {
-    return vineId;
-  }
-  return null;
 }

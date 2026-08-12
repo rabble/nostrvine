@@ -176,6 +176,17 @@ class AppDatabase extends _$AppDatabase {
             pendingViewEvents.videoAddressableDTag,
           );
         }
+        // Parsed `d` tags were stored only as video_vine_id. Copy that when it
+        // is not VideoEvent's event-id fallback. Leave true nulls alone so a
+        // later vine_id-only enqueue still cannot mint an `a` tag.
+        await customStatement('''
+          UPDATE pending_view_events
+          SET video_addressable_d_tag = video_vine_id
+          WHERE video_addressable_d_tag IS NULL
+            AND video_vine_id IS NOT NULL
+            AND video_vine_id != ''
+            AND video_vine_id != video_id
+        ''');
       }
     },
     beforeOpen: (details) async {

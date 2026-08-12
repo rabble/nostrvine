@@ -146,25 +146,27 @@ void main() {
       expect(captured[5], 1);
     });
 
-    test('recovers a legacy row d tag from its distinct vine id', () async {
-      await dao.enqueue(makeEvent(id: 'legacy', addressableDTag: null));
-      final service = makeService();
+    test(
+      'discards a null stored d tag even when vine id is distinct',
+      () async {
+        await dao.enqueue(makeEvent(id: 'legacy', addressableDTag: null));
+        final service = makeService();
 
-      await service.sweep();
+        await service.sweep();
 
-      expect(await dao.getById('legacy'), isNull);
-      final captured = verify(
-        () => publisher.publishViewEvent(
-          video: captureAny(named: 'video'),
-          startSeconds: any(named: 'startSeconds'),
-          endSeconds: any(named: 'endSeconds'),
-          source: any(named: 'source'),
-          sourceDetail: any(named: 'sourceDetail'),
-          loopCount: any(named: 'loopCount'),
-        ),
-      ).captured;
-      expect((captured.single as VideoEvent).addressableDTag, 'vine-legacy');
-    });
+        expect(await dao.getById('legacy'), isNull);
+        verifyNever(
+          () => publisher.publishViewEvent(
+            video: any(named: 'video'),
+            startSeconds: any(named: 'startSeconds'),
+            endSeconds: any(named: 'endSeconds'),
+            source: any(named: 'source'),
+            sourceDetail: any(named: 'sourceDetail'),
+            loopCount: any(named: 'loopCount'),
+          ),
+        );
+      },
+    );
 
     test('discards a legacy row whose vine id is its event id', () async {
       await dao.enqueue(
