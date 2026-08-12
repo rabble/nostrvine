@@ -713,7 +713,8 @@ String _$brokenVideoTrackerHash() =>
     r'a0b2af154496e50f633f49069986b3c0ee1f5585';
 
 /// Guard that HEAD-confirms a feed item's media is 404 and verifies moderation
-/// says the blob is `blocked` before marking it broken. Reuses the singleton
+/// says the blob is `blocked` before marking it broken. A canonical API 404
+/// is session-only and does not persist. Reuses the singleton
 /// [brokenVideoTrackerProvider] so a mark here is visible to every surface's
 /// `filterVideoList`. See #5953 / #6251.
 ///
@@ -727,7 +728,8 @@ String _$brokenVideoTrackerHash() =>
 final deadMediaFeedGuardProvider = DeadMediaFeedGuardProvider._();
 
 /// Guard that HEAD-confirms a feed item's media is 404 and verifies moderation
-/// says the blob is `blocked` before marking it broken. Reuses the singleton
+/// says the blob is `blocked` before marking it broken. A canonical API 404
+/// is session-only and does not persist. Reuses the singleton
 /// [brokenVideoTrackerProvider] so a mark here is visible to every surface's
 /// `filterVideoList`. See #5953 / #6251.
 ///
@@ -748,7 +750,8 @@ final class DeadMediaFeedGuardProvider
         $FutureModifier<DeadMediaFeedGuard>,
         $FutureProvider<DeadMediaFeedGuard> {
   /// Guard that HEAD-confirms a feed item's media is 404 and verifies moderation
-  /// says the blob is `blocked` before marking it broken. Reuses the singleton
+  /// says the blob is `blocked` before marking it broken. A canonical API 404
+  /// is session-only and does not persist. Reuses the singleton
   /// [brokenVideoTrackerProvider] so a mark here is visible to every surface's
   /// `filterVideoList`. See #5953 / #6251.
   ///

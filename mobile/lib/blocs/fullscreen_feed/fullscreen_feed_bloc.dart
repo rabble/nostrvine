@@ -39,13 +39,13 @@ typedef OnVideoConfirmedUnavailable = void Function(VideoEvent video);
 
 /// Confirms whether a player-reported unavailable video is safe to prune.
 ///
-/// Production passes [DeadMediaFeedGuard.isConfirmedUnavailable], which first
-/// HEAD-confirms a 404 and then requires moderation to say the blob is
-/// `blocked`. Quarantined and age-restricted blobs also 404 but are reversible,
-/// so they keep their error tile instead of being pruned. Tests may inject a
-/// smaller predicate.
+/// Production passes [DeadMediaFeedGuard.isConfirmedUnavailable]. An API 404
+/// is session-only; only a HEAD-confirmed 404 plus a terminal `blocked`
+/// verdict is persisted. Quarantined and age-restricted blobs also 404 but
+/// are reversible, so they keep their error tile. Tests may inject a smaller
+/// predicate.
 typedef ConfirmVideoUnavailable =
-    Future<bool> Function({
+    Future<FeedUnavailability> Function({
       required String videoId,
       required String? videoUrl,
       String? explicitSha256,
@@ -624,7 +624,7 @@ class FullscreenFeedBloc
       videoUrl: videoUrl,
       explicitSha256: video.sha256,
     );
-    if (!unavailable) {
+    if (!unavailable.shouldRemoveFromSession) {
       Log.warning(
         'FullscreenFeedBloc: Player reported notFound for $videoId but '
         'confirmation did not allow prune — video stays.',
@@ -638,11 +638,11 @@ class FullscreenFeedBloc
     // our HEAD was in flight.
     if (state.removedVideoIds.contains(videoId)) return;
 
-    // Persist the confirmed 404 first so the video stays filtered out of
-    // every list surface (feed, profile, hashtag, grids) across restarts —
-    // not just dropped from this session's in-memory caches via
-    // [_onRemoveVideo].
-    _onVideoConfirmedUnavailable?.call(video);
+    // Persist only a terminal (HEAD 404 + blocked) verdict. An API 404 is
+    // session-only because funnelcake also 404s reversible states.
+    if (unavailable.shouldPersist) {
+      _onVideoConfirmedUnavailable?.call(video);
+    }
 
     _onRemoveVideo?.call(videoId);
 
@@ -659,11 +659,11 @@ class FullscreenFeedBloc
 
   /// Fails closed: without an injected confirmer there is no moderation
   /// verdict, and a bare 404 is not grounds for the persistent prune (#6251).
-  static Future<bool> _defaultConfirmVideoUnavailable({
+  static Future<FeedUnavailability> _defaultConfirmVideoUnavailable({
     required String videoId,
     required String? videoUrl,
     String? explicitSha256,
-  }) async => false;
+  }) async => FeedUnavailability.none;
 
   /// Handle UI acknowledgement of a pending skip signal.
   void _onSkipAcknowledged(

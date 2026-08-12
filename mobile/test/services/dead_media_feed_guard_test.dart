@@ -76,7 +76,7 @@ void main() {
       );
 
       test(
-        'returns true and marks broken when the canonical API no longer has the video',
+        'returns true without persisting when the canonical API no longer has the video',
         () async {
           final apiMissingGuard = DeadMediaFeedGuard(
             brokenVideoTracker: tracker,
@@ -92,7 +92,7 @@ void main() {
           );
 
           expect(result, isTrue);
-          verify(() => tracker.markVideoBroken('v1', any())).called(1);
+          verifyNever(() => tracker.markVideoBroken(any(), any()));
           verifyNever(() => checker.isConfirmedMissing(any()));
           verifyNever(() => moderationStatusService.fetchStatus(any()));
         },
@@ -299,7 +299,7 @@ void main() {
         ).thenAnswer((_) async => true);
       });
 
-      test('is true for a 404 blocked by moderation', () async {
+      test('is persistent for a 404 blocked by moderation', () async {
         when(
           () => moderationStatusService.fetchStatus(any()),
         ).thenAnswer((_) async => status(blocked: true));
@@ -310,11 +310,11 @@ void main() {
             videoUrl: url,
             explicitSha256: 'e' * 64,
           ),
-          isTrue,
+          FeedUnavailability.persistent,
         );
       });
 
-      test('is false for a 404 that is only quarantined', () async {
+      test('is none for a 404 that is only quarantined', () async {
         when(
           () => moderationStatusService.fetchStatus(any()),
         ).thenAnswer((_) async => status(quarantined: true));
@@ -325,8 +325,28 @@ void main() {
             videoUrl: url,
             explicitSha256: 'e' * 64,
           ),
-          isFalse,
+          FeedUnavailability.none,
         );
+      });
+
+      test('is session-only when the canonical API 404s the video', () async {
+        final apiMissingGuard = DeadMediaFeedGuard(
+          brokenVideoTracker: tracker,
+          moderationStatusService: moderationStatusService,
+          availabilityChecker: checker,
+          eventMissingChecker: (_) async => true,
+        );
+
+        expect(
+          await apiMissingGuard.isConfirmedUnavailable(
+            videoId: 'v1',
+            videoUrl: url,
+            explicitSha256: 'e' * 64,
+          ),
+          FeedUnavailability.sessionOnly,
+        );
+        verifyNever(() => checker.isConfirmedMissing(any()));
+        verifyNever(() => moderationStatusService.fetchStatus(any()));
       });
     });
   });

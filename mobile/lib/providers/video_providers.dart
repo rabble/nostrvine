@@ -452,7 +452,8 @@ Future<BrokenVideoTracker> brokenVideoTracker(Ref ref) async {
 }
 
 /// Guard that HEAD-confirms a feed item's media is 404 and verifies moderation
-/// says the blob is `blocked` before marking it broken. Reuses the singleton
+/// says the blob is `blocked` before marking it broken. A canonical API 404
+/// is session-only and does not persist. Reuses the singleton
 /// [brokenVideoTrackerProvider] so a mark here is visible to every surface's
 /// `filterVideoList`. See #5953 / #6251.
 ///

@@ -32,6 +32,7 @@ import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/screens/feed/feed_immersive_cubit.dart';
 import 'package:openvine/screens/feed/feed_settings_menu.dart';
 import 'package:openvine/screens/feed/feed_tuning_snackbar.dart';
+import 'package:openvine/services/dead_media_feed_guard.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -241,9 +242,9 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
 
     // Persist permanently-unavailable ids so the video stays filtered out of
     // every list surface (feed, profile, hashtag, grids) across restarts. The
-    // bloc only fires this after DeadMediaFeedGuard confirms either the
-    // canonical API no longer has the video, or a requester-independent,
-    // terminal moderation verdict explains the media 404 (#6251).
+    // bloc only fires this after DeadMediaFeedGuard confirms a
+    // requester-independent, terminal moderation verdict explains the media
+    // 404 (#6251). An API 404 is session-only.
     void persistConfirmedUnavailable(VideoEvent video) {
       ref.read(videoEventServiceProvider).removeVideoEventCompletely(video);
       unawaited(
@@ -282,13 +283,13 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
           orElse: () => false,
         );
 
-    Future<bool> confirmVideoUnavailable({
+    Future<FeedUnavailability> confirmVideoUnavailable({
       required String videoId,
       required String? videoUrl,
       String? explicitSha256,
     }) async {
       final guard = ref.read(deadMediaFeedGuardProvider).asData?.value;
-      if (guard == null) return false;
+      if (guard == null) return FeedUnavailability.none;
       return guard.isConfirmedUnavailable(
         videoId: videoId,
         videoUrl: videoUrl,

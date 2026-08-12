@@ -7,6 +7,18 @@ import 'package:openvine/services/video_moderation_status_service.dart';
 
 typedef VideoEventMissingChecker = Future<bool> Function(String videoId);
 
+/// Why a feed item is unavailable, and whether that reason may be persisted.
+enum FeedUnavailability {
+  none,
+  sessionOnly,
+  persistent,
+}
+
+extension FeedUnavailabilityX on FeedUnavailability {
+  bool get shouldRemoveFromSession => this != FeedUnavailability.none;
+  bool get shouldPersist => this == FeedUnavailability.persistent;
+}
+
 /// Decides whether a feed item whose player failed should be treated as
 /// permanently unavailable.
 ///
@@ -45,16 +57,20 @@ class DeadMediaFeedGuard {
   final VideoEventMissingChecker? _eventMissingChecker;
   final VideoModerationStatusService _moderationStatusService;
 
-  /// Returns `true` iff either [videoId] is missing from the canonical video
-  /// API, or [videoUrl] is a HEAD-confirmed 404 and moderation confirms the
-  /// blob is `blocked`.
+  /// Classifies why [videoId] is unavailable.
   ///
-  /// Returns `false` when [videoUrl] is missing, reachable, returns any status
-  /// other than 404, the HEAD request fails, the blob hash cannot be resolved,
-  /// the moderation lookup fails, or moderation reports a reversible verdict
-  /// (quarantined / age-restricted). The caller must then keep the item
-  /// recoverable.
-  Future<bool> isConfirmedUnavailable({
+  /// A canonical API 404 is [FeedUnavailability.sessionOnly]: funnelcake's
+  /// by-id filter also 404s reversible states (quarantine, suspension,
+  /// vanished, expiry), so it must not persist a tombstone. See #6251.
+  ///
+  /// [FeedUnavailability.persistent] is only a HEAD-confirmed 404 whose
+  /// requester-independent moderation status is `blocked`.
+  ///
+  /// Returns [FeedUnavailability.none] when [videoUrl] is missing, reachable,
+  /// returns any status other than 404, the HEAD request fails, the blob hash
+  /// cannot be resolved, the moderation lookup fails, or moderation reports a
+  /// reversible verdict (quarantined / age-restricted).
+  Future<FeedUnavailability> isConfirmedUnavailable({
     required String videoId,
     required String? videoUrl,
     String? explicitSha256,
@@ -62,33 +78,36 @@ class DeadMediaFeedGuard {
     final eventMissingChecker = _eventMissingChecker;
     if (eventMissingChecker != null && videoId.isNotEmpty) {
       try {
-        if (await eventMissingChecker(videoId)) return true;
+        if (await eventMissingChecker(videoId)) {
+          return FeedUnavailability.sessionOnly;
+        }
       } on Exception {
         // API confirmation is an optional prune signal. Fall through to the
         // media/moderation path and stay conservative if that cannot confirm.
       }
     }
 
-    if (videoUrl == null || videoUrl.isEmpty) return false;
+    if (videoUrl == null || videoUrl.isEmpty) return FeedUnavailability.none;
     final missing = await _checker.isConfirmedMissing(videoUrl);
-    if (!missing) return false;
+    if (!missing) return FeedUnavailability.none;
 
     final sha256 = VideoModerationStatusService.resolveSha256(
       explicitSha256: explicitSha256,
       videoUrl: videoUrl,
     );
-    if (sha256 == null) return false;
+    if (sha256 == null) return FeedUnavailability.none;
 
     final status = await _moderationStatusService.fetchStatus(sha256);
     // `blocked` (PERMANENT_BAN) is the only terminal verdict. QUARANTINE maps
     // to blossom RESTRICT: reversible and pending review, so a quarantined
     // blob 404s now but must stay recoverable. See #6251.
-    return status?.blocked == true;
+    return status?.blocked == true
+        ? FeedUnavailability.persistent
+        : FeedUnavailability.none;
   }
 
-  /// Persists [videoId] as broken iff [isConfirmedUnavailable] returns `true`,
-  /// so [BrokenVideoTracker.isVideoBroken] (and therefore `filterVideoList`)
-  /// drops it from every list surface across restarts.
+  /// Returns `true` when the item should leave this session's feed.
+  /// Persists [videoId] as broken only for [FeedUnavailability.persistent].
   Future<bool> confirmAndMarkMissing({
     required String videoId,
     required String? videoUrl,
@@ -99,11 +118,13 @@ class DeadMediaFeedGuard {
       videoUrl: videoUrl,
       explicitSha256: explicitSha256,
     );
-    if (!unavailable) return false;
-    await _tracker.markVideoBroken(
-      videoId,
-      'Confirmed moderation-unavailable 404 in home feed',
-    );
+    if (!unavailable.shouldRemoveFromSession) return false;
+    if (unavailable.shouldPersist) {
+      await _tracker.markVideoBroken(
+        videoId,
+        'Confirmed moderation-unavailable 404 in home feed',
+      );
+    }
     return true;
   }
 }

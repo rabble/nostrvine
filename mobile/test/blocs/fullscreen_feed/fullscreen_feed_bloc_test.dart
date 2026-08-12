@@ -14,6 +14,7 @@ import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
+import 'package:openvine/services/dead_media_feed_guard.dart';
 
 class MockFileInfo extends Mock implements FileInfo {}
 
@@ -113,14 +114,23 @@ void main() {
       feedTuningRepository: feedTuningRepository,
     );
 
-    ConfirmVideoUnavailable confirmerReturning(
-      bool result, {
+    ConfirmVideoUnavailable confirmerWith(
+      FeedUnavailability result, {
       void Function(String videoId, String? videoUrl, String? explicitSha256)?
       onCall,
     }) => ({required videoId, required videoUrl, explicitSha256}) async {
       onCall?.call(videoId, videoUrl, explicitSha256);
       return result;
     };
+
+    ConfirmVideoUnavailable confirmerReturning(
+      bool result, {
+      void Function(String videoId, String? videoUrl, String? explicitSha256)?
+      onCall,
+    }) => confirmerWith(
+      result ? FeedUnavailability.persistent : FeedUnavailability.none,
+      onCall: onCall,
+    );
 
     test('initial state has correct values', () {
       final bloc = createBloc(initialIndex: 2);
@@ -1918,6 +1928,33 @@ void main() {
             (s) => s.pendingSkipTarget,
             'pendingSkipTarget',
             equals(2),
+          ),
+        ],
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'session-only confirmation removes without persisting',
+        build: () => createBloc(
+          onRemoveVideo: expectAsync1<void, String>((id) {
+            expect(id, equals('video1'));
+          }),
+          onVideoConfirmedUnavailable: (_) =>
+              fail('API-missing 404 must not persist'),
+          confirmVideoUnavailable: confirmerWith(
+            FeedUnavailability.sessionOnly,
+          ),
+        ),
+        seed: () => FullscreenFeedState(
+          status: FullscreenFeedStatus.ready,
+          videos: [createTestVideo('video1')],
+        ),
+        act: (bloc) => bloc.add(const FullscreenFeedVideoUnavailable('video1')),
+        wait: const Duration(milliseconds: 100),
+        expect: () => [
+          isA<FullscreenFeedState>().having(
+            (s) => s.removedVideoIds,
+            'removedVideoIds',
+            equals({'video1'}),
           ),
         ],
       );
