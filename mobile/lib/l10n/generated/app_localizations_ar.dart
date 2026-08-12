@@ -2254,9 +2254,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'مبدّل البيئة وإعدادات التصحيح';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle => 'تعديلات قد تتعثّر.';
-
-  @override
   String get nostrSettingsKeyManagement => 'إدارة المفاتيح';
 
   @override

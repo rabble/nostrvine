@@ -2144,10 +2144,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsDeveloperOptionsSubtitle => '環境スイッチャーとデバッグ設定';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'バグるかもしれない機能フラグを切り替える。';
-
-  @override
   String get nostrSettingsKeyManagement => '鍵の管理';
 
   @override

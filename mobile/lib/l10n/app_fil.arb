@@ -2532,7 +2532,6 @@
     "nostrSettingsMediaServersSubtitle": "I-configure ang mga Blossom upload server",
     "settingsDeveloperOptions": "Developer Options",
     "settingsDeveloperOptionsSubtitle": "Environment switcher at debug settings",
-    "nostrSettingsExperimentalFeaturesSubtitle": "I-toggle ang mga feature flag na maaaring magka-hiccup.",
     "nostrSettingsKeyManagement": "Key Management",
     "nostrSettingsKeyManagementSubtitle": "I-export, i-backup, at i-restore ang iyong Nostr keys",
     "nostrSettingsClientAttribution": "Pagkilala sa kliyente",

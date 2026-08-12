@@ -2,6 +2,7 @@
 // ABOUTME: Each service is initialized on first read and kept alive for the app lifetime
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/models/nostr_signature_verification_policy.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/audio_device_preference_service.dart';
 import 'package:openvine/services/audio_sharing_preference_service.dart';

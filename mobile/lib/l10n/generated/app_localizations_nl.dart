@@ -2282,10 +2282,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Omgevingswisselaar en debug-instellingen';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Zet feature flags aan die soms haperen.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Sleutelbeheer';
 
   @override

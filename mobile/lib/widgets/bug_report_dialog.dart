@@ -5,12 +5,13 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:openvine/blocs/bug_report/bug_report_cubit.dart';
 import 'package:openvine/blocs/bug_report/bug_report_state.dart';
 import 'package:openvine/config/bug_report_config.dart';
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/widgets/image_attachment_picker.dart';
@@ -157,7 +158,10 @@ class _BugReportView extends StatelessWidget {
       appBar: DiVineAppBar(
         title: l10n.supportReportBug,
         showBackButton: true,
-        onBackPressed: context.pop,
+        // safePop: this screen has a registered path, so the back stack
+        // can be empty on a cold entry and a raw pop would throw GoError.
+        onBackPressed: () =>
+            context.safePop(fallback: SupportCenterScreen.path),
       ),
       backgroundColor: context.vineColors.background,
       body: Column(

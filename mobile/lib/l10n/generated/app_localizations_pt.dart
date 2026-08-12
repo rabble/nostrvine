@@ -2293,10 +2293,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Seletor de ambiente e opções de depuração';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Ative flags de recursos que podem dar chilique.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Gerenciamento de chaves';
 
   @override

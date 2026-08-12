@@ -3636,7 +3636,6 @@
     "nostrSettingsMediaServersSubtitle": "Configura i server di upload Blossom",
     "settingsDeveloperOptions": "Opzioni sviluppatore",
     "settingsDeveloperOptionsSubtitle": "Selettore ambiente e impostazioni di debug",
-    "nostrSettingsExperimentalFeaturesSubtitle": "Attiva feature flag che potrebbero fare i capricci.",
     "nostrSettingsKeyManagement": "Gestione chiavi",
     "nostrSettingsKeyManagementSubtitle": "Esporta, fai il backup e ripristina le tue chiavi Nostr",
     "nostrSettingsClientAttribution": "Attribuzione del client",

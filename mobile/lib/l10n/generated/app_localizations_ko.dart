@@ -2155,10 +2155,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsDeveloperOptionsSubtitle => '환경 전환과 디버그 설정';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      '삐걱댈 수 있는 기능 플래그를 켜고 꺼봐요.';
-
-  @override
   String get nostrSettingsKeyManagement => '키 관리';
 
   @override

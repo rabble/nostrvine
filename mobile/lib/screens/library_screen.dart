@@ -288,6 +288,13 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
     );
   }
 
+  /// Deliberately imperative: [ClipsLibraryBloc] is created inside
+  /// [LibraryScreen.build] under a ValueKey over Riverpod deps and seeded with
+  /// the current `preSelectedIds` / `disabledClipIds`. A sibling GoRoute sits
+  /// outside that provider scope, and a child GoRoute stacks as a separate
+  /// page rather than nesting inside the parent's subtree, so neither can see
+  /// the bloc. Routing this needs a ShellRoute or a bloc hoist — tracked
+  /// separately, see #6481.
   Future<void> _openTrash(
     BuildContext context,
     ClipsLibraryBloc clipsBloc,

@@ -3629,7 +3629,6 @@
     "nostrSettingsMediaServersSubtitle": "إعداد خوادم الرفع Blossom",
     "settingsDeveloperOptions": "خيارات المطوّر",
     "settingsDeveloperOptionsSubtitle": "مبدّل البيئة وإعدادات التصحيح",
-    "nostrSettingsExperimentalFeaturesSubtitle": "تعديلات قد تتعثّر.",
     "nostrSettingsKeyManagement": "إدارة المفاتيح",
     "nostrSettingsKeyManagementSubtitle": "تصدير مفاتيح Nostr ونسخها واستعادتها",
     "nostrSettingsClientAttribution": "إسناد العميل",

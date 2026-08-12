@@ -2312,10 +2312,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Превключвател на средата и настройки за дебъг';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Превключвай функции, които може да се държат странно.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Управление на ключове';
 
   @override

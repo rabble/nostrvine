@@ -1280,7 +1280,6 @@
   "nostrSettingsMediaServersSubtitle": "Blossom اپلوڈ سرورز کنفیگر کریں",
   "settingsDeveloperOptions": "ڈویلپر اختیارات",
   "settingsDeveloperOptionsSubtitle": "ماحول سوئچر اور ڈیبگ ترتیبات",
-  "nostrSettingsExperimentalFeaturesSubtitle": "ایسے فیچر فلیگز ٹوگل کریں جو کبھی کبھار لڑکھڑا سکتے ہیں۔",
   "nostrSettingsKeyManagement": "کلید مینجمنٹ",
   "nostrSettingsKeyManagementSubtitle": "اپنی Nostr کلیدیں ایکسپورٹ، بیک اپ اور بحال کریں",
   "nostrSettingsClientAttribution": "کلائنٹ انتساب",

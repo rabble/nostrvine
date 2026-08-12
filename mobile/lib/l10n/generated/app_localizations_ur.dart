@@ -2274,10 +2274,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get settingsDeveloperOptionsSubtitle => 'ماحول سوئچر اور ڈیبگ ترتیبات';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'ایسے فیچر فلیگز ٹوگل کریں جو کبھی کبھار لڑکھڑا سکتے ہیں۔';
-
-  @override
   String get nostrSettingsKeyManagement => 'کلید مینجمنٹ';
 
   @override

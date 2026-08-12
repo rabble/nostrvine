@@ -3640,7 +3640,6 @@
     "nostrSettingsMediaServersSubtitle": "Configurá los servidores de subida de Blossom",
     "settingsDeveloperOptions": "Opciones de desarrollador",
     "settingsDeveloperOptionsSubtitle": "Selector de entorno y ajustes de depuración",
-    "nostrSettingsExperimentalFeaturesSubtitle": "Activá flags de funciones que pueden fallar.",
     "nostrSettingsKeyManagement": "Gestión de claves",
     "nostrSettingsKeyManagementSubtitle": "Exportá, respaldá y restaurá tus claves de Nostr",
     "nostrSettingsClientAttribution": "Atribución del cliente",

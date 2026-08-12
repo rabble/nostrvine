@@ -14,6 +14,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
+import 'package:openvine/router/routes/route_extras.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -576,15 +577,12 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
             'Tapped discovered list: ${list.name}',
             category: LogCategory.ui,
           );
-          // Use Navigator directly since we're outside the go_router shell
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => CuratedListFeedScreen(
-                listId: list.id,
-                listName: list.name,
-                videoIds: list.videoEventIds,
-                authorPubkey: list.pubkey,
-              ),
+          context.push(
+            CuratedListFeedScreen.pathForId(list.id),
+            extra: CuratedListRouteExtra(
+              listName: list.name,
+              videoIds: list.videoEventIds,
+              authorPubkey: list.pubkey,
             ),
           );
         },

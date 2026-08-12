@@ -3629,7 +3629,6 @@
     "nostrSettingsMediaServersSubtitle": "Blossom アップロードサーバーを設定",
     "settingsDeveloperOptions": "開発者オプション",
     "settingsDeveloperOptionsSubtitle": "環境スイッチャーとデバッグ設定",
-    "nostrSettingsExperimentalFeaturesSubtitle": "バグるかもしれない機能フラグを切り替える。",
     "nostrSettingsKeyManagement": "鍵の管理",
     "nostrSettingsKeyManagementSubtitle": "Nostr 鍵をエクスポート、バックアップ、復元",
     "nostrSettingsClientAttribution": "クライアント表記",

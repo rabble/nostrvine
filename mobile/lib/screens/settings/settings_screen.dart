@@ -465,12 +465,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   title: context.l10n.settingsExperimentalFeatures,
                   subtitle: context.l10n.settingsExperimentalFeaturesSubtitle,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const FeatureFlagScreen(),
-                    ),
-                  ),
+                  onTap: () => context.push(FeatureFlagScreen.path),
                 ),
                 if (isDeveloperMode) ...[
                   DivineListTile(

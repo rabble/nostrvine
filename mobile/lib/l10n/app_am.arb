@@ -1119,7 +1119,6 @@
     "nostrSettingsMediaServersSubtitle": "የBlossom ማስጫኛ አገልጋዮችን ያቀናብሩ",
     "settingsDeveloperOptions": "የገንቢ አማራጮች",
     "settingsDeveloperOptionsSubtitle": "የአካባቢ መቀየሪያ እና የማረሚያ ቅንብሮች",
-    "nostrSettingsExperimentalFeaturesSubtitle": "ሊያደናቅፉ የሚችሉ የባህሪ ባንዲራዎችን ቀይር።",
     "nostrSettingsKeyManagement": "የቁልፍ አስተዳደር",
     "nostrSettingsKeyManagementSubtitle": "የNostr ቁልፎችዎን ወደ ውጭ ይላኩ፣ ምትኬ ያስቀምጡ እና ይመልሱ",
     "nostrSettingsClientAttribution": "የደንበኛ መለያ",

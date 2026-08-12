@@ -3636,7 +3636,6 @@
     "nostrSettingsMediaServersSubtitle": "Configureer Blossom-uploadservers",
     "settingsDeveloperOptions": "Ontwikkelaarsopties",
     "settingsDeveloperOptionsSubtitle": "Omgevingswisselaar en debug-instellingen",
-    "nostrSettingsExperimentalFeaturesSubtitle": "Zet feature flags aan die soms haperen.",
     "nostrSettingsKeyManagement": "Sleutelbeheer",
     "nostrSettingsKeyManagementSubtitle": "Exporteer, back-up en herstel je Nostr-sleutels",
     "nostrSettingsClientAttribution": "Clienttoeschrijving",

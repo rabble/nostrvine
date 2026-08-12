@@ -2298,10 +2298,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Umgebungswechsler und Debug-Einstellungen';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Feature-Flags an- und ausschalten — kann holpern.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Schlüsselverwaltung';
 
   @override

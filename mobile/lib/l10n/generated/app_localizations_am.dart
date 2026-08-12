@@ -2231,10 +2231,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get settingsDeveloperOptionsSubtitle => 'የአካባቢ መቀየሪያ እና የማረሚያ ቅንብሮች';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'ሊያደናቅፉ የሚችሉ የባህሪ ባንዲራዎችን ቀይር።';
-
-  @override
   String get nostrSettingsKeyManagement => 'የቁልፍ አስተዳደር';
 
   @override

@@ -2239,10 +2239,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Ortam değiştirici ve hata ayıklama ayarları';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Aksaklık çıkarabilecek özellik bayraklarını aç/kapat.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Anahtar Yönetimi';
 
   @override

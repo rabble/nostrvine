@@ -2308,10 +2308,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Sélecteur d\'environnement et réglages de débogage';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Active des feature flags qui peuvent avoir des ratés.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Gestion des clés';
 
   @override

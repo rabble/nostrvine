@@ -2334,10 +2334,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Comutator de mediu și setări de depanare';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Activează indicatoare de funcții care s-ar putea să sughițe.';
-
-  @override
   String get nostrSettingsKeyManagement => 'Gestionare chei';
 
   @override

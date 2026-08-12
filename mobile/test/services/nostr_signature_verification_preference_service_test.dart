@@ -3,6 +3,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' as nostr_sdk;
+import 'package:openvine/models/nostr_signature_verification_policy.dart';
 import 'package:openvine/services/nostr_signature_verification_preference_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
