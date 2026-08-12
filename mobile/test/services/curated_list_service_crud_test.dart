@@ -1501,6 +1501,10 @@ void main() {
           (invocation) async =>
               _accepted(invocation.positionalArguments[0] as Event),
         );
+        when(() => mockNostr.publishEvent(any())).thenAnswer(
+          (invocation) async =>
+              PublishSuccess(event: invocation.positionalArguments[0] as Event),
+        );
 
         final result = await service.updateList(
           listId: list.id,
@@ -1511,8 +1515,8 @@ void main() {
         expect(service.getListById(list.id)!.isPublic, isFalse);
 
         // Kind 30005 is addressable: republishing under the same d-tag
-        // replaces the public copy. A kind 5 would ask relays to drop the
-        // replacement too, since it targets the same coordinate.
+        // replaces the public copy, with the items moved out of plain tags
+        // into sealed content.
         final published =
             verify(
                   () => mockNostr.publishEventAwaitOk(captureAny()),
@@ -1532,7 +1536,72 @@ void main() {
         ]);
       });
 
-      test('publishes no deletion when a list becomes private', () async {
+      test('redacts the plaintext event when a list becomes private', () async {
+        final list = await service.createList(name: 'Public List');
+        final plaintextEventId = service.getListById(list!.id)!.nostrEventId;
+        expect(plaintextEventId, isNotNull);
+        reset(mockNostr);
+        when(() => mockNostr.signer).thenReturn(mockSigner);
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+          (invocation) async =>
+              _accepted(invocation.positionalArguments[0] as Event),
+        );
+        when(() => mockNostr.publishEvent(any())).thenAnswer(
+          (invocation) async =>
+              PublishSuccess(event: invocation.positionalArguments[0] as Event),
+        );
+
+        await service.updateList(listId: list.id, isPublic: false);
+
+        // The replacement only reaches relays that accepted it, so the ones
+        // that did not are asked to drop the plaintext event instead. It has
+        // to be an `e` tag on the old event id: NIP-09 honours an `a` tag on
+        // the coordinate for every version up to the request, which would
+        // take the sealed replacement down with the original.
+        final redaction =
+            verify(
+                  () => mockNostr.publishEvent(captureAny()),
+                ).captured.single
+                as Event;
+        expect(redaction.kind, EventKind.eventDeletion);
+        expect(redaction.tags, contains(equals(['e', plaintextEventId])));
+        expect(redaction.tags, contains(equals(['k', '30005'])));
+        expect(
+          redaction.tags.any(
+            (dynamic tag) =>
+                (tag as List<dynamic>).isNotEmpty && tag.first == 'a',
+          ),
+          isFalse,
+        );
+      });
+
+      test('commits privacy when only some relays accept it', () async {
+        final list = await service.createList(name: 'Public List');
+        reset(mockNostr);
+        when(() => mockNostr.signer).thenReturn(mockSigner);
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+          (invocation) async =>
+              _partiallyAccepted(invocation.positionalArguments[0] as Event),
+        );
+        when(() => mockNostr.publishEvent(any())).thenAnswer(
+          (invocation) async =>
+              PublishSuccess(event: invocation.positionalArguments[0] as Event),
+        );
+
+        final result = await service.updateList(
+          listId: list!.id,
+          isPublic: false,
+        );
+
+        // One relay already holds the sealed copy. Reading public locally
+        // would let the next edit publish plain item tags over it, so the
+        // flip commits and the relays that rejected it get the redaction.
+        expect(result, isTrue);
+        expect(service.getListById(list.id)!.isPublic, isFalse);
+        verify(() => mockNostr.publishEvent(any())).called(1);
+      });
+
+      test('keeps a list private when its redaction fails', () async {
         final list = await service.createList(name: 'Public List');
         reset(mockNostr);
         when(() => mockNostr.signer).thenReturn(mockSigner);
@@ -1540,13 +1609,19 @@ void main() {
           (invocation) async =>
               _accepted(invocation.positionalArguments[0] as Event),
         );
+        when(
+          () => mockNostr.publishEvent(any()),
+        ).thenAnswer((_) async => const PublishNoRelays());
 
-        await service.updateList(listId: list!.id, isPublic: false);
+        final result = await service.updateList(
+          listId: list!.id,
+          isPublic: false,
+        );
 
-        final kinds = verify(
-          () => mockNostr.publishEventAwaitOk(captureAny()),
-        ).captured.cast<Event>().map((event) => event.kind);
-        expect(kinds, isNot(contains(EventKind.eventDeletion)));
+        // NIP-09 is a request relays may ignore anyway, so the flip cannot
+        // depend on it — the sealed replacement is already accepted.
+        expect(result, isTrue);
+        expect(service.getListById(list.id)!.isPublic, isFalse);
       });
 
       test('unsets the description when the edit clears it', () async {
@@ -1612,30 +1687,12 @@ void main() {
           );
 
           // Relays still hold the public copy with its items in plain tags, so
-          // showing the list as private would understate what is exposed.
+          // showing the list as private would understate what is exposed. No
+          // relay took the sealed replacement either, so there is nothing the
+          // redaction could usefully retire.
           expect(result, isFalse);
           expect(service.getListById(list.id)!.isPublic, isTrue);
-        },
-      );
-
-      test(
-        'keeps a list public when only some relays accept privacy',
-        () async {
-          final list = await service.createList(name: 'Public List');
-          reset(mockNostr);
-          when(() => mockNostr.signer).thenReturn(mockSigner);
-          when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
-            (invocation) async =>
-                _partiallyAccepted(invocation.positionalArguments[0] as Event),
-          );
-
-          final result = await service.updateList(
-            listId: list!.id,
-            isPublic: false,
-          );
-
-          expect(result, isFalse);
-          expect(service.getListById(list.id)!.isPublic, isTrue);
+          verifyNever(() => mockNostr.publishEvent(any()));
         },
       );
 
@@ -1844,9 +1901,11 @@ void main() {
         expect(await pendingPrivacy, isTrue);
         expect(await pendingAdd, isTrue);
 
-        final addEvent =
-            verify(() => mockNostr.publishEvent(captureAny())).captured.single
-                as Event;
+        // The flip also fires a kind 5 redaction of the plaintext event
+        // through the same unconfirmed path, so pick the list event out.
+        final addEvent = verify(
+          () => mockNostr.publishEvent(captureAny()),
+        ).captured.cast<Event>().singleWhere((event) => event.kind == 30005);
         expect(
           addEvent.tags.any(
             (tag) => tag.isNotEmpty && (tag.first == 'e' || tag.first == 'a'),

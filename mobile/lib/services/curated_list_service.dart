@@ -612,23 +612,20 @@ class CuratedListService extends ChangeNotifier {
 
       // Kind 30005 is addressable, so publishing under the same d-tag
       // replaces whatever the relays hold — including a public copy whose
-      // items were in plain tags. That is what makes a list private, and it
-      // is why this is a republish rather than a NIP-09 deletion: a kind 5
-      // targets the coordinate, so it would ask relays to drop the private
-      // replacement along with the public original.
+      // items were in plain tags. That is what makes a list private; the
+      // plaintext event that preceded it is then redacted by id below.
+      final becamePrivate = list.isPublic && !updatedList.isPublic;
+      final plaintextEventId = becamePrivate ? list.nostrEventId : null;
+
       if (_authService.isAuthenticated &&
-          !await _publishListToNostr(
-            updatedList,
-            confirmed: true,
-            requireAllRelays: list.isPublic && !updatedList.isPublic,
-          )) {
+          !await _publishListToNostr(updatedList, confirmed: true)) {
         // A failed metadata edit (rename, description, tags, order) is
         // retried by backfill like a failed item edit: clear the event id
         // and flag it, so the local edit is not stranded on this device and
         // later lost to a newer relay copy. A failed visibility flip is left
-        // alone — backfill republishes at accepted-by-any, which would defeat
-        // the all-relays bar the flip needs — so it stays at its old
-        // visibility for the user to retry.
+        // alone: no relay accepted the sealed replacement, so the plaintext
+        // copy is still what every relay serves and the list must keep saying
+        // public until the user retries.
         if (!visibilityChanged) {
           final currentIndex = _lists.indexWhere((l) => l.id == listId);
           if (currentIndex != -1) {
@@ -640,6 +637,10 @@ class CuratedListService extends ChangeNotifier {
           }
         }
         return false;
+      }
+
+      if (plaintextEventId != null) {
+        await _redactPlaintextListEvent(plaintextEventId);
       }
 
       // A successful publish already persisted the edit: _publishListToNostr
@@ -735,6 +736,52 @@ class CuratedListService extends ChangeNotifier {
         stackTrace: stackTrace,
       );
       return false;
+    }
+  }
+
+  /// Asks relays to drop the plaintext list event a privacy flip replaced.
+  ///
+  /// The sealed replacement already overwrote the coordinate on every relay
+  /// that accepted it; this reaches the relays that did not, so the worst
+  /// case of a partial flip is a relay serving nothing rather than a relay
+  /// still serving the items in plain `e` tags.
+  ///
+  /// Deliberately an `e` tag on [plaintextEventId] and never an `a` tag on the
+  /// coordinate: NIP-09 has relays honour a coordinate deletion for every
+  /// version up to the request's `created_at`, which would take the sealed
+  /// replacement down with the original.
+  ///
+  /// Best effort by contract. NIP-09 is a request relays SHOULD honour, and
+  /// anything that already read the public copy keeps it, so the caller must
+  /// not gate the flip on the result — the flip is already committed by the
+  /// time this runs.
+  Future<void> _redactPlaintextListEvent(String plaintextEventId) async {
+    final event = await _authService.createAndSignEvent(
+      kind: EventKind.eventDeletion,
+      content: '',
+      tags: [
+        ['e', plaintextEventId],
+        ['k', '30005'],
+      ],
+    );
+    if (event == null) {
+      Log.warning(
+        'Could not sign redaction for public list event $plaintextEventId',
+        name: 'CuratedListService',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    final result = await _nostrService.publishEvent(event);
+    final failureReason = result.failureReason;
+    if (failureReason != null) {
+      Log.warning(
+        'Failed to redact public list event $plaintextEventId: '
+        '$failureReason',
+        name: 'CuratedListService',
+        category: LogCategory.system,
+      );
     }
   }
 
@@ -1283,7 +1330,6 @@ class CuratedListService extends ChangeNotifier {
   Future<bool> _publishListToNostr(
     CuratedList list, {
     bool confirmed = false,
-    bool requireAllRelays = false,
   }) async {
     try {
       if (!_authService.isAuthenticated) {
@@ -1329,14 +1375,15 @@ class CuratedListService extends ChangeNotifier {
 
       if (confirmed) {
         final outcome = await _nostrService.publishEventAwaitOk(event);
-        // Ordinary edits are durable enough once any target accepts them. A
-        // public-to-private replacement is stricter: do not claim the list is
-        // private locally while a targeted relay explicitly rejected or did
-        // not acknowledge the encrypted replacement.
-        final accepted = requireAllRelays
-            ? outcome.acceptedByAll
-            : outcome.acceptedByAny;
-        if (!accepted) {
+        // Accepted-by-any, including the public-to-private replacement. Once
+        // one relay holds the sealed copy the list has to read private
+        // locally, or the next edit would republish plain item tags over it.
+        // Breadth is not the bar and cannot be: nothing here republishes to
+        // relays that did not accept, so a partial publish stays partial, and
+        // one wedged pool member would block every flip forever. The relays
+        // that missed the replacement are covered by the plaintext redaction
+        // in [_redactPlaintextListEvent] instead.
+        if (!outcome.acceptedByAny) {
           Log.warning(
             'Failed to publish curated list: ${list.name} (${list.id}): '
             '${outcome.summary}',
