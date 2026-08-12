@@ -17,15 +17,6 @@ import 'package:profile_repository/profile_repository.dart';
 import 'package:profile_repository/src/identity_event_selection.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-// TODO(e2e): Add divine-name-server to local_stack Docker dependencies
-// so username check/claim flows can be tested against it in E2E tests.
-const _usernameClaimUrl = 'https://names.divine.video/api/username/claim';
-const _usernameCheckUrl = 'https://names.divine.video/api/username/check';
-const _usernameReleaseUrl = 'https://names.divine.video/api/username/release';
-const _usernameByPubkeyUrl =
-    'https://names.divine.video/api/username/by-pubkey';
-const _keycastNip05Url = 'https://login.divine.video/.well-known/nostr.json';
-
 // How long a Divine-identity determination is trusted before re-querying.
 //
 // Kept equal to ModerationLabelService._resolvedPubkeyTtl (24h) so the app
@@ -76,6 +67,30 @@ const defaultProfileIndexerRelays = [
   'wss://relay.nos.social',
 ];
 
+/// Origin of the divine-name-server that owns `@divine.video` usernames.
+///
+/// Production wiring overrides this via
+/// `EnvironmentConfig.nameServerBaseUrl`. There is no staging deployment of
+/// divine-name-server today, so every environment resolves to this host; the
+/// parameter exists so tests can substitute a fake.
+const defaultNameServerBaseUrl = 'https://names.divine.video';
+
+/// Keycast NIP-05 document consulted as a second username-availability
+/// source.
+///
+/// Production wiring overrides this via `OAuthConfig.nip05Url`, which follows
+/// the environment's Keycast origin. Keycast keys its username namespace on
+/// the request Host, so this must name the same tenant the app signs in
+/// against or availability answers describe a different registry.
+const defaultKeycastNip05Url =
+    'https://login.divine.video/.well-known/nostr.json';
+
+/// Normalizes an injected endpoint so path composition cannot double the
+/// separator. `'$base/name'` on a base ending in `/` yields `//name`, which
+/// the name server routes to a 404 rather than the intended handler.
+String _stripTrailingSlash(String url) =>
+    url.endsWith('/') ? url.substring(0, url.length - 1) : url;
+
 /// Repository for fetching and publishing user profiles (Kind 0 metadata).
 class ProfileRepository implements ProfileReader {
   /// Creates a new profile repository.
@@ -91,7 +106,11 @@ class ProfileRepository implements ProfileReader {
     IdentityEventsDao? identityEventsDao,
     VanishedProfilesDao? vanishedProfilesDao,
     List<String> indexerRelays = defaultProfileIndexerRelays,
-  }) : _nostrClient = nostrClient,
+    String nameServerBaseUrl = defaultNameServerBaseUrl,
+    String keycastNip05Url = defaultKeycastNip05Url,
+  }) : _nameServerBaseUrl = _stripTrailingSlash(nameServerBaseUrl),
+       _keycastNip05Url = _stripTrailingSlash(keycastNip05Url),
+       _nostrClient = nostrClient,
        _userProfilesDao = userProfilesDao,
        _httpClient = httpClient,
        _profileStatsDao = profileStatsDao,
@@ -134,6 +153,22 @@ class ProfileRepository implements ProfileReader {
   final VanishedProfilesDao? _vanishedProfilesDao;
 
   final List<String> _indexerRelays;
+
+  final String _nameServerBaseUrl;
+  final String _keycastNip05Url;
+
+  /// NIP-98 signs the absolute request URL and the server compares it by
+  /// exact string equality, so these getters are the single source for both
+  /// the signed string and the requested string. Never rebuild either at a
+  /// call site.
+  String get _usernameClaimUrl => '$_nameServerBaseUrl/api/username/claim';
+
+  String get _usernameCheckUrl => '$_nameServerBaseUrl/api/username/check';
+
+  String get _usernameReleaseUrl => '$_nameServerBaseUrl/api/username/release';
+
+  String get _usernameByPubkeyUrl =>
+      '$_nameServerBaseUrl/api/username/by-pubkey';
 
   /// In-flight relay fetches keyed by pubkey. Concurrent callers for the
   /// same pubkey share the same future instead of firing duplicate requests.

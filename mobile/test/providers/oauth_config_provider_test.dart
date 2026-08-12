@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 void main() {
   group('oauthConfigProvider', () {
@@ -27,6 +28,14 @@ void main() {
         'https://login.divine.video/api/oauth/authorize',
       );
       expect(config.tokenUrl, 'https://login.divine.video/api/oauth/token');
+      // Feeds ProfileRepository.keycastNip05Url. The availability probe is
+      // fail-open, so a malformed value here yields silently-claimable
+      // usernames rather than a visible error.
+      expect(
+        config.nip05Url,
+        equals(defaultKeycastNip05Url),
+        reason: 'production must keep the shipped repository default',
+      );
     });
 
     test('keeps local oauth on the emulator localhost endpoint', () {
@@ -49,6 +58,14 @@ void main() {
       expect(
         config.tokenUrl,
         'http://$localHost:$localKeycastPort/api/oauth/token',
+      );
+      // LOCAL now checks username availability against the local_stack
+      // Keycast rather than production. Keycast keys its username namespace
+      // on the request Host and rejects 127.0.0.1, so this must resolve
+      // through localHost.
+      expect(
+        config.nip05Url,
+        'http://$localHost:$localKeycastPort/.well-known/nostr.json',
       );
     });
   });
