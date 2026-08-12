@@ -1554,7 +1554,17 @@ void main() {
           bookmarkStatusSyncCompleter.complete(true);
         },
         expect: () => [
+          // The in-flight save (#7073) emits before the toggle resolves; the
+          // label must not commit to a direction while it is pending.
           isA<ShareSheetState>()
+              .having((s) => s.isSaving, 'isSaving', isTrue)
+              .having(
+                (s) => s.bookmarkStatus,
+                'bookmarkStatus',
+                ShareSheetBookmarkStatus.unknown,
+              ),
+          isA<ShareSheetState>()
+              .having((s) => s.isSaving, 'isSaving', isFalse)
               .having(
                 (s) => s.bookmarkStatus,
                 'bookmarkStatus',
@@ -1617,11 +1627,20 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetSaveRequested()),
         expect: () => [
-          isA<ShareSheetState>().having(
-            (s) => s.bookmarkStatus,
-            'bookmarkStatus',
-            ShareSheetBookmarkStatus.notSaved,
-          ),
+          isA<ShareSheetState>()
+              .having((s) => s.isSaving, 'isSaving', isTrue)
+              .having(
+                (s) => s.bookmarkStatus,
+                'bookmarkStatus',
+                ShareSheetBookmarkStatus.unknown,
+              ),
+          isA<ShareSheetState>()
+              .having((s) => s.isSaving, 'isSaving', isFalse)
+              .having(
+                (s) => s.bookmarkStatus,
+                'bookmarkStatus',
+                ShareSheetBookmarkStatus.notSaved,
+              ),
         ],
       );
 
@@ -1648,11 +1667,20 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetSaveRequested()),
         expect: () => [
-          isA<ShareSheetState>().having(
-            (s) => s.bookmarkStatus,
-            'bookmarkStatus',
-            ShareSheetBookmarkStatus.saved,
-          ),
+          isA<ShareSheetState>()
+              .having((s) => s.isSaving, 'isSaving', isTrue)
+              .having(
+                (s) => s.bookmarkStatus,
+                'bookmarkStatus',
+                ShareSheetBookmarkStatus.saved,
+              ),
+          isA<ShareSheetState>()
+              .having((s) => s.isSaving, 'isSaving', isFalse)
+              .having(
+                (s) => s.bookmarkStatus,
+                'bookmarkStatus',
+                ShareSheetBookmarkStatus.saved,
+              ),
         ],
       );
     });
