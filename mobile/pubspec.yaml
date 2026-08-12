@@ -259,6 +259,9 @@ dependencies:
   # People Lists Repository - NIP-51 kind 30000 follow sets
   people_lists_repository:
 
+  # Permissions Service - runtime permission checks (camera, mic, photos)
+  permissions_service:
+
   # Profile Repository - Kind 0 user metadata persistence and search
   profile_repository:
 

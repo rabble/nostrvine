@@ -18,6 +18,8 @@ import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
 import 'package:openvine/widgets/stop_motion/stop_motion_player.dart';
 import 'package:openvine/widgets/video_clip/clip_thumbnail_image.dart';
 import 'package:openvine/widgets/video_clip/video_clip_hero.dart';
+import 'package:pro_video_editor/pro_video_editor.dart'
+    show RenderCanceledException;
 import 'package:unified_logger/unified_logger.dart';
 
 class VideoClipPreview extends ConsumerStatefulWidget {
@@ -111,7 +113,11 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreview> {
       final gallerySaveService = ref.read(gallerySaveServiceProvider);
       // Stop-motion clips render their mp4 on demand; a normal clip passes
       // through unchanged.
-      materialized = await StopMotionRenderService.materialize(widget.clip);
+      try {
+        materialized = await StopMotionRenderService.materialize(widget.clip);
+      } on RenderCanceledException {
+        materialized = null;
+      }
       if (!mounted) return;
       if (materialized == null) {
         ScaffoldMessenger.of(context).showSnackBar(

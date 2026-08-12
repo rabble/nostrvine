@@ -162,6 +162,12 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
       stickerRepository: StickerRepository(),
       onPrecacheStickers: _precacheStickers,
     );
+    // Captured while mounted: long clip renders (reverse / transform /
+    // chroma-key, ~15-20s) can finish after this State unmounts. `ref` is
+    // unsafe then, but the notifier outlives the screen for the editor
+    // session, so deferred cleanup and final-clip invalidation still need to
+    // reach it — otherwise orphans never enter `_deferredFileCleanup`.
+    final videoEditor = ref.read(videoEditorProvider.notifier);
     _clipEditorBloc = ClipEditorBloc(
       // The clip library sits behind a Riverpod provider the BLoC can't reach,
       // so it arrives as a callback — the same transition seam that brings the
@@ -172,18 +178,15 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
         if (!mounted) return false;
         return ref.read(clipManagerProvider.notifier).saveClipToLibrary(clip);
       },
-      cleanupChromaKeyFiles: (paths) {
-        if (!mounted) return;
-        ref.read(videoEditorProvider.notifier).deferFileCleanup(paths);
-      },
+      deferFileCleanup: videoEditor.deferFileCleanup,
       onFinalClipInvalidated: () {
         // A clip render (reverse / transform) can resolve after this screen is
         // disposed — the user backed out while a long clip was still
-        // re-encoding (~15-20s). Both `ref` and `_editor` are unsafe to touch
-        // once the State is unmounted, so bail before either is used;
-        // otherwise `ref.read` throws "Using ref when unmounted".
+        // re-encoding (~15-20s). `_editor` is unsafe once the State is
+        // unmounted; the video-editor notifier was captured above so cleanup
+        // and invalidation still run.
+        videoEditor.invalidateFinalRenderedClip();
         if (!mounted) return;
-        ref.read(videoEditorProvider.notifier).invalidateFinalRenderedClip();
 
         if (_editor != null) {
           // A split subdivides one clip at the same total span, so no marker

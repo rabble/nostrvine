@@ -290,6 +290,35 @@ class DivineVideoClip {
     return false;
   }
 
+  /// Every local file this clip holds a reference to.
+  ///
+  /// The canonical answer to "which files does this clip own", so the cleanup
+  /// paths that diff one clip against another — the editor's superseded-file
+  /// queue, the autosave orphan diff, the clip/library deletes — agree on the
+  /// set instead of each keeping its own list and drifting apart.
+  ///
+  /// Mirrored on the persistence side by `ClipsDao._jsonFilePathKeys`, which
+  /// answers the same question against a serialized clip; a field added here
+  /// needs its JSON key added there or the reference check stops protecting it.
+  ///
+  /// Yields nulls and duplicates: a clip's video is commonly also one of its
+  /// reverse caches. Callers filter.
+  Iterable<String?> get ownedFilePaths sync* {
+    yield video?.file?.path;
+    // Cached reverse renders: a transform or a de-key clears both, which
+    // orphans whichever of them is not also the clip's current video.
+    yield forwardVideoPath;
+    yield reversedVideoPath;
+    final frames = stopMotionFrames;
+    if (frames != null) {
+      yield* frames.map((frame) => frame.path);
+    }
+    yield thumbnailPath;
+    yield ghostFramePath;
+    yield chromaKeySourcePath;
+    yield chromaKey?.backgroundImagePath;
+  }
+
   /// Whether this clip was recorded with a front-facing camera.
   bool get isFrontCameraLens =>
       DivineCameraLens.isFrontCameraLens(lensMetadata?.lensType);

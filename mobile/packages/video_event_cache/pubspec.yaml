@@ -10,8 +10,6 @@ environment:
   sdk: ^3.11.0
 
 dependencies:
-  flutter:
-    sdk: flutter
   models:
     path: ../models
 

@@ -302,6 +302,7 @@ ApiService apiService(Ref ref) {
   final service = ApiService(
     authService: authService,
     relayManagerBaseUrl: environment.relayManagerApiUrl,
+    client: ref.watch(instrumentedHttpClientFactoryProvider)(),
   );
   // Close the owned http.Client on rebuild (env switch) — in-flight requests
   // on the old instance fail over, which switchEnvironment's cache/sub reset
@@ -315,9 +316,12 @@ ApiService apiService(Ref ref) {
 CrosspostApiClient crosspostApiClient(Ref ref) {
   final oauthClient = ref.watch(oauthClientProvider);
   final config = ref.watch(oauthConfigProvider);
+  final httpClient = ref.watch(instrumentedHttpClientFactoryProvider)();
+  ref.onDispose(httpClient.close);
   return CrosspostApiClient(
     oauthClient: oauthClient,
     serverUrl: config.serverUrl,
+    httpClient: httpClient,
   );
 }
 
@@ -338,7 +342,10 @@ BlueskyCrosspostRepository blueskyCrosspostRepository(Ref ref) {
 @riverpod
 CrossposterApiClient crossposterApiClient(Ref ref) {
   final oauthClient = ref.watch(oauthClientProvider);
-  final client = CrossposterApiClient(oauthClient: oauthClient);
+  final client = CrossposterApiClient(
+    oauthClient: oauthClient,
+    httpClient: ref.watch(instrumentedHttpClientFactoryProvider)(),
+  );
   ref.onDispose(client.close);
   return client;
 }
