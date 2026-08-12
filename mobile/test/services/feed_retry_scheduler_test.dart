@@ -90,6 +90,29 @@ void main() {
           [true, true, true, false],
         );
       });
+
+      test('clearTimeoutBudget re-arms a type that had given up', () {
+        final scheduler = build();
+        addTearDown(scheduler.dispose);
+
+        for (var i = 0; i < 4; i++) {
+          scheduler.recordFeedLoadTimeout(SubscriptionType.discovery);
+        }
+        expect(
+          scheduler.recordFeedLoadTimeout(SubscriptionType.discovery),
+          isFalse,
+        );
+
+        scheduler.clearTimeoutBudget(SubscriptionType.discovery);
+
+        expect(
+          scheduler.recordFeedLoadTimeout(SubscriptionType.discovery),
+          isTrue,
+          reason:
+              'an explicit subscribe must start over; otherwise navigate-back '
+              'after give-up never re-arms auto-retry',
+        );
+      });
     });
 
     group('scheduleWhenOnline', () {

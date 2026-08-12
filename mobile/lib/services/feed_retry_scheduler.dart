@@ -86,6 +86,16 @@ class FeedRetryScheduler {
     _consecutiveTimeouts.remove(type);
   }
 
+  /// Clears the consecutive-timeout budget for [type].
+  ///
+  /// Call when the user (or another explicit path) starts a fresh subscribe
+  /// for that feed. Without this, a type that exhausted [maxAttempts] stays
+  /// latched until a load is actually served or [resetBudgets] runs — so a
+  /// navigate-back after give-up would never re-arm auto-retry.
+  void clearTimeoutBudget(SubscriptionType type) {
+    _consecutiveTimeouts.remove(type);
+  }
+
   /// Resets every timeout budget, for an explicit user-driven retry.
   void resetBudgets() {
     _consecutiveTimeouts.clear();
