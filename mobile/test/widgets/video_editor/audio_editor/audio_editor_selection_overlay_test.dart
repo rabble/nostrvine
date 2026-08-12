@@ -1,6 +1,7 @@
 // ABOUTME: Tests for AudioEditorSelectionOverlay widget
 // ABOUTME: Validates rendering of audio metadata, play/pause toggle, and done.
 
+import 'dart:async';
 import 'dart:ui' show Tristate;
 
 import 'package:flutter/material.dart';
@@ -232,6 +233,81 @@ void main() {
           find.bySemanticsLabel(l10n.videoEditorAudioPausePreviewSemanticLabel),
           findsOneWidget,
         );
+      });
+    });
+
+    group('Progress ring', () {
+      late StreamController<Duration> positionController;
+
+      setUp(() {
+        positionController = StreamController<Duration>.broadcast();
+        when(
+          () => audioService.positionStream,
+        ).thenAnswer((_) => positionController.stream);
+        when(
+          () => audioService.duration,
+        ).thenReturn(const Duration(seconds: 10));
+      });
+
+      tearDown(() => positionController.close());
+
+      // The ring is painted as the foreground of the box holding the
+      // play/pause button, so it is the outermost paint in that subtree.
+      CustomPainter progressPainter(WidgetTester tester) {
+        final paint = tester.widget<CustomPaint>(
+          find
+              .descendant(
+                of: find.byWidgetPredicate(
+                  (widget) =>
+                      widget is SizedBox &&
+                      widget.width == 42 &&
+                      widget.height == 42,
+                ),
+                matching: find.byType(CustomPaint),
+              )
+              .first,
+        );
+        return paint.foregroundPainter!;
+      }
+
+      Future<void> emitPosition(WidgetTester tester, Duration position) async {
+        positionController.add(position);
+        await tester.idle();
+        await tester.pump();
+      }
+
+      // just_audio advances the position from the moment play() is requested,
+      // while the platform reports the true — smaller — position once it
+      // actually starts rendering audio. Painting that correction rewinds the
+      // ring at the start of every preview.
+      testWidgets('holds while the player corrects the position backwards', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget(audio: _createTestAudio()));
+        await tester.pump();
+
+        await emitPosition(tester, const Duration(milliseconds: 500));
+        final ahead = progressPainter(tester);
+
+        await emitPosition(tester, const Duration(milliseconds: 200));
+        expect(progressPainter(tester).shouldRepaint(ahead), isFalse);
+
+        await emitPosition(tester, const Duration(milliseconds: 800));
+        expect(progressPainter(tester).shouldRepaint(ahead), isTrue);
+      });
+
+      testWidgets('rewinds when playback restarts at the beginning', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget(audio: _createTestAudio()));
+        await tester.pump();
+        final atStart = progressPainter(tester);
+
+        await emitPosition(tester, const Duration(milliseconds: 500));
+        expect(progressPainter(tester).shouldRepaint(atStart), isTrue);
+
+        await emitPosition(tester, Duration.zero);
+        expect(progressPainter(tester).shouldRepaint(atStart), isFalse);
       });
     });
 
