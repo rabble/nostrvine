@@ -54,7 +54,7 @@ class AudioSelectionBottomSheet extends ConsumerStatefulWidget {
       context: context,
       maxChildSize: 1,
       initialChildSize: 1,
-      minChildSize: 0.5,
+      minChildSize: VineTheme.bottomSheetDismissFloor,
       headerPadding: const EdgeInsetsDirectional.only(
         start: 12,
         end: 12,

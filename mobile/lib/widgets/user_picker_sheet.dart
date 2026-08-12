@@ -44,7 +44,7 @@ Future<List<UserProfile>?> showUserPickerSheet(
     context: context,
     initialChildSize: 1,
     maxChildSize: 1,
-    minChildSize: 0.5,
+    minChildSize: VineTheme.bottomSheetDismissFloor,
     showDragHandle: false,
     showHeader: false,
     buildScrollBody: (scrollController) => UserPickerSheet(

@@ -675,6 +675,16 @@ class VineTheme {
   /// Border radius for bottom sheets.
   static const double bottomSheetBorderRadius = 32;
 
+  /// `minChildSize` for a draggable sheet that must not be dismissed by
+  /// accident.
+  ///
+  /// [DraggableScrollableSheet] pops its modal on reaching `minChildSize`, so
+  /// a floor set close to the size the sheet opens at turns an overscroll
+  /// flick at the top of the content into a dismissal — and a sheet that
+  /// returns its result on pop loses the pending selection with it. Half the
+  /// viewport keeps drag-to-dismiss reachable but out of reach of a twitch.
+  static const double bottomSheetDismissFloor = 0.5;
+
   /// Primary content color on surfaces (95% white).
   static const Color onSurface = Color(0xF2FFFFFF);
 

@@ -449,7 +449,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
       context: context,
       maxChildSize: 1,
       initialChildSize: 0.9,
-      minChildSize: 0.5,
+      minChildSize: VineTheme.bottomSheetDismissFloor,
       buildScrollBody: (scrollController) => LibraryScreen(
         initialTabIndex: 1,
         selectionMode: true,
@@ -529,7 +529,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
       title: Text(context.l10n.videoEditorStickers),
       maxChildSize: 1,
       initialChildSize: 1,
-      minChildSize: 0.5,
+      minChildSize: VineTheme.bottomSheetDismissFloor,
       buildScrollBody: (scrollController) => BlocProvider.value(
         value: _stickerBloc,
         child: VideoEditorStickerSheet(scrollController: scrollController),
