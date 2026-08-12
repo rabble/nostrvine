@@ -2082,7 +2082,7 @@ void main() {
         });
       });
 
-      test('a failure() result surfaces retryable failure', () {
+      test('a declined result surfaces retryable failure', () {
         when(() => mockAuthService.isAuthenticated).thenReturn(false);
         when(() => mockAuthService.isRegistered).thenReturn(false);
         when(
@@ -2090,7 +2090,11 @@ void main() {
         ).thenAnswer((_) async => PollResult.pending());
         when(
           () => mockOAuth.resendHeadlessVerification(testDeviceCode),
-        ).thenAnswer((_) async => ResendVerificationResult.failure());
+        ).thenAnswer(
+          (_) async => ResendVerificationResult.failure(
+            ResendVerificationError.declined,
+          ),
+        );
 
         fakeAsync((fake) {
           final cubit = buildCubit()
@@ -2104,6 +2108,70 @@ void main() {
           fake.elapse(const Duration(milliseconds: 100));
 
           expect(cubit.state.resendStatus, ResendStatus.failure);
+          expect(cubit.state.resendCooldownSeconds, 0);
+
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
+
+      test('an unavailable endpoint surfaces the non-retryable status', () {
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+        when(
+          () => mockOAuth.pollForCode(testDeviceCode),
+        ).thenAnswer((_) async => PollResult.pending());
+        when(
+          () => mockOAuth.resendHeadlessVerification(testDeviceCode),
+        ).thenAnswer(
+          (_) async => ResendVerificationResult.failure(
+            ResendVerificationError.unavailable,
+          ),
+        );
+
+        fakeAsync((fake) {
+          final cubit = buildCubit()
+            ..startPolling(
+              deviceCode: testDeviceCode,
+              verifier: testVerifier,
+              email: testEmail,
+            );
+
+          unawaited(cubit.resendVerification());
+          fake.elapse(const Duration(milliseconds: 100));
+
+          expect(cubit.state.resendStatus, ResendStatus.unavailable);
+
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
+
+      test('an expired registration surfaces the expired status', () {
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+        when(
+          () => mockOAuth.pollForCode(testDeviceCode),
+        ).thenAnswer((_) async => PollResult.pending());
+        when(
+          () => mockOAuth.resendHeadlessVerification(testDeviceCode),
+        ).thenAnswer(
+          (_) async =>
+              ResendVerificationResult.failure(ResendVerificationError.expired),
+        );
+
+        fakeAsync((fake) {
+          final cubit = buildCubit()
+            ..startPolling(
+              deviceCode: testDeviceCode,
+              verifier: testVerifier,
+              email: testEmail,
+            );
+
+          unawaited(cubit.resendVerification());
+          fake.elapse(const Duration(milliseconds: 100));
+
+          expect(cubit.state.resendStatus, ResendStatus.expired);
           expect(cubit.state.resendCooldownSeconds, 0);
 
           cubit.close();

@@ -68,10 +68,6 @@ void main() {
         FeatureFlag.communityContentWarnings.audience,
         FeatureFlagAudience.internal,
       );
-      expect(
-        FeatureFlag.emailVerificationPinFallback.audience,
-        FeatureFlagAudience.internal,
-      );
     });
 
     test('should leave user-facing flags visible to users', () {

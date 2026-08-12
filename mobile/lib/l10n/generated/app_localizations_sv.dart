@@ -3131,6 +3131,18 @@ class AppLocalizationsSv extends AppLocalizations {
       'Vi kunde inte skicka mejlet igen. Försök igen.';
 
   @override
+  String get authVerificationResendExpired =>
+      'That signup expired. Start again to get a fresh code.';
+
+  @override
+  String get authVerificationResendUnavailable =>
+      'Resending isn\'t available right now. Use the 6-digit code from the email we already sent you.';
+
+  @override
+  String get authVerificationPollingStopped =>
+      'We stopped checking for you. Enter the 6-digit code from your email to finish signing in.';
+
+  @override
   String get authWelcomeToDivine => 'Välkommen till Divine!';
 
   @override

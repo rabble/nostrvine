@@ -928,6 +928,63 @@ void main() {
       });
 
       group('sign up', () {
+        // Duplicate registrations are not cosmetic: each one mints a separate
+        // pending row with its own token, so the first email's link dies and
+        // the second registration's pubkey becomes the account. Measured in
+        // prod on 2026-08-10 (two registers 2.9s apart for one signup).
+        test(
+          'a second submit while the first is in flight is dropped',
+          () async {
+            final registered = Completer<(HeadlessRegisterResult, String)>();
+            when(
+              () => mockOAuth.headlessRegister(
+                email: any(named: 'email'),
+                password: any(named: 'password'),
+                scope: any(named: 'scope'),
+              ),
+            ).thenAnswer((_) => registered.future);
+            when(
+              () => mockPendingVerification.save(
+                deviceCode: any(named: 'deviceCode'),
+                verifier: any(named: 'verifier'),
+                email: any(named: 'email'),
+                inviteCode: any(named: 'inviteCode'),
+              ),
+            ).thenAnswer((_) async {});
+
+            final cubit = buildCubit()
+              ..initialize()
+              ..updateEmail(testEmail)
+              ..updatePassword(testPassword);
+
+            final first = cubit.submit();
+            // No await between the two: this is the same-frame double tap.
+            final second = cubit.submit();
+
+            registered.complete((
+              HeadlessRegisterResult(
+                success: true,
+                pubkey: 'test-pubkey',
+                verificationRequired: true,
+                deviceCode: testDeviceCode,
+                email: testEmail,
+              ),
+              testVerifier,
+            ));
+            await Future.wait([first, second]);
+
+            verify(
+              () => mockOAuth.headlessRegister(
+                email: any(named: 'email'),
+                password: any(named: 'password'),
+                scope: any(named: 'scope'),
+              ),
+            ).called(1);
+
+            await cubit.close();
+          },
+        );
+
         blocTest<DivineAuthCubit, DivineAuthState>(
           'emits $DivineAuthEmailVerification when verification is required',
           setUp: () {

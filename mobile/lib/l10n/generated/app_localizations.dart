@@ -5450,6 +5450,24 @@ abstract class AppLocalizations {
   /// **'We couldn\'t resend the email. Try again.'**
   String get authVerificationResendFailed;
 
+  /// Shown beneath the Resend button when the pending signup registration has expired, so resending cannot recover it. Tells the user to restart signup.
+  ///
+  /// In en, this message translates to:
+  /// **'That signup expired. Start again to get a fresh code.'**
+  String get authVerificationResendExpired;
+
+  /// Shown beneath the Resend button when the server has no resend endpoint, so retrying cannot help. The button stays tappable; only the resend request is unavailable. Points the user at the PIN in the email they already received.
+  ///
+  /// In en, this message translates to:
+  /// **'Resending isn\'t available right now. Use the 6-digit code from the email we already sent you.'**
+  String get authVerificationResendUnavailable;
+
+  /// Shown on the email-verification screen after the 15-minute polling window elapses, explaining why the waiting spinner disappeared and what to do instead.
+  ///
+  /// In en, this message translates to:
+  /// **'We stopped checking for you. Enter the 6-digit code from your email to finish signing in.'**
+  String get authVerificationPollingStopped;
+
   /// No description provided for @authWelcomeToDivine.
   ///
   /// In en, this message translates to:

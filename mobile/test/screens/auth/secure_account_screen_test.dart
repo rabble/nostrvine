@@ -15,8 +15,6 @@ import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
-import 'package:openvine/features/feature_flags/models/feature_flag.dart';
-import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/app_router.dart';
@@ -411,9 +409,6 @@ void main() {
                 pendingVerificationServiceProvider.overrideWithValue(
                   mockPendingVerification,
                 ),
-                isFeatureEnabledProvider(
-                  FeatureFlag.emailVerificationPinFallback,
-                ).overrideWithValue(true),
                 goRouterProvider.overrideWithValue(router),
               ],
               child: Consumer(

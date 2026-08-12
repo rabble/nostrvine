@@ -707,14 +707,19 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
         _startResendCooldown();
         return;
       }
-      // The request reached the server but it declined to send. Leave resend
-      // retryable and surface a visible failure instead of a silent dead button.
+      // Route-absent and expired-registration failures both need specific
+      // recovery guidance. Every other decline stays retryable.
+      final status = switch (result.errorCode) {
+        ResendVerificationError.unavailable => ResendStatus.unavailable,
+        ResendVerificationError.expired => ResendStatus.expired,
+        _ => ResendStatus.failure,
+      };
       Log.warning(
-        'Resend verification returned failure; keeping resend available',
+        'Resend verification failed (${result.errorCode}); status=$status',
         name: 'EmailVerificationCubit',
         category: LogCategory.auth,
       );
-      emit(state.copyWith(resendStatus: ResendStatus.failure));
+      emit(state.copyWith(resendStatus: status));
     } catch (e, stackTrace) {
       if (!_matchesActiveVerification(
         generation: generation,
