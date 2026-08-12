@@ -1362,6 +1362,46 @@ void main() {
         expect(verificationRow, isNotNull);
       });
 
+      test('recovery path — restores the staleness stamps on an existing '
+          'identity_events table', () async {
+        // The stamps arrived in v3 by altering a table that already existed,
+        // so a damaged database can hold identity_events without them. The
+        // probe only recovers what normalization can actually rebuild — if
+        // these two drifted apart the probe would fire on every startup and
+        // never repair anything.
+        await database.customStatement(
+          'ALTER TABLE identity_events DROP COLUMN source_created_at',
+        );
+        await database.customStatement(
+          'ALTER TABLE identity_events DROP COLUMN source_event_id',
+        );
+        await database.close();
+
+        database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+
+        final columns = await _collectTableInfo(database, 'identity_events');
+        final names = columns.map((column) => column.first).toList();
+        expect(
+          names,
+          containsAll(<String>['source_created_at', 'source_event_id']),
+          reason: 'the recovery probe must restore the v3 staleness stamps',
+        );
+
+        // A second reopen must find nothing left to repair.
+        await database.close();
+        database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+        await database.identityEventsDao.upsertEvent(
+          pubkey: testPubkey,
+          tagsJson: '[["i","github:alice","proof-a"]]',
+          sourceKind: 10011,
+          sourceCreatedAt: 1700000000,
+          sourceEventId: 'e' * 64,
+        );
+        final restored = await database.identityEventsDao.getEvent(testPubkey);
+        expect(restored?.sourceCreatedAt, 1700000000);
+        expect(restored?.sourceEventId, 'e' * 64);
+      });
+
       test('schema parity — identity_events fresh-install matches runtime '
           'CREATE-IF-NOT-EXISTS path', () async {
         final freshColumns = await _collectTableInfo(
@@ -1852,6 +1892,7 @@ const _v1NormalizationTables = <String>[
   'nip05_verifications',
   'pending_actions',
   'clips',
+  'clip_categories',
   'drafts',
   'direct_messages',
   'conversations',
@@ -1887,6 +1928,8 @@ const _v1NormalizationRepairIndexes = <String>[
   'idx_personal_reactions_addressable_id',
   'idx_notification_owner_timestamp',
   'idx_seen_videos_last_seen_at',
+  'idx_clip_category_id',
+  'idx_clip_category_owner_pubkey',
 ];
 
 /// The set of column names on [table] per `pragma table_info`.

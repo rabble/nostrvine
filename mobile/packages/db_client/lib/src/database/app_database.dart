@@ -20,6 +20,7 @@ const legacyV1NormalizationRepairTables = <String>[
   'pending_actions',
   'drafts',
   'clips',
+  'clip_categories',
   'direct_messages',
   'conversations',
   'outgoing_dms',
@@ -49,6 +50,8 @@ const legacyV1NormalizationRepairIndexes = <String>[
   'idx_personal_reactions_addressable_id',
   'idx_notification_owner_timestamp',
   'idx_seen_videos_last_seen_at',
+  'idx_clip_category_id',
+  'idx_clip_category_owner_pubkey',
 ];
 
 /// Main application database using Drift
@@ -930,6 +933,22 @@ class AppDatabase extends _$AppDatabase {
       ''');
     }
 
+    // The staleness stamps arrived in v3 on an already-existing table, so a
+    // damaged database can carry identity_events without them. Recreating the
+    // table above only covers the missing-table case; these two cover the
+    // missing-column case that the v3 upgrade would otherwise be the only
+    // path to.
+    await _addColumnIfMissing(
+      'identity_events',
+      'source_created_at',
+      'INTEGER NULL',
+    );
+    await _addColumnIfMissing(
+      'identity_events',
+      'source_event_id',
+      'TEXT NULL',
+    );
+
     // Check if identity_verifications table exists, create if missing.
     // Added for #3936 — same pattern as identity_events above. No index:
     // the only access is a primary-key lookup on pubkey.
@@ -1117,6 +1136,7 @@ class AppDatabase extends _$AppDatabase {
       'outgoing_dms': ['send_batch_id'],
       'personal_reactions': ['addressable_id'],
       'profile_statistics': ['follower_counts_updated_at'],
+      'identity_events': ['source_created_at', 'source_event_id'],
     };
 
     for (final entry in requiredColumns.entries) {
