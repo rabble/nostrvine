@@ -67,22 +67,18 @@ picker's **Divine** tab, whose entries come from
 is the relay-backed one, and it is the live-content dependency this file names
 elsewhere as the suite's main source of flakiness — no flow goes near it.
 
-Every file in the capture, lip-sync and stop-motion flows has been run green on
-a Galaxy SM-S942B. The lip-sync and stop-motion tests were driven test-by-test
-against an already-signed-in app rather than through their flow end to end,
-because the device runs a German system locale and `loginFreshInstall`'s
-`clearState` drops the per-app English override mid-run (see step 0b). The login
-and `removeKeys` bookends of both flows are the same ones `captureModeFlow`
-already runs.
+Every file in all four flows has been run green on a Galaxy SM-S942B. The
+lip-sync, stop-motion and classic tests were driven test-by-test against an
+already-signed-in app rather than through their flow end to end, because the
+device runs a German system locale and `loginFreshInstall`'s `clearState` drops
+the per-app English override mid-run (see step 0b). The login and `removeKeys`
+bookends of those three flows are the same ones `captureModeFlow` already runs.
 
-**`classicModeFlow` has not been run on hardware yet.** It was written against
-the classic stack's widget tree and its selectors are pinned at the widget level
-(`video_recorder_classic_*_test.dart` each assert their E2E anchors), but no
-part of it has been executed on a device. Treat a first failure there as a
-possible flow bug, not automatically an app regression — the two selector calls
-most worth checking first are `classicModeRecordingLimit`'s reliance on the
-native auto-stop reaching the Flutter side, and whether the ghost-frame
-snackbar in `classicModeControls` covers the action row it sits above.
+The classic run settled the two things only hardware could, both of which had
+been flagged as unknowns while it was written: the native auto-stop reaches the
+Flutter side as a clip, so `classicModeRecordingLimit` sees the session hold it,
+and the ghost-frame snackbar does not cover the action row `classicModeControls`
+drives above it.
 
 None of them is in **`smoke.yaml`**, and all four are deliberately off the iOS
 lane:
