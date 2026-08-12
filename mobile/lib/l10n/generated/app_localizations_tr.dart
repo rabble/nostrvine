@@ -7157,6 +7157,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Hesap değiştirdin, bu yüzden hiçbir şey silinmedi. Kaldırmak istediğin hesap için silme ekranını yeniden aç.';
 
   @override
+  String get deleteAccountAccountChangedAfterDeletion =>
+      'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+
+  @override
   String get deleteAccountBurnUsernameFailed =>
       'Kullanıcı adın serbest bırakılamadı. Hesabın silinmedi. Tekrar dene ya da seçeneğin işaretini kaldır.';
 
@@ -7186,6 +7190,10 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get deleteAccountContentDeletionFailed =>
       'İçerik rölelerden silinemedi';
+
+  @override
+  String get deleteAccountRelayConfirmationFailed =>
+      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Tüm İçeriği Sil';

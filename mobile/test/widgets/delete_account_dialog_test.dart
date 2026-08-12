@@ -605,6 +605,61 @@ void main() {
   });
 
   group('executeAccountDeletion', () {
+    testWidgets(
+      'localizes relay confirmation failure without surfacing raw service text',
+      (tester) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        when(
+          authService.checkAccountDeletionReadiness,
+        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+        when(
+          () => deletionService.deleteAccount(
+            onProgress: any(named: 'onProgress'),
+            expectedPubkey: any(named: 'expectedPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => DeleteAccountResult.failure(
+            DeleteAccountFailureReason.vanishNotConfirmed,
+            diagnosticError: 'Failed to publish deletion request to relays',
+          ),
+        );
+
+        late BuildContext capturedContext;
+        await tester.pumpWidget(
+          _wrapWithRouter(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const Scaffold(body: SizedBox.shrink());
+              },
+            ),
+          ),
+        );
+
+        await executeAccountDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = _englishL10n();
+        expect(
+          find.text(l10n.deleteAccountRelayConfirmationFailed),
+          findsOneWidget,
+        );
+        expect(
+          find.text('Failed to publish deletion request to relays'),
+          findsNothing,
+        );
+        expect(
+          find.text(l10n.deleteAccountContentDeletionFailed),
+          findsNothing,
+        );
+      },
+    );
+
     testWidgets('shows failure when local data cleanup fails after sign-out', (
       tester,
     ) async {
@@ -889,7 +944,12 @@ void main() {
           () => deletionService.deleteAccount(
             onProgress: any(named: 'onProgress'),
           ),
-        ).thenAnswer((_) async => DeleteAccountResult.failure('relay down'));
+        ).thenAnswer(
+          (_) async => DeleteAccountResult.failure(
+            DeleteAccountFailureReason.vanishNotConfirmed,
+            diagnosticError: 'relay down',
+          ),
+        );
 
         late BuildContext capturedContext;
         await tester.pumpWidget(
@@ -1489,8 +1549,8 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => DeleteAccountResult.failure(
-            'Signed-in account changed; deletion aborted',
-            accountChanged: true,
+            DeleteAccountFailureReason.accountChanged,
+            diagnosticError: 'Signed-in account changed; deletion aborted',
           ),
         );
 
@@ -1520,6 +1580,240 @@ void main() {
         expect(
           find.text('Signed-in account changed; deletion aborted'),
           findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'acknowledges a confirmed vanish when the account changes afterward',
+      (tester) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        when(
+          authService.checkAccountDeletionReadiness,
+        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+        when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyHex);
+        when(
+          () => deletionService.deleteAccount(
+            onProgress: any(named: 'onProgress'),
+            expectedPubkey: any(named: 'expectedPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => DeleteAccountResult.failure(
+            DeleteAccountFailureReason.accountChangedAfterDeletion,
+            diagnosticError:
+                'Signed-in account changed after vanish confirmation',
+          ),
+        );
+
+        late BuildContext capturedContext;
+        await tester.pumpWidget(
+          _wrapWithRouter(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const Scaffold(body: SizedBox.shrink());
+              },
+            ),
+          ),
+        );
+
+        await executeAccountDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+          confirmedPubkey: _pubkeyHex,
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          find.text(l10n.deleteAccountAccountChangedAfterDeletion),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n.deleteAccountAccountChanged),
+          findsNothing,
+        );
+        verifyNever(authService.deleteKeycastAccount);
+      },
+    );
+
+    testWidgets(
+      'stops cleanup when the account changes as deletion returns success',
+      (tester) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        var currentPubkey = _pubkeyHex;
+        when(
+          authService.checkAccountDeletionReadiness,
+        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+        when(
+          () => authService.currentPublicKeyHex,
+        ).thenAnswer((_) => currentPubkey);
+        when(
+          () => deletionService.deleteAccount(
+            onProgress: any(named: 'onProgress'),
+            expectedPubkey: any(named: 'expectedPubkey'),
+          ),
+        ).thenAnswer((_) async {
+          currentPubkey = 'a_different_pubkey_than_confirmed';
+          return DeleteAccountResult.createSuccess('event-id');
+        });
+
+        late BuildContext capturedContext;
+        await tester.pumpWidget(
+          _wrapWithRouter(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const Scaffold(body: SizedBox.shrink());
+              },
+            ),
+          ),
+        );
+
+        await executeAccountDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+          confirmedPubkey: _pubkeyHex,
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          find.text(l10n.deleteAccountAccountChangedAfterDeletion),
+          findsOneWidget,
+        );
+        verifyNever(authService.deleteKeycastAccount);
+        verifyNever(
+          () => authService.signOut(
+            deleteKeys: true,
+            deleteLocalUserData: true,
+          ),
+        );
+      },
+    );
+
+    testWidgets('does not sign out a new account after Keycast cleanup', (
+      tester,
+    ) async {
+      final deletionService = _MockAccountDeletionService();
+      final authService = _MockAuthService();
+      var currentPubkey = _pubkeyHex;
+      when(
+        authService.checkAccountDeletionReadiness,
+      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+      when(
+        () => authService.currentPublicKeyHex,
+      ).thenAnswer((_) => currentPubkey);
+      when(
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
+      ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
+      when(authService.deleteKeycastAccount).thenAnswer((_) async {
+        currentPubkey = 'a_different_pubkey_than_confirmed';
+        return (success: true, error: null, requiresReauthentication: false);
+      });
+
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ),
+      );
+
+      await executeAccountDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+        confirmedPubkey: _pubkeyHex,
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(
+        find.text(l10n.deleteAccountAccountChangedAfterDeletion),
+        findsOneWidget,
+      );
+      verify(authService.deleteKeycastAccount).called(1);
+      verifyNever(
+        () => authService.signOut(
+          deleteKeys: true,
+          deleteLocalUserData: true,
+        ),
+      );
+    });
+
+    testWidgets(
+      'uses partial-deletion copy when a failed Keycast call switches account',
+      (tester) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        var currentPubkey = _pubkeyHex;
+        when(
+          authService.checkAccountDeletionReadiness,
+        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+        when(
+          () => authService.currentPublicKeyHex,
+        ).thenAnswer((_) => currentPubkey);
+        when(() => authService.isRegistered).thenReturn(true);
+        when(
+          () => deletionService.deleteAccount(
+            onProgress: any(named: 'onProgress'),
+            expectedPubkey: any(named: 'expectedPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => DeleteAccountResult.createSuccess('event-id'),
+        );
+        when(authService.deleteKeycastAccount).thenAnswer((_) async {
+          currentPubkey = 'a_different_pubkey_than_confirmed';
+          return (
+            success: false,
+            error: 'server refused',
+            requiresReauthentication: false,
+          );
+        });
+
+        late BuildContext capturedContext;
+        await tester.pumpWidget(
+          _wrapWithRouter(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const Scaffold(body: SizedBox.shrink());
+              },
+            ),
+          ),
+        );
+
+        await executeAccountDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+          confirmedPubkey: _pubkeyHex,
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          find.text(l10n.deleteAccountAccountChangedAfterDeletion),
+          findsOneWidget,
+        );
+        expect(find.text(l10n.deleteAccountServerDeletionFailed), findsNothing);
+        verifyNever(
+          () => authService.signOut(
+            deleteKeys: true,
+            deleteLocalUserData: true,
+          ),
         );
       },
     );

@@ -6878,6 +6878,10 @@ class AppLocalizationsJa extends AppLocalizations {
       'アカウントが切り替わったから、何も削除されていないよ。削除したいアカウントで削除画面を開き直してね。';
 
   @override
+  String get deleteAccountAccountChangedAfterDeletion =>
+      'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+
+  @override
   String get deleteAccountBurnUsernameFailed =>
       'ユーザー名を解放できなかったよ。アカウントは削除されていないよ。もう一回試すか、オプションのチェックを外してね。';
 
@@ -6905,6 +6909,10 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get deleteAccountContentDeletionFailed => 'リレーからのコンテンツ削除に失敗したよ';
+
+  @override
+  String get deleteAccountRelayConfirmationFailed =>
+      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'すべてのコンテンツを削除';

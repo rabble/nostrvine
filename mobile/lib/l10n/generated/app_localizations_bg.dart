@@ -7269,6 +7269,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Смени акаунта, затова нищо не беше изтрито. Отвори отново изтриването за акаунта, който искаш да премахнеш.';
 
   @override
+  String get deleteAccountAccountChangedAfterDeletion =>
+      'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+
+  @override
   String get deleteAccountBurnUsernameFailed =>
       'Не успяхме да освободим потребителското ти име. Акаунтът ти не беше изтрит. Опитай пак или махни отметката от опцията.';
 
@@ -7299,6 +7303,10 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get deleteAccountContentDeletionFailed =>
       'Неуспешно изтриване на съдържание от релетата';
+
+  @override
+  String get deleteAccountRelayConfirmationFailed =>
+      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Изтрий цялото съдържание';

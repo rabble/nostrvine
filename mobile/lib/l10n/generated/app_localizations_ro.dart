@@ -7363,6 +7363,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Ai schimbat contul, așa că nimic nu a fost șters. Redeschide ștergerea pentru contul pe care vrei să-l elimini.';
 
   @override
+  String get deleteAccountAccountChangedAfterDeletion =>
+      'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+
+  @override
   String get deleteAccountBurnUsernameFailed =>
       'Nu am putut elibera numele tău de utilizator. Contul tău nu a fost șters. Încearcă din nou sau debifează opțiunea.';
 
@@ -7393,6 +7397,10 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get deleteAccountContentDeletionFailed =>
       'Nu am putut șterge conținutul de pe relay-uri';
+
+  @override
+  String get deleteAccountRelayConfirmationFailed =>
+      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Șterge tot conținutul';

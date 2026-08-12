@@ -7289,6 +7289,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Tu as changé de compte, donc rien n\'a été supprimé. Rouvre la suppression pour le compte que tu veux retirer.';
 
   @override
+  String get deleteAccountAccountChangedAfterDeletion =>
+      'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+
+  @override
   String get deleteAccountBurnUsernameFailed =>
       'Impossible de libérer ton nom d\'utilisateur. Ton compte n\'a pas été supprimé. Réessaie ou décoche l\'option.';
 
@@ -7319,6 +7323,10 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get deleteAccountContentDeletionFailed =>
       'Échec de la suppression du contenu des relays';
+
+  @override
+  String get deleteAccountRelayConfirmationFailed =>
+      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Supprimer tout le contenu';

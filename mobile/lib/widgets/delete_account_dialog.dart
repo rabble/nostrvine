@@ -500,8 +500,12 @@ Future<void> executeAccountDeletion({
   final localDataDeletionFailedText =
       context.l10n.deleteAccountLocalDataDeletionFailed;
   final accountChangedText = context.l10n.deleteAccountAccountChanged;
+  final accountChangedAfterDeletionText =
+      context.l10n.deleteAccountAccountChangedAfterDeletion;
   final burnUsernameFailedText = context.l10n.deleteAccountBurnUsernameFailed;
   final deletionIncompleteText = context.l10n.deleteAccountDeletionIncomplete;
+  final relayConfirmationFailedText =
+      context.l10n.deleteAccountRelayConfirmationFailed;
   final handleLabel = ownedUsername != null
       ? '@${ownedUsername.name}.divine.video'
       : null;
@@ -513,6 +517,30 @@ Future<void> executeAccountDeletion({
 
   // Whether the @divine.video handle was permanently released this run.
   var burnCommitted = false;
+
+  bool stopCleanupIfAccountChanged() {
+    if (confirmedPubkey == null ||
+        authService.currentPublicKeyHex == confirmedPubkey) {
+      return false;
+    }
+    Log.warning(
+      'Account-bound cleanup aborted after network deletion: signed-in '
+      'account changed',
+      name: screenName,
+      category: LogCategory.auth,
+    );
+    dismissProgressSheet();
+    if (context.mounted) {
+      final text = (burnCommitted && burnReleasedText != null)
+          ? burnReleasedText
+          : accountChangedAfterDeletionText;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(DivineSnackbarContainer.snackBar(text, error: true));
+      announceOutcome(text);
+    }
+    return true;
+  }
 
   try {
     // Bind to the confirmed account: if the signed-in account changed since the
@@ -650,8 +678,16 @@ Future<void> executeAccountDeletion({
     );
 
     if (result.success) {
+      // The service's signer checks end when its Future completes. Re-bind at
+      // the caller boundary before account-scoped cleanup, because Keycast
+      // deletion and sign-out resolve the account that is active right now.
+      if (stopCleanupIfAccountChanged()) return;
+
       // Step 2: Delete Keycast account if one exists (invalidates signer)
       final keycast = await authService.deleteKeycastAccount();
+      // Check before interpreting the result: `isRegistered` and every later
+      // cleanup operation are properties of the account active right now.
+      if (stopCleanupIfAccountChanged()) return;
       final keycastSuccess = keycast.success;
       final keycastError = keycast.error;
       if (!keycastSuccess && authService.isRegistered) {
@@ -752,9 +788,16 @@ Future<void> executeAccountDeletion({
       if (context.mounted) {
         final text = (burnCommitted && burnReleasedText != null)
             ? burnReleasedText
-            : result.accountChanged
-            ? accountChangedText
-            : (result.error ?? context.l10n.deleteAccountContentDeletionFailed);
+            : _deleteAccountFailureText(
+                result.failureReason,
+                accountChangedText: accountChangedText,
+                accountChangedAfterDeletionText:
+                    accountChangedAfterDeletionText,
+                relayConfirmationFailedText: relayConfirmationFailedText,
+                reauthRequiredText: context.l10n.deleteAccountReauthRequired,
+                genericFailureText:
+                    context.l10n.deleteAccountContentDeletionFailed,
+              );
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(DivineSnackbarContainer.snackBar(text, error: true));
@@ -767,6 +810,28 @@ Future<void> executeAccountDeletion({
     // Ensure the progress sheet is dismissed even if an exception occurred.
     dismissProgressSheet();
   }
+}
+
+String _deleteAccountFailureText(
+  DeleteAccountFailureReason? reason, {
+  required String accountChangedText,
+  required String accountChangedAfterDeletionText,
+  required String relayConfirmationFailedText,
+  required String reauthRequiredText,
+  required String genericFailureText,
+}) {
+  return switch (reason) {
+    DeleteAccountFailureReason.accountChanged => accountChangedText,
+    DeleteAccountFailureReason.accountChangedAfterDeletion =>
+      accountChangedAfterDeletionText,
+    DeleteAccountFailureReason.vanishNotConfirmed =>
+      relayConfirmationFailedText,
+    DeleteAccountFailureReason.notAuthenticated => reauthRequiredText,
+    DeleteAccountFailureReason.noPubkey ||
+    DeleteAccountFailureReason.signingFailed ||
+    DeleteAccountFailureReason.unexpected ||
+    null => genericFailureText,
+  };
 }
 
 /// Cubit for managing account deletion progress state.

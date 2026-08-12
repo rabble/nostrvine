@@ -7361,6 +7361,10 @@ class AppLocalizationsPl extends AppLocalizations {
       'Przełączono konto, więc nic nie zostało usunięte. Otwórz ponownie usuwanie dla konta, które chcesz usunąć.';
 
   @override
+  String get deleteAccountAccountChangedAfterDeletion =>
+      'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+
+  @override
   String get deleteAccountBurnUsernameFailed =>
       'Nie udało się zwolnić twojej nazwy użytkownika. Twoje konto nie zostało usunięte. Spróbuj ponownie albo odznacz tę opcję.';
 
@@ -7391,6 +7395,10 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get deleteAccountContentDeletionFailed =>
       'Nie udało się usunąć treści z przekaźników';
+
+  @override
+  String get deleteAccountRelayConfirmationFailed =>
+      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Usuń wszystkie treści';

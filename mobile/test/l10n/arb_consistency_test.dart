@@ -416,6 +416,12 @@ const _knownUntranslatedDebt = <String>{
   'authVerificationResendExpired',
   'authVerificationResendUnavailable',
   'authVerificationPollingStopped',
+  // Partial account-deletion copy after a confirmed deletion request;
+  // translation is deferred to the next account-management localization pass.
+  'deleteAccountAccountChangedAfterDeletion',
+  // Relay-confirmation failure copy for account deletion; translation is
+  // deferred to the next account-management localization pass.
+  'deleteAccountRelayConfirmationFailed',
   // Warning shown when a requested reusable sound fails to publish; translation
   // is deferred to the next sound-library localization pass.
   'publishAudioReuseDegradedWarning',

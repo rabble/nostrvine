@@ -7186,6 +7186,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'You switched accounts, so nothing was deleted. Reopen delete for the account you want to remove.';
 
   @override
+  String get deleteAccountAccountChangedAfterDeletion =>
+      'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+
+  @override
   String get deleteAccountBurnUsernameFailed =>
       'Couldn\'t release your username. Your account was not deleted. Try again, or uncheck the option.';
 
@@ -7215,6 +7219,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get deleteAccountContentDeletionFailed =>
       'Failed to delete content from relays';
+
+  @override
+  String get deleteAccountRelayConfirmationFailed =>
+      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Delete All Content';

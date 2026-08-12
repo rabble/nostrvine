@@ -7191,6 +7191,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Du bytte konto, så ingenting raderades. Öppna raderingen igen för kontot du vill ta bort.';
 
   @override
+  String get deleteAccountAccountChangedAfterDeletion =>
+      'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+
+  @override
   String get deleteAccountBurnUsernameFailed =>
       'Kunde inte frigöra ditt användarnamn. Ditt konto raderades inte. Försök igen eller avmarkera alternativet.';
 
@@ -7220,6 +7224,10 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get deleteAccountContentDeletionFailed =>
       'Kunde inte ta bort innehåll från relerna';
+
+  @override
+  String get deleteAccountRelayConfirmationFailed =>
+      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Ta bort allt innehåll';

@@ -71,10 +71,18 @@ const _noRelayResponse = PublishOutcome(
   noResponseFrom: <String>['wss://relay.example.com'],
 );
 
+const _alreadyVanished = PublishOutcome(
+  eventId: 'already-vanished',
+  acceptedBy: <String>[],
+  rejectedBy: {'wss://relay.example.com': 'blocked: pubkey already vanished'},
+  noResponseFrom: <String>[],
+);
+
 void main() {
   setUpAll(() {
     registerFallbackValue(_FakeEvent());
     registerFallbackValue(<Filter>[]);
+    registerFallbackValue(Duration.zero);
   });
 
   group('AccountDeletionService', () {
@@ -112,6 +120,7 @@ void main() {
       service = AccountDeletionService(
         nostrService: mockNostrService,
         authService: mockAuthService,
+        retryDelay: (_) async {},
       );
 
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
@@ -123,6 +132,15 @@ void main() {
       when(
         () => mockNostrService.connectedRelays,
       ).thenReturn(['wss://relay.example.com']);
+      when(
+        () => mockNostrService.publishEventAwaitOk(any()),
+      ).thenAnswer((_) async => _confirmed);
+      when(
+        () => mockNostrService.publishEventAwaitOk(
+          any(),
+          timeout: any(named: 'timeout'),
+        ),
+      ).thenAnswer((_) async => _confirmed);
     });
 
     test('createNip62Event should create kind 62 event', () async {
@@ -222,15 +240,16 @@ void main() {
         ),
       ).thenAnswer((_) async => expectedEvent);
 
-      when(
-        () => mockNostrService.publishEventAwaitOk(any()),
-      ).thenAnswer((_) async => _confirmed);
-
       // Act
       await expectLater(service.deleteAccount(), completes);
 
       // Assert
-      verify(() => mockNostrService.publishEventAwaitOk(any())).called(1);
+      verify(
+        () => mockNostrService.publishEventAwaitOk(
+          any(),
+          timeout: const Duration(seconds: 30),
+        ),
+      ).called(1);
     });
 
     test(
@@ -263,7 +282,7 @@ void main() {
 
         // Assert
         expect(result.success, isTrue);
-        expect(result.error, isNull);
+        expect(result.failureReason, isNull);
       },
     );
 
@@ -288,7 +307,10 @@ void main() {
 
       // publishEventAwaitOk reports every relay rejecting
       when(
-        () => mockNostrService.publishEventAwaitOk(any()),
+        () => mockNostrService.publishEventAwaitOk(
+          any(),
+          timeout: any(named: 'timeout'),
+        ),
       ).thenAnswer((_) async => _rejected);
 
       // Act
@@ -296,8 +318,11 @@ void main() {
 
       // Assert
       expect(result.success, isFalse);
-      expect(result.error, isNotNull);
-      expect(result.error, contains('Failed to publish'));
+      expect(
+        result.failureReason,
+        DeleteAccountFailureReason.vanishNotConfirmed,
+      );
+      expect(result.diagnosticError, contains('rejected'));
     });
 
     test(
@@ -322,7 +347,10 @@ void main() {
         ).thenAnswer((_) async => expectedEvent);
 
         when(
-          () => mockNostrService.publishEventAwaitOk(any()),
+          () => mockNostrService.publishEventAwaitOk(
+            any(),
+            timeout: any(named: 'timeout'),
+          ),
         ).thenAnswer((_) async => _noRelayResponse);
 
         // Act
@@ -330,7 +358,92 @@ void main() {
 
         // Assert
         expect(result.success, isFalse);
-        expect(result.error, contains('Failed to publish'));
+        expect(
+          result.failureReason,
+          DeleteAccountFailureReason.vanishNotConfirmed,
+        );
+        expect(result.diagnosticError, contains('no relay responded'));
+      },
+    );
+
+    test('deleteAccount retries vanish publish and succeeds later', () async {
+      final expectedEvent = createTestEvent(
+        pubkey: testPublicKey,
+        kind: 62,
+        tags: [
+          ['relay', 'ALL_RELAYS'],
+        ],
+        content: 'User requested account deletion via Divine app',
+      );
+
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => expectedEvent);
+
+      var publishCalls = 0;
+      when(
+        () => mockNostrService.publishEventAwaitOk(
+          any(),
+          timeout: any(named: 'timeout'),
+        ),
+      ).thenAnswer((_) async {
+        publishCalls++;
+        return publishCalls == 3 ? _confirmed : _noRelayResponse;
+      });
+
+      final result = await service.deleteAccount();
+
+      expect(result.success, isTrue);
+      expect(publishCalls, equals(3));
+      verify(
+        () => mockNostrService.publishEventAwaitOk(
+          any(),
+          timeout: const Duration(seconds: 30),
+        ),
+      ).called(3);
+    });
+
+    test(
+      'deleteAccount treats already-vanished relay rejection as success',
+      () async {
+        final expectedEvent = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 62,
+          tags: [
+            ['relay', 'ALL_RELAYS'],
+          ],
+          content: 'User requested account deletion via Divine app',
+        );
+
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((_) async => expectedEvent);
+
+        when(
+          () => mockNostrService.publishEventAwaitOk(
+            any(),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((_) async => _alreadyVanished);
+
+        final result = await service.deleteAccount();
+
+        expect(result.success, isTrue);
+        expect(result.deleteEventId, expectedEvent.id);
+        verify(
+          () => mockNostrService.publishEventAwaitOk(
+            any(),
+            timeout: any(named: 'timeout'),
+          ),
+        ).called(1);
       },
     );
 
@@ -343,7 +456,7 @@ void main() {
 
       // Assert
       expect(result.success, isFalse);
-      expect(result.error, contains('Not authenticated'));
+      expect(result.failureReason, DeleteAccountFailureReason.notAuthenticated);
 
       // Verify publishEvent was NOT called
       verifyNever(() => mockNostrService.publishEventAwaitOk(any()));
@@ -366,7 +479,7 @@ void main() {
 
         // Assert
         expect(result.success, isFalse);
-        expect(result.error, contains('Failed to create deletion event'));
+        expect(result.failureReason, DeleteAccountFailureReason.signingFailed);
 
         // Verify publishEvent was NOT called
         verifyNever(() => mockNostrService.publishEventAwaitOk(any()));
@@ -463,7 +576,13 @@ void main() {
 
           // Assert
           expect(result.success, isTrue);
-          verify(() => mockNostrService.publishEventAwaitOk(any())).called(2);
+          verify(() => mockNostrService.publishEventAwaitOk(any())).called(1);
+          verify(
+            () => mockNostrService.publishEventAwaitOk(
+              any(),
+              timeout: const Duration(seconds: 30),
+            ),
+          ).called(1);
         },
       );
 
@@ -547,7 +666,13 @@ void main() {
         // Assert
         expect(result.success, isTrue);
         expect(result.deletedEventsCount, equals(3));
-        verify(() => mockNostrService.publishEventAwaitOk(any())).called(3);
+        verify(() => mockNostrService.publishEventAwaitOk(any())).called(2);
+        verify(
+          () => mockNostrService.publishEventAwaitOk(
+            any(),
+            timeout: const Duration(seconds: 30),
+          ),
+        ).called(1);
       });
 
       test('should return deletedEventsCount in result', () async {
@@ -638,7 +763,12 @@ void main() {
         // Assert
         expect(result.success, isTrue);
         expect(result.deletedEventsCount, equals(0));
-        verify(() => mockNostrService.publishEventAwaitOk(any())).called(1);
+        verify(
+          () => mockNostrService.publishEventAwaitOk(
+            any(),
+            timeout: const Duration(seconds: 30),
+          ),
+        ).called(1);
       });
 
       test(
@@ -1108,6 +1238,110 @@ void main() {
 
     group('expectedPubkey binding', () {
       test(
+        'reports partial deletion when account changes during confirmed kind 5',
+        () async {
+          var current = testPublicKey;
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenAnswer((_) => current);
+          when(() => mockNostrService.queryEvents(any())).thenAnswer(
+            (_) async => [
+              createTestEvent(
+                pubkey: testPublicKey,
+                kind: 1,
+                tags: const [],
+                content: 'note',
+              ),
+            ],
+          );
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async => createTestEvent(
+              pubkey: testPublicKey,
+              kind: 5,
+              tags: const [],
+              content: 'deletion',
+            ),
+          );
+          when(
+            () => mockNostrService.publishEventAwaitOk(any()),
+          ).thenAnswer((_) async {
+            current = 'a_different_pubkey_than_confirmed';
+            return _confirmed;
+          });
+
+          final result = await service.deleteAccount(
+            expectedPubkey: testPublicKey,
+          );
+
+          expect(result.success, isFalse);
+          expect(
+            result.failureReason,
+            DeleteAccountFailureReason.accountChangedAfterDeletion,
+          );
+          verify(
+            () => mockNostrService.publishEventAwaitOk(any()),
+          ).called(1);
+          verifyNever(
+            () => mockNostrService.publishEventAwaitOk(
+              any(),
+              timeout: any(named: 'timeout'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'aborts when the account changes while awaiting vanish confirmation',
+        () async {
+          var current = testPublicKey;
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenAnswer((_) => current);
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async => createTestEvent(
+              pubkey: testPublicKey,
+              kind: 62,
+              tags: const [
+                ['relay', 'ALL_RELAYS'],
+              ],
+              content: 'deletion',
+            ),
+          );
+          when(
+            () => mockNostrService.publishEventAwaitOk(
+              any(),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async {
+            current = 'a_different_pubkey_than_confirmed';
+            return _confirmed;
+          });
+
+          final result = await service.deleteAccount(
+            expectedPubkey: testPublicKey,
+          );
+
+          expect(result.success, isFalse);
+          expect(
+            result.failureReason,
+            DeleteAccountFailureReason.accountChangedAfterDeletion,
+          );
+        },
+      );
+
+      test(
         'aborts before signing when the account changes mid-deletion',
         () async {
           var current = testPublicKey;
@@ -1132,8 +1366,10 @@ void main() {
           );
 
           expect(result.success, isFalse);
-          expect(result.error, contains('account changed'));
-          expect(result.accountChanged, isTrue);
+          expect(
+            result.failureReason,
+            DeleteAccountFailureReason.accountChanged,
+          );
           verifyNever(
             () => mockAuthService.createAndSignEvent(
               kind: any(named: 'kind'),
@@ -1156,7 +1392,10 @@ void main() {
           );
 
           expect(result.success, isFalse);
-          expect(result.accountChanged, isTrue);
+          expect(
+            result.failureReason,
+            DeleteAccountFailureReason.accountChanged,
+          );
           // Bailed before fetching or signing anything.
           verifyNever(() => mockNostrService.queryEvents(any()));
           verifyNever(

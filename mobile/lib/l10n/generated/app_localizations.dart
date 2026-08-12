@@ -12509,6 +12509,12 @@ abstract class AppLocalizations {
   /// **'You switched accounts, so nothing was deleted. Reopen delete for the account you want to remove.'**
   String get deleteAccountAccountChanged;
 
+  /// Error shown when a relay accepted at least one account or content deletion request but the signed-in account changed before cleanup could finish.
+  ///
+  /// In en, this message translates to:
+  /// **'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.'**
+  String get deleteAccountAccountChangedAfterDeletion;
+
   /// Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted.
   ///
   /// In en, this message translates to:
@@ -12556,6 +12562,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to delete content from relays'**
   String get deleteAccountContentDeletionFailed;
+
+  /// Error shown when the NIP-62 account deletion request could not be confirmed by any relay after bounded retries; account deletion could not proceed to server cleanup or sign-out.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t confirm account deletion with a relay. Check your connection and try again.'**
+  String get deleteAccountRelayConfirmationFailed;
 
   /// No description provided for @deleteAccountDeleteAllContentButton.
   ///

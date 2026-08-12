@@ -7280,6 +7280,10 @@ class AppLocalizationsFil extends AppLocalizations {
       'Nagpalit ka ng account, kaya walang na-delete. Buksan ulit ang pag-delete para sa account na gusto mong alisin.';
 
   @override
+  String get deleteAccountAccountChangedAfterDeletion =>
+      'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+
+  @override
   String get deleteAccountBurnUsernameFailed =>
       'Hindi ma-release ang username mo. Hindi na-delete ang account mo. Subukan ulit, o alisin ang check sa option.';
 
@@ -7309,6 +7313,10 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get deleteAccountContentDeletionFailed =>
       'Hindi nabura ang content mula sa mga relay';
+
+  @override
+  String get deleteAccountRelayConfirmationFailed =>
+      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Burahin Lahat ng Content';

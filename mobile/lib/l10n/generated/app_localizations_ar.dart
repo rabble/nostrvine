@@ -7143,6 +7143,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'لقد بدّلت الحسابات، لذا لم يُحذف أي شيء. أعد فتح الحذف للحساب الذي تريد إزالته.';
 
   @override
+  String get deleteAccountAccountChangedAfterDeletion =>
+      'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
+
+  @override
   String get deleteAccountBurnUsernameFailed =>
       'تعذّر تحرير اسم المستخدم الخاص بك. لم يُحذف حسابك. حاول مرّة أخرى، أو ألغِ تحديد الخيار.';
 
@@ -7173,6 +7177,10 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get deleteAccountContentDeletionFailed =>
       'فشل حذف المحتوى من المحوّلات';
+
+  @override
+  String get deleteAccountRelayConfirmationFailed =>
+      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'حذف كل المحتوى';
