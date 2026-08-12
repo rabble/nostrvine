@@ -22,6 +22,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/upload_media_providers.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
+import 'package:openvine/widgets/library/saved_sound_card.dart';
 import 'package:openvine/widgets/library/sounds_tab.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sound_service/sound_service.dart';
@@ -34,14 +35,32 @@ class _MockSoundSyncRepository extends Mock implements SoundSyncRepository {}
 class _FakeAudioPlaybackService extends Fake implements AudioPlaybackService {
   final positions = StreamController<Duration>.broadcast();
   Completer<void>? _playing;
+  final _loadHold = <String, Completer<void>>{};
+  final loadedUrls = <String>[];
   int playCalls = 0;
   int pauseCalls = 0;
+  int stopCalls = 0;
+
+  /// Gates the next `loadAudio` for [url] until [releaseLoad] is called.
+  void holdLoad(String url) {
+    _loadHold[url] = Completer<void>();
+  }
+
+  void releaseLoad(String url) {
+    final hold = _loadHold.remove(url);
+    if (hold != null && !hold.isCompleted) hold.complete();
+  }
 
   @override
   Stream<Duration> get positionStream => positions.stream;
 
   @override
-  Future<Duration?> loadAudio(String url) async => const Duration(seconds: 6);
+  Future<Duration?> loadAudio(String url) async {
+    final hold = _loadHold[url];
+    if (hold != null) await hold.future;
+    loadedUrls.add(url);
+    return const Duration(seconds: 6);
+  }
 
   @override
   Future<void> play() {
@@ -56,7 +75,10 @@ class _FakeAudioPlaybackService extends Fake implements AudioPlaybackService {
   }
 
   @override
-  Future<void> stop() async => _resolvePlay();
+  Future<void> stop() async {
+    stopCalls++;
+    _resolvePlay();
+  }
 
   /// Completes the sound the way reaching its end would.
   void finishPlayback() => _resolvePlay();
@@ -257,6 +279,108 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(_previewIcon(tester), DivineIconName.play);
+    });
+
+    testWidgets('rapid pause then resume keeps the preview active', (
+      tester,
+    ) async {
+      await SavedSoundsService(
+        sharedPreferences,
+      ).saveSound(_sound(id: 'sound1', title: 'Original sound - rabble'));
+      final audio = _FakeAudioPlaybackService();
+      addTearDown(audio.positions.close);
+
+      await pumpSoundsTab(tester, audioService: audio);
+      final preview = find.byKey(const Key('saved_sound_preview'));
+
+      await tester.tap(preview);
+      await tester.pumpAndSettle();
+      expect(_previewIcon(tester), DivineIconName.pause);
+
+      // Pause, then resume before the pause path's microtasks fully settle —
+      // the resolving play() must not wipe the resumed preview.
+      await tester.tap(preview);
+      await tester.tap(preview);
+      await tester.pumpAndSettle();
+
+      expect(audio.pauseCalls, 1);
+      expect(audio.playCalls, 2);
+      expect(_previewIcon(tester), DivineIconName.pause);
+    });
+
+    Finder previewOnCard(String title) => find.descendant(
+      of: find.ancestor(
+        of: find.text(title),
+        matching: find.byType(SavedSoundCard),
+      ),
+      matching: find.byKey(const Key('saved_sound_preview')),
+    );
+
+    testWidgets(
+      'switching sounds does not let the first play clear the second',
+      (tester) async {
+        final service = SavedSoundsService(sharedPreferences);
+        await service.saveSound(_sound(id: 'sound1', title: 'Loop One'));
+        await service.saveSound(_sound(id: 'sound2', title: 'Loop Two'));
+        final audio = _FakeAudioPlaybackService();
+        addTearDown(audio.positions.close);
+
+        await pumpSoundsTab(tester, audioService: audio);
+
+        await tester.tap(previewOnCard('Loop One'));
+        await tester.pumpAndSettle();
+        expect(audio.playCalls, 1);
+        expect(audio.loadedUrls.single, contains('sound1'));
+
+        await tester.tap(previewOnCard('Loop Two'));
+        await tester.pumpAndSettle();
+        expect(audio.loadedUrls.last, contains('sound2'));
+        expect(audio.playCalls, 2);
+        expect(
+          tester.widget<DivineIconButton>(previewOnCard('Loop Two')).icon,
+          DivineIconName.pause,
+        );
+
+        // Natural end of the second preview — not a wipe from the first.
+        audio.finishPlayback();
+        await tester.pumpAndSettle();
+        expect(
+          tester.widget<DivineIconButton>(previewOnCard('Loop Two')).icon,
+          DivineIconName.play,
+        );
+      },
+    );
+
+    testWidgets('overlapping loads serialize onto the later sound', (
+      tester,
+    ) async {
+      final service = SavedSoundsService(sharedPreferences);
+      await service.saveSound(_sound(id: 'sound1', title: 'Loop One'));
+      await service.saveSound(_sound(id: 'sound2', title: 'Loop Two'));
+      final audio = _FakeAudioPlaybackService();
+      addTearDown(audio.positions.close);
+      const sound1Url = 'https://example.com/audio/sound1.m4a';
+      const sound2Url = 'https://example.com/audio/sound2.m4a';
+      audio.holdLoad(sound1Url);
+
+      await pumpSoundsTab(tester, audioService: audio);
+
+      await tester.tap(previewOnCard('Loop One'));
+      await tester.pump();
+      await tester.tap(previewOnCard('Loop Two'));
+      await tester.pump();
+
+      audio.releaseLoad(sound1Url);
+      await tester.pumpAndSettle();
+
+      // sound1's load must finish (and be discarded) before sound2's load
+      // starts — never the reverse interleave on the shared player.
+      expect(audio.loadedUrls, [sound1Url, sound2Url]);
+      expect(audio.playCalls, 1);
+      expect(
+        tester.widget<DivineIconButton>(previewOnCard('Loop Two')).icon,
+        DivineIconName.pause,
+      );
     });
 
     testWidgets('saves sound selected from Add audio picker', (tester) async {

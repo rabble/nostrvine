@@ -1,6 +1,8 @@
 // ABOUTME: Sounds tab for the Library screen.
 // ABOUTME: Shows reusable sounds the user has explicitly saved.
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -62,12 +64,23 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
   /// the active card state.
   int _previewSession = 0;
 
+  /// Bumped when a running `play()` is intentionally interrupted (pause,
+  /// stop, or a newer play). The `_playToEnd` that owned the interrupted
+  /// `play()` must not treat that resolution as "the sound ended".
+  int _playEpoch = 0;
+
+  /// Serializes `loadAudio` calls on the shared player. Session checks alone
+  /// protect card state; without this gate two overlapping loads can still
+  /// interleave `setAudioSource` on [AudioPlaybackService].
+  Future<void>? _previewLoadGate;
+
   /// Cached reference to audio service for safe disposal.
   AudioPlaybackService? _audioService;
 
   @override
   void dispose() {
     _previewSession++;
+    _playEpoch++;
     if (_previewingSoundId != null && _audioService != null) {
       _audioService!.stop();
     }
@@ -90,6 +103,7 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
 
   Future<void> _stopPreview() async {
     _previewSession++;
+    _playEpoch++;
     if (_previewingSoundId != null) {
       _audioService ??= ref.read(audioPlaybackServiceProvider);
       await _audioService!.stop();
@@ -109,8 +123,18 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
     if (sound.url == null || sound.url!.isEmpty) return;
 
     final session = ++_previewSession;
+    _playEpoch++;
+    final priorLoad = _previewLoadGate;
+    final loadDone = Completer<void>();
+    _previewLoadGate = loadDone.future;
+
     try {
+      if (priorLoad != null) await priorLoad;
+      if (!mounted || session != _previewSession) return;
+
       await audioService.stop();
+      if (!mounted || session != _previewSession) return;
+
       final total = await audioService.loadAudio(sound.url!);
       if (!mounted || session != _previewSession) return;
       setState(() {
@@ -127,6 +151,11 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
       );
       if (mounted && session == _previewSession) _clearPreviewState();
       return;
+    } finally {
+      if (!loadDone.isCompleted) loadDone.complete();
+      if (identical(_previewLoadGate, loadDone.future)) {
+        _previewLoadGate = null;
+      }
     }
     await _playToEnd(audioService, sound.id, session);
   }
@@ -142,9 +171,11 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
       await _playToEnd(audioService, soundId, session);
       return;
     }
-    // Flipped before the await: pausing resolves the pending `play()`, and
-    // [_playToEnd] reads this flag to tell a pause apart from an ending.
+    // Flipped before the await: pausing resolves the pending `play()`.
+    // Bump [_playEpoch] so that resolving `_playToEnd` cannot clear state
+    // if a resume starts before this pause await finishes.
     setState(() => _previewPaused = true);
+    _playEpoch++;
     await audioService.pause();
   }
 
@@ -158,6 +189,7 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
     String soundId,
     int session,
   ) async {
+    final playEpoch = ++_playEpoch;
     try {
       await audioService.play();
     } catch (e) {
@@ -169,6 +201,7 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
     }
     if (mounted &&
         session == _previewSession &&
+        playEpoch == _playEpoch &&
         _previewingSoundId == soundId &&
         !_previewPaused) {
       _clearPreviewState();
