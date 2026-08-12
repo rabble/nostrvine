@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show SemanticsService;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
@@ -272,9 +273,16 @@ class _MasonryLayout extends StatelessWidget {
       maxColumnCount: ClipGridColumns.max,
       backgroundColor: backgroundColor,
       scrollController: scrollController,
-      onColumnCountChanged: (columns) => context.read<ClipsLibraryBloc>().add(
-        ClipsLibraryGridColumnsChanged(columns),
-      ),
+      onColumnCountChanged: (columns) {
+        context.read<ClipsLibraryBloc>().add(
+          ClipsLibraryGridColumnsChanged(columns),
+        );
+        SemanticsService.sendAnnouncement(
+          View.of(context),
+          context.l10n.libraryGridSizeColumns(columns),
+          Directionality.of(context),
+        );
+      },
       builder: (context, columns, controller) => MasonryGridView.count(
         controller: controller,
         padding: .only(

@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -71,8 +72,31 @@ class _StubClipManagerNotifier extends ClipManagerNotifier {
   ClipManagerState build() => ClipManagerState(clips: _clips);
 }
 
+List<Object?> _captureAnnouncements(WidgetTester tester) {
+  final announced = <Object?>[];
+  tester.binding.defaultBinaryMessenger.setMockDecodedMessageHandler<Object?>(
+    SystemChannels.accessibility,
+    (message) async {
+      if (message is Map && message['type'] == 'announce') {
+        announced.add((message['data'] as Map?)?['message']);
+      }
+      return null;
+    },
+  );
+  addTearDown(
+    () => tester.binding.defaultBinaryMessenger
+        .setMockDecodedMessageHandler<Object?>(
+          SystemChannels.accessibility,
+          null,
+        ),
+  );
+  return announced;
+}
+
 void main() {
   final en = AppLocalizationsEn();
+  final displayOptionsLabel =
+      '${en.librarySortClipsSemanticLabel}. ${en.libraryGridSizeLabel}';
 
   group(LibraryScreen, () {
     late _MockGallerySaveService mockGallerySaveService;
@@ -210,12 +234,11 @@ void main() {
       testWidgets('changes the grid size from the menu without a pinch', (
         tester,
       ) async {
+        final announcements = _captureAnnouncements(tester);
         await tester.pumpWidget(buildWidget(initialTabIndex: 1));
         await tester.pumpAndSettle();
 
-        await tester.tap(
-          find.bySemanticsLabel(en.librarySortClipsSemanticLabel),
-        );
+        await tester.tap(find.bySemanticsLabel(displayOptionsLabel));
         await tester.pumpAndSettle();
         await tester.tap(find.text(en.libraryGridSizeLabel));
         await tester.pumpAndSettle();
@@ -226,10 +249,28 @@ void main() {
         await tester.tap(find.text(en.libraryGridSizeColumns(2)));
         await tester.pumpAndSettle();
 
-        expect(
-          sharedPreferences.getInt(ClipGridColumns.prefsKey),
-          equals(2),
-        );
+        expect(sharedPreferences.getInt(ClipGridColumns.prefsKey), equals(2));
+        expect(announcements, contains(en.libraryGridSizeColumns(2)));
+      });
+
+      testWidgets('changes the grid size from the selection sheet', (
+        tester,
+      ) async {
+        final announcements = _captureAnnouncements(tester);
+        await tester.pumpWidget(buildWidget(selectionMode: true));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.bySemanticsLabel(en.libraryGridSizeLabel));
+        await tester.pumpAndSettle();
+
+        expect(find.text(en.libraryGridSizeColumns(2)), findsOneWidget);
+        expect(find.text(en.libraryGridSizeColumns(5)), findsOneWidget);
+
+        await tester.tap(find.text(en.libraryGridSizeColumns(5)));
+        await tester.pumpAndSettle();
+
+        expect(sharedPreferences.getInt(ClipGridColumns.prefsKey), equals(5));
+        expect(announcements, contains(en.libraryGridSizeColumns(5)));
       });
 
       testWidgets('$ClipSelectionFooter in selection mode', (tester) async {

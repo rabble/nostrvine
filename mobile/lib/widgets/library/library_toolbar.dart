@@ -71,7 +71,9 @@ class LibraryToolbar extends StatelessWidget {
               size: .small,
               type: .secondary,
               icon: .funnelSimple,
-              semanticLabel: context.l10n.librarySortClipsSemanticLabel,
+              semanticLabel:
+                  '${context.l10n.librarySortClipsSemanticLabel}. '
+                  '${context.l10n.libraryGridSizeLabel}',
               onPressed: onOpenSortMenu,
             ),
             if (!isLibrarySelectionMode)

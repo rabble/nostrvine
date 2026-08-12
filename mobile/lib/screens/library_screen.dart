@@ -4,6 +4,8 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/semantics.dart' show SemanticsService;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -414,7 +416,17 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
 
     final columns = int.tryParse(selected ?? '');
     if (columns == null) return;
+    if (!context.mounted) return;
     clipsBloc.add(ClipsLibraryGridColumnsChanged(columns));
+    _announceGridColumns(context, columns);
+  }
+
+  void _announceGridColumns(BuildContext context, int columns) {
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      context.l10n.libraryGridSizeColumns(columns),
+      Directionality.of(context),
+    );
   }
 
   Future<void> _createVideoFromSelected(
@@ -638,10 +650,16 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
                             tabs: _tabs,
                             tabController: tabController,
                             selectionMode: widget.selectionMode,
+                            currentColumns: clipsState.gridColumnCount,
                             scrollController: widget.scrollController,
                             targetAspectRatio: targetAspectRatio,
                             sortedClips: sortedClips,
                             selectionEnabled: selectionEnabled,
+                            onOpenGridSizeMenu: () => _openGridSizeMenu(
+                              context,
+                              clipsBloc,
+                              clipsState.gridColumnCount,
+                            ),
                             onCreateVideo: () => _createVideoFromSelected(
                               context,
                               selectedClips: clipsState.selectedClips,
@@ -703,8 +721,10 @@ class _LibraryContent extends StatelessWidget {
     required this.tabs,
     required this.tabController,
     required this.selectionMode,
+    required this.currentColumns,
     required this.sortedClips,
     required this.selectionEnabled,
+    required this.onOpenGridSizeMenu,
     required this.onCreateVideo,
     this.scrollController,
     this.targetAspectRatio,
@@ -713,14 +733,17 @@ class _LibraryContent extends StatelessWidget {
   final List<_LibraryTab> tabs;
   final TabController tabController;
   final bool selectionMode;
+  final int currentColumns;
   final List<DivineVideoClip> sortedClips;
   final bool selectionEnabled;
+  final VoidCallback onOpenGridSizeMenu;
   final VoidCallback onCreateVideo;
   final ScrollController? scrollController;
   final double? targetAspectRatio;
 
   @override
   Widget build(BuildContext context) {
+    final tabBackgroundColor = context.vineColors.surfaceContainerHigh;
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -759,8 +782,10 @@ class _LibraryContent extends StatelessWidget {
         Expanded(
           child: selectionMode
               ? _SelectionBody(
+                  currentColumns: currentColumns,
                   scrollController: scrollController,
                   targetAspectRatio: targetAspectRatio,
+                  onOpenGridSizeMenu: onOpenGridSizeMenu,
                   onCreate: onCreateVideo,
                 )
               : _TabBody(
@@ -769,6 +794,7 @@ class _LibraryContent extends StatelessWidget {
                   tabs: tabs,
                   tabController: tabController,
                   targetAspectRatio: targetAspectRatio,
+                  backgroundColor: tabBackgroundColor,
                 ),
         ),
       ],
@@ -788,7 +814,7 @@ class _LibraryContent extends StatelessWidget {
         Radius.circular(VineTheme.shellInnerCornerRadius),
       ),
       child: Material(
-        color: context.vineColors.surfaceContainerHigh,
+        color: tabBackgroundColor,
         child: content,
       ),
     );
@@ -890,11 +916,15 @@ class _LibraryWebUnavailableScreen extends StatelessWidget {
 
 class _SelectionBody extends StatelessWidget {
   const _SelectionBody({
+    required this.currentColumns,
+    required this.onOpenGridSizeMenu,
     required this.onCreate,
     this.targetAspectRatio,
     this.scrollController,
   });
 
+  final int currentColumns;
+  final VoidCallback onOpenGridSizeMenu;
   final VoidCallback onCreate;
   final double? targetAspectRatio;
   final ScrollController? scrollController;
@@ -903,6 +933,22 @@ class _SelectionBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        Align(
+          alignment: AlignmentDirectional.centerEnd,
+          child: Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 0),
+            child: DivineIconButton(
+              size: .small,
+              type: .secondary,
+              icon: .gridNine,
+              semanticLabel: context.l10n.libraryGridSizeLabel,
+              semanticValue: context.l10n.libraryGridSizeColumns(
+                currentColumns,
+              ),
+              onPressed: onOpenGridSizeMenu,
+            ),
+          ),
+        ),
         Expanded(
           child: ClipsTab(
             targetAspectRatio: targetAspectRatio,
@@ -926,6 +972,7 @@ class _TabBody extends StatefulWidget {
     required this.tabs,
     required this.clips,
     required this.selectionEnabled,
+    required this.backgroundColor,
     this.targetAspectRatio,
   });
 
@@ -933,6 +980,7 @@ class _TabBody extends StatefulWidget {
   final List<_LibraryTab> tabs;
   final List<DivineVideoClip> clips;
   final bool selectionEnabled;
+  final Color backgroundColor;
   final double? targetAspectRatio;
 
   @override
@@ -947,13 +995,30 @@ class _TabBodyState extends State<_TabBody> {
   /// duration of the pinch keeps the tabs still while the grid zooms.
   bool _isPinching = false;
 
+  void _setPinching(bool active) {
+    if (active == _isPinching || !mounted) return;
+
+    void apply() {
+      if (!mounted || active == _isPinching) return;
+      setState(() => _isPinching = active);
+    }
+
+    switch (SchedulerBinding.instance.schedulerPhase) {
+      case SchedulerPhase.idle:
+      case SchedulerPhase.postFrameCallbacks:
+        apply();
+      case SchedulerPhase.transientCallbacks:
+      case SchedulerPhase.midFrameMicrotasks:
+      case SchedulerPhase.persistentCallbacks:
+        WidgetsBinding.instance.addPostFrameCallback((_) => apply());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return NotificationListener<PinchZoomNotification>(
       onNotification: (notification) {
-        if (notification.active != _isPinching) {
-          setState(() => _isPinching = notification.active);
-        }
+        _setPinching(notification.active);
         return false;
       },
       child: TabBarView(
@@ -968,8 +1033,7 @@ class _TabBodyState extends State<_TabBody> {
                 selectionEnabled: widget.selectionEnabled,
                 targetAspectRatio: widget.targetAspectRatio,
                 showRecordButton: false,
-                // Matches the shell _LibraryContent paints behind the tabs.
-                backgroundColor: context.vineColors.surfaceContainerHigh,
+                backgroundColor: widget.backgroundColor,
               ),
               _LibraryTab.sounds => const SoundsTab(),
             },

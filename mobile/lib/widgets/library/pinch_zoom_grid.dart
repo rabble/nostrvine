@@ -377,9 +377,9 @@ class _PinchZoomGridState extends State<PinchZoomGrid>
   /// Keeps the clip at the top of the viewport in place across a column
   /// change.
   ///
-  /// A row is both `1/columns` of the item list and `1/columns` of the
-  /// viewport tall, so the offset that shows a given clip scales with the
-  /// square of the ratio between the two counts.
+  /// The masonry grid mixes square and vertical clips, so this is an
+  /// approximation: the square-grid ratio keeps the visible area close, and the
+  /// post-frame clamp absorbs extent differences once masonry layout settles.
   void _keepScrollAnchored({required int from, required int to}) {
     final controller = _controller;
     if (!controller.hasClients) return;
