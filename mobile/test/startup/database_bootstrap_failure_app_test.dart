@@ -606,17 +606,22 @@ void main() {
       );
     });
 
-    test('excludes an unreadable database despite it being unusable', () {
+    test('excludes an unreadable database despite its message matching the '
+        'corruption allowlist', () {
       // Unusable, but the automatic repair also rotates the cipher key, and
-      // nothing proves the stored one is stale — rotating it would orphan the
-      // backup the repair leaves behind. The failure screen offers the same
-      // reset with the key kept, so the user chooses the data loss.
+      // nothing proves the stored one is stale — rotating it would strand any
+      // encrypted backup beside the damaged file. The failure screen offers the
+      // same reset with the key kept, so the user chooses the data loss.
+      const error = DatabaseUnreadableError();
       expect(
-        shouldRepairLocalDatabaseCacheAfterBootstrapError(
-          const DatabaseUnreadableError(),
-        ),
-        isFalse,
+        error.toString(),
+        contains('SQLITE_CORRUPT'),
+        reason:
+            'the type check is only load-bearing while the message would '
+            'otherwise match the allowlist below it — without this the '
+            'expectation that follows passes no matter what the function does',
       );
+      expect(shouldRepairLocalDatabaseCacheAfterBootstrapError(error), isFalse);
     });
   });
 }

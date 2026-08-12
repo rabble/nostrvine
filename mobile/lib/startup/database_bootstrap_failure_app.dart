@@ -433,8 +433,8 @@ enum DatabaseBootstrapDiagnosis {
   /// The key no longer opens the database file.
   cipherMismatch('db-cipher-mismatch'),
 
-  /// The database file is damaged past classification — neither readable
-  /// plaintext nor recognizably encrypted.
+  /// The database file is structurally corrupt — neither readable plaintext nor
+  /// recognizably encrypted.
   databaseUnreadable('db-unreadable'),
 
   /// Anything else. Read the exception from Crashlytics for this one.
@@ -449,8 +449,8 @@ enum DatabaseBootstrapDiagnosis {
   /// Whether the screen may offer the destructive local-database reset.
   ///
   /// [cipherMismatch] is provably unusable — the key no longer opens the file.
-  /// [databaseUnreadable] is too: the file is damaged past classification, and
-  /// no key or retry changes that. [bootstrapFailed] is only presumed unusable:
+  /// [databaseUnreadable] is too: the file is structurally corrupt, and no key
+  /// or retry changes that. [bootstrapFailed] is only presumed unusable:
   /// the cause is unknown, though startup did fail on it. The reset keeps the
   /// cipher key for exactly that reason, so the backup it leaves behind stays
   /// readable if the presumption was wrong.
