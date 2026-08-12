@@ -226,7 +226,10 @@ class DbClient {
 
       final result = await countExp.getSingle();
 
-      return result.read(countAll()) ?? 0;
+      // The type argument is explicit because inference through `??` leaves
+      // `read`'s return unresolved for `unawaited_return_in_try_block`, which
+      // then reports this `int` as an unawaited `Future`.
+      return result.read<int>(countAll()) ?? 0;
     } on Exception {
       rethrow;
     }
