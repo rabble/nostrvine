@@ -1469,7 +1469,7 @@ class ProfileRepository implements ProfileReader {
 
   /// Claims a username via NIP-98 authenticated request.
   ///
-  /// Makes a POST request to `names.divine.video/api/username/claim` with the
+  /// Makes a POST request to the name server's `/api/username/claim` with the
   /// username. The pubkey is extracted from the NIP-98 auth header by the
   /// server.
   ///
@@ -1559,7 +1559,7 @@ class ProfileRepository implements ProfileReader {
   }
 
   /// Permanently burns the caller's own `@divine.video` username via a NIP-98
-  /// authenticated request to `names.divine.video/api/username/release`.
+  /// authenticated request to the name server's `/api/username/release`.
   ///
   /// The server verifies the authenticated pubkey owns [name] as an active
   /// username before burning it. Returns a [UsernameReleaseResult]; never
@@ -1799,8 +1799,8 @@ class ProfileRepository implements ProfileReader {
         final code = data['code'] as String?;
 
         if (available) {
-          // Also check keycast (login.divine.video) — username must be
-          // available on both the name server and the login server.
+          // Also check keycast — username must be available on both the name
+          // server and the login server.
           try {
             final keycastResponse = await _httpClient
                 .get(Uri.parse('$_keycastNip05Url?name=$normalizedUsername'))
