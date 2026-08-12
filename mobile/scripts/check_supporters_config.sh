@@ -39,9 +39,8 @@ if [ "$flag" = "true" ] && [ -z "$base_url" ]; then
   echo "ERROR: FF_DIVINE_SUPPORTERS=true but SUPPORTERS_API_BASE_URL is empty." >&2
   echo "  supporterApiClientProvider returns null when the URL is empty, so the" >&2
   echo "  supporter screen would render with no way to claim a purchase or read" >&2
-  echo "  entitlement. Set SUPPORTERS_API_BASE_URL in the Codemagic" >&2
-  echo "  'supporters_credentials' environment variable group, or turn the flag" >&2
-  echo "  off for this build." >&2
+  echo "  entitlement. Configure SUPPORTERS_API_BASE_URL for this build, or" >&2
+  echo "  turn the flag off." >&2
   exit 1
 fi
 
