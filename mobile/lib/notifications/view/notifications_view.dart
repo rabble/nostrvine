@@ -116,7 +116,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
                         .add(const NotificationFeedRefreshed()),
                     onItemTap: (notification) =>
                         _onItemTap(context, notification),
-                    onProfileTap: (notification) =>
+                    onAvatarStackTap: (notification) =>
                         _onAvatarStackTap(context, notification),
                     onFollowBack: (pubkey) => context
                         .read<NotificationFeedBloc>()
@@ -535,7 +535,7 @@ class _NotificationList extends StatelessWidget {
     required this.hasMore,
     required this.scrollController,
     required this.onItemTap,
-    required this.onProfileTap,
+    required this.onAvatarStackTap,
     required this.onFollowBack,
     required this.showRefreshErrorBanner,
     required this.onRetryRefresh,
@@ -546,7 +546,11 @@ class _NotificationList extends StatelessWidget {
   final bool hasMore;
   final ScrollController scrollController;
   final void Function(NotificationItem notification) onItemTap;
-  final void Function(NotificationItem notification) onProfileTap;
+
+  /// Called when the row's avatar stack is tapped. Resolves to the engagement
+  /// list for grouped like/repost rows and to a profile otherwise, so this is
+  /// deliberately not named `onProfileTap`.
+  final void Function(NotificationItem notification) onAvatarStackTap;
   final void Function(String pubkey) onFollowBack;
 
   /// When `true`, renders [_RefreshErrorBanner] as the list's first item so
@@ -609,7 +613,7 @@ class _NotificationList extends StatelessWidget {
             NotificationListItem(
               notification: notification,
               onTap: () => onItemTap(notification),
-              onProfileTap: () => onProfileTap(notification),
+              onProfileTap: () => onAvatarStackTap(notification),
               onFollowBack: () {
                 final pubkey = _profilePubkey(notification);
                 if (pubkey != null) onFollowBack(pubkey);
