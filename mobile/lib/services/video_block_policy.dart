@@ -12,14 +12,24 @@ class VideoBlockPolicy {
     ContentBlocklistRepository? blocklistRepository,
   ) {
     if (blocklistRepository == null) return false;
+    if (video.pubkey.isNotEmpty &&
+        blocklistRepository.shouldFilterFromFeeds(video.pubkey)) {
+      return true;
+    }
     return [
-      video.pubkey,
       if (video.reposterPubkey != null) video.reposterPubkey!,
       ...?video.reposterPubkeys,
     ].any(
       (pubkey) =>
-          pubkey.isNotEmpty &&
-          blocklistRepository.shouldFilterFromFeeds(pubkey),
+          pubkey.isNotEmpty && _shouldHideReposter(blocklistRepository, pubkey),
     );
+  }
+
+  static bool _shouldHideReposter(
+    ContentBlocklistRepository blocklistRepository,
+    String pubkey,
+  ) {
+    return blocklistRepository.isBlocked(pubkey) ||
+        blocklistRepository.isMutedByUs(pubkey);
   }
 }
