@@ -228,6 +228,7 @@ class RelayPool {
     this.onNotice,
     this.signatureVerificationPolicy = SignatureVerificationPolicy.all,
     this.silentRepairCooldown = const Duration(seconds: 60),
+    this.minSubscriptionAgeBeforeRepair = const Duration(seconds: 10),
     this.tempRelayIdleTimeout = const Duration(seconds: 120),
     this.tempRelaySweepInterval = const Duration(seconds: 60),
   });
@@ -266,6 +267,19 @@ class RelayPool {
   /// tests that need to exercise the post-cooldown re-repair without a
   /// wall-clock wait.
   Duration silentRepairCooldown;
+
+  /// How long a live subscription must have gone unanswered before its
+  /// teardown is treated as evidence against the socket.
+  ///
+  /// Unlike a one-shot query, which is only released once its caller gave up
+  /// waiting, [unsubscribe] is the ordinary teardown every screen runs — so
+  /// without a floor, a feed the user left inside the relay's round-trip time
+  /// would force-cycle a perfectly healthy connection and make it replay its
+  /// stored window for every other subscription it carries. The default sits
+  /// far above navigation-speed teardowns and well below the app's own feed
+  /// deadline, so a caller that actually waited still gets the repair.
+  /// Injectable so tests need no wall-clock wait.
+  Duration minSubscriptionAgeBeforeRepair;
 
   /// Controls whether [_dispatchTypedFrame] performs expensive Schnorr
   /// verification. The event id is always recomputed first; policy skips only
@@ -1065,9 +1079,16 @@ class RelayPool {
   /// swallowed the REQ into a half-open socket is not, which is the case the
   /// feed loads hit. Without this a zombie charges every subsequent feed load
   /// the caller's full timeout until something else happens to cycle it.
+  ///
+  /// A subscription torn down before [minSubscriptionAgeBeforeRepair] proves
+  /// nothing about the socket — the relay may simply not have answered yet —
+  /// so it is ignored rather than charged against the connection.
   void _repairRelaysThatNeverServedSubscription(String subId) {
     final sentAt = _subscriptionSentAt.remove(subId);
     if (sentAt == null) return;
+    if (DateTime.now().difference(sentAt) < minSubscriptionAgeBeforeRepair) {
+      return;
+    }
     final silent = [
       for (final relay in [
         ..._relaysSnapshot(),
@@ -2308,11 +2329,11 @@ class RelayPool {
       if (!_silentRelayRepairsInFlight.add(url)) continue;
       _lastSilentRepairAt[url] = now;
       log(
-        '📡 $url accepted a publish frame but sent nothing back for the '
-        'whole OK window; reconnecting the stale connection',
+        '📡 $url accepted a frame but sent nothing back for the whole window '
+        'the caller waited; reconnecting the stale connection',
       );
       unawaited(
-        _reconnectAndResubscribe(
+        _reconnectSilentRelay(
           relay,
         ).whenComplete(() => _silentRelayRepairsInFlight.remove(url)),
       );
@@ -2322,11 +2343,11 @@ class RelayPool {
   /// Force-cycles [relay]'s socket. [Relay.onConnected] re-issues the saved
   /// subscriptions and pending one-shot queries on the fresh connection, so an
   /// in-flight REQ that the closed socket swallowed still runs.
-  Future<void> _reconnectAndResubscribe(RelayBase relay) async {
+  Future<void> _reconnectSilentRelay(RelayBase relay) async {
     try {
       await relay.forceReconnect();
     } catch (e) {
-      log('OK-timeout reconnect failed for ${relay.url}: $e');
+      log('silent-relay reconnect failed for ${relay.url}: $e');
     }
   }
 

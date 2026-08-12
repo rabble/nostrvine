@@ -30,6 +30,9 @@ void main() {
       await nostr.relayPool.add(
         RelayBase(relayUrl, RelayStatus(relayUrl), channelFactory: factory),
       );
+      // These tests tear the subscription down immediately; the age floor
+      // that protects navigation-speed teardowns has its own test below.
+      nostr.relayPool.minSubscriptionAgeBeforeRepair = Duration.zero;
     });
 
     String subscribeToFeed() => nostr.subscribe([
@@ -93,6 +96,28 @@ void main() {
         factory.createdChannels,
         hasLength(1),
         reason: 'an inbound-active connection must not be cycled',
+      );
+    });
+
+    test('a subscription dropped before the age floor is not charged against '
+        'the socket', () async {
+      nostr.relayPool.minSubscriptionAgeBeforeRepair = const Duration(
+        minutes: 1,
+      );
+
+      final subId = subscribeToFeed();
+      await Future<void>.delayed(Duration.zero);
+
+      // The user left the screen inside the relay's round-trip time.
+      nostr.unsubscribe(subId);
+
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(
+        factory.createdChannels,
+        hasLength(1),
+        reason:
+            'a teardown faster than the relay could answer proves nothing '
+            'about the connection',
       );
     });
 
