@@ -1074,6 +1074,43 @@ void main() {
         expect(service.getListById(list!.id)!.nostrEventId, isNotNull);
       });
 
+      test(
+        'does not double-publish a list created during a relay sync',
+        () async {
+          // A create's confirmed publish and a background sync's backfill both
+          // target the new list. They must run on the same operation lane so the
+          // backfill cannot publish a second event for the coordinate while the
+          // create is still in flight.
+          final release = Completer<void>();
+          final publishedDTags = <String>[];
+          when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer((
+            invocation,
+          ) async {
+            final event = invocation.positionalArguments[0] as Event;
+            publishedDTags.add(
+              event.tags.firstWhere((tag) => tag.first == 'd').last,
+            );
+            await release.future;
+            return _accepted(event);
+          });
+
+          final createFuture = service.createList(name: 'Race List');
+          await pumpEventQueue();
+
+          final syncFuture = service.fetchUserListsFromRelays();
+          await pumpEventQueue();
+
+          release.complete();
+          final created = await createFuture;
+          await syncFuture;
+
+          expect(
+            publishedDTags.where((dTag) => dTag == created!.id).length,
+            1,
+          );
+        },
+      );
+
       test('publishes again when a video is added', () async {
         final list = await service.createList(name: 'Public List');
         reset(mockNostr);

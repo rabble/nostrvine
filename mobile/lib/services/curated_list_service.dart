@@ -327,9 +327,16 @@ class CuratedListService extends ChangeNotifier {
       // Private lists publish too, with their items sealed. A list that only
       // ever lived in SharedPreferences died with the device.
       if (_authService.isAuthenticated) {
-        // Keep the local list when no relay is currently reachable. Its null
-        // event id makes the next complete relay sync backfill it.
-        await _publishListToNostr(newList, confirmed: true);
+        // Publish under the list's own operation lane, re-checking that it is
+        // still unpublished. A concurrent relay-sync backfill runs on the same
+        // lane, so it cannot publish a second event for this coordinate while
+        // the create is in flight. Keep the local list when no relay is
+        // reachable — its null event id makes the next complete sync back it up.
+        await _serializeListOperation(listId, () async {
+          final current = getListById(listId);
+          if (current == null || current.nostrEventId != null) return;
+          await _publishListToNostr(current, confirmed: true);
+        });
       }
 
       Log.info(
