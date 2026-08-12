@@ -217,7 +217,7 @@ class InviteApiClient {
     }
 
     try {
-      return _consumeInvite(code: code, signer: signer);
+      return await _consumeInvite(code: code, signer: signer);
     } finally {
       signer.close();
     }
@@ -239,7 +239,7 @@ class InviteApiClient {
       );
     }
     try {
-      return _consumeInvite(code: code, signer: signer);
+      return await _consumeInvite(code: code, signer: signer);
     } finally {
       signer.close();
     }
