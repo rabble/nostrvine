@@ -13,6 +13,7 @@ import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_feed/profile_feed_cubit.dart';
 import 'package:openvine/blocs/profile_feed/profile_feed_scope.dart';
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -342,7 +343,9 @@ class _ProfileContentView extends ConsumerWidget {
     final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
     if (blocklistRepository.hasMutedUs(userIdHex) ||
         blocklistRepository.hasBlockedUs(userIdHex)) {
-      return BlockedUserScreen(onBack: context.pop, userIdHex: userIdHex);
+      // safePop: a deep link to a profile whose owner blocked or muted the
+      // viewer lands here with a one-entry stack, where a raw pop throws.
+      return BlockedUserScreen(onBack: context.safePop, userIdHex: userIdHex);
     }
 
     // Fetch profile data if needed (post-frame to avoid build mutations)
