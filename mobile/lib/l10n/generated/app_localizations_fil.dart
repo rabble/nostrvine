@@ -6553,7 +6553,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count na hanay',
-      one: '1 hanay',
+      one: '$count hanay',
     );
     return '$_temp0';
   }

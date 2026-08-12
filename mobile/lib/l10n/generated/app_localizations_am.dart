@@ -6344,7 +6344,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count አምዶች',
-      one: '1 አምድ',
+      one: '$count አምድ',
     );
     return '$_temp0';
   }

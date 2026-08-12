@@ -2551,7 +2551,7 @@
     "librarySortClipsSemanticLabel": "Ordenar clipes",
     "librarySelectClipsSemanticLabel": "Selecionar clipes",
     "libraryGridSizeLabel": "Tamanho da grade",
-    "libraryGridSizeColumns": "{count, plural, one{1 coluna} other{{count} colunas}}",
+    "libraryGridSizeColumns": "{count, plural, one{{count} coluna} other{{count} colunas}}",
     "librarySelect": "Selecionar",
     "librarySortNewestCreation": "Criação mais recente",
     "librarySortOldestCreation": "Criação mais antiga",

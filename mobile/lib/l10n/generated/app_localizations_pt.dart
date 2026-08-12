@@ -6518,7 +6518,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count colunas',
-      one: '1 coluna',
+      one: '$count coluna',
     );
     return '$_temp0';
   }

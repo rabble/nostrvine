@@ -2944,7 +2944,7 @@
     "librarySortClipsSemanticLabel": "ቅንጥቦችን ደርድር",
     "librarySelectClipsSemanticLabel": "ቅንጥቦችን ምረጥ",
     "libraryGridSizeLabel": "የፍርግርግ መጠን",
-    "libraryGridSizeColumns": "{count, plural, one{1 አምድ} other{{count} አምዶች}}",
+    "libraryGridSizeColumns": "{count, plural, one{{count} አምድ} other{{count} አምዶች}}",
     "librarySelect": "ምረጥ",
     "librarySortNewestCreation": "በጣም አዲስ የተፈጠረ",
     "librarySortOldestCreation": "በጣም አሮጌ የተፈጠረ",

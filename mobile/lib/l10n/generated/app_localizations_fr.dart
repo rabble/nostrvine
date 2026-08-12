@@ -6556,7 +6556,7 @@ class AppLocalizationsFr extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count colonnes',
-      one: '1 colonne',
+      one: '$count colonne',
     );
     return '$_temp0';
   }
