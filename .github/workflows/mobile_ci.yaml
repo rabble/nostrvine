@@ -298,26 +298,27 @@ jobs:
           cache: true
       - name: 📦 Install dependencies
         run: flutter pub get
-      - name: Restore sqlite3mc hook cache
-        # The sqlite3 hook stores libsqlite3mc under this tree. flutter-action
-        # cache: true does not keep it. merge_group can restore but not save
-        # (#7197), so only push-to-main warms the cache.
+      - name: Restore dart hook downloads
+        # Native-asset hooks store downloaded libs under this tree (sqlite3,
+        # cupertino_http, objective_c, …). flutter-action cache: true does not
+        # keep it. merge_group can restore but not save (#7197), so only
+        # push-to-main warms the cache.
         uses: actions/cache/restore@v4
         with:
-          path: mobile/.dart_tool/hooks_runner/shared/sqlite3
-          key: ${{ runner.os }}-sqlite3mc-${{ hashFiles('mobile/pubspec.lock') }}
+          path: mobile/.dart_tool/hooks_runner/shared
+          key: ${{ runner.os }}-dart-hooks-${{ hashFiles('mobile/pubspec.lock') }}
           restore-keys: |
-            ${{ runner.os }}-sqlite3mc-
+            ${{ runner.os }}-dart-hooks-
       - name: Warm sqlite3mc native assets
-        # Retries the hook download. A cache hit makes the hook skip GitHub
-        # Releases; a miss still gets five attempts instead of one.
+        # Retries the one hook that does an unretried GitHub Releases GET.
+        # A cache hit skips that download; a miss still gets five attempts.
         run: bash scripts/ci/warmup_sqlite3mc.sh
-      - name: Save sqlite3mc hook cache
+      - name: Save dart hook downloads
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/cache/save@v4
         with:
-          path: mobile/.dart_tool/hooks_runner/shared/sqlite3
-          key: ${{ runner.os }}-sqlite3mc-${{ hashFiles('mobile/pubspec.lock') }}
+          path: mobile/.dart_tool/hooks_runner/shared
+          key: ${{ runner.os }}-dart-hooks-${{ hashFiles('mobile/pubspec.lock') }}
       - name: 🛠️ Install Very Good CLI
         # Pinned so the optimizer's bundle mechanics don't float under CI. 1.3.0
         # is the current latest; 1.1.1≡1.2.0≡1.3.0 for all test/optimizer

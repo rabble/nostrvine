@@ -8,7 +8,7 @@
 #
 # This script runs the hook through `dart run tools/warmup_sqlite3mc.dart`
 # and retries. Pair it with actions/cache on
-# .dart_tool/hooks_runner/shared/sqlite3 so later jobs skip the download.
+# .dart_tool/hooks_runner/shared so later jobs skip hook downloads.
 
 set -euo pipefail
 
