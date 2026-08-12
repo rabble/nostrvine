@@ -122,7 +122,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test(super.e);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -133,6 +133,20 @@ class AppDatabase extends _$AppDatabase {
     onUpgrade: (m, from, to) async {
       if (from < 2) {
         await _normalizeLegacyV1Schema();
+      }
+      if (from < 3) {
+        // Rebuilds the table from the current definition, so it lands on the
+        // same shape whether normalization above created the legacy
+        // three-column table or the current one.
+        await m.alterTable(
+          TableMigration(
+            identityEvents,
+            newColumns: [
+              identityEvents.sourceCreatedAt,
+              identityEvents.sourceEventId,
+            ],
+          ),
+        );
       }
     },
     beforeOpen: (details) async {
@@ -824,7 +838,9 @@ class AppDatabase extends _$AppDatabase {
         CREATE TABLE identity_events (
           pubkey TEXT NOT NULL PRIMARY KEY,
           tags_json TEXT NOT NULL,
-          source_kind INTEGER NOT NULL
+          source_kind INTEGER NOT NULL,
+          source_created_at INTEGER NULL,
+          source_event_id TEXT NULL
         )
       ''');
     }

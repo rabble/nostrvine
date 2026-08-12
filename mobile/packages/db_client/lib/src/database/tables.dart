@@ -1531,6 +1531,22 @@ class IdentityEvents extends Table {
   /// (legacy fallback).
   IntColumn get sourceKind => integer().named('source_kind')();
 
+  /// `created_at` of the kind-10011 event [tagsJson] was taken from.
+  ///
+  /// Null for a kind-0 fallback row and for rows written before this column
+  /// existed. Kind 10011 is replaceable, so this is what lets a later read be
+  /// recognised as behind: an event older than the one a row was built from
+  /// cannot be the current state of the profile, it is a relay that has not
+  /// caught up. The write path refuses to publish on such a base instead of
+  /// replacing the event with a set that predates what this device has
+  /// already seen (#7081).
+  IntColumn get sourceCreatedAt =>
+      integer().nullable().named('source_created_at')();
+
+  /// Event id that goes with [sourceCreatedAt], for the NIP-01 same-second
+  /// tie (lowest id wins). Null under exactly the same conditions.
+  TextColumn get sourceEventId => text().nullable().named('source_event_id')();
+
   @override
   Set<Column> get primaryKey => {pubkey};
 }

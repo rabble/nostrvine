@@ -65,6 +65,40 @@ void main() {
         expect(row!.tagsJson, equals('[["i","github:alice","proof-b"]]'));
         expect(row.sourceKind, equals(10011));
       });
+
+      test('stores the source event coordinates when given', () async {
+        await dao.upsertEvent(
+          pubkey: testPubkey,
+          tagsJson: tagsJson,
+          sourceKind: 10011,
+          sourceCreatedAt: 1700,
+          sourceEventId: 'e' * 64,
+        );
+
+        final row = await dao.getEvent(testPubkey);
+        expect(row!.sourceCreatedAt, equals(1700));
+        expect(row.sourceEventId, equals('e' * 64));
+      });
+
+      test('clears stale coordinates when a row is replaced without '
+          'them', () async {
+        await dao.upsertEvent(
+          pubkey: testPubkey,
+          tagsJson: tagsJson,
+          sourceKind: 10011,
+          sourceCreatedAt: 1700,
+          sourceEventId: 'e' * 64,
+        );
+        await dao.upsertEvent(
+          pubkey: testPubkey,
+          tagsJson: '[["i","github:alice","proof-b"]]',
+          sourceKind: 0,
+        );
+
+        final row = await dao.getEvent(testPubkey);
+        expect(row!.sourceCreatedAt, isNull);
+        expect(row.sourceEventId, isNull);
+      });
     });
 
     group('getEvent', () {

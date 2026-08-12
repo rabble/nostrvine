@@ -16,11 +16,17 @@ import 'package:verifier_client/verifier_client.dart';
 ///
 /// Returns null when the signer refuses or is unavailable. Mirrors the
 /// `AuthService.createAndSignEvent` shape the app wires in.
+///
+/// [createdAt] overrides the signer's own clock. Replaceable kinds need it:
+/// the event has to supersede the one it replaces, and a device that
+/// publishes twice inside the same second would otherwise sign a tie that
+/// NIP-01 can resolve against it.
 typedef IdentityEventSigner =
     Future<Event?> Function({
       required int kind,
       required String content,
       required List<List<String>> tags,
+      int? createdAt,
     });
 
 /// The claims already on the identity event could not be read, so a write
@@ -123,11 +129,28 @@ class _PublishedIdentityTags {
 }
 
 class _IdentityEventBase {
-  const _IdentityEventBase({required this.tags, required this.content});
+  const _IdentityEventBase({
+    required this.tags,
+    required this.content,
+    this.source,
+  });
 
   final List<List<String>> tags;
   final String content;
+
+  /// Coordinates of the kind-10011 event these tags were read off.
+  ///
+  /// Null on every other branch — the kind-0 fallback, the snapshot, and the
+  /// empty base — where no identity event came back to supersede.
+  final _IdentitySource? source;
 }
+
+/// Coordinates of the identity event a set of tags came from, ordered by
+/// [compareIdentityEvents].
+typedef _IdentitySource = ({int createdAt, String id});
+
+/// Wall-clock seconds, the unit Nostr `created_at` is expressed in.
+int _nowSeconds() => DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
 /// Composes [VerifierClient] with NIP-39 `i` tag parsing off identity
 /// events (kind 10011, with kind-0 tags as the legacy fallback) and a
@@ -267,8 +290,7 @@ class IdentityClaimsRepository {
     final verified = claims
         .where((c) => snapshot.contains(_tupleOf(c)))
         .toList();
-    final nowSeconds = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    final isFresh = nowSeconds < row.checkedAtFloor + verifiedTtl.inSeconds;
+    final isFresh = _nowSeconds() < row.checkedAtFloor + verifiedTtl.inSeconds;
     return CachedVerifiedClaims(claims: verified, isFresh: isFresh);
   }
 
@@ -422,6 +444,7 @@ class IdentityClaimsRepository {
     return _publishIdentityEvent(
       claim.pubkey,
       content: base.content,
+      after: base.source,
       tags: [
         for (final tag in base.tags)
           if (_tagIdentityKeyOrNull(tag) != key) tag,
@@ -456,6 +479,7 @@ class IdentityClaimsRepository {
     final published = await _publishIdentityEvent(
       claim.pubkey,
       content: base.content,
+      after: base.source,
       tags: next,
     );
     (_lastRemovedKeys[claim.pubkey] ??= <String>{}).add(key);
@@ -517,6 +541,11 @@ class IdentityClaimsRepository {
   /// kind-10011 read worked. On the write path it goes through the same
   /// lagging-read merge as the identity event, and the same refusal when the
   /// local snapshot knows claims it does not carry.
+  ///
+  /// A kind-10011 event coming back is not evidence either, only a better
+  /// starting point: the one that comes back can still be an older revision
+  /// than this device has already mirrored, which
+  /// [_refuseIfSnapshotIsNewer] catches.
   Future<List<List<String>>> _currentIdentityTags(
     String pubkey, {
     required bool forWrite,
@@ -561,13 +590,27 @@ class IdentityClaimsRepository {
         identityEventCreatedAt: identityEvent.createdAt,
         identityEventId: identityEvent.id,
       );
+      // The merge drops its record once the relay catches up, so an entry
+      // that survives it is strictly newer than what came back — and the
+      // merged tags carry at least what it published, so stamping the
+      // snapshot with its coordinates never claims more than the row holds.
+      final pending = _lastPublishedTags[pubkey];
+      final source = (
+        createdAt: pending?.createdAt ?? identityEvent.createdAt,
+        id: pending?.id ?? identityEvent.id,
+      );
       Log.info(
         'Identity event for $pubkey carries '
         '${identityTagsOf(tags).length} claim tag(s)',
         name: 'IdentityClaimsRepository',
       );
-      await _cacheIdentityTags(pubkey, identityTagsOf(tags));
-      return _IdentityEventBase(tags: tags, content: identityEvent.content);
+      if (forWrite) await _refuseIfSnapshotIsNewer(pubkey, source);
+      await _cacheIdentityTags(pubkey, identityTagsOf(tags), source: source);
+      return _IdentityEventBase(
+        tags: tags,
+        content: identityEvent.content,
+        source: source,
+      );
     }
 
     final legacyEvent = await _newestEventOfKind(client, pubkey, 0);
@@ -654,6 +697,48 @@ class IdentityClaimsRepository {
     }
   }
 
+  /// Refuses a write whose kind-10011 read is an older revision than the one
+  /// this device has already mirrored.
+  ///
+  /// Kind 10011 is replaceable, so the only thing that can legitimately drop a
+  /// claim is a *newer* event: unlinking on another device replaces the event
+  /// and moves `created_at` forward. An older event coming back is a relay
+  /// that has not caught up — after an app restart, or on a session where
+  /// [_lastPublishedTags] cannot vouch for the claim — and publishing on it
+  /// would replace the current event with a set that predates what this
+  /// device has already seen. That is the same silent unlink the empty-read
+  /// and kind-0 branches refuse, reached through the branch that used to
+  /// trust the read outright (#7081).
+  ///
+  /// Only a strictly older read is refused, so a remote unlink is never
+  /// blocked: its event is newer and goes through on the first attempt. A
+  /// snapshot written before the source columns existed has nothing to
+  /// compare against and is skipped rather than guessed at; the next read
+  /// stamps it.
+  Future<void> _refuseIfSnapshotIsNewer(
+    String pubkey,
+    _IdentitySource source,
+  ) async {
+    final cached = await _cachedIdentitySource(pubkey);
+    if (cached == null || !_isBehind(source, cached)) return;
+    throw IdentityClaimReadException(
+      'The kind-$identityEventKind event that came back (created_at '
+      '${source.createdAt}) is an older revision than the one this device '
+      'has already seen (created_at ${cached.createdAt}) — refusing to '
+      'publish over it',
+    );
+  }
+
+  /// Whether [source] is superseded by [other] under NIP-01 ordering.
+  static bool _isBehind(_IdentitySource source, _IdentitySource other) =>
+      compareIdentityEvents(
+        createdAt: source.createdAt,
+        id: source.id,
+        otherCreatedAt: other.createdAt,
+        otherId: other.id,
+      ) <
+      0;
+
   /// Whether the verdict snapshot has ever recorded a verified claim here.
   Future<bool> _hasVerdictSnapshot(String pubkey) async {
     final dao = _verificationsDao;
@@ -677,16 +762,39 @@ class IdentityClaimsRepository {
   /// Any source kind counts: a kind-0 row still proves the profile had claims,
   /// which is all this is asked for.
   Future<List<List<String>>?> _cachedIdentityTags(String pubkey) async {
-    final dao = _identityEventsDao;
-    if (dao == null) return null;
+    final row = await _cachedIdentityRow(pubkey);
+    if (row == null) return null;
     try {
-      final row = await dao.getEvent(pubkey);
-      if (row == null) return null;
       final decoded = jsonDecode(row.tagsJson) as List<dynamic>;
       return [
         for (final tag in decoded)
           (tag as List<dynamic>).map((value) => value as String).toList(),
       ];
+    } on Object catch (e) {
+      Log.warning(
+        'Identity-tags snapshot is unreadable for $pubkey: $e',
+        name: 'IdentityClaimsRepository',
+      );
+      return null;
+    }
+  }
+
+  /// Coordinates of the identity event the local snapshot was built from, or
+  /// null when there is no row, it cannot be read, or it carries none —
+  /// a kind-0 fallback row, or a row written before those columns existed.
+  Future<_IdentitySource?> _cachedIdentitySource(String pubkey) async {
+    final row = await _cachedIdentityRow(pubkey);
+    final createdAt = row?.sourceCreatedAt;
+    final id = row?.sourceEventId;
+    if (createdAt == null || id == null) return null;
+    return (createdAt: createdAt, id: id);
+  }
+
+  Future<IdentityEventRow?> _cachedIdentityRow(String pubkey) async {
+    final dao = _identityEventsDao;
+    if (dao == null) return null;
+    try {
+      return await dao.getEvent(pubkey);
     } on Object catch (e) {
       Log.warning(
         'Identity-tags snapshot read failed for $pubkey: $e',
@@ -707,16 +815,35 @@ class IdentityClaimsRepository {
     return newestIdentityEvent(events.where((e) => e.kind == kind).toList());
   }
 
+  /// Signs and publishes a kind-10011 event carrying [tags].
+  ///
+  /// [after] is the event this one replaces. Kind 10011 is replaceable, so the
+  /// new event has to supersede it under NIP-01 ordering — and `created_at` is
+  /// in whole seconds, so a second write inside the same second would
+  /// otherwise sign a tie, which NIP-01 breaks by lowest id and therefore
+  /// resolves against this event half the time. A relay that keeps the older
+  /// one drops the write silently; a relay that keeps the newer one leaves
+  /// the snapshot mirroring an event this device now reads as stale, which
+  /// [_refuseIfSnapshotIsNewer] then refuses forever. Dating the event one
+  /// second past what it replaces removes the tie instead of picking a side
+  /// (#7081).
   Future<List<List<String>>> _publishIdentityEvent(
     String pubkey, {
     required List<List<String>> tags,
     required String content,
+    required _IdentitySource? after,
   }) async {
     final deps = _writeDeps();
+    // The base is the newest event that came back; when none did, the
+    // snapshot still carries the newest coordinates this device has seen.
+    final replaced = after ?? await _cachedIdentitySource(pubkey);
     final event = await deps.sign(
       kind: identityEventKind,
       content: content,
       tags: tags,
+      createdAt: replaced == null
+          ? null
+          : max(_nowSeconds(), replaced.createdAt + 1),
     );
     if (event == null) {
       throw const IdentityClaimPublishException(
@@ -732,7 +859,11 @@ class IdentityClaimsRepository {
     }
 
     final identityTags = identityTagsOf(tags);
-    await _cacheIdentityTags(pubkey, identityTags);
+    await _cacheIdentityTags(
+      pubkey,
+      identityTags,
+      source: (createdAt: event.createdAt, id: event.id),
+    );
     _lastPublishedTags[pubkey] = _PublishedIdentityTags(
       tags: identityTags,
       createdAt: event.createdAt,
@@ -783,30 +914,50 @@ class IdentityClaimsRepository {
     return [...kept, ...missing];
   }
 
-  bool _isAtLeastAsNewAsLastPublished(
+  static bool _isAtLeastAsNewAsLastPublished(
     _PublishedIdentityTags published, {
     required int? identityEventCreatedAt,
     required String? identityEventId,
   }) {
     if (identityEventCreatedAt == null || identityEventId == null) return false;
-    if (identityEventCreatedAt != published.createdAt) {
-      return identityEventCreatedAt > published.createdAt;
-    }
-    return identityEventId.compareTo(published.id) <= 0;
+    return !_isBehind(
+      (createdAt: identityEventCreatedAt, id: identityEventId),
+      (createdAt: published.createdAt, id: published.id),
+    );
   }
 
   /// Mirrors the published tags into the local identity cache so the new
-  /// link renders immediately. Best-effort: a storage failure must not turn
-  /// a landed publish into a thrown one.
+  /// link renders immediately.
+  ///
+  /// Skipped when [source] is an older revision than the event the row
+  /// already mirrors: the snapshot only ever moves forward, so a relay read
+  /// that is behind cannot quietly erase the evidence
+  /// [_refuseIfSnapshotIsNewer] checks the next write against.
+  ///
+  /// Best-effort otherwise: a storage failure must not turn a landed publish
+  /// into a thrown one.
   Future<void> _cacheIdentityTags(
     String pubkey,
-    List<List<String>> tags,
-  ) async {
+    List<List<String>> tags, {
+    required _IdentitySource source,
+  }) async {
+    final cached = await _cachedIdentitySource(pubkey);
+    if (cached != null && _isBehind(source, cached)) {
+      Log.warning(
+        'Identity snapshot for $pubkey mirrors a newer event (created_at '
+        '${cached.createdAt}) than the one just read (created_at '
+        '${source.createdAt}); keeping the snapshot',
+        name: 'IdentityClaimsRepository',
+      );
+      return;
+    }
     try {
       await _identityEventsDao?.upsertEvent(
         pubkey: pubkey,
         tagsJson: jsonEncode(tags),
         sourceKind: identityEventKind,
+        sourceCreatedAt: source.createdAt,
+        sourceEventId: source.id,
       );
     } on Object catch (e) {
       Log.warning(
