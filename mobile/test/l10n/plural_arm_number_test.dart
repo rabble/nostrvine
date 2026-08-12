@@ -51,8 +51,10 @@ void main() {
 
           for (final arm in _pluralArms(value)) {
             if (!RegExp(r'\d').hasMatch(arm.text)) continue;
-            // Interpolating the placeholder is always safe.
-            if (RegExp(r'\{\w+\}').hasMatch(arm.text)) continue;
+            // Interpolating the count itself is always safe. A *different*
+            // placeholder is not — `one{1 clip into {destination}}` still
+            // renders a false count.
+            if (arm.text.contains('{${arm.variable}}')) continue;
             final digits = RegExp(
               r'\d+',
             ).allMatches(arm.text).map((m) => m[0]).toList();
@@ -135,35 +137,48 @@ Iterable<int> _countsSelectingOne(String locale) sync* {
 }
 
 class _PluralArm {
-  const _PluralArm(this.category, this.text);
+  const _PluralArm(this.variable, this.category, this.text);
+
+  /// The plural argument the enclosing block switches on, e.g. `count`.
+  final String variable;
   final String category;
   final String text;
 }
 
-/// Splits the first `{name, plural, ...}` block of [value] into its arms.
+/// Splits *every* `{name, plural, ...}` block of [value] into its arms.
+///
+/// One string can carry several blocks — `settingsUnsavedDraftsMessage` has up
+/// to four — so stopping at the first would leave the rest unguarded.
 Iterable<_PluralArm> _pluralArms(String value) sync* {
-  final header = RegExp(r'\{\s*\w+\s*,\s*plural\s*,').firstMatch(value);
-  if (header == null) return;
-
-  final body = value.substring(header.end);
   final armHead = RegExp(r'^\s*(=\d+|zero|one|two|few|many|other)\s*\{');
-  var cursor = 0;
-  while (cursor < body.length) {
-    final head = armHead.firstMatch(body.substring(cursor));
-    if (head == null) return;
 
-    var index = cursor + head.end;
-    final start = index;
-    var depth = 1;
-    while (index < body.length && depth > 0) {
-      if (body[index] == '{') {
-        depth++;
-      } else if (body[index] == '}') {
-        depth--;
+  for (final header in RegExp(
+    r'\{\s*(\w+)\s*,\s*plural\s*,',
+  ).allMatches(value)) {
+    final variable = header.group(1)!;
+    final body = value.substring(header.end);
+    var cursor = 0;
+    while (cursor < body.length) {
+      final head = armHead.firstMatch(body.substring(cursor));
+      if (head == null) break;
+
+      var index = cursor + head.end;
+      final start = index;
+      var depth = 1;
+      while (index < body.length && depth > 0) {
+        if (body[index] == '{') {
+          depth++;
+        } else if (body[index] == '}') {
+          depth--;
+        }
+        index++;
       }
-      index++;
+      yield _PluralArm(
+        variable,
+        head.group(1)!,
+        body.substring(start, index - 1),
+      );
+      cursor = index;
     }
-    yield _PluralArm(head.group(1)!, body.substring(start, index - 1));
-    cursor = index;
   }
 }
