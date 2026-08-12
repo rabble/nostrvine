@@ -122,9 +122,6 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
   /// every playhead tick so canvas overlays track playback smoothly.
   final _playTimeNotifier = ValueNotifier<Duration>(Duration.zero);
 
-  /// Tracks the previous audio tracks to detect offset changes.
-  List<AudioEvent> _previousAudioTracks = const [];
-
   /// Track ids whose missing duration we already tried to backfill, so a
   /// failed probe isn't retried on every audio-track change.
   final Set<String> _durationHealAttempted = {};
@@ -912,6 +909,19 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
 
   /// Extracts waveform data for an audio track and updates the timeline
   /// overlay with the samples.
+  ///
+  /// Always extracts the **full source file**. Windowing to
+  /// `[startOffset, startOffset + span]` is [StereoWaveformPainter]'s job via
+  /// its `startOffset` / `maxDuration` args (see `_SoundContent`). Extracting a
+  /// pre-windowed segment here would (a) double-window against the painter's
+  /// offset and (b) restyle bar heights on every left-trim, because the
+  /// painter normalizes against the loudest sample in the arrays it is given.
+  ///
+  /// The measured duration travels with the samples: covering the whole source
+  /// makes it the source duration, which is the basis the painter maps samples
+  /// to time against. Sounds whose `duration` never resolved
+  /// (see [_healMissingAudioDurations]) would otherwise reach the painter with
+  /// no basis and draw the entire file squeezed into the visible bar.
   Future<void> _extractWaveform(AudioEvent audio) async {
     final path = audio.isBundled ? audio.assetPath : audio.url;
     if (path == null) return;
@@ -923,19 +933,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
           ? EditorVideo.file(path)
           : EditorVideo.network(path);
       final data = await ProVideoEditor.instance.getWaveform(
-        WaveformConfigs(
-          video: video,
-          startTime: audio.startOffset,
-          endTime:
-              audio.startOffset +
-              Duration(
-                milliseconds:
-                    ((audio.duration ??
-                                VideoEditorConstants.maxDuration.inSeconds) *
-                            1000)
-                        .toInt(),
-              ),
-        ),
+        WaveformConfigs(video: video),
       );
       if (!mounted) return;
       _timelineOverlayBloc.add(
@@ -943,6 +941,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
           itemId: audio.id,
           leftChannel: data.leftChannel,
           rightChannel: data.rightChannel,
+          sourceDuration: data.duration,
         ),
       );
     } catch (e, s) {
@@ -985,21 +984,16 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
         listenWhen: (previous, current) =>
             previous.audioTracks != current.audioTracks,
         listener: (context, state) {
-          final previousById = {for (final a in _previousAudioTracks) a.id: a};
-          _previousAudioTracks = state.audioTracks;
-
           final existingWaveformIds = state.items
               .where((i) => i.waveformLeftChannel != null)
               .map((i) => i.id)
               .toSet();
 
           for (final audio in state.audioTracks) {
-            final hadWaveform = existingWaveformIds.contains(audio.id);
-            final prev = previousById[audio.id];
-            final offsetChanged =
-                prev != null && prev.startOffset != audio.startOffset;
-
-            if (!hadWaveform || offsetChanged) {
+            // Full-source samples are offset-invariant; the painter scrolls
+            // via startOffset. Re-extract only when this track has no samples
+            // yet (new sound, or a rebuild that dropped the cache).
+            if (!existingWaveformIds.contains(audio.id)) {
               unawaited(_extractWaveform(audio));
             }
           }
