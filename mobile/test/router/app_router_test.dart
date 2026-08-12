@@ -461,7 +461,11 @@ void main() {
         authService,
       );
 
-      expect(target, equals(NostrConnectScreen.path));
+      expect(target?.path, equals(NostrConnectScreen.path));
+      // Ungated on purpose: /nostr-connect is an auth route, so the
+      // authenticated-auth-route bounce would pull a signed-in user out of the
+      // pairing they just approved.
+      expect(target?.gated, isFalse);
       verify(
         () => authService.onSignerCallbackReceived(
           relayUrl: 'wss://localrelay.link:28443',
@@ -469,9 +473,6 @@ void main() {
       ).called(greaterThan(0));
     });
 
-    // go_router runs the top-level redirect at most once per navigation, so
-    // whatever this returns is terminal — the authenticated-auth-route bounce
-    // further down appRouterRedirect never gets a second pass (#7074).
     test('sends a signed-in user home when no pairing is in flight', () {
       final authService = _MockAuthService();
       when(() => authService.nostrConnectUrl).thenReturn(null);
@@ -487,7 +488,8 @@ void main() {
         authService,
       );
 
-      expect(target, equals(VideoFeedPage.pathForIndex(0)));
+      expect(target?.path, equals(VideoFeedPage.pathForIndex(0)));
+      expect(target?.gated, isTrue);
     });
 
     test('sends a signed-out user to welcome when no pairing is in '
@@ -506,7 +508,8 @@ void main() {
         authService,
       );
 
-      expect(target, equals(WelcomeScreen.path));
+      expect(target?.path, equals(WelcomeScreen.path));
+      expect(target?.gated, isTrue);
     });
 
     test('fires no signer side effect for a divine:// app route', () {
@@ -546,8 +549,8 @@ void main() {
     const unlistedPaths = <String>[
       '/developer-options',
       '/settings',
-      '/video/abc123',
-      '/profile/npub1abc',
+      '/relay-settings',
+      '/key-management',
     ];
 
     test('never fall through for a signed-in user', () {
@@ -557,7 +560,10 @@ void main() {
         when(() => authService.nostrConnectUrl).thenReturn(null);
 
         expect(
-          divineSchemeRedirectTarget(Uri.parse('divine://$path'), authService),
+          divineSchemeRedirectTarget(
+            Uri.parse('divine://$path'),
+            authService,
+          )?.path,
           equals(VideoFeedPage.pathForIndex(0)),
           reason:
               'divine://$path must not reach $path — go_router would match it '
@@ -573,10 +579,38 @@ void main() {
         when(() => authService.nostrConnectUrl).thenReturn(null);
 
         expect(
-          divineSchemeRedirectTarget(Uri.parse('divine://$path'), authService),
+          divineSchemeRedirectTarget(
+            Uri.parse('divine://$path'),
+            authService,
+          )?.path,
           equals(WelcomeScreen.path),
           reason: 'divine://$path must not reach $path.',
         );
+      }
+    });
+
+    // These resolve to a destination rather than a bounce, so asserting the
+    // resolver alone proves nothing about reachability — `gated` is what hands
+    // the decision to appRouterRedirect. The router-level suite below is what
+    // actually pins the outcome.
+    test('allow-listed paths resolve to a destination but stay gated', () {
+      for (final path in const <String>[
+        '/saved-videos',
+        '/video/abc123',
+        '/video/abc123/likers',
+        '/profile/npub1abc',
+        '/hashtag/art',
+      ]) {
+        final authService = _MockAuthService();
+        when(() => authService.authState).thenReturn(AuthState.authenticated);
+        when(() => authService.nostrConnectUrl).thenReturn(null);
+
+        final target = divineSchemeRedirectTarget(
+          Uri.parse('divine://$path'),
+          authService,
+        );
+
+        expect(target?.gated, isTrue, reason: 'divine://$path must be gated.');
       }
     });
 
