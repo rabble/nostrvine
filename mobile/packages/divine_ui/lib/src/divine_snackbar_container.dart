@@ -198,7 +198,9 @@ class DivineSnackbarContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.vineColors;
     final labelStyle = VineTheme.labelLargeFont(color: _labelColor(colors));
-    final actionStyle = VineTheme.titleMediumFont();
+    // The banner's accent is what a lone action wears; the buttons below
+    // re-resolve it when a destructive secondary changes the pairing.
+    final actionStyle = VineTheme.titleMediumFont(color: _accentColor);
 
     final actions = <Widget>[
       if (_hasAction)
