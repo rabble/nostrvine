@@ -727,11 +727,14 @@ class _LibraryContent extends StatelessWidget {
     // the top row of thumbnails.
     if (selectionMode) return content;
 
+    // A Material rather than a ColoredBox: the tabs host ink-reactive rows
+    // (draft tiles, clip cards), and an opaque box here would swallow their
+    // splashes by painting over the Material further up the tree.
     return ClipRRect(
       borderRadius: const BorderRadius.all(
         Radius.circular(VineTheme.shellInnerCornerRadius),
       ),
-      child: ColoredBox(
+      child: Material(
         color: context.vineColors.surfaceContainerHigh,
         child: content,
       ),
