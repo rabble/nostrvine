@@ -31,7 +31,8 @@ Future<DatabaseBootstrapStartupResult> resolveDatabaseBootstrapForAppStart({
   Future<void> Function(Object error, StackTrace stack)?
   repairLocalDatabaseCache,
   bool Function(Object error)? shouldRepairLocalDatabaseCache,
-  Future<void> Function()? resetLocalDatabase,
+  Future<void> Function(DatabaseBootstrapDiagnosis diagnosis)?
+  resetLocalDatabase,
 }) async {
   try {
     return DatabaseBootstrapStartupResult.ready(await resolveCipherKey());
@@ -112,12 +113,18 @@ class DatabaseBootstrapFailureApp extends StatelessWidget {
   final StackTrace stack;
   final VoidCallback onCloseApp;
 
-  /// Backs up and clears the local database so the next launch rebuilds it.
+  /// Clears the local database so the next launch rebuilds it.
+  ///
+  /// Receives the diagnosis so the caller can pick the file disposition: a
+  /// reset backs the database up by default, but a plaintext-shaped
+  /// [DatabaseBootstrapDiagnosis.databaseUnreadable] file is deleted outright
+  /// rather than preserved as plaintext at rest.
   ///
   /// `null` hides the affordance. Even when provided it is only offered for
   /// diagnoses where the database is already unusable — see
   /// [DatabaseBootstrapDiagnosis.allowsLocalDatabaseReset].
-  final Future<void> Function()? onResetLocalDatabase;
+  final Future<void> Function(DatabaseBootstrapDiagnosis diagnosis)?
+  onResetLocalDatabase;
 
   @override
   Widget build(BuildContext context) {
@@ -144,7 +151,8 @@ class _FailureScreen extends StatefulWidget {
   final Object error;
   final StackTrace stack;
   final VoidCallback onCloseApp;
-  final Future<void> Function()? onResetLocalDatabase;
+  final Future<void> Function(DatabaseBootstrapDiagnosis diagnosis)?
+  onResetLocalDatabase;
 
   @override
   State<_FailureScreen> createState() => _FailureScreenState();
@@ -157,9 +165,10 @@ class _FailureScreenState extends State<_FailureScreen> {
 
   bool get _canReset =>
       widget.onResetLocalDatabase != null &&
-      databaseBootstrapDiagnosis(
-        widget.error,
-      ).allowsLocalDatabaseReset;
+      _diagnosis.allowsLocalDatabaseReset;
+
+  DatabaseBootstrapDiagnosis get _diagnosis =>
+      databaseBootstrapDiagnosis(widget.error);
 
   /// Swaps the step in place and announces it: nothing is pushed, so assistive
   /// tech gets no route change and the focused node just disappears.
@@ -179,7 +188,7 @@ class _FailureScreenState extends State<_FailureScreen> {
       _resetFailed = false;
     });
     try {
-      await widget.onResetLocalDatabase!().timeout(_resetTimeout);
+      await widget.onResetLocalDatabase!(_diagnosis).timeout(_resetTimeout);
     } on Object {
       // The reset can fail outright, and a wedged platform channel can hang it
       // past the timeout. Stay put and say so rather than closing on a reset

@@ -251,7 +251,7 @@ Future<bool> salvageCorruptEncryptedDatabase({
   if (!File(dbPath).existsSync()) return false;
 
   final salvagePath = '$dbPath$_salvageSuffix';
-  _deleteDatabaseAndSidecars(salvagePath);
+  deleteDatabaseAndSidecars(salvagePath);
 
   // Build the salvage copy, then only swap it in if it is itself sound. On any
   // failure (wrong key, unbuildable, unsound copy) leave the original intact.
@@ -267,7 +267,7 @@ Future<bool> salvageCorruptEncryptedDatabase({
         databasePath: salvagePath,
       );
   if (!usable) {
-    _deleteDatabaseAndSidecars(salvagePath);
+    deleteDatabaseAndSidecars(salvagePath);
     return false;
   }
 
@@ -565,7 +565,7 @@ Future<CipherMigrationOutcome> migratePlaintextToEncrypted({
       // or the I/O fault is likely gone.
       return CipherMigrationOutcome.failed;
     case _DbClassification.emptyPlaintext:
-      _deleteDatabaseAndSidecars(dbPath);
+      deleteDatabaseAndSidecars(dbPath);
       return CipherMigrationOutcome.removedEmptyPlaintext;
     case _DbClassification.populatedPlaintext:
       return _rekeyPlaintextInPlace(dbPath: dbPath, rawKeyHex: rawKeyHex);
@@ -597,7 +597,7 @@ Future<bool> _resumeInterruptedSalvage({
     return true;
   }
 
-  _deleteDatabaseAndSidecars(salvagePath);
+  deleteDatabaseAndSidecars(salvagePath);
   return false;
 }
 
@@ -687,7 +687,7 @@ CipherMigrationOutcome _rekeyPlaintextInPlace({
 }) {
   final encryptedPath = '$dbPath$_migratingSuffix';
   // Remove any partial artifact from an interrupted previous attempt.
-  _deleteDatabaseAndSidecars(encryptedPath);
+  deleteDatabaseAndSidecars(encryptedPath);
 
   Database source;
   try {
@@ -706,7 +706,7 @@ CipherMigrationOutcome _rekeyPlaintextInPlace({
     }
     source.execute('VACUUM INTO ?;', [encryptedPath]);
   } on SqliteException catch (e) {
-    _deleteDatabaseAndSidecars(encryptedPath);
+    deleteDatabaseAndSidecars(encryptedPath);
     return _rekeyFailureOutcome(e);
   } finally {
     source.close();
@@ -716,7 +716,7 @@ CipherMigrationOutcome _rekeyPlaintextInPlace({
     encryptedPath: encryptedPath,
     rawKeyHex: rawKeyHex,
   )) {
-    _deleteDatabaseAndSidecars(encryptedPath);
+    deleteDatabaseAndSidecars(encryptedPath);
     return CipherMigrationOutcome.failed;
   }
 
@@ -725,7 +725,7 @@ CipherMigrationOutcome _rekeyPlaintextInPlace({
     encryptedPath: encryptedPath,
     rawKeyHex: rawKeyHex,
   )) {
-    _deleteDatabaseAndSidecars(encryptedPath);
+    deleteDatabaseAndSidecars(encryptedPath);
     return CipherMigrationOutcome.failed;
   }
 
@@ -841,6 +841,16 @@ Future<void> backUpAndRemoveSharedDatabase() async {
   );
   File(dbPath).renameSync(backupPath);
   _moveSidecars(fromPath: dbPath, toPath: backupPath);
+}
+
+/// Deletes the shared database and sidecars without preserving a backup.
+///
+/// Use only when the caller has already proved the file is unusable plaintext.
+/// Encrypted database resets should keep using [backUpAndRemoveSharedDatabase]
+/// so the preserved backup remains readable under the retained cipher key.
+Future<void> deleteSharedDatabase() async {
+  final dbPath = await getSharedDatabasePath();
+  deleteDatabaseAndSidecars(dbPath);
 }
 
 /// Removes plaintext backups left by a successful plaintext→encrypted
@@ -1021,7 +1031,7 @@ Future<void> migrateLegacyDatabase({
       );
       return;
     } else {
-      _deleteDatabaseAndSidecars(legacyPath);
+      deleteDatabaseAndSidecars(legacyPath);
       return;
     }
   }
@@ -1095,7 +1105,8 @@ void _moveSidecars({
   }
 }
 
-void _deleteDatabaseAndSidecars(String dbPath) {
+@visibleForTesting
+void deleteDatabaseAndSidecars(String dbPath) {
   for (final suffix in const ['', '-wal', '-shm']) {
     final file = File('$dbPath$suffix');
     if (file.existsSync()) file.deleteSync();

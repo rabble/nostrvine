@@ -68,3 +68,8 @@ Future<CipherMigrationOutcome> migratePlaintextToEncrypted({
 Future<void> backUpAndRemoveSharedDatabase() async {
   throw UnsupportedError('No database implementation found for this platform');
 }
+
+/// Stub implementation - will be replaced by conditional imports
+Future<void> deleteSharedDatabase() async {
+  throw UnsupportedError('No database implementation found for this platform');
+}

@@ -70,6 +70,10 @@ Future<bool> salvageCorruptEncryptedDatabase({
 /// No-op on web (key-loss recovery is native-only). Never reached at runtime.
 Future<void> backUpAndRemoveSharedDatabase() async {}
 
+/// No-op on web (native database deletion is native-only). Never reached at
+/// runtime.
+Future<void> deleteSharedDatabase() async {}
+
 /// Outcome of [migratePlaintextToEncrypted]. Mirrors the native enum so app
 /// code that switches on it compiles for web.
 enum CipherMigrationOutcome {

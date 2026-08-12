@@ -244,7 +244,7 @@ void main() {
   group('resolveDatabaseBootstrapForAppStart reset wiring', () {
     test('hands the reset hook to the failure app', () async {
       Widget? renderedApp;
-      Future<void> reset() async {}
+      Future<void> reset(DatabaseBootstrapDiagnosis diagnosis) async {}
 
       await resolveDatabaseBootstrapForAppStart(
         resolveCipherKey: () async => throw StateError('bootstrap failed'),
@@ -355,7 +355,7 @@ void main() {
             _lockedKeychainFailure(),
           ),
           stack: StackTrace.current,
-          onResetLocalDatabase: () async {},
+          onResetLocalDatabase: (_) async {},
         ),
       );
 
@@ -372,7 +372,7 @@ void main() {
         DatabaseBootstrapFailureApp(
           error: StateError('something else entirely'),
           stack: StackTrace.current,
-          onResetLocalDatabase: () async {},
+          onResetLocalDatabase: (_) async {},
         ),
       );
 
@@ -387,7 +387,7 @@ void main() {
     });
 
     testWidgets('resets and closes once the user confirms', (tester) async {
-      var resets = 0;
+      DatabaseBootstrapDiagnosis? resetDiagnosis;
       var closed = false;
 
       await tester.pumpWidget(
@@ -395,7 +395,7 @@ void main() {
           error: StateError('something else entirely'),
           stack: StackTrace.current,
           onCloseApp: () => closed = true,
-          onResetLocalDatabase: () async => resets++,
+          onResetLocalDatabase: (diagnosis) async => resetDiagnosis = diagnosis,
         ),
       );
 
@@ -404,13 +404,34 @@ void main() {
 
       expect(find.text('reset your local database?'), findsOneWidget);
       expect(find.textContaining('Your account stays'), findsOneWidget);
-      expect(resets, isZero, reason: 'confirmation must gate the wipe');
+      expect(resetDiagnosis, isNull, reason: 'confirmation must gate the wipe');
 
       await tester.tap(find.text('reset and close'));
       await tester.pump();
 
-      expect(resets, equals(1));
+      expect(resetDiagnosis, DatabaseBootstrapDiagnosis.bootstrapFailed);
       expect(closed, isTrue);
+    });
+
+    testWidgets('passes the database-unreadable diagnosis to reset', (
+      tester,
+    ) async {
+      DatabaseBootstrapDiagnosis? resetDiagnosis;
+
+      await tester.pumpWidget(
+        DatabaseBootstrapFailureApp(
+          error: const DatabaseUnreadableError(),
+          stack: StackTrace.current,
+          onResetLocalDatabase: (diagnosis) async => resetDiagnosis = diagnosis,
+        ),
+      );
+
+      await tester.tap(find.text('reset local database'));
+      await tester.pump();
+      await tester.tap(find.text('reset and close'));
+      await tester.pump();
+
+      expect(resetDiagnosis, DatabaseBootstrapDiagnosis.databaseUnreadable);
     });
 
     testWidgets('returns to the failure screen on cancel', (tester) async {
@@ -420,7 +441,7 @@ void main() {
         DatabaseBootstrapFailureApp(
           error: StateError('something else entirely'),
           stack: StackTrace.current,
-          onResetLocalDatabase: () async => resets++,
+          onResetLocalDatabase: (_) async => resets++,
         ),
       );
 
@@ -443,7 +464,7 @@ void main() {
           error: StateError('something else entirely'),
           stack: StackTrace.current,
           onCloseApp: () => closed = true,
-          onResetLocalDatabase: () async =>
+          onResetLocalDatabase: (_) async =>
               throw StateError('keystore delete failed'),
         ),
       );
@@ -473,7 +494,7 @@ void main() {
           error: StateError('something else entirely'),
           stack: StackTrace.current,
           onCloseApp: () => closes++,
-          onResetLocalDatabase: () async {},
+          onResetLocalDatabase: (_) async {},
         ),
       );
 
@@ -501,7 +522,7 @@ void main() {
         DatabaseBootstrapFailureApp(
           error: StateError('something else entirely'),
           stack: StackTrace.current,
-          onResetLocalDatabase: () => Completer<void>().future,
+          onResetLocalDatabase: (_) => Completer<void>().future,
         ),
       );
 
@@ -528,7 +549,7 @@ void main() {
         DatabaseBootstrapFailureApp(
           error: StateError('something else entirely'),
           stack: StackTrace.current,
-          onResetLocalDatabase: () async => throw StateError('nope'),
+          onResetLocalDatabase: (_) async => throw StateError('nope'),
         ),
       );
 
