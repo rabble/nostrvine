@@ -81,6 +81,55 @@ of scope); the ui-service guard is further narrowed to the presentation
 subtrees. The full ratchet policy is in
 [docs/BLOC_UI_MIGRATION_PRD.md](BLOC_UI_MIGRATION_PRD.md).
 
+### Which packages may depend on Flutter (issue #3338)
+
+A package under `mobile/packages/` may declare a runtime Flutter SDK
+dependency when it is one of:
+
+- a **native plugin** — it ships a `flutter: plugin:` block and talks over a
+  `MethodChannel` (`background_uploader`, `caption_generator`,
+  `divine_quick_actions`, `image_metadata_stripper`), or wraps one
+  (`keycast_flutter`, `media_cache`, `nostr_key_manager`, `sound_service`,
+  `analytics`, `iap_repository`, `permissions_service`);
+- a **presentation-layer package** — it exports widgets
+  (`divine_ui`, `divine_camera`, `divine_video_player`,
+  `infinite_video_feed`, `tv_static_effect`);
+- a consumer of a **Flutter-only API with no pure-Dart substitute** —
+  `dm_repository` (`compute`, `kReleaseMode`), `unified_logger`
+  (`kDebugMode`/`kIsWeb`/`debugPrint`), `blurhash_service` (`foundation.dart`),
+  `nostr_sdk` (Android NIP-55 external signer).
+
+Anything else is out of policy. To re-derive the current set — the list above
+is hand-maintained and can drift:
+
+```bash
+awk 'FNR==1{d=0;hit=0} /^dependencies:/{d=1;next} /^[^ ]/{d=0}
+     !hit&&d&&/^  flutter(_web_plugins)?:$/{getline
+       if($0~/sdk: flutter/){print FILENAME;hit=1}}' mobile/packages/*/pubspec.yaml
+```
+
+`flutter_test` under `dev_dependencies:` is **not** counted — test-only Flutter
+is fine, and six packages on `main` already ship exactly that shape.
+
+In the API group, everything except `nostr_sdk` is a removal candidate:
+`unified_logger` needs an injected console sink, `blurhash_service` imports
+`foundation.dart` for almost nothing, and `dm_repository` needs `compute`
+replaced. None of the three decouples anything on its own while `nostr_sdk` is
+still in the way, which is the second point below.
+
+Two things are worth knowing before doing more of this work:
+
+- **Removing a `flutter: sdk: flutter` entry is zero-risk but also cosmetic.**
+  `pubspec.lock` is bit-identical across the removal and no native plugin is
+  deregistered (`flutter` has no `plugin:` key, so it is never a plugin). It
+  makes the manifest honest; it does not decouple anything.
+- **No package in the `nostr_sdk` cone can run under `dart test`.** `nostr_sdk`
+  declares the Flutter SDK and five Flutter plugins, and nearly every package
+  reaches it — `models` included, via `models -> nostr_sdk`. So a package with
+  no `flutter:` line is still not a pure-Dart package. Making that true
+  requires splitting `nostr_sdk`'s Android NIP-55 signer (4 files, 735 LOC)
+  into a Flutter-side shim, which is tracked as the #3338 follow-up epic.
+
 ## Go deeper
 
 - [`.claude/rules/architecture.md`](../.claude/rules/architecture.md) — the full contract (per-layer responsibilities, dependency graph, DI, barrel files, when to extract a package). **Source of truth.**
