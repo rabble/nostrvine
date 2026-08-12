@@ -3797,12 +3797,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'Bewaar om later te bekijken';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Toevoegen aan bladwijzerset';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'Orden in collecties';
-
-  @override
   String get shareMenuFollowSets => 'Volgsets';
 
   @override
@@ -4183,9 +4177,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get shareMenuUnknown => 'Onbekend';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'Bladwijzerset maken';
-
-  @override
   String get shareMenuSetName => 'Setnaam';
 
   @override
@@ -4199,15 +4190,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Begin een nieuwe bladwijzercollectie';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Nog geen bladwijzersets. Maak je eerste!';
-
-  @override
   String get shareMenuError => 'Fout';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Laden van bladwijzersets mislukt';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

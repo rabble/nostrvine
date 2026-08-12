@@ -1,12 +1,12 @@
-// ABOUTME: Service for managing NIP-51 bookmarks (kind 10003) and bookmark sets (kind 30003)
-// ABOUTME: Handles creation, updates, and management of user's bookmark collections
+// ABOUTME: Service for the NIP-51 global bookmark list (kind 10003)
+// ABOUTME: Reconciles with the relay before every read and every publish
 
 import 'dart:async';
 import 'dart:convert';
 
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/nostr_list_service_mixin.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -63,188 +63,330 @@ class BookmarkItem {
   int get hashCode => Object.hash(type, id);
 }
 
-/// Represents a bookmark set (categorized bookmarks)
-class BookmarkSet {
-  const BookmarkSet({
-    required this.id,
-    required this.name,
-    required this.items,
-    required this.createdAt,
-    required this.updatedAt,
-    this.description,
-    this.imageUrl,
-    this.nostrEventId,
+/// Outcome of [BookmarkService.toggleVideoInGlobalBookmarks].
+///
+/// Carries the state observed *after* reconciling with the relay, so callers
+/// render "Saved" / "Removed" from what actually happened rather than from a
+/// local read that predates the sync.
+class BookmarkToggleResult {
+  const BookmarkToggleResult({
+    required this.succeeded,
+    required this.wasBookmarked,
+    required this.isBookmarked,
   });
 
-  final String id;
-  final String name;
-  final String? description;
-  final String? imageUrl;
-  final List<BookmarkItem> items;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-  final String? nostrEventId;
+  /// Whether the change reconciled and a relay accepted the new list.
+  final bool succeeded;
 
-  BookmarkSet copyWith({
-    String? id,
-    String? name,
-    String? description,
-    String? imageUrl,
-    List<BookmarkItem>? items,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-    String? nostrEventId,
-  }) => BookmarkSet(
-    id: id ?? this.id,
-    name: name ?? this.name,
-    description: description ?? this.description,
-    imageUrl: imageUrl ?? this.imageUrl,
-    items: items ?? this.items,
-    createdAt: createdAt ?? this.createdAt,
-    updatedAt: updatedAt ?? this.updatedAt,
-    nostrEventId: nostrEventId ?? this.nostrEventId,
-  );
+  /// Whether the video was bookmarked before the toggle, per the relay.
+  final bool wasBookmarked;
 
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'description': description,
-    'imageUrl': imageUrl,
-    'items': items.map((item) => item.toJson()).toList(),
-    'createdAt': createdAt.toIso8601String(),
-    'updatedAt': updatedAt.toIso8601String(),
-    'nostrEventId': nostrEventId,
-  };
-
-  static BookmarkSet fromJson(Map<String, dynamic> json) => BookmarkSet(
-    id: json['id'] as String,
-    name: json['name'] as String,
-    description: json['description'] as String?,
-    imageUrl: json['imageUrl'] as String?,
-    items: (json['items'] as List<dynamic>)
-        .map((item) => BookmarkItem.fromJson(item as Map<String, dynamic>))
-        .toList(),
-    createdAt: DateTime.parse(json['createdAt'] as String),
-    updatedAt: DateTime.parse(json['updatedAt'] as String),
-    nostrEventId: json['nostrEventId'] as String?,
-  );
+  /// Whether the video is bookmarked now. Equals [wasBookmarked] when the
+  /// toggle failed, since no relay accepted a new list.
+  final bool isBookmarked;
 }
 
-/// Service for managing NIP-51 bookmarks and bookmark sets
-class BookmarkService with NostrListServiceMixin {
+/// Service for the user's NIP-51 global bookmark list (kind 10003).
+class BookmarkService {
   BookmarkService({
     required NostrClient nostrService,
     required AuthService authService,
     required SharedPreferences prefs,
+    DateTime Function() now = DateTime.now,
   }) : _nostrService = nostrService,
        _authService = authService,
-       _prefs = prefs {
+       _prefs = prefs,
+       _now = now {
     _loadBookmarksFromSharedPreferences();
   }
 
   final NostrClient _nostrService;
   final AuthService _authService;
   final SharedPreferences _prefs;
-
-  // Mixin interface implementations
-  @override
-  NostrClient get nostrService => _nostrService;
-  @override
-  AuthService get authService => _authService;
+  final DateTime Function() _now;
 
   static const String globalBookmarksStorageKey = 'global_bookmarks';
-  static const String bookmarkSetsStorageKey = 'bookmark_sets';
-  static const String globalBookmarksId = 'global_bookmarks';
+
+  /// NIP-51 kind for the uncategorized ("global") bookmark list.
+  static const int globalBookmarksKind = 10003;
+
+  /// The `content` Divine wrote into kind 10003 before it respected NIP-51's
+  /// reservation of that field for the encrypted private-item array.
+  ///
+  /// Carrying an unrecognized `content` through is what protects another
+  /// client's ciphertext, but this literal is Divine's own former output and
+  /// is not ciphertext. Preserving it would republish the malformed value for
+  /// exactly the users who already carry it — every account that saved a
+  /// bookmark on an older build.
+  static const String _legacyProseContent = 'Divine global bookmarks';
 
   // Global bookmarks (Kind 10003)
   final List<BookmarkItem> _globalBookmarks = [];
 
-  // Bookmark sets (Kind 30003)
-  final List<BookmarkSet> _bookmarkSets = [];
+  /// The `content` of the newest kind-10003 we have seen for this user.
+  ///
+  /// NIP-51 reserves `.content` for the NIP-44-encrypted private item array.
+  /// Divine cannot read those items yet, so it carries the ciphertext through
+  /// untouched instead of overwriting another client's private bookmarks —
+  /// except for [_legacyProseContent], which is Divine's own malformed output
+  /// and is dropped rather than propagated.
+  String _lastKnownRemoteContent = '';
 
-  bool _isInitialized = false;
+  /// How long a full-settlement "this user has no list" answer is reused
+  /// before the next empty answer is confirmed again.
+  ///
+  /// Bounds two opposing costs: without it a user who genuinely has no
+  /// bookmarks pays a full-settlement wait every time Saved opens, and with an
+  /// unbounded latch a list created on another device stays invisible for the
+  /// life of the service whenever a relay is mute.
+  ///
+  /// The exact value is uninteresting because this is only ever consulted
+  /// after a read came back empty — a user who has bookmarks never reaches it
+  /// and pays nothing for it.
+  static const absenceConfirmationTtl = Duration(minutes: 5);
 
-  // Getters
+  /// When a full-settlement read last established that this user has no
+  /// kind-10003 at all.
+  DateTime? _absenceConfirmedAt;
+
+  /// Whether an empty answer from a partial set of relays still has to be
+  /// confirmed before it is believed.
+  ///
+  /// Always, while this device holds bookmarks an unconfirmed empty would
+  /// discard. Otherwise whenever the last confirmation has aged out — the
+  /// reinstall case starts with an empty cache, so "nothing to lose" is
+  /// exactly when the confirmation matters.
+  bool get _mustConfirmAbsence {
+    if (_globalBookmarks.isNotEmpty) return true;
+    final confirmedAt = _absenceConfirmedAt;
+    return confirmedAt == null ||
+        _now().difference(confirmedAt) >= absenceConfirmationTtl;
+  }
+
   List<BookmarkItem> get globalBookmarks => List.unmodifiable(_globalBookmarks);
-  List<BookmarkSet> get bookmarkSets => List.unmodifiable(_bookmarkSets);
-  bool get isInitialized => _isInitialized;
 
-  /// Initialize the service
-  Future<void> initialize() async {
+  /// Reconciles [globalBookmarks] against the user's kind-10003 on the relay.
+  ///
+  /// Returns `false` when the remote list could not be established — signed
+  /// out, no reachable relay, or a timed-out query. **Callers that are about
+  /// to publish must not write on `false`**: kind 10003 is replaceable, so
+  /// republishing a list this device never reconciled deletes every bookmark
+  /// it has not seen (see `replaceable-event-preservation`).
+  ///
+  /// A zero-event answer is only trusted when the relay actually answered,
+  /// which is why this uses [NostrClient.queryEventsDetailed] rather than
+  /// [NostrClient.queryEvents] — the latter cannot tell "you have no
+  /// bookmarks" apart from "nobody replied", and treating the second as the
+  /// first is precisely how the list gets destroyed.
+  ///
+  /// Pass [requireAuthoritative] when the result is about to become the base of
+  /// a replacing publish. Without it, `true` only means *some* relay answered:
+  /// the pool releases a query one second after the first terminal frame, so a
+  /// relay that stays connected and never answers is skipped and its copy of
+  /// the list is invisible here — indistinguishable from the user having no
+  /// bookmarks, and from a newer revision not existing. Republishing on that
+  /// answer is what deletes the list. With it, the query holds out for every
+  /// relay and an incomplete answer reports `false` instead.
+  ///
+  /// A non-authoritative read still never *discards* a list on a partial
+  /// answer. An empty answer is confirmed against every relay before it is
+  /// believed — always while this device holds bookmarks, otherwise at most
+  /// once per [absenceConfirmationTtl] counted from the last confirmed
+  /// absence. Seeing a list resets that count, so a list that keeps going
+  /// missing is re-confirmed each time rather than once per window. An answer
+  /// that stays unconfirmed changes nothing. A read that finds a list keeps
+  /// the fast trade and pays for none of this.
+  Future<bool> syncGlobalBookmarks({bool requireAuthoritative = false}) async {
+    final pubkey = _authService.currentPublicKeyHex;
+    if (!_authService.isAuthenticated || pubkey == null) {
+      Log.warning(
+        'Skipping bookmark sync - user not authenticated',
+        name: 'BookmarkService',
+        category: LogCategory.system,
+      );
+      return false;
+    }
+
     try {
-      if (!_authService.isAuthenticated) {
-        Log.warning(
-          'Cannot initialize bookmarks - user not authenticated',
-          name: 'BookmarkService',
-          category: LogCategory.system,
+      var events = await _readRemoteGlobalBookmarks(
+        pubkey,
+        requireAuthoritative: requireAuthoritative,
+      );
+      if (events == null) return false;
+      var answeredAuthoritatively = requireAuthoritative;
+
+      if (events.isEmpty && !requireAuthoritative && _mustConfirmAbsence) {
+        // Only *some* relay said the list does not exist, and the settle
+        // window's latency trade cannot afford to be wrong about that one
+        // answer: it is indistinguishable from a relay that stayed mute. Left
+        // unchecked it either tells a user with bookmarks that they have none
+        // — the reinstall #6627 is about, where the cache is empty too — or
+        // overwrites the snapshot Saved falls back to offline. Confirm it
+        // against every relay before believing it.
+        events = await _readRemoteGlobalBookmarks(
+          pubkey,
+          requireAuthoritative: true,
         );
-        return;
+        if (events == null) {
+          Log.warning(
+            'Empty bookmark answer not confirmed by every relay - keeping '
+            'the ${_globalBookmarks.length} bookmarks this device has',
+            name: 'BookmarkService',
+            category: LogCategory.system,
+          );
+          return false;
+        }
+        answeredAuthoritatively = true;
       }
 
-      // 1. Load from SharedPreferences cache (fast, may be stale)
-      _loadBookmarksFromSharedPreferences();
+      if (events.isEmpty) {
+        // Nobody holds a list, and — because of the confirmation above — that
+        // is either an authoritative answer or one that had nothing to
+        // destroy. The first save may create one.
+        //
+        // Only an authoritative answer renews the absence: stamping an
+        // unconfirmed one would slide the window forward on every read, and a
+        // session that opens Saved often enough would never re-confirm.
+        if (answeredAuthoritatively) _absenceConfirmedAt = _now();
+        _globalBookmarks.clear();
+        _lastKnownRemoteContent = '';
+      } else {
+        // Seeing the event disproves the absence, so the stamp cannot stand.
+        // A list whose items are all private has no public tags, leaving
+        // [_globalBookmarks] empty while [_lastKnownRemoteContent] holds
+        // another client's ciphertext — a stale stamp would let the next
+        // partial empty answer through unconfirmed and wipe it.
+        _absenceConfirmedAt = null;
+        final newestFirst = [...events]
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        _adoptGlobalBookmarksFromEvent(newestFirst.first);
+      }
 
-      // 2. Load from relay (authoritative)
-      await _loadBookmarksFromNostr();
-
-      // 3. Update SharedPreferences cache for next startup
       await _saveBookmarksToSharedPreferences();
 
-      _isInitialized = true;
       Log.info(
-        'Bookmark service initialized with ${_globalBookmarks.length} global bookmarks and ${_bookmarkSets.length} bookmark sets',
+        'Synced ${_globalBookmarks.length} global bookmarks from relay',
         name: 'BookmarkService',
         category: LogCategory.system,
       );
+      return true;
     } catch (e) {
       Log.error(
-        'Failed to initialize bookmark service: $e',
+        'Failed to sync global bookmarks from relay: $e',
         name: 'BookmarkService',
         category: LogCategory.system,
       );
+      return false;
     }
   }
 
-  // === GLOBAL BOOKMARKS (Kind 10003) ===
-
-  /// Add a video event to global bookmarks
-  Future<bool> addVideoToGlobalBookmarks(
-    String videoEventId, {
-    String? relay,
-    String? petname,
+  /// The user's kind-10003 events as the relays report them, or `null` when
+  /// the answer was inconclusive — no reachable relay, or a query that timed
+  /// out. `null` is never "you have no bookmarks": mistaking the two is what
+  /// truncates the list.
+  ///
+  /// An authoritative read skips the local event cache. The cache is merged in
+  /// regardless of settlement, so leaving it on would let a stale locally-held
+  /// kind-10003 stand in for a relay answer — and the next publish would
+  /// resurrect a list the user had already emptied.
+  Future<List<Event>?> _readRemoteGlobalBookmarks(
+    String pubkey, {
+    required bool requireAuthoritative,
   }) async {
-    return addToGlobalBookmarks(
-      BookmarkItem(type: 'e', id: videoEventId, relay: relay, petname: petname),
+    final result = await _nostrService.queryEventsDetailed(
+      [
+        Filter(kinds: [globalBookmarksKind], authors: [pubkey], limit: 1),
+      ],
+      useCache: !requireAuthoritative,
+      requireAllRelaysSettled: requireAuthoritative,
     );
-  }
 
-  /// Remove a video event from global bookmarks (kind 10003 `e` tag).
-  Future<bool> removeVideoFromGlobalBookmarks(String videoEventId) async {
-    return removeFromGlobalBookmarks(BookmarkItem(type: 'e', id: videoEventId));
+    if (result.timedOut || result.noRelays) {
+      Log.warning(
+        'Bookmark sync inconclusive (timedOut=${result.timedOut}, '
+        'noRelays=${result.noRelays}, '
+        'requireAuthoritative=$requireAuthoritative) - '
+        'remote list left unchanged',
+        name: 'BookmarkService',
+        category: LogCategory.system,
+      );
+      return null;
+    }
+
+    return result.events
+        .where((event) => event.kind == globalBookmarksKind)
+        .toList();
   }
 
   /// If [videoEventId] is globally bookmarked, removes it; otherwise adds it.
   ///
-  /// Uses the same persistence and Nostr publish path as
-  /// [addVideoToGlobalBookmarks] / [removeVideoFromGlobalBookmarks].
-  Future<bool> toggleVideoInGlobalBookmarks(
+  /// The direction is decided *after* reconciling with the relay, so a video
+  /// bookmarked on another device is removed rather than added a second time.
+  /// The returned [BookmarkToggleResult] carries both the reconciled
+  /// before-state and the resulting state; callers must not assume the
+  /// direction from their own pre-read.
+  Future<BookmarkToggleResult> toggleVideoInGlobalBookmarks(
     String videoEventId, {
     String? relay,
     String? petname,
   }) async {
-    if (isVideoBookmarkedGlobally(videoEventId)) {
-      return removeVideoFromGlobalBookmarks(videoEventId);
+    final reconciled = await syncGlobalBookmarks(requireAuthoritative: true);
+    final wasBookmarked = isVideoBookmarkedGlobally(videoEventId);
+
+    if (!reconciled) {
+      return BookmarkToggleResult(
+        succeeded: false,
+        wasBookmarked: wasBookmarked,
+        isBookmarked: wasBookmarked,
+      );
     }
-    return addVideoToGlobalBookmarks(
-      videoEventId,
-      relay: relay,
-      petname: petname,
+
+    final succeeded = wasBookmarked
+        ? await removeFromGlobalBookmarks(
+            BookmarkItem(type: 'e', id: videoEventId),
+            alreadyReconciled: true,
+          )
+        : await addToGlobalBookmarks(
+            BookmarkItem(
+              type: 'e',
+              id: videoEventId,
+              relay: relay,
+              petname: petname,
+            ),
+            alreadyReconciled: true,
+          );
+
+    return BookmarkToggleResult(
+      succeeded: succeeded,
+      wasBookmarked: wasBookmarked,
+      isBookmarked: succeeded ? !wasBookmarked : wasBookmarked,
     );
   }
 
-  /// Add an item to global bookmarks
-  Future<bool> addToGlobalBookmarks(BookmarkItem item) async {
+  /// Add an item to global bookmarks.
+  ///
+  /// Reconciles with the relay first and refuses to publish if that fails, so
+  /// a device whose cache is empty (fresh install, second device) cannot
+  /// replace the user's list with a one-item one.
+  ///
+  /// Pass [alreadyReconciled] when the caller has just run
+  /// [syncGlobalBookmarks] with `requireAuthoritative: true` and the extra
+  /// round trip would be redundant.
+  Future<bool> addToGlobalBookmarks(
+    BookmarkItem item, {
+    bool alreadyReconciled = false,
+  }) async {
     try {
+      if (!alreadyReconciled &&
+          !await syncGlobalBookmarks(requireAuthoritative: true)) {
+        Log.warning(
+          'Not adding to global bookmarks: could not reconcile with relay',
+          name: 'BookmarkService',
+          category: LogCategory.system,
+        );
+        return false;
+      }
+
       // Check if already bookmarked
       if (_globalBookmarks.contains(item)) {
         Log.debug(
@@ -255,13 +397,11 @@ class BookmarkService with NostrListServiceMixin {
         return true;
       }
 
-      _globalBookmarks.add(item);
-      await _saveBookmarks();
-
-      // Publish to Nostr if authenticated
-      if (_authService.isAuthenticated) {
-        await _publishGlobalBookmarksToNostr();
-      }
+      final published = await _publishGlobalBookmarks([
+        ..._globalBookmarks,
+        item,
+      ]);
+      if (!published) return false;
 
       Log.info(
         'Added item to global bookmarks: ${item.id}',
@@ -280,11 +420,28 @@ class BookmarkService with NostrListServiceMixin {
     }
   }
 
-  /// Remove an item from global bookmarks
-  Future<bool> removeFromGlobalBookmarks(BookmarkItem item) async {
+  /// Remove an item from global bookmarks.
+  ///
+  /// Reconciles with the relay first for the same reason as
+  /// [addToGlobalBookmarks] — the republished list must be the user's real
+  /// one minus [item], not this device's cache minus [item].
+  Future<bool> removeFromGlobalBookmarks(
+    BookmarkItem item, {
+    bool alreadyReconciled = false,
+  }) async {
     try {
-      final removed = _globalBookmarks.remove(item);
-      if (!removed) {
+      if (!alreadyReconciled &&
+          !await syncGlobalBookmarks(requireAuthoritative: true)) {
+        Log.warning(
+          'Not removing from global bookmarks: could not reconcile with relay',
+          name: 'BookmarkService',
+          category: LogCategory.system,
+        );
+        return false;
+      }
+
+      final candidate = [..._globalBookmarks];
+      if (!candidate.remove(item)) {
         Log.warning(
           'Item not found in global bookmarks: ${item.id}',
           name: 'BookmarkService',
@@ -293,12 +450,8 @@ class BookmarkService with NostrListServiceMixin {
         return false;
       }
 
-      await _saveBookmarks();
-
-      // Update on Nostr if authenticated
-      if (_authService.isAuthenticated) {
-        await _publishGlobalBookmarksToNostr();
-      }
+      final published = await _publishGlobalBookmarks(candidate);
+      if (!published) return false;
 
       Log.info(
         'Removed item from global bookmarks: ${item.id}',
@@ -329,279 +482,22 @@ class BookmarkService with NostrListServiceMixin {
     return isInGlobalBookmarks(videoEventId, 'e');
   }
 
-  // === BOOKMARK SETS (Kind 30003) ===
-
-  /// Create a new bookmark set
-  Future<BookmarkSet?> createBookmarkSet({
-    required String name,
-    String? description,
-    String? imageUrl,
-  }) async {
-    try {
-      final setId = 'bookmarkset_${DateTime.now().millisecondsSinceEpoch}';
-      final now = DateTime.now();
-
-      final newSet = BookmarkSet(
-        id: setId,
-        name: name,
-        description: description,
-        imageUrl: imageUrl,
-        items: [],
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      _bookmarkSets.add(newSet);
-      await _saveBookmarks();
-
-      // Publish to Nostr if authenticated
-      if (_authService.isAuthenticated) {
-        await _publishBookmarkSetToNostr(newSet);
-      }
-
-      Log.info(
-        'Created new bookmark set: $name ($setId)',
-        name: 'BookmarkService',
-        category: LogCategory.system,
-      );
-
-      return newSet;
-    } catch (e) {
-      Log.error(
-        'Failed to create bookmark set: $e',
-        name: 'BookmarkService',
-        category: LogCategory.system,
-      );
-      return null;
-    }
-  }
-
-  /// Add an item to a bookmark set
-  Future<bool> addToBookmarkSet(String setId, BookmarkItem item) async {
-    try {
-      final setIndex = _bookmarkSets.indexWhere((set) => set.id == setId);
-      if (setIndex == -1) {
-        Log.warning(
-          'Bookmark set not found: $setId',
-          name: 'BookmarkService',
-          category: LogCategory.system,
-        );
-        return false;
-      }
-
-      final set = _bookmarkSets[setIndex];
-
-      // Check if item is already in the set
-      if (set.items.contains(item)) {
-        Log.debug(
-          'Item already in bookmark set: ${item.id}',
-          name: 'BookmarkService',
-          category: LogCategory.system,
-        );
-        return true;
-      }
-
-      final updatedItems = [...set.items, item];
-      final updatedSet = set.copyWith(
-        items: updatedItems,
-        updatedAt: DateTime.now(),
-      );
-
-      _bookmarkSets[setIndex] = updatedSet;
-      await _saveBookmarks();
-
-      // Update on Nostr if authenticated
-      if (_authService.isAuthenticated) {
-        await _publishBookmarkSetToNostr(updatedSet);
-      }
-
-      Log.debug(
-        'Added item to bookmark set "${set.name}": ${item.id}',
-        name: 'BookmarkService',
-        category: LogCategory.system,
-      );
-
-      return true;
-    } catch (e) {
-      Log.error(
-        'Failed to add to bookmark set: $e',
-        name: 'BookmarkService',
-        category: LogCategory.system,
-      );
-      return false;
-    }
-  }
-
-  /// Remove an item from a bookmark set
-  Future<bool> removeFromBookmarkSet(String setId, BookmarkItem item) async {
-    try {
-      final setIndex = _bookmarkSets.indexWhere((set) => set.id == setId);
-      if (setIndex == -1) {
-        Log.warning(
-          'Bookmark set not found: $setId',
-          name: 'BookmarkService',
-          category: LogCategory.system,
-        );
-        return false;
-      }
-
-      final set = _bookmarkSets[setIndex];
-      final updatedItems = set.items.where((i) => i != item).toList();
-
-      final updatedSet = set.copyWith(
-        items: updatedItems,
-        updatedAt: DateTime.now(),
-      );
-
-      _bookmarkSets[setIndex] = updatedSet;
-      await _saveBookmarks();
-
-      // Update on Nostr if authenticated
-      if (_authService.isAuthenticated) {
-        await _publishBookmarkSetToNostr(updatedSet);
-      }
-
-      Log.debug(
-        'Removed item from bookmark set "${set.name}": ${item.id}',
-        name: 'BookmarkService',
-        category: LogCategory.system,
-      );
-
-      return true;
-    } catch (e) {
-      Log.error(
-        'Failed to remove from bookmark set: $e',
-        name: 'BookmarkService',
-        category: LogCategory.system,
-      );
-      return false;
-    }
-  }
-
-  /// Update bookmark set metadata
-  Future<bool> updateBookmarkSet({
-    required String setId,
-    String? name,
-    String? description,
-    String? imageUrl,
-  }) async {
-    try {
-      final setIndex = _bookmarkSets.indexWhere((set) => set.id == setId);
-      if (setIndex == -1) {
-        return false;
-      }
-
-      final set = _bookmarkSets[setIndex];
-      final updatedSet = set.copyWith(
-        name: name ?? set.name,
-        description: description ?? set.description,
-        imageUrl: imageUrl ?? set.imageUrl,
-        updatedAt: DateTime.now(),
-      );
-
-      _bookmarkSets[setIndex] = updatedSet;
-      await _saveBookmarks();
-
-      // Update on Nostr if authenticated
-      if (_authService.isAuthenticated) {
-        await _publishBookmarkSetToNostr(updatedSet);
-      }
-
-      Log.debug(
-        'Updated bookmark set: ${updatedSet.name}',
-        name: 'BookmarkService',
-        category: LogCategory.system,
-      );
-
-      return true;
-    } catch (e) {
-      Log.error(
-        'Failed to update bookmark set: $e',
-        name: 'BookmarkService',
-        category: LogCategory.system,
-      );
-      return false;
-    }
-  }
-
-  /// Delete a bookmark set
-  Future<bool> deleteBookmarkSet(String setId) async {
-    try {
-      final setIndex = _bookmarkSets.indexWhere((set) => set.id == setId);
-      if (setIndex == -1) {
-        return false;
-      }
-
-      final set = _bookmarkSets[setIndex];
-
-      // For replaceable events (kind 30003), we don't need a deletion event
-      // The event is automatically replaced when publishing with the same d-tag
-
-      _bookmarkSets.removeAt(setIndex);
-      await _saveBookmarks();
-
-      Log.debug(
-        'Deleted bookmark set: ${set.name}',
-        name: 'BookmarkService',
-        category: LogCategory.system,
-      );
-
-      return true;
-    } catch (e) {
-      Log.error(
-        'Failed to delete bookmark set: $e',
-        name: 'BookmarkService',
-        category: LogCategory.system,
-      );
-      return false;
-    }
-  }
-
-  /// Get bookmark set by ID
-  BookmarkSet? getBookmarkSetById(String setId) {
-    try {
-      return _bookmarkSets.firstWhere((set) => set.id == setId);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  /// Check if an item is in a specific bookmark set
-  bool isInBookmarkSet(String setId, String itemId, String type) {
-    final set = getBookmarkSetById(setId);
-    return set?.items.any((item) => item.id == itemId && item.type == type) ??
-        false;
-  }
-
   // === NOSTR PUBLISHING ===
 
-  /// Public method to publish a bookmark set to Nostr (for background sync)
-  Future<bool> publishBookmarkSetToNostr(String setId) async {
-    try {
-      final set = getBookmarkSetById(setId);
-      if (set == null) {
-        Log.warning(
-          'Cannot publish bookmark set - not found: $setId',
-          name: 'BookmarkService',
-          category: LogCategory.system,
-        );
-        return false;
-      }
-
-      await _publishBookmarkSetToNostr(set);
-      return true;
-    } catch (e) {
-      Log.error(
-        'Failed to publish bookmark set $setId: $e',
-        name: 'BookmarkService',
-        category: LogCategory.system,
-      );
-      return false;
-    }
-  }
-
-  /// Publish global bookmarks to Nostr as NIP-51 kind 10003 event
-  Future<void> _publishGlobalBookmarksToNostr() async {
+  /// Publishes [candidate] as the user's kind 10003 and adopts it locally only
+  /// once a relay has confirmed acceptance.
+  ///
+  /// Returns whether a relay accepted the event. On `false` nothing local has
+  /// moved: memory and the [SharedPreferences] cache still hold the list this
+  /// device last reconciled, so a failed save cannot leave a bookmark that
+  /// exists only on this device until the next sync happens to wipe it.
+  ///
+  /// Acceptance means at least one `OK true`. [NostrClient.publishEvent] would
+  /// only prove the frame was handed to a socket, and this result is what the
+  /// share sheet turns into "Saved" — a relay-policy rejection has to be able
+  /// to say the save did not stick. It is still breadth, not durability: the
+  /// relay acknowledges from an in-memory queue and commits afterwards.
+  Future<bool> _publishGlobalBookmarks(List<BookmarkItem> candidate) async {
     try {
       if (!_authService.isAuthenticated) {
         Log.warning(
@@ -609,240 +505,70 @@ class BookmarkService with NostrListServiceMixin {
           name: 'BookmarkService',
           category: LogCategory.system,
         );
-        return;
-      }
-
-      // Create NIP-51 kind 10003 tags
-      final tags = <List<String>>[];
-
-      // Add bookmark items as tags
-      for (final item in _globalBookmarks) {
-        tags.add(item.toTag());
+        return false;
       }
 
       final event = await _authService.createAndSignEvent(
-        kind: 10003, // NIP-51 global bookmarks
-        content: 'Divine global bookmarks',
-        tags: tags,
+        kind: globalBookmarksKind,
+        // NIP-51 reserves `content` for the encrypted private item array, so
+        // it is either the ciphertext we read back or empty — never prose.
+        content: _lastKnownRemoteContent,
+        tags: [for (final item in candidate) item.toTag()],
       );
 
-      if (event != null) {
-        final sentEvent = await _nostrService.publishEvent(event);
-        if (sentEvent is PublishSuccess) {
-          Log.debug(
-            'Published global bookmarks to Nostr: ${event.id}',
-            name: 'BookmarkService',
-            category: LogCategory.system,
-          );
-        }
+      if (event == null) return false;
+
+      final outcome = await _nostrService.publishEventAwaitOk(event);
+      if (!outcome.acceptedByAny) {
+        Log.warning(
+          'Relay did not accept global bookmarks: ${event.id} '
+          '(${outcome.summary})',
+          name: 'BookmarkService',
+          category: LogCategory.system,
+        );
+        return false;
       }
+
+      _globalBookmarks
+        ..clear()
+        ..addAll(candidate);
+      await _saveBookmarksToSharedPreferences();
+
+      Log.debug(
+        'Published global bookmarks to Nostr: ${event.id} '
+        '(${outcome.summary})',
+        name: 'BookmarkService',
+        category: LogCategory.system,
+      );
+      return true;
     } catch (e) {
       Log.error(
         'Failed to publish global bookmarks to Nostr: $e',
         name: 'BookmarkService',
         category: LogCategory.system,
       );
-    }
-  }
-
-  /// Publish bookmark set to Nostr as NIP-51 kind 30003 event
-  Future<void> _publishBookmarkSetToNostr(BookmarkSet set) async {
-    try {
-      if (!_authService.isAuthenticated) {
-        Log.warning(
-          'Cannot publish bookmark set - user not authenticated',
-          name: 'BookmarkService',
-          category: LogCategory.system,
-        );
-        return;
-      }
-
-      // Create NIP-51 kind 30003 tags
-      final tags = <List<String>>[
-        ['d', set.id], // Identifier for replaceable event
-        ['title', set.name],
-      ];
-
-      // Add description if present
-      if (set.description != null && set.description!.isNotEmpty) {
-        tags.add(['description', set.description!]);
-      }
-
-      // Add image if present
-      if (set.imageUrl != null && set.imageUrl!.isNotEmpty) {
-        tags.add(['image', set.imageUrl!]);
-      }
-
-      // Add bookmark items as tags
-      for (final item in set.items) {
-        tags.add(item.toTag());
-      }
-
-      final content = set.description ?? 'Bookmark collection: ${set.name}';
-
-      final event = await _authService.createAndSignEvent(
-        kind: 30003, // NIP-51 bookmark set
-        content: content,
-        tags: tags,
-      );
-
-      if (event != null) {
-        final sentEvent = await _nostrService.publishEvent(event);
-        if (sentEvent is PublishSuccess) {
-          // Update local set with Nostr event ID
-          final setIndex = _bookmarkSets.indexWhere((s) => s.id == set.id);
-          if (setIndex != -1) {
-            _bookmarkSets[setIndex] = set.copyWith(nostrEventId: event.id);
-            await _saveBookmarks();
-          }
-          Log.debug(
-            'Published bookmark set to Nostr: ${set.name} (${event.id})',
-            name: 'BookmarkService',
-            category: LogCategory.system,
-          );
-        }
-      }
-    } catch (e) {
-      Log.error(
-        'Failed to publish bookmark set to Nostr: $e',
-        name: 'BookmarkService',
-        category: LogCategory.system,
-      );
+      return false;
     }
   }
 
   // === NOSTR LOADING ===
 
-  /// Load bookmarks from relay (authoritative)
-  Future<void> _loadBookmarksFromNostr() async {
-    try {
-      // Get all our published events using the universal query
-      final myEvents = await getMyPublishedEvents();
-
-      // Filter for bookmark-related events
-      final bookmarkEvents = filterMyEventsByKind(myEvents, [10003, 30003]);
-
-      if (bookmarkEvents.isEmpty) {
-        Log.debug(
-          'No bookmark events found in relay',
-          name: 'BookmarkService',
-          category: LogCategory.system,
-        );
-        return;
-      }
-
-      // Process global bookmarks (kind 10003) - latest replaces previous
-      final globalBookmarkEvents = bookmarkEvents
-          .where((e) => e.kind == 10003)
-          .toList();
-      if (globalBookmarkEvents.isNotEmpty) {
-        // Sort by created_at to get the latest
-        globalBookmarkEvents.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        _parseGlobalBookmarksFromEvent(globalBookmarkEvents.first);
-        Log.debug(
-          'Loaded global bookmarks from Nostr event: ${globalBookmarkEvents.first.id}',
-          name: 'BookmarkService',
-          category: LogCategory.system,
-        );
-      }
-
-      // Process bookmark sets (kind 30003) - latest per d-tag
-      final bookmarkSetEvents = filterMyParameterizedEvents(myEvents, [30003]);
-      for (final event in bookmarkSetEvents.values) {
-        _parseBookmarkSetFromEvent(event);
-      }
-
-      Log.info(
-        'Loaded ${_globalBookmarks.length} global bookmarks and ${_bookmarkSets.length} bookmark sets from relay',
-        name: 'BookmarkService',
-        category: LogCategory.system,
-      );
-    } catch (e) {
-      Log.error(
-        'Failed to load bookmarks from relay: $e',
-        name: 'BookmarkService',
-        category: LogCategory.system,
-      );
-    }
-  }
-
-  /// Parse global bookmarks from NIP-51 kind 10003 event
-  void _parseGlobalBookmarksFromEvent(Event event) {
+  /// Replace the in-memory list with the contents of a kind-10003 [event].
+  ///
+  /// Also captures `event.content`. Divine cannot decrypt NIP-51 private
+  /// items, so carrying the ciphertext through unchanged is what keeps a
+  /// republish from deleting bookmarks another client stored privately.
+  void _adoptGlobalBookmarksFromEvent(Event event) {
+    _lastKnownRemoteContent = event.content == _legacyProseContent
+        ? ''
+        : event.content;
     _globalBookmarks.clear();
 
     for (final tag in event.tags) {
       if (tag.length >= 2 && ['e', 'a', 't', 'r'].contains(tag[0])) {
-        final item = BookmarkItem(
-          type: tag[0],
-          id: tag[1],
-          relay: tag.length > 2 ? tag[2] : null,
-          petname: tag.length > 3 ? tag[3] : null,
-        );
-        _globalBookmarks.add(item);
+        _globalBookmarks.add(BookmarkItem.fromTag(tag));
       }
     }
-  }
-
-  /// Parse bookmark set from NIP-51 kind 30003 event
-  void _parseBookmarkSetFromEvent(Event event) {
-    // Extract d-tag (identifier)
-    String? dTag;
-    String? title;
-    String? description;
-    String? imageUrl;
-
-    for (final tag in event.tags) {
-      if (tag.length >= 2) {
-        switch (tag[0]) {
-          case 'd':
-            dTag = tag[1];
-          case 'title':
-            title = tag[1];
-          case 'description':
-            description = tag[1];
-          case 'image':
-            imageUrl = tag[1];
-        }
-      }
-    }
-
-    if (dTag == null) {
-      Log.warning(
-        'Bookmark set event missing d-tag: ${event.id}',
-        name: 'BookmarkService',
-        category: LogCategory.system,
-      );
-      return;
-    }
-
-    // Parse bookmark items from tags
-    final items = <BookmarkItem>[];
-    for (final tag in event.tags) {
-      if (tag.length >= 2 && ['e', 'a', 't', 'r'].contains(tag[0])) {
-        final item = BookmarkItem(
-          type: tag[0],
-          id: tag[1],
-          relay: tag.length > 2 ? tag[2] : null,
-          petname: tag.length > 3 ? tag[3] : null,
-        );
-        items.add(item);
-      }
-    }
-
-    final bookmarkSet = BookmarkSet(
-      id: dTag,
-      name: title ?? dTag,
-      description: description,
-      imageUrl: imageUrl,
-      items: items,
-      createdAt: event.createdAtDateTime,
-      updatedAt: event.createdAtDateTime,
-      nostrEventId: event.id,
-    );
-
-    // Remove existing set with same ID and add updated one
-    _bookmarkSets.removeWhere((set) => set.id == dTag);
-    _bookmarkSets.add(bookmarkSet);
   }
 
   // === STORAGE ===
@@ -873,67 +599,6 @@ class BookmarkService with NostrListServiceMixin {
         );
       }
     }
-
-    // Load bookmark sets
-    final bookmarkSetsJson = _prefs.getString(bookmarkSetsStorageKey);
-    if (bookmarkSetsJson != null) {
-      try {
-        final List<dynamic> setsData = jsonDecode(bookmarkSetsJson);
-        _bookmarkSets.clear();
-        _bookmarkSets.addAll(
-          setsData.map(
-            (json) => BookmarkSet.fromJson(json as Map<String, dynamic>),
-          ),
-        );
-        Log.debug(
-          'Loaded ${_bookmarkSets.length} bookmark sets from storage',
-          name: 'BookmarkService',
-          category: LogCategory.system,
-        );
-      } catch (e) {
-        Log.error(
-          'Failed to load bookmark sets: $e',
-          name: 'BookmarkService',
-          category: LogCategory.system,
-        );
-      }
-    }
-  }
-
-  /// Get all bookmark sets that contain a specific video
-  List<BookmarkSet> getBookmarkSetsContainingVideo(String videoEventId) {
-    return _bookmarkSets
-        .where(
-          (set) => set.items.any(
-            (item) => item.type == 'e' && item.id == videoEventId,
-          ),
-        )
-        .toList();
-  }
-
-  /// Get readable summary of bookmark status for a video
-  String getVideoBookmarkSummary(String videoEventId) {
-    final isInGlobal = isVideoBookmarkedGlobally(videoEventId);
-    final bookmarkSets = getBookmarkSetsContainingVideo(videoEventId);
-
-    if (!isInGlobal && bookmarkSets.isEmpty) {
-      return 'Not bookmarked';
-    }
-
-    final parts = <String>[];
-    if (isInGlobal) {
-      parts.add('Bookmarked');
-    }
-
-    if (bookmarkSets.isNotEmpty) {
-      if (bookmarkSets.length == 1) {
-        parts.add('in "${bookmarkSets.first.name}"');
-      } else {
-        parts.add('in ${bookmarkSets.length} bookmark sets');
-      }
-    }
-
-    return parts.join(' ');
   }
 
   /// Save bookmarks to SharedPreferences cache
@@ -947,15 +612,6 @@ class BookmarkService with NostrListServiceMixin {
         globalBookmarksStorageKey,
         jsonEncode(globalBookmarksJson),
       );
-
-      // Save bookmark sets
-      final bookmarkSetsJson = _bookmarkSets
-          .map((set) => set.toJson())
-          .toList();
-      await _prefs.setString(
-        bookmarkSetsStorageKey,
-        jsonEncode(bookmarkSetsJson),
-      );
     } catch (e) {
       Log.error(
         'Failed to save bookmarks to SharedPreferences: $e',
@@ -963,10 +619,5 @@ class BookmarkService with NostrListServiceMixin {
         category: LogCategory.system,
       );
     }
-  }
-
-  /// Save bookmarks to local storage (backwards compatibility)
-  Future<void> _saveBookmarks() async {
-    await _saveBookmarksToSharedPreferences();
   }
 }

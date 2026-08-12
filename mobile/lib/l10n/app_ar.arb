@@ -1528,8 +1528,6 @@
     "shareMenuBookmarks": "الإشارات المرجعية",
     "shareMenuAddToBookmarks": "إضافة إلى الإشارات المرجعية",
     "shareMenuAddToBookmarksSubtitle": "حفظ للمشاهدة لاحقًا",
-    "shareMenuAddToBookmarkSet": "إضافة إلى مجموعة إشارات",
-    "shareMenuAddToBookmarkSetSubtitle": "نظّم في مجموعات",
     "shareMenuFollowSets": "مجموعات المتابعة",
     "shareMenuCreateFollowSet": "إنشاء مجموعة متابعة",
     "shareMenuCreateFollowSetSubtitle": "ابدأ مجموعة جديدة بهذا الصانع",
@@ -1641,14 +1639,11 @@
     "shareMenuAddInspirationCredit": "إضافة تنويه الإلهام",
     "shareMenuCreatorCannotBeReferenced": "لا يمكن الإشارة إلى هذا الصانع.",
     "shareMenuUnknown": "غير معروف",
-    "shareMenuCreateBookmarkSet": "إنشاء مجموعة إشارات",
     "shareMenuSetName": "اسم المجموعة",
     "shareMenuSetNameHint": "مثل: المفضلة، مشاهدة لاحقًا، إلخ.",
     "shareMenuCreateNewSet": "إنشاء مجموعة جديدة",
     "shareMenuStartNewBookmarkCollection": "ابدأ مجموعة إشارات جديدة",
-    "shareMenuNoBookmarkSets": "لا توجد مجموعات إشارات بعد. أنشئ أول واحدة!",
     "shareMenuError": "خطأ",
-    "shareMenuFailedToLoadBookmarkSets": "فشل تحميل مجموعات الإشارات",
     "shareMenuCreatedSetAndAddedVideo": "تم إنشاء \"{name}\" وإضافة الفيديو",
     "@shareMenuCreatedSetAndAddedVideo": {
         "placeholders": {

@@ -3812,12 +3812,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Simpan untuk tontonan kemudian';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Tambah ke Set Penanda Buku';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'Susun dalam koleksi';
-
-  @override
   String get shareMenuFollowSets => 'Senarai Orang';
 
   @override
@@ -4198,9 +4192,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get shareMenuUnknown => 'Tidak diketahui';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'Cipta Set Penanda Buku';
-
-  @override
   String get shareMenuSetName => 'Nama Set';
 
   @override
@@ -4214,15 +4205,7 @@ class AppLocalizationsMs extends AppLocalizations {
       'Mulakan koleksi penanda buku baharu';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Belum ada set penanda buku. Cipta yang pertama!';
-
-  @override
   String get shareMenuError => 'Ralat';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Gagal memuatkan set penanda buku';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

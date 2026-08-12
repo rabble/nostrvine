@@ -3748,12 +3748,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'حفظ للمشاهدة لاحقًا';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'إضافة إلى مجموعة إشارات';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'نظّم في مجموعات';
-
-  @override
   String get shareMenuFollowSets => 'مجموعات المتابعة';
 
   @override
@@ -4131,9 +4125,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareMenuUnknown => 'غير معروف';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'إنشاء مجموعة إشارات';
-
-  @override
   String get shareMenuSetName => 'اسم المجموعة';
 
   @override
@@ -4146,14 +4137,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareMenuStartNewBookmarkCollection => 'ابدأ مجموعة إشارات جديدة';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'لا توجد مجموعات إشارات بعد. أنشئ أول واحدة!';
-
-  @override
   String get shareMenuError => 'خطأ';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets => 'فشل تحميل مجموعات الإشارات';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

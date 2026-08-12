@@ -3825,12 +3825,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get shareMenuAddToBookmarksSubtitle => 'Salva per guardare dopo';
 
   @override
-  String get shareMenuAddToBookmarkSet => 'Aggiungi al set di segnalibri';
-
-  @override
-  String get shareMenuAddToBookmarkSetSubtitle => 'Organizza in collezioni';
-
-  @override
   String get shareMenuFollowSets => 'Set di follow';
 
   @override
@@ -4213,9 +4207,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get shareMenuUnknown => 'Sconosciuto';
 
   @override
-  String get shareMenuCreateBookmarkSet => 'Crea set di segnalibri';
-
-  @override
   String get shareMenuSetName => 'Nome set';
 
   @override
@@ -4229,15 +4220,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Inizia una nuova collezione di segnalibri';
 
   @override
-  String get shareMenuNoBookmarkSets =>
-      'Ancora nessun set di segnalibri. Crea il tuo primo!';
-
-  @override
   String get shareMenuError => 'Errore';
-
-  @override
-  String get shareMenuFailedToLoadBookmarkSets =>
-      'Impossibile caricare i set di segnalibri';
 
   @override
   String shareMenuCreatedSetAndAddedVideo(String name) {

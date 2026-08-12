@@ -2080,8 +2080,6 @@
   "shareMenuBookmarks": "بک مارکس",
   "shareMenuAddToBookmarks": "بک مارکس میں شامل کریں",
   "shareMenuAddToBookmarksSubtitle": "بعد میں دیکھنے کے لیے محفوظ کریں",
-  "shareMenuAddToBookmarkSet": "بک مارک سیٹ میں شامل کریں",
-  "shareMenuAddToBookmarkSetSubtitle": "مجموعوں میں ترتیب دیں",
   "shareMenuFollowSets": "لوگوں کی فہرستیں",
   "shareMenuCreateFollowSet": "فالو سیٹ بنائیں",
   "shareMenuCreateFollowSetSubtitle": "اس کریئیٹر کے ساتھ نیا مجموعہ شروع کریں",
@@ -2308,14 +2306,11 @@
   "shareMenuAddInspirationCredit": "متاثر ہونے کا کریڈٹ شامل کریں",
   "shareMenuCreatorCannotBeReferenced": "اس کریئیٹر کا حوالہ نہیں دیا جا سکتا۔",
   "shareMenuUnknown": "نامعلوم",
-  "shareMenuCreateBookmarkSet": "بک مارک سیٹ بنائیں",
   "shareMenuSetName": "سیٹ کا نام",
   "shareMenuSetNameHint": "مثلاً پسندیدہ، بعد میں دیکھیں وغیرہ",
   "shareMenuCreateNewSet": "نیا سیٹ بنائیں",
   "shareMenuStartNewBookmarkCollection": "نیا بک مارک مجموعہ شروع کریں",
-  "shareMenuNoBookmarkSets": "ابھی کوئی بک مارک سیٹ نہیں۔ اپنا پہلا بنائیں!",
   "shareMenuError": "خرابی",
-  "shareMenuFailedToLoadBookmarkSets": "بک مارک سیٹس لوڈ نہیں ہو سکے",
   "shareMenuCreatedSetAndAddedVideo": "\"{name}\" بنایا اور ویڈیو شامل کی",
   "@shareMenuCreatedSetAndAddedVideo": {
     "placeholders": {

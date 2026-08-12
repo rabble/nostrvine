@@ -1538,8 +1538,6 @@
     "shareMenuBookmarks": "Lesezeichen",
     "shareMenuAddToBookmarks": "Zu Lesezeichen hinzufügen",
     "shareMenuAddToBookmarksSubtitle": "Für später speichern",
-    "shareMenuAddToBookmarkSet": "Zu Lesezeichen-Set hinzufügen",
-    "shareMenuAddToBookmarkSetSubtitle": "In Sammlungen organisieren",
     "shareMenuFollowSets": "Follow-Sets",
     "shareMenuCreateFollowSet": "Follow-Set erstellen",
     "shareMenuCreateFollowSetSubtitle": "Neue Sammlung mit diesem Creator starten",
@@ -1651,14 +1649,11 @@
     "shareMenuAddInspirationCredit": "Inspirationsangabe hinzufügen",
     "shareMenuCreatorCannotBeReferenced": "Dieser Creator kann nicht referenziert werden.",
     "shareMenuUnknown": "Unbekannt",
-    "shareMenuCreateBookmarkSet": "Lesezeichen-Set erstellen",
     "shareMenuSetName": "Set-Name",
     "shareMenuSetNameHint": "z.B. Favoriten, Später ansehen usw.",
     "shareMenuCreateNewSet": "Neues Set erstellen",
     "shareMenuStartNewBookmarkCollection": "Eine neue Lesezeichen-Sammlung starten",
-    "shareMenuNoBookmarkSets": "Noch keine Lesezeichen-Sets. Erstelle dein erstes!",
     "shareMenuError": "Fehler",
-    "shareMenuFailedToLoadBookmarkSets": "Lesezeichen-Sets konnten nicht geladen werden",
     "shareMenuCreatedSetAndAddedVideo": "\"{name}\" erstellt und Video hinzugefügt",
     "@shareMenuCreatedSetAndAddedVideo": {
         "placeholders": {

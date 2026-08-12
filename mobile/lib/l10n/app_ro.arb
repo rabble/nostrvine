@@ -1538,8 +1538,6 @@
     "shareMenuBookmarks": "Semne de carte",
     "shareMenuAddToBookmarks": "Adaugă la semne de carte",
     "shareMenuAddToBookmarksSubtitle": "Salvează pentru vizualizare ulterioară",
-    "shareMenuAddToBookmarkSet": "Adaugă la set de semne de carte",
-    "shareMenuAddToBookmarkSetSubtitle": "Organizează în colecții",
     "shareMenuFollowSets": "Seturi de urmărire",
     "shareMenuCreateFollowSet": "Creează un set de urmărire",
     "shareMenuCreateFollowSetSubtitle": "Începe o colecție nouă cu acest creator",
@@ -1651,14 +1649,11 @@
     "shareMenuAddInspirationCredit": "Adaugă credit pentru inspirație",
     "shareMenuCreatorCannotBeReferenced": "Acest creator nu poate fi referit.",
     "shareMenuUnknown": "Necunoscut",
-    "shareMenuCreateBookmarkSet": "Creează un set de semne de carte",
     "shareMenuSetName": "Numele setului",
     "shareMenuSetNameHint": "ex. Preferate, De vizionat mai târziu etc.",
     "shareMenuCreateNewSet": "Creează un set nou",
     "shareMenuStartNewBookmarkCollection": "Începe o colecție nouă de semne de carte",
-    "shareMenuNoBookmarkSets": "Încă nu ai seturi de semne de carte. Creează-l pe primul!",
     "shareMenuError": "Eroare",
-    "shareMenuFailedToLoadBookmarkSets": "N-am putut încărca seturile de semne de carte",
     "shareMenuCreatedSetAndAddedVideo": "Set \"{name}\" creat și videoclipul adăugat",
     "@shareMenuCreatedSetAndAddedVideo": {
         "placeholders": {

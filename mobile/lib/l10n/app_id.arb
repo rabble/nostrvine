@@ -1535,8 +1535,6 @@
     "shareMenuBookmarks": "Bookmark",
     "shareMenuAddToBookmarks": "Tambah ke Bookmark",
     "shareMenuAddToBookmarksSubtitle": "Simpan untuk ditonton nanti",
-    "shareMenuAddToBookmarkSet": "Tambah ke Set Bookmark",
-    "shareMenuAddToBookmarkSetSubtitle": "Susun dalam koleksi",
     "shareMenuFollowSets": "Set Ikuti",
     "shareMenuCreateFollowSet": "Buat Set Ikuti",
     "shareMenuCreateFollowSetSubtitle": "Mulai koleksi baru dengan kreator ini",
@@ -1648,14 +1646,11 @@
     "shareMenuAddInspirationCredit": "Tambah kredit inspirasi",
     "shareMenuCreatorCannotBeReferenced": "Kreator ini tidak bisa dirujuk.",
     "shareMenuUnknown": "Tidak Dikenal",
-    "shareMenuCreateBookmarkSet": "Buat Set Bookmark",
     "shareMenuSetName": "Nama Set",
     "shareMenuSetNameHint": "contoh: Favorit, Tonton Nanti, dll.",
     "shareMenuCreateNewSet": "Buat Set Baru",
     "shareMenuStartNewBookmarkCollection": "Mulai koleksi bookmark baru",
-    "shareMenuNoBookmarkSets": "Belum ada set bookmark. Buat yang pertama!",
     "shareMenuError": "Kesalahan",
-    "shareMenuFailedToLoadBookmarkSets": "Gagal memuat set bookmark",
     "shareMenuCreatedSetAndAddedVideo": "\"{name}\" dibuat dan video ditambahkan",
     "@shareMenuCreatedSetAndAddedVideo": {
         "placeholders": {

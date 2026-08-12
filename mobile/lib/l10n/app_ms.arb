@@ -2080,8 +2080,6 @@
   "shareMenuBookmarks": "Penanda Buku",
   "shareMenuAddToBookmarks": "Tambah ke Penanda Buku",
   "shareMenuAddToBookmarksSubtitle": "Simpan untuk tontonan kemudian",
-  "shareMenuAddToBookmarkSet": "Tambah ke Set Penanda Buku",
-  "shareMenuAddToBookmarkSetSubtitle": "Susun dalam koleksi",
   "shareMenuFollowSets": "Senarai Orang",
   "shareMenuCreateFollowSet": "Cipta Set Ikutan",
   "shareMenuCreateFollowSetSubtitle": "Mulakan koleksi baharu dengan pencipta ini",
@@ -2308,14 +2306,11 @@
   "shareMenuAddInspirationCredit": "Tambah kredit inspirasi",
   "shareMenuCreatorCannotBeReferenced": "Pencipta ini tidak boleh dirujuk.",
   "shareMenuUnknown": "Tidak diketahui",
-  "shareMenuCreateBookmarkSet": "Cipta Set Penanda Buku",
   "shareMenuSetName": "Nama Set",
   "shareMenuSetNameHint": "cth. Kegemaran, Tonton Nanti, dsb.",
   "shareMenuCreateNewSet": "Cipta Set Baharu",
   "shareMenuStartNewBookmarkCollection": "Mulakan koleksi penanda buku baharu",
-  "shareMenuNoBookmarkSets": "Belum ada set penanda buku. Cipta yang pertama!",
   "shareMenuError": "Ralat",
-  "shareMenuFailedToLoadBookmarkSets": "Gagal memuatkan set penanda buku",
   "shareMenuCreatedSetAndAddedVideo": "\"{name}\" dicipta dan video ditambah",
   "@shareMenuCreatedSetAndAddedVideo": {
     "placeholders": {
