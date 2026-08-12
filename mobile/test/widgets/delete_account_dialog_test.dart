@@ -1753,6 +1753,71 @@ void main() {
       );
     });
 
+    testWidgets(
+      'uses partial-deletion copy when a failed Keycast call switches account',
+      (tester) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        var currentPubkey = _pubkeyHex;
+        when(
+          authService.checkAccountDeletionReadiness,
+        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+        when(
+          () => authService.currentPublicKeyHex,
+        ).thenAnswer((_) => currentPubkey);
+        when(() => authService.isRegistered).thenReturn(true);
+        when(
+          () => deletionService.deleteAccount(
+            onProgress: any(named: 'onProgress'),
+            expectedPubkey: any(named: 'expectedPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => DeleteAccountResult.createSuccess('event-id'),
+        );
+        when(authService.deleteKeycastAccount).thenAnswer((_) async {
+          currentPubkey = 'a_different_pubkey_than_confirmed';
+          return (
+            success: false,
+            error: 'server refused',
+            requiresReauthentication: false,
+          );
+        });
+
+        late BuildContext capturedContext;
+        await tester.pumpWidget(
+          _wrapWithRouter(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const Scaffold(body: SizedBox.shrink());
+              },
+            ),
+          ),
+        );
+
+        await executeAccountDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+          confirmedPubkey: _pubkeyHex,
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          find.text(l10n.deleteAccountAccountChangedAfterDeletion),
+          findsOneWidget,
+        );
+        expect(find.text(l10n.deleteAccountServerDeletionFailed), findsNothing);
+        verifyNever(
+          () => authService.signOut(
+            deleteKeys: true,
+            deleteLocalUserData: true,
+          ),
+        );
+      },
+    );
+
     // THE regression test for #6335. Production published the irreversible
     // NIP-62 vanish and the kind-5 sweep, and only then asked Keycast to delete
     // the account — which refused with 403 for any user whose token had been

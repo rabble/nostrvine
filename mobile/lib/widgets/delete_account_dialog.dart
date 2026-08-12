@@ -685,6 +685,9 @@ Future<void> executeAccountDeletion({
 
       // Step 2: Delete Keycast account if one exists (invalidates signer)
       final keycast = await authService.deleteKeycastAccount();
+      // Check before interpreting the result: `isRegistered` and every later
+      // cleanup operation are properties of the account active right now.
+      if (stopCleanupIfAccountChanged()) return;
       final keycastSuccess = keycast.success;
       final keycastError = keycast.error;
       if (!keycastSuccess && authService.isRegistered) {
@@ -722,10 +725,6 @@ Future<void> executeAccountDeletion({
           category: LogCategory.auth,
         );
       }
-
-      // Keycast deletion is also asynchronous; do not let an account switch
-      // at that boundary turn the following sign-out into cross-account work.
-      if (stopCleanupIfAccountChanged()) return;
 
       // Step 3: Sign out, delete local keys, and clear local account data
       // Router will automatically redirect to /welcome when auth state
