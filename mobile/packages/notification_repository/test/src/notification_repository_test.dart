@@ -3418,8 +3418,9 @@ void main() {
         'keeps a non-Latin lead-in mention that straddles the cut',
         () async {
           // #6763 asks for Latin and non-Latin lead-in so the fix cannot
-          // silently regress to being locale-sensitive. Lead-in is long enough
-          // that the npub straddles the 120-char cap (not merely fits under it).
+          // silently regress to being locale-sensitive. Lead-in is long
+          // enough that the npub straddles the 120-char cap (not only
+          // fits under it).
           const npub =
               'npub180cvv07tjdrrgpa9jzd0cdkej42kwsaxq9rz7gvdpjx6nz004f9uulstw6';
           const cyrillic = 'Привет всем друзьям сегодня';
