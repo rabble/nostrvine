@@ -120,9 +120,10 @@ class _SavedSoundDetailsEditorState extends State<SavedSoundDetailsEditor> {
     _autosaveTimer = Timer(widget.autosaveDelay, _saveNow);
   }
 
-  void _saveNow() {
+  void _saveNow({bool notify = true}) {
     _autosaveTimer?.cancel();
     _autosaveTimer = null;
+    _flushHashtagDraft(notify: notify);
     _bloc.add(
       SavedSoundDetailsChanged(
         soundId: widget.sound.id,
@@ -130,6 +131,30 @@ class _SavedSoundDetailsEditorState extends State<SavedSoundDetailsEditor> {
         hashtags: _hashtags,
       ),
     );
+  }
+
+  /// Folds text still sitting in the hashtag field into [_hashtags].
+  ///
+  /// Only a delimiter or the Done key turns typed text into a hashtag, so
+  /// without this a save — or a dismissal — drops one the user can still
+  /// see in the field.
+  ///
+  /// [notify] is false on the teardown path, where `setState` is no longer
+  /// legal and nothing is left to repaint anyway.
+  void _flushHashtagDraft({required bool notify}) {
+    final additions = normalizeSavedSoundHashtags(
+      _hashtagController.text.split(RegExp(r'[,\s]+')),
+    );
+    if (additions.isEmpty) return;
+    final merged = normalizeSavedSoundHashtags([..._hashtags, ...additions]);
+    if (!notify) {
+      _hashtags = merged;
+      return;
+    }
+    _updatingHashtagField = true;
+    _hashtagController.clear();
+    _updatingHashtagField = false;
+    setState(() => _hashtags = merged);
   }
 
   void _onHashtagChanged(String value) {
@@ -160,8 +185,12 @@ class _SavedSoundDetailsEditorState extends State<SavedSoundDetailsEditor> {
 
   @override
   void dispose() {
-    // Dismissing the sheet must not swallow the last few keystrokes.
-    if (_autosaveTimer?.isActive ?? false) _saveNow();
+    // Dismissing the sheet must not swallow the last few keystrokes — nor a
+    // hashtag still sitting uncommitted in the field.
+    if ((_autosaveTimer?.isActive ?? false) ||
+        _hashtagController.text.trim().isNotEmpty) {
+      _saveNow(notify: false);
+    }
     _autosaveTimer?.cancel();
     widget.controller?._save = null;
     _labelFocus

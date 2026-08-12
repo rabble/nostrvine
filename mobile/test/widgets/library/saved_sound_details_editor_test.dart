@@ -138,6 +138,55 @@ void main() {
     expect(service.loadSavedSounds().single.personalLabel, 'Saved on tap');
   });
 
+  testWidgets('saving keeps a hashtag typed without a delimiter', (
+    tester,
+  ) async {
+    final (bloc, service) = await _bloc();
+    final controller = SavedSoundDetailsEditorController();
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await bloc.close();
+    });
+    await tester.pumpWidget(_app(bloc, controller: controller));
+
+    // No comma, space, or Done key — only the sheet's Save button.
+    await tester.enterText(
+      find.byKey(const Key('saved_sound_hashtag_field')),
+      '#Chill',
+    );
+    controller.save();
+    await tester.pump();
+
+    expect(service.loadSavedSounds().single.personalHashtags, [
+      'rain',
+      'chill',
+    ]);
+    expect(find.text('#chill'), findsOneWidget);
+  });
+
+  testWidgets('disposing keeps a hashtag typed without a delimiter', (
+    tester,
+  ) async {
+    final (bloc, service) = await _bloc();
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await bloc.close();
+    });
+    await tester.pumpWidget(_app(bloc));
+
+    await tester.enterText(
+      find.byKey(const Key('saved_sound_hashtag_field')),
+      '#Chill',
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+
+    expect(service.loadSavedSounds().single.personalHashtags, [
+      'rain',
+      'chill',
+    ]);
+  });
+
   testWidgets('commits normalized unique hashtags on delimiters', (
     tester,
   ) async {
