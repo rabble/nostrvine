@@ -1,6 +1,8 @@
 // ABOUTME: Builds + parses the NIP-18 `q` citation for a video shared in a DM.
 // ABOUTME: Encodes naddr (addressable 34236) / nevent (regular 22) per NIP-19.
+// ABOUTME: Also reads divine-web's legacy `r` + `a` share shape (#6224).
 
+import 'package:dm_repository/src/collaborator_invite_recovery.dart';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 
@@ -71,10 +73,17 @@ class DmSharedVideoCitation {
     );
   }
 
-  /// Parses the first `q` tag of a kind-14 rumor's [tags] into a
-  /// [DmSharedVideoRef]. Total — returns `null` for absent/malformed tags so a
-  /// plain message degrades gracefully.
-  static DmSharedVideoRef? parse(List<List<String>> tags) {
+  /// Parses a kind-14 rumor's [tags] into a [DmSharedVideoRef]. Total —
+  /// returns `null` for absent/malformed tags so a plain message degrades
+  /// gracefully.
+  ///
+  /// Tries the canonical NIP-18 `q` citation first, then falls back to the
+  /// legacy divine-web share shape (see [_parseLegacyWebShare]).
+  static DmSharedVideoRef? parse(List<List<String>> tags) =>
+      _parseQTag(tags) ?? _parseLegacyWebShare(tags);
+
+  /// Parses the first `q` tag into a [DmSharedVideoRef].
+  static DmSharedVideoRef? _parseQTag(List<List<String>> tags) {
     for (final tag in tags) {
       if (tag.length < 2 || tag[0] != 'q') continue;
       final value = tag[1];
@@ -117,4 +126,74 @@ class DmSharedVideoCitation {
     }
     return null;
   }
+
+  /// Parses divine-web's legacy share shape: `['r', <canonical url>]` plus
+  /// `['a', '<kind>:<author>:<d>']` (#6224).
+  ///
+  /// divine-web emitted this from 2026-03-09 until its DM share path was
+  /// removed on 2026-08-04, and never wrote the URL into the rumor content —
+  /// so without this fallback those messages render as plain text, or as an
+  /// empty bubble when the sender attached the share with no comment.
+  ///
+  /// Two tags are deliberately NOT accepted:
+  ///
+  /// - **`e`**, because NIP-17 reserves it for the reply parent and
+  ///   `DmRepository` already assigns any `e` tag to `replyToId`. Treating it
+  ///   as a citation would render a compact quoted preview instead of a share
+  ///   card and leave the video actions disabled. divine-web only ever shared
+  ///   kind 34236, so its `e` branch was effectively unreachable anyway.
+  /// - **A bare `a` with no companion `r`**, because Divine's own
+  ///   collaborator-invite DM also carries an addressable video coordinate.
+  static DmSharedVideoRef? _parseLegacyWebShare(List<List<String>> tags) {
+    if (_hasCollaboratorInviteMarker(tags)) return null;
+
+    // divine-web wrote `r` first and unconditionally on every share, and no
+    // Divine DM producer emits an `r` tag otherwise — so requiring a canonical
+    // divine.video URL is what makes the `a` fallback unambiguous.
+    if (!_hasDivineVideoUrlTag(tags)) return null;
+
+    for (final tag in tags) {
+      if (tag.length < 2 || tag[0] != 'a') continue;
+      final coordinate = tag[1];
+      final parts = coordinate.split(':');
+      if (parts.length < 3) continue;
+
+      final kind = int.tryParse(parts.first);
+      if (kind != DmSharedVideoKind.addressableShortVideo.kind &&
+          kind != DmSharedVideoKind.addressableNormalVideo.kind) {
+        continue;
+      }
+
+      // divine-web built the coordinate from unvalidated URL query params, so
+      // guard both segments rather than trusting the wire.
+      final author = parts[1];
+      if (!_isHex64(author)) continue;
+      if (parts.sublist(2).join(':').isEmpty) continue;
+
+      return DmSharedVideoRef(
+        coordinateOrId: coordinate,
+        videoKind: DmSharedVideoKind.fromKind(kind!),
+        relayHint: tag.length >= 3 && tag[2].isNotEmpty ? tag[2] : null,
+        authorPubkey: author,
+      );
+    }
+    return null;
+  }
+
+  /// Whether [tags] carry the `['divine', 'collab-invite']` marker that
+  /// identifies a collaborator invite rather than a shared video.
+  static bool _hasCollaboratorInviteMarker(List<List<String>> tags) => tags.any(
+    (tag) =>
+        tag.length >= 2 &&
+        tag[0] == CollaboratorInviteTags.markerName &&
+        tag[1] == CollaboratorInviteTags.markerValue,
+  );
+
+  /// Whether [tags] carry an `r` tag holding a canonical divine.video URL.
+  static bool _hasDivineVideoUrlTag(List<List<String>> tags) => tags.any(
+    (tag) =>
+        tag.length >= 2 &&
+        tag[0] == 'r' &&
+        divineVideoUrlRegex.hasMatch(tag[1]),
+  );
 }

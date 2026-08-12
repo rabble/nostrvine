@@ -116,4 +116,52 @@ void main() {
       expect(target.fallbackRouteIds, isEmpty);
     });
   });
+
+  // divine-web never wrote the share URL into the rumor content and allowed
+  // sending a share with an empty draft, so the citation is the only identity
+  // these messages carry. See #6224.
+  group('resolveDmVideoTarget — legacy divine-web share', () {
+    const dTag = 'my-reel-123';
+
+    DmSharedVideoRef webRef() => const DmSharedVideoRef(
+      coordinateOrId: '34236:$author:$dTag',
+      videoKind: DmSharedVideoKind.addressableShortVideo,
+      authorPubkey: author,
+    );
+
+    test('resolves from the citation alone when content is empty', () {
+      final target = resolveDmVideoTarget(
+        content: '',
+        sharedVideoRef: webRef(),
+      );
+
+      expect(target, isNotNull);
+      expect(target!.stableId, equals(dTag));
+      expect(target.authorPubkey, equals(author));
+      expect(target.videoKind, equals(34236));
+      expect(
+        target.canonicalUrl,
+        equals('https://divine.video/video/$dTag'),
+      );
+    });
+
+    test('keeps the author-scoped fallback route for repository lookup', () {
+      final target = resolveDmVideoTarget(
+        content: '',
+        sharedVideoRef: webRef(),
+      );
+
+      expect(target!.fallbackRouteIds, equals(['34236:$author:$dTag']));
+    });
+
+    test('resolves when the sender typed a comment alongside the share', () {
+      final target = resolveDmVideoTarget(
+        content: 'check this out',
+        sharedVideoRef: webRef(),
+      );
+
+      expect(target, isNotNull);
+      expect(target!.stableId, equals(dTag));
+    });
+  });
 }
