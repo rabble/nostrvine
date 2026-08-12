@@ -154,8 +154,7 @@ void main() {
       final res = run(
         allowNoBase: false,
         baseRef: 'HEAD',
-        baseRepoPath:
-            'mobile/test/tools/fixtures/service_god_file_base_sizes.txt',
+        baseRepoPath: 'mobile/test/tools/fixtures/raw_icons_base_sizes.txt',
       );
       expect(res.exitCode, 1);
       expect(res.stdout, contains('ADDED a file or RAISED a ceiling'));

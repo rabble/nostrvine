@@ -1,2 +1,4 @@
 # Fixture baseline for service_god_file_ceiling_test.dart anti-bypass coverage.
+# The `^raised` assertion diffs 9999 against the entry below; keep it present.
+# Do not point another ratchet test at this fixture.
 lib/services/auth_service.dart	6

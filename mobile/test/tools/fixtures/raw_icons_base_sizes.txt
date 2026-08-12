@@ -1,0 +1,4 @@
+# Fixture baseline for raw_icons_ceiling_test.dart anti-bypass coverage.
+# The `+added` assertion fires because `lib/uses.dart` is ABSENT here; keep it
+# absent. Do not point another ratchet test at this fixture.
+lib/placeholder.dart	1
