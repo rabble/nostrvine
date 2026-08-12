@@ -87,6 +87,27 @@ class DeepLink {
   }
 }
 
+/// The custom URL scheme registered by the app on iOS and Android.
+const divineCustomScheme = 'divine';
+
+/// Host of the NIP-46 callback the app mints for signer apps.
+const divineSignerCallbackHost = 'nostrconnect';
+
+/// Whether [uri] is the NIP-46 signer callback rather than an app route.
+///
+/// True for `divine://nostrconnect` (with or without a trailing slash, path,
+/// or query — third-party signers such as Aegis append their own params) and
+/// for the bare `divine:` / `divine://` / `divine:///` foregrounding shapes,
+/// which carry no route intent.
+///
+/// Deliberately narrower than `uri.scheme == 'divine'`: matching on scheme
+/// alone classified every custom-scheme URL as a signer callback (#6733).
+bool isDivineSignerCallbackUri(Uri uri) {
+  if (uri.scheme != divineCustomScheme) return false;
+  if (uri.host == divineSignerCallbackHost) return true;
+  return uri.host.isEmpty && uri.pathSegments.isEmpty;
+}
+
 /// Service for handling universal/deep links
 class DeepLinkService {
   DeepLinkService();

@@ -37,6 +37,87 @@ String? signerCallbackRedirectTarget(Uri uri, AuthService authService) {
       : WelcomeScreen.path;
 }
 
+/// Path prefixes the `divine://` custom scheme is allowed to open.
+///
+/// Mirrors the universal-link claims in the served apple-app-site-association
+/// files, so the custom scheme reaches exactly what a web page can already
+/// reach over https — and nothing more. A custom scheme is unauthenticated
+/// input (any app can register `divine://`), so without this gate, narrowing
+/// the signer-callback predicate would expose all ~70 registered routes,
+/// including Developer Options and key management (#6733).
+///
+/// `invite` is intentionally absent: it has no GoRoute to land on and is
+/// handled by the [DeepLinkService] listener for https links only.
+const _divineSchemeRoutablePrefixes = <String>{
+  'video',
+  'profile',
+  'hashtag',
+  'search',
+  'list',
+  // Not an AASA claim — added deliberately for #7074. A read-only view of the
+  // signed-in user's own bookmarks, which publishes and deletes nothing.
+  'saved-videos',
+};
+
+/// Resolves a `divine://` app route to an internal path, or bounces it home.
+///
+/// Returns `null` when [uri] is not a custom-scheme app route, so the rest of
+/// the redirect chain runs unchanged. Signer callbacks are consumed earlier by
+/// [signerCallbackRedirectTarget] and are not this function's concern.
+@visibleForTesting
+String? divineSchemeRedirectTarget(Uri uri) {
+  if (uri.scheme != divineCustomScheme) return null;
+  if (isDivineSignerCallbackUri(uri)) return null;
+
+  final segments = _divineSchemePathSegments(uri);
+  if (segments.isEmpty) return null;
+
+  if (!_divineSchemeRoutablePrefixes.contains(segments.first)) {
+    Log.warning(
+      'Ignoring non-routable custom-scheme deep link: /${segments.first}',
+      name: 'AppRouter',
+      category: LogCategory.ui,
+    );
+    return VideoFeedPage.pathForIndex(0);
+  }
+
+  // Reuse the one mapper that owns public-URL vs internal-route differences
+  // (notably /search/* -> /search-results/:query) so the two cannot drift.
+  final canonical = Uri(
+    scheme: 'https',
+    host: 'divine.video',
+    pathSegments: segments,
+    queryParameters: uri.queryParameters.isEmpty ? null : uri.queryParameters,
+  );
+  final mapped = universalLinkToRouterPath(canonical);
+  if (mapped != null) return mapped;
+
+  // No public/internal difference (e.g. /video/:id, /saved-videos): the
+  // canonical path is already a registered GoRoute.
+  return canonical.hasQuery
+      ? '${canonical.path}?${canonical.query}'
+      : canonical.path;
+}
+
+/// Path segments of a `divine://` URL, tolerating both authority forms.
+///
+/// `divine:///video/abc` parses with an empty host, while `divine://video/abc`
+/// puts `video` in the host. Lift the host back into the segments so both
+/// forms resolve identically — unless it is a real divine.video host, where
+/// the segments are already correct.
+List<String> _divineSchemePathSegments(Uri uri) {
+  final segments = uri.pathSegments
+      .where((segment) => segment.isNotEmpty)
+      .toList();
+  final host = uri.host.toLowerCase();
+  if (host.isEmpty ||
+      host == 'divine.video' ||
+      host.endsWith('.divine.video')) {
+    return segments;
+  }
+  return <String>[host, ...segments];
+}
+
 /// Reset navigation state for testing purposes
 @visibleForTesting
 void resetNavigationState() {
@@ -190,6 +271,22 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
       category: LogCategory.auth,
     );
     return signerCallbackRedirect;
+  }
+
+  // Resolve divine:// app routes to internal paths, and bounce anything
+  // outside the universal-link path set. GoRouter matches a custom-scheme
+  // location on uri.path alone, so without this gate every registered route
+  // would be openable by any app or web page (#6733).
+  final customSchemeRedirect = divineSchemeRedirectTarget(state.uri);
+  if (customSchemeRedirect != null) {
+    Log.info(
+      'Router redirect: custom scheme '
+      '${redactUriStringForLogs(state.uri.toString())} -> '
+      '$customSchemeRedirect',
+      name: 'AppRouter',
+      category: LogCategory.ui,
+    );
+    return customSchemeRedirect;
   }
 
   // Rewrite divine.video universal-link URLs to internal paths before the

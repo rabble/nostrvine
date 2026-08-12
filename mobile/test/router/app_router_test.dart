@@ -22,11 +22,15 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/router/routes/settings_routes.dart';
 import 'package:openvine/screens/auth/nostr_connect_screen.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/message_requests/request_preview_page.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/screens/saved_videos_screen.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
+import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -463,6 +467,106 @@ void main() {
           relayUrl: 'wss://localrelay.link:28443',
         ),
       ).called(greaterThan(0));
+    });
+  });
+
+  // GoRouter matches a custom-scheme location on uri.path alone, so this gate
+  // is what keeps divine:// at parity with the universal-link claim set
+  // instead of exposing every registered route (#6733).
+  group('divine:// custom scheme routing', () {
+    test('resolves an allowlisted route to its internal path', () {
+      expect(
+        divineSchemeRedirectTarget(Uri.parse('divine:///video/abc123')),
+        equals(VideoDetailScreen.pathForId('abc123')),
+      );
+      expect(
+        divineSchemeRedirectTarget(
+          Uri.parse('divine:///profile/npub1abc123def456'),
+        ),
+        equals(ProfileScreenRouter.pathForNpub('npub1abc123def456')),
+      );
+      expect(
+        divineSchemeRedirectTarget(Uri.parse('divine:///hashtag/vines')),
+        equals(HashtagScreenRouter.pathForTag('vines')),
+      );
+    });
+
+    test('maps /search/* to the internal search-results route', () {
+      expect(
+        divineSchemeRedirectTarget(Uri.parse('divine:///search/music')),
+        equals(
+          SearchResultsPage.pathForQuery('music', requestFocusOnMount: false),
+        ),
+      );
+    });
+
+    test('opens saved videos, closing #7074', () {
+      expect(
+        divineSchemeRedirectTarget(Uri.parse('divine:///saved-videos')),
+        equals(SavedVideosScreen.path),
+      );
+    });
+
+    test('treats the two-slash authority form as a path segment', () {
+      expect(
+        divineSchemeRedirectTarget(Uri.parse('divine://video/abc123')),
+        equals(divineSchemeRedirectTarget(Uri.parse('divine:///video/abc123'))),
+      );
+    });
+
+    test('preserves the query string on a passthrough path', () {
+      expect(
+        divineSchemeRedirectTarget(
+          Uri.parse('divine:///video/abc123?a=34236%3Apubkey%3Adtag'),
+        ),
+        contains('a=34236'),
+      );
+    });
+
+    // The security core of #6733: a web page doing
+    // location = 'divine:///developer-options' must not reach the environment
+    // switcher just because the signer-callback predicate was narrowed.
+    for (final path in <String>[
+      '/developer-options',
+      '/key-management',
+      '/import-key',
+      '/secure-account',
+      '/inbox',
+      '/settings',
+      '/relay-settings',
+      // No GoRoute exists for invites, so it stays off the allowlist even
+      // though the AASA file claims /invite/* for https.
+      '/invite/ABCD-EFGH',
+    ]) {
+      test('bounces $path home instead of opening it', () {
+        expect(
+          divineSchemeRedirectTarget(Uri.parse('divine://$path')),
+          equals(VideoFeedPage.pathForIndex(0)),
+        );
+      });
+    }
+
+    test('ignores signer callbacks and bare scheme shapes', () {
+      for (final url in <String>[
+        'divine://nostrconnect?relay=wss://localrelay.link:28443',
+        'divine://nostrconnect',
+        'divine:',
+        'divine://',
+        'divine:///',
+      ]) {
+        expect(divineSchemeRedirectTarget(Uri.parse(url)), isNull, reason: url);
+      }
+    });
+
+    test('ignores universal links and internal routes', () {
+      for (final url in <String>[
+        'https://divine.video/video/abc123',
+        'https://evil.example/video/abc123',
+        '/home/0',
+        '/saved-videos',
+      ]) {
+        expect(divineSchemeRedirectTarget(Uri.parse(url)), isNull, reason: url);
+      }
     });
   });
 
