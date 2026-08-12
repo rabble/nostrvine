@@ -21,25 +21,40 @@ void clearAuthenticatedAuthRouteRedirectSuppression() {
   _suppressNextAuthenticatedAuthRouteRedirect = false;
 }
 
+/// Where a `divine://` location that is **not** an allow-listed app route has
+/// to go. Returns null for every other scheme.
+///
+/// This must never return null for a `divine://` URI. GoRouter matches a
+/// location by `uri.path` alone — scheme and host are never consulted — so
+/// falling through here does not mean "nothing happens", it means every one of
+/// the app's registered routes becomes openable by any app on the device.
+/// `divine:///developer-options` reaching the relay environment switcher is the
+/// worked example (#7074). [customSchemeToRouterPath] runs first and takes the
+/// allow-listed routes; everything left over lands here.
 @visibleForTesting
-String? signerCallbackRedirectTarget(Uri uri, AuthService authService) {
-  final deepLink = DeepLinkService.parseDeepLink(uri.toString());
-  if (deepLink.type != DeepLinkType.signerCallback) {
+String? divineSchemeRedirectTarget(Uri uri, AuthService authService) {
+  if (uri.scheme != 'divine') {
     return null;
   }
 
-  // The app-links stream handles this too, but GoRouter may see Android
-  // custom-scheme callbacks first. Keep this idempotent: it only preserves
-  // an already-listening NIP-46 session while routing back to its screen.
-  authService.onSignerCallbackReceived(relayUrl: deepLink.signerCallbackRelay);
-  if (authService.nostrConnectUrl != null) {
-    return NostrConnectScreen.path;
+  final deepLink = DeepLinkService.parseDeepLink(uri.toString());
+  if (deepLink.type == DeepLinkType.signerCallback) {
+    // The app-links stream handles this too, but GoRouter may see Android
+    // custom-scheme callbacks first. Keep this idempotent: it only preserves
+    // an already-listening NIP-46 session while routing back to its screen.
+    authService.onSignerCallbackReceived(
+      relayUrl: deepLink.signerCallbackRelay,
+    );
+    if (authService.nostrConnectUrl != null) {
+      return NostrConnectScreen.path;
+    }
   }
 
-  // No pairing is in flight, so this is a stray callback — a stale signer
-  // return, an expired session, or another app probing the scheme. Send a
-  // signed-in user home rather than to /welcome: go_router runs the top-level
-  // redirect at most once per navigation, so returning /welcome here is
+  // Either a stray callback (stale signer return, expired session, another app
+  // probing the scheme) or a URI naming a route that is not allow-listed.
+  //
+  // Send a signed-in user home rather than to /welcome: go_router runs the
+  // top-level redirect at most once per navigation, so this return value is
   // terminal and [appRouterRedirect]'s authenticated-auth-route bounce never
   // gets a second pass. The user would be left on the account picker, which
   // reads as a lost session.
@@ -180,7 +195,7 @@ bool minorAccountReviewStatusAffectsRouting(
       _minorReviewRoutingSignature(next);
 }
 
-/// Top-level GoRouter redirect: signer-callback → universal-link rewrite →
+/// Top-level GoRouter redirect: divine:// scheme → universal-link rewrite →
 /// minor-account-review gating → auth-route gating → unauthenticated gating.
 ///
 /// The order of these checks is load-bearing; reordering risks the
@@ -188,27 +203,14 @@ bool minorAccountReviewStatusAffectsRouting(
 /// un-rewritten universal-link URL into the matcher (Page Not Found).
 String? appRouterRedirect(Ref ref, GoRouterState state) {
   final authService = ref.read(authServiceProvider);
-  final signerCallbackRedirect = signerCallbackRedirectTarget(
-    state.uri,
-    authService,
-  );
-  if (signerCallbackRedirect != null) {
-    Log.info(
-      'Router redirect: signer callback '
-      '${redactUriStringForLogs(state.uri.toString())} -> '
-      '$signerCallbackRedirect',
-      name: 'AppRouter',
-      category: LogCategory.auth,
-    );
-    return signerCallbackRedirect;
-  }
 
   // Rewrite allow-listed divine:// app routes to their internal path. Doing
   // it here rather than leaving it to the matcher keeps the reported location
   // clean (/saved-videos, not divine:///saved-videos) for analytics, route
-  // normalization, and the listener's currentLocation comparison — GoRouter
-  // matches on uri.path alone and would otherwise land there under the raw
-  // custom-scheme location.
+  // normalization, and the listener's currentLocation comparison.
+  //
+  // This must stay ahead of divineSchemeRedirectTarget, which deliberately
+  // claims every remaining divine:// location.
   final customSchemeRedirect = customSchemeToRouterPath(state.uri);
   if (customSchemeRedirect != null) {
     Log.info(
@@ -219,6 +221,21 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
       category: LogCategory.ui,
     );
     return customSchemeRedirect;
+  }
+
+  final divineSchemeRedirect = divineSchemeRedirectTarget(
+    state.uri,
+    authService,
+  );
+  if (divineSchemeRedirect != null) {
+    Log.info(
+      'Router redirect: divine scheme '
+      '${redactUriStringForLogs(state.uri.toString())} -> '
+      '$divineSchemeRedirect',
+      name: 'AppRouter',
+      category: LogCategory.auth,
+    );
+    return divineSchemeRedirect;
   }
 
   // Rewrite divine.video universal-link URLs to internal paths before the

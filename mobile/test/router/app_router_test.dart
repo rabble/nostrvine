@@ -21,12 +21,14 @@ import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/router/routes/settings_routes.dart';
+import 'package:openvine/router/universal_link_resolver.dart';
 import 'package:openvine/screens/auth/nostr_connect_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/message_requests/request_preview_page.dart';
+import 'package:openvine/screens/saved_videos_screen.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
@@ -452,7 +454,7 @@ void main() {
         ),
       ).thenReturn(null);
 
-      final target = signerCallbackRedirectTarget(
+      final target = divineSchemeRedirectTarget(
         Uri.parse(
           'divine://nostrconnect?x-source=aegis&relay=wss://localrelay.link:28443',
         ),
@@ -480,7 +482,7 @@ void main() {
         ),
       ).thenReturn(null);
 
-      final target = signerCallbackRedirectTarget(
+      final target = divineSchemeRedirectTarget(
         Uri.parse('divine://nostrconnect'),
         authService,
       );
@@ -499,7 +501,7 @@ void main() {
         ),
       ).thenReturn(null);
 
-      final target = signerCallbackRedirectTarget(
+      final target = divineSchemeRedirectTarget(
         Uri.parse('divine://nostrconnect'),
         authService,
       );
@@ -507,20 +509,81 @@ void main() {
       expect(target, equals(WelcomeScreen.path));
     });
 
-    test('leaves a divine:// app route alone and fires no signer side '
-        'effect', () {
+    test('fires no signer side effect for a divine:// app route', () {
       final authService = _MockAuthService();
+      when(() => authService.authState).thenReturn(AuthState.authenticated);
 
-      final target = signerCallbackRedirectTarget(
+      divineSchemeRedirectTarget(
         Uri.parse('divine:///saved-videos'),
         authService,
       );
 
-      expect(target, isNull);
       verifyNever(
         () => authService.onSignerCallbackReceived(
           relayUrl: any(named: 'relayUrl'),
         ),
+      );
+    });
+
+    test('ignores every other scheme', () {
+      final authService = _MockAuthService();
+
+      expect(
+        divineSchemeRedirectTarget(
+          Uri.parse('https://divine.video/video/abc123'),
+          authService,
+        ),
+        isNull,
+      );
+    });
+  });
+
+  // GoRouter matches a location by uri.path alone, so a divine:// URI that the
+  // redirect lets through is not inert — it opens whatever route shares that
+  // path. divine:///developer-options reaching the relay environment switcher
+  // was reproduced on device (#7074).
+  group('divine:// routes outside the allow-list', () {
+    const unlistedPaths = <String>[
+      '/developer-options',
+      '/settings',
+      '/video/abc123',
+      '/profile/npub1abc',
+    ];
+
+    test('never fall through for a signed-in user', () {
+      for (final path in unlistedPaths) {
+        final authService = _MockAuthService();
+        when(() => authService.authState).thenReturn(AuthState.authenticated);
+        when(() => authService.nostrConnectUrl).thenReturn(null);
+
+        expect(
+          divineSchemeRedirectTarget(Uri.parse('divine://$path'), authService),
+          equals(VideoFeedPage.pathForIndex(0)),
+          reason:
+              'divine://$path must not reach $path — go_router would match it '
+              'by path and open the screen.',
+        );
+      }
+    });
+
+    test('never fall through for a signed-out user', () {
+      for (final path in unlistedPaths) {
+        final authService = _MockAuthService();
+        when(() => authService.authState).thenReturn(AuthState.unauthenticated);
+        when(() => authService.nostrConnectUrl).thenReturn(null);
+
+        expect(
+          divineSchemeRedirectTarget(Uri.parse('divine://$path'), authService),
+          equals(WelcomeScreen.path),
+          reason: 'divine://$path must not reach $path.',
+        );
+      }
+    });
+
+    test('the allow-listed route still resolves to its screen', () {
+      expect(
+        customSchemeToRouterPath(Uri.parse('divine:///saved-videos')),
+        equals(SavedVideosScreen.path),
       );
     });
   });
