@@ -139,19 +139,11 @@ void main() {
       expect(target!.stableId, equals(dTag));
       expect(target.authorPubkey, equals(author));
       expect(target.videoKind, equals(34236));
+      expect(target.fallbackRouteIds, equals(['34236:$author:$dTag']));
       expect(
         target.canonicalUrl,
         equals('https://divine.video/video/$dTag'),
       );
-    });
-
-    test('keeps the author-scoped fallback route for repository lookup', () {
-      final target = resolveDmVideoTarget(
-        content: '',
-        sharedVideoRef: webRef(),
-      );
-
-      expect(target!.fallbackRouteIds, equals(['34236:$author:$dTag']));
     });
 
     test('a typed comment does not displace the citation identity', () {
