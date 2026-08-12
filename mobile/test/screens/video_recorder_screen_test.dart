@@ -521,7 +521,7 @@ void main() {
         expect(fakeVideoPublishNotifier.keepAutosavedDraftValues, isEmpty);
       });
 
-      testWidgets('does not clear video publish state for autosaved draft', (
+      testWidgets('discards the autosaved session when the route pops', (
         tester,
       ) async {
         SharedPreferences.setMockInitialValues({
@@ -553,8 +553,11 @@ void main() {
         Navigator.of(tester.element(find.byType(VideoRecorderView))).pop();
         await tester.pumpAndSettle();
 
-        expect(fakeVideoPublishNotifier.clearAllCalls, isZero);
-        expect(fakeVideoPublishNotifier.keepAutosavedDraftValues, isEmpty);
+        // The autosave draft is this session's own recovery point, so leaving
+        // the recorder takes it with the session — otherwise the next camera
+        // open inherits its aspect ratio.
+        expect(fakeVideoPublishNotifier.clearAllCalls, equals(1));
+        expect(fakeVideoPublishNotifier.keepAutosavedDraftValues, [isFalse]);
       });
     });
 

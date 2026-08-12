@@ -74,7 +74,7 @@ class VideoRecorderCaptureTopBar extends ConsumerWidget {
                       type: .ghostOverMedia,
                       onPressed: () => fromEditor
                           ? context.pop(false)
-                          : closeVideoRecorder(context),
+                          : closeVideoRecorder(context, ref),
                     ),
                     ?center,
                     AnimatedOpacity(

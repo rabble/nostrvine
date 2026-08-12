@@ -18,6 +18,7 @@ import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/library_screen.dart';
@@ -30,12 +31,38 @@ import 'package:unified_logger/unified_logger.dart';
 ///
 /// Pops if there is a route to pop to, otherwise navigates home (the recorder
 /// was reached via `go`, so there is nothing on the stack).
-void closeVideoRecorder(BuildContext context) {
+void closeVideoRecorder(BuildContext context, WidgetRef ref) {
   if (context.canPop()) {
+    // The recorder's `PopScope` discards the session on the way out; a `go`
+    // never reaches it, so that branch has to do it here.
     context.pop();
-  } else {
-    context.go(VideoFeedPage.pathForIndex(0));
+    return;
   }
+  discardRecorderSession(ref);
+  context.go(VideoFeedPage.pathForIndex(0));
+}
+
+/// Ends the recording session the user is walking away from.
+///
+/// Every recorded clip is already saved to the persistent clip library, so
+/// this only drops the session — which is what keeps the camera from
+/// reopening on the previous session's settings. The aspect ratio is derived
+/// from the clips in the session and its toggle is disabled while any exist
+/// (mixing ratios in one video isn't supported), so a surviving 1:1 clip
+/// pinned the next camera open to 1:1 until the selection was cleared in the
+/// library.
+///
+/// An autosaved session's recovery point *is* the autosave draft, so
+/// discarding the session takes that draft with it. A named draft holds its
+/// own file and the autosave draft then belongs to some other session — leave
+/// it alone.
+void discardRecorderSession(WidgetRef ref) {
+  final isAutosavedDraft = ref.read(videoEditorProvider).isAutosavedDraft;
+  unawaited(
+    ref
+        .read(videoPublishProvider.notifier)
+        .clearAll(keepAutosavedDraft: !isAutosavedDraft),
+  );
 }
 
 /// Navigates to the video editor (or the metadata screen, depending on mode),

@@ -17,11 +17,14 @@ import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
+import 'package:openvine/models/video_publish/video_publish_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
@@ -41,6 +44,18 @@ class _MockVideoRecorderBloc
 class _MockAudioSessionService extends Mock implements AudioSessionService {}
 
 class _MockDraftStorageService extends Mock implements DraftStorageService {}
+
+class _FakeVideoPublishNotifier extends VideoPublishNotifier {
+  final keepAutosavedDraftValues = <bool>[];
+
+  @override
+  VideoPublishProviderState build() => const VideoPublishProviderState();
+
+  @override
+  Future<void> clearAll({bool keepAutosavedDraft = false}) async {
+    keepAutosavedDraftValues.add(keepAutosavedDraft);
+  }
+}
 
 class _FakeVideoEditorNotifier extends VideoEditorNotifier {
   bool saveAsDraftCalled = false;
@@ -91,6 +106,7 @@ void main() {
   late _MockVideoRecorderBloc recorderBloc;
   late _MockAudioSessionService audioSessionService;
   late _FakeVideoEditorNotifier fakeEditor;
+  late _FakeVideoPublishNotifier fakePublish;
   late _FakeClipManagerNotifier fakeClipManager;
   late _MockDraftStorageService mockDraftStorageService;
 
@@ -103,6 +119,7 @@ void main() {
     recorderBloc = _MockVideoRecorderBloc();
     audioSessionService = _MockAudioSessionService();
     fakeEditor = _FakeVideoEditorNotifier();
+    fakePublish = _FakeVideoPublishNotifier();
     fakeClipManager = _FakeClipManagerNotifier();
     mockDraftStorageService = _MockDraftStorageService();
     when(
@@ -156,6 +173,10 @@ void main() {
           path: WelcomeScreen.path,
           builder: (_, _) => const _StubScreen(label: 'welcome'),
         ),
+        GoRoute(
+          path: VideoFeedPage.pathForIndex(0),
+          builder: (_, _) => const _StubScreen(label: 'feed'),
+        ),
       ],
     );
 
@@ -163,6 +184,7 @@ void main() {
       overrides: [
         authServiceProvider.overrideWithValue(mockAuthService),
         videoEditorProvider.overrideWith(() => fakeEditor),
+        videoPublishProvider.overrideWith(() => fakePublish),
         clipManagerProvider.overrideWith(() => fakeClipManager),
         audioSessionServiceProvider.overrideWithValue(audioSessionService),
         draftStorageServiceProvider.overrideWithValue(mockDraftStorageService),
@@ -174,6 +196,24 @@ void main() {
       ),
     );
   }
+
+  group('closeVideoRecorder', () {
+    testWidgets('discards the session when it has to leave via go', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildHarness());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('close-recorder')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('feed'), findsOneWidget);
+      // Nothing to pop means the recorder's PopScope never runs, so this exit
+      // has to end the session itself — otherwise its clips (and with them the
+      // aspect ratio they lock in) survive into the next camera open.
+      expect(fakePublish.keepAutosavedDraftValues, [isFalse]);
+    });
+  });
 
   group('recorder-exit auth gate', () {
     group('when already authenticated', () {
@@ -516,6 +556,11 @@ class _RecorderHarness extends ConsumerWidget {
             key: const Key('show-delete-snackbar'),
             onPressed: () => showClipDeleteSnackbar(context, ref),
             child: const Text('show delete snackbar'),
+          ),
+          ElevatedButton(
+            key: const Key('close-recorder'),
+            onPressed: () => closeVideoRecorder(context, ref),
+            child: const Text('close recorder'),
           ),
         ],
       ),

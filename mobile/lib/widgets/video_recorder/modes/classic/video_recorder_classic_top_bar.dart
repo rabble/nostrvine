@@ -39,7 +39,7 @@ class VideoRecorderClassicTopBar extends ConsumerWidget {
                   type: .ghostSecondary,
                   onPressed: isRecording
                       ? null
-                      : () => closeVideoRecorder(context),
+                      : () => closeVideoRecorder(context, ref),
                 ),
                 DivineIconButton(
                   icon: .caretRight,
