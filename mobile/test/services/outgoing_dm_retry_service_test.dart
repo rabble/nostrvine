@@ -10,6 +10,7 @@ import 'package:db_client/db_client.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show NIP17SendResult;
 import 'package:openvine/services/crash_reporting_service.dart';
@@ -367,13 +368,16 @@ void main() {
         () {
           fakeAsync((async) {
             final base = DateTime.utc(2026, 5, 10, 12);
-            // The row was queued 60s before the first pass: too young for
-            // the 120s min-age at t=0 and t=30, old enough at t=60.
+            // Derived from the guard, not restated: the row starts one
+            // follow-up gap short of it, so it is too young at t=0 and
+            // t=+gap, and exactly old enough at t=+2×gap.
+            const gap = Duration(seconds: 30);
+            final minAge = OutgoingDmRetryService.interruptedMinAge;
             final row = _row(
               id: 'young-pending',
               recipient: OutgoingWrapStatus.pending,
               self: OutgoingWrapStatus.pending,
-              queuedAt: base.subtract(const Duration(seconds: 60)),
+              queuedAt: base.subtract(minAge - gap * 2),
             );
             var terminalized = false;
             when(
@@ -406,7 +410,7 @@ void main() {
 
             unawaited(service.sweep());
             async.flushMicrotasks();
-            // Age 60s < 120s: nothing flipped, but the follow-up is armed.
+            // Two gaps short of the guard: nothing flipped, follow-up armed.
             verifyNever(
               () => dao.markRecipientWrapStatus(
                 id: any(named: 'id'),
@@ -416,9 +420,9 @@ void main() {
             );
 
             async
-              ..elapse(const Duration(seconds: 30))
+              ..elapse(gap)
               ..flushMicrotasks();
-            // Age 90s: still young, chain re-armed.
+            // One gap short of the guard: still young, chain re-armed.
             verifyNever(
               () => dao.markRecipientWrapStatus(
                 id: any(named: 'id'),
@@ -428,9 +432,9 @@ void main() {
             );
 
             async
-              ..elapse(const Duration(seconds: 30))
+              ..elapse(gap)
               ..flushMicrotasks();
-            // Age 120s: flipped to failed so it stops looking delivered.
+            // Guard reached: flipped to failed so it stops looking delivered.
             verify(
               () => dao.markRecipientWrapStatus(
                 id: 'young-pending',
@@ -2014,6 +2018,60 @@ void main() {
     test('retry growth caps at maxDelay', () {
       // Default config: 2s × 2^N — after enough retries we hit 5min cap.
       expect(cfg.backoffFor(20), cfg.maxDelay);
+    });
+  });
+
+  // #6586. The DM send budget is assembled from constants in three packages,
+  // and nothing but this test connects them. `dm_repository` cannot import
+  // `keycast_flutter`, so the app layer — which depends on both — is the only
+  // place the full relationship can be asserted.
+  //
+  // The drift these pin actually happened: #6046 derived the publish backstop
+  // from a 12s Keycast per-RPC bound, #6075 raised that bound to 30s without
+  // re-deriving it, and the cap silently became smaller than the chain it
+  // bounds.
+  //
+  // Only the first assertion is a regression test — replaying the pre-fix
+  // constants (90s backstop, 140s honest chain) turns it red and the other two
+  // stay green. The second and third guard the two ways this could break next:
+  // tightening the build bound below the transport (the #6046 mistake), and
+  // letting the sweep guard fall to or below the backstop.
+  group('DM send budget invariants', () {
+    test('the backstop exceeds the chain it bounds', () {
+      expect(
+        DmSendBudget.chainWorstCase,
+        lessThan(DmSendBudget.messagePublishTimeout),
+        reason:
+            'a backstop below its own worst case fires mid-send and '
+            'misclassifies an already-delivered message',
+      );
+    });
+
+    test('the recipient wrap build exceeds two Keycast round trips', () {
+      // A 1:1 send costs four measured signer round trips: nip44Encrypt +
+      // signEvent for the seal, per wrap. Sizing the recipient build below
+      // two transport bounds would fail requests the transport itself would
+      // have allowed — the #6046 mistake that #6075 had to revert.
+      //
+      // Strictly greater, not >=: the bound also covers the seal
+      // construction, ephemeral keypair, NIP-44 encryption and wrap signature
+      // that run alongside those round trips. At exactly 2x, two ops each
+      // returning just inside 30s would still trip it, which is the same
+      // no-margin shape #6586 was about.
+      expect(
+        DmSendBudget.recipientWrapBuild,
+        greaterThan(KeycastRpc.defaultRequestTimeout * 2),
+      );
+    });
+
+    test('the sweep guard outlives the whole backstop', () {
+      // `Future.timeout` does not cancel, so an abandoned send keeps running
+      // past the cap. A guard at or below it re-drives a rumor that is still
+      // in flight and publishes a concurrent duplicate.
+      expect(
+        OutgoingDmRetryService.interruptedMinAge,
+        greaterThan(DmSendBudget.messagePublishTimeout),
+      );
     });
   });
 }
