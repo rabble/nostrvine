@@ -667,6 +667,45 @@ void main() {
       },
     );
 
+    test('an unreachable signer is tagged on the enqueue trace', () async {
+      // Signing fails, so no auth header can be built and the hand-off never
+      // happens. Called directly rather than through uploadVideoWithResume so
+      // the fallback leg does not open a second trace over the same failure.
+      when(
+        () => auth.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      final monitor = _RecordingPerformanceMonitor();
+      final transport = _FakeTransport();
+      final service = BlossomUploadService(
+        authProvider: auth,
+        dio: dio,
+        defaultServerUrl: _testServer,
+        backgroundTransport: transport,
+        performanceMonitor: monitor,
+      );
+
+      final result = await service.uploadVideoInBackground(
+        videoFile: videoFile,
+        taskId: 'task-no-signer',
+        proofManifestJson: null,
+      );
+
+      expect(
+        result.failureReason,
+        BlossomUploadFailureReason.authUnavailable,
+      );
+      expect(
+        monitor.named(enqueueTraceName)!.attributes['outcome'],
+        'error:authUnavailable',
+      );
+      expect(transport.enqueuedTaskIds, isEmpty);
+    });
+
     test('an unauthenticated in-process upload opens no trace', () async {
       when(() => auth.isAuthenticated).thenReturn(false);
 
