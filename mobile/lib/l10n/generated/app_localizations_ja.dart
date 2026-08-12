@@ -6200,6 +6200,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get libraryGridSizeLabel => 'グリッドのサイズ';
 
   @override
+  String get libraryDisplayOptionsLabel => '並び替えとグリッドサイズ';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => 'ライブラリのその他の操作';
+
+  @override
   String libraryGridSizeColumns(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

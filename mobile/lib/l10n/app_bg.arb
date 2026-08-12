@@ -2705,6 +2705,8 @@
     "librarySortClipsSemanticLabel": "Сортирай клиповете",
     "librarySelectClipsSemanticLabel": "Избери клипове",
     "libraryGridSizeLabel": "Размер на мрежата",
+    "libraryDisplayOptionsLabel": "Сортиране и размер на мрежата",
+    "libraryMoreActionsSemanticLabel": "Още действия в библиотеката",
     "libraryGridSizeColumns": "{count, plural, one{1 колона} other{{count} колони}}",
     "librarySelect": "Избери",
     "librarySortNewestCreation": "Най-ново създадени",

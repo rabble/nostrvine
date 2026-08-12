@@ -6430,6 +6430,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get libraryGridSizeLabel => 'حجم الشبكة';
 
   @override
+  String get libraryDisplayOptionsLabel => 'الفرز وحجم الشبكة';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => 'المزيد من إجراءات المكتبة';
+
+  @override
   String libraryGridSizeColumns(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

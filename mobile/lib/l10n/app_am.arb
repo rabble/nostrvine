@@ -2944,6 +2944,8 @@
     "librarySortClipsSemanticLabel": "ቅንጥቦችን ደርድር",
     "librarySelectClipsSemanticLabel": "ቅንጥቦችን ምረጥ",
     "libraryGridSizeLabel": "የፍርግርግ መጠን",
+    "libraryDisplayOptionsLabel": "መደርደር እና የፍርግርግ መጠን",
+    "libraryMoreActionsSemanticLabel": "ተጨማሪ የቤተ-መጽሐፍት እርምጃዎች",
     "libraryGridSizeColumns": "{count, plural, one{{count} አምድ} other{{count} አምዶች}}",
     "librarySelect": "ምረጥ",
     "librarySortNewestCreation": "በጣም አዲስ የተፈጠረ",

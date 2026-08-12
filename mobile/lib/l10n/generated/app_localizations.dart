@@ -11345,6 +11345,18 @@ abstract class AppLocalizations {
   /// **'Grid size'**
   String get libraryGridSizeLabel;
 
+  /// Row in the library overflow menu that opens the sorting and grid size options. Used when the toolbar is too narrow to show that button.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort & grid size'**
+  String get libraryDisplayOptionsLabel;
+
+  /// Accessibility label for the library toolbar button that opens the actions which did not fit in the toolbar.
+  ///
+  /// In en, this message translates to:
+  /// **'More library actions'**
+  String get libraryMoreActionsSemanticLabel;
+
   /// Option in the library grid size menu, naming how many columns of clips the grid shows. The range is 2 to 5. English never selects the singular arm in that range, but other locales do — Filipino selects `one` at 2, 3 and 5 — so every arm must interpolate {count} rather than spell out a digit.
   ///
   /// In en, this message translates to:

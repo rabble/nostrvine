@@ -6482,6 +6482,12 @@ class AppLocalizationsUr extends AppLocalizations {
   String get libraryGridSizeLabel => 'گرڈ کا سائز';
 
   @override
+  String get libraryDisplayOptionsLabel => 'ترتیب اور گرڈ سائز';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => 'لائبریری کی مزید کارروائیاں';
+
+  @override
   String libraryGridSizeColumns(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

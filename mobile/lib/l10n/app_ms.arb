@@ -3737,6 +3737,8 @@
   "librarySortClipsSemanticLabel": "Isih klip",
   "librarySelectClipsSemanticLabel": "Pilih klip",
   "libraryGridSizeLabel": "Saiz grid",
+  "libraryDisplayOptionsLabel": "Susunan & saiz grid",
+  "libraryMoreActionsSemanticLabel": "Lagi tindakan pustaka",
   "libraryGridSizeColumns": "{count, plural, other{{count} lajur}}",
   "librarySelect": "Pilih",
   "librarySortNewestCreation": "Ciptaan Terbaharu",

@@ -2558,6 +2558,8 @@
     "librarySortClipsSemanticLabel": "Clips sortieren",
     "librarySelectClipsSemanticLabel": "Clips auswählen",
     "libraryGridSizeLabel": "Rastergröße",
+    "libraryDisplayOptionsLabel": "Sortierung & Rastergröße",
+    "libraryMoreActionsSemanticLabel": "Weitere Bibliotheksaktionen",
     "libraryGridSizeColumns": "{count, plural, one{1 Spalte} other{{count} Spalten}}",
     "libraryDraftActionDelete": "Entwurf löschen",
     "libraryDraftActionEdit": "Bearbeiten",

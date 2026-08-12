@@ -2543,6 +2543,8 @@
     "librarySortClipsSemanticLabel": "クリップを並べ替える",
     "librarySelectClipsSemanticLabel": "クリップを選択",
     "libraryGridSizeLabel": "グリッドのサイズ",
+    "libraryDisplayOptionsLabel": "並び替えとグリッドサイズ",
+    "libraryMoreActionsSemanticLabel": "ライブラリのその他の操作",
     "libraryGridSizeColumns": "{count, plural, other{{count}列}}",
     "librarySelect": "選択",
     "librarySortNewestCreation": "作成日が新しい順",

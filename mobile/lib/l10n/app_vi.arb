@@ -3737,6 +3737,8 @@
   "librarySortClipsSemanticLabel": "Sắp xếp clip",
   "librarySelectClipsSemanticLabel": "Chọn clip",
   "libraryGridSizeLabel": "Kích thước lưới",
+  "libraryDisplayOptionsLabel": "Sắp xếp và cỡ lưới",
+  "libraryMoreActionsSemanticLabel": "Thao tác thư viện khác",
   "libraryGridSizeColumns": "{count, plural, other{{count} cột}}",
   "librarySelect": "Chọn",
   "librarySortNewestCreation": "Mới tạo nhất",

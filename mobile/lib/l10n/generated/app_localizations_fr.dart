@@ -6556,6 +6556,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get libraryGridSizeLabel => 'Taille de la grille';
 
   @override
+  String get libraryDisplayOptionsLabel => 'Tri et taille de grille';
+
+  @override
+  String get libraryMoreActionsSemanticLabel =>
+      'Plus d\'actions de la bibliothèque';
+
+  @override
   String libraryGridSizeColumns(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

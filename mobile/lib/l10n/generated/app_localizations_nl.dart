@@ -6505,6 +6505,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get libraryGridSizeLabel => 'Rastergrootte';
 
   @override
+  String get libraryDisplayOptionsLabel => 'Sortering en rastergrootte';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => 'Meer bibliotheekacties';
+
+  @override
   String libraryGridSizeColumns(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

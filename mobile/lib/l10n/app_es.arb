@@ -2559,6 +2559,8 @@
     "librarySortClipsSemanticLabel": "Ordenar clips",
     "librarySelectClipsSemanticLabel": "Seleccionar clips",
     "libraryGridSizeLabel": "Tamaño de la cuadrícula",
+    "libraryDisplayOptionsLabel": "Orden y tamaño de cuadrícula",
+    "libraryMoreActionsSemanticLabel": "Más acciones de la biblioteca",
     "libraryGridSizeColumns": "{count, plural, one{1 columna} other{{count} columnas}}",
     "librarySelect": "Seleccionar",
     "librarySortNewestCreation": "Creación más reciente",

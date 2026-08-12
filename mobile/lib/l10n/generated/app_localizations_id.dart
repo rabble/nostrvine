@@ -6441,6 +6441,12 @@ class AppLocalizationsId extends AppLocalizations {
   String get libraryGridSizeLabel => 'Ukuran kisi';
 
   @override
+  String get libraryDisplayOptionsLabel => 'Urutan & ukuran kisi';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => 'Tindakan pustaka lainnya';
+
+  @override
   String libraryGridSizeColumns(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

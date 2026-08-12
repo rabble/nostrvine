@@ -2551,6 +2551,8 @@
     "librarySortClipsSemanticLabel": "Sortuj klipy",
     "librarySelectClipsSemanticLabel": "Wybierz klipy",
     "libraryGridSizeLabel": "Rozmiar siatki",
+    "libraryDisplayOptionsLabel": "Sortowanie i rozmiar siatki",
+    "libraryMoreActionsSemanticLabel": "Więcej akcji biblioteki",
     "libraryGridSizeColumns": "{count, plural, one{1 kolumna} few{{count} kolumny} many{{count} kolumn} other{{count} kolumny}}",
     "librarySelect": "Wybierz",
     "librarySortNewestCreation": "Najnowsze utworzone",

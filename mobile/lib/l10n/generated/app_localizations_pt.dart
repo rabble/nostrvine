@@ -6518,6 +6518,12 @@ class AppLocalizationsPt extends AppLocalizations {
   String get libraryGridSizeLabel => 'Tamanho da grade';
 
   @override
+  String get libraryDisplayOptionsLabel => 'Ordenação e tamanho da grade';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => 'Mais ações da biblioteca';
+
+  @override
   String libraryGridSizeColumns(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

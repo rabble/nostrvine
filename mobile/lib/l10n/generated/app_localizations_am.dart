@@ -6346,6 +6346,12 @@ class AppLocalizationsAm extends AppLocalizations {
   String get libraryGridSizeLabel => 'የፍርግርግ መጠን';
 
   @override
+  String get libraryDisplayOptionsLabel => 'መደርደር እና የፍርግርግ መጠን';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => 'ተጨማሪ የቤተ-መጽሐፍት እርምጃዎች';
+
+  @override
   String libraryGridSizeColumns(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

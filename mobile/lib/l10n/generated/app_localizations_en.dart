@@ -6471,6 +6471,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get libraryGridSizeLabel => 'Grid size';
 
   @override
+  String get libraryDisplayOptionsLabel => 'Sort & grid size';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => 'More library actions';
+
+  @override
   String libraryGridSizeColumns(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

@@ -2550,6 +2550,8 @@
     "librarySortClipsSemanticLabel": "Klipleri sırala",
     "librarySelectClipsSemanticLabel": "Klip seç",
     "libraryGridSizeLabel": "Izgara boyutu",
+    "libraryDisplayOptionsLabel": "Sıralama ve ızgara boyutu",
+    "libraryMoreActionsSemanticLabel": "Diğer kütüphane işlemleri",
     "libraryGridSizeColumns": "{count, plural, other{{count} sütun}}",
     "librarySelect": "Seç",
     "librarySortNewestCreation": "En yeni oluşturulan",

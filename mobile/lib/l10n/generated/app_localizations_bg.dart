@@ -6532,6 +6532,12 @@ class AppLocalizationsBg extends AppLocalizations {
   String get libraryGridSizeLabel => 'Размер на мрежата';
 
   @override
+  String get libraryDisplayOptionsLabel => 'Сортиране и размер на мрежата';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => 'Още действия в библиотеката';
+
+  @override
   String libraryGridSizeColumns(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

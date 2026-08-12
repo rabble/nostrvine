@@ -1,5 +1,5 @@
 // ABOUTME: Tests for LibraryToolbar widget
-// ABOUTME: Covers title truncation, conditional actions, and button callbacks
+// ABOUTME: Covers title truncation, narrow-width overflow, and callbacks
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -13,12 +13,20 @@ void main() {
   final displayOptionsLabel =
       '${en.librarySortClipsSemanticLabel}. ${en.libraryGridSizeLabel}';
 
+  /// Wide enough for every action, narrow enough to stay a phone.
+  const wideWidth = 520.0;
+
+  /// A small phone in portrait — the width #7165 reported.
+  const narrowWidth = 320.0;
+
   group(LibraryToolbar, () {
     Finder iconButton(DivineIconName icon) => find.byWidgetPredicate(
       (widget) => widget is DivineIconButton && widget.icon == icon,
     );
 
     Widget buildWidget({
+      double width = wideWidth,
+      TextScaler textScaler = TextScaler.noScaling,
       bool isLibrarySelectionMode = false,
       bool canExitSelectionMode = true,
       bool isClipsTabActive = true,
@@ -35,19 +43,28 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         theme: VineTheme.theme,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+          child: child!,
+        ),
         home: Scaffold(
-          body: LibraryToolbar(
-            isLibrarySelectionMode: isLibrarySelectionMode,
-            canExitSelectionMode: canExitSelectionMode,
-            isClipsTabActive: isClipsTabActive,
-            onLeadingPressed: onLeadingPressed ?? () {},
-            onOpenSortMenu: onOpenSortMenu ?? () {},
-            onEnterSelectionMode: onEnterSelectionMode ?? () {},
-            isTrashFilterActive: isTrashFilterActive,
-            onEmptyTrash: onEmptyTrash,
-            onManageActiveCategory: onManageActiveCategory,
-            onMoveSelectedClips: onMoveSelectedClips,
-            onDeleteSelectedClips: onDeleteSelectedClips,
+          body: Center(
+            child: SizedBox(
+              width: width,
+              child: LibraryToolbar(
+                isLibrarySelectionMode: isLibrarySelectionMode,
+                canExitSelectionMode: canExitSelectionMode,
+                isClipsTabActive: isClipsTabActive,
+                onLeadingPressed: onLeadingPressed ?? () {},
+                onOpenSortMenu: onOpenSortMenu ?? () {},
+                onEnterSelectionMode: onEnterSelectionMode ?? () {},
+                isTrashFilterActive: isTrashFilterActive,
+                onEmptyTrash: onEmptyTrash,
+                onManageActiveCategory: onManageActiveCategory,
+                onMoveSelectedClips: onMoveSelectedClips,
+                onDeleteSelectedClips: onDeleteSelectedClips,
+              ),
+            ),
           ),
         ),
       );
@@ -139,6 +156,7 @@ void main() {
         expect(find.text(en.librarySelect), findsNothing);
         expect(iconButton(DivineIconName.funnelSimple), findsNothing);
         expect(iconButton(DivineIconName.trash), findsNothing);
+        expect(iconButton(DivineIconName.dotsThree), findsNothing);
       });
 
       testWidgets('shows clip actions when clips tab is active', (
@@ -148,14 +166,12 @@ void main() {
 
         expect(find.text(en.librarySelect), findsOneWidget);
         expect(iconButton(DivineIconName.funnelSimple), findsOneWidget);
-        expect(
-          find.bySemanticsLabel(displayOptionsLabel),
-          findsOneWidget,
-        );
+        expect(find.bySemanticsLabel(displayOptionsLabel), findsOneWidget);
         expect(
           find.bySemanticsLabel(en.librarySelectClipsSemanticLabel),
           findsOneWidget,
         );
+        expect(iconButton(DivineIconName.dotsThree), findsNothing);
       });
 
       testWidgets('swaps Select for move and delete in selection mode', (
@@ -190,6 +206,7 @@ void main() {
         await tester.pumpWidget(buildWidget(isTrashFilterActive: true));
 
         expect(find.text(en.libraryTrashEmptyAllLabel), findsNothing);
+        expect(iconButton(DivineIconName.dotsThree), findsNothing);
       });
 
       testWidgets('shows the manage action only for a category filter', (
@@ -198,9 +215,7 @@ void main() {
         await tester.pumpWidget(buildWidget());
         expect(iconButton(DivineIconName.pencilSimple), findsNothing);
 
-        await tester.pumpWidget(
-          buildWidget(onManageActiveCategory: () {}),
-        );
+        await tester.pumpWidget(buildWidget(onManageActiveCategory: () {}));
         expect(
           find.bySemanticsLabel(en.libraryCategoryManageSemanticLabel),
           findsOneWidget,
@@ -230,6 +245,7 @@ void main() {
           ),
           'trash empty': buildWidget(isTrashFilterActive: true),
           'drafts tab': buildWidget(isClipsTabActive: false),
+          'collapsed': buildWidget(width: narrowWidth),
         };
 
         for (final entry in cases.entries) {
@@ -244,6 +260,244 @@ void main() {
           hasLength(1),
           reason: 'toolbar height varies by action set: $heights',
         );
+      });
+    });
+
+    group('narrow widths', () {
+      testWidgets('collapses clip actions into an overflow button', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(width: narrowWidth, onManageActiveCategory: () {}),
+        );
+
+        expect(iconButton(DivineIconName.dotsThree), findsOneWidget);
+        expect(iconButton(DivineIconName.pencilSimple), findsNothing);
+        expect(iconButton(DivineIconName.funnelSimple), findsNothing);
+        expect(
+          find.bySemanticsLabel(en.libraryMoreActionsSemanticLabel),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('keeps a readable title beside the overflow button', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget(width: narrowWidth));
+
+        final titleWidth = tester
+            .getSize(find.text(en.profileMyLibraryLabel))
+            .width;
+        expect(titleWidth, greaterThanOrEqualTo(72));
+      });
+
+      testWidgets('keeps the primary action when only part of the row fits', (
+        tester,
+      ) async {
+        // A large text scale eats the room the icon buttons need, but not the
+        // room for Select — the least important actions leave first.
+        await tester.pumpWidget(
+          buildWidget(
+            textScaler: const TextScaler.linear(2),
+            onManageActiveCategory: () {},
+          ),
+        );
+
+        expect(find.text(en.librarySelect), findsOneWidget);
+        expect(iconButton(DivineIconName.dotsThree), findsOneWidget);
+        expect(iconButton(DivineIconName.pencilSimple), findsNothing);
+        expect(iconButton(DivineIconName.funnelSimple), findsNothing);
+
+        await tester.tap(iconButton(DivineIconName.dotsThree));
+        await tester.pumpAndSettle();
+
+        expect(find.text(en.libraryDisplayOptionsLabel), findsOneWidget);
+        expect(
+          find.text(en.libraryCategoryManageSemanticLabel),
+          findsOneWidget,
+        );
+        expect(find.text(en.librarySelectClipsSemanticLabel), findsNothing);
+      });
+
+      testWidgets('collapses the Empty trash chip rather than overflow it', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(
+            width: narrowWidth,
+            textScaler: const TextScaler.linear(2),
+            isTrashFilterActive: true,
+            onEmptyTrash: () {},
+          ),
+        );
+
+        expect(find.text(en.libraryTrashEmptyAllLabel), findsNothing);
+        expect(iconButton(DivineIconName.dotsThree), findsOneWidget);
+      });
+
+      testWidgets('does not overflow at any phone width', (tester) async {
+        for (var width = 280.0; width <= 520.0; width += 5) {
+          for (final build in [
+            () => buildWidget(width: width, onManageActiveCategory: () {}),
+            () => buildWidget(
+              width: width,
+              isLibrarySelectionMode: true,
+              onMoveSelectedClips: () {},
+              onDeleteSelectedClips: () {},
+            ),
+            () => buildWidget(
+              width: width,
+              isTrashFilterActive: true,
+              onEmptyTrash: () {},
+            ),
+          ]) {
+            await tester.pumpWidget(build());
+
+            expect(
+              tester.takeException(),
+              isNull,
+              reason: 'toolbar overflowed at ${width}dp',
+            );
+          }
+        }
+      });
+
+      testWidgets('estimates a Select chip no narrower than it renders', (
+        tester,
+      ) async {
+        // The toolbar decides the collapse while building, so it estimates
+        // the chip as label + 40px of chrome. An estimate below the rendered
+        // width would overflow the row instead of collapsing it.
+        await tester.pumpWidget(buildWidget());
+
+        final painter = TextPainter(
+          text: TextSpan(
+            text: en.librarySelect,
+            style: VineTheme.titleMediumFont(),
+          ),
+          textDirection: TextDirection.ltr,
+        )..layout();
+        final estimate = painter.width + 40;
+        painter.dispose();
+
+        final rendered = tester.getSize(find.byType(DivineButton).first).width;
+        expect(estimate, greaterThanOrEqualTo(rendered));
+      });
+    });
+
+    group('overflow menu', () {
+      testWidgets('lists every collapsed action', (tester) async {
+        await tester.pumpWidget(
+          buildWidget(width: narrowWidth, onManageActiveCategory: () {}),
+        );
+
+        await tester.tap(iconButton(DivineIconName.dotsThree));
+        await tester.pumpAndSettle();
+
+        expect(find.text(en.librarySelectClipsSemanticLabel), findsOneWidget);
+        expect(find.text(en.libraryDisplayOptionsLabel), findsOneWidget);
+        expect(
+          find.text(en.libraryCategoryManageSemanticLabel),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('manage row triggers onManageActiveCategory', (tester) async {
+        var pressed = false;
+        await tester.pumpWidget(
+          buildWidget(
+            width: narrowWidth,
+            onManageActiveCategory: () => pressed = true,
+          ),
+        );
+
+        await tester.tap(iconButton(DivineIconName.dotsThree));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(en.libraryCategoryManageSemanticLabel));
+        await tester.pumpAndSettle();
+
+        expect(pressed, isTrue);
+      });
+
+      testWidgets('display options row triggers onOpenSortMenu', (
+        tester,
+      ) async {
+        var pressed = false;
+        await tester.pumpWidget(
+          buildWidget(width: narrowWidth, onOpenSortMenu: () => pressed = true),
+        );
+
+        await tester.tap(iconButton(DivineIconName.dotsThree));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(en.libraryDisplayOptionsLabel));
+        await tester.pumpAndSettle();
+
+        expect(pressed, isTrue);
+      });
+
+      testWidgets('Select row triggers onEnterSelectionMode', (tester) async {
+        var pressed = false;
+        await tester.pumpWidget(
+          buildWidget(
+            width: narrowWidth,
+            onEnterSelectionMode: () => pressed = true,
+          ),
+        );
+
+        await tester.tap(iconButton(DivineIconName.dotsThree));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(en.librarySelectClipsSemanticLabel));
+        await tester.pumpAndSettle();
+
+        expect(pressed, isTrue);
+      });
+
+      testWidgets('move and delete rows trigger their callbacks', (
+        tester,
+      ) async {
+        var moved = false;
+        var deleted = false;
+        Widget build() => buildWidget(
+          width: narrowWidth,
+          textScaler: const TextScaler.linear(2),
+          isLibrarySelectionMode: true,
+          onMoveSelectedClips: () => moved = true,
+          onDeleteSelectedClips: () => deleted = true,
+        );
+
+        await tester.pumpWidget(build());
+        await tester.tap(iconButton(DivineIconName.dotsThree));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(en.libraryMoveSelectedClipsTooltip));
+        await tester.pumpAndSettle();
+
+        await tester.pumpWidget(build());
+        await tester.tap(iconButton(DivineIconName.dotsThree));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(en.libraryDeleteSelectedClipsTooltip));
+        await tester.pumpAndSettle();
+
+        expect(moved, isTrue);
+        expect(deleted, isTrue);
+      });
+
+      testWidgets('Empty trash row triggers onEmptyTrash', (tester) async {
+        var pressed = false;
+        await tester.pumpWidget(
+          buildWidget(
+            width: narrowWidth,
+            textScaler: const TextScaler.linear(2),
+            isTrashFilterActive: true,
+            onEmptyTrash: () => pressed = true,
+          ),
+        );
+
+        await tester.tap(iconButton(DivineIconName.dotsThree));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(en.libraryTrashEmptyAllLabel));
+        await tester.pumpAndSettle();
+
+        expect(pressed, isTrue);
       });
     });
 
@@ -290,6 +544,18 @@ void main() {
         );
 
         await tester.tap(find.text(en.libraryTrashEmptyAllLabel));
+        expect(pressed, isTrue);
+      });
+
+      testWidgets('manage button triggers onManageActiveCategory', (
+        tester,
+      ) async {
+        var pressed = false;
+        await tester.pumpWidget(
+          buildWidget(onManageActiveCategory: () => pressed = true),
+        );
+
+        await tester.tap(iconButton(DivineIconName.pencilSimple));
         expect(pressed, isTrue);
       });
 

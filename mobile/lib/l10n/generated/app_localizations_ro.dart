@@ -6632,6 +6632,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get libraryGridSizeLabel => 'Dimensiunea grilei';
 
   @override
+  String get libraryDisplayOptionsLabel => 'Sortare și dimensiunea grilei';
+
+  @override
+  String get libraryMoreActionsSemanticLabel =>
+      'Mai multe acțiuni în bibliotecă';
+
+  @override
   String libraryGridSizeColumns(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

@@ -6553,6 +6553,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get libraryGridSizeLabel => 'Rastergröße';
 
   @override
+  String get libraryDisplayOptionsLabel => 'Sortierung & Rastergröße';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => 'Weitere Bibliotheksaktionen';
+
+  @override
   String libraryGridSizeColumns(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

@@ -2551,6 +2551,8 @@
     "librarySortClipsSemanticLabel": "Sortează clipurile",
     "librarySelectClipsSemanticLabel": "Selectează clipuri",
     "libraryGridSizeLabel": "Dimensiunea grilei",
+    "libraryDisplayOptionsLabel": "Sortare și dimensiunea grilei",
+    "libraryMoreActionsSemanticLabel": "Mai multe acțiuni în bibliotecă",
     "libraryGridSizeColumns": "{count, plural, one{1 coloană} few{{count} coloane} other{{count} de coloane}}",
     "librarySelect": "Selectează",
     "librarySortNewestCreation": "Cele mai noi create",

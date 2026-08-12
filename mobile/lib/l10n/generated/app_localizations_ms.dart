@@ -6524,6 +6524,12 @@ class AppLocalizationsMs extends AppLocalizations {
   String get libraryGridSizeLabel => 'Saiz grid';
 
   @override
+  String get libraryDisplayOptionsLabel => 'Susunan & saiz grid';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => 'Lagi tindakan pustaka';
+
+  @override
   String libraryGridSizeColumns(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

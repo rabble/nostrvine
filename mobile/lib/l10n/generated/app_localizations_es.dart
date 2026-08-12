@@ -6528,6 +6528,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get libraryGridSizeLabel => 'Tamaño de la cuadrícula';
 
   @override
+  String get libraryDisplayOptionsLabel => 'Orden y tamaño de cuadrícula';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => 'Más acciones de la biblioteca';
+
+  @override
   String libraryGridSizeColumns(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

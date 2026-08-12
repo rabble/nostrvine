@@ -1657,6 +1657,8 @@
     "librarySortClipsSemanticLabel": "Ayusin ang mga clip",
     "librarySelectClipsSemanticLabel": "Pumili ng mga clip",
     "libraryGridSizeLabel": "Laki ng grid",
+    "libraryDisplayOptionsLabel": "Pagkakasunod-sunod at laki ng grid",
+    "libraryMoreActionsSemanticLabel": "Higit pang aksyon sa library",
     "libraryGridSizeColumns": "{count, plural, one{{count} hanay} other{{count} na hanay}}",
     "librarySelect": "Piliin",
     "librarySortNewestCreation": "Pinakabagong ginawa",

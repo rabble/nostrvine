@@ -3737,6 +3737,8 @@
   "librarySortClipsSemanticLabel": "کلپس ترتیب دیں",
   "librarySelectClipsSemanticLabel": "کلپس منتخب کریں",
   "libraryGridSizeLabel": "گرڈ کا سائز",
+  "libraryDisplayOptionsLabel": "ترتیب اور گرڈ سائز",
+  "libraryMoreActionsSemanticLabel": "لائبریری کی مزید کارروائیاں",
   "libraryGridSizeColumns": "{count, plural, one{1 کالم} other{{count} کالم}}",
   "librarySelect": "منتخب کریں",
   "librarySortNewestCreation": "تازہ ترین تخلیق",

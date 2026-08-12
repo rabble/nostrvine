@@ -6553,6 +6553,12 @@ class AppLocalizationsFil extends AppLocalizations {
   String get libraryGridSizeLabel => 'Laki ng grid';
 
   @override
+  String get libraryDisplayOptionsLabel => 'Pagkakasunod-sunod at laki ng grid';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => 'Higit pang aksyon sa library';
+
+  @override
   String libraryGridSizeColumns(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

@@ -2543,6 +2543,8 @@
     "librarySortClipsSemanticLabel": "فرز المقاطع",
     "librarySelectClipsSemanticLabel": "تحديد المقاطع",
     "libraryGridSizeLabel": "حجم الشبكة",
+    "libraryDisplayOptionsLabel": "الفرز وحجم الشبكة",
+    "libraryMoreActionsSemanticLabel": "المزيد من إجراءات المكتبة",
     "libraryGridSizeColumns": "{count, plural, zero{بلا أعمدة} one{عمود واحد} two{عمودان} few{{count} أعمدة} many{{count} عمودًا} other{{count} عمود}}",
     "librarySelect": "تحديد",
     "librarySortNewestCreation": "الأحدث إنشاءً",

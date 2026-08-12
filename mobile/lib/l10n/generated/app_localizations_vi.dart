@@ -6484,6 +6484,12 @@ class AppLocalizationsVi extends AppLocalizations {
   String get libraryGridSizeLabel => 'Kích thước lưới';
 
   @override
+  String get libraryDisplayOptionsLabel => 'Sắp xếp và cỡ lưới';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => 'Thao tác thư viện khác';
+
+  @override
   String libraryGridSizeColumns(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

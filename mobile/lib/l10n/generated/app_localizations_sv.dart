@@ -6470,6 +6470,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get libraryGridSizeLabel => 'Rutnätets storlek';
 
   @override
+  String get libraryDisplayOptionsLabel => 'Sortering och rutnätsstorlek';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => 'Fler biblioteksåtgärder';
+
+  @override
   String libraryGridSizeColumns(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

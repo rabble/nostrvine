@@ -2551,6 +2551,8 @@
     "librarySortClipsSemanticLabel": "Sortera klipp",
     "librarySelectClipsSemanticLabel": "Välj klipp",
     "libraryGridSizeLabel": "Rutnätets storlek",
+    "libraryDisplayOptionsLabel": "Sortering och rutnätsstorlek",
+    "libraryMoreActionsSemanticLabel": "Fler biblioteksåtgärder",
     "libraryGridSizeColumns": "{count, plural, one{1 kolumn} other{{count} kolumner}}",
     "librarySelect": "Välj",
     "librarySortNewestCreation": "Senast skapade",

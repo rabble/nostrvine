@@ -6628,6 +6628,12 @@ class AppLocalizationsPl extends AppLocalizations {
   String get libraryGridSizeLabel => 'Rozmiar siatki';
 
   @override
+  String get libraryDisplayOptionsLabel => 'Sortowanie i rozmiar siatki';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => 'Więcej akcji biblioteki';
+
+  @override
   String libraryGridSizeColumns(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

@@ -6172,6 +6172,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get libraryGridSizeLabel => '网格大小';
 
   @override
+  String get libraryDisplayOptionsLabel => '排序和网格大小';
+
+  @override
+  String get libraryMoreActionsSemanticLabel => '更多作品库操作';
+
+  @override
   String libraryGridSizeColumns(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
