@@ -121,15 +121,6 @@ void main() {
       );
     });
 
-    test('clears the current tab only when requested', () {
-      const state = FeaturedTabsState(
-        status: FeaturedTabsStatus.resolved,
-        tab: _tab,
-      );
-
-      expect(state.copyWith(clearTab: true).tab, isNull);
-    });
-
     test('re-polls at the server-supplied interval', () {
       fakeAsync((async) {
         stubSnapshot(

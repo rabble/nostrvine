@@ -34,18 +34,14 @@ class FeaturedTabsState extends Equatable {
   final Duration pollInterval;
 
   /// Returns a copy with the given overrides.
-  ///
-  /// Use [clearTab] when the server resolves no eligible tab; omitting [tab]
-  /// otherwise preserves the current tab like the rest of the fields.
   FeaturedTabsState copyWith({
     FeaturedTabsStatus? status,
     FeaturedTabConfig? tab,
-    bool clearTab = false,
     Duration? pollInterval,
   }) {
     return FeaturedTabsState(
       status: status ?? this.status,
-      tab: clearTab ? null : tab ?? this.tab,
+      tab: tab ?? this.tab,
       pollInterval: pollInterval ?? this.pollInterval,
     );
   }
