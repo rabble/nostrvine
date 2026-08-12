@@ -37,18 +37,25 @@ void main() {
     late _MockNostrEventsDao mockNostrEventsDao;
     late VideoEventService service;
 
-    /// Parks the first cached-events read so the caller that claimed the
-    /// subscription id sits inside its async gap while the next call races
-    /// through. This is the only `await` between the synchronous claim and the
-    /// relay `subscribe`, so it is the seam that opens the window under test.
-    late Completer<List<Event>> firstCacheReadGate;
+    /// Parks *every* cached-events read until the test releases it, so the
+    /// caller that claimed the subscription id is guaranteed to sit inside its
+    /// async gap while the next call races through. This is the only `await`
+    /// between the synchronous claim and the relay `subscribe`, so it is the
+    /// seam that opens the window under test.
+    ///
+    /// Gating every read rather than only the first: a counted gate silently
+    /// stops parking anyone if some other reader reaches the DAO first, and
+    /// the test then degenerates into two sequential subscribes that pass for
+    /// the wrong reason. A caller that is supposed to return at the claim
+    /// check never reaches this stub at all.
+    late Completer<List<Event>> cacheReadGate;
 
     setUp(() {
       mockNostrService = _MockNostrClient();
       mockSubscriptionManager = _MockSubscriptionManager();
       mockDatabase = _MockAppDatabase();
       mockNostrEventsDao = _MockNostrEventsDao();
-      firstCacheReadGate = Completer<List<Event>>();
+      cacheReadGate = Completer<List<Event>>();
 
       when(() => mockNostrService.isInitialized).thenReturn(true);
       when(() => mockNostrService.publicKey).thenReturn('');
@@ -65,17 +72,12 @@ void main() {
         ),
       ).thenAnswer((_) async {});
 
-      var cacheReads = 0;
       when(
         () => mockNostrEventsDao.getEventsByFilter(
           any(),
           sortBy: any(named: 'sortBy'),
         ),
-      ).thenAnswer((_) {
-        cacheReads++;
-        if (cacheReads == 1) return firstCacheReadGate.future;
-        return Future<List<Event>>.value([]);
-      });
+      ).thenAnswer((_) => cacheReadGate.future);
 
       service = VideoEventService(
         mockNostrService,
@@ -97,14 +99,23 @@ void main() {
           limit: 10,
         );
 
-        // Second identical call races through while the first is parked, and
-        // must reuse the pending claim rather than open a second REQ.
-        await service.subscribeToVideoFeed(
-          subscriptionType: SubscriptionType.discovery,
-          limit: 10,
+        // Pin the seam itself: the first call must still be inside its async
+        // gap. If it ever ran to completion here the two calls would be
+        // sequential, and a green result would say nothing about the race.
+        verifyNever(
+          () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
         );
 
-        firstCacheReadGate.complete([]);
+        // Second identical call races through while the first is parked, and
+        // must reuse the pending claim rather than open a second REQ.
+        await _expectReusesClaim(
+          service.subscribeToVideoFeed(
+            subscriptionType: SubscriptionType.discovery,
+            limit: 10,
+          ),
+        );
+
+        cacheReadGate.complete([]);
         await first;
 
         verify(
@@ -132,12 +143,14 @@ void main() {
       );
 
       // Races in while the first is parked: reuses the claim, no REQ.
-      await service.subscribeToVideoFeed(
-        subscriptionType: SubscriptionType.discovery,
-        limit: 10,
+      await _expectReusesClaim(
+        service.subscribeToVideoFeed(
+          subscriptionType: SubscriptionType.discovery,
+          limit: 10,
+        ),
       );
 
-      firstCacheReadGate.complete([]);
+      cacheReadGate.complete([]);
       await first;
 
       // The claim is released, so this retry gets through to the relay.
@@ -152,3 +165,17 @@ void main() {
     });
   });
 }
+
+/// Awaits a subscribe that is expected to return at the pending-claim check.
+///
+/// Such a call never reaches the gated cached-events read, so it completes
+/// promptly. One that regresses past the claim parks on the gate forever;
+/// bound it here so the failure names the broken invariant instead of
+/// surfacing as an unexplained suite timeout.
+Future<void> _expectReusesClaim(Future<void> subscribe) => subscribe.timeout(
+  const Duration(seconds: 5),
+  onTimeout: () => fail(
+    'subscribe reached the cached-events read instead of reusing the '
+    'pending claim',
+  ),
+);

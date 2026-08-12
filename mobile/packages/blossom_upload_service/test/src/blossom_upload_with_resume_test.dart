@@ -103,18 +103,22 @@ class _FakeTransport implements BlossomBackgroundTransport {
   /// Makes [enqueue] throw, modelling a transport that rejects the hand-off.
   bool throwOnEnqueue = false;
 
+  /// Makes [takeBufferedTerminalEvent] throw, modelling a platform channel
+  /// that fails during startup reconciliation — before the hand-off, so the
+  /// throw escapes the whole method instead of becoming a result.
+  bool throwOnTakeBuffered = false;
+
   @override
   Future<BlossomBackgroundTransferEvent?> takeBufferedTerminalEvent(
     String taskId,
-  ) async => bufferedTerminalEvent;
+  ) async {
+    if (throwOnTakeBuffered) {
+      throw StateError('transport channel failed');
+    }
+    return bufferedTerminalEvent;
+  }
 }
 
-/// A performance monitor whose [startOperationTrace] throws on the first call
-/// and succeeds thereafter. The first call is from uploadVideoInBackground (the
-/// OS-first attempt); the throw makes it propagate out of that method before
-/// its internal try/catch, exercising the defensive catch in
-/// uploadVideoWithResume. The subsequent resumable uploadVideo path then gets
-/// a working trace so it can complete normally.
 /// Records every trace handed out, so a test can assert which trace names were
 /// used and how each one was tagged.
 class _RecordingPerformanceMonitor implements BlossomPerformanceMonitor {
@@ -150,6 +154,12 @@ class _RecordedTrace implements BlossomPerformanceTrace {
   Future<void> stop() async => stopped = true;
 }
 
+/// A performance monitor whose [startOperationTrace] throws on the first call
+/// and succeeds thereafter. The first call is from uploadVideoInBackground (the
+/// OS-first attempt); the throw makes it propagate out of that method before
+/// its internal try/catch, exercising the defensive catch in
+/// uploadVideoWithResume. The subsequent resumable uploadVideo path then gets
+/// a working trace so it can complete normally.
 class _ThrowingPerformanceMonitor implements BlossomPerformanceMonitor {
   var _calls = 0;
 
@@ -669,6 +679,36 @@ void main() {
       },
     );
 
+    test('a throw before the hand-off is tagged error:threw', () async {
+      // The one outcome value no other test reaches. It is only produced by
+      // the outer `finally`, which needs the body to escape with no result at
+      // all — every deliberate exit assigns one and tags itself. A transport
+      // that fails during startup reconciliation does exactly that.
+      final monitor = _RecordingPerformanceMonitor();
+      final transport = _FakeTransport()..throwOnTakeBuffered = true;
+      final service = BlossomUploadService(
+        authProvider: auth,
+        dio: dio,
+        defaultServerUrl: _testServer,
+        backgroundTransport: transport,
+        performanceMonitor: monitor,
+      );
+
+      await expectLater(
+        service.uploadVideoInBackground(
+          videoFile: videoFile,
+          taskId: 'task-throws',
+          proofManifestJson: null,
+        ),
+        throwsA(isA<StateError>()),
+      );
+
+      final enqueue = monitor.named(enqueueTraceName)!;
+      expect(enqueue.stopped, isTrue);
+      expect(enqueue.attributes['outcome'], 'error:threw');
+      expect(transport.enqueuedTaskIds, isEmpty);
+    });
+
     test('an unreachable signer is tagged on the enqueue trace', () async {
       // Signing fails, so no auth header can be built and the hand-off never
       // happens. Called directly rather than through uploadVideoWithResume so
@@ -697,10 +737,7 @@ void main() {
         proofManifestJson: null,
       );
 
-      expect(
-        result.failureReason,
-        BlossomUploadFailureReason.authUnavailable,
-      );
+      expect(result.failureReason, BlossomUploadFailureReason.authUnavailable);
       expect(
         monitor.named(enqueueTraceName)!.attributes['outcome'],
         'error:authUnavailable',
@@ -1047,45 +1084,42 @@ void main() {
       },
     );
 
-    test(
-      'resumableTimeout does NOT bound the OS-first leg',
-      () async {
-        // The OS PUT succeeds only after a delay that far exceeds the tiny
-        // resumableTimeout. If a regression wrapped the OS leg in
-        // `.timeout(resumableTimeout)`, that timeout would fire first and this
-        // upload would fail / fall through to the resumable path. Because the
-        // OS leg is deliberately unbounded by resumableTimeout, the delayed OS
-        // success is returned and the resumable control plane is never touched.
-        final transport = _FakeTransport(
-          completionDelay: const Duration(milliseconds: 150),
-        );
-        final service = BlossomUploadService(
-          authProvider: auth,
-          dio: dio,
-          defaultServerUrl: _testServer,
-          backgroundTransport: transport,
-        );
+    test('resumableTimeout does NOT bound the OS-first leg', () async {
+      // The OS PUT succeeds only after a delay that far exceeds the tiny
+      // resumableTimeout. If a regression wrapped the OS leg in
+      // `.timeout(resumableTimeout)`, that timeout would fire first and this
+      // upload would fail / fall through to the resumable path. Because the
+      // OS leg is deliberately unbounded by resumableTimeout, the delayed OS
+      // success is returned and the resumable control plane is never touched.
+      final transport = _FakeTransport(
+        completionDelay: const Duration(milliseconds: 150),
+      );
+      final service = BlossomUploadService(
+        authProvider: auth,
+        dio: dio,
+        defaultServerUrl: _testServer,
+        backgroundTransport: transport,
+      );
 
-        final result = await service.uploadVideoWithResume(
-          videoFile: videoFile,
-          nostrPubkey: _testPublicKey,
-          taskId: 'task-os-slow',
-          title: 'slow OS success under short resumable timeout',
-          description: null,
-          hashtags: null,
-          proofManifestJson: null,
-          resumableTimeout: const Duration(milliseconds: 5),
-        );
+      final result = await service.uploadVideoWithResume(
+        videoFile: videoFile,
+        nostrPubkey: _testPublicKey,
+        taskId: 'task-os-slow',
+        title: 'slow OS success under short resumable timeout',
+        description: null,
+        hashtags: null,
+        proofManifestJson: null,
+        resumableTimeout: const Duration(milliseconds: 5),
+      );
 
-        expect(result.success, isTrue);
-        expect(transport.enqueuedTaskIds, equals(['task-os-slow']));
-        // Resumable leg never reached: the OS leg outlived resumableTimeout and
-        // still won, proving resumableTimeout did not cut it.
-        verifyNever(
-          () => dio.head<dynamic>(any(), options: any(named: 'options')),
-        );
-      },
-    );
+      expect(result.success, isTrue);
+      expect(transport.enqueuedTaskIds, equals(['task-os-slow']));
+      // Resumable leg never reached: the OS leg outlived resumableTimeout and
+      // still won, proving resumableTimeout did not cut it.
+      verifyNever(
+        () => dio.head<dynamic>(any(), options: any(named: 'options')),
+      );
+    });
 
     test(
       'resumableTimeout bounds the in-process resumable leg when reached',
@@ -1113,9 +1147,7 @@ void main() {
             options: any(named: 'options'),
             onSendProgress: any(named: 'onSendProgress'),
           ),
-        ).thenAnswer(
-          (_) => Completer<Response<dynamic>>().future,
-        );
+        ).thenAnswer((_) => Completer<Response<dynamic>>().future);
 
         await expectLater(
           service.uploadVideoWithResume(

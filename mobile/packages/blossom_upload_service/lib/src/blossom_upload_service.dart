@@ -1960,9 +1960,12 @@ class BlossomUploadService {
     void Function(double)? onProgress,
   }) async {
     // Check authentication before attempting any uploads. Deliberately ahead
-    // of the trace: an attempt that never reaches the network has no transfer
-    // duration to report, and timing it only adds near-zero samples to the
-    // distribution for the work itself (#7119).
+    // of the trace: a signed-out attempt is rejected without a single await,
+    // and timing it only adds near-zero samples to the distribution for the
+    // work itself (#7119). This buys nothing for the other pre-network exits —
+    // a missing file still throws out of `HashUtil.sha256File` below and
+    // reports a few-millisecond trace tagged `error:unknown`. The `outcome`
+    // attribute is what keeps those filterable.
     if (!authProvider.isAuthenticated) {
       Log.error(
         'User not authenticated - cannot sign Blossom requests',
@@ -1980,8 +1983,11 @@ class BlossomUploadService {
     // gets its own trace instead of truncating this one.
     final trace = _performanceMonitor.startOperationTrace(uploadTraceName);
 
-    // Set on every exit so the `finally` can tag the outcome. Stays null only
-    // when the body threw, which the tag distinguishes from a returned failure.
+    // Set on every exit so the `finally` can tag the outcome. The catch-all
+    // below converts every throw into an assigned return, so on this path it
+    // is never actually null — the null branch of [_traceOutcome] is carried
+    // for `uploadVideoInBackground`, whose outer `finally` can be reached with
+    // no result at all.
     BlossomUploadResult? tracedResult;
 
     try {

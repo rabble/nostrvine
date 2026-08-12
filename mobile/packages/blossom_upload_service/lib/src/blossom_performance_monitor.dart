@@ -4,10 +4,16 @@
 /// Trace name for the in-process transfer run by
 /// `BlossomUploadService.uploadVideo`.
 ///
-/// Spans the whole upload, so it is comparable to the publish timeline's
-/// `transfer_ms`. Deliberately *not* shared with [enqueueTraceName]: the two
-/// measure different things, and reporting both under one name blends two
-/// incompatible distributions into a number nobody can read (#7119).
+/// Spans the whole in-process transfer. Deliberately *not* shared with
+/// [enqueueTraceName]: the two measure different things, and reporting both
+/// under one name blends two incompatible distributions into a number nobody
+/// can read (#7119).
+///
+/// Not comparable to the publish timeline's `transfer_ms`, which stopwatches
+/// the whole `uploadVideoWithResume` call — OS attempt plus any fallback — on
+/// every publish. This trace only opens once the in-process leg actually runs,
+/// which in the shipping config means the OS attempt did not succeed first
+/// try. Its population is that biased-slow subset, not all publishes.
 const String uploadTraceName = 'video_upload';
 
 /// Trace name for the setup-and-enqueue leg of
