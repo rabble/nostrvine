@@ -2984,6 +2984,18 @@ class AppLocalizationsKo extends AppLocalizations {
   String get authVerificationResendFailed => '이메일을 다시 보내지 못했어요. 다시 시도해주세요.';
 
   @override
+  String get authVerificationResendExpired =>
+      'That signup expired. Start again to get a fresh code.';
+
+  @override
+  String get authVerificationResendUnavailable =>
+      'Resending isn\'t available right now. Use the 6-digit code from the email we already sent you.';
+
+  @override
+  String get authVerificationPollingStopped =>
+      'We stopped checking for you. Enter the 6-digit code from your email to finish signing in.';
+
+  @override
   String get authWelcomeToDivine => 'Divine에 오신 걸 환영해요!';
 
   @override

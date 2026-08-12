@@ -265,22 +265,85 @@ class VerifyPinResult {
   final String? errorDescription;
 }
 
+/// Why a resend request did not send a new verification email.
+enum ResendVerificationError {
+  /// The resend endpoint is absent (404). This server build cannot resend at
+  /// all, so retrying is pointless until it is redeployed — the UI should
+  /// steer the user to the PIN from the email they already have.
+  unavailable,
+
+  /// The request reached the server and it declined to send (4xx other than
+  /// 404). Retrying may work.
+  declined,
+
+  /// The pending registration has expired. Retrying resend cannot recover it;
+  /// the user must start signup again.
+  expired,
+
+  /// Server returned a 5xx.
+  server,
+
+  /// Transient network error or timeout — the request may not have arrived.
+  network,
+}
+
 /// Result from POST /api/auth/resend-verification
 class ResendVerificationResult {
-  ResendVerificationResult({required this.success, this.message});
+  ResendVerificationResult({
+    required this.success,
+    this.message,
+    this.errorCode,
+  });
 
   factory ResendVerificationResult.fromJson(Map<String, dynamic> json) {
+    final success = json['success'] as bool? ?? false;
+    final message = json['message'] as String?;
     return ResendVerificationResult(
-      success: json['success'] as bool? ?? false,
-      message: json['message'] as String?,
+      success: success,
+      message: message,
+      errorCode: success ? null : _errorCodeFromMessage(message),
     );
   }
 
-  factory ResendVerificationResult.failure() =>
-      ResendVerificationResult(success: false);
+  factory ResendVerificationResult.failure(ResendVerificationError errorCode) =>
+      ResendVerificationResult(success: false, errorCode: errorCode);
+
+  /// Classifies a 2xx body that reports `success: false`.
+  ///
+  /// An expired pending registration is the one such body keycast sends with a
+  /// distinct meaning, and it arrives as **HTTP 200** with
+  /// `{"success": false, "message": "This registration has expired. Please
+  /// sign up again."}` — see `headless_resend_pin`, the `expires_at <=
+  /// Utc::now()` branch in keycast `api/src/api/http/headless.rs`. The uniform
+  /// anti-enumeration response on that route is `success: true`, so any other
+  /// `success: false` is a genuine decline.
+  ///
+  /// Do not confuse this with the 410 `AuthError::RegistrationExpired` on the
+  /// `/api/auth/*` users-table routes (which means an async password hash died)
+  /// or with verify-pin's 410 `pin_expired`. Neither is reachable from
+  /// `/api/headless/resend-pin`.
+  ///
+  /// Matching on prose is the weak point: if keycast rewords that sentence this
+  /// silently degrades to [ResendVerificationError.declined], which costs the
+  /// user the "start again" guidance but leaves resend retryable.
+  // TODO(dcadenas): switch to the server's `code` once keycast emits one on
+  // resend-pin, tracked in divinevideo/keycast#362; keep this match as the
+  // old-server fallback until then. `verifyPin` already keys on codes this way.
+  static ResendVerificationError _errorCodeFromMessage(String? message) {
+    final normalized = message?.toLowerCase() ?? '';
+    if (normalized.contains('registration') &&
+        normalized.contains('expired') &&
+        normalized.contains('sign up')) {
+      return ResendVerificationError.expired;
+    }
+    return ResendVerificationError.declined;
+  }
 
   final bool success;
   final String? message;
+
+  /// Reason code on failure (null on success).
+  final ResendVerificationError? errorCode;
 }
 
 /// Result from POST /api/auth/forgot-password

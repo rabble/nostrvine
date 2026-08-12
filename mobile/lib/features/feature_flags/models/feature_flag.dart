@@ -74,12 +74,6 @@ enum FeatureFlag {
         'rollout sign-off.',
     audience: FeatureFlagAudience.internal,
   ),
-  emailVerificationPinFallback(
-    'Email Verification PIN Fallback',
-    'Show the in-app email verification PIN and resend fallback. Off by '
-        'default until keycast verify-pin support is deployed.',
-    audience: FeatureFlagAudience.internal,
-  ),
   divineSupporters(
     'Divine Supporters',
     'Optional monthly supporter subscription via in-app purchase. '

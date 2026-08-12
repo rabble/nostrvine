@@ -16,8 +16,6 @@ import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
-import 'package:openvine/features/feature_flags/models/feature_flag.dart';
-import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
@@ -89,7 +87,6 @@ void main() {
     String? email,
     String? token,
     bool restored = false,
-    bool pinFallbackEnabled = true,
     EmailVerificationState initialState = const EmailVerificationState(),
     Stream<EmailVerificationState>? stateStream,
   }) {
@@ -108,9 +105,6 @@ void main() {
         pendingVerificationServiceProvider.overrideWithValue(
           mockPendingVerification,
         ),
-        isFeatureEnabledProvider(
-          FeatureFlag.emailVerificationPinFallback,
-        ).overrideWithValue(pinFallbackEnabled),
       ],
       child: RepositoryProvider<InviteApiClient>.value(
         value: mockInviteApiClient,
@@ -175,7 +169,6 @@ void main() {
     String? email,
     String? token,
     bool restored = false,
-    bool pinFallbackEnabled = true,
     EmailVerificationState initialState = const EmailVerificationState(),
     Stream<EmailVerificationState>? stateStream,
   }) async {
@@ -188,7 +181,6 @@ void main() {
         email: email,
         token: token,
         restored: restored,
-        pinFallbackEnabled: pinFallbackEnabled,
         initialState: initialState,
         stateStream: stateStream,
       ),
@@ -847,31 +839,6 @@ void main() {
         );
       });
 
-      testWidgets('hides the PIN fallback when the feature flag is disabled', (
-        tester,
-      ) async {
-        await pumpVerificationScreen(
-          tester,
-          deviceCode: 'test-device-code',
-          verifier: 'test-verifier',
-          email: 'user@example.com',
-          pinFallbackEnabled: false,
-          initialState: pollingState,
-        );
-        await tester.pump();
-
-        expect(find.text(l10n.authVerificationPinPrompt), findsNothing);
-        expect(find.byType(TextFormField), findsNothing);
-        expect(
-          find.widgetWithText(DivineButton, l10n.authVerificationPinSubmit),
-          findsNothing,
-        );
-        expect(
-          find.widgetWithText(DivineButton, l10n.authOpenEmailApp),
-          findsOneWidget,
-        );
-      });
-
       testWidgets('submitting a 6-digit PIN dispatches submitPin', (
         tester,
       ) async {
@@ -1022,6 +989,67 @@ void main() {
         verify(() => mockCubit.resendVerification()).called(1);
       });
 
+      testWidgets(
+        'an unavailable resend endpoint says so but stays retryable',
+        (tester) async {
+          when(() => mockCubit.resendVerification()).thenAnswer((_) async {});
+
+          await pumpVerificationScreen(
+            tester,
+            deviceCode: 'test-device-code',
+            verifier: 'test-verifier',
+            email: 'user@example.com',
+            initialState: const EmailVerificationState(
+              status: EmailVerificationStatus.polling,
+              pendingEmail: 'user@example.com',
+              resendStatus: ResendStatus.unavailable,
+            ),
+          );
+          await tester.pump();
+
+          expect(
+            find.text(l10n.authVerificationResendUnavailable),
+            findsOneWidget,
+          );
+          // Not the generic "try again" copy — retrying cannot help here.
+          expect(find.text(l10n.authVerificationResendFailed), findsNothing);
+
+          // The route is missing from this server build, not from the app.
+          // A session spanning the deploy that adds it must be able to retry.
+          await tester.tap(find.text(l10n.authVerificationResend));
+          await tester.pump();
+
+          verify(() => mockCubit.resendVerification()).called(1);
+        },
+      );
+
+      testWidgets('an expired registration says to start again', (
+        tester,
+      ) async {
+        when(() => mockCubit.resendVerification()).thenAnswer((_) async {});
+
+        await pumpVerificationScreen(
+          tester,
+          deviceCode: 'test-device-code',
+          verifier: 'test-verifier',
+          email: 'user@example.com',
+          initialState: const EmailVerificationState(
+            status: EmailVerificationStatus.polling,
+            pendingEmail: 'user@example.com',
+            resendStatus: ResendStatus.expired,
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(l10n.authVerificationResendExpired), findsOneWidget);
+        expect(find.text(l10n.authVerificationResendFailed), findsNothing);
+
+        await tester.tap(find.text(l10n.authVerificationResend));
+        await tester.pump();
+
+        verifyNever(() => mockCubit.resendVerification());
+      });
+
       testWidgets('pollingTimedOut keeps PIN entry but drops the spinner', (
         tester,
       ) async {
@@ -1040,6 +1068,48 @@ void main() {
         expect(find.text(l10n.authVerificationPinPrompt), findsOneWidget);
         expect(find.text(l10n.authWaitingForVerification), findsNothing);
       });
+
+      // Without this the spinner just vanishes at the 15-minute mark and the
+      // screen looks identical to one that is still working.
+      testWidgets('pollingTimedOut explains why the spinner disappeared', (
+        tester,
+      ) async {
+        await pumpVerificationScreen(
+          tester,
+          deviceCode: 'test-device-code',
+          verifier: 'test-verifier',
+          email: 'user@example.com',
+          initialState: const EmailVerificationState(
+            status: EmailVerificationStatus.pollingTimedOut,
+            pendingEmail: 'user@example.com',
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(l10n.authVerificationPollingStopped), findsOneWidget);
+      });
+
+      testWidgets(
+        'token-mode polling timeout still explains the stopped poll',
+        (tester) async {
+          await pumpVerificationScreen(
+            tester,
+            token: 'verification-token',
+            initialState: const EmailVerificationState(
+              status: EmailVerificationStatus.pollingTimedOut,
+              pendingEmail: 'user@example.com',
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 10));
+
+          expect(find.text(l10n.authWaitingForVerification), findsNothing);
+          expect(
+            find.text(l10n.authVerificationPollingStopped),
+            findsOneWidget,
+          );
+        },
+      );
     });
 
     group('cold-start restore escape hatch', () {
@@ -1270,6 +1340,308 @@ void main() {
           );
         },
       );
+    });
+  });
+
+  group('screen-reader announcements', () {
+    // Regression for a level-triggered listener: a single listener over the
+    // union of status, pinStatus and resendStatus re-announced every message
+    // that happened to be true whenever any one field moved. A resend after
+    // polling had already stopped therefore repeated "we stopped checking"
+    // on each resend transition and then interrupted itself.
+    testWidgets(
+      'announces polling-stopped once, not again on later resend transitions',
+      (tester) async {
+        final announced = <String>[];
+        tester.binding.defaultBinaryMessenger
+            .setMockDecodedMessageHandler<Object?>(
+              SystemChannels.accessibility,
+              (Object? message) async {
+                if (message is Map) {
+                  final data = message['data'];
+                  if (data is Map && data['message'] is String) {
+                    announced.add(data['message'] as String);
+                  }
+                }
+                return null;
+              },
+            );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger
+              .setMockDecodedMessageHandler<Object?>(
+                SystemChannels.accessibility,
+                null,
+              ),
+        );
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        await pumpVerificationScreen(
+          tester,
+          deviceCode: 'device-code',
+          verifier: 'verifier',
+          email: 'someone@example.test',
+          stateStream: Stream<EmailVerificationState>.fromIterable(const [
+            EmailVerificationState(status: EmailVerificationStatus.polling),
+            EmailVerificationState(
+              status: EmailVerificationStatus.pollingTimedOut,
+            ),
+            EmailVerificationState(
+              status: EmailVerificationStatus.pollingTimedOut,
+              resendStatus: ResendStatus.sending,
+            ),
+            EmailVerificationState(
+              status: EmailVerificationStatus.pollingTimedOut,
+              resendStatus: ResendStatus.unavailable,
+            ),
+          ]),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          announced.where((m) => m == l10n.authVerificationPollingStopped),
+          hasLength(1),
+          reason:
+              'polling-stopped must announce on entry only, not on every '
+              'later resend transition while the status is unchanged',
+        );
+        expect(
+          announced.where((m) => m == l10n.authVerificationResendUnavailable),
+          hasLength(1),
+        );
+      },
+    );
+
+    // `failure` and `expired` both render red error text after the same async
+    // resend, so both need the announcement `unavailable` already gets.
+    // Otherwise the mildest outcome is the only one spoken.
+    for (final (status, label) in <(ResendStatus, String)>[
+      (ResendStatus.failure, 'failure'),
+      (ResendStatus.expired, 'expired'),
+    ]) {
+      testWidgets('announces a resend $label to screen readers', (
+        tester,
+      ) async {
+        final announced = <String>[];
+        tester.binding.defaultBinaryMessenger
+            .setMockDecodedMessageHandler<Object?>(
+              SystemChannels.accessibility,
+              (Object? message) async {
+                if (message is Map) {
+                  final data = message['data'];
+                  if (data is Map && data['message'] is String) {
+                    announced.add(data['message'] as String);
+                  }
+                }
+                return null;
+              },
+            );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger
+              .setMockDecodedMessageHandler<Object?>(
+                SystemChannels.accessibility,
+                null,
+              ),
+        );
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final expected = status == ResendStatus.failure
+            ? l10n.authVerificationResendFailed
+            : l10n.authVerificationResendExpired;
+
+        await pumpVerificationScreen(
+          tester,
+          deviceCode: 'device-code',
+          verifier: 'verifier',
+          email: 'someone@example.test',
+          // Ends on pollingTimedOut so the polling spinner is gone and
+          // pumpAndSettle can settle.
+          stateStream: Stream<EmailVerificationState>.fromIterable([
+            const EmailVerificationState(
+              status: EmailVerificationStatus.pollingTimedOut,
+            ),
+            const EmailVerificationState(
+              status: EmailVerificationStatus.pollingTimedOut,
+              resendStatus: ResendStatus.sending,
+            ),
+            EmailVerificationState(
+              status: EmailVerificationStatus.pollingTimedOut,
+              resendStatus: status,
+            ),
+          ]),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          announced.where((m) => m == expected),
+          hasLength(1),
+          reason:
+              'a resend $label swaps in red error text after an async '
+              'transition that moves no focus, so it must be announced',
+        );
+      });
+    }
+
+    // Guards the edge trigger specifically: widening listenWhen to a union of
+    // fields would re-announce the failure every time any unrelated field
+    // moved while resendStatus stayed put. That regression already happened
+    // once on this branch.
+    testWidgets('does not repeat the failure announcement while the status '
+        'stays failure', (tester) async {
+      final announced = <String>[];
+      tester.binding.defaultBinaryMessenger
+          .setMockDecodedMessageHandler<Object?>(
+            SystemChannels.accessibility,
+            (Object? message) async {
+              if (message is Map) {
+                final data = message['data'];
+                if (data is Map && data['message'] is String) {
+                  announced.add(data['message'] as String);
+                }
+              }
+              return null;
+            },
+          );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger
+            .setMockDecodedMessageHandler<Object?>(
+              SystemChannels.accessibility,
+              null,
+            ),
+      );
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      await pumpVerificationScreen(
+        tester,
+        deviceCode: 'device-code',
+        verifier: 'verifier',
+        email: 'someone@example.test',
+        stateStream: Stream<EmailVerificationState>.fromIterable(const [
+          EmailVerificationState(
+            status: EmailVerificationStatus.pollingTimedOut,
+            resendStatus: ResendStatus.sending,
+          ),
+          EmailVerificationState(
+            status: EmailVerificationStatus.pollingTimedOut,
+            resendStatus: ResendStatus.failure,
+          ),
+          EmailVerificationState(
+            status: EmailVerificationStatus.pollingTimedOut,
+            resendStatus: ResendStatus.failure,
+            resendCooldownSeconds: 42,
+          ),
+          EmailVerificationState(
+            status: EmailVerificationStatus.pollingTimedOut,
+            resendStatus: ResendStatus.failure,
+            resendCooldownSeconds: 41,
+          ),
+        ]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        announced.where((m) => m == l10n.authVerificationResendFailed),
+        hasLength(1),
+        reason:
+            'the resend listeners must be edge-triggered on resendStatus '
+            'alone, not on any field of the state',
+      );
+    });
+  });
+
+  group('close affordance', () {
+    // The only exit from the polling screen, and the expired-resend copy tells
+    // the user to start again without an icon-only X being able to say which
+    // control does that.
+    testWidgets('names the close action for assistive tech', (tester) async {
+      final handle = tester.ensureSemantics();
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      await pumpVerificationScreen(
+        tester,
+        deviceCode: 'device-code',
+        verifier: 'verifier',
+        email: 'someone@example.test',
+        initialState: const EmailVerificationState(
+          status: EmailVerificationStatus.polling,
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        find.ancestor(
+          of: _divineIcon(DivineIconName.x),
+          matching: find.bySemanticsLabel(l10n.commonClose),
+        ),
+        findsOneWidget,
+        reason:
+            'the X is a bare GestureDetector; without a Semantics wrapper a '
+            'screen reader reaches an unlabeled tap target',
+      );
+      handle.dispose();
+    });
+
+    testWidgets('names it Start over once verification has failed', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      await pumpVerificationScreen(
+        tester,
+        deviceCode: 'device-code',
+        verifier: 'verifier',
+        email: 'someone@example.test',
+        initialState: const EmailVerificationState(
+          status: EmailVerificationStatus.failure,
+          errorCode: EmailVerificationError.pinFailed,
+        ),
+      );
+      await tester.pump();
+
+      // Scoped to the X: the failure screen also renders a labelled "Start
+      // over" button, so an unscoped finder passes with the icon unlabeled.
+      expect(
+        find.ancestor(
+          of: _divineIcon(DivineIconName.x),
+          matching: find.bySemanticsLabel(l10n.authStartOver),
+        ),
+        findsOneWidget,
+      );
+      handle.dispose();
+    });
+  });
+
+  group('token mode', () {
+    // Reachable via token + persisted record: the screen latches token mode,
+    // then `_initTokenModeWithPersistenceCheck` calls `startPolling`, arming
+    // the 15-minute timeout. The URL carries no deviceCode, so `isPollingMode`
+    // is false and the timed-out screen used to render nothing at all.
+    testWidgets('explains why polling stopped in token mode', (tester) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      when(() => mockPendingVerification.load()).thenAnswer(
+        (_) async => PendingVerification(
+          deviceCode: 'persisted-device-code',
+          verifier: 'persisted-verifier',
+          email: 'someone@example.test',
+          createdAt: DateTime.utc(2026),
+        ),
+      );
+
+      await pumpVerificationScreen(
+        tester,
+        token: 'verification-token',
+        stateStream: Stream<EmailVerificationState>.fromIterable(const [
+          EmailVerificationState(status: EmailVerificationStatus.polling),
+          EmailVerificationState(
+            status: EmailVerificationStatus.pollingTimedOut,
+          ),
+        ]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.authVerificationPollingStopped), findsOneWidget);
     });
   });
 }

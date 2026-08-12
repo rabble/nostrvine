@@ -292,14 +292,11 @@ void main() {
         final oauth = KeycastOAuth(config: config, httpClient: mockClient);
 
         final escaped = <Object>[];
-        await runZonedGuarded(
-          () async {
-            await oauth.logout();
-            // Let the fire-and-forget POST reject.
-            await Future<void>.delayed(Duration.zero);
-          },
-          (error, _) => escaped.add(error),
-        );
+        await runZonedGuarded(() async {
+          await oauth.logout();
+          // Let the fire-and-forget POST reject.
+          await Future<void>.delayed(Duration.zero);
+        }, (error, _) => escaped.add(error));
 
         expect(
           escaped,
@@ -1217,6 +1214,86 @@ void main() {
         final result = await oauth.resendHeadlessVerification('device123');
 
         expect(result.success, isFalse);
+        expect(result.errorCode, ResendVerificationError.network);
+      });
+
+      test('reports a 404 as unavailable, not a decline', () async {
+        final mockClient = MockClient((request) async {
+          return http.Response('Not Found', 404);
+        });
+
+        final oauth = KeycastOAuth(config: config, httpClient: mockClient);
+        final result = await oauth.resendHeadlessVerification('device123');
+
+        expect(result.success, isFalse);
+        expect(result.errorCode, ResendVerificationError.unavailable);
+      });
+
+      // Status, both body keys and the message string are copied verbatim from
+      // keycast `headless_resend_pin`, the `expires_at <= Utc::now()` branch in
+      // `api/src/api/http/headless.rs`. That route answers an expired
+      // registration with 200 and `success: false`, not with the 410 the
+      // `/api/auth/*` routes use for their unrelated RegistrationExpired.
+      test('reports an expired registration response as expired', () async {
+        final mockClient = MockClient((request) async {
+          return http.Response(
+            jsonEncode({
+              'success': false,
+              'message': 'This registration has expired. Please sign up again.',
+            }),
+            200,
+          );
+        });
+
+        final oauth = KeycastOAuth(config: config, httpClient: mockClient);
+        final result = await oauth.resendHeadlessVerification('device123');
+
+        expect(result.success, isFalse);
+        expect(
+          result.message,
+          'This registration has expired. Please sign up again.',
+        );
+        expect(result.errorCode, ResendVerificationError.expired);
+      });
+
+      test('reports an unrecognised success:false body as declined', () async {
+        final mockClient = MockClient((request) async {
+          return http.Response(
+            jsonEncode({
+              'success': false,
+              'message': 'Please try again later.',
+            }),
+            200,
+          );
+        });
+
+        final oauth = KeycastOAuth(config: config, httpClient: mockClient);
+        final result = await oauth.resendHeadlessVerification('device123');
+
+        expect(result.success, isFalse);
+        expect(result.errorCode, ResendVerificationError.declined);
+      });
+
+      test('reports a 4xx other than 404 as declined', () async {
+        final mockClient = MockClient((request) async {
+          return http.Response(jsonEncode({'error': 'too_many'}), 429);
+        });
+
+        final oauth = KeycastOAuth(config: config, httpClient: mockClient);
+        final result = await oauth.resendHeadlessVerification('device123');
+
+        expect(result.errorCode, ResendVerificationError.declined);
+      });
+
+      test('reports a 5xx as a server failure', () async {
+        final mockClient = MockClient((request) async {
+          return http.Response('boom', 503);
+        });
+
+        final oauth = KeycastOAuth(config: config, httpClient: mockClient);
+        final result = await oauth.resendHeadlessVerification('device123');
+
+        expect(result.errorCode, ResendVerificationError.server);
       });
     });
 
@@ -2123,6 +2200,41 @@ void main() {
         expect(result.success, isFalse);
         expect(result.message, contains('TimeoutException'));
       });
+
+      // Both resend methods rely on the generic catch to turn a hang into a
+      // network failure; neither had a timeout test, so that path was
+      // unverified in either direction.
+      test(
+        'resendVerification reports network failure on hung request',
+        () async {
+          final oauth = KeycastOAuth(
+            config: config,
+            httpClient: hangingClient(),
+            requestTimeout: shortTimeout,
+          );
+
+          final result = await oauth.resendVerification('test@example.com');
+
+          expect(result.success, isFalse);
+          expect(result.errorCode, ResendVerificationError.network);
+        },
+      );
+
+      test(
+        'resendHeadlessVerification reports network failure on hung request',
+        () async {
+          final oauth = KeycastOAuth(
+            config: config,
+            httpClient: hangingClient(),
+            requestTimeout: shortTimeout,
+          );
+
+          final result = await oauth.resendHeadlessVerification('device-code');
+
+          expect(result.success, isFalse);
+          expect(result.errorCode, ResendVerificationError.network);
+        },
+      );
     });
 
     group('close', () {

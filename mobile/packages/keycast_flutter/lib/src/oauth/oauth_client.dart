@@ -919,9 +919,11 @@ class KeycastOAuth {
           return ResendVerificationResult(success: true);
         }
       }
-      return ResendVerificationResult.failure();
+      return ResendVerificationResult.failure(
+        _resendErrorFor(response.statusCode),
+      );
     } catch (_) {
-      return ResendVerificationResult.failure();
+      return ResendVerificationResult.failure(ResendVerificationError.network);
     }
   }
 
@@ -930,6 +932,10 @@ class KeycastOAuth {
   /// Posts to `/api/headless/resend-pin` with the active `device_code`, which
   /// lets keycast re-arm the pending `oauth_codes` row used by headless
   /// registration. Use [resendVerification] for users-table email-token flows.
+  ///
+  /// Never throws. A 404 (route absent on this server build) is reported as
+  /// [ResendVerificationError.unavailable] so the UI can steer the user to the
+  /// PIN instead of offering a retry that can never succeed.
   Future<ResendVerificationResult> resendHeadlessVerification(
     String deviceCode,
   ) async {
@@ -951,10 +957,18 @@ class KeycastOAuth {
           return ResendVerificationResult(success: true);
         }
       }
-      return ResendVerificationResult.failure();
+      return ResendVerificationResult.failure(
+        _resendErrorFor(response.statusCode),
+      );
     } catch (_) {
-      return ResendVerificationResult.failure();
+      return ResendVerificationResult.failure(ResendVerificationError.network);
     }
+  }
+
+  static ResendVerificationError _resendErrorFor(int statusCode) {
+    if (statusCode == 404) return ResendVerificationError.unavailable;
+    if (statusCode >= 500) return ResendVerificationError.server;
+    return ResendVerificationError.declined;
   }
 
   /// The server's own `message` (falling back to `error`) from a JSON error
