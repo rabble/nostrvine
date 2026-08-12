@@ -1244,9 +1244,10 @@ Future<void> _startOpenVineApp() async {
     ),
   );
 
-  // Both the automatic repair and the manual escape hatch below mean the same
-  // operation, so they share one definition and cannot drift apart. They differ
-  // only in whether the cipher key goes with the database.
+  // Resets preserve a backup by default because encrypted backups stay readable
+  // under the retained cipher key. The db-unreadable diagnosis is different:
+  // it proves the current file is plaintext-shaped corruption, so preserving it
+  // would leave plaintext at rest after the reset.
   Future<void> resetLocalDatabaseCache({required bool deleteCipherKey}) =>
       resetEncryptedDatabaseCache(
         secureStorage: dbCipherSecureStorage,
@@ -1300,12 +1301,19 @@ Future<void> _startOpenVineApp() async {
     // and the account with it.
     //
     // The cipher key stays: the diagnoses that reach this button cannot prove
-    // it is stale, and it is the only thing that can still read the backup this
-    // reset leaves behind. Keeping it also means the reset never touches the
-    // keystore, which may itself be why the user is on that screen.
-    resetLocalDatabase: () async {
+    // it is stale, and encrypted reset backups remain readable under it. For
+    // db-unreadable, the damaged file is plaintext-shaped, so the reset deletes
+    // it instead of preserving a plaintext backup.
+    resetLocalDatabase: (diagnosis) async {
       try {
-        await resetLocalDatabaseCache(deleteCipherKey: false);
+        if (diagnosis == DatabaseBootstrapDiagnosis.databaseUnreadable) {
+          await resetUnreadablePlaintextDatabaseCache(
+            secureStorage: dbCipherSecureStorage,
+            onDatabaseReset: () => DmSyncState(sharedPreferences).clearAll(),
+          );
+        } else {
+          await resetLocalDatabaseCache(deleteCipherKey: false);
+        }
       } catch (error, stack) {
         // The screen keeps the user on it and says the reset failed; without
         // this the only report of a failed recovery would be that sentence.

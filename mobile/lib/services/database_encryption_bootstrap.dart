@@ -367,10 +367,9 @@ class DatabaseCipherStorageUnavailableException implements Exception {
 /// is neither usable plaintext nor recognizably encrypted.
 ///
 /// Not a key problem — an encrypted file reports `SQLITE_NOTADB` and takes the
-/// salvage/recreate path instead. The stored cipher key is nonetheless kept:
-/// the damaged file itself is plaintext-shaped and needs no key to read, but any
-/// `.pre_key_loss_wipe_backup` / `.pre_corruption_recovery_backup` beside it is
-/// encrypted under that key, and rotating it would strand them.
+/// salvage/recreate path instead. The stored cipher key is nonetheless kept
+/// because nothing here proves it stale; the reset path decides what to do with
+/// the damaged plaintext-shaped file.
 ///
 /// Fails startup on purpose. The alternative the bootstrap used to take was to
 /// hand back a `null` key and let the app open the damaged file anyway, which
@@ -448,11 +447,9 @@ bool shouldRepairLocalDatabaseCacheAfterBootstrapError(Object error) {
   // Load-bearing: this message names SQLITE_CORRUPT, so it would otherwise
   // match the allowlist below and auto-repair. The database really is unusable,
   // but the repair rotates the cipher key, and nothing here proves the stored
-  // one is stale — rotating it would strand any encrypted backup already beside
-  // the damaged file, which holds the user's local-only drafts and clips. The
-  // failure screen offers the same reset with the key retained, so the user
-  // chooses the data loss instead of a silent wipe on a launch that looked
-  // normal.
+  // one is stale. The failure screen offers a diagnosis-aware reset instead, so
+  // the user chooses the data loss instead of a silent wipe on a launch that
+  // looked normal.
   if (error is DatabaseUnreadableError) return false;
 
   final message = error.toString();
@@ -484,6 +481,23 @@ Future<void> resetEncryptedDatabaseCache({
   }
   await _runPostDatabaseReset(onDatabaseReset);
 }
+
+/// Deletes an unreadable plaintext-shaped database without preserving it.
+///
+/// [DatabaseUnreadableError] proves the current file is not an encrypted DB:
+/// it has a legible SQLite header and structural corruption. Backing it up under
+/// the key-loss suffix would leave plaintext at rest after the reset, so this
+/// path keeps the cipher key but hard-deletes the database and sidecars.
+Future<void> resetUnreadablePlaintextDatabaseCache({
+  required FlutterSecureStorage secureStorage,
+  @visibleForTesting Future<void> Function()? deleteDatabase,
+  Future<void> Function()? onDatabaseReset,
+}) => resetEncryptedDatabaseCache(
+  secureStorage: secureStorage,
+  deleteCipherKey: false,
+  deleteDatabase: deleteDatabase ?? deleteSharedDatabase,
+  onDatabaseReset: onDatabaseReset,
+);
 
 Future<void> _runPostDatabaseReset(
   Future<void> Function()? onDatabaseReset,

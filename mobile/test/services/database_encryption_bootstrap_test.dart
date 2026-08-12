@@ -724,6 +724,25 @@ void main() {
         verifyNever(() => storage.delete(key: any(named: 'key')));
       },
     );
+
+    test(
+      'unreadable plaintext reset deletes DB without deleting cipher key',
+      () async {
+        var deleted = false;
+        var reset = false;
+
+        await resetUnreadablePlaintextDatabaseCache(
+          secureStorage: storage,
+          deleteDatabase: () async => deleted = true,
+          onDatabaseReset: () async => reset = true,
+        );
+
+        expect(deleted, isTrue);
+        expect(reset, isTrue);
+        expect(store[dbCipherKeyStorageKey], isNotNull);
+        verifyNever(() => storage.delete(key: any(named: 'key')));
+      },
+    );
   });
 
   group('resolveStartupDatabaseCipherKey', () {

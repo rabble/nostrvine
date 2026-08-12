@@ -1468,6 +1468,44 @@ void main() {
       },
     );
   });
+
+  group('deleteDatabaseAndSidecars', () {
+    late Directory tempRoot;
+    late String dbPath;
+
+    setUp(() {
+      tempRoot = Directory.systemTemp.createTempSync(
+        'db_client_delete_database_sidecars_test_',
+      );
+      dbPath = p.join(tempRoot.path, 'divine_db.db');
+      File(dbPath).writeAsBytesSync(const [1]);
+      File('$dbPath-wal').writeAsBytesSync(const [2]);
+      File('$dbPath-shm').writeAsBytesSync(const [3]);
+      File('$dbPath.pre_key_loss_wipe_backup').writeAsBytesSync(const [4]);
+    });
+
+    tearDown(() {
+      if (tempRoot.existsSync()) {
+        tempRoot.deleteSync(recursive: true);
+      }
+    });
+
+    test(
+      'deletes the current database and sidecars without making a backup',
+      () {
+        deleteDatabaseAndSidecars(dbPath);
+
+        expect(File(dbPath).existsSync(), isFalse);
+        expect(File('$dbPath-wal').existsSync(), isFalse);
+        expect(File('$dbPath-shm').existsSync(), isFalse);
+        expect(
+          File('$dbPath.pre_key_loss_wipe_backup').existsSync(),
+          isTrue,
+          reason: 'existing encrypted backups are not part of the current DB',
+        );
+      },
+    );
+  });
 }
 
 /// Creates an encrypted database with a few local-only rows (drafts, clips) in

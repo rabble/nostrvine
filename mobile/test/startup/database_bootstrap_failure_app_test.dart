@@ -170,81 +170,75 @@ void main() {
       },
     );
 
-    test(
-      'does not repair secure-storage failures',
-      () async {
-        var removedSplash = false;
-        Widget? renderedApp;
-        var attempts = 0;
-        var repaired = false;
-        final error = DatabaseCipherStorageUnavailableException(
-          _lockedKeychainFailure(),
-        );
+    test('does not repair secure-storage failures', () async {
+      var removedSplash = false;
+      Widget? renderedApp;
+      var attempts = 0;
+      var repaired = false;
+      final error = DatabaseCipherStorageUnavailableException(
+        _lockedKeychainFailure(),
+      );
 
-        final result = await resolveDatabaseBootstrapForAppStart(
-          resolveCipherKey: () async {
-            attempts += 1;
-            throw error;
-          },
-          repairLocalDatabaseCache: (error, stack) async {
-            repaired = true;
-          },
-          shouldRepairLocalDatabaseCache:
-              shouldRepairLocalDatabaseCacheAfterBootstrapError,
-          removeNativeSplash: () => removedSplash = true,
-          runApp: (app) => renderedApp = app,
-        );
+      final result = await resolveDatabaseBootstrapForAppStart(
+        resolveCipherKey: () async {
+          attempts += 1;
+          throw error;
+        },
+        repairLocalDatabaseCache: (error, stack) async {
+          repaired = true;
+        },
+        shouldRepairLocalDatabaseCache:
+            shouldRepairLocalDatabaseCacheAfterBootstrapError,
+        removeNativeSplash: () => removedSplash = true,
+        runApp: (app) => renderedApp = app,
+      );
 
-        expect(result.didRenderFailureApp, isTrue);
-        expect(attempts, equals(1));
-        expect(repaired, isFalse);
-        expect(removedSplash, isTrue);
-        expect(renderedApp, isA<DatabaseBootstrapFailureApp>());
-      },
-    );
+      expect(result.didRenderFailureApp, isTrue);
+      expect(attempts, equals(1));
+      expect(repaired, isFalse);
+      expect(removedSplash, isTrue);
+      expect(renderedApp, isA<DatabaseBootstrapFailureApp>());
+    });
 
-    test(
-      'repairs allowlisted sqlite corruption failures',
-      () async {
-        var removedSplash = false;
-        Widget? renderedApp;
-        var attempts = 0;
-        var repaired = false;
+    test('repairs allowlisted sqlite corruption failures', () async {
+      var removedSplash = false;
+      Widget? renderedApp;
+      var attempts = 0;
+      var repaired = false;
 
-        final result = await resolveDatabaseBootstrapForAppStart(
-          resolveCipherKey: () async {
-            attempts += 1;
-            if (attempts == 1) {
-              throw SqliteException(
-                extendedResultCode: 26,
-                message: 'file is not a database',
-              );
-            }
-            return 'c' * 64;
-          },
-          repairLocalDatabaseCache: (error, stack) async {
-            repaired = true;
-          },
-          shouldRepairLocalDatabaseCache:
-              shouldRepairLocalDatabaseCacheAfterBootstrapError,
-          removeNativeSplash: () => removedSplash = true,
-          runApp: (app) => renderedApp = app,
-        );
+      final result = await resolveDatabaseBootstrapForAppStart(
+        resolveCipherKey: () async {
+          attempts += 1;
+          if (attempts == 1) {
+            throw SqliteException(
+              extendedResultCode: 26,
+              message: 'file is not a database',
+            );
+          }
+          return 'c' * 64;
+        },
+        repairLocalDatabaseCache: (error, stack) async {
+          repaired = true;
+        },
+        shouldRepairLocalDatabaseCache:
+            shouldRepairLocalDatabaseCacheAfterBootstrapError,
+        removeNativeSplash: () => removedSplash = true,
+        runApp: (app) => renderedApp = app,
+      );
 
-        expect(result.didRenderFailureApp, isFalse);
-        expect(result.cipherKey, equals('c' * 64));
-        expect(attempts, equals(2));
-        expect(repaired, isTrue);
-        expect(removedSplash, isFalse);
-        expect(renderedApp, isNull);
-      },
-    );
+      expect(result.didRenderFailureApp, isFalse);
+      expect(result.cipherKey, equals('c' * 64));
+      expect(attempts, equals(2));
+      expect(repaired, isTrue);
+      expect(removedSplash, isFalse);
+      expect(renderedApp, isNull);
+    });
   });
 
   group('resolveDatabaseBootstrapForAppStart reset wiring', () {
     test('hands the reset hook to the failure app', () async {
       Widget? renderedApp;
-      Future<void> reset() async {}
+      Future<void> reset(DatabaseBootstrapDiagnosis diagnosis) async {}
 
       await resolveDatabaseBootstrapForAppStart(
         resolveCipherKey: () async => throw StateError('bootstrap failed'),
@@ -276,10 +270,7 @@ void main() {
         ),
       );
 
-      expect(
-        find.text("couldn't unlock your local database"),
-        findsOneWidget,
-      );
+      expect(find.text("couldn't unlock your local database"), findsOneWidget);
       expect(find.textContaining('Restart Divine'), findsOneWidget);
       // The rendered code is what a support report is triaged from, so pin the
       // value rather than just the label.
@@ -291,9 +282,7 @@ void main() {
 
     test('classifies cipher availability failures for release diagnostics', () {
       expect(
-        databaseBootstrapDiagnosticCode(
-          DatabaseCipherUnavailableError(),
-        ),
+        databaseBootstrapDiagnosticCode(DatabaseCipherUnavailableError()),
         equals('db-cipher-unavailable'),
       );
     });
@@ -355,7 +344,7 @@ void main() {
             _lockedKeychainFailure(),
           ),
           stack: StackTrace.current,
-          onResetLocalDatabase: () async {},
+          onResetLocalDatabase: (_) async {},
         ),
       );
 
@@ -372,7 +361,7 @@ void main() {
         DatabaseBootstrapFailureApp(
           error: StateError('something else entirely'),
           stack: StackTrace.current,
-          onResetLocalDatabase: () async {},
+          onResetLocalDatabase: (_) async {},
         ),
       );
 
@@ -387,7 +376,7 @@ void main() {
     });
 
     testWidgets('resets and closes once the user confirms', (tester) async {
-      var resets = 0;
+      DatabaseBootstrapDiagnosis? resetDiagnosis;
       var closed = false;
 
       await tester.pumpWidget(
@@ -395,7 +384,7 @@ void main() {
           error: StateError('something else entirely'),
           stack: StackTrace.current,
           onCloseApp: () => closed = true,
-          onResetLocalDatabase: () async => resets++,
+          onResetLocalDatabase: (diagnosis) async => resetDiagnosis = diagnosis,
         ),
       );
 
@@ -404,13 +393,34 @@ void main() {
 
       expect(find.text('reset your local database?'), findsOneWidget);
       expect(find.textContaining('Your account stays'), findsOneWidget);
-      expect(resets, isZero, reason: 'confirmation must gate the wipe');
+      expect(resetDiagnosis, isNull, reason: 'confirmation must gate the wipe');
 
       await tester.tap(find.text('reset and close'));
       await tester.pump();
 
-      expect(resets, equals(1));
+      expect(resetDiagnosis, DatabaseBootstrapDiagnosis.bootstrapFailed);
       expect(closed, isTrue);
+    });
+
+    testWidgets('passes the database-unreadable diagnosis to reset', (
+      tester,
+    ) async {
+      DatabaseBootstrapDiagnosis? resetDiagnosis;
+
+      await tester.pumpWidget(
+        DatabaseBootstrapFailureApp(
+          error: const DatabaseUnreadableError(),
+          stack: StackTrace.current,
+          onResetLocalDatabase: (diagnosis) async => resetDiagnosis = diagnosis,
+        ),
+      );
+
+      await tester.tap(find.text('reset local database'));
+      await tester.pump();
+      await tester.tap(find.text('reset and close'));
+      await tester.pump();
+
+      expect(resetDiagnosis, DatabaseBootstrapDiagnosis.databaseUnreadable);
     });
 
     testWidgets('returns to the failure screen on cancel', (tester) async {
@@ -420,7 +430,7 @@ void main() {
         DatabaseBootstrapFailureApp(
           error: StateError('something else entirely'),
           stack: StackTrace.current,
-          onResetLocalDatabase: () async => resets++,
+          onResetLocalDatabase: (_) async => resets++,
         ),
       );
 
@@ -443,7 +453,7 @@ void main() {
           error: StateError('something else entirely'),
           stack: StackTrace.current,
           onCloseApp: () => closed = true,
-          onResetLocalDatabase: () async =>
+          onResetLocalDatabase: (_) async =>
               throw StateError('keystore delete failed'),
         ),
       );
@@ -473,7 +483,7 @@ void main() {
           error: StateError('something else entirely'),
           stack: StackTrace.current,
           onCloseApp: () => closes++,
-          onResetLocalDatabase: () async {},
+          onResetLocalDatabase: (_) async {},
         ),
       );
 
@@ -501,7 +511,7 @@ void main() {
         DatabaseBootstrapFailureApp(
           error: StateError('something else entirely'),
           stack: StackTrace.current,
-          onResetLocalDatabase: () => Completer<void>().future,
+          onResetLocalDatabase: (_) => Completer<void>().future,
         ),
       );
 
@@ -528,7 +538,7 @@ void main() {
         DatabaseBootstrapFailureApp(
           error: StateError('something else entirely'),
           stack: StackTrace.current,
-          onResetLocalDatabase: () async => throw StateError('nope'),
+          onResetLocalDatabase: (_) async => throw StateError('nope'),
         ),
       );
 

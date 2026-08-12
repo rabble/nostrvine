@@ -843,6 +843,16 @@ Future<void> backUpAndRemoveSharedDatabase() async {
   _moveSidecars(fromPath: dbPath, toPath: backupPath);
 }
 
+/// Deletes the shared database and sidecars without preserving a backup.
+///
+/// Use only when the caller has already proved the file is unusable plaintext.
+/// Encrypted database resets should keep using [backUpAndRemoveSharedDatabase]
+/// so the preserved backup remains readable under the retained cipher key.
+Future<void> deleteSharedDatabase() async {
+  final dbPath = await getSharedDatabasePath();
+  deleteDatabaseAndSidecars(dbPath);
+}
+
 /// Removes plaintext backups left by a successful plaintext→encrypted
 /// migration once the encrypted database has opened with its key.
 ///
@@ -1095,11 +1105,16 @@ void _moveSidecars({
   }
 }
 
-void _deleteDatabaseAndSidecars(String dbPath) {
+@visibleForTesting
+void deleteDatabaseAndSidecars(String dbPath) {
   for (final suffix in const ['', '-wal', '-shm']) {
     final file = File('$dbPath$suffix');
     if (file.existsSync()) file.deleteSync();
   }
+}
+
+void _deleteDatabaseAndSidecars(String dbPath) {
+  deleteDatabaseAndSidecars(dbPath);
 }
 
 String _nextDatabaseBackupPath(String dbPath, {required String suffix}) {
