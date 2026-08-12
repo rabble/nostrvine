@@ -354,8 +354,8 @@ void main() {
             .getSingle();
         expect(
           version.read<int>('user_version'),
-          2,
-          reason: 'onUpgrade must record schema version 2',
+          database.schemaVersion,
+          reason: 'onUpgrade must record the current schema version',
         );
 
         for (final table in _v1NormalizationTables) {

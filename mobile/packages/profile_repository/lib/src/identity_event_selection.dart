@@ -3,18 +3,37 @@
 
 import 'package:nostr_sdk/nostr_sdk.dart';
 
+/// Orders two identity events the way NIP-01 orders replaceable events:
+/// the later `created_at` wins, and a same-second tie breaks by lowest event
+/// id so every relay agrees on the same winner.
+///
+/// Returns a positive number when `(createdAt, id)` supersedes
+/// `(otherCreatedAt, otherId)`, zero when they are the same event, and a
+/// negative number when it is the superseded one.
+int compareIdentityEvents({
+  required int createdAt,
+  required String id,
+  required int otherCreatedAt,
+  required String otherId,
+}) {
+  if (createdAt != otherCreatedAt) return createdAt > otherCreatedAt ? 1 : -1;
+  return otherId.compareTo(id);
+}
+
 /// Picks the newest event in [events], or null when empty.
 ///
 /// Relays do not guarantee newest-first ordering, so recency is decided here
-/// rather than by return order. On a same-second tie NIP-01 breaks by lowest
-/// event id, so the same event wins regardless of which relay answered first.
+/// rather than by return order.
 Event? newestIdentityEvent(List<Event> events) {
   if (events.isEmpty) return null;
   return events.reduce((a, b) {
-    if (a.createdAt != b.createdAt) {
-      return b.createdAt > a.createdAt ? b : a;
-    }
-    return b.id.compareTo(a.id) < 0 ? b : a;
+    final order = compareIdentityEvents(
+      createdAt: b.createdAt,
+      id: b.id,
+      otherCreatedAt: a.createdAt,
+      otherId: a.id,
+    );
+    return order > 0 ? b : a;
   });
 }
 
