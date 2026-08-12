@@ -1266,6 +1266,65 @@ void main() {
       );
     });
 
+    test('reports a legible header over a corrupt schema page as unreadable, '
+        'not a deferrable failure', () async {
+      // The shape that starts the app with a null cipher key (#6897): the
+      // 100-byte header survives, so the keyless open succeeds and only the
+      // sqlite_master read trips — on SQLITE_CORRUPT, not the SQLITE_NOTADB
+      // that would classify the file as encrypted. Whole-file garbage does NOT
+      // reproduce it; that reads as encrypted and self-heals.
+      _createSqliteDatabase(dbPath, draftCount: 3);
+      _corruptSchemaPageKeepingHeader(dbPath);
+
+      expect(
+        await migratePlaintextToEncrypted(
+          rawKeyHex: validKey,
+          databasePath: dbPath,
+        ),
+        equals(CipherMigrationOutcome.unreadable),
+        reason:
+            'CipherMigrationOutcome.failed would defer to a next launch that '
+            'classifies the same bytes the same way, forever',
+      );
+      expect(
+        File(dbPath).existsSync(),
+        isTrue,
+        reason: 'the damaged file is left for the caller to back up',
+      );
+    });
+
+    test('reports corruption past the schema page as unreadable, not a '
+        'deferrable failure', () async {
+      // The other door onto the same #6897 state, and the wider one: the
+      // classification reads only sqlite_master, so damage anywhere past page 1
+      // looks like healthy plaintext and first surfaces in the VACUUM INTO copy
+      // below. Deferring there retried the identical bytes on every launch just
+      // as forever as the schema-page case did.
+      _createMultiPageDatabase(dbPath);
+      _corruptPagesAfterSchema(dbPath);
+
+      expect(
+        await migratePlaintextToEncrypted(
+          rawKeyHex: validKey,
+          databasePath: dbPath,
+        ),
+        equals(CipherMigrationOutcome.unreadable),
+        reason:
+            'the schema page is intact, so only the whole-database copy '
+            'can see this damage',
+      );
+      expect(
+        File(dbPath).existsSync(),
+        isTrue,
+        reason: 'the damaged file is left for the caller to back up',
+      );
+      expect(
+        File('$dbPath.sqlcipher_migrating').existsSync(),
+        isFalse,
+        reason: 'the half-written side file is cleaned up',
+      );
+    });
+
     test(
       'migrates a populated plaintext DB to encrypted raw-key storage',
       () async {
@@ -1528,6 +1587,23 @@ void _corruptPagesAfterSchema(String path) {
   final bytes = file.readAsBytesSync();
   // page_size is 512, so bytes [0, 1024) cover pages 1-2 (header + schema).
   for (var i = 1024; i < bytes.length; i += 1) {
+    bytes[i] = 0xFF;
+  }
+  file.writeAsBytesSync(bytes);
+}
+
+/// Overwrites page 1 from the end of the 100-byte file header onwards, leaving
+/// the `SQLite format 3` magic (and the page size it declares) intact.
+///
+/// The magic is what SQLite checks before reporting `SQLITE_NOTADB`, so keeping
+/// it forces the damage to surface as `SQLITE_CORRUPT` instead — the case that
+/// the keyless classification cannot label. Byte 100 is the b-tree page type;
+/// `0xFF` is not one of the four legal values.
+void _corruptSchemaPageKeepingHeader(String path) {
+  final file = File(path);
+  final bytes = file.readAsBytesSync();
+  final pageSize = (bytes[16] << 8) | bytes[17];
+  for (var i = 100; i < pageSize; i += 1) {
     bytes[i] = 0xFF;
   }
   file.writeAsBytesSync(bytes);

@@ -481,9 +481,22 @@ enum CipherMigrationOutcome {
   /// A populated plaintext database was rekeyed into an encrypted file.
   migrated,
 
-  /// Migration was attempted but could not complete; the plaintext source is
-  /// left intact and the caller should retry on the next launch.
+  /// Migration was attempted on a **readable plaintext** database but could not
+  /// complete; the source is left intact and the caller should retry on the
+  /// next launch. Opening it with a null key in the meantime is safe — the file
+  /// really is plaintext.
   failed,
+
+  /// The database file exists but could not be classified or copied: a legible
+  /// SQLite header over structurally corrupt pages. Unlike [failed] this is
+  /// deterministic for a given file, so retrying next launch never recovers,
+  /// and opening it with a null key yields SQLITE_CORRUPT on every statement
+  /// for the whole session. The caller must fail closed. See #6897.
+  ///
+  /// Reached from either place the damage can surface: the keyless
+  /// classification, which sees only page 1, and the `VACUUM INTO` copy that
+  /// walks every remaining b-tree.
+  unreadable,
 }
 
 /// One-time in-place rekey of the existing **plaintext** `divine_db.db` into a
@@ -498,6 +511,11 @@ enum CipherMigrationOutcome {
 /// Wipe-and-resync is intentionally rejected: `divine_db.db` is shared with
 /// drafts, pending uploads/actions, reactions, reposts, etc., which cannot be
 /// re-fetched. See `mobile/docs/sqlcipher_at_rest_plan.md`.
+///
+/// Returns [CipherMigrationOutcome.unreadable] when the existing file is
+/// structurally corrupt — whether that surfaces while classifying page 1 or
+/// while copying the rest of it — which no retry can fix, so the caller must
+/// fail closed rather than open it unkeyed.
 ///
 /// Requires SQLite3MultipleCiphers; returns [CipherMigrationOutcome.failed]
 /// when it is not linked, leaving the source intact.
@@ -538,11 +556,13 @@ Future<CipherMigrationOutcome> migratePlaintextToEncrypted({
   switch (_classifyDatabase(dbPath)) {
     case _DbClassification.encrypted:
       return CipherMigrationOutcome.alreadyEncrypted;
+    case _DbClassification.corrupt:
+      return CipherMigrationOutcome.unreadable;
     case _DbClassification.indeterminate:
-      // A transient or unreadable error (busy, locked, I/O, corrupt) — do NOT
-      // assume "encrypted", which would trigger the key-loss recovery path
-      // on a readable plaintext DB. Leave everything intact and retry next
-      // launch.
+      // A transient error (busy, locked, I/O) — do NOT assume "encrypted",
+      // which would trigger the key-loss recovery path on a readable plaintext
+      // DB. Leave everything intact and retry next launch, when the contention
+      // or the I/O fault is likely gone.
       return CipherMigrationOutcome.failed;
     case _DbClassification.emptyPlaintext:
       _deleteDatabaseAndSidecars(dbPath);
@@ -591,20 +611,33 @@ enum _DbClassification {
   encrypted,
   emptyPlaintext,
   populatedPlaintext,
+
+  /// Structurally damaged: the keyless open read a legible SQLite header and
+  /// then failed with `SQLITE_CORRUPT` rather than `SQLITE_NOTADB`. An
+  /// encrypted file cannot land here — its page 1 starts with the cipher salt,
+  /// not `SQLite format 3`, so it always reports `SQLITE_NOTADB` — which makes
+  /// this a plaintext-shaped file that no key can rescue.
+  corrupt,
+
+  /// Something transient stopped the classification (busy, locked, I/O).
   indeterminate,
 }
 
 /// Classifies [dbPath] by opening it **without** a key. A plaintext database
-/// reads its schema fine. Only `SQLITE_NOTADB` is treated as a positive
-/// "encrypted" signal; any other error is [_DbClassification.indeterminate] so
-/// a transient failure on a readable plaintext DB never masquerades as
-/// encrypted (which would trigger the destructive key-loss path).
+/// reads its schema fine.
+///
+/// Only `SQLITE_NOTADB` is treated as a positive "encrypted" signal, so a
+/// transient failure on a readable plaintext DB never masquerades as encrypted
+/// (which would trigger the destructive key-loss path). `SQLITE_CORRUPT` is
+/// split out from the transient errors: it is a property of the file, not of
+/// the moment, so it repeats on every launch and needs the caller to fail
+/// closed rather than defer.
 _DbClassification _classifyDatabase(String dbPath) {
   Database db;
   try {
     db = sqlite3.open(dbPath, mode: OpenMode.readOnly);
   } on SqliteException catch (e) {
-    return _encryptedOrIndeterminate(e);
+    return _classifyKeylessFailure(e);
   }
 
   try {
@@ -617,16 +650,36 @@ _DbClassification _classifyDatabase(String dbPath) {
         ? _DbClassification.emptyPlaintext
         : _DbClassification.populatedPlaintext;
   } on SqliteException catch (e) {
-    return _encryptedOrIndeterminate(e);
+    return _classifyKeylessFailure(e);
   } finally {
     db.close();
   }
 }
 
-_DbClassification _encryptedOrIndeterminate(SqliteException e) =>
-    e.resultCode == _sqliteNotADb
-    ? _DbClassification.encrypted
-    : _DbClassification.indeterminate;
+_DbClassification _classifyKeylessFailure(SqliteException e) =>
+    switch (e.resultCode) {
+      _sqliteNotADb => _DbClassification.encrypted,
+      _sqliteCorrupt => _DbClassification.corrupt,
+      _ => _DbClassification.indeterminate,
+    };
+
+/// Maps a rekey failure to an outcome, on the same result-code split
+/// [_classifyKeylessFailure] applies one step earlier.
+///
+/// [_classifyDatabase] reads only `sqlite_master`, so it can only ever see
+/// damage on page 1; everything past it classifies as readable plaintext and
+/// first surfaces here, where `VACUUM INTO` copies the whole database and walks
+/// every b-tree. That is the larger share of a real database, and the same
+/// permanent condition: the bytes classify identically on every launch, so
+/// deferring retries them forever while the app runs unkeyed against a file
+/// that throws on the damaged pages. Fail closed for it too (#6897).
+///
+/// Everything else — busy, locked, I/O, a missing SQLite3MultipleCiphers — is
+/// genuinely transient and keeps deferring.
+CipherMigrationOutcome _rekeyFailureOutcome(SqliteException e) =>
+    e.resultCode == _sqliteCorrupt
+    ? CipherMigrationOutcome.unreadable
+    : CipherMigrationOutcome.failed;
 
 CipherMigrationOutcome _rekeyPlaintextInPlace({
   required String dbPath,
@@ -641,8 +694,8 @@ CipherMigrationOutcome _rekeyPlaintextInPlace({
     // The source must be opened UNKEYED. It remains untouched until a verified
     // encrypted side-file is ready to promote.
     source = sqlite3.open(dbPath);
-  } on SqliteException {
-    return CipherMigrationOutcome.failed;
+  } on SqliteException catch (e) {
+    return _rekeyFailureOutcome(e);
   }
 
   try {
@@ -652,9 +705,9 @@ CipherMigrationOutcome _rekeyPlaintextInPlace({
       return CipherMigrationOutcome.failed;
     }
     source.execute('VACUUM INTO ?;', [encryptedPath]);
-  } on SqliteException {
+  } on SqliteException catch (e) {
     _deleteDatabaseAndSidecars(encryptedPath);
-    return CipherMigrationOutcome.failed;
+    return _rekeyFailureOutcome(e);
   } finally {
     source.close();
   }

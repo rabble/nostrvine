@@ -60,10 +60,17 @@ database instead of silently writing plaintext.
 migration path is replaced with a safe side-file flow:
 
 1. Classify the existing `divine_db.db` by opening it unkeyed. Only
-   `SQLITE_NOTADB` is treated as already encrypted; transient read failures stay
-   indeterminate and retry later.
+   `SQLITE_NOTADB` is treated as already encrypted; transient read failures
+   (busy, locked, I/O) stay indeterminate and retry later. `SQLITE_CORRUPT` is
+   neither — a legible header over a damaged page classifies the same way on
+   every launch, so it fails startup closed rather than retrying forever (#6897).
 2. For populated plaintext DBs, copy the source to
-   `divine_db.db.sqlcipher_migrating` with `VACUUM INTO`.
+   `divine_db.db.sqlcipher_migrating` with `VACUUM INTO`. The classification in
+   step 1 reads only `sqlite_master`, so damage anywhere past page 1 reaches
+   here looking like healthy plaintext; this copy walks every b-tree and is the
+   first thing to see it. `SQLITE_CORRUPT` here takes the same fail-closed path
+   as step 1, and for the same reason — it is a property of the bytes, so the
+   retry never comes out differently.
 3. Open the side file, select `cipher='sqlcipher'` + `legacy=4`, then
    `PRAGMA rekey = "x'<key>'"`.
 4. Verify the encrypted copy opens with the raw key and that `user_version` plus
@@ -72,8 +79,11 @@ migration path is replaced with a safe side-file flow:
    promote the verified encrypted artifact into place.
 
 On any failure, the plaintext source is left intact and migration retries next
-launch. After a later successful keyed open, old pre-cipher plaintext backups are
-deleted so plaintext does not remain at rest.
+launch. That deferral opens the database unkeyed in the meantime, which is only
+safe because the source is readable plaintext — a structurally corrupt one takes
+the fail-closed path above instead, from whichever of the two steps first sees
+the damage. After a later successful keyed open, old pre-cipher plaintext backups
+are deleted so plaintext does not remain at rest.
 
 ## Key-loss recovery
 

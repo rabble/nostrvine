@@ -124,6 +124,10 @@ class DatabaseEncryptionBootstrap {
   ///   the cipher key cannot be read or written, most often a launch before
   ///   the device's first unlock. Raised by the Keychain backends only — see
   ///   the platform note on that class.
+  /// * [DatabaseUnreadableError] when the database file is structurally
+  ///   corrupt. Distinct from the deferral above: that one hands back a `null`
+  ///   key for a database that genuinely is readable plaintext, this one has no
+  ///   readable database to hand a key for.
   ///
   /// Must run before the first `AppDatabase` open.
   Future<String?> resolveCipherKey() async {
@@ -229,6 +233,14 @@ class DatabaseEncryptionBootstrap {
         // signal that forces the salvage once the retry finally classifies the
         // file as encrypted.
         return (null, false);
+      case CipherMigrationOutcome.unreadable:
+        // Deliberately NOT the deferral above: the file is structurally
+        // corrupt, so returning `null` would open an unusable database and
+        // break every statement for the whole session — the exact
+        // silent-null-key state #5301 forbids — and the outcome is a property
+        // of the bytes, so no later launch recovers on its own. Fail closed
+        // instead; the startup failure screen offers the reset. See #6897.
+        throw const DatabaseUnreadableError();
     }
   }
 
@@ -350,6 +362,36 @@ class DatabaseCipherStorageUnavailableException implements Exception {
       'secure storage is unavailable ($cause)';
 }
 
+/// Thrown when the local database file exists but is structurally corrupt: a
+/// legible SQLite header over pages that fail with `SQLITE_CORRUPT`, so the file
+/// is neither usable plaintext nor recognizably encrypted.
+///
+/// Not a key problem — an encrypted file reports `SQLITE_NOTADB` and takes the
+/// salvage/recreate path instead. The stored cipher key is nonetheless kept:
+/// the damaged file itself is plaintext-shaped and needs no key to read, but any
+/// `.pre_key_loss_wipe_backup` / `.pre_corruption_recovery_backup` beside it is
+/// encrypted under that key, and rotating it would strand them.
+///
+/// Fails startup on purpose. The alternative the bootstrap used to take was to
+/// hand back a `null` key and let the app open the damaged file anyway, which
+/// looked like a normal launch and then failed every statement in the session
+/// (#6897). Because the outcome depends only on the bytes on disk, the "retry
+/// next launch" that the deferral promises never arrives.
+class DatabaseUnreadableError implements Exception {
+  const DatabaseUnreadableError();
+
+  /// Names `SQLITE_CORRUPT` so a Crashlytics reader sees the underlying result
+  /// code without the statement that raised it. That also puts this message
+  /// inside the corruption allowlist in
+  /// [shouldRepairLocalDatabaseCacheAfterBootstrapError], which is why that
+  /// function has to deny this type before it reaches the message match.
+  @override
+  String toString() =>
+      'DatabaseUnreadableError: the local database is damaged beyond '
+      'classification (SQLITE_CORRUPT under a legible SQLite header); it is '
+      'neither readable plaintext nor an encrypted database.';
+}
+
 class DatabaseCipherUnavailableError extends StateError {
   DatabaseCipherUnavailableError()
     : super(
@@ -365,7 +407,9 @@ class DatabaseCipherUnavailableError extends StateError {
 /// secure-storage or cipher bootstrap failure: an existing encrypted DB
 /// would be opened as plaintext and repeatedly surface SQLITE_NOTADB. Web and
 /// intentional plaintext migration deferrals still return `null` from
-/// [resolveCipherKey].
+/// [resolveCipherKey] — but only when the plaintext database is actually
+/// readable; a damaged one throws [DatabaseUnreadableError] rather than
+/// inheriting that carve-out (#6897).
 Future<String?> resolveStartupDatabaseCipherKey({
   required Future<String?> Function() resolveCipherKey,
   required Future<void> Function(Object error, StackTrace stack) recordError,
@@ -401,6 +445,15 @@ bool shouldRepairLocalDatabaseCacheAfterBootstrapError(Object error) {
   // The database is fine; only the keystore holding its key was unreachable.
   // Repairing would delete that key and strand a recoverable database.
   if (error is DatabaseCipherStorageUnavailableException) return false;
+  // Load-bearing: this message names SQLITE_CORRUPT, so it would otherwise
+  // match the allowlist below and auto-repair. The database really is unusable,
+  // but the repair rotates the cipher key, and nothing here proves the stored
+  // one is stale — rotating it would strand any encrypted backup already beside
+  // the damaged file, which holds the user's local-only drafts and clips. The
+  // failure screen offers the same reset with the key retained, so the user
+  // chooses the data loss instead of a silent wipe on a launch that looked
+  // normal.
+  if (error is DatabaseUnreadableError) return false;
 
   final message = error.toString();
   return message.contains('SqliteException($_sqliteNotADb)') ||

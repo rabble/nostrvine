@@ -53,6 +53,7 @@ enum CipherMigrationOutcome {
   removedEmptyPlaintext,
   migrated,
   failed,
+  unreadable,
 }
 
 /// Stub implementation - will be replaced by conditional imports

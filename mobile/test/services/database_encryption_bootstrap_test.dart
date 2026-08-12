@@ -354,6 +354,27 @@ void main() {
           );
         },
       );
+
+      test('keeps the flag when the database is unreadable', () async {
+        store[dbCipherKeyStorageKey] = existing;
+        var cleared = false;
+        final bootstrap = buildBootstrap(
+          outcome: CipherMigrationOutcome.unreadable,
+          onDelete: () {},
+          hasPendingCorruptionRecovery: true,
+          onClearPendingCorruptionRecovery: () => cleared = true,
+        );
+
+        await expectLater(
+          bootstrap.resolveCipherKey(),
+          throwsA(isA<DatabaseUnreadableError>()),
+        );
+        expect(
+          cleared,
+          isFalse,
+          reason: 'startup failed on the database, so it recovered nothing',
+        );
+      });
     });
 
     test('backs up the unrecoverable DB on key loss (generated key + '
@@ -582,6 +603,52 @@ void main() {
       );
 
       expect(await bootstrap.resolveCipherKey(), isNull);
+    });
+
+    test('fails closed instead of handing back a null key for an unreadable '
+        'database', () async {
+      // The gap #6897 closes: this used to share the plaintext deferral's
+      // enum case, so startup continued on a null key, opened the damaged file
+      // anyway, and failed every statement for the rest of the session.
+      var deleted = false;
+      final bootstrap = buildBootstrap(
+        outcome: CipherMigrationOutcome.unreadable,
+        onDelete: () => deleted = true,
+      );
+
+      await expectLater(
+        bootstrap.resolveCipherKey(),
+        throwsA(isA<DatabaseUnreadableError>()),
+      );
+      expect(
+        deleted,
+        isFalse,
+        reason:
+            'the damaged file is preserved for the user-confirmed reset on '
+            'the failure screen, not wiped behind their back',
+      );
+    });
+
+    test('keeps the cipher key when the database is unreadable', () async {
+      const existing =
+          '2dd29ca851e7b56e4697b0e1f08507293d761a05ce4d1b628663f411a8086d99';
+      store[dbCipherKeyStorageKey] = existing;
+      final bootstrap = buildBootstrap(
+        outcome: CipherMigrationOutcome.unreadable,
+        onDelete: () {},
+      );
+
+      await expectLater(
+        bootstrap.resolveCipherKey(),
+        throwsA(isA<DatabaseUnreadableError>()),
+      );
+      expect(
+        store[dbCipherKeyStorageKey],
+        equals(existing),
+        reason:
+            'nothing here proves the key is stale, and it is the only thing '
+            'that can still read a backup of the damaged file',
+      );
     });
 
     test('regenerates a key when the stored value is malformed', () async {

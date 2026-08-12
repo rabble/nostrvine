@@ -78,6 +78,7 @@ enum CipherMigrationOutcome {
   removedEmptyPlaintext,
   migrated,
   failed,
+  unreadable,
 }
 
 /// Native plaintext→encrypted migration does not apply on web. Never reached
