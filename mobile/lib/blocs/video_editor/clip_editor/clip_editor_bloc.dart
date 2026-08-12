@@ -1281,6 +1281,14 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         renderId: clip.id,
       );
 
+      // Screen dispose closes this bloc while a long reverse can still be
+      // finishing. The new file is on disk either way — queue it when we can
+      // no longer commit it to state.
+      if (isClosed) {
+        _deferOrphanedPaths([reversedVideo.file?.path]);
+        return;
+      }
+
       final currentClips = state.clips;
       final currentIndex = currentClips.indexWhere((c) => c.id == clip.id);
       if (currentIndex == -1) {
@@ -1457,6 +1465,12 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         chromaKey: event.chromaKey,
         renderId: renderId,
       );
+
+      // See reverse: leave-during-bake still wrote a documents-dir file.
+      if (isClosed) {
+        _deferOrphanedPaths([baked.video.file?.path]);
+        return;
+      }
 
       final currentClips = state.clips;
       final currentIndex = currentClips.indexWhere((c) => c.id == clip.id);
@@ -1660,7 +1674,16 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         name: 'ClipEditorBloc',
         category: LogCategory.video,
       );
-      emit(state.copyWith(lastTransformResult: ClipTransformFrameFailure()));
+      if (!isClosed) {
+        emit(state.copyWith(lastTransformResult: ClipTransformFrameFailure()));
+      }
+      return;
+    }
+
+    // Leave-during-write: still lands on disk and must be queued even though
+    // state can no longer accept it.
+    if (isClosed) {
+      _deferOrphanedPaths([path]);
       return;
     }
 
@@ -1746,6 +1769,13 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         transform: event.transform,
         renderId: renderId,
       );
+
+      // Leave-during-transform: the new documents-dir render exists even when
+      // this bloc was closed by screen dispose and can no longer emit.
+      if (isClosed) {
+        _deferOrphanedPaths([transformedVideo.file?.path]);
+        return;
+      }
 
       final currentClips = state.clips;
       final currentIndex = currentClips.indexWhere((c) => c.id == clip.id);

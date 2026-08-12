@@ -3155,6 +3155,46 @@ void main() {
           await bloc.close();
         },
       );
+
+      test(
+        'queues the transform output when the bloc is closed mid-render',
+        () async {
+          // Screen dispose closes the bloc while a long encode can still finish.
+          // The new file is on disk either way and must still reach deferred
+          // cleanup — the path that used to drop on `if (!mounted) return`.
+          final completer = Completer<EditorVideo>();
+          final queued = <String>[];
+          final bloc = buildBloc(
+            transformClip:
+                ({
+                  required sourceClip,
+                  required transform,
+                  required renderId,
+                }) => completer.future,
+            deferFileCleanup: (paths) =>
+                queued.addAll(paths.whereType<String>()),
+          );
+
+          bloc.add(ClipEditorInitialized([_createClipWithFile()]));
+          await Future<void>.delayed(Duration.zero);
+
+          bloc.add(
+            const ClipEditorClipTransformRequested(
+              clipId: 'clip-local',
+              transform: ExportTransform(),
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+          expect(bloc.state.isTransforming, isTrue);
+
+          final closed = bloc.close();
+          completer.complete(EditorVideo.file('/transformed/after-close.mp4'));
+          await closed;
+          await Future<void>.delayed(Duration.zero);
+
+          expect(queued, ['/transformed/after-close.mp4']);
+        },
+      );
     });
 
     // =========================================================
