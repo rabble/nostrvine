@@ -7,6 +7,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/stereo_waveform_painter.dart';
 
@@ -30,6 +31,19 @@ void main() {
     test('amplitudeScale is between 0 and 1', () {
       expect(WaveformConstants.amplitudeScale, greaterThan(0));
       expect(WaveformConstants.amplitudeScale, lessThanOrEqualTo(1));
+    });
+
+    test('amplitude shaping knobs match TimelineConstants clip waveform', () {
+      // Intentionally duplicated across packages — lock the values so a
+      // future tuning change cannot drift one site without the other.
+      expect(
+        WaveformConstants.amplitudeNormalizerFloor,
+        TimelineConstants.clipWaveformNormalizerFloor,
+      );
+      expect(
+        WaveformConstants.amplitudeCurve,
+        TimelineConstants.clipWaveformCurve,
+      );
     });
   });
 
