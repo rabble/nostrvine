@@ -41,11 +41,12 @@ void main() {
       );
       final decoration = decoratedBox.decoration as BoxDecoration;
 
-      expect(decoration.color, VineTheme.cardBackground);
+      expect(decoration.color, VineTheme.surfaceContainerHigh);
       expect(
         decoration.borderRadius,
         const BorderRadius.all(Radius.circular(16)),
       );
+      expect(decoration.boxShadow, VineTheme.depth1);
     });
 
     testWidgets('renders error state correctly', (tester) async {
@@ -67,14 +68,14 @@ void main() {
       );
 
       final text = tester.widget<Text>(find.text('Error message'));
-      expect(text.style?.color, VineTheme.likeRed);
+      expect(text.style?.color, VineTheme.error);
     });
 
     testWidgets('renders non-error text without red color', (tester) async {
       await tester.pumpWidget(buildTestWidget(label: 'Info message'));
 
       final text = tester.widget<Text>(find.text('Info message'));
-      expect(text.style?.color, isNot(VineTheme.likeRed));
+      expect(text.style?.color, isNot(VineTheme.error));
     });
 
     testWidgets('does not render action button when actionLabel is null', (
@@ -150,7 +151,45 @@ void main() {
       );
 
       final actionText = tester.widget<Text>(find.text('Retry'));
-      expect(actionText.style?.color, VineTheme.likeRed);
+      expect(actionText.style?.color, VineTheme.error);
+    });
+
+    testWidgets('action label uses the title/medium type ramp', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          label: 'Test message',
+          actionLabel: 'Retry',
+          onActionPressed: () {},
+        ),
+      );
+
+      final actionStyle = tester.widget<Text>(find.text('Retry')).style;
+      final reference = VineTheme.titleMediumFont();
+      expect(actionStyle?.fontFamily, reference.fontFamily);
+      expect(actionStyle?.fontSize, 16);
+      expect(actionStyle?.fontWeight, FontWeight.w800);
+      expect(actionStyle?.letterSpacing, 0.15);
+    });
+
+    testWidgets('a light custom surface darkens the action too', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: VineTheme.theme,
+          home: Scaffold(
+            body: DivineSnackbarContainer(
+              label: 'Switched to Staging',
+              backgroundColor: const Color(0xFFFFF140),
+              actionLabel: 'Undo',
+              onActionPressed: () {},
+            ),
+          ),
+        ),
+      );
+
+      final actionText = tester.widget<Text>(find.text('Undo'));
+      expect(actionText.style?.color, VineTheme.primaryDarkGreen);
     });
 
     group('secondary action', () {
@@ -191,7 +230,7 @@ void main() {
         );
         expect(
           tester.widget<Text>(find.text('Delete')).style?.color,
-          VineTheme.likeRed,
+          VineTheme.error,
         );
       });
 
@@ -273,21 +312,169 @@ void main() {
       });
     });
 
-    testWidgets('has correct padding', (tester) async {
-      await tester.pumpWidget(buildTestWidget(label: 'Test message'));
+    group('sizing', () {
+      testWidgets('a one-line banner still clears the 48px touch target', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildTestWidget(label: 'Test message'));
 
-      final padding = tester.widget<Padding>(find.byType(Padding));
-      expect(
-        padding.padding,
-        const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      );
+        final banner = tester.getRect(find.byType(DecoratedBox));
+        expect(banner.height, DivineSnackbarContainer.minHeight);
+      });
+
+      testWidgets('insets the label by 16px from the leading edge', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildTestWidget(label: 'Test message'));
+
+        final banner = tester.getRect(find.byType(DecoratedBox));
+        final label = tester.getRect(find.text('Test message'));
+        expect(label.left - banner.left, 16);
+      });
+
+      testWidgets('stops growing at the max width on a wide viewport', (
+        tester,
+      ) async {
+        tester.view.physicalSize = const Size(1600, 900);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(buildTestWidget(label: 'Test message'));
+
+        final banner = tester.getRect(find.byType(DecoratedBox));
+        expect(banner.width, DivineSnackbarContainer.maxWidth);
+        // …and stays centred rather than pinned to the leading edge.
+        expect(banner.center.dx, 800);
+      });
+
+      testWidgets('tracks the viewport when it is narrower than the max', (
+        tester,
+      ) async {
+        tester.view.physicalSize = const Size(360, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(buildTestWidget(label: 'Test message'));
+
+        final banner = tester.getRect(find.byType(DecoratedBox));
+        expect(banner.width, 360);
+      });
     });
 
-    testWidgets('uses Row with spaceBetween alignment', (tester) async {
-      await tester.pumpWidget(buildTestWidget(label: 'Test message'));
+    group('dismiss button', () {
+      testWidgets('is absent when onDismissPressed is null', (tester) async {
+        await tester.pumpWidget(buildTestWidget(label: 'Test message'));
 
-      final row = tester.widget<Row>(find.byType(Row));
-      expect(row.mainAxisAlignment, MainAxisAlignment.spaceBetween);
+        expect(find.byType(DivineIconButton), findsNothing);
+      });
+
+      testWidgets('renders and calls back when tapped', (tester) async {
+        var dismissed = false;
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: VineTheme.theme,
+            home: Scaffold(
+              body: DivineSnackbarContainer(
+                label: 'Test message',
+                onDismissPressed: () => dismissed = true,
+              ),
+            ),
+          ),
+        );
+
+        expect(find.byType(DivineIconButton), findsOneWidget);
+        await tester.tap(find.byType(DivineIconButton));
+        expect(dismissed, isTrue);
+      });
+
+      testWidgets('carries the accent colour and semantic label', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: VineTheme.theme,
+            home: Scaffold(
+              body: DivineSnackbarContainer(
+                label: 'Error message',
+                error: true,
+                dismissSemanticLabel: 'Close',
+                onDismissPressed: () {},
+              ),
+            ),
+          ),
+        );
+
+        final button = tester.widget<DivineIconButton>(
+          find.byType(DivineIconButton),
+        );
+        expect(button.icon, DivineIconName.x);
+        expect(button.foregroundColor, VineTheme.error);
+        expect(button.semanticLabel, 'Close');
+      });
+
+      testWidgets('sits beside the label rather than below it', (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: VineTheme.theme,
+            home: Scaffold(
+              body: DivineSnackbarContainer(
+                label: 'Test message',
+                onDismissPressed: () {},
+              ),
+            ),
+          ),
+        );
+
+        final label = tester.getRect(find.text('Test message'));
+        final button = tester.getRect(find.byType(DivineIconButton));
+        expect(button.left, greaterThan(label.right));
+      });
+    });
+
+    group('action placement', () {
+      testWidgets('keeps a short action on the message row', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            label: 'Copied',
+            actionLabel: 'Undo',
+            onActionPressed: () {},
+          ),
+        );
+
+        final label = tester.getRect(find.text('Copied'));
+        final action = tester.getRect(find.text('Undo'));
+        expect(action.left, greaterThan(label.right));
+        expect(action.center.dy, closeTo(label.center.dy, 1));
+      });
+
+      testWidgets('drops a long action onto its own right-aligned row', (
+        tester,
+      ) async {
+        tester.view.physicalSize = const Size(360, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            label: 'We could not reach the relay just now',
+            actionLabel: 'Try that again',
+            onActionPressed: () {},
+          ),
+        );
+
+        final label = tester.getRect(
+          find.text('We could not reach the relay just now'),
+        );
+        final action = tester.getRect(find.text('Try that again'));
+        expect(action.top, greaterThanOrEqualTo(label.bottom));
+
+        final banner = tester.getRect(find.byType(DecoratedBox));
+        final button = tester.getRect(find.byType(TextButton));
+        expect(banner.right - button.right, 16);
+      });
     });
 
     testWidgets('paints a custom surface colour when given one', (
