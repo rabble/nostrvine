@@ -119,10 +119,18 @@ still in the way, which is the second point below.
 
 Two things are worth knowing before doing more of this work:
 
-- **Removing a `flutter: sdk: flutter` entry is zero-risk but also cosmetic.**
-  `pubspec.lock` is bit-identical across the removal and no native plugin is
-  deregistered (`flutter` has no `plugin:` key, so it is never a plugin). It
-  makes the manifest honest; it does not decouple anything.
+- **Removing a `flutter: sdk: flutter` entry changes nothing at build time,
+  but it is not cosmetic — it turns the boundary into a gate.** Nothing about
+  the build moves: `pubspec.lock` is bit-identical across the removal, and no
+  native plugin is deregistered (`flutter` has no `plugin:` key, so it is
+  never a plugin). What changes is what the package is *allowed to import*.
+  Every package under `mobile/packages/` includes `very_good_analysis`, which
+  enables `depend_on_referenced_packages`; with the entry gone, a
+  `package:flutter/...` import anywhere in that package's `lib/` becomes an
+  analyze failure, and each package's own CI workflow runs `flutter analyze`.
+  So re-opening the boundary costs a pubspec edit that shows up in review,
+  rather than an import nobody notices. (A package with no workflow of its
+  own — `nostr_apps` today — gets the local guard but no CI gate.)
 - **No package in the `nostr_sdk` cone can run under `dart test`.** `nostr_sdk`
   declares the Flutter SDK and five Flutter plugins, and nearly every package
   reaches it — `models` included, via `models -> nostr_sdk`. So a package with
