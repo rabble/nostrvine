@@ -1,10 +1,27 @@
 // ABOUTME: Tests for Firebase Performance Monitoring service
 // ABOUTME: Verifies trace creation, metrics, and attributes
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 
 void main() {
+  group('PerformanceMonitoringService.collectionEnabled', () {
+    test('stays off outside release builds', () {
+      // Premise: the test runner is not a release build, so this asserts the
+      // same branch a developer's `flutter run` takes.
+      expect(kReleaseMode, isFalse, reason: 'tests must run in non-release');
+
+      // #7123: collection was enabled unconditionally, so developer devices
+      // reported into the production dataset alongside real users. Local
+      // builds were 9.5% of the 1.0.19 `_app_start` sample at a p50 of 919 ms
+      // against ~100 ms for the same phone on a store build — enough to
+      // manufacture a release-over-release regression that the release code
+      // did not contain.
+      expect(PerformanceMonitoringService.collectionEnabled, isFalse);
+    });
+  });
+
   group('PerformanceMonitoringService', () {
     late PerformanceMonitoringService service;
 
