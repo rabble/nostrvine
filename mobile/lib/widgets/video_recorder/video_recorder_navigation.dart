@@ -56,6 +56,17 @@ void closeVideoRecorder(BuildContext context, WidgetRef ref) {
 /// discarding the session takes that draft with it. A named draft holds its
 /// own file and the autosave draft then belongs to some other session — leave
 /// it alone.
+///
+/// Deleting it here loses nothing the user could miss: at the camera the
+/// autosave draft only ever holds the selected clips, and those are already in
+/// the persistent clip library. Editor state cannot be in it, because the
+/// editor refuses to close on an autosaved session without a decision
+/// (`canPop: !isAutosavedDraft`) — save turns it into a named draft, discard
+/// ends the session, and an unedited close has nothing to keep. Keeping the
+/// draft would instead have the next camera open offer a "continue?" prompt
+/// whose only payload is the clip selection that pinned the aspect ratio in
+/// the first place. An OS kill still leaves the draft intact, which is the
+/// case recovery is for.
 void discardRecorderSession(WidgetRef ref) {
   final isAutosavedDraft = ref.read(videoEditorProvider).isAutosavedDraft;
   unawaited(
