@@ -53,6 +53,8 @@ import 'package:openvine/services/video_editor/video_editor_render_service.dart'
 import 'package:openvine/services/video_publish/publish_error_kind.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:pro_image_editor/pro_image_editor.dart' show CompleteParameters;
+import 'package:pro_video_editor/pro_video_editor.dart'
+    show RenderCanceledException;
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -419,9 +421,14 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
           : null;
 
       if (finalRenderedClip != null && finalRenderedClip.isStopMotion) {
-        final materialized = await StopMotionRenderService.materialize(
-          finalRenderedClip,
-        );
+        DivineVideoClip? materialized;
+        try {
+          materialized = await StopMotionRenderService.materialize(
+            finalRenderedClip,
+          );
+        } on RenderCanceledException {
+          materialized = null;
+        }
         if (materialized == null) {
           setError(stopMotionFailedMessage!);
           await creationTracker.publishFailed(

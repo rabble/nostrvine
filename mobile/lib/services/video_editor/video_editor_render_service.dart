@@ -487,13 +487,25 @@ class VideoEditorRenderService {
             stepCount: assemblyStepCount,
           );
           assemblyStep++;
-          final materialized = await StopMotionRenderService.materialize(
-            clip,
-            taskId: assemblyTaskId,
-          );
-          if (materialized == null) {
-            throw const VideoRenderFailedException(
-              VideoRenderFailureReason.stopMotionAssembly,
+          final DivineVideoClip materialized;
+          try {
+            final assembled = await StopMotionRenderService.materialize(
+              clip,
+              taskId: assemblyTaskId,
+            );
+            if (assembled == null) {
+              throw const VideoRenderFailedException(
+                VideoRenderFailureReason.stopMotionAssembly,
+              );
+            }
+            materialized = assembled;
+          } on RenderCanceledException catch (e) {
+            // Detach / cancelActiveNativeTasks during assembly must not land
+            // in the stop_motion_assembly bucket — same incomplete semantics
+            // as a cancelled composite render.
+            throw VideoRenderFailedException(
+              VideoRenderFailureReason.canceled,
+              cause: e,
             );
           }
           final intermediatePath = materialized.video?.file?.path;

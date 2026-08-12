@@ -15,7 +15,9 @@ import 'package:models/models.dart' as model;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/aspect_ratio_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/models/video_editor/transition_geometry.dart';
+import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:pro_image_editor/pro_image_editor.dart' as pie;
 import 'package:pro_video_editor/pro_video_editor.dart'
@@ -508,8 +510,17 @@ void main() {
   });
 
   group('render failure reporting (#7125)', () {
+    late ProVideoEditor originalProVideoEditor;
+
+    setUp(() {
+      originalProVideoEditor = ProVideoEditor.instance;
+      ProVideoEditor.instance = _StubProVideoEditor();
+    });
+
     tearDown(() {
+      ProVideoEditor.instance = originalProVideoEditor;
       VideoEditorRenderService.renderVideoOverride = null;
+      StopMotionRenderService.assembleOverride = null;
     });
 
     test('renderVideoToClip names an empty clip list as the reason', () async {
@@ -524,6 +535,51 @@ void main() {
             'reason',
             VideoRenderFailureReason.emptyClips,
           ),
+        ),
+      );
+    });
+
+    test('renderVideoToClip maps a cancelled stop-motion assembly to canceled, '
+        'not stop_motion_assembly', () async {
+      StopMotionRenderService.assembleOverride =
+          ({
+            required frames,
+            required aspectRatio,
+            frameRate = StopMotionRenderService.defaultFrameRate,
+            String? taskId,
+          }) async => throw const RenderCanceledException();
+
+      final stopMotionClip = DivineVideoClip(
+        id: 'sm-clip',
+        stopMotionFrames: const [
+          StopMotionClipFrame(
+            path: '/frames/f0.jpg',
+            duration: Duration(milliseconds: 83),
+          ),
+        ],
+        duration: const Duration(milliseconds: 83),
+        recordedAt: DateTime(2026),
+        targetAspectRatio: model.AspectRatio.vertical,
+        originalAspectRatio: 9 / 16,
+      );
+
+      await expectLater(
+        VideoEditorRenderService.renderVideoToClip(
+          clips: [stopMotionClip],
+          editorStateHistory: const {},
+        ),
+        throwsA(
+          isA<VideoRenderFailedException>()
+              .having(
+                (e) => e.reason,
+                'reason',
+                VideoRenderFailureReason.canceled,
+              )
+              .having(
+                (e) => e.cause,
+                'cause',
+                isA<RenderCanceledException>(),
+              ),
         ),
       );
     });
