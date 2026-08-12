@@ -73,6 +73,7 @@ class BookmarkToggleResult {
     required this.succeeded,
     required this.wasBookmarked,
     required this.isBookmarked,
+    this.failure,
   });
 
   /// Whether the change reconciled and a relay accepted the new list.
@@ -84,6 +85,32 @@ class BookmarkToggleResult {
   /// Whether the video is bookmarked now. Equals [wasBookmarked] when the
   /// toggle failed, since no relay accepted a new list.
   final bool isBookmarked;
+
+  /// Why the toggle failed, or `null` when [succeeded] is true. Lets the UI
+  /// tell "we could not reach the network" apart from "the relay said no".
+  final BookmarkToggleFailure? failure;
+}
+
+/// Why a bookmark mutation did not complete.
+///
+/// Deliberately does not name a member "offline": `noRelays` is also reported
+/// for a disposed client, so [couldNotReachRelays] describes what was observed
+/// rather than guessing at the device's connectivity.
+enum BookmarkToggleFailure {
+  /// No relay could be reached, so the current list could not be read.
+  couldNotReachRelays,
+
+  /// Relays were reachable but did not answer before the query deadline.
+  timedOut,
+
+  /// The list reconciled, but no relay accepted the new version.
+  relayDidNotAccept,
+
+  /// There is no signed-in identity to read or publish as.
+  notAuthenticated,
+
+  /// Anything else, including an unexpected throw.
+  unknown,
 }
 
 /// Service for the user's NIP-51 global bookmark list (kind 10003).
@@ -196,7 +223,20 @@ class BookmarkService {
   /// missing is re-confirmed each time rather than once per window. An answer
   /// that stays unconfirmed changes nothing. A read that finds a list keeps
   /// the fast trade and pays for none of this.
-  Future<bool> syncGlobalBookmarks({bool requireAuthoritative = false}) async {
+  Future<bool> syncGlobalBookmarks({bool requireAuthoritative = false}) async =>
+      // Equality to success, never `!= someFailure`: a blacklist would let any
+      // failure member added later fall through as "reconciled" and publish
+      // kind 10003 from an inconclusive read — the #6966 regression.
+      await _syncGlobalBookmarks(requireAuthoritative: requireAuthoritative) ==
+      null;
+
+  /// [syncGlobalBookmarks], but reporting *why* it failed.
+  ///
+  /// Returns `null` on success. Only [toggleVideoInGlobalBookmarks] needs the
+  /// reason, so the public surface stays a bool.
+  Future<BookmarkToggleFailure?> _syncGlobalBookmarks({
+    required bool requireAuthoritative,
+  }) async {
     final pubkey = _authService.currentPublicKeyHex;
     if (!_authService.isAuthenticated || pubkey == null) {
       Log.warning(
@@ -204,15 +244,16 @@ class BookmarkService {
         name: 'BookmarkService',
         category: LogCategory.system,
       );
-      return false;
+      return BookmarkToggleFailure.notAuthenticated;
     }
 
     try {
-      var events = await _readRemoteGlobalBookmarks(
+      final read = await _readRemoteGlobalBookmarks(
         pubkey,
         requireAuthoritative: requireAuthoritative,
       );
-      if (events == null) return false;
+      var events = read.events;
+      if (events == null) return read.failure;
       var answeredAuthoritatively = requireAuthoritative;
 
       if (events.isEmpty && !requireAuthoritative && _mustConfirmAbsence) {
@@ -223,10 +264,11 @@ class BookmarkService {
         // — the reinstall #6627 is about, where the cache is empty too — or
         // overwrites the snapshot Saved falls back to offline. Confirm it
         // against every relay before believing it.
-        events = await _readRemoteGlobalBookmarks(
+        final confirmation = await _readRemoteGlobalBookmarks(
           pubkey,
           requireAuthoritative: true,
         );
+        events = confirmation.events;
         if (events == null) {
           Log.warning(
             'Empty bookmark answer not confirmed by every relay - keeping '
@@ -234,7 +276,7 @@ class BookmarkService {
             name: 'BookmarkService',
             category: LogCategory.system,
           );
-          return false;
+          return confirmation.failure;
         }
         answeredAuthoritatively = true;
       }
@@ -269,14 +311,14 @@ class BookmarkService {
         name: 'BookmarkService',
         category: LogCategory.system,
       );
-      return true;
+      return null;
     } catch (e) {
       Log.error(
         'Failed to sync global bookmarks from relay: $e',
         name: 'BookmarkService',
         category: LogCategory.system,
       );
-      return false;
+      return BookmarkToggleFailure.unknown;
     }
   }
 
@@ -289,7 +331,8 @@ class BookmarkService {
   /// regardless of settlement, so leaving it on would let a stale locally-held
   /// kind-10003 stand in for a relay answer — and the next publish would
   /// resurrect a list the user had already emptied.
-  Future<List<Event>?> _readRemoteGlobalBookmarks(
+  Future<({List<Event>? events, BookmarkToggleFailure? failure})>
+  _readRemoteGlobalBookmarks(
     String pubkey, {
     required bool requireAuthoritative,
   }) async {
@@ -310,12 +353,22 @@ class BookmarkService {
         name: 'BookmarkService',
         category: LogCategory.system,
       );
-      return null;
+      // A device with no reachable relay sets *both* flags, so noRelays has to
+      // be tested first or offline would always report as a timeout.
+      return (
+        events: null,
+        failure: result.noRelays
+            ? BookmarkToggleFailure.couldNotReachRelays
+            : BookmarkToggleFailure.timedOut,
+      );
     }
 
-    return result.events
-        .where((event) => event.kind == globalBookmarksKind)
-        .toList();
+    return (
+      events: result.events
+          .where((event) => event.kind == globalBookmarksKind)
+          .toList(),
+      failure: null,
+    );
   }
 
   /// If [videoEventId] is globally bookmarked, removes it; otherwise adds it.
@@ -330,14 +383,15 @@ class BookmarkService {
     String? relay,
     String? petname,
   }) async {
-    final reconciled = await syncGlobalBookmarks(requireAuthoritative: true);
+    final failure = await _syncGlobalBookmarks(requireAuthoritative: true);
     final wasBookmarked = isVideoBookmarkedGlobally(videoEventId);
 
-    if (!reconciled) {
+    if (failure != null) {
       return BookmarkToggleResult(
         succeeded: false,
         wasBookmarked: wasBookmarked,
         isBookmarked: wasBookmarked,
+        failure: failure,
       );
     }
 
@@ -360,6 +414,9 @@ class BookmarkService {
       succeeded: succeeded,
       wasBookmarked: wasBookmarked,
       isBookmarked: succeeded ? !wasBookmarked : wasBookmarked,
+      // The read already reconciled, so anything failing past this point is
+      // the publish leg.
+      failure: succeeded ? null : BookmarkToggleFailure.relayDidNotAccept,
     );
   }
 
