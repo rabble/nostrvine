@@ -3243,14 +3243,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get authOk => 'Добре';
 
   @override
-  String get authInviteUnavailable =>
-      'Достъпът с покана временно не е наличен.';
-
-  @override
-  String get authInviteUnavailableBody =>
-      'Опитай пак след малко или се свържи с поддръжката, ако имаш нужда от помощ при влизането.';
-
-  @override
   String get authTryAgain => 'Опитай пак';
 
   @override

@@ -54,15 +54,12 @@ class InviteStatusState extends Equatable {
   InviteStatusState copyWith({
     InviteStatusLoadingStatus? status,
     InviteStatus? inviteStatus,
-    bool clearInviteStatus = false,
     String? accountId,
     bool? isSignerReady,
   }) {
     return InviteStatusState(
       status: status ?? this.status,
-      inviteStatus: clearInviteStatus
-          ? null
-          : (inviteStatus ?? this.inviteStatus),
+      inviteStatus: inviteStatus ?? this.inviteStatus,
       accountId: accountId ?? this.accountId,
       isSignerReady: isSignerReady ?? this.isSignerReady,
     );

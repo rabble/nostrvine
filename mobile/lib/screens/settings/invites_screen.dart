@@ -5,7 +5,6 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:openvine/blocs/invite_availability/invite_availability_cubit.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/invite_models.dart';
@@ -27,11 +26,7 @@ class _InvitesScreenState extends State<InvitesScreen> {
   @override
   void initState() {
     super.initState();
-    final invitesEnabled =
-        context.read<InviteAvailabilityCubit?>()?.state.isEnabled ?? true;
-    if (invitesEnabled) {
-      context.read<InviteStatusCubit>().load();
-    }
+    context.read<InviteStatusCubit>().load();
   }
 
   @override

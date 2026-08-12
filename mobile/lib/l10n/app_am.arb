@@ -1548,8 +1548,6 @@
         }
     },
     "authOk": "እሺ",
-    "authInviteUnavailable": "የግብዣ መዳረሻ ለጊዜው አይገኝም።",
-    "authInviteUnavailableBody": "ከአፍታ በኋላ እንደገና ይሞክሩ፣ ወይም ለመግባት እገዛ ከፈለጉ ድጋፍን ያግኙ።",
     "authTryAgain": "እንደገና ይሞክሩ",
     "authContactSupport": "ድጋፍን ያነጋግሩ",
     "authCouldNotOpenEmail": "{email} መክፈት አልተቻለም",

@@ -3194,14 +3194,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authOk => 'OK';
 
   @override
-  String get authInviteUnavailable =>
-      'Invite access is temporarily unavailable.';
-
-  @override
-  String get authInviteUnavailableBody =>
-      'Try again in a moment, or contact support if you need help getting in.';
-
-  @override
   String get authTryAgain => 'Try again';
 
   @override

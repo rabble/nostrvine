@@ -3293,14 +3293,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get authOk => 'OK';
 
   @override
-  String get authInviteUnavailable =>
-      'Accesul prin invitație e temporar indisponibil.';
-
-  @override
-  String get authInviteUnavailableBody =>
-      'Încearcă din nou într-un moment, sau contactează asistența dacă ai nevoie de ajutor ca să intri.';
-
-  @override
   String get authTryAgain => 'Încearcă din nou';
 
   @override

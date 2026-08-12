@@ -1276,8 +1276,6 @@
         }
     },
     "authOk": "OK",
-    "authInviteUnavailable": "招待アクセスが一時的に使えないよ。",
-    "authInviteUnavailableBody": "少し待ってからもう一回試してみて。参加で困ったらサポートに連絡してね。",
     "authTryAgain": "もう一回",
     "authContactSupport": "サポートに連絡",
     "authCouldNotOpenEmail": "{email} が開けなかった",

@@ -5558,18 +5558,6 @@ abstract class AppLocalizations {
   /// **'OK'**
   String get authOk;
 
-  /// No description provided for @authInviteUnavailable.
-  ///
-  /// In en, this message translates to:
-  /// **'Invite access is temporarily unavailable.'**
-  String get authInviteUnavailable;
-
-  /// No description provided for @authInviteUnavailableBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Try again in a moment, or contact support if you need help getting in.'**
-  String get authInviteUnavailableBody;
-
   /// No description provided for @authTryAgain.
   ///
   /// In en, this message translates to:

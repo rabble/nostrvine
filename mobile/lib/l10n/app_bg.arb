@@ -1361,8 +1361,6 @@
         }
     },
     "authOk": "Добре",
-    "authInviteUnavailable": "Достъпът с покана временно не е наличен.",
-    "authInviteUnavailableBody": "Опитай пак след малко или се свържи с поддръжката, ако имаш нужда от помощ при влизането.",
     "authTryAgain": "Опитай пак",
     "authContactSupport": "Свържи се с поддръжката",
     "authCouldNotOpenEmail": "Не може да се отвори {email}",

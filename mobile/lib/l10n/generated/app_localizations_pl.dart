@@ -3278,14 +3278,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get authOk => 'OK';
 
   @override
-  String get authInviteUnavailable =>
-      'Dostęp z zaproszeniem jest chwilowo niedostępny.';
-
-  @override
-  String get authInviteUnavailableBody =>
-      'Spróbuj ponownie za chwilę lub skontaktuj się z pomocą, jeśli potrzebujesz wejścia.';
-
-  @override
   String get authTryAgain => 'Spróbuj ponownie';
 
   @override

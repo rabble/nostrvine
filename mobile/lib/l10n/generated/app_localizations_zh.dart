@@ -3039,12 +3039,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get authOk => '好';
 
   @override
-  String get authInviteUnavailable => '邀请功能暂时不可用。';
-
-  @override
-  String get authInviteUnavailableBody => '请稍后再试；如果进不来，请联系客服。';
-
-  @override
   String get authTryAgain => '再试一次';
 
   @override

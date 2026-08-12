@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:invite_api_client/invite_api_client.dart';
-import 'package:openvine/blocs/invite_availability/invite_availability_cubit.dart';
 import 'package:openvine/router/invite_availability_redirects.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/settings/invites_screen.dart';
@@ -30,7 +28,10 @@ void main() {
             routes: [
               GoRoute(
                 path: 'invite',
-                redirect: inviteGateRedirectIfDisabled,
+                redirect: (_, state) => inviteGateRedirectIfDisabled(
+                  cubit,
+                  state,
+                ),
                 builder: (_, _) => const Text('Invite Gate'),
               ),
               GoRoute(
@@ -43,12 +44,7 @@ void main() {
       );
       addTearDown(router.dispose);
 
-      await tester.pumpWidget(
-        BlocProvider<InviteAvailabilityCubit>.value(
-          value: cubit,
-          child: MaterialApp.router(routerConfig: router),
-        ),
-      );
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
       await tester.pumpAndSettle();
 
       expect(find.text('Create Account'), findsOneWidget);
@@ -70,19 +66,17 @@ void main() {
           ),
           GoRoute(
             path: InvitesScreen.path,
-            redirect: invitesScreenRedirectIfDisabled,
+            redirect: (_, state) => invitesScreenRedirectIfDisabled(
+              cubit,
+              state,
+            ),
             builder: (_, _) => const Text('Invites'),
           ),
         ],
       );
       addTearDown(router.dispose);
 
-      await tester.pumpWidget(
-        BlocProvider<InviteAvailabilityCubit>.value(
-          value: cubit,
-          child: MaterialApp.router(routerConfig: router),
-        ),
-      );
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
       await tester.pumpAndSettle();
 
       expect(find.text('Settings'), findsOneWidget);
@@ -104,7 +98,10 @@ void main() {
             routes: [
               GoRoute(
                 path: 'invite',
-                redirect: inviteGateRedirectIfDisabled,
+                redirect: (_, state) => inviteGateRedirectIfDisabled(
+                  cubit,
+                  state,
+                ),
                 builder: (_, _) => const Text('Invite Gate'),
               ),
             ],
@@ -113,12 +110,7 @@ void main() {
       );
       addTearDown(router.dispose);
 
-      await tester.pumpWidget(
-        BlocProvider<InviteAvailabilityCubit>.value(
-          value: cubit,
-          child: MaterialApp.router(routerConfig: router),
-        ),
-      );
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
       await tester.pumpAndSettle();
 
       expect(find.text('Invite Gate'), findsOneWidget);

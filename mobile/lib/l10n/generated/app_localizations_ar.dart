@@ -3167,13 +3167,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get authOk => 'حسنًا';
 
   @override
-  String get authInviteUnavailable => 'وصول الدعوة غير متاح مؤقتًا.';
-
-  @override
-  String get authInviteUnavailableBody =>
-      'حاول بعد لحظات، أو تواصل مع الدعم إذا احتجت مساعدة.';
-
-  @override
   String get authTryAgain => 'حاول مرّة أخرى';
 
   @override

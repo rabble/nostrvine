@@ -3244,14 +3244,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get authOk => 'OK';
 
   @override
-  String get authInviteUnavailable =>
-      'Pansamantalang hindi available ang invite access.';
-
-  @override
-  String get authInviteUnavailableBody =>
-      'Subukang ulit mamaya, o makipag-ugnayan sa support kung kailangan mo ng tulong para makapasok.';
-
-  @override
   String get authTryAgain => 'Subukan ulit';
 
   @override

@@ -3222,14 +3222,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get authOk => 'OK';
 
   @override
-  String get authInviteUnavailable =>
-      'O acesso por convite está temporariamente indisponível.';
-
-  @override
-  String get authInviteUnavailableBody =>
-      'Tente novamente em instantes ou entre em contato com o suporte se precisar de ajuda.';
-
-  @override
   String get authTryAgain => 'Tentar novamente';
 
   @override

@@ -1786,8 +1786,6 @@
     }
   },
   "authOk": "好",
-  "authInviteUnavailable": "邀请功能暂时不可用。",
-  "authInviteUnavailableBody": "请稍后再试；如果进不来，请联系客服。",
   "authTryAgain": "再试一次",
   "authContactSupport": "联系客服",
   "authCouldNotOpenEmail": "无法打开 {email}",

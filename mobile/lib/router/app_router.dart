@@ -1,13 +1,17 @@
 // ABOUTME: GoRouter configuration with ShellRoute for per-tab state preservation
 // ABOUTME: URL is source of truth, bottom nav bound to routes; routes split by feature
 
+import 'dart:async';
+
 import 'package:analytics/analytics.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/blocs/invite_availability/invite_availability_cubit.dart';
 import 'package:openvine/config/screenshot_mode.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/models/invite_availability.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/invite_availability_providers.dart';
@@ -78,18 +82,34 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   final refreshListenable = RouterRefreshListenable(
     authService.authStateStream,
   );
-  final inviteAvailabilityCubit = ref.read(inviteAvailabilityCubitProvider);
-  var lastInviteRedirectSignature = (
-    inviteAvailabilityCubit.state.hasResolved,
-    inviteAvailabilityCubit.state.isEnabled,
-  );
-  final inviteAvailabilitySub = inviteAvailabilityCubit.stream.listen((state) {
+  var lastInviteRedirectSignature = (false, true);
+  StreamSubscription<InviteAvailabilityState>? inviteAvailabilitySub;
+
+  void refreshForInviteAvailability(InviteAvailabilityState state) {
     final signature = (state.hasResolved, state.isEnabled);
     if (signature == lastInviteRedirectSignature) return;
     lastInviteRedirectSignature = signature;
     refreshListenable.refresh();
+  }
+
+  void subscribeToInviteAvailability(InviteAvailabilityCubit cubit) {
+    unawaited(inviteAvailabilitySub?.cancel());
+    lastInviteRedirectSignature = (
+      cubit.state.hasResolved,
+      cubit.state.isEnabled,
+    );
+    inviteAvailabilitySub = cubit.stream.listen(refreshForInviteAvailability);
+  }
+
+  subscribeToInviteAvailability(ref.read(inviteAvailabilityCubitProvider));
+  ref.listen(inviteAvailabilityCubitProvider, (previous, next) {
+    if (identical(previous, next)) return;
+    subscribeToInviteAvailability(next);
+    refreshListenable.refresh();
   });
-  ref.onDispose(inviteAvailabilitySub.cancel);
+  ref.onDispose(() {
+    unawaited(inviteAvailabilitySub?.cancel());
+  });
 
   ref.listen(currentMinorAccountReviewStatusProvider, (previous, next) {
     // A resume/background refetch that resolves to a routing-identical status
@@ -132,7 +152,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ...messagingRoutes(),
       ...minorAccountReviewRoutes(),
       ...listsRoutes(ref),
-      ...authRoutes(),
+      ...authRoutes(ref),
       ...appsRoutes(ref),
       ...settingsRoutes(ref),
       ...profileRoutes(),

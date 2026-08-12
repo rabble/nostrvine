@@ -1786,8 +1786,6 @@
     }
   },
   "authOk": "ٹھیک ہے",
-  "authInviteUnavailable": "دعوتی رسائی عارضی طور پر دستیاب نہیں ہے۔",
-  "authInviteUnavailableBody": "تھوڑی دیر میں دوبارہ کوشش کریں، یا داخل ہونے میں مدد چاہیے تو سپورٹ سے رابطہ کریں۔",
   "authTryAgain": "دوبارہ کوشش کریں",
   "authContactSupport": "سپورٹ سے رابطہ کریں",
   "authCouldNotOpenEmail": "{email} نہیں کھل سکا",

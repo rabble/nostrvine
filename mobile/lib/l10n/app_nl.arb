@@ -1285,8 +1285,6 @@
         }
     },
     "authOk": "OK",
-    "authInviteUnavailable": "Invite-toegang is tijdelijk niet beschikbaar.",
-    "authInviteUnavailableBody": "Probeer het zo nog eens, of neem contact op met support als je hulp nodig hebt om binnen te komen.",
     "authTryAgain": "Opnieuw proberen",
     "authContactSupport": "Contact met support",
     "authCouldNotOpenEmail": "{email} openen lukt niet",

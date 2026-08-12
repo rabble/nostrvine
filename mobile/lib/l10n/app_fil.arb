@@ -845,8 +845,6 @@
     "authWaitlistConfirmTitle": "Pasok ka na!",
     "authWaitlistUpdatesAt": "Magbabahagi kami ng update sa {email}.\nKapag may mga bagong invite code na, ipapadala namin sa iyo.",
     "authOk": "OK",
-    "authInviteUnavailable": "Pansamantalang hindi available ang invite access.",
-    "authInviteUnavailableBody": "Subukang ulit mamaya, o makipag-ugnayan sa support kung kailangan mo ng tulong para makapasok.",
     "authTryAgain": "Subukan ulit",
     "authContactSupport": "Makipag-ugnayan sa support",
     "authCouldNotOpenEmail": "Hindi mabuksan ang {email}",

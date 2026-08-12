@@ -3195,14 +3195,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get authOk => 'ٹھیک ہے';
 
   @override
-  String get authInviteUnavailable =>
-      'دعوتی رسائی عارضی طور پر دستیاب نہیں ہے۔';
-
-  @override
-  String get authInviteUnavailableBody =>
-      'تھوڑی دیر میں دوبارہ کوشش کریں، یا داخل ہونے میں مدد چاہیے تو سپورٹ سے رابطہ کریں۔';
-
-  @override
   String get authTryAgain => 'دوبارہ کوشش کریں';
 
   @override

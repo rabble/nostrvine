@@ -771,8 +771,6 @@
     "authWaitlistConfirmTitle": "들어오셨어요!",
     "authWaitlistUpdatesAt": "{email}로 업데이트를 공유할게요.\n초대 코드가 재고가 생기면 보내드릴게요.",
     "authOk": "확인",
-    "authInviteUnavailable": "초대 접근이 일시적으로 이용 불가능해요.",
-    "authInviteUnavailableBody": "잠시 후에 다시 시도하거나 도움이 필요하면 고객센터에 문의해주세요.",
     "authTryAgain": "다시 시도",
     "authContactSupport": "고객센터 문의",
     "authCouldNotOpenEmail": "{email}을(를) 열 수 없어요",

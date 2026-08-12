@@ -3044,13 +3044,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get authOk => '확인';
 
   @override
-  String get authInviteUnavailable => '초대 접근이 일시적으로 이용 불가능해요.';
-
-  @override
-  String get authInviteUnavailableBody =>
-      '잠시 후에 다시 시도하거나 도움이 필요하면 고객센터에 문의해주세요.';
-
-  @override
   String get authTryAgain => '다시 시도';
 
   @override

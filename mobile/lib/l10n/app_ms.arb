@@ -1786,8 +1786,6 @@
     }
   },
   "authOk": "OK",
-  "authInviteUnavailable": "Akses jemputan tidak tersedia buat sementara.",
-  "authInviteUnavailableBody": "Cuba lagi sebentar nanti, atau hubungi sokongan jika anda perlukan bantuan untuk masuk.",
   "authTryAgain": "Cuba lagi",
   "authContactSupport": "Hubungi sokongan",
   "authCouldNotOpenEmail": "Tidak dapat membuka {email}",

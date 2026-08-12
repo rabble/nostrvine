@@ -1,18 +1,16 @@
 // ABOUTME: Bloc for server-driven invite gating before account creation
-// ABOUTME: Loads onboarding mode, validates invite codes, and stores invite access grants
+// ABOUTME: Validates invite codes and stores invite access grants
 
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:invite_api_client/invite_api_client.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_state.dart';
-import 'package:unified_logger/unified_logger.dart';
 
 class InviteGateBloc extends Bloc<InviteGateEvent, InviteGateState> {
   InviteGateBloc({required InviteApiClient inviteApiClient})
     : _inviteApiClient = inviteApiClient,
       super(const InviteGateState()) {
-    on<InviteGateConfigRequested>(_onConfigRequested, transformer: droppable());
     on<InviteGateCodeSubmitted>(_onCodeSubmitted, transformer: droppable());
     on<InviteGateGeneralErrorSet>(_onGeneralErrorSet);
     on<InviteGateTransientCleared>(_onTransientCleared);
@@ -21,62 +19,6 @@ class InviteGateBloc extends Bloc<InviteGateEvent, InviteGateState> {
   }
 
   final InviteApiClient _inviteApiClient;
-
-  Future<void> _onConfigRequested(
-    InviteGateConfigRequested event,
-    Emitter<InviteGateState> emit,
-  ) async {
-    if (!event.force) {
-      if (state.configStatus == InviteGateConfigStatus.loading) {
-        return;
-      }
-      if (state.configStatus == InviteGateConfigStatus.success &&
-          state.config != null) {
-        return;
-      }
-    }
-
-    emit(
-      state.copyWith(
-        configStatus: InviteGateConfigStatus.loading,
-        clearGeneralError: true,
-      ),
-    );
-
-    try {
-      final config = await _inviteApiClient.getClientConfig();
-      emit(
-        state.copyWith(
-          configStatus: InviteGateConfigStatus.success,
-          config: config,
-        ),
-      );
-    } on InviteApiException catch (error) {
-      Log.error(
-        'Failed to load invite config: ${error.message}',
-        name: 'InviteGateBloc',
-        category: LogCategory.auth,
-      );
-      emit(
-        state.copyWith(
-          configStatus: InviteGateConfigStatus.failure,
-          clearConfig: true,
-        ),
-      );
-    } catch (error) {
-      Log.error(
-        'Unexpected invite config error: $error',
-        name: 'InviteGateBloc',
-        category: LogCategory.auth,
-      );
-      emit(
-        state.copyWith(
-          configStatus: InviteGateConfigStatus.failure,
-          clearConfig: true,
-        ),
-      );
-    }
-  }
 
   Future<void> _onCodeSubmitted(
     InviteGateCodeSubmitted event,

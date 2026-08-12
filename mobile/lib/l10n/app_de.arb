@@ -1285,8 +1285,6 @@
         }
     },
     "authOk": "OK",
-    "authInviteUnavailable": "Einladungszugang ist vorübergehend nicht verfügbar.",
-    "authInviteUnavailableBody": "Versuch es gleich nochmal oder kontaktier den Support, wenn du Hilfe beim Reinkommen brauchst.",
     "authTryAgain": "Erneut versuchen",
     "authContactSupport": "Support kontaktieren",
     "authCouldNotOpenEmail": "{email} konnte nicht geöffnet werden",

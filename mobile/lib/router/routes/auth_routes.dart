@@ -1,7 +1,9 @@
 // ABOUTME: Auth-entry routes (welcome subtree, key import, nostr connect, reset, verify)
 // ABOUTME: Split from app_router.dart (#4508)
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/providers/invite_availability_providers.dart';
 import 'package:openvine/router/invite_availability_redirects.dart';
 import 'package:openvine/router/routes/router_guards.dart';
 import 'package:openvine/screens/auth/create_account_screen.dart';
@@ -15,7 +17,7 @@ import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 
-List<RouteBase> authRoutes() {
+List<RouteBase> authRoutes(Ref ref) {
   return [
     GoRoute(
       path: WelcomeScreen.path,
@@ -28,7 +30,10 @@ List<RouteBase> authRoutes() {
         GoRoute(
           path: 'invite',
           name: InviteGateScreen.routeName,
-          redirect: inviteGateRedirectIfDisabled,
+          redirect: (_, state) => inviteGateRedirectIfDisabled(
+            ref.read(inviteAvailabilityCubitProvider),
+            state,
+          ),
           builder: (_, state) => InviteGateScreen(
             initialCode: state.uri.queryParameters['code'],
             initialError: state.uri.queryParameters['error'],

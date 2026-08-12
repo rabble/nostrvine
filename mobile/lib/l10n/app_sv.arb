@@ -1285,8 +1285,6 @@
         }
     },
     "authOk": "OK",
-    "authInviteUnavailable": "Inbjudningsåtkomst är tillfälligt otillgänglig.",
-    "authInviteUnavailableBody": "Försök igen om en stund eller kontakta supporten om du behöver hjälp att komma in.",
     "authTryAgain": "Försök igen",
     "authContactSupport": "Kontakta support",
     "authCouldNotOpenEmail": "Kunde inte öppna {email}",

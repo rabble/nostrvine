@@ -1285,8 +1285,6 @@
         }
     },
     "authOk": "OK",
-    "authInviteUnavailable": "Accesul prin invitație e temporar indisponibil.",
-    "authInviteUnavailableBody": "Încearcă din nou într-un moment, sau contactează asistența dacă ai nevoie de ajutor ca să intri.",
     "authTryAgain": "Încearcă din nou",
     "authContactSupport": "Contactează asistența",
     "authCouldNotOpenEmail": "N-am putut deschide {email}",

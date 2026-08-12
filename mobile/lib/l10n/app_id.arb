@@ -1282,8 +1282,6 @@
         }
     },
     "authOk": "OK",
-    "authInviteUnavailable": "Akses undangan sementara tidak tersedia.",
-    "authInviteUnavailableBody": "Coba lagi sebentar, atau hubungi dukungan kalau kamu butuh bantuan untuk masuk.",
     "authTryAgain": "Coba lagi",
     "authContactSupport": "Hubungi dukungan",
     "authCouldNotOpenEmail": "Tidak bisa membuka {email}",

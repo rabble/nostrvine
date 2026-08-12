@@ -3158,14 +3158,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get authOk => 'OK';
 
   @override
-  String get authInviteUnavailable =>
-      'Akses undangan sementara tidak tersedia.';
-
-  @override
-  String get authInviteUnavailableBody =>
-      'Coba lagi sebentar, atau hubungi dukungan kalau kamu butuh bantuan untuk masuk.';
-
-  @override
   String get authTryAgain => 'Coba lagi';
 
   @override

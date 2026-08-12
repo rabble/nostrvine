@@ -3204,14 +3204,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get authOk => 'OK';
 
   @override
-  String get authInviteUnavailable =>
-      'Truy cập bằng mã mời tạm thời không khả dụng.';
-
-  @override
-  String get authInviteUnavailableBody =>
-      'Thử lại sau ít phút, hoặc liên hệ hỗ trợ nếu bạn cần giúp để vào.';
-
-  @override
   String get authTryAgain => 'Thử lại';
 
   @override

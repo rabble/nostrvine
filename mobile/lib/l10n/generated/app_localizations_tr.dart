@@ -3166,14 +3166,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get authOk => 'Tamam';
 
   @override
-  String get authInviteUnavailable =>
-      'Davet erişimi geçici olarak kullanılamıyor.';
-
-  @override
-  String get authInviteUnavailableBody =>
-      'Biraz sonra tekrar dene veya yardım gerekiyorsa destek ile iletişime geç.';
-
-  @override
   String get authTryAgain => 'Tekrar dene';
 
   @override

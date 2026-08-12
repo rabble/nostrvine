@@ -3138,13 +3138,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get authOk => 'እሺ';
 
   @override
-  String get authInviteUnavailable => 'የግብዣ መዳረሻ ለጊዜው አይገኝም።';
-
-  @override
-  String get authInviteUnavailableBody =>
-      'ከአፍታ በኋላ እንደገና ይሞክሩ፣ ወይም ለመግባት እገዛ ከፈለጉ ድጋፍን ያግኙ።';
-
-  @override
   String get authTryAgain => 'እንደገና ይሞክሩ';
 
   @override

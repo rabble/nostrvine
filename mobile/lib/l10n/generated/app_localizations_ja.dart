@@ -3030,12 +3030,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get authOk => 'OK';
 
   @override
-  String get authInviteUnavailable => '招待アクセスが一時的に使えないよ。';
-
-  @override
-  String get authInviteUnavailableBody => '少し待ってからもう一回試してみて。参加で困ったらサポートに連絡してね。';
-
-  @override
   String get authTryAgain => 'もう一回';
 
   @override

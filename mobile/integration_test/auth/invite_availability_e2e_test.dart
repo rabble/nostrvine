@@ -91,7 +91,6 @@ void main() {
       final tester = $.tester;
       addTearDown(restoreOpenMode);
       await setInviteOnboardingMode('invite_code_required');
-      addTearDown(restoreOpenMode);
 
       final originalOnError = suppressSetStateErrors();
       addTearDown(() => restoreErrorHandler(originalOnError));

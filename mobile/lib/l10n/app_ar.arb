@@ -1276,8 +1276,6 @@
         }
     },
     "authOk": "حسنًا",
-    "authInviteUnavailable": "وصول الدعوة غير متاح مؤقتًا.",
-    "authInviteUnavailableBody": "حاول بعد لحظات، أو تواصل مع الدعم إذا احتجت مساعدة.",
     "authTryAgain": "حاول مرّة أخرى",
     "authContactSupport": "اتصل بالدعم",
     "authCouldNotOpenEmail": "تعذّر فتح {email}",

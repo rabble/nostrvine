@@ -3209,14 +3209,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get authOk => 'OK';
 
   @override
-  String get authInviteUnavailable =>
-      'Invite-toegang is tijdelijk niet beschikbaar.';
-
-  @override
-  String get authInviteUnavailableBody =>
-      'Probeer het zo nog eens, of neem contact op met support als je hulp nodig hebt om binnen te komen.';
-
-  @override
   String get authTryAgain => 'Opnieuw proberen';
 
   @override

@@ -1285,8 +1285,6 @@
         }
     },
     "authOk": "OK",
-    "authInviteUnavailable": "O acesso por convite está temporariamente indisponível.",
-    "authInviteUnavailableBody": "Tente novamente em instantes ou entre em contato com o suporte se precisar de ajuda.",
     "authTryAgain": "Tentar novamente",
     "authContactSupport": "Contatar suporte",
     "authCouldNotOpenEmail": "Não foi possível abrir {email}",

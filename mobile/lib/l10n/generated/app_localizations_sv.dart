@@ -3194,14 +3194,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get authOk => 'OK';
 
   @override
-  String get authInviteUnavailable =>
-      'Inbjudningsåtkomst är tillfälligt otillgänglig.';
-
-  @override
-  String get authInviteUnavailableBody =>
-      'Försök igen om en stund eller kontakta supporten om du behöver hjälp att komma in.';
-
-  @override
   String get authTryAgain => 'Försök igen';
 
   @override

@@ -11,7 +11,9 @@ import 'constants.dart';
 
 /// Invite-service e2e admin secret (`fastly.toml` / docker config store).
 ///
-/// Public key is `79be667e…f81798`, listed in the e2e image `admin_pubkeys`.
+/// Public key is
+/// `79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798`,
+/// listed in the e2e image `admin_pubkeys`.
 const inviteE2eAdminPrivateKey =
     '0000000000000000000000000000000000000000000000000000000000000001';
 
@@ -27,10 +29,7 @@ Uri get _adminGenerateUri =>
 
 /// Reads the live invite-service `onboardingMode`.
 Future<String> fetchInviteOnboardingMode() async {
-  final body = await _httpJson(
-    method: 'GET',
-    uri: inviteClientConfigUri,
-  );
+  final body = await _httpJson(method: 'GET', uri: inviteClientConfigUri);
   final mode = body['onboardingMode'] as String?;
   if (mode == null || mode.isEmpty) {
     throw StateError('client-config missing onboardingMode: $body');

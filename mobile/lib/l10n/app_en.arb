@@ -1976,8 +1976,6 @@
     }
   },
   "authOk": "OK",
-  "authInviteUnavailable": "Invite access is temporarily unavailable.",
-  "authInviteUnavailableBody": "Try again in a moment, or contact support if you need help getting in.",
   "authTryAgain": "Try again",
   "authContactSupport": "Contact support",
   "authCouldNotOpenEmail": "Could not open {email}",

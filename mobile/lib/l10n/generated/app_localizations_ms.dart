@@ -3220,14 +3220,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get authOk => 'OK';
 
   @override
-  String get authInviteUnavailable =>
-      'Akses jemputan tidak tersedia buat sementara.';
-
-  @override
-  String get authInviteUnavailableBody =>
-      'Cuba lagi sebentar nanti, atau hubungi sokongan jika anda perlukan bantuan untuk masuk.';
-
-  @override
   String get authTryAgain => 'Cuba lagi';
 
   @override

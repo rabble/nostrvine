@@ -2679,12 +2679,17 @@ class _DivineAppState extends ConsumerState<DivineApp>
     // relay pool self-heals app-wide the moment the network returns (#3161).
     ref.watch(connectivityRelayReconnectProvider);
 
+    final inviteApiClient = ref.watch(inviteApiClientProvider);
+    final inviteAvailabilityRepository = ref.watch(
+      inviteAvailabilityRepositoryProvider,
+    );
+    final inviteAvailabilityCubit = ref.watch(inviteAvailabilityCubitProvider)
+      ..load();
+
     // Wrap with geo-blocking check first, then lifecycle handler
     Widget wrapped = MultiRepositoryProvider(
       providers: [
-        RepositoryProvider<InviteApiClient>.value(
-          value: ref.watch(inviteApiClientProvider),
-        ),
+        RepositoryProvider<InviteApiClient>.value(value: inviteApiClient),
       ],
       // The two app-shell badge cubits + their repository-sync listeners live
       // in AppShellBadgeScope so main.dart and its test pump the exact same
@@ -2730,14 +2735,17 @@ class _DivineAppState extends ConsumerState<DivineApp>
                 )..add(const CameraPermissionRefresh()),
               ),
               BlocProvider.value(
-                value: ref.watch(inviteAvailabilityCubitProvider)..load(),
+                key: ValueKey(inviteAvailabilityCubit),
+                value: inviteAvailabilityCubit,
               ),
               BlocProvider(
+                key: ValueKey(('inviteGateBloc', inviteApiClient)),
                 create: (context) => InviteGateBloc(
                   inviteApiClient: context.read<InviteApiClient>(),
                 ),
               ),
               BlocProvider(
+                key: ValueKey(('emailVerificationCubit', inviteApiClient)),
                 create: (context) => EmailVerificationCubit(
                   oauthClient: ref.read(oauthClientProvider),
                   authService: ref.read(authServiceProvider),
@@ -2746,14 +2754,13 @@ class _DivineAppState extends ConsumerState<DivineApp>
                 ),
               ),
               BlocProvider(
+                key: ValueKey((inviteApiClient, inviteAvailabilityRepository)),
                 lazy: false,
                 create: (context) => InviteStatusCubit(
                   inviteApiClient: context.read<InviteApiClient>(),
                   initialAuthSession: ref.read(inviteStatusAuthSessionProvider),
                   authSessionStream: ref.read(inviteStatusAuthSessionsProvider),
-                  availabilityRepository: ref.read(
-                    inviteAvailabilityRepositoryProvider,
-                  ),
+                  availabilityRepository: inviteAvailabilityRepository,
                 )..start(),
               ),
               BlocProvider(

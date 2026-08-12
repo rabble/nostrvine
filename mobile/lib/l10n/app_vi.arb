@@ -1786,8 +1786,6 @@
     }
   },
   "authOk": "OK",
-  "authInviteUnavailable": "Truy cập bằng mã mời tạm thời không khả dụng.",
-  "authInviteUnavailableBody": "Thử lại sau ít phút, hoặc liên hệ hỗ trợ nếu bạn cần giúp để vào.",
   "authTryAgain": "Thử lại",
   "authContactSupport": "Liên hệ hỗ trợ",
   "authCouldNotOpenEmail": "Không mở được {email}",

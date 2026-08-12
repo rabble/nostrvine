@@ -1285,8 +1285,6 @@
         }
     },
     "authOk": "OK",
-    "authInviteUnavailable": "Dostęp z zaproszeniem jest chwilowo niedostępny.",
-    "authInviteUnavailableBody": "Spróbuj ponownie za chwilę lub skontaktuj się z pomocą, jeśli potrzebujesz wejścia.",
     "authTryAgain": "Spróbuj ponownie",
     "authContactSupport": "Skontaktuj się z pomocą",
     "authCouldNotOpenEmail": "Nie można otworzyć {email}",

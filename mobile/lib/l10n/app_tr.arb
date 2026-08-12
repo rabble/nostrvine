@@ -1282,8 +1282,6 @@
         }
     },
     "authOk": "Tamam",
-    "authInviteUnavailable": "Davet erişimi geçici olarak kullanılamıyor.",
-    "authInviteUnavailableBody": "Biraz sonra tekrar dene veya yardım gerekiyorsa destek ile iletişime geç.",
     "authTryAgain": "Tekrar dene",
     "authContactSupport": "Destekle iletişime geç",
     "authCouldNotOpenEmail": "{email} açılamadı",

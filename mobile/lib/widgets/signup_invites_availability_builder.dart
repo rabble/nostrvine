@@ -18,9 +18,8 @@ class SignupInvitesAvailabilityBuilder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    try {
-      context.read<InviteAvailabilityCubit>();
-    } on ProviderNotFoundException {
+    final cubit = context.read<InviteAvailabilityCubit?>();
+    if (cubit == null) {
       return builder(context, const InviteAvailabilityState());
     }
     return BlocBuilder<InviteAvailabilityCubit, InviteAvailabilityState>(
