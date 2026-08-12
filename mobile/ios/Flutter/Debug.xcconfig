@@ -1,2 +1,10 @@
 #include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"
 #include "Generated.xcconfig"
+
+// Keep debug builds out of the production Firebase Performance dataset
+// (#7123). Read via Info.plist's firebase_performance_collection_deactivated.
+// This outranks the persisted collection preference, so it silences developer
+// devices that already cached "enabled" from a build predating that fix, and
+// it applies from the first launch - which is what `_app_start` needs, since
+// that trace is captured natively before Dart runs.
+FIREBASE_PERFORMANCE_COLLECTION_DEACTIVATED=YES

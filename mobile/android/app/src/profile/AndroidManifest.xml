@@ -4,4 +4,17 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Keep profile builds out of the production Firebase Performance dataset
+         (#7123). A profile build runs on a developer device and is not a real
+         user, but its timings are indistinguishable from one once they land.
+
+         See the debug manifest for why this is `_deactivated` rather than
+         `_enabled=false`, and for how to collect locally when you actually
+         want to. -->
+    <application>
+        <meta-data
+            android:name="firebase_performance_collection_deactivated"
+            android:value="true" />
+    </application>
 </manifest>
