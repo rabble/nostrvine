@@ -19,8 +19,6 @@ dev_dependencies:
 dependencies:
   db_client:
   equatable: ^2.0.8
-  flutter:
-    sdk: flutter
   funnelcake_api_client:
   http: ^1.2.2
   models:
