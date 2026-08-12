@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  merge_group:
   workflow_dispatch:
 
 concurrency:
@@ -22,86 +23,21 @@ jobs:
       app: ${{ steps.scope.outputs.app }}
       native: ${{ steps.scope.outputs.native }}
     steps:
-      # No checkout: the changed-file list comes from the REST API. A
-      # `fetch-depth: 0` clone cost ~23s of this workflow's critical path
-      # (every other job `needs: changes`) to produce a list the API already
-      # has.
+      # Fetch only the test-backed detector. The changed-file list itself still
+      # comes from the REST API, avoiding a full-history checkout on the
+      # workflow's critical path (every other job `needs: changes`).
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: mobile/scripts/ci/detect_mobile_ci_scope.sh
+          sparse-checkout-cone-mode: false
       - name: Detect whether app CI is required
         id: scope
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          if [ "${GITHUB_EVENT_NAME}" != "pull_request" ]; then
-            echo "app=true" >> "$GITHUB_OUTPUT"
-            echo "native=true" >> "$GITHUB_OUTPUT"
-            echo "Non-PR event; running full app CI."
-            exit 0
-          fi
-
-          # The files endpoint caps at 3000 entries. A PR that large is not a
-          # scoped change, so fall open to the full matrix rather than
-          # under-running CI on a truncated list.
-          changed_total=$(gh api "/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.changed_files')
-          if [ "$changed_total" -gt 3000 ]; then
-            echo "app=true" >> "$GITHUB_OUTPUT"
-            echo "native=true" >> "$GITHUB_OUTPUT"
-            echo "PR touches $changed_total files (> 3000 API cap); running full app CI."
-            exit 0
-          fi
-
-          gh api --method GET --paginate -F per_page=100 "/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" \
-            --jq '.[].filename' > /tmp/mobile-ci-changed-files.txt
-          echo "Changed files:"
-          cat /tmp/mobile-ci-changed-files.txt
-
-          app=false
-          native=false
-          while IFS= read -r path; do
-            case "$path" in
-              .github/ci-timing-budgets.json)
-                app=true
-                ;;
-              .github/workflows/*)
-                app=true
-                native=true
-                ;;
-              *.md|docs/*|brand-guidelines/*|mobile/docs/*)
-                # Docs-only changes do not need the full app test matrix.
-                ;;
-              mobile/lib/*|mobile/test/*|mobile/integration_test/*|mobile/scripts/*)
-                app=true
-                ;;
-              mobile/android/*|mobile/ios/*|mobile/macos/*|mobile/web/*|mobile/assets/*|mobile/fonts/*|mobile/overrides/*|mobile/l10n/*)
-                app=true
-                ;;
-              mobile/pubspec.yaml|mobile/pubspec.lock|mobile/dart_test.yaml|mobile/analysis_options.yaml|mobile/build.yaml|mobile/l10n.yaml)
-                app=true
-                ;;
-              mobile/*)
-                app=true
-                ;;
-            esac
-            # The transport-security guard reads one Android XML plus three
-            # Info.plists and nothing else, so its verdict cannot change
-            # unless a native config or the guard itself changed. Matched at
-            # directory level (a superset of the guard's inputs) so the gate
-            # can't silently drift when the guard gains a fourth plist.
-            case "$path" in
-              mobile/android/*|mobile/ios/*|mobile/macos/*|mobile/scripts/check_native_transport_security.sh|mobile/scripts/check_ios_shipping_versions.sh)
-                native=true
-                ;;
-            esac
-          done < /tmp/mobile-ci-changed-files.txt
-
-          echo "app=$app" >> "$GITHUB_OUTPUT"
-          echo "native=$native" >> "$GITHUB_OUTPUT"
-          if [ "$app" = "true" ]; then
-            echo "App CI required."
-          else
-            echo "Package-only/docs-only change; app CI jobs may be skipped."
-          fi
-          echo "Native transport-security inputs changed: $native"
+          QUEUE_BASE_SHA: ${{ github.event.merge_group.base_sha }}
+          QUEUE_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
+        run: bash mobile/scripts/ci/detect_mobile_ci_scope.sh
 
   codex-config:
     name: Codex Configuration
@@ -114,7 +50,7 @@ jobs:
   generated-files:
     name: Generated Files
     needs: changes
-    if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.app == 'true' }}
+    if: ${{ needs.changes.outputs.app == 'true' }}
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -141,7 +77,7 @@ jobs:
         # main already recorded. Gating it also skips the apt install of
         # libxml2-utils (~42s, of which `apt-get update` alone is ~28s), which
         # is the single most expensive step in this job after codegen.
-        if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.native == 'true' }}
+        if: ${{ needs.changes.outputs.native == 'true' }}
         run: |
           if ! command -v xmllint >/dev/null 2>&1; then
             sudo apt-get update -qq
@@ -149,7 +85,7 @@ jobs:
           fi
           bash scripts/check_native_transport_security.sh
       - name: 🍏 Verify iOS shipping target versions
-        if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.native == 'true' }}
+        if: ${{ needs.changes.outputs.native == 'true' }}
         run: bash scripts/check_ios_shipping_versions.sh
       - name: 🌐 Verify backend-host defaults stay on *.divine.video
         run: bash scripts/check_backend_host_defaults.sh
@@ -289,7 +225,7 @@ jobs:
   format:
     name: Format
     needs: changes
-    if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.app == 'true' }}
+    if: ${{ needs.changes.outputs.app == 'true' }}
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -313,7 +249,7 @@ jobs:
   analyze:
     name: Analyze
     needs: changes
-    if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.app == 'true' }}
+    if: ${{ needs.changes.outputs.app == 'true' }}
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -333,7 +269,7 @@ jobs:
   tests:
     name: Tests (shard ${{ strategy.job-index }}/${{ strategy.job-total }})
     needs: changes
-    if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.app == 'true' }}
+    if: ${{ needs.changes.outputs.app == 'true' }}
     runs-on: ubuntu-24.04
     strategy:
       # Every shard must report. Stopping the others on one failure hides
@@ -379,7 +315,7 @@ jobs:
   vgv-tag-gate:
     name: VGV Tag Gate
     needs: changes
-    if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.app == 'true' }}
+    if: ${{ needs.changes.outputs.app == 'true' }}
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -502,7 +438,7 @@ jobs:
           fi
       - name: Checkout timing budget inputs
         uses: actions/checkout@v4
-        if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.app == 'true' }}
+        if: ${{ needs.changes.outputs.app == 'true' }}
         with:
           sparse-checkout: |
             .github/ci-timing-budgets.json
@@ -514,7 +450,7 @@ jobs:
         # .github/ci-timing-budgets.json; over-warn annotates the PR, over-fail
         # fails this gate. Guards the wins recorded in PERF_BASELINE.md from
         # eroding silently.
-        if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.app == 'true' }}
+        if: ${{ needs.changes.outputs.app == 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
