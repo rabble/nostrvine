@@ -3417,14 +3417,13 @@ void main() {
       test(
         'keeps a non-Latin lead-in mention that straddles the cut',
         () async {
-          // Post-#6839 the lead-in test is Unicode-aware, so this case behaved
-          // exactly like the Latin one — the mention was deleted in every
-          // locale. #6763 asks for both to be asserted so the fix cannot
-          // silently regress to being locale-sensitive again.
+          // #6763 asks for Latin and non-Latin lead-in so the fix cannot
+          // silently regress to being locale-sensitive. Lead-in is long enough
+          // that the npub straddles the 120-char cap (not merely fits under it).
           const npub =
               'npub180cvv07tjdrrgpa9jzd0cdkej42kwsaxq9rz7gvdpjx6nz004f9uulstw6';
           const cyrillic = 'Привет всем друзьям сегодня';
-          const content = '$cyrillic nostr:$npub и ещё немного текста';
+          final content = '$cyrillic ${'слово ' * 14}nostr:$npub tail';
           stubNotifications([
             makeNotification(
               notificationType: 'comment',
@@ -3436,8 +3435,10 @@ void main() {
 
           final page = await repository.getNotifications();
           final item = page.items.single as VideoNotification;
+          expect(content.length, greaterThan(120));
           expect(item.commentText, contains(npub));
           expect(item.commentText, startsWith(cyrillic));
+          expect(item.commentText, endsWith('...'));
         },
       );
 
