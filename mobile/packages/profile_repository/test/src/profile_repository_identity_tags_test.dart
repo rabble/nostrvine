@@ -39,11 +39,15 @@ Event _identityEvent({
 IdentityEventRow _row({
   required String tagsJson,
   int sourceKind = ProfileRepository.identityEventKind,
+  int? sourceCreatedAt,
+  String? sourceEventId,
 }) {
   return IdentityEventRow(
     pubkey: _pubkey,
     tagsJson: tagsJson,
     sourceKind: sourceKind,
+    sourceCreatedAt: sourceCreatedAt,
+    sourceEventId: sourceEventId,
   );
 }
 
@@ -75,8 +79,13 @@ void main() {
         pubkey: any(named: 'pubkey'),
         tagsJson: any(named: 'tagsJson'),
         sourceKind: any(named: 'sourceKind'),
+        sourceCreatedAt: any(named: 'sourceCreatedAt'),
+        sourceEventId: any(named: 'sourceEventId'),
       ),
     ).thenAnswer((_) async {});
+    when(
+      () => identityEventsDao.getEvent(any()),
+    ).thenAnswer((_) async => null);
   });
 
   void stubQuery(List<Event> events) {
@@ -143,15 +152,13 @@ void main() {
       'returns the live kind-10011 i tags and caches them, picking the '
       'newest event',
       () async {
-        stubQuery([
-          _identityEvent(createdAt: 100),
-          _identityEvent(
-            createdAt: 200,
-            tags: const [
-              ['i', 'github:newest', 'newest-proof'],
-            ],
-          ),
-        ]);
+        final newest = _identityEvent(
+          createdAt: 200,
+          tags: const [
+            ['i', 'github:newest', 'newest-proof'],
+          ],
+        );
+        stubQuery([_identityEvent(createdAt: 100), newest]);
 
         final tags = await repository.freshIdentityTags(
           pubkey: _pubkey,
@@ -169,8 +176,151 @@ void main() {
             pubkey: _pubkey,
             tagsJson: '[["i","github:newest","newest-proof"]]',
             sourceKind: ProfileRepository.identityEventKind,
+            sourceCreatedAt: 200,
+            sourceEventId: newest.id,
           ),
         ).called(1);
+      },
+    );
+
+    test(
+      'keeps the cached claims when the live event is superseded by the '
+      'cached one',
+      () async {
+        final stale = _identityEvent(
+          createdAt: 100,
+          tags: const [
+            ['i', 'github:modern', 'modern-proof'],
+          ],
+        );
+        stubQuery([stale]);
+        when(() => identityEventsDao.getEvent(_pubkey)).thenAnswer(
+          (_) async => _row(
+            tagsJson:
+                '[["i","github:modern","modern-proof"],'
+                '["i","twitter:jack","oauth"]]',
+            sourceCreatedAt: 200,
+            sourceEventId: 'f' * 64,
+          ),
+        );
+
+        final tags = await repository.freshIdentityTags(
+          pubkey: _pubkey,
+          kind0Tags: _kind0Tags,
+        );
+
+        expect(
+          tags,
+          equals([
+            ['i', 'github:modern', 'modern-proof'],
+            ['i', 'twitter:jack', 'oauth'],
+          ]),
+        );
+        // Overwriting here would flip the chips back and erase the newer
+        // event the write path checks a publish base against.
+        verifyNever(
+          () => identityEventsDao.upsertEvent(
+            pubkey: any(named: 'pubkey'),
+            tagsJson: any(named: 'tagsJson'),
+            sourceKind: any(named: 'sourceKind'),
+            sourceCreatedAt: any(named: 'sourceCreatedAt'),
+            sourceEventId: any(named: 'sourceEventId'),
+          ),
+        );
+      },
+    );
+
+    test('caches a live event newer than the cached one', () async {
+      final live = _identityEvent(createdAt: 300);
+      stubQuery([live]);
+      when(() => identityEventsDao.getEvent(_pubkey)).thenAnswer(
+        (_) async => _row(
+          tagsJson: '[["i","twitter:jack","oauth"]]',
+          sourceCreatedAt: 200,
+          sourceEventId: 'f' * 64,
+        ),
+      );
+
+      final tags = await repository.freshIdentityTags(
+        pubkey: _pubkey,
+        kind0Tags: _kind0Tags,
+      );
+
+      // An unlink from another device arrives as a newer event, so the
+      // guard must never hold it back.
+      expect(
+        tags,
+        equals([
+          ['i', 'github:modern', 'modern-proof'],
+        ]),
+      );
+      verify(
+        () => identityEventsDao.upsertEvent(
+          pubkey: _pubkey,
+          tagsJson: '[["i","github:modern","modern-proof"]]',
+          sourceKind: ProfileRepository.identityEventKind,
+          sourceCreatedAt: 300,
+          sourceEventId: live.id,
+        ),
+      ).called(1);
+    });
+
+    test(
+      'caches a live event over a cached row that carries no source event',
+      () async {
+        stubQuery([_identityEvent(createdAt: 100)]);
+        when(() => identityEventsDao.getEvent(_pubkey)).thenAnswer(
+          (_) async => _row(tagsJson: '[["i","twitter:jack","oauth"]]'),
+        );
+
+        final tags = await repository.freshIdentityTags(
+          pubkey: _pubkey,
+          kind0Tags: _kind0Tags,
+        );
+
+        // Rows written before the source columns existed have nothing to
+        // compare against, so the live event wins and stamps them.
+        expect(
+          tags,
+          equals([
+            ['i', 'github:modern', 'modern-proof'],
+          ]),
+        );
+        verify(
+          () => identityEventsDao.upsertEvent(
+            pubkey: _pubkey,
+            tagsJson: any(named: 'tagsJson'),
+            sourceKind: ProfileRepository.identityEventKind,
+            sourceCreatedAt: 100,
+            sourceEventId: any(named: 'sourceEventId'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'keeps the live event when the superseding cached row is corrupt',
+      () async {
+        stubQuery([_identityEvent(createdAt: 100)]);
+        when(() => identityEventsDao.getEvent(_pubkey)).thenAnswer(
+          (_) async => _row(
+            tagsJson: 'not json',
+            sourceCreatedAt: 200,
+            sourceEventId: 'f' * 64,
+          ),
+        );
+
+        final tags = await repository.freshIdentityTags(
+          pubkey: _pubkey,
+          kind0Tags: _kind0Tags,
+        );
+
+        expect(
+          tags,
+          equals([
+            ['i', 'github:modern', 'modern-proof'],
+          ]),
+        );
       },
     );
 
@@ -249,6 +399,8 @@ void main() {
           pubkey: any(named: 'pubkey'),
           tagsJson: any(named: 'tagsJson'),
           sourceKind: any(named: 'sourceKind'),
+          sourceCreatedAt: any(named: 'sourceCreatedAt'),
+          sourceEventId: any(named: 'sourceEventId'),
         ),
       );
     });
@@ -278,6 +430,8 @@ void main() {
             pubkey: any(named: 'pubkey'),
             tagsJson: any(named: 'tagsJson'),
             sourceKind: any(named: 'sourceKind'),
+            sourceCreatedAt: any(named: 'sourceCreatedAt'),
+            sourceEventId: any(named: 'sourceEventId'),
           ),
         );
       },
@@ -388,6 +542,8 @@ void main() {
             pubkey: any(named: 'pubkey'),
             tagsJson: any(named: 'tagsJson'),
             sourceKind: any(named: 'sourceKind'),
+            sourceCreatedAt: any(named: 'sourceCreatedAt'),
+            sourceEventId: any(named: 'sourceEventId'),
           ),
         ).thenThrow(Exception('disk full'));
 
@@ -404,6 +560,40 @@ void main() {
             ['i', 'github:modern', 'modern-proof'],
           ]),
         );
+      },
+    );
+
+    test(
+      'keeps the live kind-10011 tags when the cache read throws',
+      () async {
+        final live = _identityEvent(createdAt: 100);
+        stubQuery([live]);
+        when(
+          () => identityEventsDao.getEvent(_pubkey),
+        ).thenThrow(Exception('db closed'));
+
+        final tags = await repository.freshIdentityTags(
+          pubkey: _pubkey,
+          kind0Tags: _kind0Tags,
+        );
+
+        // Nothing can say the live event is superseded, and it is still the
+        // freshest source in hand — so it wins and gets stamped.
+        expect(
+          tags,
+          equals([
+            ['i', 'github:modern', 'modern-proof'],
+          ]),
+        );
+        verify(
+          () => identityEventsDao.upsertEvent(
+            pubkey: _pubkey,
+            tagsJson: '[["i","github:modern","modern-proof"]]',
+            sourceKind: ProfileRepository.identityEventKind,
+            sourceCreatedAt: 100,
+            sourceEventId: live.id,
+          ),
+        ).called(1);
       },
     );
 
@@ -434,6 +624,8 @@ void main() {
             pubkey: any(named: 'pubkey'),
             tagsJson: any(named: 'tagsJson'),
             sourceKind: any(named: 'sourceKind'),
+            sourceCreatedAt: any(named: 'sourceCreatedAt'),
+            sourceEventId: any(named: 'sourceEventId'),
           ),
         );
       },

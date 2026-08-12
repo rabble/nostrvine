@@ -1162,6 +1162,7 @@ void main() {
     late List<List<String>>? signedTags;
     late String? signedContent;
     late int? signedKind;
+    late int? signedCreatedAt;
     late bool signerRefuses;
 
     setUpAll(() {
@@ -1177,6 +1178,7 @@ void main() {
       signedTags = null;
       signedContent = null;
       signedKind = null;
+      signedCreatedAt = null;
       signerRefuses = false;
 
       when(() => nostrClient.connectedRelays).thenReturn(const ['wss://a']);
@@ -1215,6 +1217,8 @@ void main() {
           pubkey: any(named: 'pubkey'),
           tagsJson: any(named: 'tagsJson'),
           sourceKind: any(named: 'sourceKind'),
+          sourceCreatedAt: any(named: 'sourceCreatedAt'),
+          sourceEventId: any(named: 'sourceEventId'),
         ),
       ).thenAnswer((_) async {});
       when(
@@ -1226,19 +1230,26 @@ void main() {
         nostrClient: nostrClient,
         identityEventsDao: identityEventsDao,
         identityVerificationsDao: verificationsDao,
-        signEvent: ({required kind, required content, required tags}) async {
-          signedKind = kind;
-          signedTags = tags;
-          signedContent = content;
-          if (signerRefuses) return null;
-          return _event(
-            id: _eventId(2),
-            kind: kind,
-            tags: tags,
-            content: content,
-            createdAt: 1500,
-          );
-        },
+        signEvent:
+            ({
+              required kind,
+              required content,
+              required tags,
+              createdAt,
+            }) async {
+              signedKind = kind;
+              signedTags = tags;
+              signedContent = content;
+              signedCreatedAt = createdAt;
+              if (signerRefuses) return null;
+              return _event(
+                id: _eventId(2),
+                kind: kind,
+                tags: tags,
+                content: content,
+                createdAt: createdAt ?? 1500,
+              );
+            },
       );
     });
 
@@ -1834,8 +1845,51 @@ void main() {
             pubkey: _pubkey,
             tagsJson: any(named: 'tagsJson'),
             sourceKind: 10011,
+            sourceCreatedAt: any(named: 'sourceCreatedAt'),
+            sourceEventId: any(named: 'sourceEventId'),
           ),
         ).called(2);
+      });
+
+      test('stamps the cache with the event the tags came from', () async {
+        stubIdentityEvents([
+          _event(
+            id: _eventId(10),
+            kind: 10011,
+            createdAt: 900,
+            tags: [
+              ['i', 'github:octocat', 'abc'],
+            ],
+          ),
+        ]);
+
+        await repo.publishClaim(
+          const IdentityClaim(
+            pubkey: _pubkey,
+            platform: 'twitter',
+            identity: 'jack',
+            proof: 'oauth',
+          ),
+        );
+
+        verify(
+          () => identityEventsDao.upsertEvent(
+            pubkey: _pubkey,
+            tagsJson: any(named: 'tagsJson'),
+            sourceKind: 10011,
+            sourceCreatedAt: 900,
+            sourceEventId: _eventId(10),
+          ),
+        ).called(1);
+        verify(
+          () => identityEventsDao.upsertEvent(
+            pubkey: _pubkey,
+            tagsJson: any(named: 'tagsJson'),
+            sourceKind: 10011,
+            sourceCreatedAt: signedCreatedAt,
+            sourceEventId: _eventId(2),
+          ),
+        ).called(1);
       });
 
       test('starts from an empty list when no source event exists', () async {
@@ -1935,6 +1989,8 @@ void main() {
             pubkey: _pubkey,
             tagsJson: '[["i","github:octocat","abc"]]',
             sourceKind: 10011,
+            sourceCreatedAt: any(named: 'sourceCreatedAt'),
+            sourceEventId: any(named: 'sourceEventId'),
           ),
         ).called(1);
       });
@@ -1945,6 +2001,8 @@ void main() {
             pubkey: any(named: 'pubkey'),
             tagsJson: any(named: 'tagsJson'),
             sourceKind: any(named: 'sourceKind'),
+            sourceCreatedAt: any(named: 'sourceCreatedAt'),
+            sourceEventId: any(named: 'sourceEventId'),
           ),
         ).thenThrow(StateError('disk on fire'));
 
@@ -2006,6 +2064,8 @@ void main() {
             pubkey: any(named: 'pubkey'),
             tagsJson: any(named: 'tagsJson'),
             sourceKind: any(named: 'sourceKind'),
+            sourceCreatedAt: any(named: 'sourceCreatedAt'),
+            sourceEventId: any(named: 'sourceEventId'),
           ),
         );
       });
@@ -2199,7 +2259,7 @@ void main() {
             _event(
               id: _eventId(11),
               kind: 10011,
-              createdAt: 2000,
+              createdAt: signedCreatedAt! + 1,
               tags: [
                 ['i', 'bluesky:alice.bsky.social', 'oauth'],
               ],
@@ -2253,7 +2313,7 @@ void main() {
             _event(
               id: _eventId(1),
               kind: 10011,
-              createdAt: 1500,
+              createdAt: signedCreatedAt!,
               tags: [
                 ['i', 'bluesky:alice.bsky.social', 'oauth'],
               ],
@@ -2305,7 +2365,7 @@ void main() {
             _event(
               id: _eventId(11),
               kind: 10011,
-              createdAt: 2000,
+              createdAt: signedCreatedAt! + 1,
               tags: [
                 ['i', 'github:octocat', 'abc'],
                 ['i', 'telegram:chan', 'new-proof'],
@@ -2325,6 +2385,431 @@ void main() {
           expect(tags.map((t) => t[1]), contains('telegram:chan'));
         },
       );
+    });
+
+    group('when the relay serves an older revision than the snapshot', () {
+      // The window #7081 closes: across an app restart nothing published in
+      // this session vouches for the claim, so only the coordinates the
+      // snapshot carries can tell a lagging relay apart from a real unlink.
+      void stubSnapshot({
+        required int sourceCreatedAt,
+        required String? sourceEventId,
+        String tagsJson =
+            '[["i","github:octocat","abc"],["i","twitter:jack","oauth"]]',
+      }) {
+        when(() => identityEventsDao.getEvent(_pubkey)).thenAnswer(
+          (_) async => IdentityEventRow(
+            pubkey: _pubkey,
+            tagsJson: tagsJson,
+            sourceKind: 10011,
+            sourceCreatedAt: sourceCreatedAt,
+            sourceEventId: sourceEventId,
+          ),
+        );
+      }
+
+      void stubRelayEvent({required int createdAt, required String id}) {
+        stubIdentityEvents([
+          _event(
+            id: id,
+            kind: 10011,
+            createdAt: createdAt,
+            tags: [
+              ['i', 'github:octocat', 'abc'],
+            ],
+          ),
+        ]);
+      }
+
+      test('refuses to publish on it', () async {
+        stubRelayEvent(createdAt: 1000, id: _eventId(10));
+        stubSnapshot(sourceCreatedAt: 2000, sourceEventId: _eventId(20));
+
+        await expectLater(
+          () => repo.publishClaim(
+            const IdentityClaim(
+              pubkey: _pubkey,
+              platform: 'bluesky',
+              identity: 'alice.bsky.social',
+              proof: IdentityClaim.oauthProof,
+            ),
+          ),
+          throwsA(isA<IdentityClaimReadException>()),
+        );
+        verifyNever(() => nostrClient.publishEventAwaitOk(any()));
+      });
+
+      test('refuses to unlink on it', () async {
+        stubRelayEvent(createdAt: 1000, id: _eventId(10));
+        stubSnapshot(sourceCreatedAt: 2000, sourceEventId: _eventId(20));
+
+        await expectLater(
+          () => repo.removeClaim(
+            const IdentityClaim(
+              pubkey: _pubkey,
+              platform: 'github',
+              identity: 'octocat',
+              proof: 'abc',
+            ),
+          ),
+          throwsA(isA<IdentityClaimReadException>()),
+        );
+        verifyNever(() => nostrClient.publishEventAwaitOk(any()));
+      });
+
+      test('refuses a same-second event that loses the id tie-break', () async {
+        stubRelayEvent(createdAt: 2000, id: _eventId(30));
+        stubSnapshot(sourceCreatedAt: 2000, sourceEventId: _eventId(20));
+
+        await expectLater(
+          () => repo.publishClaim(
+            const IdentityClaim(
+              pubkey: _pubkey,
+              platform: 'bluesky',
+              identity: 'alice.bsky.social',
+              proof: IdentityClaim.oauthProof,
+            ),
+          ),
+          throwsA(isA<IdentityClaimReadException>()),
+        );
+      });
+
+      test(
+        'does not overwrite the snapshot with it on the read path',
+        () async {
+          stubRelayEvent(createdAt: 1000, id: _eventId(10));
+          stubSnapshot(sourceCreatedAt: 2000, sourceEventId: _eventId(20));
+          when(
+            () => client.verifyBatch(any()),
+          ).thenThrow(const VerifierNetworkException('offline'));
+
+          await repo.claimsWithVerdicts(_pubkey);
+
+          // Caching it would erase the evidence the next write checks itself
+          // against, turning the refusal above into a silent unlink.
+          verifyNever(
+            () => identityEventsDao.upsertEvent(
+              pubkey: any(named: 'pubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sourceKind: any(named: 'sourceKind'),
+              sourceCreatedAt: any(named: 'sourceCreatedAt'),
+              sourceEventId: any(named: 'sourceEventId'),
+            ),
+          );
+        },
+      );
+    });
+
+    group('when the relay serves a revision the snapshot does not have', () {
+      test(
+        'publishes on it, so an unlink from another device stands',
+        () async {
+          // The other device replaced the event, so its read is newer — the
+          // guard must never turn a real remote unlink into a permanent block.
+          stubIdentityEvents([
+            _event(
+              id: _eventId(10),
+              kind: 10011,
+              createdAt: 3000,
+              tags: [
+                ['i', 'github:octocat', 'abc'],
+              ],
+            ),
+          ]);
+          when(() => identityEventsDao.getEvent(_pubkey)).thenAnswer(
+            (_) async => IdentityEventRow(
+              pubkey: _pubkey,
+              tagsJson:
+                  '[["i","github:octocat","abc"],["i","twitter:jack","oauth"]]',
+              sourceKind: 10011,
+              sourceCreatedAt: 2000,
+              sourceEventId: _eventId(20),
+            ),
+          );
+
+          final tags = await repo.publishClaim(
+            const IdentityClaim(
+              pubkey: _pubkey,
+              platform: 'bluesky',
+              identity: 'alice.bsky.social',
+              proof: IdentityClaim.oauthProof,
+            ),
+          );
+
+          expect(tags.map((t) => t[1]), isNot(contains('twitter:jack')));
+          expect(
+            tags.map((t) => t[1]),
+            containsAll(<String>[
+              'github:octocat',
+              'bluesky:alice.bsky.social',
+            ]),
+          );
+        },
+      );
+
+      test('publishes when the snapshot predates the source columns', () async {
+        stubIdentityEvents([
+          _event(
+            id: _eventId(10),
+            kind: 10011,
+            tags: [
+              ['i', 'github:octocat', 'abc'],
+            ],
+          ),
+        ]);
+        when(() => identityEventsDao.getEvent(_pubkey)).thenAnswer(
+          (_) async => const IdentityEventRow(
+            pubkey: _pubkey,
+            tagsJson:
+                '[["i","github:octocat","abc"],["i","twitter:jack","oauth"]]',
+            sourceKind: 10011,
+          ),
+        );
+
+        // A row written before #7081 has nothing to compare against.
+        // Blocking every write until it is restamped would be worse than the
+        // window it would close.
+        final tags = await repo.publishClaim(
+          const IdentityClaim(
+            pubkey: _pubkey,
+            platform: 'bluesky',
+            identity: 'alice.bsky.social',
+            proof: IdentityClaim.oauthProof,
+          ),
+        );
+
+        expect(tags, hasLength(2));
+      });
+
+      test(
+        'keeps working against a snapshot that tracks every write',
+        () async {
+          // The mocked DAO otherwise forgets, which is the one thing the real
+          // one never does: a second link in the same session reads its own
+          // stamp back, and the guard must recognise it rather than refuse.
+          IdentityEventRow? stored;
+          when(
+            () => identityEventsDao.upsertEvent(
+              pubkey: any(named: 'pubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sourceKind: any(named: 'sourceKind'),
+              sourceCreatedAt: any(named: 'sourceCreatedAt'),
+              sourceEventId: any(named: 'sourceEventId'),
+            ),
+          ).thenAnswer((invocation) async {
+            final named = invocation.namedArguments;
+            stored = IdentityEventRow(
+              pubkey: named[#pubkey] as String,
+              tagsJson: named[#tagsJson] as String,
+              sourceKind: named[#sourceKind] as int,
+              sourceCreatedAt: named[#sourceCreatedAt] as int?,
+              sourceEventId: named[#sourceEventId] as String?,
+            );
+          });
+          when(
+            () => identityEventsDao.getEvent(_pubkey),
+          ).thenAnswer((_) async => stored);
+          stubIdentityEvents([
+            _event(
+              id: _eventId(10),
+              kind: 10011,
+              tags: [
+                ['i', 'bluesky:alice.bsky.social', 'oauth'],
+              ],
+            ),
+          ]);
+
+          await repo.publishClaim(
+            const IdentityClaim(
+              pubkey: _pubkey,
+              platform: 'github',
+              identity: 'octocat',
+              proof: 'abc',
+            ),
+          );
+          // The relay still answers with the pre-github event.
+          final afterSecond = await repo.publishClaim(
+            const IdentityClaim(
+              pubkey: _pubkey,
+              platform: 'telegram',
+              identity: 'chan',
+              proof: 'chan/2',
+            ),
+          );
+
+          expect(
+            afterSecond.map((t) => t[1]),
+            containsAll(<String>[
+              'bluesky:alice.bsky.social',
+              'github:octocat',
+              'telegram:chan',
+            ]),
+          );
+        },
+      );
+    });
+
+    group('dating the replacement event', () {
+      // created_at is whole seconds, so a second write inside the same second
+      // ties — and NIP-01 breaks a tie by lowest id, which resolves against
+      // the newer event half the time. Dating past the base removes the tie
+      // rather than betting on it (#7081).
+      test('dates the event one second past the one it replaces', () async {
+        stubIdentityEvents([
+          _event(id: _eventId(10), kind: 10011, createdAt: 9999999999),
+        ]);
+
+        await repo.publishClaim(
+          const IdentityClaim(
+            pubkey: _pubkey,
+            platform: 'github',
+            identity: 'octocat',
+            proof: 'abc',
+          ),
+        );
+
+        expect(signedCreatedAt, 10000000000);
+      });
+
+      test('keeps the signer clock when it is already past the base', () async {
+        stubIdentityEvents([
+          _event(id: _eventId(10), kind: 10011),
+        ]);
+        final before = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+        await repo.publishClaim(
+          const IdentityClaim(
+            pubkey: _pubkey,
+            platform: 'github',
+            identity: 'octocat',
+            proof: 'abc',
+          ),
+        );
+
+        final after = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        expect(signedCreatedAt, inInclusiveRange(before, after));
+      });
+
+      test('floors from the snapshot when only kind 0 came back', () async {
+        // No kind-10011 event to date past, but the snapshot still carries
+        // the newest coordinates this device has seen.
+        stubIdentityEvents(
+          const [],
+          kind0: [
+            _event(
+              id: _eventId(11),
+              tags: [
+                ['i', 'github:octocat', 'abc'],
+              ],
+            ),
+          ],
+        );
+        when(() => identityEventsDao.getEvent(_pubkey)).thenAnswer(
+          (_) async => IdentityEventRow(
+            pubkey: _pubkey,
+            tagsJson: '[["i","github:octocat","abc"]]',
+            sourceKind: 10011,
+            sourceCreatedAt: 9999999999,
+            sourceEventId: _eventId(20),
+          ),
+        );
+
+        await repo.publishClaim(
+          const IdentityClaim(
+            pubkey: _pubkey,
+            platform: 'twitter',
+            identity: 'jack',
+            proof: 'oauth',
+          ),
+        );
+
+        expect(signedCreatedAt, 10000000000);
+      });
+
+      test('leaves the date to the signer when nothing to supersede', () async {
+        await repo.publishClaim(
+          const IdentityClaim(
+            pubkey: _pubkey,
+            platform: 'github',
+            identity: 'octocat',
+            proof: 'abc',
+          ),
+        );
+
+        expect(signedCreatedAt, isNull);
+      });
+
+      test('does not strand the snapshot on a same-second write', () async {
+        // The lock #7081 would otherwise reintroduce: a publish that ties the
+        // base and loses the id tie-break is neither mirrored nor readable
+        // back, so every later write is refused as stale forever.
+        IdentityEventRow? stored;
+        when(
+          () => identityEventsDao.upsertEvent(
+            pubkey: any(named: 'pubkey'),
+            tagsJson: any(named: 'tagsJson'),
+            sourceKind: any(named: 'sourceKind'),
+            sourceCreatedAt: any(named: 'sourceCreatedAt'),
+            sourceEventId: any(named: 'sourceEventId'),
+          ),
+        ).thenAnswer((invocation) async {
+          final named = invocation.namedArguments;
+          stored = IdentityEventRow(
+            pubkey: named[#pubkey] as String,
+            tagsJson: named[#tagsJson] as String,
+            sourceKind: named[#sourceKind] as int,
+            sourceCreatedAt: named[#sourceCreatedAt] as int?,
+            sourceEventId: named[#sourceEventId] as String?,
+          );
+        });
+        when(
+          () => identityEventsDao.getEvent(_pubkey),
+        ).thenAnswer((_) async => stored);
+        // The base is dated past this device's clock, so without the floor
+        // the signer would tie it — and the signed id (…02) loses the
+        // tie-break against the base's (…01).
+        stubIdentityEvents([
+          _event(id: _eventId(1), kind: 10011, createdAt: 9999999999),
+        ]);
+
+        await repo.publishClaim(
+          const IdentityClaim(
+            pubkey: _pubkey,
+            platform: 'github',
+            identity: 'octocat',
+            proof: 'abc',
+          ),
+        );
+
+        // The published event outranks the base, so the mirror lands.
+        expect(stored?.sourceCreatedAt, 10000000000);
+        expect(stored?.sourceEventId, _eventId(2));
+        expect(stored?.tagsJson, contains('github:octocat'));
+
+        // A relay now serving that event is not read back as stale.
+        stubIdentityEvents([
+          _event(
+            id: _eventId(2),
+            kind: 10011,
+            createdAt: 10000000000,
+            tags: [
+              ['i', 'github:octocat', 'abc'],
+            ],
+          ),
+        ]);
+
+        await expectLater(
+          repo.publishClaim(
+            const IdentityClaim(
+              pubkey: _pubkey,
+              platform: 'twitter',
+              identity: 'jack',
+              proof: 'oauth',
+            ),
+          ),
+          completes,
+        );
+      });
     });
 
     group('removeClaim', () {
@@ -2462,11 +2947,21 @@ void main() {
             nostrClient: nostrClient,
             identityEventsDao: identityEventsDao,
             signEvent:
-                ({required kind, required content, required tags}) async {
+                ({
+                  required kind,
+                  required content,
+                  required tags,
+                  createdAt,
+                }) async {
                   signCalls++;
                   // Refuse only the NIP-98 event, so the unlink still lands.
                   if (kind == 27235) return null;
-                  return _event(id: _eventId(2), kind: kind, tags: tags);
+                  return _event(
+                    id: _eventId(2),
+                    kind: kind,
+                    tags: tags,
+                    createdAt: createdAt ?? 1000,
+                  );
                 },
           );
 
@@ -2645,6 +3140,30 @@ void main() {
       when(
         () => identityEventsDao.getEvent(_pubkey),
       ).thenThrow(StateError('disk on fire'));
+
+      return expectLater(
+        repo.publishClaim(
+          const IdentityClaim(
+            pubkey: _pubkey,
+            platform: 'github',
+            identity: 'octocat',
+            proof: 'abc',
+          ),
+        ),
+        completion(hasLength(1)),
+      );
+    });
+
+    test('treats a corrupt snapshot row as no snapshot', () {
+      // Same reasoning as an unreadable one: tags nothing can decode are not
+      // evidence that this profile has claims.
+      when(() => identityEventsDao.getEvent(_pubkey)).thenAnswer(
+        (_) async => const IdentityEventRow(
+          pubkey: _pubkey,
+          tagsJson: 'not json',
+          sourceKind: 10011,
+        ),
+      );
 
       return expectLater(
         repo.publishClaim(
