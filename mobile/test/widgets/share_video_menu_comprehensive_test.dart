@@ -2,6 +2,9 @@
 // ABOUTME: sheet rendering, feature flags, save/bookmark, copy link, share via,
 // ABOUTME: and quick-send behavior.
 
+import 'dart:async';
+import 'dart:ui' show Tristate;
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -109,9 +112,7 @@ void main() {
         any(),
         libraryTitle: any(named: 'libraryTitle'),
       ),
-    ).thenAnswer(
-      (_) async => VideoClipImportSuccess(_FakeDivineVideoClip()),
-    );
+    ).thenAnswer((_) async => VideoClipImportSuccess(_FakeDivineVideoClip()));
     when(
       () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
     ).thenReturn(false);
@@ -257,9 +258,7 @@ void main() {
           () => authService.currentPublicKeyHex,
         ).thenReturn(testVideo.pubkey);
 
-        await tester.pumpWidget(
-          buildSubject(mockAuthService: authService),
-        );
+        await tester.pumpWidget(buildSubject(mockAuthService: authService));
         await tester.tap(find.byType(ShareActionButton));
         await tester.pumpAndSettle();
 
@@ -293,9 +292,7 @@ void main() {
     ) async {
       final authService = createMockAuthService();
       when(() => authService.isAuthenticated).thenReturn(true);
-      when(
-        () => authService.currentPublicKeyHex,
-      ).thenReturn(testVideo.pubkey);
+      when(() => authService.currentPublicKeyHex).thenReturn(testVideo.pubkey);
 
       await tester.pumpWidget(buildSubject(mockAuthService: authService));
       await tester.tap(find.byType(ShareActionButton));
@@ -366,7 +363,8 @@ void main() {
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Added to bookmarks'), findsOneWidget);
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.shareAddedToBookmarks), findsOneWidget);
       verify(
         () => mockBookmarkService.isVideoBookmarkedGlobally(testVideo.id),
       ).called(1);
@@ -374,6 +372,63 @@ void main() {
         () => mockBookmarkService.toggleVideoInGlobalBookmarks(testVideo.id),
       ).called(1);
     });
+
+    testWidgets(
+      'Save shows a spinner and stops accepting taps while in flight',
+      (tester) async {
+        // The real toggle reconciles kind 10003 with the relay, signs, then
+        // waits for the publish to be accepted — 3.9s on a healthy production
+        // connection. Holding the future open is the only way a test can see
+        // that window; the other Save tests resolve in a microtask and the
+        // handler finishes before the first rebuild.
+        final gate = Completer<BookmarkToggleResult>();
+        when(
+          () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+        ).thenReturn(false);
+        when(
+          () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+        ).thenAnswer((_) => gate.future);
+
+        await tester.pumpWidget(buildSubject());
+        await tester.tap(find.byType(ShareActionButton));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Save'));
+        // Never pumpAndSettle here: the spinner animates forever and the pump
+        // budget runs out instead of settling.
+        await tester.pump();
+
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+        final saveSemantics = tester.getSemantics(
+          find
+              .ancestor(of: find.text('Save'), matching: find.byType(Semantics))
+              .first,
+        );
+        expect(
+          saveSemantics.flagsCollection.isEnabled,
+          equals(Tristate.isFalse),
+        );
+
+        await tester.tap(find.text('Save'));
+        await tester.pump();
+
+        gate.complete(
+          const BookmarkToggleResult(
+            succeeded: true,
+            wasBookmarked: false,
+            isBookmarked: true,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.shareAddedToBookmarks), findsOneWidget);
+        verify(
+          () => mockBookmarkService.toggleVideoInGlobalBookmarks(testVideo.id),
+        ).called(1);
+      },
+    );
 
     testWidgets('tapping Save shows failure snackbar on error', (tester) async {
       when(
@@ -418,6 +473,44 @@ void main() {
 
       expect(find.text('Failed to add bookmark'), findsOneWidget);
     });
+
+    // Both network-shaped failures share the "couldn't reach the network"
+    // wording. timedOut is the one a degraded connection actually produces:
+    // the read runs with requireAllRelaysSettled, so one slow relay times the
+    // query out while connectedRelays is non-empty and noRelays stays false.
+    for (final (name, failure) in const [
+      ('couldNotReachRelays', BookmarkToggleFailure.couldNotReachRelays),
+      ('timedOut', BookmarkToggleFailure.timedOut),
+    ]) {
+      testWidgets('tapping Save reports $name as a network failure', (
+        tester,
+      ) async {
+        when(
+          () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+        ).thenReturn(false);
+        when(
+          () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+        ).thenAnswer(
+          (_) async => BookmarkToggleResult(
+            succeeded: false,
+            wasBookmarked: false,
+            isBookmarked: false,
+            failure: failure,
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject());
+        await tester.tap(find.byType(ShareActionButton));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Save'));
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.profileSetupNoRelaysConnected), findsOneWidget);
+        expect(find.text(l10n.shareFailedToAddBookmark), findsNothing);
+      });
+    }
 
     testWidgets('share sheet has correct DivineIcons', (tester) async {
       await tester.pumpWidget(buildSubject());

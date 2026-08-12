@@ -65,6 +65,7 @@ class ShareSheetSaveResult extends ShareSheetActionResult {
     required this.succeeded,
     this.removed = false,
     this.wasBookmarkedBeforeToggle = false,
+    this.failure,
   });
 
   final bool succeeded;
@@ -74,6 +75,10 @@ class ShareSheetSaveResult extends ShareSheetActionResult {
 
   /// Whether the video was already globally bookmarked before this toggle.
   final bool wasBookmarkedBeforeToggle;
+
+  /// Why the toggle failed, so the sheet can say "couldn't reach the network"
+  /// instead of a generic error. `null` when [succeeded] is true.
+  final BookmarkToggleFailure? failure;
 }
 
 class ShareSheetVideoClipImportResult extends ShareSheetActionResult {
@@ -134,6 +139,7 @@ class ShareSheetState extends Equatable {
     this.contacts = const [],
     this.selectedRecipients = const [],
     this.isSending = false,
+    this.isSaving = false,
     this.actionResult,
   });
 
@@ -148,6 +154,13 @@ class ShareSheetState extends Equatable {
 
   /// Whether a send operation is in progress.
   final bool isSending;
+
+  /// Whether a bookmark save/remove is in progress.
+  ///
+  /// The toggle reconciles kind 10003 with the relay, signs, and waits for the
+  /// publish to be accepted before it can report anything, so the sheet has to
+  /// show that it is working rather than sitting inert (#7073).
+  final bool isSaving;
 
   /// One-shot action result for BlocListener consumption.
   /// Cleared on next state emission.
@@ -165,6 +178,7 @@ class ShareSheetState extends Equatable {
     List<ShareableUser>? contacts,
     List<ShareableUser>? selectedRecipients,
     bool? isSending,
+    bool? isSaving,
     ShareSheetActionResult? actionResult,
     bool clearActionResult = false,
   }) {
@@ -173,6 +187,7 @@ class ShareSheetState extends Equatable {
       contacts: contacts ?? this.contacts,
       selectedRecipients: selectedRecipients ?? this.selectedRecipients,
       isSending: isSending ?? this.isSending,
+      isSaving: isSaving ?? this.isSaving,
       actionResult: clearActionResult
           ? null
           : (actionResult ?? this.actionResult),
@@ -185,6 +200,7 @@ class ShareSheetState extends Equatable {
     contacts,
     selectedRecipients,
     isSending,
+    isSaving,
     actionResult,
   ];
 }

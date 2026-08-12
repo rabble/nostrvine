@@ -2,6 +2,8 @@
 // ABOUTME: Verifies contact loading, recipient selection, send-with-message,
 // ABOUTME: save, copy, and share-via action flows
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:file/file.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
@@ -700,6 +702,15 @@ void main() {
     // -----------------------------------------------------------------------
 
     group('ShareSheetSaveRequested', () {
+      // The save handler emits a pending state before it touches the
+      // network, then the terminal result, so every expectation below opens
+      // with this one and asserts the flag is cleared on the way out.
+      final savePending = isA<ShareSheetState>()
+          .having((s) => s.isSaving, 'isSaving', isTrue)
+          .having((s) => s.actionResult, 'actionResult', isNull);
+
+      late Completer<BookmarkToggleResult> saveGate;
+
       blocTest<ShareSheetBloc, ShareSheetState>(
         'emits $ShareSheetSaveResult with succeeded=true, removed=false when adding bookmark',
         setUp: () {
@@ -716,18 +727,21 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetSaveRequested()),
         expect: () => [
-          isA<ShareSheetState>().having(
-            (s) => s.actionResult,
-            'actionResult',
-            isA<ShareSheetSaveResult>()
-                .having((r) => r.succeeded, 'succeeded', isTrue)
-                .having((r) => r.removed, 'removed', isFalse)
-                .having(
-                  (r) => r.wasBookmarkedBeforeToggle,
-                  'wasBookmarkedBeforeToggle',
-                  isFalse,
-                ),
-          ),
+          savePending,
+          isA<ShareSheetState>()
+              .having((s) => s.isSaving, 'isSaving', isFalse)
+              .having(
+                (s) => s.actionResult,
+                'actionResult',
+                isA<ShareSheetSaveResult>()
+                    .having((r) => r.succeeded, 'succeeded', isTrue)
+                    .having((r) => r.removed, 'removed', isFalse)
+                    .having(
+                      (r) => r.wasBookmarkedBeforeToggle,
+                      'wasBookmarkedBeforeToggle',
+                      isFalse,
+                    ),
+              ),
         ],
       );
 
@@ -747,18 +761,21 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetSaveRequested()),
         expect: () => [
-          isA<ShareSheetState>().having(
-            (s) => s.actionResult,
-            'actionResult',
-            isA<ShareSheetSaveResult>()
-                .having((r) => r.succeeded, 'succeeded', isTrue)
-                .having((r) => r.removed, 'removed', isTrue)
-                .having(
-                  (r) => r.wasBookmarkedBeforeToggle,
-                  'wasBookmarkedBeforeToggle',
-                  isTrue,
-                ),
-          ),
+          savePending,
+          isA<ShareSheetState>()
+              .having((s) => s.isSaving, 'isSaving', isFalse)
+              .having(
+                (s) => s.actionResult,
+                'actionResult',
+                isA<ShareSheetSaveResult>()
+                    .having((r) => r.succeeded, 'succeeded', isTrue)
+                    .having((r) => r.removed, 'removed', isTrue)
+                    .having(
+                      (r) => r.wasBookmarkedBeforeToggle,
+                      'wasBookmarkedBeforeToggle',
+                      isTrue,
+                    ),
+              ),
         ],
       );
 
@@ -778,18 +795,21 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetSaveRequested()),
         expect: () => [
-          isA<ShareSheetState>().having(
-            (s) => s.actionResult,
-            'actionResult',
-            isA<ShareSheetSaveResult>()
-                .having((r) => r.succeeded, 'succeeded', isFalse)
-                .having((r) => r.removed, 'removed', isFalse)
-                .having(
-                  (r) => r.wasBookmarkedBeforeToggle,
-                  'wasBookmarkedBeforeToggle',
-                  isFalse,
-                ),
-          ),
+          savePending,
+          isA<ShareSheetState>()
+              .having((s) => s.isSaving, 'isSaving', isFalse)
+              .having(
+                (s) => s.actionResult,
+                'actionResult',
+                isA<ShareSheetSaveResult>()
+                    .having((r) => r.succeeded, 'succeeded', isFalse)
+                    .having((r) => r.removed, 'removed', isFalse)
+                    .having(
+                      (r) => r.wasBookmarkedBeforeToggle,
+                      'wasBookmarkedBeforeToggle',
+                      isFalse,
+                    ),
+              ),
         ],
       );
 
@@ -810,18 +830,21 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetSaveRequested()),
         expect: () => [
-          isA<ShareSheetState>().having(
-            (s) => s.actionResult,
-            'actionResult',
-            isA<ShareSheetSaveResult>()
-                .having((r) => r.succeeded, 'succeeded', isFalse)
-                .having((r) => r.removed, 'removed', isFalse)
-                .having(
-                  (r) => r.wasBookmarkedBeforeToggle,
-                  'wasBookmarkedBeforeToggle',
-                  isTrue,
-                ),
-          ),
+          savePending,
+          isA<ShareSheetState>()
+              .having((s) => s.isSaving, 'isSaving', isFalse)
+              .having(
+                (s) => s.actionResult,
+                'actionResult',
+                isA<ShareSheetSaveResult>()
+                    .having((r) => r.succeeded, 'succeeded', isFalse)
+                    .having((r) => r.removed, 'removed', isFalse)
+                    .having(
+                      (r) => r.wasBookmarkedBeforeToggle,
+                      'wasBookmarkedBeforeToggle',
+                      isTrue,
+                    ),
+              ),
         ],
       );
 
@@ -836,18 +859,21 @@ void main() {
         act: (bloc) => bloc.add(const ShareSheetSaveRequested()),
         errors: () => [isA<Exception>()],
         expect: () => [
-          isA<ShareSheetState>().having(
-            (s) => s.actionResult,
-            'actionResult',
-            isA<ShareSheetSaveResult>()
-                .having((r) => r.succeeded, 'succeeded', isFalse)
-                .having((r) => r.removed, 'removed', isFalse)
-                .having(
-                  (r) => r.wasBookmarkedBeforeToggle,
-                  'wasBookmarkedBeforeToggle',
-                  isFalse,
-                ),
-          ),
+          savePending,
+          isA<ShareSheetState>()
+              .having((s) => s.isSaving, 'isSaving', isFalse)
+              .having(
+                (s) => s.actionResult,
+                'actionResult',
+                isA<ShareSheetSaveResult>()
+                    .having((r) => r.succeeded, 'succeeded', isFalse)
+                    .having((r) => r.removed, 'removed', isFalse)
+                    .having(
+                      (r) => r.wasBookmarkedBeforeToggle,
+                      'wasBookmarkedBeforeToggle',
+                      isFalse,
+                    ),
+              ),
         ],
       );
 
@@ -866,18 +892,21 @@ void main() {
         act: (bloc) => bloc.add(const ShareSheetSaveRequested()),
         errors: () => [isA<Exception>()],
         expect: () => [
-          isA<ShareSheetState>().having(
-            (s) => s.actionResult,
-            'actionResult',
-            isA<ShareSheetSaveResult>()
-                .having((r) => r.succeeded, 'succeeded', isFalse)
-                .having((r) => r.removed, 'removed', isFalse)
-                .having(
-                  (r) => r.wasBookmarkedBeforeToggle,
-                  'wasBookmarkedBeforeToggle',
-                  isTrue,
-                ),
-          ),
+          savePending,
+          isA<ShareSheetState>()
+              .having((s) => s.isSaving, 'isSaving', isFalse)
+              .having(
+                (s) => s.actionResult,
+                'actionResult',
+                isA<ShareSheetSaveResult>()
+                    .having((r) => r.succeeded, 'succeeded', isFalse)
+                    .having((r) => r.removed, 'removed', isFalse)
+                    .having(
+                      (r) => r.wasBookmarkedBeforeToggle,
+                      'wasBookmarkedBeforeToggle',
+                      isTrue,
+                    ),
+              ),
         ],
       );
 
@@ -887,18 +916,21 @@ void main() {
             createBloc(bookmarkServiceFuture: Future<BookmarkService?>.value()),
         act: (bloc) => bloc.add(const ShareSheetSaveRequested()),
         expect: () => [
-          isA<ShareSheetState>().having(
-            (s) => s.actionResult,
-            'actionResult',
-            isA<ShareSheetSaveResult>()
-                .having((r) => r.succeeded, 'succeeded', isFalse)
-                .having((r) => r.removed, 'removed', isFalse)
-                .having(
-                  (r) => r.wasBookmarkedBeforeToggle,
-                  'wasBookmarkedBeforeToggle',
-                  isFalse,
-                ),
-          ),
+          savePending,
+          isA<ShareSheetState>()
+              .having((s) => s.isSaving, 'isSaving', isFalse)
+              .having(
+                (s) => s.actionResult,
+                'actionResult',
+                isA<ShareSheetSaveResult>()
+                    .having((r) => r.succeeded, 'succeeded', isFalse)
+                    .having((r) => r.removed, 'removed', isFalse)
+                    .having(
+                      (r) => r.wasBookmarkedBeforeToggle,
+                      'wasBookmarkedBeforeToggle',
+                      isFalse,
+                    ),
+              ),
         ],
       );
 
@@ -925,29 +957,104 @@ void main() {
           bloc.add(const ShareSheetSaveRequested());
         },
         expect: () => [
-          isA<ShareSheetState>().having(
-            (s) => s.actionResult,
-            'actionResult',
-            isA<ShareSheetSaveResult>()
-                .having((r) => r.removed, 'removed', isFalse)
-                .having(
-                  (r) => r.wasBookmarkedBeforeToggle,
-                  'wasBookmarkedBeforeToggle',
-                  isFalse,
-                ),
-          ),
-          isA<ShareSheetState>().having(
-            (s) => s.actionResult,
-            'actionResult',
-            isA<ShareSheetSaveResult>()
-                .having((r) => r.removed, 'removed', isTrue)
-                .having(
-                  (r) => r.wasBookmarkedBeforeToggle,
-                  'wasBookmarkedBeforeToggle',
+          savePending,
+          isA<ShareSheetState>()
+              .having((s) => s.isSaving, 'isSaving', isFalse)
+              .having(
+                (s) => s.actionResult,
+                'actionResult',
+                isA<ShareSheetSaveResult>()
+                    .having((r) => r.removed, 'removed', isFalse)
+                    .having(
+                      (r) => r.wasBookmarkedBeforeToggle,
+                      'wasBookmarkedBeforeToggle',
+                      isFalse,
+                    ),
+              ),
+          savePending,
+          isA<ShareSheetState>()
+              .having((s) => s.isSaving, 'isSaving', isFalse)
+              .having(
+                (s) => s.actionResult,
+                'actionResult',
+                isA<ShareSheetSaveResult>()
+                    .having((r) => r.removed, 'removed', isTrue)
+                    .having(
+                      (r) => r.wasBookmarkedBeforeToggle,
+                      'wasBookmarkedBeforeToggle',
+                      isTrue,
+                    ),
+              ),
+        ],
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'swallows a repeat save while the first is still in flight',
+        setUp: () {
+          saveGate = Completer<BookmarkToggleResult>();
+          when(
+            () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+          ).thenAnswer((_) => saveGate.future);
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const ShareSheetSaveRequested());
+          await Future<void>.delayed(Duration.zero);
+          // Still reconciling. The sheet is showing the pending affordance and
+          // this second tap must not start another reconcile-and-publish of a
+          // replaceable list.
+          bloc.add(const ShareSheetSaveRequested());
+          await Future<void>.delayed(Duration.zero);
+          saveGate.complete(
+            const BookmarkToggleResult(
+              succeeded: true,
+              wasBookmarked: false,
+              isBookmarked: true,
+            ),
+          );
+        },
+        expect: () => [
+          savePending,
+          isA<ShareSheetState>()
+              .having((s) => s.isSaving, 'isSaving', isFalse)
+              .having(
+                (s) => s.actionResult,
+                'actionResult',
+                isA<ShareSheetSaveResult>().having(
+                  (r) => r.succeeded,
+                  'succeeded',
                   isTrue,
                 ),
-          ),
+              ),
         ],
+        verify: (_) => verify(
+          () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+        ).called(1),
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'does not emit after close when save completes late',
+        setUp: () {
+          saveGate = Completer<BookmarkToggleResult>();
+          when(
+            () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+          ).thenAnswer((_) => saveGate.future);
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const ShareSheetSaveRequested());
+          await Future<void>.delayed(Duration.zero);
+          await bloc.close();
+          saveGate.complete(
+            const BookmarkToggleResult(
+              succeeded: true,
+              wasBookmarked: false,
+              isBookmarked: true,
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+        },
+        expect: () => [savePending],
       );
     });
 

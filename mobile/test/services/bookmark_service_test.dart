@@ -887,6 +887,63 @@ void main() {
         expect(result.isBookmarked, equals(result.wasBookmarked));
         verifyNever(() => nostrClient.publishEventAwaitOk(any()));
       });
+
+      test(
+        'reports couldNotReachRelays, not timedOut, when the device is '
+        'offline and the query sets both flags',
+        () async {
+          // An offline device reports noRelays *and* timedOut. Testing
+          // timedOut first would route offline to the wrong message, so the
+          // precedence is pinned here.
+          stubRelay(events: [], timedOut: true, noRelays: true);
+          final service = createService();
+
+          final result = await service.toggleVideoInGlobalBookmarks('wanted');
+
+          expect(
+            result.failure,
+            equals(BookmarkToggleFailure.couldNotReachRelays),
+          );
+          verifyNever(() => nostrClient.publishEventAwaitOk(any()));
+        },
+      );
+
+      test('reports timedOut when relays were reachable but silent', () async {
+        stubRelay(events: [], timedOut: true);
+        final service = createService();
+
+        final result = await service.toggleVideoInGlobalBookmarks('wanted');
+
+        expect(result.failure, equals(BookmarkToggleFailure.timedOut));
+        verifyNever(() => nostrClient.publishEventAwaitOk(any()));
+      });
+
+      test(
+        'reports publishDidNotComplete when the publish is rejected',
+        () async {
+          stubRelay(events: []);
+          stubPublishRejected();
+          final service = createService();
+
+          final result = await service.toggleVideoInGlobalBookmarks('wanted');
+
+          expect(result.succeeded, isFalse);
+          expect(
+            result.failure,
+            equals(BookmarkToggleFailure.publishDidNotComplete),
+          );
+        },
+      );
+
+      test('carries no failure reason when the toggle succeeds', () async {
+        stubRelay(events: []);
+        final service = createService();
+
+        final result = await service.toggleVideoInGlobalBookmarks('wanted');
+
+        expect(result.succeeded, isTrue);
+        expect(result.failure, isNull);
+      });
     });
   });
 }

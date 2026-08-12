@@ -15,6 +15,7 @@ class _MoreActionsSection extends ConsumerWidget {
     required this.onShareVia,
     required this.onCopyEventJson,
     required this.onCopyEventId,
+    this.isSavePending = false,
     this.onEditVideo,
     this.onDeleteVideo,
     this.onAddVideoToClips,
@@ -24,6 +25,9 @@ class _MoreActionsSection extends ConsumerWidget {
 
   final VideoEvent video;
   final bool isOwnContent;
+
+  /// Whether the bookmark toggle is mid-flight (#7073).
+  final bool isSavePending;
   final VoidCallback onSave;
   final Future<void> Function()? onSaveOriginal;
   final Future<void> Function() onSaveWithWatermark;
@@ -69,6 +73,7 @@ class _MoreActionsSection extends ConsumerWidget {
         icon: DivineIconName.bookmarkSimple,
         label: context.l10n.shareSheetSave,
         onTap: onSave,
+        isPending: isSavePending,
       ),
       if (onSaveOriginal != null)
         _ActionData(
@@ -155,6 +160,7 @@ class _MoreActionsSection extends ConsumerWidget {
                   icon: action.icon,
                   label: action.label,
                   onTap: action.onTap,
+                  isPending: action.isPending,
                 );
               },
             ),
@@ -170,11 +176,16 @@ class _ActionData {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.isPending = false,
   });
 
   final DivineIconName icon;
   final String label;
   final VoidCallback onTap;
+
+  /// Whether the action is mid-flight, so the circle shows a spinner and stops
+  /// responding to taps.
+  final bool isPending;
 }
 
 class _ActionCircle extends StatelessWidget {
@@ -182,13 +193,16 @@ class _ActionCircle extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.isPending = false,
   });
 
   final DivineIconName icon;
   final String label;
   final VoidCallback onTap;
+  final bool isPending;
 
   static const double _circleSize = 48;
+  static const double _iconSize = 22;
 
   @override
   Widget build(BuildContext context) {
@@ -198,9 +212,10 @@ class _ActionCircle extends StatelessWidget {
     return Semantics(
       button: true,
       label: label,
+      enabled: !isPending,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: onTap,
+        onTap: isPending ? null : onTap,
         child: SizedBox(
           width: 68,
           child: Column(
@@ -215,7 +230,24 @@ class _ActionCircle extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 child: Center(
-                  child: DivineIcon(icon: icon, size: 22, color: iconColor),
+                  child: isPending
+                      // Same footprint as the icon it replaces, so the row does
+                      // not reflow while the save is in flight. Mirrors the
+                      // send button in share_sheet_message_input.dart.
+                      ? const SizedBox.square(
+                          dimension: _iconSize,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              iconColor,
+                            ),
+                          ),
+                        )
+                      : DivineIcon(
+                          icon: icon,
+                          size: _iconSize,
+                          color: iconColor,
+                        ),
                 ),
               ),
               Text(

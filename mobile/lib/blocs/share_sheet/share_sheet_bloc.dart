@@ -294,7 +294,15 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
     ShareSheetSaveRequested event,
     Emitter<ShareSheetState> emit,
   ) async {
+    // Emitted above the await deliberately: resolving the bookmark service is
+    // itself a wait on a cold start, and the toggle below is a relay
+    // reconcile + sign + publish. Emitting after it would leave the sheet
+    // inert for the whole window, which is the bug (#7073).
+    emit(state.copyWith(isSaving: true, clearActionResult: true));
+
     final bookmarkService = await _bookmarkServiceFuture;
+    if (isClosed) return;
+
     if (bookmarkService == null) {
       Log.warning(
         'Bookmark service unavailable — cannot save',
@@ -302,7 +310,10 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         category: LogCategory.ui,
       );
       emit(
-        state.copyWith(actionResult: ShareSheetSaveResult(succeeded: false)),
+        state.copyWith(
+          isSaving: false,
+          actionResult: ShareSheetSaveResult(succeeded: false),
+        ),
       );
       return;
     }
@@ -318,13 +329,17 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       final result = await bookmarkService.toggleVideoInGlobalBookmarks(
         _video.id,
       );
+      if (isClosed) return;
+
       wasBookmarked = result.wasBookmarked;
       emit(
         state.copyWith(
+          isSaving: false,
           actionResult: ShareSheetSaveResult(
             succeeded: result.succeeded,
             removed: result.succeeded && result.wasBookmarked,
             wasBookmarkedBeforeToggle: result.wasBookmarked,
+            failure: result.failure,
           ),
         ),
       );
@@ -339,8 +354,11 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         name: 'ShareSheetBloc',
         category: LogCategory.ui,
       );
+      if (isClosed) return;
+
       emit(
         state.copyWith(
+          isSaving: false,
           actionResult: ShareSheetSaveResult(
             succeeded: false,
             wasBookmarkedBeforeToggle: wasBookmarked,
