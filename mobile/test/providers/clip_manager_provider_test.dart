@@ -332,6 +332,47 @@ void main() {
       expect(state.isProcessing, isFalse);
     });
 
+    group('clearAll autosave draft handling', () {
+      // The recorder and editor exits differ only in this flag, and the
+      // widget-level suites drive it through a fake `VideoPublishNotifier`
+      // that records the boolean without running the chain — so these are the
+      // assertions that fail if the delete stops reaching storage.
+      void addClip(ClipManagerNotifier notifier) => notifier.addClip(
+        limitClipDuration: false,
+        video: EditorVideo.file('/path/to/video1.mp4'),
+        duration: const Duration(seconds: 1),
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
+      );
+
+      test('deletes the autosave draft by default', () async {
+        final notifier = container.read(clipManagerProvider.notifier);
+        addClip(notifier);
+
+        await notifier.clearAll();
+
+        verify(
+          () => mockDraftStorageService.deleteDraft(
+            VideoEditorConstants.autoSaveId,
+          ),
+        ).called(greaterThanOrEqualTo(1));
+      });
+
+      test('leaves the autosave draft untouched when keeping it', () async {
+        final notifier = container.read(clipManagerProvider.notifier);
+        addClip(notifier);
+
+        await notifier.clearAll(keepAutosavedDraft: true);
+
+        // The shared `draft_autosave` slot is never touched — the editor's
+        // save path relies on that, having already reaped it itself.
+        verifyNever(() => mockDraftStorageService.deleteDraft(any()));
+        // ...and the session still empties, which is what cures the inherited
+        // aspect ratio. The flag only decides the draft's fate.
+        expect(container.read(clipManagerProvider).clips, isEmpty);
+      });
+    });
+
     test('canRecordMore is true when under limit', () {
       final notifier = container.read(clipManagerProvider.notifier);
 

@@ -24,7 +24,6 @@ import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/widgets/camera_permission_gate.dart';
 import 'package:openvine/widgets/video_recorder/modes/capture/video_recorder_capture_stack.dart';
 import 'package:openvine/widgets/video_recorder/modes/capture/video_recorder_stop_motion_budget.dart';
@@ -185,8 +184,6 @@ class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
   OverlayVisibility? _overlayVisibilityNotifier;
   late final CreationAnalyticsTracker _creationAnalyticsTracker;
   VideoRecorderMode? _lastRecorderMode;
-
-  bool get _isAutosavedDraft => ref.read(videoEditorProvider).isAutosavedDraft;
 
   @override
   void initState() {
@@ -402,10 +399,8 @@ class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
         },
         child: PopScope(
           onPopInvokedWithResult: (didPop, value) {
-            if (didPop && !widget.fromEditor && !_isAutosavedDraft) {
-              ref
-                  .read(videoPublishProvider.notifier)
-                  .clearAll(keepAutosavedDraft: true);
+            if (didPop && !widget.fromEditor) {
+              discardRecorderSession(ref);
             }
           },
           child: AnnotatedRegion<SystemUiOverlayStyle>(

@@ -52,7 +52,7 @@ class _VideoRecorderTopBarState extends ConsumerState<VideoRecorderTopBar> {
                   doneSemanticLabel:
                       context.l10n.videoRecorderContinueToEditorLabel,
                   doneIcon: DivineIconName.caretRight,
-                  onClose: () => closeVideoRecorder(context),
+                  onClose: () => closeVideoRecorder(context, ref),
                   onDone: hasClips
                       ? () => openVideoEditorFromRecorder(context, ref)
                       : null,

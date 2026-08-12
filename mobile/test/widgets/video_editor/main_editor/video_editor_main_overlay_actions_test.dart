@@ -63,6 +63,7 @@ class _FakeVideoEditorNotifier extends VideoEditorNotifier {
 
 class _FakeVideoPublishNotifier extends VideoPublishNotifier {
   int clearAllCalls = 0;
+  final keepAutosavedDraftValues = <bool>[];
 
   @override
   VideoPublishProviderState build() => const VideoPublishProviderState();
@@ -70,6 +71,7 @@ class _FakeVideoPublishNotifier extends VideoPublishNotifier {
   @override
   Future<void> clearAll({bool keepAutosavedDraft = false}) async {
     clearAllCalls++;
+    keepAutosavedDraftValues.add(keepAutosavedDraft);
   }
 }
 
@@ -317,6 +319,13 @@ void main() {
           expect(fakeVideoEditorNotifier.saveAsDraftCalls, equals(1));
           verify(() => mockGoRouter.pop<Object?>(any())).called(2);
           expect(find.text('Saved to library'), findsOneWidget);
+          // The draft owns the session now; leaving it selected would carry
+          // its clips — and their aspect ratio — into the next camera open.
+          expect(fakeVideoPublishNotifier.clearAllCalls, equals(1));
+          // `saveAsDraft` already awaited the autosave delete, so this clear
+          // must not re-issue it: a late fixed-id delete would wipe whatever
+          // session is active by the time it lands.
+          expect(fakeVideoPublishNotifier.keepAutosavedDraftValues, [isTrue]);
         },
       );
 
@@ -358,6 +367,8 @@ void main() {
           verify(() => mockGoRouter.pop<Object?>(any())).called(1);
           expect(find.text('Failed to save'), findsOneWidget);
           expect(find.bySemanticsLabel(closeLabel), findsOneWidget);
+          // Nothing was saved, so the session is all the user has left.
+          expect(fakeVideoPublishNotifier.clearAllCalls, isZero);
         },
       );
 
