@@ -518,6 +518,30 @@ Future<void> executeAccountDeletion({
   // Whether the @divine.video handle was permanently released this run.
   var burnCommitted = false;
 
+  bool stopCleanupIfAccountChanged() {
+    if (confirmedPubkey == null ||
+        authService.currentPublicKeyHex == confirmedPubkey) {
+      return false;
+    }
+    Log.warning(
+      'Account-bound cleanup aborted after network deletion: signed-in '
+      'account changed',
+      name: screenName,
+      category: LogCategory.auth,
+    );
+    dismissProgressSheet();
+    if (context.mounted) {
+      final text = (burnCommitted && burnReleasedText != null)
+          ? burnReleasedText
+          : accountChangedAfterDeletionText;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(DivineSnackbarContainer.snackBar(text, error: true));
+      announceOutcome(text);
+    }
+    return true;
+  }
+
   try {
     // Bind to the confirmed account: if the signed-in account changed since the
     // user confirmed, abort before burning or deleting anything.
@@ -654,6 +678,11 @@ Future<void> executeAccountDeletion({
     );
 
     if (result.success) {
+      // The service's signer checks end when its Future completes. Re-bind at
+      // the caller boundary before account-scoped cleanup, because Keycast
+      // deletion and sign-out resolve the account that is active right now.
+      if (stopCleanupIfAccountChanged()) return;
+
       // Step 2: Delete Keycast account if one exists (invalidates signer)
       final keycast = await authService.deleteKeycastAccount();
       final keycastSuccess = keycast.success;
@@ -693,6 +722,10 @@ Future<void> executeAccountDeletion({
           category: LogCategory.auth,
         );
       }
+
+      // Keycast deletion is also asynchronous; do not let an account switch
+      // at that boundary turn the following sign-out into cross-account work.
+      if (stopCleanupIfAccountChanged()) return;
 
       // Step 3: Sign out, delete local keys, and clear local account data
       // Router will automatically redirect to /welcome when auth state
