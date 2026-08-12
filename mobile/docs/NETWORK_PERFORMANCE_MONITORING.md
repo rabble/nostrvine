@@ -135,10 +135,18 @@ slow; check the cheap things first.
 
 1. Unit level: `flutter test test/observability/network`.
 2. Local stack: loopback hosts are instrumented on purpose, so a LOCAL run
-   against `local_stack/` exercises the same path end to end. The cost is that
-   debug runs report `http://localhost:<port>/…` patterns into the same
-   project — a handful of extra patterns, the same routes on a different
-   authority. That is the same trade the existing custom traces already make.
+   against `local_stack/` exercises the same path end to end. Nothing reaches
+   the console from it by default, though — developer builds are deactivated
+   natively and gated in Dart (#7123), so this step only proves the client
+   builds a metric, not that Firebase accepted it. To take it all the way,
+   opt that one run back in: undo the native deactivation for your platform
+   (`android/app/src/debug/AndroidManifest.xml`, or
+   `FIREBASE_PERFORMANCE_COLLECTION_DEACTIVATED=NO` in `ios/Flutter/Debug.xcconfig`)
+   **and** flip `PerformanceMonitoringService.collectionEnabled` to `true` —
+   either alone leaves collection off. Revert both before committing; a debug
+   run that reports lands `http://localhost:<port>/…` patterns in the
+   production project under a build number no store build uses — exactly the
+   contamination that skewed #7123.
 3. Console: **Performance → Network Requests**, filtered to `divine.video` /
    `dvines.org`. Confirm requests appear from **both** platforms and that each
    endpoint shows as one aggregated pattern with placeholders — a list of

@@ -1,2 +1,10 @@
 #include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"
 #include "Generated.xcconfig"
+
+// Keep profile builds out of the production Firebase Performance dataset
+// (#7123). Profile.xcconfig is the base for the Runner Profile configuration
+// (wired in Runner.xcodeproj); without that wiring the Profile configuration
+// falls through to Release.xcconfig and cannot be told apart from a store
+// build natively. See Debug.xcconfig for why this is `_deactivated` and how
+// to opt a single local run back in.
+FIREBASE_PERFORMANCE_COLLECTION_DEACTIVATED=YES

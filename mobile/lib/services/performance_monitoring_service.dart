@@ -2,6 +2,7 @@
 // ABOUTME: Uses Firebase Performance Monitoring to track screen transitions, network requests, and custom operations
 
 import 'package:firebase_performance/firebase_performance.dart';
+import 'package:flutter/foundation.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// A handle to a single started performance trace.
@@ -135,6 +136,29 @@ class NoOpPerformanceTraceMonitor implements PerformanceTraceMonitor {
 class PerformanceMonitoringService implements PerformanceTraceMonitor {
   PerformanceMonitoringService();
 
+  /// Whether this build may report to the production Firebase Performance
+  /// dataset.
+  ///
+  /// Release-only, which is stricter than the `!kDebugMode` gate
+  /// `CrashReportingService` uses: a profile build is a developer device too,
+  /// and its timings land in the same dataset as real users rather than in a
+  /// separate bucket.
+  ///
+  /// Debug and profile builds are excluded because they are far slower than
+  /// release and there is no way to tell them apart once the data has landed.
+  /// In #7123 this skewed the release comparison it was being read for: local
+  /// builds — identifiable only because they carry the `pubspec.yaml` build
+  /// number, which store builds never use — were 9.5% of the 1.0.19 sample at
+  /// a p50 of 919 ms, against ~100 ms for the same phone model on a store
+  /// build.
+  ///
+  /// Paired with a native deactivation in the debug and profile Android
+  /// manifests and in iOS `Debug.xcconfig` / `Profile.xcconfig`, which is what
+  /// actually suppresses `_app_start` — that trace is captured natively before
+  /// Dart runs.
+  @visibleForTesting
+  static const bool collectionEnabled = kReleaseMode;
+
   late final FirebasePerformance _performance;
   bool _initialized = false;
 
@@ -155,12 +179,16 @@ class PerformanceMonitoringService implements PerformanceTraceMonitor {
     try {
       _performance = FirebasePerformance.instance;
 
-      // Enable performance collection
-      await _performance.setPerformanceCollectionEnabled(true);
+      // Always assert the flag rather than skipping the call when collection
+      // is off: the SDK persists it across launches, so a device that ran an
+      // earlier build — which enabled collection unconditionally — keeps
+      // reporting until something actively sets it back to false.
+      await _performance.setPerformanceCollectionEnabled(collectionEnabled);
 
       _initialized = true;
       Log.info(
-        'Performance monitoring initialized successfully',
+        'Performance monitoring initialized successfully '
+        '(collection enabled: $collectionEnabled)',
         name: 'PerformanceMonitoring',
       );
     } catch (e) {
