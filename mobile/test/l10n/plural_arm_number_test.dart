@@ -50,19 +50,7 @@ void main() {
           if (value is! String) continue;
 
           for (final arm in _pluralArms(value)) {
-            if (!RegExp(r'\d').hasMatch(arm.text)) continue;
-            // Interpolating the count itself is always safe. A *different*
-            // placeholder is not — `one{1 clip into {destination}}` still
-            // renders a false count.
-            if (arm.text.contains('{${arm.variable}}')) continue;
-            final digits = RegExp(
-              r'\d+',
-            ).allMatches(arm.text).map((m) => m[0]).toList();
-            final exact = _exactValueArms[arm.category];
-            if (exact != null && digits.length == 1 && digits.single == exact) {
-              continue;
-            }
-            if ((arm.category == '=1' || arm.category == 'one') && oneIsExact) {
+            if (!_armHardcodesUnsafeNumber(arm, oneIsExact: oneIsExact)) {
               continue;
             }
             offenders.add(
@@ -82,6 +70,43 @@ void main() {
             '${offenders.join('\n')}',
       );
     });
+
+    test(
+      'flags a hardcoded digit even when the count placeholder is also present',
+      () {
+        // Presence of {count} does not make a literal safe: fil one fires for
+        // most integers, so one{1 of {count}} still shows a false leading 1.
+        expect(
+          _armHardcodesUnsafeNumber(
+            const _PluralArm('count', 'one', '1 of {count}'),
+            oneIsExact: false,
+          ),
+          isTrue,
+        );
+        expect(
+          _armHardcodesUnsafeNumber(
+            const _PluralArm('count', 'one', '{count} personne'),
+            oneIsExact: false,
+          ),
+          isFalse,
+        );
+        // Exact-one locales may keep a lone literal 1, but not other digits.
+        expect(
+          _armHardcodesUnsafeNumber(
+            const _PluralArm('count', 'one', '1 item'),
+            oneIsExact: true,
+          ),
+          isFalse,
+        );
+        expect(
+          _armHardcodesUnsafeNumber(
+            const _PluralArm('count', 'one', '2 items'),
+            oneIsExact: true,
+          ),
+          isTrue,
+        );
+      },
+    );
 
     test('render the real count in every locale whose `one` is not exactly 1', () {
       // Regression pins for the four locales that were shipping wrong numbers.
@@ -143,6 +168,31 @@ class _PluralArm {
   final String variable;
   final String category;
   final String text;
+}
+
+/// Whether [arm] hardcodes a digit that can disagree with the selected count.
+///
+/// Interpolating `{variable}` alone is safe. A literal digit is only safe when
+/// the arm is value-exact (`=0`/`zero`/`=2`/`two`, or `=1`/`one` in a locale
+/// whose `one` fires only at n=1) and every digit token matches that value.
+/// A mixed arm like `one{1 of {count}}` is unsafe wherever `one` is not exact.
+bool _armHardcodesUnsafeNumber(_PluralArm arm, {required bool oneIsExact}) {
+  if (!RegExp(r'\d').hasMatch(arm.text)) return false;
+
+  final digits = RegExp(
+    r'\d+',
+  ).allMatches(arm.text).map((m) => m[0]!).toList();
+
+  final exact = _exactValueArms[arm.category];
+  if (exact != null && digits.every((digit) => digit == exact)) {
+    return false;
+  }
+  if ((arm.category == '=1' || arm.category == 'one') &&
+      oneIsExact &&
+      digits.every((digit) => digit == '1')) {
+    return false;
+  }
+  return true;
 }
 
 /// Splits *every* `{name, plural, ...}` block of [value] into its arms.
