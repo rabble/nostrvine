@@ -2,6 +2,9 @@
 // ABOUTME: sheet rendering, feature flags, save/bookmark, copy link, share via,
 // ABOUTME: and quick-send behavior.
 
+import 'dart:async';
+import 'dart:ui' show Tristate;
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -374,6 +377,62 @@ void main() {
         () => mockBookmarkService.toggleVideoInGlobalBookmarks(testVideo.id),
       ).called(1);
     });
+
+    testWidgets(
+      'Save shows a spinner and stops accepting taps while in flight',
+      (tester) async {
+        // The real toggle reconciles kind 10003 with the relay, signs, then
+        // waits for the publish to be accepted — 3.9s on a healthy production
+        // connection. Holding the future open is the only way a test can see
+        // that window; the other Save tests resolve in a microtask and the
+        // handler finishes before the first rebuild.
+        final gate = Completer<BookmarkToggleResult>();
+        when(
+          () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+        ).thenReturn(false);
+        when(
+          () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+        ).thenAnswer((_) => gate.future);
+
+        await tester.pumpWidget(buildSubject());
+        await tester.tap(find.byType(ShareActionButton));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Save'));
+        // Never pumpAndSettle here: the spinner animates forever and the pump
+        // budget runs out instead of settling.
+        await tester.pump();
+
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+        final saveSemantics = tester.getSemantics(
+          find
+              .ancestor(of: find.text('Save'), matching: find.byType(Semantics))
+              .first,
+        );
+        expect(
+          saveSemantics.flagsCollection.isEnabled,
+          equals(Tristate.isFalse),
+        );
+
+        await tester.tap(find.text('Save'));
+        await tester.pump();
+
+        gate.complete(
+          const BookmarkToggleResult(
+            succeeded: true,
+            wasBookmarked: false,
+            isBookmarked: true,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Added to bookmarks'), findsOneWidget);
+        verify(
+          () => mockBookmarkService.toggleVideoInGlobalBookmarks(testVideo.id),
+        ).called(1);
+      },
+    );
 
     testWidgets('tapping Save shows failure snackbar on error', (tester) async {
       when(

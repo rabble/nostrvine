@@ -24,6 +24,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/video_clip_import_provider.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_edit_screen.dart';
+import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/video_clip_import_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/utils/delete_result_localization.dart';
@@ -290,11 +291,18 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
         :final succeeded,
         :final removed,
         :final wasBookmarkedBeforeToggle,
+        :final failure,
       ):
+        // "Failed to add bookmark" names no recovery for the state the user is
+        // almost certainly in, and after a long blocking wait that matters
+        // more, not less. Only the unreachable-relay case is worded
+        // separately; the rest keep today's copy.
         final snackText = succeeded
             ? (removed
                   ? context.l10n.shareRemovedFromBookmarks
                   : context.l10n.shareAddedToBookmarks)
+            : failure == BookmarkToggleFailure.couldNotReachRelays
+            ? context.l10n.profileSetupNoRelaysConnected
             : (wasBookmarkedBeforeToggle
                   ? context.l10n.shareFailedToRemoveBookmark
                   : context.l10n.shareFailedToAddBookmark);
@@ -714,6 +722,7 @@ class _UnifiedShareSheetView extends StatelessWidget {
                       _MoreActionsSection(
                         video: video,
                         isOwnContent: isOwnContent,
+                        isSavePending: state.isSaving,
                         onCrosspost: onCrosspost,
                         onSave: () => bloc.add(const ShareSheetSaveRequested()),
                         onSaveOriginal: onSaveOriginal,
