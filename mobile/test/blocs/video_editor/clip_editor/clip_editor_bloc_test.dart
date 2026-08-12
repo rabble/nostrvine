@@ -3017,7 +3017,10 @@ void main() {
         seed: () => ClipEditorState(
           clips: [
             _createClipWithFile().copyWith(
-              forwardVideoPath: '/path/clip-local.mp4',
+              // Distinct from `video` (`/path/clip-local.mp4`) so the
+              // forward-cache yield is what makes the expectation pass —
+              // a same-path seed would already be covered by the video yield.
+              forwardVideoPath: '/forward/clip-local-cache.mp4',
               reversedVideoPath: '/reversed/clip-local.mp4',
             ),
           ],
@@ -3033,6 +3036,7 @@ void main() {
             supersededPaths,
             containsAll(<String>[
               '/path/clip-local.mp4',
+              '/forward/clip-local-cache.mp4',
               '/reversed/clip-local.mp4',
             ]),
           );
