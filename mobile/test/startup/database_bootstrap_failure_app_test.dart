@@ -319,6 +319,13 @@ void main() {
       );
     });
 
+    test('classifies a database damaged past classification', () {
+      expect(
+        databaseBootstrapDiagnosticCode(const DatabaseUnreadableError()),
+        equals('db-unreadable'),
+      );
+    });
+
     test('falls back to the catch-all for unrecognized failures', () {
       expect(
         databaseBootstrapDiagnosticCode(StateError('something else entirely')),
@@ -552,6 +559,7 @@ void main() {
             .toSet(),
         equals({
           DatabaseBootstrapDiagnosis.cipherMismatch,
+          DatabaseBootstrapDiagnosis.databaseUnreadable,
           DatabaseBootstrapDiagnosis.bootstrapFailed,
         }),
       );
@@ -593,6 +601,19 @@ void main() {
       expect(
         shouldRepairLocalDatabaseCacheAfterBootstrapError(
           DatabaseCipherStorageUnavailableException(_lockedKeychainFailure()),
+        ),
+        isFalse,
+      );
+    });
+
+    test('excludes an unreadable database despite it being unusable', () {
+      // Unusable, but the automatic repair also rotates the cipher key, and
+      // nothing proves the stored one is stale — rotating it would orphan the
+      // backup the repair leaves behind. The failure screen offers the same
+      // reset with the key kept, so the user chooses the data loss.
+      expect(
+        shouldRepairLocalDatabaseCacheAfterBootstrapError(
+          const DatabaseUnreadableError(),
         ),
         isFalse,
       );

@@ -433,6 +433,10 @@ enum DatabaseBootstrapDiagnosis {
   /// The key no longer opens the database file.
   cipherMismatch('db-cipher-mismatch'),
 
+  /// The database file is damaged past classification — neither readable
+  /// plaintext nor recognizably encrypted.
+  databaseUnreadable('db-unreadable'),
+
   /// Anything else. Read the exception from Crashlytics for this one.
   bootstrapFailed('db-bootstrap-failed');
 
@@ -445,10 +449,11 @@ enum DatabaseBootstrapDiagnosis {
   /// Whether the screen may offer the destructive local-database reset.
   ///
   /// [cipherMismatch] is provably unusable — the key no longer opens the file.
-  /// [bootstrapFailed] is only presumed unusable: the cause is unknown, though
-  /// startup did fail on it. The reset keeps the cipher key for exactly that
-  /// reason, so the backup it leaves behind stays readable if the presumption
-  /// was wrong.
+  /// [databaseUnreadable] is too: the file is damaged past classification, and
+  /// no key or retry changes that. [bootstrapFailed] is only presumed unusable:
+  /// the cause is unknown, though startup did fail on it. The reset keeps the
+  /// cipher key for exactly that reason, so the backup it leaves behind stays
+  /// readable if the presumption was wrong.
   ///
   /// [secureStorage] must never reach it: the database is intact and only its
   /// keystore was unreachable, so clearing it would trade a restart-and-retry
@@ -459,7 +464,7 @@ enum DatabaseBootstrapDiagnosis {
   /// Switched exhaustively on purpose: a future diagnosis has to make this
   /// choice deliberately instead of defaulting into a destructive offer.
   bool get allowsLocalDatabaseReset => switch (this) {
-    cipherMismatch || bootstrapFailed => true,
+    cipherMismatch || databaseUnreadable || bootstrapFailed => true,
     cipherUnavailable || secureStorage => false,
   };
 }
@@ -479,6 +484,9 @@ DatabaseBootstrapDiagnosis databaseBootstrapDiagnosis(Object error) {
   }
   if (error is DatabaseCipherStorageUnavailableException) {
     return DatabaseBootstrapDiagnosis.secureStorage;
+  }
+  if (error is DatabaseUnreadableError) {
+    return DatabaseBootstrapDiagnosis.databaseUnreadable;
   }
 
   final message = error.toString();

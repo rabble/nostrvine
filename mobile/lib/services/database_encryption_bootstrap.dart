@@ -124,6 +124,10 @@ class DatabaseEncryptionBootstrap {
   ///   the cipher key cannot be read or written, most often a launch before
   ///   the device's first unlock. Raised by the Keychain backends only — see
   ///   the platform note on that class.
+  /// * [DatabaseUnreadableError] when the database file is damaged past
+  ///   classification. Distinct from the deferral above: that one hands back a
+  ///   `null` key for a database that genuinely is readable plaintext, this one
+  ///   has no readable database to hand a key for.
   ///
   /// Must run before the first `AppDatabase` open.
   Future<String?> resolveCipherKey() async {
@@ -229,6 +233,14 @@ class DatabaseEncryptionBootstrap {
         // signal that forces the salvage once the retry finally classifies the
         // file as encrypted.
         return (null, false);
+      case CipherMigrationOutcome.unreadable:
+        // Deliberately NOT the deferral above: the file cannot be classified,
+        // so returning `null` would open an unusable database and break every
+        // statement for the whole session — the exact silent-null-key state
+        // #5301 forbids — and the classification is deterministic, so no later
+        // launch recovers on its own. Fail closed instead; the startup failure
+        // screen offers the reset. See #6897.
+        throw const DatabaseUnreadableError();
     }
   }
 
@@ -350,6 +362,30 @@ class DatabaseCipherStorageUnavailableException implements Exception {
       'secure storage is unavailable ($cause)';
 }
 
+/// Thrown when the local database file exists but cannot be classified: the
+/// keyless probe read a legible SQLite header and then failed with
+/// `SQLITE_CORRUPT`, so the file is neither usable plaintext nor recognizably
+/// encrypted.
+///
+/// Not a key problem — an encrypted file reports `SQLITE_NOTADB` and takes the
+/// salvage/recreate path instead. The stored cipher key is fine and is
+/// deliberately kept, so the backup a reset leaves behind stays readable.
+///
+/// Fails startup on purpose. The alternative the bootstrap used to take was to
+/// hand back a `null` key and let the app open the damaged file anyway, which
+/// looked like a normal launch and then failed every statement in the session
+/// (#6897). Because the classification depends only on the bytes on disk, the
+/// "retry next launch" that the deferral promises never arrives.
+class DatabaseUnreadableError implements Exception {
+  const DatabaseUnreadableError();
+
+  @override
+  String toString() =>
+      'DatabaseUnreadableError: the local database is damaged beyond '
+      'classification; it is neither readable plaintext nor an encrypted '
+      'database.';
+}
+
 class DatabaseCipherUnavailableError extends StateError {
   DatabaseCipherUnavailableError()
     : super(
@@ -365,7 +401,9 @@ class DatabaseCipherUnavailableError extends StateError {
 /// secure-storage or cipher bootstrap failure: an existing encrypted DB
 /// would be opened as plaintext and repeatedly surface SQLITE_NOTADB. Web and
 /// intentional plaintext migration deferrals still return `null` from
-/// [resolveCipherKey].
+/// [resolveCipherKey] — but only when the plaintext database is actually
+/// readable; a damaged one throws [DatabaseUnreadableError] rather than
+/// inheriting that carve-out (#6897).
 Future<String?> resolveStartupDatabaseCipherKey({
   required Future<String?> Function() resolveCipherKey,
   required Future<void> Function(Object error, StackTrace stack) recordError,
@@ -401,6 +439,13 @@ bool shouldRepairLocalDatabaseCacheAfterBootstrapError(Object error) {
   // The database is fine; only the keystore holding its key was unreachable.
   // Repairing would delete that key and strand a recoverable database.
   if (error is DatabaseCipherStorageUnavailableException) return false;
+  // The database really is unusable, but the repair below also rotates the
+  // cipher key, and nothing here proves the stored one is stale. Rotating it
+  // would orphan the backup the repair leaves behind — the user's only copy of
+  // their local-only drafts and clips. The failure screen offers the same reset
+  // with the key retained, so the user chooses the data loss instead of a
+  // silent wipe on a launch that looked normal.
+  if (error is DatabaseUnreadableError) return false;
 
   final message = error.toString();
   return message.contains('SqliteException($_sqliteNotADb)') ||
