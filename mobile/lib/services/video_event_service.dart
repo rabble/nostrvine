@@ -42,6 +42,7 @@ import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/effective_content_labels.dart';
 import 'package:openvine/services/event_router.dart';
 import 'package:openvine/services/feed_aspect_ratio_preference_service.dart';
+import 'package:openvine/services/feed_retry_scheduler.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/repost_resolver.dart';
@@ -190,15 +191,23 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   // Global state
   bool _isLoading = false;
   String? _error;
-  Timer? _retryTimer;
   StreamSubscription<Map<String, RelayConnectionStatus>>?
   _relayReadyRetrySubscription;
 
-  // Feed types whose relay subscription failed on a connection error and
-  // should be re-established by the online-retry cycle.
-  final Set<SubscriptionType> _typesAwaitingRetry = {};
+  // Feed types whose relay subscription failed because no relay was usable
+  // yet, and should be re-established once one is.
   final Set<SubscriptionType> _typesAwaitingRelayReady = {};
-  int _retryAttempts = 0;
+
+  late final FeedRetryScheduler _retryScheduler = FeedRetryScheduler(
+    connectionService: _connectionService,
+    resubscribe: _resubscribeWithStoredParams,
+    onRelayNotReady: _scheduleRetryWhenRelayReady,
+  );
+
+  /// Per-type 30s feed-load fuses. Cancelled on replace/teardown so a
+  /// subscription the user already left cannot fire recovery against a later
+  /// live feed of the same type.
+  final Map<SubscriptionType, Timer> _feedLoadTimeouts = {};
 
   // Track subscription parameters per type
   final Map<SubscriptionType, Map<String, dynamic>> _subscriptionParams = {};
@@ -249,8 +258,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   final StreamController<String> _removedVideoIdsController =
       StreamController<String>.broadcast();
 
-  static const int _maxRetryAttempts = 3;
-  static const Duration _retryDelay = Duration(seconds: 10);
   static const int _eventDeletionKind = 5;
 
   // Optional services for enhanced functionality
@@ -1789,6 +1796,13 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     _isLoading = true;
     _error = null;
 
+    // Explicit subscribe paths re-arm the consecutive-timeout budget. The
+    // auto-retry cycle passes scheduleOnlineRetry: false so it keeps counting
+    // toward the give-up ceiling instead of resetting itself every attempt.
+    if (scheduleOnlineRetry) {
+      _retryScheduler.clearTimeoutBudget(subscriptionType);
+    }
+
     if (!_nostrService.isInitialized) {
       _isLoading = false;
 
@@ -1826,7 +1840,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           sortBy: sortBy,
           nip50Sort: nip50Sort,
         );
-        _scheduleRetryWhenOnline(subscriptionType);
+        _retryScheduler.scheduleWhenOnline(subscriptionType);
       }
       throw const VideoEventServiceException('Device is offline');
     }
@@ -2285,10 +2299,27 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           category: LogCategory.video,
         );
 
-        // Set up timeout to detect feed loading failures (30 seconds)
-        Timer? feedLoadingTimeout;
+        // Set up timeout to detect feed loading failures (30 seconds).
+        // Tracked on the service so replace/cancel can kill it — a local-only
+        // Timer kept firing after the user left and could unmap a later live
+        // sub of the same type, then auto-retry with stale/null filters.
+        _cancelFeedLoadTimeout(subscriptionType);
+        late final Timer feedLoadingTimeout;
         feedLoadingTimeout = Timer(const Duration(seconds: 30), () {
           if (_isDisposed) return;
+          if (!identical(
+            _feedLoadTimeouts[subscriptionType],
+            feedLoadingTimeout,
+          )) {
+            return;
+          }
+          _feedLoadTimeouts.remove(subscriptionType);
+
+          // Subscription already torn down or replaced — do not recover.
+          if (_activeSubscriptions[subscriptionType] != subscriptionId ||
+              !_subscriptions.containsKey(subscriptionId)) {
+            return;
+          }
 
           if (!eoseReceived && eventCount == 0 && !timeoutReported) {
             timeoutReported = true;
@@ -2298,16 +2329,22 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
               category: LogCategory.video,
             );
 
-            // Clean up subscription state so retry is possible
+            // Clean up subscription state so retry is possible.
+            // The stored params are deliberately kept: they are the only
+            // record of the filters this feed was built from, and the retry
+            // scheduled below cannot re-issue the REQ without them. Dropping
+            // them made a timed-out feed unrecoverable until the user
+            // navigated away and back (#7124).
             Log.info(
               '🧹 Cleaning up timed-out subscription state for $subscriptionType',
               name: 'VideoEventService',
               category: LogCategory.video,
             );
             _activeSubscriptions.remove(subscriptionType);
-            _subscriptionParams.remove(subscriptionType);
 
-            // Cancel the subscription to prevent leaks
+            // Cancel the subscription to prevent leaks. This also releases the
+            // REQ in the SDK, which force-cycles the relay if the socket
+            // swallowed it — so the retry below runs on a live connection.
             final sub = _subscriptions.remove(subscriptionId);
             sub?.cancel();
 
@@ -2324,8 +2361,16 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
             );
 
             completeFeedLoadTrace('timeout');
+            // Every other completion path notifies; without this the loading
+            // state flips silently and no listener re-evaluates the feed.
+            notifyListeners();
+
+            if (_retryScheduler.recordFeedLoadTimeout(subscriptionType)) {
+              _retryScheduler.scheduleWhenOnline(subscriptionType);
+            }
           }
         });
+        _feedLoadTimeouts[subscriptionType] = feedLoadingTimeout;
 
         // Phase 3.3: Cache-first strategy - load cached events BEFORE relay subscription
         // This provides instant UI feedback while relay fetches fresh data
@@ -2391,8 +2436,8 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           filters,
           onEose: () {
             eoseReceived = true;
-            feedLoadingTimeout
-                ?.cancel(); // Cancel timeout - EOSE received successfully
+            _cancelFeedLoadTimeout(subscriptionType);
+            _retryScheduler.recordFeedServed(subscriptionType);
             final eoseDuration = DateTime.now().difference(
               subscriptionStartTime,
             );
@@ -2488,8 +2533,8 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
             // Track first event arrival time
             if (firstEventTime == null) {
               firstEventTime = DateTime.now();
-              feedLoadingTimeout
-                  ?.cancel(); // Cancel timeout - events are arriving successfully
+              _cancelFeedLoadTimeout(subscriptionType);
+              _retryScheduler.recordFeedServed(subscriptionType);
               final firstEventLatency = firstEventTime!.difference(
                 subscriptionStartTime,
               );
@@ -2536,7 +2581,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
             );
           },
           onError: (error) {
-            feedLoadingTimeout?.cancel();
+            _cancelFeedLoadTimeout(subscriptionType);
             Log.error(
               '❌ Subscription error for $subscriptionType after $eventCount events: $error',
               name: 'VideoEventService',
@@ -2546,7 +2591,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
             _handleSubscriptionError(error, subscriptionType);
           },
           onDone: () {
-            feedLoadingTimeout?.cancel();
+            _cancelFeedLoadTimeout(subscriptionType);
             final totalDuration = DateTime.now().difference(
               subscriptionStartTime,
             );
@@ -2632,7 +2677,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           category: LogCategory.video,
         );
         if (scheduleOnlineRetry) {
-          _scheduleRetryWhenOnline(subscriptionType);
+          _retryScheduler.scheduleWhenOnline(subscriptionType);
         } else {
           rethrow;
         }
@@ -3294,7 +3339,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         name: 'VideoEventService',
         category: LogCategory.video,
       );
-      _scheduleRetryWhenOnline(subscriptionType);
+      _retryScheduler.scheduleWhenOnline(subscriptionType);
     }
   }
 
@@ -4693,7 +4738,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
   /// Schedule retry of [subscriptionType] when at least one relay reconnects.
   ///
-  /// This is intentionally separate from [_scheduleRetryWhenOnline]: the device
+  /// This is intentionally separate from [FeedRetryScheduler.scheduleWhenOnline]: the device
   /// can have network connectivity while every Nostr relay is disconnected.
   void _scheduleRetryWhenRelayReady(SubscriptionType subscriptionType) {
     _typesAwaitingRelayReady.add(subscriptionType);
@@ -4762,97 +4807,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     _relayReadyRetrySubscription = null;
   }
 
-  /// Schedule retry of [subscriptionType] when the device is back online.
-  ///
-  /// The failed type is recorded so the retry re-establishes the feed
-  /// that actually broke (with its original parameters) — previously the
-  /// retry hardcoded the discovery feed, so home/hashtag/profile feeds
-  /// never recovered through this path.
-  void _scheduleRetryWhenOnline(SubscriptionType subscriptionType) {
-    _typesAwaitingRetry.add(subscriptionType);
-
-    // An active cycle keeps its attempt budget. A fresh cycle starts
-    // over — previously an exhausted counter was never reset, leaving
-    // retries dead for the rest of the session.
-    if (_retryTimer?.isActive ?? false) return;
-    _retryAttempts = 0;
-
-    _retryTimer = Timer.periodic(_retryDelay, (timer) {
-      if (!_connectionService.isOnline) {
-        Log.debug(
-          '⏳ Still offline, waiting for connection...',
-          name: 'VideoEventService',
-          category: LogCategory.video,
-        );
-        return;
-      }
-      if (_typesAwaitingRetry.isEmpty || _retryAttempts >= _maxRetryAttempts) {
-        _typesAwaitingRetry.clear();
-        timer.cancel();
-        return;
-      }
-
-      _retryAttempts++;
-      Log.warning(
-        'Attempting to resubscribe to '
-        '${_typesAwaitingRetry.map((t) => t.name).join(", ")} '
-        '(attempt $_retryAttempts/$_maxRetryAttempts)',
-        name: 'VideoEventService',
-        category: LogCategory.video,
-      );
-
-      for (final type in Set<SubscriptionType>.of(_typesAwaitingRetry)) {
-        _retrySubscription(type, timer);
-      }
-    });
-  }
-
-  /// Re-issue the relay subscription for [type] using its last-known
-  /// parameters, forcing past duplicate detection (the dead subscription
-  /// is still registered after an onError, so a non-forced call no-ops).
-  void _retrySubscription(SubscriptionType type, Timer timer) {
-    unawaited(
-      _resubscribeWithStoredParams(type)
-          .then((_) {
-            _typesAwaitingRetry.remove(type);
-            Log.info(
-              'Successfully resubscribed to ${type.name} feed',
-              name: 'VideoEventService',
-              category: LogCategory.video,
-            );
-            if (_typesAwaitingRetry.isEmpty) {
-              timer.cancel();
-              _retryAttempts = 0;
-            }
-          })
-          .catchError((Object e) {
-            Log.error(
-              'Retry attempt $_retryAttempts for ${type.name} failed: $e',
-              name: 'VideoEventService',
-              category: LogCategory.video,
-            );
-            if (e is RelayNotReadyException) {
-              _typesAwaitingRetry.remove(type);
-              if (_typesAwaitingRetry.isEmpty) {
-                timer.cancel();
-                _retryAttempts = 0;
-              }
-              _scheduleRetryWhenRelayReady(type);
-              return;
-            }
-            if (_retryAttempts >= _maxRetryAttempts) {
-              _typesAwaitingRetry.clear();
-              timer.cancel();
-              Log.warning(
-                'Max retry attempts reached for video feed subscription',
-                name: 'VideoEventService',
-                category: LogCategory.video,
-              );
-            }
-          }),
-    );
-  }
-
   Future<void> _resubscribeWithStoredParams(SubscriptionType type) {
     final params = _subscriptionParams[type];
     return subscribeToVideoFeed(
@@ -4882,7 +4836,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       ),
     ),
     'isLoading': _isLoading,
-    'retryAttempts': _retryAttempts,
+    'retryAttempts': _retryScheduler.attempts,
     'hasError': _error != null,
     'lastError': _error,
     'connectionInfo': _connectionService.getConnectionInfo(),
@@ -4895,7 +4849,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       name: 'VideoEventService',
       category: LogCategory.video,
     );
-    _retryAttempts = 0;
+    _retryScheduler.resetBudgets();
     _error = null;
 
     try {
@@ -5503,8 +5457,16 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         includeReposts == currentIncludeReposts;
   }
 
+  void _cancelFeedLoadTimeout(SubscriptionType subscriptionType) {
+    _feedLoadTimeouts.remove(subscriptionType)?.cancel();
+  }
+
   /// Cancel subscription for a specific type
   Future<void> _cancelSubscription(SubscriptionType subscriptionType) async {
+    // Kill the fuse before tearing down state so a later fire cannot unmap a
+    // replacement subscription or schedule a retry for a feed the user left.
+    _cancelFeedLoadTimeout(subscriptionType);
+
     final subscriptionId = _activeSubscriptions[subscriptionType];
     if (subscriptionId != null) {
       Log.info(
@@ -5876,7 +5838,11 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   void dispose() {
     _isDisposed = true;
 
-    _retryTimer?.cancel();
+    for (final timer in _feedLoadTimeouts.values) {
+      timer.cancel();
+    }
+    _feedLoadTimeouts.clear();
+    _retryScheduler.dispose();
     _cancelRelayReadyRetrySubscription();
     _likeCountBatchTimer?.cancel();
     _authStateSubscription?.cancel();

@@ -5,11 +5,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 
 class _RequeueingRelay extends Relay {
-  _RequeueingRelay(String url, {required this.failedMessage})
-    : super(url, RelayStatus(url));
+  _RequeueingRelay(
+    String url, {
+    required this.failedMessage,
+    this.connectionIsFresh = true,
+  }) : super(url, RelayStatus(url));
 
   final List<dynamic> failedMessage;
   final List<List<dynamic>> sentMessages = [];
+
+  @override
+  final bool connectionIsFresh;
 
   @override
   Future<bool> doConnect() async => true;
@@ -80,5 +86,110 @@ void main() {
         expect(relay.pendingMessages, [failedMessage]);
       },
     );
+  });
+
+  group('Relay saved-REQ re-issue on reconnect', () {
+    Subscription subscriptionWith(String id) => Subscription(
+      [
+        {
+          'kinds': [34236],
+        },
+      ],
+      (_) {},
+      id: id,
+    );
+
+    test('re-issues saved subscriptions so a dropped socket does not leave the '
+        'caller waiting forever', () async {
+      final relay = _RequeueingRelay('wss://relay.example', failedMessage: [])
+        ..saveSubscription(subscriptionWith('feed'));
+
+      await relay.onConnected(source: 'stateStream-reconnect');
+
+      expect(relay.sentMessages, [
+        [
+          'REQ',
+          'feed',
+          {
+            'kinds': [34236],
+          },
+        ],
+      ]);
+    });
+
+    test('re-issues pending one-shot queries too', () async {
+      final relay = _RequeueingRelay('wss://relay.example', failedMessage: [])
+        ..saveQuery(subscriptionWith('author-page'));
+
+      await relay.onConnected(source: 'stateStream-reconnect');
+
+      expect(relay.sentMessages.single[1], 'author-page');
+    });
+
+    test(
+      'sends a queued REQ once when its subscription is also saved — a '
+      'double REQ makes the relay replay the whole stored window twice',
+      () async {
+        final subscription = subscriptionWith('feed');
+        final relay = _RequeueingRelay('wss://relay.example', failedMessage: [])
+          ..saveSubscription(subscription)
+          ..pendingMessages.add(subscription.toJson());
+
+        await relay.onConnected(source: 'stateStream-reconnect');
+
+        expect(relay.sentMessages, hasLength(1));
+        expect(relay.pendingMessages, isEmpty);
+      },
+    );
+
+    test('still replays queued frames that are not re-issued REQs', () async {
+      final relay = _RequeueingRelay('wss://relay.example', failedMessage: [])
+        ..saveSubscription(subscriptionWith('feed'))
+        ..pendingMessages.add([
+          'EVENT',
+          {'id': 'queued-while-down'},
+        ]);
+
+      await relay.onConnected(source: 'stateStream-reconnect');
+
+      expect(relay.sentMessages.map((m) => m.first), ['EVENT', 'REQ']);
+    });
+
+    test('leaves saved REQs alone when the connection was only reused — the '
+        'live socket still holds them', () async {
+      final subscription = subscriptionWith('feed');
+      final relay =
+          _RequeueingRelay(
+              'wss://relay.example',
+              failedMessage: [],
+              connectionIsFresh: false,
+            )
+            ..saveSubscription(subscription)
+            ..pendingMessages.add([
+              'EVENT',
+              {'id': 'queued-while-down'},
+            ]);
+
+      await relay.onConnected(source: 'connect()');
+
+      expect(relay.sentMessages.map((m) => m.first), ['EVENT']);
+    });
+
+    test('replays a queued REQ when the connection was only reused — nothing '
+        're-issues it otherwise', () async {
+      final subscription = subscriptionWith('feed');
+      final relay =
+          _RequeueingRelay(
+              'wss://relay.example',
+              failedMessage: [],
+              connectionIsFresh: false,
+            )
+            ..saveSubscription(subscription)
+            ..pendingMessages.add(subscription.toJson());
+
+      await relay.onConnected(source: 'connect()');
+
+      expect(relay.sentMessages.map((m) => m.first), ['REQ']);
+    });
   });
 }

@@ -28,13 +28,20 @@ class RelayBase extends Relay {
   /// Tracks whether doConnect is in progress to avoid duplicate onConnected calls
   bool _isConnecting = false;
 
+  bool _connectionIsFresh = true;
+
+  @override
+  bool get connectionIsFresh => _connectionIsFresh;
+
   @override
   Future<bool> doConnect() async {
     // If already connected, return true
     if (_connectionManager != null && _connectionManager!.isConnected) {
       log("connect break: $url - already connected");
+      _connectionIsFresh = false;
       return true;
     }
+    _connectionIsFresh = true;
 
     try {
       _isConnecting = true;
@@ -89,6 +96,10 @@ class RelayBase extends Relay {
           // Flush pending messages on reconnection, but NOT during initial connect
           // (relay.connect() will call onConnected after doConnect returns)
           if (wasDisconnected && !_isConnecting) {
+            // A disconnected -> connected transition is a new socket by
+            // definition, including the one `forceReconnect` drives without
+            // going through `doConnect`.
+            _connectionIsFresh = true;
             onConnected(source: 'stateStream-reconnect');
           }
         case ConnectionState.connecting:
